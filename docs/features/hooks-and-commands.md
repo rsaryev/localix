@@ -124,6 +124,31 @@ event acts as on exit 2, and a `PermissionRequest` is denied. The error names th
 `failed; blocking because onFailure is "block"`. `Stop`, `SubagentStop`, `TaskCompleted`,
 `TeammateIdle` and background (`async`) handlers ignore the field.
 
+### Tool calls and transcripts
+
+A tool call reaches a hook under Claude Code's name, with Claude Code's fields beside Localix's:
+`Bash`, `Read`, `Write`, `Edit`, `Grep`, `AskUserQuestion`, `Workflow`, `Agent` for starting a
+delegated task, `Skill` for running a skill, and `WebFetch` for a research call that reads named
+pages or `WebSearch` for one that searches. A call with no Claude Code counterpart, such as listing
+delegated tasks or saving a skill, keeps Localix's name.
+
+An edit, write or read that names several files runs the tool hooks once per file, each as a one-file
+`Edit`, `Write` or `Read` with its `file_path`; a deny of any file refuses the call, and an allow
+approves it only when every file is allowed.
+
+A PostToolUse hook reads `tool_response` in that tool's Claude Code shape: Bash's `stdout` and
+`stderr` apart with `interrupted`, Write's `type`, `filePath`, `content` and `structuredPatch`,
+Edit's `filePath`, `oldString`, `newString` and hunks, Read's `{type, file}`, and WebFetch's `url`
+and `result`; an `updatedToolOutput` in that shape replaces what the model sees. Localix does not
+keep a file's text from before a write, so `originalFile` is `null`.
+
+`transcript_path` names the conversation as a JSONL file in Claude Code's transcript format, one
+`user` or `assistant` entry per line with Claude Code's tool names, so hooks such as ralph-loop and
+hookify's stop rules read it as they do in Claude Code. A `SubagentStop` hook's
+`agent_transcript_path` is the delegated task's own file, under `subagents/` beside it. Localix
+keeps the conversation in its database and rewrites these files from it before a hook that can read
+them runs; they live in the session's data folder and go with the session.
+
 ### Matcher, `if`, and `once`
 
 Tool-event matchers accept engine names and compatible aliases such as `Bash`, including MCP name
@@ -273,19 +298,22 @@ placeholders are substituted directly.
 Stdout counts as JSON output only when it is one JSON object with nothing around it. Text that does
 not start with `{` or end with `}` is plain text; anything else that fails to parse is a
 non-blocking error, applies nothing and never becomes context. On exit 2 a JSON object is still
-read, and a deny or block reason in it replaces stderr as the message. On `Stop`, `SubagentStop`,
-`TaskCompleted` and a plugin's `UserPromptSubmit`, exit 2 with empty stdout and a stderr that says
-`No such file or directory` is a non-blocking error, so a hook whose script is missing does not trap
-the agent. An `http` handler's 2xx body must be empty or a JSON object; plain text is an error.
+read, and a deny or block reason in it replaces stderr as the message.
+
+On `Stop`, `SubagentStop`, `TaskCompleted` and a plugin's `UserPromptSubmit`, exit 2 with empty
+stdout and a stderr that says `No such file or directory` is a non-blocking error, so a hook whose
+script is missing does not trap the agent. An `http` handler's 2xx body must be empty or a JSON
+object; plain text is an error.
 
 Command-hook stdout and stderr capture is capped at 64 KiB each. A hook's `additionalContext`,
 `systemMessage` or plain stdout longer than 10,000 characters is saved to a file in the session's
-folder and replaced by that file's path and its first 2,000 characters, as in Claude Code. A command
-handler with `async: true` cannot affect the current event. When it exits 0, the `additionalContext`
-and `systemMessage` of its JSON response reach the model with the session's next turn; print the
-JSON alone on stdout or on a line of its own. `asyncRewake` can wake an idle session when that
-command exits with code 2. That wake is armed when the hook starts and delivered at most once; a
-hook that exits any other way, or is lost to an API restart, wakes nobody.
+folder and replaced by that file's path and its first 2,000 characters, as in Claude Code.
+
+A command handler with `async: true` cannot affect the current event. When it exits 0, the
+`additionalContext` and `systemMessage` of its JSON response reach the model with the session's next
+turn; print the JSON alone on stdout or on a line of its own. `asyncRewake` can wake an idle session
+when that command exits with code 2. That wake is armed when the hook starts and delivered at most
+once; a hook that exits any other way, or is lost to an API restart, wakes nobody.
 
 ## Limits
 

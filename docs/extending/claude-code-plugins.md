@@ -94,16 +94,9 @@ has one folder. `WorktreeRemove` fires for worktree sessions, which Localix does
 Claude Code, it keeps a workflow agent's hook-made worktree. Between-turn events (a model switch, a
 project move, a file change) fire the hooks the conversation's latest turn assembled.
 
-An edit, write or read that names several files runs the tool hooks once per file, each as a
-one-file `Edit`, `Write` or `Read` with its `file_path`; a deny of any file refuses the call, and an
-allow approves it only when every file is allowed.
-
-`transcript_path` names the conversation as a JSONL file in Claude Code's transcript format, one
-`user` or `assistant` entry per line with Claude Code's tool names, so hooks such as ralph-loop and
-hookify's stop rules read it as they do in Claude Code. A `SubagentStop` hook's
-`agent_transcript_path` is the delegated task's own file, under `subagents/` beside it. Localix
-keeps the conversation in its database and rewrites these files from it before a hook that can read
-them runs; they live in the session's data folder and go with the session.
+A tool call reaches a hook under Claude Code's name and in Claude Code's shape, and
+`transcript_path` is a Claude Code transcript; see
+[Tool calls and transcripts](../features/hooks-and-commands.md#tool-calls-and-transcripts).
 
 ### Built-in plugins and updates
 
