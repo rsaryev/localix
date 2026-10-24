@@ -278,13 +278,14 @@ read, and a deny or block reason in it replaces stderr as the message. On `Stop`
 `No such file or directory` is a non-blocking error, so a hook whose script is missing does not trap
 the agent. An `http` handler's 2xx body must be empty or a JSON object; plain text is an error.
 
-Command-hook stdout and stderr capture is capped at 64 KiB each. Declarative post-tool appended
-context has a separate aggregate cap of 4,096 UTF-16 code units. A command handler with
-`async: true` cannot affect the current event. When it exits 0, the `additionalContext` and
-`systemMessage` of its JSON response reach the model with the session's next turn; print the JSON
-alone on stdout or on a line of its own. `asyncRewake` can wake an idle session when that command
-exits with code 2. That wake is armed when the hook starts and delivered at most once; a hook that
-exits any other way, or is lost to an API restart, wakes nobody.
+Command-hook stdout and stderr capture is capped at 64 KiB each. A hook's `additionalContext`,
+`systemMessage` or plain stdout longer than 10,000 characters is saved to a file in the session's
+folder and replaced by that file's path and its first 2,000 characters, as in Claude Code. A command
+handler with `async: true` cannot affect the current event. When it exits 0, the `additionalContext`
+and `systemMessage` of its JSON response reach the model with the session's next turn; print the
+JSON alone on stdout or on a line of its own. `asyncRewake` can wake an idle session when that
+command exits with code 2. That wake is armed when the hook starts and delivered at most once; a
+hook that exits any other way, or is lost to an API restart, wakes nobody.
 
 ## Limits
 

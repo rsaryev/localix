@@ -8,6 +8,8 @@ import { spendOnce } from './runtime-selection'
 import { refreshTranscriptFor } from './transcript'
 import { runHookOperation } from '../lifecycle-hooks/operation'
 import { blockOnFailure } from './on-failure'
+import { capHookOutput } from './output-cap'
+import { dirname, join } from 'node:path'
 
 type HandlerRunnerOptions = Pick<
   CreateCcHooksRuntimeOptions,
@@ -81,7 +83,11 @@ export function createHookHandlerRunner(options: HandlerRunnerOptions) {
         ? {}
         : blockOnFailure(event, h, { failed: result.kind === 'timeout' ? 'timeout' : 'error' })
     }
-    const outcome = blockOnFailure(event, h, result.value)
+    // Strings past 10,000 characters go to a file beside the session's transcript.
+    const outcome = capHookOutput(
+      blockOnFailure(event, h, result.value),
+      ...(options.transcript ? [join(dirname(options.transcript.path), 'hook-output')] : []),
+    )
     // A skill's `once` hook is spent by a run that neither failed nor blocked (exit 2).
     if (!outcome.failed && !outcome.blocked) spendOnce(onceKeys, event, h)
     // Surface a non-blocking `systemMessage` warning (CC: shown to the user in the

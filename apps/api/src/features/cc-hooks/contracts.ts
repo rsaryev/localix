@@ -197,8 +197,11 @@ export const CC_EVENT_DEFAULT_TIMEOUT_SEC: Partial<Record<CcHookEvent, number>> 
 export const CC_HOOK_MAX_TIMEOUT_SEC = 1800
 /** Max stdout/stderr bytes captured from a hook (protects the context window). */
 export const CC_HOOK_MAX_OUTPUT_BYTES = 64 * 1024
-/** Max chars of `additionalContext` a PostToolUse hook may append to a tool result. */
-export const CC_POST_APPEND_CAP_BYTES = 4 * 1024
+/**
+ * Max chars of hook context appended to a tool result: Claude Code's 10,000-character cap per
+ * string (`output-cap.ts`), for the joined notes of several hooks.
+ */
+export const CC_POST_APPEND_CAP_BYTES = 4 * 10_000
 
 /**
  * One normalized handler, ready to execute. Shell-command path placeholders
