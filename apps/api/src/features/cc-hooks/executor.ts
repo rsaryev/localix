@@ -58,6 +58,8 @@ function hookEnv(handler: CcHookHandler, input: CcHookInput, cwd: string, extra?
     CLAUDE_PROJECT_DIR: cwd,
     // env-vars.md: matches the `session_id` field of the hook's input.
     CLAUDE_CODE_SESSION_ID: input.session_id,
+    // env-vars.md: matches the input's `effort.level`.
+    ...(input.effort?.level ? { CLAUDE_EFFORT: input.effort.level } : {}),
     ...(extra?.envFile ? { CLAUDE_ENV_FILE: extra.envFile } : {}),
     ...(handler.pluginRoot ? { CLAUDE_PLUGIN_ROOT: handler.pluginRoot } : {}),
     ...(handler.pluginDataDir ? { CLAUDE_PLUGIN_DATA: handler.pluginDataDir } : {}),

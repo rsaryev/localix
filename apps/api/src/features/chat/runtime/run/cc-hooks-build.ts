@@ -46,6 +46,7 @@ import { claudeCodeSettingsEnv } from '../../../cc-settings/settings-env'
 import { readSettingsFileLayers } from '../../../cc-settings/settings-files'
 import { settingsHooks } from '../../../cc-settings/settings-hooks'
 import { claudeCodeTrusts } from '../../../cc-settings/settings-trust'
+import { ccBackgroundWork, ccRunFacts } from './cc-hook-run-facts'
 import { createCcTranscript } from './cc-transcript'
 import type { PermissionMode } from '../../../../contracts/permission-modes'
 
@@ -71,6 +72,8 @@ export interface BuildRunCcHooksInput {
   contextFiles?: readonly { path: string }[]
   /** The run's permission mode (its policy), reported to hooks as `permission_mode`. */
   permissionMode?: PermissionMode
+  /** The speaker's reasoning effort, reported to hooks as `effort.level`. */
+  effort?: string
 }
 
 export interface RunCcHooks {
@@ -169,6 +172,8 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
     projectDir: defaultCwd,
     enabled: true,
     ...(input.permissionMode ? { permissionMode: ccPermissionMode(input.permissionMode) } : {}),
+    ...ccRunFacts(params, input.effort, effectiveModelId),
+    backgroundWork: () => ccBackgroundWork(env.state.work, userId, session.id),
     // A delegated child's hooks fire inside its subagent (`agent_id`, `agent_type`).
     ...(subagent ? { agent: subagent } : {}),
     envFiles,

@@ -110,6 +110,11 @@ them runs; they live in the session's data folder and go with the session.
 Localix ships some plugins of its own as **Built-in**, registers its official `localix` marketplace
 on first start, and updates plugins installed from marketplaces by Claude Code's version rule, on
 its own for marketplaces with auto-update on. See [Built-in plugins and updates](plugin-updates.md).
+Hooks also read `prompt_id` (the message being answered), `effort.level` and the `CLAUDE_EFFORT`
+variable, SessionStart's `model`, PostToolUse's `duration_ms`, and on `Stop` and `SubagentStop` the
+session's running jobs, monitors and delegated tasks as `background_tasks` and its loops as
+`session_crons`. Two fields are never sent: `scratchpad_dir`, since a Localix session has no
+scratchpad, and `session_title`, since Localix does not record whether a person named the session.
 
 ### Earlier installs
 

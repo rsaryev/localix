@@ -136,7 +136,7 @@ export function createToolHookRunners({
     async runPostToolUse(
       tool: CcHookToolRef,
       input: unknown,
-      result: { content: string; details?: unknown },
+      result: { content: string; details?: unknown; durationMs?: number },
       toolUseId?: string,
       durationMs?: number,
     ) {

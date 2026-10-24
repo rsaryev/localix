@@ -88,6 +88,8 @@ describe('updating a marketplace', () => {
       update: async (_user, name) => calls.push(`update ${name}`),
       remove: async (_user, name) => calls.push(`remove ${name}`),
       migrate: async (_user, from, to) => calls.push(`migrate ${from} → ${to}`),
+      recheck: async () => undefined,
+      env: {},
     })
     const result = await methods.updateMarketplace('u', { name: 'acme' })
     expect(calls.sort()).toEqual([
@@ -107,6 +109,8 @@ describe('updating a marketplace', () => {
       repo: { listForScope: async () => [row('vanished')] } as never,
       update: async (_user, name) => calls.push(`update ${name}`),
       remove: async (_user, name) => calls.push(`remove ${name}`),
+      recheck: async () => undefined,
+      env: {},
     })
     const result = await methods.updateMarketplace('u', { name: 'acme' })
     expect(calls).toEqual([])

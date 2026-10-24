@@ -29,6 +29,10 @@ export interface CcHookInputBase {
   cwd: string
   /** Claude Code's spelling of the session's mode, on the events whose examples carry it. */
   permission_mode?: string
+  /** The user prompt being answered (absent before the first user input). */
+  prompt_id?: string
+  /** The effort level in effect. */
+  effort?: { level: string }
   hook_event_name: CcHookEvent
   /** The subagent the hook fires in (a delegated child's id and type). */
   agent_id?: string
@@ -43,6 +47,8 @@ export interface CcSessionStartInput extends CcHookInputBase {
    * (both re-fire on the NEXT run so the injected context lands in a model turn).
    */
   source: string
+  /** The session's model, when known. */
+  model?: string
 }
 export interface CcUserPromptSubmitInput extends CcHookInputBase {
   hook_event_name: 'UserPromptSubmit'
@@ -60,6 +66,8 @@ export interface CcPostToolUseInput extends CcHookInputBase {
   tool_input: unknown
   tool_response: unknown
   tool_use_id?: string
+  /** How long the tool ran, in milliseconds. */
+  duration_ms?: number
 }
 export interface CcPostToolUseFailureInput extends CcHookInputBase {
   hook_event_name: 'PostToolUseFailure'
@@ -69,6 +77,8 @@ export interface CcPostToolUseFailureInput extends CcHookInputBase {
   error: string
   /** True when the call was cut short by a cancellation, not a failure of its own. */
   is_interrupt: boolean
+  tool_use_id?: string
+  duration_ms?: number
 }
 export interface CcStopInput extends CcHookInputBase {
   hook_event_name: 'Stop'
@@ -102,6 +112,9 @@ export interface CcSubagentStopInput extends CcHookInputBase {
   stop_hook_active: boolean
   /** The subagent's own transcript (the host's `transcript_path` for it). */
   agent_transcript_path: string
+  /** The parent session's running work and scheduled loops, as on Stop. */
+  background_tasks: unknown[]
+  session_crons: unknown[]
 }
 export interface CcPreCompactInput extends CcHookInputBase {
   hook_event_name: 'PreCompact'

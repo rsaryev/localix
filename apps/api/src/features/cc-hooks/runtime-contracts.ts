@@ -92,7 +92,8 @@ export interface CcHooksRuntime
   runPostToolUse(
     tool: CcHookToolRef,
     input: unknown,
-    result: { content: string; details?: unknown },
+    /** `durationMs`: how long the tool ran, for `duration_ms`. */
+    result: { content: string; details?: unknown; durationMs?: number },
     toolUseId?: string,
     /** How long the tool ran (hooks.md `duration_ms`), when measured. */
     durationMs?: number,
@@ -163,6 +164,17 @@ export interface CreateCcHooksRuntimeOptions {
    * reported as `permission_mode` on the events whose documented input carries it.
    */
   permissionMode?: string
+  /** The user prompt this run answers → `prompt_id` (hooks.md, common input fields). */
+  promptId?: string
+  /** The effort level in effect → `effort.level` and `CLAUDE_EFFORT`; absent when reasoning is off. */
+  effort?: 'low' | 'medium' | 'high' | 'xhigh' | 'max'
+  /** The run's model → SessionStart's `model`. */
+  model?: string
+  /**
+   * The session's background work for Stop and SubagentStop (`background_tasks`, `session_crons`):
+   * its running jobs, monitors and delegated tasks, and its scheduled loops.
+   */
+  backgroundWork?: () => { background_tasks: unknown[]; session_crons: unknown[] }
   /** The run is a delegated subagent's: every input names it (`agent_id`, `agent_type`). */
   agent?: { id: string; type: string }
   /** The session's `CLAUDE_ENV_FILE`s (session-env.ts); absent → hooks get none. */

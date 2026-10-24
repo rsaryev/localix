@@ -162,6 +162,7 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
     isContinuation: frame.isContinuation,
     contextFiles: context.contextFiles,
     permissionMode: turn.policy.permission.mode,
+    ...(frame.speakerRoute.reasoningEffort ? { effort: frame.speakerRoute.reasoningEffort } : {}),
   })
   frame.teardown.ccHooks = ccHooks
   // Claude Code mods: the hooks modules of the plugins enabled for this run, in its project.

@@ -57,6 +57,10 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
     emitNotice,
     signal: runSignal,
     permissionMode,
+    promptId,
+    effort,
+    model,
+    backgroundWork,
     agent,
     envFiles,
     settingsEnv,
@@ -77,6 +81,8 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
     ...(permissionMode && PERMISSION_MODE_EVENTS.has(event)
       ? { permission_mode: permissionMode }
       : {}),
+    ...(promptId ? { prompt_id: promptId } : {}),
+    ...(effort ? { effort: { level: effort } } : {}),
     hook_event_name: event,
     // hooks.md: tool events inside a subagent carry "the agent_id and agent_type common input
     // fields that identify the subagent".
@@ -156,6 +162,8 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
   const stopRun = (stop: CcRunStop) => {
     runStop ??= stop
   }
+  // Stop and SubagentStop: what is still running or scheduled ("Both arrays are present").
+  const backgroundOf = () => backgroundWork?.() ?? { background_tasks: [], session_crons: [] }
   const dispatch = { select, runHandler, fireAsync, runAll, baseInput, emitNotice, stopRun }
   // Inputs a PermissionRequest hook rewrote, by tool call, until the call runs.
   const approvedInputs = new Map<string, unknown>()
@@ -165,7 +173,11 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
     stoppedBy: () => runStop,
 
     async runSessionStart(source = 'startup') {
-      const input: CcHookInput = { ...baseInput('SessionStart'), source }
+      const input: CcHookInput = {
+        ...baseInput('SessionStart'),
+        source,
+        ...(model ? { model } : {}),
+      }
       const outcomes = await runAll('SessionStart', (m) => matchesField(m, source), input, true)
       const additionalContext = contextFrom(outcomes)
       // `sessionTitle` "applies when source is startup, resume, or fork" — the last one named.
@@ -227,9 +239,7 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
         ...baseInput('Stop'),
         stop_hook_active: Boolean(stopOpts?.stopHookActive),
         last_assistant_message: stopOpts?.lastAssistantMessage ?? '',
-        // Claude Code's background tasks and crons: this host reports none to a Stop hook.
-        background_tasks: [],
-        session_crons: [],
+        ...backgroundOf(),
       }
       return stopVerdictFrom(await runAll('Stop', () => true, input, false))
     },
@@ -273,6 +283,8 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
         ...(lastMessage ? { last_assistant_message: lastMessage } : {}),
         stop_hook_active: Boolean(subOpts?.stopHookActive),
         agent_transcript_path: transcript?.agentPath(agentId) ?? '',
+        // "scoped to the parent session, not the subagent".
+        ...backgroundOf(),
       }
       return stopVerdictFrom(
         await runAll('SubagentStop', (m) => matchesField(m, agentType), input, false, {
