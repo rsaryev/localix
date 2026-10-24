@@ -31,6 +31,7 @@ import { fileURLToPath } from 'node:url'
 import {
   backendField,
   hasExtensionManifest,
+  isClaudeCodePluginOnly,
   localixManifestFile,
   readExtensionManifest,
 } from './lib/extension-manifest.mjs'
@@ -321,7 +322,13 @@ export function stageDropins({
     const skipTopDirs = privateMiniAppDirs(repoMiniApps)
     for (const entry of readdirSync(repoMiniApps, { withFileTypes: true })) {
       if (!entry.isDirectory()) continue
-      if (names.includes(entry.name) || !hasExtensionManifest(join(repoMiniApps, entry.name)))
+      const folder = join(repoMiniApps, entry.name)
+      // A Claude Code plugin is a built-in plugin, staged on its own (`stage-builtin-plugins.mjs`).
+      if (
+        names.includes(entry.name) ||
+        !hasExtensionManifest(folder) ||
+        isClaudeCodePluginOnly(folder)
+      )
         skipTopDirs.add(entry.name)
       else if (!skipTopDirs.has(entry.name)) names.push(entry.name)
     }

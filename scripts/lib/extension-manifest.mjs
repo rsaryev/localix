@@ -23,6 +23,15 @@ export function hasExtensionManifest(dir) {
 }
 
 /**
+ * True when `dir` is a Claude Code plugin and nothing else: its only manifest is
+ * `.claude-plugin/plugin.json`. Such a folder under `plugins/` is a built-in plugin
+ * (`stage-builtin-plugins.mjs`), never a mini app to stage.
+ */
+export function isClaudeCodePluginOnly(dir) {
+  return existsSync(join(dir, PLUGIN_MANIFEST)) && localixManifestFile(dir) === null
+}
+
+/**
  * The file that carries the Localix layer (`private`, `fileAssociations`, the backend): the mini
  * app manifest, else a legacy `plugin.json`; null for a plain Claude Code plugin.
  */

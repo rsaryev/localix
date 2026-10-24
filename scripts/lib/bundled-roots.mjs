@@ -1,11 +1,12 @@
 // Where Localix's bundled extensions live, named once for every build, staging, watch and guard
 // script. The repository keeps the two layers apart (AGENTS.md, "Plugins and mini apps"): each
-// folder under `mini-apps/` is one mini app (its screens, backend and tools, with the plugin it
-// contains), and each folder under `plugins/` is one plugin with no mini app. A build stages both
-// into one root beside the server bundle, which the API reads at runtime.
+// folder under `mini-apps/` is one mini app, and each folder under `plugins/` is one Claude Code
+// plugin built into Localix. A build stages the mini apps into one root beside the server bundle
+// and the built-in plugins into another (`resources/builtin-plugins`), which the API reads at
+// runtime. A Claude Code plugin is never staged as a mini app.
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { hasExtensionManifest } from './extension-manifest.mjs'
+import { hasExtensionManifest, isClaudeCodePluginOnly } from './extension-manifest.mjs'
 
 /** The repository folder of the bundled mini apps, one folder each. */
 export const MINI_APPS_DIR = 'mini-apps'
@@ -42,10 +43,14 @@ export function bundledRoots(repoRoot) {
  */
 export function bundledFolderOf(repoRoot, name) {
   for (const root of bundledRoots(repoRoot)) {
-    if (hasExtensionManifest(join(root, name))) return join(root, name)
+    const folder = join(root, name)
+    if (hasExtensionManifest(folder) && !isClaudeCodePluginOnly(folder)) return folder
   }
   return null
 }
+
+/** The folder a build stages the built-in plugins into, beside `server.js` (`resources/<dir>`). */
+export const STAGED_BUILTIN_PLUGINS_DIR = 'builtin-plugins'
 
 const segmentsOf = (rel) => String(rel).split(/[\\/]/u)
 

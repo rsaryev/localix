@@ -5,12 +5,14 @@ import { kitCacheRoot } from './mini-app-kit-cache.mjs'
 import { stageDropins, stageMiniAppKitBeside } from './stage-dropins.mjs'
 import { watchMiniAppKitInputs, watchMiniAppsForRestage } from './dev-mini-app-watch.mjs'
 import { repoRoot } from './lib/paths.mjs'
-import { STAGED_APPS_DIR } from './lib/bundled-roots.mjs'
+import { STAGED_APPS_DIR, STAGED_BUILTIN_PLUGINS_DIR } from './lib/bundled-roots.mjs'
+import { stageBuiltinPlugins } from './stage-builtin-plugins.mjs'
 
 const repo = repoRoot()
 const apiDir = join(repo, 'apps', 'api')
 const devStageRoot = join(repo, '.turbo', 'dev-mini-apps', String(process.pid))
 const stagedMiniApps = join(devStageRoot, STAGED_APPS_DIR)
+const stagedBuiltinPlugins = join(devStageRoot, STAGED_BUILTIN_PLUGINS_DIR)
 
 /**
  * Drop staging trees left by dev runs that are no longer alive.
@@ -66,6 +68,9 @@ stageDropins({
   // Release staging (prepare-sidecar.mjs) deliberately keeps the default `fatal`.
   onMiniAppError: 'skip',
 })
+// The plugins built into Localix, staged as a build stages them. A snapshot: an edit under
+// `plugins/` loads after the next `bun run dev`.
+stageBuiltinPlugins({ repoRoot: repo, out: stagedBuiltinPlugins })
 // Boot staging is a snapshot; a mini app created or whose backend changed while the API runs
 // is re-staged on its own, so `/mini-app create` and a backend edit no longer need a restart.
 const miniAppWatcher = watchMiniAppsForRestage({
@@ -88,6 +93,7 @@ const spawnApi = () =>
     env: {
       ...process.env,
       LOCALIX_BUNDLED_MINI_APPS_DIR: stagedMiniApps,
+      LOCALIX_BUILTIN_PLUGINS_DIR: stagedBuiltinPlugins,
     },
     stdin: 'inherit',
     stdout: 'inherit',

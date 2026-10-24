@@ -194,6 +194,26 @@ describe('stageDropins', () => {
     expect(existsSync(join(outMiniApps, 'trading', 'backend', 'tmp'))).toBe(false)
   })
 
+  test('a Claude Code plugin under plugins/ is a built-in plugin, never staged as a mini app', () => {
+    const root = mkdtempSync(join(tmpdir(), 'localix-stage-dropins-'))
+    roots.push(root)
+    const outMiniApps = join(root, 'staged', 'mini-apps')
+    write(
+      join(root, 'mini-apps', 'chess', 'mini-app.json'),
+      JSON.stringify({ name: 'chess', version: '1.0.0' }),
+    )
+    write(
+      join(root, 'plugins', 'guide', '.claude-plugin', 'plugin.json'),
+      JSON.stringify({ name: 'guide', version: '0.1.0' }),
+    )
+    write(join(root, 'plugins', 'guide', 'commands', 'new.md'), 'New.\n')
+
+    stageDropins({ repoRoot: root, outMiniApps, onMiniAppError: 'skip' })
+
+    expect(existsSync(join(outMiniApps, 'chess', 'mini-app.json'))).toBe(true)
+    expect(existsSync(join(outMiniApps, 'guide'))).toBe(false)
+  })
+
   test('a re-stage that builds again clears the recorded failure; one that breaks records it', () => {
     const root = mkdtempSync(join(tmpdir(), 'localix-stage-dropins-'))
     roots.push(root)

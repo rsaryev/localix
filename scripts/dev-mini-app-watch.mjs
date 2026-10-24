@@ -18,6 +18,7 @@ import {
 } from './stage-dropins.mjs'
 import { MINI_APP_KIT_INPUTS } from './stage-mini-app-kit.mjs'
 import { BUNDLED_DIRS, bundledRoots } from './lib/bundled-roots.mjs'
+import { isClaudeCodePluginOnly } from './lib/extension-manifest.mjs'
 
 /**
  * The kit inputs that decide its LAYOUT: the stagers and the layout contract the API's authoring
@@ -204,7 +205,8 @@ export function watchMiniAppsForRestage({
       (events) => {
         for (const event of events) {
           const name = miniAppNameForChange(relative(bundledDir, event.path))
-          if (name) schedule(name)
+          // A built-in plugin is not a mini app: it is staged with the API, not re-staged here.
+          if (name && !isClaudeCodePluginOnly(join(bundledDir, name))) schedule(name)
         }
       },
       {

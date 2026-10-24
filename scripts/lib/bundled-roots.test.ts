@@ -91,6 +91,7 @@ describe('bundled roots', () => {
     'mini-apps/chess/ui/register.tsx': '',
     'plugins/workflows/.claude-plugin/plugin.json': '{"name":"workflows"}',
     'plugins/workflows/commands/workflows.md': '',
+    'plugins/legacy/plugin.json': '{"name":"legacy"}',
     // What a move leaves behind in a checkout: ignored build caches, no manifest.
     'plugins/chess/.turbo/turbo-build.log': '',
     'plugins/stale/node_modules/.keep': '',
@@ -98,10 +99,12 @@ describe('bundled roots', () => {
 
   test('an extension is found in whichever bundled folder holds it', () => {
     expect(bundledFolderOf(checkout(), 'chess')).toBe(join(checkout(), MINI_APPS_DIR, 'chess'))
-    expect(bundledFolderOf(checkout(), 'workflows')).toBe(
-      join(checkout(), PLUGINS_DIR, 'workflows'),
-    )
+    expect(bundledFolderOf(checkout(), 'legacy')).toBe(join(checkout(), PLUGINS_DIR, 'legacy'))
     expect(bundledFolderOf(checkout(), 'missing')).toBeNull()
+  })
+
+  test('a Claude Code plugin is a built-in plugin, not an extension to stage as a mini app', () => {
+    expect(bundledFolderOf(checkout(), 'workflows')).toBeNull()
   })
 
   test('a folder without a manifest is not an extension', () => {

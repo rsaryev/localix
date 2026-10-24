@@ -8,6 +8,7 @@
 //   resources/server.js         the API bundled to one JS file, migrations and `kysely` included
 //   resources/mini-app-kit/     what the app needs to create, build and test USER mini apps
 //                               (template, shared-module exports, theme stylesheets)
+//   resources/builtin-plugins/  the Claude Code plugins built into Localix (`plugins/`)
 //
 // Pass --ui to ALSO build apps/ui into apps/ui/dist (the prod frontendDist).
 // Run by tauri's beforeDev/BuildCommand; also runnable by hand.
@@ -44,7 +45,12 @@ import {
 } from './tauri-staging.mjs'
 import { stageMiniAppKitBeside } from '../../../scripts/stage-dropins.mjs'
 import { MINI_APP_KIT_INPUTS } from '../../../scripts/stage-mini-app-kit.mjs'
-import { BUNDLED_DIRS, STAGED_APPS_DIR } from '../../../scripts/lib/bundled-roots.mjs'
+import {
+  BUNDLED_DIRS,
+  STAGED_APPS_DIR,
+  STAGED_BUILTIN_PLUGINS_DIR,
+} from '../../../scripts/lib/bundled-roots.mjs'
+import { stageBuiltinPlugins } from '../../../scripts/stage-builtin-plugins.mjs'
 import { BUILD_STAMP_ENV, resolveBuildStamp } from '../../../scripts/build-stamp.mjs'
 import {
   buildVisualFeedbackProbe,
@@ -120,6 +126,7 @@ const runtimeKey = fingerprint([
   join(desktop, 'scripts'),
   join(repo, 'scripts', 'build-visual-feedback-probe.mjs'),
   join(repo, 'scripts', 'stage-dropins.mjs'),
+  join(repo, 'scripts', 'stage-builtin-plugins.mjs'),
   join(repo, 'scripts', 'lib', 'bundled-roots.mjs'),
   join(repo, 'scripts', 'embed-migrations-plugin.mjs'),
   join(desktop, 'scripts', 'sidecar-bun.mjs'),
@@ -151,6 +158,7 @@ const runtimeReady =
   existsSync(join(resources, 'visual-feedback-probe.js')) &&
   existsSync(join(resources, 'visual-feedback-native-probe.js')) &&
   existsSync(join(resources, 'mini-app-kit', 'kit.json')) &&
+  existsSync(join(resources, STAGED_BUILTIN_PLUGINS_DIR)) &&
   existsSync(join(resources, 'cli', 'server', 'cli.js')) &&
   existsSync(join(resources, 'cli', 'package.json')) &&
   existsSync(join(resources, 'LICENSE')) &&
@@ -246,6 +254,15 @@ if (!runtimeReady) {
   // release publishes (`scripts/pack-mini-apps.mjs`). It ships the kit, which the installed app
   // needs to create and build the person's own mini apps without a source tree.
   stageMiniAppKitBeside({ repoRoot: repo, outMiniApps: join(resources, STAGED_APPS_DIR) })
+
+  // ── 3a. the built-in plugins ─────────────────────────────────────────────────────
+  // Claude Code plugins that ship inside Localix (`plugins/`), read beside `server.js` by
+  // `features/plugins/builtin-plugins.ts`; they update with the app.
+  const builtins = stageBuiltinPlugins({
+    repoRoot: repo,
+    out: join(resources, STAGED_BUILTIN_PLUGINS_DIR),
+  })
+  log(`staged ${builtins.length} built-in plugin(s): ${builtins.join(', ') || 'none'}`)
 
   // ── 3b. the `localix` CLI, staged INSIDE the bundle (no separate CLI product) ──
   // The shim (bin/localix.mjs) + the launcher bundle it imports (runCli). lib.rs points
