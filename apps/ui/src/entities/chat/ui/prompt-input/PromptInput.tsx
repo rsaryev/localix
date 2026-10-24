@@ -1,11 +1,8 @@
-import { cloneElement, lazy, Suspense, useCallback, useId, useMemo, useRef, useState } from 'react'
+import { cloneElement, lazy, Suspense, useCallback, useId, useState } from 'react'
 
 import { ChipRow } from './ChipRow'
 import { isModelRoutingTaskEnabled } from '@localixai/api/model-task-catalog'
 import { useUserSettings } from '@/shared/lib/user-settings/useUserSettings'
-import { acceptAttribute } from '@/shared/lib/attachment-policy'
-import { filesFromDesktopPick } from '@/shared/lib/attachments/file-staging'
-import { desktopPickFiles } from '@/shared/lib/desktopDialogs'
 import { composerShellClassName } from './composerShell'
 import { LocalixBorderBeam } from '@localixai/kit/localix-border-beam'
 
@@ -27,7 +24,6 @@ import { ModelSearchSelect } from './ModelSearchSelect'
 import { SessionPermissionModeChip } from './SessionPermissionModeChip'
 import { PinnedSkillsRow } from './PinnedSkillsRow'
 import type { PromptInputProps } from './promptInputProps'
-import { mergeDynamicSlashCommands } from './slashCommands'
 import { useAtRefAutocomplete } from './useAtRefAutocomplete'
 import { useChatInlineCompletion } from './useChatInlineCompletion'
 import { useComposerBusSubmit } from './useComposerBusSubmit'
@@ -38,13 +34,13 @@ import { useComposerMirror } from './useComposerMirror'
 import { useComposerVoice } from './useComposerVoice'
 import { useMessageBindingDrop } from './useMessageBindingDrop'
 import { useOpenResourceCommand } from './useOpenResourceCommand'
-import { usePluginCommands } from './usePluginCommands'
-import { useMiniAppCommands } from './useMiniAppCommands'
 import { usePromptInputKeyboard } from './usePromptInputKeyboard'
 import { useHistoryKeyDown } from './usePromptHistory'
 import { usePromptSend } from './usePromptSend'
 import { usePromptSessionView } from './usePromptSessionView'
-import { useSkillCommands } from './useSkillCommands'
+import { useComposerFilePicker } from './useComposerFilePicker'
+import { useDynamicSlashCommands } from './useDynamicSlashCommands'
+import { useShownParticipant } from './useShownParticipant'
 
 import { useSlashArgOptions } from './useSlashArgOptions'
 import { useModelCommand } from './model-command/useModelCommand'
@@ -79,15 +75,8 @@ export function PromptInput(props: PromptInputProps) {
     setCaretAtEnd(atEnd)
     setCaretInText((prev) => nextCaretInText(prev, offset, text))
   }, [])
-  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
-  const skillCommands = useSkillCommands(activeSessionId, isFocused)
-  const pluginCommands = usePluginCommands(activeSessionId, isFocused)
-  const miniAppCommands = useMiniAppCommands(activeSessionId, isFocused)
-  const dynamicCommands = useMemo(
-    () => mergeDynamicSlashCommands([...pluginCommands, ...miniAppCommands], skillCommands),
-    [skillCommands, pluginCommands, miniAppCommands],
-  )
+  const dynamicCommands = useDynamicSlashCommands(activeSessionId, isFocused)
   const sessionView = usePromptSessionView(activeSessionId, serverQueue)
   const { activeProjectId, participants } = sessionView
   const modelCommand = useModelCommand(activeSessionId, activeProjectId, activeConnectionId)
@@ -118,22 +107,11 @@ export function PromptInput(props: PromptInputProps) {
     model,
     participants,
   )
-  // The roster participant whose model the composer shows. Defaults to the first seat, the
-  // highest-priority one; a pick that has left the roster falls back to it too.
-  const [selectedAgent, setSelectedAgent] = useState<{
-    sessionId: string | null
-    agentId: string
-  }>()
-  const setSelectedAgentId = useCallback(
-    (agentId: string) => setSelectedAgent({ sessionId: activeSessionId, agentId }),
-    [activeSessionId],
+  // The roster participant whose model the composer shows (the first seat unless picked).
+  const { shownAgentId, select: setSelectedAgentId } = useShownParticipant(
+    activeSessionId,
+    participants,
   )
-  const pickedAgentId =
-    selectedAgent?.sessionId === activeSessionId ? selectedAgent.agentId : undefined
-  const shownAgentId =
-    participants.find((member) => member.agentId === pickedAgentId)?.agentId ??
-    participants[0]?.agentId ??
-    null
   // The context gauge measures against the shown participant's window, not the first seat's.
   const contextWindow =
     rosterParticipants.find((member) => member.agentId === shownAgentId)?.contextWindow ??
@@ -274,17 +252,7 @@ export function PromptInput(props: PromptInputProps) {
   })
   const dropzone = props.dropzone ?? ownDropzone
   const { dragKind, handleFiles } = dropzone
-  const handleAttachClick = useCallback(async () => {
-    const files = filesFromDesktopPick(await desktopPickFiles())
-    if (files === undefined) {
-      fileInputRef.current?.click()
-      return
-    }
-    // Opened without `extensions` on purpose: `pick_files` filters by extension only, while the
-    // browser input's `accept` hint is partly MIME types (`acceptAttribute`), so a filter here
-    // would diverge from it. The composer stages every kind rather than refusing after the pick.
-    handleFiles(files)
-  }, [handleFiles])
+  const filePicker = useComposerFilePicker(handleFiles, attachmentGate)
   // Mention pills in each member's colour, and the ghost suggestion after the caret.
   const composerHighlight = useComposerMirror({ prompt, suggestionGhost, participants })
 
@@ -353,18 +321,7 @@ export function PromptInput(props: PromptInputProps) {
           intensity={beamIntensity}
         />
         {/* Hidden file input driven by the paperclip button */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          accept={attachmentGate ? acceptAttribute(attachmentGate) : undefined}
-          className="hidden"
-          onChange={(e) => {
-            const files = Array.from(e.target.files ?? [])
-            if (files.length > 0) handleFiles(files)
-            e.target.value = ''
-          }}
-        />
+        {filePicker.fileInput}
         <ComposerSessionStrips
           sessionView={sessionView}
           tip={props.showTips === false ? null : streamTip}
@@ -439,7 +396,7 @@ export function PromptInput(props: PromptInputProps) {
               isGenerating={isGenerating}
               hasApiKey={hasConnection && !readOnly}
               canAttach={attachEnabled}
-              onAttachClick={() => void handleAttachClick()}
+              onAttachClick={() => void filePicker.openPicker()}
               onSend={handleSend}
               onStop={props.onStop}
               canRecord={voice.canRecord}
