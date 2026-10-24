@@ -3,6 +3,7 @@
  * which row a plugin's state lives in, when an enable or disable is refused, when an uninstall
  * takes the plugin's data directory with it, and validating a folder that is not installed.
  */
+import { refreshMarketplaceBeforeUpdate } from './marketplace-refresh'
 import { promises as fs } from 'node:fs'
 
 import { ConflictError, InvalidRequestError } from '../../lib/domain-errors'
@@ -12,13 +13,7 @@ import { pluginDataDir } from '../ext/user-config-substitute'
 import type { PluginCatalog } from './catalog'
 import { listDependents } from './dependencies'
 import { loadManifest, type DiscoveredPlugin } from './discovery'
-import {
-  marketplacesRoot,
-  parseMarketplaceRef,
-  readKnownMarketplaces,
-  updateMarketplace,
-  type MarketplaceRegistryDeps,
-} from './marketplace-registry'
+import type { MarketplaceRegistryDeps } from './marketplace-registry'
 import { pluginTrustClass } from './enable'
 import { validatePluginFull } from './validate'
 import type { PluginValidation } from './contracts'
@@ -101,24 +96,6 @@ export async function validatePluginDir(
 }
 
 /**
- * Before an update re-installs `<plugin>@<marketplace>` from a marketplace added from a local
- * folder (or a catalog file inside one), read that folder again. A folder is registered in place,
- * so this re-reads its catalog (and retires a copy an older build took of it); a catalog file's
- * marketplace is a copy, which this refreshes. A folder that is gone keeps what there is.
- */
-export async function refreshLocalMarketplace(
-  source: string,
-  deps: MarketplaceRegistryDeps,
-): Promise<void> {
-  const ref = parseMarketplaceRef(source)
-  if (!ref) return
-  const known = await readKnownMarketplaces(deps.root ?? marketplacesRoot())
-  const kind = known[ref.marketplace]?.source.source
-  if (kind !== 'local' && kind !== 'file') return
-  await updateMarketplace(ref.marketplace, deps).catch(() => undefined)
-}
-
-/**
  * `plugin update`: re-install from the source the plugin was installed from, at the scope of its
  * own row, so a user-scope plugin updated from a project chat stays a user-scope plugin ("updates
  * the plugin at the most specific scope it's installed at"). With `registryDeps`, a plugin from a
@@ -145,6 +122,7 @@ export async function reinstallFromSource<R>(input: {
       `Plugin "${name}" has no recorded install source — drop in the updated folder manually.`,
     )
   }
-  if (input.registryDeps) await refreshLocalMarketplace(state.source, input.registryDeps)
+  // The marketplace is read again first (git, url and npm ones too), so the update sees new commits.
+  if (input.registryDeps) await refreshMarketplaceBeforeUpdate(state.source, input.registryDeps)
   return input.install(state.source, state.projectId || null)
 }

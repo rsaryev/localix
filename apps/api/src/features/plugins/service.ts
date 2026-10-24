@@ -28,7 +28,6 @@ import {
   marketplacesRoot,
   parseMarketplaceRef,
   resolveBareInstall,
-  resolveMarketplaceInstall,
   updateMarketplace,
   addMarketplace,
   type MarketplaceRegistryDeps,
@@ -60,6 +59,7 @@ import {
   validatePluginDir,
 } from './service-lifecycle'
 import { removePlugin } from './service-remove'
+import { resolveFreshMarketplaceInstall } from './marketplace-refresh'
 import { inPlaceInstallFor, inPlacePublication } from './install-in-place'
 import { assertNameNotBuiltin, assertNotBuiltin, BUILTIN_ORIGIN } from './builtin-plugins'
 import { createPluginUpdates } from './plugin-updates'
@@ -413,8 +413,11 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       // marketplaces, mirroring Claude Code's `plugin install <name>`.
       const marketRef = parseMarketplaceRef(source)
       let resolvedMarket: ResolvedMarketplaceInstall | null = null
+      const refreshNotes: string[] = []
       if (marketRef) {
-        resolvedMarket = await resolveMarketplaceInstall(marketRef, registryDeps)
+        resolvedMarket = await resolveFreshMarketplaceInstall(marketRef, registryDeps, {
+          notes: refreshNotes,
+        })
       } else if (!isGitSource(source) && !isAbsolute(source)) {
         resolvedMarket = await resolveBareInstall(source, registryDeps)
       }
@@ -471,7 +474,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
         depInstall = await prepareDependenciesForInstall(resolvedMarket, registryDeps, discovered)
       }
       const enabledValue = input.enable
-      const installNotes = [...(depInstall?.warnings ?? [])]
+      const installNotes = [...refreshNotes, ...(depInstall?.warnings ?? [])]
       const { plugin, state, warnings } = await withPluginSource(
         {
           source: resolvedMarket?.dir ?? source,
