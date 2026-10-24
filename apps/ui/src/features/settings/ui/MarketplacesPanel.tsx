@@ -7,6 +7,8 @@ import { LoadingHint } from '@localixai/kit/empty-hint'
 import { Button } from '@localixai/kit/button'
 import { Field } from '@localixai/kit/field'
 import { Input } from '@localixai/kit/input'
+import { Switch } from '@localixai/kit/switch'
+import type { MarketplaceListing, UpdateMarketplaceResponse } from '@/shared/api/contracts'
 import {
   SettingProblems,
   SettingRegistryList,
@@ -16,17 +18,30 @@ import {
 import { SettingsActionActivity } from './SettingsActionActivity'
 import { SettingsSection } from './SettingsScaffold'
 
-interface Marketplace {
-  name: string
-  count: number
+type Marketplace = MarketplaceListing
+
+type MarketplaceMutation =
+  | { kind: 'add' }
+  | { kind: 'remove'; name: string }
+  | { kind: 'update'; name: string }
+  | { kind: 'auto-update'; name: string }
+
+/** What one Update marketplace did, said on its row. */
+function updateReport(res: UpdateMarketplaceResponse): string {
+  const parts = [
+    res.updated.length ? `Updated ${res.updated.join(', ')}.` : 'Its plugins are up to date.',
+  ]
+  if (res.manual.length) parts.push(`Update by hand: ${res.manual.join(', ')}.`)
+  if (res.warnings.length) parts.push(`Not updated: ${res.warnings.join('; ')}`)
+  return parts.join(' ')
 }
 
-type MarketplaceMutation = { kind: 'add' } | { kind: 'remove'; name: string }
-
 /**
- * Plugin marketplace catalog management. The built-in `localix` catalog is always
- * listed first and cannot be removed. Added marketplaces clone a CC-compatible
- * owner/repo catalog; plugins from them appear in `/plugin install` autocomplete.
+ * Plugin marketplace management, as Claude Code's Marketplaces tab has it: each registered
+ * marketplace with its plugin count, whether it auto-updates (on by default for the official
+ * `localix` one, off for every other; hidden while an environment variable pauses the pass),
+ * Update marketplace (its listing and the plugins installed from it) and Remove. Added marketplaces
+ * clone a Claude Code catalog; their plugins appear in `/plugin install` autocomplete.
  */
 export function MarketplacesPanel({ onChanged }: { onChanged?: () => void }) {
   const workItemVisible = useWorkItemVisible()
@@ -35,6 +50,7 @@ export function MarketplacesPanel({ onChanged }: { onChanged?: () => void }) {
   const [mutation, setMutation] = useState<MarketplaceMutation | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [mutationError, setMutationError] = useState<string | null>(null)
+  const [reports, setReports] = useState<Record<string, string>>({})
 
   // `null` means "not loaded", `[]` means "loaded, and you have none" — the list below
   // relies on that distinction. Catching into `[]` FORGED the loaded signal, so a failed
@@ -98,7 +114,42 @@ export function MarketplacesPanel({ onChanged }: { onChanged?: () => void }) {
     }
   }
 
+  const update = async (name: string) => {
+    setMutation({ kind: 'update', name })
+    setMutationError(null)
+    try {
+      const res = await backendClient.updateMarketplace(name)
+      setReports((current) => ({ ...current, [name]: updateReport(res) }))
+      void load()
+      onChanged?.()
+    } catch (e) {
+      setMutationError(inlineFailure(e, 'The marketplace could not be updated.'))
+    } finally {
+      setMutation(null)
+    }
+  }
+
+  const setAutoUpdate = async (name: string, autoUpdate: boolean) => {
+    setMutation({ kind: 'auto-update', name })
+    setMutationError(null)
+    // Optimistic: the switch moves at once, and the list read again says what was kept.
+    setMarkets((rows) => rows?.map((m) => (m.name === name ? { ...m, autoUpdate } : m)) ?? rows)
+    try {
+      await backendClient.setMarketplaceAutoUpdate(name, autoUpdate)
+    } catch (e) {
+      setMutationError(inlineFailure(e, 'Auto-update could not be changed.'))
+    } finally {
+      setMutation(null)
+      void load()
+    }
+  }
+
   const adding = mutation?.kind === 'add'
+  const busyLabelFor = (name: string): string | undefined => {
+    if (mutation?.kind === 'remove' && mutation.name === name) return `Removing ${name}`
+    if (mutation?.kind === 'update' && mutation.name === name) return `Updating ${name}`
+    return undefined
+  }
 
   return (
     <SettingsSection
@@ -120,10 +171,16 @@ export function MarketplacesPanel({ onChanged }: { onChanged?: () => void }) {
               <SettingRegistryRow
                 key={m.name}
                 state="neutral"
-                busyLabel={
-                  mutation?.kind === 'remove' && mutation.name === m.name
-                    ? `Removing ${m.name}`
-                    : undefined
+                busyLabel={busyLabelFor(m.name)}
+                toggle={
+                  m.autoUpdatePaused ? undefined : (
+                    <Switch
+                      checked={m.autoUpdate === true}
+                      disabled={mutation !== null}
+                      onChange={() => void setAutoUpdate(m.name, m.autoUpdate !== true)}
+                      aria-label={`Auto-update ${m.name}`}
+                    />
+                  )
                 }
                 header={
                   <div className="min-w-0">
@@ -131,20 +188,47 @@ export function MarketplacesPanel({ onChanged }: { onChanged?: () => void }) {
                       {m.name}
                     </code>
                     <SettingRegistryMeta
-                      items={[{ label: `${m.count} plugin${m.count === 1 ? '' : 's'}` }]}
+                      items={[
+                        ...(m.official
+                          ? [{ label: 'Official', title: 'The Localix marketplace' }]
+                          : []),
+                        { label: `${m.count} plugin${m.count === 1 ? '' : 's'}` },
+                        m.autoUpdatePaused
+                          ? {
+                              label: 'Auto-update paused',
+                              title:
+                                'DISABLE_UPDATES, DISABLE_AUTOUPDATER or CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC is set; FORCE_AUTOUPDATE_PLUGINS=1 turns it back on',
+                            }
+                          : { label: m.autoUpdate ? 'auto-updates' : 'updates by hand' },
+                      ]}
                     />
+                    {reports[m.name] && (
+                      <p role="status" className="mt-1 text-xs text-text-soft">
+                        {reports[m.name]}
+                      </p>
+                    )}
                   </div>
                 }
                 actions={
-                  <Button
-                    variant="ghost"
-                    size="default"
-                    onClick={() => void remove(m.name)}
-                    disabled={mutation !== null}
-                    className="text-text-soft hover:text-status-error"
-                  >
-                    Remove
-                  </Button>
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="default"
+                      onClick={() => void update(m.name)}
+                      disabled={mutation !== null}
+                    >
+                      Update marketplace
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="default"
+                      onClick={() => void remove(m.name)}
+                      disabled={mutation !== null}
+                      className="text-text-soft hover:text-status-error"
+                    >
+                      Remove
+                    </Button>
+                  </>
                 }
               />
             ))}

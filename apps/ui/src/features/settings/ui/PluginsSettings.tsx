@@ -11,6 +11,8 @@ import { SettingsSection } from './SettingsScaffold'
 import { AttentionRollup } from './AttentionRollup'
 import { CapabilityRegistryBody } from './capabilities/CapabilityRegistryBody'
 import { PluginRow } from './capabilities/PluginRow'
+import { PluginGroups } from './capabilities/PluginGroups'
+import { usePluginUpdates } from '../model/usePluginUpdates'
 import { trackCapabilityWrite } from '@/shared/contrib/capabilityWrites'
 import { refetchActiveMiniAppContrib } from '@/shared/contrib/enabledMiniApps'
 
@@ -25,6 +27,7 @@ interface PluginsSettingsProps {
 export function PluginsSettings({ scope, agentScope = '', projects }: PluginsSettingsProps) {
   const { plugins, loading, error, busy, busyLabel, refresh, toggle, remove, saveConfig } =
     usePlugins(scope, agentScope)
+  const pluginUpdates = usePluginUpdates()
 
   // Install panel
   const form = useInstallForm({
@@ -95,6 +98,7 @@ export function PluginsSettings({ scope, agentScope = '', projects }: PluginsSet
           count={plugins.length}
           loading={loading}
           error={error}
+          list={false}
           empty={
             <>
               No plugins here yet. Install one with Install plugin, or drop a plugin folder (with{' '}
@@ -103,20 +107,27 @@ export function PluginsSettings({ scope, agentScope = '', projects }: PluginsSet
             </>
           }
         >
-          {plugins.map((p) => (
-            <PluginRow
-              key={`${p.projectId}:${p.name}`}
-              plugin={p}
-              projects={projects}
-              busy={busy === p.name}
-              busyLabel={busy === p.name ? busyLabel : null}
-              configOpen={configFor === p.name}
-              onToggle={() => void toggle(p)}
-              onRemove={() => void remove(p)}
-              onToggleConfig={() => setConfigFor((cur) => (cur === p.name ? null : p.name))}
-              onSaveConfig={(values) => void handleSaveConfig(p, values)}
-            />
-          ))}
+          <PluginGroups
+            plugins={plugins}
+            updates={pluginUpdates.updates}
+            renderRow={(p, update) => (
+              <PluginRow
+                key={`${p.projectId}:${p.name}`}
+                plugin={p}
+                projects={projects}
+                busy={busy === p.name}
+                busyLabel={busy === p.name ? busyLabel : null}
+                configOpen={configFor === p.name}
+                update={update}
+                updateJob={update ? pluginUpdates.jobFor(update.id) : undefined}
+                onToggle={() => void toggle(p)}
+                onRemove={() => void remove(p)}
+                onUpdate={update ? () => void pluginUpdates.updateNow(update.id) : undefined}
+                onToggleConfig={() => setConfigFor((cur) => (cur === p.name ? null : p.name))}
+                onSaveConfig={(values) => void handleSaveConfig(p, values)}
+              />
+            )}
+          />
         </CapabilityRegistryBody>
       </SettingsSection>
 

@@ -1,5 +1,10 @@
 import { client, unwrap, cleanQuery, assertOk } from './internal'
-import type { MarketplaceListing, PluginRecord } from './contracts'
+import type {
+  MarketplaceListing,
+  PluginRecord,
+  PluginUpdatesResponse,
+  UpdateMarketplaceResponse,
+} from './contracts'
 
 /**
  * Claude Code plugin management: output styles, config, install/remove and marketplaces. Mini apps
@@ -49,8 +54,48 @@ export const pluginsApi = {
     await assertOk(response)
   },
 
+  /** Re-install a plugin from its source (Claude Code's Update now). */
+  async updatePlugin(name: string, opts?: { projectId?: string | null }): Promise<PluginRecord> {
+    return unwrap(
+      await client.rpc.plugins.update.$post({
+        json: { name, projectId: opts?.projectId ?? null },
+      }),
+    )
+  },
+
   /**
-   * Registered plugin marketplaces — built-in `localix` first, then user-added.
+   * Updates the marketplaces offer, and the ones in flight. `refresh` fetches the listings first;
+   * progress arrives as `plugin-updates` pokes.
+   */
+  async getPluginUpdates(opts?: { refresh?: boolean }): Promise<PluginUpdatesResponse> {
+    return unwrap(
+      await client.rpc.plugins.updates.$get({ query: opts?.refresh ? { refresh: '1' } : {} }),
+    )
+  },
+
+  /** Queue updates (every available one when `ids` is omitted). */
+  async applyPluginUpdates(ids?: string[]): Promise<{ queued: string[] }> {
+    return unwrap(await client.rpc.plugins.updates.apply.$post({ json: ids ? { ids } : {} }))
+  },
+
+  /**
+   * With a name, Claude Code's Update marketplace (its listing and its plugins); without one, every
+   * listing is refreshed and no plugin changes.
+   */
+  async updateMarketplace(name?: string): Promise<UpdateMarketplaceResponse> {
+    return unwrap(
+      await client.rpc.plugins.marketplaces.update.$post({ json: name ? { name } : {} }),
+    )
+  },
+
+  async setMarketplaceAutoUpdate(name: string, autoUpdate: boolean): Promise<void> {
+    await assertOk(
+      await client.rpc.plugins.marketplaces['auto-update'].$post({ json: { name, autoUpdate } }),
+    )
+  },
+
+  /**
+   * Registered plugin marketplaces, each with whether it auto-updates.
    *
    * Each row carries its catalog ENTRIES, which is what lets the composer offer
    * `<name>@<marketplace>` for `/plugin install` without a second round trip; the

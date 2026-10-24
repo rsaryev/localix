@@ -1,5 +1,5 @@
 import { pluginCapabilityLabels, pluginIssueSummary } from '@localixai/api/plugin-presentation'
-import type { PluginRecord, Project } from '@/shared/api/contracts'
+import type { PluginRecord, PluginUpdateJob, Project } from '@/shared/api/contracts'
 import { projectScopeLabel } from '@/shared/lib/projectScope'
 import { pluginSettingsAnchor, pluginSettingsUri } from '@/shared/lib/settingsAnchors'
 import { Button } from '@localixai/kit/button'
@@ -12,9 +12,26 @@ import {
   type SettingRegistryMetaItem,
 } from '../settingRegistry'
 
+/** An update the marketplace listing offers for this plugin, and its job when one is running. */
+export interface PluginRowUpdate {
+  /** `<name>@<marketplace>`. */
+  id: string
+  from: string
+  to: string
+}
+
+const UPDATE_PHASE_LABEL: Record<Exclude<PluginUpdateJob['phase'], 'failed' | 'done'>, string> = {
+  checking: 'Checking',
+  downloading: 'Downloading',
+  installing: 'Installing',
+}
+
 /**
- * One installed Claude Code plugin as a registry row: what it provides, where it came from, its
- * enable switch, and its config form when expanded. Mini apps have their own rows.
+ * One Claude Code plugin as a registry row: what it provides, where it came from, its enable
+ * switch, its config form when expanded, and — for one installed from a marketplace — Update now
+ * when the listing offers a newer version. A built-in plugin (shipped inside Localix) can be
+ * switched off but has no Remove and no Update: it updates with Localix. Mini apps have their own
+ * rows.
  */
 export function PluginRow({
   plugin,
@@ -22,8 +39,11 @@ export function PluginRow({
   busy,
   busyLabel,
   configOpen,
+  update,
+  updateJob,
   onToggle,
   onRemove,
+  onUpdate,
   onToggleConfig,
   onSaveConfig,
 }: {
@@ -32,11 +52,20 @@ export function PluginRow({
   busy: boolean
   busyLabel: string | null
   configOpen: boolean
+  /** The newer version its marketplace lists, if any. */
+  update?: PluginRowUpdate
+  /** The update job for this plugin, while it runs or once it failed. */
+  updateJob?: Pick<PluginUpdateJob, 'phase' | 'error'>
   onToggle: () => void
   onRemove: () => void
+  onUpdate?: () => void
   onToggleConfig: () => void
   onSaveConfig: (values: Record<string, string | number | boolean>) => void
 }) {
+  const builtin = plugin.builtin === true
+  const offered = !builtin && update ? update : null
+  const updating =
+    updateJob && updateJob.phase !== 'done' && updateJob.phase !== 'failed' ? updateJob.phase : null
   const configurable = plugin.config.length > 0
   const chips = pluginCapabilityLabels(plugin.provides)
 
@@ -58,8 +87,9 @@ export function PluginRow({
             : 'disabled'
   const label = plugin.displayName?.trim() || plugin.name
   const metadata: SettingRegistryMetaItem[] = [
+    ...(builtin ? [{ label: 'Built-in', title: 'Ships with Localix and updates with it' }] : []),
     { label: `v${plugin.version}` },
-    { label: projName },
+    ...(builtin ? [] : [{ label: projName }]),
     ...(plugin.importedFrom === 'claude-code'
       ? [{ label: 'from Claude Code', title: 'Installed by Claude Code and read in place' }]
       : []),
@@ -90,14 +120,27 @@ export function PluginRow({
       }
       actions={
         <>
+          {offered && onUpdate && (
+            <Button
+              variant="ghost"
+              size="default"
+              onClick={onUpdate}
+              disabled={busy || updating !== null}
+              aria-busy={updating !== null || undefined}
+            >
+              Update now
+            </Button>
+          )}
           {configurable && (
             <Button variant="ghost" size="default" onClick={onToggleConfig} disabled={busy}>
               Configure
             </Button>
           )}
-          <Button variant="destructive" size="default" onClick={onRemove} disabled={busy}>
-            Remove
-          </Button>
+          {!builtin && (
+            <Button variant="destructive" size="default" onClick={onRemove} disabled={busy}>
+              Remove
+            </Button>
+          )}
         </>
       }
       header={
@@ -121,6 +164,15 @@ export function PluginRow({
           <p className="mt-1 break-all text-xs text-text-faint" title={plugin.dir}>
             Path: <code className="font-mono text-text-soft">{plugin.dir}</code>
           </p>
+          {offered && (
+            <p className="mt-1 text-xs text-text-soft" role="status">
+              {updating
+                ? `${UPDATE_PHASE_LABEL[updating]} ${offered.to}…`
+                : updateJob?.phase === 'failed'
+                  ? `Update failed: ${updateJob.error ?? 'unknown error'}`
+                  : `Update available: ${offered.from} → ${offered.to}`}
+            </p>
+          )}
         </>
       }
     >

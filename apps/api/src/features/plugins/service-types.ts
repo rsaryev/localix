@@ -155,7 +155,7 @@ export interface PluginService {
     userId: string,
     input: { source: string },
   ): Promise<{ name: string; count: number }>
-  /** List marketplaces — the built-in `localix` first, then registered ones. */
+  /** List the registered marketplaces, each with whether it auto-updates. */
   listMarketplaces(userId: string): Promise<MarketplaceListing[]>
   /**
    * Refresh a registered marketplace's listing from its source, then update the plugins installed
@@ -183,8 +183,8 @@ export interface PluginService {
     input: { name: string; autoUpdate: boolean },
   ): Promise<void>
   /**
-   * Remove a registered marketplace (the built-in `localix` cannot be removed) and, as Claude Code
-   * does, uninstall the plugins installed from it.
+   * Remove a registered marketplace and, as Claude Code does, uninstall the plugins installed from
+   * it. Removing the official `localix` one is remembered: it is not registered again at start.
    */
   removeMarketplace(userId: string, input: { name: string }): Promise<{ uninstalled: string[] }>
   /**
