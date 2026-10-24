@@ -22,11 +22,16 @@ import type { DiscoveredPlugin } from './discovery'
 
 export interface PluginDependency {
   name: string
+  /** The marketplace to resolve `name` in (`"name@marketplace"` or the object's field). */
+  marketplace?: string
   /** Semver RANGE (advisory — a mismatch warns, never blocks). */
   version?: string
 }
 
-/** Normalize the manifest's `dependencies` union (`string | {name, version?}`) — deduped by name, first wins. */
+/**
+ * Normalize the manifest's `dependencies` union (`"name"`, `"name@marketplace"`,
+ * `{ name, marketplace?, version? }`) — deduped by name, first wins.
+ */
 export function normalizePluginDependencies(raw: unknown): PluginDependency[] {
   if (!Array.isArray(raw)) return []
   const seen = new Set<string>()
@@ -34,15 +39,22 @@ export function normalizePluginDependencies(raw: unknown): PluginDependency[] {
   for (const entry of raw) {
     let name = ''
     let version: string | undefined
-    if (typeof entry === 'string') name = entry.trim()
-    else if (entry && typeof entry === 'object') {
-      const obj = entry as { name?: unknown; version?: unknown }
+    let marketplace: string | undefined
+    if (typeof entry === 'string') {
+      // `"name@marketplace"` resolves `name` in another marketplace.
+      const [bare = '', market] = entry.trim().split('@')
+      name = bare.trim()
+      if (market?.trim()) marketplace = market.trim()
+    } else if (entry && typeof entry === 'object') {
+      const obj = entry as { name?: unknown; version?: unknown; marketplace?: unknown }
       if (typeof obj.name === 'string') name = obj.name.trim()
       if (typeof obj.version === 'string' && obj.version.trim()) version = obj.version.trim()
+      if (typeof obj.marketplace === 'string' && obj.marketplace.trim())
+        marketplace = obj.marketplace.trim()
     }
     if (!name || seen.has(name)) continue
     seen.add(name)
-    out.push({ name, ...(version ? { version } : {}) })
+    out.push({ name, ...(marketplace ? { marketplace } : {}), ...(version ? { version } : {}) })
   }
   return out
 }
@@ -131,7 +143,10 @@ export async function resolveDependencyPlan(
         continue // satisfied; its own deps were handled when IT was installed
       }
 
-      const hits = await deps.findMarketplacesWithPlugin(dep.name)
+      const named = dep.marketplace
+      const hits = (await deps.findMarketplacesWithPlugin(dep.name)).filter(
+        (market) => !named || market === named,
+      )
       let chosen: string | null = hits.includes(from) ? from : null
       if (!chosen && hits.length > 0) {
         const allow = await deps.getAllowList(from)
@@ -139,14 +154,16 @@ export async function resolveDependencyPlan(
         if (!chosen) {
           throw new InvalidRequestError(
             'plugin_dependency_blocked',
-            `Dependency "${dep.name}" is only available in marketplace(s) ${hits.map((h) => `"${h}"`).join(', ')}, but marketplace "${from}" does not allow cross-marketplace dependencies on ${allow.length ? `anything beyond ${allow.map((a) => `"${a}"`).join(', ')}` : 'any other marketplace'} (allowCrossMarketplaceDependenciesOn).`,
+            `Dependency "${named ? `${dep.name}@${named}` : dep.name}" is only available in marketplace(s) ${hits.map((h) => `"${h}"`).join(', ')}, but marketplace "${from}" does not allow cross-marketplace dependencies on ${allow.length ? `anything beyond ${allow.map((a) => `"${a}"`).join(', ')}` : 'any other marketplace'} (allowCrossMarketplaceDependenciesOn).`,
           )
         }
       }
       if (!chosen) {
         throw new NotFoundError(
           'plugin_dependency_missing',
-          `Dependency "${dep.name}" is not installed and was not found in marketplace "${from}" or any allowed marketplace. Nothing was installed.`,
+          named
+            ? `Dependency "${dep.name}@${named}" is not installed and marketplace "${named}" does not list it. Nothing was installed.`
+            : `Dependency "${dep.name}" is not installed and was not found in marketplace "${from}" or any allowed marketplace. Nothing was installed.`,
         )
       }
 

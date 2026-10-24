@@ -38,11 +38,12 @@ export function fromClaudePlugin(
   const monitors = manifest.experimental?.monitors ?? manifest.monitors
   if (monitors !== undefined) out.monitors = monitors
   if (manifest.dependencies)
-    out.dependencies = manifest.dependencies.map((dependency) =>
-      typeof dependency === 'string'
-        ? dependency.split('@')[0]
-        : { name: dependency.name, ...(dependency.version ? { version: dependency.version } : {}) },
-    )
+    // `"name@marketplace"` and `{ marketplace }` keep the marketplace the dependency resolves in.
+    out.dependencies = manifest.dependencies.map((dependency) => {
+      if (typeof dependency !== 'string') return dependency
+      const [name, marketplace] = dependency.split('@')
+      return marketplace ? { name, marketplace } : name
+    })
 
   const defaultDirs: Record<string, boolean> = {}
   if (manifest.agents !== undefined) {

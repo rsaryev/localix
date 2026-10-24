@@ -161,14 +161,23 @@ export const pluginManifestSchema = z.object({
     .union([z.string(), z.array(pluginMonitorSchema).max(MONITORS_MAX_PER_PLUGIN)])
     .optional(),
   /**
-   * Claude Code plugin-to-plugin dependencies: `["helper-lib", { name, version? }]`.
+   * Claude Code plugin-to-plugin dependencies: `["helper-lib", "name@market", { name, marketplace?, version? }]`.
    * `version` is a semver RANGE (checked advisorily — mismatch warns, never blocks).
    * Resolved on marketplace install (same marketplace first, then marketplaces the
    * parent catalog lists in `allowCrossMarketplaceDependenciesOn`, then already-
    * installed/bundled plugins by name) and cascaded on enable — see `dependencies.ts`.
    */
   dependencies: z
-    .array(z.union([z.string(), z.object({ name: z.string(), version: z.string().optional() })]))
+    .array(
+      z.union([
+        z.string(),
+        z.object({
+          name: z.string(),
+          marketplace: z.string().optional(),
+          version: z.string().optional(),
+        }),
+      ]),
+    )
     .optional(),
   /**
    * Claude Code output styles, themes and workflows: paths that REPLACE the default
