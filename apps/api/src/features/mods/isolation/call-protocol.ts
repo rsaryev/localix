@@ -10,6 +10,8 @@ export type ApiShape = Record<string, Record<string, { fn: true } | { value: unk
 /** What the VM's `next` mirrors of the host's: where the event came from, and the hook's time. */
 export interface CallMeta {
   origin: unknown
+  /** The dispatch's event, by name (`next.event`). */
+  event?: string
   budget: { ms: number; remainingMs: number }
   error?: unknown
   called?: boolean
@@ -28,7 +30,7 @@ export interface CallInput {
 export type CallReply = { value: unknown } | { stream: number } | { absent: true }
 
 /** How the host answers a `next`: the result, or a stream of the call it keeps. */
-export type NextReply = { value: unknown } | { stream: number }
+export type NextReply = { value: unknown; trace?: unknown } | { stream: number }
 
 /** One hook the module registered, as the VM describes it (`hook-specs.ts` reads it). */
 export interface HookSpecWire {

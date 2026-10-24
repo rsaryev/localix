@@ -1,5 +1,6 @@
 import type { ModsApi } from './intercept'
 import type { Matcher } from './matcher'
+import type { TraceEntry } from './trace'
 
 /**
  * The shapes of the chain a mod's hooks form: what `on` registers, what a hook receives as
@@ -32,6 +33,12 @@ export interface Next {
   (event?: unknown): Promise<unknown> | HookStream
   readonly signal: AbortSignal
   readonly origin: HookOrigin
+  /** This dispatch's event, by name. */
+  readonly event: string
+  /** Whether this dispatch's event is one `pattern` (a name, a glob, a negation) selects. */
+  readonly is: (pattern: string, e?: unknown) => boolean
+  /** What settled beneath on this hook's latest `next()`: a link per entry, nearest first. */
+  readonly trace: readonly TraceEntry[]
   readonly budget: { readonly ms: number; readonly remainingMs: number }
   /**
    * Past the rest of this tier: the chain goes on at the first hook of `tier` or a tier beneath

@@ -13,6 +13,9 @@ const TELEMETRY = /^telemetry\./
 
 export function matchesEventName(pattern: string, event: string): boolean {
   if (pattern === event) return true
+  // A negation (`!tool.describe`) selects every event its pattern does not, telemetry aside.
+  if (pattern.startsWith('!'))
+    return !TELEMETRY.test(event) && !matchesEventName(pattern.slice(1), event)
   if (pattern === '*') return !TELEMETRY.test(event)
   if (pattern.endsWith('.*')) return event.startsWith(pattern.slice(0, -1))
   return false

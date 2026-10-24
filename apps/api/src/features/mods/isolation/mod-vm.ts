@@ -149,7 +149,9 @@ export function startModVm(options: ModVmOptions): ModVm {
           const own = calls.get(call)
           if (!own) throw new Error('next called after its hook ended')
           const answer = tier === undefined ? own.next(e) : own.next.to(e, tier as never)
-          if (!isHookBody(answer)) return Promise.resolve(answer).then((value) => ({ value }))
+          // The trace of what ran beneath goes back with the answer (`next.trace`).
+          if (!isHookBody(answer))
+            return Promise.resolve(answer).then((value) => ({ value, trace: own.next.trace }))
           const id = own.streams.size + 1
           own.streams.set(id, answer)
           return { stream: id }

@@ -1,4 +1,5 @@
 import type { HookStream } from './chain'
+import type { TraceEntry } from './trace'
 
 /**
  * Streaming events, as Claude Code's engine runs them: a hook is an async generator that yields
@@ -13,6 +14,8 @@ import type { HookStream } from './chain'
 export interface Outcome {
   value: unknown
   chunks: readonly unknown[]
+  /** The links that ran for it, this one first (`next.trace` of the hook above). */
+  trace?: readonly TraceEntry[]
 }
 
 /** How a streaming event's result and its chunks stand for each other. */

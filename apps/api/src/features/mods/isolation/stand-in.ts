@@ -45,6 +45,7 @@ export function createCalls(endpoint: Endpoint) {
     next.signal.addEventListener('abort', abort, { once: true })
     const meta: CallMeta = {
       origin: next.origin,
+      event: next.event,
       budget: { ms: next.budget.ms, remainingMs: next.budget.remainingMs },
       ...(next.error ? { error: next.error, called: next.called } : {}),
     }

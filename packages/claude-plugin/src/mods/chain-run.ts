@@ -9,9 +9,10 @@ import {
   type TargetTier,
 } from './chain'
 import { freezeDeep, pausedApi, type ModsApi } from './intercept'
-import { matchesEvent, type Matcher } from './matcher'
+import { matchesEvent, matchesEventName, type Matcher } from './matcher'
 import { drive, isHookBody, openStream, type OpenStream, type Outcome } from './stream'
 import { STREAMING_EVENTS } from './turn-step-stream'
+import { traceEntry, type TraceEntry, type TraceOutcome } from './trace'
 
 /**
  * How one dispatch runs down the chain: each matching hook in turn, with its own `$` and `next`,
@@ -75,14 +76,26 @@ export function createChainRunner(deps: ChainRunnerDeps) {
     const site = STREAMING_EVENTS.get(event)
     const signal = opts.signal ?? new AbortController().signal
     const bottom = async (e: unknown): Promise<Outcome> => {
+      const link = { index: chain.length, plugin: 'engine', event, startedAt: Date.now() }
       const value = await core(e)
-      return { value, chunks: site ? site.chunksOf(value) : [] }
+      const trace = [traceEntry(link, 'returned', e, value)]
+      return { value, chunks: site ? site.chunksOf(value) : [], trace }
     }
     for (let i = index; i < chain.length; i++) {
       const entry = chain[i]!
       if (!matchesEvent(entry.matcher, input)) continue
       const frozen = freezeDeep(input)
       const api = deps.apiFor(entry.plugin, opts.plugins)
+      const link = { index: i, plugin: entry.plugin, event, startedAt: Date.now() }
+      /** This link's outcome, its own entry ahead of what settled beneath it. */
+      const traced = (
+        outcome: Outcome,
+        kind: TraceOutcome,
+        beneath: readonly TraceEntry[] = [],
+      ): Outcome => ({
+        ...outcome,
+        trace: [traceEntry(link, kind, frozen, outcome.value), ...beneath],
+      })
       // Each call runs what is beneath afresh, so a hook may retry it.
       const beneath = (next: unknown, tier?: TargetTier): Promise<Outcome> => {
         const e = next === undefined ? input : next
@@ -102,8 +115,16 @@ export function createChainRunner(deps: ChainRunnerDeps) {
         record: (call: Call) => void,
         signal: AbortSignal,
       ): Next => {
+        let trace: readonly TraceEntry[] = []
         const call = (e: unknown, tier?: TargetTier) => {
           const { outcome, start } = open(e, tier)
+          // The trace of the latest call: what settled beneath, filled once it settles.
+          trace = []
+          const mine = outcome.then((settled) => {
+            if (latest === mine) trace = settled.trace ?? []
+          })
+          latest = mine
+          mine.catch(() => {})
           const paused = meter.pause(outcome)
           if (!site) {
             record({ outcome })
@@ -119,13 +140,18 @@ export function createChainRunner(deps: ChainRunnerDeps) {
             return meter.remainingMs()
           },
         }
-        return Object.assign((e?: unknown) => call(e), {
+        let latest: Promise<void> | undefined
+        const next = Object.assign((e?: unknown) => call(e), {
           to: (e: unknown, tier: TargetTier) => call(e, tier),
           signal,
           origin: opts.origin ?? CORE,
           budget,
+          event,
+          is: (pattern: unknown) => matchesEventName(String(pattern), event),
           ...extra,
-        }) as Next
+        })
+        // Read fresh: the trace of the latest call, once it settled.
+        return Object.defineProperty(next, 'trace', { get: () => trace }) as unknown as Next
       }
 
       const runHook = (
@@ -207,12 +233,15 @@ export function createChainRunner(deps: ChainRunnerDeps) {
               caughtYield,
             )
             if (caught.value !== undefined)
-              return {
-                value: caught.value,
-                chunks: caught.body
-                  ? [...sofar, ...caughtYield]
-                  : (site?.chunksOf(caught.value) ?? []),
-              }
+              return traced(
+                {
+                  value: caught.value,
+                  chunks: caught.body
+                    ? [...sofar, ...caughtYield]
+                    : (site?.chunksOf(caught.value) ?? []),
+                },
+                'caught',
+              )
           } catch (catchError) {
             deps.report?.(entry.plugin, event, `.catch failed: ${failureOf(catchError).message}`)
           }
@@ -223,13 +252,21 @@ export function createChainRunner(deps: ChainRunnerDeps) {
         const standing = (caughtLast as Call | null) ?? hookLast
         if (standing) {
           const settled = await standing.outcome
-          return {
-            value: settled.value,
-            chunks: [...sofar, ...settled.chunks.slice(standing.stream?.read ?? 0)],
-          }
+          return traced(
+            {
+              value: settled.value,
+              chunks: [...sofar, ...settled.chunks.slice(standing.stream?.read ?? 0)],
+            },
+            failure.kind === 'timeout' ? 'expired' : 'kept',
+            settled.trace,
+          )
         }
         const rest = await run(event, chain, i + 1, input, core, opts)
-        return { value: rest.value, chunks: [...sofar, ...rest.chunks] }
+        return traced(
+          { value: rest.value, chunks: [...sofar, ...rest.chunks] },
+          failure.kind === 'timeout' ? 'expired' : 'skipped',
+          rest.trace,
+        )
       }
 
       let last: Call | null = null
@@ -247,16 +284,25 @@ export function createChainRunner(deps: ChainRunnerDeps) {
       } catch (error) {
         return await failed(error, last, yielded.slice())
       }
-      if (ran.value !== undefined)
-        return { value: ran.value, chunks: ran.body ? yielded : (site?.chunksOf(ran.value) ?? []) }
       // Returning nothing lets the hook's last `next` stand; without one, the hook was absent.
       const called = last as Call | null
+      const settled = called ? await called.outcome.catch(() => null) : null
+      if (ran.value !== undefined)
+        return traced(
+          { value: ran.value, chunks: ran.body ? yielded : (site?.chunksOf(ran.value) ?? []) },
+          settled && settled.value === ran.value ? 'passed' : 'returned',
+          settled?.trace,
+        )
       if (called) {
-        const settled = await called.outcome
-        return { value: settled.value, chunks: ran.body ? yielded : settled.chunks }
+        const passed = await called.outcome
+        return traced(
+          { value: passed.value, chunks: ran.body ? yielded : passed.chunks },
+          'passed',
+          passed.trace,
+        )
       }
       if (ran.body && yielded.length > 0 && site)
-        return { value: site.resultOf(input, yielded), chunks: yielded }
+        return traced({ value: site.resultOf(input, yielded), chunks: yielded }, 'returned')
       continue
     }
     return bottom(input)

@@ -1,4 +1,9 @@
-import { COUNTED_CALLS, SYNC_CALLS, elementTable } from '@localixai/claude-plugin/mods'
+import {
+  COUNTED_CALLS,
+  SYNC_CALLS,
+  elementTable,
+  matchesEventName,
+} from '@localixai/claude-plugin/mods'
 import type { ApiShape, CallMeta, NextReply } from '../call-protocol'
 import type { Endpoint } from '../endpoint'
 
@@ -114,15 +119,24 @@ export function createGuestApi(endpoint: Endpoint) {
       const meter = createMeter(meta.budget.remainingMs)
       controllers.set(call, controller)
       meters.set(call, meter)
-      const run = (e: unknown, tier?: unknown) =>
-        streamOf(
-          call,
-          meter.wait(endpoint.request('next', { call, e, tier }) as Promise<NextReply>),
+      let trace: unknown = []
+      const run = (e: unknown, tier?: unknown) => {
+        trace = []
+        const reply = meter.wait(endpoint.request('next', { call, e, tier }) as Promise<NextReply>)
+        void reply.then(
+          (answer) =>
+            void ('trace' in answer && Array.isArray(answer.trace) && (trace = answer.trace)),
+          () => {},
         )
-      return Object.assign((e?: unknown) => run(e), {
+        return streamOf(call, reply)
+      }
+      const event = typeof meta.event === 'string' ? meta.event : ''
+      const next = Object.assign((e?: unknown) => run(e), {
         to: (e: unknown, tier: unknown) => run(e, tier),
         signal: controller.signal,
         origin: meta.origin,
+        event,
+        is: (pattern: unknown) => matchesEventName(String(pattern), event),
         budget: {
           ms: meta.budget.ms,
           get remainingMs() {
@@ -131,6 +145,8 @@ export function createGuestApi(endpoint: Endpoint) {
         },
         ...(meta.error === undefined ? {} : { error: meta.error, called: meta.called }),
       })
+      // Read fresh: the trace the host sent back with the latest call's answer.
+      return Object.defineProperty(next, 'trace', { get: () => trace })
     },
 
     /** The host abandoned the call's event: its `next.signal` aborts. */
