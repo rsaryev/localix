@@ -38,7 +38,7 @@ function resolver(
 /** The dependencies a plugin.json declares, as the runtime manifest carries them. */
 const declared = (dependencies: unknown[]) =>
   normalizePluginDependencies(
-    fromClaudePlugin({ name: 'deploy-kit', dependencies } as never, []).dependencies,
+    fromClaudePlugin({ name: 'deploy-kit', dependencies } as never).dependencies,
   )
 
 describe('a dependency that names its marketplace', () => {

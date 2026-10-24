@@ -52,17 +52,17 @@ manifest is a plugin named after the folder when it has a component folder such 
 missing license. A root `plugin.json` is not read, as in Claude Code, and a folder holding a
 `mini-app.json` is a mini app: it loads nothing as a plugin.
 
-| Claude Code rule                                     | In Localix                                                                         |
-| ---------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Listed `commands` / `agents` paths                   | Replace the default `commands/` / `agents/` folder                                 |
-| Listed `skills` paths                                | Add to the default `skills/` folder                                                |
-| `hooks`, `mcpServers`, `lspServers`                  | Merge with `hooks/hooks.json`, `.mcp.json`, `.lsp.json`; the default file first    |
-| `userConfig`, `sensitive: true`                      | The plugin's settings form, masked when sensitive                                  |
-| `${VAR}` in an MCP server's config                   | Expands from the environment, as in Claude Code                                    |
-| `${CLAUDE_PLUGIN_ROOT}`, `${CLAUDE_PLUGIN_DATA}`     | The plugin's folder, and `~/.localix/plugin-data/<id>` keyed by `name@marketplace` |
-| `${user_config.KEY}`                                 | The setting's value                                                                |
-| Command `arguments` frontmatter                      | Names positional arguments; `$name` takes each value, beside `$ARGUMENTS` and `$1` |
-| Names Anthropic reserves (`claude-…`, `anthropic-…`) | Load, as Claude Code loads Anthropic's own plugins                                 |
+| Claude Code rule                                     | In Localix                                                                                                                                        |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Listed `commands` / `agents` paths                   | Replace the default `commands/` / `agents/` folder                                                                                                |
+| Listed `skills` paths                                | Add to the default `skills/` folder                                                                                                               |
+| `hooks`, `mcpServers`, `lspServers`                  | Merge with `hooks/hooks.json`, `.mcp.json`, `.lsp.json`; the default file first                                                                   |
+| `userConfig`, `sensitive: true`                      | The plugin's settings form, masked when sensitive; a `multiple` option takes one item per line and is substituted as its items joined with commas |
+| `${VAR}` in an MCP server's config                   | Expands from the environment, as in Claude Code                                                                                                   |
+| `${CLAUDE_PLUGIN_ROOT}`, `${CLAUDE_PLUGIN_DATA}`     | The plugin's folder, and `~/.localix/plugin-data/<id>` keyed by `name@marketplace`                                                                |
+| `${user_config.KEY}`                                 | The setting's value                                                                                                                               |
+| Command `arguments` frontmatter                      | Names positional arguments; `$name` takes each value, beside `$ARGUMENTS` and `$1`                                                                |
+| Names Anthropic reserves (`claude-…`, `anthropic-…`) | Load, as Claude Code loads Anthropic's own plugins                                                                                                |
 
 **Boundary:** in a remote MCP server's `url` and `headers`, a variable whose name looks like a
 credential (`TOKEN`, `SECRET`, `API_KEY`, `PASSWORD`, …) reads as empty unless the plugin's settings

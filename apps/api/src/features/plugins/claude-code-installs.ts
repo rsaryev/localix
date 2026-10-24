@@ -1,4 +1,5 @@
 import { promises as fs } from 'node:fs'
+import { listItems } from './config-lists'
 import { join, resolve } from 'node:path'
 
 import { MANIFEST_FILE, MARKETPLACE_FILE } from '@localixai/claude-plugin'
@@ -251,7 +252,10 @@ function withClaudeCodeOptions<T extends { config?: Record<string, { default?: u
       key,
       key in options && options[key] !== null && typeof options[key] !== 'object'
         ? { ...option, default: options[key] }
-        : option,
+        : // A `multiple` option's list, kept as its JSON array (`config-lists.ts`).
+          Array.isArray(options[key]) && listItems(options[key])
+          ? { ...option, default: JSON.stringify(options[key]) }
+          : option,
     ]),
   )
   return { ...manifest, config }

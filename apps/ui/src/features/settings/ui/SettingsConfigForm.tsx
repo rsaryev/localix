@@ -7,6 +7,7 @@ import { Input } from '@localixai/kit/input'
 import { ModelFieldSelect } from '@/shared/ui/ModelFieldSelect'
 import { Select } from '@localixai/kit/select'
 import { Switch } from '@localixai/kit/switch'
+import { Textarea } from '@localixai/kit/textarea'
 import { SettingsActionActivity } from './SettingsActionActivity'
 
 /** Structural shape of a declared config field
@@ -21,8 +22,51 @@ export interface ConfigFormField {
   isSet: boolean
   /** Human-readable label. Rendered in place of `key` when present; falls back to `key`. */
   title?: string
+  /** A list of strings (a plugin's `multiple` option): one item per line, saved as a JSON array. */
+  multiple?: boolean
   /** Declared string choices — rendered as a picker when present (providers only). */
   enum?: { value: string; label?: string; description?: string }[]
+}
+
+/** A stored list (a JSON array of strings) as one item per line. */
+function linesOf(value: string): string {
+  try {
+    const items: unknown = JSON.parse(value)
+    return Array.isArray(items) ? items.map(String).join('\n') : value
+  } catch {
+    return value
+  }
+}
+
+/** Typed lines as the stored list: each line trimmed, blank lines dropped. */
+const listOf = (text: string): string =>
+  JSON.stringify(
+    text
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean),
+  )
+
+/** One item per line. The typed text stays as typed, so a new line can be started; the list saves. */
+function ListFieldEditor({
+  value,
+  onValueChange,
+}: {
+  value: string
+  onValueChange: (value: string) => void
+}) {
+  const [text, setText] = useState(() => linesOf(value))
+  return (
+    <Textarea
+      size="xl"
+      className="font-mono text-xs"
+      value={text}
+      onChange={(event) => {
+        setText(event.target.value)
+        onValueChange(listOf(event.target.value))
+      }}
+    />
+  )
 }
 
 function ConfigFieldEditor({
@@ -78,6 +122,8 @@ function ConfigFieldEditor({
           checked={value === 'true' || value === '1'}
           onChange={(event) => onValueChange(event.target.checked ? 'true' : 'false')}
         />
+      ) : field.multiple && !field.secret ? (
+        <ListFieldEditor value={value} onValueChange={onValueChange} />
       ) : !field.secret && isModelConfigField(field) ? (
         <ModelFieldSelect value={value} onValueChange={onValueChange} />
       ) : (

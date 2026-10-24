@@ -53,7 +53,7 @@ export function composeManifest(files: ManifestFiles, folderName: string): Compo
   const parsed = parseClaudePluginManifest(files.plugin.json, { fallbackName: folderName })
   issues.push(...parsed.issues.map((found) => at(MANIFEST_FILE, found)))
   if (!parsed.manifest) return { raw: null, issues, error: firstError(parsed.issues) }
-  return { raw: fromClaudePlugin(parsed.manifest, issues), issues }
+  return { raw: fromClaudePlugin(parsed.manifest), issues }
 }
 
 /** A root `plugin.json` an earlier Localix wrote beside a Claude Code plugin it imported. */

@@ -1,3 +1,4 @@
+import { joinedList, listItems } from './config-lists'
 import type { PluginManifest } from './contracts'
 
 import type { PluginConfigValues } from './contracts-base'
@@ -18,6 +19,11 @@ export function resolvePluginConfig(
     if (opt.default !== undefined) out[k] = opt.default
   }
   for (const [k, v] of Object.entries(stored ?? {})) out[k] = typed(manifest.config?.[k]?.type, v)
+  // A `multiple` option's list reads as its items joined with commas (`config-lists.ts`).
+  for (const [k, opt] of Object.entries(manifest.config ?? {})) {
+    const items = opt.multiple && k in out ? listItems(out[k]) : undefined
+    if (items) out[k] = joinedList(items)
+  }
   return out
 }
 

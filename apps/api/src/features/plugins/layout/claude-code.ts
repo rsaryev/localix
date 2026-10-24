@@ -1,4 +1,4 @@
-import type { ClaudePluginManifest, PluginIssue, UserConfigOption } from '@localixai/claude-plugin'
+import type { ClaudePluginManifest, UserConfigOption } from '@localixai/claude-plugin'
 
 /**
  * A Claude Code plugin manifest as the runtime manifest the loader reads. Field names mostly
@@ -12,10 +12,7 @@ import type { ClaudePluginManifest, PluginIssue, UserConfigOption } from '@local
  *  - each `channels` entry's `userConfig` → options in the plugin's `config`.
  * What Localix does not run is reported, never dropped silently.
  */
-export function fromClaudePlugin(
-  manifest: ClaudePluginManifest,
-  issues: PluginIssue[],
-): Record<string, unknown> {
+export function fromClaudePlugin(manifest: ClaudePluginManifest): Record<string, unknown> {
   const out: Record<string, unknown> = { name: manifest.name, origin: { format: 'claude-code' } }
   for (const field of [
     'version',
@@ -34,7 +31,7 @@ export function fromClaudePlugin(
   ] as const) {
     if (manifest[field] !== undefined) out[field] = manifest[field]
   }
-  if (manifest.userConfig) out.config = configOf(manifest.userConfig, issues)
+  if (manifest.userConfig) out.config = configOf(manifest.userConfig)
   const monitors = manifest.experimental?.monitors ?? manifest.monitors
   if (monitors !== undefined) out.monitors = monitors
   if (manifest.dependencies)
@@ -77,26 +74,20 @@ export function fromClaudePlugin(
       ...manifest.channels.map((channel) => channel.userConfig ?? {}),
     ) as Record<string, UserConfigOption>
     if (Object.keys(channelOptions).length)
-      out.config = { ...configOf(channelOptions, issues), ...(out.config as object | undefined) }
+      out.config = { ...configOf(channelOptions), ...(out.config as object | undefined) }
   }
   return out
 }
 
 function configOf(
   options: Record<string, UserConfigOption>,
-  issues: PluginIssue[],
 ): Record<string, Record<string, unknown>> {
   return Object.fromEntries(
     Object.entries(options).map(([key, option]) => {
       const { sensitive, default: fallback, ...rest } = option
       const converted: Record<string, unknown> = { ...rest, ...(sensitive ? { secret: true } : {}) }
-      // A `multiple` option's list default has no scalar form here: it starts empty instead.
-      if (Array.isArray(fallback))
-        issues.push({
-          severity: 'warning',
-          path: `userConfig.${key}`,
-          message: `The list default of "${key}" is not applied; the option starts empty`,
-        })
+      // A `multiple` option's list default is stored as its JSON array (`config-lists.ts`).
+      if (Array.isArray(fallback)) converted.default = JSON.stringify(fallback)
       else if (fallback !== undefined) converted.default = fallback
       return [key, converted]
     }),
