@@ -3,6 +3,7 @@
   "checked": [
     "call:clock.now",
     "call:command.list",
+    "call:command.register",
     "call:env.get",
     "call:fs.exists",
     "call:model.classify",
@@ -21,6 +22,7 @@
     "call:tool.list",
     "call:ui.open",
     "event:command.run",
+    "event:prompt.submit",
     "event:session.start",
     "event:tool.call:Write",
     "event:tool.check",
@@ -28,6 +30,7 @@
     "event:turn.start",
     "event:ui.render:AbovePrompt",
     "event:ui.render:Pane",
+    "result:prompt.submit",
     "result:tool.call:Write",
     "result:turn.step"
   ]

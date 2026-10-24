@@ -94,6 +94,14 @@ export interface ModSessionRead {
   costUsd?: number
 }
 
+/** A slash command or skill as `$.command.list()` lists it. */
+export interface ModCommandInfo {
+  name: string
+  description: string
+  source: 'builtin' | 'plugin' | 'user' | 'mcp'
+  plugin?: string
+}
+
 /** One delegated child of a conversation (`$.agent.list`). */
 export interface ModAgentRun {
   sessionId: string
@@ -125,6 +133,8 @@ export interface ModsPorts {
   abortTurn?: (scene: ModScene) => Promise<void>
   /** The scene's conversation's delegated children (`$.agent.list`). */
   listAgentRuns?: (scene: ModScene) => Promise<readonly ModAgentRun[]>
+  /** Localix's own commands and the skills a person runs there (`$.command.list`). */
+  listCommands?: (scene: ModScene) => Promise<readonly ModCommandInfo[]>
   /** The scene's conversation for `$.session`, or null outside one. */
   readSession?: (scene: ModScene) => Promise<ModSessionRead | null>
   /** The mods' panes or commands changed: clients re-read them. */

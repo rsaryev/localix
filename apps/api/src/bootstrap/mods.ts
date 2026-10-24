@@ -18,9 +18,13 @@ import type { ModelCompletion, ModsPorts } from '../features/mods/contracts'
 import { receiveDelivery } from '../features/mods/conversation-events'
 import { createModsHost, type ModsHost } from '../features/mods/host'
 import { loadEnabledPluginMods } from '../features/plugins/loader-declarative'
+import { loadEnabledPlugins } from '../features/plugins/loader'
+import { discoverFilesystemSkills } from '../features/agent-core/skill-discovery'
+import { SLASH_COMMANDS } from '../features/chat/slash-catalog'
 import type { ProviderConnectionsService } from '../features/provider-connections/service'
 import type { RealtimeResource } from '../features/realtime/resources'
 import type { BootstrapServiceRefs } from './chat-service-deps'
+import { localixCommands } from './mods-commands'
 import { failedCompletion, usageOf } from './mods-model'
 import { sessionReadOf } from './mods-session'
 import type { MiniAppHostRefs } from './mini-app-host-refs'
@@ -104,6 +108,7 @@ export function createModsPhase(input: {
 
   // Each loaded mod's data folder, keyed by its plugin identifier (`name@marketplace`).
   const modDataDirs = new Map<string, string>()
+  const repo = createCapabilitySourceRepository(deps.db, 'plugin')
   const ports: ModsPorts = {
     dataDir: (plugin) => modDataDirs.get(plugin) ?? pluginDataDir(plugin, userHome()),
     workspaceDir: localixWorkspaceDir(),
@@ -201,6 +206,24 @@ export function createModsPhase(input: {
         ...(run.parentSessionId ? { parentSessionId: run.parentSessionId } : {}),
       }))
     },
+    async listCommands(scene) {
+      const userId = scene.userId || defaultUserId
+      const [own, plugins] = await Promise.all([
+        discoverFilesystemSkills(scene.cwd, userHome()),
+        loadEnabledPlugins({
+          repo,
+          availability: await readAvailability(deps.db, { userId, agentId: DEFAULT_AGENT_ID }),
+          userId,
+          projectId: '',
+          cwd: scene.cwd,
+          homeDir: userHome(),
+        }).catch(() => null),
+      ])
+      return localixCommands({
+        builtins: SLASH_COMMANDS,
+        skills: [...own, ...(plugins?.skills ?? [])],
+      })
+    },
     async readSession(scene) {
       if (!scene.sessionId) return null
       const userId = scene.userId || defaultUserId
@@ -224,7 +247,6 @@ export function createModsPhase(input: {
     vms: createScriptVms(bundledScriptSandboxOptions(here)),
     runtimeDir: here,
   })
-  const repo = createCapabilitySourceRepository(deps.db, 'plugin')
   const debounce = createDebouncer(REFRESH_DEBOUNCE_MS)
   const reconcile = async () => {
     const mods = await loadEnabledPluginMods({

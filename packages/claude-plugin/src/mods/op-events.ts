@@ -84,6 +84,20 @@ const WHOLE = [
   'turn.abort',
 ]
 
+/**
+ * The input of an event a `$` call raises that is no op event (`$.prompt.submit` raises
+ * `prompt.submit`): what the engine stamps on it beside the call's argument — its origin, the
+ * calling plugin.
+ */
+export function namedEventInput(event: string, args: Args, plugin: string): unknown {
+  const first = args[0] ?? {}
+  if (!['prompt.submit', 'prompt.fill', 'prompt.suggest', 'command.run'].includes(event))
+    return first
+  const origin = { kind: 'plugin', name: plugin }
+  const input = typeof first === 'string' ? { text: first } : record(first)
+  return event === 'prompt.submit' ? { ...input, wait: false, origin } : { ...input, origin }
+}
+
 export const OP_SHAPES: ReadonlyMap<string, OpShape> = new Map<string, OpShape>([
   ...NO_ARGS.map((name): [string, OpShape] => [name, none]),
   ...WHOLE.map((name): [string, OpShape] => [name, whole]),

@@ -22,7 +22,9 @@
     {
       "kind": "call",
       "name": "command.register",
-      "shape": "undefined"
+      "shape": {
+        "command": "string"
+      }
     },
     {
       "kind": "call",
@@ -213,7 +215,6 @@
           "kind": "string"
         },
         "text": "string",
-        "turnId": "string",
         "wait": "boolean"
       }
     },
@@ -339,7 +340,9 @@
       "kind": "result",
       "name": "prompt.submit",
       "shape": {
-        "context": "undefined",
+        "origin": {
+          "kind": "string"
+        },
         "text": "string"
       }
     },

@@ -133,11 +133,20 @@ export async function createModRunScope(
       const appended = scene.sessionId ? host.composer.takeNotes(scene.sessionId) : []
       if (!active || !host.hears('prompt.submit', plugins))
         return { dropped: false, text, context: appended }
-      const input = { text, turnId, wait: false, origin: { kind: 'composer' } }
+      // The turn's id is `turn.start`'s to carry, as in Claude Code.
+      void turnId
+      const input = { text, wait: false, origin: { kind: 'composer' } }
       const answer = (await host.dispatch(
         'prompt.submit',
         input,
-        (e) => ({ text: (e as typeof input).text, context: (e as { context?: unknown }).context }),
+        (e) => {
+          const { context } = e as { context?: unknown }
+          return {
+            text: (e as typeof input).text,
+            ...(Array.isArray(context) ? { context } : {}),
+            origin: (e as typeof input).origin,
+          }
+        },
         scene,
         plugins,
       )) as { drop?: unknown; text?: unknown; context?: unknown } | undefined

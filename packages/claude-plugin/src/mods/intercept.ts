@@ -1,6 +1,6 @@
 import type { Pause } from './budget'
 import type { DispatchOptions } from './engine'
-import { OP_SHAPES } from './op-events'
+import { namedEventInput, OP_SHAPES } from './op-events'
 
 /**
  * The calls a mod makes on `$`, as Claude Code's engine answers them: each is an event other mods
@@ -81,7 +81,12 @@ export function interceptApi(
           ...(plugins ? { plugins } : {}),
         }
         if (!shape)
-          return engine.dispatch(event, args[0] ?? {}, (e) => method(e, ...args.slice(1)), opts)
+          return engine.dispatch(
+            event,
+            namedEventInput(event, args, plugin),
+            (e) => method(e, ...args.slice(1)),
+            opts,
+          )
         const core = async (e: unknown) => ({
           value: await method(...shape.args(e as Record<string, unknown>, args)),
         })

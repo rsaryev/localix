@@ -3,6 +3,7 @@ import { currentScene, stringOr, type ModScene, type ModSource, type ModsPorts }
 import type { ModComposer } from '../composer'
 import { DESCRIBING_CORES, type ModEventCalls } from '../event-calls'
 import type { ModRegistry } from '../registry'
+import { modToolName } from '../tool-call'
 import { createHash } from 'node:crypto'
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
@@ -101,15 +102,20 @@ export function buildModApi(deps: ModApiDeps): { api: ModsApi; dispose: () => vo
   const api: ModsApi = {
     plugin: { name: plugin, root: source.root },
     command: {
-      register: (spec: { name: string; description: string; argumentHint?: string }) =>
-        registry.addCommand(instance, spec),
-      list: () =>
-        registry.commands().map((command) => ({
+      register: (spec: { name: string; description: string; argumentHint?: string }) => {
+        registry.addCommand(instance, spec)
+        return { command: spec.name }
+      },
+      // Localix's commands and skills, then the mods' own, as the typeahead lists them.
+      list: async () => [
+        ...((await ports.listCommands?.(scene()).catch(() => [])) ?? []),
+        ...registry.commands().map((command) => ({
           name: command.name,
           description: command.description,
-          source: 'plugin',
+          source: 'plugin' as const,
           plugin: command.plugin,
         })),
+      ],
       run: (input: { command: string; args?: string }) => deps.runCommand(input),
       describe: DESCRIBING_CORES.command.describe,
     },
@@ -118,7 +124,10 @@ export function buildModApi(deps: ModApiDeps): { api: ModsApi; dispose: () => vo
         name: string
         description: string
         inputSchema?: Record<string, unknown>
-      }) => registry.addTool(instance, spec),
+      }) => {
+        registry.addTool(instance, spec)
+        return { tool: modToolName(plugin, spec.name) }
+      },
       list: run.tool.list,
       call: run.tool.call,
       check: run.tool.check,
@@ -178,8 +187,9 @@ export function buildModApi(deps: ModApiDeps): { api: ModsApi; dispose: () => vo
         registry.closePane(instance, typeof pane === 'string' ? pane : pane.id),
       panes: () => registry.panes(instance).map(({ id, title }) => ({ id, title })),
       toast: (text: unknown) => ports.notify(scene(), { plugin, text: textOf(text), tone: 'info' }),
-      notify: (text: unknown) =>
-        ports.notify(scene(), { plugin, text: textOf(text), tone: 'attention' }),
+      // A notification is the terminal's channel; the desktop has none, as in Claude Code's
+      // desktop app, so a mod falls back to a toast (`if (!r.isSent) $.ui.toast(text)`).
+      notify: () => ({ isSent: false, reason: 'no-surface' }),
       // The conversation's status line, a line per mod, as Claude Code's status bar shows it.
       status: (text: unknown) => {
         const sessionId = scene().sessionId
@@ -205,12 +215,21 @@ export function buildModApi(deps: ModApiDeps): { api: ModsApi; dispose: () => vo
     clock: system.clock,
     session,
     prompt: {
-      submit: (input: { text: string; asUser?: boolean }) =>
-        ports.submitPrompt(scene(), {
-          text: textOf(input),
-          asUser: input?.asUser === true,
-          plugin,
-        }),
+      // What entered: the text, any context, and the origin the hooks passed down.
+      submit: async (input: {
+        text: string
+        asUser?: boolean
+        context?: unknown
+        origin?: unknown
+      }) => {
+        const text = textOf(input)
+        await ports.submitPrompt(scene(), { text, asUser: input?.asUser === true, plugin })
+        return {
+          text,
+          ...(Array.isArray(input?.context) ? { context: input.context } : {}),
+          origin: input?.origin ?? { kind: 'plugin', name: plugin },
+        }
+      },
       // The box's draft lives in the window; a mod sees none, as where no box is mounted.
       read: () => ({ text: '', cursor: 0 }),
       fill: (input: { text?: unknown; mode?: unknown }) => {
