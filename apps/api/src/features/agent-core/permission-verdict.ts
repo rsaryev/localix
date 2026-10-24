@@ -38,6 +38,8 @@ export interface VerdictOptions {
    * as a skill's `allowed-tools` does; it never lifts the list's own denial.
    */
   outerRules?: OuterRules
+  /** Further working directories (Claude Code's `additionalDirectories`): not outside the workspace. */
+  extraRoots?: readonly string[]
 }
 
 export interface OuterRuleVerdict {
@@ -108,7 +110,7 @@ export function judgeCall(
     ? scopeToOwnPlan(declared, writeTargets(ctx.toolName, ctx.input, opts.root), opts.ownPlanDir)
     : declared
   const facts: ToolFacts = { name: ctx.toolName, ...callClass }
-  const call = extractCallFacts(ctx.toolName, ctx.input, opts.root, tool)
+  const call = extractCallFacts(ctx.toolName, ctx.input, opts.root, tool, opts.extraRoots)
 
   // THE RULES ARBITRATE CAPABILITIES, AND A CAPABILITY IS A CATALOG ENTRY.
   //

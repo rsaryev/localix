@@ -77,8 +77,11 @@ export function isOutsideWorkspace(
   toolName: string,
   root: string | undefined,
   candidate: string,
+  /** Further working directories (Claude Code's `additionalDirectories`), judged like the root. */
+  extraRoots: readonly string[] = [],
 ): boolean {
   if (!root || root === '/' || root === '') return false
+  if (extraRoots.some((extra) => !isOutsideWorkspace(toolName, extra, candidate))) return false
   if (!WORKSPACE_CONFINED_READERS.has(toolName)) {
     // Mutations: lexically inside AND inside once linked folders are followed, both sides
     // resolved (macOS `/tmp` is itself a link), against the same roots a write may touch.

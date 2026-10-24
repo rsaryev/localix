@@ -1,3 +1,5 @@
+import { join, resolve } from 'node:path'
+
 import { isRecord } from '../../lib/record'
 import { normalizeCcToolName } from '../ext/cc-tool-names'
 import { parseRuleString, specifierIsAll, specifierMatchesValue } from './permission-rules'
@@ -240,4 +242,33 @@ export function settingsRemoveTool(
       r.tool !== 'WebSearch' &&
       namesTool(r, call),
   )
+}
+
+/**
+ * `permissions.additionalDirectories` of every file, absolute: further working directories whose
+ * files a call may touch as it touches the project's. A committed project file's entries wait for
+ * the folder's trust, as its allow rules do; relative entries resolve against the working
+ * directory and `~` against home.
+ */
+export function settingsAdditionalDirectories(
+  layers: readonly SettingsLayer[],
+  options: { projectTrusted: boolean; cwd: string; homeDir: string },
+): string[] {
+  const out = new Set<string>()
+  for (const layer of layers) {
+    if (layer.source === 'project' && !options.projectTrusted) continue
+    const permissions = layer.settings.permissions
+    const list = isRecord(permissions) ? permissions.additionalDirectories : undefined
+    if (!Array.isArray(list)) continue
+    for (const entry of list) {
+      if (typeof entry !== 'string' || !entry.trim()) continue
+      const dir = entry.trim()
+      out.add(
+        dir === '~' || dir.startsWith('~/')
+          ? join(options.homeDir, dir.slice(1))
+          : resolve(options.cwd, dir),
+      )
+    }
+  }
+  return [...out]
 }

@@ -5,7 +5,7 @@ import type { AgentTool } from '@localixai/agent/agents'
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 
 import { createPermissionGate, type PermissionRule } from '../../../agent-core/permission-engine'
-import { claudeCodeRulePort, loadClaudeCodePermissions } from './claude-code-permissions'
+import { claudeCodeGateOptions, loadClaudeCodePermissions } from './claude-code-permissions'
 
 /**
  * A person's Claude Code `permissions` reach a Localix run's gate: a deny in any settings file
@@ -37,7 +37,7 @@ async function gateFor(
     rules,
     toolsByName: new Map(tools.map((t) => [t.name, t])),
     root: cwd,
-    outerRules: claudeCodeRulePort(loaded, { homeDir: join(root, 'home'), mode }),
+    ...claudeCodeGateOptions(loaded, { homeDir: join(root, 'home'), mode }),
     requestConfirm: async (args) => {
       asked.push(args.toolName)
       return true
@@ -93,5 +93,38 @@ describe("Claude Code's permission rules in a Localix run", () => {
     expect((await run('bash', { command: 'rm x' }))?.block).toBe(true)
     await run('bash', { command: 'make' })
     expect(asked).toEqual(['bash'])
+  })
+
+  test('Read and Edit rules guard the files a shell line names', async () => {
+    const { run } = await gateFor(
+      {
+        'project/.claude/settings.json': JSON.stringify({
+          permissions: { deny: ['Read(./.env)', 'Edit(src/**)'] },
+        }),
+      },
+      ALLOW_ALL,
+    )
+    expect((await run('bash', { command: 'cat .env' }))?.block).toBe(true)
+    expect((await run('bash', { command: 'echo hi > src/app.ts' }))?.block).toBe(true)
+    expect((await run('bash', { command: 'sed -i s/a/b/ src/app.ts' }))?.block).toBe(true)
+    expect((await run('bash', { command: 'cat src/app.ts' }))?.block).toBeUndefined()
+  })
+
+  test('additionalDirectories count as inside the workspace', async () => {
+    const outside = [{ permission: '*', pattern: 'outside-workspace', action: 'ask' } as const]
+    const { run, asked, cwd } = await gateFor(
+      {
+        'home/.claude/settings.json': JSON.stringify({
+          permissions: { additionalDirectories: ['../shared'] },
+        }),
+        'shared/notes.md': 'notes',
+        'elsewhere/x.md': 'x',
+      },
+      [...ALLOW_ALL, ...outside],
+    )
+    await run('read', { path: join(cwd, '../shared/notes.md') })
+    expect(asked).toEqual([])
+    await run('read', { path: join(cwd, '../elsewhere/x.md') })
+    expect(asked).toEqual(['read'])
   })
 })

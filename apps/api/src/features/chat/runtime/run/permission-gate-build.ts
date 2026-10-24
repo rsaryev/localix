@@ -53,6 +53,8 @@ export interface BuildRunPermissionGateOptions extends RunHookContext {
   }
   /** The person's Claude Code `permissions`, as the gate's outer rule set. */
   outerRules?: OuterRules
+  /** Claude Code's `additionalDirectories`: further working directories. */
+  extraRoots?: readonly string[]
   /** Receives the gate's inputs: a skill the model loads checks its injected commands on them. */
   onVerdictOptions?: (options: VerdictOptions) => void
 }
@@ -120,6 +122,7 @@ export function buildRunPermissionGate(
     // The conversation's own plan directory: a plan-shaped write anywhere else is a file write.
     ownPlanDir: ownPlanDirForRun(session, defaultCwd),
     ...(options.outerRules ? { outerRules: options.outerRules } : {}),
+    ...(options.extraRoots ? { extraRoots: options.extraRoots } : {}),
   }
   options.toolCheck?.lend(verdictOf(verdictOptions))
   options.onVerdictOptions?.(verdictOptions)

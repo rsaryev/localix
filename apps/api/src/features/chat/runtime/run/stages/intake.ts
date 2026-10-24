@@ -16,7 +16,7 @@ import { createGateRefusalTracker } from '@localixai/agent/agents'
 
 import { intakeTurn, markPromptBlocked } from '../../history/intake'
 import { userHome } from '../../../../../lib/env'
-import { claudeCodeRulePort } from '../claude-code-permissions'
+import { claudeCodeGateOptions } from '../claude-code-permissions'
 import { buildRunPermissionGate } from '../permission-gate-build'
 import { runTurnLimitFor } from '../turn-limit'
 import type { RunInputs } from './context'
@@ -99,7 +99,7 @@ export async function intakeRunTurn(
     mayConfirm: turn.policy.human.canAnswer,
     tools: toolset.dispatchTools,
     defaultCwd,
-    outerRules: claudeCodeRulePort(toolset.claudeCodePermissions, {
+    ...claudeCodeGateOptions(toolset.claudeCodePermissions, {
       homeDir: userHome(),
       mode: turn.policy.permission.mode,
     }),

@@ -216,9 +216,16 @@ directory) and gitignore matching with `!` carve-outs; `WebFetch(domain:…)` ma
 `research` reads; `mcp__<server>` and `mcp__<server>__<tool>` match MCP tools; `Agent(…)` matches a
 delegated plugin agent and `Skill(…)` a skill.
 
-The `allow` rules of a committed `.claude/settings.json` apply only to a folder you trusted in
-Claude Code (`hasTrustDialogAccepted` in `~/.claude.json`), as Claude Code holds them back until
-then. `allowManagedPermissionRulesOnly` in managed settings leaves only the managed rules.
+A shell line meets `Read` and `Edit` rules through the files it names: the operands of `cat`,
+`head`, `tail`, `grep`, `sed`, `tee`, `cp`, `mv`, `rm` and similar commands, `sed -i`, and
+redirections (`> file`, `< file`). A command that opens files without naming them is not covered, as
+in Claude Code. `permissions.additionalDirectories` lists further working directories: a path in one
+is not outside the workspace, so the agent's `outside-workspace` question does not arise.
+
+The `allow` rules and `additionalDirectories` of a committed `.claude/settings.json` apply only to a
+folder you trusted in Claude Code (`hasTrustDialogAccepted` in `~/.claude.json`), as Claude Code
+holds them back until then. `allowManagedPermissionRulesOnly` in managed settings leaves only the
+managed rules.
 
 ## Configuration
 

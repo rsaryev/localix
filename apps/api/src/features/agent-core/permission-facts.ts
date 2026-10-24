@@ -95,6 +95,8 @@ export function extractCallFacts(
   root?: string,
   /** Tool-owned declarations augment the core path and command facts. */
   tool?: Pick<AgentTool, 'permissionPaths' | 'permissionResources'>,
+  /** Further working directories a path may be in without being outside the workspace. */
+  extraRoots: readonly string[] = [],
 ): CallFacts {
   const declaredResources = tool?.permissionResources?.(input)
   if (
@@ -177,7 +179,9 @@ export function extractCallFacts(
       paths.push(resolvedCwd)
       for (const c of allCommands) paths.push(...outsideHomePathsInCommand(c, root, resolvedCwd))
       const commands = allCommands.length > 0 ? allCommands : undefined
-      const outsidePaths = [...new Set(paths.filter((p) => isOutsideWorkspace(toolName, root, p)))]
+      const outsidePaths = [
+        ...new Set(paths.filter((p) => isOutsideWorkspace(toolName, root, p, extraRoots))),
+      ]
       return {
         ...resourceFacts,
         paths,
@@ -222,7 +226,9 @@ export function extractCallFacts(
     }
   }
 
-  const outsidePaths = [...new Set(paths.filter((p) => isOutsideWorkspace(toolName, root, p)))]
+  const outsidePaths = [
+    ...new Set(paths.filter((p) => isOutsideWorkspace(toolName, root, p, extraRoots))),
+  ]
   return {
     ...resourceFacts,
     fileArtifacts: fileArtifactClasses(writeTargets(toolName, input, root), root),

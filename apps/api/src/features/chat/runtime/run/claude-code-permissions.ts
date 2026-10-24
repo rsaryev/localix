@@ -9,7 +9,9 @@ import {
   readSettingsLayers,
   type SettingsFilesInput,
 } from '../../../cc-settings/settings-files'
+import { bashFiles } from '../../../cc-settings/settings-bash-paths'
 import {
+  settingsAdditionalDirectories,
   settingsPermissionDecision,
   settingsPermissionRules,
   type CcPermissionRule,
@@ -27,6 +29,8 @@ import { isRecord } from '../../../../lib/record'
 
 export interface ClaudeCodePermissions {
   rules: CcPermissionRule[]
+  /** `permissions.additionalDirectories`, absolute. */
+  additionalDirectories: string[]
   cwd: string
 }
 
@@ -63,27 +67,60 @@ export async function loadClaudeCodePermissions(
     readSettingsLayers(input),
     claudeCodeTrusts(input),
   ])
-  return { rules: settingsPermissionRules(layers, { projectTrusted }), cwd: input.cwd }
+  return {
+    rules: settingsPermissionRules(layers, { projectTrusted }),
+    additionalDirectories: settingsAdditionalDirectories(layers, {
+      projectTrusted,
+      cwd: input.cwd,
+      homeDir: input.homeDir,
+    }),
+    cwd: input.cwd,
+  }
 }
 
 const STOPS_ASKING: ReadonlySet<PermissionMode> = new Set(['bypass', 'autonomous'])
 
 const where = (rule: CcPermissionRule) => `${rule.raw} in ${rule.file}`
 
-/** The gate's outer rule set for one run. */
-export function claudeCodeRulePort(
+/** What the gate takes from the person's Claude Code settings for one run. */
+export function claudeCodeGateOptions(
   permissions: ClaudeCodePermissions,
   options: { homeDir: string; mode: PermissionMode },
-): OuterRules | undefined {
-  if (permissions.rules.length === 0) return undefined
+): { outerRules?: OuterRules; extraRoots?: string[] } {
+  return {
+    ...(permissions.rules.length > 0 ? { outerRules: claudeCodeRules(permissions, options) } : {}),
+    ...(permissions.additionalDirectories.length > 0
+      ? { extraRoots: permissions.additionalDirectories }
+      : {}),
+  }
+}
+
+function claudeCodeRules(
+  permissions: ClaudeCodePermissions,
+  options: { homeDir: string; mode: PermissionMode },
+): OuterRules {
   return ({ toolName, input, tool, facts, writes }) => {
+    // A shell line's own files: what `cat`, `sed`, `tee` and redirections name.
+    const shell =
+      toolName === 'bash' && facts.commands
+        ? facts.commands.map((line) =>
+            bashFiles(line, facts.paths[0] ?? permissions.cwd, options.homeDir),
+          )
+        : []
+    const shellWrites = shell.flatMap((files) => files.writes)
     const decision = settingsPermissionDecision(permissions.rules, {
       toolName,
       ...(tool?.aliases ? { aliases: tool.aliases } : {}),
       input,
-      paths: facts.paths,
-      // A shell line that changes something writes the files it names (`> out`, `tee`, `sed -i`).
-      writes: toolName === 'bash' && !facts.readOnly ? facts.paths : writes,
+      // A shell call's first path is its working directory, which the line does not read.
+      paths:
+        toolName === 'bash'
+          ? [
+              ...facts.paths.slice(1),
+              ...shell.flatMap((files) => [...files.reads, ...files.writes]),
+            ]
+          : facts.paths,
+      writes: toolName === 'bash' ? shellWrites : writes,
       ...(facts.commands ? { commands: facts.commands } : {}),
       cwd: permissions.cwd,
       homeDir: options.homeDir,
