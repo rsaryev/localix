@@ -31,6 +31,9 @@ const EXTERNAL_FORMAT_LITERALS = new Map([
     'apps/api/src/features/plugins/discovery-cc-files.ts',
     "trimmedFrontmatterField(fields.isolation) === 'worktree' ? ('isolated' as const) : undefined",
   ],
+  // Git's own layout: a linked checkout's `gitdir:` points under the main one's `.git/worktrees/`,
+  // which is how Claude Code finds the repository root that keeps `settings.local.json`.
+  ['apps/api/src/features/cc-settings/settings-files.ts', "linked.lastIndexOf('/.git/worktrees/')"],
 ])
 
 /**
@@ -42,6 +45,9 @@ const EXTERNAL_FORMAT_LITERALS = new Map([
  */
 const CLAUDE_CODE_ISOLATION = [
   'apps/api/src/features/agent-core/tools/workflow/',
+  // The Agent tool's own `isolation: 'worktree'` parameter, as Claude Code declares it.
+  'apps/api/src/features/agent-core/tools/delegate.ts',
+  'apps/api/src/features/agent-core/tools/delegate-start.ts',
   'apps/api/src/features/agent-core/tools/delegate-plugin-agent',
   'apps/api/src/features/cc-hooks/',
   'apps/api/src/features/chat/session-cwd',

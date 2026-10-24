@@ -18,7 +18,7 @@ import { mergeSettingsSources, type Settings, type SettingsSource } from './sett
  *
  *   user     `$CLAUDE_CONFIG_DIR/settings.json`, else `~/.claude/settings.json`
  *   project  `<cwd>/.claude/settings.json` — the working directory's own, no parent fallback
- *   local    `.claude/settings.local.json` at the repository root (a worktree's main checkout),
+ *   local    `.claude/settings.local.json` at the repository root (a linked checkout's main one),
  *            and the working directory's own as earlier versions kept it; the root's wins
  *   policy   the managed settings (`managed-settings.ts`)
  *
@@ -61,7 +61,7 @@ function readSettingsFile(file: string): Settings | undefined {
 
 /**
  * The repository root Claude Code keeps the local settings file at: the nearest folder holding
- * `.git`, a worktree resolved to its main checkout. Null where Claude Code keeps it beside the
+ * `.git`, a linked checkout resolved to its main one. Null where Claude Code keeps it beside the
  * project file instead: outside a repository, a repository rooted at home, and on Windows.
  */
 export function localSettingsRoot(

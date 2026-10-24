@@ -28,23 +28,23 @@ const rowsOf = async (test: TestJournal) =>
 describe('finished mini app installs, as the Event Center reads them', () => {
   test('one install is one short line', async () => {
     const { test, report } = await setup()
-    report([{ name: 'git-workspace', label: 'Git', kind: 'install', version: '1.0.0' }])
+    report([{ name: 'habits', label: 'Habits', kind: 'install', version: '1.0.0' }])
     expect(await rowsOf(test)).toEqual([
-      { title: 'Installed Git', body: undefined, severity: 'success', state: 'open' },
+      { title: 'Installed Habits', body: undefined, severity: 'success', state: 'open' },
     ])
   })
 
   test('installs and updates that finished together are one line each, naming the apps', async () => {
     const { test, report } = await setup()
     report([
-      { name: 'git-workspace', label: 'Git', kind: 'install', version: '1.0.0' },
+      { name: 'habits', label: 'Habits', kind: 'install', version: '1.0.0' },
       { name: 'documents', label: 'Documents', kind: 'install', version: '1.0.0' },
       { name: 'kanban', label: 'Kanban', kind: 'install', version: '1.0.0' },
       { name: 'chess', label: 'Chess', kind: 'update', version: '1.2.0' },
       { name: 'reader', label: 'Reader', kind: 'update', version: '0.4.0' },
     ])
     expect((await rowsOf(test)).map(({ title, body }) => ({ title, body }))).toEqual([
-      { title: 'Installed 3 mini apps', body: 'Git, Documents and Kanban' },
+      { title: 'Installed 3 mini apps', body: 'Habits, Documents and Kanban' },
       { title: 'Updated 2 mini apps', body: 'Chess and Reader' },
     ])
   })

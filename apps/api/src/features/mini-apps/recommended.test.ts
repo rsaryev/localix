@@ -13,7 +13,7 @@ const OFFLINE = 'https://catalog.example.test/mini-app-catalog.json'
 /** The staged first-party folder: four apps, three of them recommended. */
 async function firstParty() {
   const source = join(root(), 'staged')
-  for (const name of ['git-workspace', 'documents', 'kanban', 'chess']) {
+  for (const name of ['habits', 'documents', 'kanban', 'chess']) {
     await fs.mkdir(join(source, name), { recursive: true })
     await fs.writeFile(
       join(source, name, 'mini-app.json'),
@@ -22,7 +22,7 @@ async function firstParty() {
   }
   await fs.writeFile(
     join(source, 'catalog-picks.json'),
-    JSON.stringify({ recommended: ['git-workspace', 'documents', 'kanban'] }),
+    JSON.stringify({ recommended: ['habits', 'documents', 'kanban'] }),
   )
   return source
 }
@@ -57,9 +57,9 @@ describe('recommended mini apps on a new installation', () => {
   test('are installed on the first start without asking, and only once', async () => {
     const { pass, installed } = await setup()
     expect(await pass()).toBe('done')
-    expect(await installed()).toEqual(['documents', 'git-workspace', 'kanban'])
+    expect(await installed()).toEqual(['documents', 'habits', 'kanban'])
     expect(await pass()).toBe('done')
-    expect(await installed()).toEqual(['documents', 'git-workspace', 'kanban'])
+    expect(await installed()).toEqual(['documents', 'habits', 'kanban'])
   })
 
   test('one the person removed is never added again', async () => {
@@ -67,7 +67,7 @@ describe('recommended mini apps on a new installation', () => {
     await pass()
     await fs.rm(join(home, '.localix', 'mini-apps', 'kanban'), { recursive: true })
     expect(await pass()).toBe('done')
-    expect(await installed()).toEqual(['documents', 'git-workspace'])
+    expect(await installed()).toEqual(['documents', 'habits'])
   })
 
   test('offline, nothing is installed and the pass asks to run again; online it installs', async () => {
@@ -77,7 +77,7 @@ describe('recommended mini apps on a new installation', () => {
     net.online = true
     expect(await installed()).toEqual([])
     expect(await pass()).toBe('done')
-    expect(await installed()).toEqual(['documents', 'git-workspace', 'kanban'])
+    expect(await installed()).toEqual(['documents', 'habits', 'kanban'])
   })
 
   test('an installation that already has mini apps is not a first start: nothing is added', async () => {

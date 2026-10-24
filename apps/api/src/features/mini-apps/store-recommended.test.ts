@@ -10,14 +10,14 @@ import { createMiniAppStore, type MiniAppStoreSource } from './store'
 const root = tempDirPerTest('mini-app-store-recommended-')
 const CATALOG = 'https://catalog.example.test/mini-app-catalog.json'
 
-/** A hosted catalog whose one app, `git-workspace`, says it is recommended. */
+/** A hosted catalog whose one app, `habits`, says it is recommended. */
 async function hosted() {
   const archive = await packMiniAppFiles({
-    'mini-app.json': JSON.stringify({ name: 'git-workspace', version: '1.0.0' }),
+    'mini-app.json': JSON.stringify({ name: 'habits', version: '1.0.0' }),
   })
   const app = {
-    name: 'git-workspace',
-    displayName: 'Git',
+    name: 'habits',
+    displayName: 'Habits',
     version: '1.0.0',
     publisher: { name: 'Localix', verified: true },
     recommended: true,
@@ -61,7 +61,7 @@ describe('recommended mini apps', () => {
   test('a catalog Localix vouches for marks the apps it recommends', async () => {
     const store = storeOver([{ kind: 'catalog', url: CATALOG, vouches: true }], await hosted())
     expect((await store.list()).entries[0]).toMatchObject({
-      name: 'git-workspace',
+      name: 'habits',
       recommended: true,
     })
   })
