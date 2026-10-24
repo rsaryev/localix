@@ -1,35 +1,16 @@
 import { API_BASE_URL, apiFetch, assertOk } from './internal'
+import type { PluginUpdateJob, PluginUpdatesResponse } from '@localixai/api/client'
 
 /**
  * Claude Code plugin updates: what the marketplaces offer over what is installed, and the updates
- * in flight. The server pokes `plugin-updates` as either moves.
- *
- * MERGE NOTE: the route is built beside this client in `features/plugins`; until it lands, this
- * file declares the contract it answers with and reads a 404 as "this server has no plugin
- * updates" rather than as a failure. Once `PluginUpdatesResponse` is exported from
- * `@localixai/api/client`, import it from there and drop the local declaration.
+ * in flight. The server pokes `plugin-updates` as either moves. The contract is the API's
+ * (`features/plugins/contracts-updates.ts`); a 404 still reads as "this server has no plugin
+ * updates", for a client talking to an older server.
  */
+export type { PluginUpdateJob, PluginUpdatesResponse }
 
-export interface PluginUpdateOffer {
-  /** `name@marketplace`. */
-  id: string
-  name: string
-  marketplace: string
-  from: string
-  to: string
-}
-
-export interface PluginUpdateJob {
-  id: string
-  phase: 'checking' | 'downloading' | 'installing' | 'done' | 'failed'
-  error?: string
-}
-
-export interface PluginUpdatesResponse {
-  available: PluginUpdateOffer[]
-  jobs: PluginUpdateJob[]
-  lastCheckedAt: string | null
-}
+/** One update on offer: `name@marketplace` from one version to another. */
+export type PluginUpdateOffer = PluginUpdatesResponse['available'][number]
 
 const UPDATES = `${API_BASE_URL}/rpc/plugins/updates`
 
