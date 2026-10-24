@@ -61,3 +61,31 @@ test('a negation selects every event but the one it names', async () => {
   await engine.dispatch('tool.call', {}, () => ({}))
   expect(heard.filter((name) => name.startsWith('tool.'))).toEqual(['tool.call'])
 })
+
+test('an abandoned event goes no further: core never runs beneath a hook it cut short', async () => {
+  const engine = createModsEngine()
+  await engine.load(
+    'holder',
+    (on) =>
+      void on('tool.call', (_$, _e, next) =>
+        next.signal.aborted
+          ? undefined
+          : new Promise((resolve) => next.signal.addEventListener('abort', resolve)),
+      ),
+    {},
+    {},
+  )
+  let ran = 0
+  const stop = new AbortController()
+  const dispatched = engine
+    .dispatch('tool.call', { tool: 'Bash' }, () => (ran++, { result: 'ran' }), {
+      signal: stop.signal,
+    })
+    .then(
+      () => 'answered',
+      () => 'abandoned',
+    )
+  stop.abort()
+  expect(await dispatched).toBe('abandoned')
+  expect(ran).toBe(0)
+})

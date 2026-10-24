@@ -64,6 +64,10 @@ export function failureOf(error: unknown): HookFailure {
   return { kind: 'throw', message: error instanceof Error ? error.message : String(error) }
 }
 
+/** Why an abandoned event rejects: its signal's reason. */
+const abandonment = (signal: AbortSignal) =>
+  signal.reason instanceof Error ? signal.reason : new Error('the event was abandoned')
+
 export function createChainRunner(deps: ChainRunnerDeps) {
   async function run(
     event: string,
@@ -76,6 +80,8 @@ export function createChainRunner(deps: ChainRunnerDeps) {
     const site = STREAMING_EVENTS.get(event)
     const signal = opts.signal ?? new AbortController().signal
     const bottom = async (e: unknown): Promise<Outcome> => {
+      // An abandoned event goes no further: what it would have run beneath does not run.
+      if (signal.aborted) throw abandonment(signal)
       const link = { index: chain.length, plugin: 'engine', event, startedAt: Date.now() }
       const value = await core(e)
       const trace = [traceEntry(link, 'returned', e, value)]
@@ -282,6 +288,7 @@ export function createChainRunner(deps: ChainRunnerDeps) {
           yielded,
         )
       } catch (error) {
+        if (signal.aborted) throw abandonment(signal)
         return await failed(error, last, yielded.slice())
       }
       // Returning nothing lets the hook's last `next` stand; without one, the hook was absent.

@@ -28,7 +28,11 @@ describe('tool.call', () => {
     const stop = new AbortController()
     const running = tool!.execute('t1', { command: 'rm -rf build' }, stop.signal)
     stop.abort()
-    const outcome = await running.catch((error: Error) => error)
-    expect(String(outcome)).toContain('held, then the turn was interrupted')
+    // The call is abandoned with the turn: it rejects, and the tool never runs.
+    const outcome = await running.then(
+      () => 'ran',
+      () => 'abandoned',
+    )
+    expect(outcome).toBe('abandoned')
   })
 })
