@@ -10,18 +10,17 @@ import { stopNotice } from './stop-notice'
 import { announceEmptyReply, announceRunStopped } from './finalize-notices'
 import { isPass, isSilentConversationTurn, settleConversationTurn } from './conversation-silence'
 import { runStopHooks } from './finalize-stop-hooks'
+import { sealFinalPayload } from './finalize-payload'
 
 import type { SessionRecord } from '../../repository'
-import type { PersistedMessage, MessageTiming } from '../../contracts'
+import type { PersistedMessage } from '../../contracts'
 import type { LoadedPlugins } from '../../../plugins/loader'
 import { ccBackgroundWork } from './cc-hook-run-facts'
 import type { CcHooksRuntime } from '../../../cc-hooks'
 import type { ModRunScope } from '../../../mods/run-scope'
 import { runAssistantMessageHooks, runMemoryProviderRunEnd } from '../../../mini-apps/hooks'
-import { finalizeTiming } from './turn-state'
 import { publishSessionTiming, type TurnEventContext } from './event-handlers'
 import type { ResolvedRunModel } from './model-selection'
-import { findUsedKey, maskKey } from './key-meta'
 import { consoleWarnLogger } from '../plugin-hook-logger'
 import { maybeStartContinuation } from './run-continuations'
 import type { RunParams } from './types'
@@ -51,34 +50,8 @@ export async function finalizeSuccessfulRun(args: {
   const { ctx, params, abort } = args
   const { env, userId, session, assistantMessageId, state, acc } = ctx
   const { stoppedRuntimeSessionIds } = env.state
-  const { connection, providerId } = ctx
 
-  // Finalize timing now that all events are processed, and ensure the
-  // persisted payload carries the latest aggregate.
-  finalizeTiming(state)
-  const finalTiming: MessageTiming = {
-    ...state.timing,
-    tools: [...state.timing.tools],
-  }
-  const usedKey = findUsedKey(connection, state.usedKeyId)
-  const providerMeta = {
-    providerId,
-    providerName: args.providerEntry.name,
-    modelId: args.rawModelId,
-    keyLabel: usedKey?.label || undefined,
-    keyMasked: maskKey(usedKey),
-  }
-  if (state.currentPayload.timing !== finalTiming) {
-    state.currentPayload = {
-      ...state.currentPayload,
-      timing: finalTiming,
-      providerMeta,
-    }
-    state.payload = state.currentPayload
-  } else if (state.currentPayload.providerMeta === undefined) {
-    state.currentPayload = { ...state.currentPayload, providerMeta }
-    state.payload = state.currentPayload
-  }
+  sealFinalPayload(ctx, args.providerEntry, args.rawModelId)
 
   // A turn that ends with only tool items keeps EMPTY assistant text — we never
   // fabricate model-voiced filler ("Completed N tool calls." / "Updated N files.").

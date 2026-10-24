@@ -2,8 +2,6 @@ import type { ResolvedRunAgent } from '../../agents/invocation-service'
 import { NO_ROSTERS, projectCapabilities, skillOverridesOf } from '../../capabilities/resolve'
 import { narrowLoadedPlugins } from '../../plugins/narrow'
 import { narrowLoadedMiniApps } from '../../mini-apps/narrow'
-import { loadEnabledMiniApps, type LoadedMiniApps } from '../../mini-apps/loader'
-import { emptyLoadedMiniApps } from '../../mini-apps/loader-contract'
 import { BUILTIN_TOOL_NAMES } from '../../agent-core/tool-names'
 import { safeJsonParse } from '../../../lib/json'
 import {
@@ -13,23 +11,18 @@ import {
 import { resolveEffectiveAgentConfig } from '../../effective-config/effective-config'
 import { createEnvironment } from '../../agent-core/tools/environments'
 import type { ExecutionEnvironmentConfig } from '../../agent-core/tools/environment'
-import { discoverFilesystemSkills } from '../../agent-core/skill-discovery'
-import { discoverContextFiles } from '../../agent-core/context-files'
 import { resolveAgentPromptContext } from './prompt-agent-context'
-import { loadEnabledPlugins, type LoadedPlugins } from '../../plugins/loader'
-import { emptyLoadedPlugins } from '../../plugins/loader-contract'
+import type { LoadedMiniApps } from '../../mini-apps/loader'
+import type { LoadedPlugins } from '../../plugins/loader'
+import { loadScopeDiscovery } from './prompt-context-discovery'
 import { availabilityOf } from '../../capabilities/availability'
 import type { loadUserSettingsContext } from '../../user/runtime-settings'
-import { prefixedWarnLogger } from './plugin-hook-logger'
 import { skillsMatchingFiles } from './prompt-skill-paths'
 import { withWorkspaceExtensions } from './prompt-context-extensions'
 import { buildSkillsContext } from './prompt-skills'
 import { agentRoute } from '../../../contracts/session-route'
-import { recordPluginCatalogLoad } from '../../notifications/conditions/plugins'
-import { recordMiniAppCatalogLoad } from '../../notifications/conditions/mini-apps'
 import type { SessionRecord } from '../repository'
 import { resolveBaseSessionCwd } from '../session-cwd'
-import { userHome } from '../../../lib/env'
 import type { PersistedMessage } from '../contracts'
 import { loadProjectStructureSnapshot } from '../../agent-core/project-structure'
 import { memoryScopePolicy } from '../../agent-core/memory-scope-policy'
@@ -58,7 +51,7 @@ export async function prepareRunContext(
     globalAgentSettings: UserSettingsContext['agentSettings']
   },
 ): Promise<PreparedRunContext> {
-  const { memoryRepo, projectsRepo, pluginRepo, miniAppRepo, contextSnapshots, now } = ctx
+  const { memoryRepo, projectsRepo, contextSnapshots } = ctx
   const { userId, session, speakerAgentId, historyMessages, viewEpoch, globalAgentSettings } =
     params
   const speakerRoute = agentRoute(session, speakerAgentId)
@@ -159,79 +152,17 @@ export async function prepareRunContext(
           cwd: defaultCwd,
           agentId: resolvedAgent.definition.id,
         },
-        () => loadScopeDiscovery(),
+        () =>
+          loadScopeDiscovery(ctx, {
+            userId,
+            projectId: session.projectId ?? '',
+            cwd: defaultCwd,
+            availability: scopeAvailability,
+          }),
       ),
       loadProjectStructureSnapshot(env, defaultCwd),
     ],
   )
-  async function loadScopeDiscovery() {
-    return Promise.all([
-      // Merge portable filesystem SKILL.md skills (project + home) into the
-      // prompt's skill list, so the agent knows it can invoke them by name.
-      discoverFilesystemSkills(defaultCwd, undefined, ctx.logger).catch(() => []),
-      // Plugins: discover + load the user's ENABLED plugins for this scope. The
-      // enable-state is the trust gate — only enabled plugins' native code is
-      // imported. Their bundled skills, MCP servers and native tools fold into the
-      // same pipelines built-ins use. Failures are isolated per-plugin and never
-      // block the turn.
-      loadEnabledPlugins({
-        homeDir: userHome(),
-        repo: pluginRepo,
-        availability: scopeAvailability,
-        userId,
-        projectId: session.projectId ?? '',
-        cwd: defaultCwd,
-        now,
-        logger: prefixedWarnLogger('plugin'),
-      })
-        // The load as a whole is a standing condition of this scope
-        // (`notifications/conditions/plugins.ts`): raised when it throws, settled when it works.
-        .then((loaded) => {
-          recordPluginCatalogLoad(userId, session.projectId ?? '')
-          return loaded
-        })
-        .catch((err) => {
-          console.warn('[agent-runner] plugin load failed', err)
-          recordPluginCatalogLoad(userId, session.projectId ?? '', err)
-          return emptyLoadedPlugins()
-        }),
-      // Mini apps: the enabled ones' backends (agent tools, hooks, memory), prompt sections and
-      // guides. Their own load, beside the plugins': the two share nothing.
-      loadEnabledMiniApps({
-        homeDir: userHome(),
-        repo: miniAppRepo,
-        availability: scopeAvailability,
-        userId,
-        projectId: session.projectId ?? '',
-        cwd: defaultCwd,
-        logger: prefixedWarnLogger('mini-app'),
-        // The user is the host's to bind (it is part of this scope's key); the session is the
-        // app's to state, because one scope serves a parent and its children.
-        ...(ctx.publishMiniAppProblem
-          ? {
-              reportProblem: (app, problem) =>
-                ctx.publishMiniAppProblem!({ userId, app, ...problem }),
-            }
-          : {}),
-        ...(ctx.miniAppSessionStorage ? { sessionStorageFor: ctx.miniAppSessionStorage } : {}),
-        ...(ctx.miniAppAgentDirectory ? { agentDirectory: ctx.miniAppAgentDirectory } : {}),
-      })
-        // Its own standing condition (`notifications/conditions/mini-apps.ts`).
-        .then((loaded) => {
-          recordMiniAppCatalogLoad(userId, session.projectId ?? '')
-          return loaded
-        })
-        .catch((err) => {
-          console.warn('[agent-runner] mini app load failed', err)
-          recordMiniAppCatalogLoad(userId, session.projectId ?? '', err)
-          return emptyLoadedMiniApps()
-        }),
-      // Localix context files (`.localix/context.md` + `.localix/rules/`) —
-      // auto-loaded into the
-      // session-stable "# Project context" prompt section. Never throws.
-      discoverContextFiles(defaultCwd),
-    ])
-  }
 
   // The load answered for the whole scope. This agent's own rules are applied here, on the
   // cheap side of that cache: a plugin it may not reach contributes nothing to its turn.

@@ -6,7 +6,7 @@
 import type { AgentTool, ToolSurface } from '@localixai/agent/agents'
 
 import { approvedInputFor, type CcHooksRuntime } from '../../../cc-hooks'
-import { gathersMcpTools, type RunProfile } from '../../../agent-core/run-shape'
+import type { RunProfile } from '../../../agent-core/run-shape'
 import type { LoadedPlugins } from '../../../plugins/loader'
 import type { SessionRecord } from '../../repository'
 import { TOOL } from '../../../agent-core/tool-names'
@@ -14,11 +14,11 @@ import { applyToolWrapperChain } from './tool-wrapper-chain'
 import { createChainGate, type ChainGate } from './chain-gate'
 import type { ModRunScope } from '../../../mods/run-scope'
 import { consoleWarnLogger } from '../plugin-hook-logger'
-import { resolveMcpTools, type McpInventoryEntry } from './mcp-tools'
+import type { McpInventoryEntry } from './mcp-tools'
+import { gatherRunMcpTools } from './tool-assembly-mcp'
 import { createActivateToolsTool } from '../../../agent-core/tools/activate-tools/activate-tools'
 import type { AvailabilityReader } from '../../../capabilities/availability'
 import type { ResolvedCapabilities } from '../../../capabilities/resolve'
-import { externalToolSurface } from './external-tool-surface'
 import { claimSecondaryTools } from './tool-namespace'
 import { rememberActivatedTools, splitDeferredTools } from './tool-deferral'
 import { markDeferred, type ToolLedger } from '../../../agent-core/tool-ledger'
@@ -111,74 +111,18 @@ export async function assembleRunTools(
     session,
     agentProfile,
     runtimeTools,
-    loadedPlugins,
     loadedMiniApps,
     ccHooks,
-    defaultCwd,
-    disabledTools,
-    availability,
-    toolSurface,
     surfaceTools,
     backgroundToolNames,
     mutatingToolNames,
   } = options
 
   const allTools = [...runtimeTools.tools]
-  let mcpInstructions: Array<{ server: string; text: string }> = []
-  let mcpInventory: McpInventoryEntry[] = []
-
-  // ---- MCP tools (persistent clients) ----------------------------------
-  // Resolve the user's enabled MCP servers to AgentTools via the process-
-  // lifetime client manager: connects (and lists tools) only on first use
-  // or after a config change / broken transport, then reuses the cached
-  // client — keeping slow stdio spawns off the per-message critical path.
-  // An optional server that's down degrades gracefully (its tools are absent);
-  // `required:true` servers fail startup. Servers removed/disabled since the last
-  // gather get their clients disposed by the manager. Disabled tools are
-  // filtered by the registry's allow-list, mirroring built-in tools.
-  // Only an OPEN toolset, or a list naming an MCP tool, gathers (`run-shape.ts`): a closed
-  // worker would pay every server's connect cost and schemas for tools it never uses.
-  const mcp = gathersMcpTools(agentProfile)
-    ? await resolveMcpTools({
-        env,
-        userId,
-        session,
-        pluginMcpServers: loadedPlugins.mcpServers,
-        defaultCwd,
-        availability,
-        agentId: options.agentId,
-        bindChannels: agentProfile.shape === 'chat',
-      })
-    : {
-        gather: undefined,
-        tools: [],
-        instructions: [],
-        inventory: [],
-      }
-  const external = externalToolSurface({
-    tools: mcp.tools,
-    profile: agentProfile,
-    capabilities: options.capabilities,
-    disabledTools,
-    authority: toolSurface,
-    modelInput: options.modelInput,
-  })
-  const claimedMcp = claimSecondaryTools(allTools, external.tools)
-  allTools.push(...claimedMcp.tools)
-  if (claimedMcp.conflicts.length > 0) {
-    console.warn(
-      `[agent-runner] Ignoring MCP tools whose names are already owned by the runtime registry: ${claimedMcp.conflicts.join(', ')}`,
-    )
-  }
-  // Each accepted MCP tool's name → the name the model is offered it under (the inventory's).
-  const acceptedMcp = new Map(claimedMcp.tools.map((tool) => [tool.name, tool.modelName]))
-  const acceptedServers = new Set([...acceptedMcp.keys()].map((n) => mcp.gather?.serverByTool[n]))
-  mcpInstructions = mcp.instructions.filter((entry) => acceptedServers.has(entry.server))
-  mcpInventory = mcp.inventory.flatMap((entry) => {
-    if (entry.pending || entry.failed) return [entry]
-    const tools = entry.tools.flatMap((n) => (acceptedMcp.has(n) ? [acceptedMcp.get(n) ?? n] : []))
-    return tools.length > 0 ? [{ ...entry, tools }] : []
-  })
+  const { mcp, external, acceptedMcp, mcpInstructions, mcpInventory } = await gatherRunMcpTools(
+    options,
+    allTools,
+  )
   // ---- Mods' tools (`$.tool.register`) — an open toolset only, like MCP ----------------
   const modTools = agentProfile.openToolset ? (options.mods?.tools() ?? []) : []
   const claimedMods = claimSecondaryTools(allTools, modTools)

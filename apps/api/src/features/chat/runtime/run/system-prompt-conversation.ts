@@ -1,9 +1,11 @@
 /**
- * The conversation half of a run's system prompt: who else is in this conversation.
+ * The conversation half of a run's system prompt: who else is in this conversation, and who a tag
+ * could bring in.
  *
- * A one-function module because the question it answers is one line of the prompt builder's call
- * and none of its business otherwise — the builder composes sections, it does not know what a
- * session's participants are. Here they become a roster and election context, including a solo chat.
+ * Its own module because each question it answers is one line of the prompt builder's call and
+ * none of its business otherwise — the builder composes sections, it does not know what a
+ * session's participants are. Here they become a roster and election context, including a solo
+ * chat, and the agent directory.
  */
 import { agentRoute } from '../../../../contracts/session-route'
 import type { RunPolicy } from '../../policy/run-policy'
@@ -48,4 +50,49 @@ export function conversationPromptContext(
     membershipClosed: !policy.conversation.tagInvites,
     ...(policy.conversation.kind === 'isolated' ? { isolated: true as const } : {}),
   }
+}
+
+/** One registered agent, as the prompt's directory lists it. */
+export interface AgentDirectoryEntry {
+  agentId: string
+  name: string
+  description: string
+  leadershipPriority?: number
+  enabled: boolean
+  canJoinConversation: boolean
+}
+
+/**
+ * The directory of agents an @mention could bring in, with the conversation's own members marked.
+ * Only where a tag can reach someone (`policy.conversation.showsDirectory`); a member no longer in
+ * the registry is still listed, unranked.
+ */
+export function agentDirectoryRows(
+  session: SessionRecord,
+  policy: RunPolicy,
+  directory: readonly AgentDirectoryEntry[] | undefined,
+) {
+  if (!policy.conversation.showsDirectory) return undefined
+  const available = new Map((directory ?? []).map((agent) => [agent.agentId, agent]))
+  const rows = [...(directory ?? [])].map((agent) => ({
+    id: agent.agentId,
+    handle: agent.name,
+    description: agent.description,
+    leadershipPriority: agent.leadershipPriority ?? 0,
+    inConversation: session.agents.some((member) => member.agentId === agent.agentId),
+    available: agent.enabled && agent.canJoinConversation,
+  }))
+  for (const member of session.agents) {
+    if (available.has(member.agentId)) continue
+    rows.push({
+      id: member.agentId,
+      handle: member.handle,
+      description: '',
+      // Not in the registry any more, so no definition ranks it — the same 0 dispatch uses.
+      leadershipPriority: 0,
+      inConversation: true,
+      available: true,
+    })
+  }
+  return rows
 }

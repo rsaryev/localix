@@ -30,7 +30,11 @@ import { getAgentService } from '../agent-service-binding'
 import { buildReactionContext } from './reaction-context'
 import { sessionAgent } from '../message-envelope'
 import type { PersistedMessage } from '../../contracts'
-import { conversationPromptContext } from './system-prompt-conversation'
+import {
+  agentDirectoryRows,
+  conversationPromptContext,
+  type AgentDirectoryEntry,
+} from './system-prompt-conversation'
 import type { BackgroundJobSnapshot } from '../../../agent-core/prompt/sections/background-jobs'
 import type { ApprovedPlanPrompt } from '../../../agent-core/prompt/sections/plan'
 import type { HumanProfile } from '../../../agent-core/prompt/sections/conversation'
@@ -73,14 +77,7 @@ export interface BuildRunSystemPromptOptions {
   approvedPlan?: ApprovedPlanPrompt
   /** Set when the run was admitted in plan mode — gates `# Plan mode`, naming the draft file. */
   planMode?: { draftPath?: string }
-  agentDirectory?: readonly {
-    agentId: string
-    name: string
-    description: string
-    leadershipPriority?: number
-    enabled: boolean
-    canJoinConversation: boolean
-  }[]
+  agentDirectory?: readonly AgentDirectoryEntry[]
   now?: () => string
   /** The person's record, listed as `@human` in the volatile roster. */
   human?: HumanProfile
@@ -263,33 +260,7 @@ export async function buildRunSystemPrompt(
     projectInstructions: frozenContext.projectInstructions,
     conversation,
     // Only where a tag can reach someone: the directory is who an @mention would bring in.
-    agentDirectory: (() => {
-      if (!options.policy.conversation.showsDirectory) return undefined
-      const available = new Map(
-        (options.agentDirectory ?? []).map((agent) => [agent.agentId, agent]),
-      )
-      const rows = [...(options.agentDirectory ?? [])].map((agent) => ({
-        id: agent.agentId,
-        handle: agent.name,
-        description: agent.description,
-        leadershipPriority: agent.leadershipPriority ?? 0,
-        inConversation: session.agents.some((member) => member.agentId === agent.agentId),
-        available: agent.enabled && agent.canJoinConversation,
-      }))
-      for (const member of session.agents) {
-        if (available.has(member.agentId)) continue
-        rows.push({
-          id: member.agentId,
-          handle: member.handle,
-          description: '',
-          // Not in the registry any more, so no definition ranks it — the same 0 dispatch uses.
-          leadershipPriority: 0,
-          inConversation: true,
-          available: true,
-        })
-      }
-      return rows
-    })(),
+    agentDirectory: agentDirectoryRows(session, options.policy, options.agentDirectory),
     ...(reactions ? { reactionContext: reactions } : {}),
     scratchDir,
     activeSubAgents,
