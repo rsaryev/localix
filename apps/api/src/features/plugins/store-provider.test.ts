@@ -246,8 +246,15 @@ describe('plugins in the Store', () => {
     expect(review.configure).toStartWith('localix://ui/settings/plugins')
   })
 
-  test('a remote plugin’s page fetches it once and says what it adds and runs', async () => {
+  test('a remote plugin’s page answers at once, fetches it once behind, then says what it adds and runs', async () => {
     const { provider, calls } = fixture()
+    let heard = 0
+    provider.subscribe(() => void heard++)
+    // The page opens on what the marketplace says; the fetch does not hold it up.
+    const first = await provider.detail(`pg@${COMMUNITY}`, actor)
+    expect(first).toMatchObject({ contents: 'unknown', components: [], readme: null })
+    await provider.settled()
+    expect(heard).toBe(1)
     const detail = await provider.detail(`pg@${COMMUNITY}`, actor)
     expect(calls).toEqual([`fetch pg@${COMMUNITY}`])
     expect(detail.readme).toContain('Query Postgres')

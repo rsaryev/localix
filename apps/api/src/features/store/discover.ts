@@ -147,7 +147,7 @@ export async function relatedOf(
   index: StoreIndexRepository,
   userId: string,
   listing: Listing,
-): Promise<{ related: ListingRef[]; similar: ListingRef[] }> {
+): Promise<{ related: ListingRef[]; similar: ListingRef[]; linked: Listing[] }> {
   const own = refKey(listing.ref)
   const others = (listings: readonly Listing[]) =>
     listings.filter((other) => refKey(other.ref) !== own)
@@ -158,13 +158,14 @@ export async function relatedOf(
       : Promise.resolve({ listings: [] as Listing[] }),
   ])
   const tags = new Set(listing.tags)
+  const related = others(publisher.listings).slice(0, ROW)
+  const similar = others(category.listings)
+    .filter((other) => tags.size === 0 || other.tags.some((tag) => tags.has(tag)))
+    .slice(0, ROW)
+  const linked = new Map([...related, ...similar].map((other) => [refKey(other.ref), other]))
   return {
-    related: others(publisher.listings)
-      .slice(0, ROW)
-      .map((other) => other.ref),
-    similar: others(category.listings)
-      .filter((other) => tags.size === 0 || other.tags.some((tag) => tags.has(tag)))
-      .slice(0, ROW)
-      .map((other) => other.ref),
+    related: related.map((other) => other.ref),
+    similar: similar.map((other) => other.ref),
+    linked: [...linked.values()],
   }
 }

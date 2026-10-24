@@ -104,17 +104,41 @@ export function createPluginStoreProvider(deps: {
   }
 
   /** The folder and contents of an entry: its checkout's, or fetched once for a remote one. */
-  async function opened(id: string) {
+  const fetching = new Map<string, Promise<void>>()
+  /** Fetch a remote entry once and read it; an opened page hears of it through `changed`. */
+  function fetchRemote(
+    id: string,
+    ref: { plugin: string; marketplace: string },
+    entry: MarketplaceEntry,
+  ) {
+    let run = fetching.get(id)
+    if (!run) {
+      run = (async () => {
+        const { dir } = await deps.fetchEntry(ref)
+        fetched.set(id, { dir, contents: await scanPluginContents(dir, id, entry) })
+      })().finally(() => fetching.delete(id))
+      fetching.set(id, run)
+    }
+    return run
+  }
+
+  /**
+   * The folder and contents of an entry: its checkout's, or a remote one's once fetched. A page
+   * does not `wait` for that fetch — it starts it and shows what the marketplace says; a plan does.
+   */
+  async function opened(id: string, wait = true) {
     const { ref, view, entry } = await find(id)
     const dir = localDir(view, entry)
     if (dir) return { view, entry, dir, contents: await localContents(view, entry) }
-    let held = fetched.get(id)
-    if (!held) {
-      const { dir: into } = await deps.fetchEntry(ref)
-      held = { dir: into, contents: await scanPluginContents(into, id, entry) }
-      fetched.set(id, held)
+    if (!fetched.has(id)) {
+      const run = fetchRemote(id, ref, entry)
+      if (!wait) {
+        run.then(changed, () => {})
+        return { view, entry, dir: null, contents: null }
+      }
+      await run
     }
-    return { view, entry, ...held }
+    return { view, entry, ...fetched.get(id)! }
   }
 
   async function installsBy(actor: StoreActor) {
@@ -182,7 +206,10 @@ export function createPluginStoreProvider(deps: {
 
   return {
     kind: 'plugin',
-    settled: () => jobs.settled(),
+    settled: async () => {
+      await Promise.allSettled(fetching.values())
+      await jobs.settled()
+    },
 
     async listings(actor) {
       const [{ views: all, problems }, installs] = await Promise.all([views(), installsBy(actor)])
@@ -205,7 +232,7 @@ export function createPluginStoreProvider(deps: {
     },
 
     async detail(id, actor): Promise<ListingDetail> {
-      const { view, entry, dir, contents } = await opened(id)
+      const { view, entry, dir, contents } = await opened(id, false)
       const installs = await installsBy(actor)
       const listing = pluginListing(view, entry, {
         ...(contents ? { contents } : {}),
@@ -220,7 +247,7 @@ export function createPluginStoreProvider(deps: {
       ]
       return {
         ...listing,
-        readme: await readPluginReadme(dir),
+        readme: dir ? await readPluginReadme(dir) : null,
         media: [],
         facts: facts.flatMap(([label, value]) => (value ? [{ label, value }] : [])),
         components: contents?.components ?? [],

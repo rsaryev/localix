@@ -169,9 +169,12 @@ export function createStoreService(deps: {
     async detail(ref: ListingRef, actor: StoreActor) {
       await runs.ready(actor)
       const detail = await providerOf(ref.kind).detail(ref.id, actor)
-      // What a fetched package contains is written back, so its card and shelves show it.
-      if ((await deps.index.rememberComponents(ref, detail.components)) && deps.resyncMeaning)
-        deps.resyncMeaning()
+      // What a fetched package contains is written back, so its card and shelves show it; a page
+      // answered before its package was fetched has learned nothing yet.
+      const learned =
+        (detail.contents !== 'unknown' || detail.components.length > 0) &&
+        (await deps.index.rememberComponents(ref, detail.components))
+      if (learned && deps.resyncMeaning) deps.resyncMeaning()
       const indexed = await deps.index.get(actor.userId, ref)
       if (!indexed) return detail
       return {

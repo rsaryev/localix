@@ -244,4 +244,13 @@ describe('the Store', () => {
     }
     expect(await store.applyUpdates(actor)).toEqual([{ kind: 'mini-app', id: 'kanban' }])
   })
+
+  test('a page opened before its package is fetched leaves what it contains unknown', async () => {
+    const remote = makeListing({ id: 'pg', kind: 'plugin', contents: 'unknown' })
+    const plugins = fakeProvider('plugin', [remote])
+    const { store } = storeOf([plugins.provider])
+    await store.detail({ kind: 'plugin', id: 'pg' }, actor)
+    const page = await store.listings(actor, { shelf: 'package:plugin' })
+    expect(page.listings[0]!.contents).toBe('unknown')
+  })
 })

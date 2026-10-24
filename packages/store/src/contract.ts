@@ -131,6 +131,8 @@ export const listingDetailSchema = listingSchema.extend({
   related: z.array(listingRefSchema).optional(),
   /** You might also like: listings of its category that share its tags, best first. */
   similar: z.array(listingRefSchema).optional(),
+  /** The listings `related` and `similar` name, so the page draws their rows in one read. */
+  linked: z.array(listingSchema).optional(),
   readme: z.string().nullable(),
   media: z.array(z.object({ url: z.string(), caption: z.string().optional() })),
   /** License, size, API version, homepage … in the provider's words. */

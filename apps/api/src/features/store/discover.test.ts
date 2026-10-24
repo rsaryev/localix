@@ -125,6 +125,9 @@ describe('Discover', () => {
     expect(detail.related?.map((ref) => ref.id)).toContain('checkers')
     expect(detail.related?.map((ref) => ref.id)).not.toContain('chess')
     expect(detail.similar?.map((ref) => ref.id)).toEqual(['checkers'])
+    // The rows come with the listings they name, so the page draws them without another read.
+    const named = new Set([...detail.related!, ...detail.similar!].map((ref) => ref.id))
+    expect(new Set(detail.linked?.map((listing) => listing.ref.id))).toEqual(named)
   })
 })
 
