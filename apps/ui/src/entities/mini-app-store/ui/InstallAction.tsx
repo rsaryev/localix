@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { MonitorUp, Trash2 } from 'lucide-react'
+import { Download, MonitorDown, Trash2 } from 'lucide-react'
 import type { MiniAppStoreEntryRecord } from '@localixai/api/client'
 import { Button } from '@localixai/kit/button'
 import { IconButton } from '@localixai/kit/icon-button'
@@ -16,9 +16,9 @@ const percent = (job: NonNullable<MiniAppStoreEntryRecord['job']>) =>
 type Size = 'sm' | 'default'
 
 /**
- * The one thing an app's state allows: how far its install is, Install (which, where a desktop app
- * can be made, turns into "Localix only" and "With desktop app" in place — Esc or a click elsewhere
- * brings it back), Update, Remove, or that it needs a newer Localix. An
+ * What an app's state allows: how far its install is; Install, beside it Install as app where a
+ * desktop app can be made (two named icons in a row, two buttons on its page); Update; Remove; or
+ * that it needs a newer Localix. An
  * unverified publisher's install asks "Install anyway?" first, whichever choice it was.
  */
 export function InstallAction({
@@ -37,8 +37,6 @@ export function InstallAction({
   removeAs?: 'icon' | 'button'
 } & StoreActions) {
   const [confirming, setConfirming] = useState<null | 'localix' | 'desktop'>(null)
-  // Install, where a desktop app can also be made, turns into the two ways to install, in place.
-  const [choosing, setChoosing] = useState(false)
   const label = entry.displayName ?? entry.name
   const job = entry.job
   if (job && isBusy(entry)) {
@@ -101,55 +99,38 @@ export function InstallAction({
   const trusted = entry.publisher.verified || Boolean(entry.installed)
   const install = () => (trusted ? onInstall(entry.name) : setConfirming('localix'))
   const installWithDesktop = () => (trusted ? onInstallWithDesktop?.({}) : setConfirming('desktop'))
-  const variant = size === 'default' ? 'mono' : 'field'
-  if (choosing)
+  // An update, or a retry, is one action: the desktop app choice is for a first install.
+  const offersApp = Boolean(onInstallWithDesktop) && !entry.installed
+  if (entry.update || job?.phase === 'failed' || size === 'default')
     return (
-      <div
-        className="flex items-center gap-1"
-        onKeyDown={(event) => {
-          if (event.key !== 'Escape') return
-          event.preventDefault()
-          setChoosing(false)
-        }}
-        onBlur={(event) => {
-          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setChoosing(false)
-        }}
-      >
-        <Button
-          ref={(button) => button?.focus()}
-          size={size}
-          variant="ghost"
-          onClick={() => {
-            setChoosing(false)
-            install()
-          }}
-        >
-          Localix only
+      <div className="flex items-center gap-1">
+        <Button size={size} variant={size === 'default' ? 'mono' : 'field'} onClick={install}>
+          {entry.update ? 'Update' : job?.phase === 'failed' ? 'Try again' : 'Install'}
         </Button>
-        <Button
-          size={size}
-          variant={variant}
-          title={DESKTOP_APP_HINT}
-          onClick={() => {
-            setChoosing(false)
-            installWithDesktop()
-          }}
-        >
-          <MonitorUp data-icon="inline-start" aria-hidden />
-          With desktop app
-        </Button>
+        {offersApp && !entry.update && (
+          <Button size={size} variant="ghost" title={DESKTOP_APP_HINT} onClick={installWithDesktop}>
+            <MonitorDown data-icon="inline-start" aria-hidden />
+            Install as app
+          </Button>
+        )}
       </div>
     )
+  // In a row: two quiet icons, each named, side by side.
   return (
-    <Button
-      size={size}
-      variant={variant}
-      onClick={() =>
-        // A first install where a desktop app can be made asks which; an update never does.
-        onInstallWithDesktop && !entry.installed ? setChoosing(true) : install()
-      }
-    >
-      {entry.update ? 'Update' : job?.phase === 'failed' ? 'Try again' : 'Install'}
-    </Button>
+    <div className="flex items-center gap-0.5">
+      <IconButton size="sm" aria-label={`Install ${label}`} tooltip="Install" onClick={install}>
+        <Download />
+      </IconButton>
+      {offersApp && (
+        <IconButton
+          size="sm"
+          aria-label={`Install ${label} as an app`}
+          tooltip={`Install as app — ${DESKTOP_APP_HINT.toLowerCase()}`}
+          onClick={installWithDesktop}
+        >
+          <MonitorDown />
+        </IconButton>
+      )}
+    </div>
   )
 }

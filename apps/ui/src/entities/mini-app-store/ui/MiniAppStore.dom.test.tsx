@@ -70,7 +70,7 @@ describe('the mini app store list', () => {
       expect(view.row('weather')?.querySelector('[role="progressbar"]')).not.toBeNull()
       expect(view.row('weather')?.textContent).toContain('25%')
       expect(view.row('future')?.textContent).toContain('Needs a newer Localix')
-      expect(view.button('Install', view.row('future')!)).toBeUndefined()
+      expect(view.button('Install Future', view.row('future')!)).toBeUndefined()
     } finally {
       await view.done()
     }
@@ -94,7 +94,7 @@ describe('the mini app store list', () => {
   test('install, update and remove each call their action', async () => {
     const view = await renderStore({ entries: ENTRIES })
     try {
-      await view.click(view.button('Install', view.row('chess')!))
+      await view.click(view.button('Install Chess', view.row('chess')!))
       await view.click(view.button('Update', view.row('trading')!))
       await view.click(view.button('Remove Kanban', view.row('kanban')!))
       expect(view.calls.install.map(({ name }) => name)).toEqual(['chess', 'trading'])
@@ -109,7 +109,7 @@ describe('the mini app store list', () => {
     try {
       expect(view.row('radio')?.textContent).toContain('Unverified · Someone')
       expect(view.row('chess')?.querySelector('[aria-label="Verified publisher"]')).not.toBeNull()
-      await view.click(view.button('Install', view.row('radio')!))
+      await view.click(view.button('Install Radio', view.row('radio')!))
       expect(view.calls.install).toEqual([])
       expect(view.row('radio')?.textContent).toContain('Install anyway?')
       await view.click(view.button('Install anyway', view.row('radio')!))

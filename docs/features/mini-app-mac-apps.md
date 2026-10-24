@@ -20,7 +20,7 @@ Any of these does the same:
 | The tab strip              | With the mini app's tab on screen, click the app button at the right of the tabs. |
 | The mini app's rail button | Right-click it and choose **Install _Name_ as App**.                              |
 | The command palette        | Run **Install _Name_ as App**.                                                    |
-| The store, installing      | **Install** → **With desktop app**: the app is made once the install lands.       |
+| The store, installing      | **Install as app** in the store: the app is made once the install lands.          |
 | The store, installed       | **Add desktop app** on the mini app's page; **Remove desktop app** takes it away. |
 
 The app's icon is the mini app's own icon, the one its `mini-app.json` names and the store shows,

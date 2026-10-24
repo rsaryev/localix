@@ -21,24 +21,17 @@ const withScreen = (candidate: { surfaces?: string[] }) =>
   Boolean(candidate.surfaces?.includes('workbench'))
 
 describe('installing with or without the desktop app', () => {
-  test('Install turns into the two ways to install, in place; Esc brings Install back', async () => {
+  test('two icon buttons side by side: install, and install as an app, each named', async () => {
     const view = await renderStore({ entries: [chess], desktopAvailable: withScreen })
     try {
       const row = () => view.row('chess')!
-      await view.click(view.button('Install', row()))
-      expect(view.calls.install).toEqual([])
-      expect(view.button('Install', row())).toBeUndefined()
-      expect(view.button('With desktop app', row())?.getAttribute('title')).toBe(
-        'Also adds it as an app with its own window, Dock icon and place in Spotlight',
-      )
-
-      await view.press('Escape')
-      expect(view.button('Install', row())).toBeDefined()
-
-      await view.click(view.button('Install', row()))
-      await view.click(view.button('Localix only', row()))
+      const asApp = view.button('Install Chess as an app', row())
+      expect(asApp).toBeDefined()
+      await view.click(view.button('Install Chess', row()))
       expect(view.calls.install.map(({ name }) => name)).toEqual(['chess'])
       expect(view.calls.desktopInstall).toEqual([])
+      // Both stay where they were: nothing turns into anything.
+      expect(view.button('Install Chess as an app', row())).toBeDefined()
     } finally {
       await view.done()
     }
@@ -47,15 +40,15 @@ describe('installing with or without the desktop app', () => {
   test('where no desktop app can be made, the action is a plain Install', async () => {
     const elsewhere = await renderStore({ entries: [chess] })
     try {
-      await elsewhere.click(elsewhere.button('Install', elsewhere.row('chess')!))
+      await elsewhere.click(elsewhere.button('Install Chess', elsewhere.row('chess')!))
       expect(elsewhere.calls.install.map(({ name }) => name)).toEqual(['chess'])
-      expect(elsewhere.button('With desktop app')).toBeUndefined()
+      expect(elsewhere.button('Install Chess as an app')).toBeUndefined()
     } finally {
       await elsewhere.done()
     }
     const noScreen = await renderStore({ entries: [notes], desktopAvailable: withScreen })
     try {
-      await noScreen.click(noScreen.button('Install', noScreen.row('notes')!))
+      await noScreen.click(noScreen.button('Install Notes', noScreen.row('notes')!))
       expect(noScreen.calls.install.map(({ name }) => name)).toEqual(['notes'])
     } finally {
       await noScreen.done()
@@ -65,8 +58,7 @@ describe('installing with or without the desktop app', () => {
   test('with the desktop app, it is made once the install has landed', async () => {
     const view = await renderStore({ entries: [chess], desktopAvailable: withScreen })
     try {
-      await view.click(view.button('Install', view.row('chess')!))
-      await view.click(view.button('With desktop app', view.row('chess')!))
+      await view.click(view.button('Install Chess as an app', view.row('chess')!))
       expect(view.calls.install.map(({ name }) => name)).toEqual(['chess'])
       expect(view.calls.desktopInstall).toEqual([])
 
@@ -88,8 +80,7 @@ describe('installing with or without the desktop app', () => {
       desktopFails: 'Chess has no icon of its own',
     })
     try {
-      await view.click(view.button('Install', view.row('chess')!))
-      await view.click(view.button('With desktop app', view.row('chess')!))
+      await view.click(view.button('Install Chess as an app', view.row('chess')!))
       await view.rerender([{ ...chess, installed: { version: '1.0.0' }, job: { phase: 'done' } }])
       expect(view.calls.remove).toEqual([])
       expect(view.row('chess')?.textContent).toContain(
