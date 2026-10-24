@@ -144,7 +144,7 @@ export interface RenderStoreOptions {
 }
 
 /** Let reads answer: event-loop turns, never a timer. */
-const turns = (act: (run: () => Promise<void>) => Promise<void>, n = 6) =>
+const turns = (act: (run: () => Promise<void>) => Promise<void>, n = 12) =>
   act(async () => {
     for (let i = 0; i < n; i++) await new Promise<void>((resolve) => setImmediate(resolve))
   })

@@ -18,6 +18,7 @@ interface Sess {
 }
 
 let getSessionCallCount = 0
+let getSessionSpy: { mockRestore(): void } | null = null
 
 function makeHarness(seed: { projects?: { id: string }[]; allSessions: Sess[] }) {
   let state: Record<string, unknown> = {
@@ -64,7 +65,7 @@ beforeEach(() => {
   } catch {
     /* no storage in this env */
   }
-  spyOn(backendClient, 'getSession').mockImplementation((async (id: string) => {
+  getSessionSpy = spyOn(backendClient, 'getSession').mockImplementation((async (id: string) => {
     getSessionCallCount += 1
     const byId: Record<string, Sess> = {
       S1: { id: 'S1', projectId: 'P', messages: [] },
@@ -76,6 +77,9 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  // `backendClient` is one object for the whole run: a spy left on it counts the next file's calls.
+  getSessionSpy?.mockRestore()
+  getSessionSpy = null
   try {
     localStorage.clear()
   } catch {
