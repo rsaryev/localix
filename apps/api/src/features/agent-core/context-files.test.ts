@@ -39,34 +39,39 @@ describe('discoverContextFiles', () => {
     expect(await discover(join(root, 'does-not-exist'))).toEqual([])
   })
 
-  test('loads workspace AGENTS.md and native context, ignoring product-specific instructions', async () => {
+  // memory.md, "Choose which instruction files load" (`claude-md-and-agents-md`): each
+  // directory's CLAUDE.md files first, its AGENTS.md after them.
+  test('loads CLAUDE.md, .claude/CLAUDE.md, CLAUDE.local.md, then AGENTS.md and native context', async () => {
     await fs.writeFile(join(root, 'AGENTS.md'), 'agents instructions')
     await fs.writeFile(join(root, 'CLAUDE.md'), 'claude instructions')
+    await fs.writeFile(join(root, 'CLAUDE.local.md'), 'local instructions')
     await fs.writeFile(join(root, '.cursorrules'), 'cursor')
     await fs.mkdir(join(root, '.claude'))
     await fs.writeFile(join(root, '.claude', 'CLAUDE.md'), 'dot-claude instructions')
     await writeContext(root, 'localix instructions')
     const files = await discover(root)
     expect(files.map((file) => file.path)).toEqual([
+      join(root, 'CLAUDE.md'),
+      join(root, '.claude', 'CLAUDE.md'),
+      join(root, 'CLAUDE.local.md'),
       join(root, 'AGENTS.md'),
       join(root, '.localix', 'context.md'),
     ])
-    expect(files.map((file) => file.content)).toEqual([
-      'agents instructions',
-      'localix instructions',
-    ])
   })
 
-  test('reads CLAUDE.md as the workspace contract only where a directory has no AGENTS.md', async () => {
+  test('a CLAUDE.md that imports AGENTS.md does not read it twice', async () => {
     const leaf = join(root, 'services', 'api')
     await fs.mkdir(leaf, { recursive: true })
-    await fs.writeFile(join(root, 'CLAUDE.md'), 'workspace CLIs and auth')
+    await fs.writeFile(join(root, 'CLAUDE.md'), '@AGENTS.md\n\nScreenshot rules.')
+    await fs.writeFile(join(root, 'AGENTS.md'), 'workspace contract')
     await fs.writeFile(join(leaf, 'AGENTS.md'), 'service contract')
-    await fs.writeFile(join(leaf, 'CLAUDE.md'), 'service claude layer')
-    expect((await discover(leaf)).map((file) => file.content)).toEqual([
-      'workspace CLIs and auth',
-      'service contract',
+    const files = await discover(leaf)
+    expect(files.map((file) => file.path)).toEqual([
+      join(root, 'CLAUDE.md'),
+      join(leaf, 'AGENTS.md'),
     ])
+    expect(files[0].content).toContain('workspace contract')
+    expect(files[0].content).toContain('Screenshot rules.')
   })
 
   test('keeps AGENTS.md directory scope in root-to-leaf order', async () => {
@@ -260,10 +265,10 @@ describe('@import expansion', () => {
       await fs.writeFile(join(root, `l${i}.md`), `L${i} @l${i + 1}.md`)
     }
     const files = await discover(root)
-    // Depth 5 hops reach L5's content but not arbitrarily deep.
+    // memory.md: "a maximum depth of four hops".
     expect(files[0].content).toContain('L1')
     expect(files[0].content).toContain('L4')
-    expect(files[0].content).not.toContain('L7')
+    expect(files[0].content).not.toContain('L5')
   })
 })
 

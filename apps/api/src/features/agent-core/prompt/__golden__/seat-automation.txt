@@ -57,7 +57,7 @@ Working directory (workspace root): /repo
 
 # Project context
 Project-provided instructions (from files in the workspace). Follow them; if they conflict with user instructions, the user wins.
-Directory-specific instructions apply within that directory. Read any deeper AGENTS.md before editing there. Later, nearer instructions take precedence within their scope.
+Directory-specific instructions apply within that directory. Read any deeper CLAUDE.md or AGENTS.md before editing there. Later, nearer instructions take precedence within their scope.
 
 ## /repo/AGENTS.md
 project rules

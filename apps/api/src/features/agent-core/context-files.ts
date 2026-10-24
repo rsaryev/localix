@@ -5,6 +5,7 @@ import { isPathWithin } from '../../lib/path-containment'
 
 import { readCappedFile } from './context-read'
 import { expandImports } from './context-imports'
+import { stripHtmlBlockComments } from './context-comments'
 import { discoverRules } from './context-rules'
 
 /**
@@ -20,8 +21,12 @@ import { discoverRules } from './context-rules'
  *   scopes a rule to a project subtree);
  * - `@path` imports are expanded inline (see {@link expandImports}).
  *
- * Workspace AGENTS.md files (or CLAUDE.md where a directory has no AGENTS.md) share this
- * bounded root-to-cwd path. Foreign agent homes (`.claude/`, `.cursorrules`) are not scanned.
+ * Claude Code's instruction files load on the same root-to-cwd path, as Claude Code reads them
+ * (memory.md): `~/.claude/CLAUDE.md` and `~/.claude/rules/` with the user's own, and in each
+ * directory `CLAUDE.md`, `.claude/CLAUDE.md`, `CLAUDE.local.md`, then `AGENTS.md` (its
+ * `claude-md-and-agents-md` mode; one a CLAUDE.md already imports is not read twice) and
+ * `.claude/rules/`. Directories above the repository contribute their instruction files too.
+ * Block-level HTML comments are stripped. Other tools' homes (`.cursorrules`) are not scanned.
  */
 export interface ContextFile {
   /** Absolute path to the discovered file. */
@@ -31,12 +36,17 @@ export interface ContextFile {
 }
 
 export const MAX_CHARS_PER_FILE = 20_000
-export const MAX_CONTEXT_FILES = 8
+export const MAX_CONTEXT_FILES = 16
 export const MAX_RULE_FILES = 20
 export const TOTAL_CONTEXT_BUDGET = 60_000
 
-/** Per directory, the first that exists is the workspace contract. */
-const WORKSPACE_CONTRACT_FILES = ['AGENTS.md', 'CLAUDE.md'] as const
+/** Per directory, in load order: Claude Code's instruction files, then the AGENTS.md contract. */
+const INSTRUCTION_FILES = [
+  'CLAUDE.md',
+  '.claude/CLAUDE.md',
+  'CLAUDE.local.md',
+  'AGENTS.md',
+] as const
 
 const TRUNCATION_MARKER = '\n[... truncated: file exceeds the 20,000 character context budget]'
 const BUDGET_MARKER = '\n[... truncated: total project-context budget exhausted]'
@@ -69,6 +79,8 @@ async function isGitRoot(dir: string): Promise<boolean> {
 class ContextCollector {
   readonly out: ContextFile[] = []
   private seenPaths = new Set<string>()
+  /** Files an earlier file's `@import` already inlined: not read a second time on their own. */
+  private readonly imported = new Set<string>()
   private seenContent = new Set<string>()
   private contextCount = 0
   private ruleCount = 0
@@ -100,13 +112,14 @@ class ContextCollector {
   ): Promise<boolean> {
     if (this.capReached(kind)) return false
     const abs = resolve(path)
-    if (this.seenPaths.has(abs)) return false
+    if (this.seenPaths.has(abs) || this.imported.has(abs)) return false
     const root = confineTo ? await realPathOf(confineTo) : undefined
     if (confineTo && (!root || !isPathWithin(root, (await realPathOf(abs)) ?? ''))) return false
     const raw = rawOverride ?? (await readNamed(abs))
     if (!raw) return false
-    const expanded = await expandImports(raw, dirname(abs), {
+    const expanded = await expandImports(stripHtmlBlockComments(raw), dirname(abs), {
       homeDir: this.env?.homeDir,
+      imported: this.imported,
       ...(root ? { confineTo: root } : {}),
     })
     const content = expanded.trim()
@@ -146,34 +159,27 @@ async function collectRules(
   }
 }
 
-/** Emit one directory's Localix context document and modular rules. */
+/**
+ * Emit one directory's instruction files, then (inside the project) its Localix context document
+ * and the rules of its `.claude/` and `.localix/`. `confineTo` is where its files must really lie:
+ * the project for a directory in it, the directory itself above it. A checkout must not use a
+ * symlink to pull instructions from an unrelated directory into the prompt.
+ */
 async function collectDir(
   dir: string,
-  projectRoot: string,
+  confineTo: string,
   collector: ContextCollector,
+  inProject: boolean,
 ): Promise<void> {
-  // AGENTS.md is a workspace contract shared by coding agents. A directory without one may
-  // keep the same contract in CLAUDE.md alone (its CLIs, auth, conventions); without it the
-  // agent rediscovers by hand what the workspace already wrote down. Never both: a CLAUDE.md
-  // beside AGENTS.md is that product's own layer. A checkout must not use a symlink to pull
-  // instructions from an unrelated directory into the prompt.
-  for (const name of WORKSPACE_CONTRACT_FILES) {
-    try {
-      const [root, contract] = await Promise.all([
-        fs.realpath(projectRoot),
-        fs.realpath(join(dir, name)),
-      ])
-      if (isPathWithin(root, contract)) {
-        await collector.add(join(dir, name), 'context', undefined, projectRoot)
-      }
-      break
-    } catch {
-      // Absent: try the next name; none leaves native Localix context discovery intact.
-    }
+  for (const name of INSTRUCTION_FILES) {
+    await collector.add(join(dir, name), 'context', undefined, confineTo)
   }
+  // Rules are the project's own: an ancestor above it contributes only its instruction files.
+  if (!inProject) return
+  await collectRules(join(dir, '.claude', 'rules'), dir, collector, confineTo)
   const localixDir = join(dir, '.localix')
-  await collector.add(join(localixDir, 'context.md'), 'context', undefined, projectRoot)
-  await collectRules(join(localixDir, 'rules'), projectRoot, collector, projectRoot)
+  await collector.add(join(localixDir, 'context.md'), 'context', undefined, confineTo)
+  await collectRules(join(localixDir, 'rules'), dir, collector, confineTo)
 }
 
 /**
@@ -200,28 +206,34 @@ export async function discoverContextFiles(
     const fsRoot = parse(start).root
     const collector = new ContextCollector(env)
 
-    // Collect the directory chain from cwd up to (and including) the git root,
-    // stopping before $HOME / the filesystem root.
+    // The directory chain from cwd to the filesystem root. The part up to (and including) the git
+    // root is the project; Claude Code reads the instruction files above it as well.
     const chain: string[] = []
+    let projectDepth = -1
     let cur: string | null = start
     while (cur) {
-      if (cur === home) break // a file directly in $HOME is not project context
       chain.push(cur)
-      if (await isGitRoot(cur)) break
+      if (projectDepth < 0 && (await isGitRoot(cur))) projectDepth = chain.length
       if (cur === fsRoot) break
       const parent: string = dirname(cur)
       cur = parent === cur ? null : parent
     }
-    const projectRoot = chain[chain.length - 1] ?? start
+    const inProject = chain.slice(0, projectDepth < 0 ? 1 : projectDepth)
+    const projectRoot = inProject[inProject.length - 1] ?? start
 
-    // Phase 1 — user-global Localix instructions + rules.
+    // Phase 1 — the user's own instructions: Localix's, then Claude Code's. User-level rules
+    // scope their globs against the session's working directory.
     const localixHome = join(home, '.localix')
     await collector.add(join(localixHome, 'context.md'), 'context')
-    await collectRules(join(localixHome, 'rules'), projectRoot, collector)
+    await collectRules(join(localixHome, 'rules'), start, collector)
+    const claudeHome = join(home, '.claude')
+    await collector.add(join(claudeHome, 'CLAUDE.md'), 'context')
+    await collectRules(join(claudeHome, 'rules'), start, collector)
 
-    // Phase 2 — directory hierarchy, ROOT-first.
+    // Phase 2 — directory hierarchy, ROOT-first. A file already loaded above is not read again.
     for (const dir of [...chain].reverse()) {
-      await collectDir(dir, projectRoot, collector)
+      const within = inProject.includes(dir)
+      await collectDir(dir, within ? projectRoot : dir, collector, within)
     }
 
     return collector.out
@@ -244,7 +256,7 @@ export function buildProjectContextSection(
   return [
     '# Project context',
     'Project-provided instructions (from files in the workspace). Follow them; if they conflict with user instructions, the user wins.',
-    'Directory-specific instructions apply within that directory. Read any deeper AGENTS.md before editing there. Later, nearer instructions take precedence within their scope.',
+    'Directory-specific instructions apply within that directory. Read any deeper CLAUDE.md or AGENTS.md before editing there. Later, nearer instructions take precedence within their scope.',
     '',
     ...files.map((f) => `## ${f.path}\n${f.content}`),
   ].join('\n')

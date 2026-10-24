@@ -4,8 +4,9 @@ import { parseMarkdownFrontmatter } from './skill-frontmatter'
 import { parseYamlFrontmatterBlock } from './frontmatter-yaml'
 
 /**
- * MODULAR RULE FILES — `.localix/rules/**\/*.md`, alongside the owning
- * `.localix/context.md`.
+ * MODULAR RULE FILES — `.localix/rules/**\/*.md` and Claude Code's `.claude/rules/**\/*.md`,
+ * alongside the owning context document. A path-scoped rule's globs are relative to the folder
+ * that holds its `.localix`/`.claude` directory (`projectRoot` here).
  *
  * This module owns what a RULE FILE IS, and nothing else: its optional YAML
  * frontmatter, the `paths:` globs that scope a rule to part of a project, and the
@@ -43,7 +44,8 @@ function parseRuleFrontmatter(content: string): { paths: string[]; body: string 
 
 /** The `paths:` value as a glob list. Anything unparseable → none → the rule applies everywhere. */
 function toGlobList(value: unknown): string[] {
-  const items = Array.isArray(value) ? value : typeof value === 'string' ? [value] : []
+  // A YAML list, or a comma-separated string (memory.md, "Rule frontmatter reference").
+  const items = Array.isArray(value) ? value : typeof value === 'string' ? value.split(',') : []
   return items
     .filter((v): v is string => typeof v === 'string')
     .map((v) => v.trim())
@@ -74,7 +76,20 @@ async function ruleMatchesProject(paths: string[], projectRoot: string): Promise
 /** List `*.md` files under a `.localix/rules/` dir, recursively, alphabetically. */
 async function listRuleFiles(rulesDir: string): Promise<string[]> {
   const found: string[] = []
+  // Symlinked rule files and folders are followed (a shared rule set linked into a project);
+  // a folder already seen by its real path is not walked again, so a link cycle ends.
+  const seen = new Set<string>()
+  async function kindOf(full: string, e: Dirent): Promise<'dir' | 'file' | null> {
+    if (e.isDirectory()) return 'dir'
+    if (e.isFile()) return 'file'
+    if (!e.isSymbolicLink()) return null
+    const st = await fs.stat(full).catch(() => null)
+    return st?.isDirectory() ? 'dir' : st?.isFile() ? 'file' : null
+  }
   async function walk(dir: string): Promise<void> {
+    const real = await fs.realpath(dir).catch(() => null)
+    if (!real || seen.has(real)) return
+    seen.add(real)
     let entries: Dirent[]
     try {
       entries = await fs.readdir(dir, { withFileTypes: true })
@@ -84,8 +99,9 @@ async function listRuleFiles(rulesDir: string): Promise<string[]> {
     const childDirs: string[] = []
     for (const e of entries) {
       const full = join(dir, e.name)
-      if (e.isDirectory()) childDirs.push(full)
-      else if (e.isFile() && e.name.endsWith('.md')) found.push(full)
+      const kind = await kindOf(full, e)
+      if (kind === 'dir') childDirs.push(full)
+      else if (kind === 'file' && e.name.endsWith('.md')) found.push(full)
     }
     await Promise.all(childDirs.map(walk))
   }

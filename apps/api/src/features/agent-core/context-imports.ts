@@ -4,6 +4,7 @@ import { dirname, isAbsolute, join, resolve } from 'node:path'
 import { isPathWithin } from '../../lib/path-containment'
 import { codeSpanRanges, createFenceTracker, insideAnyRange } from '../../lib/markdown-code'
 
+import { stripHtmlBlockComments } from './context-comments'
 import { readCappedFile } from './context-read'
 
 /**
@@ -20,7 +21,8 @@ import { readCappedFile } from './context-read'
  * path, or under `~/` (the user's home directory) — never relative to cwd. A project file's
  * imports stay inside the project (see {@link ImportEnv.confineTo}).
  */
-export const MAX_IMPORT_DEPTH = 5
+/** memory.md: "Imported files can recursively import other files, with a maximum depth of four hops." */
+export const MAX_IMPORT_DEPTH = 4
 export const MAX_IMPORT_CHARS = 20_000
 
 const IMPORT_TRUNCATION = '\n[... truncated: imported file exceeds the character budget]'
@@ -34,6 +36,8 @@ export interface ImportEnv {
    * A checkout must not pull `~/.aws/credentials` into the prompt with one line.
    */
   confineTo?: string
+  /** Filled with the absolute path of every file an import inlined (so a caller skips it later). */
+  imported?: Set<string>
 }
 
 /** The real path of an import target, when it lies inside `root` (itself a real path). */
@@ -80,7 +84,7 @@ export async function expandImports(
   env?: ImportEnv,
 ): Promise<string> {
   const home = env?.homeDir ?? homedir()
-  return expand(content, baseDir, home, [], env?.confineTo)
+  return expand(content, baseDir, home, [], env?.confineTo, env?.imported)
 }
 
 async function expand(
@@ -89,6 +93,7 @@ async function expand(
   home: string,
   stack: string[],
   confineTo: string | undefined,
+  imported: Set<string> | undefined,
 ): Promise<string> {
   if (stack.length >= MAX_IMPORT_DEPTH) return content
 
@@ -99,7 +104,8 @@ async function expand(
   // A word starting with @, preceded by start-of-string or whitespace, whose
   // spec is a run of non-space, non-backtick chars. Trailing punctuation that is
   // clearly prose (a lone . , ; : ) ]) is trimmed off the candidate path.
-  const importRe = /(^|\s)@([^\s`]+)/g
+  // A space escaped with a backslash (`@Design\ Docs/api.md`) is part of the path.
+  const importRe = /(^|\s)@((?:\\ |[^\s`])+)/g
 
   for (const line of lines) {
     if (insideFence(line)) {
@@ -119,7 +125,7 @@ async function expand(
       if (insideAnyRange(atIndex, spans)) continue
       let spec = m[2]
       const trimmed = spec.replace(/[.,;:)\]]+$/, '')
-      const resolvedPath = resolveImportPath(trimmed || spec, baseDir, home)
+      const resolvedPath = resolveImportPath((trimmed || spec).replace(/\\ /g, ' '), baseDir, home)
       if (!resolvedPath) continue
       const abs = resolve(resolvedPath)
       if (stack.includes(abs)) {
@@ -139,7 +145,15 @@ async function expand(
         inlined.push(`\n<!-- import skipped: ${abs} is outside the project -->`)
         continue
       }
-      const expandedBody = await expand(body, dirname(abs), home, [...stack, abs], confineTo)
+      imported?.add(abs)
+      const expandedBody = await expand(
+        stripHtmlBlockComments(body),
+        dirname(abs),
+        home,
+        [...stack, abs],
+        confineTo,
+        imported,
+      )
       inlined.push(`\n<!-- imported: ${abs} -->\n${expandedBody}\n<!-- end import: ${abs} -->`)
     }
     if (matched) {
