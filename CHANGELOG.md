@@ -8,6 +8,11 @@ Changes land on `main`.
 
 ### Added
 
+- **Claude Code plugin options and downloads**: a `multiple` option takes a list, one item per line
+  in the plugin's settings; a marketplace entry whose archive needs a `headersHelper` installs once
+  you accept the command it shows (`/plugin install … --accept-command <sha256>`); and ranges
+  several plugins put on one dependency resolve together, or say they conflict. See
+  [Built-in plugins and updates](docs/extending/plugin-updates.md#dependencies).
 - **Claude Code's `outputStyle`**: when neither the chat nor Settings → Preferences chose a style, a
   chat speaks in the `outputStyle` of your Claude Code settings for its folder.
 - **Your Claude Code output styles**: styles in `~/.claude/output-styles/` and a project's
@@ -164,6 +169,8 @@ Changes land on `main`.
 
 ### Fixed
 
+- **A plugin's data folder is keyed by `name@marketplace`**, as Claude Code keys
+  `${CLAUDE_PLUGIN_DATA}`; a folder an earlier Localix kept under the bare name moves there once.
 - **Options of plugins installed in Claude Code** start from the values you gave them there
   (`pluginConfigs` in your Claude Code settings), so such a plugin's servers and hooks work without
   filling its settings form again; a value set in Localix wins. Sensitive options, which Claude Code
