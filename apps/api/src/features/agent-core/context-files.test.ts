@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
+import { discoverTouchedContextFiles } from './context-on-demand'
 import {
   discoverContextFiles,
   buildProjectContextSection,
@@ -152,14 +153,28 @@ describe('.localix/rules', () => {
     expect(files.map((f) => f.content)).toEqual(['rule: api', 'rule: testing'])
   })
 
-  test('path-scoped rule is included when its glob matches a project file', async () => {
+  // memory.md, "Path-specific rules": a path-scoped rule loads "when Claude uses the Read, Write,
+  // or Edit tool on a matching file" — not because such a file exists somewhere in the project.
+  test('a path-scoped rule waits for a matching file to be worked with', async () => {
     await fs.mkdir(join(root, 'src'), { recursive: true })
     await fs.writeFile(join(root, 'src', 'index.ts'), 'code')
     const rules = join(root, '.localix', 'rules')
     await fs.mkdir(rules, { recursive: true })
     await fs.writeFile(join(rules, 'ts.md'), '---\npaths:\n  - "src/**/*.ts"\n---\nTS rule body')
-    const files = await discover(root)
-    expect(files.map((f) => f.content)).toEqual(['TS rule body'])
+    const stable = await discover(root)
+    expect(stable).toEqual([])
+    const touched = await discoverTouchedContextFiles(
+      root,
+      [join(root, 'src', 'index.ts')],
+      stable,
+      {
+        homeDir: home,
+      },
+    )
+    expect(touched.map((f) => f.content)).toEqual(['TS rule body'])
+    expect(
+      await discoverTouchedContextFiles(root, [join(root, 'README.md')], stable, { homeDir: home }),
+    ).toEqual([])
   })
 
   test('path-scoped rule is excluded when nothing in the project matches', async () => {

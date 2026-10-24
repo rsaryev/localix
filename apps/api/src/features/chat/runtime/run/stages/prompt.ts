@@ -32,6 +32,7 @@ import { approvedPlanForRun, planModeForRun } from '../../plan-view'
 import { installedAgentsPrompt } from '../../../../external-agents/installed'
 import { agentTypesSection } from '../plugin-subagent'
 import { withBuiltinSubagentTypes } from '../builtin-subagent-types'
+import { touchedInstructionsSection } from '../touched-instructions'
 
 export type RunPrompt = Awaited<ReturnType<typeof buildRunPrompt>>
 
@@ -124,6 +125,13 @@ export async function buildRunPrompt(
       )
     : null
   if (agentTypes) baseSections.push({ key: 'agent-types', scope: 'state', text: agentTypes })
+  // A subdirectory's instruction files and path-scoped rules, once the work reaches them.
+  const touchedInstructions = await touchedInstructionsSection({
+    cwd: inputs.defaultCwd,
+    history: historyMessages,
+    loaded: inputs.contextFiles ?? [],
+  })
+  if (touchedInstructions) baseSections.push(touchedInstructions)
   const otherSessions = otherWorkspaceSessionsSection(
     session,
     inputs.defaultCwd,

@@ -1,5 +1,5 @@
 import { promises as fs, type Dirent } from 'node:fs'
-import { join, relative } from 'node:path'
+import { isAbsolute, join, relative } from 'node:path'
 import { parseMarkdownFrontmatter } from './skill-frontmatter'
 import { parseYamlFrontmatterBlock } from './frontmatter-yaml'
 
@@ -14,6 +14,19 @@ import { parseYamlFrontmatterBlock } from './frontmatter-yaml'
  * expansion, capping and budgeting — it asks this module WHICH rules apply and gets
  * back their bodies, never their grammar.
  */
+
+/**
+ * Which rules a read takes. A rule without `paths` applies everywhere and loads with the session
+ * (`unscoped`); a path-scoped one loads once a file it matches has been worked with (`touched`,
+ * absolute paths), as Claude Code loads it "when Claude uses the Read, Write, or Edit tool on a
+ * matching file". The session-stable read takes the unscoped rules only.
+ */
+export interface RuleScope {
+  unscoped: boolean
+  touched: readonly string[]
+}
+
+const SESSION_STABLE: RuleScope = { unscoped: true, touched: [] }
 
 /** A rule file that applies to this project: its path and its frontmatter-stripped body. */
 export interface DiscoveredRule {
@@ -52,25 +65,20 @@ function toGlobList(value: unknown): string[] {
     .filter(Boolean)
 }
 
-/**
- * A path-scoped rule is included when at least one of its globs matches a file
- * under the project. Localix injects context per-SESSION (not per-file), so a
- * rule that targets any file present in the project tree is loaded unconditionally.
- */
-async function ruleMatchesProject(paths: string[], projectRoot: string): Promise<boolean> {
-  if (paths.length === 0) return true
-  for (const pattern of paths) {
+/** True when a touched file, relative to `base`, matches one of the rule's globs. */
+function ruleMatchesTouched(paths: string[], base: string, touched: readonly string[]): boolean {
+  const rels = touched
+    .map((file) => relative(base, file).replace(/\\/g, '/'))
+    .filter((rel) => rel && !rel.startsWith('..') && !isAbsolute(rel))
+  if (rels.length === 0) return false
+  return paths.some((pattern) => {
     try {
-      const glob = new Bun.Glob(pattern)
-      for await (const _hit of glob.scan({ cwd: projectRoot, onlyFiles: true, dot: false })) {
-        return true
-      }
+      const glob = new Bun.Glob(pattern.replace(/^\.\//, ''))
+      return rels.some((rel) => glob.match(rel))
     } catch {
-      // Bad pattern — degrade to including the rule rather than dropping it.
-      return true
+      return false // a pattern Bun cannot read matches nothing; the rule's other patterns still do
     }
-  }
-  return false
+  })
 }
 
 /** List `*.md` files under a `.localix/rules/` dir, recursively, alphabetically. */
@@ -126,6 +134,7 @@ export async function discoverRules(
   rulesDir: string,
   projectRoot: string,
   readRuleFile: ReadRuleFile,
+  scope: RuleScope = SESSION_STABLE,
 ): Promise<DiscoveredRule[]> {
   if (!(await dirExists(rulesDir))) return []
   const discovered = await Promise.all(
@@ -133,7 +142,9 @@ export async function discoverRules(
       const raw = await readRuleFile(file)
       if (!raw) return null
       const { paths, body } = parseRuleFrontmatter(raw)
-      if (!(await ruleMatchesProject(paths, projectRoot))) return null
+      const applies =
+        paths.length === 0 ? scope.unscoped : ruleMatchesTouched(paths, projectRoot, scope.touched)
+      if (!applies) return null
       return { path: file, body }
     }),
   )

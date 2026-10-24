@@ -1,58 +1,42 @@
 /**
- * Which `paths:`-scoped skills the working directory activates.
+ * Which `paths:`-scoped skills the session's work activates.
  *
  * Claude Code reads a skill's `paths` as globs over FILES, relative to the working directory, and
- * offers the skill once the model works with a matching one. Localix assembles the roster once per
- * run, not per file touched, so it applies the rule it already applies to path-scoped rules
- * (`agent-core/context-rules.ts`): a skill is offered when the project holds a file its globs
- * match. The cwd-as-path match in `prompt-skills.ts` stays for skills written against directories.
- *
- * The scan stops at the first hit, skips dot-directories, and is remembered per working directory
- * and pattern for a short while, so a roster rebuilt every turn does not walk the tree every turn.
+ * offers the skill once Claude works with a matching file (skills.md, frontmatter `paths`; files
+ * outside the working directory never match). `touched` are the files the session's file tools
+ * read, wrote or edited (`touched-files.ts`), so a skill appears from the run after the first such
+ * file and stays. The cwd-as-path match in `prompt-skills.ts` stays for skills written against
+ * directories.
  */
+import { isAbsolute, relative } from 'node:path'
 import { skillCallName } from '../../agent-core/tools/skill-names'
 import type { SkillListingEntry } from './prompt-skills'
 
-const MEMO_TTL_MS = 60_000
-const memo = new Map<string, { at: number; hit: Promise<boolean> }>()
-
-async function anyFileMatches(pattern: string, cwd: string): Promise<boolean> {
+function globMatchesAny(pattern: string, rels: readonly string[]): boolean {
   try {
     const glob = new Bun.Glob(pattern.replace(/\\/g, '/').replace(/^\.\//, ''))
-    for await (const _hit of glob.scan({ cwd, onlyFiles: true, dot: false })) return true
+    return rels.some((rel) => glob.match(rel))
   } catch {
-    // An unreadable directory or a pattern Bun cannot read matches nothing.
+    return false // a pattern Bun cannot read matches nothing
   }
-  return false
 }
 
-function patternMatches(pattern: string, cwd: string, now: number): Promise<boolean> {
-  const key = `${cwd}\u0000${pattern}`
-  const cached = memo.get(key)
-  if (cached && now - cached.at < MEMO_TTL_MS) return cached.hit
-  const hit = anyFileMatches(pattern, cwd)
-  memo.set(key, { at: now, hit })
-  return hit
-}
-
-/** The call names of the `paths:`-scoped skills that some file under `cwd` activates. */
-export async function skillsMatchingProjectFiles(
+/** The call names of the `paths:`-scoped skills a touched file under `cwd` activates. */
+export function skillsMatchingFiles(
   skills: readonly SkillListingEntry[],
   cwd: string,
-  now: number = Date.now(),
-): Promise<ReadonlySet<string>> {
+  touched: readonly string[],
+): ReadonlySet<string> {
   const out = new Set<string>()
-  if (!cwd || cwd === '/') return out
-  await Promise.all(
-    skills.map(async (skill) => {
-      if (!skill.activationPaths?.length || skill.disableModelInvocation) return
-      for (const pattern of skill.activationPaths) {
-        if (await patternMatches(pattern, cwd, now)) {
-          out.add(skillCallName(skill))
-          return
-        }
-      }
-    }),
-  )
+  const rels = touched
+    .map((file) => relative(cwd, file).replace(/\\/g, '/'))
+    .filter((rel) => rel && !rel.startsWith('..') && !isAbsolute(rel))
+  if (rels.length === 0) return out
+  for (const skill of skills) {
+    if (!skill.activationPaths?.length) continue
+    if (skill.activationPaths.some((pattern) => globMatchesAny(pattern, rels))) {
+      out.add(skillCallName(skill))
+    }
+  }
   return out
 }

@@ -21,7 +21,8 @@ import { emptyLoadedPlugins } from '../../plugins/loader-contract'
 import { availabilityOf } from '../../capabilities/availability'
 import type { loadUserSettingsContext } from '../../user/runtime-settings'
 import { prefixedWarnLogger } from './plugin-hook-logger'
-import { skillsMatchingProjectFiles } from './prompt-skill-paths'
+import { skillsMatchingFiles } from './prompt-skill-paths'
+import { touchedFilesOf } from './touched-files'
 import { buildSkillsContext } from './prompt-skills'
 import { agentRoute } from '../../../contracts/session-route'
 import { recordPluginCatalogLoad } from '../../notifications/conditions/plugins'
@@ -281,7 +282,7 @@ export async function prepareRunContext(
     allSkills,
     skillOverrides,
     defaultCwd,
-    await skillsMatchingProjectFiles(allSkills, defaultCwd),
+    skillsMatchingFiles(allSkills, defaultCwd, touchedFilesOf(historyMessages, defaultCwd)),
   )
   const { frozenContext, pinnedSkills, triggeredSkills } = await resolveAgentPromptContext({
     userId,

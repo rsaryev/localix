@@ -3,6 +3,7 @@ import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
 import { discoverContextFiles } from './context-files'
+import { discoverTouchedContextFiles } from './context-on-demand'
 
 // memory.md — where Claude Code reads instructions from, and how. A repository set up for Claude
 // Code has to give the agent the same instructions in Localix.
@@ -40,7 +41,33 @@ describe('Claude Code instruction files', () => {
     )
     await write(join(pkg, 'src', 'App.tsx'), 'x')
     const files = await discoverContextFiles(pkg, { homeDir: home })
-    expect(files.map((f) => f.content)).toEqual(['always rule', 'tsx rule'])
+    expect(files.map((f) => f.content)).toEqual(['always rule'])
+    const touched = await discoverTouchedContextFiles(pkg, [join(pkg, 'src', 'App.tsx')], files, {
+      homeDir: home,
+    })
+    expect(touched.map((f) => f.content)).toEqual(['tsx rule'])
+  })
+
+  // memory.md: subdirectory CLAUDE.md files load "once Claude reads, writes, or edits another file
+  // in that subdirectory".
+  test('a subdirectory’s instruction files load once a file there is worked with', async () => {
+    const { home, root } = await setup()
+    const web = join(root, 'apps', 'web')
+    await write(join(root, 'CLAUDE.md'), 'root memory')
+    await write(join(web, 'CLAUDE.md'), 'web memory')
+    await write(join(web, '.claude', 'rules', 'web.md'), 'web rule')
+    await write(join(root, 'apps', 'api', 'AGENTS.md'), 'api contract')
+    const stable = await discoverContextFiles(root, { homeDir: home })
+    expect(stable.map((f) => f.content)).toEqual(['root memory'])
+    const touched = await discoverTouchedContextFiles(
+      root,
+      [join(web, 'src', 'page.tsx')],
+      stable,
+      {
+        homeDir: home,
+      },
+    )
+    expect(touched.map((f) => f.content)).toEqual(['web memory', 'web rule'])
   })
 
   test('a symlinked rule inside the project loads', async () => {
