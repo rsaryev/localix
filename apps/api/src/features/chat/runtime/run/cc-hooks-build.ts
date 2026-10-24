@@ -78,6 +78,8 @@ export interface BuildRunCcHooksInput {
   permissionMode?: PermissionMode
   /** The speaker's reasoning effort, reported to hooks as `effort.level`. */
   effort?: string
+  /** Whether a person can answer this run; `false` is Claude Code's non-interactive mode. */
+  interactive?: boolean
 }
 
 export interface RunCcHooks {
@@ -87,6 +89,10 @@ export interface RunCcHooks {
    * for the next request (PostModelSwitch) — injected into the model context.
    */
   ccSessionStartContext?: string
+  /** A SessionStart `initialUserMessage`, kept only for a run nobody types into. */
+  ccInitialUserMessage?: string
+  /** A SessionStart hook asked to scan the skill folders again. */
+  ccReloadSkills?: boolean
 }
 
 export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunCcHooks> {
@@ -229,6 +235,7 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
   // injected into the model context alongside the prompt). Continuation runs
   // (for example a checkpoint-recovery rerun) never re-fire it.
   let ccSessionStartContext: string | undefined
+  let started: Awaited<ReturnType<CcHooksRuntime['runSessionStart']>> = {}
   if (ccHooks.active && !isContinuation && !ccHooksStartedSessions.has(session.id)) {
     ccHooksStartedSessions.add(session.id)
     // Source of THIS SessionStart: a pending `clear`/`compact` recorded when the view was reset
@@ -240,7 +247,7 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
       ccHooksSessionStartSource.get(session.id),
     )
     ccHooksSessionStartSource.delete(session.id)
-    const started = await ccHooks.runSessionStart(startSource)
+    started = await ccHooks.runSessionStart(startSource)
     ccSessionStartContext = started.additionalContext
     if (started.watchPaths) ccHookSessions.setWatchPaths(session.id, started.watchPaths)
     await applyHookSessionTitle(deps, userId, session.id, started.sessionTitle)
@@ -260,7 +267,15 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
   const queued = ccHookSessions.takeContext(session.id)
   if (queued) ccSessionStartContext = [ccSessionStartContext, queued].filter(Boolean).join('\n\n')
 
-  return { ccHooks, ccSessionStartContext }
+  return {
+    ccHooks,
+    ccSessionStartContext,
+    // "used as the first user message of the session, in non-interactive mode" (hooks.md).
+    ...(started.initialUserMessage && input.interactive === false
+      ? { ccInitialUserMessage: started.initialUserMessage }
+      : {}),
+    ...(started.reloadSkills ? { ccReloadSkills: true } : {}),
+  }
 }
 
 // ---- What every runtime is constructed with -------------------------------------

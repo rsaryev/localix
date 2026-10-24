@@ -60,6 +60,7 @@ export async function intakeRunTurn(
     ccHooks,
     mods: inputs.mods,
     ccSessionStartContext: inputs.ccSessionStartContext,
+    ...(inputs.ccInitialUserMessage ? { ccInitialUserMessage: inputs.ccInitialUserMessage } : {}),
     runtimeSections: prompt.runtimeSections,
     defaultCwd,
     assistantCreatedAt: turn.state.assistantCreatedAt,

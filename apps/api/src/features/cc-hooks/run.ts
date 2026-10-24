@@ -178,10 +178,16 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
         source === 'clear' || source === 'compact'
           ? undefined
           : outcomes.reduce<string | undefined>((title, o) => o.sessionTitle ?? title, undefined)
+      const initialUserMessage = outcomes.reduce<string | undefined>(
+        (message, o) => o.initialUserMessage ?? message,
+        undefined,
+      )
       return {
         ...(additionalContext ? { additionalContext } : {}),
         ...watchPathsFrom(outcomes),
         ...(sessionTitle ? { sessionTitle } : {}),
+        ...(initialUserMessage ? { initialUserMessage } : {}),
+        ...(outcomes.some((o) => o.reloadSkills) ? { reloadSkills: true } : {}),
       }
     },
 

@@ -23,5 +23,5 @@ export async function sessionStartSource(
   }
   if (pending) return pending
   if (started) return 'resume'
-  return session.provenance.kind === 'fork' ? 'fork' : 'startup'
+  return session.provenance?.kind === 'fork' ? 'fork' : 'startup'
 }

@@ -84,9 +84,15 @@ export interface CcHooksRuntime
    * `watchPaths` a handler named for `FileChanged`, and the `sessionTitle` one gave (not on a
    * `clear` or `compact` source).
    */
-  runSessionStart(
-    source?: string,
-  ): Promise<{ additionalContext?: string; watchPaths?: string[]; sessionTitle?: string }>
+  runSessionStart(source?: string): Promise<{
+    additionalContext?: string
+    watchPaths?: string[]
+    sessionTitle?: string
+    /** The last `initialUserMessage` a handler gave. */
+    initialUserMessage?: string
+    /** A handler asked for `reloadSkills`. */
+    reloadSkills?: boolean
+  }>
   runUserPromptSubmit(prompt: string): Promise<PromptSubmitResult>
   runPreToolUse(tool: CcHookToolRef, input: unknown, toolUseId?: string): Promise<PreToolUseResult>
   runPostToolUse(

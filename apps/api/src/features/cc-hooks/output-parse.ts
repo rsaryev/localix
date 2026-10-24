@@ -58,6 +58,9 @@ export function foldHookOutput(text: string, allowPlainTextContext: boolean): Cc
       outcome.updatedMCPToolOutput = hso.updatedMCPToolOutput
     if (typeof hso.sessionTitle === 'string' && hso.sessionTitle.trim())
       outcome.sessionTitle = hso.sessionTitle.trim()
+    if (typeof hso.initialUserMessage === 'string' && hso.initialUserMessage.trim())
+      outcome.initialUserMessage = hso.initialUserMessage
+    if (hso.reloadSkills === true) outcome.reloadSkills = true
     const pd = hso.permissionDecision
     if (pd === 'allow' || pd === 'deny' || pd === 'ask') outcome.permissionDecision = pd
     if (typeof hso.permissionDecisionReason === 'string') {

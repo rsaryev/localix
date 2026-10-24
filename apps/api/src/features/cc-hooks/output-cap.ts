@@ -33,10 +33,11 @@ export function capHookOutput(
   outcome: CcHookOutcome,
   dir = join(tmpdir(), 'localix-hooks'),
 ): CcHookOutcome {
-  const { additionalContext, systemMessage } = outcome
+  const { additionalContext, systemMessage, initialUserMessage } = outcome
   if (
     (additionalContext?.length ?? 0) <= CC_HOOK_TEXT_CAP &&
-    (systemMessage?.length ?? 0) <= CC_HOOK_TEXT_CAP
+    (systemMessage?.length ?? 0) <= CC_HOOK_TEXT_CAP &&
+    (initialUserMessage?.length ?? 0) <= CC_HOOK_TEXT_CAP
   )
     return outcome
   return {
@@ -45,5 +46,8 @@ export function capHookOutput(
       ? { additionalContext: capped(additionalContext, dir) }
       : {}),
     ...(systemMessage !== undefined ? { systemMessage: capped(systemMessage, dir) } : {}),
+    ...(initialUserMessage !== undefined
+      ? { initialUserMessage: capped(initialUserMessage, dir) }
+      : {}),
   }
 }

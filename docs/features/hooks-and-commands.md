@@ -100,7 +100,9 @@ and that call cannot block. After a checkpoint, the next run fires `SessionStart
 
 `SessionStart` fires on a session's first run in the API process. Its source is `startup` for a new
 session, `fork` for a forked one, `resume` for a session that ran before the API last started, and
-`clear` or `compact` after `/clear` or a checkpoint.
+`clear` or `compact` after `/clear` or a checkpoint. In a run nobody is typing into, such as a
+scheduled one, its `initialUserMessage` is the user turn before the run's prompt; with
+`reloadSkills`, skills the hook installed are named to the agent and listed from the next run on.
 
 `SessionEnd` fires when a session ends, not when a run ends. Deleting a session fires it with reason
 `other`.

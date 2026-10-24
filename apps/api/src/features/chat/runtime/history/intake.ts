@@ -49,6 +49,11 @@ export interface IntakeArgs {
   mods?: ModRunScope
   /** SessionStart CC-hook context to inject once (this session's first run). */
   ccSessionStartContext: string | undefined
+  /**
+   * A SessionStart hook's `initialUserMessage`, in a run nobody types into: the session's first
+   * user message, the run's own prompt following it.
+   */
+  ccInitialUserMessage?: string
   /** The keyed runtime sections split off the cacheable system prompt. */
   runtimeSections: readonly RuntimeSection[]
   /** The turn cap this run runs under, so the reminder can tell the agent what it may spend. */
@@ -94,6 +99,23 @@ export async function markPromptBlocked(
     createdAt: promptMessage.createdAt,
     updatedAt,
   })
+}
+
+/** A SessionStart `initialUserMessage` as the user turn before the run's prompt (model-facing). */
+function withInitialUserMessage(history: PersistedMessage[], text: string): PersistedMessage[] {
+  const prompt = history[history.length - 1]
+  if (!prompt) return history
+  const first: PersistedMessage = {
+    ...prompt,
+    id: `${prompt.id}:initial-user-message`,
+    payload: {
+      ...prompt.payload,
+      id: `${prompt.id}:initial-user-message`,
+      content: text,
+      bindings: [],
+    },
+  }
+  return [...history.slice(0, -1), first, prompt]
 }
 
 /** Replace the active prompt on the already model-filtered history copy. */
@@ -146,7 +168,9 @@ export async function intakeTurn(args: IntakeArgs): Promise<IntakeResult> {
 
   // Mini app onUserMessage hooks rewrite the MODEL-FACING prompt only; the persisted row the
   // user sees is never changed. Real user prompts only — never internal continuations.
-  let messages = modelHistory
+  let messages = args.ccInitialUserMessage
+    ? withInitialUserMessage(modelHistory, args.ccInitialUserMessage)
+    : modelHistory
   if (loadedMiniApps.hooks.length > 0 && isRealUserPrompt && promptMessage) {
     const rewritten = await runUserMessageHooks(
       loadedMiniApps.hooks,

@@ -25,6 +25,7 @@ import { publishHumanAssignment } from '../human-assignment'
 import { applyPluginMainAgent } from '../plugin-main-agent'
 import { applyPluginSubagent, contextFilesFor } from '../plugin-subagent'
 import { adoptPluginAgentModel } from '../plugin-main-agent-model'
+import { reloadedSkillsNote } from '../cc-reload-skills'
 import type { ModelView } from '../../model-view/view'
 import type { RunFrame } from './frame'
 import type { ResolvedTurn } from './turn'
@@ -145,7 +146,7 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
 
   // Claude Code declarative hooks: the registry, its three evaluators and the once-per-session
   // SessionStart fire are owned by cc-hooks-build.ts.
-  const { ccHooks, ccSessionStartContext } = await buildRunCcHooks({
+  const built = await buildRunCcHooks({
     signal: frame.abort.signal,
     env,
     userId,
@@ -163,7 +164,25 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
     contextFiles: context.contextFiles,
     permissionMode: turn.policy.permission.mode,
     ...(frame.speakerRoute.reasoningEffort ? { effort: frame.speakerRoute.reasoningEffort } : {}),
+    interactive: turn.policy.human.canAnswer,
   })
+  const { ccHooks, ccInitialUserMessage } = built
+  // `reloadSkills`: a SessionStart hook installed skills after this run's discovery read the folders.
+  const reloaded = built.ccReloadSkills
+    ? await reloadedSkillsNote({
+        cwd: defaultCwd,
+        known: context.allSkills.map((skill) => skill.name),
+        invalidate: () =>
+          runtimeState.runScopes.invalidate({
+            userId,
+            projectId: session.projectId ?? '',
+            cwd: defaultCwd,
+            agentId: context.agent.id,
+          }),
+      })
+    : undefined
+  const ccSessionStartContext =
+    [built.ccSessionStartContext, reloaded].filter(Boolean).join('\n\n') || undefined
   frame.teardown.ccHooks = ccHooks
   // Claude Code mods: the hooks modules of the plugins enabled for this run, in its project.
   const mods = deps.mods
@@ -198,6 +217,7 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
     hookRunOptions,
     ccHooks,
     ccSessionStartContext,
+    ...(ccInitialUserMessage ? { ccInitialUserMessage } : {}),
     mods,
   }
 }
