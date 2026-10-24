@@ -21,7 +21,8 @@ export interface MiniAppDesktopApps {
 
 let provided: MiniAppDesktopApps | null = null
 
-export function provideMiniAppDesktopApps(port: MiniAppDesktopApps): void {
+/** Offer the port; `null` withdraws it, as a shell without desktop apps has none. */
+export function provideMiniAppDesktopApps(port: MiniAppDesktopApps | null): void {
   provided = port
 }
 
