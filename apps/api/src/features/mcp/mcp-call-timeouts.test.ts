@@ -29,7 +29,12 @@ afterEach(async () => {
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 /** A real SDK server with one tool that runs `ms`, reporting progress every `everyMs` if set. */
-async function slowTool(ms: number, config: Record<string, unknown> = {}, everyMs?: number) {
+async function slowTool(
+  ms: number,
+  config: Record<string, unknown> = {},
+  everyMs?: number,
+  settingsEnv?: Record<string, string>,
+) {
   const server = new McpServer({ name: 'builds', version: '1.0.0' })
   server.registerTool('build', { description: 'Run the build' }, async (extra) => {
     const token = extra._meta?.progressToken
@@ -60,6 +65,7 @@ async function slowTool(ms: number, config: Record<string, unknown> = {}, everyM
     description: '',
     transport: 'stdio',
     config,
+    ...(settingsEnv ? { settingsEnv } : {}),
     createdAt: '',
     updatedAt: '',
   }
@@ -100,5 +106,12 @@ describe('MCP tool call time limits', () => {
     process.env[IDLE] = '40'
     const result = await (await slowTool(150, { timeout: 2_000 }))()
     expect(String(result.content)).toBe('built')
+  })
+
+  test("the folder's Claude Code settings env sets the limits, as Claude Code's own env does", async () => {
+    delete process.env[IDLE]
+    const result = await (await slowTool(400, {}, undefined, { [IDLE]: '60' }))()
+    expect(result.isError).toBe(true)
+    expect(String(result.content)).toContain('timed out')
   })
 })

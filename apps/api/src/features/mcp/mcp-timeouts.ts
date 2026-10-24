@@ -25,8 +25,15 @@ const MIN_TIMEOUT_MS = 1_000
  * 0 = envInt's "unset or unparseable" sentinel (it only ever yields a positive
  * int); a real timeout has to clear MIN_TIMEOUT_MS anyway.
  */
-function envTimeout(name: string): number | undefined {
-  const ms = envInt(name, 0)
+type Env = Record<string, string | undefined>
+
+/** The environment a server's limits are read from: the API's, the folder's settings over it. */
+export function serverEnv(server?: Pick<McpServerRecord, 'settingsEnv'>): Env {
+  return server?.settingsEnv ? { ...process.env, ...server.settingsEnv } : process.env
+}
+
+function envTimeout(name: string, env: Env): number | undefined {
+  const ms = envInt(name, 0, env)
   return ms >= MIN_TIMEOUT_MS ? ms : undefined
 }
 
@@ -34,8 +41,8 @@ function envTimeout(name: string): number | undefined {
  * The capability-discovery (connect / `tools/list`) timeout. Honors the global
  * `MCP_TIMEOUT` env var (CC's server-startup budget), else the built-in default.
  */
-export function resolveConnectTimeoutMs(): number {
-  return envTimeout('MCP_TIMEOUT') ?? DEFAULT_TIMEOUT_MS
+export function resolveConnectTimeoutMs(env: Env = process.env): number {
+  return envTimeout('MCP_TIMEOUT', env) ?? DEFAULT_TIMEOUT_MS
 }
 
 /**
@@ -43,10 +50,13 @@ export function resolveConnectTimeoutMs(): number {
  *   server `config.timeout` → `MCP_TOOL_TIMEOUT` env → built-in default.
  * Values below 1s are ignored at each level.
  */
-export function resolveToolTimeoutMs(config: Record<string, unknown>): number {
+export function resolveToolTimeoutMs(
+  config: Record<string, unknown>,
+  env: Env = process.env,
+): number {
   const perServer = typeof config.timeout === 'number' ? config.timeout : undefined
   if (perServer !== undefined && perServer >= MIN_TIMEOUT_MS) return Math.floor(perServer)
-  return envTimeout('MCP_TOOL_TIMEOUT') ?? DEFAULT_TOOL_TIMEOUT_MS
+  return envTimeout('MCP_TOOL_TIMEOUT', env) ?? DEFAULT_TOOL_TIMEOUT_MS
 }
 
 /**
@@ -54,8 +64,10 @@ export function resolveToolTimeoutMs(config: Record<string, unknown>): number {
  * off), else 30 minutes for stdio and 5 for a remote server. A per-server `timeout` of at least 1 s
  * is its floor, so a server allowed ten minutes is never cut for idling sooner.
  */
-export function resolveToolIdleTimeoutMs(server: Pick<McpServerRecord, 'transport' | 'config'>) {
-  const raw = envString('CLAUDE_CODE_MCP_TOOL_IDLE_TIMEOUT')
+export function resolveToolIdleTimeoutMs(
+  server: Pick<McpServerRecord, 'transport' | 'config' | 'settingsEnv'>,
+) {
+  const raw = envString('CLAUDE_CODE_MCP_TOOL_IDLE_TIMEOUT', serverEnv(server))
   const parsed = raw === undefined ? Number.NaN : Number(raw)
   const configured = Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : undefined
   if (configured === 0) return 0

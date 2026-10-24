@@ -12,6 +12,7 @@ import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
 import type { McpServerRecord } from './repository'
 import { mcpLaunch } from './mcp-settings-env'
 import { resolveConnectTimeoutMs } from './mcp-tools'
+import { serverEnv } from './mcp-timeouts'
 import { silentAuthProvider } from './oauth/runtime'
 import { createElicitingClient } from './mcp-elicitation'
 
@@ -114,7 +115,7 @@ function ensurePluginDataDir(server: McpServerRecord, env: Record<string, string
 export async function connectClient(server: McpServerRecord, cwd: string): Promise<Client> {
   // Offers elicitation: the server may ask the person for input during a tool call.
   const client = createElicitingClient({ name: CLIENT_NAME, version: CLIENT_VERSION })
-  const deadline = Date.now() + resolveConnectTimeoutMs()
+  const deadline = Date.now() + resolveConnectTimeoutMs(serverEnv(server))
 
   if (server.transport === 'ws') {
     const config = expandedConfig(server, cwd)

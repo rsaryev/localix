@@ -10,6 +10,7 @@ import {
   type SettingsFilesInput,
   type SettingsLayer,
 } from '../cc-settings/settings-files'
+import { claudeCodeSettingsEnv } from '../cc-settings/settings-env'
 import { claudeCodeTrusts } from '../cc-settings/settings-trust'
 import { mcpServerPolicy } from './claude-code-mcp-policy'
 import { normalizeMcpServerEntry } from './normalize'
@@ -127,7 +128,9 @@ export function claudeCodeMcpServers(input: ClaudeCodeMcpInput): McpServerRecord
       if (record) add(record, scope === 'managed')
     }
   for (const server of exclusive ? [] : input.plugins) add(server, false)
-  return out
+  // The folder's settings `env` sets the limits Claude Code reads from its environment.
+  const settingsEnv = claudeCodeSettingsEnv(input)
+  return Object.keys(settingsEnv).length > 0 ? out.map((s) => ({ ...s, settingsEnv })) : out
 }
 
 function recordOf(

@@ -30,7 +30,7 @@ export {
   resolveToolIdleTimeoutMs,
   resolveToolTimeoutMs,
 } from './mcp-timeouts'
-import { resolveToolIdleTimeoutMs, resolveToolTimeoutMs } from './mcp-timeouts'
+import { resolveToolIdleTimeoutMs, resolveToolTimeoutMs, serverEnv } from './mcp-timeouts'
 
 /** MCP tool descriptions can be huge (multi-KB); cap what reaches the model. */
 export const MCP_DESCRIPTION_MAX_CHARS = 600
@@ -202,9 +202,10 @@ export function buildToolForServer(
   const description = def.description?.trim()
     ? `[MCP: ${server.name}] ${capDescription(def.description.trim())}`
     : `[MCP: ${server.name}] ${def.name}`
-  const timeout = resolveToolTimeoutMs(server.config)
+  const env = serverEnv(server)
+  const timeout = resolveToolTimeoutMs(server.config, env)
   const idleTimeout = resolveToolIdleTimeoutMs(server)
-  const maxResultChars = resolveMcpResultMaxChars(def.maxResultChars)
+  const maxResultChars = resolveMcpResultMaxChars(def.maxResultChars, env)
   const callClass = classifyMcpTool(def.annotations)
   const mutates = callClass.effect !== 'read'
   const modelName = pluginToolModelName(server, def.name)

@@ -31,6 +31,13 @@ export interface McpServerRecord {
    * as an option set to `${GITHUB_TOKEN}` would otherwise read the host environment.
    */
   configExpanded?: boolean
+  /**
+   * The `env` of the Claude Code settings for the folder the run connects from
+   * (`claude-code-servers.ts`): the limits Claude Code reads from its environment —
+   * `MCP_TIMEOUT`, `MCP_TOOL_TIMEOUT`, `CLAUDE_CODE_MCP_TOOL_IDLE_TIMEOUT`, `MAX_MCP_OUTPUT_TOKENS` —
+   * are read from it over the API's own. Never stored.
+   */
+  settingsEnv?: Readonly<Record<string, string>>
   createdAt: string
   updatedAt: string
 }

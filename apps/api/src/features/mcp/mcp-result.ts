@@ -130,7 +130,10 @@ export function capMcpErrorMessage(
  *   3. else the built-in default.
  * Image content is bounded separately (run image downscaling), so this is text-only.
  */
-export function resolveMcpResultMaxChars(annotationChars?: number): number {
+export function resolveMcpResultMaxChars(
+  annotationChars?: number,
+  env: Record<string, string | undefined> = process.env,
+): number {
   if (
     typeof annotationChars === 'number' &&
     Number.isFinite(annotationChars) &&
@@ -148,7 +151,7 @@ export function resolveMcpResultMaxChars(annotationChars?: number): number {
     return Math.min(Math.floor(annotationChars), MCP_RESULT_MAX_ANNOTATION_CHARS)
   }
   // 0 = envInt's "unset or unparseable" sentinel (it only ever yields a positive int).
-  const tokens = envInt('MAX_MCP_OUTPUT_TOKENS', 0)
+  const tokens = envInt('MAX_MCP_OUTPUT_TOKENS', 0, env)
   return tokens > 0 ? tokens * 4 : MCP_RESULT_DEFAULT_MAX_CHARS
 }
 
