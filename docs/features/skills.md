@@ -54,11 +54,12 @@ procedure.
 ### Loading and invocation
 
 The runtime initially gives the model a bounded roster of skill names and descriptions. The roster
-has a 3,200-code-unit budget: descriptions shorten before names are omitted with a notice. The
-`skill` tool can list that roster or load one body; plugin skills can be read but not saved or
-deleted through the tool. Default delegated workers can also retrieve skills. An agent's explicit
-tool list and capability denials still control availability; pinning a skill supplies its body even
-without the retrieval tool.
+lists each description up to 1,536 characters, as Claude Code does, within an 8,000-code-unit
+budget: descriptions shorten to bare names before any name is omitted with a notice. The `skill`
+tool can list that roster or load one body; plugin skills can be read but not saved or deleted
+through the tool. Default delegated workers can also retrieve skills. An agent's explicit tool list
+and capability denials still control availability; pinning a skill supplies its body even without
+the retrieval tool.
 
 One-shot `/name` invocation expands supported arguments before submitting the prompt. Filesystem
 skills can also opt into bounded local command expansion and confined file-reference expansion. A

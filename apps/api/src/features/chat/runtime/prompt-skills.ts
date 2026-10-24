@@ -21,15 +21,16 @@ export interface SkillListingEntry {
   activationPaths?: string[]
 }
 
-// One line per skill: the name is what the model retrieves by, the description only has to
-// say WHEN the skill applies. CC caps a description at 1,536 chars, but CC lists a handful of
-// skills; a workbench with plugins lists fifty, and at that count the catalog was the single
-// largest block of the system prompt (2,000 of 4,000 tokens on a fresh session, measured).
-const SKILL_DESC_MAX = 120
-// Total listing budget. Lines degrade to bare names before any skill is dropped, so a
-// long roster still costs ~800 tokens instead of ~2,000 — and `skill action="list"` has the
-// full descriptions for the one time the model needs them.
-const SKILL_LISTING_BUDGET = 3200
+// One line per skill: the name is what the model retrieves by, the description says WHEN the
+// skill applies. Claude Code truncates each entry's combined `description` + `when_to_use` at
+// 1,536 characters, and its skills are written to that: the summary comes first and the trigger
+// phrases ("Use when the user asks to …") after it. A shorter cut keeps the summary and drops the
+// very words a request is matched against, so a skill written for Claude Code stops triggering.
+const SKILL_DESC_MAX = 1536
+// Total listing budget, about 1% of a 200k-token context window as Claude Code sizes its own.
+// Past it, lines degrade to bare names before any skill is dropped, and `skill action="list"`
+// still has every full description.
+const SKILL_LISTING_BUDGET = 8000
 
 function omittedSkillsNotice(count: number): string {
   return `[${count} additional skill${count === 1 ? '' : 's'} omitted: use the \`skill\` tool with action="list" to inspect the full roster.]`

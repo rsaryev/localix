@@ -98,9 +98,18 @@ describe('buildSkillsContext', () => {
     expect(buildSkillsContext(deep, {}, '/work/apps/a/b/src')).toContain('/two')
   })
 
-  it('caps one description at a line the model can scan, never a paragraph', () => {
-    const out = buildSkillsContext([{ name: 'long', description: 'y'.repeat(2_000) }], {}, cwd)!
-    expect(out).toBe(`- /long: ${'y'.repeat(120)}`)
+  // skills.md: "the combined `description` and `when_to_use` text is truncated at 1,536
+  // characters in the skill listing". A Claude Code skill puts its trigger phrases after the
+  // first sentence ("Use when the user asks to pair, approve someone…"), so a 120-character cut
+  // kept the summary and dropped exactly the words the model matches a request against.
+  it('keeps a description up to 1,536 characters, the trigger phrases included', () => {
+    const description =
+      'Manage Discord channel access — approve pairings, edit allowlists, set DM/group policy. ' +
+      "Use when the user asks to pair, approve someone, check who's allowed, or change policy."
+    const out = buildSkillsContext([{ name: 'access', description }], {}, cwd)!
+    expect(out).toBe(`- /access: ${description}`)
+    const long = buildSkillsContext([{ name: 'long', description: 'y'.repeat(2_000) }], {}, cwd)!
+    expect(long).toBe(`- /long: ${'y'.repeat(1_536)}`)
   })
 
   it('drops descriptions before names when the full roster exceeds the budget', () => {
@@ -111,7 +120,7 @@ describe('buildSkillsContext', () => {
     }))
 
     const out = buildSkillsContext(skills, {}, cwd)!
-    expect(out.length).toBeLessThanOrEqual(3_200)
+    expect(out.length).toBeLessThanOrEqual(8_000)
     expect(out).toContain('/skill-49')
     expect(out).not.toContain('/skill-49:')
     expect(out).not.toContain('additional skills omitted')
@@ -124,7 +133,7 @@ describe('buildSkillsContext', () => {
     }))
 
     const out = buildSkillsContext(skills, {}, cwd)!
-    expect(out.length).toBeLessThanOrEqual(3_200)
+    expect(out.length).toBeLessThanOrEqual(8_000)
     expect(out).toContain('additional skills omitted')
     expect(out).toContain('action="list"')
     expect(out).not.toContain('/very-long-skill-name-0999')
