@@ -35,7 +35,9 @@ import { richRegistry } from './prompt/testing/prompt-render'
 // `edit` and `write` again as the TypeScript a script calls (measured total 9,358).
 // Mini apps split from plugins: `configure` names its own `mini-app.enable` remedy beside
 // `plugin.enable` (+52), since a mini app's tools are switched by the app (measured total 9,449).
-const WIRE_BUDGET_TOKENS = 9_450
+// `delegate` takes Claude Code's per-call `model`, `effort` and `isolation` (+74), so an agent
+// written for Claude Code can pick the child's model and folder (measured total 9,523).
+const WIRE_BUDGET_TOKENS = 9_525
 /** No single tool may take more than this — `browser` was 1,900 before its diet. */
 const PER_TOOL_CEILING_TOKENS = 800
 /** `codemode` restates four tools' schemas by design; it answers to the total, not the ceiling. */

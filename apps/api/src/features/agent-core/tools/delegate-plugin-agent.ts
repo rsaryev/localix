@@ -126,23 +126,41 @@ export interface PluginAgentChild {
 const worktreeName = (toolCallId: string) =>
   `delegate-${toolCallId.replace(/[^A-Za-z0-9._-]/g, '-')}`.slice(0, 120)
 
+/** A fresh worktree for one child, and the note that says where it is. */
+export async function isolateChild(
+  ports: DelegatePluginPorts,
+  toolCallId: string,
+  who: string,
+): Promise<{ provenance: { workingDir: string; worktreeByHook?: true }; note: string }> {
+  if (!ports.isolate) throw new Error('isolation: worktree is not available in this chat')
+  const worktree = await ports.isolate(worktreeName(toolCallId))
+  return {
+    provenance: {
+      workingDir: worktree.workingDir,
+      ...(worktree.byHook ? { worktreeByHook: true as const } : {}),
+    },
+    note: `${who} works in the worktree ${worktree.dir}${worktree.branch ? ` (branch ${worktree.branch})` : ''}; it is kept, remove it when the work is merged`,
+  }
+}
+
 /**
- * The route, skills and folder a plugin agent's child is created with. A model the host picked
- * for the call (a mod's `agent.spawn`) wins over the agent's own, as Claude Code's per-call
- * `model` does; its effort still applies.
+ * The route, skills and folder a plugin agent's child is created with. A model the call names (or
+ * a mod's `agent.spawn` picked) wins over the agent's own, as Claude Code's per-call `model` does,
+ * and so does a call's `effort`; `isolation` from the call isolates a child the file does not.
  */
 export async function preparePluginAgentChild(
   agent: PluginAgentType,
   ports: DelegatePluginPorts,
-  call: { toolCallId: string; hostModel: boolean },
+  call: { toolCallId: string; hostModel: boolean; effort?: string; isolate?: boolean },
 ): Promise<PluginAgentChild> {
   const who = `agent ${agent.fullName}`
   const model = call.hostModel ? undefined : agent.preferredModel
+  const effort = call.effort ?? agent.preferredEffort
   const notes: string[] = []
   let route: WorkflowAgentRoute = {}
-  if (model || agent.preferredEffort) {
+  if (model || effort) {
     if (ports.route) {
-      const resolved = await ports.route({ model, effort: agent.preferredEffort, who })
+      const resolved = await ports.route({ model, effort, who })
       route = resolved.route
       notes.push(...resolved.notes)
     } else if (model && model.toLowerCase() !== 'inherit') {
@@ -150,14 +168,10 @@ export async function preparePluginAgentChild(
     }
   }
   const provenance: PluginAgentChild['provenance'] = { pluginAgent: agent.fullName }
-  if (agent.isolation) {
-    if (!ports.isolate) throw new Error('isolation: worktree is not available in this chat')
-    const worktree = await ports.isolate(worktreeName(call.toolCallId))
-    provenance.workingDir = worktree.workingDir
-    if (worktree.byHook) provenance.worktreeByHook = true
-    notes.push(
-      `${who} works in the worktree ${worktree.dir}${worktree.branch ? ` (branch ${worktree.branch})` : ''}; it is kept, remove it when the work is merged`,
-    )
+  if (agent.isolation || call.isolate) {
+    const isolated = await isolateChild(ports, call.toolCallId, who)
+    Object.assign(provenance, isolated.provenance)
+    notes.push(isolated.note)
   }
   return {
     provenance,

@@ -60,13 +60,14 @@ report follows.
 
 ## The `delegate` input
 
-| Call                                                       | Effect                                                                                              | Boundary                                                       |
-| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| `delegate { title, task, agent?, context?, wait? }`        | Starts a child. `task` is the goal and when it is done; `title` is a short name.                    | Admitted against the limits below.                             |
-| `delegate { action: "list" }`                              | This session's children: status, place in the queue, spend (tokens and cost) and public progress.   | Starts nothing. Not for polling.                               |
-| `delegate { action: "message", run, message, interrupt? }` | A running child reads it at its next step; a finished child runs again for it, in the same session. | Queued, not read: the result never claims the child acted yet. |
-| `delegate { action: "stop", run }`                         | Requests a stop of the current run of one child or a list. No report follows.                       | The child can still be messaged later.                         |
-| `delegate { action: "close", run }`                        | Stops one child or a list and ends them for good: nothing wakes them, their chats turn read-only.   | Irreversible. Transcripts stay readable; no report follows.    |
+| Call                                                       | Effect                                                                                                                                 | Boundary                                                                                     |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `delegate { title, task, agent?, context?, wait? }`        | Starts a child. `task` is the goal and when it is done; `title` is a short name.                                                       | Admitted against the limits below.                                                           |
+| `delegate { …, model?, effort?, isolation? }`              | Sets the child's model (an alias such as `haiku` or an id), its reasoning effort, or `isolation: "worktree"` for a fresh git worktree. | A call's model and effort win over an agent type's own; a host's model wins over the call's. |
+| `delegate { action: "list" }`                              | This session's children: status, place in the queue, spend (tokens and cost) and public progress.                                      | Starts nothing. Not for polling.                                                             |
+| `delegate { action: "message", run, message, interrupt? }` | A running child reads it at its next step; a finished child runs again for it, in the same session.                                    | Queued, not read: the result never claims the child acted yet.                               |
+| `delegate { action: "stop", run }`                         | Requests a stop of the current run of one child or a list. No report follows.                                                          | The child can still be messaged later.                                                       |
+| `delegate { action: "close", run }`                        | Stops one child or a list and ends them for good: nothing wakes them, their chats turn read-only.                                      | Irreversible. Transcripts stay readable; no report follows.                                  |
 
 `agent` is an agent's handle (or id); omitted, the delegating agent runs the task itself. `run` is
 the session id or task name that `list` prints, and it must be one of this session's own children. A

@@ -39,10 +39,15 @@ export interface DelegateRequest {
   context: DelegateContext
   wait: boolean
   /**
-   * The child's model, an alias or an id, when the host picked one (a Claude Code mod's
-   * `agent.spawn`); never a parameter the model passes. Absent, the child runs on the parent's.
+   * The child's model, an alias (`haiku`, `sonnet`, `opus`, `inherit`) or an id: the caller's, as
+   * Claude Code's Agent tool takes it, or a host's pick (a Claude Code mod's `agent.spawn`), which
+   * wins. Absent, the child runs on the parent's or its agent type's.
    */
   model?: string
+  /** The child's reasoning effort for this call (Claude Code's Agent `effort`). */
+  effort?: string
+  /** `worktree`: the child works in a fresh git worktree of the chat's repository. */
+  isolation?: 'worktree'
 }
 
 export interface DelegateToolPort extends DelegateControlPorts {
@@ -81,6 +86,9 @@ const inputSchema = z
       .optional()
       .describe('Start: what the child sees besides the task. Default none.'),
     wait: z.boolean().optional().describe('Start: hold this call until the report.'),
+    model: z.string().trim().min(1).max(120).optional().describe('Start: child model alias or id.'),
+    effort: z.enum(['low', 'medium', 'high', 'xhigh', 'max']).optional().describe('Start: effort.'),
+    isolation: z.enum(['worktree']).optional().describe('Start: own git worktree.'),
     run: z
       .union([runRef, z.array(runRef).min(1).max(24)])
       .optional()
@@ -166,6 +174,8 @@ export function createDelegateTool(port: DelegateToolPort) {
               ...(input.agent ? { agent: input.agent } : {}),
               context: input.context ?? 'none',
               wait: input.wait ?? false,
+              ...(input.effort ? { effort: input.effort } : {}),
+              ...(input.isolation ? { isolation: input.isolation } : {}),
               ...hostModel(input),
             },
             signal,
@@ -193,7 +203,7 @@ export function createDelegateTool(port: DelegateToolPort) {
   })
 }
 
-/** The child's model a host set on the call (`DelegateRequest.model`); the schema offers none. */
+/** The child's model the call names, or a host set on it (`DelegateRequest.model`). */
 const hostModel = (input: object): { model?: string } => {
   const model = (input as { model?: unknown }).model
   return typeof model === 'string' && model ? { model } : {}

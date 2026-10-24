@@ -227,3 +227,41 @@ test('general-purpose and claude run the task as the delegator itself', async ()
     )
   }
 })
+
+// claude-code-tools Agent input: `model`, `effort` and `isolation` are the caller's per call, and
+// a call's model and effort win over the agent file's (sub-agents.md, "Choose a model").
+test('a call names the child model, effort and a worktree of its own', async () => {
+  const isolated: string[] = []
+  const { opts, ports, calls } = host({
+    isolate: async (name) => {
+      isolated.push(name)
+      return { dir: '/wt/c', workingDir: '/wt/c' }
+    },
+  })
+  await startDelegation(
+    'c',
+    request({ model: 'haiku', effort: 'low', isolation: 'worktree' }),
+    opts,
+    undefined,
+    ports,
+  )
+  expect(calls.route).toEqual([{ model: 'haiku', effort: 'low', who: 'agent localix' }])
+  expect(isolated).toEqual(['delegate-c'])
+  expect(calls.create).toEqual([
+    expect.objectContaining({
+      modelId: 'claude-haiku-5',
+      reasoningEffort: 'high',
+      provenance: expect.objectContaining({ workingDir: '/wt/c' }),
+    }),
+  ])
+
+  const typed = host()
+  await startDelegation(
+    'c',
+    request({ agent: 'sec:reviewer', effort: 'max' }),
+    typed.opts,
+    undefined,
+    typed.ports,
+  )
+  expect(typed.calls.route).toEqual([expect.objectContaining({ effort: 'max' })])
+})

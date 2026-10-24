@@ -6,7 +6,9 @@ import { resolveModelAlias } from '../model-alias'
 import { ONE_SHOT_EXECUTION } from '../prompt/sections/team-contract'
 import { reportBody } from './child-report'
 import type { DelegateRequest } from './delegate'
+import type { WorkflowAgentRoute } from './workflow/agent-start'
 import {
+  isolateChild,
   preparePluginAgentChild,
   resolveDelegateTarget,
   type DelegatePluginPorts,
@@ -77,16 +79,26 @@ export async function startDelegation(
     if ('refusal' in target) return refuse(target.refusal)
     const { agent, plugin } = target
     // A host's pick of the child's model: an alias resolves to a concrete id, or to the parent's.
-    const modelId = request.model ? resolveModelAlias(request.model, undefined) : undefined
     const typed =
       plugin && plugins
-        ? await preparePluginAgentChild(plugin, plugins, { toolCallId, hostModel: !!modelId })
+        ? await preparePluginAgentChild(plugin, plugins, {
+            toolCallId,
+            hostModel: !!request.model,
+            ...(request.effort ? { effort: request.effort } : {}),
+            ...(request.isolation === 'worktree' ? { isolate: true } : {}),
+          })
         : null
+    // The call's own model, effort and worktree for a child that is not a plugin type (Claude
+    // Code's Agent `model` / `effort` / `isolation`): routed against the chat's provider.
+    const own = !plugin ? await callChildSetup(request, plugins, toolCallId, agent.handle) : null
+    const modelId = request.model
+      ? (own?.route.modelId ?? resolveModelAlias(request.model, undefined) ?? undefined)
+      : undefined
     // Claude Code's `background: true`: the call never holds for its report.
     const wait = request.wait && !plugin?.background
     const name = plugin?.fullName ?? agent.handle
     const maxTurns = plugin?.maxTurns ?? agent.maxTurns
-    const notes = typed?.notes ?? []
+    const notes = typed?.notes ?? own?.notes ?? []
     const child = await opts.createSession(opts.userId, {
       agents: [{ agentId: agent.agentId }],
       title,
@@ -101,9 +113,11 @@ export async function startDelegation(
         depth: depth + 1,
         chain: [...chain, self],
         ...typed?.provenance,
+        ...own?.provenance,
       },
       ...(opts.projectId ? { projectId: opts.projectId } : {}),
       ...typed?.route,
+      ...own?.route,
       ...(typed?.pinnedSkills ? { pinnedSkills: typed.pinnedSkills } : {}),
       ...(modelId ? { modelId } : {}),
     })
@@ -172,4 +186,32 @@ export async function startDelegation(
   } catch (error) {
     return refuse(`Could not delegate "${title}": ${errorMessage(error)}`)
   }
+}
+
+/** A non-type child's route and folder from the call's `model`, `effort` and `isolation`. */
+async function callChildSetup(
+  request: DelegateRequest,
+  plugins: DelegatePluginPorts | undefined,
+  toolCallId: string,
+  handle: string,
+): Promise<{ route: WorkflowAgentRoute; provenance: object; notes: string[] }> {
+  const who = `agent ${handle}`
+  const notes: string[] = []
+  let route: WorkflowAgentRoute = {}
+  if ((request.model || request.effort) && plugins?.route) {
+    const resolved = await plugins.route({
+      ...(request.model ? { model: request.model } : {}),
+      ...(request.effort ? { effort: request.effort } : {}),
+      who,
+    })
+    route = resolved.route
+    notes.push(...resolved.notes)
+  }
+  let provenance: object = {}
+  if (request.isolation === 'worktree' && plugins) {
+    const isolated = await isolateChild(plugins, toolCallId, who)
+    provenance = isolated.provenance
+    notes.push(isolated.note)
+  }
+  return { route, provenance, notes }
 }
