@@ -127,3 +127,28 @@ describe('Discover', () => {
     expect(detail.similar?.map((ref) => ref.id)).toEqual(['checkers'])
   })
 })
+
+describe('Discover without an editorial source', () => {
+  // The hosted mini app catalog and the `localix` marketplace may answer 404 (offline, or a
+  // development build whose catalog is not published): official sources still fill Discover.
+  function officialOnly() {
+    const plugins = fakeProvider('plugin', [
+      plugin('review@official', 'official', { icon: '/media/review.svg', category: 'development' }),
+      plugin('pg@official', 'official', { category: 'database' }),
+      plugin('risky@community', 'community', { icon: '/media/risky.svg', featured: true }),
+    ])
+    return storeOf([plugins.provider]).store
+  }
+
+  test('the hero is the best official listing with a picture, never a community one', async () => {
+    const answer = await officialOnly().discover(actor, {})
+    expect(answer.hero).toMatchObject({ style: 'hero', items: [{ id: 'review@official' }] })
+    expect(answer.hero?.title).toBe('review@official')
+  })
+
+  test('Start here falls back to the official listings, never a community one', async () => {
+    const answer = await officialOnly().discover(actor, {})
+    expect(ids(answer, 'start')?.sort()).toEqual(['pg@official', 'review@official'])
+    expect(answer.listings.map((listing) => listing.ref.id)).toContain('review@official')
+  })
+})

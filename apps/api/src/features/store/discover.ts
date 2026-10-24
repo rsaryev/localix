@@ -23,6 +23,8 @@ import { refKey } from './index-rows'
  */
 
 const ROW = 12
+/** How many trusted listings a hero is looked for in when no editorial source picked one. */
+const FALLBACK = 24
 /** "New": a version published in the last quarter. */
 const NEW_MS = 90 * 24 * 60 * 60 * 1000
 const KIND_TITLES: Record<PackageKind, string> = {
@@ -74,7 +76,7 @@ export async function discoverOf(deps: {
   const kept = (items: readonly ListingRef[]) => items.filter((ref) => picked.has(refKey(ref)))
 
   const heroPick = editorial.find((pick) => pick.hero && picked.has(refKey(pick.hero.item)))
-  const hero: Collection | null = heroPick?.hero
+  const picks: Collection | null = heroPick?.hero
     ? {
         id: 'hero',
         title: heroPick.hero.title ?? picked.get(refKey(heroPick.hero.item))!.displayName,
@@ -85,6 +87,22 @@ export async function discoverOf(deps: {
         ...(heroPick.hero.image ? { image: heroPick.hero.image } : {}),
       }
     : null
+
+  // No editorial source could be read (offline, or a catalog not published yet): the best
+  // trusted listing with a picture leads, and Start here is the trusted ones by score.
+  const trustedTop = await index.page(userId, { trusted: true }, { limit: FALLBACK })
+  const fallbackHero = trustedTop.listings.find((listing) => listing.icon)
+  const hero: Collection | null =
+    picks ??
+    (fallbackHero
+      ? {
+          id: 'hero',
+          title: fallbackHero.displayName,
+          ...(fallbackHero.summary ? { subtitle: fallbackHero.summary } : {}),
+          style: 'hero',
+          items: [fallbackHero.ref],
+        }
+      : null)
 
   const row = (id: string, title: string, items: ListingRef[], subtitle?: string): Collection[] =>
     items.length ? [{ id, title, ...(subtitle ? { subtitle } : {}), style: 'row', items }] : []
@@ -97,8 +115,9 @@ export async function discoverOf(deps: {
     ...PACKAGE_KINDS.map((kind) => top({ shelf: `package:${kind}` })),
   ])
 
+  const startHere = start.length ? start : refs(trustedTop.listings.slice(0, ROW))
   const rows: Collection[] = [
-    ...row('start', 'Start here', start, 'What Localix suggests first'),
+    ...row('start', 'Start here', startHere, 'What Localix suggests first'),
     ...row('project', 'For this project', project, 'Suits what this project is written in'),
     ...editorial.flatMap((pick) =>
       pick.collections.flatMap((collection) => {
