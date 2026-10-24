@@ -274,6 +274,9 @@ export async function readSkillsFromRoot(
           ),
         )
       else warnEmptyBody(logger, rootSkillPath)
+      // A folder holding SKILL.md directly IS one skill (Claude Code's either/or): its own
+      // subfolders are its files, not more skills.
+      return skills
     }
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== 'ENOENT')

@@ -101,7 +101,8 @@ export async function resolveEntrypoints(
   // Deduplicate so a manifest can't declare the same skill dir twice (causes double-scanning).
   const skillDirSet = new Set([
     ...explicitSkillDirs,
-    ...(rootHasSkillMd && !explicitSkillDirs.includes(dir) ? [dir] : []),
+    // CC: a root `SKILL.md` is the plugin's one skill only with no `skills/` and no `skills` key.
+    ...(rootHasSkillMd && !defaultExists && manifest.skills === undefined ? [dir] : []),
     ...(defaultExists && !explicitSkillDirs.includes(defaultSkillDir) ? [defaultSkillDir] : []),
   ])
   const skillDirs = [...skillDirSet]
