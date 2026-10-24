@@ -299,9 +299,9 @@ Each step lands with its tests first, a screenshot scenario for the Store and th
   a `store` poke for a `mini-app` or `mini-app.catalog` notice (`bootstrap/store.ts`). The mini apps
   provider lists from its catalogs as the old store page did, so a catalog older than ten minutes is
   read again on that rebuild.
-- **Activity.** `/rpc/store/activity` and `/updates/apply` exist; the Event Center's In progress and
-  the update strip still read the mini app store's own feed (`/rpc/mini-apps/store/activity`), which
-  stays until step 2 adds plugin jobs to the same feed.
+- **Activity.** `/rpc/store/activity` and `/updates/apply` exist; at step 1 the Event Center's In
+  progress and the update strip still read the mini app store's own feed, which stays until step 2
+  adds plugin jobs to the same feed.
 - **Settings → Mini apps** no longer lists catalogs: it opens the Store and its Sources.
 - **Sources** offers "Add …" for every kind with a source; the contract does not yet say whether a
   provider can add one.
@@ -321,6 +321,11 @@ The API side of step 2; the screens that use all of it come in the step's UI par
   `project` the open project's (`StoreActor.projectId`, sent as `projectId` on the write routes).
   Installs and updates are the Store's own jobs (`store-jobs.ts`); the update pass's jobs show
   through the same field, so `/rpc/store/activity` covers plugin jobs and updates.
+- **One activity feed.** The Event Center's In progress and the composer's update strip read
+  `/rpc/store/activity` on the `store` poke: one row per job of any kind, opening its page in the
+  Store, and one offer for every package update, whose **Update all** is `/updates/apply`. The mini
+  app store's own feed and Update all routes, the `mini-app-installs` poke and the UI's plugin
+  updates client are gone; Settings → Plugins still reads `/rpc/plugins/updates`.
 - **Trust.** `listing.source` carries `trust` and `weight`, a `SourceView` its `trust`. A listing
   also says its `origin`, `alsoIn`, `homepage` and `updatedAt`.
 - **Paging and filters.** `/listings` takes `cursor`, `limit` (40, at most 500), `category`,

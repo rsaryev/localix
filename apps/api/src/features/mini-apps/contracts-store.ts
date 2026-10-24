@@ -42,37 +42,6 @@ export const miniAppStoreResponseSchema = z.object({
 })
 export type MiniAppStoreResponse = z.infer<typeof miniAppStoreResponseSchema>
 
-/**
- * What the store is doing in the background (`GET /store/activity`, `store-activity.ts`): the
- * installs and updates in flight, and the updates the catalogs already offer. Read on every
- * `mini-app-installs` poke by the surfaces always on screen; it never fetches a catalog.
- */
-export const miniAppStoreActivitySchema = z.object({
-  jobs: z.array(
-    z.object({
-      name: z.string(),
-      displayName: z.string().optional(),
-      icon: z.string().optional(),
-      version: z.string().optional(),
-      kind: z.enum(['install', 'update']),
-      phase: jobPhaseSchema,
-      received: z.number().optional(),
-      total: z.number().optional(),
-      error: z.string().optional(),
-    }),
-  ),
-  updates: z.array(
-    z.object({
-      name: z.string(),
-      displayName: z.string().optional(),
-      icon: z.string().optional(),
-      from: z.string().optional(),
-      to: z.string(),
-    }),
-  ),
-})
-export type MiniAppStoreActivityRecord = z.infer<typeof miniAppStoreActivitySchema>
-
 export const installMiniAppRequestSchema = z.object({
   name: z.string().min(1),
   /** The person said yes to a publisher Localix does not vouch for. */

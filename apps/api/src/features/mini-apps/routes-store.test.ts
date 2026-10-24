@@ -59,23 +59,6 @@ function app(installed: string[], catalogs: string[] = []) {
           : { bytes: PNG, type: 'image/png', index },
       install: async (name: string, opts: { acceptUnverified?: boolean }) =>
         void installed.push(opts.acceptUnverified ? `${name}!` : name),
-      activity: async () => ({
-        jobs: [
-          {
-            name: 'chess',
-            displayName: 'Chess',
-            kind: 'install',
-            phase: 'downloading',
-            received: 10,
-            total: 40,
-          },
-        ],
-        updates: [{ name: 'kanban', from: '1.0.0', to: '1.1.0' }],
-      }),
-      updateInstalled: async () => {
-        installed.push('*update*')
-        return ['kanban']
-      },
     },
   } as unknown as MiniAppRoutesService
   const root = new Hono<AppContext>()
@@ -103,34 +86,6 @@ describe('/rpc/mini-apps/store', () => {
     })
     expect(response.status).toBe(202)
     expect(installed).toEqual(['chess!'])
-  })
-
-  test('what the store is doing in the background: installs in flight and the updates offered', async () => {
-    const response = await app([]).request('/rpc/mini-apps/store/activity')
-    expect(response.status).toBe(200)
-    expect(await response.json()).toEqual({
-      jobs: [
-        {
-          name: 'chess',
-          displayName: 'Chess',
-          kind: 'install',
-          phase: 'downloading',
-          received: 10,
-          total: 40,
-        },
-      ],
-      updates: [{ name: 'kanban', from: '1.0.0', to: '1.1.0' }],
-    })
-  })
-
-  test('Update all is queued and answered at once with the apps it queued', async () => {
-    const installed: string[] = []
-    const response = await app(installed).request('/rpc/mini-apps/store/update', {
-      method: 'POST',
-    })
-    expect(response.status).toBe(202)
-    expect(await response.json()).toEqual({ queued: ['kanban'] })
-    expect(installed).toEqual(['*update*'])
   })
 
   test('the catalogs are listed, added and removed; a write answers 204 and is announced', async () => {

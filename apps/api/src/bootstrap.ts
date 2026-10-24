@@ -303,7 +303,6 @@ export async function bootstrap(
         statusPokes: {
           localModels,
           semanticService,
-          miniAppStore: miniAppService.store,
           store: storeService,
           pluginUpdates: pluginService.updates,
           chatService,

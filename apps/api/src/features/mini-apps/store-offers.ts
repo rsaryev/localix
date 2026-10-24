@@ -217,10 +217,8 @@ export function createOfferReader(deps: {
   async function catalogOffers(
     source: Extract<MiniAppStoreSource, { kind: 'catalog' }>,
     fresh: boolean,
-    cachedOnly: boolean,
   ): Promise<{ offers: Offer[]; editorial?: MiniAppCatalogEditorial }> {
     const cached = cache.get(source.url)
-    if (cachedOnly) return cached ?? { offers: [] }
     if (cached && !fresh && now() - cached.at < ttl) return cached
     const { apps, editorial } = await readMiniAppCatalogFeed(source.url, {
       fetchImpl: deps.fetchImpl,
@@ -271,10 +269,8 @@ export function createOfferReader(deps: {
 
   /**
    * Every offer by name — the first source to offer a name wins it — and what could not be read.
-   * `cachedOnly` answers from what the hosted catalogs said last, fetching nothing: the reads a
-   * background surface makes must never be what sends a request out.
    */
-  return async function read(opts: { fresh?: boolean; cachedOnly?: boolean } = {}): Promise<{
+  return async function read(opts: { fresh?: boolean } = {}): Promise<{
     offers: Map<string, Offer>
     problems: string[]
     /** Each vouched source's picks for Discover, by the source's address. */
@@ -289,7 +285,7 @@ export function createOfferReader(deps: {
         found =
           source.kind === 'local'
             ? await localOffers(source)
-            : await catalogOffers(source, opts.fresh ?? false, opts.cachedOnly ?? false)
+            : await catalogOffers(source, opts.fresh ?? false)
       } catch (error) {
         problems.push(errorMessage(error))
         found =

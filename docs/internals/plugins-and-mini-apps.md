@@ -102,8 +102,8 @@ Mini apps follow the [architecture](architecture/README.md) like any owned model
   owner; none patches another's state (C6).
 - The backend host, the channel host and the contribution sync are reactors on those notices, each
   with its own cursor, never a callback from the writer (C5).
-- An install or update in flight is in-memory status: it pokes `mini-app-installs`, and the client
-  pulls the progress rows, as the local models do.
+- An install or update in flight is in-memory status: the Store indexes its job and pokes `store`,
+  and the client pulls the Store's activity (`/rpc/store/activity`), as the local models do.
 
 ### Package format v1
 

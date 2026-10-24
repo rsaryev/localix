@@ -6,12 +6,9 @@ import { errorMessage } from '../../lib/errors'
 import { MINI_APPS_SUBDIR } from './paths'
 import {
   ACTIVE_PHASES,
-  iconOf,
   isIncompatible as incompatible,
   isUpdatable,
-  readStoreActivity,
   type MiniAppInstallOutcome,
-  type MiniAppJobLabel,
 } from './store-activity'
 import { storePage, type MiniAppStorePage } from './store-detail'
 import { storeEntry, type MiniAppJob, type MiniAppStoreEntry } from './store-entry'
@@ -25,13 +22,13 @@ import {
 } from './store-offers'
 
 export type { MiniAppPublisher, MiniAppStoreSource } from './store-offers'
-export type { MiniAppInstallOutcome, MiniAppStoreActivity } from './store-activity'
+export type { MiniAppInstallOutcome } from './store-activity'
 
 /**
  * The mini app store: what the catalogs offer, what is installed, and the installs in flight
  * (`docs/internals/plugins-and-mini-apps.md`, "Catalogs and sources"). Nothing is installed until
  * the person chooses it (rule X5), but the apps Localix recommends (`recommended.ts`). An install is in-memory status — every move of a job tells the
- * subscribers, which poke `mini-app-installs` so the client re-reads the list — and a finished one
+ * subscribers, the Store among them, whose `store` poke tells the client to read again — and a finished one
  * is announced through `onInstalled`. When the queue drains, how each install went is handed to
  * `onJobsSettled`, which records it in the person's journal (the owner announces).
  */
@@ -71,7 +68,6 @@ export function createMiniAppStore(deps: {
     fetchImpl: deps.fetchImpl,
   })
   const jobs = new Map<string, MiniAppJob>()
-  const labels = new Map<string, MiniAppJobLabel>()
   let outcomes: MiniAppInstallOutcome[] = []
   const listeners = new Set<() => void>()
   let queue: Promise<void> = Promise.resolve()
@@ -79,22 +75,12 @@ export function createMiniAppStore(deps: {
     jobs.set(name, job)
     for (const listener of listeners) listener()
   }
-  const labelJob = (offer: Offer, kind: MiniAppJobLabel['kind']) => {
-    const icon = iconOf(offer)
-    labels.set(offer.name, {
-      ...(offer.displayName ? { displayName: offer.displayName } : {}),
-      ...(icon ? { icon } : {}),
-      ...(offer.version ? { version: offer.version } : {}),
-      kind,
-    })
-  }
   const busy = (name: string) => ACTIVE_PHASES.has(jobs.get(name)?.phase ?? 'done')
 
   async function run(offer: Offer, userId: string | undefined): Promise<void> {
     const fresh = (await installedBy(join(installRoot, offer.name))) === null
     const label = offer.displayName ?? offer.name
     const kind = fresh ? 'install' : 'update'
-    labelJob(offer, kind)
     const outcome = {
       name: offer.name,
       label,
@@ -145,8 +131,7 @@ export function createMiniAppStore(deps: {
     return offer
   }
 
-  const enqueue = (offer: Offer, kind: MiniAppJobLabel['kind'], userId?: string) => {
-    labelJob(offer, kind)
+  const enqueue = (offer: Offer, userId?: string) => {
     setJob(offer.name, { phase: 'queued' })
     queue = queue.then(() => run(offer, userId)).then(reportIfDrained)
   }
@@ -197,7 +182,7 @@ export function createMiniAppStore(deps: {
           'mini_app_unverified',
           `"${name}" comes from an unverified publisher (${offer.publisher.name}); confirm to install it`,
         )
-      enqueue(offer, by === null ? 'install' : 'update', opts.userId)
+      enqueue(offer, opts.userId)
     },
 
     /**
@@ -212,19 +197,10 @@ export function createMiniAppStore(deps: {
         // A staged first-party copy an earlier build installed moves to the catalog's on its next
         // version; a folder the person made is theirs (`isUpdatable`).
         if (busy(offer.name) || !(await isUpdatable(offer, installRoot))) continue
-        enqueue(offer, 'update')
+        enqueue(offer)
         queued.push(offer.name)
       }
       return queued
-    },
-
-    /**
-     * The installs in flight and the updates the catalogs already offer, from what the store last
-     * read — never a catalog fetch of its own (`store-activity.ts`).
-     */
-    async activity() {
-      const { offers } = await readOffers({ cachedOnly: true })
-      return readStoreActivity({ jobs, labels, offers, installRoot })
     },
 
     /** Read every catalog again, so the next list is fresh; tells the subscribers. */

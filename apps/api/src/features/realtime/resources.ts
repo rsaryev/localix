@@ -13,8 +13,6 @@ export const REALTIME_RESOURCES = [
   'system',
   // In-memory status a service signals as it moves (a download, an index build), not a table.
   'local-models',
-  // Mini app installs and updates in flight, with their progress.
-  'mini-app-installs',
   // Claude Code plugin updates: what is offered and the updates in flight
   // (`/rpc/plugins/updates`).
   'plugin-updates',
