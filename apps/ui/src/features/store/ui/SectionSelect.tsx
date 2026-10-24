@@ -6,7 +6,7 @@ import { Select } from '@localixai/kit/select'
  * The Store's sections as one picker, for a pane too narrow for the shelf column: the same
  * groups and counts as the column, in its order.
  */
-export function SectionPicker({
+export function SectionSelect({
   groups,
   active,
   onSelect,

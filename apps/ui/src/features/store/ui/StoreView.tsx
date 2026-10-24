@@ -12,7 +12,7 @@ import { navGroups, parseSection, sectionLabel, type StoreSection } from '../mod
 import { useExtrasAfterInstall } from '../model/useExtrasAfterInstall'
 import { useStoreListings, useStoreSources } from '../model/useStoreData'
 import { AddSourceDialog } from './AddSourceDialog'
-import { SectionPicker } from './SectionPicker'
+import { SectionSelect } from './SectionSelect'
 import { StoreContent } from './StoreContent'
 
 const scopeOf = (listing: Listing): Scope => listing.installs[0]?.scope ?? 'user'
@@ -150,7 +150,7 @@ export function StoreView({
           size="md"
           className="w-72 max-w-full min-w-0 flex-1 @2xl/store:flex-none"
         />
-        <SectionPicker
+        <SectionSelect
           groups={groups}
           active={q ? '' : section}
           onSelect={choose}
