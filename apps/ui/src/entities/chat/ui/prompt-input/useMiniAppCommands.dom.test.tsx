@@ -48,12 +48,12 @@ const snapshotWith = (projectId: string, commands: MiniAppCommandSpec[]) =>
     grammar: { kinds: [], effects: [], classes: [], examples: [] },
   }) as unknown as CapabilitySnapshot
 
-const CHESS_COMMANDS: MiniAppCommandSpec[] = [
+const SCOREBOARD_COMMANDS: MiniAppCommandSpec[] = [
   {
-    app: 'chess',
+    app: 'scoreboard',
     name: 'new-game',
-    fullName: 'chess:new-game',
-    description: 'Start a game against the agent',
+    fullName: 'scoreboard:new-game',
+    description: 'Start a round against the agent',
     featured: true,
     args: [
       {
@@ -64,9 +64,9 @@ const CHESS_COMMANDS: MiniAppCommandSpec[] = [
     ],
   },
   {
-    app: 'chess',
+    app: 'scoreboard',
     name: 'open',
-    fullName: 'chess:open',
+    fullName: 'scoreboard:open',
     description: '',
     args: [{ name: 'game', type: 'choice', dynamic: true }],
   },
@@ -84,7 +84,7 @@ async function mountCommands(enabled = true) {
   const reads: Array<string | null | undefined> = []
   spyOn(backendClient, 'fetchCapabilitySnapshot').mockImplementation(async (scope) => {
     reads.push(scope?.projectId)
-    return snapshotWith(scope?.projectId ?? '', CHESS_COMMANDS)
+    return snapshotWith(scope?.projectId ?? '', SCOREBOARD_COMMANDS)
   })
   let commands: SlashCommand[] = []
   function Composer() {
@@ -114,9 +114,9 @@ describe('mini app commands in the composer', () => {
     const view = await mountCommands()
     expect(view.reads).toEqual(['p1'])
     expect([...view.host.querySelectorAll('li')].map((item) => item.textContent)).toEqual([
-      '/chess:new-game — Start a game against the agent',
+      '/scoreboard:new-game — Start a round against the agent',
       // No description of its own: the app it comes from.
-      '/chess:open — From chess',
+      '/scoreboard:open — From scoreboard',
     ])
     await view.done()
   })
@@ -124,7 +124,7 @@ describe('mini app commands in the composer', () => {
   test('a command takes its arguments, typed after its name; a dynamic one asks the app', async () => {
     const view = await mountCommands()
     const [newGame, open] = view.commands()
-    expect(newGame).toMatchObject({ prefix: '/chess:new-game ', featured: true })
+    expect(newGame).toMatchObject({ prefix: '/scoreboard:new-game ', featured: true })
     expect(newGame!.args?.[0]).toMatchObject({
       name: 'side',
       type: 'choice',
@@ -135,7 +135,7 @@ describe('mini app commands in the composer', () => {
     })
     expect(newGame!.argSource).toBeUndefined()
     expect(open!.featured).toBeUndefined()
-    expect(open!.argSource).toEqual({ app: 'chess', command: 'open' })
+    expect(open!.argSource).toEqual({ app: 'scoreboard', command: 'open' })
     await view.done()
   })
 
