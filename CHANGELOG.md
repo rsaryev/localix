@@ -128,6 +128,10 @@ Changes land on `main`.
   `if` anchor path rules at the working directory, `//` or `~/`, cover writes with `Edit(...)` and
   searches with `Read(...)`, and understand `WebFetch(domain:…)`, `Agent(…)`, `Skill(…)` and a bare
   `mcp__<server>`. See [Permission rules](docs/features/permissions.md).
+- **Plugins installed in Claude Code** load from the folder `CLAUDE_CONFIG_DIR` names when you moved
+  your Claude Code configuration, and follow your organization's managed settings: a plugin they
+  turn off stays off and one they turn on cannot be turned off. A `.claude/settings.local.json` at
+  the repository root now applies in a subfolder too, as in Claude Code.
 - **Long MCP tool calls** are no longer cut off after 30 seconds: as in Claude Code, a call may run
   for about 28 hours unless the server's `timeout` or `MCP_TOOL_TIMEOUT` says otherwise, and fails
   sooner only when its server stays silent — no answer and no progress — for 30 minutes (stdio) or 5
