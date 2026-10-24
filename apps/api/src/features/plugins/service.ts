@@ -61,6 +61,8 @@ import {
 import { removePlugin } from './service-remove'
 import { resolveFreshMarketplaceInstall } from './marketplace-refresh'
 import { createDeclaredMarketplaceSync } from './declared-marketplaces'
+import { installNodeDependencies } from './plugin-node-deps'
+import { userDefaultNpmRegistry } from './marketplace-npm-registry'
 import { inPlaceInstallFor, inPlacePublication } from './install-in-place'
 import { assertNameNotBuiltin, assertNotBuiltin, BUILTIN_ORIGIN } from './builtin-plugins'
 import { createPluginUpdates } from './plugin-updates'
@@ -482,6 +484,13 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
         installNotes.push(
           ...(candidate.manifestIssues ?? []).map((found) => `${found.path}: ${found.message}`),
         )
+        // A copied plugin's Node.js packages install from its lockfile, scripts off (loading.md).
+        if (!inPlace) {
+          const packages = await installNodeDependencies(directory, {
+            defaultRegistry: await userDefaultNpmRegistry(),
+          })
+          if (packages.skipped) installNotes.push(packages.skipped)
+        }
       }
       if (resolvedMarket) {
         const discovered = await discover({ cwd, projectId })
