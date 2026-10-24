@@ -12,6 +12,7 @@ import { resolvePluginConfig } from './config'
 import type { PluginCommand, PluginCommandSpec } from './contracts'
 import { pluginLoadBlockReason } from './load-block'
 import { makePluginSubstituter } from './loader-runtime-declarations'
+import { readPluginCommandSkills } from './plugin-command-skills'
 
 /**
  * A plugin's `SKILL.md` skill as the person types it: `/<plugin>:<skill>`.
@@ -91,6 +92,21 @@ export async function readCatalogPluginSkills(
             skill,
           })
         }
+      }
+      // Its command files, as Claude Code invokes them: skills of the same frontmatter.
+      const taken = new Set(out.map((entry) => entry.skill.name))
+      for (const skill of await readPluginCommandSkills(plugin, scope, taken, subst, opts.logger)) {
+        if (skill.description) skill.description = subst(skill.description)
+        if (skill.allowedTools) skill.allowedTools = skill.allowedTools.map(subst)
+        skill.pluginName = name
+        const fullName = pluginSkillFullName(name, skill.name)
+        out.push({
+          pluginName: name,
+          pluginDir: plugin.dir,
+          fullName,
+          shortName: fullName.slice(name.length + 1),
+          skill,
+        })
       }
       return out
     }),

@@ -57,22 +57,39 @@ export async function readCommandFilesAsSkills(
   const out: DiscoveredSkill[] = []
   for (const path of files) {
     const name = relative(container, path).replace(/\.md$/i, '').split(/[\\/]/).join(':')
-    if (!COMMAND_NAME_RE.test(name)) continue
-    const readPath = await canonicalPathWithin(path, safetyRoot, logger)
-    if (!readPath) continue
-    try {
-      const fm = parseSkillFrontmatter(await readSkillMarkdownFile(readPath))
-      if (!fm.body) continue
-      delete fm.name
-      delete fm.activationPaths
-      out.push(makeLazySkill(fm, name, scope, path, dirname(path), readPath))
-    } catch (error) {
-      logger.warn(`[skills] ignoring command "${path}": ${skillFileErrorDetail(error)}`, {
-        code: 'read_failed',
-        kind: 'command',
-        path,
-      })
-    }
+    const skill = await readCommandFileAsSkill(path, name, scope, logger, safetyRoot)
+    if (skill) out.push(skill)
   }
   return out
+}
+
+/**
+ * One command file as a skill named `name` (its path with `:`), or null when it cannot be one.
+ * `transformContent` is a plugin's path and option substitution for the body.
+ */
+export async function readCommandFileAsSkill(
+  path: string,
+  name: string,
+  scope: 'project' | 'global',
+  logger: SkillScanLogger,
+  safetyRoot: string | null,
+  transformContent?: (content: string) => string,
+): Promise<DiscoveredSkill | null> {
+  if (!COMMAND_NAME_RE.test(name)) return null
+  const readPath = await canonicalPathWithin(path, safetyRoot, logger)
+  if (!readPath) return null
+  try {
+    const fm = parseSkillFrontmatter(await readSkillMarkdownFile(readPath))
+    if (!fm.body) return null
+    delete fm.name
+    delete fm.activationPaths
+    return makeLazySkill(fm, name, scope, path, dirname(path), readPath, transformContent)
+  } catch (error) {
+    logger.warn(`[skills] ignoring command "${path}": ${skillFileErrorDetail(error)}`, {
+      code: 'read_failed',
+      kind: 'command',
+      path,
+    })
+    return null
+  }
 }

@@ -12,6 +12,7 @@ import { buildLoadedAgent, emptyLoadedPlugins, type LoadedPlugins } from './load
 import { resolvePluginConfig } from './config'
 import { recordPluginLoad } from '../notifications/conditions/plugins'
 import { buildMcpRecords } from './mcp'
+import { readPluginCommandSkills } from './plugin-command-skills'
 import {
   makePluginSubstituter,
   appendPluginRuntimeDeclarations,
@@ -157,6 +158,21 @@ export async function loadEnabledPlugins(opts: {
           `plugin "${plugin.manifest.name}" failed to read skills from ${skillDir}`,
           { error: message },
         )
+      }
+    }
+
+    // ---- Command files, read as the skills Claude Code invokes them as ----
+    {
+      const scope = plugin.scope === 'project' ? 'project' : 'global'
+      const taken = new Set(
+        result.skills.filter((s) => s.pluginName === plugin.manifest.name).map((s) => s.name),
+      )
+      for (const skill of await readPluginCommandSkills(plugin, scope, taken, subst, opts.logger)) {
+        if (skill.description) skill.description = subst(skill.description)
+        if (skill.allowedTools) skill.allowedTools = skill.allowedTools.map(subst)
+        skill.pluginName = plugin.manifest.name
+        skill.pluginRoot = plugin.dir
+        result.skills.push(skill)
       }
     }
 
