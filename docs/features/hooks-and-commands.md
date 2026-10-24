@@ -120,9 +120,10 @@ compose and the first deny stops the call. `PostToolUse` replacements are visibl
 
 Tool-event matchers accept engine names and compatible aliases such as `Bash`, including MCP name
 forms. Empty, omitted, or `*` matchers match all. Simple names separated by `|` or commas compare
-case-insensitively; other patterns are unanchored JavaScript regular expressions. Invalid regexes do
-not match. `UserPromptSubmit` and `Stop` ignore group matchers; other lifecycle matchers inspect the
-event's source, reason, agent type, notification type, or checkpoint trigger.
+exactly, case included (`Bash`, not `bash`, is Claude Code's name); other patterns are unanchored
+JavaScript regular expressions. Invalid regexes do not match. `UserPromptSubmit` and `Stop` ignore
+group matchers; other lifecycle matchers inspect the event's source, reason, agent type,
+notification type, or checkpoint trigger.
 
 A matcher meets the Claude Code name of the call itself: a file listing is `Glob` and a content
 search `Grep`, so a `Glob` matcher does not fire for a content search. `MultiEdit` matches an edit

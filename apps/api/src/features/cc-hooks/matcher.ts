@@ -38,13 +38,13 @@ export function isMatchAll(matcher: string | undefined): boolean {
 }
 
 /**
- * Split an exact-match matcher into its lowercased alternatives (on `|` or `,`),
+ * Split an exact-match matcher into its alternatives (on `|` or `,`), as written,
  * expanding each CC MCP name form with `variants` (mcp-names.ts).
  */
 function exactAlternatives(matcher: string, variants: (token: string) => string[]): string[] {
   return matcher
     .split(/[|,]/)
-    .map((s) => s.trim().toLowerCase())
+    .map((s) => s.trim())
     .filter((s) => s.length > 0)
     .flatMap(variants)
 }
@@ -62,7 +62,7 @@ function variantsFor(candidates: readonly string[]): (token: string) => string[]
 
 /**
  * Match a matcher against a set of candidate names. Exact matchers compare
- * case-insensitively against each candidate; regex matchers `.test` each one —
+ * case-sensitively against each candidate; regex matchers `.test` each one —
  * a matcher whose source is a CC MCP name form is also tried with its engine-form
  * source rewrites (`mcp__…` → `mcp_…`), so CC-written regexes match live tools.
  */
@@ -70,9 +70,9 @@ function matchAny(matcher: string, candidates: readonly string[]): boolean {
   if (isMatchAll(matcher)) return true
   const variants = variantsFor(candidates)
   if (EXACT_ONLY.test(matcher)) {
+    // Case-sensitive, as in Claude Code: `Bash` matches the Bash tool, `bash` only the engine's.
     const alts = exactAlternatives(matcher, variants)
-    const lowered = candidates.map((c) => c.toLowerCase())
-    return alts.some((a) => lowered.includes(a))
+    return alts.some((a) => candidates.includes(a))
   }
   for (const source of variants(matcher)) {
     let re: RegExp
@@ -163,8 +163,8 @@ const ENGINE_TO_CC: Readonly<Record<string, string[]>> = (() => {
 
 /**
  * The full set of names a matcher may use to refer to an engine tool: its own
- * (lowercased) engine name plus every CC alias that maps to it, lowercased and as Claude Code
- * writes it. E.g. engine `research` → `['research','webfetch','WebFetch','websearch','WebSearch']`.
+ * (lowercased) engine name plus every CC alias that maps to it, as Claude Code writes it.
+ * E.g. engine `research` → `['research','WebFetch','WebSearch']`.
  * The cased names are what a regex matcher sees as Claude Code does (`RegExp.test` on `Bash`).
  */
 export function toolNameCandidates(
@@ -174,13 +174,9 @@ export function toolNameCandidates(
 ): string[] {
   const lower = engineToolName.toLowerCase()
   const set = new Set<string>([lower])
-  for (const cc of ENGINE_TO_CC[lower] ?? []) {
-    set.add(cc)
-    const cased = CC_CASED_NAMES.get(cc)
-    if (cased) set.add(cased)
-  }
+  for (const cc of ENGINE_TO_CC[lower] ?? []) set.add(CC_CASED_NAMES.get(cc) ?? cc)
   // The names the tool's calls carry as `tool_name` (`delegate` is `Agent`, `SendMessage` …).
-  for (const cc of claudeCodeNames(lower)) set.add(cc).add(cc.toLowerCase())
+  for (const cc of claudeCodeNames(lower)) set.add(cc)
   // MCP + plugin tools have no CC alias — the engine name is the only candidate,
   // preserved in its original casing too so a case-sensitive regex still matches.
   if (engineToolName !== lower) set.add(engineToolName)

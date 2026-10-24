@@ -23,11 +23,19 @@ describe('matcher', () => {
     expect(isMatchAll('Bash')).toBe(false)
   })
 
-  it('exact single + | / , alternation (case-insensitive)', () => {
+  it('exact single + | / , alternation', () => {
     expect(matchesField('startup', 'startup')).toBe(true)
     expect(matchesField('startup|resume', 'resume')).toBe(true)
     expect(matchesField('startup, resume', 'resume')).toBe(true)
     expect(matchesField('startup', 'clear')).toBe(false)
+  })
+
+  it('an exact matcher is case-sensitive, as in Claude Code ("Bash matches only the Bash tool")', () => {
+    expect(matchesField('Startup', 'startup')).toBe(false)
+    expect(matchesToolName('BASH', 'bash')).toBe(false)
+    expect(matchesToolName('grep', 'search')).toBe(false)
+    expect(matchesToolName('edit|write', 'write')).toBe(true) // `write` is the engine's own name
+    expect(matchesToolName('Grep', 'search')).toBe(true)
   })
 
   it('regex path for matchers with special chars', () => {
@@ -57,11 +65,11 @@ describe('matcher', () => {
     expect(matchesToolName('^Bash$', 'search')).toBe(false)
   })
 
-  it('candidate set includes engine + CC aliases', () => {
+  it('candidate set includes engine + CC aliases as Claude Code writes them', () => {
     const c = toolNameCandidates('search')
     expect(c).toContain('search')
-    expect(c).toContain('grep')
-    expect(c).toContain('glob')
+    expect(c).toContain('Grep')
+    expect(c).toContain('Glob')
   })
 })
 
