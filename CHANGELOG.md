@@ -71,6 +71,11 @@ Changes land on `main`.
   pinned version, a tarball link and a private registry token, a dependency's version range installs
   the matching release tag, and a copied plugin gets its Node.js packages from its lockfile. See
   [Claude Code settings](docs/extending/claude-code-plugins.md#claude-code-settings).
+- **More from Claude Code hooks**: a policy hook with `"onFailure": "block"` blocks the action when
+  it fails; PermissionRequest hooks see the card's widenings as suggestions and may grant one; and
+  hooks read `prompt_id`, `effort`, the model, `duration_ms` and the session's background work. See
+  [Hooks and commands](docs/features/hooks-and-commands.md).
+
 - **Mini app store pages**: every mini app has its own icon, and choosing one in the store opens its
   page: screenshots at full resolution with a full-window viewer, its README as About, and details
   such as size, license and what it adds. Tags filter the store, and featured apps come first. See
@@ -207,6 +212,14 @@ Changes land on `main`.
   again first, so a plugin added since is found and new commits arrive; an update with nothing new
   leaves the plugin as it is, a renamed plugin moves to its new name, and a dependency names its own
   marketplace. See [Marketplaces](docs/extending/claude-code-plugins.md#marketplaces).
+- **Claude Code plugin hooks behave as in Claude Code**: matching hooks run at once instead of one
+  after another; a call that edits, writes or reads several files runs each file's hooks with its
+  `file_path`; delegated tasks, skill runs and page reads reach hooks as `Agent`, `Skill` and
+  `WebFetch`; PostToolUse hooks read each tool's result in Claude Code's shape, and their exit 2
+  reaches the agent; exact matchers are case-sensitive; Stop hooks may continue a turn eight times
+  in a row; and stdout, exit codes and long output follow Claude Code's rules. See
+  [Claude Code plugins](docs/extending/claude-code-plugins.md#hook-events).
+
 - **Group chats** keep routing a message to the right participant after the model catalog refreshes:
   the decision model was dropped when the catalog named its vendor's own package.
 - **A repository can no longer run code before you allow it**: a plugin in a project named like one
