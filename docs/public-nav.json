@@ -121,6 +121,7 @@
       "pages": [
         "extending/mini-apps.md",
         "extending/claude-code-plugins.md",
+        "extending/claude-code-settings.md",
         "extending/plugin-updates.md",
         "extending/build-with-the-agent.md",
         "extending/mini-app-publishing.md",

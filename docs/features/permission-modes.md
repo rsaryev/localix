@@ -25,7 +25,7 @@ Restrictions that modes preserve:
   recognized destructive forms, including disk formatting and recursive forced deletion of a home or
   system root. This is a lexical guard, not a guarantee about every executable's behavior.
 
-### Claude Code's mode settings
+### Mode settings from Claude Code
 
 A new conversation starts in the mode `permissions.defaultMode` names in the Claude Code settings
 files for its folder: `default` (or `manual`) is Default, `plan` is Plan and `bypassPermissions` is
