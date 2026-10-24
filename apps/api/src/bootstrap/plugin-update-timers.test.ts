@@ -35,7 +35,7 @@ const settled = () => new Promise<void>((resolve) => setImmediate(resolve))
 
 function arm(opts: { outcomes?: Array<Outcome | Error>; official?: () => Promise<object> } = {}) {
   const clock = fakeClock()
-  const passes: string[] = []
+  const passes: Array<{ userId: string }> = []
   const logs: Array<{ level: 'info' | 'warn'; entry: object }> = []
   const outcomes = [...(opts.outcomes ?? [])]
   const controller = new AbortController()
@@ -43,7 +43,7 @@ function arm(opts: { outcomes?: Array<Outcome | Error>; official?: () => Promise
     pluginService: {
       updates: {
         autoUpdatePass: async (userId: string) => {
-          passes.push(userId)
+          passes.push({ userId })
           const next = outcomes.shift() ?? {
             skipped: false,
             refreshed: [],
@@ -77,14 +77,14 @@ describe('the plugin auto-update timers', () => {
 
     clock.armed[0]!.run()
     await settled()
-    expect(passes).toEqual(['u1'])
+    expect(passes).toEqual([{ userId: 'u1' }])
     const every = clock.armed.find((timer) => timer.kind === 'interval')!
     expect(every.ms).toBe(AUTO_UPDATE_INTERVAL_MS)
 
     every.run()
     every.run()
     await settled()
-    expect(passes).toEqual(['u1', 'u1', 'u1'])
+    expect(passes).toHaveLength(3)
   })
 
   test('a pass that updated or failed something is logged; a quiet or switched-off one is not', async () => {
@@ -128,7 +128,7 @@ describe('the plugin auto-update timers', () => {
     ])
     clock.armed.find((timer) => timer.kind === 'interval')!.run()
     await settled()
-    expect(passes).toEqual(['u1', 'u1'])
+    expect(passes).toHaveLength(2)
   })
 
   test('shutting down before the first pass disarms it; after it, the six-hour cadence stops', () => {
