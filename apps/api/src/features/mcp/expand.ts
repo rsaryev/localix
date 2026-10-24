@@ -2,8 +2,11 @@
  * Claude-Code-compatible environment variable expansion for MCP server configs.
  *
  * Supported syntax (per the CC `.mcp.json` reference):
- *   - `${VAR}`          → the value of `VAR`, or '' when unset
+ *   - `${VAR}`          → the value of `VAR`; unset and without a default, the `${VAR}` text stays
+ *                         as written, as Claude Code keeps it
  *   - `${VAR:-default}` → the value of `VAR` when set, otherwise `default`
+ * In `url` and `headers` — what reaches a remote server — a credential name reads as empty,
+ * default or not (`lib/credential-env-name.ts`).
  *
  * Expansion is applied at CONNECT time (not when a record is stored) so the same
  * config works across machines: it's read fresh from `process.env` plus a small
@@ -12,15 +15,23 @@
  *
  * Pure module: the environment map is injected so it's trivially testable.
  */
+import { isCredentialEnvName } from '../../lib/credential-env-name'
+
+const REMOTE = { remote: true }
 
 const VAR_RE = /\$\{([A-Za-z_][A-Za-z0-9_]*)(?::-([^}]*))?\}/g
 
 /** Expand `${VAR}` / `${VAR:-default}` in a single string against `env`. */
-export function expandString(input: string, env: Record<string, string | undefined>): string {
-  return input.replace(VAR_RE, (_full, name: string, fallback: string | undefined) => {
+export function expandString(
+  input: string,
+  env: Record<string, string | undefined>,
+  options: { remote?: boolean } = {},
+): string {
+  return input.replace(VAR_RE, (full, name: string, fallback: string | undefined) => {
+    if (options.remote && isCredentialEnvName(name)) return ''
     const value = env[name]
     if (value !== undefined && value !== '') return value
-    return fallback ?? ''
+    return fallback ?? full
   })
 }
 
@@ -35,11 +46,12 @@ function expandStringArray(
 function expandStringRecord(
   record: unknown,
   env: Record<string, string | undefined>,
+  options: { remote?: boolean } = {},
 ): Record<string, string> | undefined {
   if (!record || typeof record !== 'object' || Array.isArray(record)) return undefined
   const out: Record<string, string> = {}
   for (const [k, v] of Object.entries(record as Record<string, unknown>)) {
-    if (typeof v === 'string') out[k] = expandString(v, env)
+    if (typeof v === 'string') out[k] = expandString(v, env, options)
   }
   return out
 }
@@ -72,8 +84,8 @@ export function expandServerConfig(
   if (args) out.args = args
   const cfgEnv = expandStringRecord(config.env, env)
   if (cfgEnv) out.env = cfgEnv
-  if (typeof config.url === 'string') out.url = expandString(config.url, env)
-  const headers = expandStringRecord(config.headers, env)
+  if (typeof config.url === 'string') out.url = expandString(config.url, env, REMOTE)
+  const headers = expandStringRecord(config.headers, env, REMOTE)
   if (headers) out.headers = headers
 
   return out

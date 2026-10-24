@@ -1,5 +1,6 @@
 import { join } from 'node:path'
 
+import { isCredentialEnvName } from '../../lib/credential-env-name'
 import type { PluginConfigValues } from '../plugins/config'
 import { normalizeTokenKey } from './manifest-substitute'
 
@@ -57,9 +58,6 @@ export interface McpSubstitutionResult {
 
 export type McpEnvironmentPolicy = 'declared' | 'claude-code'
 
-/** Names Claude Code treats as credentials: empty in a remote server's `url` and `headers`. */
-const CREDENTIAL_NAME =
-  /TOKEN|SECRET|PASSWORD|PASSWD|API_?KEY|ACCESS_?KEY|PRIVATE_?KEY|CREDENTIAL|AUTH/i
 const REMOTE_FIELDS = new Set(['url', 'headers'])
 
 interface SubstituteCtx {
@@ -110,7 +108,7 @@ function substituteString(text: string, ctx: SubstituteCtx): string {
 
 function envAllowed(key: string, ctx: SubstituteCtx): boolean {
   if (ctx.environment === 'declared') return ctx.allowedEnvKeys.has(key)
-  return !(REMOTE_FIELDS.has(ctx.field) && CREDENTIAL_NAME.test(key))
+  return !(REMOTE_FIELDS.has(ctx.field) && isCredentialEnvName(key))
 }
 
 function walk(value: unknown, ctx: SubstituteCtx): unknown {

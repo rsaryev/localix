@@ -18,8 +18,8 @@ describe('expandString', () => {
     expect(expandString('${EMPTY:-def}', env)).toBe('def')
   })
 
-  it('expands an unset ${VAR} with no default to empty string', () => {
-    expect(expandString('a${MISSING}b', env)).toBe('ab')
+  it('keeps an unset ${VAR} with no default as written, as Claude Code does', () => {
+    expect(expandString('a${MISSING}b', env)).toBe('a${MISSING}b')
   })
 
   it('supports multiple substitutions and paths', () => {
@@ -29,14 +29,14 @@ describe('expandString', () => {
 
 describe('expandServerConfig', () => {
   it('expands command, args, env, url, and headers', () => {
-    const env = { TOKEN: 'sekret', BASE: 'https://api.example.com' }
+    const env = { TENANT: 'sekret', BASE: 'https://api.example.com' }
     const out = expandServerConfig(
       {
         command: ['${MISSING:-node}', 'server.js'],
         args: ['--url', '${BASE}/mcp'],
-        env: { AUTH: 'Bearer ${TOKEN}' },
+        env: { AUTH: 'Bearer ${TENANT}' },
         url: '${BASE}/mcp',
-        headers: { Authorization: 'Bearer ${TOKEN}' },
+        headers: { 'X-Tenant': '${TENANT}' },
         // untouched passthrough fields:
         timeout: 5000,
       },
@@ -46,7 +46,7 @@ describe('expandServerConfig', () => {
     expect(out.args).toEqual(['--url', 'https://api.example.com/mcp'])
     expect(out.env).toEqual({ AUTH: 'Bearer sekret' })
     expect(out.url).toBe('https://api.example.com/mcp')
-    expect(out.headers).toEqual({ Authorization: 'Bearer sekret' })
+    expect(out.headers).toEqual({ 'X-Tenant': 'sekret' })
     expect(out.timeout).toBe(5000)
   })
 
@@ -59,12 +59,40 @@ describe('expandServerConfig', () => {
   })
 })
 
+describe('credentials toward a remote server', () => {
+  const env = { ANTHROPIC_API_KEY: 'sk-host', GITHUB_TOKEN: 'ghp_host', BASE: 'https://x.example' }
+
+  it('reads a credential name as empty in url and headers, ignoring its default', () => {
+    const out = expandServerConfig(
+      {
+        url: '${BASE}/mcp?key=${ANTHROPIC_API_KEY}',
+        headers: {
+          Authorization: 'Bearer ${GITHUB_TOKEN}',
+          'X-Key': '${UNSET_API_KEY:-fallback}',
+        },
+      },
+      { env },
+    )
+    expect(out.url).toBe('https://x.example/mcp?key=')
+    expect(out.headers).toEqual({ Authorization: 'Bearer ', 'X-Key': '' })
+  })
+
+  it('still hands a local server its credentials through args and env', () => {
+    const out = expandServerConfig(
+      { command: 'gh-mcp', args: ['--token', '${GITHUB_TOKEN}'], env: { KEY: '${GITHUB_TOKEN}' } },
+      { env },
+    )
+    expect(out.args).toEqual(['--token', 'ghp_host'])
+    expect(out.env).toEqual({ KEY: 'ghp_host' })
+  })
+})
+
 describe('connectServerConfig', () => {
-  const env = { GITHUB_TOKEN: 'ghp_HOSTSECRET' }
-  const config = { url: 'https://x.example', headers: { X: '${GITHUB_TOKEN}' } }
+  const env = { ORG_ID: 'acme' }
+  const config = { url: 'https://x.example', headers: { X: '${ORG_ID}' } }
 
   it('expands a record whose config was stored with its tokens', () => {
-    expect(connectServerConfig({ config }, { env }).headers).toEqual({ X: 'ghp_HOSTSECRET' })
+    expect(connectServerConfig({ config }, { env }).headers).toEqual({ X: 'acme' })
   })
 
   it('leaves an already-resolved config (a plugin server) as built', () => {

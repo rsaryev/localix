@@ -128,6 +128,10 @@ Changes land on `main`.
   `if` anchor path rules at the working directory, `//` or `~/`, cover writes with `Edit(...)` and
   searches with `Read(...)`, and understand `WebFetch(domain:…)`, `Agent(…)`, `Skill(…)` and a bare
   `mcp__<server>`. See [Permission rules](docs/features/permissions.md).
+- **MCP servers you added** expand `${VAR}` as Claude Code does: a credential name such as
+  `GITHUB_TOKEN` or `ANTHROPIC_API_KEY` reads as empty in a server's URL and headers, so an imported
+  configuration no longer sends it to that server, and an unset `${VAR}` without a default stays as
+  written instead of turning empty. See [MCP](docs/features/mcp.md).
 - **Smaller Documents download**: the Documents mini app no longer carries its fonts twice; its
   download is about half the size.
 - **Group chats** keep routing a message to the right participant after the model catalog refreshes:

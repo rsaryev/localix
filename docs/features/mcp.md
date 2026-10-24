@@ -52,10 +52,17 @@ wrapper, a `servers` wrapper, or a bare name-to-config map in Settings.
 | `http`    | Tries Streamable HTTP, then legacy SSE against the same URL                          | Supports configured headers and OAuth 2.0                                |
 | `ws`      | Uses the SDK WebSocket transport                                                     | URL only; configured headers and OAuth are not applied                   |
 
-At connection time, `${VAR}` expands to an environment value or an empty string, while
-`${VAR:-default}` uses its default when the variable is unset or empty. Expansion covers command,
-arguments, configured environment values, URL, and headers. `CLAUDE_PROJECT_DIR` is set to the
-session working directory for expansion and stdio processes.
+At connection time, `${VAR}` expands to an environment value, while `${VAR:-default}` uses its
+default when the variable is unset or empty. A `${VAR}` that is unset and has no default stays as
+written, as in Claude Code. Expansion covers command, arguments, configured environment values, URL,
+and headers. `CLAUDE_PROJECT_DIR` is set to the session working directory for expansion and stdio
+processes.
+
+A credential-like name (one containing `TOKEN`, `SECRET`, `PASSWORD`, `API_KEY`, `ACCESS_KEY`,
+`PRIVATE_KEY`, `CREDENTIAL` or `AUTH`) reads as empty in a URL or header, set or not and with its
+default ignored, so an imported configuration cannot send `ANTHROPIC_API_KEY` or `GITHUB_TOKEN` to
+the server it names. Copy the value into a variable with a name of your own to send it on purpose. A
+stdio server still receives such names in its command, arguments and environment.
 
 ### Connection and discovery
 
