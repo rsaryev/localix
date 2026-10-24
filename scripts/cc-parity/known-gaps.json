@@ -2,7 +2,6 @@
   "$comment": "Known differences from the newest Claude Code snapshot, each with why. The report prints the reason beside the entry; fixing one moves it to checked.json.",
   "gaps": {
     "call:command.register": "Localix resolves undefined; Claude Code resolves { command }.",
-    "call:model.complete": "Localix resolves the reply's text; Claude Code resolves { isAnswered, text, usage } (or isAnswered: false with a reason), so a mod that reads r.isAnswered sees undefined.",
     "call:session.messages": "A tool use or result carries no result object, and a tool use no text, in Localix.",
     "call:session.usage": "Localix has no session start time and gives cost only once a run reported one.",
     "call:session.version": "Localix names itself ({ version: 'localix' }), with no base or build time.",

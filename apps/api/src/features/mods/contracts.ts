@@ -30,10 +30,16 @@ export interface ModSource {
 
 export interface ModelCompletionRequest {
   model?: string
+  /** The one user message, its blocks' texts joined. */
   prompt: string
   system?: string
   maxTokens?: number
+  /** How hard the model thinks, by Claude Code's levels. */
+  effort?: 'low' | 'medium' | 'high' | 'xhigh' | 'max'
+  /** Aborts the call: the caller's signal, its time limit, or the event abandoned. */
   signal?: AbortSignal
+  /** The time limit the caller set; `signal` already carries it. */
+  timeoutMs?: number
   /** Earlier turns the prompt follows (`$.model.fork`: the conversation so far). */
   history?: readonly { role: 'user' | 'assistant'; text: string }[]
 }
@@ -46,9 +52,29 @@ export interface ModelUsage {
   cache_creation_input_tokens: number
 }
 
+export const NO_USAGE: ModelUsage = {
+  input_tokens: 0,
+  output_tokens: 0,
+  cache_read_input_tokens: 0,
+  cache_creation_input_tokens: 0,
+}
+
+/**
+ * What one completion came to, as Claude Code's `$.model.complete` resolves: the reply, or why
+ * there was none. Nothing the provider does rejects it.
+ */
 export type ModelCompletion =
-  | { isAnswered: true; text: string; usage?: ModelUsage }
-  | { isAnswered: false; reason: string }
+  | { isAnswered: true; text: string; usage: ModelUsage }
+  | {
+      isAnswered: false
+      reason: 'api-error'
+      /** The error reply's HTTP status; null when no response arrived. */
+      status: number | null
+      /** The failure's kind (`rate_limit`, `overloaded`, ...), never its text. */
+      error: string
+      usage: ModelUsage
+    }
+  | { isAnswered: false; reason: 'empty-reply' | 'aborted'; usage: ModelUsage }
 
 /** One message of a conversation as Claude Code's `$.session.messages()` gives it. */
 export interface ModSessionMessage {
@@ -127,7 +153,13 @@ export const INERT_MOD_PORTS: ModsPorts = {
   dataDir: () => '',
   workspaceDir: '',
   submitPrompt: async () => {},
-  complete: async () => ({ isAnswered: false, reason: 'no mods host' }),
+  complete: async () => ({
+    isAnswered: false,
+    reason: 'api-error',
+    status: null,
+    error: 'unknown',
+    usage: NO_USAGE,
+  }),
   log: () => {},
   notify: () => {},
   changed: () => {},

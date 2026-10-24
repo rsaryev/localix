@@ -6,6 +6,7 @@
     "call:env.get",
     "call:fs.exists",
     "call:model.classify",
+    "call:model.complete",
     "call:model.fork",
     "call:prompt.fill",
     "call:prompt.suggest",

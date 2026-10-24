@@ -21,6 +21,7 @@ import { loadEnabledPluginMods } from '../features/plugins/loader-declarative'
 import type { ProviderConnectionsService } from '../features/provider-connections/service'
 import type { RealtimeResource } from '../features/realtime/resources'
 import type { BootstrapServiceRefs } from './chat-service-deps'
+import { failedCompletion, usageOf } from './mods-model'
 import { sessionReadOf } from './mods-session'
 import type { MiniAppHostRefs } from './mini-app-host-refs'
 import { createDebouncer, createThrottle } from '../lib/debounce'
@@ -131,45 +132,43 @@ export function createModsPhase(input: {
             .catch(() => null)
         : null
       const modelId = request.model ?? route?.modelId
-      if (!modelId) return { isAnswered: false, reason: 'no model: open the mod in a conversation' }
+      const refused = (status: number | null, error: string): ModelCompletion => ({
+        isAnswered: false,
+        reason: 'api-error',
+        status,
+        error,
+        usage: usageOf(null),
+      })
+      if (!modelId) return refused(null, 'invalid_request')
       const built = await aux
         .buildLanguageModel(userId, modelId, route?.providerConnectionId)
         .catch(() => null)
-      if (!built) return { isAnswered: false, reason: `the model ${modelId} is not available` }
+      if (!built) return refused(null, 'invalid_request')
       // `$.model.fork`: the conversation so far, as the transcript the one question follows.
       const transcript = (request.history ?? [])
         .map(({ role, text }) => `${role === 'user' ? 'User' : 'Assistant'}: ${text}`)
         .join('\n\n')
-      const message = await built.model.complete({
-        systemPrompt: request.system ?? '',
-        messages: [
-          {
-            role: 'user',
-            content: transcript
-              ? `The conversation so far:\n\n${transcript}\n\n${request.prompt}`
-              : request.prompt,
-            timestamp: Date.now(),
-          },
-        ],
-        maxOutputTokens: Math.min(request.maxTokens ?? 1024, 64_000),
-        reasoningEffort: 'off',
-        ...(scene.sessionId ? { sessionId: scene.sessionId } : {}),
-        ...(request.signal ? { signal: request.signal } : {}),
-      })
-      const usage = message.usage
-      return {
-        isAnswered: true,
-        text: textOf(message.content),
-        ...(usage
-          ? {
-              usage: {
-                input_tokens: usage.inputTokens,
-                output_tokens: usage.outputTokens,
-                cache_read_input_tokens: usage.cacheReadTokens ?? 0,
-                cache_creation_input_tokens: usage.cacheWriteTokens ?? 0,
-              },
-            }
-          : {}),
+      try {
+        const message = await built.model.complete({
+          systemPrompt: request.system ?? '',
+          messages: [
+            {
+              role: 'user',
+              content: transcript
+                ? `The conversation so far:\n\n${transcript}\n\n${request.prompt}`
+                : request.prompt,
+              timestamp: Date.now(),
+            },
+          ],
+          maxOutputTokens: Math.min(request.maxTokens ?? 1024, 64_000),
+          reasoningEffort: request.effort ?? 'off',
+          ...(scene.sessionId ? { sessionId: scene.sessionId } : {}),
+          ...(request.signal ? { signal: request.signal } : {}),
+        })
+        return { isAnswered: true, text: textOf(message.content), usage: usageOf(message.usage) }
+      } catch (error) {
+        // What the provider did never rejects a mod's call (Claude Code's `api-error`).
+        return failedCompletion(error, request.signal)
       }
     },
     log(scene, { plugin, text }) {

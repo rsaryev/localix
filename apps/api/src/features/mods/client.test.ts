@@ -4,7 +4,7 @@ import { Hono } from 'hono'
 import { createScriptVms } from '@localixai/engine-scripts'
 import { defaultErrorHandler } from '@localixai/mini-app-sdk/backend'
 import { tempDirPerTest, writeTree } from '@localixai/testing'
-import type { ModSource, ModsPorts } from './contracts'
+import { INERT_MOD_PORTS, type ModSource, type ModsPorts } from './contracts'
 import { createModsHost } from './host'
 import { instanceIdOf } from './instance-id'
 import { createModRoutes } from './routes'
@@ -64,7 +64,7 @@ function setup(files: Record<string, string>, extra: Record<string, string> = {}
     dataDir: (plugin) => join(dir, 'data', plugin),
     workspaceDir: dir,
     submitPrompt: async () => {},
-    complete: async () => ({ isAnswered: false, reason: 'no model' }),
+    complete: INERT_MOD_PORTS.complete,
     log: (_scene, line) => heard.push(JSON.parse(line.text)),
     notify: () => {},
     changed: () => changes.push(1),

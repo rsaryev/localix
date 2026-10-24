@@ -4,7 +4,7 @@ import { tempDirPerTest, writeTree } from '@localixai/testing'
 import { z } from 'zod'
 import { defineAgentTool, type AgentTool } from '@localixai/agent/agents'
 import { createScriptVms } from '@localixai/engine-scripts'
-import type { ModScene, ModSource, ModsPorts } from './contracts'
+import { INERT_MOD_PORTS, type ModScene, type ModSource, type ModsPorts } from './contracts'
 import { createModsHost } from './host'
 import { instanceIdOf } from './instance-id'
 import { createModRunScope } from './run-scope'
@@ -44,7 +44,7 @@ function ports(dir: string) {
     dataDir: (plugin) => join(dir, 'data', plugin),
     workspaceDir: dir,
     submitPrompt: async () => {},
-    complete: async () => ({ isAnswered: false, reason: 'no model' }),
+    complete: INERT_MOD_PORTS.complete,
     log: () => {},
     notify: () => {},
     changed: () => changes.push(1),
