@@ -20,11 +20,14 @@ interface Anchors {
   cwd: string
   /** Where a `/p` pattern anchors: the project (permissions.md, "Where a pattern anchors"). */
   projectDir?: string
+  /** Where a `~/p` pattern anchors; the OS account's home by default. */
+  homeDir?: string
 }
 
 function anchored(spec: string, anchors: Anchors): { base: string; rel: string } {
   if (spec.startsWith('//')) return { base: '/', rel: spec.slice(2) }
-  if (spec === '~' || spec.startsWith('~/')) return { base: homedir(), rel: spec.slice(2) }
+  if (spec === '~' || spec.startsWith('~/'))
+    return { base: anchors.homeDir ?? homedir(), rel: spec.slice(2) }
   if (spec.startsWith('/')) return { base: anchors.projectDir ?? anchors.cwd, rel: spec.slice(1) }
   return { base: anchors.cwd, rel: spec.replace(/^\.\//, '') }
 }

@@ -1,6 +1,4 @@
-import { join } from 'node:path'
-
-import { globToRegExpSource } from './path-glob'
+import { ccPathRuleMatches } from './cc-path-rule'
 
 /**
  * A `Read(…)` or `Edit(…)` path of a Claude Code settings rule against a file, with gitignore
@@ -24,27 +22,16 @@ export interface PathAnchors {
   sourceDir: string
 }
 
-function patternGlob(spec: string, effect: 'allow' | 'ask' | 'deny', at: PathAnchors): string {
-  if (spec.startsWith('//')) return spec.slice(1)
-  if (spec === '~' || spec.startsWith('~/')) return join(at.homeDir, spec.slice(2))
-  if (spec.startsWith('/')) return join(at.sourceDir, spec.slice(1))
-  if (spec.startsWith('./')) return join(at.cwd, spec.slice(2))
-  const rel = spec.replace(/\/+$/, '')
-  const segments = rel.split('/')
-  const bareName = segments.length === 1
+/**
+ * In a deny or ask rule a single directory segment (`secrets/**`) names that directory at any
+ * depth (permissions.md, "How deep a pattern matches"); in an allow rule, and for every other
+ * shape, the match stays where `cc-path-rule.ts` anchors it.
+ */
+function forEffect(spec: string, effect: 'allow' | 'ask' | 'deny'): string {
+  if (effect === 'allow' || /^(\/|~|\.\/)/.test(spec)) return spec
+  const segments = spec.replace(/\/+$/, '').split('/')
   const oneDirectory = segments.length === 2 && segments[1] === '**' && !segments[0]!.includes('*')
-  const anyDepth = bareName || (oneDirectory && effect !== 'allow')
-  return anyDepth && !rel.startsWith('**/') ? `${at.cwd}/**/${rel}` : join(at.cwd, rel)
-}
-
-function compile(glob: string): RegExp | null {
-  try {
-    const source = globToRegExpSource(glob)
-    // A path inside a matched directory is matched too.
-    return new RegExp(`^${source}(?:/.*)?$`)
-  } catch {
-    return null
-  }
+  return oneDirectory ? `**/${spec}` : spec
 }
 
 export function pathRuleMatches(
@@ -55,10 +42,11 @@ export function pathRuleMatches(
 ): boolean {
   const trimmed = spec.trim()
   if (!trimmed) return false
-  const regex = compile(patternGlob(trimmed, effect, at))
-  // A deny or ask path that is not a usable pattern still guards that exact path.
-  if (!regex) return effect !== 'allow' && path === patternGlob(trimmed, effect, at)
-  return regex.test(path)
+  return ccPathRuleMatches(forEffect(trimmed, effect), path, {
+    cwd: at.cwd,
+    projectDir: at.sourceDir,
+    homeDir: at.homeDir,
+  })
 }
 
 /**

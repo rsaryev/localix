@@ -1,6 +1,8 @@
 import { join, resolve } from 'node:path'
 
 import { isRecord } from '../../lib/record'
+import type { PermissionRule } from '../agent-core/permission-engine'
+import { claudeCodeAllowRules } from './cc-rule-translate'
 import { normalizeCcToolName } from '../ext/cc-tool-names'
 import { parseRuleString, specifierIsAll, specifierMatchesValue } from './permission-rules'
 import { bashRuleMatches } from './settings-bash-match'
@@ -161,12 +163,7 @@ function coversCall(rule: CcPermissionRule, call: CcCallFacts): boolean {
       : typeof input.command === 'string'
         ? [input.command]
         : []
-    return (
-      commands.length > 0 &&
-      commands[rule.effect === 'allow' ? 'every' : 'some']((command) =>
-        bashRuleMatches(spec, command, rule.effect),
-      )
-    )
+    return commands.some((command) => bashRuleMatches(spec, command))
   }
   if (rule.tool === 'Read' || rule.tool === 'Edit' || rule.tool === 'MultiEdit') {
     // A Read rule guards every file a call touches; an Edit rule the files it writes, a shell
@@ -201,12 +198,17 @@ function carvedOut(rule: CcPermissionRule, rules: readonly CcPermissionRule[], c
   return targets.every((path) => pathListMatches(specs, rule.effect, path, at) === undefined)
 }
 
-/** What Claude Code's settings say about a call: deny over ask over allow; undefined if silent. */
+/**
+ * What Claude Code's restrictive rules say about a call: deny over ask; undefined if neither
+ * names it. Allow rules are not judged here: they become the Localix rows that pre-approve the
+ * same calls (`settingsAllowRows`, through `cc-rule-translate.ts`), which answer the agent's
+ * catch-all question as a skill's `allowed-tools` do — and an ask or deny still wins over them.
+ */
 export function settingsPermissionDecision(
   rules: readonly CcPermissionRule[],
   call: CcCallFacts,
-): { effect: CcEffect; rule: CcPermissionRule } | undefined {
-  for (const effect of ['deny', 'ask', 'allow'] as const) {
+): { effect: 'ask' | 'deny'; rule: CcPermissionRule } | undefined {
+  for (const effect of ['deny', 'ask'] as const) {
     const rule = rules.find(
       (r) =>
         r.effect === effect &&
@@ -271,4 +273,14 @@ export function settingsAdditionalDirectories(
     }
   }
   return [...out]
+}
+
+/** The allow rules as the Localix rows that pre-approve the same calls, anchored for `cwd`. */
+export function settingsAllowRows(
+  rules: readonly CcPermissionRule[],
+  cwd: string,
+): PermissionRule[] {
+  return rules
+    .filter((rule) => rule.effect === 'allow')
+    .flatMap((rule) => claudeCodeAllowRules(rule.raw, cwd, rule.sourceDir))
 }

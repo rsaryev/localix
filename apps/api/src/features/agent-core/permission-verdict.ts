@@ -32,10 +32,9 @@ export interface VerdictOptions {
    */
   ownPlanDir?: string
   /**
-   * A second rule set from outside the agent's list — a person's Claude Code settings
-   * (`chat/runtime/run/claude-code-permissions.ts`). Its deny refuses whatever the list says, its
-   * ask turns an allow into a question, and its allow answers only the list's catch-all question,
-   * as a skill's `allowed-tools` does; it never lifts the list's own denial.
+   * A second, restrictive rule set from outside the agent's list — the deny and ask rules of a
+   * person's Claude Code settings (`chat/runtime/run/claude-code-permissions.ts`). Its deny refuses
+   * whatever the list says, its ask turns an allow into a question; it never loosens the list.
    */
   outerRules?: OuterRules
   /** Further working directories (Claude Code's `additionalDirectories`): not outside the workspace. */
@@ -43,7 +42,7 @@ export interface VerdictOptions {
 }
 
 export interface OuterRuleVerdict {
-  action: 'allow' | 'ask' | 'deny'
+  action: 'ask' | 'deny'
   /** The rule as written, and where: `Bash(rm *)` in `.claude/settings.json`. */
   rule: string
   message?: string
@@ -74,8 +73,7 @@ function withOuterRules(decision: RuleDecision, outer: OuterRuleVerdict | undefi
     ...(outer.message ? { message: outer.message } : {}),
   }
   if (outer.action === 'deny') return replaced
-  if (outer.action === 'ask') return decision.action === 'allow' ? replaced : decision
-  return decision.action === 'ask' && decision.rule?.pattern === '*' ? replaced : decision
+  return decision.action === 'allow' ? replaced : decision
 }
 
 export type CallJudgement =

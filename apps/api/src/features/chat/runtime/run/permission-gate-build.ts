@@ -55,6 +55,8 @@ export interface BuildRunPermissionGateOptions extends RunHookContext {
   outerRules?: OuterRules
   /** Claude Code's `additionalDirectories`: further working directories. */
   extraRoots?: readonly string[]
+  /** Claude Code's settings `allow` rules as pre-approvals, beside a skill's `allowed-tools`. */
+  preapprovedRules?: readonly PermissionRule[]
   /** Receives the gate's inputs: a skill the model loads checks its injected commands on them. */
   onVerdictOptions?: (options: VerdictOptions) => void
 }
@@ -116,7 +118,10 @@ export function buildRunPermissionGate(
 
   const verdictOptions = {
     rules: permissionRules,
-    preapprovedRules: skillPermissionRules(extraAllowedTools, defaultCwd),
+    preapprovedRules: [
+      ...skillPermissionRules(extraAllowedTools, defaultCwd),
+      ...(options.preapprovedRules ?? []),
+    ],
     toolsByName,
     root: defaultCwd,
     // The conversation's own plan directory: a plan-shaped write anywhere else is a file write.

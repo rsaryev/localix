@@ -87,7 +87,7 @@ export function bashFiles(commandLine: string, cwd: string, homeDir: string): Ba
         : resolve(cwd, path)
   const subcommands = splitCompoundCommand(commandLine) ?? commandLine.split(/&&|\|\||[;|&\n]/)
   for (const sub of subcommands) {
-    const words = tokens(bashRuleSubject(sub, false) ?? sub)
+    const words = tokens(bashRuleSubject(sub))
     const operands: string[] = []
     for (let i = 0; i < words.length; i++) {
       const word = words[i]!

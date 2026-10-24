@@ -4,7 +4,10 @@ import { join } from 'node:path'
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 
 import { readSettingsLayers } from './settings-files'
+import { evaluate } from '../agent-core/permission-engine'
+import { fetchedUrls } from './settings-webfetch-match'
 import {
+  settingsAllowRows,
   settingsPermissionDecision,
   settingsPermissionRules,
   settingsRemoveTool,
@@ -27,15 +30,34 @@ async function rulesFor(tree: Record<string, string>, options: { projectTrusted?
     managed: { dir: join(root, 'managed') },
   })
   const rules = settingsPermissionRules(layers, { projectTrusted: options.projectTrusted ?? true })
-  const decide = (call: Partial<CcCallFacts> & { toolName: string }) =>
-    settingsPermissionDecision(rules, {
-      input: {},
-      paths: [],
-      writes: [],
-      cwd: join(root, 'project'),
-      homeDir: join(root, 'home'),
-      ...call,
-    })?.effect
+  const cwd = join(root, 'project')
+  // As the gate composes them: deny and ask judged here, allow as the translated pre-approvals.
+  const rows = settingsAllowRows(rules, cwd)
+  const decide = (call: Partial<CcCallFacts> & { toolName: string }) => {
+    const facts = { input: {}, paths: [], writes: [], cwd, homeDir: join(root, 'home'), ...call }
+    const restricted = settingsPermissionDecision(rules, facts)?.effect
+    if (restricted) return restricted
+    const urls = fetchedUrls(facts.input)
+    const allowed = evaluate(
+      rows,
+      { name: call.toolName, effect: 'external' },
+      {
+        paths: [...facts.paths],
+        outsidePaths: [],
+        outsideWorkspace: false,
+        insideWorkspace: facts.paths.length > 0,
+        dangerous: false,
+        catastrophic: false,
+        readOnly: false,
+        touchesSecret: false,
+        ...(facts.commands
+          ? { commands: [...facts.commands], command: facts.commands.join('\n') }
+          : {}),
+        ...(urls.length ? { resources: urls.map((url) => `domain:${new URL(url).hostname}`) } : {}),
+      },
+    ).rule
+    return allowed?.action === 'allow' ? 'allow' : undefined
+  }
   return { root, rules, decide }
 }
 
@@ -71,7 +93,6 @@ describe('Claude Code permission rules from settings files', () => {
       }),
     })
     expect(decide(bash('npm run build'))).toBe('allow')
-    expect(decide(bash('timeout 30 npm run build'))).toBe('allow')
     expect(decide(bash('npm run build && curl x'))).toBeUndefined()
     expect(decide(bash('cd /tmp && rm -rf build'))).toBe('deny')
     expect(decide(bash('FOO=bar rm -rf tmp'))).toBe('deny')

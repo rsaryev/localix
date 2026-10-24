@@ -3,7 +3,9 @@ import type { OuterRules } from '../../../agent-core/permission-verdict'
 import { readSettingsLayers, type SettingsFilesInput } from '../../../cc-settings/settings-files'
 import { claudeCodeTrusts } from '../../../cc-settings/settings-trust'
 import { bashFiles } from '../../../cc-settings/settings-bash-paths'
+import type { PermissionRule } from '../../../agent-core/permission-engine'
 import {
+  settingsAllowRows,
   settingsAdditionalDirectories,
   settingsPermissionDecision,
   settingsPermissionRules,
@@ -13,9 +15,10 @@ import {
 /**
  * THE PERSON'S CLAUDE CODE `permissions`, AT A RUN'S GATE. A run in a folder reads the settings
  * files Claude Code would read there (`cc-settings/settings-files.ts`) and hands their rules to
- * the gate as its outer rule set (`agent-core/permission-verdict.ts`, `outerRules`): the agent's
- * own rules stay as they are, a Claude Code deny refuses, an ask raises a card, an allow answers
- * the agent's catch-all question. A session mode that stops asking (Bypass, Autonomous) stops
+ * the gate: its deny and ask rules as the outer rule set (`agent-core/permission-verdict.ts`,
+ * `outerRules`) — a deny refuses, an ask raises a card, whatever the agent's own rules say — and
+ * its allow rules as pre-approvals (`cc-settings/cc-rule-translate.ts`), which answer the agent's
+ * catch-all question. A session mode that stops asking (Bypass, Autonomous) stops
  * asking about these too, as `bypassPermissions` does; denials hold in every mode.
  */
 
@@ -50,8 +53,10 @@ const where = (rule: CcPermissionRule) => `${rule.raw} in ${rule.file}`
 export function claudeCodeGateOptions(
   permissions: ClaudeCodePermissions,
   options: { homeDir: string; mode: PermissionMode },
-): { outerRules?: OuterRules; extraRoots?: string[] } {
+): { outerRules?: OuterRules; extraRoots?: string[]; preapprovedRules?: PermissionRule[] } {
+  const allows = settingsAllowRows(permissions.rules, permissions.cwd)
   return {
+    ...(allows.length > 0 ? { preapprovedRules: allows } : {}),
     ...(permissions.rules.length > 0 ? { outerRules: claudeCodeRules(permissions, options) } : {}),
     ...(permissions.additionalDirectories.length > 0
       ? { extraRoots: permissions.additionalDirectories }
