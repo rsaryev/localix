@@ -41,6 +41,8 @@ import {
 } from './cc-hook-evaluators'
 import type { RunCatalog, RunEnv, RunParams } from './types'
 import { ccPermissionMode, ccSessionEnvFilesOf, ccSubagentOf } from './cc-hook-session-facts'
+import { claudeCodeSettingsEnv } from '../../../cc-settings/settings-env'
+import { userHome } from '../../../../lib/env'
 import { createCcTranscript } from './cc-transcript'
 import type { PermissionMode } from '../../../../contracts/permission-modes'
 
@@ -98,6 +100,8 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
   const onceKeys = ensureCcHookOnceKeys(ccHookOnceKeys, session.id)
   const emitNotice = ccHookNoticeEmitter(deps.streamRegistry, userId, session.id)
   const envFiles = ccSessionEnvFilesOf(session, deps.sessionDataRoot)
+  // Claude Code's settings `env` for this folder reaches every hook process.
+  const settingsEnv = claudeCodeSettingsEnv({ homeDir: userHome(), cwd: defaultCwd })
   const transcript = createCcTranscript({
     repo: env.repo,
     userId,
@@ -120,6 +124,7 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
     onceKeys,
     emitNotice,
     envFiles,
+    settingsEnv,
     transcript,
   })
   // Run-SCOPED frontmatter hooks: a skill's or a delegated sub-agent's `hooks`
@@ -155,6 +160,7 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
     // A delegated child's hooks fire inside its subagent (`agent_id`, `agent_type`).
     ...(subagent ? { agent: subagent } : {}),
     envFiles,
+    settingsEnv,
     transcript,
     logger: ccHooksConsoleLogger,
     // Per-session `once` tracker (survives across the per-run runtimes).

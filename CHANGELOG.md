@@ -8,6 +8,11 @@ Changes land on `main`.
 
 ### Added
 
+- **Claude Code's settings `env`**: the variables in the `env` block of your Claude Code settings
+  reach what a Localix run in that folder starts — shell commands, hooks and stdio MCP servers — and
+  the `${VAR}` expansion of MCP servers, as in Claude Code. A project's own variables wait until you
+  trusted the folder in Claude Code, and a repository cannot move Claude Code's files or turn
+  telemetry export on.
 - **Claude Code's starting mode**: a new conversation starts in the permission mode
   `permissions.defaultMode` names in the folder's Claude Code settings (Default, Plan or Bypass),
   and `disableBypassPermissionsMode: "disable"` keeps Bypass and Autonomous off there. See

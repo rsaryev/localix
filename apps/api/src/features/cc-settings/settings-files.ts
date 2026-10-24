@@ -1,9 +1,10 @@
-import { promises as fs } from 'node:fs'
+import { readFileSync, statSync } from 'node:fs'
 import { dirname, join, parse, resolve } from 'node:path'
 
 import { isRecord } from '../../lib/record'
 import { claudeConfigDir } from './config-dir'
 import {
+  readManagedFiles,
   readManagedSettings,
   systemManagedSource,
   type ManagedSettingsSource,
@@ -43,9 +44,13 @@ export interface SettingsFilesInput {
   platform?: NodeJS.Platform
 }
 
-async function readSettingsFile(file: string): Promise<Settings | undefined> {
-  const text = await fs.readFile(file, 'utf8').catch(() => null)
-  if (text === null) return undefined
+function readSettingsFile(file: string): Settings | undefined {
+  let text: string
+  try {
+    text = readFileSync(file, 'utf8')
+  } catch {
+    return undefined
+  }
   try {
     const parsed: unknown = JSON.parse(text)
     return isRecord(parsed) ? parsed : undefined
@@ -59,19 +64,29 @@ async function readSettingsFile(file: string): Promise<Settings | undefined> {
  * `.git`, a worktree resolved to its main checkout. Null where Claude Code keeps it beside the
  * project file instead: outside a repository, a repository rooted at home, and on Windows.
  */
-export async function localSettingsRoot(
+export function localSettingsRoot(
   cwd: string,
   homeDir: string,
   platform: NodeJS.Platform = process.platform,
-): Promise<string | null> {
+): string | null {
   if (platform === 'win32') return null
   let current = resolve(cwd)
   for (;;) {
     const marker = join(current, '.git')
-    const stat = await fs.stat(marker).catch(() => null)
+    let stat: ReturnType<typeof statSync> | null = null
+    try {
+      stat = statSync(marker)
+    } catch {
+      stat = null
+    }
     if (stat?.isDirectory()) return current === resolve(homeDir) ? null : current
     if (stat?.isFile()) {
-      const text = await fs.readFile(marker, 'utf8').catch(() => '')
+      let text = ''
+      try {
+        text = readFileSync(marker, 'utf8')
+      } catch {
+        text = ''
+      }
       const gitdir = /^gitdir:\s*(.+)$/m.exec(text)?.[1]?.trim()
       const linked = gitdir ? resolve(current, gitdir) : ''
       const at = linked.lastIndexOf('/.git/worktrees/')
@@ -84,28 +99,50 @@ export async function localSettingsRoot(
   }
 }
 
-/** Every settings layer of the session, lowest precedence first; absent files are skipped. */
-export async function readSettingsLayers(input: SettingsFilesInput): Promise<SettingsLayer[]> {
+/**
+ * The settings files of the session, lowest precedence first, read synchronously: the managed
+ * layer here is the file-based policy alone (`managed-settings.json` and its drop-ins). For a
+ * caller that cannot wait — a connection key, a spawn's environment.
+ */
+export function readSettingsFileLayers(input: SettingsFilesInput): SettingsLayer[] {
   const env = input.env ?? process.env
   const configDir = claudeConfigDir(input.homeDir, env)
   const layers: SettingsLayer[] = []
-  const push = async (source: SettingsSource, file: string, anchorDir: string) => {
-    const settings = await readSettingsFile(file)
+  const push = (source: SettingsSource, file: string, anchorDir: string) => {
+    const settings = readSettingsFile(file)
     if (settings) layers.push({ source, file, anchorDir, settings })
   }
-  await push('user', join(configDir, 'settings.json'), configDir)
+  push('user', join(configDir, 'settings.json'), configDir)
   const cwd = input.cwd ? resolve(input.cwd) : null
   // A session in the home folder reads the user file once, not again as its project's.
   if (cwd && join(cwd, '.claude') !== configDir) {
-    await push('project', join(cwd, '.claude', 'settings.json'), cwd)
-    const root = await localSettingsRoot(cwd, input.homeDir, input.platform)
+    push('project', join(cwd, '.claude', 'settings.json'), cwd)
+    const root = localSettingsRoot(cwd, input.homeDir, input.platform)
     // Local rules anchor at the working directory wherever the file is kept.
-    if (root && root !== cwd) await push('local', join(cwd, '.claude', 'settings.local.json'), cwd)
-    await push('local', join(root ?? cwd, '.claude', 'settings.local.json'), cwd)
+    if (root && root !== cwd) push('local', join(cwd, '.claude', 'settings.local.json'), cwd)
+    push('local', join(root ?? cwd, '.claude', 'settings.local.json'), cwd)
   }
   const managed = input.managed === undefined ? systemManagedSource(input.platform) : input.managed
   if (managed) {
+    const settings = readManagedFiles(managed.dir)
+    if (settings && Object.keys(settings).length > 0)
+      layers.push({
+        source: 'policy',
+        file: managed.dir,
+        anchorDir: cwd ?? input.homeDir,
+        settings,
+      })
+  }
+  return layers
+}
+
+/** Every settings layer of the session, the MDM policy included; absent files are skipped. */
+export async function readSettingsLayers(input: SettingsFilesInput): Promise<SettingsLayer[]> {
+  const layers = readSettingsFileLayers({ ...input, managed: null })
+  const managed = input.managed === undefined ? systemManagedSource(input.platform) : input.managed
+  if (managed) {
     const settings = await readManagedSettings(managed)
+    const cwd = input.cwd ? resolve(input.cwd) : null
     if (Object.keys(settings).length > 0)
       layers.push({
         source: 'policy',

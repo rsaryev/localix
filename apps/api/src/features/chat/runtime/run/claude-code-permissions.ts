@@ -1,14 +1,7 @@
-import { promises as fs } from 'node:fs'
-import { dirname, resolve } from 'node:path'
-
 import type { PermissionMode } from '../../../../contracts/permission-modes'
 import type { OuterRules } from '../../../agent-core/permission-verdict'
-import { claudeStateFile } from '../../../cc-settings/config-dir'
-import {
-  localSettingsRoot,
-  readSettingsLayers,
-  type SettingsFilesInput,
-} from '../../../cc-settings/settings-files'
+import { readSettingsLayers, type SettingsFilesInput } from '../../../cc-settings/settings-files'
+import { claudeCodeTrusts } from '../../../cc-settings/settings-trust'
 import { bashFiles } from '../../../cc-settings/settings-bash-paths'
 import {
   settingsAdditionalDirectories,
@@ -16,7 +9,6 @@ import {
   settingsPermissionRules,
   type CcPermissionRule,
 } from '../../../cc-settings/settings-permissions'
-import { isRecord } from '../../../../lib/record'
 
 /**
  * THE PERSON'S CLAUDE CODE `permissions`, AT A RUN'S GATE. A run in a folder reads the settings
@@ -34,39 +26,11 @@ export interface ClaudeCodePermissions {
   cwd: string
 }
 
-/**
- * Whether Claude Code trusts the folder: `projects["<root>"].hasTrustDialogAccepted` in its state
- * file, keyed on the repository root (a worktree's main checkout) or the folder, or a parent
- * folder outside a repository (permissions.md, "Project allow rules and workspace trust").
- */
-export async function claudeCodeTrusts(input: SettingsFilesInput & { cwd: string }) {
-  const text = await fs.readFile(claudeStateFile(input.homeDir, input.env), 'utf8').catch(() => '')
-  let projects: unknown
-  try {
-    projects = text ? (JSON.parse(text) as { projects?: unknown }).projects : undefined
-  } catch {
-    return false
-  }
-  if (!isRecord(projects)) return false
-  const trusted = (dir: string) => {
-    const entry = projects[dir]
-    return isRecord(entry) && entry.hasTrustDialogAccepted === true
-  }
-  const root = await localSettingsRoot(input.cwd, input.homeDir, input.platform)
-  if (root) return trusted(root)
-  for (let dir = resolve(input.cwd); ; dir = dirname(dir)) {
-    if (trusted(dir)) return true
-    if (dirname(dir) === dir) return false
-  }
-}
-
 export async function loadClaudeCodePermissions(
   input: SettingsFilesInput & { cwd: string },
 ): Promise<ClaudeCodePermissions> {
-  const [layers, projectTrusted] = await Promise.all([
-    readSettingsLayers(input),
-    claudeCodeTrusts(input),
-  ])
+  const layers = await readSettingsLayers(input)
+  const projectTrusted = claudeCodeTrusts(input)
   return {
     rules: settingsPermissionRules(layers, { projectTrusted }),
     additionalDirectories: settingsAdditionalDirectories(layers, {

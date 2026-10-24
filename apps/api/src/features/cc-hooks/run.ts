@@ -58,6 +58,7 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
     permissionMode,
     agent,
     envFiles,
+    settingsEnv,
     onAsyncContext,
     transcript,
   } = opts
@@ -82,7 +83,8 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
   })
   const envFor = (event: CcHookEvent) => {
     const envFile = envFileForEvent(envFiles, event)
-    return envFile ? { envFile } : undefined
+    if (!envFile && !settingsEnv) return undefined
+    return { ...(envFile ? { envFile } : {}), ...(settingsEnv ? { settings: settingsEnv } : {}) }
   }
 
   const select = createHookSelector({ registry, sessionId, logger, onceKeys, signalFor })

@@ -38,6 +38,8 @@ export interface CcHookSessionEntry {
   emitNotice?: (message: string, event: CcHookEvent) => void
   /** The session's `CLAUDE_ENV_FILE`s: CwdChanged and FileChanged hooks write theirs there. */
   envFiles?: CcSessionEnvFiles
+  /** The `env` of Claude Code's settings for the session's folder. */
+  settingsEnv?: Readonly<Record<string, string>>
   /** The session's transcript file (`transcript_path`), refreshed before a hook reads it. */
   transcript?: CcTranscript
 }
@@ -68,6 +70,7 @@ export function createCcHookSessions(watchFile?: WatchFile) {
       ...(entry.onceKeys ? { onceKeys: entry.onceKeys } : {}),
       ...(entry.emitNotice ? { emitNotice: entry.emitNotice } : {}),
       ...(entry.envFiles ? { envFiles: entry.envFiles } : {}),
+      ...(entry.settingsEnv ? { settingsEnv: entry.settingsEnv } : {}),
       ...(entry.transcript ? { transcript: entry.transcript } : {}),
       onAsyncContext: (text) => appendAsyncContext(sessionId, text),
     })

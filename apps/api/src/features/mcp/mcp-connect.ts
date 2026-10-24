@@ -10,7 +10,7 @@ import { WebSocketClientTransport } from '@modelcontextprotocol/sdk/client/webso
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
 
 import type { McpServerRecord } from './repository'
-import { connectServerConfig } from './expand'
+import { mcpLaunch } from './mcp-settings-env'
 import { resolveConnectTimeoutMs } from './mcp-tools'
 import { silentAuthProvider } from './oauth/runtime'
 import { createElicitingClient } from './mcp-elicitation'
@@ -46,7 +46,7 @@ export function isMcpAuthenticationRequiredError(error: unknown): boolean {
  * project root) to the expansion so a config can reference it without a default.
  */
 function expandedConfig(server: McpServerRecord, cwd: string): Record<string, unknown> {
-  return connectServerConfig(server, { extraEnv: { CLAUDE_PROJECT_DIR: cwd } })
+  return mcpLaunch(server, cwd).config
 }
 
 /**
@@ -69,7 +69,8 @@ export function withConnectBudget<T>(p: Promise<T>, ms: number): Promise<T | typ
 
 /** Build a stdio or http transport for a server record. */
 function buildTransport(server: McpServerRecord, cwd: string): Transport {
-  const config = expandedConfig(server, cwd)
+  const launch = mcpLaunch(server, cwd)
+  const config = launch.config
   if (server.transport === 'stdio') {
     const command = (config.command as string[] | undefined) ?? []
     if (command.length === 0) throw new Error('stdio server has no command')
@@ -80,10 +81,10 @@ function buildTransport(server: McpServerRecord, cwd: string): Transport {
       command: cmd,
       args,
       cwd,
-      // Expose CLAUDE_PROJECT_DIR to the spawned server (CC parity) so it can
-      // resolve project-relative paths independent of its working directory.
-      // An explicit config `env` value still wins over the injected default.
-      env: { ...filterEnv(process.env), CLAUDE_PROJECT_DIR: cwd, ...env },
+      // The API's environment, the folder's Claude Code settings `env`, CLAUDE_PROJECT_DIR (CC
+      // parity: project-relative paths independent of the working directory), then the
+      // server's own `env`, which wins (`mcp-settings-env.ts`).
+      env: launch.env,
       stderr: 'pipe',
     })
   }
@@ -107,15 +108,6 @@ function ensurePluginDataDir(server: McpServerRecord, env: Record<string, string
   } catch {
     // The server starts all the same; one that needs the directory reports it.
   }
-}
-
-/** Drop undefined values so the spawned process gets a clean string env. */
-function filterEnv(env: NodeJS.ProcessEnv): Record<string, string> {
-  const out: Record<string, string> = {}
-  for (const [k, v] of Object.entries(env)) {
-    if (typeof v === 'string') out[k] = v
-  }
-  return out
 }
 
 /** Connect a client, falling back from Streamable HTTP to SSE for remote servers. */

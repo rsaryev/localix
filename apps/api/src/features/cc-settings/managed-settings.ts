@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process'
-import { promises as fs } from 'node:fs'
+import { promises as fs, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { isRecord } from '../../lib/record'
@@ -33,9 +33,13 @@ export interface ManagedSettingsSource {
   readMdm?: () => Promise<Settings | undefined>
 }
 
-async function readJsonObject(file: string): Promise<Settings | undefined> {
-  const text = await fs.readFile(file, 'utf8').catch(() => null)
-  if (text === null) return undefined
+function readJsonObject(file: string): Settings | undefined {
+  let text: string
+  try {
+    text = readFileSync(file, 'utf8')
+  } catch {
+    return undefined
+  }
   try {
     const parsed: unknown = JSON.parse(text)
     return isRecord(parsed) ? parsed : undefined
@@ -45,15 +49,19 @@ async function readJsonObject(file: string): Promise<Settings | undefined> {
 }
 
 /** `managed-settings.json`, then `managed-settings.d/*.json` alphabetically, merged. */
-export async function readManagedFiles(dir: string): Promise<Settings | undefined> {
-  const base = await readJsonObject(join(dir, 'managed-settings.json'))
+export function readManagedFiles(dir: string): Settings | undefined {
+  const base = readJsonObject(join(dir, 'managed-settings.json'))
   const dropInDir = join(dir, 'managed-settings.d')
-  const names = (await fs.readdir(dropInDir).catch(() => [] as string[]))
-    .filter((name) => name.endsWith('.json') && !name.startsWith('.'))
-    .sort()
+  let entries: string[] = []
+  try {
+    entries = readdirSync(dropInDir)
+  } catch {
+    entries = []
+  }
+  const names = entries.filter((name) => name.endsWith('.json') && !name.startsWith('.')).sort()
   let merged = base
   for (const name of names) {
-    const part = await readJsonObject(join(dropInDir, name))
+    const part = readJsonObject(join(dropInDir, name))
     if (part) merged = mergeSettingsLayer(merged ?? {}, part)
   }
   return merged
@@ -67,7 +75,7 @@ const hasPolicyKey = (settings: Settings | undefined): settings is Settings =>
 export async function readManagedSettings(source: ManagedSettingsSource): Promise<Settings> {
   const [mdm, files] = await Promise.all([
     source.readMdm?.().catch(() => undefined),
-    readManagedFiles(source.dir),
+    Promise.resolve(readManagedFiles(source.dir)),
   ])
   const ranked = [mdm, files].filter(hasPolicyKey)
   const top = ranked[0]

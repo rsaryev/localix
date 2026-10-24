@@ -43,11 +43,15 @@ export interface HookLogger {
  */
 export interface HookEnv {
   envFile?: string
+  /** The `env` of Claude Code's settings for the folder (`cc-settings/settings-env.ts`). */
+  settings?: Readonly<Record<string, string>>
 }
 
 /** The hook's environment: the user's, the session's id, the project, the plugin and the event's. */
 function hookEnv(handler: CcHookHandler, input: CcHookInput, cwd: string, extra?: HookEnv) {
   const env = childEnv({
+    // Claude Code's settings `env` first: the variables Claude Code sets for a hook still win.
+    ...extra?.settings,
     // Every plugin option as `CLAUDE_PLUGIN_OPTION_<KEY>`, plus a shell-form command's
     // `${user_config.KEY}` values, bound as variables rather than pasted into it.
     ...handler.shellEnv,
@@ -83,7 +87,17 @@ function runCommandHook(
     maxOutputBytes: CC_HOOK_MAX_OUTPUT_BYTES,
     signal,
     // hooks.md: a PowerShell hook never gets CLAUDE_ENV_FILE.
-    env: hookEnv(handler, input, cwd, handler.shell === 'powershell' ? undefined : extra),
+    // A PowerShell hook gets no CLAUDE_ENV_FILE; the settings' variables it does get.
+    env: hookEnv(
+      handler,
+      input,
+      cwd,
+      handler.shell === 'powershell'
+        ? extra?.settings
+          ? { settings: extra.settings }
+          : undefined
+        : extra,
+    ),
   })
 }
 

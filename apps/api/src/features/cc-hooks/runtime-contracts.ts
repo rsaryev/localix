@@ -167,6 +167,8 @@ export interface CreateCcHooksRuntimeOptions {
   agent?: { id: string; type: string }
   /** The session's `CLAUDE_ENV_FILE`s (session-env.ts); absent → hooks get none. */
   envFiles?: CcSessionEnvFiles
+  /** The `env` of Claude Code's settings for the run's folder, given to every hook process. */
+  settingsEnv?: Readonly<Record<string, string>>
   /** The session's transcript file and how to refresh it (transcript.ts); absent → paths are ''. */
   transcript?: CcTranscript
   logger: HookLogger
