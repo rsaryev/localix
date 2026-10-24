@@ -1,7 +1,11 @@
-import { promises as fs } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { resolve } from 'node:path'
 
 import { isRecord } from '../../lib/record'
+import {
+  readManagedSettings,
+  systemManagedSource,
+  type ManagedSettingsSource,
+} from '../cc-settings/managed-settings'
 import type { MarketplaceSource } from './marketplace-source'
 
 /**
@@ -15,7 +19,7 @@ import type { MarketplaceSource } from './marketplace-source'
  * without `ref` or `path` blocks all of them; `strictKnownMarketplaces`, when set, admits only a
  * source it lists exactly (`ref` and `path` included), a `github` `owner/*` entry, a
  * `hostPattern` (github, git and url hosts) or a `pathPattern` (file and directory paths). An
- * empty list admits nothing. MDM profiles and server-managed settings are not read.
+ * empty list admits nothing. Server-managed settings are not read.
  */
 
 export interface ManagedPolicy {
@@ -26,47 +30,24 @@ export interface ManagedPolicy {
   extraKnownMarketplaces?: Record<string, unknown>
 }
 
-/** Where Claude Code reads file-based managed settings on this platform. */
-export function managedSettingsDir(platform: NodeJS.Platform = process.platform): string {
-  if (platform === 'darwin') return '/Library/Application Support/ClaudeCode'
-  if (platform === 'win32') return 'C:\\Program Files\\ClaudeCode'
-  return '/etc/claude-code'
-}
-
-async function readObject(file: string): Promise<Record<string, unknown> | undefined> {
-  try {
-    const parsed = JSON.parse(await fs.readFile(file, 'utf8')) as unknown
-    return isRecord(parsed) ? parsed : undefined
-  } catch {
-    return undefined
-  }
-}
-
-export async function readManagedPolicy(dir = managedSettingsDir()): Promise<ManagedPolicy> {
-  const dropIns = await fs.readdir(join(dir, 'managed-settings.d')).catch(() => [] as string[])
-  const files = [
-    join(dir, 'managed-settings.json'),
-    ...dropIns
-      .filter((name) => name.endsWith('.json') && !name.startsWith('.'))
-      .sort()
-      .map((name) => join(dir, 'managed-settings.d', name)),
-  ]
+/**
+ * The plugin policy of the machine's managed settings, read through the settings reader (MDM
+ * profile and files, `managedSourcesBehavior` honoured). A directory names a file-only source.
+ */
+export async function readManagedPolicy(
+  from: string | ManagedSettingsSource = systemManagedSource(),
+): Promise<ManagedPolicy> {
+  const settings = await readManagedSettings(typeof from === 'string' ? { dir: from } : from)
   const policy: ManagedPolicy = { enabledPlugins: {}, blockedMarketplaces: [] }
-  for (const file of files) {
-    const settings = await readObject(file)
-    if (!settings) continue
-    if (isRecord(settings.enabledPlugins))
-      for (const [id, on] of Object.entries(settings.enabledPlugins))
-        if (typeof on === 'boolean') policy.enabledPlugins[id] = on
-    if (Array.isArray(settings.blockedMarketplaces))
-      policy.blockedMarketplaces.push(...settings.blockedMarketplaces)
-    const strict = settings.strictKnownMarketplaces ?? settings.allowedMarketplaces
-    if (Array.isArray(strict))
-      policy.strictKnownMarketplaces = [...(policy.strictKnownMarketplaces ?? []), ...strict]
-    const extra = settings.extraKnownMarketplaces ?? settings.additionalMarketplaces
-    if (isRecord(extra))
-      policy.extraKnownMarketplaces = { ...policy.extraKnownMarketplaces, ...extra }
-  }
+  if (isRecord(settings.enabledPlugins))
+    for (const [id, on] of Object.entries(settings.enabledPlugins))
+      if (typeof on === 'boolean') policy.enabledPlugins[id] = on
+  if (Array.isArray(settings.blockedMarketplaces))
+    policy.blockedMarketplaces.push(...settings.blockedMarketplaces)
+  const strict = settings.strictKnownMarketplaces ?? settings.allowedMarketplaces
+  if (Array.isArray(strict)) policy.strictKnownMarketplaces = [...strict]
+  const extra = settings.extraKnownMarketplaces ?? settings.additionalMarketplaces
+  if (isRecord(extra)) policy.extraKnownMarketplaces = { ...extra }
   return policy
 }
 

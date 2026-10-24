@@ -35,6 +35,8 @@ import type { PluginService } from './service-types'
  */
 export function createMarketplaceMethods(deps: {
   registryDeps: MarketplaceRegistryDeps
+  /** Register what the user's and managed settings declare (`declared-marketplaces.ts`). */
+  syncDeclared?: (cwd: string | null) => Promise<void>
   repo: CapabilitySourceRepository
   update: (userId: string, name: string) => Promise<unknown>
   remove: (userId: string, name: string) => Promise<unknown>
@@ -89,6 +91,7 @@ export function createMarketplaceMethods(deps: {
     },
 
     async listMarketplaces(_userId) {
+      await deps.syncDeclared?.(null).catch(() => undefined)
       const [rows, known] = await Promise.all([
         listMarketplaces(registryDeps),
         readKnownMarketplaces(root),

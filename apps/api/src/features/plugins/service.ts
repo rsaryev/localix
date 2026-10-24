@@ -60,6 +60,7 @@ import {
 } from './service-lifecycle'
 import { removePlugin } from './service-remove'
 import { resolveFreshMarketplaceInstall } from './marketplace-refresh'
+import { createDeclaredMarketplaceSync } from './declared-marketplaces'
 import { inPlaceInstallFor, inPlacePublication } from './install-in-place'
 import { assertNameNotBuiltin, assertNotBuiltin, BUILTIN_ORIGIN } from './builtin-plugins'
 import { createPluginUpdates } from './plugin-updates'
@@ -89,6 +90,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
   const repo: CapabilitySourceRepository = deps.capabilityStores.sources(deps.db, 'plugin', now)
   // Marketplace registry deps — one git clone primitive shared with plugin install.
   const registryDeps: MarketplaceRegistryDeps = { cloneRepo, now, root: marketplacesRoot(home) }
+  const syncDeclared = createDeclaredMarketplaceSync({ deps: registryDeps, homeDir: home })
   // Tool rosters of enabled native plugins, remembered in memory and across restarts
   // (see `inspection-snapshots.ts`); every lifecycle mutation below invalidates them.
 
@@ -242,6 +244,10 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
     listOutputStyles: (userId, opts) =>
       listScopeOutputStyles({ catalogFor, cwdFor, homeDir: home }, userId, opts?.projectId ?? ''),
     async listPlugins(userId, opts) {
+      // Marketplaces the scope's Claude Code settings declare register in the background.
+      void cwdFor(userId, opts?.projectId ?? '')
+        .then(syncDeclared)
+        .catch(() => undefined)
       const { projectId, catalog } = await scopeCatalog(userId, opts?.projectId)
       return { plugins: await recordsFromCatalog(catalog, projectId) }
     },
@@ -578,6 +584,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
 
     ...createMarketplaceMethods({
       registryDeps,
+      syncDeclared,
       repo,
       env: deps.env ?? process.env,
       recheck: (userId) => service.updates.recheck(userId),

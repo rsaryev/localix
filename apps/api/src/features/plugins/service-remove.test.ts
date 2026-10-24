@@ -15,6 +15,8 @@ const previousEnv = {
 
 let root: string
 let homeDir: string
+/** Claude Code's configuration directory: its plugins live under it (`CLAUDE_CONFIG_DIR`). */
+let claudeConfigDir: string
 let workspaceDir: string
 let bundledDir: string
 let db: ReturnType<typeof createDatabase>
@@ -42,7 +44,7 @@ beforeAll(async () => {
   homeDir = join(root, 'home')
   workspaceDir = join(root, 'workspace')
   bundledDir = join(root, 'bundled')
-  const claudeConfigDir = join(root, 'claude-config')
+  claudeConfigDir = join(root, 'claude-config')
   await Promise.all(
     [homeDir, workspaceDir, bundledDir, claudeConfigDir].map((dir) =>
       mkdir(dir, { recursive: true }),
