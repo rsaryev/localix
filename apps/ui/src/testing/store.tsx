@@ -39,7 +39,13 @@ export function answer(
   const shelf = parseShelf(query.shelf)
   const words = (query.q ?? '').toLowerCase().split(/\s+/).filter(Boolean)
   const text = (l: Listing) =>
-    [l.name, l.displayName, l.summary, ...l.tags, ...(l.componentNames ?? [])]
+    [
+      l.name,
+      l.displayName,
+      l.summary,
+      ...l.tags,
+      ...(l.components ?? []).flatMap((c) => [c.name, c.description ?? '']),
+    ]
       .join(' ')
       .toLowerCase()
   return {

@@ -60,6 +60,13 @@ export const jobSchema = z.object({
 })
 export type StoreJob = z.infer<typeof jobSchema>
 
+export const componentSchema = z.object({
+  kind: componentKindSchema,
+  name: z.string(),
+  description: z.string().optional(),
+})
+export type StoreComponent = z.infer<typeof componentSchema>
+
 /** The Store's read-only projection of one package, for display and search. */
 export const listingSchema = z.object({
   ref: listingRefSchema,
@@ -77,8 +84,11 @@ export const listingSchema = z.object({
     z.partialRecord(componentKindSchema, z.number().int().nonnegative()),
     z.literal('unknown'),
   ]),
-  /** The names of what it contains, when the provider knows them before install; searched. */
-  componentNames: z.array(z.string()).optional(),
+  /**
+   * What it contains, one by one, when the provider knows before install: searched, and listed
+   * on the capability shelves, which show components rather than packages.
+   */
+  components: z.array(componentSchema).optional(),
   runsCode: z.union([z.boolean(), z.literal('unknown')]),
   featured: z.boolean(),
   recommended: z.boolean(),
@@ -90,13 +100,6 @@ export const listingSchema = z.object({
   configure: z.string().optional(),
 })
 export type Listing = z.infer<typeof listingSchema>
-
-export const componentSchema = z.object({
-  kind: componentKindSchema,
-  name: z.string(),
-  description: z.string().optional(),
-})
-export type StoreComponent = z.infer<typeof componentSchema>
 
 export const listingDetailSchema = listingSchema.extend({
   readme: z.string().nullable(),

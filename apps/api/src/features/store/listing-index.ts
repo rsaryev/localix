@@ -33,7 +33,7 @@ const words = (text: string) =>
  * whenever one says it changed — so it can always be thrown away (P9).
  *
  * Search is local token matching: every word of the query must start a word of the listing's
- * name, display name, summary, tags or component names.
+ * name, display name, summary, tags, or a name or description of what it contains.
  */
 export function createListingIndex(listings: readonly Listing[]) {
   const byRef = new Map(listings.map((listing) => [keyOf(listing.ref), listing]))
@@ -46,7 +46,7 @@ export function createListingIndex(listings: readonly Listing[]) {
           listing.displayName,
           listing.summary,
           ...listing.tags,
-          ...(listing.componentNames ?? []),
+          ...(listing.components ?? []).flatMap((part) => [part.name, part.description ?? '']),
         ].join(' '),
       ),
     ]),

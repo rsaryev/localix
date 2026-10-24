@@ -26,7 +26,10 @@ const review = makeListing({
   displayName: 'Code review',
   summary: 'Reviews a diff',
   contents: { skill: 3 },
-  componentNames: ['pr-review', 'security-audit'],
+  components: [
+    { kind: 'skill', name: 'pr-review', description: 'Reads a pull request' },
+    { kind: 'skill', name: 'security-audit' },
+  ],
 })
 
 const index = createListingIndex([chess, kanban, review])
@@ -46,11 +49,12 @@ describe('the Store index', () => {
     expect(ids(index.query({ installed: false }))).toEqual(['chess', 'review'])
   })
 
-  test('search matches every word, in names, summaries, tags and component names', () => {
+  test('search matches every word, in names, summaries, tags and what it contains', () => {
     expect(ids(index.query({ q: 'board' }))).toEqual(['chess'])
     expect(ids(index.query({ q: 'agent opp' }))).toEqual(['chess'])
     expect(ids(index.query({ q: 'KANB' }))).toEqual(['kanban'])
     expect(ids(index.query({ q: 'security' }))).toEqual(['review'])
+    expect(ids(index.query({ q: 'pull request' }))).toEqual(['review'])
     expect(ids(index.query({ q: 'chess cards' }))).toEqual([])
   })
 

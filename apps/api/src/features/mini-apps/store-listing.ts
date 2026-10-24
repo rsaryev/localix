@@ -56,7 +56,7 @@ export function miniAppListing(
     source: { id: entry.source, label: context.sourceLabel },
     ...(entry.version ? { version: entry.version } : {}),
     contents: contentsOf(entry),
-    ...(entry.commands?.length ? { componentNames: entry.commands } : {}),
+    components: miniAppComponents(entry),
     runsCode: hasBackend(entry),
     featured: entry.featured ?? false,
     recommended: entry.recommended ?? false,

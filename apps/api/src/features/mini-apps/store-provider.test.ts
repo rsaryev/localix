@@ -86,12 +86,18 @@ describe('the mini apps in the Store', () => {
       source: { id: pathToFileURL(source).href, label: 'Localix' },
       version: '1.0.0',
       contents: { screen: 1, 'agent-tool': 1, backend: 1, command: 2 },
-      componentNames: ['play', 'hint'],
       runsCode: true,
       featured: true,
       recommended: false,
       installs: [],
     })
+    expect(chess!.components).toEqual([
+      { kind: 'screen', name: 'Chess', description: 'A screen of its own' },
+      { kind: 'agent-tool', name: 'Agent tools', description: 'Tools for the agent' },
+      { kind: 'backend', name: 'Chess', description: 'Runs on this computer' },
+      { kind: 'command', name: '/chess:play' },
+      { kind: 'command', name: '/chess:hint' },
+    ])
     expect(clock).toMatchObject({ displayName: 'clock', contents: { screen: 1 }, runsCode: false })
   })
 
