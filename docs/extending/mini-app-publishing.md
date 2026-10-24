@@ -34,8 +34,10 @@ the template, and people add it to their store.
 
 ### Icon and screenshots
 
-The store, the rail and the Mac app an app can become all show the app's own icon, so an app is
-recognisable wherever it appears. `mini-app.json` names the files by paths inside the app's folder:
+The store, Settings → Mini apps and the Mac app an app can become all show the app's own icon, so an
+app is recognisable wherever it appears. Its rail button keeps the line glyph its screen registers,
+drawn like every other rail button. `mini-app.json` names the files by paths inside the app's
+folder:
 
 ```json
 {

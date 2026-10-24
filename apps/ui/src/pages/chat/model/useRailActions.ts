@@ -13,7 +13,6 @@ import { openPageWorkItem } from './openPageWorkItem'
 import { miniAppViewRailAction } from './miniAppViewRailAction'
 import { requestConfirmation } from '@/shared/lib/confirmAction'
 import { railViewletRegistry } from '@/shared/contrib/uiContrib'
-import { railIcon, useRailIconsVersion } from './railIcon'
 import {
   miniAppActivationVersion,
   subscribeMiniAppActivation,
@@ -136,12 +135,13 @@ export function useRailActions({
     subscribeMiniAppActivation,
     miniAppActivationVersion,
   )
-  const contribVersion = useRailIconsVersion()
   const contributedViewlets = useMemo(
     () =>
       railViewletRegistry.list().map((v) => ({
         kind: v.kind as WorkItemKind,
-        icon: railIcon(v.miniAppName) ?? v.Icon,
+        // The glyph the screen registered: a line glyph like every other rail button. The manifest's
+        // icon is a store/Dock tile and belongs to the store, Settings and the Dock only.
+        icon: v.Icon,
         label: v.label,
         defaultArea: v.defaultArea,
         chordId: v.chordId,
@@ -164,7 +164,7 @@ export function useRailActions({
         open: () =>
           openPageWorkItem(openSessionId, { workKind: v.kind, id: v.kind, title: v.title }),
       })),
-    [activationVersion, contribVersion, capabilityScope, openSessionId],
+    [activationVersion, capabilityScope, openSessionId],
   )
   const viewlets: ViewletDef[] = [...coreViewlets(openSessionId), ...contributedViewlets]
 
