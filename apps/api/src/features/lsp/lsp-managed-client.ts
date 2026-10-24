@@ -8,5 +8,7 @@ export interface ManagedClient {
   rootDir: string
   status: LspServerStatus
   diagnostics: Record<string, LspDiagnostic[]>
+  /** `false`: kept out of the report after an edit (its server's `diagnostics: false`). */
+  reportsDiagnostics?: false
   idleTimer?: ReturnType<typeof setTimeout>
 }

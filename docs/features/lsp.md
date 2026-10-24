@@ -151,15 +151,26 @@ above, or enable a plugin that contributes an `lspServers` map.
 }
 ```
 
-| Plugin field            | Runtime effect                                                                                  |
-| ----------------------- | ----------------------------------------------------------------------------------------------- |
-| `command`               | Resolves the executable on `PATH`                                                               |
-| `args`                  | Adds command arguments                                                                          |
-| `extensionToLanguage`   | Uses the extension keys for matching; document `languageId` still comes from Localix's file map |
-| `initializationOptions` | Sends the object in the server initialize request                                               |
-| `env`                   | Adds environment variables to the stdio process                                                 |
+| Plugin field            | Runtime effect                                                                        |
+| ----------------------- | ------------------------------------------------------------------------------------- |
+| `command`               | Resolves the executable on `PATH`                                                     |
+| `args`                  | Adds command arguments                                                                |
+| `extensionToLanguage`   | Selects the server by extension and opens each file with the mapped `languageId`      |
+| `initializationOptions` | Sends the object in the server initialize request                                     |
+| `settings`              | Sent as the server's configuration and answered to its `workspace/configuration` asks |
+| `env`                   | Adds environment variables to the stdio process                                       |
+| `workspaceFolder`       | The server's root instead of the project root                                         |
+| `startupTimeout`        | How long the initialize request may take (30 seconds when unset)                      |
+| `requestTimeout`        | How long any other request may take; 60 seconds when unset                            |
+| `shutdownTimeout`       | How long a graceful shutdown may take before the process is ended                     |
+| `restartOnCrash`        | `false` leaves a server that exited on its own stopped                                |
+| `maxRestarts`           | How many times a server that exited on its own starts again                           |
+| `diagnostics`           | `false` keeps the server's diagnostics out of `edit` and `write` results              |
+| `transport`             | `stdio` or `socket`; both run over stdio, as in Claude Code                           |
 
-Plugin servers use stdio and the project root.
+The server process also receives `CLAUDE_PLUGIN_ROOT`, `CLAUDE_PLUGIN_DATA` and
+`CLAUDE_PROJECT_DIR`. A server config is a strict object: an unknown key keeps that server from
+loading, and the plugin's validation notes name the key.
 
 For each enabled plugin server, Localix reports two things in the plugin's validation notes
 (Settings → Capabilities → Plugins and `/plugin details`) and in the agent's `# Plugins` prompt
@@ -202,10 +213,6 @@ buffer is what the server checks, and the editor reloads it from disk itself.
 - Language-server processes and executable discovery run on the API host. Selecting SSH or Docker
   for file tools does not start an LSP server there. Remote editing can work while language services
   remain unavailable; the server needs a usable local root and dependencies on the API host.
-- Plugin `extensionToLanguage` values do not extend the document language-ID map. An unknown custom
-  extension is sent as `plaintext` even when its key selects a plugin server.
-- `startupTimeout`, `transport`, `settings`, `workspaceFolder`, `maxRestarts`, and `diagnostics` in
-  a plugin declaration do not change runtime behavior.
 - Built-in definitions win over plugin definitions. A plugin server never registers an extension a
   built-in definition handles, even when the built-in executable is missing.
 - Rename and code actions apply text edits only. Workspace file-create, file-rename, and file-delete

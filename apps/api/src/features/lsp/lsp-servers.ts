@@ -17,6 +17,16 @@ import { matchingLspServers } from './lsp-server-match'
 export interface LspServerHandle {
   process: ChildProcessWithoutNullStreams
   initialization?: Record<string, unknown>
+  /** The server's configuration, when it differs from `initialization` (a plugin's `settings`). */
+  settings?: Record<string, unknown>
+  /** How long `initialize` may take (a plugin's `startupTimeout`). */
+  initializeTimeoutMs?: number
+  /** How long any other request may take before it fails. */
+  requestTimeoutMs?: number
+  /** How long a graceful `shutdown` may take before the process is ended. */
+  shutdownTimeoutMs?: number
+  /** The language id a file opens with, when the server declares its own. */
+  languageIdFor?(filePath: string): string | undefined
 }
 
 export interface LspServerDef {
@@ -27,6 +37,8 @@ export interface LspServerDef {
   /** Return the root directory for this file, or undefined if the server should not handle it */
   resolveRoot(filePath: string, projectRoot: string): string | undefined
   spawn(rootDir: string, projectRoot: string): Promise<LspServerHandle | undefined>
+  /** `false`: its diagnostics are not reported after an edit (a plugin's `diagnostics: false`). */
+  reportsDiagnostics?: false
 }
 
 export const VTSLS_MAX_TS_SERVER_MEMORY_MB = 1536

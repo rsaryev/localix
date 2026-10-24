@@ -128,11 +128,11 @@ export function buildRunToolRegistry(
   // so this honors the plugin trust gate. Idempotent per turn — setPluginServers
   // REPLACES the root's set; already-running servers are left untouched.
   if (deps.lspManager) {
-    const pluginLspDefs = loadedPlugins.lspServers.flatMap(({ pluginName, servers }) =>
+    const pluginLspDefs = loadedPlugins.lspServers.flatMap(({ pluginName, servers, env }) =>
       // A built-in server keeps the extensions it already owns (see lsp-plugin-notes.ts).
       Object.entries(parseLspServersConfig(servers)).flatMap(([id, cfg]) => {
         const own = withoutBuiltinOverlap(cfg)
-        return own ? [configuredLspServer(`${pluginName}:${id}`, own)] : []
+        return own ? [configuredLspServer(`${pluginName}:${id}`, own, { env })] : []
       }),
     )
     deps.lspManager.setPluginServers(defaultCwd, pluginLspDefs)

@@ -6,6 +6,7 @@ interface DiagnosticClientState extends Pick<
   'serverId' | 'serverName' | 'rootDir' | 'status'
 > {
   diagnostics: Record<string, LspDiagnostic[]>
+  reportsDiagnostics?: false
 }
 
 /** Read current client snapshots in insertion order without owning their lifecycle. */
@@ -35,11 +36,16 @@ export function createProjectDiagnostics(
     })
   }
 
-  function collectDiagnostics(projectRoot: string): Record<string, LspDiagnostic[]> {
+  /** Every client's diagnostics by file; `forReport` leaves out a server that reports none. */
+  function collectDiagnostics(
+    projectRoot: string,
+    opts: { forReport?: boolean } = {},
+  ): Record<string, LspDiagnostic[]> {
     const clients = getClients(projectRoot)
     if (!clients) return {}
     const merged: Record<string, LspDiagnostic[]> = {}
     for (const mc of clients.values()) {
+      if (opts.forReport && mc.reportsDiagnostics === false) continue
       for (const [file, diags] of Object.entries(mc.diagnostics)) {
         if (!merged[file]) merged[file] = []
         merged[file].push(...diags)

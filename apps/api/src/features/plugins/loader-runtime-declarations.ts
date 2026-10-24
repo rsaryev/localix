@@ -109,6 +109,11 @@ export function appendPluginRuntimeDeclarations({
     })
     result.lspServers.push({
       pluginName: plugin.manifest.name,
+      env: {
+        CLAUDE_PLUGIN_ROOT: plugin.dir,
+        CLAUDE_PLUGIN_DATA: pluginDataDir(plugin.manifest.name, opts.homeDir),
+        ...(opts.cwd ? { CLAUDE_PROJECT_DIR: opts.cwd } : {}),
+      },
       servers: substituteStrings(plugin.entrypoints.lspServers, lspSubst) as Record<
         string,
         unknown

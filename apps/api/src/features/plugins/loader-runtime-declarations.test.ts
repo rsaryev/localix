@@ -44,8 +44,10 @@ function lspServersOf(
     opts: { homeDir: '/home/u', cwd: '/repo' },
   })
   expect(result.lspServers).toHaveLength(1)
+  lastEnv = (result.lspServers[0] as { env?: Record<string, string> }).env
   return (result.lspServers[0] as { servers: Record<string, unknown> }).servers
 }
+let lastEnv: Record<string, string> | undefined
 
 describe('plugin LSP server config', () => {
   // Claude Code substitutes `${user_config.KEY}` into LSP server config with its real value; only
@@ -80,5 +82,15 @@ describe('plugin LSP server config', () => {
       { tok: value },
     )
     expect(servers).toEqual({ ls: { command: 'ls', env: { TOKEN: value } } })
+  })
+
+  // Claude Code exports the plugin's path variables to an LSP server's process.
+  test("the server's process is given the plugin's path variables", () => {
+    lspServersOf({ ls: { command: 'ls' } }, {})
+    expect(lastEnv).toEqual({
+      CLAUDE_PLUGIN_ROOT: '/plugins/lsp-p',
+      CLAUDE_PLUGIN_DATA: '/home/u/.localix/plugin-data/lsp-p',
+      CLAUDE_PROJECT_DIR: '/repo',
+    })
   })
 })

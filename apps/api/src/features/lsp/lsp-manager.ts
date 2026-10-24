@@ -165,7 +165,11 @@ export function createLspManager(options: LspManagerOptions = {}): LspManager {
       // Touch every changed file in parallel and wait for diagnostics to settle.
       // Files of a type with no language server resolve immediately (no server).
       await Promise.all(filePaths.map((fp) => touchAndWait(fp, projectRoot).catch(() => {})))
-      return buildInlineDiagnostics(filePaths, collectDiagnostics(projectRoot), projectRoot)
+      return buildInlineDiagnostics(
+        filePaths,
+        collectDiagnostics(projectRoot, { forReport: true }),
+        projectRoot,
+      )
     },
 
     getDiagnostics(projectRoot) {

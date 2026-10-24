@@ -20,6 +20,8 @@ interface DocumentSyncPorts {
   isDisposed(): boolean
   waitForPush(filePath: string, timeout: number): Promise<boolean>
   requestDiagnostics(filePath: string): Promise<{ handled: boolean; matched: boolean }>
+  /** The server's own language id for a file (a plugin's `extensionToLanguage`). */
+  languageIdFor?(filePath: string): string | undefined
 }
 
 /** Synchronize editor buffers and transient disk reads through the same document lifecycle. */
@@ -33,6 +35,7 @@ export function createDocumentSync({
   isDisposed,
   waitForPush,
   requestDiagnostics,
+  languageIdFor,
 }: DocumentSyncPorts) {
   async function touchFileAndWait(filePath: string, wait = true): Promise<boolean> {
     if (isDisposed()) return false
@@ -80,7 +83,7 @@ export function createDocumentSync({
   ): Promise<boolean> {
     if (isDisposed()) return false
 
-    const languageId = languageIdForPath(filePath)
+    const languageId = languageIdFor?.(filePath) ?? languageIdForPath(filePath)
     const opened = openedFiles.get(filePath)
     const startedAt = Date.now()
 

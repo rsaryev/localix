@@ -29,7 +29,11 @@ export {
   type RenameResult,
 } from './service'
 
-export { parseLspServersConfig, configuredLspServer } from './lsp-plugin-servers'
+export {
+  parseLspServersConfig,
+  configuredLspServer,
+  lspServerConfigProblems,
+} from './lsp-plugin-servers'
 export {
   pluginLspNotes,
   summarizePluginLspServers,

@@ -177,6 +177,14 @@ Changes land on `main`.
   written instead of turning empty. See [MCP](docs/features/mcp.md).
 - **Smaller Documents download**: the Documents mini app no longer carries its fonts twice; its
   download is about half the size.
+- **Claude Code plugins behave as they do in Claude Code**: a command's
+  `allowed-tools: Bash(git add:*)` pre-approves only that command instead of the whole shell; a
+  command keeps the `${NAME}` text it does not declare instead of blanking it; a `PostToolUse` hook
+  that exits 2 hands its message to the agent and `continue: false` stops the run; and a plugin's
+  language server gets every `.lsp.json` field — `startupTimeout` (the Java and Kotlin servers need
+  two minutes), `settings`, `workspaceFolder`, request and shutdown timeouts, restart limits,
+  `diagnostics` and its own language ids. See
+  [Language servers](docs/features/lsp.md#configuration).
 - **Group chats** keep routing a message to the right participant after the model catalog refreshes:
   the decision model was dropped when the catalog named its vendor's own package.
 - **A repository can no longer run code before you allow it**: a plugin in a project named like one

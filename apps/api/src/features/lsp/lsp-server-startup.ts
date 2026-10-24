@@ -77,6 +77,7 @@ export function createServerStartup({
       rootDir,
       status: 'starting',
       diagnostics: {},
+      ...(serverDef.reportsDiagnostics === false ? { reportsDiagnostics: false as const } : {}),
     }
     clients.set(key, mc)
     notifyUpdate(projectRoot)
@@ -106,6 +107,13 @@ export function createServerStartup({
           process: handle.process,
           rootDir,
           initialization: handle.initialization,
+          ...(handle.settings ? { settings: handle.settings } : {}),
+          ...(handle.initializeTimeoutMs
+            ? { initializeTimeoutMs: handle.initializeTimeoutMs }
+            : {}),
+          ...(handle.requestTimeoutMs ? { requestTimeoutMs: handle.requestTimeoutMs } : {}),
+          ...(handle.shutdownTimeoutMs ? { shutdownTimeoutMs: handle.shutdownTimeoutMs } : {}),
+          ...(handle.languageIdFor ? { languageIdFor: handle.languageIdFor } : {}),
           onDiagnosticsUpdate(byFile) {
             mc.diagnostics = byFile
             notifyUpdate(projectRoot)

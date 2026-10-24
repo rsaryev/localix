@@ -2,7 +2,7 @@ import type { DiscoveredPlugin } from './discovery'
 import type { PluginValidation } from './contracts'
 import { isUnsafeRelPath, isKebabCase } from '../ext/manifest-validate'
 import { CC_HOOK_EVENTS, CC_INERT_HOOK_EVENTS } from '../cc-hooks/contracts'
-import { pluginLspNotes, summarizePluginLspServers } from '../lsp'
+import { lspServerConfigProblems, pluginLspNotes, summarizePluginLspServers } from '../lsp'
 
 /**
  * Claude Code compatibility advisories. Emits only WARNINGS — never blocks load.
@@ -67,6 +67,8 @@ export function validateCompatibility(plugin: DiscoveredPlugin): PluginValidatio
 
   // LSP servers: missing binaries (with an install hint) and built-in overlap.
   warnings.push(...pluginLspNotes(summarizePluginLspServers(plugin.entrypoints.lspServers)))
+  // A server whose config breaks Claude Code's strict shape does not load (Errors tab there).
+  warnings.push(...lspServerConfigProblems(plugin.entrypoints.lspServers))
 
   // Kebab-case name: our schema accepts underscores/camel, but the Claude.ai
   // marketplace sync requires strict kebab-case.

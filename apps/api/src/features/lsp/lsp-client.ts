@@ -13,6 +13,7 @@ import { createDiagnosticPullCoordinator } from './lsp-diagnostics-coordinator'
 import { CLIENT_CAPABILITIES } from './lsp-capabilities'
 import { createDiagnosticsSnapshot } from './lsp-diagnostics-snapshot'
 import { createEditorFeatures } from './lsp-editor-features'
+import { limitRequests, shutDownWithin } from './lsp-client-timeouts'
 import {
   configurationValue,
   DIAGNOSTICS_PUBLISH_INTERVAL_MS,
@@ -59,11 +60,18 @@ export async function createLspClient(input: {
   process: ChildProcessWithoutNullStreams
   rootDir: string
   initialization?: Record<string, unknown>
+  /** The configuration answered and pushed, when it is not `initialization` (a plugin's `settings`). */
+  settings?: Record<string, unknown>
+  initializeTimeoutMs?: number
+  requestTimeoutMs?: number
+  shutdownTimeoutMs?: number
+  languageIdFor?(filePath: string): string | undefined
   onDiagnosticsUpdate?: (byFile: Record<string, LspDiagnostic[]>) => void
   onReady?: () => void
   onError?: (err: unknown) => void
 }): Promise<LspClientInfo | undefined> {
   const { serverId, process: proc, rootDir } = input
+  const configuration = input.settings ?? input.initialization
 
   const connection = createMessageConnection(
     new StreamMessageReader(proc.stdout),
@@ -113,7 +121,7 @@ export async function createLspClient(input: {
   connection.onRequest('window/workDoneProgress/create', () => null)
   connection.onRequest('workspace/configuration', (params: unknown) => {
     const items = (params as { items?: { section?: string }[] }).items ?? []
-    return items.map((item) => configurationValue(input.initialization, item.section))
+    return items.map((item) => configurationValue(configuration, item.section))
   })
   connection.onRequest('client/registerCapability', (params: unknown) =>
     applyDiagnosticRegistrations(
@@ -159,7 +167,10 @@ export async function createLspClient(input: {
   connection.listen()
 
   const initPromise = new Promise<{ capabilities: ServerCapabilities } | undefined>((resolve) => {
-    const timer = setTimeout(() => resolve(undefined), INITIALIZE_TIMEOUT_MS)
+    const timer = setTimeout(
+      () => resolve(undefined),
+      input.initializeTimeoutMs ?? INITIALIZE_TIMEOUT_MS,
+    )
     connection
       .sendRequest('initialize', {
         processId: process.pid,
@@ -198,11 +209,12 @@ export async function createLspClient(input: {
   // a JSON file with a real syntax error show no diagnostics at all. Servers with
   // no initialization still answer the server-initiated `workspace/configuration`
   // pull (handled below), which is the correct path for defaults.
-  if (input.initialization && Object.keys(input.initialization).length > 0) {
+  if (configuration && Object.keys(configuration).length > 0) {
     await connection.sendNotification('workspace/didChangeConfiguration', {
-      settings: input.initialization,
+      settings: configuration,
     })
   }
+  if (input.requestTimeoutMs) limitRequests(connection, input.requestTimeoutMs)
   input.onReady?.()
 
   const syncKind = getSyncKind(initialized.capabilities)
@@ -222,6 +234,7 @@ export async function createLspClient(input: {
       isDisposed: () => disposed,
       waitForPush,
       requestDiagnostics,
+      ...(input.languageIdFor ? { languageIdFor: input.languageIdFor } : {}),
     })
 
   // Editor requests share the connection and read disposal state at call time.
@@ -236,6 +249,12 @@ export async function createLspClient(input: {
     disposed = true
     diagnosticsDebouncer.cancel()
     clearListeners()
+    if (input.shutdownTimeoutMs) {
+      void shutDownWithin(connection, input.shutdownTimeoutMs, () =>
+        killProcessTree(proc.pid, undefined, stillRunning(proc)),
+      )
+      return
+    }
     try {
       void connection.sendRequest('shutdown').catch(() => undefined)
     } catch {
