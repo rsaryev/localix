@@ -16,7 +16,12 @@ export async function copyToClipboard(
 ): Promise<{ isCopied: true } | { isCopied: false; reason: 'no-clipboard' }> {
   for (const argv of COPY_COMMANDS[platform] ?? []) {
     try {
-      const proc = Bun.spawn(argv, { stdin: new Blob([text]), stdout: 'ignore', stderr: 'ignore' })
+      const proc = Bun.spawn(argv, {
+        stdin: new Blob([text]),
+        stdout: 'ignore',
+        stderr: 'ignore',
+        windowsHide: true,
+      })
       if ((await proc.exited) === 0) return { isCopied: true }
     } catch {
       // Not installed here: the next command, or none.
