@@ -254,6 +254,12 @@ const EXEMPTIONS: Exemptions = {
       '(list / updateMetadata / remove, each with its own audit actor), so there is no single ' +
       'downstream signature to spread into.',
   },
+  [exemptionKey('bootstrap/mods.ts', 'dataDir(plugin)')]: {
+    reason:
+      'Adapter: looks the mod up in the data folders the last reload recorded and, for one it ' +
+      'has not loaded, falls back to `pluginDataDir(plugin, userHome())`, injecting the home ' +
+      'directory the port does not carry.',
+  },
 }
 
 /** The exemption key for a found restatement: the whole signature, qualified by file. */

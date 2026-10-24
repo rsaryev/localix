@@ -283,8 +283,7 @@ h2{margin:0 0 .5rem}p{margin:0;color:#888;font-size:.9rem}</style></head>
     .route(
       '/rpc/mods',
       createModRoutes(deps.modsHost ?? createModsHost(INERT_MOD_PORTS), {
-        sessionViewed: (userId, sessionId) =>
-          deps.chatService.statusLine?.viewed(userId, sessionId),
+        sessionViewed: (...args) => deps.chatService.statusLine?.viewed(...args),
       }),
     )
     .route('/rpc/shell-command', createShellCommandRoutes(deps.shellCommandService))

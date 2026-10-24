@@ -14,7 +14,7 @@ import { listDelegatedRuns } from '../features/chat/service/delegated-runs'
 import { createUsageRepository } from '../features/usage/repository'
 import { createUserProfileRepository } from '../features/user/repository'
 import { pluginDataDir } from '../features/ext/user-config-substitute'
-import type { ModelCompletion, ModsPorts } from '../features/mods/contracts'
+import type { ModsPorts } from '../features/mods/contracts'
 import { receiveDelivery } from '../features/mods/conversation-events'
 import { createModsHost, type ModsHost } from '../features/mods/host'
 import { loadEnabledPluginMods } from '../features/plugins/loader-declarative'
@@ -25,7 +25,7 @@ import type { ProviderConnectionsService } from '../features/provider-connection
 import type { RealtimeResource } from '../features/realtime/resources'
 import type { BootstrapServiceRefs } from './chat-service-deps'
 import { localixCommands } from './mods-commands'
-import { failedCompletion, usageOf } from './mods-model'
+import { createModCompletion } from './mods-model'
 import { sessionReadOf } from './mods-session'
 import type { MiniAppHostRefs } from './mini-app-host-refs'
 import { createDebouncer, createThrottle } from '../lib/debounce'
@@ -129,54 +129,7 @@ export function createModsPhase(input: {
         `mod ${input.plugin}`,
       )
     },
-    async complete(scene, request): Promise<ModelCompletion> {
-      const userId = scene.userId || defaultUserId
-      const route = scene.sessionId
-        ? await deps
-            .chat()
-            ?.getSessionAgentRoute(userId, scene.sessionId)
-            .catch(() => null)
-        : null
-      const modelId = request.model ?? route?.modelId
-      const refused = (status: number | null, error: string): ModelCompletion => ({
-        isAnswered: false,
-        reason: 'api-error',
-        status,
-        error,
-        usage: usageOf(null),
-      })
-      if (!modelId) return refused(null, 'invalid_request')
-      const built = await aux
-        .buildLanguageModel(userId, modelId, route?.providerConnectionId)
-        .catch(() => null)
-      if (!built) return refused(null, 'invalid_request')
-      // `$.model.fork`: the conversation so far, as the transcript the one question follows.
-      const transcript = (request.history ?? [])
-        .map(({ role, text }) => `${role === 'user' ? 'User' : 'Assistant'}: ${text}`)
-        .join('\n\n')
-      try {
-        const message = await built.model.complete({
-          systemPrompt: request.system ?? '',
-          messages: [
-            {
-              role: 'user',
-              content: transcript
-                ? `The conversation so far:\n\n${transcript}\n\n${request.prompt}`
-                : request.prompt,
-              timestamp: Date.now(),
-            },
-          ],
-          maxOutputTokens: Math.min(request.maxTokens ?? 1024, 64_000),
-          reasoningEffort: request.effort ?? 'off',
-          ...(scene.sessionId ? { sessionId: scene.sessionId } : {}),
-          ...(request.signal ? { signal: request.signal } : {}),
-        })
-        return { isAnswered: true, text: textOf(message.content), usage: usageOf(message.usage) }
-      } catch (error) {
-        // What the provider did never rejects a mod's call (Claude Code's `api-error`).
-        return failedCompletion(error, request.signal)
-      }
-    },
+    complete: createModCompletion({ aux, chat: deps.chat, defaultUserId }),
     log(scene, { plugin, text }) {
       if (scene.sessionId) notice(scene.userId || defaultUserId, scene.sessionId, text, plugin)
       else logger.info({ event: 'mod.log', plugin, text })
@@ -286,21 +239,4 @@ export function createModsPhase(input: {
     receive: (delivery) => receiveDelivery(modsHost, delivery),
   }
   return { modsHost, refreshMods }
-}
-
-/** The text of a model reply: its text parts, joined. */
-function textOf(content: unknown): string {
-  if (typeof content === 'string') return content
-  if (!Array.isArray(content)) return ''
-  return content
-    .flatMap((part) =>
-      part && typeof part === 'object' && (part as { type?: unknown }).type === 'text'
-        ? [
-            typeof (part as { text?: unknown }).text === 'string'
-              ? (part as { text: string }).text
-              : '',
-          ]
-        : [],
-    )
-    .join('')
 }
