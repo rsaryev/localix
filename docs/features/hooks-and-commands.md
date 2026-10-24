@@ -118,6 +118,12 @@ from any `PreToolUse` handler stops the call without stopping the others from ru
 | `PreCompact`                | Skips a proactive checkpoint; fails a turn whose checkpoint recovers from a context-limit error. |
 | Other lifecycle events      | Do not stop the run; context or observer effects depend on the event.                            |
 
+A `command` or `http` handler with `"onFailure": "block"` turns its own failure into a block: when
+it cannot start, exits with a code other than 0 or 2, times out, or answers with invalid output, the
+event acts as on exit 2, and a `PermissionRequest` is denied. The error names the hook and says
+`failed; blocking because onFailure is "block"`. `Stop`, `SubagentStop`, `TaskCompleted`,
+`TeammateIdle` and background (`async`) handlers ignore the field.
+
 ### Matcher, `if`, and `once`
 
 Tool-event matchers accept engine names and compatible aliases such as `Bash`, including MCP name

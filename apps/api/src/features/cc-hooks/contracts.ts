@@ -283,6 +283,11 @@ export interface CcHookHandler {
   rewakeSummary?: string
   /** CC `once` — run at most once per session, then never again. */
   once?: boolean
+  /**
+   * CC `onFailure: "block"` (command and http hooks): a hook that cannot start, exits with a code
+   * other than 0 or 2, times out or prints invalid output does what exit 2 does on its event.
+   */
+  onFailure?: 'block'
 }
 
 /** A matcher group: an optional matcher plus the handlers that run when it matches. */

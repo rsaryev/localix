@@ -166,8 +166,10 @@ export async function executeHook(
   }
   // hooks.md, Exit code output: a JSON object on stdout decides with "Any other exit code" too —
   // "Claude Code ignores the exit code, and the fields alone decide".
+  // With `onFailure: "block"` that exit is a failure, "even if it printed JSON that allows".
   if (
     result.code !== null &&
+    handler.onFailure !== 'block' &&
     !OUTPUT_ON_EXIT_ZERO_ONLY.has(input.hook_event_name) &&
     isJsonObjectText(result.stdout)
   ) {
@@ -178,7 +180,8 @@ export async function executeHook(
   logger.warn(
     `[cc-hook:${label}] ${input.hook_event_name} hook exited ${result.code ?? 'error'}${firstLine ? `: ${firstLine}` : ''} — non-blocking, continuing`,
   )
-  return { failed: 'error' }
+  const detail = result.stderr.trim()
+  return { failed: 'error', ...(detail ? { failureDetail: detail } : {}) }
 }
 
 /**

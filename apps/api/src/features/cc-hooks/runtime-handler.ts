@@ -7,6 +7,7 @@ import { mapPromptOutcome } from './prompt-hook'
 import { spendOnce } from './runtime-selection'
 import { refreshTranscriptFor } from './transcript'
 import { runHookOperation } from '../lifecycle-hooks/operation'
+import { blockOnFailure } from './on-failure'
 
 type HandlerRunnerOptions = Pick<
   CreateCcHooksRuntimeOptions,
@@ -78,9 +79,9 @@ export function createHookHandlerRunner(options: HandlerRunnerOptions) {
       logger.warn(`[cc-hooks] ${event} ${h.kind ?? 'command'} handler ${result.kind} — ignored`)
       return result.kind === 'aborted'
         ? {}
-        : { failed: result.kind === 'timeout' ? 'timeout' : 'error' }
+        : blockOnFailure(event, h, { failed: result.kind === 'timeout' ? 'timeout' : 'error' })
     }
-    const outcome = result.value
+    const outcome = blockOnFailure(event, h, result.value)
     // A skill's `once` hook is spent by a run that neither failed nor blocked (exit 2).
     if (!outcome.failed && !outcome.blocked) spendOnce(onceKeys, event, h)
     // Surface a non-blocking `systemMessage` warning (CC: shown to the user in the

@@ -202,4 +202,6 @@ export interface CcHookOutcome {
    * response, a failed MCP call. Most events ignore it; PreModelSwitch reads a timeout as a block.
    */
   failed?: 'timeout' | 'error'
+  /** What a failed hook wrote to stderr, for the error an `onFailure: "block"` hook reports. */
+  failureDetail?: string
 }

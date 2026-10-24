@@ -143,6 +143,7 @@ export function parseHandler(
         : {}),
       timeoutMs: clampTimeoutMs(hRaw.timeout, eventDefaultSec),
       ...commonHandlerFields(hRaw),
+      ...(hRaw.onFailure === 'block' ? { onFailure: 'block' as const } : {}),
     }
   }
 
@@ -200,5 +201,7 @@ export function parseHandler(
     ...(typeof hRaw.rewakeMessage === 'string' ? { rewakeMessage: hRaw.rewakeMessage } : {}),
     ...(typeof hRaw.rewakeSummary === 'string' ? { rewakeSummary: hRaw.rewakeSummary } : {}),
     ...(hRaw.once === true ? { once: true } : {}),
+    // A background hook's failure can block nothing (hooks.md, "Block the action when a hook fails").
+    ...(hRaw.onFailure === 'block' && !isAsync ? { onFailure: 'block' as const } : {}),
   }
 }
