@@ -114,7 +114,9 @@ export async function resolveAgentPromptContext(input: {
   const pinnedNames = [
     ...new Set([...(session.pinnedSkills ?? []), ...(context?.preloadSkills ?? [])]),
   ]
-  const pinnedSkills = resolvePinnedSkills(allSkills, pinnedNames, skillOverrides)
+  // A child delegated as an agent type got its pins from the agent file's `skills`: preloads.
+  const preload = session.provenance?.kind === 'task-delegation' && !!session.provenance.pluginAgent
+  const pinnedSkills = resolvePinnedSkills(allSkills, pinnedNames, skillOverrides, { preload })
   const triggeredSkills = resolveTriggeredSkills(
     filterDisabledSkills(allSkills, skillOverrides),
     latestUserText,

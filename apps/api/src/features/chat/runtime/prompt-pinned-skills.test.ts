@@ -55,3 +55,34 @@ describe('resolvePinnedSkills', () => {
     ])
   })
 })
+
+// sub-agents.md, "Preload skills into subagents": "You can't preload skills that set
+// `disable-model-invocation: true`"; "up to the first 32 distinct names in the list"; a plugin
+// skill is named `<plugin>:<name>`.
+describe('skills an agent file preloads', () => {
+  const skill = (name: string, extra: Partial<DiscoveredSkill> = {}) =>
+    ({
+      name,
+      description: 'd',
+      content: `Body ${name}`,
+      scope: 'global',
+      path: `/s/${name}/SKILL.md`,
+      dir: `/s/${name}`,
+      ...extra,
+    }) as DiscoveredSkill
+
+  test('leave out a user-only skill, stop at 32 names, and find a plugin skill by its full name', () => {
+    const all = [
+      skill('manual', { disableModelInvocation: true }),
+      skill('lookup', { pluginName: 'kit' }),
+      ...Array.from({ length: 40 }, (_, i) => skill(`s${i}`)),
+    ]
+    const names = ['manual', 'kit:lookup', ...Array.from({ length: 40 }, (_, i) => `s${i}`)]
+    const out = resolvePinnedSkills(all, names, {}, { preload: true }).map((s) => s.name)
+    expect(out).not.toContain('manual')
+    expect(out[0]).toBe('kit:lookup')
+    expect(out).toHaveLength(31)
+    // A pin the person made is an explicit invocation and keeps its user-only skill.
+    expect(resolvePinnedSkills(all, ['manual']).map((s) => s.name)).toEqual(['manual'])
+  })
+})
