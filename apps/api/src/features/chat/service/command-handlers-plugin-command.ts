@@ -1,6 +1,8 @@
 import { sessionRoute } from '../../../contracts/session-route'
 import { commandTarget } from './command-participant'
-import { toolOverrideOptions } from './tool-override-options'
+import { skillToolPathVars, toolOverrideOptions } from './tool-override-options'
+import { pluginDataDir } from '../../plugins/mcp'
+import { userHome } from '../../../lib/env'
 import { parsePluginCommandArgs, renderPluginPrompt } from './plugin-commands'
 import type { MessageBinding } from '@localixai/agent'
 import { resolveMessageBindings } from './message-bindings'
@@ -130,7 +132,14 @@ export async function handlePluginCommand(
       instruction,
       ts,
       {
-        ...toolOverrideOptions(match.command, projectDir),
+        ...toolOverrideOptions(
+          match.command,
+          skillToolPathVars({
+            projectDir,
+            pluginRoot: match.pluginDir,
+            pluginDataDir: pluginDataDir(match.plugin, userHome()),
+          }),
+        ),
         ...(resolvedBindings?.length ? { bindings: resolvedBindings } : {}),
         invocation: {
           source: 'plugin',

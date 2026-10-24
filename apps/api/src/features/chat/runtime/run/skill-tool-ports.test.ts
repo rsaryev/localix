@@ -58,6 +58,23 @@ describe('a skill’s injected commands meet the run’s rules', () => {
     expect(own('git status')).toBeUndefined()
   })
 
+  // skills.md: a skill can pre-approve its own bundled script with
+  // `allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/render.sh *)` — the model loading it too.
+  test('a skill pre-approves its own script through ${CLAUDE_SKILL_DIR} and plugin paths', () => {
+    const skill = {
+      allowedTools: [
+        'Bash(${CLAUDE_SKILL_DIR}/scripts/render.sh *)',
+        'Bash(${CLAUDE_PLUGIN_ROOT}/bin/tool *)',
+      ],
+      path: '/skills/render-chart/SKILL.md',
+      pluginRoot: '/plugins/charts',
+      pluginName: 'charts',
+    }
+    const check = authorizeSkillCommands(policy(ASK_SHELL), skill)
+    expect(check('/skills/render-chart/scripts/render.sh data.csv')).toBeUndefined()
+    expect(check('/plugins/charts/bin/tool x')).toBeUndefined()
+  })
+
   test('nothing runs without the run’s rules or without a shell tool', () => {
     expect(authorizeSkillCommands({}, {})('git status')).toBeString()
     expect(authorizeSkillCommands(policy([], []), {})('git status')).toBeString()

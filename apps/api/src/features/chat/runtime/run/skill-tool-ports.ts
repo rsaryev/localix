@@ -9,6 +9,7 @@ import type { SessionRecord } from '../../repository'
 import type { RunnerDeps } from '../agent-runner-types'
 import type { CcHookSessions } from '../cc-hook-sessions'
 import { skillPermissionRules } from './permission-gate-build'
+import { skillToolPathVars, substituteToolPathVars } from '../../service/tool-override-options'
 
 /** The run's permission inputs, filled once its gate is built (`stages/intake.ts`). */
 export type SkillCommandPolicyRef = { current?: VerdictOptions }
@@ -23,8 +24,20 @@ export type SkillCommandPolicyRef = { current?: VerdictOptions }
  */
 export function authorizeSkillCommands(
   policy: SkillCommandPolicyRef | undefined,
-  skill: Pick<DiscoveredSkill, 'allowedTools'>,
+  skill: Pick<DiscoveredSkill, 'allowedTools'> &
+    Partial<Pick<DiscoveredSkill, 'path' | 'pluginRoot' | 'pluginName'>>,
+  projectDir?: string,
 ): (command: string) => string | undefined {
+  // The skill's `${CLAUDE_*}` paths filled into its own rules, as its body gets them.
+  const allowedTools = substituteToolPathVars(
+    skill.allowedTools,
+    skillToolPathVars({
+      projectDir,
+      path: skill.path,
+      pluginRoot: skill.pluginRoot,
+      pluginDataDir: skill.pluginName ? pluginDataDir(skill.pluginName, userHome()) : undefined,
+    }),
+  )
   return (command) => {
     const options = policy?.current
     if (!options) return 'the permission rules of this run are not available'
@@ -33,7 +46,7 @@ export function authorizeSkillCommands(
       ...options,
       preapprovedRules: [
         ...(options.preapprovedRules ?? []),
-        ...skillPermissionRules(skill.allowedTools, options.root),
+        ...skillPermissionRules(allowedTools, options.root),
       ],
     })(TOOL.bash, { command })
     if (verdict.decision === 'allow') return undefined
@@ -110,7 +123,7 @@ export function skillToolPorts(input: {
       // the consent for its hooks; any other skill the model loads (a checkout's, or one it
       // wrote) registers none unless the run's rules would let the shell run each command.
       if (!plugin) {
-        const authorize = authorizeSkillCommands(commandPolicy, skill)
+        const authorize = authorizeSkillCommands(commandPolicy, skill, defaultCwd)
         if (commandHookTexts(skill.hooks).some((command) => authorize(command) !== undefined)) {
           return
         }
@@ -137,7 +150,7 @@ export function skillToolPorts(input: {
               // plugin's, the same files a typed `/name` runs the commands of.
               dynamic: true,
               // The model asked for this, not the person: every command meets the rules first.
-              authorize: authorizeSkillCommands(commandPolicy, skill),
+              authorize: authorizeSkillCommands(commandPolicy, skill, defaultCwd),
             })
           },
         }

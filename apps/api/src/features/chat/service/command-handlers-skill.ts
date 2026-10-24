@@ -6,7 +6,7 @@ import { parseSkillCommand } from './slash-commands'
 import { commandTarget } from './command-participant'
 import { SkillCommandFailedError } from './skill-commands'
 import { renderSkillBody } from './skill-render'
-import { toolOverrideOptions } from './tool-override-options'
+import { skillToolPathVars, toolOverrideOptions } from './tool-override-options'
 import type { SessionRecord } from '../repository'
 import type { SkillRecord } from './skills'
 import { pluginDataDir } from '../../plugins/mcp'
@@ -192,7 +192,15 @@ export async function handleSkillCommand(
     {
       // CC disallowed-tools removes tools; allowed-tools auto-approves them.
       // ${CLAUDE_PROJECT_DIR} in allowed-tools resolves to the session working dir.
-      ...toolOverrideOptions(skill, workingDir),
+      ...toolOverrideOptions(
+        skill,
+        skillToolPathVars({
+          projectDir: workingDir,
+          path: skill.path,
+          pluginRoot: plugin?.root,
+          pluginDataDir: plugin?.dataDir,
+        }),
+      ),
       // CC skill frontmatter `hooks` — registered for "the rest of the session once the skill is
       // invoked": from this run on, every later run of the session keeps them. No
       // Stop→SubagentStop conversion: the skill runs in THIS session's turn.
