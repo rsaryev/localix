@@ -1,6 +1,5 @@
 import { describe, expect, test } from 'bun:test'
 import { MINI_APP_GUIDE_FILE, MINI_APP_MANIFEST_FILE, miniAppManifestSchema } from './app'
-import { legacyMiniAppManifestSchema } from './legacy'
 
 const calories = {
   name: 'calories',
@@ -95,17 +94,5 @@ describe('mini-app.json', () => {
     expect(author({ name: 'Ada', email: 'ada@example.com', url: 'https://example.com' })).toBe(true)
     expect(author(42)).toBe(false)
     expect(author({ name: 42 })).toBe(false)
-  })
-})
-
-describe('the .localix-app/app.json written before the split', () => {
-  test('still parses, so a start-up migration can read it', () => {
-    const parsed = legacyMiniAppManifestSchema.parse({
-      name: 'calories',
-      backend: './backend/index.ts',
-      commands: { log: { featured: true, activateTools: ['calories_log'] } },
-    })
-    expect(parsed).toMatchObject({ name: 'calories', commands: { log: { featured: true } } })
-    expect(parsed.version).toBeUndefined()
   })
 })

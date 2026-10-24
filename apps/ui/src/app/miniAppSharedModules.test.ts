@@ -8,7 +8,8 @@ const NOT_SHARED = new Set([
   './backend',
   './manifest',
   './app-manifest',
-  './legacy-manifest',
+  // The store media rules the host checks when it packs, serves or authors an app's icon.
+  './manifest-media',
   './ui/testing',
   './ui-artifact',
 ])

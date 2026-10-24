@@ -18,9 +18,6 @@
   "./document-layout": {
     "bytes": 2546
   },
-  "./legacy-manifest": {
-    "bytes": 4370
-  },
   "./manifest": {
     "bytes": 2836
   },
