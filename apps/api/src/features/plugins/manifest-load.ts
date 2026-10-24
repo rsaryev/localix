@@ -11,7 +11,12 @@ import {
   type PluginManifest,
   type PluginProvides,
 } from './contracts'
-import { mapCcTools, parseAgentFile, parseCommandFile } from './discovery-cc-files'
+import {
+  mapCcTools,
+  parseAgentFile,
+  parseCommandFile,
+  type CollectedMarkdownFile,
+} from './discovery-cc-files'
 import { mapCcAllowList } from '../ext/cc-tool-names'
 import type { DiscoveredPlugin } from './discovery-types'
 import { resolveEntrypoints } from './discovery-entrypoints'
@@ -39,6 +44,20 @@ function parseInlineCommands(field: PluginManifest['commands']): PluginCommand[]
     out.push(cmd)
   }
   return out
+}
+
+/** A `commands` object-map entry's fields over its file's frontmatter. */
+function withEntryFields(
+  command: PluginCommand,
+  entry: NonNullable<CollectedMarkdownFile['overrides']>,
+): PluginCommand {
+  return {
+    ...command,
+    ...(entry.description !== undefined ? { description: entry.description } : {}),
+    ...(entry.argumentHint !== undefined ? { argumentHint: entry.argumentHint } : {}),
+    ...(entry.model !== undefined ? { model: entry.model } : {}),
+    ...(entry.allowedTools ? { allowedTools: mapCcAllowList(entry.allowedTools) } : {}),
+  }
 }
 
 /**
@@ -124,9 +143,10 @@ export async function loadManifest(
   // Parse command and agent files in parallel (independent reads).
   const [parsedCmdFiles, parsedAgentFiles, skillNames] = await Promise.all([
     Promise.all(
-      entrypoints.commandFiles.map((c) =>
-        parseCommandFile(c.file, c.name, entrypoints.diagnostics),
-      ),
+      entrypoints.commandFiles.map(async (c) => {
+        const parsed = await parseCommandFile(c.file, c.name, entrypoints.diagnostics)
+        return parsed && c.overrides ? withEntryFields(parsed, c.overrides) : parsed
+      }),
     ),
     Promise.all(
       entrypoints.agentFiles.map((a) => parseAgentFile(a.file, a.name, entrypoints.diagnostics)),

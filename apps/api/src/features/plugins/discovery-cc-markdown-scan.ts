@@ -18,6 +18,13 @@ export interface CollectedMarkdownFile {
    * joined by `:`. `commands/foo/bar.md` → `foo:bar`; a top-level `deploy.md` → `deploy`.
    */
   name: string
+  /** A `commands` object-map entry's own fields, which win over the file's frontmatter. */
+  overrides?: {
+    description?: string
+    argumentHint?: string
+    model?: string
+    allowedTools?: string[]
+  }
 }
 
 const MAX_CC_MARKDOWN_DEPTH = 8
@@ -168,6 +175,8 @@ export async function collectMarkdownFiles(
   defaultSubdir: string,
   opts?: {
     replaceDefault?: boolean
+    /** `false`: the default folder is not scanned even with no path listed (an object map). */
+    scanDefault?: boolean
     diagnostics?: PluginArtifactDiagnostic[]
     kind?: 'command' | 'agent'
   },
@@ -197,7 +206,8 @@ export async function collectMarkdownFiles(
   const paths = toAbsList(dir, pathEntries)
   // Keyed off the RESOLVED (safe) paths, not the raw entries — a manifest whose only
   // listed paths were dropped as unsafe (`..`, absolute) never hides the default dir.
-  const skipDefault = opts?.replaceDefault === true && paths.length > 0
+  const skipDefault =
+    opts?.scanDefault === false || (opts?.replaceDefault === true && paths.length > 0)
   // Explicit entries first (in declared order), then the default dir — so a name
   // declared explicitly wins over the same name discovered in the default scan.
   const explicitGroups = await mapLimit(paths, MAX_CONCURRENT_CC_MARKDOWN_ROOTS, async (abs) => {

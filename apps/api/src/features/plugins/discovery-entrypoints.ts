@@ -130,9 +130,15 @@ export async function resolveEntrypoints(
   // (an imported Claude Code plugin records its REPLACE rule this way). Skills always add.
   // When that hides an existing default dir, the field lands in `ccReplacedDefaults`.
   const exclusive = (field: 'commands' | 'agents') => manifest.defaultDirs?.[field] === false
-  const [commandFiles, agentFiles] = await Promise.all([
+  // A Claude Code `commands` object map replaces `commands/` even when it lists no path.
+  const commandMap =
+    exclusive('commands') &&
+    asStringArray(manifest.commands).length === 0 &&
+    (manifest.commands?.length || manifest.commandFiles)
+  const [listedCommandFiles, agentFiles, mappedCommandFiles] = await Promise.all([
     collectMarkdownFiles(dir, manifest.commands, 'commands', {
       replaceDefault: exclusive('commands'),
+      ...(commandMap ? { scanDefault: false } : {}),
       diagnostics,
       kind: 'command',
     }),
@@ -141,12 +147,16 @@ export async function resolveEntrypoints(
       diagnostics,
       kind: 'agent',
     }),
+    mappedCommands(dir, manifest.commandFiles, diagnostics),
   ])
+  const commandFiles = [...mappedCommandFiles, ...listedCommandFiles]
   const ccReplacedDefaults: Array<'commands' | 'agents'> = []
   await Promise.all(
     (['commands', 'agents'] as const).map(async (field) => {
       if (!exclusive(field)) return
-      const listsPaths = toAbsList(dir, asStringArray(manifest[field])).length > 0
+      const listsPaths =
+        toAbsList(dir, asStringArray(manifest[field])).length > 0 ||
+        (field === 'commands' && Boolean(commandMap))
       if (listsPaths && (await pathExists(join(dir, field)))) ccReplacedDefaults.push(field)
     }),
   )
@@ -215,4 +225,23 @@ export async function resolveEntrypoints(
     diagnostics,
     ...(ccReplacedDefaults.length > 0 ? { ccReplacedDefaults } : {}),
   }
+}
+
+/** The files a `commands` object map names, each named after its key and carrying its fields. */
+async function mappedCommands(
+  dir: string,
+  entries: PluginManifest['commandFiles'],
+  diagnostics: PluginArtifactDiagnostic[],
+): Promise<CollectedMarkdownFile[]> {
+  const found = await Promise.all(
+    Object.entries(entries ?? {}).map(async ([name, { source, ...overrides }]) => {
+      const [file] = await collectMarkdownFiles(dir, [source], 'commands', {
+        scanDefault: false,
+        diagnostics,
+        kind: 'command',
+      })
+      return file ? [{ file: file.file, name, overrides }] : []
+    }),
+  )
+  return found.flat()
 }

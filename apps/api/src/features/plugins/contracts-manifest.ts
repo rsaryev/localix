@@ -88,6 +88,22 @@ export const pluginManifestSchema = z.object({
    * discovery). The default `commands/` directory of flat `.md` files is also scanned.
    */
   commands: z.array(z.union([pluginCommandSchema, z.string()])).optional(),
+  /**
+   * Commands a Claude Code `commands` object map reads from a file: key = the command's name,
+   * `source` = its `.md` file; the entry's fields win over the file's frontmatter.
+   */
+  commandFiles: z
+    .record(
+      z.string(),
+      z.object({
+        source: z.string(),
+        description: z.string().optional(),
+        argumentHint: z.string().optional(),
+        model: z.string().optional(),
+        allowedTools: z.array(z.string()).optional(),
+      }),
+    )
+    .optional(),
   /** Bundled MCP servers: inline `{ name: { command|url, … } }`, a path string, or an array of paths. */
   mcpServers: z
     .union([

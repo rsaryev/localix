@@ -6,7 +6,8 @@ import type { ClaudePluginManifest, PluginIssue, UserConfigOption } from '@local
  *  - `userConfig` → `config`, with `sensitive` → `secret`;
  *  - `experimental.monitors` (or the top-level alias) → `monitors`;
  *  - listed `commands` / `agents` REPLACE their default folder → `defaultDirs: { <field>: false }`;
- *  - the `commands` object map → inline commands (`content`) or command files (`source`);
+ *  - the `commands` object map → inline commands (`content`) or `commandFiles` (`source`), each
+ *    named after its key;
  *  - `experimental.themes` (or the top-level alias) → `themes`;
  *  - each `channels` entry's `userConfig` → options in the plugin's `config`.
  * What Localix does not run is reported, never dropped silently.
@@ -49,7 +50,9 @@ export function fromClaudePlugin(
     defaultDirs.agents = false
   }
   if (manifest.commands !== undefined) {
-    out.commands = commandsOf(manifest.commands, issues)
+    out.commands = commandsOf(manifest.commands)
+    const files = commandFilesOf(manifest.commands)
+    if (files) out.commandFiles = files
     defaultDirs.commands = false
   }
   if (Object.keys(defaultDirs).length) out.defaultDirs = defaultDirs
@@ -99,30 +102,35 @@ function configOf(
   )
 }
 
-function commandsOf(
-  commands: NonNullable<ClaudePluginManifest['commands']>,
-  issues: PluginIssue[],
-): unknown[] {
+/** The paths and inline commands of `commands`; an object map's file entries are `commandFiles`. */
+function commandsOf(commands: NonNullable<ClaudePluginManifest['commands']>): unknown[] {
   if (typeof commands === 'string') return [commands]
   if (Array.isArray(commands)) return commands
-  return Object.entries(commands).map(([name, entry]) => {
-    if (entry.source !== undefined) {
-      const file = entry.source.split('/').at(-1)?.replace(/\.md$/i, '')
-      if (file !== name)
-        issues.push({
-          severity: 'warning',
-          path: `commands.${name}`,
-          message: `"${name}" runs as /${file}: Localix names a command after its file`,
-        })
-      return entry.source
-    }
-    return {
-      name,
-      description: entry.description ?? '',
-      prompt: entry.content ?? '',
-      ...(entry.argumentHint ? { argumentHint: entry.argumentHint } : {}),
-      ...(entry.model ? { model: entry.model } : {}),
-      ...(entry.allowedTools ? { allowedTools: entry.allowedTools } : {}),
-    }
+  return Object.entries(commands).flatMap(([name, entry]) =>
+    entry.source !== undefined
+      ? []
+      : [
+          {
+            name,
+            description: entry.description ?? '',
+            prompt: entry.content ?? '',
+            ...(entry.argumentHint ? { argumentHint: entry.argumentHint } : {}),
+            ...(entry.model ? { model: entry.model } : {}),
+            ...(entry.allowedTools ? { allowedTools: entry.allowedTools } : {}),
+          },
+        ],
+  )
+}
+
+/** An object map's `source` entries, keyed by the command name the key gives. */
+function commandFilesOf(
+  commands: NonNullable<ClaudePluginManifest['commands']>,
+): Record<string, Record<string, unknown>> | undefined {
+  if (typeof commands === 'string' || Array.isArray(commands)) return undefined
+  const files = Object.entries(commands).flatMap(([name, entry]) => {
+    if (entry.source === undefined) return []
+    const { content: _content, ...fields } = entry
+    return [[name, fields] as const]
   })
+  return files.length ? Object.fromEntries(files) : undefined
 }
