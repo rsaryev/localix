@@ -38,7 +38,7 @@ import { usePromptInputKeyboard } from './usePromptInputKeyboard'
 import { useHistoryKeyDown } from './usePromptHistory'
 import { usePromptSend } from './usePromptSend'
 import { usePromptSessionView } from './usePromptSessionView'
-import { useComposerFilePicker } from './useComposerFilePicker'
+import { useComposerFileInput } from './useComposerFileInput'
 import { useDynamicSlashCommands } from './useDynamicSlashCommands'
 import { useShownParticipant } from './useShownParticipant'
 
@@ -252,7 +252,7 @@ export function PromptInput(props: PromptInputProps) {
   })
   const dropzone = props.dropzone ?? ownDropzone
   const { dragKind, handleFiles } = dropzone
-  const filePicker = useComposerFilePicker(handleFiles, attachmentGate)
+  const filePicker = useComposerFileInput(handleFiles, attachmentGate)
   // Mention pills in each member's colour, and the ghost suggestion after the caret.
   const composerHighlight = useComposerMirror({ prompt, suggestionGhost, participants })
 

@@ -9,7 +9,7 @@ import { desktopPickFiles } from '@/shared/lib/desktopDialogs'
  * file input this returns for the composer to render. Either way the picked files are staged
  * through `handleFiles`.
  */
-export function useComposerFilePicker(
+export function useComposerFileInput(
   handleFiles: (files: File[]) => void,
   attachmentGate: AttachmentGate | undefined,
 ) {
