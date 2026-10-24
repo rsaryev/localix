@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test'
+import { beforeEach, describe, expect, test } from 'bun:test'
 import type { MenuEntry, StatusItemState } from '@localixai/mini-app-sdk/ui'
 
 import { isMenuAction } from '@localixai/kit/menu-entries'
@@ -10,6 +10,10 @@ const labels = (entries: MenuEntry[]) =>
   entries.map((entry) =>
     'separator' in entry ? '—' : 'header' in entry ? `#${entry.header}` : entry.label,
   )
+
+// The bus latches the last navigation for a late subscriber; one left by another file in the same
+// process would replay into these assertions.
+beforeEach(() => consumeSettingsNav())
 
 const state = (partial: Partial<StatusItemState> & { label: string }): StatusItemState => partial
 

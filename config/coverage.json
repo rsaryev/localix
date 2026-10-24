@@ -15,10 +15,10 @@
     "**/*.config.mjs"
   ],
   "floors": {
-    "apps/api": 87.2,
+    "apps/api": 87.3,
     "apps/desktop-tauri": 82.5,
     "apps/landing": 89.8,
-    "apps/ui": 78.5,
+    "apps/ui": 78.6,
     "packages/agent": 95.3,
     "packages/change-feed": 98.6,
     "packages/claude-plugin": 96.1,
@@ -28,7 +28,7 @@
     "packages/engine-models": 70.2,
     "packages/engine-scripts": 90.8,
     "packages/engine": 94.7,
-    "packages/kit": 88.3,
+    "packages/kit": 88.5,
     "packages/markdown": 72.2,
     "packages/notifications": 98.1,
     "packages/os-open": 99,
@@ -58,7 +58,8 @@
     "mini-apps/template": 94.6,
     "mini-apps/tic-tac-toe": 91.1,
     "mini-apps/trading": 88.8,
-    "scripts": 69.6
+    "scripts": 69.6,
+    "packages/store": 99.4
   },
   "unloaded": [
     "apps/api/scripts/check-compression.ts",
@@ -517,7 +518,6 @@
     "packages/kit/src/content/pdf-pages.tsx",
     "packages/kit/src/controls/autocomplete.surface.ts",
     "packages/kit/src/controls/chrome-action.ts",
-    "packages/kit/src/controls/media-overlay-button.tsx",
     "packages/kit/src/controls/rail-button.ts",
     "packages/kit/src/controls/toggle-pill.tsx",
     "packages/kit/src/entries/autocomplete.ts",
@@ -653,7 +653,7 @@
     "packages/engine-models": 1011,
     "packages/engine-scripts": 50,
     "packages/engine": 6,
-    "packages/kit": 930,
+    "packages/kit": 937,
     "packages/markdown": 394,
     "packages/notifications": 6,
     "packages/os-open": 1,
@@ -683,6 +683,7 @@
     "mini-apps/template": 58,
     "mini-apps/tic-tac-toe": 89,
     "mini-apps/trading": 1404,
-    "scripts": 1608
+    "scripts": 1608,
+    "packages/store": 1
   }
 }
