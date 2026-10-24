@@ -13,6 +13,7 @@ import {
   installPluginRequestSchema,
   pluginRecordSchema,
   removePluginRequestSchema,
+  updatePluginRequestSchema,
   setPluginConfigRequestSchema,
 } from './contracts'
 import type { PluginService } from './service-types'
@@ -56,7 +57,7 @@ export function createPluginRoutes(service: PluginRoutesService) {
       const response = await service.install(c.get('userId'), c.req.valid('json'))
       return c.json(pluginRecordSchema.parse(response), 201)
     })
-    .post('/update', zValidator('json', removePluginRequestSchema), async (c) => {
+    .post('/update', zValidator('json', updatePluginRequestSchema), async (c) => {
       const response = await service.update(c.get('userId'), c.req.valid('json'))
       return c.json(pluginRecordSchema.parse(response), 200)
     })

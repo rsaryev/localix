@@ -225,7 +225,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
   /** `update`; a marketplace update has just refreshed the marketplace and says so. */
   const updatePlugin = async (
     userId: string,
-    input: { name: string; projectId?: string | null },
+    input: { name: string; projectId?: string | null; acceptCommand?: string },
     opts: { refreshMarketplace: boolean },
   ): Promise<PluginRecord> => {
     const plugin = await findPlugin(userId, input.name, input.projectId ?? '')
@@ -238,7 +238,15 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       plugin,
       registryDeps: opts.refreshMarketplace ? registryDeps : null,
       install: (source, projectId) =>
-        service.install(userId, { source, projectId }, { replace: true }),
+        service.install(
+          userId,
+          {
+            source,
+            projectId,
+            ...(input.acceptCommand ? { acceptCommand: input.acceptCommand } : {}),
+          },
+          { replace: true },
+        ),
     })
   }
 
@@ -425,6 +433,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       if (marketRef) {
         resolvedMarket = await resolveFreshMarketplaceInstall(marketRef, registryDeps, {
           notes: refreshNotes,
+          ...(input.acceptCommand ? { acceptCommand: input.acceptCommand } : {}),
         })
       } else if (!isGitSource(source) && !isAbsolute(source)) {
         resolvedMarket = await resolveBareInstall(source, registryDeps)

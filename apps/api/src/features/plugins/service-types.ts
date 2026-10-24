@@ -18,6 +18,7 @@ import type {
   PluginRecord,
   PluginValidation,
   RemovePluginRequest,
+  UpdatePluginRequest,
   SetPluginConfigRequest,
   SetPluginEnabledRequest,
 } from './contracts'
@@ -139,7 +140,7 @@ export interface PluginService {
     opts?: { strict?: boolean },
   ): Promise<{ name: string; validation: PluginValidation }>
   /** Re-install from the original source (CC `plugin update` parity). */
-  update(userId: string, input: RemovePluginRequest): Promise<PluginRecord>
+  update(userId: string, input: UpdatePluginRequest): Promise<PluginRecord>
   /**
    * Remove a plugin (never cascades to dependents). When other installed plugins still
    * declare a dependency on it, returns `warnings` naming them (also logged). A name that is not

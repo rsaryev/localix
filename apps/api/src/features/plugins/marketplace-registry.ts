@@ -30,6 +30,7 @@ import {
   findMarketplacesWithPlugin,
 } from './marketplace-catalog'
 import { withSourceHeaders } from './marketplace-headers'
+import { withEntryHelperHeaders } from './entry-headers-helper'
 import { assertMarketplaceAllowed, readManagedPolicy } from './claude-code-policy'
 import { tagInRange } from './dependency-tags'
 
@@ -280,7 +281,11 @@ export interface ResolvedMarketplaceInstall {
 export async function resolveMarketplaceInstall(
   ref: { plugin: string; marketplace: string },
   deps: MarketplaceRegistryDeps,
-  opts?: { versionRange?: string },
+  opts?: {
+    versionRange?: string
+    /** The person accepted this entry's `headersHelper` (`entry-headers-helper.ts`). */
+    acceptCommand?: string
+  },
 ): Promise<ResolvedMarketplaceInstall> {
   const root = deps.root ?? marketplacesRoot()
   const known = await readKnownMarketplaces(root)
@@ -354,6 +359,13 @@ export async function resolveMarketplaceInstall(
   const hostedBy = known[ref.marketplace]?.source
   if ('archive' in resolved && hostedBy?.source === 'url')
     resolved.archive = await withSourceHeaders(resolved.archive, hostedBy)
+  // An entry's headersHelper runs only once the person accepted it; its output wins a name.
+  if ('archive' in resolved)
+    resolved.archive = await withEntryHelperHeaders(
+      resolved.archive,
+      entry.name,
+      opts?.acceptCommand,
+    )
   // Remote sources stage into a stable temp dir under the marketplaces root; git, npm and
   // archives land the same shape (a plain plugin dir handed to `installFromLocal`).
   const staging = join(root, `.fetch-${Math.abs(hashString(`${ref.plugin}\0${ref.marketplace}`))}`)

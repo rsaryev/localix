@@ -21,12 +21,12 @@ type PluginsCommandContext = Pick<
 /** Every accepted sub-command, in menu order — the reply to an unrecognized one. */
 const PLUGIN_SUBCOMMAND_USAGE = [
   '/plugin list',
-  '/plugin install <name>@<marketplace> | <name> --marketplace <source> | <git-url> | <owner/repo> | </absolute/path> [--project]',
+  '/plugin install <name>@<marketplace> | <name> --marketplace <source> | <git-url> | <owner/repo> | </absolute/path> [--project] [--accept-command <sha256>]',
   '/plugin enable <name>',
   '/plugin disable <name>',
   '/plugin remove <name>',
   '/plugin validate [<name> | </absolute/path>] [--strict]',
-  '/plugin update <name>',
+  '/plugin update <name> [--accept-command <sha256>]',
   '/plugin details <name>',
   '/plugin reload',
   '/plugin marketplace list [<name>] | add <source> | update [<name>] | remove <name>',
@@ -75,7 +75,7 @@ export async function handlePluginsControlCommand(
 
   if (sub === 'install') {
     // Global by default (~/.localix/plugins); `--project` targets this chat's project.
-    const args = tokens.slice(2)
+    const { args, accepted } = takeAcceptCommand(tokens.slice(2))
     const toProject = args.includes('--project')
     // `--marketplace <source>` adds (or refreshes) that marketplace first, as in Claude Code.
     const at = args.indexOf('--marketplace')
@@ -95,6 +95,7 @@ export async function handlePluginsControlCommand(
         source: added ? `${source}@${added.name}` : source,
         projectId: toProject ? (session.projectId ?? null) : null,
         enable: true,
+        ...(accepted ? { acceptCommand: accepted } : {}),
       })
       return directReply(installReply(rec))
     } catch (err) {
@@ -124,11 +125,16 @@ export async function handlePluginsControlCommand(
   }
 
   if (sub === 'update') {
-    const name = tokens.slice(2).join(' ').trim()
+    const { args: updateArgs, accepted } = takeAcceptCommand(tokens.slice(2))
+    const name = updateArgs.join(' ').trim()
     if (!name)
       return directReply('Usage: `/plugin update <name>` — re-installs from the original source.')
     try {
-      const rec = await pluginService.update(userId, { name, projectId: session.projectId ?? null })
+      const rec = await pluginService.update(userId, {
+        name,
+        projectId: session.projectId ?? null,
+        ...(accepted ? { acceptCommand: accepted } : {}),
+      })
       return directReply(updateReply(rec))
     } catch (err) {
       return directReply(`Update failed: ${errorMessage(err)}`)
@@ -253,4 +259,18 @@ export async function handlePluginsControlCommand(
           }),
         ].join('\n')
   return directReply(reply)
+}
+
+/**
+ * `--accept-command <sha256>`: the person accepts the `headersHelper` command an install or update
+ * showed them (plugins/cli-reference, `plugin install`); the flag leaves the other arguments.
+ */
+function takeAcceptCommand(args: string[]): { args: string[]; accepted?: string } {
+  const at = args.indexOf('--accept-command')
+  if (at < 0) return { args }
+  const accepted = args[at + 1]
+  return {
+    args: args.filter((_arg, i) => i !== at && i !== at + 1),
+    ...(accepted ? { accepted } : {}),
+  }
 }

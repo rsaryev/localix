@@ -133,6 +133,8 @@ export const installPluginRequestSchema = z.object({
   projectId: z.string().nullable().optional(),
   /** Explicit installation is consent to run; callers may opt out with `false`. */
   enable: z.boolean().default(true),
+  /** The person accepted the entry's `headersHelper` command: the sha256 it was shown with. */
+  acceptCommand: z.string().optional(),
 })
 export type InstallPluginRequest = z.infer<typeof installPluginRequestSchema>
 
@@ -141,6 +143,12 @@ export const removePluginRequestSchema = z.object({
   projectId: z.string().nullable().optional(),
 })
 export type RemovePluginRequest = z.infer<typeof removePluginRequestSchema>
+
+/** `/plugin update`: the plugin, and the `headersHelper` command the person accepted, if any. */
+export const updatePluginRequestSchema = removePluginRequestSchema.extend({
+  acceptCommand: z.string().optional(),
+})
+export type UpdatePluginRequest = z.infer<typeof updatePluginRequestSchema>
 
 /** Register a marketplace from a source (owner/repo, git/https URL, or absolute path). */
 export const addMarketplaceRequestSchema = z.object({ source: z.string().min(1) })

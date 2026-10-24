@@ -57,11 +57,15 @@ export async function refreshMarketplace(
 export async function resolveFreshMarketplaceInstall(
   ref: { plugin: string; marketplace: string },
   deps: MarketplaceRegistryDeps,
-  opts: RefreshOptions & { notes: string[] },
+  opts: RefreshOptions & { notes: string[]; acceptCommand?: string },
 ): Promise<ResolvedMarketplaceInstall> {
   const note = await refreshMarketplace(ref.marketplace, deps, opts)
   if (note) opts.notes.push(note)
-  return resolveMarketplaceInstall(ref, deps)
+  return resolveMarketplaceInstall(
+    ref,
+    deps,
+    opts.acceptCommand ? { acceptCommand: opts.acceptCommand } : undefined,
+  )
 }
 
 /**

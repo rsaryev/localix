@@ -138,9 +138,10 @@ An npm `package` may carry its version (`@org/formatter@2.0.0`) or be an `https`
 tarball; a link on github.com, gitlab.com (outside its npm registry API), bitbucket.org or git.sr.ht
 is refused. A registry your `~/.npmrc` holds an `_authToken` for receives it. An archive download
 gets the entry's `headers` and, on the catalog's own origin, the headers of a `url` marketplace
-source; an entry `headersHelper` is refused, since Claude Code first asks you to accept that
-command. A relative entry path must start with `./` (a bare name only under `metadata.pluginRoot`)
-and use `/`, and a catalog needs an `owner`, as in Claude Code.
+source; an entry `headersHelper` runs only once you accept it (see
+[Accept a headersHelper command](plugin-updates.md#accept-a-headershelper-command)). A relative
+entry path must start with `./` (a bare name only under `metadata.pluginRoot`) and use `/`, and a
+catalog needs an `owner`, as in Claude Code.
 
 `/plugin install <name>@<marketplace>` and `/plugin update` read the marketplace again first, unless
 it was refreshed in the last 30 seconds or `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` is set; when

@@ -129,6 +129,17 @@ of them moves to that version. Ranges that share no version refuse the install w
 set it; what is installed stays as it was. A plugin whose installed dependency is outside its range
 does not load and says `Requires "<name>" <range>, installed <version>`.
 
+### Accept a headersHelper command
+
+A marketplace entry may fetch its archive with the headers a `headersHelper` command prints. The
+command runs only when you install or update that one plugin and accept it: the first
+`/plugin install <name>@<marketplace>` stops and shows the command, the archive URL and a sha256.
+Run the install again with `--accept-command <sha256>` (also on `/plugin update`) to run that
+command for that URL; a changed command or URL needs a new acceptance, each install asks again, and
+an install as another plugin's dependency or a background update leaves the plugin for you. The
+command runs through `sh` in Claude Code's configuration directory, without the variables that look
+like credentials and with `CLAUDE_CODE_PLUGIN_NAME` and `CLAUDE_CODE_PLUGIN_ARCHIVE_URL` set.
+
 ## Limits
 
 - Only user-scope copies from a marketplace go into the version cache and are auto-updated; a

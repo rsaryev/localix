@@ -13,7 +13,15 @@ export type ResolvedEntrySource =
   | { localPath: string }
   | { git: { url: string; subdir?: string; ref?: string } }
   | { npm: NpmEntrySource }
-  | { archive: { url: string; sha256?: string; headers?: Record<string, string> } }
+  | {
+      archive: {
+        url: string
+        sha256?: string
+        headers?: Record<string, string>
+        /** A command printing more headers, run only once the person accepts it. */
+        headersHelper?: string
+      }
+    }
 
 const GITHUB_SHORTHAND = /^[\w.-]+\/[\w.-]+$/
 
@@ -70,13 +78,10 @@ export function resolveEntrySource(
     throw new Error(
       `Entry "${entry.name}" uses a "command" source, which Localix does not run; install the plugin from the directory that command prints`,
     )
-  // An entry `headersHelper` is a command the person must accept before it runs; Localix has no
-  // such review, so the entry is refused rather than the command run unseen.
-  const helper = (entry as { headersHelper?: unknown }).headersHelper
-  if (typeof helper === 'string' && helper.trim())
-    throw new Error(
-      `Entry "${entry.name}" sets a headersHelper command, which Localix does not run; set the marketplace's url source headers instead, or install the plugin from a folder`,
-    )
+  // An entry `headersHelper` is a command the person accepts before it runs
+  // (`entry-headers-helper.ts`); it applies to an archive download only.
+  const rawHelper = (entry as { headersHelper?: unknown }).headersHelper
+  const helper = typeof rawHelper === 'string' && rawHelper.trim() ? rawHelper : undefined
   if (kind === 'archive') {
     if (typeof obj.url !== 'string' || !obj.url.startsWith('https://'))
       throw new Error(`Entry "${entry.name}" archive source needs an https:// "url"`)
@@ -86,6 +91,7 @@ export function resolveEntrySource(
         url: obj.url,
         ...(typeof obj.sha256 === 'string' ? { sha256: obj.sha256.toLowerCase() } : {}),
         ...(headers ? { headers } : {}),
+        ...(helper ? { headersHelper: helper } : {}),
       },
     }
   }
@@ -116,11 +122,11 @@ export function resolveEntrySource(
 }
 
 /** Request-routing and identity headers a catalog entry may not set (Claude Code drops them). */
-const ROUTING_HEADER =
+export const ROUTING_HEADER =
   /^(host|connection|content-length|transfer-encoding|upgrade|te|trailer|forwarded|via|proxy-.*|x-forwarded-.*|x-real-ip)$/i
 
 /** An entry's `headers`: its string values, routing headers left out. */
-function stringHeaders(value: unknown): Record<string, string> | undefined {
+export function stringHeaders(value: unknown): Record<string, string> | undefined {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined
   const entries = Object.entries(value).filter(
     (entry): entry is [string, string] =>

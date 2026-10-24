@@ -5,13 +5,11 @@ import { tempDirPerTest } from '@localixai/testing'
 
 import { stubFetch } from '../../testing/fetch-stub'
 import { addMarketplace, resolveMarketplaceInstall } from './marketplace-registry'
-import { resolveEntrySource } from './marketplace-source'
 
 /**
  * Headers on an archive download (host-marketplace.md, "Authenticate archive downloads"): the
  * marketplace's `url` source headers reach archives on the catalog's origin, an entry's own
- * `headers` win a name both set, and an entry `headersHelper` — a command the person would have to
- * accept first — is refused with the reason.
+ * `headers` win a name both set (an entry `headersHelper`: `entry-headers-helper.test.ts`).
  */
 
 const dir = tempDirPerTest('mkt-archive-headers-')
@@ -53,15 +51,5 @@ describe('archive download headers', () => {
       await resolveMarketplaceInstall({ plugin, marketplace: 'hosted' }, { ...deps, fetchArchive })
     // Another origin gets no marketplace headers.
     expect(seen).toEqual([{ Authorization: 'entry', 'X-Mkt': 'm', 'X-Entry': 'e' }, undefined])
-  })
-
-  it('refuses an entry headersHelper', () => {
-    expect(() =>
-      resolveEntrySource('/mkt', {
-        name: 'tool',
-        source: { source: 'archive', url: 'https://r.example.com/t.zip' },
-        headersHelper: '/opt/bin/mint.sh',
-      } as never),
-    ).toThrow(/headersHelper/)
   })
 })
