@@ -122,10 +122,28 @@ matrix for 5,000 listings at 256 dimensions is about 5 MB, scanned in well under
 The Store collection is separate from the installed-capabilities collections, so searching the Store
 never crowds the palette's search for an installed skill, and the reverse.
 
+### One search, two places
+
+The Store adds no search engine of its own. It registers one provider, `store`, in the global
+search-provider registry (`@localixai/mini-app-sdk/backend`), the way chats, files and installed
+plugins do, and both places ask the global search service:
+
+| Place                    | Request                                                     | Shows                                                                                        |
+| ------------------------ | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| The search palette       | Every eager provider, `store` among them, five hits at most | A "Store" group below installed results: packages not yet installed; Enter opens their page. |
+| The Store's search field | `domains: ['store']` plus the Store's filters               | Full results in pages, with facets; the same ranking as the palette.                         |
+
+The global service builds the query's semantic strategy once (the query embedded once) and hands it
+to every provider; the `store` provider runs `catalogHits` over its collection and the filtered
+index. The Store's filters travel as a provider option on the query, so the shared `SearchQuery`
+gains one optional, opaque field rather than Store-specific ones. The Store routes reach the search
+service through a port wired in `bootstrap/` (A4), never by importing the search feature.
+
 ## Query path
 
 1. Filters (shelf, kind, category, source, trust, installed, updates) narrow the in-memory index.
-2. A query runs the hybrid search over what is left; no query orders by score.
+2. A query goes through the global search service to the `store` provider, which runs the hybrid
+   search over what is left; with no query, the Store orders by score without calling search.
 3. Results come back in pages of 40 with a cursor; facet counts are counted over the filtered set.
 4. Typing debounces at 150 ms and cancels the previous request.
 
