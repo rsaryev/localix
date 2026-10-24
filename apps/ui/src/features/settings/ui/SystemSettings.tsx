@@ -20,17 +20,19 @@ export function SystemSettings({
     <SettingsPage
       title="System"
       description="Application maintenance, access policies, and runtime diagnostics."
+      tabs={
+        <TabBar
+          aria-label="System categories"
+          items={[
+            { id: 'system', label: 'Application' },
+            { id: 'context', label: 'Access & context' },
+            { id: 'diagnostics', label: 'Diagnostics' },
+          ]}
+          active={activeTab}
+          onChange={(tab) => onTabChange?.(tab)}
+        />
+      }
     >
-      <TabBar
-        aria-label="System categories"
-        items={[
-          { id: 'system', label: 'Application' },
-          { id: 'context', label: 'Access & context' },
-          { id: 'diagnostics', label: 'Diagnostics' },
-        ]}
-        active={activeTab}
-        onChange={(tab) => onTabChange?.(tab)}
-      />
       {activeTab === 'context' ? (
         <ContextSettings />
       ) : activeTab === 'diagnostics' ? (

@@ -4,7 +4,7 @@ import { Wrench, BookOpen, LayoutGrid, Plug, Puzzle, ShieldCheck } from 'lucide-
 import type { Project } from '@/shared/api/contracts'
 import type { TabItem } from '@localixai/kit/tabs'
 import { CAPABILITY_TABS, type CapabilityTabId } from '@/shared/routing/routes'
-import { SettingsPageHeader } from './SettingsScaffold'
+import { SettingsPage } from './SettingsScaffold'
 import { CapabilityTabRow } from './capabilities/CapabilityTabRow'
 import { AgentSwitcher } from './AgentSwitcher'
 import { ToolsSettings } from './ToolsSettings'
@@ -104,12 +104,12 @@ export function CapabilitiesSettings({
   const agentScope = agentScopeValue(agentId || DEFAULT_AGENT_ID)
 
   return (
-    <div ref={targetRef} tabIndex={-1} className="flex flex-col gap-6">
+    <div ref={targetRef} tabIndex={-1} className="outline-none">
       {/* Both pickers ride the HEADER row, not the tab strip below it — the same control
           answers the same question on the Agents tab, and putting it on a different row
           made it jump as you moved between the two. Page-level state, so a choice survives
           switching sub-tabs. */}
-      <SettingsPageHeader
+      <SettingsPage
         title="Capabilities"
         description="Everything the agent can do — built-in tools, skills, MCP servers, plugins and mini apps."
         actions={
@@ -123,16 +123,15 @@ export function CapabilitiesSettings({
           // where a NEW artifact is installed is stated by the form that installs it.
           <AgentSwitcher agents={pickableAgents} agentId={agentId} onChange={setPicked} />
         }
-      />
-
-      <CapabilityTabRow
-        aria-label="Capability categories"
-        items={TABS}
-        active={activeTab}
-        onChange={onTabChange}
-      />
-
-      <div className="min-w-0">
+        tabs={
+          <CapabilityTabRow
+            aria-label="Capability categories"
+            items={TABS}
+            active={activeTab}
+            onChange={onTabChange}
+          />
+        }
+      >
         {activeTab === 'tools' && <ToolsSettings scope={agentScope} projects={projects} />}
         {activeTab === 'skills' && (
           <SkillsSettings scope={project} agentScope={agentScope} projects={projects} />
@@ -148,7 +147,7 @@ export function CapabilitiesSettings({
         )}
         {/* Keyed on the agent so no staged edit survives a switch from one role to another. */}
         {activeTab === 'rules' && <PermissionRulesView key={agentScope} scope={agentScope} />}
-      </div>
+      </SettingsPage>
     </div>
   )
 }

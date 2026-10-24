@@ -21,16 +21,18 @@ export function ModelsSettings({
     <SettingsPage
       title="Models"
       description="Models that run on this computer, and the list of models providers offer. Which model each task uses is chosen in the model picker."
+      tabs={
+        <TabBar
+          aria-label="Model categories"
+          items={[
+            { id: 'models', label: 'Local' },
+            { id: 'model-list', label: 'Model list' },
+          ]}
+          active={activeTab}
+          onChange={(tab) => onTabChange?.(tab)}
+        />
+      }
     >
-      <TabBar
-        aria-label="Model categories"
-        items={[
-          { id: 'models', label: 'Local' },
-          { id: 'model-list', label: 'Model list' },
-        ]}
-        active={activeTab}
-        onChange={(tab) => onTabChange?.(tab)}
-      />
       {activeTab === 'model-list' ? <ModelCatalogSection /> : <LocalModelsSettings />}
     </SettingsPage>
   )

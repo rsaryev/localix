@@ -2,7 +2,7 @@ import { useAgents } from '@/shared/contrib/useAgents'
 import type { Project } from '@/shared/api/contracts'
 import { Button } from '@localixai/kit/button'
 import { SettingProblems } from './settingRegistry'
-import { SettingsPageHeader } from './SettingsScaffold'
+import { SettingsPage } from './SettingsScaffold'
 import { CapabilityRegistryBody } from './capabilities/CapabilityRegistryBody'
 import { AgentRow } from './capabilities/AgentRow'
 import { HumanAgentCard } from './capabilities/HumanAgentCard'
@@ -32,21 +32,18 @@ export function AgentsSettings({ scope, projects, onScopeChange }: AgentsSetting
   const { agents, loading, error, busy, busyLabel, refresh, toggle } = useAgents(scope)
 
   return (
-    <div className="w-full">
-      <SettingsPageHeader
-        title="Agents"
-        description="Who you can talk to, and who a run can delegate to."
-        className="mb-5 border-b border-border-faint pb-4"
-        actions={
-          <>
-            <ProjectSwitcher projects={projects} project={scope} onChange={onScopeChange} />
-            <Button variant="mono" onClick={() => openNewAgentProfile(scope)}>
-              New agent
-            </Button>
-          </>
-        }
-      />
-
+    <SettingsPage
+      title="Agents"
+      description="Who you can talk to, and who a run can delegate to."
+      actions={
+        <>
+          <ProjectSwitcher projects={projects} project={scope} onChange={onScopeChange} />
+          <Button variant="mono" onClick={() => openNewAgentProfile(scope)}>
+            New agent
+          </Button>
+        </>
+      }
+    >
       <SettingProblems
         className="mb-3"
         subject="Agents"
@@ -78,6 +75,6 @@ export function AgentsSettings({ scope, projects, onScopeChange }: AgentsSetting
           />
         ))}
       </CapabilityRegistryBody>
-    </div>
+    </SettingsPage>
   )
 }

@@ -36,7 +36,8 @@ export function SettingsPageHeader({
   className,
 }: {
   title: string
-  description?: string
+  /** A sentence, or a node such as a monospaced path; it sits under the title in the soft tier. */
+  description?: ReactNode
   /**
    * What this page can do, on the heading's own line.
    *
@@ -56,15 +57,19 @@ export function SettingsPageHeader({
       )}
     >
       <div className="min-w-0 space-y-1">
-        <h2 className="text-xl font-semibold tracking-tight text-foreground text-balance">
+        <h2 className="text-xl leading-7 font-semibold tracking-tight text-foreground text-balance">
           {title}
         </h2>
         {description && (
-          <p className="max-w-2xl text-sm leading-5 text-text-soft text-pretty">{description}</p>
+          <div className="max-w-2xl text-sm leading-5 text-text-soft text-pretty">
+            {description}
+          </div>
         )}
       </div>
       {actions && (
-        <div className="flex min-w-0 flex-wrap items-center gap-2 @xl:shrink-0 @xl:justify-end">
+        // Centred on the title's line, whatever the control's height: a 36px button and a 28px
+        // picker sit on the same axis as the title instead of drifting toward the description.
+        <div className="flex min-w-0 flex-wrap items-center gap-2 @xl:h-7 @xl:shrink-0 @xl:flex-nowrap @xl:justify-end">
           {actions}
         </div>
       )}
@@ -72,25 +77,34 @@ export function SettingsPageHeader({
   )
 }
 
+/**
+ * Every settings page: its header, an optional tab strip, then its sections. One geometry for all
+ * of them — the same gap under the header and under the tabs, the same space between sections —
+ * so moving between pages or tabs never moves the title, the tabs or the first section.
+ */
 export function SettingsPage({
   title,
   description,
   actions,
+  tabs,
   children,
 }: {
   title: string
-  description?: string
+  description?: ReactNode
   actions?: ReactNode
+  /** The page's tab strip, directly under the header. */
+  tabs?: ReactNode
   children: ReactNode
 }) {
   return (
-    <div className="space-y-8 text-left">
+    <div className="flex flex-col gap-6 text-left">
       <SettingsPageHeader
         title={title}
         {...(description === undefined ? {} : { description })}
         {...(actions === undefined ? {} : { actions })}
       />
-      {children}
+      {tabs}
+      <div className="min-w-0 space-y-8">{children}</div>
     </div>
   )
 }
@@ -140,7 +154,7 @@ export function SettingsSection({
           'flex flex-col items-stretch justify-between gap-3',
           standaloneControl
             ? '@xl:flex-row @xl:items-center @xl:gap-4'
-            : '@lg:flex-row @lg:items-end @lg:gap-4',
+            : '@lg:flex-row @lg:items-start @lg:gap-4',
         )}
       >
         <div className="min-w-0 space-y-0.5">
@@ -164,7 +178,9 @@ export function SettingsSection({
           <div
             className={cn(
               'flex min-w-0 flex-wrap items-center gap-2',
-              standaloneControl ? '@xl:shrink-0' : '@lg:shrink-0',
+              // Beside a section's title the actions ride the title's line (24px), centred on it
+              // whatever their own height, so a roll-up and a button stay one group by the title.
+              standaloneControl ? '@xl:shrink-0' : '@lg:h-6 @lg:shrink-0 @lg:flex-nowrap',
             )}
           >
             {actions}

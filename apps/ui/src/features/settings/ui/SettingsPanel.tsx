@@ -22,7 +22,7 @@ import { subscribeSettingsNav, consumeSettingsNav } from '@/shared/lib/settingsN
 import { useSettingsAnchorMaterializer } from '../model/useSettingsAnchorMaterializer'
 import { navigateUi } from '@/shared/lib/uiNavigation'
 import { primarySettingsSection } from '../model/settingsNavigation'
-import { SectionLabel } from '@localixai/kit/section-label'
+import { SettingsPage } from './SettingsScaffold'
 
 export type { SettingsTabId }
 
@@ -136,32 +136,32 @@ export function SettingsPanel({
     }
     if (onProjectTab || activeTab === 'project') {
       const proj = projects.find((p) => p.id === activeProjId)
-      return (
-        <div className="space-y-5">
-          {/* Scope selector — which project these settings apply to. */}
-          <div className="flex items-center gap-2">
-            <SectionLabel as="span" weight="semibold">
-              Project
-            </SectionLabel>
-            <ProjectScopeSelect
-              projects={projects}
-              activeId={activeProjId}
-              onSelect={(id) => onTabChange?.({ kind: 'project', id })}
-              onCreate={() => {
-                void addProject()
-              }}
-            />
-          </div>
-          {proj ? (
-            <ProjectSettingsForm
-              key={proj.id}
-              project={proj}
-              onDeleted={() => onTabChange?.('preferences')}
-            />
-          ) : (
-            <p className="text-sm text-text-soft">Select a project above, or create one.</p>
-          )}
-        </div>
+      // Which project these settings apply to: the page header's action, as every page's own.
+      const picker = (
+        <ProjectScopeSelect
+          projects={projects}
+          activeId={activeProjId}
+          onSelect={(id) => onTabChange?.({ kind: 'project', id })}
+          onCreate={() => {
+            void addProject()
+          }}
+        />
+      )
+      return proj ? (
+        <ProjectSettingsForm
+          key={proj.id}
+          project={proj}
+          picker={picker}
+          onDeleted={() => onTabChange?.('preferences')}
+        />
+      ) : (
+        <SettingsPage
+          title="Project"
+          description="Select a project, or create one."
+          actions={picker}
+        >
+          {null}
+        </SettingsPage>
       )
     }
     return null

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, type ReactNode } from 'react'
 import { Button } from '@localixai/kit/button'
 import { ConfirmDialog } from '@localixai/kit/confirm-dialog'
 import { Input } from '@localixai/kit/input'
@@ -6,15 +6,17 @@ import { Textarea } from '@localixai/kit/textarea'
 import { backendClient } from '@/shared/api/client'
 import { PROJECT_CUSTOM_SYSTEM_PROMPT_MAX_CHARS, type Project } from '@/shared/api/contracts'
 import { inlineFailure } from '@/shared/lib/notifications/inlineReport'
-import { SettingsPageHeader, SettingsSection, SettingsSurface } from './SettingsScaffold'
+import { SettingsPage, SettingsSection, SettingsSurface } from './SettingsScaffold'
 import { SettingsActionActivity } from './SettingsActionActivity'
 
 export interface ProjectSettingsFormProps {
   project: Project
   onDeleted?: (id: string) => void
+  /** Which project the page shows, on the header's line like every page's own controls. */
+  picker?: ReactNode
 }
 
-export function ProjectSettingsForm({ project, onDeleted }: ProjectSettingsFormProps) {
+export function ProjectSettingsForm({ project, onDeleted, picker }: ProjectSettingsFormProps) {
   const [name, setName] = useState(project.name)
   const [systemPrompt, setSystemPrompt] = useState(project.settings?.customSystemPrompt ?? '')
   const [saving, setSaving] = useState(false)
@@ -75,18 +77,17 @@ export function ProjectSettingsForm({ project, onDeleted }: ProjectSettingsFormP
   }
 
   return (
-    <div className="space-y-8">
-      {/* The shared heading, not a local copy of it: this one had its own weight and no
-          responsive step, so the title changed shape when you navigated between settings
-          tabs. The working directory sits under it rather than in the header's description,
-          because it is a path — monospaced and truncating — and not a sentence. */}
-      <div className="space-y-0.5 border-b border-border-faint pb-5">
-        <SettingsPageHeader title={project.name} />
-        <p className="truncate font-mono text-xs text-text-soft" title={project.workingDir}>
+    // The shared page: the project's name is the title, its working directory the description —
+    // a path, so monospaced and truncating rather than a sentence — and the picker the action.
+    <SettingsPage
+      title={project.name}
+      description={
+        <p className="truncate font-mono text-xs" title={project.workingDir}>
           {project.workingDir}
         </p>
-      </div>
-
+      }
+      {...(picker === undefined ? {} : { actions: picker })}
+    >
       <SettingsSection title="Display name" anchor="project-name" scope="project">
         <SettingsSurface>
           <Input
@@ -188,6 +189,6 @@ export function ProjectSettingsForm({ project, onDeleted }: ProjectSettingsFormP
         }}
         onClose={() => setConfirmDelete(false)}
       />
-    </div>
+    </SettingsPage>
   )
 }
