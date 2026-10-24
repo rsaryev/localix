@@ -36,35 +36,56 @@ export type SkillDiscoveryLogger = SkillScanLogger
 
 const quietSkillDiscoveryLogger: SkillDiscoveryLogger = { warn: () => {} }
 
-/** Bound pathological working-directory ancestry while preserving normal monorepo walks. */
 function claimSkill(
   byName: Map<string, DiscoveredSkill>,
   skill: DiscoveredSkill,
   logger: SkillDiscoveryLogger,
+  layer: number,
+  layers: Map<string, number>,
 ): void {
   const winner = byName.get(skill.name)
   if (!winner) {
     byName.set(skill.name, skill)
+    layers.set(skill.name, layer)
     return
   }
-  // A project skill shadowing a personal one of the same name is the DECLARED precedence,
-  // not a collision: the nearer definition wins, which is the point of being able to keep a
-  // repository's own version. Warning about it would fire on every session in such a project
-  // and train the reader to ignore the one warning that does mean something — two skills of
-  // the same name in the same place.
-  if (winner.scope !== skill.scope) return
+  // A nearer or higher-precedence definition winning is the DECLARED order, not a collision;
+  // only two skills of one name read from the same place are worth a warning.
+  if (layers.get(skill.name) !== layer) return
   logger.warn(
     `[skills] duplicate name "${skill.name}": keeping "${winner.path}", ignoring "${skill.path}"`,
     { skillName: skill.name, winnerPath: winner.path, loserPath: skill.path },
   )
 }
 
+async function isGitRoot(dir: string): Promise<boolean> {
+  return fs.stat(join(dir, '.git')).then(
+    () => true,
+    () => false,
+  )
+}
+
+/** `cwd` and each parent up to the repository root holding it (nearest first); `cwd` alone outside one. */
+async function projectChain(start: string, home: string): Promise<string[]> {
+  const chain: string[] = []
+  let cur = start
+  while (true) {
+    if (cur === home) break
+    chain.push(cur)
+    if (await isGitRoot(cur)) return chain
+    const parent = dirname(cur)
+    if (parent === cur) break
+    cur = parent
+  }
+  return [start]
+}
+
 /**
- * Every skill visible from here: the working directory's own, then the personal ones.
- *
- * Both, project first — a repository's own skill shadows a personal one of the same name. It
- * used to be a CHOICE between the two, so opening a project hid every skill you had written
- * for yourself and nothing said why.
+ * Every skill visible from here, in Claude Code's precedence (skills.md, "Resolve skills that
+ * share a name"): the personal ones first — "personal over project" — then the project's, read
+ * from the working directory and every parent up to the repository root, the nearest first.
+ * Within one directory Localix's own `.localix/skills` come before Claude Code's
+ * `.claude/skills`, the portable `.agents/skills` and `.claude/commands` (`skill-scan.ts`).
  */
 export async function discoverFilesystemSkills(
   workingDir?: string | null,
@@ -74,25 +95,20 @@ export async function discoverFilesystemSkills(
   logger: SkillDiscoveryLogger = quietSkillDiscoveryLogger,
 ): Promise<DiscoveredSkill[]> {
   const byName = new Map<string, DiscoveredSkill>()
+  const layers = new Map<string, number>()
   const home = homeDir ?? homedir()
-
-  // BOTH, project first so a repository's own skill shadows a personal one of the same name.
-  //
-  // It used to be a choice — a project saw only its own skills, a project-less session only
-  // the personal ones — which meant a skill you wrote for yourself vanished the moment you
-  // opened a project, with nothing on screen saying why. Where a skill LIVES decides who it
-  // travels with (a repository's skills ship with the repository); it should not decide
-  // whether you can use your own.
+  let layer = 0
+  for (const s of await scanScope(home, 'global', logger))
+    claimSkill(byName, s, logger, layer, layers)
   const absWorking = workingDir && workingDir !== '/' ? resolve(workingDir) : null
   if (absWorking && absWorking !== home) {
-    for (const s of await scanScope(absWorking, 'project', logger)) {
-      claimSkill(byName, s, logger)
+    for (const dir of await projectChain(absWorking, home)) {
+      layer++
+      for (const s of await scanScope(dir, 'project', logger)) {
+        claimSkill(byName, s, logger, layer, layers)
+      }
     }
   }
-  for (const s of await scanScope(home, 'global', logger)) {
-    claimSkill(byName, s, logger)
-  }
-
   return [...byName.values()].sort((a, b) => a.name.localeCompare(b.name))
 }
 

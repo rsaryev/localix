@@ -33,13 +33,14 @@ async function writeSkill(base: string, container: string, body: string): Promis
 }
 
 describe('portable project skills', () => {
-  test('native project skills shadow portable skills and personal Localix skills', async () => {
+  test('native project skills shadow portable ones, and a personal skill shadows both', async () => {
     await writeSkill(root, '.agents', 'portable body')
     await writeSkill(root, '.localix', 'native project body')
+    const project = await discoverFilesystemSkills(root, home)
+    expect(project.map((skill) => skill.content)).toEqual(['native project body'])
     await writeSkill(home, '.localix', 'personal body')
     const skills = await discoverFilesystemSkills(root, home)
-    expect(skills).toHaveLength(1)
-    expect(skills[0].content).toBe('native project body')
+    expect(skills.map((skill) => skill.content)).toEqual(['personal body'])
   })
 
   test('personal agent homes are not implicitly imported', async () => {

@@ -12,12 +12,12 @@ const forked = (frontmatter: string): DiscoveredSkill =>
     ...(parseSkillFrontmatter(
       `---\n${frontmatter}\n---\nResearch $ARGUMENTS thoroughly.`,
     ) as object),
-    name: 'deep-research',
+    name: 'zz-fork-research',
     description: 'Research a topic',
     content: 'Research $ARGUMENTS thoroughly.',
     scope: 'project',
-    path: '/p/.localix/skills/deep-research/SKILL.md',
-    dir: '/p/.localix/skills/deep-research',
+    path: '/p/.localix/skills/zz-fork-research/SKILL.md',
+    dir: '/p/.localix/skills/zz-fork-research',
   }) as DiscoveredSkill
 
 describe('a context: fork skill the agent loads', () => {
@@ -38,12 +38,12 @@ describe('a context: fork skill the agent loads', () => {
     )
     const got = await tool.execute('call-1', {
       action: 'get',
-      name: 'deep-research',
+      name: 'zz-fork-research',
       arguments: 'auth',
     })
     expect(asked).toEqual([
       {
-        title: '/deep-research auth',
+        title: '/zz-fork-research auth',
         task: 'Research auth thoroughly.',
         agent: 'Explore',
         wait: true,
@@ -52,7 +52,7 @@ describe('a context: fork skill the agent loads', () => {
       },
     ])
     expect(String(got.content)).toContain('the report')
-    expect(String(got.content)).not.toContain('# Skill: deep-research\nSource')
+    expect(String(got.content)).not.toContain('# Skill: zz-fork-research\nSource')
   })
 
   test('runs in the background unless background: false', async () => {
@@ -69,7 +69,7 @@ describe('a context: fork skill the agent loads', () => {
         forkSkill: async (_id, request) => (asked.push(request), { content: 'started' }),
       },
     )
-    await tool.execute('c', { action: 'get', name: 'deep-research' })
+    await tool.execute('c', { action: 'get', name: 'zz-fork-research' })
     expect(asked[0]).toEqual(expect.objectContaining({ wait: false }))
     expect(asked[0]).not.toHaveProperty('agent')
   })

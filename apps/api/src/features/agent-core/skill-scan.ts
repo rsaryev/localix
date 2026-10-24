@@ -12,8 +12,8 @@ import { type DiscoveredSkill, parseSkillFrontmatter } from './skill-frontmatter
  *   `<base>/.localix/skills/<name>/SKILL.md`
  *
  * Each skill remains a directory so it can carry scripts and assets beside the
- * prompt. Project `.agents/skills` is also a portable read source; native Localix
- * skills win by name. Foreign personal skill and command homes are not enumerated.
+ * prompt. Claude Code's `.claude/skills` and `.claude/commands` (and a project's portable
+ * `.agents/skills`) are read sources beside it; native Localix skills win by name.
  * `skill-discovery.ts` owns scope precedence and the write/delete side.
  */
 
@@ -24,6 +24,7 @@ import {
 } from './skill-scan-contracts'
 import { canonicalPathWithin, collectSkillFiles, type SkillFileCandidate } from './skill-scan-tree'
 import { makeLazySkill } from './skill-lazy'
+import { readCommandFilesAsSkills } from './skill-scan-commands'
 
 export {
   MAX_SKILL_SCAN_DEPTH,
@@ -207,16 +208,25 @@ export async function scanScope(
       return []
     }
   }
-  const native = await scanSkillDir(baseDir, scope, logger, safetyRoot)
-  if (scope !== 'project') return native
-  const portable = await readSkillsInContainer(
-    join(baseDir, '.agents', 'skills'),
-    scope,
-    logger,
-    safetyRoot,
-  )
-  const nativeNames = new Set(native.map((skill) => skill.name))
-  return [...native, ...portable.filter((skill) => !nativeNames.has(skill.name))]
+  // In precedence order, first name wins: Localix's own skills, Claude Code's `.claude/skills`,
+  // the portable `.agents/skills` (a project's only), then `.claude/commands` — "A skill and a
+  // file in `.claude/commands/`: the skill".
+  const layers = [
+    await scanSkillDir(baseDir, scope, logger, safetyRoot),
+    await readSkillsInContainer(join(baseDir, '.claude', 'skills'), scope, logger, safetyRoot),
+    scope === 'project'
+      ? await readSkillsInContainer(join(baseDir, '.agents', 'skills'), scope, logger, safetyRoot)
+      : [],
+    await readCommandFilesAsSkills(join(baseDir, '.claude', 'commands'), scope, logger, safetyRoot),
+  ]
+  const taken = new Set<string>()
+  const out: DiscoveredSkill[] = []
+  for (const layer of layers) {
+    const fresh = layer.filter((skill) => !taken.has(skill.name))
+    for (const skill of fresh) taken.add(skill.name)
+    out.push(...fresh)
+  }
+  return out
 }
 
 /**

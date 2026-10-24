@@ -4,9 +4,10 @@ Skills are local `SKILL.md` files that give the agent a named procedure, descrip
 invocation controls. Use them once with `/name`, pin them to a session, or let the agent load one
 when its description matches the task.
 
-**Discovery boundary:** a project session scans its working directory's `.localix/skills` and
-portable `.agents/skills`, then personal Localix skills. A chat in the **Default** project scans
-personal Localix skills.
+**Discovery boundary:** a session reads personal skills (`~/.localix/skills`, `~/.claude/skills`,
+`~/.claude/commands`), then the project's (`.localix/skills`, `.claude/skills`, `.agents/skills`,
+`.claude/commands`) in the working directory and every parent up to the repository root. A chat in
+the **Default** project reads the personal ones.
 
 ## What you can do
 
@@ -35,21 +36,26 @@ personal Localix skills.
 
 ### Discovery and precedence
 
-| Session scope   | Filesystem root scanned                                                           | Additional source     |
-| --------------- | --------------------------------------------------------------------------------- | --------------------- |
-| Project         | `<working-directory>/.localix/skills`, `.agents/skills`, then `~/.localix/skills` | Enabled plugin skills |
-| Default project | `~/.localix/skills`                                                               | Enabled plugin skills |
+| Session scope   | Folders read, in precedence order                                                                                                                                                                                 | Additional source     |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| Project         | `~/.localix/skills`, `~/.claude/skills`, `~/.claude/commands`, then in the working directory and each parent up to the repository root: `.localix/skills`, `.claude/skills`, `.agents/skills`, `.claude/commands` | Enabled plugin skills |
+| Default project | `~/.localix/skills`, `~/.claude/skills`, `~/.claude/commands`                                                                                                                                                     | Enabled plugin skills |
+
+A command file `.claude/commands/<path>.md` is a skill named by its path with each `/` a `:`
+(`commands/git/commit.md` is `/git:commit`); it takes a skill's frontmatter except `name` and
+`paths`.
 
 The scanner walks nested directories to find `SKILL.md`, up to six levels and 2,000 entries per
 root. Project symlinks must resolve inside the session's working directory. Personal skill symlinks
 may point outside the home directory; plugin skill links stay inside their declared root.
 
-Built-in slash commands keep precedence over a skill with the same name. Within one filesystem scan,
-the first sorted match wins and a duplicate-name warning identifies the ignored path. Native project
-skills take precedence over same-name portable project skills, and project skills take precedence
-over personal skills. Portable project skills are read sources: the Localix manager does not delete
-or archive them. Saving the same name creates a native Localix copy that shadows the portable
-procedure.
+Built-in slash commands keep precedence over a skill with the same name. As in Claude Code, a
+personal skill takes precedence over a project skill of the same name, a nearer project folder over
+a parent's, a skill over a command file, and within one folder Localix's own skills over
+`.claude/skills` and portable `.agents/skills`. Two skills of one name in the same place keep the
+first sorted one, with a duplicate-name warning. Portable project skills are read sources: the
+Localix manager does not delete or archive them. Saving the same name creates a native Localix copy
+that shadows the portable procedure.
 
 ### Loading and invocation
 
@@ -116,11 +122,12 @@ same name. Curator pins protect automatic passes, but manual archive remains ava
 
 ## Limits
 
-- Project and personal filesystem skills are merged, project first: a repository's own skill shadows
-  a personal one of the same name. Where a skill lives decides who it travels with, not whether you
-  can use it.
-- Product-specific skill folders such as `.claude/skills` and `.claude/commands`, and personal
-  `.agents/skills`, are not scanned. Project `.agents/skills` is a portable read source.
+- Personal and project skills are merged, personal first, as in Claude Code: a personal skill
+  shadows a project skill of the same name.
+- Personal `.agents/skills` is not read. Skills in a folder below the working directory are not read
+  either; start the session there to use them.
+- Skills read from `.claude/` and `.agents/` are read sources: the Settings manager writes, deletes
+  and archives only `.localix/skills`.
 - Project and plugin symlinks cannot extend discovery outside their safety root; personal skill
   links can. Archived and hidden subdirectories are excluded, and a discovered skill's assets are
   not scanned for nested skills.

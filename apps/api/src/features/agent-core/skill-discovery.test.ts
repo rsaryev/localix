@@ -322,7 +322,7 @@ describe('discoverFilesystemSkills', () => {
   })
 })
 
-describe('foreign Claude discovery is disabled', () => {
+describe('project read sources beside .localix/skills', () => {
   let cdir: string
   beforeAll(async () => {
     cdir = await fs.mkdtemp(join(tmpdir(), 'cmds-'))
@@ -355,16 +355,6 @@ describe('foreign Claude discovery is disabled', () => {
     await fs.rm(cdir, { recursive: true, force: true })
   })
 
-  it('does not discover .claude/commands/*.md', async () => {
-    const skills = await discoverFilesystemSkills(cdir)
-    expect(skills.find((s) => s.name === 'deploy')).toBeUndefined()
-  })
-
-  it('does not discover .claude/skills', async () => {
-    const skills = await discoverFilesystemSkills(cdir)
-    expect(skills.find((s) => s.name === 'shared')).toBeUndefined()
-  })
-
   it('discovers portable project .agents/skills with their source directory', async () => {
     const skills = await discoverFilesystemSkills(cdir)
     const portable = skills.find((s) => s.name === 'agents-only')
@@ -389,51 +379,6 @@ describe('foreign Claude discovery is disabled', () => {
     const skills = await discoverFilesystemSkills(linkRoot)
     expect(skills.find((s) => s.name === 'formatter')?.description).toBe('Formats code')
     await fs.rm(linkRoot, { recursive: true, force: true })
-  })
-})
-
-describe('nested foreign Claude commands remain undiscovered', () => {
-  let ndir: string
-  beforeAll(async () => {
-    ndir = await fs.mkdtemp(join(tmpdir(), 'cmd-ns-'))
-    const cmds = join(ndir, '.claude', 'commands')
-    // Nested: commands/git/commit.md → /git:commit (frontmatter name is display-only).
-    await fs.mkdir(join(cmds, 'git'), { recursive: true })
-    await fs.writeFile(
-      join(cmds, 'git', 'commit.md'),
-      '---\nname: totally-ignored\ndescription: Commit staged changes\n---\n\nCommit with a good message.',
-    )
-    // Deeper nesting: commands/db/migrations/run.md → /db:migrations:run
-    await fs.mkdir(join(cmds, 'db', 'migrations'), { recursive: true })
-    await fs.writeFile(
-      join(cmds, 'db', 'migrations', 'run.md'),
-      '---\ndescription: Run DB migrations\n---\n\nRun them.',
-    )
-    // Top-level still un-namespaced: commands/deploy.md → /deploy
-    await fs.writeFile(join(cmds, 'deploy.md'), '---\ndescription: Deploy\n---\n\nDeploy it.')
-    // .archive/ subdir must be skipped entirely.
-    await fs.mkdir(join(cmds, '.archive'), { recursive: true })
-    await fs.writeFile(join(cmds, '.archive', 'old.md'), '---\ndescription: Archived\n---\n\nOld.')
-  })
-  afterAll(async () => {
-    await fs.rm(ndir, { recursive: true, force: true })
-  })
-
-  it('does not derive colon-namespaced commands', async () => {
-    const skills = await discoverFilesystemSkills(ndir)
-    expect(skills.find((s) => s.name === 'git:commit')).toBeUndefined()
-    expect(skills.find((s) => s.name === 'totally-ignored')).toBeUndefined()
-  })
-
-  it('does not discover deeply nested command files', async () => {
-    const skills = await discoverFilesystemSkills(ndir)
-    expect(skills.find((s) => s.name === 'db:migrations:run')).toBeUndefined()
-  })
-
-  it('does not discover top-level commands', async () => {
-    const skills = await discoverFilesystemSkills(ndir)
-    expect(skills.find((s) => s.name === 'deploy')).toBeUndefined()
-    expect(skills.find((s) => s.name === 'old')).toBeUndefined()
   })
 })
 
@@ -507,7 +452,8 @@ describe('exact skill scopes', () => {
     }
   })
 
-  it('a project sees only its own same-named skill', async () => {
+  // skills.md, "Resolve skills that share a name": "personal over project".
+  it('a personal skill wins over a project skill of the same name', async () => {
     const home = await fs.mkdtemp(join(tmpdir(), 'home-'))
     const proj = await fs.mkdtemp(join(tmpdir(), 'proj-'))
     const mk = async (base: string, label: string) => {
@@ -527,8 +473,8 @@ describe('exact skill scopes', () => {
     })
     const clash = skills.filter((s) => s.name === 'clash')
     expect(clash).toHaveLength(1)
-    expect(clash[0].description).toBe('PROJECT')
-    expect(clash[0].scope).toBe('project')
+    expect(clash[0].description).toBe('PERSONAL')
+    expect(clash[0].scope).toBe('global')
     expect(warnings).toEqual([])
 
     await fs.rm(home, { recursive: true, force: true })

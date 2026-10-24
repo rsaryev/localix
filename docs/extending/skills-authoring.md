@@ -65,14 +65,13 @@ automatically execute files merely because they sit beside `SKILL.md`.
 
 ### Discovery and write scope
 
-| Session scope | Directories scanned                                                               | Precedence                         |
-| ------------- | --------------------------------------------------------------------------------- | ---------------------------------- |
-| Project       | `<working-directory>/.localix/skills`, `.agents/skills`, then `~/.localix/skills` | Native project, portable, personal |
-| Default       | `~/.localix/skills`                                                               | Personal filesystem skills         |
+| Session scope | Folders read, in precedence order                                                                                                                                                                              | Precedence                                                                                      |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Project       | `~/.localix/skills`, `~/.claude/skills`, `~/.claude/commands`; then the working directory and each parent up to the repository root: `.localix/skills`, `.claude/skills`, `.agents/skills`, `.claude/commands` | Personal, then nearest project folder; within a folder Localix, Claude Code, portable, commands |
+| Default       | `~/.localix/skills`, `~/.claude/skills`, `~/.claude/commands`                                                                                                                                                  | Localix, Claude Code, commands                                                                  |
 
-The project scan uses the session's exact working directory; it does not search parent projects.
-Localix writes and deletes only its own `.localix/skills` entries. A portable skill can be shadowed
-by saving a native copy with the same name.
+Localix writes and deletes only its own `.localix/skills` entries. A skill in `.claude/` or
+`.agents/` can be shadowed by saving a native copy with the same name in a scope that wins.
 
 The scanner accepts nested skill directories within the selected root. It ignores archive folders,
 caps traversal at six levels and 2,000 entries, and reads regular UTF-8 `SKILL.md` files up to 1
@@ -224,9 +223,9 @@ and non-zero-exit behavior. For a forked skill, verify the invoking agent has ev
 
 - Filesystem skill bodies and adjacent assets live on disk. Session pin names are stored in the
   session database, so the skill system is not entirely filesystem-only.
-- Project and personal filesystem skills are merged, project first, so a repository's copy shadows a
-  personal skill of the same name.
-- Discovery does not scan other applications' skill or command directories.
+- Personal and project skills are merged, personal first, as in Claude Code.
+- Discovery reads Claude Code's `.claude/skills` and `.claude/commands` beside Localix's own, but no
+  other application's folders; skills below the working directory are not read.
 - `shell` and `metadata` are accepted without runtime behavior. `version` and `license` are retained
   as information only.
 - Tool overrides apply to the turn that invokes the skill. A fork runs with its agent type's tools;
