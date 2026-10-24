@@ -73,7 +73,7 @@ export const WORKSPACE_TIPS: WorkspaceTip[] = [
   {
     id: 'mini-apps',
     lead: 'Add mini apps.',
-    rest: 'Apps with their own screens and tools — games, a board, a reader — install from',
+    rest: 'Apps with their own screens and tools — games, a board, a reader. A few install on their own:',
     Scene: MiniAppsScene,
     Action: MiniAppsAction,
   },
