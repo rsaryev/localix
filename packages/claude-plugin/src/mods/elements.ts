@@ -95,10 +95,11 @@ export function h(
 
 /** A control's closures, by its `key`. */
 export interface ElementHandlers {
-  onPress?: () => unknown
-  onInput?: (value: string) => unknown
-  onSubmit?: (value: string) => unknown
-  onSelect?: (value: string) => unknown
+  /** Each runs with its event's argument as the chain left it: `onPress(e)`, `onInput(value, e)`. */
+  onPress?: (e?: unknown) => unknown
+  onInput?: (value: string, e?: unknown) => unknown
+  onSubmit?: (value: string, e?: unknown) => unknown
+  onSelect?: (value: string, e?: unknown) => unknown
 }
 
 export interface JsonElement {

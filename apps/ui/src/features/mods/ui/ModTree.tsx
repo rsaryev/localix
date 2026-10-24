@@ -1,57 +1,36 @@
-import { useState, type CSSProperties, type ReactNode } from 'react'
-import { Button } from '@localixai/kit/button'
-import { Input } from '@localixai/kit/input'
-import { Select } from '@localixai/kit/select'
+import type { ReactNode } from 'react'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { ExternalAnchor } from '@/shared/ui/external-anchor'
 import { MarkdownRenderer } from '@/shared/ui/MarkdownRenderer'
 import type { ModAction, ModElement } from '@/shared/api/modsApi'
 import { ModClient } from './ModClient'
+import { ModButton, ModInput, ModSelect, text } from './ModControls'
+import { boxStyle, textLook } from './modTreeStyle'
+
+/** The border styles Claude Code draws as a frame; `quote` is a bar, anything else none. */
+const BORDERED = new Set([
+  'single',
+  'double',
+  'round',
+  'bold',
+  'singleDouble',
+  'doubleSingle',
+  'classic',
+  'arrow',
+  'dashed',
+])
 
 /**
  * A mod's drawing on a Localix screen. The elements are Claude Code's (`Box`, `Text`, `Button`,
  * `Link`, `Code`, `Markdown`, `Input`, `Select`, `Svg`, `Client`); each is drawn with the kit's own
  * control, so a mod looks like the rest of the app; a `Client` runs plugin code, in an isolated
- * frame. Spacing in terminal cells (or a step name) becomes a step of the app's spacing; colours a
- * terminal names are left to the theme.
+ * frame. Layout and text props read as `modTreeStyle.ts` says; controls are `ModControls.tsx`.
  */
-
-const STEP_PX: Record<string, number> = { xs: 2, sm: 4, md: 8, lg: 12, xl: 16 }
-const space = (value: unknown): string | undefined =>
-  typeof value === 'number'
-    ? `${value * 4}px`
-    : typeof value === 'string'
-      ? `${STEP_PX[value] ?? 0}px`
-      : undefined
-
-/** A prop as text: what a mod passes as a string or number, never an object's `[object Object]`. */
-const text = (value: unknown, fallback = ''): string =>
-  typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
-    ? String(value)
-    : fallback
 
 /** A link a mod draws opens only on the web or in mail, never as script; any other is text. */
 const safeHref = (value: unknown): string | undefined => {
   const href = text(value)
   return /^(https?:|mailto:)/i.test(href) ? href : undefined
-}
-
-function boxStyle(props: Record<string, unknown>): CSSProperties {
-  return {
-    display: 'flex',
-    flexDirection: props.flexDirection === 'column' ? 'column' : 'row',
-    flexWrap: props.flexWrap === 'wrap' ? 'wrap' : undefined,
-    alignItems: typeof props.alignItems === 'string' ? props.alignItems : undefined,
-    justifyContent: typeof props.justifyContent === 'string' ? props.justifyContent : undefined,
-    gap: space(props.gap),
-    rowGap: space(props.rowGap),
-    columnGap: space(props.columnGap),
-    padding: space(props.padding),
-    paddingInline: space(props.paddingX),
-    paddingBlock: space(props.paddingY),
-    margin: space(props.margin),
-    flexGrow: typeof props.flexGrow === 'number' ? props.flexGrow : undefined,
-  }
 }
 
 export interface ModTreeProps {
@@ -83,37 +62,27 @@ function ModNode({ node, act }: { node: ModElement | string; act: ModTreeProps['
       return (
         <div
           style={boxStyle(props)}
-          className={cn(props.borderStyle !== undefined && 'rounded-md border border-border')}
+          className={cn(
+            BORDERED.has(text(props.borderStyle)) && 'rounded-md border border-border',
+            props.borderStyle === 'quote' && 'border-l-2 border-border pl-2',
+          )}
         >
           {children}
         </div>
       )
-    case 'Text':
+    case 'Text': {
+      const look = textLook(props)
       return (
-        <span
-          className={cn(
-            (props.bold === true || props.weight === 'semibold' || props.weight === 'bold') &&
-              'font-semibold',
-            props.weight === 'medium' && 'font-medium',
-            props.italic === true && 'italic',
-            props.underline === true && 'underline',
-            props.dimColor === true && 'text-text-soft',
-            props.mono === true && 'font-mono',
-            props.tabular === true && 'tabular-nums',
-          )}
-        >
+        <span className={look.className} style={look.style}>
           {children}
         </span>
       )
+    }
     case 'Button':
       return (
-        <Button
-          size="sm"
-          variant={props.plain === true ? 'ghost' : 'secondary'}
-          onClick={() => act({ kind: 'press', element: text(props.key) })}
-        >
-          {text(props.label)}
-        </Button>
+        <ModButton props={props} hasChildren={node.children.length > 0} act={act}>
+          {children}
+        </ModButton>
       )
     case 'Link': {
       const href = safeHref(props.href)
@@ -133,7 +102,11 @@ function ModNode({ node, act }: { node: ModElement | string; act: ModTreeProps['
         </pre>
       )
     case 'Markdown':
-      return <MarkdownRenderer>{text(props.text)}</MarkdownRenderer>
+      return (
+        <div className={cn(props.dimColor === true && 'text-text-soft')}>
+          <MarkdownRenderer>{text(props.text)}</MarkdownRenderer>
+        </div>
+      )
     case 'Svg':
       return <ModSvg props={props} />
     case 'Client':
@@ -141,29 +114,8 @@ function ModNode({ node, act }: { node: ModElement | string; act: ModTreeProps['
     case 'Input':
       return <ModInput element={text(props.key)} props={props} act={act} />
     case 'Select':
-      return (
-        <Select
-          value={text(props.value)}
-          onValueChange={(value) => act({ kind: 'select', element: text(props.key), value })}
-          options={optionsOf(props.options)}
-        />
-      )
+      return <ModSelect props={props} act={act} />
   }
-}
-
-function optionsOf(value: unknown): { value: string; label: string }[] {
-  if (!Array.isArray(value)) return []
-  return value.map((option) =>
-    typeof option === 'string'
-      ? { value: option, label: option }
-      : {
-          value: text((option as { value?: unknown }).value),
-          label: text(
-            (option as { label?: unknown }).label,
-            text((option as { value?: unknown }).value),
-          ),
-        },
-  )
 }
 
 /**
@@ -187,38 +139,5 @@ function ModSvg({ props }: { props: Record<string, unknown> }) {
       {...size}
       className="max-w-full"
     />
-  )
-}
-
-/** Typing stays on screen; Enter submits it, and leaving the field sends what was typed. */
-function ModInput(input: {
-  element: string
-  props: Record<string, unknown>
-  act: ModTreeProps['act']
-}) {
-  const [value, setValue] = useState(text(input.props.value))
-  return (
-    <form
-      className="flex items-center gap-2"
-      onSubmit={(event) => {
-        event.preventDefault()
-        input.act({ kind: 'submit', element: input.element, value })
-      }}
-    >
-      <Input
-        aria-label={text(input.props.label, input.element)}
-        placeholder={
-          typeof input.props.placeholder === 'string' ? input.props.placeholder : undefined
-        }
-        value={value}
-        onChange={(event) => setValue(event.target.value)}
-        onBlur={() => input.act({ kind: 'input', element: input.element, value })}
-      />
-      {typeof input.props.submitLabel === 'string' && (
-        <Button size="sm" type="submit">
-          {input.props.submitLabel}
-        </Button>
-      )}
-    </form>
   )
 }

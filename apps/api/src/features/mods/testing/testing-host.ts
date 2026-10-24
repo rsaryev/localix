@@ -12,6 +12,14 @@ import { createModRunScope } from '../run-scope'
 const scratch = tempDirPerTest('mods-events', {})
 
 export async function hostWithMod(register: (on: On) => void, ports: Partial<ModsPorts> = {}) {
+  return hostWithMods({ m: register }, ports)
+}
+
+/** Several mods, each its own plugin, loaded in the order given, as `hostWithMod` loads one. */
+export async function hostWithMods(
+  mods: Record<string, (on: On) => void>,
+  ports: Partial<ModsPorts> = {},
+) {
   const dir = scratch()
   const reports: string[] = []
   const host = createModsHost(
@@ -22,12 +30,20 @@ export async function hostWithMod(register: (on: On) => void, ports: Partial<Mod
       report: (plugin, message) => reports.push(`${plugin}: ${message}`),
       ...ports,
     },
-    { build: async () => (on) => register(on) },
+    { build: async (source) => (on) => mods[source.plugin]!(on) },
   )
-  await host.reconcile([
-    { plugin: 'm', root: dir, module: `${dir}/hooks/m.js`, options: {}, revision: '1' },
-  ])
+  await host.reconcile(
+    Object.keys(mods).map((plugin) => ({
+      plugin,
+      root: dir,
+      module: `${dir}/hooks/${plugin}.js`,
+      options: {},
+      revision: '1',
+    })),
+  )
   const scene: ModScene = { userId: 'u', sessionId: 's1', cwd: dir }
-  const scope = await createModRunScope(host, scene, new Set(['m']), { model: 'model-a' })
+  const scope = await createModRunScope(host, scene, new Set(Object.keys(mods)), {
+    model: 'model-a',
+  })
   return { host, scope, scene, dir, reports }
 }

@@ -63,3 +63,37 @@ test('a mod’s drawing renders with kit controls and sends what the person does
   await act(async () => root.unmount())
   host.remove()
 })
+
+test('Claude Code’s control and text props draw: labels from children, hotkeys, rows, colours', async () => {
+  const { act } = await import('react')
+  const { createRoot } = await import('react-dom/client')
+  const { ModTree } = await import('./ModTree')
+  const host = document.createElement('div')
+  document.body.append(host)
+  const root = createRoot(host)
+  const nodes: ModElement[] = [
+    {
+      type: 'Button',
+      props: { key: 'open', hotkey: 'r', autoFocus: true },
+      children: ['Replay ', { type: 'Text', props: { dimColor: true }, children: ['2m'] }],
+    },
+    { type: 'Input', props: { key: 'note', rows: 4, label: 'Note' }, children: [] },
+    { type: 'Select', props: { key: 'pick', label: 'Model', options: ['a'] }, children: [] },
+    { type: 'Text', props: { color: 'green', strikethrough: true }, children: ['+1'] },
+    { type: 'Text', props: { inverse: true }, children: [' 1 '] },
+  ]
+  await act(async () => root.render(<ModTree nodes={nodes} act={() => {}} />))
+  const button = host.querySelector('button')!
+  expect(button.textContent).toBe('Replay 2mr')
+  expect(button.getAttribute('aria-keyshortcuts')).toBe('r')
+  expect(button.hasAttribute('data-autofocus')).toBe(true)
+  expect(host.querySelector('textarea')?.getAttribute('rows')).toBe('4')
+  expect(host.textContent).toContain('Model')
+  const added = [...host.querySelectorAll('span')].find((span) => span.textContent === '+1')!
+  expect(added.className).toContain('line-through')
+  expect(added.style.color).toBe('var(--status-success)')
+  const inverse = [...host.querySelectorAll('span')].find((span) => span.textContent === ' 1 ')!
+  expect(inverse.style.backgroundColor).toBe('var(--foreground)')
+  await act(async () => root.unmount())
+  host.remove()
+})

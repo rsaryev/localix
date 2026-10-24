@@ -44,6 +44,10 @@ export interface ModPaneRef {
   id: string
   title?: string
   cwd: string | null
+  /** Escape closes it while it holds the keyboard. */
+  closeOnEscape: boolean
+  /** Grows each time the mod asks for the keyboard (`$.ui.open({ focus })`). */
+  focusRequest: number
 }
 
 export interface ModsOverview {
@@ -57,6 +61,13 @@ export interface ModSessionView {
   fills: Array<{ id: string; text: string; mode: 'replace' | 'append' | 'insert' }>
   suggestion: string | null
   statuses: Record<string, string>
+}
+
+/** The band above a conversation's prompt box, as its mods draw it (`AbovePrompt`). */
+export interface ModBandDrawing {
+  sessionId: string
+  tree: Array<ModElement | string> | null
+  problem?: string
 }
 
 export type ModAction = {
@@ -80,6 +91,22 @@ export const modsApi = {
       await client.rpc.mods.sessions[':sessionId'].taken.$post({
         param: { sessionId },
         json: taken,
+      }),
+    )
+  },
+  async band(sessionId: string, columns: number, rows: number): Promise<ModBandDrawing> {
+    return (await unwrap(
+      await client.rpc.mods.sessions[':sessionId'].band.$get({
+        param: { sessionId },
+        query: { columns: String(columns), rows: String(rows) },
+      }),
+    )) as ModBandDrawing
+  },
+  async bandAct(sessionId: string, action: ModAction): Promise<void> {
+    await unwrap(
+      await client.rpc.mods.sessions[':sessionId'].band.actions.$post({
+        param: { sessionId },
+        json: action,
       }),
     )
   },

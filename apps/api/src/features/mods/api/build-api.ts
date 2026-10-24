@@ -72,6 +72,29 @@ export function buildModApi(deps: ModApiDeps): { api: ModsApi; dispose: () => vo
     compact: () => deps.calls.compact(scene()),
   })
 
+  /**
+   * `$.ui.open`: the pane opens in the Mods tab. One that asks for the keyboard (`focus`) is
+   * brought forward there, so it is placed; one that does not waits in the tab's list, as Claude
+   * Code's waits undrawn, until the person opens it.
+   */
+  const openPane = (args: unknown) => {
+    const pane = (args ?? {}) as Record<string, unknown>
+    for (const flag of ['focus', 'closeOnEscape', 'holdToasts'])
+      if (flag in pane && pane[flag] !== true)
+        throw new Error(`ui.open: ${flag} is true or left out`)
+    const sessionId = scene().sessionId
+    registry.openPane(instance, {
+      id: pane.id as string,
+      ...(typeof pane.title === 'string' ? { title: pane.title } : {}),
+      ...(sessionId ? { sessionId } : {}),
+      ...(pane.closeOnEscape === true ? { closeOnEscape: true } : {}),
+      focus: pane.focus === true,
+    })
+    return pane.focus === true
+      ? { isPlaced: true }
+      : { isPlaced: false, reason: 'listed in the Mods tab until the person opens it' }
+  }
+
   const api: ModsApi = {
     plugin: { name: plugin, root: source.root },
     command: {
@@ -147,10 +170,7 @@ export function buildModApi(deps: ModApiDeps): { api: ModsApi; dispose: () => vo
         (typeof e?.component === 'string' ? deps.tableOf(e.component) : undefined) ??
         elementTable(),
       invalidate: (event: unknown) => deps.calls.invalidate(event),
-      open: (pane: { id: string; title?: string; rows?: number; columns?: number }) => {
-        registry.openPane(instance, pane)
-        return { isPlaced: true }
-      },
+      open: (args: unknown) => openPane(args),
       close: (pane: { id: string } | string) =>
         registry.closePane(instance, typeof pane === 'string' ? pane : pane.id),
       panes: () => registry.panes(instance).map(({ id, title }) => ({ id, title })),

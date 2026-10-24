@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { X } from 'lucide-react'
 import { EmptyHint, LoadingHint } from '@localixai/kit/empty-hint'
 import { IconButton } from '@localixai/kit/icon-button'
@@ -7,9 +7,11 @@ import { MENU_ROW, SELECTED_ROW } from '@localixai/kit/selected-row'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { runMiniAppAction } from '@localixai/mini-app-sdk/ui'
 import { modsApi, type ModPaneRef } from '@/shared/api/modsApi'
+import { paneFocus } from '../model/paneFocus'
 import { useModPane, useModsOverview } from '../model/useMods'
 import { ModClientScope, type ModClientScopeValue } from './ModClient'
 import { ModTree } from './ModTree'
+import { hotkeysOf, pressHotkey } from './siteHotkeys'
 
 /** Panes are drawn for this many text columns: what a mod reads as `e.props.bodyColumns`. */
 const PANE_COLUMNS = 100
@@ -29,6 +31,14 @@ const projectOf = (cwd: string | null) =>
 export function ModsWorkspace() {
   const overview = useModsOverview()
   const [chosen, setChosen] = useState<{ instance: string; id: string } | null>(null)
+  // A pane its mod asked forward (`$.ui.open({ focus })`) is the one shown.
+  const requested = useSyncExternalStore(
+    (listener) => paneFocus.subscribe(listener),
+    () => paneFocus.requested(),
+  )
+  useEffect(() => {
+    if (requested) setChosen({ instance: requested.instance, id: requested.id })
+  }, [requested])
   const panes = overview.data?.panes ?? []
   const selected =
     panes.find((pane) => pane.instance === chosen?.instance && pane.id === chosen?.id) ??
@@ -77,7 +87,11 @@ export function ModsWorkspace() {
         ))}
       </nav>
       <section className="min-w-0 flex-1 overflow-y-auto">
-        {selected ? <ModPane pane={selected} /> : <EmptyHint>No mod has opened a pane.</EmptyHint>}
+        {selected ? (
+          <ModPane key={`${selected.instance}/${selected.id}`} pane={selected} />
+        ) : (
+          <EmptyHint>No mod has opened a pane.</EmptyHint>
+        )}
       </section>
     </div>
   )
@@ -98,20 +112,39 @@ function ModPane({ pane }: { pane: ModPaneRef }) {
   )
   const act = (action: Parameters<typeof modsApi.act>[2]) =>
     runMiniAppAction(() => modsApi.act(pane.instance, pane.id, action), 'The mod did not take that')
+  const close = () =>
+    runMiniAppAction(() => modsApi.close(pane.instance, pane.id), 'The pane did not close')
+  const tree = drawing.data?.tree
+  const hotkeys = useMemo(() => hotkeysOf(tree ?? []), [tree])
+  // Asked forward, the pane takes the keyboard: where its `autoFocus` control is, else itself.
+  const body = useRef<HTMLDivElement>(null)
+  const drawn = Boolean(tree)
+  useEffect(() => {
+    if (!drawn || pane.focusRequest === 0) return
+    const node = body.current
+    ;(node?.querySelector<HTMLElement>('[data-autofocus]') ?? node)?.focus()
+  }, [pane.focusRequest, drawn])
   return (
-    <div className="flex flex-col gap-3 px-4 py-3">
+    <div
+      ref={body}
+      tabIndex={-1}
+      className="flex flex-col gap-3 px-4 py-3 outline-none"
+      onKeyDown={(event) => {
+        if (event.key === 'Escape' && pane.closeOnEscape) {
+          event.preventDefault()
+          close()
+          return
+        }
+        // While the pane holds the keyboard its Buttons' hotkeys press them.
+        pressHotkey(event, hotkeys, act)
+      }}
+    >
       <header className="flex items-center gap-2">
         <h2 className="truncate text-sm font-medium">{pane.title ?? pane.id}</h2>
         <span className="truncate text-2xs text-text-faint" title={pane.cwd ?? undefined}>
           {[pane.plugin, projectOf(pane.cwd)].filter(Boolean).join(' · ')}
         </span>
-        <IconButton
-          className="ml-auto"
-          aria-label="Close pane"
-          onClick={() =>
-            runMiniAppAction(() => modsApi.close(pane.instance, pane.id), 'The pane did not close')
-          }
-        >
+        <IconButton className="ml-auto" aria-label="Close pane" onClick={close}>
           <X />
         </IconButton>
       </header>

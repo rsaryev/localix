@@ -1,17 +1,15 @@
 import {
-  InvalidTreeError,
   plainDataProblem,
-  serializeTree,
   type ElementHandlers,
   type HookOrigin,
   type JsonElement,
-  type RenderChild,
 } from '@localixai/claude-plugin/mods'
 import { UnprocessableError } from '../../lib/domain-errors'
 import { whileDrawing } from './api/state-api'
 import type { ClientBundle } from './client-modules'
 import type { ModScene } from './contracts'
 import type { ModRegistry } from './registry'
+import { drawingOf, runControl, type ControlAction } from './site-controls'
 
 /**
  * A mod's panes on a Localix screen. A pane is drawn through `ui.render` with the `Pane` site (on
@@ -60,9 +58,17 @@ export function createModPanes(deps: {
   /** Each drawn pane's `Client`s: their module, by key. */
   const clients = new Map<string, Map<string, string>>()
   const paneKey = (instance: string, id: string) => `${instance}\u0000${id}`
-  const send = (instance: string, event: string, input: unknown, core: (e: unknown) => unknown) => {
+  /** A pane's events run in the conversation that opened it, so its `$` acts there. */
+  const send = (
+    instance: string,
+    event: string,
+    input: unknown,
+    core: (e: unknown) => unknown,
+    id?: string,
+  ) => {
     const { scene, instances } = deps.sceneOf(instance)
-    return deps.dispatch(event, input, core, scene, instances)
+    const sessionId = id === undefined ? undefined : deps.registry.pane(instance, id)?.sessionId
+    return deps.dispatch(event, input, core, sessionId ? { ...scene, sessionId } : scene, instances)
   }
 
   async function render(
@@ -89,21 +95,20 @@ export function createModPanes(deps: {
     }
     // The state its hooks read subscribes the pane: a write to it draws the pane again.
     const drawn = await whileDrawing(paneKey(instance, id), () =>
-      send(instance, 'ui.render', event, () => ({ type: 'engine' })),
+      send(instance, 'ui.render', event, () => ({ type: 'engine' }), id),
     )
     const drawing = { instance, plugin, id, title: pane.title }
-    if (!drawn || (drawn as { type?: unknown }).type === 'engine') return { ...drawing, tree: null }
-    try {
-      const { tree, ...own } = serializeTree(drawn as RenderChild, {
-        client: (module) => deps.clientOf?.(instance, module)?.revision,
-      })
-      handlers.set(paneKey(instance, id), own.handlers)
-      clients.set(paneKey(instance, id), own.clients)
-      return { ...drawing, tree }
-    } catch (error) {
-      if (!(error instanceof InvalidTreeError)) throw error
-      return { ...drawing, tree: null, problem: error.message }
+    const own = drawingOf(drawn, {
+      client: (module) => deps.clientOf?.(instance, module)?.revision,
+    })
+    if (own.tree === null) return { ...drawing, ...own }
+    const { handlers: controls, clients: drawnClients } = own as {
+      handlers: Map<string, ElementHandlers>
+      clients: Map<string, string>
     }
+    handlers.set(paneKey(instance, id), controls)
+    clients.set(paneKey(instance, id), drawnClients)
+    return { ...drawing, tree: own.tree }
   }
 
   /** Where a drawn `Client` sits, as `ui.message` and `ui.fault` name it; null when not drawn. */
@@ -168,37 +173,18 @@ export function createModPanes(deps: {
   }
 
   /** A control used on screen: through its event, to the closure of the last drawing. */
-  async function interact(
-    instance: string,
-    id: string,
-    action: { kind: 'press' | 'input' | 'submit' | 'select'; element: string; value?: string },
-  ): Promise<boolean> {
+  async function interact(instance: string, id: string, action: ControlAction): Promise<boolean> {
     const own = handlers.get(paneKey(instance, id))?.get(action.element)
     if (!own) return false
-    const value = action.value ?? ''
-    const base = {
+    const site = {
       plugin: deps.registry.pane(instance, id)?.plugin,
-      element: action.element,
       component: 'Pane',
-      surface: 'desktop',
       requestId: id,
+      surface: 'desktop' as const,
     }
-    if (action.kind === 'press')
-      await send(instance, 'ui.press', base, async () => {
-        await own.onPress?.()
-        return { element: action.element }
-      })
-    else if (action.kind === 'select')
-      await send(instance, 'ui.select', { ...base, value }, async (e) => {
-        await own.onSelect?.((e as { value: string }).value)
-        return { element: action.element, value }
-      })
-    else
-      await send(instance, 'ui.input', { ...base, kind: action.kind, value }, async (e) => {
-        const typed = (e as { value: string }).value
-        await (action.kind === 'submit' ? own.onSubmit : own.onInput)?.(typed)
-        return { element: action.element, value: typed }
-      })
+    await runControl(own, site, action, (event, input, core) =>
+      send(instance, event, input, core, id),
+    )
     // What the control did is the mod's: the screen draws the pane again to see it.
     deps.changed()
     return true
@@ -209,7 +195,16 @@ export function createModPanes(deps: {
     interact,
     /** A pane the person closed: `ui.close` tells the mod, then it goes. */
     async close(instance: string, id: string): Promise<void> {
-      await send(instance, 'ui.close', { id, origin: { kind: 'person' } }, () => ({}))
+      let closed = false
+      await send(
+        instance,
+        'ui.close',
+        { id, origin: { kind: 'person' } },
+        () => void (closed = true),
+        id,
+      )
+      // A hook that answered without `next` keeps the pane open.
+      if (!closed) return
       deps.registry.closePane(instance, id)
       handlers.delete(paneKey(instance, id))
       clients.delete(paneKey(instance, id))

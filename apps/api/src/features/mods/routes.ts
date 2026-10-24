@@ -45,13 +45,16 @@ export function createModRoutes(
       .get('/', (c) =>
         c.json({
           mods: host.loaded(),
-          panes: host.registry.panes().map(({ instance, plugin, id, title }) => ({
-            instance,
-            plugin,
-            id,
-            title,
+          panes: host.registry.panes().map((pane) => ({
+            instance: pane.instance,
+            plugin: pane.plugin,
+            id: pane.id,
+            title: pane.title,
+            closeOnEscape: pane.closeOnEscape === true,
+            // Grows each time the mod asks for the keyboard: the screen brings the pane forward.
+            focusRequest: pane.focusRequest,
             // The project the pane belongs to: a mod runs once per working directory.
-            cwd: host.instances().get(instance)?.cwd ?? null,
+            cwd: host.instances().get(pane.instance)?.cwd ?? null,
           })),
           failures: Object.fromEntries(host.failures()),
         }),
@@ -63,6 +66,21 @@ export function createModRoutes(
       })
       .post('/sessions/:sessionId/taken', zValidator('json', takenBody), (c) => {
         host.composer.take(c.req.param('sessionId'), c.req.valid('json'))
+        return c.json({ ok: true })
+      })
+      // The band above a conversation's prompt box, as its mods draw it (`AbovePrompt`).
+      .get('/sessions/:sessionId/band', zValidator('query', viewportQuery), async (c) => {
+        const { columns, rows } = c.req.valid('query')
+        return c.json(
+          await host.band.render(c.req.param('sessionId'), {
+            columns: columns ?? 100,
+            rows: rows ?? 12,
+          }),
+        )
+      })
+      .post('/sessions/:sessionId/band/actions', zValidator('json', actionBody), async (c) => {
+        const handled = await host.band.interact(c.req.param('sessionId'), c.req.valid('json'))
+        if (!handled) throw new NotFoundError('mod_control_gone', 'That control is no longer drawn')
         return c.json({ ok: true })
       })
       .get('/panes/:instance/:id', zValidator('query', viewportQuery), async (c) => {

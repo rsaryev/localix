@@ -17,6 +17,7 @@ import { instanceIdOf, pluginOfInstance, type ModInstance } from './instance-id'
 import { judgeJoin, resolveTables } from './joining'
 import { createMeasurer } from './measure'
 import type { ModVm } from './isolation/mod-vm'
+import { createModBand } from './band'
 import { createModPanes } from './panes'
 import { createModRegistry } from './registry'
 import { createModHealth, RESTART_RULES, SUPERVISOR_CLOCK } from './restarts'
@@ -217,10 +218,25 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions = {}) 
     sources.get(pluginOfInstance(id))?.clients.get(module)
   const calls = createEventCalls(() => host)
   const panes = createModPanes({ dispatch, registry, changed: ports.changed, sceneOf, clientOf })
+  /** Where a conversation's band runs: where its latest turn ran, else the workspace. */
+  const bandSceneOf = (sessionId: string) => {
+    const joined = conversations.of(sessionId)
+    if (joined) return { scene: joined.scene, instances: joined.plugins }
+    const { scene, instances } = sceneOf(instanceIdOf('', ports.workspaceDir))
+    return { scene: { ...scene, sessionId }, instances }
+  }
+  const band = createModBand({
+    dispatch,
+    sceneOf: bandSceneOf,
+    isWorking: (sessionId) => runs.has(sessionId),
+    changed: ports.changed,
+  })
 
   const host = {
     registry,
     panes,
+    /** The band above each conversation's prompt box (`AbovePrompt`). */
+    band,
     composer,
     ports,
     /** The describing events' answers, kept per conversation (`answer-cache.ts`). */
@@ -260,8 +276,14 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions = {}) 
       hears: (event, ids) => engine.hears(event, ids),
     }),
     /** A conversation's turn lends its tools to `$.tool` and `$.mcp` while it runs. */
-    attachRun: (sessionId: string, surface: RunSurface) => void runs.set(sessionId, surface),
-    detachRun: (sessionId: string) => void runs.delete(sessionId),
+    // The band's `isWorking` follows the turn, so it redraws as one starts and ends.
+    attachRun(sessionId: string, surface: RunSurface) {
+      runs.set(sessionId, surface)
+      ports.changed()
+    },
+    detachRun(sessionId: string) {
+      if (runs.delete(sessionId)) ports.changed()
+    },
     hears: (event: string, ids?: ReadonlySet<string>) => engine.hears(event, ids),
     /** `$.ui.invalidate(event)`: the event's kept answers go, and clients re-read the mods. */
     invalidate(event: unknown) {

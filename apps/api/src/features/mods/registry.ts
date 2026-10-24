@@ -36,6 +36,12 @@ export interface ModAgent extends Owned {
 export interface ModPane extends Owned {
   id: string
   title?: string
+  /** The conversation that opened it, where its events run. */
+  sessionId?: string
+  /** Escape, while the pane holds the keyboard, closes it as the person's close does. */
+  closeOnEscape?: boolean
+  /** Counts the opens that asked for the keyboard: each one brings the pane forward. */
+  focusRequest: number
   rows?: number
   columns?: number
 }
@@ -79,9 +85,19 @@ export function createModRegistry(onChange: () => void) {
           `${agent.plugin}:${agent.name}` === fullName &&
           (!instances || instances.has(agent.instance)),
       ),
-    openPane(instance: string, pane: Omit<ModPane, keyof Owned>) {
+    openPane(
+      instance: string,
+      pane: Omit<ModPane, keyof Owned | 'focusRequest'> & { focus?: boolean },
+    ) {
       const id = checkName('A pane', pane.id)
-      panes.set(key(instance, id), { ...owner(instance), ...pane, id })
+      const { focus, ...rest } = pane
+      const before = panes.get(key(instance, id))?.focusRequest ?? 0
+      panes.set(key(instance, id), {
+        ...owner(instance),
+        ...rest,
+        id,
+        focusRequest: before + (focus ? 1 : 0),
+      })
       onChange()
     },
     closePane(instance: string, id: string): boolean {
