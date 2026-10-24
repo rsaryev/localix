@@ -4,7 +4,6 @@ import { Button } from '@localixai/kit/button'
 import { Spinner } from '@localixai/kit/spinner'
 import { WorkbenchNoticeBar } from '@localixai/kit/workbench-notice-bar'
 import { useDesktopUpdate, type DesktopUpdateState } from '@/shared/hooks/useDesktopUpdate'
-import { useReducedMotion } from '@localixai/kit/environment'
 import { useBackgroundActivity } from '@/shared/lib/background-activity/useBackgroundActivity'
 import { restartToUpdate } from '../../model/restartToUpdate'
 import { UpdateOffersRow } from './UpdateOffersRow'
@@ -67,12 +66,11 @@ export const UpdateStrip = memo(function UpdateStrip({ isFocused }: { isFocused:
 /**
  * The app's own update always wins the strip and is always shown while it is available (it is
  * the only one that needs a restart); hidden, it gives the place to the other offers. Otherwise
- * the mini app and plugin updates take turns (`UpdateOffersRow`).
+ * the Store's updates are offered, every package kind together (`UpdateOffersRow`).
  */
 function FocusedUpdateStrip() {
   const { state, applyUpdate, noticeDismissed, dismissNotice } = useDesktopUpdate({ poll: false })
   const { updates } = useBackgroundActivity()
-  const reducedMotion = useReducedMotion()
   if (state?.available && (!noticeDismissed || state.installing)) {
     return (
       <UpdateRow
@@ -82,5 +80,5 @@ function FocusedUpdateStrip() {
       />
     )
   }
-  return <UpdateOffersRow offers={updates} reducedMotion={reducedMotion} />
+  return <UpdateOffersRow offers={updates} />
 }

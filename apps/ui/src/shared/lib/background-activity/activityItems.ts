@@ -1,16 +1,16 @@
-import type { MiniAppStoreActivityRecord } from '@localixai/api/client'
+import type { ListingRef, PackageKind, StoreActivity } from '@localixai/store'
 import type { LocalModelsStatus } from '@/shared/api/localModelsApi'
-import type { PluginUpdatesResponse } from '@/shared/api/plugin-updates-client'
 import type { DesktopUpdateState } from '@/shared/hooks/useDesktopUpdate'
 import { formatBytes } from '@/shared/lib/formatBytes'
 import { isActiveJob, jobLine, jobPercent } from '@/shared/lib/localModelsFormat'
+import type { StoreTarget } from '@/shared/lib/openStore'
 
 /**
- * EVERYTHING THE APP IS DOING ON ITS OWN, as rows: the jobs in flight (mini app installs, model
- * downloads, the app's own update, plugin updates) and the updates it offers. Pure: the live
- * sources come in (each read on its own poke, `useBackgroundActivity.ts`), the actions go out
- * through `ops`, and nothing here is journal state — a finished job becomes a journal fact,
- * recorded by its owner.
+ * EVERYTHING THE APP IS DOING ON ITS OWN, as rows: the jobs in flight (the Store's installs,
+ * updates and removals of every package kind, model downloads, the app's own update) and the
+ * updates it offers. Pure: the live sources come in (each read on its own poke,
+ * `useBackgroundActivity.ts`), the actions go out through `ops`, and nothing here is journal
+ * state — a finished job becomes a journal fact, recorded by its owner.
  */
 
 export interface ActivityAction {
@@ -19,7 +19,7 @@ export interface ActivityAction {
   run: () => unknown
 }
 
-export type ActivityKind = 'mini-app' | 'local-model' | 'app-update' | 'plugin'
+export type ActivityKind = 'package' | 'local-model' | 'app-update'
 
 export interface ActivityItem {
   id: string
@@ -30,14 +30,14 @@ export interface ActivityItem {
   /** 0–100, or null while how far it is cannot be said (the bar is then indeterminate). */
   percent: number | null
   state: 'waiting' | 'running' | 'paused'
-  /** A mini app's icon, as the host serves it. */
+  /** A package's icon, as the host serves it. */
   icon?: string
   actions: ActivityAction[]
 }
 
-/** An update the app offers. One per kind; the app's own always comes first. */
+/** An update the app offers: its own, and the Store's packages together. The app's comes first. */
 export interface UpdateOffer {
-  id: 'app' | 'mini-apps' | 'plugins'
+  id: 'app' | 'store'
   title: string
   detail: string
   /** What the offer is about; a dismissal holds until it changes (`dismissals.ts`). */
@@ -48,31 +48,45 @@ export interface UpdateOffer {
 }
 
 export interface ActivitySources {
-  miniApps?: MiniAppStoreActivityRecord | null
+  /** The Store's jobs and updates, every kind's (`/rpc/store/activity`). */
+  store?: StoreActivity | null
   localModels?: LocalModelsStatus | null
   app?: DesktopUpdateState | null
-  plugins?: PluginUpdatesResponse | null
 }
 
 export interface ActivityOps {
-  openStore: () => void
+  openStore: (target?: StoreTarget) => void
   pauseModel: (id: string) => unknown
   resumeModel: (id: string) => unknown
   cancelModel: (id: string) => unknown
-  updateMiniApps: () => unknown
-  updatePlugins: () => unknown
-  openPlugins: () => void
+  /** Update all: every install the Store offers a newer version of. */
+  updateStore: () => unknown
   /** Absent where nothing can restart the app (a browser window). */
   restartToUpdate?: () => void
 }
 
-type MiniAppJob = MiniAppStoreActivityRecord['jobs'][number]
+type StoreJob = StoreActivity['jobs'][number]
+
+const keyOf = (ref: ListingRef) => `${ref.kind}:${ref.id}`
+
+/** How a package kind is named in a count: "2 mini app updates". */
+const KIND_NOUN: Record<PackageKind, string> = {
+  'mini-app': 'mini app',
+  plugin: 'plugin',
+  'mcp-server': 'MCP server',
+  skill: 'skill',
+  agent: 'agent',
+}
 
 const percentOf = (received?: number, total?: number) =>
   total && total > 0 ? Math.min(100, Math.round(((received ?? 0) / total) * 100)) : null
 
-/** "1 update", "3 updates", after the thing updated. */
-const count = (n: number, thing: string) => `${n} ${thing} update${n === 1 ? '' : 's'}`
+/** "1 plugin update", "3 updates": the kind is named when every update is of it. */
+function updatesTitle(kinds: readonly PackageKind[]): string {
+  const n = kinds.length
+  const kind = kinds.every((each) => each === kinds[0]) ? `${KIND_NOUN[kinds[0]!]} ` : ''
+  return `${n} ${kind}update${n === 1 ? '' : 's'}`
+}
 
 /** "Git", "Git and Kanban", "Git, Documents and Kanban". */
 export function joinNames(names: readonly string[]): string {
@@ -80,28 +94,37 @@ export function joinNames(names: readonly string[]): string {
   return `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`
 }
 
-function miniAppStatus(job: MiniAppJob): string {
-  const update = job.kind === 'update'
-  if (job.phase === 'queued') return update ? 'Waiting to update' : 'Waiting to install'
+const WAITING = {
+  install: 'Waiting to install',
+  update: 'Waiting to update',
+  remove: 'Waiting to remove',
+} as const
+const WORKING = { install: 'Installing', update: 'Updating', remove: 'Removing' } as const
+
+function jobStatus(job: StoreJob): string {
+  if (job.phase === 'queued') return WAITING[job.action]
   if (job.phase === 'downloading') {
-    const what = update && job.version ? `Downloading ${job.version}` : 'Downloading'
+    const what =
+      job.action === 'update' && job.version ? `Downloading ${job.version}` : 'Downloading'
     return job.total
       ? `${what} · ${formatBytes(job.received ?? 0)} of ${formatBytes(job.total)}`
       : what
   }
-  return update ? 'Updating' : 'Installing'
+  return WORKING[job.action]
 }
 
-function miniAppItems(activity: MiniAppStoreActivityRecord, ops: ActivityOps): ActivityItem[] {
+function storeItems(activity: StoreActivity, ops: ActivityOps): ActivityItem[] {
   return activity.jobs.map((job) => ({
-    id: `mini-app:${job.name}`,
-    kind: 'mini-app',
-    name: job.displayName ?? job.name,
-    status: miniAppStatus(job),
+    id: keyOf(job.ref),
+    kind: 'package',
+    name: job.displayName,
+    status: jobStatus(job),
     percent: job.phase === 'downloading' ? percentOf(job.received, job.total) : null,
     state: job.phase === 'queued' ? 'waiting' : 'running',
     icon: job.icon,
-    actions: [{ id: 'store', label: 'Open the store', run: ops.openStore }],
+    actions: [
+      { id: 'store', label: 'Open in the Store', run: () => ops.openStore({ ref: job.ref }) },
+    ],
   }))
 }
 
@@ -136,14 +159,6 @@ function modelItems(status: LocalModelsStatus, ops: ActivityOps): ActivityItem[]
   return [...downloads, ...paused]
 }
 
-const ACTIVE_PLUGIN_PHASES = new Set(['checking', 'downloading', 'installing'])
-const PLUGIN_PHASE_LABEL = {
-  checking: 'Checking',
-  downloading: 'Downloading',
-  installing: 'Installing',
-}
-const pluginName = (id: string) => id.split('@')[0] || id
-
 function appOffer(app: DesktopUpdateState, ops: ActivityOps): UpdateOffer {
   return {
     id: 'app',
@@ -157,59 +172,29 @@ function appOffer(app: DesktopUpdateState, ops: ActivityOps): UpdateOffer {
   }
 }
 
-function miniAppOffer(activity: MiniAppStoreActivityRecord, ops: ActivityOps): UpdateOffer | null {
-  const running = activity.jobs.filter((job) => job.kind === 'update')
+/** The Store's updates as one offer: Update all, or how far the running update is. */
+function storeOffer(activity: StoreActivity, ops: ActivityOps): UpdateOffer | null {
+  const running = activity.jobs.filter((job) => job.action === 'update')
   const all = [
-    ...activity.updates.map((u) => ({ name: u.name, label: u.displayName ?? u.name, to: u.to })),
-    ...running.map((j) => ({ name: j.name, label: j.displayName ?? j.name, to: j.version ?? '' })),
-  ].sort((a, b) => a.name.localeCompare(b.name))
+    ...activity.updates.map((u) => ({ ref: u.ref, label: u.displayName, to: u.to })),
+    ...running.map((j) => ({ ref: j.ref, label: j.displayName, to: j.version ?? '' })),
+  ].sort((a, b) => keyOf(a.ref).localeCompare(keyOf(b.ref)))
   if (all.length === 0) return null
   const first = running[0]
   const percent = first?.phase === 'downloading' ? percentOf(first.received, first.total) : null
   return {
-    id: 'mini-apps',
-    title: count(all.length, 'mini app'),
+    id: 'store',
+    title: updatesTitle(all.map((u) => u.ref.kind)),
     detail: joinNames(all.map((u) => u.label)),
-    fingerprint: all.map((u) => `${u.name}@${u.to}`).join(','),
+    fingerprint: all.map((u) => `${keyOf(u.ref)}@${u.to}`).join(','),
     ...(first
       ? {
           running: {
             percent,
-            status: `Updating ${first.displayName ?? first.name}${percent === null ? '' : ` · ${percent}%`}`,
+            status: `Updating ${first.displayName}${percent === null ? '' : ` · ${percent}%`}`,
           },
         }
-      : { action: { id: 'update-all', label: 'Update all', run: ops.updateMiniApps } }),
-  }
-}
-
-function pluginOffer(plugins: PluginUpdatesResponse, ops: ActivityOps): UpdateOffer | null {
-  const active = plugins.jobs.filter((job) => ACTIVE_PLUGIN_PHASES.has(job.phase))
-  if (active.length > 0) {
-    const done = plugins.jobs.filter((job) => job.phase === 'done').length
-    return {
-      id: 'plugins',
-      title: count(active.length, 'plugin'),
-      detail: joinNames(active.map((job) => pluginName(job.id))),
-      fingerprint: active
-        .map((job) => job.id)
-        .sort()
-        .join(','),
-      running: {
-        percent: Math.round((done / plugins.jobs.length) * 100),
-        status: `Updating plugins · ${done} of ${plugins.jobs.length}`,
-      },
-    }
-  }
-  if (plugins.available.length === 0) return null
-  return {
-    id: 'plugins',
-    title: count(plugins.available.length, 'plugin'),
-    detail: joinNames(plugins.available.map((offer) => offer.name)),
-    fingerprint: plugins.available
-      .map((offer) => `${offer.id}@${offer.to}`)
-      .sort()
-      .join(','),
-    action: { id: 'update-all', label: 'Update all', run: ops.updatePlugins },
+      : { action: { id: 'update-all', label: 'Update all', run: ops.updateStore } }),
   }
 }
 
@@ -219,7 +204,7 @@ export function buildActivity(
 ): { items: ActivityItem[]; updates: UpdateOffer[] } {
   const items: ActivityItem[] = []
   const updates: UpdateOffer[] = []
-  const { app, miniApps, localModels, plugins } = sources
+  const { app, store, localModels } = sources
   if (app?.available) {
     updates.push(appOffer(app, ops))
     if (app.installing)
@@ -233,27 +218,11 @@ export function buildActivity(
         actions: [],
       })
   }
-  if (miniApps) {
-    items.push(...miniAppItems(miniApps, ops))
-    const offer = miniAppOffer(miniApps, ops)
+  if (store) {
+    items.push(...storeItems(store, ops))
+    const offer = storeOffer(store, ops)
     if (offer) updates.push(offer)
   }
   if (localModels) items.push(...modelItems(localModels, ops))
-  if (plugins) {
-    for (const job of plugins.jobs) {
-      if (!ACTIVE_PLUGIN_PHASES.has(job.phase)) continue
-      items.push({
-        id: `plugin:${job.id}`,
-        kind: 'plugin',
-        name: pluginName(job.id),
-        status: PLUGIN_PHASE_LABEL[job.phase as keyof typeof PLUGIN_PHASE_LABEL],
-        percent: null,
-        state: 'running',
-        actions: [{ id: 'plugins', label: 'Open plugin settings', run: ops.openPlugins }],
-      })
-    }
-    const offer = pluginOffer(plugins, ops)
-    if (offer) updates.push(offer)
-  }
   return { items, updates }
 }

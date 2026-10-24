@@ -8,13 +8,14 @@ import { buildActivity, type ActivityOps } from './activityItems'
 function recordingOps() {
   const calls: string[] = []
   const ops: ActivityOps = {
-    openStore: () => void calls.push('store'),
+    openStore: (target) =>
+      void calls.push(
+        `store ${target?.ref ? `${target.ref.kind}/${target.ref.id}` : target?.shelf}`,
+      ),
     pauseModel: (id) => void calls.push(`pause ${id}`),
     resumeModel: (id) => void calls.push(`resume ${id}`),
     cancelModel: (id) => void calls.push(`cancel ${id}`),
-    updateMiniApps: () => void calls.push('update mini apps'),
-    updatePlugins: () => void calls.push('update plugins'),
-    openPlugins: () => void calls.push('plugins'),
+    updateStore: () => void calls.push('update store'),
     restartToUpdate: () => void calls.push('restart'),
   }
   return { ops, calls }
@@ -41,22 +42,33 @@ describe('what is happening in the background, as rows', () => {
     expect(buildActivity({}, recordingOps().ops)).toEqual({ items: [], updates: [] })
   })
 
-  test('a mini app download: its name, its icon, how far it is, and the store', () => {
+  test('a Store download: its name, its icon, how far it is, and its page in the Store', () => {
     const { ops, calls } = recordingOps()
     const { items } = buildActivity(
       {
-        miniApps: {
+        store: {
           jobs: [
             {
-              name: 'sample-git',
+              ref: { kind: 'mini-app', id: 'sample-git' },
               displayName: 'Git',
               icon: '/rpc/mini-apps/store/media/sample-git/icon?v=1',
-              kind: 'install',
+              action: 'install',
               phase: 'downloading',
               received: 1024,
               total: 4096,
             },
-            { name: 'kanban', displayName: 'Kanban', kind: 'install', phase: 'queued' },
+            {
+              ref: { kind: 'plugin', id: 'review@localix' },
+              displayName: 'Review',
+              action: 'install',
+              phase: 'queued',
+            },
+            {
+              ref: { kind: 'plugin', id: 'lint@localix' },
+              displayName: 'Lint',
+              action: 'remove',
+              phase: 'installing',
+            },
           ],
           updates: [],
         },
@@ -80,15 +92,16 @@ describe('what is happening in the background, as rows', () => {
         icon: '/rpc/mini-apps/store/media/sample-git/icon?v=1',
       },
       {
-        name: 'Kanban',
+        name: 'Review',
         status: 'Waiting to install',
         percent: null,
         state: 'waiting',
         icon: undefined,
       },
+      { name: 'Lint', status: 'Removing', percent: null, state: 'running', icon: undefined },
     ])
-    press(items[0]?.actions.find((action) => action.label === 'Open the store'))
-    expect(calls).toEqual(['store'])
+    press(items[1]?.actions.find((action) => action.label === 'Open in the Store'))
+    expect(calls).toEqual(['store plugin/review@localix'])
   })
 
   test('a model download can be paused or cancelled; a paused one resumed', () => {
@@ -155,29 +168,17 @@ describe('what is happening in the background, as rows', () => {
     })
   })
 
-  test('mini app and plugin updates are offered as Update all, naming what changes', () => {
+  test('the Store’s updates, of every kind, are one offer with Update all, naming what changes', () => {
     const { ops, calls } = recordingOps()
     const { updates } = buildActivity(
       {
-        miniApps: {
+        store: {
           jobs: [],
           updates: [
-            { name: 'chess', displayName: 'Chess', from: '1.0.0', to: '1.1.0' },
-            { name: 'reader', displayName: 'Reader', from: '0.3.0', to: '0.4.0' },
+            { ref: { kind: 'mini-app', id: 'sample-reader' }, displayName: 'Reader', to: '0.4.0' },
+            { ref: { kind: 'mini-app', id: 'sample-chess' }, displayName: 'Chess', to: '1.1.0' },
+            { ref: { kind: 'plugin', id: 'review@localix' }, displayName: 'Review', to: '1.1.0' },
           ],
-        },
-        plugins: {
-          available: [
-            {
-              id: 'review@localix',
-              name: 'review',
-              marketplace: 'localix',
-              from: '1.0.0',
-              to: '1.1.0',
-            },
-          ],
-          jobs: [],
-          lastCheckedAt: null,
         },
       },
       ops,
@@ -186,32 +187,41 @@ describe('what is happening in the background, as rows', () => {
       updates.map(({ id, title, detail, fingerprint }) => ({ id, title, detail, fingerprint })),
     ).toEqual([
       {
-        id: 'mini-apps',
-        title: '2 mini app updates',
-        detail: 'Chess and Reader',
-        fingerprint: 'chess@1.1.0,reader@0.4.0',
-      },
-      {
-        id: 'plugins',
-        title: '1 plugin update',
-        detail: 'review',
-        fingerprint: 'review@localix@1.1.0',
+        id: 'store',
+        title: '3 updates',
+        detail: 'Chess, Reader and Review',
+        fingerprint:
+          'mini-app:sample-chess@1.1.0,mini-app:sample-reader@0.4.0,plugin:review@localix@1.1.0',
       },
     ])
-    for (const offer of updates) press(offer.action)
-    expect(calls).toEqual(['update mini apps', 'update plugins'])
+    press(updates[0]?.action)
+    expect(calls).toEqual(['update store'])
+  })
+
+  test('updates of one kind say which kind', () => {
+    const { updates } = buildActivity(
+      {
+        store: {
+          jobs: [],
+          updates: [
+            { ref: { kind: 'plugin', id: 'review@localix' }, displayName: 'Review', to: '1.1.0' },
+          ],
+        },
+      },
+      recordingOps().ops,
+    )
+    expect(updates[0]?.title).toBe('1 plugin update')
   })
 
   test('an update that is running keeps its offer, with its progress, under the same fingerprint', () => {
-    const { ops } = recordingOps()
     const { items, updates } = buildActivity(
       {
-        miniApps: {
+        store: {
           jobs: [
             {
-              name: 'chess',
+              ref: { kind: 'mini-app', id: 'sample-chess' },
               displayName: 'Chess',
-              kind: 'update',
+              action: 'update',
               version: '1.1.0',
               phase: 'downloading',
               received: 3,
@@ -220,26 +230,19 @@ describe('what is happening in the background, as rows', () => {
           ],
           updates: [],
         },
-        plugins: {
-          available: [],
-          jobs: [
-            { id: 'review@localix', phase: 'installing' },
-            { id: 'lint@localix', phase: 'done' },
-          ],
-          lastCheckedAt: null,
-        },
       },
-      ops,
+      recordingOps().ops,
     )
     expect(items.map(({ name, status }) => ({ name, status }))).toEqual([
       { name: 'Chess', status: 'Downloading 1.1.0 · 3 B of 4 B' },
-      { name: 'review', status: 'Installing' },
     ])
-    expect(updates.map(({ fingerprint, running }) => ({ fingerprint, running }))).toEqual([
-      { fingerprint: 'chess@1.1.0', running: { percent: 75, status: 'Updating Chess · 75%' } },
+    expect(
+      updates.map(({ title, fingerprint, running }) => ({ title, fingerprint, running })),
+    ).toEqual([
       {
-        fingerprint: 'review@localix',
-        running: { percent: 50, status: 'Updating plugins · 1 of 2' },
+        title: '1 mini app update',
+        fingerprint: 'mini-app:sample-chess@1.1.0',
+        running: { percent: 75, status: 'Updating Chess · 75%' },
       },
     ])
   })

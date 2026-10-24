@@ -121,10 +121,11 @@ Only the Localix catalog can recommend an app: a catalog you added cannot, whate
 
 An install or an update in progress shows in the Event Center's **In progress** with its progress,
 and the bell shows a thin ring while anything runs. Updates on offer appear there too and in one
-line above the message box: **2 mini app updates — Update all**. That line takes turns with plugin
-updates, and Localix's own update always comes first. Each can be hidden with × until what it offers
-changes. When an install or update finishes, the Event Center keeps one line: "Installed Git",
-"Updated 3 mini apps", or "Could not install Kanban" with the reason and **Try again**.
+line above the message box: **2 mini app updates — Update all**, or **3 updates** when plugins have
+updates too, since the Store offers every kind together. Localix's own update always comes first.
+The line can be hidden with × until what it offers changes. When an install or update finishes, the
+Event Center keeps one line: "Installed Git", "Updated 3 mini apps", or "Could not install Kanban"
+with the reason and **Try again**.
 
 A catalog's app arrives as an archive whose checksum the catalog pins. An archive that does not
 match is discarded, and the version you had keeps running. Apps installed from a catalog take its

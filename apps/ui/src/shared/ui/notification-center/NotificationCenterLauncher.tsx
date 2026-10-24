@@ -11,10 +11,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@localixai/kit/tooltip'
 import { chromeAction, chromeActionActive } from '@localixai/kit/chrome-action'
 import { Chip } from '@localixai/kit/chip'
 import { ContextRing } from '@localixai/kit/context-ring'
-import { useUiNavigation } from '@/shared/hooks/useUiNavigation'
 import { useBackgroundActivity } from '@/shared/lib/background-activity/useBackgroundActivity'
-import { navigateUi } from '@/shared/lib/uiNavigation'
-import { settingsUiUri } from '@localixai/mini-app-sdk/navigation'
 // Shared with contributed status items — a severity paints the same way wherever it appears.
 import { STATUS_BADGE_CLASS } from '@localixai/kit/status-tone'
 import { NOTIFICATION_CENTER_OVERLAY_ID } from './NotificationCenter.surface'
@@ -60,12 +57,7 @@ export function NotificationCenterLauncher({
   restartToUpdate,
 }: { restartToUpdate?: () => void } = {}) {
   const [open, setOpen] = useState(false)
-  const navigation = useUiNavigation({ sessionId: null })
-  const openPlugins = useCallback(() => {
-    setOpen(false)
-    navigateUi(settingsUiUri('plugins'), navigation)
-  }, [navigation])
-  const activity = useBackgroundActivity({ openPlugins, restartToUpdate })
+  const activity = useBackgroundActivity({ restartToUpdate })
   const triggerRef = useRef<HTMLButtonElement>(null)
   const [signal, setSignal] = useState<{ id: string; severity: NotificationSeverity } | null>(null)
   const entries = useNotificationsStore((state) => state.entries)

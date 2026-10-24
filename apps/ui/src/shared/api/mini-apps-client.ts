@@ -1,5 +1,5 @@
 import { assertOk, cleanQuery, client, unwrap } from './internal'
-import type { MiniAppCatalogEntryRecord, MiniAppStoreActivityRecord } from '@localixai/api/client'
+import type { MiniAppCatalogEntryRecord } from '@localixai/api/client'
 import type { MiniAppRecord } from './contracts'
 
 /**
@@ -130,17 +130,7 @@ export const miniAppsApi = {
     return response.ok ? response.blob() : null
   },
 
-  /** Installs in flight and the updates already offered; reads no catalog (`store-activity.ts`). */
-  async getMiniAppStoreActivity(): Promise<MiniAppStoreActivityRecord> {
-    return unwrap(await client.rpc['mini-apps'].store.activity.$get())
-  },
-
-  /** Update all: queue the newer version of every app a catalog put here. */
-  async updateMiniApps(): Promise<string[]> {
-    return (await unwrap(await client.rpc['mini-apps'].store.update.$post())).queued
-  },
-
-  /** Queue an install; its progress arrives as `mini-app-installs` pokes. */
+  /** Queue an install; its progress arrives as `store` pokes. */
   async installMiniApp(name: string, opts?: { acceptUnverified?: boolean }): Promise<void> {
     await assertOk(await client.rpc['mini-apps'].store.install.$post({ json: { name, ...opts } }))
   },

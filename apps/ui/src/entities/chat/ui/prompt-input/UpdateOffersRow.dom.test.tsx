@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeAll, describe, expect, jest, test } from 'bun:test'
+import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import type { UpdateOffer } from '@/shared/lib/background-activity/activityItems'
 
@@ -8,28 +8,25 @@ beforeAll(() => {
   ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 })
 afterAll(() => teardown())
-afterEach(() => {
-  jest.useRealTimers()
-  window.localStorage.clear()
-})
+afterEach(() => window.localStorage.clear())
 
 const calls: string[] = []
-const miniApps: UpdateOffer = {
-  id: 'mini-apps',
-  title: '2 mini app updates',
-  detail: 'Chess and Reader',
-  fingerprint: 'chess@1.1.0,reader@0.4.0',
-  action: { id: 'update-all', label: 'Update all', run: () => calls.push('mini apps') },
+const store: UpdateOffer = {
+  id: 'store',
+  title: '3 updates',
+  detail: 'Chess, Reader and Review',
+  fingerprint:
+    'mini-app:sample-chess@1.1.0,mini-app:sample-reader@0.4.0,plugin:review@localix@1.1.0',
+  action: { id: 'update-all', label: 'Update all', run: () => calls.push('store') },
 }
-const plugins: UpdateOffer = {
-  id: 'plugins',
-  title: '3 plugin updates',
-  detail: 'review, lint and docs',
-  fingerprint: 'p1',
-  action: { id: 'update-all', label: 'Update all', run: () => calls.push('plugins') },
+const app: UpdateOffer = {
+  id: 'app',
+  title: 'Localix 1.5.0',
+  detail: 'you have 1.4.0',
+  fingerprint: '1.5.0',
 }
 
-async function mount(offers: UpdateOffer[], opts: { reducedMotion?: boolean } = {}) {
+async function mount(offers: UpdateOffer[]) {
   const React = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { UpdateOffersRow } = await import('./UpdateOffersRow')
@@ -37,15 +34,7 @@ async function mount(offers: UpdateOffer[], opts: { reducedMotion?: boolean } = 
   document.body.append(host)
   const root = createRoot(host)
   const render = (next: UpdateOffer[]) =>
-    React.act(async () =>
-      root.render(
-        <UpdateOffersRow
-          offers={next}
-          rotateMs={8_000}
-          reducedMotion={opts.reducedMotion ?? false}
-        />,
-      ),
-    )
+    React.act(async () => root.render(<UpdateOffersRow offers={next} />))
   await render(offers)
   return {
     host,
@@ -63,56 +52,30 @@ async function mount(offers: UpdateOffer[], opts: { reducedMotion?: boolean } = 
 }
 
 describe('the composer’s update strip', () => {
-  test('shows one offer at a time, with Update all', async () => {
+  test('offers the Store’s updates, every kind together, with Update all', async () => {
     calls.length = 0
-    const view = await mount([miniApps, plugins])
-    expect(view.host.textContent).toContain('2 mini app updates')
-    expect(view.host.textContent).not.toContain('3 plugin updates')
+    const view = await mount([app, store])
+    expect(view.host.textContent).toContain('3 updates')
+    expect(view.host.textContent).toContain('Chess, Reader and Review')
+    expect(view.host.textContent).not.toContain('Localix 1.5.0')
     view.button('Update all')?.click()
-    expect(calls).toEqual(['mini apps'])
-    await view.unmount()
-  })
-
-  test('turns to the next offer every few seconds, but not while the pointer rests on it', async () => {
-    jest.useFakeTimers()
-    const view = await mount([miniApps, plugins])
-    await view.act(async () => void jest.advanceTimersByTime(8_000))
-    expect(view.host.textContent).toContain('3 plugin updates')
-
-    const strip = view.host.querySelector<HTMLElement>('[data-slot="workbench-notice-bar"]')!
-    await view.act(async () => {
-      strip.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
-    })
-    await view.act(async () => void jest.advanceTimersByTime(16_000))
-    expect(view.host.textContent).toContain('3 plugin updates')
-    await view.unmount()
-  })
-
-  test('with reduced motion it stays put; Next shows the other offer', async () => {
-    jest.useFakeTimers()
-    const view = await mount([miniApps, plugins], { reducedMotion: true })
-    await view.act(async () => void jest.advanceTimersByTime(24_000))
-    expect(view.host.textContent).toContain('2 mini app updates')
-    await view.act(async () => view.button('Show the next update')?.click())
-    expect(view.host.textContent).toContain('3 plugin updates')
+    expect(calls).toEqual(['store'])
     await view.unmount()
   })
 
   test('a hidden offer stays hidden until what it offers changes', async () => {
-    const view = await mount([miniApps])
+    const view = await mount([store])
     await view.act(async () => view.button('Hide until there are newer updates')?.click())
     expect(view.host.textContent).toBe('')
-    expect(window.localStorage.getItem('localix.update.dismissed.mini-apps')).toBe(
-      'chess@1.1.0,reader@0.4.0',
-    )
-    await view.render([{ ...miniApps, title: '3 mini app updates', fingerprint: 'more' }])
-    expect(view.host.textContent).toContain('3 mini app updates')
+    expect(window.localStorage.getItem('localix.update.dismissed.store')).toBe(store.fingerprint)
+    await view.render([{ ...store, title: '4 updates', fingerprint: 'more' }])
+    expect(view.host.textContent).toContain('4 updates')
     await view.unmount()
   })
 
   test('while an update runs it shows how far it is, with nothing to press', async () => {
     const view = await mount([
-      { ...miniApps, action: undefined, running: { percent: 40, status: 'Updating Chess · 40%' } },
+      { ...store, action: undefined, running: { percent: 40, status: 'Updating Chess · 40%' } },
     ])
     expect(view.host.textContent).toContain('Updating Chess · 40%')
     expect(view.button('Update all')).toBeUndefined()

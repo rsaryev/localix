@@ -2,12 +2,10 @@ import type { ReactNode } from 'react'
 import {
   Download,
   ExternalLink,
-  LayoutGrid,
   Pause,
   Play,
-  Puzzle,
-  Settings2,
   Sparkles,
+  Store as StoreIcon,
   X,
   type LucideIcon,
 } from 'lucide-react'
@@ -29,23 +27,19 @@ import { MiniAppIcon } from '@/shared/ui/MiniAppIcon'
  * a journal row. A finished job leaves as a fact its owner records ("Installed Git").
  */
 
-const KIND_ICON: Record<ActivityKind, LucideIcon> = {
-  'mini-app': LayoutGrid,
+const KIND_ICON: Record<Exclude<ActivityKind, 'package'>, LucideIcon> = {
   'local-model': Sparkles,
   'app-update': Download,
-  plugin: Puzzle,
 }
 const OFFER_ICON: Record<UpdateOffer['id'], LucideIcon> = {
   app: Download,
-  'mini-apps': LayoutGrid,
-  plugins: Puzzle,
+  store: StoreIcon,
 }
 const ACTION_ICON: Record<string, LucideIcon> = {
   pause: Pause,
   resume: Play,
   cancel: X,
   store: ExternalLink,
-  plugins: Settings2,
 }
 
 function Glyph({ Icon }: { Icon: LucideIcon }) {
@@ -147,7 +141,7 @@ export function ActivitySection({
             <Row
               key={item.id}
               icon={
-                item.kind === 'mini-app' ? (
+                item.kind === 'package' ? (
                   <MiniAppIcon name={item.name} label={item.name} icon={item.icon} size={24} />
                 ) : (
                   <Glyph Icon={KIND_ICON[item.kind]} />

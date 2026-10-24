@@ -169,20 +169,28 @@ describe('UpdateStrip', () => {
 })
 
 describe('UpdateStrip with other updates on offer', () => {
-  /** Servers that offer two mini app updates. */
+  /** Servers whose Store offers two mini app updates. */
   async function offerMiniAppUpdates() {
-    const { backendClient } = await import('@/shared/api/client')
-    const { pluginUpdatesApi } = await import('@/shared/api/plugin-updates-client')
+    const { storeApi } = await import('@/shared/api/store-client')
     const { localModelsApi } = await import('@/shared/api/localModelsApi')
     const spies = [
-      spyOn(backendClient, 'getMiniAppStoreActivity').mockResolvedValue({
+      spyOn(storeApi, 'activity').mockResolvedValue({
         jobs: [],
         updates: [
-          { name: 'chess', displayName: 'Chess', from: '1.0.0', to: '1.1.0' },
-          { name: 'reader', displayName: 'Reader', from: '0.3.0', to: '0.4.0' },
+          {
+            ref: { kind: 'mini-app', id: 'sample-chess' },
+            displayName: 'Chess',
+            from: '1.0.0',
+            to: '1.1.0',
+          },
+          {
+            ref: { kind: 'mini-app', id: 'sample-reader' },
+            displayName: 'Reader',
+            from: '0.3.0',
+            to: '0.4.0',
+          },
         ],
       }),
-      spyOn(pluginUpdatesApi, 'list').mockResolvedValue(null),
       spyOn(localModelsApi, 'status').mockResolvedValue({
         jobs: [],
         paused: [],
@@ -208,7 +216,7 @@ describe('UpdateStrip with other updates on offer', () => {
     return view
   }
 
-  test('without an app update, the mini app updates are offered', async () => {
+  test('without an app update, the Store’s updates are offered', async () => {
     const restore = await offerMiniAppUpdates()
     const { checkDesktopUpdate } = await import('@/shared/hooks/useDesktopUpdate')
     ;(window as unknown as { __TAURI__?: unknown }).__TAURI__ = {

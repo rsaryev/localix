@@ -33,13 +33,13 @@ async function mount(items: ActivityItem[], updates: UpdateOffer[]) {
 const calls: string[] = []
 const download: ActivityItem = {
   id: 'mini-app:sample-git',
-  kind: 'mini-app',
+  kind: 'package',
   name: 'Git',
   status: 'Downloading · 1.0 KB of 4.0 KB',
   percent: 25,
   state: 'running',
   icon: '/rpc/mini-apps/store/media/sample-git/icon?v=1',
-  actions: [{ id: 'store', label: 'Open the store', run: () => calls.push('store') }],
+  actions: [{ id: 'store', label: 'Open in the Store', run: () => calls.push('store') }],
 }
 const model: ActivityItem = {
   id: 'local-model:gemma',
@@ -53,12 +53,12 @@ const model: ActivityItem = {
     { id: 'cancel', label: 'Cancel download', run: () => calls.push('cancel') },
   ],
 }
-const plugins: UpdateOffer = {
-  id: 'plugins',
-  title: '3 plugin updates',
-  detail: 'review, lint and docs',
+const storeUpdates: UpdateOffer = {
+  id: 'store',
+  title: '3 updates',
+  detail: 'Chess, Reader and Review',
   fingerprint: 'x',
-  action: { id: 'update-all', label: 'Update all', run: () => calls.push('update plugins') },
+  action: { id: 'update-all', label: 'Update all', run: () => calls.push('update store') },
 }
 
 describe('the Event Center’s In progress section', () => {
@@ -78,7 +78,7 @@ describe('the Event Center’s In progress section', () => {
     const bars = [...section.querySelectorAll('[role="progressbar"]')]
     expect(bars.map((bar) => bar.getAttribute('aria-valuenow'))).toEqual(['25', '40'])
     expect(bars[0]?.getAttribute('aria-label')).toBe('Git progress')
-    view.button('Open the store')?.click()
+    view.button('Open in the Store')?.click()
     view.button('Resume download')?.click()
     view.button('Cancel download')?.click()
     expect(calls).toEqual(['store', 'resume', 'cancel'])
@@ -95,12 +95,12 @@ describe('the Event Center’s In progress section', () => {
 
   test('updates on offer are listed below, each with its one action', async () => {
     calls.length = 0
-    const view = await mount([], [plugins])
+    const view = await mount([], [storeUpdates])
     const section = view.host.querySelector('section[aria-label="Updates"]')!
-    expect(section.textContent).toContain('3 plugin updates')
-    expect(section.textContent).toContain('review, lint and docs')
+    expect(section.textContent).toContain('3 updates')
+    expect(section.textContent).toContain('Chess, Reader and Review')
     view.button('Update all')?.click()
-    expect(calls).toEqual(['update plugins'])
+    expect(calls).toEqual(['update store'])
     await view.unmount()
   })
 
@@ -109,13 +109,13 @@ describe('the Event Center’s In progress section', () => {
       [],
       [
         {
-          ...plugins,
+          ...storeUpdates,
           action: undefined,
-          running: { percent: 50, status: 'Updating plugins · 1 of 2' },
+          running: { percent: 50, status: 'Updating Chess · 50%' },
         },
       ],
     )
-    expect(view.host.textContent).toContain('Updating plugins · 1 of 2')
+    expect(view.host.textContent).toContain('Updating Chess · 50%')
     expect(view.button('Update all')).toBeUndefined()
     expect(view.host.querySelector('[role="progressbar"]')?.getAttribute('aria-valuenow')).toBe(
       '50',
