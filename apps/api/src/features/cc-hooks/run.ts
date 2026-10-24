@@ -33,6 +33,7 @@ import {
 import { createHookSelector, spendOnce, type SelectOptions } from './runtime-selection'
 import { createHookHandlerRunner } from './runtime-handler'
 import { createToolHookRunners } from './runtime-tool-hooks'
+import { byFile } from './runtime-file-calls'
 import { createGateHookRunners } from './runtime-gate-hooks'
 import { createSessionHookRunners, watchPathsFrom } from './runtime-session-hooks'
 import { createDisplayHookRunners } from './runtime-display-hooks'
@@ -204,7 +205,8 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
       return { blocked: false, additionalContext: joinContext(contexts), ...titled() }
     },
 
-    ...createToolHookRunners(dispatch),
+    // A call that names several files runs each file's hooks as its own call.
+    ...byFile(createToolHookRunners(dispatch)),
     ...createGateHookRunners(dispatch),
     hasHooks: (event) => (registry[event]?.length ?? 0) > 0,
     approveWithInput(toolCallId, input) {

@@ -94,6 +94,10 @@ has one folder. `WorktreeRemove` fires for worktree sessions, which Localix does
 Claude Code, it keeps a workflow agent's hook-made worktree. Between-turn events (a model switch, a
 project move, a file change) fire the hooks the conversation's latest turn assembled.
 
+An edit, write or read that names several files runs the tool hooks once per file, each as a
+one-file `Edit`, `Write` or `Read` with its `file_path`; a deny of any file refuses the call, and an
+allow approves it only when every file is allowed.
+
 `transcript_path` names the conversation as a JSONL file in Claude Code's transcript format, one
 `user` or `assistant` entry per line with Claude Code's tool names, so hooks such as ralph-loop and
 hookify's stop rules read it as they do in Claude Code. A `SubagentStop` hook's
