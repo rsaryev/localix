@@ -1,10 +1,5 @@
-import { startSemantic } from './bootstrap/semantic-changes'
-import { startCoreReactors } from './bootstrap/core-reactors'
-import type { WebSocketHandler } from 'bun'
-import { websocket } from './features/realtime/ws'
 import { createModsPhase } from './bootstrap/mods'
-import { startModelStatusPokes } from './bootstrap/status-pokes'
-import { MAX_MESSAGE_BINDINGS_TOTAL_BYTES } from './features/chat/contracts'
+import { realtimeWebSocket } from './bootstrap/realtime-websocket'
 import { bindChatHostRefs } from './bootstrap/chat-host-refs'
 import { createChatServicePhase } from './bootstrap/chat-service-deps'
 import { createStorageService } from './features/storage/service'
@@ -19,24 +14,11 @@ import { createAgentFacadePhase } from './bootstrap/agent-facade'
 import { createAppServicesPhase } from './bootstrap/app-services'
 import { createAppPhase } from './bootstrap/create-app'
 import { createOpsTimersPhase } from './bootstrap/ops-timers'
+import { startAfterListen } from './bootstrap/post-listen'
 import { buildSemanticService } from './bootstrap/semantic'
 import { buildDecisionService } from './bootstrap/decisions'
 import { migrateLegacyPluginInstalls } from './features/plugins/legacy-install-migration'
 import { userHome } from './lib/env'
-import { loadLoginShellEnv, loginShellEnvSource } from './lib/login-shell-env'
-
-// Bun CLOSES a socket that receives a frame above `maxPayloadLength` (default
-// 16MB) — but a `{t:'send'}` RPC legitimately carries up to
-// MAX_MESSAGE_BINDINGS_TOTAL_BYTES (~25MB) of inline binding payloads, so the
-// default would kill the tab's whole multiplexed firehose on a contract-valid
-// send. ×2 headroom covers JSON/prompt overhead. Overridden HERE so every host
-// (index.ts, the desktop shell) inherits the same cap via `runtime.websocket`.
-// (Annotated with Bun's own handler type — hono/bun's inferred type isn't
-// portable in the emitted declarations, TS2883.)
-const realtimeWebSocket: WebSocketHandler<unknown> = {
-  ...(websocket as unknown as WebSocketHandler<unknown>),
-  maxPayloadLength: 2 * MAX_MESSAGE_BINDINGS_TOTAL_BYTES,
-}
 
 export async function bootstrap(
   envSource: Record<string, string | undefined> = process.env,
@@ -292,73 +274,55 @@ export async function bootstrap(
     notifications,
     miniAppConditions,
   })
-  const startPostListen = (signal?: AbortSignal): Promise<void> => {
-    // GUI launches (desktop app, .desktop entry) inherit a bare launchd/systemd
-    // env — no version-manager dirs on PATH, no SHELL — so child processes across
-    // ANY stack (node/npm, python/pyenv, ruby, cargo, go, git, language servers,
-    // MCP servers) fail with "command not found" even though they work in the
-    // user's terminal. Fold the user's real login-shell env into process.env ONCE
-    // so downstream spawns that spread `{...process.env}` inherit it. No-op from a
-    // terminal. (The foreground bash / ripgrep path passes `childEnv()` explicitly
-    // — under Bun a spawn with no `env` only ever sees the process-start snapshot.)
-    //
-    // Non-blocking, and the subsystems that spawn from `process.env` wait for it.
-    // The probe used to block JS on this turn, BEFORE the endpoint was published —
-    // 330 ms on a cache miss, and up to 10 s with a slow rc against the desktop
-    // shell's 12 s start deadline, which then killed and retried the launch. Now
-    // READY no longer waits on the user's rc files; the backend host, engines and
-    // timers start once `envReady` settles (a snapshot hit settles on this turn);
-    // and a request that spawns earlier gets a correct env from `childEnv()`, which
-    // resolves synchronously rather than hand out a half-repaired one. A stop that
-    // lands first (`signal`) must not have its torn-down subsystems restarted.
-    const envStartedAt = performance.now()
-    const envReady = loadLoginShellEnv()
-    return envReady.then(() => {
-      const ms = Math.round(performance.now() - envStartedAt)
-      logger.info({ event: 'startup.env_ready', ms, cache: loginShellEnvSource() })
-      if (signal?.aborted) return
-      startBackendHost()
-      refreshMods()
-      startEngines()
-      startOpsTimers(signal)
-      startSemantic({ db, logger, localModels, semanticService, changes: infra.changes, signal })
-      startModelStatusPokes({
-        localModels,
-        semanticService,
-        miniAppStore: miniAppService.store,
-        pluginUpdates: pluginService.updates,
-        chatService,
-        env,
-        signal,
-      })
-      void startCoreReactors({
-        db,
-        feed: infra.changes.core,
-        defaultUserId: env.LOCALIX_DEFAULT_USER_ID,
-        catalogService,
-        providerConnectionsService,
-        projectsService,
-        userService,
-        agentsService,
-        secretsStore,
-        notifications,
-        sessionExists: async (...args) =>
-          Boolean(await bootRepo.getSession(...args).catch(() => true)),
-        providerConditions: infra.providerConditions,
-        triggerConditions,
-        refreshMiniAppHosts: () => {
-          backendHost.refresh()
-          channelHost.refresh()
+  const startPostListen = (signal?: AbortSignal): Promise<void> =>
+    startAfterListen(
+      {
+        logger,
+        start: () => {
+          startBackendHost()
+          refreshMods()
+          startEngines()
+          startOpsTimers(signal)
         },
-        subagentRows: chatService.subagentRowsLive,
-        statusLine: chatService.statusLine,
-        publish: (userId, resources) =>
-          chatService.streamRegistry.publish(userId, '', { type: 'resources.changed', resources }),
-      }).catch((err: unknown) =>
-        logger.warn({ event: 'core_reactors.start_failed', error: String(err) }),
-      )
-    })
-  }
+        semantic: { db, logger, localModels, semanticService, changes: infra.changes },
+        statusPokes: {
+          localModels,
+          semanticService,
+          miniAppStore: miniAppService.store,
+          pluginUpdates: pluginService.updates,
+          chatService,
+          env,
+        },
+        coreReactors: {
+          db,
+          feed: infra.changes.core,
+          defaultUserId: env.LOCALIX_DEFAULT_USER_ID,
+          catalogService,
+          providerConnectionsService,
+          projectsService,
+          userService,
+          agentsService,
+          secretsStore,
+          notifications,
+          sessionExists: async (...args) =>
+            Boolean(await bootRepo.getSession(...args).catch(() => true)),
+          providerConditions: infra.providerConditions,
+          triggerConditions,
+          refreshMiniAppHosts: () => {
+            backendHost.refresh()
+            channelHost.refresh()
+          },
+          subagentRows: chatService.subagentRowsLive,
+          statusLine: chatService.statusLine,
+          publish: (userId, resources) =>
+            chatService.streamRegistry.publish(userId, '', {
+              type: 'resources.changed',
+              resources,
+            }),
+        },
+      },
+      signal,
+    )
   return {
     env,
     logger,
@@ -369,7 +333,7 @@ export async function bootstrap(
     // Bun WebSocket handler for the multiplexed realtime socket (/rpc/ws). Any
     // host that builds its own Bun.serve (e.g. the desktop shell) MUST pass this
     // alongside `app.fetch`, or the WS upgrade fails with a bad-response error.
-    // Carries the attachment-sized maxPayloadLength override (see above).
+    // Carries the attachment-sized maxPayloadLength override (`bootstrap/realtime-websocket.ts`).
     websocket: realtimeWebSocket,
     chatService,
     providerConnectionsService,

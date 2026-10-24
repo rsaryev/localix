@@ -145,10 +145,11 @@ describe('Git Workspace ownership boundary', () => {
       include: [
         'apps/api/src/app.ts',
         'apps/api/src/client.ts',
+        'apps/api/src/client-extensions.ts',
         'apps/api/src/features/chat/contracts.ts',
         'apps/ui/src/shared/api/contracts.ts',
       ],
-      minFiles: 4,
+      minFiles: 5,
     })
     const source = files.map((file) => file.code).join('\n')
     expect(source).not.toMatch(/\/rpc\/(?:source-control|worktrees)\b/u)

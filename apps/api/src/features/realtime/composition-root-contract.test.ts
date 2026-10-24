@@ -248,7 +248,7 @@ const EXEMPTIONS: Exemptions = {
   [exemptionKey('bootstrap/app-services.ts', 'resolveModel(userId, modelId, preferred)')]: {
     reason: 'Adapter: projects `{providerConnectionId, modelId}` off the built provider.',
   },
-  [exemptionKey('bootstrap/chat-service-deps.ts', 'vaultToolFor(userId)')]: {
+  [exemptionKey('bootstrap/chat-vault-ports.ts', 'vaultToolFor(userId)')]: {
     reason:
       'Factory, not a forward: `userId` is captured by four independent closures it builds ' +
       '(list / updateMetadata / remove, each with its own audit actor), so there is no single ' +

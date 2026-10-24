@@ -151,64 +151,8 @@ export type {
   RenameResult,
 } from './features/lsp'
 
-// The agnostic agent-vs-workbench split: a mini app DECLARES its surfaces in
-// `.localix-app/app.json`, every consumer (onboarding steps, settings grouping) reads the
-// declaration through these pure helpers — no host-side plugin allowlist.
-export {
-  MINI_APP_SURFACE_AGENT,
-  MINI_APP_SURFACE_WORKBENCH,
-  normalizeMiniAppSurfaces,
-  isWorkbenchMiniApp,
-} from './features/mini-apps/contracts-base'
-export {
-  pluginCapabilityLabels,
-  pluginIssueSummary,
-  pluginOriginLabel,
-} from './features/plugins/presentation'
-export type { PluginIssueSummary } from './features/plugins/presentation'
-
-export type {
-  PluginRecord,
-  PluginProvides,
-  PluginConfigField,
-  PluginConfigOption,
-  PluginConfigType,
-  PluginManifest,
-  PluginCommand,
-  MiniAppCommandArg,
-  PluginCommandSpec,
-  ListPluginCommandsResponse,
-  PluginValidation,
-  MarketplaceListing,
-  ListPluginsResponse,
-  SetPluginEnabledRequest,
-  SetPluginConfigRequest,
-  InstallPluginRequest,
-  RemovePluginRequest,
-} from './features/plugins/contracts'
-export type {
-  PluginUpdatesResponse,
-  PluginUpdateJob,
-  UpdateMarketplaceResponse,
-} from './features/plugins/contracts-updates'
-
-export type {
-  MiniAppRecord,
-  MiniAppConfigField,
-  MiniAppCommandSpec,
-  MiniAppContributions,
-  MiniAppToolDescriptor,
-  MiniAppUiDescriptor,
-} from './features/mini-apps/contracts'
-export type { MiniAppViewSpec } from './features/mini-apps/contracts-contributions'
-export type {
-  MiniAppCatalogEntryRecord,
-  MiniAppCatalogPreviewRecord,
-  MiniAppStoreActivityRecord,
-  MiniAppStoreEntryRecord,
-  MiniAppStorePageRecord,
-  MiniAppStoreResponse,
-} from './features/mini-apps/contracts-store'
+// Plugins and mini apps: their records, presentation helpers and store (`client-extensions.ts`).
+export * from './client-extensions'
 
 export type {
   AgentRecord,

@@ -17,7 +17,7 @@ import type { createUserService } from '../features/user/service'
 import type { createSecretsService } from '../features/secrets/service'
 import type { createSecretExposureShield } from '../features/secrets/exposure-shield'
 import type { createSecretsStore } from '../features/secrets/store'
-import { createVaultTool } from '../features/secrets/agent-tool'
+import { createChatVaultPorts } from './chat-vault-ports'
 import { createChatService } from '../features/chat/service'
 import type { MonitorService } from '../features/monitors/service'
 import type { SemanticService } from '../features/embeddings/service'
@@ -186,80 +186,8 @@ export function createChatServicePhase({
     // Mini app capabilities resolve PER USE: resolving once at boot would freeze hot
     // enable/disable in both directions. An absent provider degrades gracefully.
     documentExtract: () => capabilityRegistry.get(CAP_DOCUMENT_EXTRACT),
-    // Resolve-only vault port for runtime features that name a secret — the mini app host's seam.
-    resolveSecret: async (userId, key) => {
-      const value = await secretsStore.resolve(userId, key, {
-        actorType: 'agent',
-        actorId: 'chat-runtime',
-        consumerType: 'agent',
-        consumerId: 'chat-runtime',
-      })
-      if (value) secretExposureShield.remember(userId, value)
-      return value ?? undefined
-    },
-    // The create-only half of the vault (`setIfAbsent`, never `set`): the `request_secret`
-    // answer leg (chatService.submitSecret) writes the typed value here and discards it.
-    storeSecret: async (userId, request, value) => {
-      // Registered on the WRITE, not only when something later resolves it: the user has just typed
-      // this value into the HITL prompt and the very next turn is the one that uses it, so waiting for
-      // a later `resolveSecret` leaves the whole first use unshielded — the same read-only gap the
-      // provider-connection and MCP registrations closed.
-      //
-      // But only when the store ACCEPTED it. A review named the cost of registering first: a
-      // `missing`/`conflict`/`exists` outcome would permanently redact a value the vault never held,
-      // so a mistyped 12-plus-character non-secret (a long path, a branch name) would rewrite every
-      // later mention of itself as `[vault-secret]` for the rest of the process.
-      const audit = {
-        actorType: 'agent' as const,
-        actorId: 'chat-runtime',
-        consumerType: 'agent',
-        consumerId: 'request_secret',
-      }
-      if (request.action === 'rotate') {
-        const result = await secretsStore.rotate(
-          userId,
-          request.key,
-          value,
-          request.expectedVersion!,
-          audit,
-        )
-        if (result.status === 'updated') secretExposureShield.remember(userId, value)
-        return result.status === 'updated'
-          ? { stored: true, outcome: 'rotated' as const }
-          : { stored: false, outcome: result.status as 'missing' | 'conflict' }
-      }
-      const stored = await secretsStore.setIfAbsent(userId, request.key, value, {
-        label: request.label ?? request.key,
-        description: request.description,
-        type: request.type,
-        source: 'user',
-        tags: [...request.tags, 'agent-requested'],
-        audit,
-      })
-      if (stored) secretExposureShield.remember(userId, value)
-      return { stored, outcome: stored ? ('created' as const) : ('exists' as const) }
-    },
-    vaultToolFor: (userId) =>
-      createVaultTool({
-        list: () => secretsService.list(userId),
-        updateMetadata: (key, request) =>
-          secretsStore.updateMetadata(userId, key, request, {
-            actorType: 'agent',
-            actorId: 'chat-runtime',
-            consumerType: 'agent',
-            consumerId: 'vault',
-          }),
-        remove: (key, expectedVersion) =>
-          secretsStore.remove(userId, key, {
-            expectedVersion,
-            audit: {
-              actorType: 'agent',
-              actorId: 'chat-runtime',
-              consumerType: 'agent',
-              consumerId: 'vault',
-            },
-          }),
-      }),
+    // The vault as chat reaches it: resolve, create-only store, and the agent's `vault` tool.
+    ...createChatVaultPorts({ secretsStore, secretExposureShield, secretsService }),
     sanitizeToolResult: (...args) => secretExposureShield.redactResult(...args),
     sanitizeToolError: (...args) => secretExposureShield.redactError(...args),
     sanitizeToolInput: (...args) => secretExposureShield.redactValue(...args),
