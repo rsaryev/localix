@@ -23,5 +23,7 @@ export const pluginConfigFieldSchema = z.object({
   min: z.number().optional(),
   /** CC-spec numeric upper bound hint. */
   max: z.number().optional(),
+  /** CC `options`: the values the field takes, rendered as a picker. */
+  enum: z.array(z.object({ value: z.string() })).optional(),
 })
 export type PluginConfigField = z.infer<typeof pluginConfigFieldSchema>

@@ -1,3 +1,4 @@
+import { InvalidRequestError } from '../../lib/domain-errors'
 import {
   type CapabilitySourceRecord,
   type CapabilitySourceRepository,
@@ -32,6 +33,16 @@ export async function savePluginConfig(input: {
   const { repo, userId, plugin, projectId } = input
   const name = plugin.manifest.name
   const declared = plugin.manifest.config ?? {}
+  // A field with `options` takes one of them, as Claude Code's picker allows (an empty value
+  // clears it).
+  for (const [key, value] of Object.entries(input.values)) {
+    const choices = declared[key]?.options
+    if (choices?.length && value !== '' && !choices.includes(String(value)))
+      throw new InvalidRequestError(
+        'plugin_config_invalid',
+        `"${key}" must be one of ${choices.join(', ')}`,
+      )
+  }
   const rowScope = rowScopeOf(plugin, projectId)
   const legacy = rowScope !== projectId ? await repo.get(userId, projectId, name) : null
   const existing = (await repo.get(userId, rowScope, name))?.config

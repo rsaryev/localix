@@ -87,7 +87,7 @@ function configOf(
 ): Record<string, Record<string, unknown>> {
   return Object.fromEntries(
     Object.entries(options).map(([key, option]) => {
-      const { sensitive, options: _choices, default: fallback, ...rest } = option
+      const { sensitive, default: fallback, ...rest } = option
       const converted: Record<string, unknown> = { ...rest, ...(sensitive ? { secret: true } : {}) }
       // A `multiple` option's list default has no scalar form here: it starts empty instead.
       if (Array.isArray(fallback))

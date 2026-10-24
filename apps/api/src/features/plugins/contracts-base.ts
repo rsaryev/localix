@@ -30,6 +30,8 @@ export const pluginConfigOptionSchema = z.object({
   multiple: z.boolean().optional(),
   min: z.number().optional(),
   max: z.number().optional(),
+  /** CC `options`: the only values a string field takes, offered as a picker. */
+  options: z.array(z.string()).optional(),
 })
 export type PluginConfigOption = z.output<typeof pluginConfigOptionSchema>
 

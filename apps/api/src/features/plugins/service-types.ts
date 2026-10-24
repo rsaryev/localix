@@ -216,5 +216,6 @@ export function toConfigFields(
     ...(opt.multiple !== undefined ? { multiple: opt.multiple } : {}),
     ...(opt.min !== undefined ? { min: opt.min } : {}),
     ...(opt.max !== undefined ? { max: opt.max } : {}),
+    ...(opt.options?.length ? { enum: opt.options.map((value) => ({ value })) } : {}),
   }))
 }
