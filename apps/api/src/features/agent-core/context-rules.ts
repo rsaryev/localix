@@ -1,5 +1,6 @@
 import { promises as fs, type Dirent } from 'node:fs'
-import { isAbsolute, join, relative } from 'node:path'
+import { join, relative } from 'node:path'
+import { isPathBelow } from '../../lib/path-containment'
 import { parseMarkdownFrontmatter } from './skill-frontmatter'
 import { parseYamlFrontmatterBlock } from './frontmatter-yaml'
 
@@ -68,8 +69,8 @@ function toGlobList(value: unknown): string[] {
 /** True when a touched file, relative to `base`, matches one of the rule's globs. */
 function ruleMatchesTouched(paths: string[], base: string, touched: readonly string[]): boolean {
   const rels = touched
+    .filter((file) => isPathBelow(base, file))
     .map((file) => relative(base, file).replace(/\\/g, '/'))
-    .filter((rel) => rel && !rel.startsWith('..') && !isAbsolute(rel))
   if (rels.length === 0) return false
   return paths.some((pattern) => {
     try {

@@ -8,7 +8,8 @@
  * file and stays. The cwd-as-path match in `prompt-skills.ts` stays for skills written against
  * directories.
  */
-import { isAbsolute, relative } from 'node:path'
+import { relative } from 'node:path'
+import { isPathBelow } from '../../../lib/path-containment'
 import { skillCallName } from '../../agent-core/tools/skill-names'
 import type { SkillListingEntry } from './prompt-skills'
 
@@ -29,8 +30,8 @@ export function skillsMatchingFiles(
 ): ReadonlySet<string> {
   const out = new Set<string>()
   const rels = touched
+    .filter((file) => isPathBelow(cwd, file))
     .map((file) => relative(cwd, file).replace(/\\/g, '/'))
-    .filter((rel) => rel && !rel.startsWith('..') && !isAbsolute(rel))
   if (rels.length === 0) return out
   for (const skill of skills) {
     if (!skill.activationPaths?.length) continue

@@ -1,4 +1,5 @@
 import { dirname, join, relative, sep } from 'node:path'
+import { isPathBelow } from '../../../lib/path-containment'
 import type { DiscoveredSkill } from '../../agent-core/skill-discovery'
 import { scanScope } from '../../agent-core/skill-scan'
 
@@ -14,8 +15,8 @@ export async function nestedSkillsForTouched(
 ): Promise<DiscoveredSkill[]> {
   const dirs = new Set<string>()
   for (const file of touched) {
+    if (!isPathBelow(cwd, dirname(file))) continue
     const rel = relative(cwd, dirname(file))
-    if (!rel || rel.startsWith('..')) continue
     const parts = rel.split(sep)
     for (let i = 1; i <= parts.length; i++) {
       if (parts[i - 1]!.startsWith('.') || parts[i - 1] === 'node_modules') break

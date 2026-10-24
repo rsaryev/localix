@@ -8,6 +8,7 @@ import {
   type ContextFile,
 } from './context-collector'
 import type { DiscoverContextEnv } from './context-files'
+import { isPathBelow, isPathWithin } from '../../lib/path-containment'
 
 /**
  * Instructions that load as the agent works, as Claude Code loads them (memory.md):
@@ -73,8 +74,8 @@ async function gitRootAt(start: string): Promise<string> {
 
 /** The directories from `root` down to `leaf`, both included (root-first). */
 function chainBetween(root: string, leaf: string): string[] {
+  if (!isPathWithin(root, leaf)) return [leaf]
   const rel = relative(root, leaf)
-  if (rel.startsWith('..')) return [leaf]
   const parts = rel ? rel.split(sep) : []
   return [root, ...parts.map((_, i) => join(root, ...parts.slice(0, i + 1)))]
 }
@@ -84,8 +85,8 @@ function subdirectoriesTouched(cwd: string, touched: readonly string[]): string[
   const out: string[] = []
   const seen = new Set<string>()
   for (const file of touched) {
+    if (!isPathBelow(cwd, dirname(file))) continue
     const rel = relative(cwd, dirname(file))
-    if (!rel || rel.startsWith('..')) continue
     const parts = rel.split(sep)
     for (let i = 1; i <= parts.length; i++) {
       const dir = join(cwd, ...parts.slice(0, i))
