@@ -7,6 +7,7 @@ import { parseSkillCommand } from './slash-commands'
 import { commandTarget } from './command-participant'
 import { SkillCommandFailedError } from './skill-commands'
 import { renderSkillBody } from './skill-render'
+import { stackedSkills } from './command-handlers-skill-stack'
 import { skillPromptDetails } from '../../agent-core/skill-prompt-details'
 import {
   skillToolPathVars,
@@ -124,14 +125,23 @@ export async function handleSkillCommand(
     pluginRoot: plugin?.root,
     pluginDataDir: plugin?.dataDir,
   })
-  let expanded: string
-  try {
-    expanded = await renderSkillBody(skill, skillCmd.arg, {
+  // `/write-tests /fix-issue 123`: the skills stacked after an inline first one, all taking `123`.
+  const stack = skill.contextFork
+    ? { extra: [], arg: skillCmd.arg }
+    : await stackedSkills(
+        skillCmd.arg,
+        async (name) =>
+          skills.find((s) => s.name.toLowerCase() === name) ??
+          findPluginSkill(await ctx.gatherEnabledPluginSkills(userId, session), name),
+      )
+  const arg = stack.arg
+  const render = (one: SkillRecord) =>
+    renderSkillBody(one, arg, {
       ...(rules
         ? {
             authorize: authorizeTypedSkillCommands(
               rules,
-              substituteToolPathVars(skill.allowedTools, pathVars),
+              substituteToolPathVars(one.allowedTools, pathVars),
               workingDir,
             ),
           }
@@ -142,8 +152,11 @@ export async function handleSkillCommand(
       ...(plugin
         ? { env: { CLAUDE_PLUGIN_ROOT: plugin.root, CLAUDE_PLUGIN_DATA: plugin.dataDir } }
         : {}),
-      dynamic: skill.source === 'file',
+      dynamic: one.source === 'file',
     })
+  let expanded: string
+  try {
+    expanded = (await Promise.all([skill, ...stack.extra].map(render))).join('\n\n')
   } catch (error) {
     const reason =
       error instanceof SkillCommandFailedError
@@ -191,7 +204,7 @@ export async function handleSkillCommand(
     const childId = await spawnForkSkill(userId, sessionId, instruction, {
       ...(speaker ? { invokedBy: speaker.agentId } : {}),
       ...(forkAgent ? { pluginAgent: forkAgent } : {}),
-      title: `/${skill.name}${skillCmd.arg ? ' ' + skillCmd.arg : ''}`,
+      title: `/${skill.name}${arg ? ' ' + arg : ''}`,
       preferredModel: skill.preferredModel,
       preferredEffort: skill.preferredEffort,
       // CC skill frontmatter `hooks` — activated for the forked sub-agent run.
@@ -217,7 +230,13 @@ export async function handleSkillCommand(
     {
       // CC disallowed-tools removes tools; allowed-tools auto-approves them.
       // ${CLAUDE_PROJECT_DIR} in allowed-tools resolves to the session working dir.
-      ...toolOverrideOptions(skill, pathVars),
+      ...toolOverrideOptions(
+        {
+          allowedTools: [skill, ...stack.extra].flatMap((s) => s.allowedTools ?? []),
+          disallowedTools: [skill, ...stack.extra].flatMap((s) => s.disallowedTools ?? []),
+        },
+        pathVars,
+      ),
       // CC skill frontmatter `hooks` — registered for "the rest of the session once the skill is
       // invoked": from this run on, every later run of the session keeps them. No
       // Stop→SubagentStop conversion: the skill runs in THIS session's turn.
@@ -247,7 +266,7 @@ export async function handleSkillCommand(
         invocation: {
           kind: 'skill',
           name: skill.name,
-          ...(skillCmd.arg ? { arguments: skillCmd.arg } : {}),
+          ...(arg ? { arguments: arg } : {}),
           lifetime: 'turn',
         },
         presentation: { label: `/${skill.name}`, token: `/${skill.name}` },
