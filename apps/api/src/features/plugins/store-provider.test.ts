@@ -36,9 +36,7 @@ function fixture() {
           recommended: ['review'],
           featured: ['pg'],
           hero: { item: 'review', title: 'Review every change' },
-          collections: [
-            { id: 'data', title: 'Work with data', items: ['pg', 'mini-app:database'] },
-          ],
+          collections: [{ id: 'data', title: 'Work with data', items: ['pg', 'mini-app:ledger'] }],
         },
       },
       plugins: [
@@ -180,7 +178,7 @@ describe('plugins in the Store', () => {
             style: 'row',
             items: [
               { kind: 'plugin', id: `pg@${OFFICIAL}` },
-              { kind: 'mini-app', id: 'database' },
+              { kind: 'mini-app', id: 'ledger' },
             ],
           },
         ],
