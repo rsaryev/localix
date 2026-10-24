@@ -50,6 +50,7 @@ interface ChatPorts {
   ): Promise<{ providerConnectionId: string | null; modelId: string | null } | null>
   streamRegistry: { publish(userId: string, sessionId: string, event: unknown): void }
   stop(sessionId: string, callerUserId?: string): Promise<boolean>
+  resolveSessionWorkspaceMetadata(userId: string, sessionId: string): Promise<{ rootPath: string }>
 }
 
 interface Wakes {
@@ -205,6 +206,13 @@ export function createModsPhase(input: {
         ...(run.agentId ? { agentId: run.agentId } : {}),
         ...(run.parentSessionId ? { parentSessionId: run.parentSessionId } : {}),
       }))
+    },
+    async sessionCwd(scene) {
+      if (!scene.sessionId) return null
+      const meta = await deps
+        .chat()
+        ?.resolveSessionWorkspaceMetadata(scene.userId || defaultUserId, scene.sessionId)
+      return meta?.rootPath ?? null
     },
     async listCommands(scene) {
       const userId = scene.userId || defaultUserId

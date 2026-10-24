@@ -41,7 +41,7 @@ const EMPTY_BAND = () => h(Fragment, null)
 export function createModBand(deps: {
   dispatch: Dispatch
   /** Where a conversation's band events run: its scene, and the mod instances there. */
-  sceneOf: (sessionId: string) => { scene: ModScene; instances: ReadonlySet<string> }
+  sceneOf: (sessionId: string) => Promise<{ scene: ModScene; instances: ReadonlySet<string> }>
   /** True while a turn runs in the conversation. */
   isWorking: (sessionId: string) => boolean
   changed: () => void
@@ -51,7 +51,7 @@ export function createModBand(deps: {
   const owners = new Map<string, string | undefined>()
 
   async function render(sessionId: string, viewport: BandViewport): Promise<BandDrawing> {
-    const { scene, instances } = deps.sceneOf(sessionId)
+    const { scene, instances } = await deps.sceneOf(sessionId)
     const maxRows = Math.max(2, viewport.rows)
     const event = {
       component: 'AbovePrompt',
@@ -86,7 +86,7 @@ export function createModBand(deps: {
   async function interact(sessionId: string, action: ControlAction): Promise<boolean> {
     const own = handlers.get(sessionId)?.get(action.element)
     if (!own) return false
-    const { scene, instances } = deps.sceneOf(sessionId)
+    const { scene, instances } = await deps.sceneOf(sessionId)
     const site = {
       plugin: owners.get(sessionId),
       component: 'AbovePrompt',

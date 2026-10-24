@@ -144,6 +144,8 @@ export interface ModsPorts {
   listAgentRuns?: (scene: ModScene) => Promise<readonly ModAgentRun[]>
   /** Localix's own commands and the skills a person runs there (`$.command.list`). */
   listCommands?: (scene: ModScene) => Promise<readonly ModCommandInfo[]>
+  /** A conversation's working directory, for its band before it ran a turn here. */
+  sessionCwd?: (scene: ModScene) => Promise<string | null>
   /** The scene's conversation for `$.session`, or null outside one. */
   readSession?: (scene: ModScene) => Promise<ModSessionRead | null>
   /** The mods' panes or commands changed: clients re-read them. */

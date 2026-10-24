@@ -104,4 +104,17 @@ describe('the AbovePrompt band', () => {
     await host.band.render('s1', { columns: 80, rows: 10 })
     expect(working).toEqual([true, false])
   })
+
+  test('a conversation that ran no turn since Localix started draws its band in its own project', async () => {
+    const { host, dir } = await hostWithMod(
+      (on) => {
+        on('ui.render', { component: 'AbovePrompt' }, async ($, e) =>
+          ui($, e).Text({ children: await ($.session.cwd as () => Promise<string>)() }),
+        )
+      },
+      { sessionCwd: async () => `${dir}/project` },
+    )
+    const drawing = await host.band.render('fresh', { columns: 80, rows: 10 })
+    expect(drawing.tree).toEqual([{ type: 'Text', props: {}, children: [`${dir}/project`] }])
+  })
 })

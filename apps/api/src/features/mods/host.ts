@@ -223,12 +223,17 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions = {}) 
     sources.get(pluginOfInstance(id))?.clients.get(module)
   const calls = createEventCalls(() => host)
   const panes = createModPanes({ dispatch, registry, changed: ports.changed, sceneOf, clientOf })
-  /** Where a conversation's band runs: where its latest turn ran, else the workspace. */
-  const bandSceneOf = (sessionId: string) => {
+  /**
+   * Where a conversation's band runs: where its latest turn ran; for one that ran none since
+   * Localix started, its own working directory, the mods loaded starting there for it.
+   */
+  const bandSceneOf = async (sessionId: string) => {
     const joined = conversations.of(sessionId)
     if (joined) return { scene: joined.scene, instances: joined.plugins }
-    const { scene, instances } = sceneOf(instanceIdOf('', ports.workspaceDir))
-    return { scene: { ...scene, sessionId }, instances }
+    const fallback: ModScene = { userId: '', sessionId, cwd: ports.workspaceDir }
+    const cwd = (await ports.sessionCwd?.(fallback).catch(() => null)) ?? ports.workspaceDir
+    const scene = { ...fallback, cwd }
+    return { scene, instances: await host.instancesFor(scene, new Set(host.loaded())) }
   }
   const band = createModBand({
     dispatch,
