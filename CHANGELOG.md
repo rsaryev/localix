@@ -142,7 +142,32 @@ Changes land on `main`.
   and slide along it; frames present as slides; styles copy and paste; a highlighter, an eraser and
   find-and-replace join the tools. See [Project Space](docs/features/project-space.md).
 
+- **Claude Code skills, commands and agents from their own folders**: skills in `~/.claude/skills`
+  and a repository's `.claude/skills`, command files in `.claude/commands` (`commands/git/commit.md`
+  is `/git:commit`) and agents in `.claude/agents` and `~/.claude/agents` now work without moving
+  them, read from the working directory up to the repository root. A subfolder's skills reach the
+  agent once it works with a file there. See [Skills](docs/features/skills.md).
+- **Claude Code's built-in agent types**: `delegate` runs a task as `general-purpose` (the agent
+  itself) or the read-only `Explore` and `Plan`, and a call can set the child's `model`, `effort`
+  and `isolation: worktree`. Agent files' `memory`, `omitClaudeMd`, `autoCompactWindow` and
+  `initialPrompt` take effect. See [Delegation](docs/features/delegation.md).
+- **Instructions that follow the work**: a subfolder's `CLAUDE.md`, `AGENTS.md` and rules, and a
+  path-scoped rule, load once the agent reads or edits a file they cover. See
+  [Project instructions](docs/features/project-instructions.md).
+- **More ways to run a skill**: stack skills at the start of a message
+  (`/write-tests /fix-issue 123`), or write `/name` later in a message to let the agent run it for
+  that message.
+
 ### Changed
+
+- **Instruction files read as in Claude Code**: `CLAUDE.md`, `.claude/CLAUDE.md`, `CLAUDE.local.md`,
+  `~/.claude/CLAUDE.md` and `.claude/rules/` load, a folder's `CLAUDE.md` before its `AGENTS.md`,
+  and folders above the repository add theirs. Maintainer comments are stripped.
+- **Skill precedence follows Claude Code**: a personal skill wins over a project skill of the same
+  name, and the agent's skill list shows each description in full (up to 1,536 characters).
+- **Skills the agent loads behave like typed ones**: a `context: fork` skill runs in a subagent of
+  its `agent:` type, its `allowed-tools` and `disallowed-tools` apply to the turn, and a plugin's
+  command files can be run by the agent too.
 
 - **Claude Code plugins** load as they are: the same folder works in Claude Code and in Localix,
   with nothing converted at install. Hooks on `PostToolUseFailure` run when a tool fails, and
@@ -204,6 +229,10 @@ Changes land on `main`.
   `GITHUB_TOKEN` or `ANTHROPIC_API_KEY` reads as empty in a server's URL and headers, so an imported
   configuration no longer sends it to that server, and an unset `${VAR}` without a default stays as
   written instead of turning empty. See [MCP](docs/features/mcp.md).
+- **Skills and commands written for Claude Code** run as written: `${CLAUDE_SKILL_DIR}` and plugin
+  paths work in `allowed-tools`, command output keeps its `$1`, a skill's `effort` applies to its
+  turn, `paths:` skills appear once a matching file is worked with, `yes`/`on`/`1` count as true,
+  and injected commands meet your permission rules.
 - **Smaller Documents download**: the Documents mini app no longer carries its fonts twice; its
   download is about half the size.
 - **Claude Code plugin components load as they do in Claude Code**: a `commands` map in
