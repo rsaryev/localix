@@ -1,0 +1,529 @@
+{
+  "source": "claude-code",
+  "version": "2.1.310",
+  "note": "Shape descriptors observed by scripts/cc-parity/probe; names and kinds only.",
+  "entries": [
+    {
+      "kind": "call",
+      "name": "clock.now",
+      "shape": "number"
+    },
+    {
+      "kind": "call",
+      "name": "command.list",
+      "shape": [
+        {
+          "description": "string",
+          "name": "string",
+          "plugin?": "string",
+          "source": "string"
+        }
+      ]
+    },
+    {
+      "kind": "call",
+      "name": "command.register",
+      "shape": {
+        "command": "string"
+      }
+    },
+    {
+      "kind": "call",
+      "name": "env.get",
+      "shape": "string"
+    },
+    {
+      "kind": "call",
+      "name": "fs.exists",
+      "shape": "boolean"
+    },
+    {
+      "kind": "call",
+      "name": "model.classify",
+      "shape": "string"
+    },
+    {
+      "kind": "call",
+      "name": "model.complete",
+      "shape": {
+        "isAnswered": "boolean",
+        "text": "string",
+        "usage": {
+          "cache_creation_input_tokens": "number",
+          "cache_read_input_tokens": "number",
+          "input_tokens": "number",
+          "output_tokens": "number"
+        }
+      }
+    },
+    {
+      "kind": "call",
+      "name": "model.fork",
+      "shape": {
+        "isAnswered": "boolean",
+        "reason?": "string",
+        "text?": "string",
+        "usage?": {
+          "cache_creation_input_tokens": "number",
+          "cache_read_input_tokens": "number",
+          "input_tokens": "number",
+          "output_tokens": "number"
+        }
+      }
+    },
+    {
+      "kind": "call",
+      "name": "prompt.fill",
+      "shape": {
+        "cursor": "number",
+        "isFilled": "boolean",
+        "refusal?": "string",
+        "text": "string"
+      }
+    },
+    {
+      "kind": "call",
+      "name": "prompt.suggest",
+      "shape": {
+        "isShown": "boolean"
+      }
+    },
+    {
+      "kind": "call",
+      "name": "session.cwd",
+      "shape": "string"
+    },
+    {
+      "kind": "call",
+      "name": "session.id",
+      "shape": "string"
+    },
+    {
+      "kind": "call",
+      "name": "session.messages",
+      "shape": [
+        {
+          "role": "string",
+          "text": "string",
+          "toolResults?": [
+            {
+              "isError": "boolean",
+              "result": "object",
+              "text": "string",
+              "tool_use_id": "string"
+            }
+          ],
+          "toolUses": [
+            {
+              "input": "object",
+              "result": "object",
+              "text": "string",
+              "tool": "string",
+              "tool_use_id": "string"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "call",
+      "name": "session.model",
+      "shape": "string"
+    },
+    {
+      "kind": "call",
+      "name": "session.surfaces",
+      "shape": ["string"]
+    },
+    {
+      "kind": "call",
+      "name": "session.turns",
+      "shape": "number"
+    },
+    {
+      "kind": "call",
+      "name": "session.usage",
+      "shape": {
+        "context": {
+          "percent?": "number",
+          "tokens?": "number",
+          "window": "number"
+        },
+        "cost": {
+          "usd": "number"
+        },
+        "rateLimits": [
+          {
+            "kind": "string",
+            "percentUsed": "number",
+            "resetsAt": "string"
+          }
+        ],
+        "startedAt": "number"
+      }
+    },
+    {
+      "kind": "call",
+      "name": "session.version",
+      "shape": {
+        "base": "string",
+        "builtAt": "string",
+        "version": "string"
+      }
+    },
+    {
+      "kind": "call",
+      "name": "settings.read",
+      "shape": "object"
+    },
+    {
+      "kind": "call",
+      "name": "store.get",
+      "shape": {
+        "seen": "boolean"
+      }
+    },
+    {
+      "kind": "call",
+      "name": "store.set",
+      "shape": "undefined"
+    },
+    {
+      "kind": "call",
+      "name": "tool.list",
+      "shape": [
+        {
+          "description": "string",
+          "mcp": "boolean",
+          "name": "string"
+        }
+      ]
+    },
+    {
+      "kind": "call",
+      "name": "ui.open",
+      "shape": {
+        "isPlaced": "boolean",
+        "reason?": "string"
+      }
+    },
+    {
+      "kind": "call",
+      "name": "ui.panes",
+      "shape": [
+        {
+          "id": "string",
+          "isFocused": "boolean",
+          "isPlaced": "boolean",
+          "isShown": "boolean",
+          "title": "string"
+        }
+      ]
+    },
+    {
+      "kind": "event",
+      "name": "command.run",
+      "shape": {
+        "args": "string",
+        "command": "string",
+        "origin": {
+          "kind": "string"
+        },
+        "presentation": {
+          "columns": "number",
+          "isFullscreen": "boolean"
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "name": "prompt.submit",
+      "shape": {
+        "origin": {
+          "kind": "string"
+        },
+        "text": "string",
+        "wait": "boolean"
+      }
+    },
+    {
+      "kind": "event",
+      "name": "session.end",
+      "shape": {
+        "reason": "string",
+        "resume": {
+          "id": "string"
+        },
+        "sessionId": "string"
+      }
+    },
+    {
+      "kind": "event",
+      "name": "session.start",
+      "shape": {
+        "cwd": "string",
+        "isInteractive": "boolean",
+        "surface": {
+          "$oneOf": ["null", "string"]
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "name": "tool.call:Write",
+      "shape": {
+        "content": "string",
+        "file_path": "string",
+        "tool": "string",
+        "tool_use_id": "string"
+      }
+    },
+    {
+      "kind": "event",
+      "name": "tool.check",
+      "shape": {
+        "input": {
+          "content": "string",
+          "file_path": "string"
+        },
+        "tool": "string",
+        "tool_use_id": "string"
+      }
+    },
+    {
+      "kind": "event",
+      "name": "turn.complete",
+      "shape": {
+        "answer": "string",
+        "durationMs": "number",
+        "isAborted": "boolean",
+        "reason": "string",
+        "turnId": "string",
+        "usage": {
+          "cache_creation_input_tokens": "number",
+          "cache_read_input_tokens": "number",
+          "input_tokens": "number",
+          "model": "string",
+          "output_tokens": "number"
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "name": "turn.start",
+      "shape": {
+        "text": "string",
+        "turnId": "string"
+      }
+    },
+    {
+      "kind": "event",
+      "name": "turn.step",
+      "shape": {
+        "effort": "string",
+        "index": "number",
+        "messageCount": "number",
+        "model": "string",
+        "turnId": "string"
+      }
+    },
+    {
+      "kind": "event",
+      "name": "ui.render:AbovePrompt",
+      "shape": {
+        "component": "string",
+        "props": {
+          "bodyColumns": "number",
+          "hasSurvey": "boolean",
+          "isWorking": "boolean",
+          "maxRows": "number",
+          "scroll": "object",
+          "view": "object"
+        },
+        "requestId": "string",
+        "surface": "string",
+        "viewport": {
+          "columns": "number",
+          "isFullscreen": "boolean",
+          "rows": "number"
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "name": "ui.render:CommandOutput",
+      "shape": {
+        "component": "string",
+        "props": {
+          "args": "string",
+          "command": "string",
+          "isErrored": "boolean",
+          "onScreen?": "object",
+          "text": "string"
+        },
+        "requestId": "string",
+        "surface": "string",
+        "viewport": {
+          "columns": "number",
+          "isFullscreen": "boolean",
+          "rows": "number"
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "name": "ui.render:Pane",
+      "shape": {
+        "component": "string",
+        "props": {
+          "bodyColumns": "number",
+          "isFocused": "boolean",
+          "placement": "string",
+          "scroll": "object",
+          "title": "string",
+          "view": "object"
+        },
+        "requestId": "string",
+        "surface": "string",
+        "viewport": {
+          "columns": "number",
+          "isFullscreen": "boolean",
+          "rows": "number"
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "name": "ui.render:PromptHint",
+      "shape": {
+        "component": "string",
+        "props": {
+          "hint": "string",
+          "isDraft": "boolean",
+          "isWorking": "boolean"
+        },
+        "requestId": "string",
+        "surface": "string",
+        "viewport": {
+          "columns": "number",
+          "isFullscreen": "boolean",
+          "rows": "number"
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "name": "ui.render:SessionMode",
+      "shape": {
+        "component": "string",
+        "props": {
+          "modes": "array"
+        },
+        "requestId": "string",
+        "surface": "string",
+        "viewport": {
+          "columns": "number",
+          "isFullscreen": "boolean",
+          "rows": "number"
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "name": "ui.render:Spinner",
+      "shape": {
+        "component": "string",
+        "props": {
+          "message": "null",
+          "mode": "string",
+          "suffix": "string",
+          "word": "string"
+        },
+        "requestId": "string",
+        "surface": "string",
+        "viewport": {
+          "columns": "number",
+          "isFullscreen": "boolean",
+          "rows": "number"
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "name": "ui.render:UserMessage",
+      "shape": {
+        "component": "string",
+        "props": {
+          "isExpanded": "boolean",
+          "onScreen?": "object",
+          "origin": "object",
+          "text": "string"
+        },
+        "requestId": "string",
+        "surface": "string",
+        "viewport": {
+          "columns": "number",
+          "isFullscreen": "boolean",
+          "rows": "number"
+        }
+      }
+    },
+    {
+      "kind": "result",
+      "name": "prompt.submit",
+      "shape": {
+        "origin": {
+          "kind": "string"
+        },
+        "text": "string"
+      }
+    },
+    {
+      "kind": "result",
+      "name": "tool.call:Write",
+      "shape": {
+        "ref": "number",
+        "result": {
+          "content": "string",
+          "filePath": "string",
+          "originalFile": "null",
+          "structuredPatch": "array",
+          "type": "string",
+          "userModified": "boolean"
+        },
+        "text": "string"
+      }
+    },
+    {
+      "kind": "result",
+      "name": "tool.check",
+      "shape": {
+        "decision": "string",
+        "rule": "string"
+      }
+    },
+    {
+      "kind": "result",
+      "name": "turn.step",
+      "shape": {
+        "answer": "string",
+        "index": "number",
+        "stopReason": "string",
+        "toolUses": [
+          {
+            "input": "object",
+            "name": "string"
+          }
+        ],
+        "turnId": "string",
+        "usage": {
+          "cache_creation_input_tokens": "number",
+          "cache_read_input_tokens": "number",
+          "input_tokens": "number",
+          "model": "string",
+          "output_tokens": "number"
+        }
+      }
+    }
+  ]
+}
