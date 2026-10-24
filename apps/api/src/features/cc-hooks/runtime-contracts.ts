@@ -28,11 +28,11 @@ export interface PreToolUseResult {
 }
 
 /**
- * A hook ended this run: a PreToolUse `continue:false` or a PostToolBatch block. Claude Code
+ * A hook ended this run: a PreToolUse or PostToolUse `continue:false`, or a PostToolBatch block. Claude Code
  * "stops processing entirely", so no end-of-turn hook or continuation may restart the agent.
  */
 export interface CcRunStop {
-  event: 'PreToolUse' | 'PostToolBatch'
+  event: 'PreToolUse' | 'PostToolUse' | 'PostToolBatch'
   reason: string
 }
 

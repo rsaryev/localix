@@ -17,7 +17,7 @@ import type {
   CcRunStop,
   PreToolUseResult,
 } from './runtime-contracts'
-import { contextFrom, joinContext } from './runtime-results'
+import { joinContext } from './runtime-results'
 import { replacementContent } from './tool-output-replacement'
 import type { createHookSelector, SelectOptions } from './runtime-selection'
 import type { createHookHandlerRunner } from './runtime-handler'
@@ -176,9 +176,21 @@ export function createToolHookRunners({
           inputFor(replaced ?? result.content, replaced !== undefined),
           false,
         )
-        // PostToolUse cannot block (tool already ran); we surface reason + context.
-        contexts.push(o.additionalContext, o.decision === 'block' ? o.reason : undefined)
+        // PostToolUse cannot block (tool already ran): a `decision:block` reason and an exit-2
+        // stderr ("Shows stderr to Claude") reach the model beside the context.
+        contexts.push(
+          o.additionalContext,
+          o.decision === 'block' ? o.reason : undefined,
+          o.blocked ? o.blockReason : undefined,
+        )
         replaced = replacementContent(toolName, o) ?? replaced
+        // `continue:false` ends the run after this call, its stopReason shown to the person.
+        if (o.continue === false) {
+          const stopReason = o.stopReason?.trim() || 'A PostToolUse hook stopped the run.'
+          emitNotice?.(stopReason, 'PostToolUse')
+          stopRun?.({ event: 'PostToolUse', reason: stopReason })
+          break
+        }
       }
       const additionalContext = joinContext(contexts)
       return {
@@ -199,14 +211,16 @@ export function createToolHookRunners({
         is_interrupt: failure.isInterrupt,
         ...(failure.durationMs !== undefined ? { duration_ms: failure.durationMs } : {}),
       }
-      const additionalContext = contextFrom(
-        await runAll(
-          'PostToolUseFailure',
-          (m) => matchesToolName(m, toolName, ref.aliases, input),
-          hookInput,
-          false,
-          { ifCtx: { toolName, toolInput: input, aliases: ref.aliases, cwd: base.cwd } },
-        ),
+      const outcomes = await runAll(
+        'PostToolUseFailure',
+        (m) => matchesToolName(m, toolName, ref.aliases, input),
+        hookInput,
+        false,
+        { ifCtx: { toolName, toolInput: input, aliases: ref.aliases, cwd: base.cwd } },
+      )
+      // An exit-2 stderr is shown to Claude, as on PostToolUse.
+      const additionalContext = joinContext(
+        outcomes.flatMap((o) => [o.additionalContext, o.blocked ? o.blockReason : undefined]),
       )
       return additionalContext ? { additionalContext } : {}
     },
