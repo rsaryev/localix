@@ -124,6 +124,18 @@ export const miniAppsApi = {
     return json.result
   },
 
+  /**
+   * An installed mini app's own icon file, as the host serves it from its manifest; `null` when
+   * it names none. The body is the picture's bytes, so it is read as a blob, not through `unwrap`.
+   */
+  async getMiniAppIcon(app: string): Promise<Blob | null> {
+    const response = await client.rpc['mini-apps'][':app'].icon.$get({
+      param: { app },
+      query: {},
+    })
+    return response.ok ? response.blob() : null
+  },
+
   /** What the catalogs offer, what is installed and the installs in flight. */
   async listMiniAppStore(): Promise<MiniAppStoreResponse> {
     return unwrap(await client.rpc['mini-apps'].store.$get())

@@ -1,4 +1,4 @@
-import { API_BASE_URL, apiFetch } from '@/shared/api/internal'
+import { backendClient } from '@/shared/api/client'
 
 /**
  * A standalone app's Dock icon: the mini app's own icon, the file its `mini-app.json` names, as
@@ -18,12 +18,9 @@ const GRID = 1024
 
 /** The app's icon file, from the host. */
 export async function loadAppIcon(miniApp: string, title: string): Promise<Blob> {
-  const response = await apiFetch(
-    `${API_BASE_URL}/rpc/mini-apps/${encodeURIComponent(miniApp)}/icon`,
-  )
-  if (!response.ok)
-    throw new Error(`${title} has no icon of its own: add an "icon" to its mini-app.json`)
-  return response.blob()
+  const icon = await backendClient.getMiniAppIcon(miniApp)
+  if (!icon) throw new Error(`${title} has no icon of its own: add an "icon" to its mini-app.json`)
+  return icon
 }
 
 function loadImage(blob: Blob): Promise<{ image: HTMLImageElement; release: () => void }> {
