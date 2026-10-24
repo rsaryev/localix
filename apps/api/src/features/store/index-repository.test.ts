@@ -78,6 +78,23 @@ describe('the Store index', () => {
     expect(page.listings[0]!.alsoIn).toEqual([{ id: 'community', label: 'Community' }])
   })
 
+  test('a source that lists one origin twice is "also in" once', async () => {
+    const { repo, put } = index()
+    const origin = 'git:github.com/acme/lint'
+    await put('community', [
+      plugin('lint@community', { origin, source: { id: 'community', label: 'Community' } }),
+      plugin('lint-again@community', { origin, source: { id: 'community', label: 'Community' } }),
+    ])
+    await put('official', [
+      plugin('lint@official', {
+        origin,
+        source: { id: 'official', label: 'Official', trust: 'official' },
+      }),
+    ])
+    const [listing] = (await repo.page('u1', {}, { limit: 40 })).listings
+    expect(listing!.alsoIn).toEqual([{ id: 'community', label: 'Community' }])
+  })
+
   test('the copy a person installed shows even when another source outranks it', async () => {
     const { repo, put } = index()
     const origin = 'git:github.com/acme/lint'

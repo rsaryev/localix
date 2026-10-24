@@ -60,6 +60,26 @@ describe('searching the Store', () => {
     ])
   })
 
+  test('a name that says the query comes before a summary that does, whatever the trust', async () => {
+    const plugins = fakeProvider('plugin', [
+      from('official', 'observability', {
+        displayName: 'Observability',
+        summary: 'Watch your Kubernetes cluster',
+        tags: [],
+      }),
+      from('community', 'kubernetes-devkit', {
+        displayName: 'kubernetes-devkit',
+        summary: 'Manifests and debugging for Kubernetes',
+        tags: [],
+      }),
+    ])
+    const { store } = storeOf([plugins.provider])
+    expect(ids((await store.listings(actor, { q: 'kubernetes' })).listings)).toEqual([
+      'kubernetes-devkit',
+      'observability',
+    ])
+  })
+
   test('finds by meaning what no word of the query names, when the model answers', async () => {
     const k8s = makeListing({
       id: 'helm',

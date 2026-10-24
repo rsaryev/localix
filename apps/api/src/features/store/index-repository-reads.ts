@@ -1,11 +1,12 @@
 import { sql, type ExpressionBuilder, type Kysely } from 'kysely'
 import type { Listing, ListingRef } from '@localixai/store'
 
+import { createAssemble } from './index-repository-assemble'
 import { createIndexCards } from './index-repository-cards'
 import { facetsOf } from './index-repository-facets'
 import { narrowed, visibleListings, type IndexFilters } from './index-repository-filters'
 import type { StoreIndexTables } from './index-repository-open'
-import { fromRow, refKey } from './index-rows'
+import { refKey } from './index-rows'
 
 /**
  * THE STORE INDEX'S READS: keyset pages ordered by score (lifted by the open project's words),
@@ -65,50 +66,18 @@ function rankOf(eb: Eb, boost: readonly string[]) {
   return eb(eb.ref('l.score'), '*', eb(eb.val<number>(1), '+', lift))
 }
 
-const ROW = ['l.card', 's.state', 'l.origin', 'l.kind', 'l.id', 'l.display_name'] as const
+const ROW = [
+  'l.card',
+  's.state',
+  'l.origin',
+  'l.kind',
+  'l.id',
+  'l.display_name',
+  'l.source_id',
+] as const
 
 export function createIndexReads(db: Kysely<StoreIndexTables>) {
-  /** The other sources that list each origin, for "Also in". */
-  async function alsoIn(rows: ReadonlyArray<{ origin: string | null; kind: string; id: string }>) {
-    const origins = [...new Set(rows.flatMap((row) => (row.origin ? [row.origin] : [])))]
-    const out = new Map<string, Array<{ id: string; label: string; key: string }>>()
-    if (origins.length === 0) return out
-    const others = await db
-      .selectFrom('listing')
-      .select(['origin', 'source_id', 'source_label', 'kind', 'id'])
-      .where('origin', 'in', origins)
-      .orderBy('weight', 'desc')
-      .execute()
-    for (const other of others) {
-      const list = out.get(other.origin!) ?? []
-      list.push({
-        id: other.source_id,
-        label: other.source_label,
-        key: refKey(other as ListingRef),
-      })
-      out.set(other.origin!, list)
-    }
-    return out
-  }
-
-  async function assemble(
-    rows: ReadonlyArray<{
-      card: string
-      state: string | null
-      origin: string | null
-      kind: string
-      id: string
-    }>,
-  ): Promise<Listing[]> {
-    const copies = await alsoIn(rows)
-    return rows.map((row) => {
-      const own = refKey(row as ListingRef)
-      const others = (row.origin ? (copies.get(row.origin) ?? []) : [])
-        .filter((copy) => copy.key !== own)
-        .map(({ id, label }) => ({ id, label }))
-      return fromRow({ card: row.card, state: row.state ?? null, alsoIn: others })
-    })
-  }
+  const assemble = createAssemble(db)
 
   return {
     /** One page in rank order, and where the next starts. */

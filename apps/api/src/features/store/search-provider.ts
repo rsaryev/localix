@@ -128,6 +128,8 @@ export function createStoreSearchProvider(deps: {
           : 0
         const tie = Math.min(1, (deps.staticOf(listing) * (1 + 0.25 * Math.min(2, about))) / 3)
         const uri = storeListingUri(listing.ref)
+        // A name that says the query outranks a summary that does: words in the name count once more.
+        const named = wordCoverage(terms, `${listing.displayName} ${listing.name}`)
         return {
           id: uri,
           uri,
@@ -135,7 +137,7 @@ export function createStoreSearchProvider(deps: {
           title: listing.displayName,
           subtitle: listing.summary,
           icon: 'store',
-          score: (1 - TIE_SHARE) * unitScore(result.score) + TIE_SHARE * tie,
+          score: (1 - TIE_SHARE) * unitScore(result.score + named) + TIE_SHARE * tie,
           matchedBy: result.matchedBy,
         }
       })
