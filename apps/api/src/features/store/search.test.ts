@@ -80,6 +80,26 @@ describe('searching the Store', () => {
     ])
   })
 
+  test('the package named exactly what was asked for comes first', async () => {
+    const plugins = fakeProvider('plugin', [
+      from('community', 'outside-in-code-review', {
+        displayName: 'outside-in-code-review',
+        summary: 'Code review from the outside in',
+        tags: [],
+      }),
+      from('official', 'code-review', {
+        displayName: 'code-review',
+        summary: 'Automated code review for pull requests',
+        tags: [],
+      }),
+    ])
+    const { store } = storeOf([plugins.provider], {
+      // A strong match by meaning for the longer name.
+      meaning: () => [{ key: 'plugin:outside-in-code-review', z: 3.5 }],
+    })
+    expect(ids((await store.listings(actor, { q: 'code review' })).listings)[0]).toBe('code-review')
+  })
+
   test('finds by meaning what no word of the query names, when the model answers', async () => {
     const k8s = makeListing({
       id: 'helm',

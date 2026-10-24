@@ -32,6 +32,11 @@ export const STORE_COLLECTION = 'store.listings'
 export const PALETTE_HITS = 5
 const WORD_CANDIDATES = 200
 const MEANING_CANDIDATES = 80
+/**
+ * What a name that is exactly the query adds: as much as a strong match by meaning, so the
+ * package called `code-review` leads a search for "code review".
+ */
+const EXACT_NAME = 3
 /** How much of a hit's score the static score decides: enough to order near ties only. */
 const TIE_SHARE = 0.15
 
@@ -61,6 +66,17 @@ export function refOfStoreHit(hit: Pick<SearchHit, 'id'>): ListingRef | null {
   } catch {
     return null
   }
+}
+
+/** Whether two texts are the same words, whatever joins them. */
+const sameWords = (a: string, b: string) => {
+  const words = (text: string) =>
+    text
+      .toLowerCase()
+      .split(/[^\p{L}\p{N}]+/u)
+      .filter(Boolean)
+      .join(' ')
+  return words(a) !== '' && words(a) === words(b)
 }
 
 const textOf = (listing: Listing) =>
@@ -128,8 +144,13 @@ export function createStoreSearchProvider(deps: {
           : 0
         const tie = Math.min(1, (deps.staticOf(listing) * (1 + 0.25 * Math.min(2, about))) / 3)
         const uri = storeListingUri(listing.ref)
-        // A name that says the query outranks a summary that does: words in the name count once more.
-        const named = wordCoverage(terms, `${listing.displayName} ${listing.name}`)
+        // A name that says the query outranks a summary that does: words in the name count once
+        // more, and a name that is exactly the query as much as a strong match by meaning.
+        const named =
+          wordCoverage(terms, `${listing.displayName} ${listing.name}`) +
+          (sameWords(listing.name, query.text) || sameWords(listing.displayName, query.text)
+            ? EXACT_NAME
+            : 0)
         return {
           id: uri,
           uri,
