@@ -102,6 +102,7 @@ export function skillToolPorts(input: {
         sessionId: session.rootSessionId ?? session.id,
         skillName: skill.name,
         ...(skill.pluginName ? { pluginName: skill.pluginName } : {}),
+        ...(defaultCwd ? { cwd: defaultCwd } : {}),
       })
       if (!skill.hooks) return
       const plugin = skillPlugin(skill)

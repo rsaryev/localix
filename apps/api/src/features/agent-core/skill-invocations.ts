@@ -19,6 +19,8 @@ export interface SkillInvocation {
   skillName: string
   /** The plugin that ships the skill; absent for a personal or project skill. */
   pluginName?: string
+  /** The chat's working directory, when the caller knows it. */
+  cwd?: string
 }
 
 export type SkillInvocationListener = (invocation: SkillInvocation) => void | Promise<unknown>

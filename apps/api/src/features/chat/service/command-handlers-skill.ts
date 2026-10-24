@@ -156,6 +156,7 @@ export async function handleSkillCommand(
     ...(skill.pluginName
       ? { skillName: skill.name.slice(skill.pluginName.length + 1), pluginName: skill.pluginName }
       : { skillName: skill.name }),
+    ...(workingDir ? { cwd: workingDir } : {}),
   })
 
   // CC `context: fork` — run the skill in a child session, seated by the invoking agent and run

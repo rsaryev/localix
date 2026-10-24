@@ -54,9 +54,10 @@ async function writePlugin(name: string, monitors: unknown[]): Promise<void> {
 }
 
 /** Each spawn prints one line naming its command, and stays open until killed. */
-function spawner(spawned: string[]): MonitorSpawner {
-  return (command) => {
+function spawner(spawned: string[], cwds: string[] = []): MonitorSpawner {
+  return (command, opts) => {
     spawned.push(command)
+    cwds.push(`${opts.cwd} ${opts.env.CLAUDE_PROJECT_DIR}`)
     let exit!: (code: number) => void
     const exited = new Promise<number>((resolve) => (exit = resolve))
     let ctrl!: ReadableStreamDefaultController<Uint8Array>
@@ -77,7 +78,11 @@ function spawner(spawned: string[]): MonitorSpawner {
   }
 }
 
-function host(spawned: string[], deliver: (note: MonitorNotification) => void = () => {}) {
+function host(
+  spawned: string[],
+  deliver: (note: MonitorNotification) => void = () => {},
+  cwds: string[] = [],
+) {
   return createPluginMonitorHost({
     availabilityFor: async () => ON,
     repo: repo(['ops']),
@@ -85,7 +90,7 @@ function host(spawned: string[], deliver: (note: MonitorNotification) => void = 
     cwd: home(),
     homeDir: home(),
     deliver,
-    spawn: spawner(spawned),
+    spawn: spawner(spawned, cwds),
   })
 }
 
@@ -154,6 +159,23 @@ describe('an on-skill-invoke monitor', () => {
     expect(spawned.filter((cmd) => cmd === 'watch-deploy')).toHaveLength(2)
     await monitors.stop()
     expect(monitors.running()).toEqual([])
+  })
+
+  // Claude Code runs a monitor "in the session working directory": the chat that ran the skill.
+  test('starts in the working directory of the chat that ran the skill', async () => {
+    await writePlugin('ops', [DEPLOY_WATCH])
+    const cwds: string[] = []
+    const monitors = host([], () => {}, cwds)
+    await monitors.start()
+    await monitors.skillInvoked({
+      userId: 'u1',
+      sessionId: 'c1',
+      skillName: 'deploy',
+      pluginName: 'ops',
+      cwd: '/work/repo',
+    })
+    expect(cwds).toEqual(['/work/repo /work/repo'])
+    await monitors.stop()
   })
 
   test('the skill tool’s `get` and the announcement reach the host', async () => {

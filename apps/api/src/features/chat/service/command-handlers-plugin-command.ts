@@ -118,6 +118,7 @@ export async function handlePluginCommand(
       sessionId: session.rootSessionId ?? sessionId,
       skillName: match.command.name,
       pluginName: match.plugin,
+      ...(projectDir ? { cwd: projectDir } : {}),
     })
     return runMacroCommand(
       userId,

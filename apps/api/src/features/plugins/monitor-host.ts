@@ -123,23 +123,24 @@ export function createPluginMonitorHost(options: MonitorHostOptions): PluginMoni
   // read anything — an empty set then would refuse a monitor the plugin does declare.
   let declaredRead = false
   let declared: LoadedPluginMonitor[] = []
-  /** The lazy monitors a skill has started: they run from then on, across refreshes. */
+  /** The lazy monitors a skill has started (they run from then on), and the chat cwd they run in. */
   const triggered = new Set<string>()
+  const triggeredIn = new Map<string, string>()
   const arms = createMonitorArms()
   const refreshDebouncer = createDebouncer(REFRESH_DEBOUNCE_MS)
   let lifecycle: Promise<void> = Promise.resolve()
 
-  function startMonitor(m: LoadedPluginMonitor): RunningMonitor {
+  function startMonitor(m: LoadedPluginMonitor, at: string = cwd): RunningMonitor {
     const key = `${m.pluginName}:${m.monitor.name}`
     const controller = new AbortController()
     // The `${CLAUDE_*}` placeholders stay in the command; `env` below supplies their values.
     const command = substituteCommand(m.monitor.command, m)
     const env = childEnv({
-      CLAUDE_PROJECT_DIR: cwd,
+      CLAUDE_PROJECT_DIR: at,
       CLAUDE_PLUGIN_ROOT: m.pluginRoot,
       CLAUDE_PLUGIN_DATA: m.dataDir,
     })
-    const proc = spawn(command, { cwd, env: env as Record<string, string | undefined> })
+    const proc = spawn(command, { cwd: at, env: env as Record<string, string | undefined> })
     const gate = createRateGate(now, () =>
       logger?.warn(`monitor "${key}" exceeded ${MAX_LINES_PER_WINDOW} lines/s — dropping excess`),
     )
@@ -195,8 +196,7 @@ export function createPluginMonitorHost(options: MonitorHostOptions): PluginMoni
     await stopRunning(stopping)
   }
 
-  // Declarative-only: a monitor is manifest data, so reading them must not import and
-  // `register()` every enabled plugin (the full loader at boot imported ~9 MB of plugin JS).
+  // Declarative-only: reading monitors must not import and `register()` every enabled plugin.
   async function readDeclared(): Promise<LoadedPluginMonitor[]> {
     declared = await loadEnabledPluginMonitors({
       repo,
@@ -217,8 +217,9 @@ export function createPluginMonitorHost(options: MonitorHostOptions): PluginMoni
     const started: RunningMonitor[] = []
     try {
       for (const m of declared) {
-        if (isAlwaysMonitor(m.monitor) || triggered.has(`${m.pluginName}:${m.monitor.name}`)) {
-          started.push(startMonitor(m))
+        const key = `${m.pluginName}:${m.monitor.name}`
+        if (isAlwaysMonitor(m.monitor) || triggered.has(key)) {
+          started.push(startMonitor(m, triggeredIn.get(key)))
         } else {
           logger?.info?.(
             `monitor "${m.pluginName}:${m.monitor.name}" waits for skill "${monitorSkillTrigger(m.monitor)}"`,
@@ -252,6 +253,7 @@ export function createPluginMonitorHost(options: MonitorHostOptions): PluginMoni
     stop: () => {
       refreshDebouncer.cancel()
       triggered.clear()
+      triggeredIn.clear()
       return enqueue(stopAll)
     },
     running: () => monitors.map((r) => r.key),
@@ -288,7 +290,8 @@ export function createPluginMonitorHost(options: MonitorHostOptions): PluginMoni
           arms.arm(armed[i], input.sessionId)
           if (triggered.has(armed[i])) continue
           triggered.add(armed[i])
-          monitors.push(startMonitor(m))
+          if (input.cwd) triggeredIn.set(armed[i], input.cwd)
+          monitors.push(startMonitor(m, input.cwd))
         }
       })
       return armed

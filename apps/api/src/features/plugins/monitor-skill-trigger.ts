@@ -22,6 +22,8 @@ export interface SkillInvocationInput {
   skillName: string
   /** The plugin that ships the skill; absent for a personal or project skill. */
   pluginName?: string
+  /** The chat's working directory: the monitor runs there, as Claude Code runs it in the session's. */
+  cwd?: string
 }
 
 export function monitorWaitsForSkill(
