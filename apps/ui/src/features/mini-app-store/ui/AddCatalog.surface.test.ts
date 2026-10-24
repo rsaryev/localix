@@ -10,13 +10,16 @@ test('a link to add a catalog opens the store with the address, and adds nothing
   })
   expect(surface.resolve({ url: 'https://ada.test/mini-app-catalog.json' })).toEqual({
     kind: 'work-item',
-    workKind: 'mini-app-store',
-    id: 'mini-app-store',
-    title: 'Mini apps',
-    payload: { addCatalog: 'https://ada.test/mini-app-catalog.json' },
+    workKind: 'store',
+    id: 'store',
+    title: 'Store',
+    payload: {
+      shelf: 'sources',
+      addSource: { kind: 'mini-app', input: 'https://ada.test/mini-app-catalog.json' },
+    },
   })
   expect(surface.present?.({ url: 'https://ada.test/mini-app-catalog.json' })).toEqual({
     label: 'Add the catalog at ada.test',
-    description: 'Opens the store to read it first; nothing is added until you choose Add',
+    description: 'Opens the Store to read it first; nothing is added until you choose Add',
   })
 })

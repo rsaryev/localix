@@ -1,11 +1,5 @@
 import { assertOk, cleanQuery, client, unwrap } from './internal'
-import type {
-  MiniAppCatalogEntryRecord,
-  MiniAppCatalogPreviewRecord,
-  MiniAppStorePageRecord,
-  MiniAppStoreActivityRecord,
-  MiniAppStoreResponse,
-} from '@localixai/api/client'
+import type { MiniAppCatalogEntryRecord, MiniAppStoreActivityRecord } from '@localixai/api/client'
 import type { MiniAppRecord } from './contracts'
 
 /**
@@ -136,21 +130,6 @@ export const miniAppsApi = {
     return response.ok ? response.blob() : null
   },
 
-  /** What the catalogs offer, what is installed and the installs in flight. */
-  async listMiniAppStore(): Promise<MiniAppStoreResponse> {
-    return unwrap(await client.rpc['mini-apps'].store.$get())
-  },
-
-  /** One app's store page: its row, README, screenshots and what it brings. */
-  async getMiniAppStorePage(name: string): Promise<MiniAppStorePageRecord> {
-    return unwrap(await client.rpc['mini-apps'].store[':name'].$get({ param: { name } }))
-  },
-
-  /** Read a catalog before adding it: who publishes it and what is in it. Writes nothing. */
-  async previewMiniAppCatalog(url: string): Promise<MiniAppCatalogPreviewRecord> {
-    return unwrap(await client.rpc['mini-apps'].catalogs.preview.$post({ json: { url } }))
-  },
-
   /** Installs in flight and the updates already offered; reads no catalog (`store-activity.ts`). */
   async getMiniAppStoreActivity(): Promise<MiniAppStoreActivityRecord> {
     return unwrap(await client.rpc['mini-apps'].store.activity.$get())
@@ -169,14 +148,5 @@ export const miniAppsApi = {
   /** The catalogs the store reads, Localix's own first. */
   async listMiniAppCatalogs(): Promise<MiniAppCatalogEntryRecord[]> {
     return (await unwrap(await client.rpc['mini-apps'].catalogs.$get())).catalogs
-  },
-
-  /** Add a catalog; the server reads it first and refuses one that is not a catalog. */
-  async addMiniAppCatalog(url: string): Promise<void> {
-    await assertOk(await client.rpc['mini-apps'].catalogs.$post({ json: { url } }))
-  },
-
-  async removeMiniAppCatalog(url: string): Promise<void> {
-    await assertOk(await client.rpc['mini-apps'].catalogs.remove.$post({ json: { url } }))
   },
 }

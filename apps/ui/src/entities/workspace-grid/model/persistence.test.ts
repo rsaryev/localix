@@ -35,6 +35,35 @@ describe('loadGrid', () => {
     expect(loadGrid()).toBeNull()
   })
 
+  test('a mini app store tab from before the Store comes back as the Store on its Mini apps shelf', () => {
+    seed({
+      root: {
+        type: 'leaf',
+        id: 'g1',
+        tabs: ['chat:1', 'mini-app-store'],
+        activeTab: 'mini-app-store',
+      },
+      items: [
+        { kind: 'chat', id: 'chat:1', title: 'Chat', scope: 's1' },
+        { kind: 'mini-app-store', id: 'mini-app-store', title: 'Mini apps', scope: '@global' },
+      ],
+      activeGroup: 'g1',
+      maximizedGroup: null,
+    })
+    const grid = loadGrid()!
+    expect(grid.items['mini-app-store']).toBeUndefined()
+    expect(grid.items.store).toMatchObject({
+      kind: 'store',
+      id: 'store',
+      title: 'Store',
+      payload: { shelf: 'package:mini-app' },
+    })
+    expect(findLeaf(grid.root, 'g1')).toMatchObject({
+      tabs: ['chat:1', 'store'],
+      activeTab: 'store',
+    })
+  })
+
   test('a restart interrupted by reload restores the exited terminal without a pending spawn flag', () => {
     const payload = {
       terminalId: 'dead',

@@ -119,4 +119,13 @@ export const LAYOUT: readonly KitCatalogEntry[] = [
     summary: 'Whether this tab is the active tab of the focused editor group.',
     use: 'Keyboard handling or polling that must run only in the focused tab, not every visible one.',
   },
+  {
+    specifier: k('shelf-nav'),
+    category: 'layout',
+    provider: 'kit',
+    exports: ['ShelfNav'],
+    summary: 'Grouped section navigation for a browsing pane, one section current, with counts.',
+    use: 'The left column of a store or library: Discover, kinds, library views. Leave a section out to hide it.',
+    not: 'Not tabs inside a pane (`tabs`) nor the application rail.',
+  },
 ]

@@ -2,7 +2,7 @@ import { Plus } from 'lucide-react'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { IconButton } from '@localixai/kit/icon-button'
 import { railBtn } from '@localixai/kit/rail-button'
-import { openMiniAppStore } from '@/shared/lib/openMiniAppStore'
+import { openMiniAppStore } from '@/shared/lib/openStore'
 
 /**
  * The rail's add button: the mini app store in its own tab. An app installed there appears in the

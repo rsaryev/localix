@@ -10,7 +10,7 @@ beforeAll(() => {
 })
 afterAll(async () => teardown())
 
-test('the rail’s add button opens the mini app store in its own tab', async () => {
+test('the rail’s add button opens the Store on its Mini apps shelf, in its own tab', async () => {
   const opened: InspectorRequest[] = []
   const unregister = registerInspectorHandler((request) => void opened.push(request))
   const { act } = await import('react')
@@ -25,7 +25,13 @@ test('the rail’s add button opens the mini app store in its own tab', async ()
       host.querySelector<HTMLButtonElement>('button[aria-label="Add mini apps"]')!.click(),
     )
     expect(opened).toEqual([
-      expect.objectContaining({ kind: 'work-item', workKind: 'mini-app-store', scope: null }),
+      expect.objectContaining({
+        kind: 'work-item',
+        workKind: 'store',
+        id: 'store',
+        scope: null,
+        payload: { shelf: 'package:mini-app' },
+      }),
     ])
     expect(document.querySelector('[role="dialog"]')).toBeNull()
   } finally {

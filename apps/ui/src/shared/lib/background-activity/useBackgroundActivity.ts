@@ -7,7 +7,7 @@ import { pluginUpdatesApi } from '@/shared/api/plugin-updates-client'
 import { useRevalidateOnResources } from '@/shared/api/resourceGeneration'
 import { useDesktopUpdate } from '@/shared/hooks/useDesktopUpdate'
 import { useLocalModelsStatus } from '@/shared/hooks/useLocalModels'
-import { openMiniAppStore } from '@/shared/lib/openMiniAppStore'
+import { openMiniAppStore } from '@/shared/lib/openStore'
 import { buildActivity, type ActivityItem, type ActivityOps } from './activityItems'
 
 const MINI_APP_ACTIVITY_KEY = 'mini-app-store-activity'

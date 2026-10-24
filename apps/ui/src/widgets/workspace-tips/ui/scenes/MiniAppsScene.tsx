@@ -1,13 +1,14 @@
 import { BadgeCheck, LayoutGrid, Store } from 'lucide-react'
-import type { MiniAppStoreEntryRecord } from '@localixai/api/client'
+import useSWR from 'swr'
+import { isActiveJob, type Listing } from '@localixai/store'
 import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
 import { MonogramAvatar } from '@localixai/kit/avatar'
-import { isBusy } from '@/entities/mini-app-store/model/storeFilters'
-import { useMiniAppStore } from '@/entities/mini-app-store/model/useMiniAppStore'
-import { miniAppIconGlyph } from '@/entities/mini-app-store/ui/miniAppIconGlyph'
+import { storeApi } from '@/shared/api/store-client'
+import { useResourceGeneration } from '@/shared/api/resourceGeneration'
 import { joinNames } from '@/shared/lib/background-activity/activityItems'
-import { openMiniAppStore } from '@/shared/lib/openMiniAppStore'
+import { openMiniAppStore } from '@/shared/lib/openStore'
 import { TipPick } from '../TipPick'
+import { miniAppIconGlyph } from './miniAppIconGlyph'
 import './mini-apps-scene.css'
 
 /** Three cards of the store, the middle one being installed. */
@@ -40,7 +41,7 @@ export function MiniAppsScene() {
 const MORE = 4
 
 /** Where one app stands, as the row's hint says it. */
-function standing(entry: MiniAppStoreEntryRecord): string {
+function standing(entry: Listing): string {
   const job = entry.job
   if (job?.phase === 'queued') return 'Waiting'
   if (job?.phase === 'downloading')
@@ -48,43 +49,51 @@ function standing(entry: MiniAppStoreEntryRecord): string {
       ? `Installing ${Math.round(((job.received ?? 0) / job.total) * 100)}%`
       : 'Installing'
   if (job?.phase === 'installing') return 'Installing'
-  if (entry.installed) return 'Installed'
+  if (entry.installs.length) return 'Installed'
   return job?.phase === 'failed' ? 'Try again' : 'Install'
 }
 
-function row(entry: MiniAppStoreEntryRecord, install: (name: string) => unknown): MenuEntry {
-  const settled = Boolean(entry.installed) || isBusy(entry)
+function row(entry: Listing, install: (entry: Listing) => unknown): MenuEntry {
+  const settled = entry.installs.length > 0 || isActiveJob(entry.job)
   return {
-    id: entry.name,
-    label: entry.displayName ?? entry.name,
+    id: entry.ref.id,
+    label: entry.displayName,
     icon: entry.icon ? miniAppIconGlyph(entry.icon) : LayoutGrid,
     hint: standing(entry),
     // Choosing installs it here and keeps the menu open, so its progress shows in the row.
     keepOpen: true,
     disabled: settled,
-    onSelect: () => void install(entry.name),
+    onSelect: () => void install(entry),
   }
 }
 
 /**
  * The sentence ends in the apps themselves, picked in place like the other setup choices: the
  * recommended ones (installing on their own on a new installation, with where each stands), a
- * few more of Localix's own with Install, and the store last — opened behind setup, which stays.
+ * few more of Localix's own with Install, and the Store last — opened behind setup, which stays.
  */
 export function MiniAppsAction() {
-  const { entries, install } = useMiniAppStore()
+  const generation = useResourceGeneration('store')
+  const { data } = useSWR(['tips-mini-apps', generation], () =>
+    storeApi.listings({ shelf: 'package:mini-app' }),
+  )
+  const entries = data?.listings ?? []
   const recommended = entries.filter((entry) => entry.recommended)
   const more = entries
     .filter(
       (entry) =>
-        !entry.recommended && entry.publisher.verified && !entry.installed && !entry.incompatible,
+        !entry.recommended &&
+        entry.publisher.verified &&
+        entry.installs.length === 0 &&
+        !entry.incompatible,
     )
-    .sort((a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured)))
+    .sort((a, b) => Number(b.featured) - Number(a.featured))
     .slice(0, MORE)
   const value = recommended.length
-    ? joinNames(recommended.map((entry) => entry.displayName ?? entry.name))
-    : 'the store'
-  const tryInstall = (name: string) => install(name).catch(() => {})
+    ? joinNames(recommended.map((entry) => entry.displayName))
+    : 'the Store'
+  const tryInstall = (entry: Listing) =>
+    storeApi.install(entry.ref, 'user', { plan: false }).catch(() => {})
   return (
     <TipPick
       label="Mini apps"
@@ -95,7 +104,7 @@ export function MiniAppsAction() {
         { header: 'More from Localix' },
         ...more.map((entry) => row(entry, tryInstall)),
         { separator: true as const },
-        { id: 'store', label: 'Open the store', icon: Store, onSelect: openMiniAppStore },
+        { id: 'store', label: 'Open the Store', icon: Store, onSelect: openMiniAppStore },
       ]}
     />
   )

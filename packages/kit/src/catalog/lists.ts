@@ -88,4 +88,23 @@ export const LISTS: readonly KitCatalogEntry[] = [
     use: 'Tabular data (`TableGrid`: sortable, loads more at the end, optionally editable) instead of a raw <table>; a failed read shown as `ProblemLine`.',
     not: 'Not a raw <table> with a hand-made sort header.',
   },
+  {
+    specifier: k('item-card'),
+    category: 'lists',
+    provider: 'kit',
+    exports: ['ItemCard'],
+    summary:
+      'One item of a browsable collection: tile, title with marks, one line, a footer and actions; the whole card opens it.',
+    use: 'Store and gallery entries that open a page of their own, with install or add actions beside them. Place inside `CardGrid`.',
+    not: 'Not a navigable sidebar or tree row (`workbench-list-row`), nor a settings registry row.',
+  },
+  {
+    specifier: k('card-grid'),
+    category: 'lists',
+    provider: 'kit',
+    exports: ['CardGrid', 'CardGridSection'],
+    summary: 'Cards in one column, two on a wide container; a titled, counted group of them.',
+    use: 'Lay out `ItemCard`s by the pane width; `CardGridSection` for a named group (Featured, Installed).',
+    not: 'Not a table or a fixed tile grid of thumbnails.',
+  },
 ]

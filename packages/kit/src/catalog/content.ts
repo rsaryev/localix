@@ -248,4 +248,13 @@ export const CONTENT: readonly KitCatalogEntry[] = [
     summary: "Finds the app's links (files, resources) inside plain text.",
     use: 'Making paths in output clickable.',
   },
+  {
+    specifier: k('media-carousel'),
+    category: 'content',
+    provider: 'kit',
+    exports: ['MediaCarousel'],
+    summary: 'Screenshots one at a time with arrows, swipe, keys, dots and an announced caption.',
+    use: 'An item page’s pictures at their published resolution; the host opens one full-window from `onOpen`.',
+    not: 'Not a thumbnail strip or an image editor.',
+  },
 ]

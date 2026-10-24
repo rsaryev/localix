@@ -3,7 +3,7 @@ import { registerDom } from '@localixai/kit/testing/dom'
 import { registerInspectorHandler } from '@/shared/lib/inspectorBus'
 import type { InspectorRequest } from '@/shared/lib/inspectorBusContracts'
 import { isSetupOpen, openSetup } from '@/shared/lib/setupDialog'
-import { storeEntry } from '@/testing/miniAppStore'
+import { answer, listing } from '@/testing/store'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -17,35 +17,40 @@ afterEach(() => restores.splice(0).forEach((restore) => restore()))
 const settle = () => new Promise((resolve) => setTimeout(resolve, 20))
 
 /** The store as a new installation sees it: the recommended apps arriving on their own. */
-const ENTRIES = [
-  storeEntry({
-    name: 'sample-git',
+const LISTINGS = [
+  listing({
+    id: 'sample-git',
     displayName: 'Git',
     recommended: true,
-    job: { phase: 'downloading', received: 1, total: 2 },
+    job: { action: 'install', phase: 'downloading', received: 1, total: 2 },
   }),
-  storeEntry({ name: 'documents', displayName: 'Documents', recommended: true, installed: {} }),
-  storeEntry({
-    name: 'kanban',
+  listing({
+    id: 'documents',
+    displayName: 'Documents',
+    recommended: true,
+    installs: [{ scope: 'user', enabled: true }],
+  }),
+  listing({
+    id: 'kanban',
     displayName: 'Kanban',
     recommended: true,
-    job: { phase: 'queued' },
+    job: { action: 'install', phase: 'queued' },
   }),
-  storeEntry({ name: 'chess', displayName: 'Chess', featured: true }),
-  storeEntry({ name: 'reader', displayName: 'Reader', installed: {} }),
-  storeEntry({ name: 'notes', publisher: { name: 'Ada', verified: false } }),
+  listing({ id: 'chess', displayName: 'Chess', featured: true }),
+  listing({ id: 'reader', displayName: 'Reader', installs: [{ scope: 'user', enabled: true }] }),
+  listing({ id: 'notes', publisher: { name: 'Ada', verified: false } }),
 ]
 
 async function mountPick() {
   const React = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { SWRConfig } = await import('swr')
-  const { backendClient } = await import('@/shared/api/client')
+  const { storeApi } = await import('@/shared/api/store-client')
   const installs: string[] = []
   const spies = [
-    spyOn(backendClient, 'listMiniAppStore').mockResolvedValue({ entries: ENTRIES, problems: [] }),
-    spyOn(backendClient, 'installMiniApp').mockImplementation(async (name: string) => {
-      installs.push(name)
+    spyOn(storeApi, 'listings').mockImplementation(async (query = {}) => answer(LISTINGS, query)),
+    spyOn(storeApi, 'install').mockImplementation(async (ref) => {
+      installs.push(ref.id)
     }),
   ]
   restores.push(() => spies.forEach((spy) => spy.mockRestore()))
@@ -111,9 +116,11 @@ test('the slide names the apps that install on their own, and its pick never lea
     expect(isSetupOpen()).toBe(true)
 
     // The store is the last, quiet way out — and setup stays where it is.
-    expect(view.items().at(-1)?.textContent).toContain('Open the store')
-    await view.choose(view.item('Open the store'))
-    expect(opened).toEqual([expect.objectContaining({ workKind: 'mini-app-store' })])
+    expect(view.items().at(-1)?.textContent).toContain('Open the Store')
+    await view.choose(view.item('Open the Store'))
+    expect(opened).toEqual([
+      expect.objectContaining({ workKind: 'store', payload: { shelf: 'package:mini-app' } }),
+    ])
     expect(isSetupOpen()).toBe(true)
   } finally {
     unregister()

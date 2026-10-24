@@ -7,8 +7,7 @@ import { AttentionRollup } from './AttentionRollup'
 import { CapabilityRegistryBody } from './capabilities/CapabilityRegistryBody'
 import { MiniAppRow } from './capabilities/MiniAppRow'
 import { Button } from '@localixai/kit/button'
-import { openMiniAppStore } from '@/shared/lib/openMiniAppStore'
-import { MiniAppCatalogs } from '@/entities/mini-app-store/ui/MiniAppCatalogs'
+import { openMiniAppStore, openStore } from '@/shared/lib/openStore'
 
 interface MiniAppsSettingsProps {
   /** '' = no project; otherwise a project id: which installed mini apps are listed. */
@@ -79,18 +78,16 @@ export function MiniAppsSettings({ scope, agentScope = '', projects }: MiniAppsS
 
       <SettingsSection
         title="Store"
-        description="Add mini apps from the catalogs, update them and see who publishes each."
+        description="Add mini apps, update them and choose the catalogs they come from in the Store."
       >
-        <Button size="sm" variant="field" onClick={openMiniAppStore}>
-          Open the store
-        </Button>
-      </SettingsSection>
-
-      <SettingsSection
-        title="Catalogs"
-        description="Where the store finds mini apps. Add a publisher's catalog by its address."
-      >
-        <MiniAppCatalogs />
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" variant="field" onClick={openMiniAppStore}>
+            Open the Store
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => openStore({ shelf: 'sources' })}>
+            Catalogs
+          </Button>
+        </div>
       </SettingsSection>
     </div>
   )
