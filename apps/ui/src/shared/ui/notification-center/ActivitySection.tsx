@@ -140,7 +140,7 @@ export function ActivitySection({
 }) {
   if (items.length === 0 && updates.length === 0) return null
   return (
-    <div className="shrink-0 border-b border-border-soft">
+    <div className="mt-2.5 shrink-0 border-y border-border-soft">
       {items.length > 0 && (
         <Group label="In progress">
           {items.map((item) => (
@@ -157,7 +157,10 @@ export function ActivitySection({
               detail={item.status}
               trailing={
                 <>
-                  <Progress name={item.name} percent={item.percent} status={item.status} />
+                  {/* Waiting is not 0%: no bar until it starts. */}
+                  {item.state !== 'waiting' && (
+                    <Progress name={item.name} percent={item.percent} status={item.status} />
+                  )}
                   <ItemActions actions={item.actions} />
                 </>
               }

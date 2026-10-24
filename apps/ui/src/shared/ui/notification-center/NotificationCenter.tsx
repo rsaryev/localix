@@ -101,7 +101,7 @@ export function NotificationCenterContent({
       }}
       className="max-h-[min(42rem,var(--radix-popover-content-available-height))] w-[46rem] max-w-[calc(100vw-1rem)] gap-0 overflow-hidden p-0"
     >
-      <div className="shrink-0 border-b border-border-soft px-3 py-2.5">
+      <div className="shrink-0 px-3 pt-2.5">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <h2 className="text-sm font-medium text-foreground">Event Center</h2>
@@ -141,7 +141,12 @@ export function NotificationCenterContent({
             )}
           </div>
         </div>
+      </div>
 
+      {/* Live, between the title and the journal's filters: the filters filter only the journal. */}
+      <ActivitySection items={activity?.items ?? []} updates={activity?.updates ?? []} />
+
+      <div className="shrink-0 border-b border-border-soft px-3 pb-2.5">
         <EventFilterBar
           filters={filters}
           onChange={(next) => setFilters((current) => ({ ...current, ...next }))}
@@ -152,8 +157,6 @@ export function NotificationCenterContent({
           total={entries.length}
         />
       </div>
-
-      <ActivitySection items={activity?.items ?? []} updates={activity?.updates ?? []} />
 
       {filtered.length === 0 ? (
         <div className="flex min-h-32 flex-col items-center justify-center gap-1 px-4 py-8 text-center">
