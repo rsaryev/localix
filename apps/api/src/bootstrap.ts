@@ -326,6 +326,7 @@ export async function bootstrap(
         localModels,
         semanticService,
         miniAppStore: miniAppService.store,
+        pluginUpdates: pluginService.updates,
         chatService,
         env,
         signal,

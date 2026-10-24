@@ -30,6 +30,7 @@ import { sweepOrphanSessionData } from '../features/mini-apps/session-storage'
 import { MINI_APP_WARNINGS, warnOnce } from '../lib/warn-once'
 import type { StorageMaintenance } from './storage-maintenance'
 import { armModelCatalogChecks } from '../features/catalog/refresh-schedule'
+import { armPluginAutoUpdate } from '../features/plugins/auto-update-schedule'
 
 export interface OpsTimersPhaseInput
   extends
@@ -256,6 +257,23 @@ export function createOpsTimersPhase({
         })
     setInterval(() => void updateMiniApps(), 6 * 60 * 60 * 1000).unref?.()
 
+    // Plugins from marketplaces with auto-update on take their newer versions: a random one to ten
+    // minutes after start, then every six hours (`features/plugins/auto-update-schedule.ts`). The
+    // official `localix` marketplace is registered first, once (`official-marketplace.ts`).
+    const stopPluginUpdates = armPluginAutoUpdate({
+      run: () =>
+        pluginService.updates
+          .autoUpdatePass(env.LOCALIX_DEFAULT_USER_ID)
+          .then((outcome) => {
+            if (outcome.updated.length || outcome.failed.length)
+              logger.info({ event: 'plugins.auto_update', ...outcome })
+          })
+          .catch((error) =>
+            logger.warn({ event: 'plugins.auto_update_failed', error: errorMessage(error) }),
+          ),
+    })
+    signal.addEventListener('abort', stopPluginUpdates, { once: true })
+
     // Model lists: hourly, refetched past six hours (`features/catalog/refresh-schedule.ts`).
     const checkModelCatalog = armModelCatalogChecks({ catalogService, signal, logger })
     // Everything above only ARMS a cadence. The first run of each job waits for the idle
@@ -272,6 +290,19 @@ export function createOpsTimersPhase({
         run: () => stagedRoot.then((root) => (root ? reportStagingFailures(root) : undefined)),
       },
       { name: 'delegation_recovery', run: recoverReports },
+      {
+        name: 'official_plugin_marketplace',
+        run: () =>
+          pluginService
+            .ensureOfficialMarketplace()
+            .then((outcome) => logger.info({ event: 'plugins.official_marketplace', ...outcome }))
+            .catch((error) =>
+              logger.warn({
+                event: 'plugins.official_marketplace_failed',
+                error: errorMessage(error),
+              }),
+            ),
+      },
       // Session data whose session is gone (a crash mid-delete, a write racing the delete):
       // every user's, like the recovery. Once per start — deletion itself removes the folder.
       {

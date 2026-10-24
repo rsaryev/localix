@@ -22,6 +22,9 @@ import type {
   SetPluginEnabledRequest,
 } from './contracts'
 import type { PluginThemeSpec } from './contracts-themes'
+import type { PluginUpdates } from './plugin-updates'
+import type { OfficialMarketplaceOutcome } from './official-marketplace'
+import type { UpdateMarketplaceResponse } from './contracts-updates'
 
 export interface PluginServiceDeps {
   db: Kysely<AppDatabase>
@@ -37,6 +40,13 @@ export interface PluginServiceDeps {
   logger?: { warn: (msg: string, meta?: unknown) => void }
   /** Fired after any mutation (enable/config/install/remove) — e.g. to restart plugin channels. */
   onChanged?: () => void
+  /**
+   * The environment the update switches are read from (`DISABLE_AUTOUPDATER` and the rest, see
+   * `marketplace-auto-update.ts`); the process's own by default.
+   */
+  env?: Record<string, string | undefined>
+  /** The commit a remote git ref points at (`git ls-remote`); tests stub the network. */
+  remoteCommit?: (url: string, ref?: string) => Promise<string | undefined>
   /** Where the plugin kit is; defaults to the one shipped beside the staged plugins. */
   miniAppKitDir?: () => string
   /**
@@ -154,12 +164,36 @@ export interface PluginService {
   updateMarketplace(
     userId: string,
     input: { name: string },
-  ): Promise<{ name: string; count: number; updated: string[]; warnings: string[] }>
+  ): Promise<{
+    name: string
+    count: number
+    updated: string[]
+    /** Installed from it, but left for the person to update (a `headersHelper` entry). */
+    manual: string[]
+    warnings: string[]
+  }>
+  /**
+   * `marketplace update` with no name: refresh every marketplace's listing and leave the installed
+   * plugins at their versions, as Claude Code does.
+   */
+  refreshMarketplaces(userId: string): Promise<UpdateMarketplaceResponse>
+  /** The Marketplaces toggle: whether the background pass auto-updates this marketplace. */
+  setMarketplaceAutoUpdate(
+    userId: string,
+    input: { name: string; autoUpdate: boolean },
+  ): Promise<void>
   /**
    * Remove a registered marketplace (the built-in `localix` cannot be removed) and, as Claude Code
    * does, uninstall the plugins installed from it.
    */
   removeMarketplace(userId: string, input: { name: string }): Promise<{ uninstalled: string[] }>
+  /**
+   * Register the official `localix` marketplace unless it is there, the person removed it, or this
+   * run is offline (`official-marketplace.ts`). Run once at start.
+   */
+  ensureOfficialMarketplace(): Promise<OfficialMarketplaceOutcome>
+  /** Updates available, in flight, and the auto-update pass (`plugin-updates.ts`). */
+  updates: PluginUpdates
   /** Notify all subscribers that plugins changed (mirrors CC's /reload-plugins; exposed as `/plugin reload`). */
   onChanged?(): void
 }

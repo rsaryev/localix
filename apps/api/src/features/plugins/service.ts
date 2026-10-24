@@ -29,6 +29,8 @@ import {
   parseMarketplaceRef,
   resolveBareInstall,
   resolveMarketplaceInstall,
+  updateMarketplace,
+  addMarketplace,
   type MarketplaceRegistryDeps,
   type ResolvedMarketplaceInstall,
 } from './marketplace-registry'
@@ -60,6 +62,10 @@ import {
 import { removePlugin } from './service-remove'
 import { inPlaceInstallFor, inPlacePublication } from './install-in-place'
 import { assertNameNotBuiltin, assertNotBuiltin, BUILTIN_ORIGIN } from './builtin-plugins'
+import { createPluginUpdates } from './plugin-updates'
+import { ensureOfficialMarketplace } from './official-marketplace'
+import { setInstallRecord } from './plugin-cache'
+import { readRemoteCommit } from './git-fetch'
 import {
   claimCachedRecord,
   existingVersion,
@@ -427,7 +433,14 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
         // Claude Code computes the version again and leaves the copy alone when it is the same.
         const current = await existingVersion(home, versioned, replace)
         const installed = current ? await findPlugin(userId, versioned.plugin, projectId) : null
-        if (installed?.cachedInstall?.id === versioned.id) {
+        if (current && installed?.cachedInstall?.id === versioned.id) {
+          // The fetch saw a newer commit that resolves to the same version: remember the commit,
+          // so the next check does not offer this update again.
+          if (versioned.commitSha && current.gitCommitSha !== versioned.commitSha)
+            await setInstallRecord(home, versioned.id, {
+              ...current,
+              gitCommitSha: versioned.commitSha,
+            })
           const state = await repo.get(userId, '', installed.manifest.name)
           const record = await toRecord(
             installed,
@@ -537,9 +550,33 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
 
     validatePath: (dir, opts) => validatePluginDir(dir, opts),
 
+    ensureOfficialMarketplace: () =>
+      ensureOfficialMarketplace({
+        root: registryDeps.root ?? marketplacesRoot(home),
+        add: (source) => addMarketplace(source, registryDeps),
+        env: deps.env ?? process.env,
+      }),
+
+    updates: createPluginUpdates({
+      repo,
+      home,
+      find: (userId, name) => findPlugin(userId, name, ''),
+      reinstall: (userId, source, onInstalling) =>
+        service.install(
+          userId,
+          { source, projectId: null },
+          { replace: true, onPhase: onInstalling },
+        ),
+      refreshMarketplace: (name) => updateMarketplace(name, registryDeps),
+      remoteCommit: deps.remoteCommit ?? readRemoteCommit,
+      env: deps.env ?? process.env,
+      now,
+    }),
+
     ...createMarketplaceMethods({
       registryDeps,
       repo,
+      env: deps.env ?? process.env,
       update: (userId, name) => updatePlugin(userId, { name }, { refreshMarketplace: false }),
       remove: (userId, name) => service.remove(userId, { name }),
     }),

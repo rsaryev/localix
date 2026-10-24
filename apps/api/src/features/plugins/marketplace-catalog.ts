@@ -95,6 +95,14 @@ export interface MarketplaceListing {
   plugins: MarketplaceListingPlugin[]
   /** Why this registered marketplace cannot be read (kept listed so the user sees it). */
   unsupported?: string
+  /** Whether the background pass auto-updates it (`marketplace-auto-update.ts`). */
+  autoUpdate?: boolean
+  /** An environment variable turns the whole pass off, so the toggle does nothing now. */
+  autoUpdatePaused?: boolean
+  /** Localix's official marketplace, registered from `rsaryev/localix`. */
+  official?: boolean
+  /** When its listing was last fetched. */
+  lastUpdated?: string
 }
 
 function toListingPlugins(market: Marketplace): MarketplaceListingPlugin[] {

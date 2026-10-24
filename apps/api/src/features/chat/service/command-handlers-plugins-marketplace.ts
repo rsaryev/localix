@@ -42,12 +42,27 @@ export async function handleMarketplaceSubcommand(
 
   if (action === 'update') {
     const name = tokens.slice(3).join(' ').trim()
-    if (!name) return directReply('Usage: `/plugin marketplace update <name>`')
+    const quoted = (names: string[]) => names.map((p) => `\`${p}\``).join(', ')
+    // With no name, Claude Code refreshes every listing and leaves the installed plugins alone.
+    if (!name) {
+      try {
+        const res = await pluginService.refreshMarketplaces(userId)
+        const lines = [
+          res.refreshed.length
+            ? `Refreshed ${quoted(res.refreshed)}. Installed plugins keep their versions; update one marketplace's plugins with \`/plugin marketplace update <name>\`.`
+            : 'No marketplace was refreshed.',
+        ]
+        if (res.warnings.length) lines.push(`Not refreshed: ${res.warnings.join('; ')}`)
+        return directReply(lines.join(' '))
+      } catch (err) {
+        return directReply(`Marketplace update failed: ${errorMessage(err)}`)
+      }
+    }
     try {
       const res = await pluginService.updateMarketplace(userId, { name })
       const lines = [`Updated marketplace \`${res.name}\` (${res.count} plugins).`]
-      if (res.updated.length)
-        lines.push(`Updated plugins: ${res.updated.map((p) => `\`${p}\``).join(', ')}.`)
+      if (res.updated.length) lines.push(`Updated plugins: ${quoted(res.updated)}.`)
+      if (res.manual.length) lines.push(`Update these yourself: ${quoted(res.manual)}.`)
       if (res.warnings.length) lines.push(`Not updated: ${res.warnings.join('; ')}`)
       return directReply(lines.join(' '))
     } catch (err) {
@@ -73,7 +88,7 @@ export async function handleMarketplaceSubcommand(
   // silent fall-through the top-level dispatcher no longer allows.
   if (action !== 'list') {
     return directReply(
-      `Unknown marketplace action \`${action}\`. Use \`list [<name>]\`, \`add <source>\`, \`update <name>\`, or \`remove <name>\`.`,
+      `Unknown marketplace action \`${action}\`. Use \`list [<name>]\`, \`add <source>\`, \`update [<name>]\`, or \`remove <name>\`.`,
     )
   }
 

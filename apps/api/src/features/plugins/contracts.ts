@@ -165,13 +165,21 @@ export const marketplaceListingPluginSchema = z.object({
     .optional(),
 })
 
-/** One row in the marketplace listing (built-in `localix` first, then registered). */
+/** One row in the marketplace listing: every registered marketplace. */
 export const marketplaceListingSchema = z.object({
   name: z.string(),
   count: z.number(),
   plugins: z.array(marketplaceListingPluginSchema).optional(),
   /** Why a registered marketplace cannot be used (a Claude Code-only catalog), with a hint. */
   unsupported: z.string().optional(),
+  /** Whether the background pass refreshes it and updates its plugins. */
+  autoUpdate: z.boolean().optional(),
+  /** An environment variable turns the pass off, so the toggle is hidden (as in Claude Code). */
+  autoUpdatePaused: z.boolean().optional(),
+  /** Localix's official marketplace (`localix`, from `rsaryev/localix`). */
+  official: z.boolean().optional(),
+  /** When its listing was last fetched. */
+  lastUpdated: z.string().optional(),
 })
 
 export type MarketplaceListing = z.infer<typeof marketplaceListingSchema>

@@ -20,6 +20,8 @@ export const REALTIME_RESOURCES = [
   'plugin-updates',
   // The catalogs the mini app store reads.
   'mini-app-catalogs',
+  // Plugin updates available and in flight (`plugins/plugin-updates.ts`), with their progress.
+  'plugin-updates',
   'semantic',
   // What loaded mods put on screen: their panes and what is drawn in them.
   'mods',
