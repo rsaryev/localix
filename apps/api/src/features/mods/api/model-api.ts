@@ -2,7 +2,7 @@ import type { ModelCompletion, ModelCompletionRequest, ModSessionMessage } from 
 
 /**
  * `$.model`, as Claude Code answers it: `complete` resolves to the reply's text, `fork` asks one
- * more question after the conversation so far (null when there is none to answer from), and
+ * more question after the conversation so far (`isAnswered: false` when it cannot), and
  * `classify` names which of the labels a text is (undefined when the model names none).
  */
 
@@ -28,13 +28,26 @@ export function createModelApi(input: {
       if (typeof ask.prompt !== 'string') throw new Error('model.complete takes a prompt')
       return (await answered(ask)).text
     },
+    // Claude Code's shape since 2.1.310: never null; a mod reads `isAnswered`, and an unanswered
+    // fork names why (`nothing-to-fork` with no conversation yet, `api-error` with the cause).
     async fork(request: unknown) {
       const ask = (request ?? {}) as { prompt?: unknown }
       if (typeof ask.prompt !== 'string') throw new Error('model.fork takes a prompt')
       const history = (await input.messages()).map(({ role, text }) => ({ role, text }))
-      if (history.length === 0) return null
+      if (history.length === 0) return { isAnswered: false, reason: 'nothing-to-fork' }
       const reply = await input.complete({ prompt: ask.prompt, history })
-      return reply.isAnswered ? { text: reply.text, usage: reply.usage ?? NO_USAGE } : null
+      if (!reply.isAnswered)
+        return {
+          isAnswered: false,
+          reason: 'api-error',
+          status: null,
+          error: reply.reason,
+          usage: NO_USAGE,
+        }
+      const usage = reply.usage ?? NO_USAGE
+      return reply.text === ''
+        ? { isAnswered: false, reason: 'empty-reply', usage }
+        : { isAnswered: true, text: reply.text, usage }
     },
     async classify(text: unknown, labels: unknown, options?: unknown): Promise<string | undefined> {
       if (typeof text !== 'string' || !Array.isArray(labels) || labels.length === 0)
