@@ -23,3 +23,9 @@ export interface ModInstance {
   dispose(): void
   vm?: ModVm
 }
+
+/** Projects a plugin's mod runs in at once; the least recently used beyond them stops. */
+export const INSTANCES_PER_PLUGIN = 8
+
+/** Why the mods running in a project refused one more (`plugin.register`). */
+export class ModRefusedError extends Error {}

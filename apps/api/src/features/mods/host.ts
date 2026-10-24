@@ -8,13 +8,14 @@ import { createModConversations } from './conversations'
 import { createEventCalls } from './event-calls'
 import { sceneDispatch, type ModScene, type ModSource, type ModsPorts } from './contracts'
 import { createHooksLoader, type HooksOptions, type LoadedMod } from './hooks-load'
-import { instanceIdOf, pluginOfInstance, type ModInstance } from './instance-id'
+import * as ids from './instance-id'
 import { judgeJoin, resolveTables } from './joining'
 import { createMeasurer } from './measure'
 import type { ModVm } from './isolation/mod-vm'
 import { createModBand } from './band'
 import { createModPanes } from './panes'
 import { createModRegistry } from './registry'
+import { summarize } from './summary'
 import { createModHealth, RESTART_RULES, SUPERVISOR_CLOCK } from './restarts'
 
 /**
@@ -27,12 +28,6 @@ import { createModHealth, RESTART_RULES, SUPERVISOR_CLOCK } from './restarts'
  * plugin turned off or changed, Localix stopping, or the instance the least recently used past it.
  */
 
-/** Projects a plugin's mod runs in at once; the least recently used beyond them stops. */
-const INSTANCES_PER_PLUGIN = 8
-
-/** Why the mods running in a project refused one more (`plugin.register`). */
-class ModRefusedError extends Error {}
-
 export interface ModsHostOptions extends HooksOptions {
   engine?: ModsEngineOptions
 }
@@ -40,10 +35,10 @@ export interface ModsHostOptions extends HooksOptions {
 export function createModsHost(ports: ModsPorts, options: ModsHostOptions = {}) {
   const engine = createModsEngine({
     report: (instance, event, reason) =>
-      ports.report(pluginOfInstance(instance), `${event}: ${reason}`),
-    pluginOf: pluginOfInstance,
+      ports.report(ids.pluginOfInstance(instance), `${event}: ${reason}`),
+    pluginOf: ids.pluginOfInstance,
     // The chain runs in the plugins' order, whichever project's instance started first.
-    rankOf: (id) => [...sources.keys()].indexOf(pluginOfInstance(id)),
+    rankOf: (id) => [...sources.keys()].indexOf(ids.pluginOfInstance(id)),
     // A mod's `$` calls reach the hooks of the mods running in its project, not another's.
     peersOf: (id) => sceneOf(id).instances,
     ...options.engine,
@@ -54,7 +49,9 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions = {}) 
   const conversations = createModConversations()
   const state = createStateSpaces({ changed: () => ports.changed() })
   const sources = new Map<string, LoadedMod>()
-  const instances = new Map<string, ModInstance>()
+  /** The events each plugin's module registered, for the Mods view (`summary.ts`). */
+  const hooked = new Map<string, readonly string[]>()
+  const instances = new Map<string, ids.ModInstance>()
   const starting = new Map<string, Promise<string | null>>()
   const clock = options.clock ?? SUPERVISOR_CLOCK
   const health = createModHealth({ ...RESTART_RULES, ...options.restarts }, clock.now, ports.report)
@@ -78,7 +75,7 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions = {}) 
       // A VM that died loading fails its load, which reports it (`start`).
       if (instances.get(id)?.vm !== vm) return
       drop(id)
-      const plugin = pluginOfInstance(id)
+      const plugin = ids.pluginOfInstance(id)
       if (health.died(plugin, reason))
         for (const [other, one] of Array.from(instances)) if (one.plugin === plugin) drop(other)
       ports.changed()
@@ -88,7 +85,7 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions = {}) 
   async function start(plugin: string, cwd: string): Promise<string | null> {
     const loaded = sources.get(plugin)
     if (!loaded) return null
-    const id = instanceIdOf(plugin, cwd)
+    const id = ids.instanceIdOf(plugin, cwd)
     const scene: ModScene = { userId: '', cwd }
     let tables: Awaited<ReturnType<typeof resolveTables>> | undefined
     let vm: ModVm | undefined
@@ -110,12 +107,13 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions = {}) 
       const hooks = await hooksLoader.load(loaded, id)
       vm = hooks.vm
       const events = await engine.load(id, hooks.register, loaded.source.options, api)
+      hooked.set(plugin, events)
       const refused = await judgeJoin(dispatch, scene, judges, {
         plugin,
         root: loaded.source.root,
         events,
       })
-      if (refused !== undefined) throw new ModRefusedError(`refused by a mod: ${refused}`)
+      if (refused !== undefined) throw new ids.ModRefusedError(`refused by a mod: ${refused}`)
       // The plugin failed while this start was loading (another instance hit the death limit):
       // it stays stopped, so this instance does not join, and does not clear that failure.
       if (health.failures.has(plugin)) {
@@ -146,7 +144,7 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions = {}) 
 
   /** The plugin's instance in `cwd`, started once however many conversations ask at once. */
   function instanceIn(plugin: string, cwd: string): Promise<string | null> {
-    const id = instanceIdOf(plugin, cwd)
+    const id = ids.instanceIdOf(plugin, cwd)
     const running = instances.get(id)
     if (running && running.vm?.alive() !== false) {
       running.usedAt = Date.now()
@@ -180,7 +178,7 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions = {}) 
     const own = [...instances]
       .filter(([, instance]) => instance.plugin === plugin && instance.cwd !== ports.workspaceDir)
       .sort(([, a], [, b]) => a.usedAt - b.usedAt)
-    for (const [id] of own.slice(0, Math.max(0, own.length - INSTANCES_PER_PLUGIN)))
+    for (const [id] of own.slice(0, Math.max(0, own.length - ids.INSTANCES_PER_PLUGIN)))
       await stopInstance(id, 'other')
   }
 
@@ -204,7 +202,7 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions = {}) 
 
   /** A surface module an instance's `Client`s may run (`client-modules.ts`). */
   const clientOf = (id: string, module: string) =>
-    sources.get(pluginOfInstance(id))?.clients.get(module)
+    sources.get(ids.pluginOfInstance(id))?.clients.get(module)
   const calls = createEventCalls(() => host)
   const panes = createModPanes({ dispatch, registry, changed: ports.changed, sceneOf, clientOf })
   const band = createModBand({
@@ -271,6 +269,13 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions = {}) 
     instances: () => new Map([...instances].map(([id, { plugin, cwd }]) => [id, { plugin, cwd }])),
     /** Why a mod that should run did not load, by plugin. */
     failures: () => new Map(health.failures),
+    summary: () =>
+      summarize({
+        roots: new Map([...sources].map(([plugin, mod]) => [plugin, mod.source.root])),
+        events: hooked,
+        failures: health.failures,
+        panes: registry.panes(),
+      }),
     clientModule: clientOf,
     /** A mod's command, through `command.run` in the scene's project: only mods answer it. */
     async runCommand(input: CommandInput, scene: ModScene, plugins: ReadonlySet<string>) {

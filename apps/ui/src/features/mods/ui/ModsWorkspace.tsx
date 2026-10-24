@@ -2,36 +2,33 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'reac
 import { X } from 'lucide-react'
 import { EmptyHint, LoadingHint } from '@localixai/kit/empty-hint'
 import { IconButton } from '@localixai/kit/icon-button'
-import { SectionLabel } from '@localixai/kit/section-label'
-import { MENU_ROW, SELECTED_ROW } from '@localixai/kit/selected-row'
-import { cn } from '@localixai/mini-app-sdk/ui/classes'
+import { PanelHeader } from '@localixai/kit/panel-header'
 import { runMiniAppAction } from '@localixai/mini-app-sdk/ui'
+import { settingsUiUri } from '@localixai/mini-app-sdk/navigation'
+import { useUiNavigation } from '@/shared/hooks/useUiNavigation'
+import { pluginSettingsUri } from '@/shared/lib/settingsAnchors'
+import { navigateUi } from '@/shared/lib/uiNavigation'
 import { modsApi, type ModPaneRef } from '@/shared/api/modsApi'
 import { paneFocus } from '../model/paneFocus'
 import { useModPane, useModsOverview } from '../model/useMods'
 import { ModClientScope, type ModClientScopeValue } from './ModClient'
+import { projectOf } from './ModsList'
+import { ModsWorkspaceView } from './ModsWorkspaceView'
 import { ModTree } from './ModTree'
 import { hotkeysOf, pressHotkey } from './siteHotkeys'
 
 /** Panes are drawn for this many text columns: what a mod reads as `e.props.bodyColumns`. */
 const PANE_COLUMNS = 100
 
-/** The last folder of a project path: which project a pane belongs to, at a glance. */
-const projectOf = (cwd: string | null) =>
-  cwd
-    ?.split(/[\\/]/)
-    .reverse()
-    .find((part) => part !== '') ?? ''
-
 /**
- * The mods loaded here and the panes they opened (`$.ui.open`), one drawn at a time beside the
- * list. A mod runs once per project, so a pane names its project. A mod that failed to load says
- * why; a pane updates whenever its mod asks for a redraw.
+ * The Mods view: the panes mods opened (`$.ui.open`), the installed mods, and the pane on show.
+ * A pane a mod asks forward (`$.ui.open({ focus })`) is the one shown; a pane updates whenever its
+ * mod asks for a redraw.
  */
 export function ModsWorkspace() {
   const overview = useModsOverview()
+  const navigation = useUiNavigation({ sessionId: null })
   const [chosen, setChosen] = useState<{ instance: string; id: string } | null>(null)
-  // A pane its mod asked forward (`$.ui.open({ focus })`) is the one shown.
   const requested = useSyncExternalStore(
     (listener) => paneFocus.subscribe(listener),
     () => paneFocus.requested(),
@@ -39,61 +36,21 @@ export function ModsWorkspace() {
   useEffect(() => {
     if (requested) setChosen({ instance: requested.instance, id: requested.id })
   }, [requested])
-  const panes = overview.data?.panes ?? []
+  if (!overview.data) return <LoadingHint>Loading mods…</LoadingHint>
+  const panes = overview.data.panes
   const selected =
     panes.find((pane) => pane.instance === chosen?.instance && pane.id === chosen?.id) ??
     panes[0] ??
     null
-  if (!overview.data) return <LoadingHint>Loading mods…</LoadingHint>
-  const failures = Object.entries(overview.data.failures)
-  if (overview.data.mods.length === 0 && failures.length === 0)
-    return (
-      <EmptyHint>
-        No mod is loaded. A mod is a Claude Code plugin whose hooks/hooks.json names a hooks module;
-        install one and turn it on in Settings → Plugins.
-      </EmptyHint>
-    )
   return (
-    <div className="flex h-full min-h-0">
-      <nav className="flex w-56 shrink-0 flex-col gap-1 overflow-y-auto border-r border-border p-2">
-        <SectionLabel className="px-2.5 py-1">Panes</SectionLabel>
-        {panes.length === 0 && <p className="px-2.5 text-xs text-text-soft">None open</p>}
-        {panes.map((pane) => (
-          <button
-            key={`${pane.instance}/${pane.id}`}
-            type="button"
-            className={cn(MENU_ROW, selected === pane && SELECTED_ROW)}
-            onClick={() => setChosen(pane)}
-          >
-            <span className="truncate">{pane.title ?? pane.id}</span>
-            <span
-              className="ml-auto truncate text-2xs text-text-faint"
-              title={pane.cwd ?? undefined}
-            >
-              {projectOf(pane.cwd) || pane.plugin}
-            </span>
-          </button>
-        ))}
-        <SectionLabel className="mt-3 px-2.5 py-1">Mods</SectionLabel>
-        {overview.data.mods.map((mod) => (
-          <p key={mod} className="truncate px-2.5 text-xs">
-            {mod}
-          </p>
-        ))}
-        {failures.map(([mod, reason]) => (
-          <p key={mod} className="px-2.5 text-xs text-destructive" title={reason}>
-            {mod} did not load: {reason}
-          </p>
-        ))}
-      </nav>
-      <section className="min-w-0 flex-1 overflow-y-auto">
-        {selected ? (
-          <ModPane key={`${selected.instance}/${selected.id}`} pane={selected} />
-        ) : (
-          <EmptyHint>No mod has opened a pane.</EmptyHint>
-        )}
-      </section>
-    </div>
+    <ModsWorkspaceView
+      overview={overview.data}
+      selected={selected}
+      onSelect={setChosen}
+      onOpenSettings={(plugin) => navigateUi(pluginSettingsUri(plugin), navigation)}
+      onBrowsePlugins={() => navigateUi(settingsUiUri('plugins'), navigation)}
+      renderPane={(pane) => <ModPane key={`${pane.instance}/${pane.id}`} pane={pane} />}
+    />
   )
 }
 
@@ -125,40 +82,53 @@ function ModPane({ pane }: { pane: ModPaneRef }) {
     ;(node?.querySelector<HTMLElement>('[data-autofocus]') ?? node)?.focus()
   }, [pane.focusRequest, drawn])
   return (
-    <div
-      ref={body}
-      tabIndex={-1}
-      className="flex flex-col gap-3 px-4 py-3 outline-none"
-      onKeyDown={(event) => {
-        if (event.key === 'Escape' && pane.closeOnEscape) {
-          event.preventDefault()
-          close()
-          return
+    <>
+      <PanelHeader
+        tone="content"
+        title={
+          <span className="truncate text-xs font-medium text-foreground">
+            {pane.title ?? pane.id}
+          </span>
         }
-        // While the pane holds the keyboard its Buttons' hotkeys press them.
-        pressHotkey(event, hotkeys, act)
-      }}
-    >
-      <header className="flex items-center gap-2">
-        <h2 className="truncate text-sm font-medium">{pane.title ?? pane.id}</h2>
-        <span className="truncate text-2xs text-text-faint" title={pane.cwd ?? undefined}>
-          {[pane.plugin, projectOf(pane.cwd)].filter(Boolean).join(' · ')}
-        </span>
-        <IconButton className="ml-auto" aria-label="Close pane" onClick={close}>
-          <X />
-        </IconButton>
-      </header>
-      {!drawing.data ? (
-        <LoadingHint>Drawing…</LoadingHint>
-      ) : drawing.data.tree ? (
-        <div className="flex flex-col gap-2 text-sm">
-          <ModClientScope.Provider value={scope}>
-            <ModTree nodes={drawing.data.tree} act={act} />
-          </ModClientScope.Provider>
-        </div>
-      ) : (
-        <EmptyHint>{drawing.data.problem ?? 'The mod draws nothing in this pane.'}</EmptyHint>
-      )}
-    </div>
+        summary={
+          <span className="truncate text-2xs text-text-faint" title={pane.cwd ?? undefined}>
+            {[pane.plugin, projectOf(pane.cwd)].filter(Boolean).join(' · ')}
+          </span>
+        }
+        actions={
+          <IconButton size="sm" aria-label="Close pane" onClick={close}>
+            <X />
+          </IconButton>
+        }
+      />
+      <div
+        ref={body}
+        role="region"
+        aria-label={pane.title ?? pane.id}
+        tabIndex={-1}
+        className="min-h-0 flex-1 overflow-y-auto px-4 py-3 text-sm outline-none @2xl:px-6"
+        onKeyDown={(event) => {
+          if (event.key === 'Escape' && pane.closeOnEscape) {
+            event.preventDefault()
+            close()
+            return
+          }
+          // While the pane holds the keyboard its Buttons' hotkeys press them.
+          pressHotkey(event, hotkeys, act)
+        }}
+      >
+        {!drawing.data ? (
+          <LoadingHint>Drawing…</LoadingHint>
+        ) : drawing.data.tree ? (
+          <div className="flex flex-col gap-2">
+            <ModClientScope.Provider value={scope}>
+              <ModTree nodes={drawing.data.tree} act={act} />
+            </ModClientScope.Provider>
+          </div>
+        ) : (
+          <EmptyHint>{drawing.data.problem ?? 'The mod draws nothing in this pane.'}</EmptyHint>
+        )}
+      </div>
+    </>
   )
 }

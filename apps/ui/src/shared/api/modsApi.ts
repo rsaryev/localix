@@ -50,8 +50,22 @@ export interface ModPaneRef {
   focusRequest: number
 }
 
+/** One mod as the Mods view lists it (`features/mods/summary.ts` on the API). */
+export interface ModSummary {
+  plugin: string
+  version?: string
+  /** The events its hooks module registered. */
+  events: string[]
+  /** Panes it has open. */
+  panes: number
+  /** Whether it draws on a render site: a pane or the band above the message box. */
+  draws: boolean
+  status: 'running' | 'failed'
+  problem?: string
+}
+
 export interface ModsOverview {
-  mods: string[]
+  mods: ModSummary[]
   panes: ModPaneRef[]
   failures: Record<string, string>
 }

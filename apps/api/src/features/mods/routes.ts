@@ -44,7 +44,8 @@ export function createModRoutes(
     new Hono<AppContext>()
       .get('/', (c) =>
         c.json({
-          mods: host.loaded(),
+          // Each mod: its version, what it hooks, its panes, and whether it runs or why not.
+          mods: host.summary(),
           panes: host.registry.panes().map((pane) => ({
             instance: pane.instance,
             plugin: pane.plugin,
