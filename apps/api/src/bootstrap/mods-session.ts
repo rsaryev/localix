@@ -1,5 +1,14 @@
 import type { PersistedMessage } from '../features/chat/contracts'
+import {
+  claudeCodeHookCall,
+  claudeCodeToolName,
+  claudeCodeToolResponse,
+} from '../features/ext/cc-tool-shapes'
 import type { ModSessionMessage, ModSessionRead } from '../features/mods/contracts'
+
+/** A call's input in Claude Code's fields, as the conversation recorded it. */
+const toClaudeInput = (tool: string, input: Record<string, unknown>) =>
+  record(claudeCodeHookCall({ name: tool }, input).tool_input)
 
 /**
  * A conversation as `$.session` reads it (`features/mods`), from the transcript chat stores: each
@@ -29,12 +38,25 @@ function messageOf(message: PersistedMessage): ModSessionMessage {
   const toolResults: NonNullable<ModSessionMessage['toolResults']> = []
   for (const item of payload.items ?? []) {
     if (!('toolCallId' in item)) continue
-    toolUses.push({ tool_use_id: item.toolCallId, tool: item.name, input: record(item.input) })
-    if (item.status === 'completed' || item.status === 'failed')
+    const input = record(item.input)
+    const done = item.status === 'completed' || item.status === 'failed'
+    const text = item.resultText ?? textOf('output' in item ? item.output : undefined)
+    // The result as Claude Code's tool records it, and the text the model read.
+    const result = done
+      ? record(claudeCodeToolResponse({ name: item.name }, { content: text }, input))
+      : undefined
+    toolUses.push({
+      tool_use_id: item.toolCallId,
+      tool: claudeCodeToolName({ name: item.name }, input),
+      input: toClaudeInput(item.name, input),
+      ...(done ? { result, text } : {}),
+    })
+    if (done)
       toolResults.push({
         tool_use_id: item.toolCallId,
-        text: item.resultText ?? textOf('output' in item ? item.output : undefined),
+        text,
         isError: item.status === 'failed',
+        result,
       })
   }
   return {
@@ -68,9 +90,12 @@ export function sessionReadOf(
     if (typeof payload.usage?.totalCost === 'number')
       costUsd = (costUsd ?? 0) + payload.usage.totalCost
   }
+  const first = visible[0]?.createdAt
+  const startedAt = first ? Date.parse(first) : Number.NaN
   return {
     messages: visible.map(messageOf),
     model,
+    ...(Number.isFinite(startedAt) ? { startedAt } : {}),
     ...(context ? { context } : {}),
     ...(costUsd !== undefined ? { costUsd } : {}),
   }

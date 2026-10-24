@@ -7,8 +7,15 @@ import type { ModScene, ModsPorts } from '../contracts'
  * directory.
  */
 
-/** What `$.session.version()` names: Localix, not a Claude Code release. */
-const VERSION = { version: 'localix' }
+/**
+ * What `$.session.version()` names: Localix, the Claude Code release whose mods it runs as its
+ * base, and when this process started (Localix stamps no build time on its server).
+ */
+const VERSION = {
+  version: 'localix',
+  base: '2.1.310',
+  builtAt: new Date(Date.now() - Math.round(process.uptime() * 1000)).toISOString(),
+}
 
 export function createSessionApi(input: {
   scene: () => ModScene
@@ -52,7 +59,8 @@ export function createSessionApi(input: {
             : {}),
         },
         rateLimits: [],
-        ...(session?.costUsd !== undefined ? { cost: { usd: session.costUsd } } : {}),
+        cost: { usd: session?.costUsd ?? 0 },
+        startedAt: session?.startedAt ?? Date.now(),
       }
     },
     version: () => VERSION,

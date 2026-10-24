@@ -80,8 +80,15 @@ export type ModelCompletion =
 export interface ModSessionMessage {
   role: 'user' | 'assistant'
   text: string
-  toolUses: { tool_use_id: string; tool: string; input: Record<string, unknown> }[]
-  toolResults?: { tool_use_id: string; text: string; isError: boolean }[]
+  /** Each call with its result: the tool's own record and the text the model read. */
+  toolUses: {
+    tool_use_id: string
+    tool: string
+    input: Record<string, unknown>
+    result?: unknown
+    text?: string
+  }[]
+  toolResults?: { tool_use_id: string; text: string; isError: boolean; result?: unknown }[]
 }
 
 /** What a conversation holds for `$.session`; a figure Localix does not have is left out. */
@@ -92,6 +99,8 @@ export interface ModSessionRead {
   context?: { tokens?: number; window: number }
   /** What the conversation has cost so far, in US dollars. */
   costUsd?: number
+  /** When the conversation began, in milliseconds since the epoch. */
+  startedAt?: number
 }
 
 /** A slash command or skill as `$.command.list()` lists it. */

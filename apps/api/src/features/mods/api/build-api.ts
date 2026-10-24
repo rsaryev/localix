@@ -185,7 +185,15 @@ export function buildModApi(deps: ModApiDeps): { api: ModsApi; dispose: () => vo
       open: (args: unknown) => openPane(args),
       close: (pane: { id: string } | string) =>
         registry.closePane(instance, typeof pane === 'string' ? pane : pane.id),
-      panes: () => registry.panes(instance).map(({ id, title }) => ({ id, title })),
+      // A pane asked forward is placed and shown in the Mods tab; focus is the person's to give.
+      panes: () =>
+        registry.panes(instance).map((pane) => ({
+          id: pane.id,
+          title: pane.title ?? pane.id,
+          isShown: pane.focusRequest > 0,
+          isFocused: false,
+          isPlaced: pane.focusRequest > 0,
+        })),
       toast: (text: unknown) => ports.notify(scene(), { plugin, text: textOf(text), tone: 'info' }),
       // A notification is the terminal's channel; the desktop has none, as in Claude Code's
       // desktop app, so a mod falls back to a toast (`if (!r.isSent) $.ui.toast(text)`).

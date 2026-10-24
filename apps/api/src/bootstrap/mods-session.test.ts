@@ -3,7 +3,13 @@ import type { PersistedMessage } from '../features/chat/contracts'
 import { sessionReadOf } from './mods-session'
 
 const message = (id: string, payload: Record<string, unknown>) =>
-  ({ id, sessionId: 's', userId: 'u', payload: { id, ...payload } }) as unknown as PersistedMessage
+  ({
+    id,
+    sessionId: 's',
+    userId: 'u',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    payload: { id, ...payload },
+  }) as unknown as PersistedMessage
 
 test('a conversation reads as Claude Code’s $.session gives it', () => {
   const read = sessionReadOf(
@@ -49,17 +55,30 @@ test('a conversation reads as Claude Code’s $.session gives it', () => {
   expect(read.messages[1]).toEqual({
     role: 'assistant',
     text: 'Two files.',
+    // Under Claude Code's names, each with its result as the tool records it.
     toolUses: [
-      { tool_use_id: 'call-1', tool: 'bash', input: { command: 'ls' } },
-      { tool_use_id: 'call-2', tool: 'read', input: {} },
+      {
+        tool_use_id: 'call-1',
+        tool: 'Bash',
+        input: { command: 'ls' },
+        result: { stdout: 'a\nb', stderr: '', interrupted: false, isImage: false },
+        text: 'a\nb',
+      },
+      { tool_use_id: 'call-2', tool: 'Read', input: {}, result: expect.any(Object), text: '' },
     ],
     toolResults: [
-      { tool_use_id: 'call-1', text: 'a\nb', isError: false },
-      { tool_use_id: 'call-2', text: '', isError: true },
+      {
+        tool_use_id: 'call-1',
+        text: 'a\nb',
+        isError: false,
+        result: { stdout: 'a\nb', stderr: '', interrupted: false, isImage: false },
+      },
+      { tool_use_id: 'call-2', text: '', isError: true, result: expect.any(Object) },
     ],
   })
   expect(read.context).toEqual({ window: 200_000, tokens: 50_000 })
   expect(read.costUsd).toBe(0.75)
+  expect(read.startedAt).toBe(Date.parse('2026-01-01T00:00:00.000Z'))
 })
 
 test('a conversation with no measurement leaves the figures out', () => {
@@ -67,5 +86,6 @@ test('a conversation with no measurement leaves the figures out', () => {
   expect(read).toEqual({
     messages: [{ role: 'user', text: 'hi', toolUses: [] }],
     model: null,
+    startedAt: Date.parse('2026-01-01T00:00:00.000Z'),
   })
 })

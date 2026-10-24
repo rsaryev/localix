@@ -106,6 +106,7 @@
           "toolResults?": [
             {
               "isError": "boolean",
+              "result": "object",
               "text": "string",
               "tool_use_id": "string"
             }
@@ -113,6 +114,8 @@
           "toolUses": [
             {
               "input": "object",
+              "result": "object",
+              "text": "string",
               "tool": "string",
               "tool_use_id": "string"
             }
@@ -142,13 +145,19 @@
         "context": {
           "window": "number"
         },
-        "rateLimits": []
+        "cost": {
+          "usd": "number"
+        },
+        "rateLimits": [],
+        "startedAt": "number"
       }
     },
     {
       "kind": "call",
       "name": "session.version",
       "shape": {
+        "base": "string",
+        "builtAt": "string",
         "version": "string"
       }
     },
@@ -188,6 +197,9 @@
       "shape": [
         {
           "id": "string",
+          "isFocused": "boolean",
+          "isPlaced": "boolean",
+          "isShown": "boolean",
           "title": "string"
         }
       ]

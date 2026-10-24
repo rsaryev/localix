@@ -18,6 +18,7 @@ describe('mod panes', () => {
         answers.push(await call($, 'ui.open', { id: 'held', focus: true, closeOnEscape: true }))
         answers.push(await call($, 'ui.open', { id: 'quiet', title: 'Quiet' }))
         answers.push(await call($, 'ui.open', { id: 'bad', focus: false }).catch(String))
+        answers.push(await call($, 'ui.panes'))
         return next(e)
       })
     })
@@ -25,6 +26,10 @@ describe('mod panes', () => {
     expect(answers[0]).toEqual({ isPlaced: true })
     expect(answers[1]).toMatchObject({ isPlaced: false, reason: expect.any(String) })
     expect(String(answers[2])).toContain('focus is true or left out')
+    expect(answers[3]).toEqual([
+      { id: 'held', title: 'held', isShown: true, isFocused: false, isPlaced: true },
+      { id: 'quiet', title: 'Quiet', isShown: false, isFocused: false, isPlaced: false },
+    ])
     const held = host.registry.panes().find((pane) => pane.id === 'held')
     expect(held).toMatchObject({ sessionId: 's1', closeOnEscape: true, focusRequest: 1 })
     expect(host.registry.panes().find((pane) => pane.id === 'quiet')?.focusRequest).toBe(0)
