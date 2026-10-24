@@ -217,20 +217,10 @@ A plugin's `agents/*.md` are subagent types. Agents that can delegate see them u
 and hand a task to one with `delegate` and `agent: "<plugin>:<name>"`, or the bare name when only
 one plugin defines it; a workflow's `agent()` takes the same `agentType`. The child runs with the
 agent's prompt, `tools` and `disallowedTools`, `model` (`inherit` keeps the chat's), `effort`,
-preloaded `skills`, `maxTurns`, `autoCompactWindow` (the window its runs compact against) and
-`omitClaudeMd` (it starts without the project's instruction files, as `Explore` and `Plan` do).
-`background: true` never waits for the report, and `isolation: worktree` works in a fresh git
-worktree, which is kept.
-
-`memory: user | project | local` gives an agent a folder (`~/.claude/agent-memory/<name>/`,
-`.claude/agent-memory/<name>/` or `.claude/agent-memory-local/<name>/`) whose `MEMORY.md` — its
-first 200 lines or 25KB — joins its instructions, with the file tools to keep it. As in Claude Code,
-a plugin agent's `hooks`, `mcpServers` and `permissionMode` are ignored.
-
-Claude Code's built-in types work too: `general-purpose` and `claude` run the task as the delegating
-agent itself, and `Explore` and `Plan` run it read-only (without the tools that write files) for
-searching and planning. A plugin agent named `Explore` or `Plan` replaces the built-in. In an
-agent's `tools`, `Agent` and `Task` mean `delegate`.
+preloaded `skills`, `maxTurns`, `autoCompactWindow`, `omitClaudeMd` and `memory`. `background: true`
+never waits for the report, and `isolation: worktree` works in a fresh git worktree, which is kept.
+As in Claude Code, a plugin agent's `hooks`, `mcpServers` and `permissionMode` are ignored; see
+[Claude Code agent types](../features/delegation.md#claude-code-agent-types).
 
 Without `tools`, the child inherits the chat's tools, its MCP tools included behind
 `activate_tools`. A `tools` list is exact: the child holds those tools and `tool_output`, which

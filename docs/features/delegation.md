@@ -154,6 +154,25 @@ next model request together, after a fully completed tool turn. Disabling
 `LOCALIX_MID_RUN_INTERJECT` keeps them for a separate turn. A completed child is not proof that the
 requested outcome is ready: the delegator reviews the report before it calls the work done.
 
+## Claude Code agent types
+
+`agent` names a Claude Code agent type as well as a Localix agent:
+
+- **Agent files**: a plugin's `agents/*.md` (`<plugin>:<name>`), and outside a plugin
+  `.claude/agents/**/*.md` in the working directory and each parent up to the repository root (the
+  closest definition of a name wins), then `~/.claude/agents/**/*.md`, named by their `name`
+  frontmatter. A file outside a plugin without a `name` or a `description` is skipped.
+- **Built-in types**: `general-purpose` and `claude` run the task as the delegating agent itself;
+  `Explore` and `Plan` run it read-only, without the project's instruction files. An agent file
+  named `Explore` or `Plan` replaces the built-in.
+- **Memory**: `memory: user | project | local` gives an agent a folder
+  (`~/.claude/agent-memory/<name>/`, `.claude/agent-memory/<name>/` or
+  `.claude/agent-memory-local/<name>/`) whose `MEMORY.md` — its first 200 lines or 25KB — joins its
+  instructions, with the file tools to keep it.
+
+In an agent's `tools`, `Agent` and `Task` mean `delegate`. An agent type whose `tools` list names no
+tool available here is refused instead of starting with none.
+
 ## Skills that run in a child session
 
 A skill with `context: fork` in its frontmatter, invoked by the person as a slash command, runs in a
