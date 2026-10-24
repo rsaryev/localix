@@ -38,6 +38,7 @@ import { claudeCodeHome } from '../../../cc-settings/config-dir'
 import { claudeCodeSettingsEnv } from '../../../cc-settings/settings-env'
 import { readSettingsFileLayers } from '../../../cc-settings/settings-files'
 import { settingsHooks } from '../../../cc-settings/settings-hooks'
+import { applyHttpHookPolicy } from '../../../cc-hooks/http-policy'
 import { claudeCodeTrusts } from '../../../cc-settings/settings-trust'
 import { ccBackgroundWork, ccRunFacts } from './cc-hook-run-facts'
 import { createCcTranscript } from './cc-transcript'
@@ -133,6 +134,7 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
     ),
     settingsHooks: fromSettings.blocks,
   })
+  applyHttpHookPolicy(ccHookRegistry, fromSettings.http)
   // The session's own hooks — before this run's scoped ones merge in — are what its between-run
   // events fire (a model switch, a project move, a watched file). See cc-hook-sessions.ts.
   ccHookSessions.remember(session.id, {
@@ -166,6 +168,9 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
       }),
     )
   }
+
+  // The http allowlist holds a skill's or an agent's http hooks too.
+  applyHttpHookPolicy(ccHookRegistry, fromSettings.http)
 
   const ccHooks: CcHooksRuntime = createCcHooksRuntime({
     signal: input.signal,

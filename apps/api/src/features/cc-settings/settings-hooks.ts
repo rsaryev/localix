@@ -19,6 +19,17 @@ export interface SettingsHooks {
   pluginAllowed(pluginId: string): boolean
   /** Whether a skill's or an agent's frontmatter hooks may run. */
   frontmatterAllowed: boolean
+  /** `allowedHttpHookUrls` and `httpHookAllowedEnvVars`, each merged across the files. */
+  http: { allowedUrls?: string[]; allowedEnvVars?: string[] }
+}
+
+/** A list key's entries from every layer that sets it, or undefined when none does. */
+function mergedList(layers: readonly SettingsLayer[], key: string): string[] | undefined {
+  const lists = layers
+    .map((layer) => layer.settings[key])
+    .filter((value): value is unknown[] => Array.isArray(value))
+  if (!lists.length) return undefined
+  return [...new Set(lists.flat().filter((entry): entry is string => typeof entry === 'string'))]
 }
 
 export function settingsHooks(
@@ -27,7 +38,7 @@ export function settingsHooks(
 ): SettingsHooks {
   const managed = layers.filter((l) => l.source === 'policy')
   if (managed.some((l) => l.settings.disableAllHooks === true))
-    return { blocks: [], pluginAllowed: () => false, frontmatterAllowed: false }
+    return { blocks: [], pluginAllowed: () => false, frontmatterAllowed: false, http: {} }
   const managedOnly =
     managed.some((l) => l.settings.allowManagedHooksOnly === true) ||
     layers.some((l) => l.source !== 'policy' && l.settings.disableAllHooks === true)
@@ -51,8 +62,14 @@ export function settingsHooks(
     const source = layer.source === 'project' || layer.source === 'local' ? layer.source : 'user'
     blocks.push({ source, raw: { hooks: layer.settings.hooks }, managed: isManaged })
   }
+  const allowedUrls = mergedList(layers, 'allowedHttpHookUrls')
+  const allowedEnvVars = mergedList(layers, 'httpHookAllowedEnvVars')
   return {
     blocks,
+    http: {
+      ...(allowedUrls ? { allowedUrls } : {}),
+      ...(allowedEnvVars ? { allowedEnvVars } : {}),
+    },
     // `allowManagedHooksOnly` blocks "hooks declared in agent frontmatter" with the rest.
     frontmatterAllowed: !managedOnly,
     pluginAllowed: (pluginId) =>

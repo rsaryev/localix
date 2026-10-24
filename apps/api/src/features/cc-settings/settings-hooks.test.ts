@@ -57,3 +57,18 @@ test('disableAllHooks and allowManagedHooksOnly', () => {
   expect(only.frontmatterAllowed).toBe(false)
   expect(settingsHooks([user], { projectTrusted: true }).frontmatterAllowed).toBe(true)
 })
+
+test('the http hook allowlists merge across settings files', () => {
+  const policy = settingsHooks(
+    [
+      layer('user', { allowedHttpHookUrls: ['https://a.dev/*'] }),
+      layer('policy', { allowedHttpHookUrls: ['https://b.dev/*'], httpHookAllowedEnvVars: ['T'] }),
+    ],
+    { projectTrusted: false },
+  ).http
+  expect(policy).toEqual({
+    allowedUrls: ['https://a.dev/*', 'https://b.dev/*'],
+    allowedEnvVars: ['T'],
+  })
+  expect(settingsHooks([layer('user', {})], { projectTrusted: false }).http).toEqual({})
+})
