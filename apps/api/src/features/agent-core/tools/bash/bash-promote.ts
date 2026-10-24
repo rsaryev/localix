@@ -99,6 +99,10 @@ export async function promoteTimedOutCommand(
       exitCode: -1,
       wallTimeMs,
       jobStatus: 'timeout',
+      // Each stream on its own, as a foreground result reports them (`bash-run.ts`).
+      ...(detached.stderr.trim()
+        ? { stdout: detached.stdout.trimEnd(), stderr: detached.stderr.trimEnd() }
+        : {}),
     }
     onUpdate?.(details)
     return {

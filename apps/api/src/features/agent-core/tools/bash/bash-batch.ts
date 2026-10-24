@@ -54,6 +54,9 @@ export async function runBatchCommands(
   const timeoutSecs = input.timeout ?? 60
   const keepGoing = input.keep_going ?? false
   const startAll = Date.now()
+  // Each stream across the batch, for a PostToolUse hook's `stdout` / `stderr`.
+  const stdoutParts: string[] = []
+  const stderrParts: string[] = []
   const results: {
     command: string
     exitCode: number
@@ -122,6 +125,8 @@ export async function runBatchCommands(
       })
       exitCode = r.exitCode
       combined = (r.stdout + (r.stderr ? '\n' + r.stderr : '')).trimEnd()
+      if (r.stdout.trim()) stdoutParts.push(r.stdout.trimEnd())
+      if (r.stderr?.trim()) stderrParts.push(r.stderr.trimEnd())
     } catch (err) {
       exitCode = -1
       combined = err instanceof Error ? err.message : 'Process failed'
@@ -251,6 +256,9 @@ export async function runBatchCommands(
     // keep_going batch with one bad command shows as failed, with its exit code — and a batch that
     // ran out of time is not "completed" while commands it was given never started.
     jobStatus: aborted || firstFail ? 'failed' : budgetSpent ? 'timeout' : 'completed',
+    ...(stderrParts.length
+      ? { stdout: truncate(stdoutParts.join('\n')), stderr: truncate(stderrParts.join('\n')) }
+      : {}),
   }
   onUpdate?.(details)
   return { content, details, isError }

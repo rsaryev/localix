@@ -108,6 +108,7 @@
           "pages": [
             "features/mcp.md",
             "features/hooks-and-commands.md",
+            "features/hook-tool-calls.md",
             "features/execution-environments.md",
             "features/secrets.md",
             "features/webhook.md"

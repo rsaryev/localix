@@ -68,6 +68,7 @@
   <url><loc>https://localix.ai/docs/features--skills</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--mcp</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--hooks-and-commands</loc><priority>0.7</priority></url>
+  <url><loc>https://localix.ai/docs/features--hook-tool-calls</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--execution-environments</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--secrets</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--webhook</loc><priority>0.7</priority></url>

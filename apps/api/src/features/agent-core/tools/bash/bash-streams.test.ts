@@ -17,4 +17,14 @@ describe('bash keeps stdout and stderr apart for a PostToolUse hook', () => {
     const r = await tool.execute('s2', { command: 'echo out' })
     expect((r.details as BashToolDetails).stderr).toBeUndefined()
   })
+
+  test('a batch reports the streams of all its commands, each on its own', async () => {
+    const r = await tool.execute('s3', {
+      commands: ['echo one', 'echo bad >&2', 'echo two'],
+      keep_going: true,
+    })
+    const details = r.details as BashToolDetails
+    expect(details.stdout).toBe('one\ntwo')
+    expect(details.stderr).toBe('bad')
+  })
 })

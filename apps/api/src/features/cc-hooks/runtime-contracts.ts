@@ -231,4 +231,6 @@ export interface CreateCcHooksRuntimeOptions {
    * are de-duped before this fires.
    */
   emitNotice?: (message: string, event: CcHookEvent) => void
+  /** A handler's `statusMessage` while it runs (`active`), and once it is done. */
+  onHookStatus?: (message: string, active: boolean) => void
 }

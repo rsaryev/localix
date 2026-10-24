@@ -20,6 +20,7 @@ type HandlerRunnerOptions = Pick<
   | 'runAgentHook'
   | 'callMcpTool'
   | 'emitNotice'
+  | 'onHookStatus'
   | 'onceKeys'
   | 'transcript'
 > & {
@@ -73,10 +74,13 @@ export function createHookHandlerRunner(options: HandlerRunnerOptions) {
     addContextOnZero: boolean,
   ): Promise<CcHookOutcome> {
     await refreshTranscriptFor(options.transcript, [h], input)
+    if (h.statusMessage) options.onHookStatus?.(h.statusMessage, true)
     const result = await runHookOperation({
       timeoutMs: h.timeoutMs,
       signal: signalFor(event),
       run: (signal) => runHandlerInner(event, h, input, addContextOnZero, signal),
+    }).finally(() => {
+      if (h.statusMessage) options.onHookStatus?.(h.statusMessage, false)
     })
     if (result.kind !== 'completed') {
       logger.warn(`[cc-hooks] ${event} ${h.kind ?? 'command'} handler ${result.kind} — ignored`)

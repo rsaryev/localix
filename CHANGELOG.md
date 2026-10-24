@@ -13,6 +13,13 @@ Changes land on `main`.
   you accept the command it shows (`/plugin install … --accept-command <sha256>`); and ranges
   several plugins put on one dependency resolve together, or say they conflict. See
   [Built-in plugins and updates](docs/extending/plugin-updates.md#dependencies).
+- **More of Claude Code's hooks**: `SessionStart` reads `resume` and `fork`, its
+  `initialUserMessage` opens a run nobody types into and `reloadSkills` makes newly installed skills
+  available; `Notification` hooks hear `idle_prompt` a minute after a reply nobody answered; a
+  hook's `statusMessage` shows while it runs and a failing hook leaves a `hook error` notice in the
+  chat; `allowedHttpHookUrls` and `httpHookAllowedEnvVars` hold http hooks; and a batch of shell
+  commands reports `stdout` and `stderr` apart. See
+  [Hooks and commands](docs/features/hooks-and-commands.md).
 - **Claude Code's `outputStyle`**: when neither the chat nor Settings → Preferences chose a style, a
   chat speaks in the `outputStyle` of your Claude Code settings for its folder.
 - **Your Claude Code output styles**: styles in `~/.claude/output-styles/` and a project's
@@ -180,7 +187,7 @@ Changes land on `main`.
   Skill, and the built-in tools' results in their Claude Code shape (an edit's `filePath` and patch,
   a read's file record). A hook can answer a question card with `answers`, and post-tool events
   carry the call id and duration. See
-  [Tool names and shapes](docs/features/hooks-and-commands.md#tool-names-and-shapes).
+  [Tool names and shapes](docs/features/hook-tool-calls.md#tool-names-and-shapes).
 - **Claude Code permission rules match as in Claude Code**: a skill's `allowed-tools` and a hook's
   `if` anchor path rules at the working directory, `//` or `~/`, cover writes with `Edit(...)` and
   searches with `Read(...)`, and understand `WebFetch(domain:…)`, `Agent(…)`, `Skill(…)` and a bare

@@ -64,6 +64,9 @@ function commonHandlerFields(hRaw: Record<string, unknown>): Partial<CcHookHandl
   return {
     ...(typeof hRaw.if === 'string' && hRaw.if.trim() ? { if: hRaw.if.trim() } : {}),
     ...(hRaw.once === true ? { once: true } : {}),
+    ...(typeof hRaw.statusMessage === 'string' && hRaw.statusMessage.trim()
+      ? { statusMessage: hRaw.statusMessage.trim() }
+      : {}),
   }
 }
 
@@ -201,6 +204,9 @@ export function parseHandler(
     ...(typeof hRaw.rewakeMessage === 'string' ? { rewakeMessage: hRaw.rewakeMessage } : {}),
     ...(typeof hRaw.rewakeSummary === 'string' ? { rewakeSummary: hRaw.rewakeSummary } : {}),
     ...(hRaw.once === true ? { once: true } : {}),
+    ...(typeof hRaw.statusMessage === 'string' && hRaw.statusMessage.trim()
+      ? { statusMessage: hRaw.statusMessage.trim() }
+      : {}),
     // A background hook's failure can block nothing (hooks.md, "Block the action when a hook fails").
     ...(hRaw.onFailure === 'block' && !isAsync ? { onFailure: 'block' as const } : {}),
   }

@@ -98,6 +98,7 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
     runAgentHook,
     callMcpTool,
     emitNotice,
+    onHookStatus: opts.onHookStatus,
     signalFor,
     envFor,
     onceKeys,

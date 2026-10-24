@@ -42,6 +42,7 @@ import { applyHttpHookPolicy } from '../../../cc-hooks/http-policy'
 import { claudeCodeTrusts } from '../../../cc-settings/settings-trust'
 import { ccBackgroundWork, ccRunFacts } from './cc-hook-run-facts'
 import { createCcTranscript } from './cc-transcript'
+import { publishAgentPhase } from '../session-stream-registry'
 import { sessionStartSource } from './cc-session-start-source'
 import {
   ccHookNoticeEmitter,
@@ -231,6 +232,9 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
     // An `async` hook that exited 0 speaks to Claude on the session's next turn (below).
     onAsyncContext: (text) => ccHookSessions.appendAsyncContext(session.id, text),
     emitNotice,
+    // A hook's `statusMessage` is the chat's activity line while it runs.
+    onHookStatus: (message, active) =>
+      publishAgentPhase(deps.streamRegistry, userId, session.id, 'hook-status', active, message),
   })
 
   // SessionStart CC hooks — once per session (their stdout/additionalContext is
