@@ -30,6 +30,8 @@ export interface PluginUpdates {
   status(userId: string, opts?: { refresh?: boolean }): Promise<PluginUpdatesResponse>
   /** The last computed status, without computing anything. */
   snapshot(): PluginUpdatesResponse
+  /** Compute availability again from the listings on disk (after they were refreshed). */
+  recheck(userId: string): Promise<void>
   /** Queue updates for these ids (all available when omitted); returns at once. */
   apply(userId: string, ids?: string[]): Promise<{ queued: string[] }>
   /** Resolves when every queued update has finished. */
@@ -153,6 +155,9 @@ export function createPluginUpdates(deps: {
       return snapshot()
     },
     snapshot,
+    async recheck(userId) {
+      await check(userId, false)
+    },
     async apply(userId, ids) {
       if (lastCheckedAt === null) await check(userId, false)
       const queued = ids ?? available.map((entry) => entry.id)

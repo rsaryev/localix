@@ -38,6 +38,8 @@ export function createMarketplaceMethods(deps: {
   repo: CapabilitySourceRepository
   update: (userId: string, name: string) => Promise<unknown>
   remove: (userId: string, name: string) => Promise<unknown>
+  /** Listings changed: compute the available updates again (`plugin-updates.ts`). */
+  recheck: (userId: string) => Promise<unknown>
   env: Record<string, string | undefined>
 }): Pick<
   PluginService,
@@ -131,10 +133,11 @@ export function createMarketplaceMethods(deps: {
           warnings.push(`${row.name}: ${errorMessage(err)}`)
         }
       }
+      await deps.recheck(userId).catch(() => {})
       return { ...refreshed, updated, manual, warnings }
     },
 
-    async refreshMarketplaces(_userId) {
+    async refreshMarketplaces(userId) {
       const refreshed: string[] = []
       const warnings: string[] = []
       for (const name of Object.keys(await readKnownMarketplaces(root))) {
@@ -145,6 +148,7 @@ export function createMarketplaceMethods(deps: {
           warnings.push(`${name}: ${errorMessage(err)}`)
         }
       }
+      await deps.recheck(userId).catch(() => {})
       return { refreshed, updated: [], manual: [], warnings }
     },
 

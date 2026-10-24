@@ -577,6 +577,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       registryDeps,
       repo,
       env: deps.env ?? process.env,
+      recheck: (userId) => service.updates.recheck(userId),
       update: (userId, name) => updatePlugin(userId, { name }, { refreshMarketplace: false }),
       remove: (userId, name) => service.remove(userId, { name }),
     }),

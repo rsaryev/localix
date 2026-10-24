@@ -78,6 +78,16 @@ describe('plugin updates', () => {
     expect(existsSync(cachedVersionDir(home, 'shop', 'tool', '2.0.0'))).toBe(false)
   })
 
+  test('a refresh of the listings from the marketplace commands is checked at once', async () => {
+    setVersion('2.5.0')
+    await service.refreshMarketplaces('u1')
+    expect(service.updates.snapshot().available).toEqual([
+      { id: 'tool@shop', name: 'tool', marketplace: 'shop', from: '1.0.0', to: '2.5.0' },
+    ])
+    setVersion('2.0.0')
+    await service.updates.status('u1', { refresh: true })
+  })
+
   test('an apply moves the job through its phases and installs the new version', async () => {
     const phases: string[] = []
     const off = service.updates.subscribe(() => {
