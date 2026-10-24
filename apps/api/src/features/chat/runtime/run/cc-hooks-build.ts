@@ -114,6 +114,8 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
   const { ccHooksStartedSessions, ccHooksSessionStartSource, ccHookOnceKeys, ccHookSessions } =
     env.state
   const onceKeys = ensureCcHookOnceKeys(ccHookOnceKeys, session.id)
+  // A new turn: the person is back, so no `idle_prompt` is owed for the last reply.
+  ccHookSessions.cancelIdle(session.id)
   const emitNotice = ccHookNoticeEmitter(deps.streamRegistry, userId, session.id)
   const envFiles = ccSessionEnvFilesOf(session, deps.sessionDataRoot)
   // Claude Code's settings `env` for this folder reaches every hook process.

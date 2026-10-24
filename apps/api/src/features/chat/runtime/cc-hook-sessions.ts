@@ -44,13 +44,32 @@ export interface CcHookSessionEntry {
   transcript?: CcTranscript
 }
 
+/** hooks.md: `idle_prompt` comes "about 60 seconds after Claude finishes responding". */
+export const IDLE_PROMPT_MS = 60_000
+
+/** The timer the idle notification waits on (tests drive it by hand). */
+export interface IdleTimers {
+  set(fn: () => unknown, ms: number): unknown
+  clear(handle: unknown): void
+}
+
+const realTimers: IdleTimers = {
+  set: (fn, ms) => {
+    const timer = setTimeout(fn, ms)
+    timer.unref?.()
+    return timer
+  },
+  clear: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
+}
+
 /** Sessions watched at once; the oldest watch is dropped beyond it. */
 const MAX_WATCHED_SESSIONS = 64
 
 const logger = { warn: (m: string) => console.warn(m), info: (m: string) => console.info(m) }
 
-export function createCcHookSessions(watchFile?: WatchFile) {
+export function createCcHookSessions(watchFile?: WatchFile, timers: IdleTimers = realTimers) {
   const entries = new Map<string, CcHookSessionEntry>()
+  const idle = new Map<string, unknown>()
   const pendingContext = new Map<string, string>()
   /** What `async` hooks said after they exited, oldest first; every one reaches the next turn. */
   const asyncContext = new Map<string, string[]>()
@@ -125,6 +144,12 @@ export function createCcHookSessions(watchFile?: WatchFile) {
     }
   }
 
+  function cancelIdle(sessionId: string): void {
+    const handle = idle.get(sessionId)
+    if (handle !== undefined) timers.clear(handle)
+    idle.delete(sessionId)
+  }
+
   function setWatchPaths(sessionId: string, paths: readonly string[]): void {
     dynamicWatch.set(sessionId, [...paths])
     syncWatches(sessionId)
@@ -171,7 +196,30 @@ export function createCcHookSessions(watchFile?: WatchFile) {
     skillHooks(sessionId: string): ScopedCcHooks[] {
       return [...(skillHooks.get(sessionId)?.values() ?? [])]
     },
+    /**
+     * A reply finished: unless the person types or background work is still running by then, the
+     * session's Notification hooks hear `idle_prompt` in {@link IDLE_PROMPT_MS}.
+     */
+    scheduleIdle(sessionId: string, busy: () => boolean): void {
+      cancelIdle(sessionId)
+      idle.set(
+        sessionId,
+        timers.set(async () => {
+          idle.delete(sessionId)
+          if (busy() || !entries.has(sessionId)) return
+          await runtimeFor(sessionId)
+            .runNotification({
+              message: 'Claude is waiting for your input',
+              notificationType: 'idle_prompt',
+            })
+            .catch(() => undefined)
+        }, IDLE_PROMPT_MS),
+      )
+    },
+    /** The person is back (a new turn): no idle notification is owed. */
+    cancelIdle,
     forget(sessionId: string): void {
+      cancelIdle(sessionId)
       skillHooks.delete(sessionId)
       entries.delete(sessionId)
       pendingContext.delete(sessionId)

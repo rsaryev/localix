@@ -14,6 +14,7 @@ import { runStopHooks } from './finalize-stop-hooks'
 import type { SessionRecord } from '../../repository'
 import type { PersistedMessage, MessageTiming } from '../../contracts'
 import type { LoadedPlugins } from '../../../plugins/loader'
+import { ccBackgroundWork } from './cc-hook-run-facts'
 import type { CcHooksRuntime } from '../../../cc-hooks'
 import type { ModRunScope } from '../../../mods/run-scope'
 import { runAssistantMessageHooks, runMemoryProviderRunEnd } from '../../../mini-apps/hooks'
@@ -279,5 +280,11 @@ export async function finalizeSuccessfulRun(args: {
   await args.publishRuntimeSession(
     stoppedRuntimeSessionIds.has(session.id) ? 'stopped' : 'completed',
   )
+  // The reply is done and the person may answer: `idle_prompt` comes if they don't (hooks.md).
+  if (args.policy.human.canAnswer)
+    env.state.ccHookSessions.scheduleIdle(
+      session.id,
+      () => ccBackgroundWork(env.state.work, userId, session.id).background_tasks.length > 0,
+    )
   return false
 }

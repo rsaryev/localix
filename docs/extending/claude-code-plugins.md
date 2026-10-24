@@ -76,7 +76,7 @@ decisions. Where Localix's moment differs, the table says where it fires. See
 
 | Events                                                                           | In Localix                                                                                            |
 | -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `SessionStart`, `SessionEnd`, `UserPromptSubmit`, `Stop`, `Notification`         | As in Claude Code                                                                                     |
+| `SessionStart`, `SessionEnd`, `UserPromptSubmit`, `Stop`, `Notification`         | As in Claude Code; `Notification` `idle_prompt` comes 60 seconds after a reply nobody answered        |
 | `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, `PostToolBatch`               | Around every tool call and after each batch of parallel calls                                         |
 | `UserPromptExpansion`                                                            | A typed skill or plugin command, after `UserPromptSubmit`                                             |
 | `PermissionRequest`, `PermissionDenied`                                          | The approval card, which the hook races; refusals by a mode's rules or on an unattended run           |
