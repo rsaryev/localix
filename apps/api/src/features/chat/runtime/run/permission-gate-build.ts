@@ -9,6 +9,7 @@ import { createPermissionGate, type PermissionRule } from '../../../agent-core/p
 import {
   verdictOf,
   type CallVerdict,
+  type OuterRules,
   type ReviewVerdict,
   type VerdictOptions,
 } from '../../../agent-core/permission-verdict'
@@ -50,6 +51,8 @@ export interface BuildRunPermissionGateOptions extends RunHookContext {
     review?: ReviewVerdict
     lend(verdict: (toolName: string, input: unknown) => CallVerdict): void
   }
+  /** The person's Claude Code `permissions`, as the gate's outer rule set. */
+  outerRules?: OuterRules
   /** Receives the gate's inputs: a skill the model loads checks its injected commands on them. */
   onVerdictOptions?: (options: VerdictOptions) => void
 }
@@ -116,6 +119,7 @@ export function buildRunPermissionGate(
     root: defaultCwd,
     // The conversation's own plan directory: a plan-shaped write anywhere else is a file write.
     ownPlanDir: ownPlanDirForRun(session, defaultCwd),
+    ...(options.outerRules ? { outerRules: options.outerRules } : {}),
   }
   options.toolCheck?.lend(verdictOf(verdictOptions))
   options.onVerdictOptions?.(verdictOptions)

@@ -8,6 +8,11 @@ Changes land on `main`.
 
 ### Added
 
+- **Claude Code permission rules**: the `permissions` in your Claude Code settings files — your own,
+  the project's, the local file and your organization's managed settings — now apply to Localix runs
+  in that folder. A Claude Code `deny` refuses the call, an `ask` raises a card and an `allow`
+  answers the agent's catch-all question, combined deny over ask over allow as in Claude Code. See
+  [Permission rules](docs/features/permissions.md#claude-code-permission-rules).
 - **In progress in the Event Center**: the top of the Event Center shows what runs in the background
   — mini app installs and updates, model downloads, a Localix update, plugin updates — with progress
   and actions, and the updates on offer. The bell shows a thin ring and says how many tasks are in

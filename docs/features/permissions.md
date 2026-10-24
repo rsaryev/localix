@@ -194,6 +194,32 @@ policy and call gate; an unattended hook cannot execute a call that requires con
 `classify`, a tool with `mutates: false` is a read. A true or omitted mutation flag yields
 `external`, which Plan refuses.
 
+### Claude Code permission rules
+
+A run also follows the `permissions` of the Claude Code settings files for its folder, so rules you
+wrote for Claude Code keep working: `~/.claude/settings.json` (or
+`$CLAUDE_CONFIG_DIR/settings.json`), the folder's `.claude/settings.json`,
+`.claude/settings.local.json` at the repository root, and your organization's managed settings. They
+are read on every run, so an edit applies from the next message, and Localix never writes them.
+
+| Claude Code rule | In a Localix run                                                                                                                       |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `deny`           | Refuses the call, whatever the agent's own rules allow. A bare tool (`WebFetch`, `mcp__github`) is also taken out of the model's view. |
+| `ask`            | Raises a confirmation card for a call the agent's rules allow. Bypass and Autonomous stop asking, as `bypassPermissions` does.         |
+| `allow`          | Answers the agent's catch-all question (`*` with `ask`), like a skill's `allowed-tools`. It never lifts the agent's own denial.        |
+
+Rules combine as in Claude Code: a deny in any file beats an ask in any file, which beats an allow;
+the order of files and rules does not matter. `Bash(…)` rules match each subcommand of a compound
+line after `timeout`, `nice`, `nohup` and similar wrappers; `Read(…)` and `Edit(…)` paths use Claude
+Code's anchors (`//abs`, `~/home`, `/` for the settings file's own folder, relative for the working
+directory) and gitignore matching with `!` carve-outs; `WebFetch(domain:…)` matches the pages
+`research` reads; `mcp__<server>` and `mcp__<server>__<tool>` match MCP tools; `Agent(…)` matches a
+delegated plugin agent and `Skill(…)` a skill.
+
+The `allow` rules of a committed `.claude/settings.json` apply only to a folder you trusted in
+Claude Code (`hasTrustDialogAccepted` in `~/.claude.json`), as Claude Code holds them back until
+then. `allowManagedPermissionRulesOnly` in managed settings leaves only the managed rules.
+
 ## Configuration
 
 Edit rules in **Settings → Capabilities → Permission rules**. The picker selects whose list you are

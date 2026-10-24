@@ -31,9 +31,50 @@ export interface VerdictOptions {
    * Absent → no plan file is the run's own.
    */
   ownPlanDir?: string
+  /**
+   * A second rule set from outside the agent's list — a person's Claude Code settings
+   * (`chat/runtime/run/claude-code-permissions.ts`). Its deny refuses whatever the list says, its
+   * ask turns an allow into a question, and its allow answers only the list's catch-all question,
+   * as a skill's `allowed-tools` does; it never lifts the list's own denial.
+   */
+  outerRules?: OuterRules
 }
 
+export interface OuterRuleVerdict {
+  action: 'allow' | 'ask' | 'deny'
+  /** The rule as written, and where: `Bash(rm *)` in `.claude/settings.json`. */
+  rule: string
+  message?: string
+}
+
+export type OuterRules = (call: {
+  toolName: string
+  input: unknown
+  tool: AgentTool | undefined
+  facts: ReturnType<typeof extractCallFacts>
+  writes: readonly string[]
+}) => OuterRuleVerdict | undefined
+
 export type RuleDecision = ReturnType<typeof evaluate>
+
+/** The list's decision with the outer rule set's verdict applied (see `outerRules`). */
+function withOuterRules(decision: RuleDecision, outer: OuterRuleVerdict | undefined): RuleDecision {
+  if (!outer || decision.action === 'deny') return decision
+  const rule: PermissionRule = {
+    action: outer.action,
+    permission: 'claude-code',
+    pattern: outer.rule,
+    ...(outer.message ? { message: outer.message } : {}),
+  }
+  const replaced = {
+    action: outer.action,
+    rule,
+    ...(outer.message ? { message: outer.message } : {}),
+  }
+  if (outer.action === 'deny') return replaced
+  if (outer.action === 'ask') return decision.action === 'allow' ? replaced : decision
+  return decision.action === 'ask' && decision.rule?.pattern === '*' ? replaced : decision
+}
 
 export type CallJudgement =
   /** A mechanism, not a capability: never a permission question. */
@@ -98,7 +139,19 @@ export function judgeCall(
   // ONE evaluation, because there is one list. A session mode that stops asking does it by
   // rewriting that list before the run (`capabilities/permission-mode.ts`), never by a flag
   // here: a gate that knows about modes is a second answer to the question the rules answer.
-  const decision = evaluate(opts.rules, facts, call, opts.preapprovedRules)
+  const listed = evaluate(opts.rules, facts, call, opts.preapprovedRules)
+  const decision = opts.outerRules
+    ? withOuterRules(
+        listed,
+        opts.outerRules({
+          toolName: ctx.toolName,
+          input: ctx.input,
+          tool,
+          facts: call,
+          writes: writeTargets(ctx.toolName, ctx.input, opts.root),
+        }),
+      )
+    : listed
 
   // The agent's own system directories (workspace, scratch, etc.) are always writable without
   // approval, regardless of workspace boundary rules. The dir comes from the ONE `~/.localix`

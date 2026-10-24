@@ -26,6 +26,8 @@ import { assembleRunTools } from '../tool-assembly'
 import { assertRunToolRequirements } from '../tool-requirements'
 import { listEnabledPluginWorkflows } from '../../../../plugins/workflow-commands'
 import { userHome } from '../../../../../lib/env'
+import { settingsRemoveTool } from '../../../../cc-settings/settings-permissions'
+import { loadClaudeCodePermissions } from '../claude-code-permissions'
 import type { RunInputs } from './context'
 import { currentAssistantMessageId, type RunFrame } from './frame'
 import type { ResolvedTurn } from './turn'
@@ -189,9 +191,27 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
   mkdirSync(scratchDir, { recursive: true })
 
   const [
-    { tools, dispatchTools, preflightTools, mcpInstructions, mcpInventory, ledger, gate },
+    {
+      tools: assembledTools,
+      dispatchTools,
+      preflightTools,
+      mcpInstructions,
+      mcpInventory,
+      ledger,
+      gate,
+    },
     descendantSessions,
-  ] = await Promise.all([assembledPromise, frame.loadSessionSnapshot()])
+    claudeCodePermissions,
+  ] = await Promise.all([
+    assembledPromise,
+    frame.loadSessionSnapshot(),
+    loadClaudeCodePermissions({ homeDir: userHome(), cwd: defaultCwd }),
+  ])
+  // A bare deny in Claude Code's settings (`WebFetch`, `mcp__github`) takes the tool out of the
+  // model's view, as Claude Code removes it; the gate refuses a call that names it anyway.
+  const tools = assembledTools.filter(
+    (tool) => !settingsRemoveTool(claudeCodePermissions.rules, tool),
+  )
   recordToolRoster(
     preflightTools.map((tool) => tool.name),
     { userId, projectId: session.projectId },
@@ -221,6 +241,8 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
     mcpInstructions,
     mcpInventory,
     descendantSessions,
+    /** The person's Claude Code `permissions` for this folder (`claude-code-permissions.ts`). */
+    claudeCodePermissions,
     agentDirectory: turn.registry,
     scratchDir,
     recoveryToolAvailable: tools.some((tool) => tool.name === TOOL.tool_output),
