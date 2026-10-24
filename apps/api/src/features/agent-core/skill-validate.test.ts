@@ -43,21 +43,17 @@ describe('validateSkillFile', () => {
     expect(v.warnings.some((w) => w.includes('no frontmatter "name"'))).toBe(true)
   })
 
-  it('warns that a fork no longer runs the agent `agent:` names', async () => {
+  // skills.md: "The `agent` field specifies which subagent configuration to use" — a forked skill
+  // runs as that type (`Explore`, a plugin agent), so naming one is not a mistake to warn about.
+  it('accepts a fork that names its agent type', async () => {
     const body = 'Review the diff file by file and report each finding with its line.'
-    const named = await writeSkill(
-      'review-fork',
-      `---\nname: review-fork\ndescription: d\ncontext: fork\nagent: reviewer\n---\n\n${body}`,
-    )
-    const warnings = (await validateSkillFile(named)).warnings
-    expect(warnings.some((w) => w.includes('"agent: reviewer", which is no longer honoured'))).toBe(
-      true,
-    )
-    const generic = await writeSkill(
-      'generic-fork',
-      `---\nname: generic-fork\ndescription: d\ncontext: fork\nagent: general-purpose\n---\n\n${body}`,
-    )
-    expect((await validateSkillFile(generic)).warnings).toEqual([])
+    for (const agent of ['reviewer', 'Explore', 'general-purpose']) {
+      const path = await writeSkill(
+        `fork-${agent.toLowerCase()}`,
+        `---\nname: fork-${agent.toLowerCase()}\ndescription: d\ncontext: fork\nagent: ${agent}\n---\n\n${body}`,
+      )
+      expect((await validateSkillFile(path)).warnings).toEqual([])
+    }
   })
 
   it('warns on contradictory allowed/disallowed tools', async () => {

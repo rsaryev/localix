@@ -16,7 +16,7 @@ import type { OptionalToolPorts } from '../../../agent-core/tool-registry'
 import { TOOL } from '../../../agent-core/tool-names'
 import { agentParticipant } from '../../../../db/participant'
 import { createMemoryTool } from '../../../agent-core/tools/memory/memory'
-import { createSkillTool } from '../../../agent-core/tools/skill'
+import { createSkillTool, type SkillToolPorts } from '../../../agent-core/tools/skill'
 import { createMiniAppGuideTool } from '../../../agent-core/tools/mini-app-guide'
 import { skillToolPorts, type SkillCommandPolicyRef } from './skill-tool-ports'
 import { createToolOutputTool } from '../../../agent-core/tools/context-search/context-search'
@@ -60,6 +60,8 @@ export interface DirectToolInstanceDeps {
   ccHookSessions?: CcHookSessions
   /** The run's permission inputs, which every command a loaded skill injects must pass. */
   skillCommandPolicy?: SkillCommandPolicyRef
+  /** Starts a `context: fork` skill's subagent; absent where this run cannot delegate. */
+  forkSkill?: SkillToolPorts['forkSkill']
 }
 
 /** The pre-built tool slots of `createRuntimeToolRegistry`, ready to spread into it. */
@@ -110,6 +112,7 @@ export function buildDirectToolInstances(
           deps.announceCapabilityChange,
           skillPorts.onSkillLoaded,
           skillPorts.renderSkill,
+          deps.forkSkill ? { forkSkill: deps.forkSkill } : {},
         )
       : undefined,
     mini_app_guide:

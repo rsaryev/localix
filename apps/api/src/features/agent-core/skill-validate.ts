@@ -1,4 +1,5 @@
 import { DECLARABLE_EFFORTS_TEXT, isDeclarableEffort } from '../../db/types'
+import { frontmatterBool } from './frontmatter-values'
 import { basename, dirname } from 'node:path'
 
 import { parseMarkdownFrontmatter, scalarField, splitTokenList } from './skill-discovery'
@@ -74,17 +75,9 @@ export async function validateSkillFile(skillMdPath: string): Promise<SkillValid
       `Skill "${dirName}" has "context: fork" but a very short body — the forked sub-agent needs explicit task instructions, not just short guidelines.`,
     )
   }
-  // `agent:` used to run a forked skill on another agent. No path starts a different agent any
-  // more: the fork runs as the agent that invoked the skill, so the field is ignored.
-  const forkAgent = scalarField(fields.agent)?.trim()
-  if (forkAgent && forkAgent.toLowerCase() !== 'general-purpose') {
-    warnings.push(
-      `Skill "${dirName}" declares "agent: ${forkAgent}", which is no longer honoured — a forked skill runs as the agent that invoked it.`,
-    )
-  }
   // `user-invocable: false` + `disable-model-invocation: true` = no way to invoke the skill.
-  const disableModel = /^true$/i.test(scalarField(fields['disable-model-invocation']) ?? '')
-  const notUserInvocable = /^false$/i.test(scalarField(fields['user-invocable']) ?? '')
+  const disableModel = frontmatterBool(fields['disable-model-invocation']) === true
+  const notUserInvocable = frontmatterBool(fields['user-invocable']) === false
   if (disableModel && notUserInvocable) {
     warnings.push(
       `Skill "${dirName}" has both "disable-model-invocation: true" and "user-invocable: false" — neither Claude nor users can invoke it, making it dead code.`,

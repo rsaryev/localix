@@ -120,6 +120,13 @@ export function buildOptionalToolPorts(
     ...(worktreeHook ? { worktreeHook } : {}),
   })
 
+  const delegate = buildDelegateOptions({
+    userId,
+    session,
+    agentProfile,
+    taskDelegation,
+    plugins: pluginAgents,
+  })
   const optional: OptionalToolPorts = {
     // A budget the model can read before it overflows.
     context_budget: params.readContextBudget
@@ -147,15 +154,16 @@ export function buildOptionalToolPorts(
       renderSkill: deps.renderSkill,
       ccHookSessions: ctx.ccHookSessions,
       skillCommandPolicy: params.skillCommandPolicy,
+      // A `context: fork` skill the agent loads starts a subagent, as `delegate` does.
+      ...(delegate
+        ? {
+            forkSkill: (toolCallId, request) =>
+              delegate.delegate(`skill-fork-${toolCallId}`, { ...request, context: 'none' }),
+          }
+        : {}),
     }),
     jobs: isToolDirect(agentProfile, TOOL.jobs) ? jobsTool : undefined,
-    delegate: buildDelegateOptions({
-      userId,
-      session,
-      agentProfile,
-      taskDelegation,
-      plugins: pluginAgents,
-    }),
+    delegate,
     agents: buildAgentsOptions(ctx, params),
     loops: isToolDirect(agentProfile, TOOL.loops)
       ? { userId, sessionId: session.id, agentId: params.agentId }

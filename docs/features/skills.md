@@ -63,9 +63,9 @@ the retrieval tool.
 
 One-shot `/name` invocation expands supported arguments before submitting the prompt. Filesystem
 skills can also opt into bounded local command expansion and confined file-reference expansion. A
-skill with `context: fork` runs in a child session only when invoked in a root chat, as the agent
-that invoked it; its `agent:` field is no longer honoured. Other skills run in the current session.
-Child sessions cannot fork skills into more child sessions.
+skill with `context: fork` runs in a child session, typed or loaded by the agent, as the subagent
+type its `agent:` names (`Explore`, `Plan`, a plugin agent; the invoking agent by default). Other
+skills run in the current session. Child sessions cannot fork skills into more child sessions.
 
 Session pins persist with the session record. The runtime injects each resolvable pinned body under
 an active-skills prompt section on subsequent turns, within a shared 32,000-code-unit budget.

@@ -33,6 +33,24 @@ const skillToolInputSchema = z.object({
     ),
 })
 
+/** A `context: fork` skill's subagent, as `delegate` starts one (`DelegateRequest`'s shape). */
+export interface SkillForkRequest {
+  title: string
+  task: string
+  agent?: string
+  wait: boolean
+  model?: string
+  effort?: string
+}
+
+export interface SkillToolPorts {
+  /** Runs a `context: fork` skill the agent loads as a subagent; absent: the skill runs inline. */
+  forkSkill?: (
+    toolCallId: string,
+    request: SkillForkRequest,
+  ) => Promise<{ content: string; isError?: boolean }>
+}
+
 /**
  * Discovery stays available under a read-only rule: an agent should be able to SEE which skills
  * exist before proposing one, so only the two writing actions are blocked there. A `get` may run
@@ -98,6 +116,7 @@ export function createSkillTool(
   onSkillsChanged?: () => void,
   onSkillLoaded?: (skill: DiscoveredSkill) => void,
   renderSkill?: (skill: DiscoveredSkill, args: string) => Promise<string>,
+  ports: SkillToolPorts = {},
 ) {
   const announce = () => {
     try {
@@ -154,7 +173,7 @@ export function createSkillTool(
     // get/list only read, so they overlap other reads; save/delete stay a barrier in their turn.
     executionModeFor: (input) =>
       classifySkillCall(input).effect === 'read' ? 'parallel' : 'sequential',
-    async execute(_toolCallId, input) {
+    async execute(toolCallId, input) {
       switch (input.action) {
         case 'save': {
           if (!input.name) return { content: 'name is required for action="save".', isError: true }
@@ -208,6 +227,20 @@ export function createSkillTool(
           // Curator usage telemetry — best-effort, never blocks the get.
           recordSkillUse(skill.name, skill.scope, skill.scope === 'project' ? projectId : '')
           onSkillLoaded?.(skill)
+          // CC `context: fork`: the rendered skill is a subagent's task, of the type `agent:`
+          // names, in the background unless `background: false`.
+          if (skill.contextFork && ports.forkSkill) {
+            const called = skillCallName(skill)
+            const args = input.arguments?.trim() ?? ''
+            return ports.forkSkill(toolCallId, {
+              title: `/${called}${args ? ` ${args}` : ''}`.slice(0, 120),
+              task: body,
+              ...(skill.forkAgent ? { agent: skill.forkAgent } : {}),
+              wait: skill.forkBackground === false,
+              ...(skill.preferredModel ? { model: skill.preferredModel } : {}),
+              ...(skill.preferredEffort ? { effort: skill.preferredEffort } : {}),
+            })
+          }
           // Progressive loading must retain provenance: bundled scripts,
           // references, and assets are relative to the skill directory. Other
           // agents wrap explicit skill bodies with a baseDir or inject their

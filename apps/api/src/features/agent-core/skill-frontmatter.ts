@@ -65,6 +65,8 @@ export interface DiscoveredSkill {
   contextFork?: boolean
   /** `agent: Explore` — subagent type for `context: fork`. */
   forkAgent?: string
+  /** `background: false` — a `context: fork` skill's caller waits for its result (CC default: true). */
+  forkBackground?: boolean
   /** `model: sonnet` — preferred model hint (advisory). */
   preferredModel?: string
   /** `effort: high` — preferred reasoning effort hint (advisory). */
@@ -185,6 +187,7 @@ export function parseSkillFrontmatter(raw: string): SkillFrontmatter {
     keywords: splitPhraseList(fields.keywords),
     contextFork: scalarField(fields.context) === 'fork' || undefined,
     forkAgent: scalarField(fields.agent) || undefined,
+    forkBackground: frontmatterBool(fields.background),
     preferredModel: scalarField(fields.model) || undefined,
     preferredEffort: scalarField(fields.effort) || undefined,
     version: scalarField(fields.version) || undefined,
@@ -234,6 +237,7 @@ export function makeSkill(
   if (ccFields.keywords?.length) cc.keywords = ccFields.keywords
   if (ccFields.contextFork) cc.contextFork = true
   if (ccFields.forkAgent) cc.forkAgent = ccFields.forkAgent
+  if (ccFields.forkBackground === false) cc.forkBackground = false
   if (ccFields.preferredModel) cc.preferredModel = ccFields.preferredModel
   if (ccFields.preferredEffort) cc.preferredEffort = ccFields.preferredEffort
   if (ccFields.version) cc.version = ccFields.version
