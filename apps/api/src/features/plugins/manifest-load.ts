@@ -134,12 +134,17 @@ export async function loadManifest(
   // "`userConfig` options … are strict. An unknown key inside one is an error, and the plugin
   // doesn't load." The option used to be dropped with an issue and the plugin loaded anyway.
   const strictIssue = composed.issues.find(
-    (found) => found.severity === 'error' && /(^|#)userConfig\./.test(found.path),
+    (found) => found.severity === 'error' && /(^|#)(userConfig\.|channels)/.test(found.path),
   )
   const promoted = parsed.error ? undefined : strictIssue
-  const error = parsed.error ?? (promoted ? `${promoted.message} (${promoted.path})` : undefined)
-
   const entrypoints = await resolveEntrypoints(dir, manifest)
+  // So do monitors entries: one with an unknown key keeps the plugin from loading.
+  const monitorError = entrypoints.monitorErrors?.[0]
+  const error =
+    parsed.error ??
+    (promoted ? `${promoted.message} (${promoted.path})` : undefined) ??
+    (monitorError ? `Invalid monitors: ${monitorError}` : undefined)
+
   // Parse command and agent files in parallel (independent reads).
   const [parsedCmdFiles, parsedAgentFiles, skillNames] = await Promise.all([
     Promise.all(

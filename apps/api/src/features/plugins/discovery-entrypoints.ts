@@ -57,6 +57,8 @@ export interface ResolvedEntrypoints {
    * `monitors/monitors.json`. Spawned (enabled plugins only) by the monitor host.
    */
   monitors: PluginMonitor[]
+  /** Monitors entries that break the strict shape: the plugin does not load (Claude Code). */
+  monitorErrors?: string[]
   /** Output styles, themes, workflows and default settings (`discovery-cc-components.ts`). */
   components?: PluginCcComponents
   /**
@@ -196,18 +198,19 @@ export async function resolveEntrypoints(
   // default `monitors/monitors.json` scan; absent → the default file is read. Both
   // sources run through `parseMonitors` for uniform validation + name de-duplication.
   // Only PARSED here — the trust-gated spawn happens in the monitor host (enabled only).
-  let monitors: PluginMonitor[] = []
+  let parsedMonitors: ReturnType<typeof parseMonitors> = { monitors: [], errors: [] }
   if (typeof manifest.monitors === 'string') {
     const [file] = toAbsList(dir, manifest.monitors)
-    if (file) monitors = parseMonitors(await readJson(file)).monitors
+    if (file) parsedMonitors = parseMonitors(await readJson(file))
   } else if (manifest.monitors !== undefined) {
-    monitors = parseMonitors(manifest.monitors).monitors
+    parsedMonitors = parseMonitors(manifest.monitors)
   } else {
     const monitorsFile = join(dir, 'monitors', 'monitors.json')
-    if (await pathExists(monitorsFile)) {
-      monitors = parseMonitors(await readJson(monitorsFile)).monitors
-    }
+    if (await pathExists(monitorsFile)) parsedMonitors = parseMonitors(await readJson(monitorsFile))
   }
+  const monitors: PluginMonitor[] = parsedMonitors.monitors
+  // Localix's own cap on how many run is not Claude Code's rule: only a broken entry counts.
+  const monitorErrors = parsedMonitors.errors.filter((error) => error.startsWith('invalid monitor'))
 
   const components = await resolveCcComponents(dir, manifest)
 
@@ -221,6 +224,7 @@ export async function resolveEntrypoints(
     ...(hookModule ? { hookModule } : {}),
     lspServers,
     monitors,
+    ...(monitorErrors.length ? { monitorErrors } : {}),
     components,
     diagnostics,
     ...(ccReplacedDefaults.length > 0 ? { ccReplacedDefaults } : {}),

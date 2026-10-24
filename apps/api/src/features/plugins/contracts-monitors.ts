@@ -28,7 +28,8 @@ const monitorWhenSchema = z
  * level) and supports `${CLAUDE_PLUGIN_ROOT}` / `${CLAUDE_PLUGIN_DATA}` /
  * `${CLAUDE_PROJECT_DIR}`. `description` is shown in the task panel.
  */
-export const pluginMonitorSchema = z.object({
+/** Strict, as in Claude Code: an unknown key is an error and the plugin doesn't load. */
+export const pluginMonitorSchema = z.strictObject({
   name: z
     .string()
     .regex(PLUGIN_NAME_RE, 'Monitor name must be letters, numbers, dashes or underscores.'),
