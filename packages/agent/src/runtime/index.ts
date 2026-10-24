@@ -150,6 +150,12 @@ export interface AgentRuntimeRunInput {
    * adapter keeps its own default.
    */
   promptCacheIdleMs?: number
+  /**
+   * How long the run's prompt cache should live, in the provider's own terms: `long` asks for the
+   * longest-lived cache it offers (a Claude Code agent's `experimental.cacheTtl: 1h`), `short`
+   * its default. A preference, not a TTL: the adapter maps it to what its provider sells.
+   */
+  promptCacheRetention?: 'short' | 'long'
   maxTurns?: number
   tools: readonly AgentTool[]
   /**

@@ -70,6 +70,8 @@ export const pluginAgentSchema = z.object({
   isolation: z.literal('isolated').optional(),
   /** CC `omitClaudeMd` — the agent's runs read no workspace instruction file. */
   omitClaudeMd: z.boolean().optional(),
+  /** CC `experimental.cacheTtl` — the prompt cache lifetime of the agent's runs. */
+  cacheTtl: z.enum(['5m', '1h']).optional(),
   /**
    * CC `color` — display color for this agent in the task list / transcript
    * (`red`/`blue`/`green`/`yellow`/`purple`/`orange`/`pink`/`cyan`). Persisted on

@@ -62,6 +62,8 @@ export const DEFAULT_SILENCE: SilenceDeadline = { firstPartMs: 300_000, betweenP
 export interface SessionOptions {
   sessionId: string
   idleMs?: number
+  /** `long`: the longest-lived prompt cache the provider offers. */
+  cacheRetention?: 'short' | 'long'
   retry?: RetryPolicy
   silence?: SilenceDeadline
 }
@@ -133,6 +135,7 @@ export function createModelSession(bound: BoundModel, options: SessionOptions): 
         sessionId: options.sessionId,
         reasoningEffort: request.reasoningEffort,
         idleMs: options.idleMs,
+        ...(options.cacheRetention ? { cacheRetention: options.cacheRetention } : {}),
       },
       bound.origin,
     )

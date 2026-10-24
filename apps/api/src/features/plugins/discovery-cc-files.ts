@@ -250,6 +250,9 @@ export async function parseAgentFile(
   // ACTIVATED for the child delegate run (see command-handlers / delegate wiring). A flat-string
   // `hooks:` value (rare) is ignored — only a mapping is a valid CC hooks block.
   const hooks = isPlainRecord(yaml?.hooks) ? yaml!.hooks : undefined
+  // CC `experimental.cacheTtl:` — `5m` or `1h`; any other value is ignored.
+  const ttl = isPlainRecord(yaml?.experimental) ? yaml!.experimental.cacheTtl : undefined
+  const cacheTtl = ttl === '5m' || ttl === '1h' ? ttl : undefined
   // CC `when-to-use:` (hyphen) and `when_to_use` (underscore) — appended to description.
   const desc =
     [fields.description, fields['when-to-use'], fields.when_to_use]
@@ -272,6 +275,7 @@ export async function parseAgentFile(
     ...(memory ? { memory } : {}),
     ...(isolation ? { isolation } : {}),
     ...(omitClaudeMd ? { omitClaudeMd } : {}),
+    ...(cacheTtl ? { cacheTtl } : {}),
     ...(color ? { color } : {}),
     ...(initialPrompt ? { initialPrompt } : {}),
     ...(hooks !== undefined ? { hooks } : {}),

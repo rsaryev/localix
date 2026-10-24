@@ -76,6 +76,7 @@ export interface OpenSessionInput {
   credentialStore?: RuntimeCredentialStore
   sessionId: string
   idleMs?: number
+  cacheRetention?: 'short' | 'long'
   signal: AbortSignal
 }
 
@@ -163,6 +164,7 @@ export async function openSession(
   const session = createModelSession(await bindModel(options, input, entry), {
     sessionId: input.sessionId,
     ...(input.idleMs !== undefined ? { idleMs: input.idleMs } : {}),
+    ...(input.cacheRetention ? { cacheRetention: input.cacheRetention } : {}),
     ...(options.retry ? { retry: options.retry } : {}),
     ...(options.silence ? { silence: options.silence } : {}),
   })

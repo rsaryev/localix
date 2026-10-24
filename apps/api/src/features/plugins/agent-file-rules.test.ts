@@ -55,4 +55,23 @@ describe('a plugin agent file', () => {
     const { agents } = await loadManifest(dir(), 'global', '')
     expect(buildLoadedAgent('my-plugin', agents[0]!, (text) => text).omitClaudeMd).toBe(true)
   })
+
+  test('carries experimental.cacheTtl (5m or 1h, anything else ignored)', async () => {
+    for (const [value, expected] of [
+      ['1h', '1h'],
+      ['5m', '5m'],
+      ['2h', undefined],
+    ] as const) {
+      const file = `---\nname: cached\ndescription: C\nexperimental:\n  cacheTtl: ${value}\n---\nWork.`
+      mkdirSync(join(dir(), 'agents'), { recursive: true })
+      mkdirSync(join(dir(), '.claude-plugin'), { recursive: true })
+      writeFileSync(
+        join(dir(), '.claude-plugin/plugin.json'),
+        JSON.stringify({ name: 'my-plugin' }),
+      )
+      writeFileSync(join(dir(), 'agents/cached.md'), file)
+      const { agents } = await loadManifest(dir(), 'global', '')
+      expect(buildLoadedAgent('my-plugin', agents[0]!, (text) => text).cacheTtl).toBe(expected)
+    }
+  })
 })

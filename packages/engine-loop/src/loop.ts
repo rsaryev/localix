@@ -34,7 +34,7 @@ import { refuseTruncatedCalls, runToolBatch, type SettledCall } from './tools/sc
 /** What one run of the loop needs: the host's run input, with the model already bound. */
 export interface LoopInput extends Omit<
   AgentRuntimeRunInput,
-  'model' | 'credential' | 'credentialStore' | 'promptCacheIdleMs'
+  'model' | 'credential' | 'credentialStore' | 'promptCacheIdleMs' | 'promptCacheRetention'
 > {
   session: ModelSession
   /** Reports a tool whose schema had to be shortened for the model. */

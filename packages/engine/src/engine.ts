@@ -146,6 +146,7 @@ export function createEngine(options: EngineOptions = {}): AgentEngine {
             ...(input.credentialStore ? { credentialStore: input.credentialStore } : {}),
             sessionId: input.sessionId,
             ...(input.promptCacheIdleMs !== undefined ? { idleMs: input.promptCacheIdleMs } : {}),
+            ...(input.promptCacheRetention ? { cacheRetention: input.promptCacheRetention } : {}),
             messages: input.messages.filter((message) => 'content' in message) as never,
             signal,
           }),

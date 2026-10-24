@@ -9,6 +9,7 @@ import {
   agentTypesSection,
   applyPluginSubagent,
   contextFilesFor,
+  promptCacheRetentionFor,
   delegatePluginPorts,
 } from './plugin-subagent'
 
@@ -177,4 +178,12 @@ test('a plugin agent with omitClaudeMd runs without the workspace instruction fi
   expect(contextFilesFor(files, { ...REVIEWER, omitClaudeMd: true })).toEqual([files[2]])
   expect(contextFilesFor(files, REVIEWER)).toEqual(files)
   expect(contextFilesFor(files, null)).toEqual(files)
+})
+
+// sub-agents.md, `experimental.cacheTtl`: `1h` is the longer-lived cache, `5m` the default.
+test('a plugin agent with cacheTtl asks its runs for that cache lifetime', () => {
+  expect(promptCacheRetentionFor({ ...REVIEWER, cacheTtl: '1h' })).toBe('long')
+  expect(promptCacheRetentionFor({ ...REVIEWER, cacheTtl: '5m' })).toBe('short')
+  expect(promptCacheRetentionFor(REVIEWER)).toBeUndefined()
+  expect(promptCacheRetentionFor(null)).toBeUndefined()
 })

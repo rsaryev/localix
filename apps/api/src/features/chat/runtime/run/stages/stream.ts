@@ -26,6 +26,7 @@ import { wireRunSteering } from '../steering-wiring'
 import { indexToolPresentation } from '../tool-assembly'
 import { settleRunStream } from './stream-settle'
 import type { RunInputs } from './context'
+import { promptCacheRetentionFor } from '../plugin-subagent'
 import type { RunFrame } from './frame'
 import type { RunHistory } from './history'
 import type { RunIntake } from './intake'
@@ -136,6 +137,10 @@ export async function streamRun(
     ),
     // The observed idle gap, not a TTL: the adapter owns its provider's cache cost model.
     promptCacheIdleMs: turn.turnIdleMs,
+    // A plugin agent's `experimental.cacheTtl` (`1h` → the provider's long-lived cache).
+    ...(promptCacheRetentionFor(inputs.pluginSubagent)
+      ? { promptCacheRetention: promptCacheRetentionFor(inputs.pluginSubagent) }
+      : {}),
     maxTurns: intake.maxTurns,
     tools,
     // `activate_tools` promotes selected full schemas from this superset into the next turn.

@@ -42,6 +42,8 @@ export interface LoadedPluginAgent {
   isolation?: 'isolated'
   /** CC `omitClaudeMd` — its runs read no workspace instruction file (`AGENTS.md`, `CLAUDE.md`). */
   omitClaudeMd?: boolean
+  /** CC `experimental.cacheTtl` — the prompt cache lifetime of its runs. */
+  cacheTtl?: '5m' | '1h'
 }
 
 /**
@@ -184,5 +186,6 @@ export function buildLoadedAgent(
     ...(agent.background ? { background: true } : {}),
     ...(agent.isolation ? { isolation: agent.isolation } : {}),
     ...(agent.omitClaudeMd ? { omitClaudeMd: true } : {}),
+    ...(agent.cacheTtl ? { cacheTtl: agent.cacheTtl } : {}),
   }
 }

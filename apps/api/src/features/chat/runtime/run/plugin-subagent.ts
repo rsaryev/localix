@@ -105,3 +105,11 @@ export function contextFilesFor<File extends { path: string }>(
     ? files.filter((file) => !INSTRUCTION_FILE.test(file.path))
     : [...files]
 }
+
+/** The prompt cache a run as `subagent` asks for: `1h` the long-lived one, `5m` the default. */
+export function promptCacheRetentionFor(
+  subagent: Pick<LoadedPluginAgent, 'cacheTtl'> | null,
+): 'short' | 'long' | undefined {
+  if (subagent?.cacheTtl === '1h') return 'long'
+  return subagent?.cacheTtl === '5m' ? 'short' : undefined
+}

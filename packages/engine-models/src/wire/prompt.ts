@@ -50,6 +50,8 @@ export interface RequestContext {
   reasoningEffort: ReasoningEffort | undefined
   /** How long the session sat idle before this run, when the host measured it. */
   idleMs: number | undefined
+  /** The host asked for the longest-lived prompt cache the provider offers (`long`). */
+  cacheRetention?: 'short' | 'long'
 }
 
 const CACHE_POINT = {
@@ -119,13 +121,21 @@ function assistantMessage(
   return content.length > 0 ? { role: 'assistant', content } : undefined
 }
 
+/** Anthropic's one-hour cache write, for a run that asked for long retention. */
+const LONG_CACHE_POINT = { anthropic: { cacheControl: { type: 'ephemeral', ttl: '1h' } } } as const
+
 function withCache(
   message: LanguageModelV4Message,
   points: WireProfile['cachePoints'],
+  retention?: 'short' | 'long',
 ): LanguageModelV4Message {
+  const point =
+    retention === 'long' && (points ?? 'anthropic') === 'anthropic'
+      ? LONG_CACHE_POINT
+      : CACHE_POINT[points ?? 'anthropic']
   return {
     ...message,
-    providerOptions: { ...message.providerOptions, ...CACHE_POINT[points ?? 'anthropic'] },
+    providerOptions: { ...message.providerOptions, ...point },
   } as LanguageModelV4Message
 }
 
@@ -137,6 +147,7 @@ export function buildPrompt(
   request: Pick<ModelTurnRequest, 'systemPrompt' | 'messages'>,
   profile: WireProfile,
   origin?: AgentMessageOrigin,
+  retention?: 'short' | 'long',
 ) {
   const images = profile.images !== false
   const shape: ToolOutputShape = { images, textOnly: profile.compatible === true }
@@ -175,9 +186,10 @@ export function buildPrompt(
     // The system prompt (and the tools before it), the end of the history rebuilt byte for byte
     // next run, and the newest message: the three prefixes worth reading back.
     const points = profile.cachePoints
-    prompt[0] = withCache(prompt[0]!, points)
-    if (anchor > 0) prompt[anchor] = withCache(prompt[anchor]!, points)
-    if (prompt.length > 1) prompt[prompt.length - 1] = withCache(prompt[prompt.length - 1]!, points)
+    prompt[0] = withCache(prompt[0]!, points, retention)
+    if (anchor > 0) prompt[anchor] = withCache(prompt[anchor]!, points, retention)
+    if (prompt.length > 1)
+      prompt[prompt.length - 1] = withCache(prompt[prompt.length - 1]!, points, retention)
   }
   return prompt
 }
@@ -193,7 +205,7 @@ export function buildCallOptions(
     ? ({ [profile.namespace]: extra } as SharedV4ProviderOptions)
     : undefined
   return {
-    prompt: buildPrompt(request, profile, origin),
+    prompt: buildPrompt(request, profile, origin, context.cacheRetention),
     ...(request.tools.length > 0
       ? {
           tools: request.tools.map((tool) => ({
