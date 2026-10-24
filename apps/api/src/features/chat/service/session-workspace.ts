@@ -2,7 +2,7 @@ import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import { discoverFilesystemSkills } from '../../agent-core/skill-discovery'
 import { buildPluginCatalog, type PluginCatalog } from '../../plugins/catalog'
 import type { PluginCommand } from '../../plugins/contracts'
-import { readCatalogPluginSkills } from '../../plugins/plugin-skills'
+import { catalogPluginCommands, readCatalogPluginSkills } from '../../plugins/plugin-skills'
 import type { createProjectsRepository } from '../../projects/repository'
 import type { SessionRecord } from '../repository'
 import { projectWorkingDirPort, resolveBaseSessionCwd } from '../session-cwd'
@@ -88,12 +88,8 @@ export function createSessionWorkspace(deps: SessionWorkspaceDeps) {
       cwd,
       homeDir: userHome(),
     })
-    const out: Array<{ plugin: string; command: PluginCommand; pluginDir: string }> = []
-    for (const { plugin } of catalog.enabled) {
-      for (const command of plugin.commands)
-        out.push({ plugin: plugin.manifest.name, command, pluginDir: plugin.dir })
-    }
-    return out
+    // Each command's text takes the plugin's saved `${user_config.KEY}` values, as a skill's does.
+    return catalogPluginCommands(catalog, { projectDir: cwd, homeDir: userHome() })
   }
 
   const buildSessionPluginCatalog = async (

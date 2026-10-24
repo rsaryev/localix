@@ -8,7 +8,7 @@ import { errorMessage } from '../../lib/errors'
 import type { PluginCatalog } from './catalog'
 import { listCommandsFromCatalog, modCommandSpecs } from './commands'
 import { resolvePluginConfig } from './config'
-import type { PluginCommandSpec } from './contracts'
+import type { PluginCommand, PluginCommandSpec } from './contracts'
 import { pluginLoadBlockReason } from './load-block'
 import { makePluginSubstituter } from './loader-runtime-declarations'
 
@@ -94,6 +94,33 @@ export async function readCatalogPluginSkills(
     }),
   )
   return perPlugin.flat()
+}
+
+/**
+ * The commands of every ENABLED plugin, with their text read as a skill's is (a command is a skill
+ * in Claude Code): `${user_config.KEY}` takes the saved value, a sensitive one a placeholder.
+ */
+export function catalogPluginCommands(
+  catalog: PluginCatalog,
+  opts: { projectDir: string; homeDir: string },
+): Array<{ plugin: string; command: PluginCommand; pluginDir: string }> {
+  return catalog.enabled.flatMap(({ plugin, state }) => {
+    const name = plugin.manifest.name
+    const config = resolvePluginConfig(plugin.manifest, scalarConfig(state?.config))
+    const subst = makePluginSubstituter(
+      plugin.dir,
+      name,
+      config,
+      plugin.manifest,
+      opts.projectDir,
+      opts.homeDir,
+    )
+    return plugin.commands.map((command) => ({
+      plugin: name,
+      command: { ...command, prompt: subst(command.prompt) },
+      pluginDir: plugin.dir,
+    }))
+  })
 }
 
 /**
