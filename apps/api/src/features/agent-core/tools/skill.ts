@@ -11,6 +11,7 @@ import {
   type DiscoveredSkill,
 } from '../skill-discovery'
 import { recordSkillUse } from '../skill-usage-recorder'
+import { skillPromptDetails } from '../skill-prompt-details'
 import { ambiguousSkillNames, findSkillByName, skillCallName } from './skill-names'
 import { MAX_OUTPUT_BYTES } from './file/read-output'
 import { truncationMarker } from './tool-output'
@@ -259,6 +260,8 @@ export function createSkillTool(
               })}`
             : body
           return {
+            // What a mod's `skill.prompt` is told about the skill it rewrites.
+            details: { skill: await skillPromptDetails(skill) },
             content: [
               `# Skill: ${skillCallName(skill)}`,
               `Source: ${JSON.stringify(skill.path)}`,

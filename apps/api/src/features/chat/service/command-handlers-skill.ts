@@ -7,6 +7,7 @@ import { parseSkillCommand } from './slash-commands'
 import { commandTarget } from './command-participant'
 import { SkillCommandFailedError } from './skill-commands'
 import { renderSkillBody } from './skill-render'
+import { skillPromptDetails } from '../../agent-core/skill-prompt-details'
 import {
   skillToolPathVars,
   substituteToolPathVars,
@@ -163,6 +164,7 @@ export async function handleSkillCommand(
     { userId, sessionId, cwd: workingDir },
     skill.name,
     expanded,
+    await skillPromptDetails(skill),
   )
   // Curator usage telemetry — a slash-command invocation counts as a use. The curator tends the
   // person's own skills; a plugin's are the plugin's.
