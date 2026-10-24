@@ -1,0 +1,128 @@
+import { Hono } from 'hono'
+import { z } from 'zod'
+import {
+  enableRequestSchema,
+  installPlanSchema,
+  installRequestSchema,
+  listingDetailSchema,
+  listingParamsSchema,
+  listingsQuerySchema,
+  listingsResponseSchema,
+  parseShelf,
+  planRequestSchema,
+  scopeRequestSchema,
+  sourceInputSchema,
+  sourcePreviewSchema,
+  sourceRemoveSchema,
+  sourceViewSchema,
+  storeActivitySchema,
+  updatesApplyResponseSchema,
+} from '@localixai/store'
+
+import type { AppContext } from '../../app'
+import { defaultErrorHandler } from '../../lib/http'
+import { zValidator } from '../../lib/validator'
+import type { StoreService } from './service'
+
+const sourcesResponseSchema = z.object({ sources: z.array(sourceViewSchema) })
+
+/**
+ * `/rpc/store` (`docs/internals/store.md`, "Routes"): listings, a listing's page and plan, the
+ * jobs that change an install, sources and activity, across every package kind. A provider's
+ * domain error reaches the client with its own status and code through the one error handler
+ * (A7). A write that queues a job answers 202, a switch 204: the `store` poke tells every surface
+ * to read again (P11).
+ */
+export function createStoreRoutes(store: StoreService) {
+  const app = new Hono<AppContext>()
+  const actor = (c: { get(key: 'userId'): string }) => ({ userId: c.get('userId') })
+
+  const routes = app
+    .get('/listings', zValidator('query', listingsQuerySchema), async (c) => {
+      const { shelf, q, scope, installed } = c.req.valid('query')
+      const page = await store.listings(actor(c), {
+        ...(shelf ? { shelf: parseShelf(shelf)! } : {}),
+        ...(q ? { q } : {}),
+        ...(scope ? { scope } : {}),
+        ...(installed ? { installed: installed === 'true' } : {}),
+      })
+      return c.json(listingsResponseSchema.parse(page), 200)
+    })
+    .get('/activity', async (c) =>
+      c.json(storeActivitySchema.parse(await store.activity(actor(c))), 200),
+    )
+    .post('/updates/apply', async (c) =>
+      c.json(updatesApplyResponseSchema.parse({ queued: await store.applyUpdates(actor(c)) }), 202),
+    )
+    .get('/sources', async (c) =>
+      c.json(sourcesResponseSchema.parse({ sources: await store.sources() }), 200),
+    )
+    .post('/sources/preview', zValidator('json', sourceInputSchema), async (c) => {
+      const { kind, input } = c.req.valid('json')
+      return c.json(sourcePreviewSchema.parse(await store.previewSource(kind, input)), 200)
+    })
+    .post('/sources/add', zValidator('json', sourceInputSchema), async (c) => {
+      const { kind, input } = c.req.valid('json')
+      await store.addSource(kind, input)
+      return c.body(null, 204)
+    })
+    .post('/sources/remove', zValidator('json', sourceRemoveSchema), async (c) => {
+      const { kind, id } = c.req.valid('json')
+      await store.removeSource(kind, id)
+      return c.body(null, 204)
+    })
+    .get('/:kind/:id', zValidator('param', listingParamsSchema), async (c) =>
+      c.json(listingDetailSchema.parse(await store.detail(c.req.valid('param'), actor(c))), 200),
+    )
+    .post(
+      '/:kind/:id/plan',
+      zValidator('param', listingParamsSchema),
+      zValidator('json', planRequestSchema),
+      async (c) => {
+        const plan = await store.plan(c.req.valid('param'), c.req.valid('json').scope, actor(c))
+        return c.json(installPlanSchema.parse(plan), 200)
+      },
+    )
+    .post(
+      '/:kind/:id/install',
+      zValidator('param', listingParamsSchema),
+      zValidator('json', installRequestSchema),
+      async (c) => {
+        const { scope, consent } = c.req.valid('json')
+        await store.install(c.req.valid('param'), scope, consent, actor(c))
+        return c.body(null, 202)
+      },
+    )
+    .post(
+      '/:kind/:id/update',
+      zValidator('param', listingParamsSchema),
+      zValidator('json', scopeRequestSchema),
+      async (c) => {
+        await store.update(c.req.valid('param'), c.req.valid('json').scope, actor(c))
+        return c.body(null, 202)
+      },
+    )
+    .post(
+      '/:kind/:id/remove',
+      zValidator('param', listingParamsSchema),
+      zValidator('json', scopeRequestSchema),
+      async (c) => {
+        await store.remove(c.req.valid('param'), c.req.valid('json').scope, actor(c))
+        return c.body(null, 204)
+      },
+    )
+    .post(
+      '/:kind/:id/enable',
+      zValidator('param', listingParamsSchema),
+      zValidator('json', enableRequestSchema),
+      async (c) => {
+        const { scope, enabled } = c.req.valid('json')
+        await store.setEnabled(c.req.valid('param'), scope, enabled, actor(c))
+        return c.body(null, 204)
+      },
+    )
+
+  routes.onError(defaultErrorHandler)
+
+  return routes
+}

@@ -224,6 +224,12 @@ export function createMiniAppStore(deps: {
       return readStoreActivity({ jobs, labels, offers, installRoot })
     },
 
+    /** Read every catalog again, so the next list is fresh; tells the subscribers. */
+    async refresh(): Promise<void> {
+      await readOffers({ fresh: true })
+      for (const listener of listeners) listener()
+    },
+
     /** A catalog's icon, checked against its pin, for a catalog not added yet. */
     catalogImage: readMedia.catalogImage,
 

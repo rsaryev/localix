@@ -1,0 +1,222 @@
+import { afterEach, describe, expect, test } from 'bun:test'
+import { promises as fs } from 'node:fs'
+import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
+import { tempDirPerTest } from '@localixai/testing'
+
+import { __resetBundledSyncCache } from './bundled-install'
+import { createMiniAppStore, type MiniAppStoreSource } from './store'
+import { createMiniAppStoreProvider } from './store-provider'
+
+const root = tempDirPerTest('mini-app-store-provider-')
+const actor = { userId: 'u1' }
+const ADA = 'https://ada.test/mini-app-catalog.json'
+
+async function offer(source: string, name: string, extra: Record<string, unknown> = {}) {
+  await fs.mkdir(join(source, name), { recursive: true })
+  await fs.writeFile(
+    join(source, name, 'mini-app.json'),
+    JSON.stringify({ name, version: '1.0.0', description: `${name} app`, ...extra }),
+  )
+}
+
+function setup(publisher = { name: 'Localix', verified: true }) {
+  const source = join(root(), 'staged')
+  const local: MiniAppStoreSource = { kind: 'local', root: source, publisher, vouches: true }
+  const store = createMiniAppStore({
+    homeDir: join(root(), 'home'),
+    sources: () => [local],
+    onInstalled: async () => {},
+  })
+  const calls: string[] = []
+  const enabled = new Map<string, boolean>()
+  const catalogs = [{ url: pathToFileURL(source).href, builtIn: true }]
+  const provider = createMiniAppStoreProvider({
+    store,
+    catalogs: {
+      list: async () => catalogs,
+      add: async (url) => void calls.push(`add ${url}`),
+      remove: async (url) => void calls.push(`remove ${url}`),
+      preview: async (url) => ({
+        url,
+        publishers: ['Ada'],
+        apps: 3,
+        icons: [],
+        verified: false,
+        added: false,
+      }),
+    },
+    apps: {
+      list: async () => ({
+        miniApps: [...enabled].map(([name, on]) => ({ name, enabled: on })),
+      }),
+      setEnabled: async (_userId, { name, enabled: on }) => void calls.push(`enable ${name} ${on}`),
+      remove: async (_userId, { name }) => void calls.push(`remove ${name}`),
+    },
+  })
+  return { source, store, provider, calls, enabled, catalogs }
+}
+
+afterEach(() => __resetBundledSyncCache())
+
+describe('the mini apps in the Store', () => {
+  test('an offer is a listing: what it is, where it comes from and what is inside', async () => {
+    const { source, provider } = setup()
+    await offer(source, 'chess', {
+      displayName: 'Chess',
+      category: 'games',
+      tags: ['board-game'],
+      surfaces: ['agent', 'workbench'],
+      commands: { play: { prompt: 'Play', description: 'Play' }, hint: { prompt: 'Hint' } },
+    })
+    await offer(source, 'clock', { surfaces: ['workbench'] })
+    await fs.writeFile(join(source, 'catalog-picks.json'), JSON.stringify({ featured: ['chess'] }))
+
+    const { listings, problems } = await provider.listings(actor)
+    expect(problems).toEqual([])
+    const [chess, clock] = listings
+    expect(chess).toMatchObject({
+      ref: { kind: 'mini-app', id: 'chess' },
+      name: 'chess',
+      displayName: 'Chess',
+      summary: 'chess app',
+      category: 'games',
+      tags: ['board-game'],
+      publisher: { name: 'Localix', verified: true },
+      source: { id: pathToFileURL(source).href, label: 'Localix' },
+      version: '1.0.0',
+      contents: { screen: 1, 'agent-tool': 1, backend: 1, command: 2 },
+      componentNames: ['play', 'hint'],
+      runsCode: true,
+      featured: true,
+      recommended: false,
+      installs: [],
+    })
+    expect(clock).toMatchObject({ displayName: 'clock', contents: { screen: 1 }, runsCode: false })
+  })
+
+  test('an install shows its version, its switch, an offered update and its settings', async () => {
+    const { source, store, provider, enabled } = setup()
+    await offer(source, 'chess')
+    await store.install('chess')
+    await store.settled()
+    await offer(source, 'chess', { version: '1.1.0' })
+    enabled.set('chess', false)
+
+    const [chess] = (await provider.listings(actor)).listings
+    expect(chess!.installs).toEqual([
+      { scope: 'user', version: '1.0.0', enabled: false, updateTo: '1.1.0' },
+    ])
+    expect(chess!.job).toMatchObject({ action: 'update', phase: 'done' })
+    expect(chess!.configure).toStartWith('localix://ui/settings/mini-apps')
+  })
+
+  test('its page: README, pictures, facts and what it adds', async () => {
+    const { source, provider } = setup()
+    await offer(source, 'chess', {
+      displayName: 'Chess',
+      license: 'MIT',
+      author: 'Ada',
+      homepage: 'https://example.test/chess',
+      icon: 'icon.svg',
+      screenshots: [{ path: 'shots/board.png', caption: 'The board' }],
+      surfaces: ['workbench'],
+      commands: { play: { prompt: 'Play' } },
+    })
+    await fs.writeFile(join(source, 'chess', 'README.md'), '# Chess')
+
+    const detail = await provider.detail('chess', actor)
+    expect(detail.readme).toBe('# Chess')
+    expect(detail.media).toEqual([
+      {
+        url: expect.stringContaining('/rpc/mini-apps/store/media/chess/screenshot/0'),
+        caption: 'The board',
+      },
+    ])
+    expect(detail.facts).toEqual([
+      { label: 'Version', value: '1.0.0' },
+      { label: 'License', value: 'MIT' },
+      { label: 'Author', value: 'Ada' },
+      { label: 'Homepage', value: 'https://example.test/chess' },
+    ])
+    expect(detail.components).toEqual([
+      { kind: 'screen', name: 'Chess', description: 'A screen of its own' },
+      { kind: 'command', name: '/chess:play' },
+    ])
+  })
+
+  test('a plan says what runs; an unverified publisher needs a yes, given as consent', async () => {
+    const { source, store, provider } = setup({ name: 'Someone', verified: false })
+    await offer(source, 'radio', { displayName: 'Radio', surfaces: ['agent'] })
+
+    const plan = await provider.plan('radio', 'user', actor)
+    expect(plan.runs).toEqual([{ kind: 'backend', name: 'Radio' }])
+    expect(plan.needsConsent).toBe(true)
+    expect(plan.warnings).toEqual(['Someone is not a publisher Localix verifies'])
+
+    await expect(provider.install('radio', 'user', { plan: false }, actor)).rejects.toMatchObject({
+      code: 'mini_app_unverified',
+    })
+    await provider.install('radio', 'user', { plan: true }, actor)
+    await store.settled()
+    expect((await provider.listings(actor)).listings[0]!.installs).toHaveLength(1)
+  })
+
+  test('a mini app is installed for the person only, never for a project', async () => {
+    const { source, provider } = setup()
+    await offer(source, 'chess')
+    await expect(provider.plan('chess', 'project', actor)).rejects.toMatchObject({
+      code: 'mini_app_user_scope',
+    })
+    await expect(provider.install('chess', 'project', { plan: true }, actor)).rejects.toMatchObject(
+      { status: 400 },
+    )
+  })
+
+  test('remove and the switch go to the person’s mini apps', async () => {
+    const { provider, calls } = setup()
+    await provider.remove('chess', 'user', actor)
+    await provider.setEnabled!('chess', 'user', false, actor)
+    expect(calls).toEqual(['remove chess', 'enable chess false'])
+  })
+
+  test('sources are the catalogs, labelled, with how many apps each offers', async () => {
+    const { source, provider, catalogs, calls } = setup()
+    await offer(source, 'chess')
+    catalogs.push({ url: ADA, builtIn: false })
+    expect(await provider.sources()).toEqual([
+      {
+        kind: 'mini-app',
+        id: pathToFileURL(source).href,
+        label: 'Localix',
+        url: pathToFileURL(source).href,
+        builtIn: true,
+        count: 1,
+      },
+      { kind: 'mini-app', id: ADA, label: 'ada.test', url: ADA, builtIn: false, count: 0 },
+    ])
+    expect(await provider.previewSource!(ADA)).toEqual({
+      kind: 'mini-app',
+      id: ADA,
+      label: 'ada.test',
+      publishers: ['Ada'],
+      count: 3,
+      icons: [],
+      verified: false,
+      added: false,
+    })
+    await provider.addSource!(ADA)
+    await provider.removeSource!(ADA)
+    expect(calls).toEqual([`add ${ADA}`, `remove ${ADA}`])
+  })
+
+  test('every move of an install is heard', async () => {
+    const { source, store, provider } = setup()
+    await offer(source, 'chess')
+    let heard = 0
+    provider.subscribe(() => heard++)
+    await provider.install('chess', 'user', { plan: false }, actor)
+    await store.settled()
+    expect(heard).toBeGreaterThan(1)
+  })
+})

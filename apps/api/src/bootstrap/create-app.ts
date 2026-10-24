@@ -10,6 +10,7 @@ import type { DomainServicesPhase } from './domain-services'
 import type { AppServicesPhase } from './app-services'
 import type { StorageService } from '../features/storage/service'
 import type { AgentSessionsService } from '../features/external-agents/backend/service'
+import type { StoreService } from '../features/store/service'
 
 export interface CreateAppPhaseInput
   extends
@@ -46,6 +47,7 @@ export interface CreateAppPhaseInput
   chatService: ReturnType<typeof createChatService>
   storageService: StorageService
   externalAgents: AgentSessionsService
+  storeService: StoreService
 }
 
 export interface CreateAppPhase {
@@ -54,6 +56,7 @@ export interface CreateAppPhase {
 
 export function createAppPhase({
   externalAgents,
+  storeService,
   storageService,
   runtimeInfo,
   env,
@@ -94,6 +97,7 @@ export function createAppPhase({
 }: CreateAppPhaseInput): CreateAppPhase {
   const app = createApp({
     externalAgents,
+    storeService,
     runtimeInfo,
     logger,
     defaultUserId: env.LOCALIX_DEFAULT_USER_ID,

@@ -55,11 +55,11 @@ export const RELAY_TOPICS = {
   agent: { resources: ['capabilities', 'sessions'], resync: ['capabilities'] },
   skill: { resources: ['capabilities'] },
   plugin: 'ignore',
-  // A mini app installed, updated, removed or reconfigured: the mini apps list and what the catalog
-  // offers (its tools join or leave runs).
-  'mini-app': { resources: ['mini-apps', 'capabilities'], bumpsCapabilities: true },
-  // The store's catalogs: their list and what the store offers.
-  'mini-app.catalog': { resources: ['mini-app-catalogs'] },
+  // A mini app installed, updated, removed or reconfigured: the mini apps list, what the catalog
+  // offers (its tools join or leave runs) and the Store's listings.
+  'mini-app': { resources: ['mini-apps', 'capabilities', 'store'], bumpsCapabilities: true },
+  // The store's catalogs: their list and what the Store offers.
+  'mini-app.catalog': { resources: ['mini-app-catalogs', 'store'] },
   mcp: 'ignore',
   // What the `local` provider lists reaches clients through the catalog's own refresh; the
   // install itself through the `local-models` status poke (`status-pokes.ts`), which every

@@ -31,6 +31,7 @@
     "@localixai/notifications": "workspace:*",
     "@localixai/path-containment": "workspace:*",
     "@localixai/search": "workspace:*",
+    "@localixai/store": "workspace:*",
     "@localixai/visual-feedback": "workspace:*",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/react-virtual": "^3.14.21",

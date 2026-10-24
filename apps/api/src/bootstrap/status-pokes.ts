@@ -11,6 +11,8 @@ export function startModelStatusPokes(deps: {
   semanticService: Pick<SemanticService, 'subscribe'>
   /** The mini app store's installs in flight (`mini-apps/store.ts`). */
   miniAppStore: { subscribe(listener: () => void): () => void }
+  /** The Store: any provider's listings moved (`features/store/service.ts`). */
+  store: { subscribe(listener: () => void): () => void }
   /** Plugin updates available and in flight (`plugins/plugin-updates.ts`). */
   pluginUpdates: { subscribe(listener: () => void): () => void }
   chatService: {
@@ -24,6 +26,7 @@ export function startModelStatusPokes(deps: {
       { resource: 'local-models', subscribe: deps.localModels.subscribe },
       { resource: 'semantic', subscribe: deps.semanticService.subscribe },
       { resource: 'mini-app-installs', subscribe: deps.miniAppStore.subscribe },
+      { resource: 'store', subscribe: deps.store.subscribe },
       { resource: 'plugin-updates', subscribe: deps.pluginUpdates.subscribe },
     ],
     (resources) =>

@@ -13,6 +13,7 @@ import { createEnginesPhase } from './bootstrap/engines'
 import { createAgentFacadePhase } from './bootstrap/agent-facade'
 import { createAppServicesPhase } from './bootstrap/app-services'
 import { createAppPhase } from './bootstrap/create-app'
+import { createStorePhase, invalidateStoreOn } from './bootstrap/store'
 import { createOpsTimersPhase } from './bootstrap/ops-timers'
 import { startAfterListen } from './bootstrap/post-listen'
 import { buildSemanticService } from './bootstrap/semantic'
@@ -221,7 +222,9 @@ export async function bootstrap(
     chatService,
     semanticService,
   })
+  const storeService = createStorePhase({ miniAppService })
   const { app } = createAppPhase({
+    storeService,
     externalAgents: externalAgents.service,
     storageService,
     runtimeInfo,
@@ -289,6 +292,7 @@ export async function bootstrap(
           localModels,
           semanticService,
           miniAppStore: miniAppService.store,
+          store: storeService,
           pluginUpdates: pluginService.updates,
           chatService,
           env,
@@ -314,11 +318,12 @@ export async function bootstrap(
           },
           subagentRows: chatService.subagentRowsLive,
           statusLine: chatService.statusLine,
-          publish: (userId, resources) =>
+          publish: invalidateStoreOn(storeService, (userId, resources) =>
             chatService.streamRegistry.publish(userId, '', {
               type: 'resources.changed',
               resources,
             }),
+          ),
         },
       },
       signal,

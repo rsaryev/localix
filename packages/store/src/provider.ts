@@ -1,0 +1,51 @@
+import type {
+  InstallPlan,
+  Listing,
+  ListingDetail,
+  PackageKind,
+  Scope,
+  SourcePreview,
+  SourceView,
+} from './contract'
+
+/**
+ * Who a call is for. Enabled state and the yes to run a package are the person's, so every call
+ * names them; the Store passes it through and keeps nothing per person.
+ */
+export interface StoreActor {
+  userId: string
+}
+
+/** What a listing page shows beside the listings: sources that could not be read this time. */
+export interface ProviderListings {
+  listings: Listing[]
+  problems: string[]
+}
+
+/**
+ * The port one feature implements to serve its package kind through the Store
+ * (`docs/internals/store.md`, "Provider port"). It owns its records, sources, routes and errors:
+ * a method throws the provider's own domain errors, and only the Store's routes turn them into
+ * HTTP. A capability a provider lacks is an absent method; the UI hides its control.
+ */
+export interface StoreProvider {
+  kind: PackageKind
+  /** From the provider's cached feeds. */
+  listings(actor: StoreActor): Promise<ProviderListings>
+  detail(id: string, actor: StoreActor): Promise<ListingDetail>
+  /** May fetch a remote package into the provider's cache. */
+  plan(id: string, scope: Scope, actor: StoreActor): Promise<InstallPlan>
+  /** Queues a job; resolves once queued. Refuses a plan that needs consent without it. */
+  install(id: string, scope: Scope, consent: { plan: boolean }, actor: StoreActor): Promise<void>
+  update(id: string, scope: Scope, actor: StoreActor): Promise<void>
+  remove(id: string, scope: Scope, actor: StoreActor): Promise<void>
+  setEnabled?(id: string, scope: Scope, enabled: boolean, actor: StoreActor): Promise<void>
+  /** Re-read the sources, so the next listings are fresh. */
+  refresh(): Promise<void>
+  sources(): Promise<SourceView[]>
+  previewSource?(input: string): Promise<SourcePreview>
+  addSource?(input: string): Promise<void>
+  removeSource?(id: string): Promise<void>
+  /** Hear every change to what `listings` would answer; returns the unsubscribe. */
+  subscribe(onChange: () => void): () => void
+}

@@ -20,6 +20,9 @@ export const REALTIME_RESOURCES = [
   'plugin-updates',
   // The catalogs the mini app store reads.
   'mini-app-catalogs',
+  // The Store's listings across package kinds (`/rpc/store`): a job moved, an install or a
+  // source changed.
+  'store',
   // Plugin updates available and in flight (`plugins/plugin-updates.ts`), with their progress.
   'plugin-updates',
   'semantic',

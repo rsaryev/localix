@@ -31,6 +31,8 @@ export interface MiniAppStoreEntry {
   /** Installed on its own on a new installation (the Localix catalog only, `recommended.ts`). */
   recommended?: boolean
   surfaces?: string[]
+  /** The names of the `/<app>:<command>` commands its manifest declares. */
+  commands?: string[]
   /** What is on this machine, or null. */
   installed: { version?: string } | null
   /** The catalog offers a version other than the installed one. */
@@ -47,7 +49,7 @@ export function storeEntry(
   job: MiniAppJob | undefined,
 ): MiniAppStoreEntry {
   const installedVersion = typeof installed?.version === 'string' ? installed.version : undefined
-  const { tags, featured, recommended, surfaces } = offer.store
+  const { tags, featured, recommended, surfaces, commands } = offer.store
   const icon = iconOf(offer)
   return {
     name: offer.name,
@@ -62,6 +64,7 @@ export function storeEntry(
     ...(featured ? { featured: true } : {}),
     ...(recommended ? { recommended: true } : {}),
     ...(surfaces ? { surfaces } : {}),
+    ...(commands?.length ? { commands } : {}),
     installed: installed ? (installedVersion ? { version: installedVersion } : {}) : null,
     update: Boolean(installed && offer.version && installedVersion !== offer.version),
     ...(isIncompatible(offer) ? { incompatible: true } : {}),

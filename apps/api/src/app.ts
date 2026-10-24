@@ -34,9 +34,6 @@ import {
   createCapabilityRoutes,
   type CapabilityRoutesService,
 } from './features/capabilities/routes'
-import { createMcpRoutes, type McpRoutesService } from './features/mcp/routes'
-import { createPluginRoutes, type PluginRoutesService } from './features/plugins/routes'
-import { createMiniAppRoutes, type MiniAppRoutesService } from './features/mini-apps/routes'
 import {
   holdMiniAppRoutesUntilWired,
   type MiniAppRouteHost,
@@ -77,6 +74,7 @@ import { createTerminalStreamRoute } from './features/terminal/ws'
 import { createPreviewRoutes, type PreviewRoutesDeps } from './features/preview/routes'
 import { createWebhookRoutes } from './features/webhook/routes'
 import { createConversationRoutes, type ConversationRouteDeps } from './conversation-routes'
+import { createExtensionRoutes, type ExtensionRouteDeps } from './extension-routes'
 import { WEBHOOK_MOUNT_PATH } from './lib/runtime-address'
 import type { TerminalService } from './features/terminal/service'
 import type { WorkRegistry } from './features/work/registry'
@@ -91,7 +89,7 @@ import type { UiLocationCatalogService } from './features/ui-locations/service'
 export type AppContext = HostRouteContext
 
 // The plan, Continue, attention and comments deps (`./conversation-routes`).
-export interface AppDeps extends ConversationRouteDeps {
+export interface AppDeps extends ConversationRouteDeps, ExtensionRouteDeps {
   externalAgents?: AgentSessionsService
   runtimeInfo?: {
     instanceId: string
@@ -119,9 +117,6 @@ export interface AppDeps extends ConversationRouteDeps {
    * a feature that only reports.
    */
   toolGcSource?: ToolGcSource
-  mcpService: McpRoutesService
-  pluginService: PluginRoutesService
-  miniAppService: MiniAppRoutesService
   agentsService: AgentsRoutesService
   skillsCuratorService: SkillsCuratorService
   /** The notification journal — the Event Center's single source of truth. */
@@ -269,9 +264,7 @@ h2{margin:0 0 .5rem}p{margin:0;color:#888;font-size:.9rem}</style></head>
         writeRules: (...args) => deps.capabilityPermissions.writeRules(...args),
       }),
     )
-    .route('/rpc/mcp', createMcpRoutes(deps.mcpService))
-    .route('/rpc/plugins', createPluginRoutes(deps.pluginService))
-    .route('/rpc/mini-apps', createMiniAppRoutes(deps.miniAppService))
+    .route('/rpc', createExtensionRoutes(deps))
     .route('/rpc/agents', createAgentsRoutes(deps.agentsService))
     .route('/rpc/external-agents', createAgentSessionsRoutes(deps.externalAgents))
     .route('/rpc/external-agents', ownedAgentRoutes(deps))
