@@ -101,6 +101,23 @@ describe('tools through the mods', () => {
     expect([...placed]).toEqual([['bash', true]])
   })
 
+  test('an MCP tool’s description reaches tool.describe as its server wrote it', async () => {
+    const seen: unknown[] = []
+    const { scope } = await hostWithMod((on) => {
+      on('tool.describe', ($, e: any) => {
+        seen.push(e.description)
+        return { description: `${e.description} Mind the rate limit.` }
+      })
+    })
+    const docs = { ...tool('mcp_docs_search'), description: '[MCP: docs] Search the docs.' }
+    const { tools } = await scope.describeTools([docs], {
+      sources: new Map(),
+      deferred: () => false,
+    })
+    expect(seen).toEqual(['Search the docs.'])
+    expect(tools[0]!.description).toBe('[MCP: docs] Search the docs. Mind the rate limit.')
+  })
+
   test('tool.check answers the gate, and $.tool.check runs the chain over the gate’s verdict', async () => {
     const checks: unknown[] = []
     const { scope } = await hostWithMod((on) => {

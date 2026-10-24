@@ -119,6 +119,8 @@ const write: Shaper = (_result, details, input, cwd) => {
     content: entry.content,
     structuredPatch: structuredPatch(one.file.diff),
     originalFile: null,
+    // The person did not change the content before it was written (Claude Code's own record).
+    userModified: false,
   }
 }
 

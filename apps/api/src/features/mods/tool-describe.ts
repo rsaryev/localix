@@ -36,6 +36,9 @@ const providerOf = (source: string | undefined, name: string) =>
       ? { plugin: /^mcp__([^_]+)__/.exec(name)?.[1] ?? 'plugin', tier: 'user' }
       : { plugin: `mcp:${source}`, tier: 'user' }
 
+/** The `[MCP: server] ` Localix leads an MCP tool's description with; Claude Code's has none. */
+const MCP_LEAD = /^\[MCP: [^\]]*\] /
+
 export async function describeTools(
   scope: ModEventScope,
   tools: readonly AgentTool[],
@@ -46,9 +49,11 @@ export async function describeTools(
   const described = await Promise.all(
     tools.map(async (tool) => {
       const deferred = placement.deferred(tool.name)
+      const lead = MCP_LEAD.exec(tool.description)?.[0] ?? ''
+      const own = tool.description.slice(lead.length)
       const input = {
         tool: claudeCodeToolName(tool),
-        description: tool.description,
+        description: own,
         ...(deferred ? { isDeferred: true } : {}),
         provider: providerOf(placement.sources.get(tool.name), tool.name),
       }
@@ -66,8 +71,9 @@ export async function describeTools(
       const isDeferred = fieldOf(answer, 'isDeferred')
       if (typeof isDeferred === 'boolean' && isDeferred !== deferred)
         placed.set(tool.name, isDeferred)
-      return typeof description === 'string' && description !== tool.description
-        ? { ...tool, description }
+      // A rewrite keeps Localix's lead, which names the server for the model.
+      return typeof description === 'string' && description !== own
+        ? { ...tool, description: `${lead}${description}` }
         : tool
     }),
   )

@@ -80,7 +80,11 @@ function writeTool(written: string[]): AgentTool {
     inputSchema: z.object({ files: z.array(z.object({ path: z.string(), content: z.string() })) }),
     execute: async (_id, input) => {
       written.push(...input.files.map((file) => file.path))
-      return { content: `Wrote ${input.files.length} file` }
+      // What Localix's write tool reports of each file, which its Claude Code result is made from.
+      return {
+        content: `Wrote ${input.files.length} file`,
+        details: { files: input.files.map((file) => ({ path: file.path, created: true })) },
+      }
     },
   }) as AgentTool
 }

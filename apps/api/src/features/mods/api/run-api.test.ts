@@ -68,3 +68,10 @@ test('ui.ask puts the question to the person through the turn’s question card'
     ],
   })
 })
+
+test('$.tool.call reaches a tool by any name Claude Code calls it', async () => {
+  const api = createRunApi(() => ({ tools: [tool('search')] }))
+  expect(await api.tool.call({ tool: 'Glob', pattern: '*.ts' })).toMatchObject({
+    text: expect.stringContaining('search got'),
+  })
+})
