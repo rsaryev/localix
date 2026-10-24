@@ -66,8 +66,15 @@ describe('renderPluginPrompt', () => {
     )
   })
 
-  it('renders an unknown ${argName} as empty', async () => {
-    expect(await renderPluginPrompt('A ${missing} B', {})).toBe('A  B')
+  it('leaves a ${NAME} that is no declared arg as written, as Claude Code does', async () => {
+    // mcp-tunnels' create-docker-mcp-tunnel shows `CN=${TUNNEL_DOMAIN}` for the model to fill in.
+    expect(await renderPluginPrompt('-subj "/CN=${TUNNEL_DOMAIN}" B', {})).toBe(
+      '-subj "/CN=${TUNNEL_DOMAIN}" B',
+    )
+  })
+
+  it('renders a declared arg the person left out as empty', async () => {
+    expect(await renderPluginPrompt('A ${missing} B', { missing: '' })).toBe('A  B')
   })
 
   it('substitutes Claude Code $ARGUMENTS with the full raw arg string', async () => {

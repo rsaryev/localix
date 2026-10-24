@@ -99,7 +99,7 @@ export function parsePluginCommandArgs(
  * - CC dynamic content (only when a `cwd` is provided): `` !`cmd` `` / ` ```! ` bash-embeds
  *   (executed in `cwd`, reusing the skill-command runner — 10s timeout, output-capped) and
  *   `@path` file references (inlined, confined to `cwd`/plugin dir, size-capped).
- * Unknown `${argName}` resolves to ''. Async because the dynamic content runs shells + FS.
+ * A `${name}` that is no declared arg stays as written. Async because the dynamic content runs shells + FS.
  */
 export const renderPluginPrompt = async (
   template: string,
@@ -160,14 +160,16 @@ export const renderPluginPrompt = async (
     out = await expandFileReferences(out, [ctx.cwd, ...(ctx.pluginDir ? [ctx.pluginDir] : [])])
   }
   // 2) Declared ${argName} placeholders + CC env vars (path vars + session env).
-  out = out.replace(/\$\{([a-zA-Z0-9_-]+)\}/g, (_m, name: string) => {
+  out = out.replace(/\$\{([a-zA-Z0-9_-]+)\}/g, (match, name: string) => {
     if (name === 'CLAUDE_SESSION_ID') return ctx?.sessionId ?? ''
     if (name === 'CLAUDE_EFFORT') return ctx?.effort ?? ''
     if (name === 'CLAUDE_WEBHOOK_URL') return resolveWebhookUrl()
     if (name === 'CLAUDE_PLUGIN_ROOT') return ctx?.pluginDir ?? ''
     if (name === 'CLAUDE_PLUGIN_DATA') return dataDir
     if (name === 'CLAUDE_PROJECT_DIR') return ctx?.projectDir ?? ''
-    return values[name] ?? ''
+    // A name that is no declared arg is text the author wrote (a shell variable, a template for
+    // the model to fill in): it stays as written, as Claude Code leaves it.
+    return values[name] ?? match
   })
   // 3) Claude Code argument tokens from the raw arg string: `$name` (a declared arg's value, else
   //    its position in `arguments`), then `$ARGUMENTS`, `$ARGUMENTS[N]` and `$N`.
