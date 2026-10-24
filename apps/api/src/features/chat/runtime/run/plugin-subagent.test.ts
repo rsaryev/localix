@@ -8,6 +8,7 @@ import {
   AGENT_TYPES_HEADING,
   agentTypesSection,
   applyPluginSubagent,
+  contextFilesFor,
   delegatePluginPorts,
 } from './plugin-subagent'
 
@@ -163,4 +164,17 @@ test('a context: fork skill whose agent names a plugin agent runs as that agent'
   const other = { ...REVIEWER, pluginName: 'ops', fullName: 'ops:reviewer' }
   expect(applyPluginSubagent(input, fork('reviewer'), [REVIEWER, other])).toBeNull()
   expect(applyPluginSubagent(input, fork(), [REVIEWER])).toBeNull()
+})
+
+// plugins/components, "Frontmatter fields in plugin agents": `omitClaudeMd` runs the agent without
+// the project's CLAUDE.md files (here also AGENTS.md, which Localix reads in their place).
+test('a plugin agent with omitClaudeMd runs without the workspace instruction files', () => {
+  const files = [
+    { path: '/repo/AGENTS.md', content: 'repo rules' },
+    { path: '/repo/sub/CLAUDE.md', content: 'sub rules' },
+    { path: '/repo/.localix/context.md', content: 'context' },
+  ]
+  expect(contextFilesFor(files, { ...REVIEWER, omitClaudeMd: true })).toEqual([files[2]])
+  expect(contextFilesFor(files, REVIEWER)).toEqual(files)
+  expect(contextFilesFor(files, null)).toEqual(files)
 })

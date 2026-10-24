@@ -239,6 +239,8 @@ export async function parseAgentFile(
   // match the bytes on disk, and the ownership guard lists this file for exactly that reason.
   const isolation =
     trimmedFrontmatterField(fields.isolation) === 'worktree' ? ('isolated' as const) : undefined
+  // CC `omitClaudeMd:` — run without the workspace instruction files.
+  const omitClaudeMd = coerceFrontmatterBool(scalarField(fields.omitClaudeMd)) === true
   // CC `color:` — display color (persisted + surfaced to the runtime panel via delegate details).
   const color = trimmedFrontmatterField(fields.color)
   // CC `initialPrompt:` — main-session auto-first-turn (RECORDED only; no `--agent` mode here).
@@ -269,6 +271,7 @@ export async function parseAgentFile(
     ...(background !== undefined ? { background } : {}),
     ...(memory ? { memory } : {}),
     ...(isolation ? { isolation } : {}),
+    ...(omitClaudeMd ? { omitClaudeMd } : {}),
     ...(color ? { color } : {}),
     ...(initialPrompt ? { initialPrompt } : {}),
     ...(hooks !== undefined ? { hooks } : {}),

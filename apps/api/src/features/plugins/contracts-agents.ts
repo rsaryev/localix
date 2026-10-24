@@ -68,6 +68,8 @@ export const pluginAgentSchema = z.object({
    * worktree is the isolation provider's business, not this contract's.
    */
   isolation: z.literal('isolated').optional(),
+  /** CC `omitClaudeMd` — the agent's runs read no workspace instruction file. */
+  omitClaudeMd: z.boolean().optional(),
   /**
    * CC `color` — display color for this agent in the task list / transcript
    * (`red`/`blue`/`green`/`yellow`/`purple`/`orange`/`pink`/`cyan`). Persisted on

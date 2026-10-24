@@ -40,6 +40,8 @@ export interface LoadedPluginAgent {
   background?: boolean
   /** CC `isolation: worktree` — a delegated run works in a git worktree of its own. */
   isolation?: 'isolated'
+  /** CC `omitClaudeMd` — its runs read no workspace instruction file (`AGENTS.md`, `CLAUDE.md`). */
+  omitClaudeMd?: boolean
 }
 
 /**
@@ -181,5 +183,6 @@ export function buildLoadedAgent(
     ...(agent.maxTurns ? { maxTurns: agent.maxTurns } : {}),
     ...(agent.background ? { background: true } : {}),
     ...(agent.isolation ? { isolation: agent.isolation } : {}),
+    ...(agent.omitClaudeMd ? { omitClaudeMd: true } : {}),
   }
 }

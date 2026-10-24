@@ -45,4 +45,14 @@ describe('a plugin agent file', () => {
       { name: 'checker', description: 'Checks' },
     ])
   })
+
+  test('carries omitClaudeMd to the agent that runs', async () => {
+    const file = '---\nname: lean\ndescription: Lean\nomitClaudeMd: true\n---\nWork lean.'
+    for (const path of ['.claude-plugin/plugin.json', 'agents/lean.md'])
+      mkdirSync(dirname(join(dir(), path)), { recursive: true })
+    writeFileSync(join(dir(), '.claude-plugin/plugin.json'), JSON.stringify({ name: 'my-plugin' }))
+    writeFileSync(join(dir(), 'agents/lean.md'), file)
+    const { agents } = await loadManifest(dir(), 'global', '')
+    expect(buildLoadedAgent('my-plugin', agents[0]!, (text) => text).omitClaudeMd).toBe(true)
+  })
 })

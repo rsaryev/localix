@@ -23,7 +23,7 @@ import { runHumanAssignedHooks } from '../../../../mini-apps/hooks'
 import type { LoadedMiniAppHook } from '../../../../mini-apps/loader-contract'
 import { publishHumanAssignment } from '../human-assignment'
 import { applyPluginMainAgent } from '../plugin-main-agent'
-import { applyPluginSubagent } from '../plugin-subagent'
+import { applyPluginSubagent, contextFilesFor } from '../plugin-subagent'
 import { adoptPluginAgentModel } from '../plugin-main-agent-model'
 import type { ModelView } from '../../model-view/view'
 import type { RunFrame } from './frame'
@@ -189,8 +189,10 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
     ...context,
     agent: main.agent,
     disabledTools: main.disabledTools,
-    // The plugin agent type a delegated child runs as: its `tools` shape the run's surface.
+    // The plugin agent type a delegated child runs as: its `tools` shape the run's surface, and
+    // its `omitClaudeMd` the instruction files it reads.
     pluginSubagent: asType?.subagent ?? null,
+    contextFiles: contextFilesFor(context.contextFiles, asType?.subagent ?? null),
     ...(humanProfile ? { human: humanProfile } : {}),
     hookRunOptions,
     ccHooks,

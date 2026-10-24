@@ -92,3 +92,16 @@ export function applyPluginSubagent<Agent extends { instructions?: string | null
   }
   return { ...runAsPluginAgent(input, subagent), subagent }
 }
+
+/** The workspace instruction files (`AGENTS.md`, `CLAUDE.md`) an `omitClaudeMd` agent runs without. */
+const INSTRUCTION_FILE = /(^|[\\/])(AGENTS|CLAUDE)(\.local)?\.md$/
+
+/** The context files a run as `subagent` reads: none of the instruction files with `omitClaudeMd`. */
+export function contextFilesFor<File extends { path: string }>(
+  files: readonly File[],
+  subagent: Pick<LoadedPluginAgent, 'omitClaudeMd'> | null,
+): File[] {
+  return subagent?.omitClaudeMd
+    ? files.filter((file) => !INSTRUCTION_FILE.test(file.path))
+    : [...files]
+}
