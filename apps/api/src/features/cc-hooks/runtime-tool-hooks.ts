@@ -18,6 +18,7 @@ import type {
   PreToolUseResult,
 } from './runtime-contracts'
 import { joinContext } from './runtime-results'
+import { runInParallel } from './runtime-parallel'
 import { replacementContent } from './tool-output-replacement'
 import type { createHookSelector, SelectOptions } from './runtime-selection'
 import type { createHookHandlerRunner } from './runtime-handler'
@@ -88,37 +89,46 @@ export function createToolHookRunners({
         ...(didRewrite ? { updatedInput: effectiveInput } : {}),
         ...(joinContext(contexts) ? { additionalContext: joinContext(contexts) } : {}),
       })
-      for (const h of selected.sync) {
-        const o = await runHandler('PreToolUse', h, inputFor(effectiveInput), false)
-        contexts.push(o.additionalContext)
-        // `continue:false` "takes precedence over any event-specific decision fields": the call
-        // does not run, processing stops, and the stopReason is shown to the person.
-        if (o.continue === false) {
-          const stopReason = o.stopReason?.trim() || 'A PreToolUse hook stopped the run.'
-          emitNotice?.(stopReason, 'PreToolUse')
-          stopRun?.({ event: 'PreToolUse', reason: stopReason })
-          return {
-            decision: 'deny',
-            reason: stopReason,
-            stop: { reason: stopReason },
-            ...rewritten(),
-          }
+      // Every handler runs at once on the call as Claude made it; the outcomes fold in
+      // declaration order (`runtime-parallel.ts`), so a deny never keeps the others from running.
+      const outcomes = await runInParallel(selected.sync, (h) =>
+        runHandler('PreToolUse', h, inputFor(input), false),
+      )
+      for (const o of outcomes) contexts.push(o.additionalContext)
+      // `continue:false` "takes precedence over any event-specific decision fields": the call
+      // does not run, processing stops, and the stopReason is shown to the person.
+      const stopped = outcomes.find((o) => o.continue === false)
+      if (stopped) {
+        const stopReason = stopped.stopReason?.trim() || 'A PreToolUse hook stopped the run.'
+        emitNotice?.(stopReason, 'PreToolUse')
+        stopRun?.({ event: 'PreToolUse', reason: stopReason })
+        return {
+          decision: 'deny',
+          reason: stopReason,
+          stop: { reason: stopReason },
+          ...rewritten(),
         }
-        if (o.blocked || o.decision === 'block' || o.permissionDecision === 'deny') {
-          return {
-            decision: 'deny',
-            reason:
-              o.blockReason ||
-              o.permissionDecisionReason ||
-              o.reason ||
-              // hookify's block gives its rule's text only as the `systemMessage`.
-              o.systemMessage?.trim() ||
-              'Tool call denied by hook',
-            ...rewritten(),
-          }
+      }
+      const denied = outcomes.find(
+        (o) => o.blocked || o.decision === 'block' || o.permissionDecision === 'deny',
+      )
+      if (denied) {
+        return {
+          decision: 'deny',
+          reason:
+            denied.blockReason ||
+            denied.permissionDecisionReason ||
+            denied.reason ||
+            // hookify's block gives its rule's text only as the `systemMessage`.
+            denied.systemMessage?.trim() ||
+            'Tool call denied by hook',
+          ...rewritten(),
         }
+      }
+      for (const o of outcomes) {
+        // Each hook replaced the whole input it was shown; the last one declared stands.
         if ('updatedInput' in o && o.updatedInput !== undefined) {
-          effectiveInput = localInputFromHook(toolName, effectiveInput, o.updatedInput, base.cwd)
+          effectiveInput = localInputFromHook(toolName, input, o.updatedInput, base.cwd)
           didRewrite = true
         }
         // "precedence is deny > defer > ask > allow" (deny already returned above).
@@ -136,7 +146,7 @@ export function createToolHookRunners({
     async runPostToolUse(
       tool: CcHookToolRef,
       input: unknown,
-      result: { content: string; details?: unknown; durationMs?: number },
+      result: { content: string; details?: unknown },
       toolUseId?: string,
       durationMs?: number,
     ) {
@@ -166,16 +176,12 @@ export function createToolHookRunners({
       })
       fireAsync(selected.async, inputFor(result.content, false))
       const contexts: (string | undefined)[] = []
-      // Last replacement in the tool's shape wins; later hooks observe the replaced
-      // content (mirrors the native onPostToolCall replaceContent chain).
+      // Every handler sees the tool's own output; the last replacement declared stands.
       let replaced: string | undefined
-      for (const h of selected.sync) {
-        const o = await runHandler(
-          'PostToolUse',
-          h,
-          inputFor(replaced ?? result.content, replaced !== undefined),
-          false,
-        )
+      const outcomes = await runInParallel(selected.sync, (h) =>
+        runHandler('PostToolUse', h, inputFor(result.content, false), false),
+      )
+      for (const o of outcomes) {
         // PostToolUse cannot block (tool already ran): a `decision:block` reason and an exit-2
         // stderr ("Shows stderr to Claude") reach the model beside the context.
         contexts.push(
@@ -184,13 +190,13 @@ export function createToolHookRunners({
           o.blocked ? o.blockReason : undefined,
         )
         replaced = replacementContent(toolName, o) ?? replaced
-        // `continue:false` ends the run after this call, its stopReason shown to the person.
-        if (o.continue === false) {
-          const stopReason = o.stopReason?.trim() || 'A PostToolUse hook stopped the run.'
-          emitNotice?.(stopReason, 'PostToolUse')
-          stopRun?.({ event: 'PostToolUse', reason: stopReason })
-          break
-        }
+      }
+      // `continue:false` ends the run after this call, its stopReason shown to the person.
+      const stopped = outcomes.find((o) => o.continue === false)
+      if (stopped) {
+        const stopReason = stopped.stopReason?.trim() || 'A PostToolUse hook stopped the run.'
+        emitNotice?.(stopReason, 'PostToolUse')
+        stopRun?.({ event: 'PostToolUse', reason: stopReason })
       }
       const additionalContext = joinContext(contexts)
       return {

@@ -13,6 +13,7 @@ import type {
 } from './runtime-contracts-added'
 import { contextFrom, joinContext } from './runtime-results'
 import { toolRefOf, type HookDispatchDeps } from './runtime-tool-hooks'
+import { runInParallel } from './runtime-parallel'
 
 type GateRunners = Pick<
   CcAddedHooksRuntime,
@@ -78,8 +79,10 @@ export function createGateHookRunners(deps: HookDispatchDeps): GateRunners {
       }
       fireAsync(selected.async, input)
       const contexts: (string | undefined)[] = []
-      for (const h of selected.sync) {
-        const o = await runHandler('UserPromptExpansion', h, input, true)
+      const outcomes = await runInParallel(selected.sync, (h) =>
+        runHandler('UserPromptExpansion', h, input, true),
+      )
+      for (const o of outcomes) {
         if (refuses(o) || o.continue === false) {
           return { blocked: true, reason: reasonOf(o) || 'Command blocked by hook' }
         }

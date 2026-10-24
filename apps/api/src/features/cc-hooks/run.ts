@@ -34,6 +34,7 @@ import { createHookSelector, spendOnce, type SelectOptions } from './runtime-sel
 import { createHookHandlerRunner } from './runtime-handler'
 import { createToolHookRunners } from './runtime-tool-hooks'
 import { byFile } from './runtime-file-calls'
+import { runInParallel } from './runtime-parallel'
 import { createGateHookRunners } from './runtime-gate-hooks'
 import { createSessionHookRunners, watchPathsFrom } from './runtime-session-hooks'
 import { createDisplayHookRunners } from './runtime-display-hooks'
@@ -151,10 +152,7 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
     const selected = select(event, matchFn, opts)
     if (!selected) return []
     fireAsync(selected.async, input)
-    const outcomes: CcHookOutcome[] = []
-    for (const h of selected.sync)
-      outcomes.push(await runHandler(event, h, input, addContextOnZero))
-    return outcomes
+    return runInParallel(selected.sync, (h) => runHandler(event, h, input, addContextOnZero))
   }
 
   // The hook that ended this run (PreToolUse `continue:false`, a PostToolBatch block).
@@ -202,8 +200,10 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
       // `sessionTitle` names the session from the prompt; the last handler to give one wins.
       let sessionTitle: string | undefined
       const titled = () => (sessionTitle ? { sessionTitle } : {})
-      for (const h of selected.sync) {
-        const o = await runHandler('UserPromptSubmit', h, input, true)
+      const outcomes = await runInParallel(selected.sync, (h) =>
+        runHandler('UserPromptSubmit', h, input, true),
+      )
+      for (const o of outcomes) {
         sessionTitle = o.sessionTitle ?? sessionTitle
         if (o.blocked || o.decision === 'block' || o.continue === false) {
           return {

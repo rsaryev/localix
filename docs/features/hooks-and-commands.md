@@ -101,13 +101,15 @@ and that call cannot block. After a checkpoint, the next run fires `SessionStart
 `SessionEnd` fires when a session ends, not when a run ends. Deleting a session fires it with reason
 `other`.
 
-Matching synchronous handlers run in declaration and plugin load order. `PreToolUse` input rewrites
-compose and the first deny stops the call. `PostToolUse` replacements are visible to later handlers.
+Matching handlers run in parallel, as in Claude Code, at most twelve `prompt` or `agent` handlers at
+once. Each sees the same input, and their answers fold in declaration and plugin load order: a deny
+from any `PreToolUse` handler stops the call without stopping the others from running, and the last
+`updatedInput` or `PostToolUse` replacement declared is the one applied.
 
 | Event                       | Effect of a blocking verdict                                                                     |
 | --------------------------- | ------------------------------------------------------------------------------------------------ |
-| `UserPromptSubmit`          | Rejects the prompt at the first block.                                                           |
-| `PreToolUse`                | Stops the tool at the first deny; `allow` and `ask` remain advisory.                             |
+| `UserPromptSubmit`          | Rejects the prompt on any block.                                                                 |
+| `PreToolUse`                | Stops the tool on any deny; `allow` and `ask` remain advisory.                                   |
 | `PostToolUse`               | Cannot undo execution; a block reason becomes added result context.                              |
 | `PostToolUseFailure`        | Cannot block; added context is appended to the failed result.                                    |
 | `Stop`                      | Requests another run with the reason; eight in a row end the turn, and a tool call resets that.  |

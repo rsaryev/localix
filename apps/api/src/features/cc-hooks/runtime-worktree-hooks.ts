@@ -7,6 +7,7 @@
  */
 import type { CcHookInput } from './contracts'
 import type { HookDispatchDeps } from './runtime-tool-hooks'
+import { runInParallel } from './runtime-parallel'
 
 /** What the WorktreeCreate handlers answered. */
 export type WorktreeCreateResult =
@@ -42,8 +43,10 @@ export function createWorktreeHookRunners({
       fireAsync(selected.async, input)
       let path: string | undefined
       // Every handler must succeed; the last path one of them returned is the worktree.
-      for (const handler of selected.sync) {
-        const outcome = await runHandler('WorktreeCreate', handler, input, false)
+      const outcomes = await runInParallel(selected.sync, (handler) =>
+        runHandler('WorktreeCreate', handler, input, false),
+      )
+      for (const outcome of outcomes) {
         if (outcome.failed) {
           const why = outcome.failed === 'timeout' ? 'it timed out' : outcome.reason || 'it failed'
           return { ok: false, error: `a WorktreeCreate hook failed: ${why}` }

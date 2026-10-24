@@ -44,25 +44,7 @@ describe('hook input fields', () => {
     expect(saved().model).toBe('claude-opus-5-5')
   })
 
-  it('PostToolUse carries how long the tool ran', async () => {
-    await make('PostToolUse').runPostToolUse(
-      'bash',
-      { command: 'ls' },
-      { content: 'x', durationMs: 42 },
-      'call-1',
-    )
-    expect(saved().duration_ms).toBe(42)
-  })
-
-  it('PostToolUseFailure carries the tool_use_id', async () => {
-    await make('PostToolUseFailure').runPostToolUseFailure(
-      'bash',
-      { command: 'false' },
-      { error: 'exit 1', isInterrupt: false },
-      'call-2',
-    )
-    expect(saved().tool_use_id).toBe('call-2')
-  })
+  // tool_use_id and duration_ms: `tool-shapes-parity.test.ts`.
 
   it('SubagentStop carries background_tasks and session_crons', async () => {
     await make('SubagentStop').runSubagentStop('reviewer', 'a1', 'done')

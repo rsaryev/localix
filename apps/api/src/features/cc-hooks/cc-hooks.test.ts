@@ -623,25 +623,22 @@ describe('runtime protocol', () => {
     expect(r.updatedToolOutput).toBe('[REDACTED]')
   })
 
-  it('PostToolUse: a later hook observes the earlier hook’s replaced output; last replacement wins', async () => {
+  it('PostToolUse: every hook sees the tool’s own output; the last replacement declared wins', async () => {
     const rt = make(
       reg({
         PostToolUse: [
-          // first hook replaces the content with AAA
           cmd(
             `echo '{"hookSpecificOutput":{"hookEventName":"PostToolUse","updatedToolOutput":"AAA"}}'`,
           ),
-          // second hook's stdin must now carry "stdout":"AAA" (the replaced value, in Bash's
-          // response shape), not the original
+          // Hooks run in parallel: the second reads the original output, not the first's.
           cmd(
-            `grep -q '"stdout":"AAA"' && echo '{"hookSpecificOutput":{"hookEventName":"PostToolUse","updatedToolOutput":"chained"}}' || echo '{"hookSpecificOutput":{"hookEventName":"PostToolUse","updatedToolOutput":"unchained"}}'`,
+            `grep -q '"stdout":"orig"' && echo '{"hookSpecificOutput":{"hookEventName":"PostToolUse","updatedToolOutput":"second"}}'`,
           ),
         ],
       }),
     )
     const r = await rt.runPostToolUse('bash', { command: 'x' }, { content: 'orig' })
-    // second hook saw the replaced content → last replacement wins
-    expect(r.updatedToolOutput).toBe('chained')
+    expect(r.updatedToolOutput).toBe('second')
   })
 
   it('Stop: runs side-effect hooks and reports a block decision', async () => {
