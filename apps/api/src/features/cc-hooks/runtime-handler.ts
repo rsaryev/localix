@@ -9,6 +9,7 @@ import { refreshTranscriptFor } from './transcript'
 import { runHookOperation } from '../lifecycle-hooks/operation'
 import { blockOnFailure } from './on-failure'
 import { capHookOutput } from './output-cap'
+import { hookErrorNotice } from './hook-error-notices'
 import { dirname, join } from 'node:path'
 
 type HandlerRunnerOptions = Pick<
@@ -79,9 +80,11 @@ export function createHookHandlerRunner(options: HandlerRunnerOptions) {
     })
     if (result.kind !== 'completed') {
       logger.warn(`[cc-hooks] ${event} ${h.kind ?? 'command'} handler ${result.kind} — ignored`)
-      return result.kind === 'aborted'
-        ? {}
-        : blockOnFailure(event, h, { failed: result.kind === 'timeout' ? 'timeout' : 'error' })
+      if (result.kind === 'aborted') return {}
+      const failed: CcHookOutcome = { failed: result.kind === 'timeout' ? 'timeout' : 'error' }
+      const notice = hookErrorNotice(event, h, input, failed)
+      if (notice) emitSafely(notice, event)
+      return blockOnFailure(event, h, failed)
     }
     // Strings past 10,000 characters go to a file beside the session's transcript.
     const outcome = capHookOutput(
@@ -90,18 +93,25 @@ export function createHookHandlerRunner(options: HandlerRunnerOptions) {
     )
     // A skill's `once` hook is spent by a run that neither failed nor blocked (exit 2).
     if (!outcome.failed && !outcome.blocked) spendOnce(onceKeys, event, h)
+    // A non-blocking error, or an observe-only event's exit-2 stderr, is a `hook error` notice.
+    const errorNotice = hookErrorNotice(event, h, input, outcome)
+    if (emitNotice && errorNotice) emitSafely(errorNotice, event)
     // Surface a non-blocking `systemMessage` warning (CC: shown to the user in the
     // transcript). Fires for EVERY event, deduping identical consecutive messages.
     const notice = DISCARDS_SYSTEM_MESSAGE.has(event) ? undefined : outcome.systemMessage?.trim()
     if (emitNotice && notice && notice !== lastNotice) {
       lastNotice = notice
-      try {
-        emitNotice(notice, event)
-      } catch (err) {
-        logger.warn?.(`[cc-hooks] emitNotice failed: ${String(err)}`)
-      }
+      emitSafely(notice, event)
     }
     return outcome
+  }
+
+  function emitSafely(message: string, event: CcHookEvent): void {
+    try {
+      emitNotice?.(message, event)
+    } catch (err) {
+      logger.warn?.(`[cc-hooks] emitNotice failed: ${String(err)}`)
+    }
   }
 
   async function runHandlerInner(
