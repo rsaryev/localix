@@ -5,7 +5,7 @@ import type { IndexFilters } from './index-repository-filters'
 import { refKey } from './index-rows'
 
 /**
- * THE OPEN PROJECT'S INSTALLS ON A PAGE (`docs/internals/store.md`, "Step 2c as built"). The index
+ * THE OPEN PROJECT'S INSTALLS ON A PAGE (`docs/internals/store.md`, "Step 2c API as built"). The index
  * holds the person's own installs; a project's are asked of the providers that have them, on each
  * read, and laid over the page: a listing shows them beside the person's, and the first page of
  * the installed shelf adds what is installed only in that project.

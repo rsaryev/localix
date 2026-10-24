@@ -329,8 +329,8 @@ The API side of step 2; the screens that use all of it come in the step's UI par
 - **Trust.** `listing.source` carries `trust` and `weight`, a `SourceView` its `trust`. A listing
   also says its `origin`, `alsoIn`, `homepage` and `updatedAt`.
 - **Paging and filters.** `/listings` takes `cursor`, `limit` (40, at most 500), `category`,
-  `source`, `trust` and `projectId`, and answers `nextCursor` and, for a search, `strategy`. Until
-  the screens scroll page by page, the UI client reads every page of a shelf.
+  `source`, `trust` and `projectId`, and answers `nextCursor` and, for a search, `strategy`. The UI
+  client reads one page per call (`storeApi.page`).
 - **Capability counts are components.** A capability shelf's count is how many components it lists,
   not how many packages hold them.
 - **Search hits open the Store.** A `store` hit's address is
@@ -358,7 +358,30 @@ carries them as `editorial` (`hero`, `collections`) from `mini-apps/catalog-pick
 which `claude plugin validate` accepts with an unknown-field warning and Claude Code ignores. An
 item is a name of the source's own kind, or `<kind>:<id>`. Only an editorial source's picks are
 read, and a community listing never reaches the hero, Start here or a collection. A listing's page
-adds `related` (more from its publisher) and `similar` (its category, sharing a tag).
+adds `related` (more from its publisher) and `similar` (its category, sharing a tag), and `linked`,
+the listings both name, so the page draws those rows in one read. When no editorial source can be
+read (offline, or a catalog not published yet), the hero is the best `localix` or `official` listing
+with an icon and Start here is those listings by score, so Discover is never empty while official
+listings exist.
+
+### Step 2c API as built
+
+- **Sources say how they are.** A `SourceView` adds `syncedAt` (the provider's own fetch time, else
+  when the Store last indexed it), `problem` (why it could not be read, in one sentence: a
+  marketplace whose listing is unreadable is still a source, with 0 packages), `autoUpdate` (absent
+  where a provider has no such switch; marketplaces have it) and `defaultSource` (on the default
+  list, so not added back once removed). `GET /sources` answers `{ sources, addable }`, `addable`
+  being the kinds whose provider can preview and add one. `POST /sources/refresh` reads one source
+  again (a mini app catalog refresh reads every catalog) and `POST /sources/auto-update` switches
+  it, through the port's optional `refreshSource` and `setSourceAutoUpdate`.
+- **The open project's installs.** `GET /:kind/:id?projectId=` shows that project's install on the
+  page; `GET /listings?projectId=` lays the project's installs over the page through the port's
+  optional `projectInstalls(actor)` (plugins only), and the first page of Installed adds what is
+  installed only in that project. The index keeps the person's installs alone.
+- **A remote plugin's page answers at once.** Opening it no longer waits for the shallow fetch
+  (about 0.5–1.5 s on GitHub): the page shows what the marketplace says with `contents: 'unknown'`,
+  the fetch runs behind it, and its end is a `store` poke, after which the page reads its readme and
+  components. A plan still waits for the fetch.
 
 ## Source of truth
 

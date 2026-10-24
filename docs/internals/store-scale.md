@@ -226,6 +226,9 @@ Where the build differs from the design above, or settles what it left open:
   Words found in the name count once more, and a name that is exactly the query (`code-review` for
   "code review") as much as a strong match by meaning: measured on the real marketplaces, coverage
   alone let a summary mention outrank a package named for the query.
+- **Sources' state**: `source_state`'s synced time and error reach the Sources screen through
+  `SourceView.syncedAt` and `problem` (`features/store/sources.ts`); a source the provider could not
+  read says so there and on the listings page's `problems`.
 - **Search pages** come from the global search service's offset cursor over at most 200 hits (its
   scoped provider cap); browsing pages are keyset.
 - **The palette** shows the `store` group last, at most five packages not installed.

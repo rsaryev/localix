@@ -8,7 +8,7 @@ import {
 import type { StoreIndexRepository } from './index-repository'
 
 /**
- * THE SOURCES AS THE STORE SHOWS THEM (`docs/internals/store.md`, "Step 2c as built"): what each
+ * THE SOURCES AS THE STORE SHOWS THEM (`docs/internals/store.md`, "Step 2c API as built"): what each
  * provider says of its sources, with when the Store last indexed each one and why it could not,
  * whether it is one a fresh profile starts with, and the kinds a source can be added for.
  */
