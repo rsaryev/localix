@@ -85,11 +85,18 @@ The editor stores these columns as `action`, `resource`, and `effect`. For live 
 projects them to the `permission`, `pattern`, and `action` fields above, removing the `tool:` prefix
 from the tool name.
 
-A skill's `allowed-tools` are evaluated as separate preapprovals after the original ordered policy
-has decided. They can answer an ordinary matching tool or argument question; they cannot reorder the
-policy, reopen a denied tool or lift a call-class confirmation such as `outside-workspace` or
-`dangerous`. A deny followed by an authored allow remains an allowlist with an exception, even when
-a skill declares `Bash(git *)`.
+A skill's `allowed-tools` are Claude Code rules, read as Claude Code reads them. A path rule anchors
+at the working directory (`Read(src/**)`), the project (`/src/**`), the filesystem root (`//tmp/**`)
+or your home folder (`~/notes/**`); a bare name such as `.env` matches at any depth. `Edit(...)`
+also covers writes and `Read(...)` covers searches. `WebFetch(domain:example.com)` names a host for
+research that reads known URLs, `Agent(Explore)` an agent type, `Skill(deploy)` a skill and a bare
+`mcp__github` every tool of that server.
+
+These preapprovals are evaluated separately after the original ordered policy has decided. They can
+answer an ordinary matching tool or argument question; they cannot reorder the policy, reopen a
+denied tool or lift a call-class confirmation such as `outside-workspace` or `dangerous`. A deny
+followed by an authored allow remains an allowlist with an exception, even when a skill declares
+`Bash(git *)`.
 
 ### Pattern matching
 

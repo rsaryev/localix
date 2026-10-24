@@ -118,6 +118,16 @@ Changes land on `main`.
 
 ### Fixed
 
+- **Claude Code hooks and mods read every tool as Claude Code shapes it**: a Bash batch arrives as
+  one command, a file listing as Glob, a URL read as WebFetch, a delegated task as Agent, a skill as
+  Skill, and the built-in tools' results in their Claude Code shape (an edit's `filePath` and patch,
+  a read's file record). A hook can answer a question card with `answers`, and post-tool events
+  carry the call id and duration. See
+  [Tool names and shapes](docs/features/hooks-and-commands.md#tool-names-and-shapes).
+- **Claude Code permission rules match as in Claude Code**: a skill's `allowed-tools` and a hook's
+  `if` anchor path rules at the working directory, `//` or `~/`, cover writes with `Edit(...)` and
+  searches with `Read(...)`, and understand `WebFetch(domain:…)`, `Agent(…)`, `Skill(…)` and a bare
+  `mcp__<server>`. See [Permission rules](docs/features/permissions.md).
 - **Smaller Documents download**: the Documents mini app no longer carries its fonts twice; its
   download is about half the size.
 - **Group chats** keep routing a message to the right participant after the model catalog refreshes:

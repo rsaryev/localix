@@ -9,6 +9,7 @@
 import { parsePatch } from 'diff'
 
 import { absolutePath, baseOf, isRecord, num, only, str, type Fields } from './cc-tool-fields'
+import { planText } from './cc-tool-inputs-agentic'
 
 interface ToolResult {
   content: string
@@ -180,7 +181,13 @@ const delegate: Shaper = (result, details, input) => {
     : { status: 'async_launched', agentId: id, description: input.title, prompt: input.task }
 }
 
+const plan: Shaper = (_result, _details, input) => {
+  if (input.action !== 'present') return undefined
+  return { plan: planText(input) ?? '', isAgent: false }
+}
+
 const SHAPERS: Record<string, Shaper> = {
+  plan,
   bash,
   read,
   edit,
@@ -199,6 +206,8 @@ export function claudeCodeResult(
   input: unknown,
   cwd?: string,
 ): unknown {
+  // An MCP tool's result is its content blocks (`updatedMCPToolOutput` takes the same shape).
+  if (tool.startsWith('mcp_')) return [{ type: 'text', text: result.content }]
   const shaper = SHAPERS[tool]
   if (!shaper) return undefined
   const details = isRecord(result.details) ? result.details : {}

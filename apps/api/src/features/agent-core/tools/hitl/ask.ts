@@ -32,6 +32,12 @@ export const askToolInputSchema = z.object({
   loading_messages: z
     .preprocess(stringToArray, z.array(z.string().trim().min(1).max(120)).min(1).max(4))
     .optional(),
+  // Claude Code's AskUserQuestion `answers`: question text → choice. A hook sets it; the model
+  // does not (its description says so), and a call that carries it is answered without a card.
+  answers: z
+    .record(z.string(), z.string())
+    .optional()
+    .describe('Set by a hook to answer programmatically; never set it yourself.'),
 })
 
 export type AskToolInput = z.infer<typeof askToolInputSchema>
@@ -168,6 +174,30 @@ function formatAnswers(answers: AskToolAnswer[]): string {
   ].join('\n')
 }
 
+/** A hook's `answers` as the card's would be: a label of the question's options, else text. */
+function givenAnswers(input: AskToolInput): AskToolAnswer[] | undefined {
+  const answers = input.answers
+  if (!answers || Object.keys(answers).length === 0) return undefined
+  return input.questions.flatMap((q) => {
+    const value = answers[q.question] ?? answers[q.id]
+    if (value === undefined) return []
+    const labels = value.split(',').map((label) => label.trim())
+    const known = labels.every((label) => q.options.some((option) => option.label === label))
+    return [
+      known
+        ? {
+            id: q.id,
+            question: q.question,
+            selectedOptions: labels.map((l) => optionValueOf(q, l)),
+          }
+        : { id: q.id, question: q.question, selectedOptions: [], customInput: value },
+    ]
+  })
+}
+
+const optionValueOf = (q: AskToolQuestion, label: string) =>
+  optionValue(q.options.find((option) => option.label === label)!)
+
 export function createAskTool(): AgentTool<AskToolInput, AskToolDetails> {
   return {
     name: TOOL.ask,
@@ -180,6 +210,8 @@ export function createAskTool(): AgentTool<AskToolInput, AskToolDetails> {
     executionMode: 'sequential',
     classify: classifyAsk,
     async execute(toolCallId, input, signal, onUpdate, context) {
+      const given = givenAnswers(input)
+      if (given) return { content: formatAnswers(given), details: { answers: given } }
       if (context?.interactive === false) return { content: NO_WATCHER_TEXT, isError: true }
       if (!context?.humanInLoop) {
         return {

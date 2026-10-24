@@ -86,7 +86,8 @@ const ask: ToolShape = {
     return { ...input, questions }
   },
   fromClaude(fields) {
-    const rest = without(fields, ['answers', 'annotations', 'metadata'])
+    // `answers` stays: the ask tool answers a call that carries a hook's answers itself.
+    const rest = without(fields, ['annotations', 'metadata'])
     if (!Array.isArray(rest.questions)) return rest
     const questions = rest.questions.map((q, i) => {
       if (!isRecord(q)) return q
@@ -123,7 +124,7 @@ const jobs: ToolShape = {
 }
 
 /** A presented plan as Claude Code's ExitPlanMode carries it: the Markdown, title first. */
-function planText(input: Fields): string | undefined {
+export function planText(input: Fields): string | undefined {
   const body = str(input.body)
   const title = str(input.title)
   if (body === undefined) return title

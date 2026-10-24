@@ -50,13 +50,16 @@ const resultOf = (item: ToolBackedItem) =>
   item.error?.userMessage ?? item.resultText ?? item.errorText ?? ''
 
 /** One model turn's entries: the assistant's blocks, then the results its calls returned. */
-function turnEntries(items: AgentItem[]): { role: 'assistant' | 'user'; content: Block[] }[] {
+function turnEntries(
+  items: AgentItem[],
+  cwd: string,
+): { role: 'assistant' | 'user'; content: Block[] }[] {
   const said: Block[] = []
   const results: Block[] = []
   for (const item of items) {
     if (item.type === 'text' && item.text) said.push({ type: 'text', text: item.text })
     if (!isToolBackedItem(item)) continue
-    const call = claudeCodeHookCall({ name: item.name }, item.input ?? {})
+    const call = claudeCodeHookCall({ name: item.name }, item.input ?? {}, cwd)
     said.push({
       type: 'tool_use',
       id: item.toolCallId,
@@ -78,7 +81,7 @@ function turnEntries(items: AgentItem[]): { role: 'assistant' | 'user'; content:
 }
 
 /** An assistant message's entries, one model turn at a time (`turnIndex`). */
-function assistantEntries(message: PersistedMessage) {
+function assistantEntries(message: PersistedMessage, cwd: string) {
   const items = message.payload.items ?? []
   if (items.length === 0) {
     const text = message.payload.content ?? ''
@@ -86,7 +89,7 @@ function assistantEntries(message: PersistedMessage) {
   }
   const turns = new Map<number | undefined, AgentItem[]>()
   for (const item of items) turns.set(item.turnIndex, [...(turns.get(item.turnIndex) ?? []), item])
-  return [...turns.values()].flatMap(turnEntries)
+  return [...turns.values()].flatMap((turn) => turnEntries(turn, cwd))
 }
 
 /** The transcript lines of a conversation, oldest first, joined into the file's text. */
@@ -102,7 +105,7 @@ export function ccTranscriptText(
         ? message.payload.content
           ? [{ role: 'user' as const, content: message.payload.content as string | Block[] }]
           : []
-        : assistantEntries(message)
+        : assistantEntries(message, meta.cwd)
     entries.forEach((entry, index) => {
       const uuid = uuidOf(`${message.id}:${index}`)
       const model = message.payload.turnEnd?.modelId ?? 'unknown'

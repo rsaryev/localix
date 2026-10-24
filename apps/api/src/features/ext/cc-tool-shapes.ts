@@ -9,9 +9,14 @@
 import { absolutePath, isRecord, type Fields, type ToolShape } from './cc-tool-fields'
 import { FILE_AND_WEB_SHAPES } from './cc-tool-inputs'
 import { AGENTIC_SHAPES } from './cc-tool-inputs-agentic'
+import { SESSION_SHAPES } from './cc-tool-inputs-session'
 import { claudeCodeResult } from './cc-tool-responses'
 
-const SHAPES: Record<string, ToolShape> = { ...FILE_AND_WEB_SHAPES, ...AGENTIC_SHAPES }
+const SHAPES: Record<string, ToolShape> = {
+  ...FILE_AND_WEB_SHAPES,
+  ...AGENTIC_SHAPES,
+  ...SESSION_SHAPES,
+}
 
 /** Claude Code's name for one call of a shaped tool: `search` with only a `glob` is `Glob`. */
 const nameOfCall = (shape: ToolShape, input: unknown) =>

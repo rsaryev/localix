@@ -96,4 +96,25 @@ describe('cc transcript lines', () => {
     expect(JSON.parse(first!)).toMatchObject({ isSidechain: true, agentId: 'child' })
     expect(ccTranscriptText([], meta)).toBe('')
   })
+
+  test('a file tool’s tool_use carries its path absolute, as Claude Code writes it', () => {
+    const edit = message('m5', {
+      role: 'assistant',
+      items: [
+        {
+          id: 'e',
+          type: 'file_change',
+          status: 'completed',
+          toolCallId: 'call-2',
+          name: 'write',
+          input: { files: [{ path: 'notes/a.md', content: 'x' }] },
+          resultText: 'Wrote notes/a.md',
+          turnIndex: 0,
+        },
+      ],
+    })
+    const [line] = ccTranscriptText([edit], { sessionId: 'root', cwd: '/w' }).split('\n')
+    const use = JSON.parse(line!).message.content[0]
+    expect(use).toMatchObject({ name: 'Write', input: { file_path: '/w/notes/a.md' } })
+  })
 })

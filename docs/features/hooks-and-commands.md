@@ -124,10 +124,47 @@ case-insensitively; other patterns are unanchored JavaScript regular expressions
 not match. `UserPromptSubmit` and `Stop` ignore group matchers; other lifecycle matchers inspect the
 event's source, reason, agent type, notification type, or checkpoint trigger.
 
+A matcher meets the Claude Code name of the call itself: a file listing is `Glob` and a content
+search `Grep`, so a `Glob` matcher does not fire for a content search. `MultiEdit` matches an edit
+with several replacements and `NotebookEdit` an edit of an `.ipynb` file.
+
 A handler's `if` is one permission-style rule evaluated against the original tool input before
-rewrites. It applies only to `PreToolUse`, `PostToolUse` and `PostToolUseFailure`; carrying it on
-another event prevents that handler from running. Unparseable rules or unavailable comparison fields
-let the handler run. This filter does not grant tool permission.
+rewrites, read in Claude Code's shape. A Bash rule matches any command of a batch. A file rule
+anchors as in Claude Code: `src/**` is the working directory's `src`, `//` the filesystem root and
+`~/` your home folder. `Agent(Explore)`, `Skill(deploy)`, `WebFetch(domain:example.com)` and
+`Tool(param:value)` read the agent type, the skill, the host and the named field. It applies only to
+`PreToolUse`, `PostToolUse` and `PostToolUseFailure`; carrying it on another event prevents that
+handler from running. Unparseable rules or unavailable comparison fields let the handler run. This
+filter does not grant tool permission.
+
+### Tool names and shapes
+
+A hook reads each Localix tool under its Claude Code name, with `tool_input` and `tool_response` in
+that tool's shape. Localix's own fields stay beside them, and a hook's `updatedInput` is folded back
+into them. File paths are absolute.
+
+| Localix tool     | `tool_name` for the call                                               | `tool_response`                                          |
+| ---------------- | ---------------------------------------------------------------------- | -------------------------------------------------------- |
+| `bash`           | `Bash`; a batch of commands is one `command` line                      | `stdout`, `stderr`, `interrupted`, `isImage`             |
+| `read`           | `Read`; a line range is `offset` and `limit`                           | `{type: "text", file: {filePath, content, …}}`, or image |
+| `edit`, `write`  | `Edit`, `Write` for one file                                           | `filePath`, `structuredPatch`; Write's `type`, `content` |
+| `search`         | `Glob` for a file listing, otherwise `Grep`                            | Glob's `filenames`; Grep's `content`, `filenames`        |
+| `research`       | `WebFetch` for known URLs, otherwise `WebSearch`                       | WebFetch's `result`; WebSearch's `results`               |
+| `delegate`       | `Agent` to start, `SendMessage`, or `TaskStop`                         | `status`, `agentId`, `content`                           |
+| `skill`          | `Skill` (`skill`, `args`)                                              | `success`, `commandName`                                 |
+| `ask`            | `AskUserQuestion`; `answers` from `updatedInput` answer without a card | `questions`, `answers`                                   |
+| `plan`           | `ExitPlanMode` to present a plan                                       | `plan`                                                   |
+| `loops`          | `CronCreate`, `CronDelete`, `CronList` or `ScheduleWakeup`             | Localix's own                                            |
+| `jobs`           | `TaskStop` to stop a job                                               | Localix's own                                            |
+| `activate_tools` | `ToolSearch` (`select:<names>`)                                        | Localix's own                                            |
+| `mcp_resources`  | `ListMcpResourcesTool` or `ReadMcpResourceTool`                        | Localix's own                                            |
+| An MCP tool      | `mcp__<server>__<tool>`                                                | Its content blocks                                       |
+
+Any other tool keeps its Localix name and shape. A call with no Claude Code counterpart, such as one
+edit call over several files, keeps Localix's `{content, details}` response. `PostToolUse` and
+`PostToolUseFailure` carry `tool_use_id` and `duration_ms`. `updatedToolOutput` in the shape of
+Read, Grep, Glob, WebFetch or WebSearch replaces the text the model reads. Bash output arrives
+merged in `stdout`.
 
 `once: true` applies only to hooks in skill frontmatter; a plugin's `hooks.json` and agent
 frontmatter ignore it. The hook is removed after its first successful run. A run that fails, blocks
