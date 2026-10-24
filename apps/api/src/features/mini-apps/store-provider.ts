@@ -1,4 +1,12 @@
-import type { InstallPlan, Scope, StoreActor, StoreProvider } from '@localixai/store'
+import {
+  packageKindSchema,
+  type Editorial,
+  type InstallPlan,
+  type ListingRef,
+  type Scope,
+  type StoreActor,
+  type StoreProvider,
+} from '@localixai/store'
 
 import { InvalidRequestError } from '../../lib/domain-errors'
 import type { MiniAppCatalogPreview } from './catalog-preview'
@@ -26,6 +34,14 @@ export interface MiniAppStoreProviderDeps {
     setEnabled(userId: string, input: { name: string; enabled: boolean }): Promise<void>
     remove(userId: string, input: { name: string }): Promise<void>
   }
+}
+
+/** A pick's item: an app's name, or `<kind>:<id>` for another kind. */
+function refOfPick(item: string): ListingRef | null {
+  const at = item.indexOf(':')
+  if (at < 0) return { kind: 'mini-app', id: item }
+  const kind = packageKindSchema.safeParse(item.slice(0, at))
+  return kind.success && at < item.length - 1 ? { kind: kind.data, id: item.slice(at + 1) } : null
 }
 
 /** A mini app belongs to the person: it has no project install (`docs/internals/store.md`). */
@@ -161,6 +177,47 @@ export function createMiniAppStoreProvider(deps: MiniAppStoreProviderDeps): Stor
         verified: preview.verified,
         added: preview.added,
       }
+    },
+
+    /**
+     * What the catalogs Localix vouches for pick for Discover. An item is an app's name, or
+     * `<kind>:<id>` for another kind; a hero without its own picture shows its first screenshot.
+     */
+    async editorial(): Promise<Editorial[]> {
+      const [{ editorial }, label] = await Promise.all([deps.store.list(), labels()])
+      const picks = editorial.filter(
+        ({ source }) => catalogTrust(label.get(source)?.builtIn ?? false).editorial,
+      )
+      return Promise.all(
+        picks.map(async ({ source, editorial: pick }) => {
+          const hero = pick.hero ? refOfPick(pick.hero.item) : null
+          const image =
+            pick.hero?.image ??
+            (hero?.kind === 'mini-app'
+              ? (await deps.store.detail(hero.id).catch(() => null))?.screenshots[0]?.url
+              : undefined)
+          return {
+            source,
+            ...(pick.hero && hero
+              ? {
+                  hero: {
+                    item: hero,
+                    ...(pick.hero.title ? { title: pick.hero.title } : {}),
+                    ...(pick.hero.subtitle ? { subtitle: pick.hero.subtitle } : {}),
+                    ...(image ? { image } : {}),
+                  },
+                }
+              : {}),
+            collections: pick.collections.map((collection) => ({
+              id: collection.id,
+              title: collection.title,
+              ...(collection.subtitle ? { subtitle: collection.subtitle } : {}),
+              style: collection.style,
+              items: collection.items.flatMap((item) => refOfPick(item) ?? []),
+            })),
+          }
+        }),
+      )
     },
 
     addSource: (input) => deps.catalogs.add(input),

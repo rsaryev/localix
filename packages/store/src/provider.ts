@@ -1,4 +1,5 @@
 import type {
+  Editorial,
   InstallPlan,
   Listing,
   ListingDetail,
@@ -48,6 +49,8 @@ export interface StoreProvider {
   previewSource?(input: string): Promise<SourcePreview>
   addSource?(input: string): Promise<void>
   removeSource?(id: string): Promise<void>
+  /** The hero and collections its editorial sources pick for Discover; none when it has none. */
+  editorial?(): Promise<Editorial[]>
   /** Hear every change to what `listings` would answer; returns the unsubscribe. */
   subscribe(onChange: () => void): () => void
 }

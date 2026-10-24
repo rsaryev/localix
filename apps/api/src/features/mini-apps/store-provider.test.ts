@@ -117,6 +117,50 @@ describe('the mini apps in the Store', () => {
     expect(added!.featured).toBe(false)
   })
 
+  test('Localix’s picks for Discover: a hero with its first screenshot, and collections', async () => {
+    const { source, provider, catalogs } = setup()
+    await offer(source, 'chess', { screenshots: [{ path: './shot.png', caption: 'Board' }] })
+    await offer(source, 'checkers')
+    await fs.writeFile(
+      join(source, 'catalog-picks.json'),
+      JSON.stringify({
+        hero: { item: 'chess', title: 'Play chess with the agent' },
+        collections: [
+          {
+            id: 'play',
+            title: 'Play with the agent',
+            items: ['chess', 'checkers', 'plugin:games@localix'],
+          },
+        ],
+      }),
+    )
+    expect(await provider.editorial!()).toEqual([
+      {
+        source: pathToFileURL(source).href,
+        hero: {
+          item: { kind: 'mini-app', id: 'chess' },
+          title: 'Play chess with the agent',
+          image: '/rpc/mini-apps/store/media/chess/screenshot/0',
+        },
+        collections: [
+          {
+            id: 'play',
+            title: 'Play with the agent',
+            style: 'row',
+            items: [
+              { kind: 'mini-app', id: 'chess' },
+              { kind: 'mini-app', id: 'checkers' },
+              { kind: 'plugin', id: 'games@localix' },
+            ],
+          },
+        ],
+      },
+    ])
+    // A catalog the person added picks nothing for Discover.
+    catalogs[0]!.builtIn = false
+    expect(await provider.editorial!()).toEqual([])
+  })
+
   test('an install shows its version, its switch, an offered update and its settings', async () => {
     const { source, store, provider, enabled } = setup()
     await offer(source, 'chess')

@@ -1,5 +1,6 @@
 import {
   LISTINGS_PAGE,
+  type DiscoverResponse,
   type ListingRef,
   type ListingsResponse,
   type PackageKind,
@@ -15,6 +16,7 @@ import {
 
 import { ConflictError, NotFoundError } from '../../lib/domain-errors'
 import { activityOf } from './activity'
+import { discoverOf, relatedOf } from './discover'
 import type { StoreIndexRepository } from './index-repository'
 import { refKey } from './index-rows'
 import { staticScore } from './ranking'
@@ -153,12 +155,30 @@ export function createStoreService(deps: {
     },
 
     async detail(ref: ListingRef, actor: StoreActor) {
+      await runs.ready(actor)
       const detail = await providerOf(ref.kind).detail(ref.id, actor)
       // What a fetched package contains is written back, so its card and shelves show it.
       if ((await deps.index.rememberComponents(ref, detail.components)) && deps.resyncMeaning)
         deps.resyncMeaning()
       const indexed = await deps.index.get(actor.userId, ref)
-      return indexed?.alsoIn?.length ? { ...detail, alsoIn: indexed.alsoIn } : detail
+      if (!indexed) return detail
+      return {
+        ...detail,
+        ...(indexed.alsoIn?.length ? { alsoIn: indexed.alsoIn } : {}),
+        ...(await relatedOf(deps.index, actor.userId, indexed)),
+      }
+    },
+
+    /** What Discover shows (`discover.ts`). */
+    async discover(actor: StoreActor, query: { projectId?: string }): Promise<DiscoverResponse> {
+      await runs.ready(actor)
+      return discoverOf({
+        index: deps.index,
+        providers: deps.providers,
+        actor,
+        projectWords: (await deps.projectWords?.(actor.userId, query.projectId)) ?? new Set(),
+        now: now(),
+      })
     },
 
     plan: async (ref: ListingRef, scope: Scope, actor: StoreActor) =>

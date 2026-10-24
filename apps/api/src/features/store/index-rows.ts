@@ -36,6 +36,8 @@ export interface IndexRow {
   featured: number
   recommended: number
   origin: string | null
+  publisher: string
+  updated_at: string | null
   weight: number
   score: number
   signals: string
@@ -102,6 +104,8 @@ export function toIndexRow(card: ListingCard, opts: { now: number }): IndexRow {
     featured: card.featured ? 1 : 0,
     recommended: card.recommended ? 1 : 0,
     origin: card.origin ?? null,
+    publisher: card.publisher.name,
+    updated_at: card.updatedAt ?? null,
     weight: card.source.weight ?? TRUST_WEIGHTS[card.source.trust ?? 'community'],
     score: staticScore(asListing, opts),
     signals: listingSignals(asListing),

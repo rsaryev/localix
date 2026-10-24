@@ -19,6 +19,7 @@ import { parseMarketplaceRef } from './marketplace-source'
 import type { PluginService } from './service-types'
 import { readPluginReadme, scanPluginContents, type PluginContents } from './store-contents'
 import { createContentsCache } from './store-contents-cache'
+import { marketEditorial } from './store-editorial'
 import { createPluginStoreJobs } from './store-jobs'
 import { marketView, pluginListing, type MarketView } from './store-listing'
 import { pluginStoreSources } from './store-sources'
@@ -285,6 +286,9 @@ export function createPluginStoreProvider(deps: {
     },
 
     sources: async () => pluginStoreSources((await views()).views),
+
+    /** What the editorial marketplaces pick for Discover (`store-editorial.ts`). */
+    editorial: async () => (await views()).views.flatMap((view) => marketEditorial(view) ?? []),
 
     ...(deps.previewMarketplace ? { previewSource: deps.previewMarketplace } : {}),
 

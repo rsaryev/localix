@@ -1,11 +1,16 @@
-import type { Listing, PackageKind, SourceView, StoreProvider } from '@localixai/store'
+import type { Editorial, Listing, PackageKind, SourceView, StoreProvider } from '@localixai/store'
 import { makeListing, makeListingDetail } from '@localixai/store/testing'
 
 /** A provider over a list in memory, recording every call it is asked to make. */
 export function fakeProvider(
   kind: PackageKind,
   initial: Listing[],
-  opts: { sources?: SourceView[]; withoutOptional?: boolean; fails?: string } = {},
+  opts: {
+    sources?: SourceView[]
+    withoutOptional?: boolean
+    fails?: string
+    editorial?: Editorial[]
+  } = {},
 ) {
   let listings = initial
   const calls: string[] = []
@@ -37,6 +42,7 @@ export function fakeProvider(
     remove: async (id, scope) => record(`remove ${id} ${scope}`),
     refresh: async () => record('refresh'),
     sources: async () => opts.sources ?? [],
+    ...(opts.editorial ? { editorial: async () => opts.editorial! } : {}),
     subscribe(listener) {
       listeners.add(listener)
       return () => listeners.delete(listener)

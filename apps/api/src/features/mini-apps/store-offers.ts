@@ -12,7 +12,11 @@ import {
 
 import { errorMessage } from '../../lib/errors'
 import { listSubdirs } from '../ext/fs-discovery'
-import { readMiniAppCatalog } from './catalog-feed'
+import {
+  parseCatalogEditorial,
+  readMiniAppCatalogFeed,
+  type MiniAppCatalogEditorial,
+} from './catalog-feed'
 
 /** Who publishes an app, and whether Localix vouches for them. */
 export interface MiniAppPublisher {
@@ -137,14 +141,23 @@ export async function readManifest(dir: string): Promise<Record<string, unknown>
 }
 
 /** The picks beside a local source's apps, only when Localix vouches for the source. */
-async function localPicks(source: Extract<MiniAppStoreSource, { kind: 'local' }>) {
+async function localPicks(source: Extract<MiniAppStoreSource, { kind: 'local' }>): Promise<{
+  featured: Set<string>
+  recommended: Set<string>
+  editorial?: MiniAppCatalogEditorial
+}> {
   const none = { featured: new Set<string>(), recommended: new Set<string>() }
   if (!source.vouches) return none
   try {
     const parsed = JSON.parse(await fs.readFile(join(source.root, CATALOG_PICKS_FILE), 'utf8'))
     const names = (value: unknown) =>
       new Set(Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [])
-    return { featured: names(parsed?.featured), recommended: names(parsed?.recommended) }
+    const editorial = parseCatalogEditorial(parsed)
+    return {
+      featured: names(parsed?.featured),
+      recommended: names(parsed?.recommended),
+      ...(editorial ? { editorial } : {}),
+    }
   } catch {
     return none
   }
@@ -152,7 +165,7 @@ async function localPicks(source: Extract<MiniAppStoreSource, { kind: 'local' }>
 
 async function localOffers(
   source: Extract<MiniAppStoreSource, { kind: 'local' }>,
-): Promise<Offer[]> {
+): Promise<{ offers: Offer[]; editorial?: MiniAppCatalogEditorial }> {
   const offers: Offer[] = []
   const picks = await localPicks(source)
   for (const folder of await listSubdirs(source.root)) {
@@ -180,7 +193,7 @@ async function localOffers(
       dir,
     })
   }
-  return offers
+  return { offers, ...(picks.editorial ? { editorial: picks.editorial } : {}) }
 }
 
 /**
@@ -196,17 +209,22 @@ export function createOfferReader(deps: {
 }) {
   const ttl = deps.ttlMs ?? 10 * 60_000
   const now = deps.now ?? Date.now
-  const cache = new Map<string, { at: number; offers: Offer[] }>()
+  const cache = new Map<
+    string,
+    { at: number; offers: Offer[]; editorial?: MiniAppCatalogEditorial }
+  >()
 
   async function catalogOffers(
     source: Extract<MiniAppStoreSource, { kind: 'catalog' }>,
     fresh: boolean,
     cachedOnly: boolean,
-  ): Promise<Offer[]> {
+  ): Promise<{ offers: Offer[]; editorial?: MiniAppCatalogEditorial }> {
     const cached = cache.get(source.url)
-    if (cachedOnly) return cached?.offers ?? []
-    if (cached && !fresh && now() - cached.at < ttl) return cached.offers
-    const apps = await readMiniAppCatalog(source.url, { fetchImpl: deps.fetchImpl })
+    if (cachedOnly) return cached ?? { offers: [] }
+    if (cached && !fresh && now() - cached.at < ttl) return cached
+    const { apps, editorial } = await readMiniAppCatalogFeed(source.url, {
+      fetchImpl: deps.fetchImpl,
+    })
     const pinned = (file: { url: string; bytes: number; sha256: string; type?: string }) => ({
       from: 'catalog' as const,
       url: file.url,
@@ -245,8 +263,10 @@ export function createOfferReader(deps: {
       catalog: source.url,
       archive: app.archive,
     }))
-    cache.set(source.url, { at: now(), offers })
-    return offers
+    // Discover's picks are Localix's own word, like featured.
+    const held = { at: now(), offers, ...(editorial && source.vouches ? { editorial } : {}) }
+    cache.set(source.url, held)
+    return held
   }
 
   /**
@@ -254,13 +274,17 @@ export function createOfferReader(deps: {
    * `cachedOnly` answers from what the hosted catalogs said last, fetching nothing: the reads a
    * background surface makes must never be what sends a request out.
    */
-  return async function read(
-    opts: { fresh?: boolean; cachedOnly?: boolean } = {},
-  ): Promise<{ offers: Map<string, Offer>; problems: string[] }> {
+  return async function read(opts: { fresh?: boolean; cachedOnly?: boolean } = {}): Promise<{
+    offers: Map<string, Offer>
+    problems: string[]
+    /** Each vouched source's picks for Discover, by the source's address. */
+    editorial: Array<{ source: string; editorial: MiniAppCatalogEditorial }>
+  }> {
     const offers = new Map<string, Offer>()
+    const editorial: Array<{ source: string; editorial: MiniAppCatalogEditorial }> = []
     const problems: string[] = []
     for (const source of await deps.sources()) {
-      let found: Offer[]
+      let found: { offers: Offer[]; editorial?: MiniAppCatalogEditorial }
       try {
         found =
           source.kind === 'local'
@@ -268,10 +292,16 @@ export function createOfferReader(deps: {
             : await catalogOffers(source, opts.fresh ?? false, opts.cachedOnly ?? false)
       } catch (error) {
         problems.push(errorMessage(error))
-        found = source.kind === 'catalog' ? (cache.get(source.url)?.offers ?? []) : []
+        found =
+          source.kind === 'catalog' ? (cache.get(source.url) ?? { offers: [] }) : { offers: [] }
       }
-      for (const offer of found) if (!offers.has(offer.name)) offers.set(offer.name, offer)
+      for (const offer of found.offers) if (!offers.has(offer.name)) offers.set(offer.name, offer)
+      if (found.editorial)
+        editorial.push({
+          source: source.kind === 'catalog' ? source.url : pathToFileURL(source.root).href,
+          editorial: found.editorial,
+        })
     }
-    return { offers, problems }
+    return { offers, problems, editorial }
   }
 }

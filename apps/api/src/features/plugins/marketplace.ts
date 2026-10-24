@@ -112,6 +112,11 @@ export const marketplaceSchema = z.object({
       description: z.string().optional(),
       version: z.string().optional(),
       pluginRoot: z.string().optional(),
+      /**
+       * Localix's own picks for its Store's Discover (`store-editorial.ts`); Claude Code ignores
+       * the key. Read leniently there, never a reason to refuse the catalog.
+       */
+      localix: z.unknown().optional(),
     })
     .optional(),
 })

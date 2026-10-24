@@ -78,6 +78,14 @@ describe('/rpc/store', () => {
     expect(seen).toEqual([['project', 'p1']])
   })
 
+  test('Discover in one read: its rows and every listing they name', async () => {
+    const body = await (await app().get('/discover')).json()
+    expect(body.hero).toBeNull()
+    expect(body.rows.map((row: { id: string }) => row.id)).toContain('kind:mini-app')
+    expect(body.listings).toHaveLength(2)
+    expect(body.updates).toEqual({ count: 1 })
+  })
+
   test('a shelf that does not exist is a bad request', async () => {
     expect((await app().get('/listings?shelf=package:gadget')).status).toBe(400)
   })

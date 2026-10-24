@@ -31,6 +31,16 @@ function fixture() {
     [`${OFFICIAL}/.claude-plugin/marketplace.json`]: JSON.stringify({
       name: OFFICIAL,
       owner: { name: 'Anthropic' },
+      metadata: {
+        localix: {
+          recommended: ['review'],
+          featured: ['pg'],
+          hero: { item: 'review', title: 'Review every change' },
+          collections: [
+            { id: 'data', title: 'Work with data', items: ['pg', 'mini-app:database'] },
+          ],
+        },
+      },
       plugins: [
         {
           name: 'review',
@@ -53,6 +63,7 @@ function fixture() {
     [`${COMMUNITY}/.claude-plugin/marketplace.json`]: JSON.stringify({
       name: COMMUNITY,
       owner: { name: 'Anthropic' },
+      metadata: { localix: { recommended: ['pg'], hero: { item: 'pg' } } },
       plugins: [{ name: 'pg', source: pg, description: 'Postgres tools' }],
     }),
   })
@@ -147,6 +158,34 @@ describe('plugins in the Store', () => {
       publisher: { verified: false },
       source: { id: COMMUNITY, trust: 'community', weight: 0.35 },
     })
+  })
+
+  test('an editorial marketplace’s picks for Discover; a community one picks nothing', async () => {
+    const { provider } = fixture()
+    const { listings } = await provider.listings(actor)
+    expect(byId(listings, `review@${OFFICIAL}`)).toMatchObject({
+      recommended: true,
+      featured: false,
+    })
+    expect(byId(listings, `pg@${OFFICIAL}`)).toMatchObject({ featured: true })
+    expect(byId(listings, `pg@${COMMUNITY}`)).toMatchObject({ recommended: false })
+    expect(await provider.editorial!()).toEqual([
+      {
+        source: OFFICIAL,
+        hero: { item: { kind: 'plugin', id: `review@${OFFICIAL}` }, title: 'Review every change' },
+        collections: [
+          {
+            id: 'data',
+            title: 'Work with data',
+            style: 'row',
+            items: [
+              { kind: 'plugin', id: `pg@${OFFICIAL}` },
+              { kind: 'mini-app', id: 'database' },
+            ],
+          },
+        ],
+      },
+    ])
   })
 
   test('two marketplaces listing one repository name one origin', async () => {

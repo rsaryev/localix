@@ -1,4 +1,7 @@
 export {
+  collectionSchema,
+  collectionStyleSchema,
+  editorialSchema,
   COMPONENT_KINDS,
   PACKAGE_KINDS,
   componentKindSchema,
@@ -18,6 +21,9 @@ export {
   trustSchema,
 } from './contract'
 export type {
+  Collection,
+  CollectionStyle,
+  Editorial,
   ComponentKind,
   InstallPlan,
   JobPhase,
@@ -35,6 +41,8 @@ export type {
 } from './contract'
 export type { ProviderListings, StoreActor, StoreProvider } from './provider'
 export {
+  discoverQuerySchema,
+  discoverResponseSchema,
   enableRequestSchema,
   installRequestSchema,
   LISTINGS_PAGE,
@@ -50,7 +58,13 @@ export {
   storeFacetsSchema,
   updatesApplyResponseSchema,
 } from './routes'
-export type { ListingsQuery, ListingsResponse, StoreActivity, StoreFacets } from './routes'
+export type {
+  DiscoverResponse,
+  ListingsQuery,
+  ListingsResponse,
+  StoreActivity,
+  StoreFacets,
+} from './routes'
 export {
   BROWSABLE_COMPONENT_KINDS,
   SHELVES,

@@ -1,6 +1,8 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import {
+  discoverQuerySchema,
+  discoverResponseSchema,
   enableRequestSchema,
   installPlanSchema,
   installRequestSchema,
@@ -49,6 +51,11 @@ export function createStoreRoutes(store: StoreService) {
         ...(installed ? { installed: installed === 'true' } : {}),
       })
       return c.json(listingsResponseSchema.parse(page), 200)
+    })
+    .get('/discover', zValidator('query', discoverQuerySchema), async (c) => {
+      const { projectId } = c.req.valid('query')
+      const answer = await store.discover(actor(c), projectId ? { projectId } : {})
+      return c.json(discoverResponseSchema.parse(answer), 200)
     })
     .get('/activity', async (c) =>
       c.json(storeActivitySchema.parse(await store.activity(actor(c))), 200),

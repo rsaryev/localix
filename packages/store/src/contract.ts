@@ -127,6 +127,10 @@ export const listingSchema = z.object({
 export type Listing = z.infer<typeof listingSchema>
 
 export const listingDetailSchema = listingSchema.extend({
+  /** More from its publisher, best first. */
+  related: z.array(listingRefSchema).optional(),
+  /** You might also like: listings of its category that share its tags, best first. */
+  similar: z.array(listingRefSchema).optional(),
   readme: z.string().nullable(),
   media: z.array(z.object({ url: z.string(), caption: z.string().optional() })),
   /** License, size, API version, homepage … in the provider's words. */
@@ -179,3 +183,44 @@ export const sourcePreviewSchema = z.object({
   added: z.boolean(),
 })
 export type SourcePreview = z.infer<typeof sourcePreviewSchema>
+
+/** How a Discover collection is drawn: one wide hero, a scrolling row, or a grid. */
+export const collectionStyleSchema = z.enum(['hero', 'row', 'grid'])
+export type CollectionStyle = z.infer<typeof collectionStyleSchema>
+
+/**
+ * A group of listings Discover shows together: an editorial source's pick (a hero, a
+ * collection) or one the Store computes (Start here, For this project, New & updated, a kind).
+ */
+export const collectionSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  subtitle: z.string().optional(),
+  style: collectionStyleSchema,
+  items: z.array(listingRefSchema),
+  /** The source that picked it; absent for a row the Store computed. */
+  source: z.string().optional(),
+  /** A wide picture for a hero: a provider media address. */
+  image: z.string().optional(),
+})
+export type Collection = z.infer<typeof collectionSchema>
+
+/**
+ * What an editorial source picks for Discover (`docs/internals/store.md`): a hero and collections
+ * that may mix kinds. Only a source whose default entry is editorial hands any over, and the
+ * Store never shows a community listing in them.
+ */
+export const editorialSchema = z.object({
+  /** The source's id, as its listings name it. */
+  source: z.string(),
+  hero: z
+    .object({
+      item: listingRefSchema,
+      title: z.string().optional(),
+      subtitle: z.string().optional(),
+      image: z.string().optional(),
+    })
+    .optional(),
+  collections: z.array(collectionSchema.omit({ source: true, image: true })),
+})
+export type Editorial = z.infer<typeof editorialSchema>

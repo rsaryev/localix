@@ -108,9 +108,49 @@ function resolveMedia<T extends { url: string }>(file: T | undefined, catalogUrl
 const withoutEmpty = <T extends Record<string, unknown>>(record: T): T =>
   Object.fromEntries(Object.entries(record).filter(([, value]) => value !== undefined)) as T
 
+/**
+ * Discover's picks a catalog may carry (`docs/internals/store.md`): a hero and collections whose
+ * items are app names, or `<kind>:<id>` for another kind. Each that does not read is dropped alone.
+ */
+const heroSchema = z.object({
+  item: z.string().min(1),
+  title: optional(z.string().max(120)),
+  subtitle: optional(z.string().max(240)),
+  /** A wide picture, against the catalog; the hero app's first screenshot when absent. */
+  image: optional(z.string().min(1)),
+})
+const collectionSchema = z.object({
+  id: z.string().min(1).max(64),
+  title: z.string().min(1).max(120),
+  subtitle: optional(z.string().max(240)),
+  style: z.enum(['hero', 'row', 'grid']).catch('row'),
+  items: z
+    .array(z.unknown())
+    .transform((items) =>
+      items.filter((item): item is string => typeof item === 'string').slice(0, 48),
+    ),
+})
+const editorialSchema = z.object({
+  hero: optional(heroSchema),
+  collections: optional(z.array(z.unknown())).transform((all) =>
+    (all ?? []).flatMap((raw) => {
+      const parsed = collectionSchema.safeParse(raw)
+      return parsed.success ? [withoutEmpty(parsed.data)] : []
+    }),
+  ),
+})
+export type MiniAppCatalogEditorial = z.infer<typeof editorialSchema>
+
+/** The picks beside a local source's apps (`catalog-picks.json`), read like a catalog's. */
+export function parseCatalogEditorial(raw: unknown): MiniAppCatalogEditorial | undefined {
+  const parsed = editorialSchema.safeParse(raw)
+  return parsed.success ? parsed.data : undefined
+}
+
 const catalogSchema = z.object({
   schema: z.literal(MINI_APP_CATALOG_SCHEMA),
   apps: z.array(z.unknown()),
+  editorial: optional(editorialSchema),
 })
 
 /**
@@ -121,6 +161,14 @@ export async function readMiniAppCatalog(
   url: string,
   options: { fetchImpl?: typeof fetch; signal?: AbortSignal } = {},
 ): Promise<MiniAppCatalogApp[]> {
+  return (await readMiniAppCatalogFeed(url, options)).apps
+}
+
+/** A catalog's apps and the picks it carries for Discover. */
+export async function readMiniAppCatalogFeed(
+  url: string,
+  options: { fetchImpl?: typeof fetch; signal?: AbortSignal } = {},
+): Promise<{ apps: MiniAppCatalogApp[]; editorial?: MiniAppCatalogEditorial }> {
   const where = url.startsWith('file:') ? url : new URL(url).host
   let response: Response
   try {
@@ -145,7 +193,10 @@ export async function readMiniAppCatalog(
     throw new Error(
       `${where} is not a mini app catalog (schema ${MINI_APP_CATALOG_SCHEMA} with an apps list)`,
     )
-  return parsed.data.apps.flatMap((raw) => {
+  const { editorial } = parsed.data
+  const hero = editorial?.hero
+  const image = hero?.image ? resolveMedia({ url: hero.image }, url)?.url : undefined
+  const apps = parsed.data.apps.flatMap((raw) => {
     const app = catalogAppSchema.safeParse(raw)
     if (!app.success) return []
     const screenshots = app.data.screenshots?.flatMap((shot) => resolveMedia(shot, url) ?? [])
@@ -160,4 +211,15 @@ export async function readMiniAppCatalog(
       }),
     ]
   })
+  return {
+    apps,
+    ...(editorial
+      ? {
+          editorial: {
+            ...(hero ? { hero: withoutEmpty({ ...hero, image }) } : {}),
+            collections: editorial.collections,
+          },
+        }
+      : {}),
+  }
 }

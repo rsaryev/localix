@@ -1,3 +1,4 @@
+import type { MiniAppCatalogEditorial } from './catalog-feed'
 import { join } from 'node:path'
 
 import { ConflictError, NotFoundError } from '../../lib/domain-errors'
@@ -41,6 +42,8 @@ export interface MiniAppStoreListing {
   entries: MiniAppStoreEntry[]
   /** Sources that could not be read this time, each said in a sentence. */
   problems: string[]
+  /** What the catalogs Localix vouches for pick for the Store's Discover, by catalog. */
+  editorial: Array<{ source: string; editorial: MiniAppCatalogEditorial }>
 }
 
 /** A catalog's store media, kept by hash once fetched. */
@@ -150,9 +153,9 @@ export function createMiniAppStore(deps: {
 
   return {
     async list(): Promise<MiniAppStoreListing> {
-      const { offers, problems } = await readOffers()
+      const { offers, problems, editorial } = await readOffers()
       const entries = await Promise.all([...offers.values()].map(toEntry))
-      return { entries: entries.sort((a, b) => a.name.localeCompare(b.name)), problems }
+      return { entries: entries.sort((a, b) => a.name.localeCompare(b.name)), problems, editorial }
     },
 
     /** One app's store page: its row, README, screenshots and what it brings. */

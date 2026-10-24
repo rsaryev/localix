@@ -15,6 +15,7 @@ import type { Marketplace, MarketplaceEntry } from './marketplace'
 import type { KnownMarketplace } from './marketplace-catalog'
 import { resolveEntrySource } from './marketplace-entry-source'
 import type { PluginContents } from './store-contents'
+import { marketPicks } from './store-editorial'
 
 /**
  * HOW A PLUGIN LOOKS IN THE STORE: one marketplace entry projected into the Store's contract
@@ -96,9 +97,10 @@ const countsOf = (contents: PluginContents) => {
   return counts as Exclude<Listing['contents'], 'unknown'>
 }
 
-/** A passthrough flag an editorial marketplace may set on an entry. */
-const flag = (entry: MarketplaceEntry, key: 'featured' | 'recommended') =>
-  (entry as Record<string, unknown>)[key] === true
+/** An editorial marketplace's word on an entry: its picks name it, or the entry sets the flag. */
+const flag = (view: MarketView, entry: MarketplaceEntry, key: 'featured' | 'recommended') =>
+  view.editorial &&
+  (marketPicks(view)[key].has(entry.name) || (entry as Record<string, unknown>)[key] === true)
 
 export function pluginListing(
   view: MarketView,
@@ -137,8 +139,8 @@ export function pluginListing(
     contents: state.contents ? countsOf(state.contents) : 'unknown',
     ...(state.contents ? { components: state.contents.components } : {}),
     runsCode: state.contents ? state.contents.runs.length > 0 : 'unknown',
-    featured: view.editorial && flag(entry, 'featured'),
-    recommended: view.editorial && flag(entry, 'recommended'),
+    featured: flag(view, entry, 'featured'),
+    recommended: flag(view, entry, 'recommended'),
     installs: state.installs,
     ...(state.job ? { job: state.job } : {}),
     ...(state.configure ? { configure: state.configure } : {}),

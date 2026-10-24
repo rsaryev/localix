@@ -146,6 +146,13 @@ export function fakeClient(fake: StoreFake): StoreClient {
     setEnabled: async (ref, scope, enabled) =>
       call(`${enabled ? 'enable' : 'disable'} ${ref.kind}/${ref.id} ${scope}`),
     sources: async () => fake.sources ?? SOURCES,
+    discover: async () => ({
+      hero: null,
+      updates: { count: fake.listings.filter(hasUpdate).length },
+      rows: [],
+      categories: [],
+      listings: [],
+    }),
     previewSource: async (kind, input) => {
       call(`preview ${kind} ${input}`)
       if (fake.previewFails) throw new Error(fake.previewFails)

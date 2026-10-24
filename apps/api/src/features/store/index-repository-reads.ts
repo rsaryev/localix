@@ -1,6 +1,7 @@
 import { sql, type ExpressionBuilder, type Kysely } from 'kysely'
 import type { Listing, ListingRef } from '@localixai/store'
 
+import { createIndexCards } from './index-repository-cards'
 import { facetsOf } from './index-repository-facets'
 import { narrowed, visibleListings, type IndexFilters } from './index-repository-filters'
 import type { StoreIndexTables } from './index-repository-open'
@@ -40,9 +41,9 @@ function decode(raw: string | undefined): Cursor | null {
  * A listing's rank on a page: its static score, lifted by a quarter for each of the open
  * project's words it is about (at most two count).
  */
-function rankOf(eb: Eb, boost: readonly string[]) {
-  if (boost.length === 0) return eb.ref('l.score')
-  const matches = boost
+/** How many of the open project's words a listing is about. */
+function matchesOf(eb: Eb, boost: readonly string[]) {
+  return boost
     .map((word) =>
       eb
         .case()
@@ -52,7 +53,15 @@ function rankOf(eb: Eb, boost: readonly string[]) {
         .end(),
     )
     .reduce((sum, match) => eb(sum, '+', match))
-  const lift = eb(eb.val<number>(0.25), '*', eb.fn<number>('min', [eb.val<number>(2), matches]))
+}
+
+function rankOf(eb: Eb, boost: readonly string[]) {
+  if (boost.length === 0) return eb.ref('l.score')
+  const lift = eb(
+    eb.val<number>(0.25),
+    '*',
+    eb.fn<number>('min', [eb.val<number>(2), matchesOf(eb, boost)]),
+  )
   return eb(eb.ref('l.score'), '*', eb(eb.val<number>(1), '+', lift))
 }
 
@@ -106,13 +115,21 @@ export function createIndexReads(db: Kysely<StoreIndexTables>) {
     async page(
       userId: string,
       filters: IndexFilters,
-      opts: { limit: number; cursor?: string; boost?: readonly string[] },
+      opts: {
+        limit: number
+        cursor?: string
+        boost?: readonly string[]
+        /** Only listings about at least one of the boost's words. */
+        boosted?: boolean
+      },
     ): Promise<{ listings: Listing[]; nextCursor?: string }> {
       const boost = opts.boost ?? []
       const after = decode(opts.cursor)
       let query = narrowed(visibleListings(db, userId), filters)
         .select(ROW)
         .select((eb) => rankOf(eb, boost).as('rank'))
+      if (opts.boosted && boost.length > 0)
+        query = query.where((eb) => eb(matchesOf(eb, boost), '>', 0))
       if (after)
         query = query.where((eb) => {
           const rank = rankOf(eb, boost)
@@ -155,6 +172,18 @@ export function createIndexReads(db: Kysely<StoreIndexTables>) {
             }
           : {}),
       }
+    },
+
+    /** The newest versions first, of those the filters let through. */
+    async newest(userId: string, filters: IndexFilters, limit: number): Promise<Listing[]> {
+      const rows = await narrowed(visibleListings(db, userId), filters)
+        .select(ROW)
+        .where('l.updated_at', 'is not', null)
+        .orderBy('l.updated_at', 'desc')
+        .orderBy('l.score', 'desc')
+        .limit(limit)
+        .execute()
+      return assemble(rows)
     },
 
     /** These listings as the person sees them, those the filters let through, by key. */
@@ -252,45 +281,7 @@ export function createIndexReads(db: Kysely<StoreIndexTables>) {
 
     facets: (userId: string, filters: IndexFilters) => facetsOf(db, userId, filters),
 
-    /** Cards in index order for the semantic collection: after `pk`, at most `limit`. */
-    async cards(after: number, limit: number) {
-      return db
-        .selectFrom('listing')
-        .select([
-          'pk',
-          'kind',
-          'id',
-          'display_name',
-          'summary',
-          'tags_text',
-          'category',
-          'components_text',
-        ])
-        .where('pk', '>', after)
-        .orderBy('pk')
-        .limit(limit)
-        .execute()
-    },
-
-    async cardsByKey(refs: readonly ListingRef[]) {
-      if (refs.length === 0) return []
-      const rows = await db
-        .selectFrom('listing')
-        .select([
-          'pk',
-          'kind',
-          'id',
-          'display_name',
-          'summary',
-          'tags_text',
-          'category',
-          'components_text',
-        ])
-        .where('id', 'in', [...new Set(refs.map((ref) => ref.id))])
-        .execute()
-      const wanted = new Set(refs.map(refKey))
-      return rows.filter((row) => wanted.has(refKey(row as ListingRef)))
-    },
+    ...createIndexCards(db),
 
     async count(): Promise<number> {
       const row = await db

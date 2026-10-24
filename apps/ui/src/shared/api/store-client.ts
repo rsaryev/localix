@@ -1,5 +1,6 @@
 import {
   LISTINGS_PAGE_MAX,
+  type DiscoverResponse,
   type InstallPlan,
   type ListingDetail,
   type ListingRef,
@@ -82,6 +83,11 @@ export const storeApi = {
 
   async removeSource(kind: PackageKind, id: string): Promise<void> {
     await assertOk(await client.rpc.store.sources.remove.$post({ json: { kind, id } }))
+  },
+
+  /** What Discover shows: the hero, its rows and every listing they name. */
+  async discover(query: { projectId?: string } = {}): Promise<DiscoverResponse> {
+    return unwrap(await client.rpc.store.discover.$get({ query: cleanQuery(query) }))
   },
 
   async activity(): Promise<StoreActivity> {

@@ -31,13 +31,47 @@ export const CATALOG_FILE = 'mini-app-catalog.json'
  */
 export const CATALOG_PICKS_FILE = 'catalog-picks.json'
 
+const names = (value) =>
+  Array.isArray(value) ? value.filter((name) => typeof name === 'string') : []
+const words = (record, keys) =>
+  Object.fromEntries(keys.flatMap((key) => (text(record?.[key]) ? [[key, record[key]]] : [])))
+
+/**
+ * Discover's hero and collections (`docs/internals/store.md`): an item is a mini app's name, or
+ * `<kind>:<id>` for another kind (`plugin:<name>@<marketplace>`). A pick that does not read is
+ * left out alone.
+ */
+function editorialPicks(parsed) {
+  const hero = text(parsed?.hero?.item)
+    ? { item: parsed.hero.item, ...words(parsed.hero, ['title', 'subtitle', 'image']) }
+    : undefined
+  const collections = (Array.isArray(parsed?.collections) ? parsed.collections : []).flatMap(
+    (collection) =>
+      text(collection?.id) && text(collection?.title)
+        ? [
+            {
+              ...words(collection, ['id', 'title', 'subtitle']),
+              style: ['hero', 'row', 'grid'].includes(collection.style) ? collection.style : 'row',
+              items: names(collection.items),
+            },
+          ]
+        : [],
+  )
+  return {
+    ...(hero ? { hero } : {}),
+    ...(collections.length ? { collections } : {}),
+  }
+}
+
 /** The checkout's picks; a list that is missing or not one is empty. */
 export function readCatalogPicks(repoRoot) {
-  const names = (value) =>
-    Array.isArray(value) ? value.filter((name) => typeof name === 'string') : []
   try {
     const parsed = JSON.parse(readFileSync(join(repoRoot, 'mini-apps', CATALOG_PICKS_FILE), 'utf8'))
-    return { featured: names(parsed?.featured), recommended: names(parsed?.recommended) }
+    return {
+      featured: names(parsed?.featured),
+      recommended: names(parsed?.recommended),
+      ...editorialPicks(parsed),
+    }
   } catch {
     return { featured: [], recommended: [] }
   }
@@ -151,6 +185,8 @@ function storeFields(dir, manifest, outDir, app) {
  *   only?: string[],
  *   featured?: string[],
  *   recommended?: string[],
+ *   hero?: { item: string, title?: string, subtitle?: string, image?: string },
+ *   collections?: Array<{ id: string, title: string, subtitle?: string, style: string, items: string[] }>,
  *   log?: (line: string) => void,
  * }} options
  */
@@ -162,6 +198,8 @@ export async function packMiniAppCatalog({
   only,
   featured = [],
   recommended = [],
+  hero,
+  collections,
   log = () => {},
 }) {
   mkdirSync(outDir, { recursive: true })
@@ -217,7 +255,16 @@ export async function packMiniAppCatalog({
     })
     log(`packed ${name} ${version} (${(bytes.byteLength / 1024 / 1024).toFixed(1)} MB)`)
   }
-  const catalog = { schema: CATALOG_SCHEMA, apps }
+  // Discover's picks travel with the catalog; the store honours them for Localix's own only.
+  const editorial = {
+    ...(hero ? { hero } : {}),
+    ...(collections?.length ? { collections } : {}),
+  }
+  const catalog = {
+    schema: CATALOG_SCHEMA,
+    apps,
+    ...(Object.keys(editorial).length ? { editorial } : {}),
+  }
   writeFileSync(join(outDir, CATALOG_FILE), `${JSON.stringify(catalog, null, 2)}\n`)
   return catalog
 }

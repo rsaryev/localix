@@ -2,7 +2,19 @@
   "name": "localix",
   "owner": { "name": "Localix" },
   "metadata": {
-    "description": "Claude Code plugins from the Localix repository. Localix registers this marketplace on first start; in Claude Code, add it with claude plugin marketplace add rsaryev/localix."
+    "description": "Claude Code plugins from the Localix repository. Localix registers this marketplace on first start; in Claude Code, add it with claude plugin marketplace add rsaryev/localix.",
+    "localix": {
+      "recommended": ["localix-mini-apps"],
+      "collections": [
+        {
+          "id": "build-for-localix",
+          "title": "Build for Localix",
+          "subtitle": "Make a mini app with the agent, then check, pack and publish it",
+          "style": "row",
+          "items": ["localix-mini-apps", "mini-app:code-graph", "mini-app:api"]
+        }
+      ]
+    }
   },
   "plugins": [
     {

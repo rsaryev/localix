@@ -15,6 +15,14 @@ export interface IndexFilters {
   category?: StoreCategory
   source?: string
   trust?: Trust
+  /** Only what an editorial source recommends. */
+  recommended?: boolean
+  /** Never a community listing (Discover's picks). */
+  trusted?: boolean
+  /** Only a version published since then (ISO 8601). */
+  updatedSince?: string
+  /** Only listings of this publisher, or of this category. */
+  publisher?: string
 }
 
 type Tables = StoreIndexTables & {
@@ -69,6 +77,10 @@ export function narrowed<O>(
   if (filters.category) out = out.where('l.category', '=', filters.category)
   if (filters.source) out = out.where('l.source_id', '=', filters.source)
   if (filters.trust) out = out.where('l.trust', '=', filters.trust)
+  if (filters.recommended) out = out.where('l.recommended', '=', 1)
+  if (filters.trusted) out = out.where('l.trust', '!=', 'community')
+  if (filters.updatedSince) out = out.where('l.updated_at', '>=', filters.updatedSince)
+  if (filters.publisher) out = out.where('l.publisher', '=', filters.publisher)
   return out
 }
 
