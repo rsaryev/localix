@@ -33,6 +33,7 @@ import { installedAgentsPrompt } from '../../../../external-agents/installed'
 import { agentTypesSection } from '../plugin-subagent'
 import { withBuiltinSubagentTypes } from '../builtin-subagent-types'
 import { touchedInstructionsSection } from '../touched-instructions'
+import { preloadedSkillsThroughMods } from '../preload-skill-prompt'
 
 export type RunPrompt = Awaited<ReturnType<typeof buildRunPrompt>>
 
@@ -62,7 +63,8 @@ export async function buildRunPrompt(
     loadedPlugins: inputs.loadedPlugins,
     loadedMiniApps: inputs.loadedMiniApps,
     frozenContext: inputs.frozenContext,
-    pinnedSkills: inputs.pinnedSkills,
+    // Preloaded and pinned skills through the mods' `skill.prompt`, as a typed or loaded one is.
+    pinnedSkills: await preloadedSkillsThroughMods(inputs.pinnedSkills, inputs.mods),
     triggeredSkills: inputs.triggeredSkills,
     contextFiles: inputs.contextFiles,
     projectStructure: inputs.projectStructure,

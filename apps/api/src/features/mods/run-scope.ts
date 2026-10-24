@@ -3,7 +3,7 @@ import type { AgentTool } from '@localixai/agent/agents'
 import { offerAgents, wrapDelegate, type DirectoryAgent } from './agent-events'
 import type { RunSurface } from './api/run-api'
 import type { ModScene } from './contracts'
-import { wrapSkillTool } from './conversation-events'
+import { skillPromptIn, wrapSkillTool } from './conversation-events'
 import type { ModEventScope } from './event-scope'
 import type { ModsHost } from './host'
 import { runtimeContext, type ContextSection } from './run-context'
@@ -52,6 +52,8 @@ export interface ModRunScope {
     reason: 'answer' | 'aborted' | 'error'
   }): Promise<string | undefined>
   wrapTools(tools: readonly AgentTool[]): AgentTool[]
+  /** `skill.prompt` for a skill preloaded into the run: the text the prompt holds for it. */
+  skillPrompt?(skill: string, text: string): Promise<string>
   /** The tools the enabled mods registered. */
   tools(): AgentTool[]
   /** `tool.describe`: each tool's description, and the tools a mod moved behind the activator. */
@@ -152,6 +154,7 @@ export async function createModRunScope(
       })
       return wrapToolResults(wrapInToolCall(wrapSkillTool(spawning, scope), scope), scope)
     },
+    skillPrompt: async (skill, text) => (active ? skillPromptIn(scope, skill, text) : text),
     tools: () => (active ? modTools(scope) : []),
     describeTools: (tools, placement) =>
       active
