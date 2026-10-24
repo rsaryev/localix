@@ -290,19 +290,6 @@ export function createOpsTimersPhase({
         run: () => stagedRoot.then((root) => (root ? reportStagingFailures(root) : undefined)),
       },
       { name: 'delegation_recovery', run: recoverReports },
-      {
-        name: 'official_plugin_marketplace',
-        run: () =>
-          pluginService
-            .ensureOfficialMarketplace()
-            .then((outcome) => logger.info({ event: 'plugins.official_marketplace', ...outcome }))
-            .catch((error) =>
-              logger.warn({
-                event: 'plugins.official_marketplace_failed',
-                error: errorMessage(error),
-              }),
-            ),
-      },
       // Session data whose session is gone (a crash mid-delete, a write racing the delete):
       // every user's, like the recovery. Once per start — deletion itself removes the folder.
       {
@@ -321,6 +308,20 @@ export function createOpsTimersPhase({
       { name: 'skills_curator', run: runCuratorCheck },
       { name: 'storage_maintenance', run: (ctx) => maintainStorage(signal, ctx) },
       { name: 'recommended_mini_apps', run: installRecommended },
+      // Near the end: it waits on the network (a first fetch of the official marketplace).
+      {
+        name: 'official_plugin_marketplace',
+        run: () =>
+          pluginService
+            .ensureOfficialMarketplace()
+            .then((outcome) => logger.info({ event: 'plugins.official_marketplace', ...outcome }))
+            .catch((error) =>
+              logger.warn({
+                event: 'plugins.official_marketplace_failed',
+                error: errorMessage(error),
+              }),
+            ),
+      },
       // Last: it waits on the network, and the restored catalog is already served.
       ...(checkModelCatalog ? [{ name: 'model_catalog_check', run: checkModelCatalog }] : []),
     ]
