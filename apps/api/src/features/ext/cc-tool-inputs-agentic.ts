@@ -165,6 +165,13 @@ const activateTools: ToolShape = {
   },
 }
 
+/** `workflow` is Claude Code's `Workflow`, whose `name`, `args` and `resumeFromRunId` it shares. */
+const workflow: ToolShape = {
+  name: 'Workflow',
+  toClaude: (input) => input,
+  fromClaude: (fields) => fields,
+}
+
 // `jobs` before `delegate`: Claude Code's TaskStop named alone is a background command's.
 export const AGENTIC_SHAPES: Record<string, ToolShape> = {
   jobs,
@@ -173,4 +180,5 @@ export const AGENTIC_SHAPES: Record<string, ToolShape> = {
   ask,
   plan,
   activate_tools: activateTools,
+  workflow,
 }
