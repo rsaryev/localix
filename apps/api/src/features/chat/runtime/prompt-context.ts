@@ -24,6 +24,8 @@ import { prefixedWarnLogger } from './plugin-hook-logger'
 import { skillsMatchingFiles } from './prompt-skill-paths'
 import { touchedFilesOf } from './touched-files'
 import { loadFileSubagentTypes } from './file-subagent-types'
+import { nestedSkillsForTouched } from './nested-skills'
+import { skillCallName } from '../../agent-core/tools/skill-names'
 import { buildSkillsContext } from './prompt-skills'
 import { agentRoute } from '../../../contracts/session-route'
 import { recordPluginCatalogLoad } from '../../notifications/conditions/plugins'
@@ -248,9 +250,18 @@ export async function prepareRunContext(
       .filter((entry) => runAvailability.effectFor('plugin', entry.name) === 'deny')
       .map((entry) => entry.name),
   )
+  // The files this session worked with: they load a subfolder's skills, `paths:` skills and rules.
+  const touched = touchedFilesOf(historyMessages, defaultCwd)
+  // Skills of a subfolder the work reached; the skill tool reads them beside the plugins' skills.
+  const nestedSkills = await nestedSkillsForTouched(
+    defaultCwd,
+    touched,
+    new Set([...fileSkills, ...narrowed.skills].map(skillCallName)),
+  )
   // Claude Code's project and user agent files are subagent types beside the plugins' agents.
   const loadedPlugins: LoadedPlugins = {
     ...narrowed,
+    skills: [...nestedSkills, ...narrowed.skills],
     agents: [...(await loadFileSubagentTypes(defaultCwd)), ...narrowed.agents],
   }
   // Project skills first (closer to the working dir), then global. Mirrors CC's
@@ -288,7 +299,7 @@ export async function prepareRunContext(
     allSkills,
     skillOverrides,
     defaultCwd,
-    skillsMatchingFiles(allSkills, defaultCwd, touchedFilesOf(historyMessages, defaultCwd)),
+    skillsMatchingFiles(allSkills, defaultCwd, touched),
   )
   const { frozenContext, pinnedSkills, triggeredSkills } = await resolveAgentPromptContext({
     userId,

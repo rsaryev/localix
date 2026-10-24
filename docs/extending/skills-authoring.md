@@ -225,7 +225,8 @@ and non-zero-exit behavior. For a forked skill, verify the invoking agent has ev
   session database, so the skill system is not entirely filesystem-only.
 - Personal and project skills are merged, personal first, as in Claude Code.
 - Discovery reads Claude Code's `.claude/skills` and `.claude/commands` beside Localix's own, but no
-  other application's folders; skills below the working directory are not read.
+  other application's folders. Skills below the working directory reach the agent once the session
+  works with a file in that folder.
 - `shell` and `metadata` are accepted without runtime behavior. `version` and `license` are retained
   as information only.
 - Tool overrides apply to the turn that invokes the skill. A fork runs with its agent type's tools;
