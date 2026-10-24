@@ -72,7 +72,12 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions = {}) 
     scene: ModScene,
     ids?: ReadonlySet<string>,
     origin?: HookOrigin,
-  ) => inScene(scene, () => engine.dispatch(event, input, core, { plugins: ids, origin }))
+    /** Aborts when the event is abandoned (the run stopped): every hook's `next.signal`. */
+    signal?: AbortSignal,
+  ) =>
+    inScene(scene, () =>
+      engine.dispatch(event, input, core, { plugins: ids, origin, ...(signal ? { signal } : {}) }),
+    )
 
   const sceneOf = (id: string) => {
     const cwd = instances.get(id)?.cwd ?? ports.workspaceDir

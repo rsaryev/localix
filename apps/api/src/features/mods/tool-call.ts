@@ -93,6 +93,8 @@ export function wrapInToolCall(tools: readonly AgentTool[], scope: ModToolScope)
               },
               scope.scene,
               scope.plugins,
+              undefined,
+              signal,
             )
             // The refusal handed back as it came keeps its own shape (whose refusal, the
             // sentence the person sees); a mod's own `deny` is the mod's.
@@ -117,7 +119,7 @@ export function modTools(scope: ModToolScope): AgentTool[] {
         description: spec.description,
         inputSchema: mcpInputSchema(spec.inputSchema ?? { type: 'object', properties: {} }),
         activeVerb: 'Running',
-        async execute(toolCallId, input) {
+        async execute(toolCallId, input, signal) {
           const unanswered: AgentToolResult = {
             content: `No hook of ${spec.plugin} answered ${name}`,
             isError: true,
@@ -128,6 +130,8 @@ export function modTools(scope: ModToolScope): AgentTool[] {
             () => ({ result: unanswered, isError: true }),
             scope.scene,
             scope.plugins,
+            undefined,
+            signal,
           )
           return resultOf(answer, unanswered)
         },
