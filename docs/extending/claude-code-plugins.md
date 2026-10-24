@@ -217,9 +217,13 @@ A plugin's `agents/*.md` are subagent types. Agents that can delegate see them u
 and hand a task to one with `delegate` and `agent: "<plugin>:<name>"`, or the bare name when only
 one plugin defines it; a workflow's `agent()` takes the same `agentType`. The child runs with the
 agent's prompt, `tools` and `disallowedTools`, `model` (`inherit` keeps the chat's), `effort`,
-preloaded `skills` and `maxTurns`. `background: true` never waits for the report, and
-`isolation: worktree` works in a fresh git worktree, which is kept. As in Claude Code, a plugin
-agent's `hooks`, `mcpServers` and `permissionMode` are ignored.
+preloaded `skills`, `maxTurns`, `autoCompactWindow` (the window its runs compact against) and
+`omitClaudeMd` (it starts without the project's instruction files, as `Explore` and `Plan` do).
+`memory: user | project | local` gives it a folder (`~/.claude/agent-memory/<name>/`,
+`.claude/agent-memory/<name>/` or `.claude/agent-memory-local/<name>/`) whose `MEMORY.md` — its
+first 200 lines or 25KB — joins its instructions, with the file tools to keep it. `background: true`
+never waits for the report, and `isolation: worktree` works in a fresh git worktree, which is kept.
+As in Claude Code, a plugin agent's `hooks`, `mcpServers` and `permissionMode` are ignored.
 
 Claude Code's built-in types work too: `general-purpose` and `claude` run the task as the delegating
 agent itself, and `Explore` and `Plan` run it read-only (without the tools that write files) for

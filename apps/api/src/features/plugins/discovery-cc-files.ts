@@ -241,6 +241,12 @@ export async function parseAgentFile(
     trimmedFrontmatterField(fields.isolation) === 'worktree' ? ('isolated' as const) : undefined
   // CC `omitClaudeMd:` — run without the workspace instruction files.
   const omitClaudeMd = coerceFrontmatterBool(scalarField(fields.omitClaudeMd)) === true
+  // CC `autoCompactWindow:` — the window its runs compact against, 100000–1000000 tokens.
+  const windowRaw = Number(trimmedFrontmatterField(fields.autoCompactWindow) ?? Number.NaN)
+  const autoCompactWindow =
+    Number.isInteger(windowRaw) && windowRaw >= 100_000 && windowRaw <= 1_000_000
+      ? windowRaw
+      : undefined
   // CC `color:` — display color (persisted + surfaced to the runtime panel via delegate details).
   const color = trimmedFrontmatterField(fields.color)
   // CC `initialPrompt:` — main-session auto-first-turn (RECORDED only; no `--agent` mode here).
@@ -273,6 +279,7 @@ export async function parseAgentFile(
     ...(maxTurns !== undefined ? { maxTurns } : {}),
     ...(background !== undefined ? { background } : {}),
     ...(memory ? { memory } : {}),
+    ...(autoCompactWindow ? { autoCompactWindow } : {}),
     ...(isolation ? { isolation } : {}),
     ...(omitClaudeMd ? { omitClaudeMd } : {}),
     ...(cacheTtl ? { cacheTtl } : {}),

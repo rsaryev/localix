@@ -9,6 +9,8 @@
  * even when a later stage throws.
  */
 import { withBuiltinSubagentTypes } from '../builtin-subagent-types'
+import { subagentRunOptions, withSubagentRunOptions } from '../subagent-file-options'
+import { userHome } from '../../../../../lib/env'
 import type { HookRunOptions } from '../event-handlers'
 import { buildRunCcHooks } from '../cc-hooks-build'
 import { createModRunScope, NO_MODS } from '../../../../mods/run-scope'
@@ -126,12 +128,24 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
   // A plugin's default `agent` setting runs the default agent's chat as that plugin agent, on its
   // model unless the person picked one — settled before anything below reads the turn's model.
   // A child delegated as a plugin agent type runs as that agent on every run (`plugin-subagent.ts`).
-  const asType = applyPluginSubagent(
+  const typed = applyPluginSubagent(
     context,
     session.provenance,
     withBuiltinSubagentTypes(loadedPlugins.agents),
     (message) => env.deps.logger?.warn(message),
   )
+  // The agent file's own run options: no instruction files, its compaction window, its memory.
+  const typeOptions = typed
+    ? await subagentRunOptions(typed.subagent, { projectDir: defaultCwd, homeDir: userHome() })
+    : null
+  const asType = typed && typeOptions ? withSubagentRunOptions(typed, typeOptions) : typed
+  if (typeOptions?.contextLimit) {
+    const own = turn.contextLimit
+    ;(turn as { contextLimit?: typeof own }).contextLimit =
+      typeof own === 'number' ? Math.min(own, typeOptions.contextLimit) : typeOptions.contextLimit
+  }
+  // `omitClaudeMd` (and the built-in Explore and Plan): no workspace instruction files.
+  const contextFiles = contextFilesFor(context.contextFiles, asType?.subagent ?? null)
   const main = applyPluginMainAgent(asType ?? context, asType ? null : loadedPlugins.mainAgent, {
     speakerAgentId,
     host: turn.policy.host.kind,
@@ -165,7 +179,7 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
     disabledTools: context.disabledTools,
     loadedPlugins,
     isContinuation: frame.isContinuation,
-    contextFiles: context.contextFiles,
+    contextFiles,
     permissionMode: turn.policy.permission.mode,
     ...(frame.speakerRoute.reasoningEffort ? { effort: frame.speakerRoute.reasoningEffort } : {}),
     interactive: turn.policy.human.canAnswer,
@@ -211,12 +225,12 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
 
   return {
     ...context,
+    contextFiles,
     agent: main.agent,
     disabledTools: main.disabledTools,
     // The plugin agent type a delegated child runs as: its `tools` shape the run's surface, and
     // its `omitClaudeMd` the instruction files it reads.
     pluginSubagent: asType?.subagent ?? null,
-    contextFiles: contextFilesFor(context.contextFiles, asType?.subagent ?? null),
     ...(humanProfile ? { human: humanProfile } : {}),
     hookRunOptions,
     ccHooks,

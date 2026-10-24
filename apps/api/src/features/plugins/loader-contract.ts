@@ -44,6 +44,10 @@ export interface LoadedPluginAgent {
   omitClaudeMd?: boolean
   /** CC `experimental.cacheTtl` — the prompt cache lifetime of its runs. */
   cacheTtl?: '5m' | '1h'
+  /** CC `autoCompactWindow` — its runs compact against this window (tokens). */
+  autoCompactWindow?: number
+  /** CC `memory` — its persistent-memory scope. */
+  memory?: 'user' | 'project' | 'local'
 }
 
 /**
@@ -187,5 +191,7 @@ export function buildLoadedAgent(
     ...(agent.isolation ? { isolation: agent.isolation } : {}),
     ...(agent.omitClaudeMd ? { omitClaudeMd: true } : {}),
     ...(agent.cacheTtl ? { cacheTtl: agent.cacheTtl } : {}),
+    ...(agent.autoCompactWindow ? { autoCompactWindow: agent.autoCompactWindow } : {}),
+    ...(agent.memory ? { memory: agent.memory } : {}),
   }
 }

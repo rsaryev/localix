@@ -53,12 +53,12 @@ export const pluginAgentSchema = z.object({
    */
   background: z.boolean().optional(),
   /**
-   * CC `memory` — a persistent-memory scope. RECORDED only: no run injects a per-agent
-   * `MEMORY.md`. This comment used to say the delegate runtime did, pointing at an
-   * `agent-core/agent-memory.ts` that nothing but its own test imported; the module is gone,
-   * and Localix memory is the `memory` tool's scopes.
+   * CC `memory` — a persistent-memory scope: a run as this agent gets its folder's `MEMORY.md`
+   * and the file tools to keep it (`chat/runtime/run/subagent-file-options.ts`).
    */
   memory: z.enum(['user', 'project', 'local']).optional(),
+  /** CC `autoCompactWindow` — the child's context window for compaction, 100000–1000000 tokens. */
+  autoCompactWindow: z.number().int().min(100_000).max(1_000_000).optional(),
   /**
    * The agent asked to run in a directory of its own: a `delegate` start as this agent works in a
    * fresh git worktree of the chat's repository, kept for the child's life.

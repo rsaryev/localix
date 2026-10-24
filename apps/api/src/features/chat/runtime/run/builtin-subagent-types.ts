@@ -27,6 +27,7 @@ export const BUILTIN_SUBAGENT_TYPES: readonly LoadedPluginAgent[] = [
       'Answer with the findings and the file paths (with line numbers) that support them.',
     ].join('\n'),
     disallowedTools: READ_ONLY,
+    omitClaudeMd: true,
   },
   {
     pluginName: 'builtin',
@@ -40,13 +41,9 @@ export const BUILTIN_SUBAGENT_TYPES: readonly LoadedPluginAgent[] = [
       'You cannot create, edit or delete files. Report the steps, the files each touches, and the risks.',
     ].join('\n'),
     disallowedTools: READ_ONLY,
+    omitClaudeMd: true,
   },
 ]
-
-/** Names of the built-in types, which start without the project's instruction files. */
-export const OMIT_INSTRUCTIONS_TYPES: ReadonlySet<string> = new Set(
-  BUILTIN_SUBAGENT_TYPES.map((t) => t.fullName),
-)
 
 /** The run's subagent types: the enabled plugins' agents, then each built-in none of them replaces. */
 export function withBuiltinSubagentTypes(

@@ -126,11 +126,13 @@ export async function buildRunPrompt(
     : null
   if (agentTypes) baseSections.push({ key: 'agent-types', scope: 'state', text: agentTypes })
   // A subdirectory's instruction files and path-scoped rules, once the work reaches them.
-  const touchedInstructions = await touchedInstructionsSection({
-    cwd: inputs.defaultCwd,
-    history: historyMessages,
-    loaded: inputs.contextFiles ?? [],
-  })
+  const touchedInstructions = inputs.pluginSubagent?.omitClaudeMd
+    ? null
+    : await touchedInstructionsSection({
+        cwd: inputs.defaultCwd,
+        history: historyMessages,
+        loaded: inputs.contextFiles ?? [],
+      })
   if (touchedInstructions) baseSections.push(touchedInstructions)
   const otherSessions = otherWorkspaceSessionsSection(
     session,
