@@ -138,6 +138,9 @@ export async function loadManifest(
   )
   const promoted = parsed.error ? undefined : strictIssue
   const entrypoints = await resolveEntrypoints(dir, manifest)
+  // A packaged server's settings join the plugin's own, as `<server>.<key>`.
+  if (entrypoints.mcpBundles && Object.keys(entrypoints.mcpBundles.options).length)
+    manifest.config = { ...entrypoints.mcpBundles.options, ...manifest.config }
   // So do monitors entries: one with an unknown key keeps the plugin from loading.
   const monitorError = entrypoints.monitorErrors?.[0]
   const error =
@@ -197,6 +200,11 @@ export async function loadManifest(
       message,
     })),
     ...hookIssues(entrypoints.hookConfigs),
+    ...(entrypoints.mcpBundles?.errors ?? []).map((message): PluginIssue => ({
+      severity: 'error',
+      path: 'mcpServers',
+      message,
+    })),
   ]
   entrypoints.diagnostics?.sort((a, b) =>
     `${a.kind}\0${a.path}\0${a.message}`.localeCompare(`${b.kind}\0${b.path}\0${b.message}`),

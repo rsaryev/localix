@@ -11,6 +11,7 @@ import {
 } from '@localixai/claude-plugin'
 import { parseMonitors, type PluginMonitor } from './contracts-monitors'
 import { toAbsList } from './discovery-paths'
+import { isMcpBundle, loadMcpBundles, type McpBundles } from './mcpb-bundle'
 import { findHookModule, mergedConfigs, readJson, readMcpJson } from './discovery-entrypoint-files'
 import { readPluginHookFiles } from './discovery-hook-files'
 import { collectMarkdownFiles, type CollectedMarkdownFile } from './discovery-cc-files'
@@ -28,6 +29,8 @@ export interface ResolvedEntrypoints {
   skillDirs: string[]
   /** MCP server configs keyed by server name (raw, normalized later). */
   mcpServers: Record<string, Record<string, unknown>>
+  /** What the packaged servers declare: their settings, the required ones, load failures. */
+  mcpBundles?: Pick<McpBundles, 'options' | 'required' | 'errors'>
   /** Claude Code flat-file commands — resolved `.md` paths + namespaced names (default `commands/` recursive + manifest string entries). */
   commandFiles: CollectedMarkdownFile[]
   /** Claude Code agent files — resolved `.md` paths + namespaced names (default `agents/` recursive + manifest string entries). */
@@ -118,13 +121,17 @@ export async function resolveEntrypoints(
     lspServers: manifest.lspServers,
   } as Partial<ClaudePluginManifest>)
   const mcpServers: Record<string, Record<string, unknown>> = {}
+  const bundleRefs = sources.mcpServers.files.filter(isMcpBundle)
   for (const servers of await mergedConfigs(
     dir,
     DEFAULT_LOCATIONS.mcpServers,
-    sources.mcpServers,
+    { ...sources.mcpServers, files: sources.mcpServers.files.filter((f) => !isMcpBundle(f)) },
     readMcpJson,
   ))
     Object.assign(mcpServers, servers)
+  // Packaged servers (`.mcpb` / `.dxt`, a path or an https URL), extracted into `.mcpb-cache/`.
+  const bundles = bundleRefs.length ? await loadMcpBundles(dir, bundleRefs) : undefined
+  if (bundles) Object.assign(mcpServers, bundles.servers)
 
   // ---- Markdown commands & agents ------------------------------------------
   // ADDITIVE by default: the default `commands/` / `agents/` dirs are scanned alongside
@@ -222,6 +229,7 @@ export async function resolveEntrypoints(
     hookConfigs,
     ...(hookErrors.length > 0 ? { hookErrors } : {}),
     ...(hookModule ? { hookModule } : {}),
+    ...(bundles ? { mcpBundles: bundles } : {}),
     lspServers,
     monitors,
     ...(monitorErrors.length ? { monitorErrors } : {}),

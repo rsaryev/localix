@@ -68,7 +68,8 @@ interface SubstituteCtx {
   field: string
 }
 
-const TOKEN_RE = /\$\{([\w.]+)(?::-([^}]*))?\}/g
+// A packaged server's option is `${user_config.<server>.<key>}`, and a server name may hold `-`.
+const TOKEN_RE = /\$\{([\w.-]+)(?::-([^}]*))?\}/g
 
 /** Server fields Claude Code runs through a shell: a plugin option there would be re-parsed. */
 const SHELL_FIELDS = ['headersHelper'] as const

@@ -72,6 +72,16 @@ export function buildMcpRecords(
   // a shell. A `headersHelper` that references one throws, and the server is skipped below.
   const records: McpServerRecord[] = []
   for (const [serverName, raw] of Object.entries(plugin.entrypoints.mcpServers)) {
+    // A packaged server with a required setting that has no saved value does not start (CC).
+    const missing = (plugin.entrypoints.mcpBundles?.required[serverName] ?? []).filter(
+      (key) => config[key] === undefined || config[key] === '',
+    )
+    if (missing.length) {
+      logger?.warn(
+        `Bundled MCP server "${serverName}" was not started: it needs configuration (${missing.join(', ')})`,
+      )
+      continue
+    }
     try {
       const { value: substituted } = substituteMcpServerEntry(
         serverName,
