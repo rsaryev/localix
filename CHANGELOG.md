@@ -61,6 +61,10 @@ Changes land on `main`.
   marketplace**; the official `localix` marketplace auto-updates by default and is added on first
   start. Versions follow Claude Code's rule, and an old version stays on disk for 14 days. See
   [Updates](docs/extending/plugin-updates.md#updates).
+- **More of Claude Code's plugin format**: a plugin's packaged MCP server (`.mcpb` or `.dxt`, a path
+  or an `https://` URL) runs, with its own settings in the plugin's settings; a `userConfig` field
+  with `options` is a picker of its values; and a plugin agent with `omitClaudeMd` runs without the
+  workspace instruction files. See [Claude Code plugins](docs/extending/claude-code-plugins.md).
 - **Mini app store pages**: every mini app has its own icon, and choosing one in the store opens its
   page: screenshots at full resolution with a full-window viewer, its README as About, and details
   such as size, license and what it adds. Tags filter the store, and featured apps come first. See
@@ -177,6 +181,14 @@ Changes land on `main`.
   written instead of turning empty. See [MCP](docs/features/mcp.md).
 - **Smaller Documents download**: the Documents mini app no longer carries its fonts twice; its
   download is about half the size.
+- **Claude Code plugin components load as they do in Claude Code**: a `commands` map in
+  `plugin.json` names each command after its key with the entry's description, hint, model and
+  tools; a root `SKILL.md` is the plugin's skill only when it has no `skills/`; an agent file
+  without usable frontmatter still loads as `Agent from <plugin> plugin`; skill, agent and command
+  text takes only `${user_config.KEY}` and leaves other `${…}` as written; an MCP server reads
+  options as `CLAUDE_PLUGIN_OPTION_<KEY>` uppercased; a monitor reaches the chats that run, from
+  their own working directory; and an unknown key in a `channels` or `monitors` entry stops the
+  plugin with an error.
 - **Claude Code plugins behave as they do in Claude Code**: a command's
   `allowed-tools: Bash(git add:*)` pre-approves only that command instead of the whole shell; a
   command keeps the `${NAME}` text it does not declare instead of blanking it; a `PostToolUse` hook
