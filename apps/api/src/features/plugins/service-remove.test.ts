@@ -120,14 +120,22 @@ describe('plugin remove', () => {
   })
 
   test('a Claude Code install is disabled here and left on disk for Claude Code', async () => {
-    const installPath = join(homeDir, '.claude', 'plugins', 'cache', 'mkt', 'cc-tool', '1.0.0')
+    // Claude Code keeps its plugins in CLAUDE_CONFIG_DIR, which this suite sets.
+    const installPath = join(
+      process.env.CLAUDE_CONFIG_DIR!,
+      'plugins',
+      'cache',
+      'mkt',
+      'cc-tool',
+      '1.0.0',
+    )
     await mkdir(join(installPath, '.claude-plugin'), { recursive: true })
     await writeFile(
       join(installPath, '.claude-plugin', 'plugin.json'),
       JSON.stringify({ name: 'cc-tool', description: 'cc-tool plugin' }),
     )
     await writeFile(
-      join(homeDir, '.claude', 'plugins', 'installed_plugins.json'),
+      join(process.env.CLAUDE_CONFIG_DIR!, 'plugins', 'installed_plugins.json'),
       JSON.stringify({
         version: 2,
         plugins: { 'cc-tool@mkt': [{ scope: 'user', installPath, version: '1.0.0' }] },

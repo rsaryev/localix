@@ -4,7 +4,11 @@ import { join, resolve } from 'node:path'
 import { MANIFEST_FILE, MARKETPLACE_FILE } from '@localixai/claude-plugin'
 
 import { claudeConfigDir } from '../cc-settings/config-dir'
-import { readSettingsLayers, type SettingsFilesInput } from '../cc-settings/settings-files'
+import {
+  readSettingsLayers,
+  type SettingsFilesInput,
+  type SettingsLayer,
+} from '../cc-settings/settings-files'
 import { pathExists } from '../ext/fs-discovery'
 import { isRecord } from '../../lib/record'
 import type { DiscoveredPlugin } from './discovery-types'
@@ -217,15 +221,55 @@ export async function readClaudeCodeInstalls(
 }
 
 /**
+ * The values a person gave a plugin's options in Claude Code (`pluginConfigs["<id>"].options`,
+ * settings-reference.md): read from the user and managed settings only — Claude Code ignores
+ * project and local entries, since it substitutes them into hooks and servers. Sensitive options
+ * live in the OS keychain, which Localix does not read; they are asked for here.
+ */
+function claudeCodeOptions(layers: readonly SettingsLayer[], id: string): Record<string, unknown> {
+  const out: Record<string, unknown> = {}
+  for (const layer of layers) {
+    if (layer.source !== 'user' && layer.source !== 'policy') continue
+    const configs = layer.settings.pluginConfigs
+    const entry = isRecord(configs) ? configs[id] : undefined
+    if (isRecord(entry) && isRecord(entry.options)) Object.assign(out, entry.options)
+  }
+  return out
+}
+
+/** The manifest with Claude Code's option values as the options' defaults. */
+function withClaudeCodeOptions<T extends { config?: Record<string, { default?: unknown }> }>(
+  manifest: T,
+  options: Record<string, unknown>,
+): T {
+  if (!manifest.config || Object.keys(options).length === 0) return manifest
+  const config = Object.fromEntries(
+    Object.entries(manifest.config).map(([key, option]) => [
+      key,
+      key in options && options[key] !== null && typeof options[key] !== 'object'
+        ? { ...option, default: options[key] }
+        : option,
+    ]),
+  )
+  return { ...manifest, config }
+}
+
+/**
  * The Claude Code installs as discovered plugins of the scope. One that no settings file turns on
- * loads only when its manifest does not say `defaultEnabled: false`, as in Claude Code.
+ * loads only when its manifest does not say `defaultEnabled: false`, as in Claude Code. The values
+ * its options were given in Claude Code are their defaults here; a value set in Localix wins.
  */
 export async function discoverClaudeCodePlugins(opts: {
   homeDir: string
   cwd: string | null
   projectId: string
+  env?: Record<string, string | undefined>
+  managed?: SettingsFilesInput['managed']
 }): Promise<DiscoveredPlugin[]> {
-  const installs = await readClaudeCodeInstalls(opts).catch(() => [])
+  const [installs, layers] = await Promise.all([
+    readClaudeCodeInstalls(opts).catch(() => []),
+    readSettingsLayers(opts).catch(() => [] as SettingsLayer[]),
+  ])
   const plugins = await Promise.all(
     installs.map(async (install): Promise<DiscoveredPlugin | null> => {
       const scope = install.scope === 'project' && opts.projectId ? 'project' : 'global'
@@ -238,7 +282,11 @@ export async function discoverClaudeCodePlugins(opts: {
         ),
       )
       if (!install.enabledBy && plugin.manifest.defaultEnabled === false) return null
-      return { ...plugin, claudeCodeInstall: install.id }
+      return {
+        ...plugin,
+        manifest: withClaudeCodeOptions(plugin.manifest, claudeCodeOptions(layers, install.id)),
+        claudeCodeInstall: install.id,
+      }
     }),
   )
   return plugins.filter((plugin): plugin is DiscoveredPlugin => plugin !== null)

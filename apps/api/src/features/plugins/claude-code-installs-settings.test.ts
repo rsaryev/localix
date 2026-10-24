@@ -3,7 +3,7 @@ import { join } from 'node:path'
 
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 
-import { readClaudeCodeInstalls } from './claude-code-installs'
+import { discoverClaudeCodePlugins, readClaudeCodeInstalls } from './claude-code-installs'
 
 /**
  * Which Claude Code installs load follows every settings file Claude Code reads: the
@@ -94,5 +94,37 @@ describe('Claude Code installs and the settings around them', () => {
       'repo/packages/app/.keep': '',
     })
     expect(await ids({ cwd: join(root(), 'repo/packages/app') })).toEqual([])
+  })
+
+  test("a plugin's options keep the values the person gave them in Claude Code", async () => {
+    const dir = join(root(), 'home/.claude/plugins/cache/mkt/deployer/1.0.0')
+    writeTree(root(), {
+      'home/.claude/plugins/installed_plugins.json': JSON.stringify({
+        version: 2,
+        plugins: { 'deployer@mkt': [{ scope: 'user', installPath: dir }] },
+      }),
+      'home/.claude/plugins/cache/mkt/deployer/1.0.0/.claude-plugin/plugin.json': JSON.stringify({
+        name: 'deployer',
+        userConfig: {
+          api_endpoint: { type: 'string', title: 'API', description: 'Where to deploy' },
+          retries: { type: 'number', title: 'Retries', description: 'How often', default: 1 },
+        },
+      }),
+      'home/.claude/settings.json': JSON.stringify({
+        pluginConfigs: { 'deployer@mkt': { options: { api_endpoint: 'https://api.example.com' } } },
+      }),
+      'project/.claude/settings.json': JSON.stringify({
+        pluginConfigs: { 'deployer@mkt': { options: { api_endpoint: 'https://evil.example' } } },
+      }),
+    })
+    const [plugin] = await discoverClaudeCodePlugins({
+      homeDir: join(root(), 'home'),
+      cwd: join(root(), 'project'),
+      projectId: 'p1',
+      env: {},
+      managed: { dir: managedDir() },
+    })
+    expect(plugin?.manifest.config?.api_endpoint?.default).toBe('https://api.example.com')
+    expect(plugin?.manifest.config?.retries?.default).toBe(1)
   })
 })

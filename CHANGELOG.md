@@ -144,6 +144,10 @@ Changes land on `main`.
 
 ### Fixed
 
+- **Options of plugins installed in Claude Code** start from the values you gave them there
+  (`pluginConfigs` in your Claude Code settings), so such a plugin's servers and hooks work without
+  filling its settings form again; a value set in Localix wins. Sensitive options, which Claude Code
+  keeps in the system keychain, are still asked for.
 - **Claude Code hooks and mods read every tool as Claude Code shapes it**: a Bash batch arrives as
   one command, a file listing as Glob, a URL read as WebFetch, a delegated task as Agent, a skill as
   Skill, and the built-in tools' results in their Claude Code shape (an edit's `filePath` and patch,
