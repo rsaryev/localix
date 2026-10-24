@@ -8,6 +8,9 @@ Changes land on `main`.
 
 ### Added
 
+- **Your Claude Code output styles**: styles in `~/.claude/output-styles/` and a project's
+  `.claude/output-styles/` are offered in `/output-style` and Settings → Preferences → Output style,
+  beside Localix's own.
 - **Hooks from your Claude Code settings**: the `hooks` of your Claude Code settings files run in
   Localix conversations in that folder — your own and your organization's always, a project's once
   you trusted the folder in Claude Code — and `disableAllHooks` and `allowManagedHooksOnly` hold as

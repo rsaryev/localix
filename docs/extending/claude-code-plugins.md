@@ -163,11 +163,12 @@ as in Claude Code, so add a marketplace from a local folder only when you contro
 An output style shapes how agents answer. Localix offers Claude Code's Default, Proactive, Concise,
 Explanatory and Learning, a plugin's `output-styles/*.md` as `<plugin>:<name>`, and your own
 Markdown files in `~/.localix/output-styles/` and a project's `.localix/output-styles/` (the nearest
-folder wins). Set the style every chat starts in under Settings → Preferences → Output style; use
-`/output-style <name>` for one chat and `/output-style default` to turn styles off there.
-`keep-coding-instructions` keeps the engineering lines of the agent's instructions, and a style
-marked `force-for-plugin` applies while its plugin is enabled. Styles shape a chat's own replies,
-not delegated tasks.
+folder wins), and those you wrote for Claude Code in `~/.claude/output-styles/` and a project's
+`.claude/output-styles/` (at one level, Localix's folder wins a name). Set the style every chat
+starts in under Settings → Preferences → Output style; use `/output-style <name>` for one chat and
+`/output-style default` to turn styles off there. `keep-coding-instructions` keeps the engineering
+lines of the agent's instructions, and a style marked `force-for-plugin` applies while its plugin is
+enabled. Styles shape a chat's own replies, not delegated tasks.
 
 A plugin's themes appear in Settings → Preferences → Appearance and through `/theme <name>`, with
 those of the open project's plugins. Choosing one applies its light or dark base plus its colors;

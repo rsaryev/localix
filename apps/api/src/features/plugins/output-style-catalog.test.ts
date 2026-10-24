@@ -106,4 +106,22 @@ describe("reading the person's and the project's styles", () => {
     const local = await readLocalOutputStyles({ homeDir: home(), cwd: `${repo()}/sub` })
     expect(local.project.map((style) => style.name)).toEqual(['here'])
   })
+
+  test("Claude Code's `.claude/output-styles` load too; Localix's own folder wins a name", async () => {
+    writeTree(home(), {
+      '.claude/output-styles/terse.md': 'From Claude Code.',
+      '.claude/output-styles/plain.md': 'Claude Code plain.',
+      '.localix/output-styles/plain.md': 'Localix plain.',
+    })
+    writeTree(repo(), {
+      '.git/HEAD': 'ref: refs/heads/main\n',
+      '.claude/output-styles/review.md': 'Team review voice.',
+    })
+    const local = await readLocalOutputStyles({ homeDir: home(), cwd: repo(), env: {} })
+    expect(Object.fromEntries(local.user.map((style) => [style.name, style.prompt]))).toEqual({
+      terse: 'From Claude Code.',
+      plain: 'Localix plain.',
+    })
+    expect(local.project.map((style) => style.name)).toEqual(['review'])
+  })
 })
