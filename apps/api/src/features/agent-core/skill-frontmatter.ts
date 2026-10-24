@@ -8,7 +8,12 @@
  * composes both, re-exporting the public parsers for existing importers.
  */
 import { parseYamlFrontmatterBlock, renderFrontmatterFile } from './frontmatter-yaml'
-import { parseMarkdownFrontmatter, splitPhraseList, splitTokenList } from './frontmatter-values'
+import {
+  frontmatterBool,
+  parseMarkdownFrontmatter,
+  splitPhraseList,
+  splitTokenList,
+} from './frontmatter-values'
 
 export { parseMarkdownFrontmatter, splitPhraseList, splitTokenList }
 
@@ -159,16 +164,12 @@ export function parseSkillFrontmatter(raw: string): SkillFrontmatter {
     .join(' ')
     .trim()
   const description = explicitDesc || extractBodyDescription(body)
-  const disableModelInvocation =
-    /^true$/i.test(scalarField(fields['disable-model-invocation']) ?? '') || undefined
-  // CC `hide-from-slash-command-tool` — bool or string "true"; hides from the model
-  // listing but keeps the skill user-invocable (see DiscoveredSkill.hideFromModel).
-  const hideFromModel =
-    /^true$/i.test(scalarField(fields['hide-from-slash-command-tool']) ?? '') || undefined
-  const userInvocable =
-    fields['user-invocable'] !== undefined
-      ? !/^false$/i.test(scalarField(fields['user-invocable']) ?? '')
-      : undefined
+  // Booleans read as Claude Code reads them: true/yes/on/1 and false/no/off/0, any case.
+  const disableModelInvocation = frontmatterBool(fields['disable-model-invocation']) || undefined
+  // CC `hide-from-slash-command-tool` — hides from the model listing but keeps the skill
+  // user-invocable (see DiscoveredSkill.hideFromModel).
+  const hideFromModel = frontmatterBool(fields['hide-from-slash-command-tool']) || undefined
+  const userInvocable = frontmatterBool(fields['user-invocable'])
   return {
     name: scalarField(fields.name) || undefined,
     description,

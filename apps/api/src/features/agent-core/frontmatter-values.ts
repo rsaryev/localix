@@ -79,3 +79,17 @@ export function splitPhraseList(raw: string | string[] | undefined): string[] | 
     .filter(Boolean)
   return out.length ? out : undefined
 }
+
+/**
+ * A frontmatter boolean, tri-state: `true`/`yes`/`on`/`1` → true, `false`/`no`/`off`/`0` → false,
+ * in any letter case; anything else (and absence) → undefined, so "unset" stays apart from an
+ * explicit `false`. Claude Code reads its skill and agent booleans this way, and YAML 1.2 parses
+ * `yes`/`on` as plain strings, so the parser alone does not.
+ */
+export function frontmatterBool(raw: string | string[] | undefined): boolean | undefined {
+  if (raw === undefined || Array.isArray(raw)) return undefined
+  const v = raw.trim().toLowerCase()
+  if (v === 'true' || v === 'yes' || v === 'on' || v === '1') return true
+  if (v === 'false' || v === 'no' || v === 'off' || v === '0') return false
+  return undefined
+}
