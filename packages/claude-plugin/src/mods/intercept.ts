@@ -1,16 +1,17 @@
 import type { Pause } from './budget'
 import type { DispatchOptions } from './engine'
+import { OP_SHAPES } from './op-events'
 
 /**
  * The calls a mod makes on `$`, as Claude Code's engine answers them: each is an event other mods
  * may hook (`fs.read`), fired past the hooks of the mod that made it, and answers with a promise
- * that a throw rejects — except the few calls Claude Code keeps synchronous.
+ * that a throw or a hook's deny rejects — except the few calls Claude Code keeps synchronous.
  */
 
 /** A mods API: namespaces of methods (`$.fs.read`) and values (`$.plugin.name`). */
 export type ModsApi = Record<string, Record<string, unknown>>
 
-/** The `$` calls Claude Code answers at once rather than with a promise; none is an event. */
+/** The `$` calls Claude Code answers at once rather than with a promise; each still fires. */
 export const SYNC_CALLS: ReadonlySet<string> = new Set([
   'ui.notice',
   'ui.invalidate',
@@ -32,9 +33,25 @@ interface Dispatcher {
   ): Promise<unknown>
 }
 
+/** What a call answers once its event's chain settled: `{ value }`, or the deny it rejects with. */
+function valueOf(answer: unknown): unknown {
+  if (answer && typeof answer === 'object') {
+    const { deny, value } = answer as { deny?: unknown; value?: unknown }
+    if (typeof deny === 'string') throw new Error(deny)
+    if ('value' in answer) return value
+  }
+  return answer
+}
+
 /**
  * `peers` names the mods whose hooks a call reaches — the mods running where the calling one does
  * — so a call in one project never runs another project's hooks; absent, every mod's.
+ *
+ * A call Claude Code serves as an op event (`op-events.ts`) reaches its hooks as its documented
+ * input (`$.fs.read('a.md')` is `{ path, as }`); `next(e)` resolves to `{ value }`, a hook may
+ * answer `{ value }` or `{ deny }`, and a deny rejects the caller's promise with its reason. A
+ * synchronous call (`$.ui.toast`, `$.clock.after`) fires its event without waiting on it. Any
+ * other call (`$.tool.call`, `$.prompt.submit`) is that event itself, answered as it answers.
  */
 export function interceptApi(
   engine: Dispatcher,
@@ -46,25 +63,36 @@ export function interceptApi(
   for (const [namespace, members] of Object.entries(api)) {
     const wrapped: Record<string, unknown> = {}
     for (const [name, member] of Object.entries(members)) {
-      if (typeof member !== 'function') {
+      const event = `${namespace}.${name}`
+      if (typeof member !== 'function' || event === 'ui.resolve') {
         wrapped[name] = member
         continue
       }
-      const event = `${namespace}.${name}`
       const method = member as (...args: unknown[]) => unknown
-      if (SYNC_CALLS.has(event)) {
-        wrapped[name] = method
-        continue
-      }
-      wrapped[name] = (first?: unknown, ...rest: unknown[]) => {
+      const sync = SYNC_CALLS.has(event)
+      const shape = OP_SHAPES.get(event)
+      wrapped[name] = (...args: unknown[]) => {
         const plugins = peers?.()
-        return engine.hears(event, plugins)
-          ? engine.dispatch(event, first ?? {}, (e) => method(e, ...rest), {
-              origin: { plugin, tier: 'user' },
-              skipPlugin: plugin,
-              ...(plugins ? { plugins } : {}),
-            })
-          : Promise.resolve().then(() => method(first, ...rest))
+        if (!engine.hears(event, plugins))
+          return sync ? method(...args) : Promise.resolve().then(() => method(...args))
+        const opts = {
+          origin: { plugin, tier: 'user' as const },
+          skipPlugin: plugin,
+          ...(plugins ? { plugins } : {}),
+        }
+        if (!shape)
+          return engine.dispatch(event, args[0] ?? {}, (e) => method(e, ...args.slice(1)), opts)
+        const core = async (e: unknown) => ({
+          value: await method(...shape.args(e as Record<string, unknown>, args)),
+        })
+        const answered = engine.dispatch(event, shape.input(args), core, opts).then(valueOf)
+        if (!sync) return answered
+        answered.catch(() => {})
+        // A timer's handle cancels once its event let it start; the other calls answer nothing.
+        if (namespace !== 'clock') return undefined
+        const cancel = (timer: unknown) =>
+          (timer as { cancel?: () => void } | undefined)?.cancel?.()
+        return { cancel: () => void answered.then(cancel, () => {}) }
       }
     }
     intercepted[namespace] = wrapped

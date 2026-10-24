@@ -184,13 +184,21 @@ describe('the hook chain', () => {
 })
 
 describe('mods API calls are events', () => {
-  test('another mod intercepts a call; the caller’s own hooks are not re-entered', async () => {
+  test('another mod intercepts a call as its documented input; a deny rejects the caller', async () => {
     const engine = createModsEngine()
     const reads: string[] = []
-    const api = { fs: { read: (e: { path: string }) => `content of ${e.path}` } }
+    const seen: unknown[] = []
+    const api = { fs: { read: (path: string) => `content of ${path}` } }
     await engine.load(
       'guard',
-      (on) => void on('fs.read', { path: /\.env$/ }, () => ({ deny: 'secrets stay put' })),
+      (on) => {
+        on('fs.read', { path: /\.env$/ }, () => ({ deny: 'secrets stay put' }))
+        on('fs.read', async ($, e, next) => {
+          const answer = await next(e)
+          seen.push(e, answer)
+          return { value: `${(answer as { value: string }).value}!` }
+        })
+      },
       {},
       api,
     )
@@ -198,16 +206,44 @@ describe('mods API calls are events', () => {
       'reader',
       (on) =>
         void on('session.start', async ($, e, next) => {
-          const fs = $.fs as { read: (input: { path: string }) => Promise<unknown> }
-          reads.push(JSON.stringify(await fs.read({ path: 'notes.md' })))
-          reads.push(JSON.stringify(await fs.read({ path: '.env' })))
+          const fs = $.fs as { read: (path: string) => Promise<unknown> }
+          reads.push(String(await fs.read('notes.md')))
+          reads.push(
+            String(await fs.read('.env').catch((error: Error) => `refused: ${error.message}`)),
+          )
           return next(e)
         }),
       {},
       api,
     )
     await engine.dispatch('session.start', {}, () => ({}), { plugins: new Set(['reader']) })
-    expect(reads).toEqual(['"content of notes.md"', '{"deny":"secrets stay put"}'])
+    expect(reads).toEqual(['content of notes.md!', 'refused: secrets stay put'])
+    expect(seen).toEqual([{ path: 'notes.md', as: 'text' }, { value: 'content of notes.md' }])
+  })
+
+  test('a synchronous call fires its event without waiting on it', async () => {
+    const engine = createModsEngine()
+    const toasts: unknown[] = []
+    const heard: unknown[] = []
+    await engine.load(
+      'watcher',
+      (on) => void on('ui.toast', (_$, e, next) => (heard.push(e), next(e))),
+      {},
+      {},
+    )
+    await engine.load(
+      'm',
+      () => {},
+      {},
+      { ui: { toast: (text: unknown) => void toasts.push(text) } },
+    )
+    const $ = engine.apiOf('m') as unknown as {
+      ui: { toast: (text: string, o?: unknown) => unknown }
+    }
+    expect($.ui.toast('saved', { timeoutMs: 900 })).toBeUndefined()
+    await new Promise((resolve) => setImmediate(resolve))
+    expect(heard).toEqual([{ text: 'saved', timeoutMs: 900 }])
+    expect(toasts).toEqual(['saved'])
   })
 
   test('a call reaches only the hooks of the mods running where its mod runs', async () => {
@@ -222,7 +258,7 @@ describe('mods API calls are events', () => {
     await engine.load('reader@b', () => {}, {}, api)
     const read = (mod: string) =>
       (engine.apiOf(mod) as unknown as { fs: { read: () => Promise<unknown> } }).fs.read()
-    expect(await read('reader@a')).toEqual({ deny: 'guarded' })
+    expect(await read('reader@a').catch((error: Error) => error.message)).toBe('guarded')
     expect(await read('reader@b')).toBe('content')
   })
 
