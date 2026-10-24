@@ -270,6 +270,14 @@ or backticks. Quote the placeholder (`"${CLAUDE_PROJECT_DIR}"`) when the value m
 Plugin monitor commands follow the same rule. An `http` handler's URL is not shell text, so its
 placeholders are substituted directly.
 
+Stdout counts as JSON output only when it is one JSON object with nothing around it. Text that does
+not start with `{` or end with `}` is plain text; anything else that fails to parse is a
+non-blocking error, applies nothing and never becomes context. On exit 2 a JSON object is still
+read, and a deny or block reason in it replaces stderr as the message. On `Stop`, `SubagentStop`,
+`TaskCompleted` and a plugin's `UserPromptSubmit`, exit 2 with empty stdout and a stderr that says
+`No such file or directory` is a non-blocking error, so a hook whose script is missing does not trap
+the agent. An `http` handler's 2xx body must be empty or a JSON object; plain text is an error.
+
 Command-hook stdout and stderr capture is capped at 64 KiB each. Declarative post-tool appended
 context has a separate aggregate cap of 4,096 UTF-16 code units. A command handler with
 `async: true` cannot affect the current event. When it exits 0, the `additionalContext` and

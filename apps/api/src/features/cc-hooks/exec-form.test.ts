@@ -85,7 +85,7 @@ describe('exec form', () => {
       { warn: (m) => warnings.push(m) },
       false,
     )
-    expect(outcome).toEqual({ failed: 'error' })
+    expect(outcome).toMatchObject({ failed: 'error' })
     expect(warnings.join('\n')).toContain('missing-binary')
   })
 

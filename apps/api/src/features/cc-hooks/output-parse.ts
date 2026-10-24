@@ -19,21 +19,25 @@ import { isRecord } from '../../lib/record'
  * Fold a hook's raw text output (stdout / HTTP body / MCP tool text) into an
  * outcome. `allowPlainTextContext` is true for the events where non-JSON output
  * is added to the model context (SessionStart / UserPromptSubmit); elsewhere
- * plain text is ignored. Never throws — malformed JSON degrades to plain text.
+ * plain text is ignored. Never throws: malformed JSON is a parse failure (`failed`).
  */
 export function foldHookOutput(text: string, allowPlainTextContext: boolean): CcHookOutcome {
   const trimmed = text.trim()
   if (!trimmed) return {}
-  if (!trimmed.startsWith('{')) {
-    return allowPlainTextContext ? { additionalContext: trimmed } : {}
+  const plain = () => (allowPlainTextContext ? { additionalContext: trimmed } : {})
+  // hooks.md, "Exit code 0": output that doesn't start with `{`, or doesn't end with `}`, is
+  // plain text; anything else must be one JSON object, or the run is a parse failure.
+  if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) return plain()
+  const json = parseJson(trimmed)
+  if (json === undefined) {
+    const lines = trimmed.split(/\r?\n/).filter((line) => line.trim())
+    const each = lines.map((line) => parseJson(line.trim()))
+    // Several lines that each parse are plain text, unless one of them is an output object.
+    if (lines.length > 1 && each.every((value) => value !== undefined))
+      return each.some(setsOutputField) ? parseFailure('several JSON objects') : plain()
+    return parseFailure('invalid JSON')
   }
-  let json: unknown
-  try {
-    json = JSON.parse(trimmed)
-  } catch {
-    return allowPlainTextContext ? { additionalContext: trimmed } : {}
-  }
-  if (!isRecord(json)) return {}
+  if (!isRecord(json)) return parseFailure('not a JSON object')
 
   const outcome: CcHookOutcome = {}
   if (json.continue === false) outcome.continue = false
@@ -78,6 +82,37 @@ export function foldHookOutput(text: string, allowPlainTextContext: boolean): Cc
   if (watchPaths) outcome.watchPaths = watchPaths
   return outcome
 }
+
+function parseJson(text: string): unknown {
+  try {
+    return JSON.parse(text) as unknown
+  } catch {
+    return undefined
+  }
+}
+
+/** The fields of Claude Code's JSON output; an object with one of them is an output object. */
+const OUTPUT_FIELDS = [
+  'continue',
+  'stopReason',
+  'suppressOutput',
+  'systemMessage',
+  'decision',
+  'reason',
+  'hookSpecificOutput',
+  'updatedInput',
+  'terminalSequence',
+  'watchPaths',
+]
+
+const setsOutputField = (value: unknown) =>
+  isRecord(value) && OUTPUT_FIELDS.some((field) => field in value)
+
+/** A parse failure is a non-blocking error: nothing applies, and no stdout becomes context. */
+const parseFailure = (why: string): CcHookOutcome => ({
+  failed: 'error',
+  failureDetail: `hook output is not valid JSON output (${why})`,
+})
 
 /** PermissionRequest's `decision` object; anything without a valid `behavior` is no decision. */
 function permissionRequestDecision(raw: unknown): CcHookOutcome['permissionRequest'] {

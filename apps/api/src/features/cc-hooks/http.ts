@@ -83,7 +83,15 @@ export async function executeHttpHook(
       )
       return { failed: 'error' }
     }
-    return foldHookOutput(result.body, allowPlainTextContext)
+    // hooks.md: "a 2xx body that is neither empty nor a JSON object" is a failure.
+    const body = result.body.trim()
+    if (body && !(body.startsWith('{') && body.endsWith('}'))) {
+      logger.warn(
+        `[cc-hook:${label}] ${input.hook_event_name} http hook answered with no JSON object — non-blocking, continuing`,
+      )
+      return { failed: 'error', failureDetail: 'the response body is not a JSON object' }
+    }
+    return foldHookOutput(body, allowPlainTextContext)
   }
   const detail =
     result.kind === 'timeout'

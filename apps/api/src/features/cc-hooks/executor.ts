@@ -158,9 +158,7 @@ export async function executeHook(
     const why = result.stderr.trim().split('\n')[0]?.trim()
     return { failed: 'error', reason: why || `the hook exited ${result.code ?? 'on an error'}` }
   }
-  if (result.code === 2) {
-    return { blocked: true, blockReason: result.stderr.trim() || 'blocked by hook (exit 2)' }
-  }
+  if (result.code === 2) return exitTwo(handler, input, result)
   if (result.code === 0) {
     return foldHookOutput(result.stdout, allowPlainTextContext)
   }
@@ -182,6 +180,40 @@ export async function executeHook(
   )
   const detail = result.stderr.trim()
   return { failed: 'error', ...(detail ? { failureDetail: detail } : {}) }
+}
+
+/** Events where a missing script's exit 2 is a non-blocking error (hooks.md, "Exit code output"). */
+const MISSING_FILE_EXEMPT: ReadonlySet<string> = new Set(['Stop', 'SubagentStop', 'TaskCompleted'])
+
+/**
+ * Exit 2 blocks with stderr as the reason. A JSON object on stdout is still read, "but they can't
+ * override the block", and a blocking decision's reason is used instead of stderr. On Stop,
+ * SubagentStop, TaskCompleted and a plugin's UserPromptSubmit, exit 2 with nothing on stdout and a
+ * stderr that says a file is missing is a non-blocking error: the hook never ran.
+ */
+function exitTwo(
+  handler: CcHookHandler,
+  input: CcHookInput,
+  result: { stdout: string; stderr: string },
+): CcHookOutcome {
+  const event = input.hook_event_name
+  const stderr = result.stderr.trim()
+  const exempt =
+    MISSING_FILE_EXEMPT.has(event) || (event === 'UserPromptSubmit' && handler.source === 'plugin')
+  if (exempt && !result.stdout.trim() && /No such file or directory/i.test(stderr))
+    return { failed: 'error', failureDetail: stderr }
+  const fields = isJsonObjectText(result.stdout) ? foldHookOutput(result.stdout, false) : {}
+  const jsonReason =
+    fields.permissionDecision === 'deny'
+      ? fields.permissionDecisionReason
+      : fields.decision === 'block'
+        ? fields.reason
+        : undefined
+  return {
+    ...fields,
+    blocked: true,
+    blockReason: jsonReason || stderr || 'blocked by hook (exit 2)',
+  }
 }
 
 /**
