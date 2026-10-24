@@ -51,6 +51,11 @@ Changes land on `main`.
   in that folder. A Claude Code `deny` refuses the call, an `ask` raises a card and an `allow`
   answers the agent's catch-all question, combined deny over ask over allow as in Claude Code. See
   [Permission rules](docs/features/permissions.md#claude-code-permission-rules).
+- **Mods draw above the message box**: a Claude Code mod's `AbovePrompt` band shows above a chat's
+  message box, with its buttons pressed by their hotkeys, or by a digit typed alone into the empty
+  box; the mark at its right end collapses it. Next Steps, Token Weather and Replay Theater run
+  unchanged. A pane a mod opens with focus opens the **Mods** view on it, with its hotkeys and
+  Escape. See [Install Claude Code plugins](docs/extending/claude-code-plugins.md#mods).
 - **In progress in the Event Center**: the top of the Event Center shows what runs in the background
   — mini app installs and updates, model downloads, a Localix update, plugin updates — with progress
   and actions, and the updates on offer. The bell shows a thin ring and says how many tasks are in
@@ -207,6 +212,11 @@ Changes land on `main`.
   (`pluginConfigs` in your Claude Code settings), so such a plugin's servers and hooks work without
   filling its settings form again; a value set in Localix wins. Sensitive options, which Claude Code
   keeps in the system keychain, are still asked for.
+- **Mods written for Claude Code 2.1.310 run unchanged**: `$.model.complete` answers whether the
+  model replied instead of rejecting, `tool.call` gives each tool's own result, one call per file, a
+  held tool call lets go when you press Stop, and `$` calls, `next`, `turn.complete`,
+  `$.command.list`, `$.prompt.submit` and `$.session` answer in Claude Code's shapes. Mods in one
+  project run in the plugins' order, and keep their band after Localix restarts.
 - **Claude Code hooks and mods read every tool as Claude Code shapes it**: a Bash batch arrives as
   one command, a file listing as Glob, a URL read as WebFetch, a delegated task as Agent, a skill as
   Skill, and the built-in tools' results in their Claude Code shape (an edit's `filePath` and patch,
