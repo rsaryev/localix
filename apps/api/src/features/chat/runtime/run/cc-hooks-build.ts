@@ -15,10 +15,6 @@
  * Layer rule: run/ may import runtime infrastructure + agent-core, never
  * features/chat/service*.
  */
-import { homedir } from 'node:os'
-import { basename, join } from 'node:path'
-
-import { isPathBelow } from '../../../../lib/path-containment'
 import type { AvailabilityReader } from '../../../capabilities/availability'
 import type { ResolvedCapabilities } from '../../../capabilities/resolve'
 import {
@@ -26,13 +22,10 @@ import {
   createCcHooksRuntime,
   parseScopedHooks,
   mergeCcHookRegistries,
-  type CcHookEvent,
   type CcHooksRuntime,
 } from '../../../cc-hooks'
 import type { LoadedPlugins } from '../../../plugins/loader'
 import type { SessionRecord } from '../../repository'
-import type { RuntimeState } from '../agent-runner-state'
-import type { SessionStreamRegistry } from '../session-stream-registry'
 import { applyHookSessionTitle } from '../hook-session-title'
 import {
   createAgentHookRunner,
@@ -48,6 +41,15 @@ import { settingsHooks } from '../../../cc-settings/settings-hooks'
 import { claudeCodeTrusts } from '../../../cc-settings/settings-trust'
 import { ccBackgroundWork, ccRunFacts } from './cc-hook-run-facts'
 import { createCcTranscript } from './cc-transcript'
+import {
+  ccHookNoticeEmitter,
+  ccHooksConsoleLogger,
+  ensureCcHookOnceKeys,
+  instructionFilesForHooks,
+  isUserInstructionFile,
+} from './cc-hooks-build-helpers'
+
+export { instructionFilesForHooks } from './cc-hooks-build-helpers'
 import type { PermissionMode } from '../../../../contracts/permission-modes'
 
 export interface BuildRunCcHooksInput {
@@ -252,54 +254,3 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
 }
 
 // ---- What every runtime is constructed with -------------------------------------
-// Each of these is a contract, not boilerplate: a second `once` Set would let a `once`
-// hook fire twice in one session, and the `hook.notice` shape is read by the UI.
-
-/**
- * Get-or-create a session's `once` tracker in the process-wide map. Keyed PER SESSION so it
- * outlives the per-run runtimes.
- */
-function ensureCcHookOnceKeys(
-  ccHookOnceKeys: RuntimeState['ccHookOnceKeys'],
-  sessionId: string,
-): Set<string> {
-  let onceKeys = ccHookOnceKeys.get(sessionId)
-  if (!onceKeys) {
-    onceKeys = new Set()
-    ccHookOnceKeys.set(sessionId, onceKeys)
-  }
-  return onceKeys
-}
-
-/** The instruction files `InstructionsLoaded` reports: every one but an `AGENTS.md`. */
-export function instructionFilesForHooks<F extends { path: string }>(
-  files: readonly F[] | undefined,
-): F[] {
-  return (files ?? []).filter((file) => basename(file.path) !== 'AGENTS.md')
-}
-
-/** The files under `~/.localix` are the person's own (CC `User`); the rest are the project's. */
-function isUserInstructionFile(path: string): boolean {
-  return isPathBelow(join(homedir(), '.localix'), path)
-}
-
-/** The console sink `createCcHooksRuntime` logs through (the hook layer prefixes its tags). */
-const ccHooksConsoleLogger = {
-  warn: (m: string) => console.warn(m),
-  info: (m: string) => console.info(m),
-}
-
-/** A hook's non-blocking `systemMessage` → an inline transcript notice on the session's firehose. */
-function ccHookNoticeEmitter(
-  streamRegistry: SessionStreamRegistry,
-  userId: string,
-  sessionId: string,
-): (message: string, hookEvent: CcHookEvent) => void {
-  return (message, hookEvent) =>
-    streamRegistry.publish(userId, sessionId, {
-      type: 'hook.notice',
-      sessionId,
-      message,
-      hookEvent,
-    })
-}
