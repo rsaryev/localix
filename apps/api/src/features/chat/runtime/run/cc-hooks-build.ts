@@ -42,6 +42,7 @@ import { applyHttpHookPolicy } from '../../../cc-hooks/http-policy'
 import { claudeCodeTrusts } from '../../../cc-settings/settings-trust'
 import { ccBackgroundWork, ccRunFacts } from './cc-hook-run-facts'
 import { createCcTranscript } from './cc-transcript'
+import { sessionStartSource } from './cc-session-start-source'
 import {
   ccHookNoticeEmitter,
   ccHooksConsoleLogger,
@@ -230,10 +231,14 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
   let ccSessionStartContext: string | undefined
   if (ccHooks.active && !isContinuation && !ccHooksStartedSessions.has(session.id)) {
     ccHooksStartedSessions.add(session.id)
-    // Source of THIS SessionStart: `startup` normally, else a pending `clear`/
-    // `compact` recorded when the view was reset by `/clear` or rewritten by a
-    // context checkpoint (consumed once so a later run reverts to `startup`).
-    const startSource = ccHooksSessionStartSource.get(session.id) ?? 'startup'
+    // Source of THIS SessionStart: a pending `clear`/`compact` recorded when the view was reset
+    // by `/clear` or rewritten by a context checkpoint (consumed once), else `startup`, `fork`
+    // or `resume` (the session ran before this process) — `cc-session-start-source.ts`.
+    const startSource = await sessionStartSource(
+      session,
+      deps.sessionDataRoot,
+      ccHooksSessionStartSource.get(session.id),
+    )
     ccHooksSessionStartSource.delete(session.id)
     const started = await ccHooks.runSessionStart(startSource)
     ccSessionStartContext = started.additionalContext

@@ -98,6 +98,10 @@ only because the history does not fit the request is announced to `PreCompact` a
 and that call cannot block. After a checkpoint, the next run fires `SessionStart` with source
 `compact`.
 
+`SessionStart` fires on a session's first run in the API process. Its source is `startup` for a new
+session, `fork` for a forked one, `resume` for a session that ran before the API last started, and
+`clear` or `compact` after `/clear` or a checkpoint.
+
 `SessionEnd` fires when a session ends, not when a run ends. Deleting a session fires it with reason
 `other`.
 
