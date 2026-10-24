@@ -1,4 +1,5 @@
 import type { PluginCommand } from '../../plugins/contracts'
+import { createInsertedTextVault } from './inserted-text-vault'
 import { pluginDataDir } from '../../plugins/mcp'
 import { resolveWebhookUrl } from '../../../lib/runtime-address'
 import { userHome } from '../../../lib/env'
@@ -135,6 +136,8 @@ export const renderPluginPrompt = async (
   const consumesArguments =
     hasDeclaredArgumentPlaceholder || receivesArguments(template, tokens, named)
   let out = template
+  // Command output and inlined files are sealed until every substitution below has run.
+  const vault = createInsertedTextVault(template)
   // 1) CC dynamic content — run FIRST, over the TEMPLATE, before any user-controlled
   //    arg values are substituted in. Otherwise a `${argName}` value containing an
   //    `` !`cmd` `` / `` ```! `` embed (or an `@path` file reference) would be executed
@@ -156,11 +159,19 @@ export const renderPluginPrompt = async (
     if (ctx.pluginDir) env.CLAUDE_PLUGIN_ROOT = ctx.pluginDir
     if (dataDir) env.CLAUDE_PLUGIN_DATA = dataDir
     if (ctx.projectDir) env.CLAUDE_PROJECT_DIR = ctx.projectDir
-    out = await expandSkillContent(out, ctx.cwd, env, {
-      raw: trimmed,
-      ...(ctx.arguments ? { names: ctx.arguments } : {}),
-    })
-    out = await expandFileReferences(out, [ctx.cwd, ...(ctx.pluginDir ? [ctx.pluginDir] : [])])
+    out = await expandSkillContent(
+      out,
+      ctx.cwd,
+      env,
+      { raw: trimmed, ...(ctx.arguments ? { names: ctx.arguments } : {}) },
+      undefined,
+      vault,
+    )
+    out = await expandFileReferences(
+      out,
+      [ctx.cwd, ...(ctx.pluginDir ? [ctx.pluginDir] : [])],
+      vault,
+    )
   }
   // 2) Declared ${argName} placeholders + CC env vars (path vars + session env).
   out = out.replace(/\$\{([a-zA-Z0-9_-]+)\}/g, (match, name: string) => {
@@ -180,20 +191,21 @@ export const renderPluginPrompt = async (
     const position = ctx?.arguments?.indexOf(name) ?? -1
     const value = values[name] ?? (position >= 0 ? (tokens[position] ?? '') : '')
     out = out.replace(namedPattern(name), (full: string, esc: string) =>
-      esc ? full.slice(1) : value,
+      esc.length === 1 ? full.slice(1) : esc + value,
     )
   }
   out = out.replace(
-    /(\\?)\$(?:ARGUMENTS(?:\[(\d+)\])?|(\d+))/g,
+    /(\\*)\$(?:ARGUMENTS(?:\[(\d+)\])?|(\d+))/g,
     (full: string, esc: string, bracketIdx?: string, bareIdx?: string) => {
-      if (esc) return full.slice(1) // \$… → literal $…
-      if (bareIdx !== undefined) return tokens[Number(bareIdx)] ?? full
-      if (bracketIdx !== undefined) return tokens[Number(bracketIdx)] ?? full
-      return trimmed // bare $ARGUMENTS
+      // One backslash escapes (`\$1` → `$1`); a doubled one stays and the token still fills.
+      if (esc.length === 1) return full.slice(1)
+      const index = bareIdx ?? bracketIdx
+      if (index !== undefined) return esc + (tokens[Number(index)] ?? full.slice(esc.length))
+      return esc + trimmed // bare $ARGUMENTS
     },
   )
   if (trimmed && !consumesArguments) out = `${out}\n\nARGUMENTS: ${trimmed}`
-  return out
+  return vault.open(out)
 }
 
 /** Names `$name` may use: declared args and CC `arguments`, longest first so `$a` never eats `$ab`. */
@@ -207,4 +219,4 @@ function namedArguments(
 }
 
 const namedPattern = (name: string) =>
-  new RegExp(`(\\\\?)\\$${name.replace(/[-]/g, '\\-')}(?![A-Za-z0-9_-])`, 'g')
+  new RegExp(`(\\\\*)\\$${name.replace(/[-]/g, '\\-')}(?![A-Za-z0-9_-])`, 'g')

@@ -168,11 +168,11 @@ export function receivesArguments(
   tokens: readonly string[],
   argumentNames: readonly string[] = [],
 ): boolean {
-  const re = /(\\?)\$(ARGUMENTS(?:\[(\d+)\])?|(\d+)|([a-zA-Z_][a-zA-Z0-9_]*))/g
+  const re = /(\\*)\$(ARGUMENTS(?:\[(\d+)\])?|(\d+)|([a-zA-Z_][a-zA-Z0-9_]*))/g
   let m: RegExpExecArray | null
   while ((m = re.exec(template)) !== null) {
     const [, esc, token, bracketIdx, bareIdx, name] = m
-    if (esc) continue
+    if (esc.length === 1) continue
     if (token === 'ARGUMENTS') return true
     const index = bracketIdx ?? bareIdx
     if (index !== undefined ? tokens[Number(index)] !== undefined : argumentNames.includes(name!))
@@ -213,8 +213,10 @@ export function applySkillArguments(
   let out = template
   // Argument tokens first (named, positional, $ARGUMENTS), then the CC environment variables:
   // "Claude Code still replaces `${CLAUDE_*}` variables ... after it inserts the arguments".
+  // Only a SINGLE backslash escapes: `\$1` is a literal `$1`, while `\\$1` keeps both
+  // backslashes and still fills `$1` (Claude Code's rule).
   out = out.replace(
-    /(\\?)\$(ARGUMENTS(?:\[(\d+)\])?|(\d+)|([a-zA-Z_][a-zA-Z0-9_]*))/g,
+    /(\\*)\$(ARGUMENTS(?:\[(\d+)\])?|(\d+)|([a-zA-Z_][a-zA-Z0-9_]*))/g,
     (
       full: string,
       esc: string,
@@ -223,14 +225,17 @@ export function applySkillArguments(
       bareIdx?: string,
       name?: string,
     ) => {
-      if (esc)
-        return token === 'ARGUMENTS' || bracketIdx || bareIdx || (name && name in namedValues)
-          ? full.slice(1)
-          : full
-      if (token === 'ARGUMENTS') return trimmed // bare $ARGUMENTS
+      const placeholder = full.slice(esc.length)
+      const known =
+        token === 'ARGUMENTS' ||
+        bracketIdx ||
+        bareIdx ||
+        (name !== undefined && name in namedValues)
+      if (esc.length === 1) return known ? placeholder : full
+      if (token === 'ARGUMENTS') return esc + trimmed // bare $ARGUMENTS
       const index = bracketIdx ?? bareIdx
-      if (index !== undefined) return tokens[Number(index)] ?? full // missing: stays as written
-      if (name && name in namedValues) return namedValues[name] // $name
+      if (index !== undefined) return esc + (tokens[Number(index)] ?? placeholder) // missing: as written
+      if (name && name in namedValues) return esc + namedValues[name] // $name
       return full // unknown $name — leave as-is
     },
   )

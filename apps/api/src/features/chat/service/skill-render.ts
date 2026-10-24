@@ -1,6 +1,7 @@
 import { dirname } from 'node:path'
 import { expandFileReferences } from './file-references'
 import { expandSkillContent, type AuthorizeSkillCommand } from './skill-commands'
+import { createInsertedTextVault } from './inserted-text-vault'
 import { applySkillArguments } from './slash-commands'
 
 /** The parts of a skill its rendering reads. */
@@ -53,6 +54,9 @@ export async function renderSkillBody(
   }
   // @path references are scanned after the commands ran; bases: the working dir and the skill's
   // own folder (a bundled `@reference.md`), both confinement-gated.
+  // What the commands print and the files they inline are sealed until the arguments are in:
+  // Claude Code inserts them as plain text, so their own `$1` / `$ARGUMENTS` stay as written.
+  const vault = createInsertedTextVault(skill.content)
   const expanded = ctx.dynamic
     ? await expandFileReferences(
         await expandSkillContent(
@@ -61,11 +65,13 @@ export async function renderSkillBody(
           env,
           { raw: args, ...(skill.argumentNames ? { names: skill.argumentNames } : {}) },
           ctx.authorize,
+          vault,
         ),
         [ctx.workingDir, ...(skillDir ? [skillDir] : [])],
+        vault,
       )
     : skill.content
-  return applySkillArguments(expanded, args, {
+  const substituted = applySkillArguments(expanded, args, {
     argumentNames: skill.argumentNames,
     skillDir,
     sessionId: ctx.sessionId,
@@ -73,4 +79,5 @@ export async function renderSkillBody(
     projectDir: ctx.workingDir,
     sourceTemplate: skill.content,
   })
+  return vault.open(substituted)
 }

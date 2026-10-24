@@ -1,5 +1,6 @@
 import { constants as fsConstants, promises as fs } from 'node:fs'
 
+import type { InsertedTextVault } from './inserted-text-vault'
 import { confineToDir } from '../../ext/fs-discovery'
 import { isPathWithin } from '../../../lib/path-containment'
 import { codeSpanRanges, createFenceTracker, insideAnyRange } from '../../../lib/markdown-code'
@@ -110,7 +111,12 @@ function neutralizeFenceClosers(body: string): string {
  * bodies that are not local files must NOT be expanded (remote content is
  * excluded from the `@`-scan).
  */
-export async function expandFileReferences(text: string, bases: string[]): Promise<string> {
+export async function expandFileReferences(
+  text: string,
+  bases: string[],
+  /** Seals each inlined file so later substitutions leave its text as written. */
+  vault?: InsertedTextVault,
+): Promise<string> {
   if (!text.includes('@') || bases.length === 0) return text
 
   const lines = text.split('\n')
@@ -163,7 +169,7 @@ export async function expandFileReferences(text: string, bases: string[]): Promi
       matched = true
       // Keep everything up to (and including) the whitespace/line-start prefix,
       // then splice in the fenced body in place of the `@rel` token.
-      rebuilt += line.slice(cursor, atIndex) + body
+      rebuilt += line.slice(cursor, atIndex) + (vault ? vault.seal(body) : body)
       cursor = atIndex + 1 + rel.length
     }
     if (matched) {

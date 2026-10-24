@@ -5,6 +5,7 @@ import { awaitChildGone, releaseChildPipes } from '../../../lib/child-exit'
 import { killProcessTree, stillRunning } from '../../agent-core/tools/bash/process-tree'
 import { resolveShellConfig } from '../../agent-core/tools/environments/shell'
 import { alignToCharBoundary } from '../../agent-core/tools/file/file-utils'
+import type { InsertedTextVault } from './inserted-text-vault'
 import { bindShellArgs, exitOneIsResult, type SkillShellArgs } from './skill-command-args'
 
 /**
@@ -105,6 +106,8 @@ export async function expandSkillContent(
   env?: Record<string, string>,
   args?: SkillShellArgs,
   authorize?: AuthorizeSkillCommand,
+  /** Seals each command's output so later substitutions leave it as printed. */
+  vault?: InsertedTextVault,
 ): Promise<string> {
   if (!content.includes('!`') && !content.includes('```!')) return content
 
@@ -190,7 +193,8 @@ export async function expandSkillContent(
   const placeholderRe = new RegExp(`${escapeRegExp(placeholderPrefix)}(\\d+)\\u0000`, 'g')
   return prepared.replace(placeholderRe, (_placeholder, rawIndex: string) => {
     const command = planned[Number(rawIndex)]
-    return command ? results[command.index] : ''
+    const text = command ? results[command.index] : ''
+    return vault ? vault.seal(text) : text
   })
 }
 
