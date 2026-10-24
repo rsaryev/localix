@@ -76,6 +76,10 @@ Localix; manage plugins with `/plugin`. A **mini app** is Localix's own format: 
 and agent tools over Localix's own APIs; manage mini apps with `/mini-app` and in Settings →
 Capabilities → Mini apps ([mini apps](docs/features/mini-apps.md)).
 
+- **Compatible with Claude Code.** Plugins, skills, slash commands, agents, hooks, mods, MCP and
+  language servers, output styles, `CLAUDE.md` and your `~/.claude` settings load the way Claude
+  Code loads them, checked against Claude Code 2.1.310. What differs, and why, is listed in
+  [Claude Code compatibility](docs/extending/claude-code-compatibility.md).
 - **Claude Code plugins work as they are.** `/plugin install owner/repo` reads
   `.claude-plugin/plugin.json` in place, with Claude Code's rules for commands, skills, hooks and
   MCP servers; what Localix does not run yet is reported, never dropped silently. See

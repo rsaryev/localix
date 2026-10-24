@@ -74,7 +74,9 @@
   <url><loc>https://localix.ai/docs/features--secrets</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--webhook</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/extending--mini-apps</loc><priority>0.7</priority></url>
+  <url><loc>https://localix.ai/docs/extending--claude-code-compatibility</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/extending--claude-code-plugins</loc><priority>0.7</priority></url>
+  <url><loc>https://localix.ai/docs/extending--claude-code-mods</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/extending--claude-code-settings</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/extending--plugin-updates</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/extending--build-with-the-agent</loc><priority>0.7</priority></url>

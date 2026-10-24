@@ -28,7 +28,8 @@ export function HomePage() {
         </h1>
         <p className="hero-lede">
           A team of AI agents works with you in one desktop app: your editor, terminals and browser.
-          Any model, or run one on your own computer.
+          Any model, or run one on your own computer. Your Claude Code plugins, skills, agents,
+          hooks and mods run as they are.
         </p>
         <DownloadChooser className="hero-download w-auto" />
         <p className="hero-under">
