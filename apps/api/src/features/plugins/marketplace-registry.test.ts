@@ -94,12 +94,14 @@ describe('parseMarketplaceInput', () => {
   it('errors on an invalid npm package name (string and object forms)', () => {
     expect(parseMarketplaceInput('npm:../evil')).toHaveProperty('error')
     expect(
-      parseMarketplaceInput({ source: 'npm', package: 'https://evil.example/x' }),
+      parseMarketplaceInput({ source: 'npm', package: 'https://github.com/o/r/x.tgz' }),
     ).toHaveProperty('error')
     expect(parseMarketplaceInput({ source: 'npm' })).toHaveProperty('error')
   })
-  it('errors on a non-npm source object', () => {
-    expect(parseMarketplaceInput({ source: 'github', repo: 'a/b' })).toHaveProperty('error')
+  it('errors on a source type only the policy lists accept', () => {
+    expect(parseMarketplaceInput({ source: 'hostPattern', hostPattern: '.*' })).toHaveProperty(
+      'error',
+    )
   })
 })
 
@@ -168,9 +170,9 @@ describe('resolveEntrySource', () => {
     expect(() =>
       resolveEntrySource('/mkt', {
         name: 'x',
-        source: { source: 'npm', package: 'https://evil.example/x' } as never,
+        source: { source: 'npm', package: 'https://github.com/o/r/x.tgz' } as never,
       }),
-    ).toThrow(/package/)
+    ).toThrow(/git host/)
   })
 
   // Source-variant coverage over representative entries from the official

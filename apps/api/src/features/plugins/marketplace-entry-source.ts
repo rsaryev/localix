@@ -13,7 +13,7 @@ export type ResolvedEntrySource =
   | { localPath: string }
   | { git: { url: string; subdir?: string; ref?: string } }
   | { npm: NpmEntrySource }
-  | { archive: { url: string; sha256?: string } }
+  | { archive: { url: string; sha256?: string; headers?: Record<string, string> } }
 
 const GITHUB_SHORTHAND = /^[\w.-]+\/[\w.-]+$/
 
@@ -64,13 +64,22 @@ export function resolveEntrySource(
     throw new Error(
       `Entry "${entry.name}" uses a "command" source, which Localix does not run; install the plugin from the directory that command prints`,
     )
+  // An entry `headersHelper` is a command the person must accept before it runs; Localix has no
+  // such review, so the entry is refused rather than the command run unseen.
+  const helper = (entry as { headersHelper?: unknown }).headersHelper
+  if (typeof helper === 'string' && helper.trim())
+    throw new Error(
+      `Entry "${entry.name}" sets a headersHelper command, which Localix does not run; set the marketplace's url source headers instead, or install the plugin from a folder`,
+    )
   if (kind === 'archive') {
     if (typeof obj.url !== 'string' || !obj.url.startsWith('https://'))
       throw new Error(`Entry "${entry.name}" archive source needs an https:// "url"`)
+    const headers = stringHeaders((entry as { headers?: unknown }).headers)
     return {
       archive: {
         url: obj.url,
         ...(typeof obj.sha256 === 'string' ? { sha256: obj.sha256.toLowerCase() } : {}),
+        ...(headers ? { headers } : {}),
       },
     }
   }
@@ -98,4 +107,13 @@ export function resolveEntrySource(
       ...(ref ? { ref } : {}),
     },
   }
+}
+
+/** An entry's `headers`: its string values. */
+function stringHeaders(value: unknown): Record<string, string> | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined
+  const entries = Object.entries(value).filter(
+    (entry): entry is [string, string] => typeof entry[1] === 'string',
+  )
+  return entries.length ? Object.fromEntries(entries) : undefined
 }

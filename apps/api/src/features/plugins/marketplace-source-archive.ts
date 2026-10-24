@@ -10,6 +10,7 @@ import { ApiError, errorMessage } from '../../lib/errors'
 import { childEnv } from '../../lib/login-shell-env'
 import { rmrf } from '../ext/install-tree'
 import { catalogHop, fetchChecked, httpsPublicHop, readCapped } from './marketplace-download'
+import { onOrigin } from './marketplace-headers'
 import { verifyZipMembers } from './marketplace-zip-inflate'
 import { scanZip, type ZipLimits } from './marketplace-zip-scan'
 
@@ -33,7 +34,7 @@ export const CATALOG_TIMEOUT_MS = 10_000
 /** Download a hosted `marketplace.json` (http or https) as text, within the size ceiling. */
 export async function fetchCatalogText(
   url: string,
-  opts: { timeoutMs?: number } = {},
+  opts: { timeoutMs?: number; headers?: Record<string, string> } = {},
 ): Promise<string> {
   if (!/^https?:\/\//i.test(url))
     throw new InvalidRequestError('marketplace_bad_source', `Not an http(s) URL: ${url}`)
@@ -42,6 +43,8 @@ export async function fetchCatalogText(
     timeoutMs: opts.timeoutMs ?? CATALOG_TIMEOUT_MS,
     checkHop: catalogHop,
     code: 'marketplace_fetch_failed',
+    // A redirect elsewhere gets no headers: they belong to the catalog's own origin.
+    headers: opts.headers ? onOrigin(new URL(url).origin, opts.headers) : undefined,
   }
   const { response } = await fetchChecked(url, download)
   const bytes = await readCapped(response, MAX_CATALOG_BYTES, {
@@ -66,7 +69,7 @@ async function pluginRootOf(dir: string): Promise<string> {
  * so `dest` IS the plugin directory — the shape the git and npm paths stage.
  */
 export async function fetchArchivePlugin(
-  src: { url: string; sha256?: string },
+  src: { url: string; sha256?: string; headers?: Record<string, string> },
   dest: string,
   opts: { timeoutMs?: number; limits?: ZipLimits } = {},
 ): Promise<void> {
@@ -82,6 +85,7 @@ export async function fetchArchivePlugin(
     timeoutMs: opts.timeoutMs ?? ARCHIVE_TIMEOUT_MS,
     checkHop: httpsPublicHop,
     code: 'marketplace_fetch_failed',
+    headers: src.headers ? onOrigin(new URL(src.url).origin, src.headers) : undefined,
   }
   const { response } = await fetchChecked(src.url, download)
   const file = join(tmpdir(), `localix-archive-${randomUUID()}.zip`)

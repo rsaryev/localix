@@ -15,6 +15,7 @@ import { fetchNpmPlugin } from './marketplace-source-npm'
 import { fetchArchivePlugin, fetchCatalogText } from './marketplace-source-archive'
 import type { MarketplaceRegistryDeps } from './marketplace-registry'
 import { readHeadCommit } from './git-fetch'
+import { urlSourceHeaders } from './marketplace-headers'
 
 /**
  * Fetching for the marketplace registry: a marketplace source into its staging dir, and one
@@ -44,7 +45,13 @@ export async function materializeMarketplace(
     if (inLayout) await copyExtensionTree(dirname(dirname(file)), staging)
     await writeCatalog(staging, await fs.readFile(file, 'utf8'))
   } else if (source.source === 'url') {
-    await writeCatalog(staging, await fetchCatalogText(source.url))
+    const headers = await urlSourceHeaders(source)
+    await writeCatalog(staging, await fetchCatalogText(source.url, { headers }))
+  } else if (source.source === 'settings') {
+    // An inline catalog: its plugins name object sources, there being no repository to resolve in.
+    const { name, owner, plugins } = source
+    await fs.mkdir(staging, { recursive: true })
+    await writeCatalog(staging, JSON.stringify({ name, owner: owner ?? { name }, plugins }))
   } else if (source.source === 'npm') {
     // Same staging helper as npm ENTRY sources: the tarball carries the catalog at its root.
     await (deps.fetchNpm ?? fetchNpmPlugin)(source, staging)
@@ -54,6 +61,13 @@ export async function materializeMarketplace(
     assertGitArgs('Marketplace source', url, source.ref)
     await deps.cloneRepo(url, staging, source.ref, source.sparsePaths)
     commitSha = await readHeadCommit(staging)
+    // `path` names the catalog inside the repository; the repository stays the marketplace root.
+    if (source.path) {
+      const file = resolve(staging, source.path)
+      if (!isPathWithin(resolve(staging), file))
+        throw new Error(`Marketplace path escapes the repository: ${source.path}`)
+      await writeCatalog(staging, await fs.readFile(file, 'utf8'))
+    }
   }
   await stripDotGit(staging)
   return commitSha ? { commitSha } : {}

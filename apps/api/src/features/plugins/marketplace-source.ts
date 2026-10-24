@@ -1,8 +1,8 @@
 import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
 
-import { errorMessage } from '../../lib/errors'
-import { parseNpmEntrySource, type NpmEntrySource } from './marketplace-source-npm'
+import type { NpmEntrySource } from './marketplace-source-npm'
+import { parseMarketplaceSourceObject } from './marketplace-source-object'
 
 /**
  * Pure source-parsing + path helpers for the marketplace registry — no I/O, no host
@@ -16,43 +16,29 @@ import { parseNpmEntrySource, type NpmEntrySource } from './marketplace-source-n
  * hosted catalog (`url`, only the `marketplace.json` is fetched), or an npm package.
  */
 export type MarketplaceSource =
-  | { source: 'github'; repo: string; ref?: string; sparsePaths?: string[] }
-  | { source: 'git'; url: string; ref?: string; sparsePaths?: string[] }
+  | { source: 'github'; repo: string; ref?: string; path?: string; sparsePaths?: string[] }
+  | { source: 'git'; url: string; ref?: string; path?: string; sparsePaths?: string[] }
   | { source: 'local'; path: string }
   | { source: 'file'; path: string }
-  | { source: 'url'; url: string }
+  | { source: 'url'; url: string; headers?: Record<string, string>; headersHelper?: string }
   | ({ source: 'npm' } & NpmEntrySource)
-
-/**
- * Recognize an object-shaped marketplace source as npm — the CC
- * `extraKnownMarketplaces` source model, the same shapes npm ENTRY sources accept
- * (`{source:'npm', package, version?, registry?}` plus the legacy `npm:"pkg"`
- * shorthand key). Invalid package names surface the entry path's typed error text.
- */
-function parseNpmMarketplaceSource(
-  obj: Record<string, unknown>,
-): MarketplaceSource | { error: string } {
-  try {
-    const npm = parseNpmEntrySource('marketplace', obj)
-    if (npm) return { source: 'npm', ...npm }
-  } catch (err) {
-    return { error: errorMessage(err) }
-  }
-  return {
-    error:
-      'Unsupported marketplace source object. Expected { "source": "npm", "package": "…", "version"?, "registry"? }.',
-  }
-}
+  /** An inline catalog written in a settings file (`extraKnownMarketplaces`). */
+  | {
+      source: 'settings'
+      name: string
+      plugins: Record<string, unknown>[]
+      owner?: Record<string, unknown>
+    }
 
 /**
  * Parse a marketplace input into a tagged source (or an error). Accepts a
  * user-typed string (owner/repo, git/ssh URL, local path, or the `npm:pkg[@range]`
- * shorthand) or a CC-spec source object (npm, per `extraKnownMarketplaces`).
+ * shorthand) or a source object as `extraKnownMarketplaces` holds one (`marketplace-source-object.ts`).
  */
 export function parseMarketplaceInput(
   input: string | Record<string, unknown>,
 ): MarketplaceSource | { error: string } {
-  if (typeof input !== 'string') return parseNpmMarketplaceSource(input)
+  if (typeof input !== 'string') return parseMarketplaceSourceObject(input)
   const trimmed = input.trim()
   if (!trimmed) return { error: 'Empty marketplace source.' }
 
@@ -63,7 +49,7 @@ export function parseMarketplaceInput(
     const at = spec.lastIndexOf('@')
     const pkg = at > 0 ? spec.slice(0, at) : spec
     const version = at > 0 ? spec.slice(at + 1) : undefined
-    return parseNpmMarketplaceSource({
+    return parseMarketplaceSourceObject({
       source: 'npm',
       package: pkg,
       ...(version ? { version } : {}),
@@ -146,6 +132,7 @@ export function sourceMatchesRef(src: MarketplaceSource, ref: string): boolean {
   if (src.source === 'git') return norm(src.url) === want
   if (src.source === 'npm') return src.package.toLowerCase() === want
   if (src.source === 'url') return src.url.trim() === ref.trim()
+  if (src.source === 'settings') return src.name === ref.trim()
   return false
 }
 

@@ -22,14 +22,17 @@ function key(src: MarketplaceSource): string {
           .replace(/\.git$/i, '')
           .toLowerCase(),
         optional(src.ref),
+        optional(src.path),
       ])
     case 'git':
-      return JSON.stringify(['git', trimSlash(src.url), optional(src.ref)])
+      return JSON.stringify(['git', trimSlash(src.url), optional(src.ref), optional(src.path)])
     case 'local':
     case 'file':
       return JSON.stringify([src.source, resolve(src.path)])
     case 'url':
       return JSON.stringify(['url', src.url.trim()])
+    case 'settings':
+      return JSON.stringify(['settings', src.name, src.plugins])
     case 'npm':
       return JSON.stringify([
         'npm',
@@ -56,6 +59,8 @@ export function describeMarketplaceSource(src: MarketplaceSource): string {
       return `${src.source === 'local' ? 'directory' : 'file'}:${src.path}`
     case 'url':
       return `url:${src.url}`
+    case 'settings':
+      return `settings:${src.name}`
     case 'npm':
       return `npm:${src.package}${src.version ? `@${src.version}` : ''}`
   }

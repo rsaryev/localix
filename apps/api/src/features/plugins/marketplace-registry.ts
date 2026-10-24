@@ -29,6 +29,7 @@ import {
   readMarketplace,
   findMarketplacesWithPlugin,
 } from './marketplace-catalog'
+import { withSourceHeaders } from './marketplace-headers'
 
 export {
   readKnownMarketplaces,
@@ -74,7 +75,10 @@ export interface MarketplaceRegistryDeps {
   /** Download an npm plugin source into `dest`. Defaults to `fetchNpmPlugin` (tests stub). */
   fetchNpm?: (src: NpmEntrySource, dest: string) => Promise<void>
   /** Download an archive plugin source into `dest`. Defaults to `fetchArchivePlugin`. */
-  fetchArchive?: (src: { url: string; sha256?: string }, dest: string) => Promise<void>
+  fetchArchive?: (
+    src: { url: string; sha256?: string; headers?: Record<string, string> },
+    dest: string,
+  ) => Promise<void>
   /** Marketplaces root override (tests). Defaults to `~/.localix/marketplaces`. */
   root?: string
   /** Timestamp for `lastUpdated` (tests pass a fixed value; `new Date()` is avoided in code paths that resume). */
@@ -319,6 +323,10 @@ export async function resolveMarketplaceInstall(
     return { dir: resolved.localPath, linkRoot: marketplaceDir, ...base, ...inPlace, ...commitSha }
   }
 
+  // An archive on a url marketplace's origin gets that source's headers; the entry's win a name.
+  const hostedBy = known[ref.marketplace]?.source
+  if ('archive' in resolved && hostedBy?.source === 'url')
+    resolved.archive = await withSourceHeaders(resolved.archive, hostedBy)
   // Remote sources stage into a stable temp dir under the marketplaces root; git, npm and
   // archives land the same shape (a plain plugin dir handed to `installFromLocal`).
   const staging = join(root, `.fetch-${Math.abs(hashString(`${ref.plugin}\0${ref.marketplace}`))}`)
