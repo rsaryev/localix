@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 
 import { listingSchema } from './contract'
-import { onShelf, parseShelf, shelfCounts } from './shelves'
+import { SHELVES, onShelf, parseShelf, shelfCounts } from './shelves'
 import { makeListing } from './testing'
 
 const chess = makeListing({
@@ -38,10 +38,22 @@ describe('shelves', () => {
       'package:mini-app': 2,
       'package:plugin': 1,
       'capability:command': 1,
-      'capability:screen': 1,
       installed: 1,
       updates: 1,
     })
+  })
+
+  test('a package’s own machinery — its screen, backend, agent tools — is never a shelf', () => {
+    const app = makeListing({
+      id: 'board',
+      contents: { screen: 1, backend: 1, 'agent-tool': 1, skill: 2 },
+    })
+    expect(Object.keys(shelfCounts([app]))).toEqual(['package:mini-app', 'capability:skill'])
+    for (const kind of ['screen', 'backend', 'agent-tool']) {
+      expect(parseShelf(`capability:${kind}`)).toBeNull()
+      expect(SHELVES).not.toContain(`capability:${kind}`)
+    }
+    expect(SHELVES).toContain('capability:output-style')
   })
 
   test('a shelf id from outside is taken only when it names a shelf', () => {

@@ -1,5 +1,5 @@
 import {
-  COMPONENT_KINDS,
+  BROWSABLE_COMPONENT_KINDS,
   PACKAGE_KINDS,
   capabilityShelf,
   packageShelf,
@@ -15,9 +15,6 @@ export type StoreSection = NonNullable<ReturnType<typeof parseShelf>> | 'sources
 export function parseSection(raw: unknown): StoreSection | null {
   return raw === 'sources' ? 'sources' : parseShelf(raw)
 }
-
-/** A component kind a package's backend is, not something a person browses for. */
-const NOT_A_SHELF = new Set(['backend'])
 
 /**
  * The Store's sections from the facets (`docs/internals/store.md`, "Hierarchy"): Discover, one
@@ -43,7 +40,7 @@ export function navGroups(facets: StoreFacets | undefined): ShelfNavGroup[] {
     {
       id: 'capabilities',
       label: 'Capabilities',
-      items: COMPONENT_KINDS.filter((kind) => !NOT_A_SHELF.has(kind)).flatMap((kind) =>
+      items: BROWSABLE_COMPONENT_KINDS.flatMap((kind) =>
         shelf(capabilityShelf(kind), capabilityLabel(kind), COMPONENT_LABELS[kind].icon),
       ),
     },
@@ -69,6 +66,6 @@ export function sectionLabel(section: StoreSection): string {
   if (section.startsWith('package:'))
     return KIND_LABELS[section.slice(8) as keyof typeof KIND_LABELS].many
   if (section.startsWith('capability:'))
-    return capabilityLabel(section.slice(11) as (typeof COMPONENT_KINDS)[number])
+    return capabilityLabel(section.slice(11) as (typeof BROWSABLE_COMPONENT_KINDS)[number])
   return LIBRARY_LABELS[section as keyof typeof LIBRARY_LABELS].label
 }

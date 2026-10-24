@@ -1,5 +1,4 @@
 import {
-  COMPONENT_KINDS,
   PACKAGE_KINDS,
   type ComponentKind,
   type Listing,
@@ -9,24 +8,42 @@ import {
 
 /**
  * A Store section, derived from listings (`docs/internals/store.md`, "Hierarchy"): Discover, one
- * shelf per package kind, one per component kind a listing contains, and the person's library.
+ * shelf per package kind, one per browsable component kind a listing contains, and the person's
+ * library.
  * A shelf no listing is on is hidden, so a new kind needs no screen of its own.
  */
+/**
+ * The component kinds a person browses by, each a capability shelf. The rest — a mini app's
+ * screen, its backend and the tools it gives the agent, a plugin's monitors and themes — are how
+ * a package works, not what anyone looks for: they stay facts on its page ("What's inside").
+ */
+export const BROWSABLE_COMPONENT_KINDS = [
+  'skill',
+  'agent',
+  'command',
+  'hook',
+  'mod',
+  'mcp-server',
+  'lsp-server',
+  'output-style',
+] as const satisfies readonly ComponentKind[]
+export type BrowsableComponentKind = (typeof BROWSABLE_COMPONENT_KINDS)[number]
+
 export type ShelfId =
   | 'discover'
   | 'installed'
   | 'updates'
   | `package:${PackageKind}`
-  | `capability:${ComponentKind}`
+  | `capability:${BrowsableComponentKind}`
 
 export const packageShelf = (kind: PackageKind): ShelfId => `package:${kind}`
-export const capabilityShelf = (kind: ComponentKind): ShelfId => `capability:${kind}`
+export const capabilityShelf = (kind: BrowsableComponentKind): ShelfId => `capability:${kind}`
 
 /** Every shelf, in the order the Store lists them. */
 export const SHELVES: readonly ShelfId[] = [
   'discover',
   ...PACKAGE_KINDS.map(packageShelf),
-  ...COMPONENT_KINDS.map(capabilityShelf),
+  ...BROWSABLE_COMPONENT_KINDS.map(capabilityShelf),
   'installed',
   'updates',
 ]

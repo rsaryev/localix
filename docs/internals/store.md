@@ -266,8 +266,10 @@ Each step lands with its tests first, a screenshot scenario for the Store and th
 - **Two listing fields more.** `componentNames` feeds the search; `configure` is the address the
   Installed menu's **Configure** opens. Neither names a provider.
 - **Shelf ids** are `discover`, `installed`, `updates`, `package:<kind>` and
-  `capability:<component>` (`shelves.ts`); the UI adds `sources`. The `backend` component counts
-  toward "Runs code" and has no shelf of its own.
+  `capability:<component>` (`shelves.ts`); the UI adds `sources`. Only the components a person
+  browses by get a capability shelf (`BROWSABLE_COMPONENT_KINDS`: skill, agent, command, hook, mod,
+  MCP and LSP server, output style). A screen, a backend, agent tools, monitors and themes are how a
+  package works: they stay facts in What's inside, and a backend counts toward "Runs code".
 - **Mini app contents** come from the offer: a `workbench` surface is a screen, the `agent` surface
   is agent tools and a backend (so `runsCode`), and each declared command counts. Its plan warns
   about and needs consent for an unverified publisher (the store's `acceptUnverified`); its only

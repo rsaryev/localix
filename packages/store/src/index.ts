@@ -47,6 +47,7 @@ export {
 } from './routes'
 export type { ListingsQuery, ListingsResponse, StoreActivity, StoreFacets } from './routes'
 export {
+  BROWSABLE_COMPONENT_KINDS,
   SHELVES,
   capabilityShelf,
   componentCount,
@@ -57,4 +58,4 @@ export {
   parseShelf,
   shelfCounts,
 } from './shelves'
-export type { ShelfId } from './shelves'
+export type { BrowsableComponentKind, ShelfId } from './shelves'

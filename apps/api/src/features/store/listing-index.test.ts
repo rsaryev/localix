@@ -67,7 +67,6 @@ describe('the Store index', () => {
         'package:plugin': 1,
         'capability:skill': 1,
         'capability:command': 1,
-        'capability:screen': 1,
         installed: 1,
         updates: 1,
       },
