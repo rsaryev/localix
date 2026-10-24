@@ -312,10 +312,13 @@ Replay uses the session's persisted delegation depth and the selected participan
 states that it reads all stored branches; it is a diagnostic replay, not a captured provider
 request. A simulated checkpoint does not change the live session or prove a better task outcome.
 
-Workspace instruction discovery includes bounded `AGENTS.md` files from the checkout root to the
-working directory, followed by native Localix context at each level. Directory scope and user
-precedence are explicit in the prompt. Portable project `.agents/skills` use the existing skill
-scanner and containment checks. Personal foreign agent homes remain outside discovery.
+Workspace instruction discovery reads Claude Code's instruction files (`CLAUDE.md`,
+`.claude/CLAUDE.md`, `CLAUDE.local.md`, then `AGENTS.md`) from the filesystem root to the working
+directory, and inside the checkout `.claude/rules/` and native Localix context at each level; a
+subfolder's files and path-scoped rules join as the session's file tools reach them
+(`context-on-demand.ts`). Directory scope and user precedence are explicit in the prompt. Project
+`.claude/skills`, `.claude/commands` and portable `.agents/skills` use the existing skill scanner
+and containment checks; personal `.agents` homes remain outside discovery.
 
 ## Related guides
 

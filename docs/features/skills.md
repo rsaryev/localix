@@ -83,9 +83,9 @@ message. Matching is case-insensitive, respects word boundaries, and tolerates w
 phrases. These triggers do not inspect tool output. Hiding a skill from the model roster does not
 disable its keyword trigger; agent availability rules do.
 
-Current slash invocation and session-pin APIs resolve filesystem skills. Enabled plugin procedures
-are available through the model-facing `skill` tool and agent preloads; these are separate from
-plugin slash commands.
+Slash invocation resolves filesystem skills and enabled plugins' skills (`/<plugin>:<skill>`, or the
+bare name when only one plugin has it); a plugin's command files are skills too. The model-facing
+`skill` tool and agent preloads reach the same skills; session pins resolve filesystem skills.
 
 The supported frontmatter, substitution tokens, tool policy, and command-expansion limits belong to
 the [skill authoring guide](../extending/skills-authoring.md).
