@@ -1,3 +1,4 @@
+import { claudeCodeHome } from '../../../cc-settings/config-dir'
 import type { AgentTool } from '@localixai/agent/agents'
 import type { AvailabilityReader } from '../../../capabilities/availability'
 
@@ -7,6 +8,7 @@ import {
   type McpGatherResult,
 } from '../../../mcp/client-manager'
 import { buildMcpResourceTools } from '../../../mcp/mcp-resource-tools'
+import { claudeCodeMcpServers } from '../../../mcp/claude-code-servers'
 import type { SessionRecord } from '../../repository'
 import { prefixedWarnLogger } from '../plugin-hook-logger'
 import type { RunEnv } from './types'
@@ -77,7 +79,19 @@ export async function resolveMcpTools(args: {
     // admitted them, but the rules editor happily writes `mcp:<plugin>_<server>` and a rule
     // that is written, listed and then ignored is worse than one that cannot be written at
     // all. The plugins this run may not reach contributed no servers to begin with.
-    enabledServers = [...mcpServers, ...pluginMcpServers].filter(
+    //
+    // The servers of Claude Code's own files for this folder join them (`mcp/claude-code-servers.ts`:
+    // `~/.claude.json`, an approved `.mcp.json`, the organization's managed servers), and the
+    // organization's allow and deny lists apply to all.
+    const servers = claudeCodeMcpServers({
+      own: mcpServers,
+      plugins: pluginMcpServers,
+      userId,
+      projectId: session.projectId ?? '',
+      cwd: defaultCwd,
+      homeDir: claudeCodeHome(),
+    })
+    enabledServers = servers.filter(
       (server) => availability.effectFor('mcp', server.name) !== 'deny',
     )
     // No early return for an empty list: the gather is what drops this scope's servers and

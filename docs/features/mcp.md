@@ -41,8 +41,23 @@ characters, or another tool of the run already uses it, the model gets
 | Enabled plugin       | Appends the plugin's declared MCP servers to the run              | Disabling the plugin removes its servers                           |
 | Seeded `grep` record | Migration adds a No project HTTP record at `https://mcp.grep.app` | It is a normal editable record; project sessions do not inherit it |
 
-Localix does not scan other applications' MCP files. Import is explicit and accepts an `mcpServers`
-wrapper, a `servers` wrapper, or a bare name-to-config map in Settings.
+A run also loads the servers you configured for Claude Code in its folder, read on every run and
+never written:
+
+| Claude Code source                                          | In a run                                                                                                                                                                                             |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mcpServers` in `~/.claude.json` (user scope)               | Loads in every folder                                                                                                                                                                                |
+| `projects["<folder>"].mcpServers` there (local scope)       | Loads in that folder or repository                                                                                                                                                                   |
+| `.mcp.json` of the folder or its repository (project scope) | Loads once approved: `enableAllProjectMcpServers` or `enabledMcpjsonServers` in your settings, or in the project's own after you trusted the folder in Claude Code; `disabledMcpjsonServers` rejects |
+| `managed-mcp.json` beside the managed settings              | Exclusive: only its servers and `managedMcpServers` load, none of yours or a plugin's                                                                                                                |
+| `managedMcpServers` in managed settings                     | Added to the rest, over a server of the same name                                                                                                                                                    |
+
+A name loads once, from the highest of managed, local, project and user; a server you added in
+Localix with that name wins over Claude Code's. `deniedMcpServers` and `allowedMcpServers`
+(`serverName`, `serverCommand`, `serverUrl`) apply to every server, plugin servers and your own
+included. Such a server is offered as `mcp_<server>_<tool>`, like your own; it is not listed in
+Settings, which shows Localix's registry. Import into the registry stays explicit and accepts an
+`mcpServers` wrapper, a `servers` wrapper, or a bare name-to-config map in Settings.
 
 ### Transports
 
@@ -164,8 +179,10 @@ OAuth tokens, dynamic client data, and the pending PKCE verifier are AES-256-GCM
   live inventory before dispatch.
 - A cold optional server that misses the 1.5-second assembly budget cannot join the run already
   being built; it can appear on a later run.
-- Imported configuration is copied into the Localix registry. Later changes to an external
-  `.mcp.json` or editor setting have no effect until another import.
+- Imported configuration is copied into the Localix registry. Later changes to an imported
+  `.mcp.json` or editor setting have no effect on the copy; Claude Code's own files are read live.
+- A `.mcp.json` server that no setting approves does not load: Localix does not show Claude Code's
+  approval prompt. Approve it in Claude Code, or list it in `enabledMcpjsonServers`.
 - Resource listing rejects a server response that exceeds 100 pages or 10,000 items, or repeats a
   pagination cursor. Listing other servers can continue; this is an error, not a partial inventory.
 - Tool annotations are advisory. Missing or contradictory mutation hints use the mutating

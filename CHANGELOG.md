@@ -8,6 +8,10 @@ Changes land on `main`.
 
 ### Added
 
+- **Your Claude Code MCP servers**: the servers in `~/.claude.json` (user and local scope), a
+  project's approved `.mcp.json`, and your organization's `managed-mcp.json` and `managedMcpServers`
+  join Localix runs in that folder, with its `allowedMcpServers` and `deniedMcpServers` applied to
+  every server. See [MCP](docs/features/mcp.md).
 - **Your Claude Code status line**: the `statusLine` command of your Claude Code settings draws the
   line under a conversation's message box, reading the session (model, folder, cost, context) as
   JSON on stdin as in Claude Code, redrawn on each message and every `refreshInterval`. A
