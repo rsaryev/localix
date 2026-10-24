@@ -154,6 +154,7 @@ export function buildOptionalToolPorts(
       renderSkill: deps.renderSkill,
       ccHookSessions: ctx.ccHookSessions,
       skillCommandPolicy: params.skillCommandPolicy,
+      ...(params.latestUserText ? { latestUserText: params.latestUserText } : {}),
       // A `context: fork` skill the agent loads starts a subagent, as `delegate` does.
       ...(delegate
         ? {

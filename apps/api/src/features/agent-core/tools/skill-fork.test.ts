@@ -74,3 +74,22 @@ describe('a context: fork skill the agent loads', () => {
     expect(asked[0]).not.toHaveProperty('agent')
   })
 })
+
+// skills.md, "Where you write the skill's name": `go ahead and /deploy to staging` — "The name
+// counts as your permission for that message: Claude can run the skill while it responds", even a
+// skill Claude cannot invoke on its own.
+describe('a user-only skill named in the person’s message', () => {
+  const manual = { ...forked('disable-model-invocation: true'), contextFork: undefined }
+  test('the agent may load it for that message, and only then', async () => {
+    const asked = createSkillTool(null, [manual], {}, '', undefined, undefined, undefined, {
+      userNamed: (name) => name === 'zz-fork-research',
+    })
+    expect(
+      (await asked.execute('c', { action: 'get', name: 'zz-fork-research' })).isError,
+    ).toBeUndefined()
+    const not = createSkillTool(null, [manual], {}, '', undefined, undefined, undefined, {
+      userNamed: () => false,
+    })
+    expect((await not.execute('c', { action: 'get', name: 'zz-fork-research' })).isError).toBe(true)
+  })
+})

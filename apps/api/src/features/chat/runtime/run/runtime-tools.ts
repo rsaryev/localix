@@ -93,6 +93,8 @@ export function buildRunToolRegistry(
      * settings object made it look like something a user profile stores.
      */
     skillOverrides?: SkillOverrides
+    /** The person's latest message, for the skill tool's `/name` permission. */
+    latestUserText?: string
     memoryScope?: MemoryScope
     /** Already-fetched model catalog, reused by delegated-child route resolution. */
     catalog: Awaited<ReturnType<RunnerDeps['catalogService']['getCatalog']>>

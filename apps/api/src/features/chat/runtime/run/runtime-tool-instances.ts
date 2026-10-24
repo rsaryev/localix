@@ -62,6 +62,8 @@ export interface DirectToolInstanceDeps {
   skillCommandPolicy?: SkillCommandPolicyRef
   /** Starts a `context: fork` skill's subagent; absent where this run cannot delegate. */
   forkSkill?: SkillToolPorts['forkSkill']
+  /** The person's latest message: a `/name` in it lets the agent run that skill (`skill.ts`). */
+  latestUserText?: string
 }
 
 /** The pre-built tool slots of `createRuntimeToolRegistry`, ready to spread into it. */
@@ -112,7 +114,10 @@ export function buildDirectToolInstances(
           deps.announceCapabilityChange,
           skillPorts.onSkillLoaded,
           skillPorts.renderSkill,
-          deps.forkSkill ? { forkSkill: deps.forkSkill } : {},
+          {
+            ...(deps.forkSkill ? { forkSkill: deps.forkSkill } : {}),
+            userNamed: (name) => namesSkill(deps.latestUserText, name),
+          },
         )
       : undefined,
     mini_app_guide:
@@ -148,4 +153,11 @@ export function buildDirectToolInstances(
         : undefined
     })(),
   }
+}
+
+/** `go ahead and /deploy to staging`: the name as its own word, no punctuation attached. */
+export function namesSkill(text: string | undefined, name: string): boolean {
+  if (!text) return false
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(`(^|\\s)/${escaped}(?=\\s|$)`, 'i').test(text)
 }

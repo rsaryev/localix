@@ -45,6 +45,11 @@ export interface SkillForkRequest {
 }
 
 export interface SkillToolPorts {
+  /**
+   * Whether the person's latest message names the skill as a separate `/name` word: Claude Code
+   * reads that as permission to run it for that message, a `disable-model-invocation` one too.
+   */
+  userNamed?: (callName: string) => boolean
   /** Runs a `context: fork` skill the agent loads as a subagent; absent: the skill runs inline. */
   forkSkill?: (
     toolCallId: string,
@@ -209,7 +214,7 @@ export function createSkillTool(
           if (!skill) return { content: notFoundMessage(input.name, skills), isError: true }
           // CC `disable-model-invocation: true`: only the person runs it. "If Claude tries anyway,
           // Claude Code blocks the call and instructs it not to reproduce the ... steps another way."
-          if (skill.disableModelInvocation) {
+          if (skill.disableModelInvocation && !ports.userNamed?.(skillCallName(skill))) {
             const called = skillCallName(skill)
             return {
               content: `Skill "${called}" can only be run by the user as /${called}. Do not carry out its steps another way; ask the user to run it.`,

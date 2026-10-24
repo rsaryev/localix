@@ -1,3 +1,4 @@
+import type { PersistedMessage } from '../../../contracts'
 /**
  * Stage 4 — tools: the one roster the model sees and the dispatcher executes.
  *
@@ -85,6 +86,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
       modelInput: turn.modelInput,
       agentSettings: turn.globalAgentSettings,
       skillOverrides: inputs.skillOverrides,
+      latestUserText: latestUserTextOf(params.historyMessages),
       memoryScope: inputs.agent.context?.memory?.scope,
       disabledTools,
       toolDenials: inputs.toolDenials,
@@ -248,4 +250,13 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
     scratchDir,
     recoveryToolAvailable: tools.some((tool) => tool.name === TOOL.tool_output),
   }
+}
+
+/** The person's own latest message, not a wake's internal prompt. */
+function latestUserTextOf(history: readonly PersistedMessage[] | undefined): string | undefined {
+  const content = [...(history ?? [])]
+    .reverse()
+    .find((message) => message.payload.role === 'user' && !message.payload.isInternal)
+    ?.payload.content
+  return typeof content === 'string' ? content : undefined
 }
