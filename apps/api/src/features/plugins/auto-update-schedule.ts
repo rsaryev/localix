@@ -13,13 +13,14 @@ const MINUTE = 60_000
 export const firstPassDelayMs = (random: () => number = Math.random): number =>
   MINUTE + Math.floor(Math.min(Math.max(random(), 0), 1) * 9 * MINUTE)
 
-interface Timers {
+/** The clock the pass is armed on; tests hand in their own. */
+export interface AutoUpdateTimers {
   setTimeout: (run: () => void, ms: number) => unknown
   setInterval: (run: () => void, ms: number) => unknown
   clear: (timer: unknown) => void
 }
 
-const systemTimers: Timers = {
+const systemTimers: AutoUpdateTimers = {
   setTimeout: (run, ms) => {
     const timer = setTimeout(run, ms)
     timer.unref?.()
@@ -37,7 +38,7 @@ const systemTimers: Timers = {
 export function armPluginAutoUpdate(opts: {
   run: () => Promise<unknown>
   random?: () => number
-  timers?: Timers
+  timers?: AutoUpdateTimers
 }): () => void {
   const timers = opts.timers ?? systemTimers
   let interval: unknown = null

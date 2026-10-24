@@ -1,6 +1,9 @@
 import { errorMessage } from '../lib/errors'
 import type { IdleTask } from '../lib/idle-tasks'
-import { armPluginAutoUpdate } from '../features/plugins/auto-update-schedule'
+import {
+  armPluginAutoUpdate,
+  type AutoUpdateTimers,
+} from '../features/plugins/auto-update-schedule'
 import type { PluginService } from '../features/plugins/service-types'
 
 /**
@@ -18,9 +21,12 @@ export function armPluginUpdateTimers(deps: {
   userId: string
   logger: { info: (entry: object) => void; warn: (entry: object) => void }
   signal: AbortSignal
+  /** The pass's clock and its random first delay; the system's unless a test hands in its own. */
+  schedule?: { timers?: AutoUpdateTimers; random?: () => number }
 }): { officialMarketplaceTask: IdleTask } {
   const { pluginService, logger } = deps
   const stop = armPluginAutoUpdate({
+    ...deps.schedule,
     run: () =>
       pluginService.updates
         .autoUpdatePass(deps.userId)
