@@ -34,9 +34,15 @@ function relativeSource(
 ): { localPath: string } {
   if (src.includes('..'))
     throw new Error(`Entry "${entry.name}" source "${src}" escapes the marketplace root`)
+  // A backslash is never a separator (Claude Code refuses one after the leading `./`).
+  if (process.platform !== 'win32' && src.includes('\\'))
+    throw new Error(`Entry "${entry.name}" source "${src}" holds a backslash; write it with "/"`)
   const root = resolve(marketplaceDir)
   // `metadata.pluginRoot` applies only to a bare name (no `/`); `./x` is always from the root.
   const bare = src !== '.' && !src.startsWith('./') && !src.includes('/')
+  // Anything else must start with `./`: a bare name only resolves under a `pluginRoot`.
+  if (src !== '.' && !src.startsWith('./') && !(bare && pluginRoot))
+    throw new Error(`Entry "${entry.name}" source "${src}": must start with "./"`)
   const base = bare && pluginRoot ? resolve(root, pluginRoot) : root
   const abs = resolve(base, src)
   if (!isPathWithin(root, abs))
@@ -109,11 +115,16 @@ export function resolveEntrySource(
   }
 }
 
-/** An entry's `headers`: its string values. */
+/** Request-routing and identity headers a catalog entry may not set (Claude Code drops them). */
+const ROUTING_HEADER =
+  /^(host|connection|content-length|transfer-encoding|upgrade|te|trailer|forwarded|via|proxy-.*|x-forwarded-.*|x-real-ip)$/i
+
+/** An entry's `headers`: its string values, routing headers left out. */
 function stringHeaders(value: unknown): Record<string, string> | undefined {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined
   const entries = Object.entries(value).filter(
-    (entry): entry is [string, string] => typeof entry[1] === 'string',
+    (entry): entry is [string, string] =>
+      typeof entry[1] === 'string' && !ROUTING_HEADER.test(entry[0]),
   )
   return entries.length ? Object.fromEntries(entries) : undefined
 }

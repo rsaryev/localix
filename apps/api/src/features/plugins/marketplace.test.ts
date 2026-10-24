@@ -1,3 +1,4 @@
+import { resolveEntrySource } from './marketplace-entry-source'
 import { describe, it, expect } from 'bun:test'
 
 import {
@@ -99,10 +100,22 @@ describe('validateMarketplace', () => {
     ).toBe(true)
   })
 
-  it('warns on an empty catalog and a missing owner', () => {
-    const { warnings } = validateMarketplace({ name: 'm', plugins: [] })
+  it('warns on an empty catalog and refuses one without an owner, as Claude Code does', () => {
+    const { warnings, errors } = validateMarketplace({ name: 'm', plugins: [] })
     expect(warnings.some((w) => w.includes('no plugins'))).toBe(true)
-    expect(warnings.some((w) => w.includes('owner'))).toBe(true)
+    expect(errors.some((e) => e.includes('owner'))).toBe(true)
+  })
+
+  it('refuses an entry path without ./ or with a backslash, keeping the other entries', () => {
+    for (const source of ['plugins/x', 'plugins\\x', './plugins\\x'])
+      expect(() => resolveEntrySource('/mkt', { name: 'x', source })).toThrow(
+        /must start|backslash/,
+      )
+    expect(
+      resolveEntrySource('/mkt', { name: 'x', source: 'x' }, { pluginRoot: './plugins' }),
+    ).toEqual({
+      localPath: '/mkt/plugins/x',
+    })
   })
 
   it('rejects a non-object manifest', () => {

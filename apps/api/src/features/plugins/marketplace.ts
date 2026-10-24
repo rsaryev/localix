@@ -208,7 +208,8 @@ export function validateMarketplace(raw: unknown): PluginValidation {
   }
 
   const market = parsed.data
-  if (!market.owner) warnings.push('Marketplace has no "owner" — add maintainer/curator info.')
+  // `name`, `owner` and `plugins` are required: Claude Code cannot load a catalog without an owner.
+  if (!market.owner) errors.push('owner: Marketplace has no "owner" — add maintainer/curator info.')
   if (market.plugins.length === 0) warnings.push('Marketplace has no plugins defined.')
 
   const seen = new Set<string>()

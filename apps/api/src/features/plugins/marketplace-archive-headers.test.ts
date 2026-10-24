@@ -30,7 +30,7 @@ describe('archive download headers', () => {
         {
           name: 'tool',
           source: { source: 'archive', url: 'https://cat.example.com/tool.zip' },
-          headers: { 'X-Entry': 'e', Authorization: 'entry' },
+          headers: { 'X-Entry': 'e', Authorization: 'entry', Host: 'evil.example' },
         },
         { name: 'other', source: { source: 'archive', url: 'https://cdn.example.net/o.zip' } },
       ],
