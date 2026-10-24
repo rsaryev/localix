@@ -53,9 +53,16 @@ const bash: Shaper = (result, details, input) => {
   const jobId = details.isBackground === true ? jobIdOf(result.content) : undefined
   const timeout = num(input.timeout)
   return {
-    stdout: typeof details.output === 'string' ? details.output : result.content,
-    stderr: '',
-    interrupted: details.jobStatus === 'killed',
+    // The bash tool keeps the two streams apart when the command wrote to stderr.
+    stdout:
+      typeof details.stdout === 'string'
+        ? details.stdout
+        : typeof details.output === 'string'
+          ? details.output
+          : result.content,
+    stderr: typeof details.stderr === 'string' ? details.stderr : '',
+    // A command a signal stopped (exit code 128 + the signal) was interrupted.
+    interrupted: details.jobStatus === 'killed' || (num(details.exitCode) ?? 0) > 128,
     isImage: false,
     ...(jobId ? { backgroundTaskId: jobId } : {}),
     ...(details.background === 'promoted' ? { timedOutAfterMs: (timeout ?? 60) * 1000 } : {}),

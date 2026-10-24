@@ -158,6 +158,10 @@ export interface BashToolDetails {
   command: string
   cwd: string
   output: string
+  /** stdout alone, when the command also wrote to stderr (`output` merges the two). */
+  stdout?: string
+  /** stderr alone, when there was any. */
+  stderr?: string
   isStreaming: boolean
   exitCode?: number
   wallTimeMs?: number

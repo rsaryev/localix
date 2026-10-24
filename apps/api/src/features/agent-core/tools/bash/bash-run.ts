@@ -90,6 +90,14 @@ export async function runForegroundCommand(
     const timedOut = result.exitCode === 124
     const combined = (result.stdout + (result.stderr ? '\n' + result.stderr : '')).trimEnd()
     const output = truncate(combined)
+    // Each stream on its own when there is stderr: a Claude Code PostToolUse hook reads Bash's
+    // `stdout` and `stderr` apart (`ext/cc-tool-responses.ts`).
+    const streams = result.stderr?.trim()
+      ? {
+          stdout: truncate(result.stdout.trimEnd()),
+          stderr: truncate((result.stderr ?? '').trimEnd()),
+        }
+      : {}
     const spillPath =
       combined.length > SPILL_MIN_BYTES ? await spillFullOutput(combined, toolCallId) : null
 
@@ -153,6 +161,7 @@ export async function runForegroundCommand(
         command: command,
         cwd,
         output: finalOutput,
+        ...streams,
         isStreaming: false,
         exitCode: result.exitCode,
         wallTimeMs,

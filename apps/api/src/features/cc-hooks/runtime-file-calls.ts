@@ -91,15 +91,21 @@ export function byFile(runners: ToolRunners): ToolRunners {
         ? preToolUseByFile(runners.runPreToolUse, tool, split, toolUseId)
         : runners.runPreToolUse(tool, input, toolUseId)
     },
-    async runPostToolUse(tool, input, result, toolUseId) {
+    async runPostToolUse(tool, input, result, toolUseId, durationMs) {
       const split = fileCallParts(toolName(tool), input)
-      if (!split) return runners.runPostToolUse(tool, input, result, toolUseId)
+      if (!split) return runners.runPostToolUse(tool, input, result, toolUseId, durationMs)
       const contexts: (string | undefined)[] = []
       // A part's replacement stands for the whole result: a redacting hook redacts every file.
       let updatedToolOutput: string | undefined
       for (const part of split.parts) {
         const content = updatedToolOutput ?? result.content
-        const post = await runners.runPostToolUse(tool, part, { ...result, content }, toolUseId)
+        const post = await runners.runPostToolUse(
+          tool,
+          part,
+          { ...result, content },
+          toolUseId,
+          durationMs,
+        )
         contexts.push(post.additionalContext)
         updatedToolOutput = post.updatedToolOutput ?? updatedToolOutput
       }
@@ -109,12 +115,14 @@ export function byFile(runners: ToolRunners): ToolRunners {
         ...(updatedToolOutput !== undefined ? { updatedToolOutput } : {}),
       }
     },
-    async runPostToolUseFailure(tool, input, failure) {
+    async runPostToolUseFailure(tool, input, failure, toolUseId) {
       const split = fileCallParts(toolName(tool), input)
-      if (!split) return runners.runPostToolUseFailure(tool, input, failure)
+      if (!split) return runners.runPostToolUseFailure(tool, input, failure, toolUseId)
       const contexts: (string | undefined)[] = []
       for (const part of split.parts)
-        contexts.push((await runners.runPostToolUseFailure(tool, part, failure)).additionalContext)
+        contexts.push(
+          (await runners.runPostToolUseFailure(tool, part, failure, toolUseId)).additionalContext,
+        )
       const additionalContext = joinContext(contexts)
       return additionalContext ? { additionalContext } : {}
     },
