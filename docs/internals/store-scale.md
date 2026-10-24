@@ -5,7 +5,7 @@ and community marketplaces, and later registries. This page is the design for re
 ranking what they list and searching it by words and by meaning. It extends
 [Store design](store.md).
 
-Status: proposed. Sized for about 5,000 listings, with headroom to 20,000.
+Status: proposed. Sized for about 5,000 listings; the index is SQLite FTS5 from the start.
 
 ## Terminology
 
@@ -27,9 +27,29 @@ Status: proposed. Sized for about 5,000 listings, with headroom to 20,000.
 | `claude-plugins-official` | 315            | Mostly in the marketplace repository      |
 | `claude-community`        | 2,283          | Mostly in their authors' own repositories |
 
-About 2,600 listings today; the design holds to 20,000. At that size the whole index is a few
-megabytes in memory and every query is a scan, so there is no separate database. Past roughly 50,000
-listings the index moves to SQLite FTS5 behind the same Store port; nothing above it changes.
+About 2,600 listings today; the design is sized for 5,000 and holds well past 100,000 without a
+redesign, because the index is SQLite with FTS5 from the start.
+
+## Index storage
+
+The index is a SQLite database read through `bun:sqlite`, the driver the main database already uses,
+with FTS5, which already serves message search. No new dependency, nothing to compile, and the same
+engine in the desktop sidecar and in development.
+
+| Choice     | Decision                                                                                                                                                                                                          |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| File       | Its own file in the cache folder, not the main database: it is derived, so it is not migrated or backed up; a schema version mismatch deletes and rebuilds it.                                                    |
+| Access     | Kysely in the Store's repository only (A5); raw SQL only for `MATCH` and `bm25`.                                                                                                                                  |
+| Tables     | `listing` (card fields, identity, kind, category, source, trust, static score), `listing_component`, `listing_fts` (FTS5, external content over `listing`), `source_state` (revision, count, synced time, error). |
+| Tokenizer  | `unicode61 remove_diacritics 2` with prefix indexes on 2 and 3 characters, so typing matches as you go.                                                                                                           |
+| Query text | Sanitized into a `MATCH` expression by the same helper message search uses, moved to a neutral library so the chat and the Store share it (A6).                                                                   |
+| Writes     | A source's listings are replaced in one transaction: delete by source, insert in batches; WAL mode, so reads never wait.                                                                                          |
+| Facets     | `GROUP BY` over indexed columns of the filtered set; fast enough at this size that no counts table is kept.                                                                                                       |
+| Vectors    | Stay in the semantic index (`features/embeddings`); the Store does not store them twice.                                                                                                                          |
+
+Considered and not chosen: an in-memory JavaScript index (Orama, MiniSearch) rebuilds on every start
+and holds everything in API memory; a Rust engine (Tantivy) would need a native module or the
+desktop shell, and could not run in the plain API. FTS5 is already built into the SQLite Bun ships.
 
 ## Default sources
 
@@ -104,13 +124,13 @@ uses the score to break near ties.
 ## Search
 
 The Store's search is the same hybrid search Localix already runs for chats and capabilities: words
-and meaning fused (`features/search/catalog-hybrid.ts`).
+and meaning fused (`features/search/hybrid.ts`).
 
 | Part     | How                                                                                                                                       |
 | -------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Words    | Field-weighted match over name, display name, tags, summary and component names; prefix on the last word while typing.                    |
+| Words    | FTS5 `MATCH` with BM25, name and display name weighted above tags, summary and component names; prefix on the last word while typing.     |
 | Meaning  | Each listing is a row of its own semantic collection: title, summary, tags, category and component names, embedded by the built-in model. |
-| Fusion   | `catalogHits` adds the two on one scale; a meaning match counts only when it stands out from the collection.                              |
+| Fusion   | The shared `fuse` puts both on one scale, as `catalogHits` does; a meaning match counts only when it stands out from the collection.      |
 | Ranking  | Relevance first, then the static score; trust weight keeps a Localix package above an equal community one.                                |
 | Fallback | While the model downloads or is unavailable, search answers from words and says so.                                                       |
 
@@ -134,14 +154,17 @@ plugins do, and both places ask the global search service:
 | The Store's search field | `domains: ['store']` plus the Store's filters               | Full results in pages, with facets; the same ranking as the palette.                         |
 
 The global service builds the query's semantic strategy once (the query embedded once) and hands it
-to every provider; the `store` provider runs `catalogHits` over its collection and the filtered
-index. The Store's filters travel as a provider option on the query, so the shared `SearchQuery`
-gains one optional, opaque field rather than Store-specific ones. The Store routes reach the search
-service through a port wired in `bootstrap/` (A4), never by importing the search feature.
+to every provider. The `store` provider takes word candidates from FTS5 (BM25 over the filtered
+index) and meaning candidates from its semantic collection, and fuses them with the shared `fuse`
+from `features/search/hybrid.ts`, the step `catalogHits` uses, so a Store hit and a skill hit are
+scored on the same scale. The Store's filters travel as a provider option on the query, so the
+shared `SearchQuery` gains one optional, opaque field rather than Store-specific ones. The Store
+routes reach the search service through a port wired in `bootstrap/` (A4), never by importing the
+search feature.
 
 ## Query path
 
-1. Filters (shelf, kind, category, source, trust, installed, updates) narrow the in-memory index.
+1. Filters (shelf, kind, category, source, trust, installed, updates) narrow by indexed columns.
 2. A query goes through the global search service to the `store` provider, which runs the hybrid
    search over what is left; with no query, the Store orders by score without calling search.
 3. Results come back in pages of 40 with a cursor; facet counts are counted over the filtered set.
@@ -149,24 +172,24 @@ service through a port wired in `bootstrap/` (A4), never by importing the search
 
 ## Budgets
 
-| Measure                                       | Budget                    |
-| --------------------------------------------- | ------------------------- |
-| Open the Store to first cards                 | 150 ms                    |
-| Search over 5,000 listings, p95, with meaning | 60 ms                     |
-| Next page while scrolling, p95                | 20 ms                     |
-| Re-index one 2,300-entry marketplace          | 1 s, off the request path |
-| Store index in API memory                     | 20 MB                     |
+| Measure                                              | Budget                    |
+| ---------------------------------------------------- | ------------------------- |
+| Open the Store to first cards                        | 150 ms                    |
+| Search over 5,000 listings, p95, with meaning        | 60 ms                     |
+| Next page while scrolling, p95                       | 20 ms                     |
+| Re-index one 2,300-entry marketplace                 | 1 s, off the request path |
+| Store index in API memory (beyond SQLite page cache) | 5 MB                      |
 
 Each budget has a benchmark test over a generated index of 5,000 and 20,000 listings.
 
 ## Order of work
 
-| Step  | Delivers                                                                                                |
-| ----- | ------------------------------------------------------------------------------------------------------- |
-| 2a    | Default sources list with trust and weight; plugins provider listing card fields; identities.           |
-| 2b    | Categories table, static score, paged queries with facets, Store semantic collection and hybrid search. |
-| 2c    | Discover from editorial picks and computed rows; lazy detail and components; adaptive UI.               |
-| Later | SQLite FTS5 index past 50,000 listings; federated registries (MCP Registry) with their own search.      |
+| Step  | Delivers                                                                                                                                           |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2a    | Default sources list with trust and weight; plugins provider listing card fields; identities.                                                      |
+| 2b    | SQLite FTS5 index, categories, static score, keyset pages with facets, Store semantic collection, hybrid search through the global search service. |
+| 2c    | Discover from editorial picks and computed rows; lazy detail and components; adaptive UI.                                                          |
+| Later | Federated registries (MCP Registry) with their own search.                                                                                         |
 
 ## Limits
 
