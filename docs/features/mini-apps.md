@@ -17,7 +17,9 @@ add yourself waits for your yes before its code runs; one the agent builds for y
 | Outcome                      | How                                                                                     | Boundary                                                           |
 | ---------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | See your mini apps           | `/mini-app list`, or Settings → Capabilities → Mini apps                                | The list shows the scope of the current chat's project.            |
-| Add one from the store       | The **+** button in the rail, **Open the store** in Settings, or setup                  | Nothing is installed until you choose it.                          |
+| Add one from the store       | The **+** button in the rail, **Open the store** in Settings, or setup                  | Only the recommended apps install without your choice.             |
+| Get the recommended apps     | Nothing: a new installation installs them in the background                             | Once per app; one you remove is not added again.                   |
+| Update all at once           | **Update all** in the line above the message box, or in the Event Center                | Only apps a catalog installed; your own folders are left alone.    |
 | Update one                   | **Update** on its row in the store, or wait for the automatic update                    | Shown when the catalog offers another version than yours.          |
 | See what an app is           | Choose its row in the store                                                             | Its page shows screenshots, its README and details.                |
 | Install with its desktop app | **Install** → **With desktop app** in the store                                         | macOS desktop only, for an app with a screen of its own.           |
@@ -73,6 +75,32 @@ in.
 why it was refused, and `/mini-app catalog remove <url>` removes one you added; the composer offers
 your catalogs for it.
 
+### Recommended apps
+
+On a new installation, Localix installs the apps its catalog recommends in the background, without
+asking: today **Git**, **Documents** and **Kanban**. They come from the Localix catalog like any
+other app, and the Event Center's **In progress** shows each download; when they are in, one entry
+says so ("Installed 3 mini apps").
+
+Offline, nothing is installed and Localix tries again later. Each recommended app is installed once:
+remove one (`/mini-app remove <name>` or **Remove** in the store) and it is not added again, and a
+folder of your own by the same name is never replaced. An installation that already had mini apps
+when this arrived gets nothing new.
+
+Setup's **Add mini apps** slide shows the recommended apps with where each stands, a few more of
+Localix's own to install in place, and **Open the store** last; setup stays open.
+
+Only the Localix catalog can recommend an app: a catalog you added cannot, whatever it says.
+
+### Installing and updating in the background
+
+An install or an update in progress shows in the Event Center's **In progress** with its progress,
+and the bell shows a thin ring while anything runs. Updates on offer appear there too and in one
+line above the message box: **2 mini app updates — Update all**. That line takes turns with plugin
+updates, and Localix's own update always comes first. Each can be hidden with × until what it offers
+changes. When an install or update finishes, the Event Center keeps one line: "Installed Git",
+"Updated 3 mini apps", or "Could not install Kanban" with the reason and **Try again**.
+
 A catalog's app arrives as an archive whose checksum the catalog pins. An archive that does not
 match is discarded, and the version you had keeps running. Apps installed from a catalog take its
 newer versions by themselves, a minute after start and then every six hours.
@@ -104,7 +132,9 @@ that opens the app's row in Settings → Mini apps. The entry clears once the ap
 - `/mini-app enable` and `/mini-app disable` change whether the app runs; they do not delete it or
   its data.
 - In a development checkout the store offers the checkout's own `mini-apps/` in place of the hosted
-  Localix catalog.
+  Localix catalog; the featured and recommended apps come from `mini-apps/catalog-picks.json`.
+- Which apps were already offered is remembered in `~/.localix/mini-app-recommended.json`. Deleting
+  that file does not reinstall anything while you have other mini apps.
 - Apps from a catalog you added are always shown as unverified.
 - Earlier versions kept mini apps under `~/.localix/plugins`. Those copies are removed at startup,
   and settings saved under the old names are not carried over.

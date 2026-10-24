@@ -93,8 +93,9 @@ in Settings → System → Updates, where you can also check on demand.
 1. Press **Restart to update**. When the UI reports running root turns or work items other than
    monitors, Localix describes what the restart will stop and asks for confirmation. Otherwise it
    starts at once. This warning uses the UI's known work roster.
-2. The row turns into **Updating** with the download's progress. Nothing else on the row can be
-   pressed, and it stays that way if you switch to another chat meanwhile.
+2. The row turns into **Updating** with the download's progress, which the Event Center's **In
+   progress** also shows as a bar. Nothing else on the row can be pressed, and it stays that way if
+   you switch to another chat meanwhile.
 3. The download is checked against Localix's public key before installation. The shell installs and
    relaunches, requesting window/draft saves and stopping its runtime on the exit path. Platform
    installation order differs; saving has a time limit, so an unresponsive window can leave pending
@@ -106,8 +107,14 @@ in Settings → System → Updates, where you can also check on demand.
 
 If the install fails, you get a message with the reason and the row leaves its busy state. This does
 not guarantee rollback of the installer's side effects. The × on the row hides it for that version
-only; the rail mark and Settings still show it, and a newer version brings the row back. A Localix
-built with the ordinary source-build commands has no updater.
+only; the rail mark, the Event Center and Settings still show it, and a newer version brings the row
+back.
+
+The same line above the message box also offers mini app and plugin updates (**N mini app updates —
+Update all**, **N plugin updates — Update all**) when Localix itself has none, one at a time, taking
+turns every few seconds unless the pointer rests on it or reduced motion is on; **›** shows the
+next. Each is hidden with × until what it offers changes. Local model downloads keep their own line
+below it. A Localix built with the ordinary source-build commands has no updater.
 
 **No newer version found** is not proof that the release feed was reached: a native check failure
 also returns no available update and records the failure in the desktop log. Retry when connectivity

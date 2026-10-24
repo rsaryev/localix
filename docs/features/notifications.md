@@ -14,6 +14,8 @@ not add a duplicate generic event.
 | Action                      | Mechanism                                                   | Boundary                                                                 |
 | --------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------ |
 | Review recent activity      | Open the title-bar bell; entries appear newest first        | The local server shares history with connected windows for the same user |
+| See what runs right now     | **In progress** at the top of the Event Center              | Live status; it is not history and leaves when the job ends              |
+| Apply an offered update     | **Update all** or **Restart to update** under **Updates**   | Mini app, plugin and Localix updates only                                |
 | Read an entry in full       | Select the row; its body, actions and trace expand          | Expanding an entry marks it read                                         |
 | Return to a source session  | Select the arrow on a row that names a session              | Application messages without a session are not navigable                 |
 | Answer a waiting request    | Select **Respond** on a human-input entry                   | The entry settles once the request is answered, expires or ends          |
@@ -30,6 +32,20 @@ history**.
 
 ## How it works
 
+### In progress and updates
+
+The top of the Event Center shows what Localix is doing in the background, live: mini app installs
+and updates, local model downloads, the download of a Localix update and plugin updates. Each row
+has the app's icon, its name, what is happening ("Downloading · 3.0 MB of 4.8 MB"), a progress bar
+and what can be done: pause, resume or cancel a model download, open the store, open plugin
+settings. Under **Updates** are the updates on offer, each with its one action. While anything runs,
+the bell has a thin ring that fills as the jobs do and its label says how many tasks are in
+progress; the unread count stays as it is.
+
+These rows are not history. When a job ends, its owner records one entry: "Installed Git", "Updated
+3 mini apps", or "Could not install Kanban" with the reason and **Try again**, which queues the app
+again and is settled once it installs.
+
 ### What becomes an entry
 
 | Runtime fact                                                                                               | Entry                                                                                           | Interrupts                       |
@@ -42,6 +58,7 @@ history**.
 | Background terminal exited                                                                                 | Success for code zero; information for a stop or a stop signal (129, 130, 137, 143); else error | Only an unexpected nonzero exit  |
 | A problem the app, a mini app or a plugin found (a file that will not validate, a connection that is down) | One standing entry per subject                                                                  | Only when nothing could be shown |
 | An action you took that failed, or that needs a decision from you                                          | Error or warning                                                                                | Only an error                    |
+| Mini apps installed or updated, or an install that failed                                                  | Success, or error with **Try again**                                                            | Only a failure                   |
 
 A logical run reports once after retries and continuations finish. Successful top-level runs report
 when no later turns remain queued; nested chats do not add the same completion entry. **Continue**

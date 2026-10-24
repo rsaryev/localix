@@ -139,9 +139,12 @@ Any square picture is accepted; the standard only keeps a catalog's apps looking
 The pack command writes the catalog and the media files, each named with the start of its hash.
 Editing it by hand is not needed. Every field after `publisher` but `archive` is optional and still
 schema 1: a reader that does not know one ignores it, and one that does not read is dropped alone,
-so a bad icon never hides its app. An app whose name, version or archive does not read is left out,
-and the rest of the catalog still loads. `featured: true` puts an app in the store's Featured group,
-but only in the hosted Localix catalog; the Localix release sets it from a list in the pack script.
+so a bad icon never hides its app.
+
+An app whose name, version or archive does not read is left out, and the rest of the catalog still
+loads. `featured: true` puts an app in the store's Featured group, and `recommended: true` has a new
+installation install it on its own, but both only in the hosted Localix catalog; the Localix release
+sets them from `mini-apps/catalog-picks.json`.
 
 ### How the store shows media
 

@@ -8,6 +8,17 @@ Changes land on `main`.
 
 ### Added
 
+- **In progress in the Event Center**: the top of the Event Center shows what runs in the background
+  — mini app installs and updates, model downloads, a Localix update, plugin updates — with progress
+  and actions, and the updates on offer. The bell shows a thin ring and says how many tasks are in
+  progress. Finished installs leave one entry: "Installed Git", or "Could not install Kanban" with
+  **Try again**. See [Manage notifications](docs/features/notifications.md).
+- **Recommended mini apps**: a new installation installs Git, Documents and Kanban in the
+  background. Remove one and it stays removed. Setup's mini apps slide shows them arriving and
+  installs more in place, without leaving setup. See [Mini apps](docs/features/mini-apps.md).
+- **Updates above the message box**: the update line also offers mini app and plugin updates with
+  **Update all**, one at a time, when Localix itself has none; each can be hidden until there is
+  something newer. See [Updates](docs/getting-started/installation.md#updates).
 - **Mini app store pages**: every mini app has its own icon, and choosing one in the store opens its
   page: screenshots at full resolution with a full-window viewer, its README as About, and details
   such as size, license and what it adds. Tags filter the store, and featured apps come first. See
@@ -96,6 +107,8 @@ Changes land on `main`.
 
 ### Fixed
 
+- **Smaller Documents download**: the Documents mini app no longer carries its fonts twice; its
+  download is about half the size.
 - **Group chats** keep routing a message to the right participant after the model catalog refreshes:
   the decision model was dropped when the catalog named its vendor's own package.
 - **A repository can no longer run code before you allow it**: a plugin in a project named like one

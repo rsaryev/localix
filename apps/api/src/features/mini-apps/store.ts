@@ -29,7 +29,7 @@ export type { MiniAppInstallOutcome, MiniAppStoreActivity } from './store-activi
 /**
  * The mini app store: what the catalogs offer, what is installed, and the installs in flight
  * (`docs/internals/plugins-and-mini-apps.md`, "Catalogs and sources"). Nothing is installed until
- * the person chooses it (rule X5). An install is in-memory status — every move of a job tells the
+ * the person chooses it (rule X5), but the apps Localix recommends (`recommended.ts`). An install is in-memory status — every move of a job tells the
  * subscribers, which poke `mini-app-installs` so the client re-reads the list — and a finished one
  * is announced through `onInstalled`. When the queue drains, how each install went is handed to
  * `onJobsSettled`, which records it in the person's journal (the owner announces).
