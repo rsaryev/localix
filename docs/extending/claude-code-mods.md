@@ -68,11 +68,13 @@ too, without waiting. An `engine.create` step adds nouns of its own (`$.telemetr
 A mod draws in the band above a chat's message box with `ui.render` for
 `{ component: 'AbovePrompt' }`, as in Claude Code's terminal and desktop app. `e.props` carries
 `hasSurvey`, `isWorking`, `maxRows`, `bodyColumns`, `scroll` and `view`; the mods of the chat's
-project compose it, `next(e)` giving what the mods after one drew. The band's Buttons press by their
-`hotkey` while the band has focus, and a digit typed alone into the empty message box presses the
-band's Button on that digit after a pause. The mark at the band's right end collapses it to one row
-of what each part says, where no hotkey presses; a click on that row opens it again. A press, a
-typed value or a pick runs in the chat, so `$.prompt.fill` puts text in its message box.
+project compose it, `next(e)` giving what the mods after one drew.
+
+The band's Buttons press by their `hotkey` while the band has focus, and a digit typed alone into
+the empty message box presses the band's Button on that digit after a pause. The mark at the band's
+right end collapses it to one row of what each part says, where no hotkey presses; a click on that
+row opens it again. A press, a typed value or a pick runs in the chat, so `$.prompt.fill` puts text
+in its message box.
 
 ## Panes as tabs
 
@@ -118,12 +120,13 @@ fixed chart colours for cyan and magenta; greys are the soft or faint text. A co
 in the light and the dark theme alike.
 
 The band also lays its tree out by shape. A column `Box` with no frame or ground only stacks, and an
-empty `Box` only spaces, so the band's own rows and hairlines take their place. Two or more `plain`
-Buttons each alone on a row, with an optional text-only line before them as their label, are a list
-of picks: one row of chips with their keys. Rows of text and buttons one line high sit side by side
-in one row. A row that does not fit scrolls sideways, with the wheel and with ← and →. Anything else
-(a framed box, a field, code) is drawn as it is, and the band scrolls past 10 rows. The band draws
-one tree composed by all of a chat's mods, so it has no menu per mod.
+empty `Box` only spaces, so the band's own rows and hairlines take their place.
+
+Two or more `plain` Buttons each alone on a row, with an optional text-only line before them as
+their label, are a list of picks: one row of chips with their keys. Rows of text and buttons one
+line high sit side by side in one row. A row that does not fit scrolls sideways, with the wheel and
+with ← and →. Anything else (a framed box, a field, code) is drawn as it is, and the band scrolls
+past 10 rows. The band draws one tree composed by all of a chat's mods, so it has no menu per mod.
 
 A Button without a `key` is addressed by its label, else its one string child, and draws its
 children as its label; `plain`, `variant`, `dimColor` and `hotkey` show as Localix draws a button
