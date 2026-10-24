@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'bun:test'
+import { describe, expect, it, test } from 'bun:test'
 import { parseSkillFrontmatter } from './skill-frontmatter'
 
 // skills.md, frontmatter reference: "Boolean fields accept `yes`, `no`, `on`, `off`, `1`, and `0` in
@@ -27,4 +27,11 @@ describe('skill frontmatter booleans', () => {
     expect(fm.userInvocable).toBeUndefined()
     expect(fm.disableModelInvocation).toBeUndefined()
   })
+})
+
+// skills.md, `description`: "If omitted, uses the first non-empty line of the markdown content" —
+// the whole line; the roster applies its own 1,536-character cap.
+test('a skill without a description takes its whole first line', () => {
+  const line = `Use this skill when ${'x'.repeat(150)} applies.`
+  expect(parseSkillFrontmatter(`---\nname: n\n---\n# ${line}\n\nMore.`).description).toBe(line)
 })

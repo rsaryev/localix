@@ -108,7 +108,8 @@ export type SkillFrontmatter = {
 
 /**
  * Extract a short description from the skill body when no frontmatter description exists.
- * Uses the first non-empty line (strips Markdown headers). Mirrors CC behavior.
+ * Uses the whole first non-empty line (strips Markdown headers), as Claude Code does; the model's
+ * roster caps each entry on its own.
  */
 function extractBodyDescription(body: string): string | undefined {
   for (const line of body.split('\n')) {
@@ -116,7 +117,7 @@ function extractBodyDescription(body: string): string | undefined {
     if (!trimmed || /^[-*_]{3,}$/.test(trimmed)) continue // skip blank lines and HR markers
     const text = trimmed.replace(/^#+\s+/, '') // strip markdown header markers
     if (!text) continue
-    return text.length > 100 ? text.slice(0, 97) + '...' : text
+    return text
   }
   return undefined
 }
