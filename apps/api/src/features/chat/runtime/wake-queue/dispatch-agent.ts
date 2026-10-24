@@ -70,9 +70,18 @@ export async function dispatchAgentTicket(
     agentId: member.agentId,
     at: deps.now(),
   })
-  const runSession = ticket.scope.modelOverride
-    ? withRoute(session, { modelId: ticket.scope.modelOverride }, member.agentId)
-    : session
+  const { modelOverride, effortOverride } = ticket.scope
+  const runSession =
+    modelOverride || effortOverride
+      ? withRoute(
+          session,
+          {
+            ...(modelOverride ? { modelId: modelOverride } : {}),
+            ...(effortOverride ? { reasoningEffort: effortOverride } : {}),
+          },
+          member.agentId,
+        )
+      : session
   try {
     return await deps.run(
       dispatchParams(

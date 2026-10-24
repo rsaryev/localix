@@ -2,6 +2,7 @@ import { sessionRoute } from '../../../contracts/session-route'
 import { recordSkillUse } from '../../agent-core/skill-usage-recorder'
 import { announceSkillInvoked } from '../../agent-core/skill-invocations'
 import { resolveModelAlias } from '../../agent-core/model-alias'
+import { resolveDeclaredReasoningEffort } from '../../../db/types'
 import { parseSkillCommand } from './slash-commands'
 import { commandTarget } from './command-participant'
 import { SkillCommandFailedError } from './skill-commands'
@@ -220,6 +221,10 @@ export async function handleSkillCommand(
       // the session model again. An alias resolves like a command's; `inherit` keeps the model.
       ...(skill.preferredModel
         ? { modelId: resolveModelAlias(skill.preferredModel, speakerRoute.modelId ?? undefined) }
+        : {}),
+      // CC skill `effort:` — the invoking turn's effort; an unknown value keeps the session's.
+      ...(resolveDeclaredReasoningEffort(skill.preferredEffort)
+        ? { reasoningEffort: resolveDeclaredReasoningEffort(skill.preferredEffort) }
         : {}),
       invocation: {
         source: 'slash',

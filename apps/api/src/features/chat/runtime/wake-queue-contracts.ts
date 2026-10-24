@@ -97,7 +97,7 @@ export interface QueuedCommand {
   origin?: { command: string; label: string }
   identity?: Pick<
     RunIdentity,
-    'extraAllowedTools' | 'requiredTools' | 'ccScopedHooks' | 'modelOverride'
+    'extraAllowedTools' | 'requiredTools' | 'ccScopedHooks' | 'modelOverride' | 'effortOverride'
   >
 }
 

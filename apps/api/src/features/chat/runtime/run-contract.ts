@@ -1,3 +1,4 @@
+import type { ReasoningEffort } from '../../../db/types'
 /**
  * THE RUN CONTRACT: what a dispatcher must state to start an agent run, and what one
  * physical segment of a logical run hands to the next.
@@ -92,6 +93,8 @@ export interface RunIdentity {
    * persisted: the user's model choice is untouched.
    */
   modelOverride?: string
+  /** A reasoning effort for THIS run only (a CC skill's `effort:`), like `modelOverride`. */
+  effortOverride?: ReasoningEffort
   /** Run-scoped CC hooks merged into the per-run cc-hooks registry. */
   ccScopedHooks?: ScopedCcHooks[]
 }

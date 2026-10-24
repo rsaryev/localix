@@ -67,6 +67,13 @@ describe('a skill invoked as /<plugin>:<skill>', () => {
     expect(runs[0]).toMatchObject({ modelId: 'gpt-4o-mini' })
   })
 
+  // skills.md: "`effort` | Effort level when this skill is active. Overrides the session effort".
+  test('its effort runs the invoking turn', async () => {
+    const { ctx, runs } = context(plugin('deep', { preferredEffort: 'max' }))
+    await handleSkillCommand(ctx, 'u1', 's1', session, '/cc:deep')
+    expect(runs[0]).toMatchObject({ reasoningEffort: 'max' })
+  })
+
   // hooks.md: skill hooks run for "the rest of the session once the skill is invoked".
   test('its hooks are registered for the rest of the session', async () => {
     const hooks = { PreToolUse: [{ hooks: [{ type: 'command', command: 'x' }] }] }

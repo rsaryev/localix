@@ -1,3 +1,4 @@
+import type { ReasoningEffort } from '../../../db/types'
 import { InvalidRequestError } from '../../../lib/domain-errors'
 import { randomUUID } from 'node:crypto'
 
@@ -44,6 +45,8 @@ export interface RunMacroOptions {
   /** Per-run model override (CC command `model:` frontmatter). Applied to the RUN
    *  only — NOT persisted to the session, so the user's model choice is untouched. */
   modelId?: string
+  /** Per-run reasoning effort (CC skill `effort:` frontmatter); like `modelId`, never persisted. */
+  reasoningEffort?: ReasoningEffort
   /** Provenance badge rendered on the visible user message ("via /loop · every 5m"). */
   commandOrigin?: { command: string; label: string }
   /** Run-scoped CC hooks from a skill's frontmatter `hooks` block (active this run only). */
@@ -205,6 +208,7 @@ function commandIdentity(opts: RunMacroOptions | undefined): QueuedCommand['iden
     ...(opts?.requiredTools?.length ? { requiredTools: opts.requiredTools } : {}),
     ...(opts?.ccScopedHooks?.length ? { ccScopedHooks: opts.ccScopedHooks } : {}),
     ...(opts?.modelId ? { modelOverride: opts.modelId } : {}),
+    ...(opts?.reasoningEffort ? { effortOverride: opts.reasoningEffort } : {}),
   }
   return Object.keys(identity).length > 0 ? identity : undefined
 }
