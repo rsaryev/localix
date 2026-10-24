@@ -246,3 +246,13 @@ describe('applySkillArguments', () => {
     expect(applySkillArguments('a=$a b=$b', 'x', { argumentNames: ['a', 'b'] })).toBe('a=x b=')
   })
 })
+
+describe('a plugin namespace with a dot', () => {
+  it('parses /acme.tools:run as the plugin command, keeping a bare dotted word a prompt', () => {
+    expect(parseSlashInvocation('/acme.tools:run now')).toEqual({
+      name: 'acme.tools:run',
+      arg: 'now',
+    })
+    expect(parseSlashInvocation('/v1.2 notes')).toBeNull()
+  })
+})

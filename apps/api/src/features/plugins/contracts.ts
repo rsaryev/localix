@@ -10,7 +10,7 @@ import { pluginConfigFieldSchema } from './contracts-config'
  * The per-concern schema clusters live in sibling modules and are re-exported here.
  */
 
-export { PLUGIN_NAME_RE, PLUGIN_QUALIFIED_NAME_RE } from './contracts-base'
+export { PLUGIN_ID_NAME_RE, PLUGIN_NAME_RE, PLUGIN_QUALIFIED_NAME_RE } from './contracts-base'
 
 export type { PluginConfigType, PluginConfigOption, PluginConfigField } from './contracts-config'
 export { pluginCommandSchema, pluginCommandSpecSchema } from './contracts-commands'

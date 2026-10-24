@@ -6,8 +6,14 @@ import { z } from 'zod'
  * other's (rule X1, `docs/internals/plugins-and-mini-apps.md`).
  */
 
-/** A plugin name: letters, digits, `-` and `_`, starting with a letter or digit. */
+/** A component name (a monitor, a command segment): letters, digits, `-` and `_`. */
 export const PLUGIN_NAME_RE = /^[a-z0-9][a-z0-9_-]*$/i
+
+/**
+ * A plugin's own name, as Claude Code allows it: letters, digits, `-`, `_` and `.`, starting with
+ * a letter or digit (so never `.` or `..`, nor a hidden folder). It names the install directory.
+ */
+export const PLUGIN_ID_NAME_RE = /^[a-z0-9][a-z0-9._-]*$/i
 
 /** A namespaced name, `<plugin>:<name>[:<name>…]`, as Claude Code addresses commands and agents. */
 export const PLUGIN_QUALIFIED_NAME_RE = /^[a-z0-9][a-z0-9_-]*(?::[a-z0-9][a-z0-9_-]*)*$/i

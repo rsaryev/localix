@@ -14,7 +14,7 @@ import {
   stripDotGit,
 } from '../ext/install-tree'
 import { findManifestPath } from './discovery'
-import { PLUGIN_NAME_RE } from './contracts'
+import { PLUGIN_ID_NAME_RE } from './contracts'
 import { marketplaceOnlyHint } from './claude-code-marketplace'
 import { fetchGitTree } from './git-fetch'
 import { publishExtensionTree, type ExtensionPublicationLifecycle } from '../ext/publish-tree'
@@ -50,7 +50,7 @@ export async function withPluginSource<T>(
     )
   if (!(await fs.stat(input.source).catch(() => null))?.isDirectory())
     throw new InvalidRequestError('plugin_bad_source', `Not a directory: ${input.source}`)
-  if (input.nameOverride !== undefined && !PLUGIN_NAME_RE.test(input.nameOverride))
+  if (input.nameOverride !== undefined && !PLUGIN_ID_NAME_RE.test(input.nameOverride))
     throw new InvalidRequestError('plugin_invalid', 'Invalid plugin name override')
   const name = input.nameOverride ?? (await manifestName(input.source))
   const directory = resolve(input.source)
@@ -117,7 +117,7 @@ async function manifestName(dir: string): Promise<string> {
   const hint = declared ? null : await marketplaceOnlyHint(dir)
   if (hint) throw new InvalidRequestError('plugin_claude_marketplace', hint)
   if (declared) {
-    if (!PLUGIN_NAME_RE.test(declared))
+    if (!PLUGIN_ID_NAME_RE.test(declared))
       throw new InvalidRequestError('plugin_invalid', 'Invalid plugin name in manifest')
     return declared
   }
@@ -125,7 +125,7 @@ async function manifestName(dir: string): Promise<string> {
   // must satisfy the same rules — otherwise a dir like ".my-plugins" would install
   // under a name the manifest schema rejects on every later discovery.
   const fallback = basename(dir)
-  if (!PLUGIN_NAME_RE.test(fallback)) {
+  if (!PLUGIN_ID_NAME_RE.test(fallback)) {
     throw new InvalidRequestError(
       'plugin_invalid',
       `Cannot derive a valid plugin name: plugin.json has no "name" and the directory name "${fallback}" is not a valid plugin name.`,

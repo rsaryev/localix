@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { PLUGIN_NAME_RE } from './contracts-base'
+import { PLUGIN_ID_NAME_RE } from './contracts-base'
 import { pluginConfigOptionSchema } from './contracts-config'
 import { pluginCommandSchema } from './contracts-commands'
 import { pluginAgentSchema } from './contracts-agents'
@@ -16,7 +16,7 @@ const pathOrPaths = z.union([z.string(), z.array(z.string())])
 export const pluginManifestSchema = z.object({
   name: z
     .string()
-    .regex(PLUGIN_NAME_RE, 'Plugin name must be letters, numbers, dashes or underscores.'),
+    .regex(PLUGIN_ID_NAME_RE, 'Plugin name must be letters, numbers, dots, dashes or underscores.'),
   version: z.string().default('0.0.0'),
   /** The plugin's `userConfig` options, keyed by option name. */
   config: z.record(z.string(), pluginConfigOptionSchema).optional(),

@@ -106,7 +106,8 @@ export function parseControlCommand(raw: string): ControlCommand | null {
 export function parseSlashInvocation(raw: string): { name: string; arg: string } | null {
   const trimmed = raw.trim()
   const match = trimmed.match(
-    /^\/([a-z0-9][a-z0-9_-]*(?::[a-z0-9][a-z0-9_-]*)*)(?:\s+([\s\S]*))?$/i,
+    // A plugin namespace may hold a `.` (`/acme.tools:run`); a bare word may not (`/v1.2`).
+    /^\/((?:[a-z0-9][a-z0-9._-]*:)?[a-z0-9][a-z0-9_-]*(?::[a-z0-9][a-z0-9_-]*)*)(?:\s+([\s\S]*))?$/i,
   )
   if (!match) return null
   return { name: match[1].toLowerCase(), arg: (match[2] ?? '').trim() }
