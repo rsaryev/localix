@@ -51,6 +51,11 @@ code path joins the two layers, and its folder holds no `mini-app.json`. Staging
 too: a folder under `plugins/` whose only manifest is `.claude-plugin/plugin.json` is never staged
 as a mini app.
 
+A mod must get what Claude Code gives it. `scripts/cc-parity/` runs one probe mod in the installed
+Claude Code and in Localix's mods host and compares the shapes each hands it, per event and `$`
+call; `parity.test.ts` holds the entries known to match. See its
+[README](../../scripts/cc-parity/README.md) for the rules and for updating after a release.
+
 ## Mini apps
 
 ### Format
