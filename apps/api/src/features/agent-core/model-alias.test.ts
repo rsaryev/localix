@@ -64,3 +64,12 @@ describe('bestModelForFamily date stamps', () => {
     expect(bestModelForFamily('sonnet', ids)).toBe('claude-sonnet-4-5-20250929')
   })
 })
+
+// sub-agents.md, "Choose a model": a family alias "resolves to the main conversation's model
+// instead of the version the alias points to" when "the main conversation's model belongs to that
+// family: the subagent runs on the main conversation's exact model, including any `[1m]` suffix".
+test('an alias of the parent model’s own family keeps the parent’s exact model', () => {
+  const catalog = ['claude-opus-4-1', 'claude-opus-5-5', 'claude-sonnet-5']
+  expect(resolveModelAlias('opus', 'claude-opus-4-1[1m]', catalog)).toBe('claude-opus-4-1[1m]')
+  expect(resolveModelAlias('sonnet', 'claude-opus-4-1', catalog)).toBe('claude-sonnet-5')
+})

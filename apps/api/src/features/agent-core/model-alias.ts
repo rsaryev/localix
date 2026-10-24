@@ -89,8 +89,9 @@ export function bestModelForFamily(
 /**
  * Resolve an agent/skill `model:` value to a concrete model id.
  *  - `inherit` / undefined / empty → the parent/session model.
- *  - a known alias family (`sonnet`/`opus`/`haiku`/`fable`) → the best matching id
- *    from `availableModelIds`, else the parent model (never the bare alias word).
+ *  - a known alias family (`sonnet`/`opus`/`haiku`/`fable`) → the parent model when it is of
+ *    that family, else the best matching id from `availableModelIds`, else the parent model
+ *    (never the bare alias word).
  *  - anything else (already a concrete id) → returned verbatim.
  * Returns undefined only when it resolves to "inherit" and no parent model is known.
  */
@@ -102,6 +103,8 @@ export function resolveModelAlias(
   if (isInherit(alias)) return parentModelId
   const family = familyOf(alias!)
   if (!family) return alias!.trim() // concrete model id — pass through
+  // The parent already runs this family: its exact model, `[1m]` suffix and all (Claude Code).
+  if (parentModelId?.toLowerCase().includes(family)) return parentModelId
   const best = availableModelIds?.length ? bestModelForFamily(family, availableModelIds) : undefined
   return best ?? parentModelId
 }

@@ -53,12 +53,18 @@ export function workflowAgentRoute(input: {
     const offered = input.catalog
       .filter((model) => model.providerId === input.chat.providerId)
       .map((model) => native(model.id))
-    const modelId = isModelAliasFamily(wanted)
-      ? bestModelForFamily(
-          wanted.toLowerCase() as Parameters<typeof bestModelForFamily>[0],
-          offered,
-        )
-      : offered.find((id) => id.toLowerCase() === native(wanted).toLowerCase())
+    // A family the chat already runs keeps the chat's exact model (Claude Code: "the subagent runs
+    // on the main conversation's exact model, including any `[1m]` suffix").
+    const ownFamily =
+      isModelAliasFamily(wanted) && input.chat.modelId.toLowerCase().includes(wanted.toLowerCase())
+    const modelId = ownFamily
+      ? input.chat.modelId
+      : isModelAliasFamily(wanted)
+        ? bestModelForFamily(
+            wanted.toLowerCase() as Parameters<typeof bestModelForFamily>[0],
+            offered,
+          )
+        : offered.find((id) => id.toLowerCase() === native(wanted).toLowerCase())
     if (modelId) {
       route.providerConnectionId = input.chat.connectionId
       route.modelId = modelId

@@ -26,6 +26,15 @@ describe('workflowAgentRoute', () => {
     )
   })
 
+  // sub-agents.md: with the main conversation on that family, an alias keeps its exact model.
+  test('an alias of the chat’s own family keeps the chat’s exact model', () => {
+    const big = { ...chat, modelId: 'claude-opus-4-8[1m]' }
+    const offered = [...catalog, { id: 'claude-opus-5-0', providerId: 'anthropic' }]
+    expect(workflowAgentRoute({ model: 'opus', chat: big, catalog: offered }).route.modelId).toBe(
+      'claude-opus-4-8[1m]',
+    )
+  })
+
   test('a concrete id the provider offers is used; one it does not is noted and inherited', () => {
     expect(workflowAgentRoute({ model: 'claude-sonnet-5', chat, catalog }).route).toEqual({
       providerConnectionId: 'conn-1',
