@@ -8,6 +8,7 @@ import type { DiscoveredPlugin } from './discovery-types'
 import { scanDirsCached } from './discovery-cached-scan'
 
 import { discoverClaudeCodePlugins } from './claude-code-installs'
+import { withDependencyVersionChecks } from './dependency-versions'
 import { discoverInPlacePlugins } from './in-place-installs'
 import { builtinShadowNotes, discoverBuiltinPlugins } from './builtin-plugins'
 import { discoverCachedPlugins } from './cached-installs'
@@ -85,7 +86,9 @@ export async function discoverPlugins(opts: {
     await Promise.all([builtinScan, projectScan, homeScan, cachedScan, inPlaceScan, claudeCodeScan])
   if (!projectId) {
     const installed = [homePlugins, cachedPlugins, inPlacePlugins, claudeCodePlugins]
-    return mergeByPrecedence([builtinShadowNotes(builtins, installed), ...installed])
+    return withDependencyVersionChecks(
+      mergeByPrecedence([builtinShadowNotes(builtins, installed), ...installed]),
+    )
   }
 
   // EVERYTHING the user has, plus the repository's own plugins.
@@ -109,7 +112,9 @@ export async function discoverPlugins(opts: {
     claudeCodePlugins,
     projectPlugins,
   ]
-  return mergeByPrecedence([builtinShadowNotes(builtins, installed), ...installed])
+  return withDependencyVersionChecks(
+    mergeByPrecedence([builtinShadowNotes(builtins, installed), ...installed]),
+  )
 }
 
 /** The canonical install directory for a scope (global home, or a project dir). */
