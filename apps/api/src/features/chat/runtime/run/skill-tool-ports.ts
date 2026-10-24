@@ -9,6 +9,7 @@ import type { SessionRecord } from '../../repository'
 import type { RunnerDeps } from '../agent-runner-types'
 import type { CcHookSessions } from '../cc-hook-sessions'
 import { skillPermissionRules } from './permission-gate-build'
+import { applySkillTurnGrants } from './skill-turn-grants'
 import { skillToolPathVars, substituteToolPathVars } from '../../../agent-core/skill-tool-path-vars'
 
 /** The run's permission inputs, filled once its gate is built (`stages/intake.ts`). */
@@ -110,6 +111,7 @@ export function skillToolPorts(input: {
   const { userId, session, defaultCwd, renderSkill, ccHookSessions, commandPolicy } = input
   return {
     onSkillLoaded: (skill) => {
+      applySkillTurnGrants(commandPolicy, skill, defaultCwd)
       announceSkillInvoked({
         userId,
         sessionId: session.rootSessionId ?? session.id,

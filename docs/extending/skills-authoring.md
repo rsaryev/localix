@@ -8,15 +8,15 @@ This page defines the package format and the behavior of each authoring field.
 
 ## What you can do
 
-| Task                       | Mechanism                                          | Boundary                                                                      |
-| -------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------- |
-| Write a reusable procedure | Put instructions in a `SKILL.md` body.             | A skill guides the agent; it does not run until selected, invoked, or pinned. |
-| Accept arguments           | Use positional, named, or session placeholders.    | Substitution is textual and happens once.                                     |
-| Gather live context        | Embed a bounded `!` command in a filesystem skill. | The command runs during explicit slash preprocessing in the resolved shell.   |
-| Include a file             | Reference `@path` from a filesystem skill.         | The resolved file must stay inside the working directory or skill directory.  |
-| Fork the procedure         | Set `context: fork`.                               | Model and effort hints affect this forked path only.                          |
-| Narrow an inline run       | Declare allowed or disallowed tools.               | These overrides apply to an inline slash invocation, not a fork or a pin.     |
-| Ship a read-only procedure | Put the same directory under a plugin skill root.  | Model retrieval and agent preloads use the stored body without preprocessing. |
+| Task                       | Mechanism                                          | Boundary                                                                                   |
+| -------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Write a reusable procedure | Put instructions in a `SKILL.md` body.             | A skill guides the agent; it does not run until selected, invoked, or pinned.              |
+| Accept arguments           | Use positional, named, or session placeholders.    | Substitution is textual and happens once.                                                  |
+| Gather live context        | Embed a bounded `!` command in a filesystem skill. | The command runs during explicit slash preprocessing in the resolved shell.                |
+| Include a file             | Reference `@path` from a filesystem skill.         | The resolved file must stay inside the working directory or skill directory.               |
+| Fork the procedure         | Set `context: fork`.                               | Model and effort hints affect this forked path only.                                       |
+| Narrow a run               | Declare allowed or disallowed tools.               | They apply to the turn that invokes the skill, typed or loaded by the agent; not to a pin. |
+| Ship a read-only procedure | Put the same directory under a plugin skill root.  | Model retrieval and agent preloads use the stored body without preprocessing.              |
 
 ## How it works
 
@@ -115,8 +115,8 @@ model decision or an explicit user request, not a guaranteed post-run action.
 | `disable-model-invocation`     | boolean; `false`         | Hides the skill from the model roster.                                                                                                      | Explicit slash invocation and pinning still load it.                                                          |
 | `hide-from-slash-command-tool` | boolean; `false`         | Also hides the skill from the model roster.                                                                                                 | Despite the field name, explicit slash invocation remains available.                                          |
 | `user-invocable`               | boolean; `true`          | Controls direct slash invocation.                                                                                                           | `false` leaves the skill in the model roster.                                                                 |
-| `allowed-tools`                | token list               | Auto-approves matching tools for an inline slash run.                                                                                       | Ignored by forked and pinned execution paths.                                                                 |
-| `disallowed-tools`             | token list               | Removes matching tools from an inline slash run.                                                                                            | Ignored by forked and pinned execution paths.                                                                 |
+| `allowed-tools`                | token list               | Pre-approves matching tools for the rest of the turn that invokes the skill, typed as `/name` or loaded by the agent.                       | Deny and narrowed ask rules still win; a pin only injects instructions.                                       |
+| `disallowed-tools`             | token list               | Refuses matching tools for the rest of the turn that invokes the skill.                                                                     | A pin only injects instructions.                                                                              |
 | `paths`                        | glob token list          | Lists the skill to the model when a file under the working directory matches a glob (relative to it), or the working directory itself does. | Checked once per run, not per file touched; explicit slash invocation and pinning do not use this filter.     |
 | `keywords`                     | phrase list              | Injects the body when the latest user message contains a phrase.                                                                            | Case-insensitive word-boundary matching; roster hiding does not disable it, but agent skill denial does.      |
 | `context`                      | `fork`                   | Starts the skill in a detached child session.                                                                                               | Any other value uses the inline path.                                                                         |
@@ -140,8 +140,9 @@ agent without Bash, or a command the rules would ask about registers none of the
 Keyword injection has its own 32,000-code-unit body budget and skips already pinned names. It adds
 instructions to the prompt; it does not guarantee that the model follows them or record curator use.
 
-`${CLAUDE_PROJECT_DIR}` inside an `allowed-tools` value resolves before the auto-approval rule is
-created.
+`${CLAUDE_SKILL_DIR}`, `${CLAUDE_PROJECT_DIR}` and, in a plugin skill, `${CLAUDE_PLUGIN_ROOT}` and
+`${CLAUDE_PLUGIN_DATA}` inside an `allowed-tools` or `disallowed-tools` value resolve before the
+rule is created, so a skill can pre-approve its own bundled script.
 
 ### Optional package policy
 
@@ -223,8 +224,8 @@ and non-zero-exit behavior. For a forked skill, verify the invoking agent has ev
 - Discovery does not scan other applications' skill or command directories.
 - `shell` and `metadata` are accepted without runtime behavior. `version` and `license` are retained
   as information only.
-- Tool overrides apply only to inline slash invocation. A fork uses the invoking agent's tool
-  policy; a pin only injects instructions.
+- Tool overrides apply to the turn that invokes the skill. A fork runs with its agent type's tools;
+  a pin only injects instructions.
 - Dynamic commands execute local code during slash preprocessing. They are not sandboxed beyond
   process, time, output, and count limits.
 - Plugin skills are read-only through the skill tool. Disable the owning plugin or copy the skill to

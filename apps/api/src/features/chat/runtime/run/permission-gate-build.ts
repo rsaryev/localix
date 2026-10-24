@@ -117,7 +117,9 @@ export function buildRunPermissionGate(
   })
 
   const verdictOptions = {
-    rules: permissionRules,
+    // The run's OWN copy: a skill the model loads appends its `disallowed-tools` to it for the
+    // rest of this run (`skill-turn-grants.ts`), and the authored list may be a cached snapshot.
+    rules: [...permissionRules],
     preapprovedRules: [
       ...skillPermissionRules(extraAllowedTools, defaultCwd),
       ...(options.preapprovedRules ?? []),
