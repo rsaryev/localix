@@ -65,9 +65,15 @@ export function marketplaceDependencyResolver(
     installed,
     findMarketplacesWithPlugin: (name) => findMarketplacesWithPlugin(name, registryDeps),
     getAllowList: (marketplace) => marketplaceDependencyAllowList(marketplace, registryDeps),
-    resolveFromMarketplace: async (name, marketplace) => {
-      const r = await resolveMarketplaceInstall({ plugin: name, marketplace }, registryDeps)
-      return toDependencyStep(r, await probeManifest(r.dir))
+    resolveFromMarketplace: async (name, marketplace, range) => {
+      const r = await resolveMarketplaceInstall(
+        { plugin: name, marketplace },
+        registryDeps,
+        range ? { versionRange: range } : undefined,
+      )
+      const step = toDependencyStep(r, await probeManifest(r.dir))
+      // A tag-resolved dependency is checked by the tag's version, not by its plugin.json.
+      return r.tagVersion ? { ...step, version: r.tagVersion } : step
     },
   }
 }

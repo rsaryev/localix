@@ -31,6 +31,7 @@ import {
 } from './marketplace-catalog'
 import { withSourceHeaders } from './marketplace-headers'
 import { assertMarketplaceAllowed, readManagedPolicy } from './claude-code-policy'
+import { tagInRange } from './dependency-tags'
 
 export {
   readKnownMarketplaces,
@@ -84,6 +85,8 @@ export interface MarketplaceRegistryDeps {
   root?: string
   /** Claude Code's managed settings directory (tests); the platform's system one by default. */
   managedSettingsDir?: string
+  /** A repository's tag names (`git ls-remote --tags`); tests stub it. */
+  listTags?: (url: string) => Promise<string[]>
   /** Timestamp for `lastUpdated` (tests pass a fixed value; `new Date()` is avoided in code paths that resume). */
   now?: () => string
 }
@@ -261,6 +264,8 @@ export interface ResolvedMarketplaceInstall {
    * (CC 2.1.193+) — callers can surface "installed as <entry.name>" to the user.
    */
   renamedFrom?: string
+  /** The version of the `<plugin>--v<version>` tag a version range resolved to. */
+  tagVersion?: string
 }
 
 /**
@@ -275,6 +280,7 @@ export interface ResolvedMarketplaceInstall {
 export async function resolveMarketplaceInstall(
   ref: { plugin: string; marketplace: string },
   deps: MarketplaceRegistryDeps,
+  opts?: { versionRange?: string },
 ): Promise<ResolvedMarketplaceInstall> {
   const root = deps.root ?? marketplacesRoot()
   const known = await readKnownMarketplaces(root)
@@ -333,6 +339,17 @@ export async function resolveMarketplaceInstall(
     return { dir: resolved.localPath, linkRoot: marketplaceDir, ...base, ...inPlace, ...commitSha }
   }
 
+  // A version range picks the highest `<plugin>--v<version>` tag of the plugin's own repository.
+  let tagVersion: string | undefined
+  if (opts?.versionRange && 'git' in resolved) {
+    const tag = await tagInRange(entry.name, resolved.git.url, opts.versionRange, deps)
+    if (!tag)
+      throw new Error(
+        `Dependency "${entry.name}@${ref.marketplace}" has no git tag satisfying "${opts.versionRange}"`,
+      )
+    resolved.git = { ...resolved.git, ref: tag.tag }
+    tagVersion = tag.version
+  }
   // An archive on a url marketplace's origin gets that source's headers; the entry's win a name.
   const hostedBy = known[ref.marketplace]?.source
   if ('archive' in resolved && hostedBy?.source === 'url')
@@ -341,7 +358,7 @@ export async function resolveMarketplaceInstall(
   // archives land the same shape (a plain plugin dir handed to `installFromLocal`).
   const staging = join(root, `.fetch-${Math.abs(hashString(`${ref.plugin}\0${ref.marketplace}`))}`)
   const fetched = await fetchEntryPlugin(resolved, staging, deps)
-  return { ...fetched, linkRoot: staging, ...base }
+  return { ...fetched, linkRoot: staging, ...base, ...(tagVersion ? { tagVersion } : {}) }
 }
 
 /**

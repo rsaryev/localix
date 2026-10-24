@@ -12,9 +12,11 @@ import type { DiscoveredPlugin } from './discovery'
  * The install write-phase lives in `dependencies-install.ts`; the enable cascade
  * in `dependencies-enable.ts`.
  *
+ * A version range on a git-backed dependency installs the highest `<plugin>--v<version>` tag in
+ * range (`dependency-tags.ts`); a relative-path one installs the marketplace's copy and is
+ * checked against the range.
+ *
  * DEFERRED (documented, not silently dropped):
- *  - git-tag version pins (`{plugin}--v{version}` tag convention) — dependencies
- *    always resolve to the marketplace entry's current source ref.
  *  - dependency resolution for NON-marketplace installs (git URL / local path) —
  *    those installs have no parent catalog; declared dependencies are only checked
  *    at enable time (cascade warns about missing ones).
@@ -103,7 +105,12 @@ export interface DependencyResolverDeps {
   /** Already-installed/bundled plugins in scope: name → declared version (if any). */
   installed: Map<string, string | undefined>
   findMarketplacesWithPlugin(name: string): Promise<string[]>
-  resolveFromMarketplace(name: string, marketplace: string): Promise<ResolvedDependencyStep>
+  /** `range`: the dependency's version range, resolved against `<name>--v<version>` tags. */
+  resolveFromMarketplace(
+    name: string,
+    marketplace: string,
+    range?: string,
+  ): Promise<ResolvedDependencyStep>
   /** The catalog's `allowCrossMarketplaceDependenciesOn` list ([] when absent/unreadable). */
   getAllowList(marketplace: string): Promise<string[]>
 }
@@ -167,7 +174,7 @@ export async function resolveDependencyPlan(
         )
       }
 
-      const step = await deps.resolveFromMarketplace(dep.name, chosen)
+      const step = await deps.resolveFromMarketplace(dep.name, chosen, dep.version)
       const w = dependencyVersionWarning(dep, step.version, `"${dep.name}@${chosen}"`)
       if (w) warnings.push(w)
       steps.push(step)
