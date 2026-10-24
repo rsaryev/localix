@@ -1,0 +1,27 @@
+{
+  "$comment": "Entries parity.test.ts holds to the newest Claude Code snapshot: each matched it when it was added here. A change that makes one differ fails the test (README.md).",
+  "checked": [
+    "call:clock.now",
+    "call:command.list",
+    "call:env.get",
+    "call:fs.exists",
+    "call:model.classify",
+    "call:model.fork",
+    "call:prompt.fill",
+    "call:prompt.suggest",
+    "call:session.cwd",
+    "call:session.id",
+    "call:session.model",
+    "call:session.surfaces",
+    "call:session.turns",
+    "call:settings.read",
+    "call:store.get",
+    "call:store.set",
+    "call:tool.list",
+    "call:ui.open",
+    "event:command.run",
+    "event:session.start",
+    "event:turn.start",
+    "result:turn.step"
+  ]
+}

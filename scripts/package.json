@@ -13,10 +13,12 @@
     "@localixai/agent": "workspace:*",
     "@localixai/api": "workspace:*",
     "@localixai/change-feed": "workspace:*",
+    "@localixai/engine-scripts": "workspace:*",
     "@localixai/kit": "workspace:*",
     "@localixai/mini-app-kit-compiler": "workspace:*",
     "@localixai/mini-app-sdk": "workspace:*",
     "@localixai/source-lint": "workspace:*",
-    "@localixai/testing": "workspace:*"
+    "@localixai/testing": "workspace:*",
+    "zod": "^4.4.3"
   }
 }
