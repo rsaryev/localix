@@ -188,7 +188,10 @@ export function withEntry(id: string, entry: MarketplaceEntry | undefined) {
 export async function readClaudeCodeInstalls(
   opts: Pick<SettingsFilesInput, 'homeDir' | 'cwd' | 'env' | 'managed'>,
 ): Promise<ClaudeCodeInstall[]> {
-  const pluginsRoot = join(claudeConfigDir(opts.homeDir, opts.env), 'plugins')
+  // `CLAUDE_CODE_PLUGIN_CACHE_DIR` moves Claude Code's plugins root, as in Claude Code.
+  const pluginsRoot =
+    (opts.env ?? process.env).CLAUDE_CODE_PLUGIN_CACHE_DIR?.trim() ||
+    join(claudeConfigDir(opts.homeDir, opts.env), 'plugins')
   const [records, enabled, known] = await Promise.all([
     readJson(join(pluginsRoot, 'installed_plugins.json')).then(installRecords),
     enabledPlugins(opts),

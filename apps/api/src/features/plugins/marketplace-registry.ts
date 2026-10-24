@@ -30,6 +30,7 @@ import {
   findMarketplacesWithPlugin,
 } from './marketplace-catalog'
 import { withSourceHeaders } from './marketplace-headers'
+import { assertMarketplaceAllowed, readManagedPolicy } from './claude-code-policy'
 
 export {
   readKnownMarketplaces,
@@ -81,6 +82,8 @@ export interface MarketplaceRegistryDeps {
   ) => Promise<void>
   /** Marketplaces root override (tests). Defaults to `~/.localix/marketplaces`. */
   root?: string
+  /** Claude Code's managed settings directory (tests); the platform's system one by default. */
+  managedSettingsDir?: string
   /** Timestamp for `lastUpdated` (tests pass a fixed value; `new Date()` is avoided in code paths that resume). */
   now?: () => string
 }
@@ -115,6 +118,8 @@ async function addMarketplaceUnlocked(
   deps: MarketplaceRegistryDeps,
 ): Promise<{ name: string; count: number }> {
   const root = deps.root ?? marketplacesRoot()
+  // The organization's policy is checked before anything is fetched or written.
+  await assertMarketplaceAllowed(source, deps.managedSettingsDir)
   await fs.mkdir(root, { recursive: true })
   if (addsInPlace(source, root)) return addMarketplaceInPlace(source, root)
 
@@ -285,6 +290,8 @@ export async function resolveMarketplaceInstall(
       `Unknown marketplace "${ref.marketplace}". Add it first: /plugin marketplace add <owner/repo>`,
     )
 
+  const registered = (byName ?? bySource?.[1])?.source
+  if (registered) await assertMarketplaceAllowed(registered, deps.managedSettingsDir)
   const market = await readMarketplace(marketplaceDir)
   // Apply the catalog's `renames` map first: an old name redirects to its successor;
   // a null mapping throws "removed from marketplace" (informative, not "not found").
@@ -293,6 +300,9 @@ export async function resolveMarketplaceInstall(
   const entry = market.plugins.find((p) => p.name === requested.name)
   if (!entry)
     throw new Error(`Plugin "${requested.name}" not found in marketplace "${ref.marketplace}"`)
+  const id = `${entry.name}@${ref.marketplace}`
+  if ((await readManagedPolicy(deps.managedSettingsDir)).enabledPlugins[id] === false)
+    throw new Error(`Plugin "${id}" is blocked by managed settings (enabledPlugins)`)
 
   // Honor the catalog's `metadata.pluginRoot` so relative entry sources resolve
   // against the declared plugins subdir (e.g. `./plugins`), not the marketplace root.
