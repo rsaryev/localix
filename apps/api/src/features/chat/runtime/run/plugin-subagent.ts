@@ -29,7 +29,7 @@ export function agentTypesSection(
   if (types.length === 0) return null
   return [
     AGENT_TYPES_HEADING,
-    'Agent types `delegate` can hand a task to as `agent: "<type>"`: the enabled plugins\' agents and the built-in read-only Explore and Plan (`general-purpose` is yourself). Each runs with its own instructions, tools and model, and sees only the task.',
+    'Agent types `delegate` can hand a task to as `agent: "<type>"`: your `.claude/agents` files, the enabled plugins\' agents and the built-in read-only Explore and Plan (`general-purpose` is yourself). Each runs with its own instructions, tools and model, and sees only the task.',
     ...types.map(
       (agent) =>
         `- ${agent.fullName}: ${agent.description.trim() || 'No description.'}${

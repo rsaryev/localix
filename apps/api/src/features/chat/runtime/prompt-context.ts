@@ -23,6 +23,7 @@ import type { loadUserSettingsContext } from '../../user/runtime-settings'
 import { prefixedWarnLogger } from './plugin-hook-logger'
 import { skillsMatchingFiles } from './prompt-skill-paths'
 import { touchedFilesOf } from './touched-files'
+import { loadFileSubagentTypes } from './file-subagent-types'
 import { buildSkillsContext } from './prompt-skills'
 import { agentRoute } from '../../../contracts/session-route'
 import { recordPluginCatalogLoad } from '../../notifications/conditions/plugins'
@@ -241,12 +242,17 @@ export async function prepareRunContext(
   // for a dropped-in plugin as if it were bundled, and asking with one would re-litigate a
   // question already settled. What is left for the role to say is "not this one".
   const runAvailability = availabilityOf(resolvedAgent.capabilities)
-  const loadedPlugins: LoadedPlugins = narrowLoadedPlugins(
+  const narrowed: LoadedPlugins = narrowLoadedPlugins(
     rawPlugins,
     rawPlugins.loaded
       .filter((entry) => runAvailability.effectFor('plugin', entry.name) === 'deny')
       .map((entry) => entry.name),
   )
+  // Claude Code's project and user agent files are subagent types beside the plugins' agents.
+  const loadedPlugins: LoadedPlugins = {
+    ...narrowed,
+    agents: [...(await loadFileSubagentTypes(defaultCwd)), ...narrowed.agents],
+  }
   // Project skills first (closer to the working dir), then global. Mirrors CC's
   // scope-priority: nearest SKILL.md definition wins, so listing in that order
   // surfaces the most relevant skills at the top of the model's attention window.
