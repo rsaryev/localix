@@ -10,6 +10,11 @@ import { Popover, PopoverTrigger } from '@localixai/kit/popover'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@localixai/kit/tooltip'
 import { chromeAction, chromeActionActive } from '@localixai/kit/chrome-action'
 import { Chip } from '@localixai/kit/chip'
+import { ContextRing } from '@localixai/kit/context-ring'
+import { useUiNavigation } from '@/shared/hooks/useUiNavigation'
+import { useBackgroundActivity } from '@/shared/lib/background-activity/useBackgroundActivity'
+import { navigateUi } from '@/shared/lib/uiNavigation'
+import { settingsUiUri } from '@localixai/mini-app-sdk/navigation'
 // Shared with contributed status items — a severity paints the same way wherever it appears.
 import { STATUS_BADGE_CLASS } from '@localixai/kit/status-tone'
 import { NOTIFICATION_CENTER_OVERLAY_ID } from './NotificationCenter.surface'
@@ -32,9 +37,35 @@ export function preloadNotificationCenter() {
 
 const LazyNotificationCenterContent = lazy(preloadNotificationCenter)
 
-/** Always-present event signal; the detailed journal is instantiated on demand. */
-export function NotificationCenterLauncher() {
+/** "Event Center, 2 tasks in progress, 3 unread": what the bell is showing, in words. */
+function bellLabel(active: number, unread: number): string {
+  return [
+    'Event Center',
+    active > 0 && `${active} ${active === 1 ? 'task' : 'tasks'} in progress`,
+    unread > 0 && `${unread} unread`,
+  ]
+    .filter(Boolean)
+    .join(', ')
+}
+
+/**
+ * Always-present event signal; the detailed journal is instantiated on demand. While anything
+ * runs in the background the glyph sits in a thin ring that fills as the jobs do (it turns
+ * slowly when none can say how far it is); the unread badge stays as it is.
+ *
+ * `restartToUpdate` is the page's (it needs the chat roster): the Event Center's offer of the
+ * app's own update restarts through the same flow as the titlebar button.
+ */
+export function NotificationCenterLauncher({
+  restartToUpdate,
+}: { restartToUpdate?: () => void } = {}) {
   const [open, setOpen] = useState(false)
+  const navigation = useUiNavigation({ sessionId: null })
+  const openPlugins = useCallback(() => {
+    setOpen(false)
+    navigateUi(settingsUiUri('plugins'), navigation)
+  }, [navigation])
+  const activity = useBackgroundActivity({ openPlugins, restartToUpdate })
   const triggerRef = useRef<HTMLButtonElement>(null)
   const [signal, setSignal] = useState<{ id: string; severity: NotificationSeverity } | null>(null)
   const entries = useNotificationsStore((state) => state.entries)
@@ -79,7 +110,7 @@ export function NotificationCenterLauncher() {
     else setFocusEntryId(undefined)
     setOpen(nextOpen)
   }, [])
-  const label = unread > 0 ? `Event Center, ${unread} unread` : 'Event Center'
+  const label = bellLabel(activity.active, unread)
 
   return (
     <>
@@ -105,7 +136,25 @@ export function NotificationCenterLauncher() {
                 // the severity and the arrival.
                 className={cn(chromeAction, open && chromeActionActive)}
               >
-                <Bell className="size-3.5 shrink-0" strokeWidth={1.75} />
+                {activity.active > 0 ? (
+                  <span
+                    data-activity-ring=""
+                    className="relative flex size-4 items-center justify-center"
+                  >
+                    <ContextRing
+                      fraction={activity.fraction ?? 0.3}
+                      size={16}
+                      strokeWidth={2}
+                      className={cn(
+                        'absolute inset-0 text-composer-accent',
+                        activity.fraction === null && 'animate-spin motion-reduce:animate-none',
+                      )}
+                    />
+                    <Bell className="size-2.5 shrink-0" strokeWidth={2} />
+                  </span>
+                ) : (
+                  <Bell className="size-3.5 shrink-0" strokeWidth={1.75} />
+                )}
                 {unread > 0 && unreadSeverity && (
                   <Chip
                     // Decorative: the button's own accessible name already reads "Event center,
@@ -146,6 +195,7 @@ export function NotificationCenterLauncher() {
               anchorRef={triggerRef}
               onRequestClose={() => setOpen(false)}
               focusEntryId={focusEntryId}
+              activity={activity}
             />
           </Suspense>
         )}

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useCallback, type ReactNode } from 'react'
 import { Download, Globe2, MoreHorizontal, SquareTerminal } from 'lucide-react'
 
 import { StatusItems, useLiveStatusItemCount } from '@/shared/contrib/statusItems'
@@ -209,7 +209,7 @@ export function BreadcrumbTrailingActions({
         </ActionButton>
 
         {/* The sole in-app notification surface: unread signal, actions and history. */}
-        <NotificationCenterLauncher />
+        <EventCenterBell />
 
         {/* A signed update is ready: offer it right beside the other always-relevant actions
             instead of only in the rail or the composer strip. Hidden otherwise. */}
@@ -219,6 +219,13 @@ export function BreadcrumbTrailingActions({
       </div>
     </div>
   )
+}
+
+/** The bell, whose offer of the app's update restarts through the same flow as the button. */
+function EventCenterBell() {
+  const { applyUpdate } = useDesktopUpdate({ poll: false })
+  const restart = useCallback(() => void restartToUpdate(applyUpdate, () => {}), [applyUpdate])
+  return <NotificationCenterLauncher restartToUpdate={restart} />
 }
 
 /** The update action, shown only once a signed update is actually available. */

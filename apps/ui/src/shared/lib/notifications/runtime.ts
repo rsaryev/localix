@@ -1,3 +1,4 @@
+import { backendClient } from '@/shared/api/client'
 import { recordClientFact } from './clientFacts'
 import { registerNotificationCommand } from './commandRegistry'
 import { sendProblemToAgent } from './agentHandoff'
@@ -56,6 +57,11 @@ export function startNotificationCommandHandlers(host: NotificationCommandHost =
     // A COMMAND, not a callback: a problem you come back to tomorrow is exactly when handing it
     // to the agent is most useful.
     registerNotificationCommand('send_to_agent', ({ entry }) => sendProblemToAgent(entry)),
+    // A mini app that did not install or update: queue it again. The row names the app in
+    // `requestId`; the store settles the row once the app is in (`producers/mini-app-installs`).
+    registerNotificationCommand('mini_app_install', async ({ action }) => {
+      if (action.requestId) await backendClient.installMiniApp(action.requestId)
+    }),
   ]
   return () => stop.forEach((dispose) => dispose())
 }

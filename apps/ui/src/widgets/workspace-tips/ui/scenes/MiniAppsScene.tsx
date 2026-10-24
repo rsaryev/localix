@@ -1,6 +1,6 @@
 import { BadgeCheck } from 'lucide-react'
 import { MonogramAvatar } from '@localixai/kit/avatar'
-import { openMiniAppStore } from '@/entities/mini-app-store/model/openMiniAppStore'
+import { openMiniAppStore } from '@/shared/lib/openMiniAppStore'
 import { closeSetup } from '@/shared/lib/setupDialog'
 import { TipPickTrigger } from '../TipPick'
 import './mini-apps-scene.css'

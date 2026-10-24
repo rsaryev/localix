@@ -3,6 +3,7 @@ import type {
   MiniAppCatalogEntryRecord,
   MiniAppCatalogPreviewRecord,
   MiniAppStorePageRecord,
+  MiniAppStoreActivityRecord,
   MiniAppStoreResponse,
 } from '@localixai/api/client'
 import type { MiniAppRecord } from './contracts'
@@ -136,6 +137,16 @@ export const miniAppsApi = {
   /** Read a catalog before adding it: who publishes it and what is in it. Writes nothing. */
   async previewMiniAppCatalog(url: string): Promise<MiniAppCatalogPreviewRecord> {
     return unwrap(await client.rpc['mini-apps'].catalogs.preview.$post({ json: { url } }))
+  },
+
+  /** Installs in flight and the updates already offered; reads no catalog (`store-activity.ts`). */
+  async getMiniAppStoreActivity(): Promise<MiniAppStoreActivityRecord> {
+    return unwrap(await client.rpc['mini-apps'].store.activity.$get())
+  },
+
+  /** Update all: queue the newer version of every app a catalog put here. */
+  async updateMiniApps(): Promise<string[]> {
+    return (await unwrap(await client.rpc['mini-apps'].store.update.$post())).queued
   },
 
   /** Queue an install; its progress arrives as `mini-app-installs` pokes. */

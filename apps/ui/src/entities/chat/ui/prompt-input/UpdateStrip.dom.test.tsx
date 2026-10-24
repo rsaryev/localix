@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test'
+import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { resetDesktopInvokeEventsForTests } from '@/shared/lib/tauri'
 import type { DesktopUpdateState } from '@/shared/hooks/useDesktopUpdate'
@@ -24,6 +24,7 @@ const available: DesktopUpdateState = {
   currentVersion: '0.1.0',
   notes: null,
   installing: false,
+  percent: null,
 }
 
 const buttonNamed = (host: HTMLElement, text: string) =>
@@ -164,5 +165,78 @@ describe('UpdateStrip', () => {
     expect(view.host.textContent).toContain('Update available')
     expect(buttonNamed(view.host, 'Restart to update')).toBeDefined()
     await view.unmount()
+  })
+})
+
+describe('UpdateStrip with other updates on offer', () => {
+  /** Servers that offer two mini app updates. */
+  async function offerMiniAppUpdates() {
+    const { backendClient } = await import('@/shared/api/client')
+    const { pluginUpdatesApi } = await import('@/shared/api/plugin-updates-client')
+    const { localModelsApi } = await import('@/shared/api/localModelsApi')
+    const spies = [
+      spyOn(backendClient, 'getMiniAppStoreActivity').mockResolvedValue({
+        jobs: [],
+        updates: [
+          { name: 'chess', displayName: 'Chess', from: '1.0.0', to: '1.1.0' },
+          { name: 'reader', displayName: 'Reader', from: '0.3.0', to: '0.4.0' },
+        ],
+      }),
+      spyOn(pluginUpdatesApi, 'list').mockResolvedValue(null),
+      spyOn(localModelsApi, 'status').mockResolvedValue({
+        jobs: [],
+        paused: [],
+        installed: [],
+        running: [],
+      } as never),
+    ]
+    return () => spies.forEach((spy) => spy.mockRestore())
+  }
+
+  async function mountStrip() {
+    const { createElement, act } = await import('react')
+    const { SWRConfig } = await import('swr')
+    const { UpdateStrip } = await import('./UpdateStrip')
+    const view = await mount(() =>
+      createElement(
+        SWRConfig,
+        { value: { provider: () => new Map(), dedupingInterval: 0 } },
+        createElement(UpdateStrip, { isFocused: true }),
+      ),
+    )
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 20)))
+    return view
+  }
+
+  test('without an app update, the mini app updates are offered', async () => {
+    const restore = await offerMiniAppUpdates()
+    const { checkDesktopUpdate } = await import('@/shared/hooks/useDesktopUpdate')
+    ;(window as unknown as { __TAURI__?: unknown }).__TAURI__ = {
+      core: {
+        invoke: async () => ({ available: false, currentVersion: '0.1.0', latestVersion: null }),
+      },
+    }
+    await checkDesktopUpdate()
+    const view = await mountStrip()
+    expect(view.host.textContent).toContain('2 mini app updates')
+    expect(view.host.textContent).toContain('Chess and Reader')
+    await view.unmount()
+    restore()
+  })
+
+  test('the app’s own update always wins the strip', async () => {
+    const restore = await offerMiniAppUpdates()
+    ;(window as unknown as { __TAURI__?: unknown }).__TAURI__ = {
+      core: {
+        invoke: async () => ({ available: true, currentVersion: '0.1.0', latestVersion: '0.2.0' }),
+      },
+    }
+    const { checkDesktopUpdate } = await import('@/shared/hooks/useDesktopUpdate')
+    await checkDesktopUpdate()
+    const view = await mountStrip()
+    expect(view.host.textContent).toContain('Update available')
+    expect(view.host.textContent).not.toContain('mini app updates')
+    await view.unmount()
+    restore()
   })
 })

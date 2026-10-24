@@ -3,7 +3,7 @@ import { BadgeCheck } from 'lucide-react'
 import type { MiniAppStoreEntryRecord } from '@localixai/api/client'
 import type { StoreActions } from '../model/storeActions'
 import { InstallAction } from './InstallAction'
-import { MiniAppIcon } from './MiniAppIcon'
+import { MiniAppIcon } from '@/shared/ui/MiniAppIcon'
 import { TagButton } from './TagButton'
 
 const ROW_TAGS = 3

@@ -27,6 +27,11 @@ export interface DesktopUpdateState {
    * composer, a closed Settings page), and the update must keep reading as in progress.
    */
   installing: boolean
+  /**
+   * How far the download is, 0–100, while one runs and its size is known; null otherwise. The
+   * Event Center's "In progress" and the composer strip draw it as a bar (`message` says it too).
+   */
+  percent: number | null
 }
 
 declare global {
@@ -74,6 +79,7 @@ function fromTauri(s: TauriUpdateStatus): DesktopUpdateState {
     currentVersion: s.currentVersion,
     notes: releaseNotes(s),
     installing: false,
+    percent: null,
   }
 }
 
@@ -135,7 +141,7 @@ export async function checkDesktopUpdate(): Promise<DesktopUpdateCheckResult> {
     // A background check must not rewrite an install that is under way: it would flip the strip
     // back to "available" mid-download and invite a second click.
     const state = shared?.installing
-      ? { ...checked, installing: true, message: shared.message }
+      ? { ...checked, installing: true, message: shared.message, percent: shared.percent }
       : checked
     publish(state)
     return { ok: true, state }
@@ -162,6 +168,27 @@ export interface DesktopUpdate {
   dismissNotice: () => void
 }
 
+/**
+ * One `updater:progress` event from the shell ({downloaded, total}), published to every reader:
+ * the percent when the size is known, and the line that says it. Returns the state it published.
+ */
+export function reportUpdateProgress(payload: {
+  downloaded?: number
+  total?: number | null
+}): DesktopUpdateState | null {
+  const downloaded = payload.downloaded ?? 0
+  const percent =
+    typeof payload.total === 'number' && payload.total > 0
+      ? Math.min(100, Math.round((downloaded / payload.total) * 100))
+      : null
+  const message =
+    percent !== null
+      ? `Downloading update… ${percent}%`
+      : `Downloading update… ${Math.round(downloaded / 1_000_000)} MB`
+  if (shared) publish({ ...shared, message, percent })
+  return shared
+}
+
 async function applyUpdate(): Promise<DesktopUpdateApplyResult> {
   const invoke = tauriInvoke()
   if (!invoke) return NO_BRIDGE
@@ -174,7 +201,12 @@ async function applyUpdate(): Promise<DesktopUpdateApplyResult> {
   } catch (cause) {
     // Back to a clickable "available": nothing was installed, and the person has the reason.
     if (shared) {
-      publish({ ...shared, installing: false, message: availableMessage(shared.latestVersion) })
+      publish({
+        ...shared,
+        installing: false,
+        percent: null,
+        message: availableMessage(shared.latestVersion),
+      })
     }
     // `updater_install` is `Result<(), String>` on the Rust side: the reason a
     // download or a signature check failed is right here, and the next status
@@ -208,15 +240,13 @@ export function useDesktopUpdate({ poll = true }: { poll?: boolean } = {}): Desk
     if (!listen) return
     let unlisten: (() => void) | undefined
     let disposed = false
-    void listen('updater:progress', (e) => {
-      const p = (e.payload ?? {}) as { downloaded?: number; total?: number | null }
-      const downloaded = p.downloaded ?? 0
-      const message =
-        typeof p.total === 'number' && p.total > 0
-          ? `Downloading update… ${Math.min(100, Math.round((downloaded / p.total) * 100))}%`
-          : `Downloading update… ${Math.round(downloaded / 1_000_000)} MB`
-      if (shared) publish({ ...shared, message })
-    }).then((u) => {
+    void listen(
+      'updater:progress',
+      (e) =>
+        void reportUpdateProgress(
+          (e.payload ?? {}) as { downloaded?: number; total?: number | null },
+        ),
+    ).then((u) => {
       if (disposed) u()
       else unlisten = u
     })

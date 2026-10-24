@@ -23,17 +23,22 @@ import { DEFAULT_JOURNAL_FILTERS, EventFilterBar, type JournalFilters } from './
 import { EventRow } from './EventRow'
 import { useJournalNavigation } from './useJournalNavigation'
 import { useNativeChromeInset } from './useNativeChromeInset'
+import { ActivitySection } from './ActivitySection'
+import type { ActivityItem, UpdateOffer } from '@/shared/lib/background-activity/activityItems'
 
 /** Heavy searchable journal, loaded only when the lightweight launcher opens it. */
 export function NotificationCenterContent({
   anchorRef,
   onRequestClose,
   focusEntryId,
+  activity,
 }: {
   anchorRef: RefObject<HTMLButtonElement | null>
   onRequestClose: () => void
   /** Entry the centre was opened FOR — a surface's "Details" button. Opens expanded, scrolled to. */
   focusEntryId?: string
+  /** What runs in the background now and the updates on offer — live, above the journal. */
+  activity?: { items: readonly ActivityItem[]; updates: readonly UpdateOffer[] }
 }) {
   const [filters, setFilters] = useState<JournalFilters>(DEFAULT_JOURNAL_FILTERS)
   const entries = useNotificationsStore((state) => state.entries)
@@ -147,6 +152,8 @@ export function NotificationCenterContent({
           total={entries.length}
         />
       </div>
+
+      <ActivitySection items={activity?.items ?? []} updates={activity?.updates ?? []} />
 
       {filtered.length === 0 ? (
         <div className="flex min-h-32 flex-col items-center justify-center gap-1 px-4 py-8 text-center">

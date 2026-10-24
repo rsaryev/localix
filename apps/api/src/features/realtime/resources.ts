@@ -15,6 +15,9 @@ export const REALTIME_RESOURCES = [
   'local-models',
   // Mini app installs and updates in flight, with their progress.
   'mini-app-installs',
+  // Claude Code plugin updates: what is offered and the updates in flight
+  // (`/rpc/plugins/updates`).
+  'plugin-updates',
   // The catalogs the mini app store reads.
   'mini-app-catalogs',
   'semantic',

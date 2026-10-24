@@ -7,7 +7,7 @@ import { AttentionRollup } from './AttentionRollup'
 import { CapabilityRegistryBody } from './capabilities/CapabilityRegistryBody'
 import { MiniAppRow } from './capabilities/MiniAppRow'
 import { Button } from '@localixai/kit/button'
-import { openMiniAppStore } from '@/entities/mini-app-store/model/openMiniAppStore'
+import { openMiniAppStore } from '@/shared/lib/openMiniAppStore'
 import { MiniAppCatalogs } from '@/entities/mini-app-store/ui/MiniAppCatalogs'
 
 interface MiniAppsSettingsProps {

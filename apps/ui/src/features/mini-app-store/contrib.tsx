@@ -4,7 +4,7 @@ import { LayoutGrid } from 'lucide-react'
 import type { MiniAppUiHost } from '@localixai/mini-app-sdk/ui'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import type { WorkItem } from '@/shared/lib/workItem'
-import { MINI_APP_STORE_KIND } from '@/entities/mini-app-store/model/openMiniAppStore'
+import { MINI_APP_STORE_KIND } from '@/shared/lib/openMiniAppStore'
 
 const MiniAppStorePageLazy = lazy(() =>
   import('./ui/MiniAppStorePage').then((module) => ({ default: module.MiniAppStorePage })),

@@ -4,7 +4,10 @@ import { Button } from '@localixai/kit/button'
 import { Spinner } from '@localixai/kit/spinner'
 import { WorkbenchNoticeBar } from '@localixai/kit/workbench-notice-bar'
 import { useDesktopUpdate, type DesktopUpdateState } from '@/shared/hooks/useDesktopUpdate'
+import { useReducedMotion } from '@localixai/kit/environment'
+import { useBackgroundActivity } from '@/shared/lib/background-activity/useBackgroundActivity'
 import { restartToUpdate } from '../../model/restartToUpdate'
+import { UpdateOffersRow } from './UpdateOffersRow'
 
 /**
  * The notice itself, with no state of its own: an available update with the one action it offers,
@@ -57,14 +60,27 @@ export function UpdateRow({
  * this only reads their state.
  */
 export const UpdateStrip = memo(function UpdateStrip({ isFocused }: { isFocused: boolean }) {
-  const { state, applyUpdate, noticeDismissed, dismissNotice } = useDesktopUpdate({ poll: false })
-  if (!isFocused || !state?.available) return null
-  if (noticeDismissed && !state.installing) return null
-  return (
-    <UpdateRow
-      state={state}
-      onInstall={() => void restartToUpdate(applyUpdate, () => {})}
-      onDismiss={dismissNotice}
-    />
-  )
+  // Only the focused composer reads the offers: every warm composer renders this stack.
+  return isFocused ? <FocusedUpdateStrip /> : null
 })
+
+/**
+ * The app's own update always wins the strip and is always shown while it is available (it is
+ * the only one that needs a restart); hidden, it gives the place to the other offers. Otherwise
+ * the mini app and plugin updates take turns (`UpdateOffersRow`).
+ */
+function FocusedUpdateStrip() {
+  const { state, applyUpdate, noticeDismissed, dismissNotice } = useDesktopUpdate({ poll: false })
+  const { updates } = useBackgroundActivity()
+  const reducedMotion = useReducedMotion()
+  if (state?.available && (!noticeDismissed || state.installing)) {
+    return (
+      <UpdateRow
+        state={state}
+        onInstall={() => void restartToUpdate(applyUpdate, () => {})}
+        onDismiss={dismissNotice}
+      />
+    )
+  }
+  return <UpdateOffersRow offers={updates} reducedMotion={reducedMotion} />
+}

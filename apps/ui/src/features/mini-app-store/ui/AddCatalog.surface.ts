@@ -1,6 +1,6 @@
 import { BookMarked } from 'lucide-react'
 import { defineUiLocation } from '@localixai/mini-app-sdk/ui'
-import { MINI_APP_STORE_KIND } from '@/entities/mini-app-store/model/openMiniAppStore'
+import { MINI_APP_STORE_KIND } from '@/shared/lib/openMiniAppStore'
 
 function host(url: string): string {
   try {

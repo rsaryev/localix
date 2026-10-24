@@ -69,9 +69,11 @@ export function ComposerHeaderStrips({
 }: ComposerHeaderStripsProps) {
   return (
     <div className="overflow-hidden rounded-t-(--radius-composer)">
-      {/* A new app version is ready. About the app, not this session, so it leads the stack. */}
+      {/* Updates, one line: the app's own when there is one (it always wins), otherwise the mini
+          app and plugin updates in turn. About the app, not this session, so it leads the stack. */}
       <UpdateStrip isFocused={isFocused} />
-      {/* Local models downloading or paused: about the app too, where its update shows. */}
+      {/* Local models downloading or paused: their own line, below the updates. A download the
+          person asked for is not an update offer, so it never takes turns with one. */}
       <LocalModelsStrip isFocused={isFocused} />
       {/* One thin contextual tip strip; stream status lives under the active message. */}
       <StatusTipStrip tip={tip} onDismissTip={onDismissTip} />

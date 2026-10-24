@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
-import { storeMediaSrc } from '../model/storeFilters'
+import { storeMediaSrc } from '@/shared/ui/MiniAppIcon'
 
 type Glyph = ComponentType<{ className?: string }>
 

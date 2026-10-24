@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { MediaOverlayButton } from '@localixai/kit/media-overlay-button'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { ImageLightbox, useLightboxPaging } from '@/shared/ui/image-lightbox'
-import { storeMediaSrc } from '../model/storeFilters'
+import { storeMediaSrc } from '@/shared/ui/MiniAppIcon'
 
 /** A drag shorter than this is a click, not a swipe. */
 const SWIPE_PX = 40

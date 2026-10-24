@@ -1,5 +1,4 @@
 import type { MiniAppCatalogEntryRecord, MiniAppStoreEntryRecord } from '@localixai/api/client'
-import { API_BASE_URL } from '@/shared/api/internal'
 
 /** What narrows the store: a category tab, one tag, one catalog and the search. */
 export interface StoreFilter {
@@ -62,8 +61,5 @@ export function countBySource(entries: readonly MiniAppStoreEntryRecord[]): Reco
   for (const entry of entries) counts[entry.source] = (counts[entry.source] ?? 0) + 1
   return counts
 }
-
-/** A store file's address on this host; the API names it by path. */
-export const storeMediaSrc = (path: string) => `${API_BASE_URL}${path}`
 
 export const appCount = (count: number) => `${count} app${count === 1 ? '' : 's'}`

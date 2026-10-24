@@ -96,6 +96,28 @@ describe('desktop update apply', () => {
   })
 })
 
+describe('desktop update download progress', () => {
+  test('keeps how far the download is as a number, beside the line every surface shows', async () => {
+    installBridge(async () => ({
+      available: true,
+      currentVersion: '1.2.3',
+      latestVersion: '1.3.0',
+    }))
+    const { checkDesktopUpdate, reportUpdateProgress } = await import('./useDesktopUpdate')
+    await checkDesktopUpdate()
+
+    expect(reportUpdateProgress({ downloaded: 42, total: 100 })).toMatchObject({
+      percent: 42,
+      message: 'Downloading update… 42%',
+    })
+    // A shell that does not know the size says how much arrived; the percent is unknown.
+    expect(reportUpdateProgress({ downloaded: 3_000_000, total: null })).toMatchObject({
+      percent: null,
+      message: 'Downloading update… 3 MB',
+    })
+  })
+})
+
 describe('desktop update check', () => {
   test('publishes one answer to every reader, so a check from Settings reaches the rail', async () => {
     installBridge(async () => ({
@@ -134,6 +156,7 @@ describe('desktop update check', () => {
         currentVersion: '1.2.3',
         notes: null,
         installing: false,
+        percent: null,
       },
     })
   })

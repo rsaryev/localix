@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { MonogramAvatar } from '@localixai/kit/avatar'
-import { storeMediaSrc } from '../model/storeFilters'
+import { API_BASE_URL } from '@/shared/api/internal'
+
+/** A store file's address on this host; the API names it by path. */
+export const storeMediaSrc = (path: string) => `${API_BASE_URL}${path}`
 
 /**
  * A mini app's own icon, as the host serves it. Shown through `<img>` only, never inlined, so an
