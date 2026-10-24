@@ -66,6 +66,7 @@ export function createFsApi(cwd: () => string) {
             name: entry.name,
             kind: entry.isSymbolicLink() ? 'other' : kindOf(entry),
             size: stat?.size ?? 0,
+            mtimeMs: stat?.mtimeMs ?? 0,
             isLink: entry.isSymbolicLink(),
           }
         }),

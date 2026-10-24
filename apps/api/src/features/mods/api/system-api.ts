@@ -39,6 +39,19 @@ export interface ModTimer {
   cancel: () => void
 }
 
+/** What one stream of a child may hand back: 4 MiB, as Claude Code's `$.process.run` holds it. */
+const OUTPUT_BYTES = 4 * 1024 * 1024
+
+/** A child's stream as text, its first 4 MiB, and whether more was read and dropped. */
+async function capped(stream: ReadableStream<Uint8Array>) {
+  const bytes = new Uint8Array(await new Response(stream).arrayBuffer())
+  const isTruncated = bytes.length > OUTPUT_BYTES
+  return {
+    text: new TextDecoder().decode(isTruncated ? bytes.subarray(0, OUTPUT_BYTES) : bytes),
+    isTruncated,
+  }
+}
+
 export function createSystemApi(input: {
   cwd: () => string
   fetcher?: typeof fetch
@@ -107,11 +120,17 @@ export function createSystemApi(input: {
         const timer = setTimeout(() => proc.kill(), ms)
         try {
           const [stdout, stderr, exitCode] = await Promise.all([
-            new Response(proc.stdout).text(),
-            new Response(proc.stderr).text(),
+            capped(proc.stdout),
+            capped(proc.stderr),
             proc.exited,
           ])
-          return { exitCode, stdout, stderr }
+          return {
+            exitCode,
+            stdout: stdout.text,
+            stderr: stderr.text,
+            isStdoutTruncated: stdout.isTruncated,
+            isStderrTruncated: stderr.isTruncated,
+          }
         } finally {
           clearTimeout(timer)
         }
@@ -127,13 +146,25 @@ export function createSystemApi(input: {
           typeof name === 'string' ? { name, value } : (name as { name: string; value?: string })
         if (call.value === undefined) delete env[call.name]
         else env[call.name] = call.value
+        // Claude Code's answer when the write was made: no `deny`.
+        return {}
       },
     },
     clock: {
       now: () => Date.now(),
-      sleep: (ms: unknown) =>
-        new Promise<void>((resolve) => {
-          later(resolve, typeof ms === 'number' ? ms : (ms as { ms: number }).ms, false)
+      // The caller's signal cuts the wait short: the sleep rejects with its reason.
+      sleep: (ms: unknown, options?: { signal?: AbortSignal }) =>
+        new Promise<void>((resolve, reject) => {
+          const signal = options?.signal instanceof AbortSignal ? options.signal : undefined
+          if (signal?.aborted) return reject(signal.reason)
+          const cancel = later(
+            resolve,
+            typeof ms === 'number' ? ms : (ms as { ms: number }).ms,
+            false,
+          )
+          signal?.addEventListener('abort', () => (cancel?.(), reject(signal.reason)), {
+            once: true,
+          })
         }),
       after: timer('clock.after', false),
       every: timer('clock.every', true),

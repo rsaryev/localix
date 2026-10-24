@@ -17,6 +17,7 @@ import { createSessionApi } from './session-api'
 import { createStateApi, type StateSpaces } from './state-api'
 import { createStoreApi } from './store-api'
 import { createSystemApi } from './system-api'
+import { copyToClipboard } from './clipboard'
 
 /**
  * One mod's `$`: the mods API bound to Localix. Calls act in the scene of the event being handled
@@ -133,7 +134,15 @@ export function buildModApi(deps: ModApiDeps): { api: ModsApi; dispose: () => vo
       check: run.tool.check,
       describe: DESCRIBING_CORES.tool.describe,
     },
-    mcp: run.mcp,
+    mcp: {
+      ...run.mcp,
+      // A plugin's MCP servers connect with the plugin, as Localix enables it, never on a call.
+      connect: (server: unknown) => ({
+        isConnected: false,
+        reason: 'unlisted',
+        message: `Localix connects ${String(server)} with its plugin, when the plugin is enabled`,
+      }),
+    },
     agent: {
       ...createAgentApi({
         instance,
@@ -204,7 +213,9 @@ export function buildModApi(deps: ModApiDeps): { api: ModsApi; dispose: () => vo
         if (sessionId)
           deps.composer.status(sessionId, plugin, text == null ? undefined : textOf(text))
       },
-      log: (text: unknown) => ports.log(scene(), { plugin, text: textOf(text) }),
+      // `{ to: 'debug' }` keeps the line off the transcript.
+      log: (text: unknown, options?: { to?: unknown }) =>
+        options?.to === 'debug' ? undefined : ports.log(scene(), { plugin, text: textOf(text) }),
       // A note under one tool call's card in Claude Code; a line in the conversation here.
       notice: (_toolUseId: unknown, text: unknown) =>
         text === undefined ? undefined : ports.log(scene(), { plugin, text: textOf(text) }),
@@ -213,15 +224,33 @@ export function buildModApi(deps: ModApiDeps): { api: ModsApi; dispose: () => vo
       focus: denied('Localix moves focus as the person does'),
       blit: denied('the desktop surface draws no terminal raster'),
       ask: run.ui.ask,
+      copy: (args: { text?: unknown }) => copyToClipboard(textOf(args)),
+      // The window's selection stays in the window: none reaches a mod.
+      selection: () => undefined,
+      view: () => ({ deny: 'Localix moves the view only on the person’s own input' }),
     },
     store: createStoreApi(ports.dataDir(plugin)),
     state: createStateApi({ plugin, space: deps.instance.cwd, spaces: deps.state }),
     fs: createFsApi(() => scene().cwd),
     http: system.http,
-    process: system.process,
+    process: {
+      ...system.process,
+      spawn: () => {
+        throw new Error('process.spawn: Localix streams no child into a mod; use $.process.run')
+      },
+    },
     env: system.env,
     clock: system.clock,
-    session,
+    session: {
+      ...session,
+      identity: () => ({
+        deny: 'Localix reaches models through its own provider connections, not a Claude account',
+      }),
+      send: () => ({
+        isDelivered: false,
+        reason: 'Localix delivers between conversations through its own agents, not a mod',
+      }),
+    },
     prompt: {
       // What entered: the text, any context, and the origin the hooks passed down.
       submit: async (input: {
