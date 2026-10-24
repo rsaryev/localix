@@ -5,7 +5,8 @@ and community marketplaces, and later registries. This page is the design for re
 ranking what they list and searching it by words and by meaning. It extends
 [Store design](store.md).
 
-Status: proposed. Sized for about 5,000 listings; the index is SQLite FTS5 from the start.
+Status: steps 2a and 2b are built ([As built](#as-built)); 2c's screens follow. Sized for about
+5,000 listings; the index is SQLite FTS5 from the start.
 
 ## Terminology
 
@@ -198,6 +199,57 @@ Each budget has a benchmark test over a generated index of 5,000 and 20,000 list
 - A community plugin's components are unknown until its detail page has been opened once.
 - Search by meaning needs the built-in embedding model; until it is ready, search is by words.
 
+## As built
+
+Where the build differs from the design above, or settles what it left open:
+
+- **Default sources** are `DEFAULT_SOURCES` in `packages/store/src/default-sources.ts`, a typed
+  module rather than a JSON file, because the API, the UI and both providers import it. The
+  community marketplace's id is its catalog name, `claude-community`. A default marketplace already
+  registered from the same repository under any name is reused; Localix does not read Claude Code's
+  own `known_marketplaces.json` for it. Removals are remembered in `.defaults.json` in the
+  marketplaces root (an earlier `.official.json` still counts for `localix`).
+- **Sync** runs off the request path: a provider's or a relayed notice's word marks the index dirty
+  and a background sync writes it, then pokes `store`; only a first read of an empty index waits. A
+  plugin notice now pokes `store`. The sources are fetched again every six hours on the plugin
+  pass's clock (first a random one to ten minutes after start), not "at start when older than six
+  hours".
+- **Index**: the person's installs, jobs and settings link live in `listing_state` beside the cards,
+  so a job's progress rewrites a few rows, not a source. A source is rewritten only when its cards'
+  hash changes. Components learned from a fetched package outlive a replace while the source still
+  says `unknown`. Columns `publisher` and `updated_at` serve Discover. Schema version 2.
+- **Identity**: a git origin keeps a branch or tag but not a pinned commit, and `main`, `master` and
+  `HEAD` count as the repository itself; otherwise the official and community copies of one
+  repository, pinned to different commits, would not meet. On today's marketplaces 226 of 2,598
+  entries are copies.
+- **Ranking in search**: the static score decides 15% of a hit's score, enough for near ties only.
+  Words found in the name count once more, and a name that is exactly the query (`code-review` for
+  "code review") as much as a strong match by meaning: measured on the real marketplaces, coverage
+  alone let a summary mention outrank a package named for the query.
+- **Search pages** come from the global search service's offset cursor over at most 200 hits (its
+  scoped provider cap); browsing pages are keyset.
+- **The palette** shows the `store` group last, at most five packages not installed.
+- **Project boost**: the open project's words come from its root's file names and its `package.json`
+  dependencies (`project-signals.ts`); nothing else in Localix detected a project's languages. A
+  word lifts a listing by a quarter, two at most.
+
+### Measured
+
+On a development machine against the real marketplaces (315 official and 2,283 community entries;
+the hosted mini app catalog answered 404 and the `localix` marketplace has no catalog on GitHub
+yet):
+
+| Measure                                             | Measured                                                 |
+| --------------------------------------------------- | -------------------------------------------------------- |
+| Plugins provider listing, cold / warm               | 63 ms / 13 ms                                            |
+| First index of both marketplaces / unchanged sync   | 154 ms / 29 ms                                           |
+| Index file                                          | 9.0 MB                                                   |
+| First page after a restart / warm / next page       | 4–15 ms / 3–7 ms / 3–4 ms                                |
+| Search p50 / p95 with meaning, through the HTTP API | 5–11 ms / 6–13 ms (first query 1.5 s: the model loading) |
+
+The budgets' tests (`budgets.test.ts`) generate 5,000 and 20,000 listings: first page 3.5 / 14 ms,
+search p95 9 / 22 ms, next page 0.7 / 1.6 ms, re-indexing a 2,300-entry source well under a second.
+
 ## Related guides
 
 - [Store design](store.md)
@@ -209,3 +261,8 @@ Each budget has a benchmark test over a generated index of 5,000 and 20,000 list
 - [Hybrid catalog search](../../apps/api/src/features/search/catalog-hybrid.ts)
 - [Catalog semantic source](../../apps/api/src/features/embeddings/list-source.ts)
 - [Plugin marketplace schema](../../apps/api/src/features/plugins/marketplace.ts)
+- [Store index](../../apps/api/src/features/store/index-repository.ts) and
+  [its schema](../../apps/api/src/features/store/index-repository-open.ts)
+- [Store search provider](../../apps/api/src/features/store/search-provider.ts)
+- [Default sources](../../packages/store/src/default-sources.ts) and
+  [categories](../../packages/store/src/categories.ts)

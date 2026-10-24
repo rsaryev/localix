@@ -6,8 +6,10 @@ page is the design contract for contributors: the hierarchy, the provider port, 
 order of work.
 
 Status: step 1 is implemented — the contract, the Store feature with its index and routes, the mini
-apps provider and the Store UI on the kit (see [Source of truth](#source-of-truth)). Steps 2–5 are
-proposed. Where step 1 differs from the first draft, this page says so under
+apps provider and the Store UI on the kit (see [Source of truth](#source-of-truth)). Step 2's API
+side is implemented: the plugins provider, the default sources, the SQLite index, search through
+global search and Discover's data ([Step 2 as built](#step-2-as-built)); its screens follow. Steps
+3–5 are proposed. Where step 1 differs from the first draft, this page says so under
 [Step 1 as built](#step-1-as-built).
 
 ## Terminology
@@ -170,7 +172,7 @@ capability omits the method and the UI hides the control.
 | Piece         | Owner                  | What it does                                                                                    |
 | ------------- | ---------------------- | ----------------------------------------------------------------------------------------------- |
 | Store feature | `features/store` (new) | Holds the provider list, the index, `/rpc/store` routes and the `store` poke.                   |
-| Index         | Store feature          | In-memory listings by ref, a token search over name, summary, tags and component names, facets. |
+| Index         | Store feature          | A SQLite FTS5 file in the cache folder: listings, components, state, facets (`store-scale.md`). |
 | Mini apps     | `features/mini-apps`   | Adapts `store.ts`, `store-detail.ts`, `catalogs.ts`; its routes stay for its own pages.         |
 | Plugins       | `features/plugins`     | Lists marketplace entries with full fields, counts components, installs by `name@marketplace`.  |
 | Wiring        | `bootstrap/`           | Builds each provider and hands the list to the Store (A4).                                      |
@@ -248,7 +250,8 @@ Each step lands with its tests first, a screenshot scenario for the Store and th
 
 - No ratings, reviews, accounts or payments: there is no Localix backend to hold them.
 - No cross-kind dependencies: a plugin cannot require a mini app (X1).
-- Search is local token matching over cached listings; semantic search can be added to the index.
+- Search is the global search service's `store` provider: FTS5 words and meaning, fused
+  ([Store sources, ranking and search](store-scale.md)).
 - Project scope exists in the contract from step 1; the UI offers it for plugins from step 2 and
   never for mini apps, which are per person.
 
@@ -303,16 +306,69 @@ Each step lands with its tests first, a screenshot scenario for the Store and th
 - **Sources** offers "Add …" for every kind with a source; the contract does not yet say whether a
   provider can add one.
 
+## Step 2 as built
+
+The API side of step 2; the screens that use all of it come in the step's UI part.
+
+- **Plugins are listings.** `features/plugins/store-provider.ts` lists every entry of every
+  registered marketplace with what the entry gives (display name, author as publisher, category,
+  tags, version, homepage). An entry inside the marketplace checkout is read from its folder for its
+  components and plan (`store-contents.ts`), kept per checkout revision on disk; a remote one is
+  `unknown` until its page is opened, which fetches it into the staging folder the install that
+  follows reuses once within ten minutes (`fetchEntryPlugin`'s prefetch). The plan lists hooks, a
+  mod, stdio MCP and LSP servers, monitors and `bin/` as what runs, and remote MCP hosts as network;
+  it needs a yes for a community marketplace or code that runs. `user` is a global install,
+  `project` the open project's (`StoreActor.projectId`, sent as `projectId` on the write routes).
+  Installs and updates are the Store's own jobs (`store-jobs.ts`); the update pass's jobs show
+  through the same field, so `/rpc/store/activity` covers plugin jobs and updates.
+- **Trust.** `listing.source` carries `trust` and `weight`, a `SourceView` its `trust`. A listing
+  also says its `origin`, `alsoIn`, `homepage` and `updatedAt`.
+- **Paging and filters.** `/listings` takes `cursor`, `limit` (40, at most 500), `category`,
+  `source`, `trust` and `projectId`, and answers `nextCursor` and, for a search, `strategy`. Until
+  the screens scroll page by page, the UI client reads every page of a shelf.
+- **Capability counts are components.** A capability shelf's count is how many components it lists,
+  not how many packages hold them.
+- **Search hits open the Store.** A `store` hit's address is
+  `localix://ui/work-item/store?kind=<kind>&id=<id>`; the Store's UI location opens on that page.
+
+### Discover as built
+
+`GET /rpc/store/discover` answers `{ hero, updates: { count }, rows, categories, listings }`: a
+`Collection` is
+`{ id, title, subtitle?, style: 'hero' | 'row' | 'grid', items: ListingRef[], source?, image? }`,
+and every listing an item names is in `listings`.
+
+| Part             | From                                                                                              |
+| ---------------- | ------------------------------------------------------------------------------------------------- |
+| Hero             | An editorial source's pick; its picture is the given `image`, else a mini app's first screenshot. |
+| Start here       | What editorial sources recommend, every kind, by score.                                           |
+| For this project | Listings about at least one of the open project's words; left out without a project or a match.   |
+| Collections      | An editorial source's picks, mixing kinds, in the order it gives.                                 |
+| New & updated    | Versions published in the last 90 days, newest first; left out when no source dates its versions. |
+| One row per kind | "Mini apps", "Plugins", by score.                                                                 |
+
+A provider hands its picks over through the port's optional `editorial()`. The mini app catalog
+carries them as `editorial` (`hero`, `collections`) from `mini-apps/catalog-picks.json`; the
+`localix` marketplace under `metadata.localix` (`recommended`, `featured`, `hero`, `collections`),
+which `claude plugin validate` accepts with an unknown-field warning and Claude Code ignores. An
+item is a name of the source's own kind, or `<kind>:<id>`. Only an editorial source's picks are
+read, and a community listing never reaches the hero, Start here or a collection. A listing's page
+adds `related` (more from its publisher) and `similar` (its category, sharing a tag).
+
 ## Source of truth
 
 - [The contract](../../packages/store/src/contract.ts),
   [the port](../../packages/store/src/provider.ts) and
   [shelves](../../packages/store/src/shelves.ts)
 - [Store service](../../apps/api/src/features/store/service.ts),
-  [index](../../apps/api/src/features/store/listing-index.ts) and
+  [index](../../apps/api/src/features/store/index-repository.ts),
+  [search provider](../../apps/api/src/features/store/search-provider.ts),
+  [Discover](../../apps/api/src/features/store/discover.ts) and
   [routes](../../apps/api/src/features/store/routes.ts)
 - [Mini apps provider](../../apps/api/src/features/mini-apps/store-provider.ts) and
   [its listings](../../apps/api/src/features/mini-apps/store-listing.ts)
+- [Plugins provider](../../apps/api/src/features/plugins/store-provider.ts) and
+  [default marketplaces](../../apps/api/src/features/plugins/default-marketplaces.ts)
 - [Wiring](../../apps/api/src/bootstrap/store.ts)
 - [Store UI](../../apps/ui/src/features/store/ui/StoreView.tsx)
 - [Mini app store service](../../apps/api/src/features/mini-apps/store.ts)

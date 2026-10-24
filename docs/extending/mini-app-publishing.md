@@ -148,6 +148,27 @@ loads. `featured: true` puts an app in the Store's Featured group, and `recommen
 installation install it on its own, but both only in the hosted Localix catalog; the Localix release
 sets them from `mini-apps/catalog-picks.json`.
 
+The same file may name the Store's **Discover** picks, which the catalog carries as an optional
+top-level `editorial`, also read for the Localix catalog only: a `hero` (`item`, `title`,
+`subtitle`, and an `image` address; without one, the app's first screenshot) and `collections`, each
+with an `id`, a `title`, a `subtitle`, a `style` (`row`, `grid` or `hero`) and its `items`. An item
+is an app's name, or `<kind>:<id>` for another kind of package, such as
+`plugin:neon@claude-plugins-official`.
+
+```json
+{
+  "hero": { "item": "code-graph", "title": "See how your code fits together" },
+  "collections": [
+    {
+      "id": "play-with-the-agent",
+      "title": "Play with the agent",
+      "style": "row",
+      "items": ["chess", "checkers"]
+    }
+  ]
+}
+```
+
 ### How the store shows media
 
 The store never hands a catalog's addresses to the page. It serves every file through the API

@@ -34,6 +34,7 @@
   <url><loc>https://localix.ai/docs/features--workspace</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--native-workspace-tabs</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--mini-apps</loc><priority>0.7</priority></url>
+  <url><loc>https://localix.ai/docs/features--store</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--mini-app-mac-apps</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--external-agents</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--settings</loc><priority>0.7</priority></url>

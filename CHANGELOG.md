@@ -14,6 +14,13 @@ Changes land on `main`.
   Installed, Updates and Sources. Each card says what is inside; a package's page adds What's
   inside, Permissions (what would run on this computer) and Versions; Installed has a switch and
   Update, Configure and Remove for each install. See [Mini apps](docs/features/mini-apps.md).
+- **Plugins in the Store**: the Store now lists Claude Code plugins from Anthropic's official and
+  community marketplaces beside Localix's own, registered on first start for browsing only. Search
+  finds packages by words and by meaning, puts a package named for your query first and Localix's
+  and official ones before community ones on a tie, and the search palette shows a **Store** group
+  of packages you have not installed. A plugin's page says what it adds and what runs on your
+  computer, and a community plugin or one that runs programs asks for your yes before it installs.
+  See [Store](docs/features/store.md).
 - **Claude Code plugin options and downloads**: a `multiple` option takes a list, one item per line
   in the plugin's settings; a marketplace entry whose archive needs a `headersHelper` installs once
   you accept the command it shows (`/plugin install … --accept-command <sha256>`); and ranges

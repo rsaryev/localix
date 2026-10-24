@@ -38,11 +38,12 @@ A user-scope plugin has one configuration in every project, as Claude Code's `pl
 to the plugin; the plugin's settings keep only a reference, and the value reaches its hooks, MCP
 servers and `CLAUDE_PLUGIN_OPTION_<KEY>` when they run.
 
-Localix ships a few plugins of its own, listed as **Built-in**, and registers its official
-marketplace, `localix`, on first start; every other plugin comes from a source you add. Manage them
-in Settings → Capabilities → Plugins or with `/plugin`. A plugin runs no Localix native code.
-Screens, a backend and agent tools over Localix's APIs are a mini app's, a separate format with its
-own folder, settings and command; see [Build a mini app](mini-apps.md).
+Localix ships a few plugins of its own, listed as **Built-in**, and registers the
+[Store](../features/store.md)'s default marketplaces on first start, `localix`, Anthropic's official
+and its community one, for browsing; every other plugin comes from a source you add. Manage them in
+Settings → Capabilities → Plugins or with `/plugin`. A plugin runs no Localix native code. Screens,
+a backend and agent tools over Localix's APIs are a mini app's, a separate format with its own
+folder, settings and command; see [Build a mini app](mini-apps.md).
 
 ## How it works
 
@@ -106,9 +107,9 @@ them runs; they live in the session's data folder and go with the session.
 
 ### Built-in plugins and updates
 
-Localix ships some plugins of its own as **Built-in**, registers its official `localix` marketplace
-on first start, and updates plugins installed from marketplaces by Claude Code's version rule, on
-its own for marketplaces with auto-update on. See [Built-in plugins and updates](plugin-updates.md).
+Localix ships some plugins of its own as **Built-in**, registers the Store's default marketplaces on
+first start, and updates plugins installed from marketplaces by Claude Code's version rule, on its
+own for marketplaces with auto-update on. See [Built-in plugins and updates](plugin-updates.md).
 
 ### Earlier installs
 

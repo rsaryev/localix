@@ -1,8 +1,8 @@
 # Built-in plugins and updates
 
-Localix ships a few Claude Code plugins inside the app, registers its official marketplace on first
-start, and keeps plugins installed from marketplaces up to date the way Claude Code does. Use this
-page to see what is built in, where a plugin's version comes from, and when an update runs.
+Localix ships a few Claude Code plugins inside the app, registers the Store's default marketplaces
+on first start, and keeps plugins installed from marketplaces up to date the way Claude Code does.
+Use this page to see what is built in, where a plugin's version comes from, and when an update runs.
 
 ## What you can do
 
@@ -45,15 +45,17 @@ claude plugin marketplace add rsaryev/localix
 claude plugin install localix-mini-apps@localix
 ```
 
-### The official marketplace
+### The default marketplaces
 
-On first start Localix registers `localix` from the GitHub repository `rsaryev/localix`, the way
-Claude Code adds `claude-plugins-official`: only the catalog and `plugins/` are checked out. It is
-not bundled, so it needs the network once; offline (or with
-`CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` set) it is skipped and tried again at the next start.
-Removing it is remembered: it is not added back until you add it yourself with
-`/plugin marketplace add rsaryev/localix`. A plugin that is both built in and listed there appears
-once, as built-in.
+On first start Localix registers the [Store](../features/store.md)'s default marketplaces, the way
+Claude Code adds `claude-plugins-official`: its official `localix` from the GitHub repository
+`rsaryev/localix` (only the catalog and `plugins/` are checked out), Anthropic's
+`claude-plugins-official` and its community `claude-community`. Nothing from them is installed. One
+already registered from the same repository, under any name, is reused. They are not bundled, so
+they need the network once; offline (or with `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` set) they
+are skipped and tried again at the next start. Removing one is remembered: it is not added back
+until you add it yourself, for example with `/plugin marketplace add rsaryev/localix`. A plugin that
+is both built in and listed there appears once, as built-in.
 
 ### Updates
 
@@ -164,4 +166,4 @@ like credentials and with `CLAUDE_CODE_PLUGIN_NAME` and `CLAUDE_CODE_PLUGIN_ARCH
 - [The version cache](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/plugin-cache.ts)
 - [Updates and the auto-update pass](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/plugin-updates.ts)
 - [Which marketplaces auto-update](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/marketplace-auto-update.ts)
-- [The official marketplace](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/official-marketplace.ts)
+- [The default marketplaces](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/default-marketplaces.ts)
