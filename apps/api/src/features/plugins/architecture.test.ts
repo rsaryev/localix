@@ -214,7 +214,7 @@ describe('C-UC Part A — pluginConfigOptionSchema accepts CC-spec fields (title
 // C-UC Part B — CLAUDE_PLUGIN_OPTION_<KEY> env injection into MCP servers
 // ---------------------------------------------------------------------------
 describe('C-UC Part B — buildPluginOptionEnv emits CLAUDE_PLUGIN_OPTION_<KEY>', () => {
-  it('emits one var per config key, case-preserved, value stringified', () => {
+  it('emits one var per config key, value stringified', () => {
     const env = buildPluginOptionEnv({
       API_KEY: 'secret-val',
       MAX_ITEMS: 20,

@@ -18,7 +18,7 @@ export {
  * Build the `CLAUDE_PLUGIN_OPTION_<KEY>` env-var map for a plugin's resolved config.
  *
  * Per the CC spec, each declared config key is exported to spawned MCP server processes
- * as `CLAUDE_PLUGIN_OPTION_<KEY>` (KEY = the exact declared key, case preserved). Sensitive
+ * as `CLAUDE_PLUGIN_OPTION_<KEY>`, the key uppercased as Claude Code names it for hooks. Sensitive
  * options ARE included, as they are wherever `${user_config.KEY}` substitutes in an MCP server's
  * config. Only keys with a resolved value are emitted.
  *
@@ -29,7 +29,7 @@ export function buildPluginOptionEnv(config: PluginConfigValues): Record<string,
   const out: Record<string, string> = {}
   for (const [key, val] of Object.entries(config)) {
     if (val !== undefined && val !== null) {
-      out[`CLAUDE_PLUGIN_OPTION_${key}`] = String(val)
+      out[`CLAUDE_PLUGIN_OPTION_${key.toUpperCase().replace(/[^A-Z0-9_]/gu, '_')}`] = String(val)
     }
   }
   return out

@@ -236,10 +236,11 @@ describe('isPlainObject', () => {
 })
 
 describe('buildPluginOptionEnv', () => {
-  test('prefixes each key with CLAUDE_PLUGIN_OPTION_, preserving case, stringifying values', () => {
-    expect(buildPluginOptionEnv({ API_KEY: 'abc', Port: 8080 })).toEqual({
-      CLAUDE_PLUGIN_OPTION_API_KEY: 'abc',
-      CLAUDE_PLUGIN_OPTION_Port: '8080',
+  // manifest-reference, "Reference a saved value": `<KEY>` uppercased, as hook processes see it.
+  test('names each option CLAUDE_PLUGIN_OPTION_<KEY>, the key uppercased, values stringified', () => {
+    expect(buildPluginOptionEnv({ api_token: 'abc', Port: 8080 })).toEqual({
+      CLAUDE_PLUGIN_OPTION_API_TOKEN: 'abc',
+      CLAUDE_PLUGIN_OPTION_PORT: '8080',
     })
   })
   test('skips undefined / null but keeps falsy-but-present values', () => {
@@ -254,9 +255,9 @@ describe('buildPluginOptionEnv', () => {
       '{"a":null,"b":null,"c":0,"d":false,"e":""}',
     ) as PluginConfigValues
     expect(buildPluginOptionEnv(fromStoredJson)).toEqual({
-      CLAUDE_PLUGIN_OPTION_c: '0',
-      CLAUDE_PLUGIN_OPTION_d: 'false',
-      CLAUDE_PLUGIN_OPTION_e: '',
+      CLAUDE_PLUGIN_OPTION_C: '0',
+      CLAUDE_PLUGIN_OPTION_D: 'false',
+      CLAUDE_PLUGIN_OPTION_E: '',
     })
   })
 })
