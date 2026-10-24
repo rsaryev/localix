@@ -21,6 +21,7 @@ import {
   recordCurrentHashedFiles,
   retainPreviousHashedFiles,
 } from './ui-retained-files'
+import { assertSharedShimsExported } from './ui-shared-check'
 import { buildMiniAppStylesheet } from './ui-styles'
 import { escapeRegExp } from '../../../lib/regexp'
 
@@ -54,6 +55,15 @@ export function miniAppUiEntry(miniAppDir: string): string | null {
  * it. The split is not cosmetic: an older CommonJS dependency `require`s React, and Bun refuses a
  * `require` whose dependency chain contains a top-level `await` anywhere.
  *
+ * The preloaded shims are CommonJS (`module.exports`), not ESM. Bun treats a module resolved to
+ * `react` (or `react-dom`, `react/jsx-runtime`) as the CommonJS package it usually is: a DEFAULT
+ * import of it — zustand's `import React from 'react'` — wrapped an ESM shim in a CommonJS
+ * function that kept its `export const { … }` as locals and exported nothing, so the Git mini
+ * app's UI loaded React from an empty object ("createContext is not a function"). A CommonJS shim
+ * is what Bun expects there, and it serves a default, named, namespace or `require` import alike.
+ * `__esModule` keeps a default import the host's `default`, as the ESM shim gave it; the build
+ * fails on a shim that lost its exports anyway (`assertSharedShimsExported`).
+ *
  * The awaited `load` is the ONLY top-level `await` an artifact carries, and it is safe only because
  * the host's registry never settles a load after `pagehide`
  * (`apps/ui/src/app/miniAppSharedModules.ts`): WebKit resumes a module paused at a top-level
@@ -64,10 +74,14 @@ export function sharedShim(specifier: string, names: readonly string[]): string 
   const named = [...new Set(names)].filter((name) => name !== 'default' && IDENTIFIER.test(name))
   const host = `globalThis[${JSON.stringify(MINI_APP_UI_SHARED_GLOBAL)}]`
   const id = JSON.stringify(specifier)
+  if (MINI_APP_UI_PRELOADED_MODULES.includes(specifier)) {
+    const fields = ['__esModule: true', 'default: m.default', ...named.map((n) => `${n}: m.${n}`)]
+    return [`const m = ${host}.require(${id})`, `module.exports = { ${fields.join(', ')} }`].join(
+      '\n',
+    )
+  }
   return [
-    MINI_APP_UI_PRELOADED_MODULES.includes(specifier)
-      ? `const m = ${host}.require(${id})`
-      : `const m = await ${host}.load(${id})`,
+    `const m = await ${host}.load(${id})`,
     named.length ? `export const { ${named.join(', ')} } = m` : '',
     'export default m.default',
   ].join('\n')
@@ -260,6 +274,15 @@ async function buildStagedUiArtifact(input: {
       Object.keys(kit.manifest.uiSharedExports).map((specifier) => `localix-shared:${specifier}`),
     ),
   })
+
+  const scripts = (await listUiArtifactFiles(outDir)).filter((file) => file.endsWith('.js'))
+  assertSharedShimsExported(
+    new Map(
+      await Promise.all(
+        scripts.map(async (file) => [file, await fs.readFile(join(outDir, file), 'utf8')] as const),
+      ),
+    ),
+  )
 
   const utilities = await buildMiniAppStylesheet(kit, miniAppDir)
   if (utilities.trim()) await fs.writeFile(join(outDir, 'utilities.css'), utilities)

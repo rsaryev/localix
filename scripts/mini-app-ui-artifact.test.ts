@@ -351,8 +351,7 @@ describe('mini app UI artifact', () => {
     expect(sharedShim('react', ['useState', 'default', 'not-an-identifier', 'useState'])).toBe(
       [
         'const m = globalThis["__LOCALIX_MINI_APP_UI_SHARED__"].require("react")',
-        'export const { useState } = m',
-        'export default m.default',
+        'module.exports = { __esModule: true, default: m.default, useState: m.useState }',
       ].join('\n'),
     )
     expect(sharedShim('@localixai/kit/button', ['Button'])).toStartWith(
@@ -371,6 +370,60 @@ describe('mini app UI artifact', () => {
       'ui/register.tsx': "export { legacy } from './Legacy'\nexport function registerUi() {}\n",
     })
     expect((await build(miniApp))?.entry).toBe('entry.js')
+  })
+
+  // Bun treats a module RESOLVED to the path `react` as the CommonJS package it usually is, and a
+  // DEFAULT import of it (zustand's `import React from 'react'`) wrapped the ESM shim in a
+  // CommonJS function that never set `exports`: the Git mini app's UI shipped, and on load threw
+  // "createContext is not a function". Every way a bundle reaches React must reach the host's.
+  test('every kind of React import reads the host React at runtime', async () => {
+    const miniApp = fixtureMiniApp({
+      'node_modules/store-hook/package.json': JSON.stringify({
+        name: 'store-hook',
+        type: 'module',
+        sideEffects: false,
+        exports: { '.': './index.mjs' },
+      }),
+      'node_modules/store-hook/index.mjs':
+        "import React from 'react'\nexport const storeContext = () => React.createContext('store')\n",
+      'node_modules/legacy-hook/package.json': '{"name":"legacy-hook","main":"index.js"}',
+      'node_modules/legacy-hook/index.js':
+        "'use strict'\nvar React = require('react')\nmodule.exports = () => React.createContext('legacy')\n",
+      'ui/register.tsx': [
+        "import React, { createContext } from 'react'",
+        "import * as ReactNamespace from 'react'",
+        "import { storeContext } from 'store-hook'",
+        "import legacyContext from 'legacy-hook'",
+        'export const contexts = () => [',
+        "  React.createContext('default'),",
+        "  createContext('named'),",
+        "  ReactNamespace.createContext('namespace'),",
+        '  storeContext(),',
+        '  legacyContext(),',
+        ']',
+      ].join('\n'),
+    })
+    const out = join(tempDir(), 'out')
+    await build(miniApp, out)
+
+    const createContext = (value: string) => ({ context: value })
+    const react = { createContext }
+    const scope = globalThis as unknown as Record<string, unknown>
+    scope.__LOCALIX_MINI_APP_UI_SHARED__ = {
+      require: (specifier: string) => {
+        if (specifier !== 'react') throw new Error(`unexpected ${specifier}`)
+        return { ...react, default: react }
+      },
+      load: (specifier: string) => Promise.reject(new Error(`unexpected ${specifier}`)),
+    }
+    try {
+      const entry = (await import(join(out, 'entry.js'))) as { contexts: () => unknown[] }
+      expect(entry.contexts()).toEqual(
+        ['default', 'named', 'namespace', 'store', 'legacy'].map((context) => ({ context })),
+      )
+    } finally {
+      delete scope.__LOCALIX_MINI_APP_UI_SHARED__
+    }
   })
 
   // The builder's resolve callbacks once matched every bare import and declined the ones they did
