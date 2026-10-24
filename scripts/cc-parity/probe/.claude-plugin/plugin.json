@@ -1,0 +1,6 @@
+{
+  "name": "cc-parity-probe",
+  "version": "0.1.0",
+  "description": "Records the shapes of the events and mods API answers it sees, for Localix's parity check",
+  "author": { "name": "Localix" }
+}

@@ -1,0 +1,4 @@
+{
+  "description": "The cc-parity probe's hooks module",
+  "modules": ["./register.js"]
+}
