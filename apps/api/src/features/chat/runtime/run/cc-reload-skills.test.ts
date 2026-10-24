@@ -18,12 +18,18 @@ test('names the skills that appeared after the run’s discovery, and forgets th
   let invalidated = 0
   const note = await reloadedSkillsNote({
     cwd: dir(),
+    homeDir: join(dir(), 'home'),
     known: ['review'],
     invalidate: () => invalidated++,
   })
   expect(note).toContain('deploy: Ship the build')
   expect(invalidated).toBe(1)
   expect(
-    await reloadedSkillsNote({ cwd: dir(), known: ['deploy'], invalidate: () => {} }),
+    await reloadedSkillsNote({
+      cwd: dir(),
+      homeDir: join(dir(), 'home'),
+      known: ['deploy'],
+      invalidate: () => {},
+    }),
   ).toBeUndefined()
 })

@@ -11,10 +11,12 @@ export async function reloadedSkillsNote(input: {
   /** The names this run's discovery already listed. */
   known: readonly string[]
   invalidate: () => void
+  /** The person's home, where their own skills are read (test seam; defaults to the OS home). */
+  homeDir?: string
 }): Promise<string | undefined> {
   input.invalidate()
   const known = new Set(input.known)
-  const added = (await discoverFilesystemSkills(input.cwd).catch(() => [])).filter(
+  const added = (await discoverFilesystemSkills(input.cwd, input.homeDir).catch(() => [])).filter(
     (skill) => !known.has(skill.name),
   )
   if (!added.length) return undefined
