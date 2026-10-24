@@ -1,32 +1,14 @@
 import { describe, expect, test } from 'bun:test'
-import { ftsOrQuery, fuse, isLookupQuery, queryTerms, unitScore, wordCoverage } from './hybrid'
+import { queryTerms } from '../../lib/fts-query'
+import { fuse, isLookupQuery, unitScore, wordCoverage } from './hybrid'
 
 // Russian words, escaped so the source stays ASCII.
-const WHERE = '\u0433\u0434\u0435' // "where"
-const WE = '\u043c\u044b' // "we"
-const DISCUSSED = '\u043e\u0431\u0441\u0443\u0436\u0434\u0430\u043b\u0438' // "discussed"
-const RETRIES = '\u0440\u0435\u0442\u0440\u0430\u0438' // "retries"
+const RETRIES = 'ретраи' // "retries"
 const RETRIES_GENITIVE = '\u0440\u0435\u0442\u0440\u0430\u0435\u0432' // "of retries"
 const WEBHOOKS_GENITIVE = '\u0432\u0435\u0431\u0445\u0443\u043a\u043e\u0432' // "of webhooks"
 const CONFIGURED = '\u041d\u0430\u0441\u0442\u0440\u043e\u0438\u043b\u0438' // "configured"
 
-describe('query terms', () => {
-  test('drops short words, dedupes, and prefixes inflected Cyrillic words', () => {
-    expect(queryTerms(`${WHERE} ${WE} ${DISCUSSED} ${RETRIES} ${RETRIES}`)).toEqual([
-      { stem: WHERE, prefix: false },
-      { stem: DISCUSSED.slice(0, -1), prefix: true },
-      { stem: RETRIES.slice(0, -1), prefix: true },
-    ])
-  })
-
-  test('only the last Latin word is a prefix while typing', () => {
-    expect(queryTerms('docker comp', { prefixLast: true })).toEqual([
-      { stem: 'docker', prefix: false },
-      { stem: 'comp', prefix: true },
-    ])
-    expect(ftsOrQuery(queryTerms('docker comp', { prefixLast: true }))).toBe('"docker" OR "comp"*')
-  })
-
+describe('word evidence', () => {
   test('coverage counts whole words and word starts', () => {
     const terms = queryTerms(`${RETRIES} ${WEBHOOKS_GENITIVE} stripe`)
     expect(

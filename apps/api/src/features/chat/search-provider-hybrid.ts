@@ -9,15 +9,8 @@
 import type { SearchHit, SearchQuery } from '../agent-core/search/provider'
 import type { SemanticQuery } from '@localixai/mini-app-sdk/backend'
 import { bestFieldScore } from '../agent-core/search/match'
-import {
-  ftsOrQuery,
-  fuse,
-  isLookupQuery,
-  queryTerms,
-  unitScore,
-  wordCoverage,
-  type FusionInput,
-} from '../search/hybrid'
+import { ftsOrQuery, queryTerms } from '../../lib/fts-query'
+import { fuse, isLookupQuery, unitScore, wordCoverage, type FusionInput } from '../search/hybrid'
 import type { MessageSearchReads, MessageSearchRow } from './repository-message-search'
 import { MESSAGES_COLLECTION, SESSIONS_COLLECTION } from './repository-semantic-sources'
 
