@@ -24,6 +24,16 @@ describe('outputStyleOf', () => {
   })
 })
 
+// Claude Code reads its frontmatter booleans as yes/no, on/off and 1/0 too, in any case.
+test('an output style flag reads yes, on and 1 as true', () => {
+  for (const yes of ['yes', 'On', '1', 'TRUE']) {
+    expect(
+      outputStyleOf('s', { 'keep-coding-instructions': yes }, 'x').keepCodingInstructions,
+    ).toBe(true)
+  }
+  expect(outputStyleOf('s', { 'force-for-plugin': 'off' }, 'x').forceForPlugin).toBe(false)
+})
+
 describe('pluginSettingsOf', () => {
   test('the file wins when it sets a supported key; other keys are dropped with a warning', () => {
     const { settings, issues } = pluginSettingsOf(

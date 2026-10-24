@@ -15,8 +15,11 @@ export interface OutputStyle {
   prompt: string
 }
 
+/** A frontmatter flag as Claude Code reads it: `true`, `yes`, `on` or `1`, in any case. */
 const truthy = (value: unknown): boolean =>
-  value === true || (typeof value === 'string' && value.trim().toLowerCase() === 'true')
+  value === true ||
+  value === 1 ||
+  (typeof value === 'string' && ['true', 'yes', 'on', '1'].includes(value.trim().toLowerCase()))
 
 /** Build a style from a file's stem, its parsed frontmatter fields and its body. */
 export function outputStyleOf(
