@@ -13,12 +13,12 @@ import {
   type MiniAppJobLabel,
 } from './store-activity'
 import { storePage, type MiniAppStorePage } from './store-detail'
+import { storeEntry, type MiniAppJob, type MiniAppStoreEntry } from './store-entry'
 import { installedBy, installOffer } from './store-install'
 import { createStoreMediaReader, type StoreMediaKind } from './store-media'
 import {
   createOfferReader,
   readManifest,
-  type MiniAppPublisher,
   type MiniAppStoreSource,
   type Offer,
 } from './store-offers'
@@ -35,42 +35,7 @@ export type { MiniAppInstallOutcome, MiniAppStoreActivity } from './store-activi
  * `onJobsSettled`, which records it in the person's journal (the owner announces).
  */
 
-export type MiniAppJobPhase = 'queued' | 'downloading' | 'installing' | 'done' | 'failed'
-
-export interface MiniAppJob {
-  phase: MiniAppJobPhase
-  /** While downloading: bytes so far, and of how many. */
-  received?: number
-  total?: number
-  error?: string
-}
-
-export interface MiniAppStoreEntry {
-  name: string
-  displayName?: string
-  description: string
-  category?: string
-  /** The version the catalog offers. */
-  version?: string
-  publisher: MiniAppPublisher
-  /** The catalog it comes from, as the catalog list names it. */
-  source: string
-  /** Where the host serves its icon; the row draws a monogram when it has none. */
-  icon?: string
-  tags?: string[]
-  /** In the Featured group above the rest (the Localix catalog only). */
-  featured?: boolean
-  /** Installed on its own on a new installation (the Localix catalog only, `recommended.ts`). */
-  recommended?: boolean
-  surfaces?: string[]
-  /** What is on this machine, or null. */
-  installed: { version?: string } | null
-  /** The catalog offers a version other than the installed one. */
-  update: boolean
-  /** Built for a newer mini app contract than this Localix runs: it cannot be installed. */
-  incompatible?: boolean
-  job?: MiniAppJob
-}
+export type { MiniAppJob, MiniAppJobPhase, MiniAppStoreEntry } from './store-entry'
 
 export interface MiniAppStoreListing {
   entries: MiniAppStoreEntry[]
@@ -164,31 +129,8 @@ export function createMiniAppStore(deps: {
     deps.onJobsSettled?.(settled)
   }
 
-  async function toEntry(offer: Offer): Promise<MiniAppStoreEntry> {
-    const installed = await readManifest(join(installRoot, offer.name))
-    const installedVersion = typeof installed?.version === 'string' ? installed.version : undefined
-    const job = jobs.get(offer.name)
-    const { tags, featured, recommended, surfaces } = offer.store
-    const icon = iconOf(offer)
-    return {
-      name: offer.name,
-      ...(offer.displayName ? { displayName: offer.displayName } : {}),
-      description: offer.description,
-      ...(offer.category ? { category: offer.category } : {}),
-      ...(offer.version ? { version: offer.version } : {}),
-      publisher: offer.publisher,
-      source: offer.source,
-      ...(icon ? { icon } : {}),
-      ...(tags.length ? { tags } : {}),
-      ...(featured ? { featured: true } : {}),
-      ...(recommended ? { recommended: true } : {}),
-      ...(surfaces ? { surfaces } : {}),
-      installed: installed ? (installedVersion ? { version: installedVersion } : {}) : null,
-      update: Boolean(installed && offer.version && installedVersion !== offer.version),
-      ...(incompatible(offer) ? { incompatible: true } : {}),
-      ...(job ? { job } : {}),
-    }
-  }
+  const toEntry = async (offer: Offer): Promise<MiniAppStoreEntry> =>
+    storeEntry(offer, await readManifest(join(installRoot, offer.name)), jobs.get(offer.name))
 
   const offerNamed = async (name: string): Promise<Offer> => {
     const offer = (await readOffers()).offers.get(name)

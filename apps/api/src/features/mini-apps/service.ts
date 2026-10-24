@@ -28,11 +28,8 @@ import { toMiniAppRecord } from './records'
 import { syncBundledContributions } from './sync-bundled-contributions'
 import { resolveMiniAppUiFile } from './ui-artifact'
 import { createMiniAppWrites } from './service-writes'
-import { withCatalogPreview } from './catalog-preview'
-import { createMiniAppCatalogs } from './catalogs'
-import { createRecommendedInstalls } from './recommended'
-import { createMiniAppStore, type MiniAppInstallOutcome, type MiniAppStoreSource } from './store'
-import { builtInMiniAppSources } from './store-sources'
+import type { MiniAppInstallOutcome, MiniAppStoreSource } from './store'
+import { createMiniAppStoreParts } from './service-store'
 import {
   invokeMiniAppUiAction,
   readInstalledMiniAppIcon,
@@ -61,7 +58,7 @@ export interface MiniAppServiceDeps {
   logger?: { warn: (msg: string, meta?: unknown) => void }
   /** Where the mini app kit is; defaults to the one shipped beside the staged mini apps. */
   miniAppKitDir?: () => string
-  /** The catalogs every installation reads; defaults to {@link builtInMiniAppSources}. */
+  /** The catalogs every installation reads; defaults to `builtInMiniAppSources`. */
   storeSources?: () => Promise<MiniAppStoreSource[]>
   /**
    * The store's queue drained: how each install and update went. The composition root records
@@ -190,39 +187,14 @@ export function createMiniAppService(deps: MiniAppServiceDeps) {
     await recordCoreChanges(deps.db, { entity: 'mini-app', op: 'resync' })
   }
 
-  // The catalogs (built in, then the person's) and the store over them; an install is announced.
-  const catalogList = createMiniAppCatalogs({
-    db: deps.db,
-    builtIn: deps.storeSources ?? builtInMiniAppSources,
-  })
-  const store = createMiniAppStore({
-    homeDir: deps.homeDir,
-    sources: catalogList.sources,
-    onInstalled: async (name, { fresh, userId }) => {
-      // Choosing it in the store is the person's yes to run it; an update keeps their decision.
-      if (fresh && userId) await setEnabled(userId, { name, enabled: true })
-      await recordCoreChanges(deps.db, {
-        entity: 'mini-app',
-        op: 'upserted',
-        ref: { id: name, scope: 'global' },
-      })
-    },
-    ...(deps.installOutcomes ? { onJobsSettled: deps.installOutcomes } : {}),
-  })
-  const catalogs = withCatalogPreview(catalogList, store)
+  const { catalogs, store, installRecommended } = createMiniAppStoreParts(deps, setEnabled)
 
   return {
     authoring,
     catalogs,
     store,
     /** The one-time install of the apps the Localix catalog recommends (`recommended.ts`). */
-    installRecommended: (userId: string) =>
-      createRecommendedInstalls({
-        store,
-        homeDir: deps.homeDir,
-        userId,
-        log: (event, detail) => deps.logger?.warn(event, detail),
-      }).run(),
+    installRecommended,
     /**
      * `/mini-app reload`: rebuild the person's own mini apps, then say every one changed, since a
      * folder edited on disk is a change no write announced.
