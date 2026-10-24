@@ -80,9 +80,9 @@ export const pluginAgentSchema = z.object({
    */
   color: z.string().optional(),
   /**
-   * CC `initialPrompt` — auto-submitted as the first user turn when the agent runs
-   * as the MAIN session agent (`--agent`). RECORDED only: Localix has no session-wide
-   * `--agent` mode, so there is no first-turn to prepend it to yet (TODO).
+   * CC `initialPrompt` — auto-submitted as the first user turn when the agent runs as the MAIN
+   * session agent: a plugin's `settings.json` `agent` leads the chat's first turn with it
+   * (`chat/runtime/run/initial-prompt.ts`).
    */
   initialPrompt: z.string().optional(),
   /**

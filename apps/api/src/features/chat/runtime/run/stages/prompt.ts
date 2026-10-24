@@ -34,6 +34,7 @@ import { agentTypesSection } from '../plugin-subagent'
 import { withBuiltinSubagentTypes } from '../builtin-subagent-types'
 import { touchedInstructionsSection } from '../touched-instructions'
 import { preloadedSkillsThroughMods } from '../preload-skill-prompt'
+import { initialPromptSection } from '../initial-prompt'
 
 export type RunPrompt = Awaited<ReturnType<typeof buildRunPrompt>>
 
@@ -136,6 +137,8 @@ export async function buildRunPrompt(
         loaded: inputs.contextFiles ?? [],
       })
   if (touchedInstructions) baseSections.push(touchedInstructions)
+  const initialPrompt = initialPromptSection(inputs.mainAgent, historyMessages)
+  if (initialPrompt) baseSections.push(initialPrompt)
   const otherSessions = otherWorkspaceSessionsSection(
     session,
     inputs.defaultCwd,

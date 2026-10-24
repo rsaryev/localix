@@ -231,6 +231,8 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
     // The plugin agent type a delegated child runs as: its `tools` shape the run's surface, and
     // its `omitClaudeMd` the instruction files it reads.
     pluginSubagent: asType?.subagent ?? null,
+    // The plugin agent the chat itself runs as (a plugin's `settings.json` `agent`), if any.
+    mainAgent: main.mainAgent,
     // The tools list the run's surface is exact to: the agent type's, or the main agent's.
     toolsAgent: runToolsAgent(asType?.subagent, main.mainAgent),
     ...(humanProfile ? { human: humanProfile } : {}),

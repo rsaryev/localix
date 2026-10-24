@@ -48,6 +48,8 @@ export interface LoadedPluginAgent {
   autoCompactWindow?: number
   /** CC `memory` — its persistent-memory scope. */
   memory?: 'user' | 'project' | 'local'
+  /** CC `initialPrompt` — leads the chat's first turn when it runs as the main session agent. */
+  initialPrompt?: string
 }
 
 /**
@@ -193,5 +195,6 @@ export function buildLoadedAgent(
     ...(agent.cacheTtl ? { cacheTtl: agent.cacheTtl } : {}),
     ...(agent.autoCompactWindow ? { autoCompactWindow: agent.autoCompactWindow } : {}),
     ...(agent.memory ? { memory: agent.memory } : {}),
+    ...(agent.initialPrompt ? { initialPrompt: subst(agent.initialPrompt) } : {}),
   }
 }
