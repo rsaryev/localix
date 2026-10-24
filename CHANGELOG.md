@@ -117,10 +117,12 @@ Changes land on `main`.
 
 - **Mods**: a Claude Code plugin with a hooks module runs it, once per project as in a Claude Code
   session. A mod can guard or rewrite tool calls and model requests, shape the system prompt, read
-  the conversation, add slash commands, tools and agents, fill the message box, and draw panes in
-  the **Mods** view from the rail's overflow menu. Claude Code's own `diff` mod shows a project's
-  changes there. Each mod runs in a sandbox of its own with a memory cap, so one that loops or runs
-  out of memory stops alone. See [Claude Code plugins](docs/extending/claude-code-plugins.md#mods).
+  the conversation, add slash commands, tools and agents, fill the message box, draw a strip above
+  it and open panes, each its own workspace tab. Settings → Capabilities → Plugins marks each mod
+  and shows what it hooks, or why it did not load. Claude Code's own `diff` mod shows a project's
+  changes in its pane. Each mod runs in a sandbox of its own with a memory cap, so one that loops or
+  runs out of memory stops alone. See
+  [Claude Code plugins](docs/extending/claude-code-plugins.md#mods).
 - **Claude Code marketplaces**: `/plugin marketplace add owner/repo` adds one, and
   `/plugin install <name>@<marketplace>` installs from it; `list`, `update` and `remove` manage it.
   Plugins you installed in Claude Code itself also appear, waiting for your approval.
@@ -164,6 +166,14 @@ Changes land on `main`.
   that message.
 
 ### Changed
+
+- **Mods look like the rest of the app**: the strip a mod draws above the message box uses the
+  composer strips' compact type, a list of picks reads as one row of chips with their keys, lines
+  sit side by side, and the strip scrolls rather than pushing the message box away; collapsed, it is
+  one row of what it says. A pane is drawn at workbench density. See
+  [How Localix draws a mod](docs/extending/claude-code-mods.md#how-localix-draws-a-mod).
+- **Settings pages line up**: every page and section keeps its actions on its title's line, and
+  moving between pages and tabs no longer moves the title, the tabs or the first section.
 
 - **Instruction files read as in Claude Code**: `CLAUDE.md`, `.claude/CLAUDE.md`, `CLAUDE.local.md`,
   `~/.claude/CLAUDE.md` and `.claude/rules/` load, a folder's `CLAUDE.md` before its `AGENTS.md`,
@@ -311,6 +321,14 @@ setup opens as a dialog over a new chat, and every dialog arrives with the same 
 
 ### Changed
 
+- **Mods look like the rest of the app**: the strip a mod draws above the message box uses the
+  composer strips' compact type, a list of picks reads as one row of chips with their keys, lines
+  sit side by side, and the strip scrolls rather than pushing the message box away; collapsed, it is
+  one row of what it says. A pane is drawn at workbench density. See
+  [How Localix draws a mod](docs/extending/claude-code-mods.md#how-localix-draws-a-mod).
+- **Settings pages line up**: every page and section keeps its actions on its title's line, and
+  moving between pages and tabs no longer moves the title, the tabs or the first section.
+
 - **Faster update check**: a new version is found a few seconds after launch instead of thirty.
 - **Launch** always opens a chat: the one you were in, or a new one. An empty editor group shows the
   Localix bird instead of the workspace tips.
@@ -359,6 +377,14 @@ setup opens as a dialog over a new chat, and every dialog arrives with the same 
 
 ### Changed
 
+- **Mods look like the rest of the app**: the strip a mod draws above the message box uses the
+  composer strips' compact type, a list of picks reads as one row of chips with their keys, lines
+  sit side by side, and the strip scrolls rather than pushing the message box away; collapsed, it is
+  one row of what it says. A pane is drawn at workbench density. See
+  [How Localix draws a mod](docs/extending/claude-code-mods.md#how-localix-draws-a-mod).
+- **Settings pages line up**: every page and section keeps its actions on its title's line, and
+  moving between pages and tabs no longer moves the title, the tabs or the first section.
+
 - An agent's question always waits up to five minutes for your answer, then the agent continues on a
   stated assumption; "Answer later" and queued questions are gone.
 - Background jobs ignore `timeout` and outlive the turn that started them; a deliberate stop is
@@ -400,6 +426,14 @@ setup opens as a dialog over a new chat, and every dialog arrives with the same 
 
 ### Changed
 
+- **Mods look like the rest of the app**: the strip a mod draws above the message box uses the
+  composer strips' compact type, a list of picks reads as one row of chips with their keys, lines
+  sit side by side, and the strip scrolls rather than pushing the message box away; collapsed, it is
+  one row of what it says. A pane is drawn at workbench density. See
+  [How Localix draws a mod](docs/extending/claude-code-mods.md#how-localix-draws-a-mod).
+- **Settings pages line up**: every page and section keeps its actions on its title's line, and
+  moving between pages and tabs no longer moves the title, the tabs or the first section.
+
 - Moved Update & Restart from the left rail into the titlebar, beside Terminal, Browser and the
   Event Center, where it is easier to notice.
 
@@ -426,6 +460,14 @@ installers were removed; this release replaces them.
   [Run Localix from source](docs/getting-started/installation.md).
 
 ### Changed
+
+- **Mods look like the rest of the app**: the strip a mod draws above the message box uses the
+  composer strips' compact type, a list of picks reads as one row of chips with their keys, lines
+  sit side by side, and the strip scrolls rather than pushing the message box away; collapsed, it is
+  one row of what it says. A pane is drawn at workbench density. See
+  [How Localix draws a mod](docs/extending/claude-code-mods.md#how-localix-draws-a-mod).
+- **Settings pages line up**: every page and section keeps its actions on its title's line, and
+  moving between pages and tabs no longer moves the title, the tabs or the first section.
 
 - Providers connect only through credentials stored in the encrypted vault; API keys are never read
   from environment variables.

@@ -5,7 +5,7 @@ import type { ModRegistry } from '../registry'
 import { copyToClipboard } from './clipboard'
 
 /**
- * `$.ui` on Localix's desktop surface: panes in the Mods tab, the conversation's status line and
+ * `$.ui` on Localix's desktop surface: panes as workspace tabs, the conversation's status line and
  * notices, a question card, the clipboard. What the desktop leaves to the person — scrolling,
  * focus, the view — or does not draw — a terminal raster — answers Claude Code's `{ deny }`.
  */
@@ -29,9 +29,9 @@ export function createUiApi(deps: {
 }) {
   const { plugin, instance, scene, ports, registry } = deps
   /**
-   * `$.ui.open`: the pane opens in the Mods tab. One that asks for the keyboard (`focus`) is
-   * brought forward there, so it is placed; one that does not waits in the tab's list, as Claude
-   * Code's waits undrawn, until the person opens it.
+   * `$.ui.open`: the pane opens as a workspace tab of its own. One that asks for the keyboard
+   * (`focus`) opens focused, so it is placed; one that does not opens as a background tab, undrawn
+   * until the person brings it forward, as Claude Code's waits undrawn.
    */
   const open = (args: unknown) => {
     const pane = (args ?? {}) as Record<string, unknown>
@@ -48,7 +48,10 @@ export function createUiApi(deps: {
     })
     return pane.focus === true
       ? { isPlaced: true }
-      : { isPlaced: false, reason: 'listed in the Mods tab until the person opens it' }
+      : {
+          isPlaced: false,
+          reason: 'opens as a background tab, drawn when the person brings it forward',
+        }
   }
   return {
     resolve: (e?: { component?: unknown }) =>
@@ -57,7 +60,7 @@ export function createUiApi(deps: {
     open,
     close: (pane: { id: string } | string) =>
       registry.closePane(instance, typeof pane === 'string' ? pane : pane.id),
-    // A pane asked forward is placed and shown in the Mods tab; focus is the person's to give.
+    // A pane asked forward is placed and shown in its tab; focus is the person's to give.
     panes: () =>
       registry.panes(instance).map((pane) => ({
         id: pane.id,

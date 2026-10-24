@@ -125,4 +125,41 @@ describe('a plugin row', () => {
       await view.cleanup()
     }
   })
+
+  test('a plugin with a hooks module says it is a mod, and what the mod does', async () => {
+    const view = await render({
+      mod: {
+        plugin: 'tool',
+        events: ['tool.call', 'ui.render'],
+        panes: 2,
+        draws: true,
+        status: 'running',
+      },
+    })
+    try {
+      const text = view.container.textContent ?? ''
+      expect(text).toContain('Mod')
+      expect(text).toContain('Hooks tool.call, ui.render · draws on screen · 2 panes open')
+    } finally {
+      await view.cleanup()
+    }
+  })
+
+  test('a mod that did not load says why, as a warning on its row', async () => {
+    const view = await render({
+      mod: {
+        plugin: 'tool',
+        events: [],
+        panes: 0,
+        draws: false,
+        status: 'failed',
+        problem: 'boom',
+      },
+    })
+    try {
+      expect(view.container.textContent).toContain('The mod did not load: boom')
+    } finally {
+      await view.cleanup()
+    }
+  })
 })

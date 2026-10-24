@@ -1,57 +1,52 @@
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import { X } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Settings2 } from 'lucide-react'
 import { EmptyHint, LoadingHint } from '@localixai/kit/empty-hint'
 import { IconButton } from '@localixai/kit/icon-button'
 import { PanelHeader } from '@localixai/kit/panel-header'
 import { runMiniAppAction } from '@localixai/mini-app-sdk/ui'
-import { settingsUiUri } from '@localixai/mini-app-sdk/navigation'
-import { useUiNavigation } from '@/shared/hooks/useUiNavigation'
-import { pluginSettingsUri } from '@/shared/lib/settingsAnchors'
-import { navigateUi } from '@/shared/lib/uiNavigation'
+import { useGridStore } from '@/entities/workspace-grid/model'
 import { modsApi, type ModPaneRef } from '@/shared/api/modsApi'
-import { paneFocus } from '../model/paneFocus'
-import { useModPane, useModsOverview } from '../model/useMods'
+import { modPaneTabPayload, openPluginSettings } from '../model/paneTabs'
+import { closeModPane, useModPane, useModsOverview } from '../model/useMods'
 import { ModClientScope, type ModClientScopeValue } from './ModClient'
-import { projectOf } from './ModsList'
-import { ModsWorkspaceView } from './ModsWorkspaceView'
+import { ModSiteContext } from './modStyle'
 import { ModTree } from './ModTree'
 import { hotkeysOf, pressHotkey } from './siteHotkeys'
 
 /** Panes are drawn for this many text columns: what a mod reads as `e.props.bodyColumns`. */
 const PANE_COLUMNS = 100
 
+/** The last folder of a project path: which project a pane belongs to, at a glance. */
+export const projectOf = (cwd: string | null) =>
+  cwd
+    ?.split(/[\\/]/)
+    .reverse()
+    .find((part) => part !== '') ?? ''
+
 /**
- * The Mods view: the panes mods opened (`$.ui.open`), the installed mods, and the pane on show.
- * A pane a mod asks forward (`$.ui.open({ focus })`) is the one shown; a pane updates whenever its
- * mod asks for a redraw.
+ * One mod pane as a workspace tab (`mod-pane`): its drawing at workbench density, redrawn whenever
+ * its mod asks. Asked forward, the pane takes the keyboard — where its `autoFocus` control is, else
+ * itself — and its Buttons' hotkeys press them while it holds it; Escape closes a pane opened with
+ * `closeOnEscape`, as the person's close does.
  */
-export function ModsWorkspace() {
+export function ModPaneBody({
+  item,
+}: {
+  item: { id: string; title: string; payload?: Record<string, unknown> }
+}) {
+  const ref = modPaneTabPayload(item.payload)
   const overview = useModsOverview()
-  const navigation = useUiNavigation({ sessionId: null })
-  const [chosen, setChosen] = useState<{ instance: string; id: string } | null>(null)
-  const requested = useSyncExternalStore(
-    (listener) => paneFocus.subscribe(listener),
-    () => paneFocus.requested(),
+  const pane = overview.data?.panes.find(
+    (open) => open.instance === ref?.instance && open.id === ref?.paneId,
   )
+  // The tab is named by the pane's own title, which the mod may change while it is open.
+  const title = pane ? (pane.title ?? pane.id) : null
   useEffect(() => {
-    if (requested) setChosen({ instance: requested.instance, id: requested.id })
-  }, [requested])
-  if (!overview.data) return <LoadingHint>Loading mods…</LoadingHint>
-  const panes = overview.data.panes
-  const selected =
-    panes.find((pane) => pane.instance === chosen?.instance && pane.id === chosen?.id) ??
-    panes[0] ??
-    null
-  return (
-    <ModsWorkspaceView
-      overview={overview.data}
-      selected={selected}
-      onSelect={setChosen}
-      onOpenSettings={(plugin) => navigateUi(pluginSettingsUri(plugin), navigation)}
-      onBrowsePlugins={() => navigateUi(settingsUiUri('plugins'), navigation)}
-      renderPane={(pane) => <ModPane key={`${pane.instance}/${pane.id}`} pane={pane} />}
-    />
-  )
+    if (title && title !== item.title) useGridStore.getState().setTabTitle(item.id, title)
+  }, [title, item.id, item.title])
+  if (!overview.data) return <LoadingHint>Opening the pane…</LoadingHint>
+  if (!pane) return <EmptyHint>This pane is closed.</EmptyHint>
+  return <ModPane key={`${pane.instance}/${pane.id}`} pane={pane} />
 }
 
 function ModPane({ pane }: { pane: ModPaneRef }) {
@@ -69,11 +64,8 @@ function ModPane({ pane }: { pane: ModPaneRef }) {
   )
   const act = (action: Parameters<typeof modsApi.act>[2]) =>
     runMiniAppAction(() => modsApi.act(pane.instance, pane.id, action), 'The mod did not take that')
-  const close = () =>
-    runMiniAppAction(() => modsApi.close(pane.instance, pane.id), 'The pane did not close')
   const tree = drawing.data?.tree
   const hotkeys = useMemo(() => hotkeysOf(tree ?? []), [tree])
-  // Asked forward, the pane takes the keyboard: where its `autoFocus` control is, else itself.
   const body = useRef<HTMLDivElement>(null)
   const drawn = Boolean(tree)
   useEffect(() => {
@@ -82,7 +74,7 @@ function ModPane({ pane }: { pane: ModPaneRef }) {
     ;(node?.querySelector<HTMLElement>('[data-autofocus]') ?? node)?.focus()
   }, [pane.focusRequest, drawn])
   return (
-    <>
+    <div className="flex h-full min-h-0 flex-col">
       <PanelHeader
         tone="content"
         title={
@@ -96,8 +88,13 @@ function ModPane({ pane }: { pane: ModPaneRef }) {
           </span>
         }
         actions={
-          <IconButton size="sm" aria-label="Close pane" onClick={close}>
-            <X />
+          <IconButton
+            size="sm"
+            aria-label={`${pane.plugin} settings`}
+            tooltip="Plugin settings"
+            onClick={() => openPluginSettings(pane.plugin)}
+          >
+            <Settings2 />
           </IconButton>
         }
       />
@@ -106,11 +103,11 @@ function ModPane({ pane }: { pane: ModPaneRef }) {
         role="region"
         aria-label={pane.title ?? pane.id}
         tabIndex={-1}
-        className="min-h-0 flex-1 overflow-y-auto px-4 py-3 text-sm outline-none @2xl:px-6"
+        className="min-h-0 flex-1 overflow-y-auto px-3 py-3 text-sm outline-none @2xl:px-4"
         onKeyDown={(event) => {
           if (event.key === 'Escape' && pane.closeOnEscape) {
             event.preventDefault()
-            close()
+            void closeModPane(pane)
             return
           }
           // While the pane holds the keyboard its Buttons' hotkeys press them.
@@ -121,14 +118,16 @@ function ModPane({ pane }: { pane: ModPaneRef }) {
           <LoadingHint>Drawing…</LoadingHint>
         ) : drawing.data.tree ? (
           <div className="flex flex-col gap-2">
-            <ModClientScope.Provider value={scope}>
-              <ModTree nodes={drawing.data.tree} act={act} />
-            </ModClientScope.Provider>
+            <ModSiteContext.Provider value="pane">
+              <ModClientScope.Provider value={scope}>
+                <ModTree nodes={drawing.data.tree} act={act} />
+              </ModClientScope.Provider>
+            </ModSiteContext.Provider>
           </div>
         ) : (
           <EmptyHint>{drawing.data.problem ?? 'The mod draws nothing in this pane.'}</EmptyHint>
         )}
       </div>
-    </>
+    </div>
   )
 }

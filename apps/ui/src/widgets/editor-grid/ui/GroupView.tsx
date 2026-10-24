@@ -56,7 +56,7 @@ function tabVisual(item: WorkItem | undefined, id: string) {
     attention: item?.attention ?? false,
   }
 }
-import { newTabActionFor, restartTabActionFor } from './tabActions'
+import { modPaneSettingsAction, newTabActionFor, restartTabActionFor } from './tabActions'
 import { GroupActions } from './GroupActions'
 import { TabOverflowMenu } from './TabOverflowMenu'
 
@@ -152,6 +152,7 @@ export const GroupView = memo(function GroupView({
     const multiple = visibleTabs.length > 1
     const newTab = newTabActionFor(item)
     const restart = restartTabActionFor(item)
+    const pluginSettings = modPaneSettingsAction(item)
     const visual = tabVisual(item, id)
     // File/diff tabs carry an on-disk path → offer path/reveal actions.
     const filePath =
@@ -212,6 +213,11 @@ export const GroupView = memo(function GroupView({
                 },
               },
             ]
+          : []),
+        // A mod's pane: the plugin it belongs to. (No per-plugin reload exists: a mod reloads when
+        // its plugin changes.)
+        ...(pluginSettings
+          ? [{ label: pluginSettings.label, separatorBefore: true, onSelect: pluginSettings.run }]
           : []),
         // A mini app tab: make its mini app an app, or open and remove the one it has.
         ...appActionsFor(item).map((action, index) => ({

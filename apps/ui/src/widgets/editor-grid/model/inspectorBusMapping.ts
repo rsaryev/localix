@@ -14,7 +14,7 @@ export interface CloseTarget {
 }
 
 export type GridBusEffect =
-  | { type: 'open'; item: WorkItem; ephemeral?: boolean; replace?: boolean }
+  | { type: 'open'; item: WorkItem; ephemeral?: boolean; replace?: boolean; activate?: boolean }
   | { type: 'close'; id: string }
   | { type: 'close-prefix'; prefix: string; session?: string; everyChat?: boolean }
   | { type: 'close-scope'; scope: string }
@@ -181,6 +181,7 @@ export function inspectorRequestToEffects(req: InspectorRequest): GridBusEffect[
           type: 'open',
           ephemeral: req.ephemeral,
           replace: req.replace,
+          ...(req.activate === false ? { activate: false } : {}),
           item: {
             kind: req.workKind,
             id: req.id,

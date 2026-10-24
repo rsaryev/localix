@@ -13,6 +13,7 @@ import { CapabilityRegistryBody } from './capabilities/CapabilityRegistryBody'
 import { PluginRow } from './capabilities/PluginRow'
 import { PluginGroups } from './capabilities/PluginGroups'
 import { usePluginUpdates } from '../model/usePluginUpdates'
+import { useModSummaries } from '../model/useModSummaries'
 import { trackCapabilityWrite } from '@/shared/contrib/capabilityWrites'
 import { refetchActiveMiniAppContrib } from '@/shared/contrib/enabledMiniApps'
 
@@ -28,6 +29,7 @@ export function PluginsSettings({ scope, agentScope = '', projects }: PluginsSet
   const { plugins, loading, error, busy, busyLabel, refresh, toggle, remove, saveConfig } =
     usePlugins(scope, agentScope)
   const pluginUpdates = usePluginUpdates()
+  const mods = useModSummaries()
 
   // Install panel
   const form = useInstallForm({
@@ -57,7 +59,10 @@ export function PluginsSettings({ scope, agentScope = '', projects }: PluginsSet
   // Glanceable roll-up: how many plugins have load/validation errors vs. only warnings.
   const errorCount = plugins.filter((p) => p.error || (p.validation?.errors.length ?? 0) > 0).length
   const warningCount = plugins.filter(
-    (p) => !p.error && !p.validation?.errors.length && (p.validation?.warnings.length ?? 0) > 0,
+    (p) =>
+      !p.error &&
+      !p.validation?.errors.length &&
+      ((p.validation?.warnings.length ?? 0) > 0 || mods.get(p.name)?.status === 'failed'),
   ).length
   const registryAuthoritative = plugins.length > 0 || (!loading && !error)
 
@@ -115,6 +120,7 @@ export function PluginsSettings({ scope, agentScope = '', projects }: PluginsSet
                 key={`${p.projectId}:${p.name}`}
                 plugin={p}
                 projects={projects}
+                mod={mods.get(p.name)}
                 busy={busy === p.name}
                 busyLabel={busy === p.name ? busyLabel : null}
                 configOpen={configFor === p.name}

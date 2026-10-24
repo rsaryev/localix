@@ -49,7 +49,7 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions = {}) 
   const conversations = createModConversations()
   const state = createStateSpaces({ changed: () => ports.changed() })
   const sources = new Map<string, LoadedMod>()
-  /** The events each plugin's module registered, for the Mods view (`summary.ts`). */
+  /** The events each plugin's module registered, for Settings → Plugins (`summary.ts`). */
   const hooked = new Map<string, readonly string[]>()
   const instances = new Map<string, ids.ModInstance>()
   const starting = new Map<string, Promise<string | null>>()

@@ -2,7 +2,7 @@ import type { ModPaneRef } from '@/shared/api/modsApi'
 
 /**
  * Which pane a mod asked to bring forward (`$.ui.open({ focus: true })`): each such open grows the
- * pane's `focusRequest`, and the screen opens the Mods tab on the pane once per request. What was
+ * pane's `focusRequest`, and the screen focuses the pane's tab once per request. What was
  * asked before this window first read the panes stays where it is: a restart opens nothing.
  */
 

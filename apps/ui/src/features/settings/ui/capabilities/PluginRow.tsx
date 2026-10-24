@@ -1,5 +1,6 @@
 import { pluginCapabilityLabels, pluginIssueSummary } from '@localixai/api/plugin-presentation'
 import type { PluginRecord, PluginUpdateJob, Project } from '@/shared/api/contracts'
+import type { ModSummary } from '@/shared/api/modsApi'
 import { projectScopeLabel } from '@/shared/lib/projectScope'
 import { pluginSettingsAnchor, pluginSettingsUri } from '@/shared/lib/settingsAnchors'
 import { Button } from '@localixai/kit/button'
@@ -18,6 +19,17 @@ export interface PluginRowUpdate {
   id: string
   from: string
   to: string
+}
+
+const plural = (count: number, one: string) => `${count} ${one}${count === 1 ? '' : 's'}`
+
+/** What a running mod does, in one quiet line: the events it hooks, whether it draws, its panes. */
+export function modLine(mod: ModSummary): string {
+  return [
+    mod.events.length > 0 ? `Hooks ${mod.events.join(', ')}` : 'Hooks nothing yet',
+    ...(mod.draws ? ['draws on screen'] : []),
+    ...(mod.panes > 0 ? [`${plural(mod.panes, 'pane')} open`] : []),
+  ].join(' · ')
 }
 
 const UPDATE_PHASE_LABEL: Record<Exclude<PluginUpdateJob['phase'], 'failed' | 'done'>, string> = {
@@ -46,8 +58,11 @@ export function PluginRow({
   onUpdate,
   onToggleConfig,
   onSaveConfig,
+  mod,
 }: {
   plugin: PluginRecord
+  /** Its mod, when it has a hooks module that Localix runs (`/rpc/mods`). */
+  mod?: ModSummary
   projects: Project[]
   busy: boolean
   busyLabel: string | null
@@ -71,7 +86,13 @@ export function PluginRow({
 
   const projName = projectScopeLabel(projects, plugin.projectId)
   // Static validation from the loader (same data `/plugin list` shows in chat).
-  const { errors, warnings } = pluginIssueSummary(plugin)
+  const issues = pluginIssueSummary(plugin)
+  const { errors } = issues
+  // A mod that did not load is a warning on its plugin's row: the rest of the plugin still runs.
+  const warnings =
+    mod?.status === 'failed'
+      ? [...issues.warnings, `The mod did not load: ${mod.problem ?? 'unknown reason'}`]
+      : issues.warnings
   const state =
     errors.length > 0
       ? 'error'
@@ -89,6 +110,14 @@ export function PluginRow({
   const metadata: SettingRegistryMetaItem[] = [
     ...(builtin ? [{ label: 'Built-in', title: 'Ships with Localix and updates with it' }] : []),
     { label: `v${plugin.version}` },
+    ...(mod
+      ? [
+          {
+            label: 'Mod',
+            title: 'Has a hooks module: it runs with each conversation, as in Claude Code',
+          },
+        ]
+      : []),
     ...(builtin ? [] : [{ label: projName }]),
     ...(plugin.importedFrom === 'claude-code'
       ? [{ label: 'from Claude Code', title: 'Installed by Claude Code and read in place' }]
@@ -159,6 +188,11 @@ export function PluginRow({
           {plugin.description && (
             <p className="mt-1 truncate text-xs text-text-faint" title={plugin.description}>
               {plugin.description}
+            </p>
+          )}
+          {mod?.status === 'running' && (
+            <p className="mt-1 truncate text-xs text-text-faint" title={modLine(mod)}>
+              {modLine(mod)}
             </p>
           )}
           <p className="mt-1 break-all text-xs text-text-faint" title={plugin.dir}>

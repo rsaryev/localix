@@ -127,6 +127,8 @@ export interface OpenWorkItemRequest {
   ephemeral?: boolean
   /** Reuse the active preview slot rather than piling a new tab. */
   replace?: boolean
+  /** False opens the tab in the background: placed in its group without taking the focus. */
+  activate?: boolean
 }
 
 export interface LiveFileChangeRequest extends SessionBound {

@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useContext, useState, type ReactNode } from 'react'
 import { Button } from '@localixai/kit/button'
 import { Input } from '@localixai/kit/input'
 import { Kbd } from '@localixai/kit/kbd'
@@ -6,6 +6,7 @@ import { Select } from '@localixai/kit/select'
 import { Textarea } from '@localixai/kit/textarea'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import type { ModAction } from '@/shared/api/modsApi'
+import { buttonLook, ModSiteContext } from './modStyle'
 
 /**
  * A mod's controls, drawn with the kit's own. A Button's label is its `label`, else its children;
@@ -32,19 +33,27 @@ export function ModButton(input: {
   act: Act
 }) {
   const { props } = input
+  const look = buttonLook(props, useContext(ModSiteContext))
   const hotkey = typeof props.hotkey === 'string' ? props.hotkey : undefined
   const label = typeof props.label === 'string' ? props.label : undefined
   return (
     <Button
-      size="sm"
-      variant={props.plain === true ? 'ghost' : props.variant === 'primary' ? 'mono' : 'secondary'}
-      className={cn(props.dimColor === true && 'text-text-soft hover:text-foreground')}
+      size={look.size}
+      variant={look.variant}
+      className={cn(
+        'font-normal',
+        // At the band's 20px rung the label keeps the strip's 12px text, not the rung's 11px.
+        look.size === 'xs' && 'text-xs',
+        // A plain button is a row: full width, its label at the start, its key at the end.
+        look.row && 'w-full justify-start gap-2 text-left',
+        look.quiet && 'text-text-soft hover:text-foreground',
+      )}
       aria-keyshortcuts={hotkey}
       {...autoFocusOf(props)}
       onClick={() => input.act({ kind: 'press', element: text(props.key) })}
     >
-      {label ?? (input.hasChildren ? input.children : '')}
-      {hotkey && <Kbd>{hotkey}</Kbd>}
+      <span className="min-w-0 truncate">{label ?? (input.hasChildren ? input.children : '')}</span>
+      {hotkey && <Kbd className="ml-auto">{hotkey}</Kbd>}
     </Button>
   )
 }

@@ -50,7 +50,7 @@ export interface ModPaneRef {
   focusRequest: number
 }
 
-/** One mod as the Mods view lists it (`features/mods/summary.ts` on the API). */
+/** One mod as its plugin's row in Settings lists it (`features/mods/summary.ts` on the API). */
 export interface ModSummary {
   plugin: string
   version?: string

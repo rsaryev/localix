@@ -6,7 +6,7 @@ import { summarize } from './summary'
 
 const scratch = tempDirPerTest('mods-summary', {})
 
-test('the Mods view lists each mod with its version, what it hooks, its panes and why one failed', () => {
+test('each plugin row lists its mod with its version, what it hooks, its panes and why one failed', () => {
   const root = scratch()
   mkdirSync(join(root, '.claude-plugin'))
   writeFileSync(join(root, '.claude-plugin/plugin.json'), JSON.stringify({ version: '1.2.0' }))

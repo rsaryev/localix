@@ -95,7 +95,8 @@ test('Claude Code’s control and text props draw: labels from children, hotkeys
   expect(added.style.whiteSpace).toBe('pre-wrap')
   expect(added.style.color).toBe('var(--status-success)')
   const inverse = [...host.querySelectorAll('span')].find((span) => span.textContent === ' 1 ')!
-  expect(inverse.style.backgroundColor).toBe('var(--foreground)')
+  // Inverse is a chip on a veil, not a block of reversed video.
+  expect(inverse.style.backgroundColor).toBe('var(--surface-active)')
   await act(async () => root.unmount())
   host.remove()
 })

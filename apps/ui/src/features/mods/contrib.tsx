@@ -1,10 +1,9 @@
-import { lazy, Suspense, useEffect } from 'react'
+import { lazy, Suspense } from 'react'
 import { Blocks } from 'lucide-react'
 import type { MiniAppUiHost, StatusItemState } from '@localixai/mini-app-sdk/ui'
 import { LoadingHint } from '@localixai/kit/empty-hint'
-import { inspector } from '@/shared/lib/inspectorBus'
-import { paneFocus } from './model/paneFocus'
-import { useModsOverview } from './model/useMods'
+import { ModPaneTabs } from './model/ModPaneTabs'
+import { MOD_PANE_KIND } from './model/paneTabs'
 import { useModSession } from './model/useModSession'
 
 const ModsAbovePromptLazy = lazy(() =>
@@ -23,14 +22,16 @@ function ModsAbovePromptSlot(props: {
   )
 }
 
-const ModsWorkspaceLazy = lazy(() =>
-  import('./ui/ModsWorkspace').then((module) => ({ default: module.ModsWorkspace })),
+const ModPaneBodyLazy = lazy(() =>
+  import('./ui/ModPaneBody').then((module) => ({ default: module.ModPaneBody })),
 )
 
-function ModsWorkspaceBody() {
+function ModPaneContent(props: {
+  item: { id: string; title: string; payload?: Record<string, unknown> }
+}) {
   return (
-    <Suspense fallback={<LoadingHint>Opening mods…</LoadingHint>}>
-      <ModsWorkspaceLazy />
+    <Suspense fallback={<LoadingHint>Opening the pane…</LoadingHint>}>
+      <ModPaneBodyLazy {...props} />
     </Suspense>
   )
 }
@@ -49,27 +50,22 @@ function useModsStatusItem(sessionId: string | null): StatusItemState | null {
   }
 }
 
-/** A pane a mod asked forward (`$.ui.open({ focus })`) opens the Mods tab on it. */
-function ModsPaneFocus() {
-  const panes = useModsOverview().data?.panes
-  useEffect(() => {
-    if (!panes || paneFocus.take(panes).length === 0) return
-    inspector.openWorkItem({ workKind: 'mods', id: 'mods', title: 'Mods', scope: null })
-  }, [panes])
-  return null
-}
-
 let registered = false
 
-/** Claude Code mods: the panes they open, in one app-wide tab. */
+/**
+ * Claude Code mods: each pane a mod opens is a workspace tab of its own, and the band above the
+ * message box is a strip of the composer's header stack. Which mods are installed, and what each
+ * hooks, is in Settings → Plugins.
+ */
 export function registerUi(host: MiniAppUiHost): void {
   if (registered) return
   registered = true
   host.workItems.register({
-    kind: 'mods',
-    Component: ModsWorkspaceBody,
+    kind: MOD_PANE_KIND,
+    Component: ModPaneContent,
     Icon: Blocks,
     restorable: true,
+    // Panes are app-wide: each names the project its mod runs in.
     scope: 'global',
   })
   host.statusItems.register({
@@ -77,17 +73,8 @@ export function registerUi(host: MiniAppUiHost): void {
     placement: 'composer',
     useItem: useModsStatusItem,
   })
-  host.sessionSurfaces.register({ surface: 'chat.background', Component: ModsPaneFocus })
+  // Keeps the pane tabs in step with the panes; one mounted instance does the work.
+  host.sessionSurfaces.register({ surface: 'chat.background', Component: ModPaneTabs })
   // Claude Code's `AbovePrompt` site: a strip in the composer's header stack.
   host.sessionSurfaces.register({ surface: 'composer.header', Component: ModsAbovePromptSlot })
-  host.railViewlets.register({
-    kind: 'mods',
-    title: 'Mods',
-    label: 'Mods — panes Claude Code mods open',
-    toolCategory: 'utilities',
-    // Out of the bar until a mod is installed: most people never load one.
-    defaultArea: 'overflow',
-    keywords: ['mods', 'mod', 'hooks module', 'claude code', 'pane', 'plugin'],
-    Icon: Blocks,
-  })
 }

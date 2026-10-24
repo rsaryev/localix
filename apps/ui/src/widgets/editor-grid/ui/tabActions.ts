@@ -1,5 +1,10 @@
 import { sessionOfScope, type WorkItem } from '@/entities/workspace-grid/model'
 import { openNewTerminal, restartTerminalTab } from '@/features/terminal/model/terminalTabs'
+import {
+  MOD_PANE_KIND,
+  modPaneTabPayload,
+  openPluginSettings,
+} from '@/features/mods/model/paneTabs'
 
 /** A "create another tab of this kind" action, surfaced in the tab CONTEXT MENU.
  *  Lives in the widget layer — the place allowed to know about features — so the
@@ -41,4 +46,10 @@ export function restartTabActionFor(item: WorkItem | undefined): NewTabAction | 
       void restartTerminalTab(item.id)
     },
   }
+}
+
+/** A mod pane's tab: "Plugin settings" opens Settings on the plugin whose mod opened it. */
+export function modPaneSettingsAction(item: WorkItem | undefined): NewTabAction | null {
+  const plugin = item?.kind === MOD_PANE_KIND ? modPaneTabPayload(item.payload)?.plugin : null
+  return plugin ? { label: 'Plugin settings', run: () => openPluginSettings(plugin) } : null
 }

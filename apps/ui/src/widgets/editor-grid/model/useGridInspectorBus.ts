@@ -95,7 +95,12 @@ export function applyGridInspectorRequest(req: InspectorRequest): void {
       }
     }
     const group = already ? already.id : st.resolveRoleGroup(eff.item.kind)
-    st.openItem(eff.item, { group, ephemeral: eff.ephemeral, replace: eff.replace })
+    st.openItem(eff.item, {
+      group,
+      ephemeral: eff.ephemeral,
+      replace: eff.replace,
+      ...(eff.activate === false ? { activate: false } : {}),
+    })
   }
 }
 

@@ -55,7 +55,7 @@ too, without waiting. An `engine.create` step adds nouns of its own (`$.telemetr
 | `$.model.complete`, `fork`, `classify`                                                           | One completion on the chat's model; a question after the conversation, with its system prompt                  |
 | `$.session.*`, `$.turn.abort`                                                                    | The chat's transcript, model, usage, repository and checkpoint; stop the turn                                  |
 | `$.prompt.submit`, `fill`, `suggest`, `compose`, `read`                                          | A new turn; the message box's draft and its ghost suggestion (Tab); the system prompt's sections               |
-| `$.ui.open`, `close`, `panes`, `status`, `ask`, `toast`, `log`, `copy`                           | Panes in the **Mods** view; the status line under the message box; a question card; notices                    |
+| `$.ui.open`, `close`, `panes`, `status`, `ask`, `toast`, `log`, `copy`                           | Panes as workspace tabs; the status line under the message box; a question card; notices                       |
 | `$.store`, `$.fs`, `$.http`, `$.process`, `$.env`, `$.clock`, `$.settings`                       | Supported; files resolve from the project's folder; settings from Claude Code's settings files                 |
 | `$.audio.speak`, `play`                                                                          | The system's voice and player                                                                                  |
 | `$.config`                                                                                       | No rows: Localix keeps its settings elsewhere                                                                  |
@@ -70,15 +70,60 @@ A mod draws in the band above a chat's message box with `ui.render` for
 `hasSurvey`, `isWorking`, `maxRows`, `bodyColumns`, `scroll` and `view`; the mods of the chat's
 project compose it, `next(e)` giving what the mods after one drew. The band's Buttons press by their
 `hotkey` while the band has focus, and a digit typed alone into the empty message box presses the
-band's Button on that digit after a pause. The mark at the band's right end collapses it to one row,
-where no hotkey presses. A press, a typed value or a pick runs in the chat, so `$.prompt.fill` puts
-text in its message box.
+band's Button on that digit after a pause. The mark at the band's right end collapses it to one row
+of what each part says, where no hotkey presses; a click on that row opens it again. A press, a
+typed value or a pick runs in the chat, so `$.prompt.fill` puts text in its message box.
 
-A pane opened with `$.ui.open({ focus: true })` opens the **Mods** view on it and takes the
-keyboard, starting at its `autoFocus` control, and answers `{ isPlaced: true }`; one opened without
-`focus` waits in the view's list and answers `{ isPlaced: false, reason }`. A pane's Buttons press
-by `hotkey` while it has focus, and `closeOnEscape` closes it on Escape. Its events run in the chat
-that opened it.
+## Panes as tabs
+
+Each pane a mod opens is a workspace tab of its own, titled with the pane's `title` and named in its
+header with the plugin and the project the mod runs in. `$.ui.open({ focus: true })` opens the tab
+focused and takes the keyboard, starting at its `autoFocus` control, and answers
+`{ isPlaced: true }`; `$.ui.open` without `focus` opens the tab in the background, where it is not
+drawn until the person brings it forward, and answers `{ isPlaced: false, reason }`. A pane's
+Buttons press by `hotkey` while it has focus, and `closeOnEscape` closes it on Escape. Its events
+run in the chat that opened it.
+
+Closing the tab is the person closing the pane: the mod hears `ui.close` with
+`origin.kind: 'person'`, and a mod that refuses keeps the pane, whose tab comes back. A pane the mod
+closes closes its tab, and after a restart a tab whose pane is gone closes. The tab's menu has
+**Close** and **Plugin settings**. A mod reloads when its plugin changes; there is no per-plugin
+reload.
+
+## How Localix draws a mod
+
+A mod is written for a terminal; Localix draws its tree with its own controls at the density of the
+place it draws on. The rules come from the site and the shape of the tree, never from which mod drew
+it, so every mod gets the same table.
+
+| Prop or element                                  | In the band above the message box                                                | In a pane tab                      |
+| ------------------------------------------------ | -------------------------------------------------------------------------------- | ---------------------------------- |
+| Text                                             | 12px, meta 11px                                                                  | 13px, meta 12px                    |
+| One cell of spacing (`gap`, `padding`, …)        | 4px across, 2px down, at most 12px                                               | 6px across, 4px down, at most 24px |
+| Steps `xs` `sm` `md` `lg` `xl`                   | 2, 4, 6, 8, 12px                                                                 | 2, 4, 8, 12, 16px                  |
+| `width`, `height` in cells                       | A character of the text across, a line down                                      | The same                           |
+| `size` caption, footnote / body / heading, title | Meta / text / text                                                               | Meta / text / text, title 14px     |
+| `bold`, `weight`                                 | Medium                                                                           | Semibold; `medium` stays medium    |
+| `dimColor`                                       | The soft text tone                                                               | The same                           |
+| `color` (a name, hex or `rgb()`)                 | The nearest theme colour, toned toward the strip's text                          | The nearest theme colour           |
+| `backgroundColor`                                | A soft tint of that colour                                                       | The same                           |
+| `inverse`                                        | A small chip in the colour                                                       | The same                           |
+| `borderStyle`                                    | A hairline with rounded corners; `bold`, `double` a stronger line; `quote` a bar | The same                           |
+| Button                                           | A 20px button with its key at the end                                            | A 24px button                      |
+| Button `plain`; `variant` primary, danger        | A quiet row; the solid and the destructive button                                | The same                           |
+| `Code`, `Markdown`, `Input`, `Select`            | A compact code block, the app's Markdown, kit fields                             | The same at pane size              |
+
+Theme colours are the error, success, warning and info colours for red, green, yellow and blue, and
+fixed chart colours for cyan and magenta; greys are the soft or faint text. A colour therefore reads
+in the light and the dark theme alike.
+
+The band also lays its tree out by shape. A column `Box` with no frame or ground only stacks, and an
+empty `Box` only spaces, so the band's own rows and hairlines take their place. Two or more `plain`
+Buttons each alone on a row, with an optional text-only line before them as their label, are a list
+of picks: one row of chips with their keys. Rows of text and buttons one line high sit side by side
+in one row. A row that does not fit scrolls sideways, with the wheel and with ← and →. Anything else
+(a framed box, a field, code) is drawn as it is, and the band scrolls past 10 rows. The band draws
+one tree composed by all of a chat's mods, so it has no menu per mod.
 
 A Button without a `key` is addressed by its label, else its one string child, and draws its
 children as its label; `plain`, `variant`, `dimColor` and `hotkey` show as Localix draws a button
@@ -107,10 +152,11 @@ follow the windows showing the conversation. `plugin.register` lets the project'
 one, and `ui.resolve` restyles the elements its panes draw with.
 
 A hook has 10 seconds of its own time, as in Claude Code; a hook that runs over or throws is
-skipped, and the API log names it. `next.to(e, 'append')` passes the rest of the user tier. A module
-that does not load shows its error in the **Mods** view, which opens from the rail's overflow menu.
-Claude Code's own mods — `diff`, `agents-md`, `sec-default`, `telemetry` — and the
-`code-modernization` plugin load and run their hooks, commands and panes in Localix.
+skipped, and the API log names it. `next.to(e, 'append')` passes the rest of the user tier. Settings
+→ Capabilities → Plugins marks each plugin with a hooks module as a **Mod**, with the events it
+hooks, whether it draws and its open panes; a module that does not load shows its error as a warning
+on its plugin's row. Claude Code's own mods — `diff`, `agents-md`, `sec-default`, `telemetry` — and
+the `code-modernization` plugin load and run their hooks, commands and panes in Localix.
 
 ## Not yet in Localix
 
