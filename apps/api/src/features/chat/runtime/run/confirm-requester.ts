@@ -15,6 +15,7 @@ import { grantedScopes, grantScope as recordGrant } from '../session-grants'
 import { confirmTitle, readConfirmAnswer, wireGrants } from './confirm-answer'
 import { hostPolicy } from '../../policy/session-policy'
 import { hookConfirmOutcome, raceCardWithPermissionHooks } from './permission-request-hook'
+import { grantsFromUpdates, permissionSuggestions } from './permission-hook-grants'
 
 /**
  * Builds the per-run "request a tool-approval confirm" function: tracks the
@@ -79,6 +80,39 @@ export function createConfirmRequester(
     const offered = (confirmArgs.grants ?? []).map((grant) =>
       grant.rule && !env.deps.persistPermissionRule ? { ...grant, rule: undefined } : grant,
     )
+    // "Always" → a row in `capability_rule` for the agent that asked, which outlives the
+    // process and is visible and revocable in Settings. The key is `args.agentId`: the rule
+    // repository is keyed by agent, and a rule stored under any other id is never read. It is
+    // written BEFORE the session grant, and a failed write withholds that grant too, so the
+    // user is asked again instead of believing a permanent answer that nothing recorded.
+    // "This session" (and "Always", for the rest of this turn) → remember the chosen breadth
+    // so later confirms it covers auto-approve (see RuntimeState.sessionAutoApprovedTools).
+    // No offered grant — an interpreter, a chained line, a credential path — means the
+    // approval covers this one call and the next one asks again.
+    const remember = async (grant: (typeof offered)[number], always: boolean) => {
+      if (always && grant.rule) {
+        try {
+          await env.deps.persistPermissionRule?.(userId, args.agentId, grant.rule)
+        } catch (error) {
+          args.hookRunOptions.logger.warn(
+            `[permissions] "Always" rule not saved for ${args.agentId}: ${String(error)}`,
+          )
+          return
+        }
+      }
+      const listed = recordGrant(
+        env.state.sessionAutoApprovedTools,
+        targetSessionId,
+        requester,
+        grant.scope,
+      )
+      // Surface the new grant so the composer permissions chip can show + revoke it.
+      env.deps.streamRegistry.publish(userId, targetSessionId, {
+        type: 'session_permissions.updated',
+        sessionId: targetSessionId,
+        autoApprovedTools: listed,
+      })
+    }
     const payload = {
       command: confirmArgs.command ?? confirmArgs.toolName,
       ...(confirmArgs.subject ? { subject: confirmArgs.subject } : {}),
@@ -165,6 +199,7 @@ export function createConfirmRequester(
           toolName: confirmArgs.toolName,
           ...(args.hookTool ? { tool: args.hookTool(confirmArgs.toolName) } : {}),
           input: call?.input,
+          suggestions: permissionSuggestions(offered, confirmArgs.toolName),
         },
         signal,
         (cardSignal) =>
@@ -175,6 +210,15 @@ export function createConfirmRequester(
       )
       if (raced.kind === 'hook') {
         fireHitlResolved({ dismissed: true })
+        // A hook that echoed a suggestion back widens the approval as that card answer would.
+        if (raced.decision.behavior === 'allow') {
+          const picks = grantsFromUpdates(
+            raced.decision.updatedPermissions,
+            offered,
+            confirmArgs.toolName,
+          )
+          for (const { grant, always } of picks) await remember(grant, always)
+        }
         return hookConfirmOutcome(ccHooks, confirmArgs.toolCallId, raced.decision, args.stopRun)
       }
       const response = raced.value
@@ -186,40 +230,7 @@ export function createConfirmRequester(
       const answer = readConfirmAnswer(response.payload.answers, offered)
       const { confirmed, grant } = answer
       const reply = answer.message ? { message: answer.message } : {}
-      // "Always" → a row in `capability_rule` for the agent that asked, which outlives the
-      // process and is visible and revocable in Settings. The key is `args.agentId`: the rule
-      // repository is keyed by agent, and a rule stored under any other id is never read. It is
-      // written BEFORE the session grant, and a failed write withholds that grant too, so the
-      // user is asked again instead of believing a permanent answer that nothing recorded.
-      let persistFailed = false
-      if (confirmed && answer.scope === 'always' && grant?.rule) {
-        try {
-          await env.deps.persistPermissionRule?.(userId, args.agentId, grant.rule)
-        } catch (error) {
-          persistFailed = true
-          args.hookRunOptions.logger.warn(
-            `[permissions] "Always" rule not saved for ${args.agentId}: ${String(error)}`,
-          )
-        }
-      }
-      // "This session" (and "Always", for the rest of this turn) → remember the chosen breadth
-      // so later confirms it covers auto-approve (see RuntimeState.sessionAutoApprovedTools).
-      // No offered grant — an interpreter, a chained line, a credential path — means the
-      // approval covers this one call and the next one asks again.
-      if (confirmed && !persistFailed && grant) {
-        const listed = recordGrant(
-          env.state.sessionAutoApprovedTools,
-          targetSessionId,
-          requester,
-          grant.scope,
-        )
-        // Surface the new grant so the composer permissions chip can show + revoke it.
-        env.deps.streamRegistry.publish(userId, targetSessionId, {
-          type: 'session_permissions.updated',
-          sessionId: targetSessionId,
-          autoApprovedTools: listed,
-        })
-      }
+      if (confirmed && grant) await remember(grant, answer.scope === 'always')
       return { approved: confirmed, via: 'user', ...reply }
     } catch (error) {
       fireHitlResolved({ dismissed: true })

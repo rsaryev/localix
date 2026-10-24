@@ -116,6 +116,12 @@ session's running jobs, monitors and delegated tasks as `background_tasks` and i
 `session_crons`. Two fields are never sent: `scratchpad_dir`, since a Localix session has no
 scratchpad, and `session_title`, since Localix does not record whether a person named the session.
 
+A `PermissionRequest` hook reads the card's widenings as `permission_suggestions`: an `addRules`
+allow entry for the session, and for the settings destinations when the breadth can be saved as an
+"Always" rule. Echoing one back in `updatedPermissions` grants it as picking it on the card would;
+an entry that is none of the suggestions grants nothing. PreToolUse's deprecated top-level
+`decision: "approve"` reads as `allow`.
+
 ### Earlier installs
 
 Versions before this one converted a Claude Code plugin at install and wrote a root `plugin.json`

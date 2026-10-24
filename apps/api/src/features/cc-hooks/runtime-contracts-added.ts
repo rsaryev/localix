@@ -20,6 +20,8 @@ export interface PermissionRequestResult {
   behavior?: 'allow' | 'deny'
   /** `allow` only: replaces the whole tool input (re-validated where the call runs). */
   updatedInput?: unknown
+  /** `allow` only: permission update entries, such as one of the `permission_suggestions`. */
+  updatedPermissions?: unknown[]
   /** `deny` only: tells the model why. */
   message?: string
   /** `deny` only: stop the run as well. */

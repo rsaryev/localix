@@ -21,7 +21,7 @@ export type CardRace<T> =
 export async function raceCardWithPermissionHooks<T>(
   ccHooks: CcHooksRuntime,
   /** `tool`, when known, carries the MCP aliases and server a hook matcher and input read. */
-  call: { toolName: string; tool?: CcHookToolRef; input: unknown },
+  call: { toolName: string; tool?: CcHookToolRef; input: unknown; suggestions?: unknown[] },
   signal: AbortSignal,
   ask: (signal: AbortSignal) => Promise<T>,
 ): Promise<CardRace<T>> {
@@ -29,7 +29,11 @@ export async function raceCardWithPermissionHooks<T>(
   const hookDecided = new AbortController()
   let decided: CardRace<T> | undefined
   void ccHooks
-    .runPermissionRequest(call.tool ?? call.toolName, call.input)
+    .runPermissionRequest(
+      call.tool ?? call.toolName,
+      call.input,
+      call.suggestions?.length ? { suggestions: call.suggestions } : undefined,
+    )
     .then((decision) => {
       if (!decision.behavior || decided || signal.aborted) return
       decided = { kind: 'hook', decision: { ...decision, behavior: decision.behavior } }

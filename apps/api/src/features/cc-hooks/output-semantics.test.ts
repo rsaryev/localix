@@ -107,3 +107,13 @@ describe('an http hook’s 2xx body', () => {
     expect(result.blocked).toBe(true)
   })
 })
+
+describe('PreToolUse’s deprecated top-level decision', () => {
+  it('"approve" reads as allow, with its reason', async () => {
+    const result = await make(
+      'PreToolUse',
+      `cat >/dev/null; echo '{"decision":"approve","reason":"read-only"}'`,
+    ).runPreToolUse('bash', { command: 'ls' })
+    expect(result).toMatchObject({ decision: 'allow', reason: 'read-only' })
+  })
+})

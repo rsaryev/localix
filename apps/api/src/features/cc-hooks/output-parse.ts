@@ -78,6 +78,11 @@ export function foldHookOutput(text: string, allowPlainTextContext: boolean): Cc
     if (typeof hso.worktreePath === 'string' && hso.worktreePath.trim())
       outcome.worktreePath = hso.worktreePath.trim()
   }
+  // PreToolUse's deprecated top-level `decision: "approve"` maps to `allow` ("block" is a deny).
+  if (json.decision === 'approve' && outcome.permissionDecision === undefined) {
+    outcome.permissionDecision = 'allow'
+    if (typeof json.reason === 'string') outcome.permissionDecisionReason ??= json.reason
+  }
   const watchPaths = stringArray(hso?.watchPaths) ?? stringArray(json.watchPaths)
   if (watchPaths) outcome.watchPaths = watchPaths
   return outcome
@@ -121,6 +126,9 @@ function permissionRequestDecision(raw: unknown): CcHookOutcome['permissionReque
     behavior: raw.behavior,
     ...(raw.behavior === 'allow' && 'updatedInput' in raw
       ? { updatedInput: raw.updatedInput }
+      : {}),
+    ...(raw.behavior === 'allow' && Array.isArray(raw.updatedPermissions)
+      ? { updatedPermissions: raw.updatedPermissions }
       : {}),
     ...(raw.behavior === 'deny' && typeof raw.message === 'string' ? { message: raw.message } : {}),
     ...(raw.behavior === 'deny' && raw.interrupt === true ? { interrupt: true } : {}),

@@ -181,6 +181,7 @@ export interface CcHookOutcome {
   permissionRequest?: {
     behavior: 'allow' | 'deny'
     updatedInput?: unknown
+    updatedPermissions?: unknown[]
     message?: string
     interrupt?: boolean
   }
