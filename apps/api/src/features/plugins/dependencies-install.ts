@@ -1,4 +1,5 @@
 import type { ExtensionTreeInput } from '../ext/publish-trees'
+import { dependencyTagVersions } from './dependency-tag-versions'
 import { loadManifest, type DiscoveredPlugin } from './discovery'
 import { applyEntryManifestOverrides } from './marketplace-entry-manifest'
 import type {
@@ -60,9 +61,12 @@ export interface PreparedDependencyInstall {
 export function marketplaceDependencyResolver(
   registryDeps: MarketplaceRegistryDeps,
   installed: Map<string, string | undefined>,
+  constraints?: DependencyResolverDeps['constraints'],
 ): DependencyResolverDeps {
   return {
     installed,
+    ...(constraints ? { constraints } : {}),
+    versionsOf: (name, marketplace) => dependencyTagVersions(name, marketplace, registryDeps),
     findMarketplacesWithPlugin: (name) => findMarketplacesWithPlugin(name, registryDeps),
     getAllowList: (marketplace) => marketplaceDependencyAllowList(marketplace, registryDeps),
     resolveFromMarketplace: async (name, marketplace, range) => {
@@ -133,7 +137,19 @@ export async function prepareDependenciesForInstall(
   // A cycle back to the root is satisfied by the parent in this same publication.
   // Its own dependencies are already the traversal roots; never schedule its tree twice.
   installed.set(rootStep.name, rootStep.version)
-  const resolver = marketplaceDependencyResolver(registryDeps, installed)
+  // The ranges the other installed plugins put on each dependency (dependencies.md, "Combine
+  // constraints from several plugins").
+  const constraints = new Map<string, Array<{ range: string; by: string }>>()
+  for (const plugin of reachable) {
+    if (plugin.manifest.name === rootStep.name) continue
+    for (const dep of normalizePluginDependencies(plugin.manifest.dependencies))
+      if (dep.version)
+        constraints.set(dep.name, [
+          ...(constraints.get(dep.name) ?? []),
+          { range: dep.version, by: plugin.manifest.name },
+        ])
+  }
+  const resolver = marketplaceDependencyResolver(registryDeps, installed, constraints)
   const plan = await resolveDependencyPlan(rootStep.dependencies, resolved.marketplace, resolver)
 
   return {
@@ -147,6 +163,8 @@ export async function prepareDependenciesForInstall(
           source: step.dir,
           name: step.entry.name,
           linkRoot: step.linkRoot,
+          // An installed dependency the combined ranges move to another version is replaced.
+          ...(installed.has(step.name) && step.name !== rootStep.name ? { replace: true } : {}),
           prepare: async (staged) => {
             await applyEntryManifestOverrides(staged, step.entry)
             const plugin = await loadManifest(staged, ops.scope, ops.projectId)

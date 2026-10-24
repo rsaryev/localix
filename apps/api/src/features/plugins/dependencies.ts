@@ -113,6 +113,18 @@ export interface DependencyResolverDeps {
   ): Promise<ResolvedDependencyStep>
   /** The catalog's `allowCrossMarketplaceDependenciesOn` list ([] when absent/unreadable). */
   getAllowList(marketplace: string): Promise<string[]>
+  /** Ranges other installed plugins put on a dependency, each with the plugin that set it. */
+  constraints?: Map<string, Array<{ range: string; by: string }>>
+  /** The versions a marketplace can install a plugin at (its release tags), when it has any. */
+  versionsOf?(name: string, marketplace: string): Promise<string[]>
+}
+
+const satisfies = (version: string | undefined, range: string) => {
+  try {
+    return version !== undefined && Bun.semver.satisfies(version, range)
+  } catch {
+    return true // an unparseable range constrains nothing
+  }
 }
 
 /**
@@ -140,14 +152,23 @@ export async function resolveDependencyPlan(
       if (visited.has(dep.name)) continue // cycle / diamond — already handled
       visited.add(dep.name)
 
+      // Every range on the dependency, this plugin's and the installed plugins' (dependencies.md,
+      // "Combine constraints from several plugins").
+      const ranges = [
+        ...(dep.version ? [{ range: dep.version, by: 'this plugin' }] : []),
+        ...(deps.constraints?.get(dep.name) ?? []),
+      ]
+      const combined = ranges.map((found) => found.range).join(' ')
       if (deps.installed.has(dep.name)) {
-        const w = dependencyVersionWarning(
-          dep,
-          deps.installed.get(dep.name),
-          'the installed plugin',
-        )
-        if (w) warnings.push(w)
-        continue // satisfied; its own deps were handled when IT was installed
+        const version = deps.installed.get(dep.name)
+        // Another plugin's range is on it too and the installed copy misses one: it moves to a
+        // version every range admits (resolved below), or the install is refused.
+        const moves = ranges.length > 1 && !ranges.every((found) => satisfies(version, found.range))
+        if (!moves) {
+          const w = dependencyVersionWarning(dep, version, 'the installed plugin')
+          if (w) warnings.push(w)
+          continue // satisfied; its own deps were handled when IT was installed
+        }
       }
 
       const named = dep.marketplace
@@ -174,7 +195,15 @@ export async function resolveDependencyPlan(
         )
       }
 
-      const step = await deps.resolveFromMarketplace(dep.name, chosen, dep.version)
+      if (ranges.length > 1 && deps.versionsOf) {
+        const versions = await deps.versionsOf(dep.name, chosen)
+        if (versions.length && !versions.some((v) => ranges.every((r) => satisfies(v, r.range))))
+          throw new InvalidRequestError(
+            'plugin_dependency_conflict',
+            `Dependency "${dep.name}" has conflicting version requirements: ${ranges.map((r) => `${r.range} (${r.by})`).join(', ')}. Nothing was installed.`,
+          )
+      }
+      const step = await deps.resolveFromMarketplace(dep.name, chosen, combined || undefined)
       const w = dependencyVersionWarning(dep, step.version, `"${dep.name}@${chosen}"`)
       if (w) warnings.push(w)
       steps.push(step)

@@ -119,6 +119,16 @@ marketplace already added, nor run a `headersHelper`. Localix's project scope is
 Claude Code's `local` scope; Claude Code's shared project scope is read from the repository's
 `.claude/settings.json`.
 
+### Dependencies
+
+A dependency's `version` range installs the highest `<plugin>--v<version>` release tag of the
+dependency's repository that the range admits. When several installed plugins constrain the same
+dependency, it resolves to the highest version every range admits, and an installed copy outside one
+of them moves to that version. Ranges that share no version refuse the install with
+`Dependency "<name>" has conflicting version requirements`, naming each range and the plugin that
+set it; what is installed stays as it was. A plugin whose installed dependency is outside its range
+does not load and says `Requires "<name>" <range>, installed <version>`.
+
 ## Limits
 
 - Only user-scope copies from a marketplace go into the version cache and are auto-updated; a
