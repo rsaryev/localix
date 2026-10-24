@@ -46,3 +46,16 @@ export function runAsPluginAgent<Agent extends { instructions?: string | null }>
     disabledTools: [...new Set([...input.disabledTools, ...off])],
   }
 }
+
+/**
+ * Whose `tools` list is the run's exact surface (`run-profile.ts`): the agent type a child runs
+ * as, else the plugin agent the chat runs as when its file has a list. Without a list the chat
+ * keeps its own surface, and only the Claude Code tools a list would name are switched off.
+ */
+export function runToolsAgent<T extends { tools?: readonly string[] }>(
+  subagent: T | null | undefined,
+  mainAgent: { tools?: readonly string[] } | null | undefined,
+): T | { tools: readonly string[] } | null {
+  if (subagent) return subagent
+  return mainAgent?.tools ? { tools: mainAgent.tools } : null
+}

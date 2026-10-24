@@ -25,7 +25,7 @@ import { createMiniAppAgentDirectory } from '../../../../mini-apps/agent-directo
 import { runHumanAssignedHooks } from '../../../../mini-apps/hooks'
 import type { LoadedMiniAppHook } from '../../../../mini-apps/loader-contract'
 import { publishHumanAssignment } from '../human-assignment'
-import { applyPluginMainAgent } from '../plugin-main-agent'
+import { applyPluginMainAgent, runToolsAgent } from '../plugin-main-agent'
 import { applyPluginSubagent, contextFilesFor } from '../plugin-subagent'
 import { adoptPluginAgentModel } from '../plugin-main-agent-model'
 import { reloadedSkillsNote } from '../cc-reload-skills'
@@ -231,6 +231,8 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
     // The plugin agent type a delegated child runs as: its `tools` shape the run's surface, and
     // its `omitClaudeMd` the instruction files it reads.
     pluginSubagent: asType?.subagent ?? null,
+    // The tools list the run's surface is exact to: the agent type's, or the main agent's.
+    toolsAgent: runToolsAgent(asType?.subagent, main.mainAgent),
     ...(humanProfile ? { human: humanProfile } : {}),
     hookRunOptions,
     ccHooks,

@@ -46,7 +46,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
     session,
     inputs.agent.instructions,
     params.scope,
-    inputs.pluginSubagent,
+    inputs.toolsAgent ?? inputs.pluginSubagent,
   )
   // Protected orchestration authority comes only from the host, never from the agent.
   const toolSurface = executionToolSurface(params.scope.executionContext)

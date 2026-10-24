@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 
-import { applyPluginMainAgent, runAsPluginAgent } from './plugin-main-agent'
+import { applyPluginMainAgent, runAsPluginAgent, runToolsAgent } from './plugin-main-agent'
 import type { LoadedPluginAgent } from '../../../plugins/loader-contract'
 
 const reviewer: LoadedPluginAgent = {
@@ -57,4 +57,13 @@ describe('a plugin’s default agent setting', () => {
     }
     expect(applyPluginMainAgent(input, null, chat).agent).toBe(input.agent)
   })
+})
+
+// sub-agents.md, `tools`: an allowlist — "The subagent can't edit files, write files, or use any
+// MCP tools" beyond it. Run as the main session agent, the same list is the chat's whole surface.
+test('the main agent’s tools list is the exact surface of the run', () => {
+  expect(runToolsAgent(null, reviewer)).toEqual({ tools: ['read', 'search'] })
+  expect(runToolsAgent(null, { ...reviewer, tools: undefined })).toBeNull()
+  const child = { ...reviewer, tools: ['read'] }
+  expect(runToolsAgent(child, reviewer)).toBe(child)
 })
