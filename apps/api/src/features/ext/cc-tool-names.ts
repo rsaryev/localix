@@ -48,6 +48,10 @@ export const CC_TOOL_NAME_MAP: Readonly<Record<string, string>> = {
   // CC HITL. `EnterPlanMode`/`ExitPlanMode` have no equivalent: this engine has no plan
   // mode and no plan tool, so they stay unmapped and a frontmatter list drops them.
   askuserquestion: 'ask',
+  // CC `Agent` (formerly `Task`) spawns subagents; the engine's is `delegate`. Its type allowlist
+  // (`Agent(worker)`) is stripped with the rest of the pattern syntax.
+  agent: 'delegate',
+  task: 'delegate',
 }
 
 /**

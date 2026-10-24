@@ -70,7 +70,7 @@ describe('normalizeCcToolName (single source of truth for CC→engine mapping)',
   it('maps CC alias names to engine names', () => {
     expect(normalizeCcToolName('Grep')).toBe('search')
     expect(normalizeCcToolName('Glob')).toBe('search')
-    expect(normalizeCcToolName('Agent')).toBe('agent')
+    expect(normalizeCcToolName('Agent')).toBe('delegate')
     expect(normalizeCcToolName('WebFetch')).toBe('research')
     expect(normalizeCcToolName('WebSearch')).toBe('research')
     expect(normalizeCcToolName('AskUserQuestion')).toBe('ask')

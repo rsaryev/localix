@@ -17,8 +17,8 @@ describe('CC_TOOL_NAME_MAP', () => {
     expect(CC_TOOL_NAME_MAP['write']).toBe('write')
     expect(CC_TOOL_NAME_MAP['edit']).toBe('edit')
     expect(CC_TOOL_NAME_MAP['multiedit']).toBe('edit')
-    expect(CC_TOOL_NAME_MAP['agent']).toBeUndefined()
-    expect(CC_TOOL_NAME_MAP['task']).toBeUndefined()
+    expect(CC_TOOL_NAME_MAP['agent']).toBe('delegate')
+    expect(CC_TOOL_NAME_MAP['task']).toBe('delegate')
     // CC task and team tools have no core equivalent: a task board is a plugin's tool, and
     // mapping to it would resolve a CC name to a plugin core cannot know is installed.
     for (const name of [
@@ -72,9 +72,9 @@ describe('normalizeCcToolName', () => {
     expect(normalizeCcToolName('Glob')).toBe('search')
     expect(normalizeCcToolName('Write')).toBe('write')
     expect(normalizeCcToolName('MultiEdit')).toBe('edit')
-    expect(normalizeCcToolName('Agent')).toBe('agent')
-    expect(normalizeCcToolName('Task')).toBe('task')
-    expect(normalizeCcToolName('Task(subagent_type: reviewer)')).toBe('task')
+    expect(normalizeCcToolName('Agent')).toBe('delegate')
+    expect(normalizeCcToolName('Task')).toBe('delegate')
+    expect(normalizeCcToolName('Task(subagent_type: reviewer)')).toBe('delegate')
     expect(normalizeCcToolName('TodoWrite')).toBe('todowrite')
     expect(normalizeCcToolName('AskUserQuestion')).toBe('ask')
   })
@@ -231,5 +231,16 @@ describe('MCP addresses map to the name the engine registers', () => {
         dropUnknown: true,
       }),
     ).toEqual(['read', 'mcp_p_ctl_echo', 'mcp_GitHub_getIssue'])
+  })
+})
+
+// sub-agents.md, "Restrict which subagents can be spawned": `tools: Agent, Read` lets an agent
+// spawn subagents, and `Task(...)` is the older name ("Existing `Task(...)` references … still work
+// as aliases"). Both are the engine's `delegate`; a list naming one must keep it.
+describe('the Agent tool in a tools list', () => {
+  it('Agent, Agent(worker) and Task map to delegate', () => {
+    expect(mapCcToolList(['Agent', 'Read'], { dropUnknown: true })).toEqual(['delegate', 'read'])
+    expect(normalizeCcToolName('Agent(worker, researcher)')).toBe('delegate')
+    expect(normalizeCcToolName('Task')).toBe('delegate')
   })
 })
