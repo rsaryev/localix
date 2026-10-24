@@ -27,6 +27,8 @@ export interface PluginAgentType {
   maxTurns?: number
   background?: boolean
   isolation?: 'isolated'
+  /** Its exact tool list, when its file has one; empty when no entry named a tool here. */
+  tools?: readonly string[]
 }
 
 /** A worktree made for an isolated child (`workflow/worktree.ts` makes one). */
@@ -99,6 +101,11 @@ export async function resolveDelegateTarget(
     if (!match) return null
     if ('ambiguous' in match)
       return { refusal: `"${reference}" names several agent types: ${match.ambiguous.join(', ')}.` }
+    // Claude Code refuses to launch an agent whose `tools` resolve to nothing.
+    if (match.agent.tools && match.agent.tools.length === 0)
+      return {
+        refusal: `Agent type "${match.agent.fullName}" would run with zero tools: none of the names in its tools list is a tool here. Fix the agent file's tools, or delegate without this type.`,
+      }
     return { agent: delegator, plugin: match.agent }
   }
   if (reference.includes(':')) {

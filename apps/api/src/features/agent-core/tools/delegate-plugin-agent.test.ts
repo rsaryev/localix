@@ -265,3 +265,19 @@ test('a call names the child model, effort and a worktree of its own', async () 
   )
   expect(typed.calls.route).toEqual([expect.objectContaining({ effort: 'max' })])
 })
+
+// sub-agents.md, `tools`: "If no entry in the list resolves to a tool, the subagent usually fails
+// to launch with an error naming the entries."
+test('an agent type whose tools list resolves to nothing is refused', async () => {
+  const { opts, ports, calls } = host({ agents: () => [{ ...TESTER, tools: [] }] })
+  const out = await startDelegation(
+    'c',
+    request({ agent: 'qa-kit:tester' }),
+    opts,
+    undefined,
+    ports,
+  )
+  expect(out.isError).toBe(true)
+  expect(out.content).toContain('zero tools')
+  expect(calls.create).toEqual([])
+})
