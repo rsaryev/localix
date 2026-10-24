@@ -58,6 +58,12 @@ export async function failRun(frame: RunFrame, error: unknown): Promise<RunExecu
   })
   // The run's LOGICAL end: both retries declined above, so this failure is final.
   const outcome = env.state.stoppedRuntimeSessionIds.has(session.id) ? 'stopped' : 'failed'
+  // The mods heard the turn start; they hear it end, stopped or dead on an error.
+  await frame.teardown.mods
+    ?.turnFailed({
+      reason: outcome === 'stopped' ? 'aborted' : 'error',
+    })
+    .catch(() => {})
   // CC StopFailure, in place of Stop: the hooks built for this run, if it got that far.
   fireStopFailure(frame.teardown.ccHooks, failure, error, outcome === 'stopped')
   // A delegated child reports every run to its parent — a failed or stopped one included.

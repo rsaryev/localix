@@ -181,7 +181,15 @@ async function turnSession(dir: string, output: string, reports: string[]) {
     }),
   )
   // finalize.ts: `turn.complete` with the answer and how long the turn took.
-  await scope.turnComplete({ answer: 'Done.', turnId, durationMs: 1200, reason: 'answer' })
+  // finalize.ts: the turn's token totals, as the run counted them, and the model that answered.
+  const usage = {
+    input_tokens: 120,
+    output_tokens: 8,
+    cache_read_input_tokens: 0,
+    cache_creation_input_tokens: 0,
+    model: MODEL,
+  }
+  await scope.turnComplete({ answer: 'Done.', turnId, durationMs: 1200, reason: 'answer', usage })
   await host.stop()
   if (written.length !== 1) throw new Error('the Write tool did not run in the Localix turn')
 }

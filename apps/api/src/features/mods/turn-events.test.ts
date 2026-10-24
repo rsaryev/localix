@@ -44,4 +44,40 @@ describe('turn events', () => {
       { event: 'turn.complete', agentId: 'child-1' },
     ])
   })
+
+  test('turn.complete says how the turn ended and what it cost, from the failure path too', async () => {
+    const heard: Record<string, unknown>[] = []
+    const answers: unknown[] = []
+    const { scope } = await hostWithMod((on) => {
+      on('turn.complete', async (_$, e, next) => {
+        heard.push(e as Record<string, unknown>)
+        answers.push(await next(e))
+        return undefined
+      })
+    })
+    const usage = {
+      input_tokens: 10,
+      output_tokens: 2,
+      cache_read_input_tokens: 0,
+      cache_creation_input_tokens: 0,
+      model: 'model-a',
+    }
+    await scope.turnStart('go', 't1')
+    await scope.turnComplete({
+      answer: 'partial',
+      turnId: 't1',
+      durationMs: 5,
+      reason: 'aborted',
+      usage,
+    })
+    // Once a turn was heard to end, the failure path that follows says nothing more.
+    await scope.turnFailed({ reason: 'error', durationMs: 6 })
+    await scope.turnStart('again', 't2')
+    await scope.turnFailed({ reason: 'error', durationMs: 7 })
+    expect(heard).toEqual([
+      { answer: 'partial', turnId: 't1', durationMs: 5, reason: 'aborted', isAborted: true, usage },
+      { answer: '', turnId: 't2', durationMs: 7, reason: 'error', isAborted: false },
+    ])
+    expect(answers[0]).toEqual({ text: 'partial', usage })
+  })
 })

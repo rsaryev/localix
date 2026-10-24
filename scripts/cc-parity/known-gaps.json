@@ -8,7 +8,6 @@
     "call:ui.panes": "Localix lists a pane's id and title, without isFocused, isPlaced or isShown.",
     "event:prompt.submit": "Localix also passes turnId; Claude Code gives it in turn.start only.",
     "event:session.end": "Localix gives the reason only, without sessionId or resume.",
-    "event:turn.complete": "Localix sends no usage, the turn's token totals.",
     "event:turn.step": "Localix leaves effort out when the run sets no effort Claude Code names (the fixture's run sets none).",
     "event:ui.render:CommandOutput": "Localix's desktop surface draws only panes through ui.render.",
     "event:ui.render:PromptHint": "Localix's desktop surface draws only panes through ui.render.",

@@ -24,6 +24,7 @@
     "event:session.start",
     "event:tool.call:Write",
     "event:tool.check",
+    "event:turn.complete",
     "event:turn.start",
     "event:ui.render:AbovePrompt",
     "event:ui.render:Pane",

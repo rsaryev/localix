@@ -240,11 +240,24 @@ export async function finalizeSuccessfulRun(args: {
     })
   }
 
+  const totals = state.usageTotals
   const modLine = await args.mods?.turnComplete({
     answer: state.currentPayload.content ?? '',
     turnId: args.promptMessage?.id ?? assistantMessageId,
     durationMs: Math.max(0, Date.now() - Date.parse(state.assistantCreatedAt)),
-    reason: 'answer',
+    // A run the person stopped ends `aborted`, as Claude Code's interrupted turn does.
+    reason: stoppedRuntimeSessionIds.has(session.id) ? 'aborted' : 'answer',
+    ...(totals.inputTokens + totals.outputTokens > 0
+      ? {
+          usage: {
+            input_tokens: totals.inputTokens,
+            output_tokens: totals.outputTokens,
+            cache_read_input_tokens: totals.cacheReadTokens,
+            cache_creation_input_tokens: totals.cacheWriteTokens,
+            model: args.rawModelId,
+          },
+        }
+      : {}),
   })
   if (modLine)
     env.deps.streamRegistry.publish(userId, session.id, {

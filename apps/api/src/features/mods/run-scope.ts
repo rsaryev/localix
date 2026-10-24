@@ -2,7 +2,7 @@ import type { ModelStepHook } from '@localixai/agent'
 import type { AgentTool } from '@localixai/agent/agents'
 import { offerAgents, wrapDelegate, type DirectoryAgent } from './agent-events'
 import type { RunSurface } from './api/run-api'
-import type { ModScene } from './contracts'
+import type { ModelUsage, ModScene } from './contracts'
 import { skillPromptIn, wrapSkillTool } from './conversation-events'
 import { agentOf, type ModEventScope } from './event-scope'
 import type { ModsHost } from './host'
@@ -45,12 +45,12 @@ export interface ModRunScope {
   submit(text: string, turnId: string): Promise<PromptOutcome>
   turnStart(text: string, turnId: string): Promise<void>
   /** `turn.complete`: a text a mod shows beneath the answer, when it gives one of its own. */
-  turnComplete(input: {
-    answer: string
-    turnId: string
-    durationMs: number
-    reason: 'answer' | 'aborted' | 'error'
-  }): Promise<string | undefined>
+  turnComplete(input: TurnEnd & { answer: string; turnId: string }): Promise<string | undefined>
+  /**
+   * `turn.complete` for a turn the run's failure path ended (an error, a stop), unless its end
+   * was heard already: what the turn started with, no answer.
+   */
+  turnFailed(input: Omit<TurnEnd, 'durationMs'> & { durationMs?: number }): Promise<void>
   wrapTools(tools: readonly AgentTool[]): AgentTool[]
   /** `skill.prompt` for a skill preloaded into the run: the text the prompt holds for it. */
   skillPrompt?(skill: string, text: string): Promise<string>
@@ -72,6 +72,14 @@ export interface ModRunScope {
   compaction(due: string | undefined): Promise<CompactionVerdict>
   /** `session.append` for the turn's answer: the payload as it is stored. */
   storeResponse<P extends { content?: unknown; items?: readonly unknown[] }>(payload: P): Promise<P>
+}
+
+/** How a turn ended, as `turn.complete` says it. */
+export interface TurnEnd {
+  durationMs: number
+  reason: 'answer' | 'aborted' | 'error'
+  /** The turn's token counts and the model that answered last; absent when none counted. */
+  usage?: ModelUsage & { model: string }
 }
 
 export interface ModToolCheck {
@@ -100,6 +108,23 @@ export async function createModRunScope(
   // What the turn lends `$.tool`, `$.mcp` and `$.tool.check` while it runs.
   const surface: RunSurface = { tools: [] }
   let directory: readonly DirectoryAgent[] = []
+  /** The turn started and not yet heard to end: `turnFailed` ends it. */
+  let open: { turnId: string; at: number } | undefined
+  async function complete(input: TurnEnd & { answer: string; turnId: string }) {
+    open = undefined
+    if (scene.sessionId) host.detachRun(scene.sessionId)
+    await host.measure(scene, plugins).catch(() => {})
+    if (!active || !host.hears('turn.complete', plugins)) return undefined
+    const answer = (await host.dispatch(
+      'turn.complete',
+      { ...input, isAborted: input.reason === 'aborted', ...agentOf(scope) },
+      () => ({ text: input.answer, ...(input.usage ? { usage: input.usage } : {}) }),
+      scene,
+      plugins,
+    )) as { text?: unknown } | undefined
+    const text = typeof answer?.text === 'string' ? answer.text.trim() : ''
+    return text && text !== input.answer.trim() ? text : undefined
+  }
   return {
     active,
     gateInChain: active && (host.hears('tool.call', plugins) || host.hears('tool.check', plugins)),
@@ -124,6 +149,7 @@ export async function createModRunScope(
       }
     },
     async turnStart(text, turnId) {
+      open = { turnId, at: Date.now() }
       if (active && host.hears('turn.start', plugins))
         await host.dispatch(
           'turn.start',
@@ -133,19 +159,11 @@ export async function createModRunScope(
           plugins,
         )
     },
-    async turnComplete(input) {
-      if (scene.sessionId) host.detachRun(scene.sessionId)
-      await host.measure(scene, plugins).catch(() => {})
-      if (!active || !host.hears('turn.complete', plugins)) return undefined
-      const answer = (await host.dispatch(
-        'turn.complete',
-        { ...input, isAborted: input.reason === 'aborted', ...agentOf(scope) },
-        () => ({ text: input.answer }),
-        scene,
-        plugins,
-      )) as { text?: unknown } | undefined
-      const text = typeof answer?.text === 'string' ? answer.text.trim() : ''
-      return text && text !== input.answer.trim() ? text : undefined
+    turnComplete: complete,
+    async turnFailed(input) {
+      if (open === undefined) return
+      const durationMs = input.durationMs ?? Math.max(0, Date.now() - open.at)
+      await complete({ ...input, durationMs, answer: '', turnId: open.turnId })
     },
     wrapTools(tools) {
       if (!active) return [...tools]
@@ -199,6 +217,7 @@ export const NO_MODS: ModRunScope = {
   submit: async (text) => ({ dropped: false, text, context: [] }),
   turnStart: async () => {},
   turnComplete: async () => undefined,
+  turnFailed: async () => {},
   wrapTools: (tools) => [...tools],
   tools: () => [],
   describeTools: async (tools) => ({ tools: [...tools], placed: new Map() }),

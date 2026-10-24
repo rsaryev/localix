@@ -16,6 +16,7 @@ import type { SessionAgentRoute } from '../../../contracts/read-model'
 import type { SessionRecord } from '../../../repository'
 import type { CcHooksRuntime } from '../../../../cc-hooks'
 import type { LoadedMiniAppHook } from '../../../../mini-apps/loader-contract'
+import type { ModRunScope } from '../../../../mods/run-scope'
 import type { ContextBudgetFrame } from '../../context-budget'
 import type { TurnEventContext } from '../event-handlers'
 import type { AgentRunRecord } from '../run-record'
@@ -62,6 +63,8 @@ export interface RunFrame {
     defaultCwd?: string
     miniAppHooks: readonly LoadedMiniAppHook[]
     ccHooks?: CcHooksRuntime
+    /** Claude Code mods of the run, whose turn the failure path still ends (`turn.complete`). */
+    mods?: ModRunScope
     readonly liveResolverKeys: Set<string>
   }
 }

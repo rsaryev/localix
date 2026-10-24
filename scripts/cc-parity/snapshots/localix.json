@@ -263,7 +263,14 @@
         "durationMs": "number",
         "isAborted": "boolean",
         "reason": "string",
-        "turnId": "string"
+        "turnId": "string",
+        "usage": {
+          "cache_creation_input_tokens": "number",
+          "cache_read_input_tokens": "number",
+          "input_tokens": "number",
+          "model": "string",
+          "output_tokens": "number"
+        }
       }
     },
     {

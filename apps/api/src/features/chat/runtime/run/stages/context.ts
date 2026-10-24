@@ -217,6 +217,8 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
       )
     : NO_MODS
 
+  frame.teardown.mods = mods
+
   if (deps.lspManager && session.projectId) {
     frame.teardown.unsubLsp = deps.lspManager.onUpdate((projectRoot, states) => {
       if (projectRoot !== defaultCwd) return
