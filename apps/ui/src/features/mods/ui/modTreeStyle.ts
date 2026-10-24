@@ -112,6 +112,7 @@ export function textLook(props: Record<string, unknown>): {
   const color = colorOf(props.color)
   const ground = colorOf(props.backgroundColor)
   const inverse = props.inverse === true
+  const truncated = typeof props.wrap === 'string' && props.wrap.startsWith('truncate')
   const weight =
     props.weight === 'semibold' || props.weight === 'bold' || (props.bold === true && !props.weight)
   const className = cn(
@@ -125,7 +126,7 @@ export function textLook(props: Record<string, unknown>): {
     props.mono === true && 'font-mono',
     props.tabular === true && 'tabular-nums',
     typeof props.size === 'string' && SIZE[props.size],
-    typeof props.wrap === 'string' && props.wrap.startsWith('truncate') && 'truncate',
+    truncated && 'overflow-hidden text-ellipsis',
     inverse && 'rounded-sm px-0.5',
   )
   const style: CSSProperties = inverse
@@ -134,6 +135,8 @@ export function textLook(props: Record<string, unknown>): {
         backgroundColor: color ?? 'var(--foreground)',
       }
     : { color, backgroundColor: ground }
+  // A terminal keeps every space a mod draws (`'  1% of context'` beside a word): so does this.
+  style.whiteSpace = truncated ? 'pre' : 'pre-wrap'
   if (props.wrap === 'truncate-start') style.direction = 'rtl'
   return { className, style }
 }

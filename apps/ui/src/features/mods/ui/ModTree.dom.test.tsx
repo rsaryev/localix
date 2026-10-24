@@ -91,6 +91,8 @@ test('Claude Code’s control and text props draw: labels from children, hotkeys
   expect(host.textContent).toContain('Model')
   const added = [...host.querySelectorAll('span')].find((span) => span.textContent === '+1')!
   expect(added.className).toContain('line-through')
+  // Spaces a mod draws between parts stay, as in a terminal.
+  expect(added.style.whiteSpace).toBe('pre-wrap')
   expect(added.style.color).toBe('var(--status-success)')
   const inverse = [...host.querySelectorAll('span')].find((span) => span.textContent === ' 1 ')!
   expect(inverse.style.backgroundColor).toBe('var(--foreground)')
