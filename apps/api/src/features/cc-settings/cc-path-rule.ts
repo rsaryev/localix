@@ -13,6 +13,7 @@
  */
 import { homedir } from 'node:os'
 import { posix } from 'node:path'
+import { isAtOrUnder } from '../../lib/path-containment'
 
 import { globToRegExpSource } from './path-glob'
 
@@ -39,7 +40,7 @@ export function ccPathRuleMatches(specifier: string, path: string, anchors: Anch
   const { base, rel } = anchored(spec, anchors)
   const target = posix.normalize(path)
   const root = posix.normalize(base).replace(/\/$/, '')
-  if (target !== root && !target.startsWith(`${root}/`)) return false
+  if (!isAtOrUnder(root || '/', target)) return false
   const inside = target === root ? '' : target.slice(root.length + 1)
   const pattern = rel.replace(/\/$/, '')
   if (!pattern) return true
