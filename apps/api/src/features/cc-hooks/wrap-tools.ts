@@ -27,6 +27,16 @@ import type { HookLogger } from './executor'
 import { blockTaskCompletion, reviewTaskCreation, taskBoardEvent } from './task-events'
 import type { McpElicitationHookCarrier } from '../agent-core/tools/hitl/mcp-elicitation'
 
+/**
+ * AskUserQuestion's `answers` are a hook's, not the model's, so the ask tool's schema leaves them
+ * out and its re-parse drops them; they are carried onto the re-parsed call here.
+ */
+function withHookAnswers(toolName: string, input: unknown, updated: unknown): unknown {
+  const answers = (updated as { answers?: unknown } | null)?.answers
+  if (toolName !== 'ask' || !answers || typeof answers !== 'object') return input
+  return { ...(input as Record<string, unknown>), answers }
+}
+
 /** Thrown when a CC PreToolUse hook denies a call — surfaces as the tool error. */
 export class CcHookBlockedError extends Error {
   constructor(reason: string) {
@@ -118,7 +128,7 @@ export function wrapToolsWithCcHooks(
       if (pre.didRewrite && pre.updatedInput !== undefined) {
         const reparsed = reparseToolInput(tool, pre.updatedInput)
         if (reparsed.ok) {
-          effectiveInput = reparsed.input
+          effectiveInput = withHookAnswers(tool.name, reparsed.input, pre.updatedInput)
         } else {
           if (decision === 'allow') decision = 'proceed'
           logger.warn(
