@@ -100,6 +100,25 @@ names any it leaves for you, such as an entry with a `headersHelper`. Localix do
 `extraKnownMarketplaces` from Claude Code's settings files: a marketplace's `autoUpdate` lives on
 its record in `~/.localix/marketplaces/known.json`.
 
+### Claude Code settings
+
+Localix reads the marketplaces and plugins Claude Code's settings declare, where Claude Code keeps
+them: `CLAUDE_CONFIG_DIR` (else `~/.claude`) for the user's settings and
+`CLAUDE_CODE_PLUGIN_CACHE_DIR` (else `<config>/plugins`) for its installs.
+
+| Setting                                          | In Localix                                                                                                                                                                   |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `extraKnownMarketplaces`                         | Registered in the background when a scope's plugins are listed, from user, project, local and managed settings; the highest entry wins whole and its `autoUpdate` is kept    |
+| `enabledPlugins`                                 | Decides Claude Code's own installs; managed settings outrank every file, `true` forcing a plugin on and `false` blocking it, and a managed `false` refuses a Localix install |
+| `strictKnownMarketplaces`, `blockedMarketplaces` | Checked before a marketplace is added or installed from, with Claude Code's matching                                                                                         |
+| `pluginConfigs`                                  | A Claude Code install's saved option values, from user and managed settings, are its values here; a sensitive one is asked for again                                         |
+
+Managed settings are read from `managed-settings.json` and `managed-settings.d/*.json` in the system
+directory; MDM profiles and server-managed settings are not. A project's settings cannot re-point a
+marketplace already added, nor run a `headersHelper`. Localix's project scope is per machine, like
+Claude Code's `local` scope; Claude Code's shared project scope is read from the repository's
+`.claude/settings.json`.
+
 ## Limits
 
 - Only user-scope copies from a marketplace go into the version cache and are auto-updated; a

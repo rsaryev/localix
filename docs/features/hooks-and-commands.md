@@ -124,7 +124,7 @@ event acts as on exit 2, and a `PermissionRequest` is denied. The error names th
 `failed; blocking because onFailure is "block"`. `Stop`, `SubagentStop`, `TaskCompleted`,
 `TeammateIdle` and background (`async`) handlers ignore the field.
 
-### Tool calls and transcripts
+### Tool calls
 
 A tool call reaches a hook under Claude Code's name, with Claude Code's fields beside Localix's:
 `Bash`, `Read`, `Write`, `Edit`, `Grep`, `AskUserQuestion`, `Workflow`, `Agent` for starting a
@@ -132,9 +132,9 @@ delegated task, `Skill` for running a skill, and `WebFetch` for a research call 
 pages or `WebSearch` for one that searches. A call with no Claude Code counterpart, such as listing
 delegated tasks or saving a skill, keeps Localix's name.
 
-An edit, write or read that names several files runs the tool hooks once per file, each as a one-file
-`Edit`, `Write` or `Read` with its `file_path`; a deny of any file refuses the call, and an allow
-approves it only when every file is allowed.
+An edit, write or read that names several files runs the tool hooks once per file, each as a
+one-file `Edit`, `Write` or `Read` with its `file_path`; a deny of any file refuses the call, and an
+allow approves it only when every file is allowed.
 
 A PostToolUse hook reads `tool_response` in that tool's Claude Code shape: Bash's `stdout` and
 `stderr` apart with `interrupted`, Write's `type`, `filePath`, `content` and `structuredPatch`,
@@ -142,12 +142,17 @@ Edit's `filePath`, `oldString`, `newString` and hunks, Read's `{type, file}`, an
 and `result`; an `updatedToolOutput` in that shape replaces what the model sees. Localix does not
 keep a file's text from before a write, so `originalFile` is `null`.
 
-`transcript_path` names the conversation as a JSONL file in Claude Code's transcript format, one
-`user` or `assistant` entry per line with Claude Code's tool names, so hooks such as ralph-loop and
-hookify's stop rules read it as they do in Claude Code. A `SubagentStop` hook's
-`agent_transcript_path` is the delegated task's own file, under `subagents/` beside it. Localix
-keeps the conversation in its database and rewrites these files from it before a hook that can read
-them runs; they live in the session's data folder and go with the session.
+Hooks also read `prompt_id` (the message being answered), `effort.level` and the `CLAUDE_EFFORT`
+variable, SessionStart's `model`, PostToolUse's `duration_ms`, and on `Stop` and `SubagentStop` the
+session's running jobs, monitors and delegated tasks as `background_tasks` and its loops as
+`session_crons`. Two fields are never sent: `scratchpad_dir`, since a Localix session has no
+scratchpad, and `session_title`, since Localix does not record whether a person named the session.
+
+A `PermissionRequest` hook reads the card's widenings as `permission_suggestions`: an `addRules`
+allow entry for the session, and for the settings destinations when the breadth can be saved as an
+"Always" rule. Echoing one back in `updatedPermissions` grants it as picking it on the card would;
+an entry that is none of the suggestions grants nothing. PreToolUse's deprecated top-level
+`decision: "approve"` reads as `allow`.
 
 ### Matcher, `if`, and `once`
 

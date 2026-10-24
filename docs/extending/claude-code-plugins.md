@@ -94,26 +94,21 @@ has one folder. `WorktreeRemove` fires for worktree sessions, which Localix does
 Claude Code, it keeps a workflow agent's hook-made worktree. Between-turn events (a model switch, a
 project move, a file change) fire the hooks the conversation's latest turn assembled.
 
-A tool call reaches a hook under Claude Code's name and in Claude Code's shape, and
-`transcript_path` is a Claude Code transcript; see
-[Tool calls and transcripts](../features/hooks-and-commands.md#tool-calls-and-transcripts).
+A tool call reaches a hook under Claude Code's name and in Claude Code's shape; see
+[Tool calls](../features/hooks-and-commands.md#tool-calls).
+
+`transcript_path` names the conversation as a JSONL file in Claude Code's transcript format, one
+`user` or `assistant` entry per line with Claude Code's tool names, so hooks such as ralph-loop and
+hookify's stop rules read it as they do in Claude Code. A `SubagentStop` hook's
+`agent_transcript_path` is the delegated task's own file, under `subagents/` beside it. Localix
+keeps the conversation in its database and rewrites these files from it before a hook that can read
+them runs; they live in the session's data folder and go with the session.
 
 ### Built-in plugins and updates
 
 Localix ships some plugins of its own as **Built-in**, registers its official `localix` marketplace
 on first start, and updates plugins installed from marketplaces by Claude Code's version rule, on
 its own for marketplaces with auto-update on. See [Built-in plugins and updates](plugin-updates.md).
-Hooks also read `prompt_id` (the message being answered), `effort.level` and the `CLAUDE_EFFORT`
-variable, SessionStart's `model`, PostToolUse's `duration_ms`, and on `Stop` and `SubagentStop` the
-session's running jobs, monitors and delegated tasks as `background_tasks` and its loops as
-`session_crons`. Two fields are never sent: `scratchpad_dir`, since a Localix session has no
-scratchpad, and `session_title`, since Localix does not record whether a person named the session.
-
-A `PermissionRequest` hook reads the card's widenings as `permission_suggestions`: an `addRules`
-allow entry for the session, and for the settings destinations when the breadth can be saved as an
-"Always" rule. Echoing one back in `updatedPermissions` grants it as picking it on the card would;
-an entry that is none of the suggestions grants nothing. PreToolUse's deprecated top-level
-`decision: "approve"` reads as `allow`.
 
 ### Earlier installs
 
@@ -170,22 +165,9 @@ user-wide install.
 
 ### Claude Code settings
 
-Localix reads the marketplaces and plugins Claude Code's settings declare, where Claude Code keeps
-them: `CLAUDE_CONFIG_DIR` (else `~/.claude`) for the user's settings and
-`CLAUDE_CODE_PLUGIN_CACHE_DIR` (else `<config>/plugins`) for its installs.
-
-| Setting                                          | In Localix                                                                                                                                                                   |
-| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `extraKnownMarketplaces`                         | Registered in the background when a scope's plugins are listed, from user, project, local and managed settings; the highest entry wins whole and its `autoUpdate` is kept    |
-| `enabledPlugins`                                 | Decides Claude Code's own installs; managed settings outrank every file, `true` forcing a plugin on and `false` blocking it, and a managed `false` refuses a Localix install |
-| `strictKnownMarketplaces`, `blockedMarketplaces` | Checked before a marketplace is added or installed from, with Claude Code's matching                                                                                         |
-| `pluginConfigs`                                  | A Claude Code install's saved option values, from user and managed settings, are its values here; a sensitive one is asked for again                                         |
-
-Managed settings are read from `managed-settings.json` and `managed-settings.d/*.json` in the system
-directory; MDM profiles and server-managed settings are not. A project's settings cannot re-point a
-marketplace already added, nor run a `headersHelper`. Localix's project scope is per machine, like
-Claude Code's `local` scope; Claude Code's shared project scope is read from the repository's
-`.claude/settings.json`.
+Localix reads the marketplaces, plugins and plugin settings Claude Code's settings files declare
+(`extraKnownMarketplaces`, `enabledPlugins`, managed policy, `pluginConfigs`); see
+[Claude Code settings](plugin-updates.md#claude-code-settings).
 
 An entry whose plugin has no `.claude-plugin/plugin.json` is its manifest: the official `*-lsp`
 plugins get their language servers this way. Where both exist, the entry's commands, agents, skills,

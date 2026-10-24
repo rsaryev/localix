@@ -70,7 +70,7 @@ Changes land on `main`.
   added and installed, plugins configured in Claude Code arrive configured, npm sources take a
   pinned version, a tarball link and a private registry token, a dependency's version range installs
   the matching release tag, and a copied plugin gets its Node.js packages from its lockfile. See
-  [Claude Code settings](docs/extending/claude-code-plugins.md#claude-code-settings).
+  [Claude Code settings](docs/extending/plugin-updates.md#claude-code-settings).
 - **More from Claude Code hooks**: a policy hook with `"onFailure": "block"` blocks the action when
   it fails; PermissionRequest hooks see the card's widenings as suggestions and may grant one; and
   hooks read `prompt_id`, `effort`, the model, `duration_ms` and the session's background work. See
