@@ -12,14 +12,14 @@ test('each plugin row lists its mod with its version, what it hooks, its panes a
   writeFileSync(join(root, '.claude-plugin/plugin.json'), JSON.stringify({ version: '1.2.0' }))
   expect(
     summarize({
-      roots: new Map([['next-steps', root]]),
-      events: new Map([['next-steps', ['turn.complete', 'ui.render']]]),
+      roots: new Map([['suggester', root]]),
+      events: new Map([['suggester', ['turn.complete', 'ui.render']]]),
       failures: new Map([['broken', 'register threw: no such file']]),
-      panes: [{ plugin: 'next-steps' }],
+      panes: [{ plugin: 'suggester' }],
     }),
   ).toEqual([
     {
-      plugin: 'next-steps',
+      plugin: 'suggester',
       version: '1.2.0',
       events: ['turn.complete', 'ui.render'],
       panes: 1,

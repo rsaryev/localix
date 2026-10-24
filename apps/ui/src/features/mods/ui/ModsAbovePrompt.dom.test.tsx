@@ -13,7 +13,7 @@ afterAll(async () => {
   await teardown()
 })
 
-/** next-steps' band: a label and one suggestion. */
+/** A made-up mod's band: a label and one suggestion. */
 const suggestion = (label: string): ModElement[] => [
   {
     type: 'Box',

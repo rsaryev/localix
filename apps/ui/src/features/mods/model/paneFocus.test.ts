@@ -3,8 +3,8 @@ import type { ModPaneRef } from '@/shared/api/modsApi'
 import { createPaneFocus } from './paneFocus'
 
 const pane = (id: string, focusRequest: number): ModPaneRef => ({
-  instance: 'blast-radius~1',
-  plugin: 'blast-radius',
+  instance: 'guard~1',
+  plugin: 'guard',
   id,
   cwd: null,
   closeOnEscape: false,
