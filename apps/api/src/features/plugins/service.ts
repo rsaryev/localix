@@ -237,16 +237,8 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       projectId: input.projectId ?? '',
       plugin,
       registryDeps: opts.refreshMarketplace ? registryDeps : null,
-      versionDeps: registryDeps,
       install: (source, projectId) =>
         service.install(userId, { source, projectId }, { replace: true }),
-      // Already at the version the marketplace offers: nothing is fetched or replaced.
-      current: async () => {
-        const { plugins } = await service.listPlugins(userId, { projectId: input.projectId })
-        const record = plugins.find((found) => found.name === input.name)
-        if (!record) throw new NotFoundError('plugin_not_found', `Plugin "${input.name}" not found`)
-        return record
-      },
     })
   }
 

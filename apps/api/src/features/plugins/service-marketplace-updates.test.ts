@@ -37,13 +37,18 @@ beforeAll(async () => {
   root = makeTempDir('marketplace-updates', {
     'market/.claude-plugin/marketplace.json': JSON.stringify({
       name: 'shop',
+      owner: { name: 'Shop' },
       plugins: [entry('tool'), entry('gated', { headersHelper: './headers.sh' })],
     }),
     'market/plugins/tool/.claude-plugin/plugin.json': '{}',
     'market/plugins/gated/.claude-plugin/plugin.json': JSON.stringify({ name: 'gated' }),
     'market/plugins/gated/commands/go.md': 'Go.\n',
     'market/plugins/tool/commands/run.md': 'Run.\n',
-    'own/.claude-plugin/marketplace.json': JSON.stringify({ name: 'localix', plugins: [] }),
+    'own/.claude-plugin/marketplace.json': JSON.stringify({
+      name: 'localix',
+      owner: { name: 'Localix' },
+      plugins: [],
+    }),
     'home/.keep': '',
     'claude/.keep': '',
   })

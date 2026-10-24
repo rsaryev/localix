@@ -31,7 +31,7 @@ export interface RefreshOptions {
 export async function refreshMarketplace(
   marketplace: string,
   deps: MarketplaceRegistryDeps,
-  opts: RefreshOptions & { includeLocal?: boolean } = {},
+  opts: RefreshOptions & { includeLocal?: boolean; always?: boolean } = {},
 ): Promise<string | undefined> {
   const env = opts.env ?? process.env
   if (env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC) return undefined
@@ -43,7 +43,7 @@ export async function refreshMarketplace(
   const now = (opts.now ?? Date.now)()
   const key = `${root}\0${marketplace}`
   const last = refreshedAt.get(key)
-  if (last !== undefined && now - last < RECENT_MS) return undefined
+  if (!opts.always && last !== undefined && now - last < RECENT_MS) return undefined
   try {
     await updateMarketplace(marketplace, deps)
     refreshedAt.set(key, now)
@@ -66,8 +66,8 @@ export async function resolveFreshMarketplaceInstall(
 
 /**
  * Before `plugin update` re-installs `<plugin>@<marketplace>`, read its marketplace again —
- * a git, url or npm one as well as a local folder — so the update sees new commits. A failure
- * keeps the cached catalog.
+ * a git, url or npm one as well as a local folder — so the update sees new commits, however
+ * recently it was read: the 30-second rule is the install's. A failure keeps the cached catalog.
  */
 export async function refreshMarketplaceBeforeUpdate(
   source: string,
@@ -76,5 +76,5 @@ export async function refreshMarketplaceBeforeUpdate(
 ): Promise<string | undefined> {
   const ref = parseMarketplaceRef(source)
   if (!ref) return undefined
-  return refreshMarketplace(ref.marketplace, deps, { ...opts, includeLocal: true })
+  return refreshMarketplace(ref.marketplace, deps, { ...opts, includeLocal: true, always: true })
 }

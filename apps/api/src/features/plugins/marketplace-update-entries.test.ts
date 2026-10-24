@@ -7,7 +7,6 @@ import { tempDirPerTest, writeTree } from '@localixai/testing'
 import type { CapabilitySourceRecord } from '../capabilities/source-repository'
 import { resolveEntryName } from './marketplace'
 import { addMarketplace } from './marketplace-registry'
-import { isAtLatestVersion } from './marketplace-latest'
 import { createMarketplaceMethods } from './service-marketplaces'
 
 /**
@@ -115,21 +114,5 @@ describe('updating a marketplace', () => {
     const result = await methods.updateMarketplace('u', { name: 'acme' })
     expect(calls).toEqual([])
     expect(result.warnings).toEqual(['vanished: Plugin "vanished" not found in marketplace "acme"'])
-  })
-})
-
-describe('the version an update would install', () => {
-  it('is the latest when plugin.json, else the entry, states the installed version', async () => {
-    const registryDeps = await marketplace({
-      plugins: [
-        { name: 'kept', source: './kept' },
-        { name: 'remote', source: { source: 'github', repo: 'o/r' }, version: '3.0.0' },
-      ],
-    })
-    expect(await isAtLatestVersion('kept@acme', '1.0.0', registryDeps)).toBe(true)
-    expect(await isAtLatestVersion('kept@acme', '0.9.0', registryDeps)).toBe(false)
-    expect(await isAtLatestVersion('remote@acme', '3.0.0', registryDeps)).toBe(true)
-    // No version anywhere: the plugin tracks commits, so it is fetched again.
-    expect(await isAtLatestVersion('kept@acme', undefined, registryDeps)).toBe(false)
   })
 })
