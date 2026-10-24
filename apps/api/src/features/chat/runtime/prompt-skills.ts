@@ -135,6 +135,8 @@ export function buildSkillsContext(
   // cast at every call site.
   skillOverrides: SkillOverrides,
   defaultCwd: string,
+  /** Call names of `paths:`-scoped skills a project file activates (`prompt-skill-paths.ts`). */
+  activatedByProjectFiles: ReadonlySet<string> = new Set(),
 ): string | undefined {
   const skillLineByName = new Map<string, RenderableSkillLine>()
   for (const f of allSkills) {
@@ -143,12 +145,16 @@ export function buildSkillsContext(
     // frontmatter-level hide: both `disable-model-invocation` and
     // `hide-from-slash-command-tool` remove the entry from the model listing.
     if (f.disableModelInvocation || f.hideFromModel) continue
-    // CC `paths` — exclude from auto-listing when cwd doesn't match any pattern.
-    if (f.activationPaths?.length && !cwdMatchesActivationPaths(f.activationPaths, defaultCwd)) {
-      continue
-    }
     // Keyed and shown by the name it is called by: two plugins' `lookup` are two skills.
     const called = skillCallName(f)
+    // CC `paths` — offered when a project file matches, or the working directory itself does.
+    if (
+      f.activationPaths?.length &&
+      !activatedByProjectFiles.has(called) &&
+      !cwdMatchesActivationPaths(f.activationPaths, defaultCwd)
+    ) {
+      continue
+    }
     if (!skillLineByName.has(called)) {
       const desc = (f.description || 'Skill').slice(0, SKILL_DESC_MAX)
       const minimum = `- /${called}`

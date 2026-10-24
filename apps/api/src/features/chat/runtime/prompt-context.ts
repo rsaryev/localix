@@ -21,6 +21,7 @@ import { emptyLoadedPlugins } from '../../plugins/loader-contract'
 import { availabilityOf } from '../../capabilities/availability'
 import type { loadUserSettingsContext } from '../../user/runtime-settings'
 import { prefixedWarnLogger } from './plugin-hook-logger'
+import { skillsMatchingProjectFiles } from './prompt-skill-paths'
 import { buildSkillsContext } from './prompt-skills'
 import { agentRoute } from '../../../contracts/session-route'
 import { recordPluginCatalogLoad } from '../../notifications/conditions/plugins'
@@ -276,7 +277,12 @@ export async function prepareRunContext(
   // (`builtin-agent-presets.ts`), so there is one place to read and one order to reason about.
   const permissionRules: PermissionRule[] = policy.permissions
   const skillOverrides = skillOverridesOf(policy.denied.skill)
-  const skillsContext = buildSkillsContext(allSkills, skillOverrides, defaultCwd)
+  const skillsContext = buildSkillsContext(
+    allSkills,
+    skillOverrides,
+    defaultCwd,
+    await skillsMatchingProjectFiles(allSkills, defaultCwd),
+  )
   const { frozenContext, pinnedSkills, triggeredSkills } = await resolveAgentPromptContext({
     userId,
     session,
