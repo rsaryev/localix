@@ -494,7 +494,12 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       }
       if (resolvedMarket) {
         const discovered = await discover({ cwd, projectId })
-        depInstall = await prepareDependenciesForInstall(resolvedMarket, registryDeps, discovered)
+        depInstall = await prepareDependenciesForInstall(
+          resolvedMarket,
+          registryDeps,
+          discovered,
+          scope,
+        )
       }
       const enabledValue = input.enable
       const installNotes = [...refreshNotes, ...(depInstall?.warnings ?? [])]

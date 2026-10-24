@@ -112,16 +112,20 @@ function toDependencyStep(
 /**
  * Plan the dependency installs for one resolved marketplace install. `discovered` is
  * the current plugin set in scope (installed + bundled) — those names are treated as
- * already satisfied (advisory version check only).
+ * already satisfied (advisory version check only), a project's own plugins only for a
+ * project install, as Claude Code counts a dependency at the scope that needs it.
  */
 export async function prepareDependenciesForInstall(
   resolved: ResolvedMarketplaceInstall,
   registryDeps: MarketplaceRegistryDeps,
   discovered: DiscoveredPlugin[],
+  /** The scope the plugin installs to: a project's copy does not satisfy a user-wide install. */
+  scope?: 'global' | 'project',
 ): Promise<PreparedDependencyInstall> {
   const rootStep = toDependencyStep(resolved, await probeManifest(resolved.dir))
+  const reachable = discovered.filter((p) => scope !== 'global' || p.scope === 'global')
   const installed = new Map<string, string | undefined>(
-    discovered.map((p) => [
+    reachable.map((p) => [
       p.manifest.name,
       typeof p.rawManifest?.version === 'string' ? (p.rawManifest.version as string) : undefined,
     ]),
