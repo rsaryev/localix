@@ -1,4 +1,3 @@
-import { envInt } from '../../lib/env'
 import { errorMessage } from '../../lib/errors'
 
 import { type AgentTool, type CallClass, mcpInputSchema } from '@localixai/agent/agents'
@@ -24,39 +23,14 @@ import {
   resolveMcpResultMaxChars,
 } from './mcp-result'
 
-export const DEFAULT_TIMEOUT_MS = 30_000
-
-// CC ignores timeout values below 1s (they fall through to the global default).
-const MIN_TIMEOUT_MS = 1_000
-
-/**
- * Parse a positive-integer millisecond timeout from an env var, else undefined.
- * 0 = envInt's "unset or unparseable" sentinel (it only ever yields a positive
- * int); a real timeout has to clear MIN_TIMEOUT_MS anyway.
- */
-function envTimeout(name: string): number | undefined {
-  const ms = envInt(name, 0)
-  return ms >= MIN_TIMEOUT_MS ? ms : undefined
-}
-
-/**
- * The capability-discovery (connect / `tools/list`) timeout. Honors the global
- * `MCP_TIMEOUT` env var (CC's server-startup budget), else the built-in default.
- */
-export function resolveConnectTimeoutMs(): number {
-  return envTimeout('MCP_TIMEOUT') ?? DEFAULT_TIMEOUT_MS
-}
-
-/**
- * The per-tool-call timeout for a server. Precedence (CC-compatible):
- *   server `config.timeout` → `MCP_TOOL_TIMEOUT` env → built-in default.
- * Values below 1s are ignored at each level.
- */
-export function resolveToolTimeoutMs(config: Record<string, unknown>): number {
-  const perServer = typeof config.timeout === 'number' ? config.timeout : undefined
-  if (perServer !== undefined && perServer >= MIN_TIMEOUT_MS) return Math.floor(perServer)
-  return envTimeout('MCP_TOOL_TIMEOUT') ?? DEFAULT_TIMEOUT_MS
-}
+export {
+  DEFAULT_TIMEOUT_MS,
+  DEFAULT_TOOL_TIMEOUT_MS,
+  resolveConnectTimeoutMs,
+  resolveToolIdleTimeoutMs,
+  resolveToolTimeoutMs,
+} from './mcp-timeouts'
+import { resolveToolIdleTimeoutMs, resolveToolTimeoutMs } from './mcp-timeouts'
 
 /** MCP tool descriptions can be huge (multi-KB); cap what reaches the model. */
 export const MCP_DESCRIPTION_MAX_CHARS = 600
@@ -229,6 +203,7 @@ export function buildToolForServer(
     ? `[MCP: ${server.name}] ${capDescription(def.description.trim())}`
     : `[MCP: ${server.name}] ${def.name}`
   const timeout = resolveToolTimeoutMs(server.config)
+  const idleTimeout = resolveToolIdleTimeoutMs(server)
   const maxResultChars = resolveMcpResultMaxChars(def.maxResultChars)
   const callClass = classifyMcpTool(def.annotations)
   const mutates = callClass.effect !== 'read'
@@ -249,8 +224,18 @@ export function buildToolForServer(
     ...(def.annotations ? { behaviorHints: def.annotations } : {}),
     async execute(toolCallId, input, signal, _onUpdate, context) {
       // The call's timeout stops while its server waits on the person (elicitation).
-      const deadline = createCallDeadline(timeout, signal, () =>
-        McpError.fromError(ErrorCode.RequestTimeout, 'Request timed out', { timeout }),
+      const deadline = createCallDeadline(
+        timeout,
+        signal,
+        (kind) =>
+          kind === 'idle'
+            ? McpError.fromError(
+                ErrorCode.RequestTimeout,
+                `Request timed out: no response or progress for ${idleTimeout} ms`,
+                { timeout: idleTimeout },
+              )
+            : McpError.fromError(ErrorCode.RequestTimeout, 'Request timed out', { timeout }),
+        idleTimeout,
       )
       try {
         const call = {
@@ -268,6 +253,7 @@ export function buildToolForServer(
             {
               timeout: deadline.sdkTimeoutMs,
               resetTimeoutOnProgress: true,
+              onprogress: deadline.progress,
               signal: deadline.signal,
             },
           ),

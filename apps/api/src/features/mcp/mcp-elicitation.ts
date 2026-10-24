@@ -189,32 +189,49 @@ export function createElicitingClient(
 const SDK_TIMEOUT_CEILING_MS = 2_147_483_647
 
 /**
- * A tool call's timeout that stops while the person answers an elicitation: a server waiting on
- * the person is not a slow server. Expiry aborts the call with the SDK's own timeout error.
+ * A tool call's time limits, stopped while the person answers an elicitation: a server waiting on
+ * the person is not a slow server. `timeoutMs` is the wall-clock limit, which progress does not
+ * extend; `idleMs` (0: none) aborts a call whose server sends no response and no progress for that
+ * long, and each progress notification (`progress()`) restarts it. Expiry aborts the call with the
+ * SDK's own timeout error.
  */
 export function createCallDeadline(
   timeoutMs: number,
   outer: AbortSignal | undefined,
-  timeoutError: () => Error,
+  timeoutError: (kind: 'total' | 'idle') => Error,
+  idleMs = 0,
 ) {
   const controller = new AbortController()
   let timer: ReturnType<typeof setTimeout> | undefined
+  let idleTimer: ReturnType<typeof setTimeout> | undefined
   let remaining = timeoutMs
   let startedAt = Date.now()
   let holds = 0
+  const armIdle = () => {
+    clearTimeout(idleTimer)
+    idleTimer = undefined
+    if (idleMs <= 0 || holds > 0 || controller.signal.aborted) return
+    idleTimer = setTimeout(() => controller.abort(timeoutError('idle')), idleMs)
+    idleTimer.unref?.()
+  }
   const arm = () => {
     startedAt = Date.now()
-    timer = setTimeout(() => controller.abort(timeoutError()), remaining)
+    timer = setTimeout(() => controller.abort(timeoutError('total')), remaining)
     timer.unref?.()
+    armIdle()
   }
   arm()
   return {
     signal: outer ? AbortSignal.any([outer, controller.signal]) : controller.signal,
     sdkTimeoutMs: SDK_TIMEOUT_CEILING_MS,
+    /** The server reported progress: the idle window starts again. */
+    progress: () => armIdle(),
     hold(): () => void {
       if (holds++ === 0 && timer) {
         clearTimeout(timer)
+        clearTimeout(idleTimer)
         timer = undefined
+        idleTimer = undefined
         remaining = Math.max(0, remaining - (Date.now() - startedAt))
       }
       let released = false
@@ -226,7 +243,9 @@ export function createCallDeadline(
     },
     clear() {
       clearTimeout(timer)
+      clearTimeout(idleTimer)
       timer = undefined
+      idleTimer = undefined
     },
   }
 }

@@ -128,6 +128,10 @@ Changes land on `main`.
   `if` anchor path rules at the working directory, `//` or `~/`, cover writes with `Edit(...)` and
   searches with `Read(...)`, and understand `WebFetch(domain:…)`, `Agent(…)`, `Skill(…)` and a bare
   `mcp__<server>`. See [Permission rules](docs/features/permissions.md).
+- **Long MCP tool calls** are no longer cut off after 30 seconds: as in Claude Code, a call may run
+  for about 28 hours unless the server's `timeout` or `MCP_TOOL_TIMEOUT` says otherwise, and fails
+  sooner only when its server stays silent — no answer and no progress — for 30 minutes (stdio) or 5
+  (remote), which `CLAUDE_CODE_MCP_TOOL_IDLE_TIMEOUT` changes. See [MCP](docs/features/mcp.md).
 - **MCP servers you added** expand `${VAR}` as Claude Code does: a credential name such as
   `GITHUB_TOKEN` or `ANTHROPIC_API_KEY` reads as empty in a server's URL and headers, so an imported
   configuration no longer sends it to that server, and an unset `${VAR}` without a default stays as

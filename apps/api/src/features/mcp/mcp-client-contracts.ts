@@ -73,7 +73,12 @@ export interface McpClientLike {
   callTool(
     params: { name: string; arguments: Record<string, unknown> },
     resultSchema?: undefined,
-    options?: { timeout?: number; resetTimeoutOnProgress?: boolean; signal?: AbortSignal },
+    options?: {
+      timeout?: number
+      resetTimeoutOnProgress?: boolean
+      onprogress?: (progress: unknown) => void
+      signal?: AbortSignal
+    },
   ): Promise<{ content?: unknown; isError?: unknown; [field: string]: unknown }>
   close(): Promise<void>
   onclose?: (() => void) | undefined

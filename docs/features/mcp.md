@@ -109,13 +109,14 @@ resource-capable server can still respond.
 
 ## Configuration
 
-| Setting                 | Effect                                                            | Default or boundary                          |
-| ----------------------- | ----------------------------------------------------------------- | -------------------------------------------- |
-| `required`              | Makes connection and discovery fail-closed for run startup        | `false`                                      |
-| `timeout`               | Per-server tool-call deadline                                     | Values below 1,000 ms are ignored            |
-| `MCP_TOOL_TIMEOUT`      | Tool-call deadline when `timeout` is absent or below the floor    | 30,000 ms                                    |
-| `MCP_TIMEOUT`           | Connection and capability-discovery deadline                      | 30,000 ms; values below 1,000 ms are ignored |
-| `MAX_MCP_OUTPUT_TOKENS` | Changes the default text allowance when no tool annotation exists | Unset                                        |
+| Setting                             | Effect                                                                                          | Default or boundary                                                                            |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `required`                          | Makes connection and discovery fail-closed for run startup                                      | `false`                                                                                        |
+| `timeout`                           | Per-server tool-call deadline                                                                   | Values below 1,000 ms are ignored                                                              |
+| `MCP_TOOL_TIMEOUT`                  | Tool-call deadline when `timeout` is absent or below the floor                                  | 100,000,000 ms (about 28 hours)                                                                |
+| `CLAUDE_CODE_MCP_TOOL_IDLE_TIMEOUT` | Fails a call whose server sends no response and no progress for this long; progress restarts it | 30 minutes for stdio, 5 for HTTP and `ws`; `0` turns it off; a server's `timeout` is its floor |
+| `MCP_TIMEOUT`                       | Connection and capability-discovery deadline                                                    | 30,000 ms; values below 1,000 ms are ignored                                                   |
+| `MAX_MCP_OUTPUT_TOKENS`             | Changes the default text allowance when no tool annotation exists                               | Unset                                                                                          |
 
 Per-tool selection is stored as capability rules such as `mcp:<server>/<tool>`, applied when tools
 are gathered without rewriting the connection configuration. JSON import translates a non-empty
