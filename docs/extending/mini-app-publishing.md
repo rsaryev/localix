@@ -17,18 +17,18 @@ the template, and people add it to their store.
 
 ## What you can do
 
-| Task                      | Do this                                                                           | Boundary                                                                |
-| ------------------------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Start an app              | Copy `mini-apps/template` to `mini-apps/<name>` and rename it                     | Or `/mini-app create`, which forks the same template.                   |
-| Give it an icon           | Put `icon.svg` in the app and set `"icon": "./icon.svg"`                          | Required to publish; see [Icon and screenshots](#icon-and-screenshots). |
-| Show it in the store      | Add `screenshots`, `tags` and `homepage` to `mini-app.json`, and a `README.md`    | Optional; the README becomes the store page's About.                    |
-| Pack it                   | `bun run pack:mini-apps --only <name> --publisher "<you>"`                        | Builds it exactly as a Localix release does; refuses a missing icon.    |
-| Pack an app Localix built | `bun run pack:mini-apps --source ~/.localix/mini-apps/<name> --publisher "<you>"` | Run `/mini-app reload` first, so its backend and screens are built.     |
-| Host the catalog          | Upload everything in the output folder to one place: a GitHub release, a site     | Any HTTPS host, or a folder read as `file://`.                          |
-| Add a catalog to Localix  | The store's catalog menu → **Add catalog…**, or `/mini-app catalog add <url>`     | Its publishers are shown as unverified.                                 |
-| Link people to it         | Share `localix://ui/work-item/mini-app-store/add-catalog?url=<encoded address>`   | Opens the Add catalog dialog filled in; nothing is added until Add.     |
-| Ship an update            | Raise `version`, pack again, replace the hosted files                             | Installed copies update within six hours, or at once with Update.       |
-| Require a newer Localix   | Raise `apiVersion` in `mini-app.json`                                             | Older Localix lists the app as needing a newer version.                 |
+| Task                      | Do this                                                                             | Boundary                                                                |
+| ------------------------- | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Start an app              | Copy `mini-apps/template` to `mini-apps/<name>` and rename it                       | Or `/mini-app create`, which forks the same template.                   |
+| Give it an icon           | Put `icon.svg` in the app and set `"icon": "./icon.svg"`                            | Required to publish; see [Icon and screenshots](#icon-and-screenshots). |
+| Show it in the store      | Add `screenshots`, `tags` and `homepage` to `mini-app.json`, and a `README.md`      | Optional; the README becomes the store page's About.                    |
+| Pack it                   | `bun run pack:mini-apps --only <name> --publisher "<you>"`                          | Builds it exactly as a Localix release does; refuses a missing icon.    |
+| Pack an app Localix built | `bun run pack:mini-apps --source ~/.localix/mini-apps/<name> --publisher "<you>"`   | Run `/mini-app reload` first, so its backend and screens are built.     |
+| Host the catalog          | Upload everything in the output folder to one place: a GitHub release, a site       | Any HTTPS host, or a folder read as `file://`.                          |
+| Add a catalog to Localix  | Store → **Sources** → **Add a mini app catalog…**, or `/mini-app catalog add <url>` | Its publishers are shown as unverified.                                 |
+| Link people to it         | Share `localix://ui/work-item/mini-app-store/add-catalog?url=<encoded address>`     | Opens the Store's add dialog filled in; nothing is added until Add.     |
+| Ship an update            | Raise `version`, pack again, replace the hosted files                               | Installed copies update within six hours, or at once with Update.       |
+| Require a newer Localix   | Raise `apiVersion` in `mini-app.json`                                               | Older Localix lists the app as needing a newer version.                 |
 
 ## How it works
 
@@ -144,7 +144,7 @@ schema 1: a reader that does not know one ignores it, and one that does not read
 so a bad icon never hides its app.
 
 An app whose name, version or archive does not read is left out, and the rest of the catalog still
-loads. `featured: true` puts an app in the store's Featured group, and `recommended: true` has a new
+loads. `featured: true` puts an app in the Store's Featured group, and `recommended: true` has a new
 installation install it on its own, but both only in the hosted Localix catalog; the Localix release
 sets them from `mini-apps/catalog-picks.json`.
 
@@ -196,7 +196,7 @@ gh release create notes-v1.2.0 dist/catalog/*
 ```
 
 People then add `https://github.com/<you>/<repo>/releases/latest/download/mini-app-catalog.json`
-from the store's catalog menu. `latest` follows your newest release, so the next release is the next
+from Store → **Sources**. `latest` follows your newest release, so the next release is the next
 update.
 
 ## Limits

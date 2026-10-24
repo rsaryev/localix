@@ -20,6 +20,8 @@ export async function verifyEvidence(page, scenario) {
     return (await import('./cloud-connection.mjs')).verifyCloudConnection(page)
   if (scenario === 'unfinished-reply')
     return (await import('./unfinished-reply.mjs')).verifyUnfinishedReply(page)
+  if (scenario === 'store' || scenario === 'store-listing')
+    return (await import('./store.mjs')).verifyStore(page, scenario)
   if (scenario === 'codemode-card')
     return (await import('./codemode-card.mjs')).verifyCodemodeCard(page)
   if (['local-models-settings', 'semantic-search'].includes(scenario))

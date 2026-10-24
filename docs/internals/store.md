@@ -5,7 +5,10 @@ can add: mini apps, Claude Code plugins, MCP servers and, later, standalone skil
 page is the design contract for contributors: the hierarchy, the provider port, the screens and the
 order of work.
 
-Status: proposed. Nothing below is implemented unless it names a current file.
+Status: step 1 is implemented — the contract, the Store feature with its index and routes, the mini
+apps provider and the Store UI on the kit (see [Source of truth](#source-of-truth)). Steps 2–5 are
+proposed. Where step 1 differs from the first draft, this page says so under
+[Step 1 as built](#step-1-as-built).
 
 ## Terminology
 
@@ -113,6 +116,8 @@ interface Listing {
     error?: string
   }
   incompatible?: string // why it cannot be installed here
+  componentNames?: string[] // names of what it contains, when known before install; searched
+  configure?: string // a localix:// address of the provider's own settings for it
 }
 
 interface ListingDetail extends Listing {
@@ -141,13 +146,13 @@ plugin phases.
 ```ts
 interface StoreProvider {
   kind: PackageKind
-  listings(): Promise<Listing[]> // from cached feeds; never waits on the network
-  detail(id: string): Promise<ListingDetail>
-  plan(id: string, scope: Scope): Promise<InstallPlan> // may fetch a remote package into cache
-  install(id: string, scope: Scope, consent: { plan: boolean }): Promise<void> // queues a job
-  update(id: string, scope: Scope): Promise<void>
-  remove(id: string, scope: Scope): Promise<void>
-  setEnabled?(id: string, scope: Scope, enabled: boolean): Promise<void>
+  listings(actor: StoreActor): Promise<{ listings: Listing[]; problems: string[] }>
+  detail(id: string, actor: StoreActor): Promise<ListingDetail>
+  plan(id: string, scope: Scope, actor: StoreActor): Promise<InstallPlan> // may fetch the package
+  install(id: string, scope: Scope, consent: { plan: boolean }, actor: StoreActor): Promise<void>
+  update(id: string, scope: Scope, actor: StoreActor): Promise<void>
+  remove(id: string, scope: Scope, actor: StoreActor): Promise<void>
+  setEnabled?(id: string, scope: Scope, enabled: boolean, actor: StoreActor): Promise<void>
   refresh(): Promise<void> // re-read sources
   sources(): Promise<SourceView[]>
   previewSource?(input: string): Promise<SourcePreview>
@@ -253,9 +258,43 @@ Each step lands with its tests first, a screenshot scenario for the Store and th
 - [Architecture rules](architecture/README.md)
 - [Visual system](visual-system.md)
 
+## Step 1 as built
+
+- **The person is named.** Every provider call but `refresh`, `subscribe` and the source methods
+  takes a `StoreActor` (`{ userId }`): enabled state and the yes to run a mini app are the person's.
+  `listings` also returns the sources it could not read, shown above the shelf.
+- **Two listing fields more.** `componentNames` feeds the search; `configure` is the address the
+  Installed menu's **Configure** opens. Neither names a provider.
+- **Shelf ids** are `discover`, `installed`, `updates`, `package:<kind>` and
+  `capability:<component>` (`shelves.ts`); the UI adds `sources`. The `backend` component counts
+  toward "Runs code" and has no shelf of its own.
+- **Mini app contents** come from the offer: a `workbench` surface is a screen, the `agent` surface
+  is agent tools and a backend (so `runsCode`), and each declared command counts. Its plan warns
+  about and needs consent for an unverified publisher (the store's `acceptUnverified`); its only
+  scope is `user`.
+- **The index** is rebuilt on the next read after a provider's `subscribe` fires or the relay sends
+  a `store` poke for a `mini-app` or `mini-app.catalog` notice (`bootstrap/store.ts`). The mini apps
+  provider lists from its catalogs as the old store page did, so a catalog older than ten minutes is
+  read again on that rebuild.
+- **Activity.** `/rpc/store/activity` and `/updates/apply` exist; the Event Center's In progress and
+  the update strip still read the mini app store's own feed (`/rpc/mini-apps/store/activity`), which
+  stays until step 2 adds plugin jobs to the same feed.
+- **Settings → Mini apps** no longer lists catalogs: it opens the Store and its Sources.
+- **Sources** offers "Add …" for every kind with a source; the contract does not yet say whether a
+  provider can add one.
+
 ## Source of truth
 
+- [The contract](../../packages/store/src/contract.ts),
+  [the port](../../packages/store/src/provider.ts) and
+  [shelves](../../packages/store/src/shelves.ts)
+- [Store service](../../apps/api/src/features/store/service.ts),
+  [index](../../apps/api/src/features/store/listing-index.ts) and
+  [routes](../../apps/api/src/features/store/routes.ts)
+- [Mini apps provider](../../apps/api/src/features/mini-apps/store-provider.ts) and
+  [its listings](../../apps/api/src/features/mini-apps/store-listing.ts)
+- [Wiring](../../apps/api/src/bootstrap/store.ts)
+- [Store UI](../../apps/ui/src/features/store/ui/StoreView.tsx)
 - [Mini app store service](../../apps/api/src/features/mini-apps/store.ts)
-- [Mini app store contracts](../../apps/api/src/features/mini-apps/contracts-store.ts)
 - [Plugin marketplaces](../../apps/api/src/features/plugins/service-marketplaces.ts)
 - [Marketplace entry schema](../../apps/api/src/features/plugins/marketplace.ts)

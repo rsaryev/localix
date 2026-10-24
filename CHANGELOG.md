@@ -8,6 +8,12 @@ Changes land on `main`.
 
 ### Added
 
+- **The Store**: the mini app store grows into one Store tab, opened from the rail's **+**, setup
+  and Settings → Mini apps. A search across everything sits on top and shelves on the left —
+  Discover, Mini apps, the capabilities packages contain (Screens, Agent tools, Commands),
+  Installed, Updates and Sources. Each card says what is inside; a package's page adds What's
+  inside, Permissions (what would run on this computer) and Versions; Installed has a switch and
+  Update, Configure and Remove for each install. See [Mini apps](docs/features/mini-apps.md).
 - **Claude Code plugin options and downloads**: a `multiple` option takes a list, one item per line
   in the plugin's settings; a marketplace entry whose archive needs a `headersHelper` installs once
   you accept the command it shows (`/plugin install … --accept-command <sha256>`); and ranges

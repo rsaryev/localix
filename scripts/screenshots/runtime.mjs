@@ -51,7 +51,7 @@ export async function api(route, body, method = body === undefined ? 'GET' : 'PO
     request.body = JSON.stringify(body)
   }
   const response = await fetch(`${apiOrigin}/rpc${route}`, request)
-  const result = await response.json()
+  const result = response.status === 204 ? null : await response.json()
   if (!response.ok) throw new Error(`${route}: ${response.status} ${JSON.stringify(result)}`)
   return result
 }

@@ -255,6 +255,19 @@ export const capturePlan = {
     scenario: 'unfinished-reply',
     start: 'project',
   },
+  'store/mini-apps': {
+    guide: 'features/mini-apps.md',
+    purpose:
+      'The Store on its Mini apps shelf: shelves on the left, featured cards with their icons',
+    scenario: 'store',
+    start: 'home',
+  },
+  'store/listing': {
+    guide: 'features/mini-apps.md',
+    purpose: 'One mini app’s page in the Store: screenshots and what is inside it',
+    scenario: 'store-listing',
+    start: 'home',
+  },
   'tools/codemode-card': {
     guide: 'features/tools.md',
     purpose: 'One script run: its calls with their files, outcome and time, and its JSON report',

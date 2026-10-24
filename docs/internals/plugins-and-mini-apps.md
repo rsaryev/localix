@@ -156,12 +156,14 @@ Only developer mode builds on the person's machine; every other source ships bui
 1. **Release.** The author raises `version`; packing (CI for the first-party ones) builds the
    archive and writes its catalog entry. The same version with other content is refused by its
    sha256.
-2. **Choose.** The store is its own workspace tab, opened from the rail's add button, from setup and
-   from Settings → Mini apps. Category tabs, a tag filter, a search and a catalog menu, then
-   Featured, Updates, Installed and Available as rows: the app's own icon, name, description, tags,
-   publisher when not verified, and Install and Install as app, Update, Remove or the download's
-   progress. A row opens the app's page: screenshots, README and details. Install and update reuse
-   the local models' pinned download (`lib/pinned-download.ts`).
+2. **Choose.** The [Store](store.md) is its own workspace tab, opened on its Mini apps shelf from
+   the rail's add button, from setup and from Settings → Mini apps. The mini apps provider
+   (`store-provider.ts`) serves the catalogs' offers through the Store's port. Category tabs, a tag
+   filter and a sources menu, then Featured, Updates, Installed and Available as cards: the app's
+   own icon, name, what is inside, description, tags, publisher when not verified, and Install and
+   Install as app, Update, Remove or the download's progress. A card opens the app's page:
+   screenshots, README, contents, plan and versions. Install and update reuse the local models'
+   pinned download (`lib/pinned-download.ts`).
 3. **Install.** One queue downloads each archive with progress (resumable, size-capped, verified
    against the catalog's sha256 before anything is unpacked), unpacks it beside the installed copy
    and swaps it in with one rename. A failed install leaves the previous build.

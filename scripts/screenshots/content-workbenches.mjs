@@ -31,9 +31,9 @@ export async function seedContent(fixture) {
     path.join(fixture.root, 'release-review.md'),
     `# ${bookName}\n\nA short field guide for reviewing a workspace update before publishing it.\n\n## Start with the outcome\n\nA release review begins with the change a person will notice. Open the shared workspace, choose the release conversation, and compare the implementation with the goal. Keep the source, preview, and checks close enough to move between them without losing context.\n\nThe review should answer three questions: does the interface communicate its purpose, can someone complete the intended task, and does the behavior remain reliable on a small screen? Record the answer as evidence rather than a general impression.\n\n## Review the interface\n\nCheck the desktop layout first. Follow the visual hierarchy from the title to the primary action. Read the labels aloud and remove words that do not help someone make a decision. A quiet interface leaves room for the work itself.\n\nThen open the mobile preview. Verify that content stays within the viewport, controls remain reachable, and the important result is visible without horizontal scrolling. Test keyboard navigation and inspect the focus indicator.\n\n## Keep a useful record\n\nName each check for the result it proves. Attach a screenshot when it makes the review easier to understand, and keep the underlying test result alongside it. A picture of an empty panel does not prove a feature works.\n\nWhen all checks pass, summarize the release in a few concrete sentences. Leave unfinished work on the board with an owner and a next action.\n`,
   )
-  // Native API routes instantiate one plugin backend: this is global within the
+  // Native API routes instantiate one mini app backend: this is global within the
   // verified disposable database, not a change to the person's workspace.
-  await api('/plugins/config', { name: 'api', values: { ALLOW_PRIVATE_NETWORK: true } })
+  await api('/mini-apps/config', { name: 'api', values: { ALLOW_PRIVATE_NETWORK: true } })
   const requests = await api(scoped('/api/requests'))
   if (!requests.requests.some((request) => request.name === requestName)) {
     await api(scoped('/api/requests'), {
