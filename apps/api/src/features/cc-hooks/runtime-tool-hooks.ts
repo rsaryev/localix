@@ -62,12 +62,14 @@ export function createToolHookRunners({
       const toolName = ref.name
       // Each handler sees the previous one's rewrite, and a deny cuts the chain —
       // neither fits `runAll`'s one-input/run-them-all contract.
-      const selected = select('PreToolUse', (m) => matchesToolName(m, toolName, ref.aliases), {
-        ifCtx: { toolName, toolInput: input, aliases: ref.aliases },
-      })
-      if (!selected) return { decision: 'proceed', didRewrite: false }
       // The hook reads the call as Claude Code names and shapes it (`Bash`, `file_path`).
       const base = baseInput('PreToolUse')
+      const selected = select(
+        'PreToolUse',
+        (m) => matchesToolName(m, toolName, ref.aliases, input),
+        { ifCtx: { toolName, toolInput: input, aliases: ref.aliases, cwd: base.cwd } },
+      )
+      if (!selected) return { decision: 'proceed', didRewrite: false }
       const inputFor = (toolInput: unknown): CcHookInput => ({
         ...base,
         ...claudeCodeHookCall(ref, toolInput, base.cwd),
@@ -142,11 +144,13 @@ export function createToolHookRunners({
       const toolName = ref.name
       // Each handler observes the previous one's output replacement — same reason as
       // PreToolUse for driving the dispatch by hand.
-      const selected = select('PostToolUse', (m) => matchesToolName(m, toolName, ref.aliases), {
-        ifCtx: { toolName, toolInput: input, aliases: ref.aliases },
-      })
-      if (!selected) return {}
       const base = baseInput('PostToolUse')
+      const selected = select(
+        'PostToolUse',
+        (m) => matchesToolName(m, toolName, ref.aliases, input),
+        { ifCtx: { toolName, toolInput: input, aliases: ref.aliases, cwd: base.cwd } },
+      )
+      if (!selected) return {}
       // A replaced output reaches the next hook as the whole response (its own details are gone).
       const inputFor = (content: string, replaced: boolean): CcHookInput => ({
         ...base,
@@ -198,10 +202,10 @@ export function createToolHookRunners({
       const additionalContext = contextFrom(
         await runAll(
           'PostToolUseFailure',
-          (m) => matchesToolName(m, toolName, ref.aliases),
+          (m) => matchesToolName(m, toolName, ref.aliases, input),
           hookInput,
           false,
-          { ifCtx: { toolName, toolInput: input, aliases: ref.aliases } },
+          { ifCtx: { toolName, toolInput: input, aliases: ref.aliases, cwd: base.cwd } },
         ),
       )
       return additionalContext ? { additionalContext } : {}

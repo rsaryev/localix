@@ -12,8 +12,7 @@ import {
   type ReviewVerdict,
   type VerdictOptions,
 } from '../../../agent-core/permission-verdict'
-import { normalizeCcToolName } from '../../../plugins/discovery'
-import { nativeCommandPatterns } from '../../../cc-settings/native-command-patterns'
+import { claudeCodeAllowRules } from '../../../cc-settings/cc-rule-translate'
 import { createConfirmRequester } from './confirm-requester'
 import { ownPlanDirForRun } from '../plan-view'
 import type { RunHookContext } from './run-hook-context'
@@ -58,20 +57,14 @@ export interface BuildRunPermissionGateOptions extends RunHookContext {
 /**
  * Translate skill declarations without rewriting the agent's ordered policy. The permission
  * evaluator applies these only to eligible questions after deciding the authored verdict.
+ * A rule reads as Claude Code reads it (`cc-settings/cc-rule-translate.ts`); given the run's
+ * working directory, its path patterns anchor there, as the call's paths do.
  */
 export function skillPermissionRules(
   extraAllowedTools: readonly string[] | undefined,
+  cwd?: string,
 ): PermissionRule[] {
-  return (extraAllowedTools ?? []).flatMap((spec): PermissionRule[] => {
-    const patternMatch = spec.match(/^([^(]+)\((.+)\)$/)
-    if (patternMatch) {
-      const bare = normalizeCcToolName(patternMatch[1].trim())
-      const specifier = patternMatch[2].trim()
-      const patterns = bare === 'bash' ? nativeCommandPatterns(specifier) : [specifier]
-      return patterns.map((pattern) => ({ action: 'allow', permission: bare, pattern }))
-    }
-    return [{ action: 'allow', permission: normalizeCcToolName(spec.trim()), pattern: '*' }]
-  })
+  return (extraAllowedTools ?? []).flatMap((spec) => claudeCodeAllowRules(spec, cwd))
 }
 
 export function buildRunPermissionGate(
@@ -118,7 +111,7 @@ export function buildRunPermissionGate(
 
   const verdictOptions = {
     rules: permissionRules,
-    preapprovedRules: skillPermissionRules(extraAllowedTools),
+    preapprovedRules: skillPermissionRules(extraAllowedTools, defaultCwd),
     toolsByName,
     root: defaultCwd,
     // The conversation's own plan directory: a plan-shaped write anywhere else is a file write.

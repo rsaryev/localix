@@ -5,7 +5,13 @@ import { plural } from '../../lib/plural'
 
 export interface SelectOptions {
   /** Tool-event context for `if` guards. */
-  ifCtx?: { toolName: string; toolInput: unknown; aliases?: readonly string[] | undefined }
+  ifCtx?: {
+    toolName: string
+    toolInput: unknown
+    aliases?: readonly string[] | undefined
+    /** The hook's working directory: an `if` path rule anchors here. */
+    cwd?: string
+  }
   /** Extra restriction applied BEFORE the guards (SubagentStop's `sourcesOnly`). */
   filter?: (h: CcHookHandler) => boolean
 }
@@ -76,8 +82,8 @@ export function createHookSelector(options: HookSelectionOptions) {
         if (opts.filter && !opts.filter(h)) continue
         if (h.if) {
           if (!isToolEvent(event) || !opts.ifCtx) continue // `if` only applies on tool events
-          if (!evaluateIfGuard(h.if, opts.ifCtx.toolName, opts.ifCtx.toolInput, opts.ifCtx.aliases))
-            continue
+          const { toolName, toolInput, aliases, cwd } = opts.ifCtx
+          if (!evaluateIfGuard(h.if, toolName, toolInput, aliases, cwd)) continue
         }
         if (honorsOnce(h) && onceKeys?.has(onceKey(event, h))) continue
         ;(h.async ? asyncH : sync).push(h)

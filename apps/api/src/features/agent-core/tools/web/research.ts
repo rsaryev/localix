@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import { z } from 'zod'
+import { researchPermissionResources } from './research-resources'
 import { defineAgentTool, type AgentSource, type AgentToolResult } from '@localixai/agent/agents'
 import { errorMessage } from '../../../../lib/errors'
 import { TOOL } from '../../tool-names'
@@ -515,6 +516,8 @@ export async function runResearch(
   }
 }
 
+export { researchPermissionResources }
+
 export function createResearchTool(deps: ResearchDeps = {}) {
   return defineAgentTool<ResearchInput, ResearchDetails>({
     name: TOOL.research,
@@ -523,6 +526,7 @@ export function createResearchTool(deps: ResearchDeps = {}) {
     description:
       'Research a question in one call: search, rank across providers, safely read the best pages, and return source-labelled evidence. Pass known urls to read primary sources directly.',
     inputSchema: researchInputSchema,
+    permissionResources: researchPermissionResources,
     mutates: false,
     executionMode: 'parallel',
     contextClass: 'readResult',

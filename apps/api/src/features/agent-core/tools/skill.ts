@@ -79,6 +79,17 @@ export function classifySkillCall(input: unknown): CallClass {
  *   person renders it. A throw (a failed command) refuses the load with its message. Absent: the
  *   content as written.
  */
+/**
+ * The skill a `get` runs, as a permission rule names it (`Skill(deploy)` in a skill's
+ * `allowed-tools`, `skill` + `deploy` in Localix's rules). Other actions name no skill to run.
+ */
+export function skillPermissionResources(input: unknown): string[] {
+  const record = (input ?? {}) as { action?: unknown; name?: unknown }
+  return record.action === 'get' && typeof record.name === 'string' && record.name
+    ? [record.name]
+    : []
+}
+
 export function createSkillTool(
   workingDir?: string | null,
   extraSkills: DiscoveredSkill[] = [],
@@ -133,6 +144,7 @@ export function createSkillTool(
     description:
       'Save, get, list and delete reusable skills (SKILL.md files; scripts/assets beside them via write/bash). After a non-trivial reusable workflow (a tricky fix, a multi-step procedure) save it under a kebab-case verb name; never save one-off answers, and fix a skill the moment it turns out wrong.',
     inputSchema: skillToolInputSchema,
+    permissionResources: skillPermissionResources,
     // `save` writes <base>/.localix/skills/<name>/SKILL.md and `delete` removes that dir
     // recursively. With `scope:"global"` the base is homedir(), i.e. outside the workspace —
     // which is exactly what the confirmation prompt exists for.

@@ -24,7 +24,7 @@
  * Pure module — no chat/UI imports.
  */
 import { CC_TOOL_NAME_MAP } from '../ext/cc-tool-names'
-import { claudeCodeNames } from '../ext/cc-tool-shapes'
+import { claudeCodeNames, claudeCodeToolName } from '../ext/cc-tool-shapes'
 import { ccMcpMatcherVariants } from './mcp-names'
 
 /** Characters that keep a matcher on the "exact string(s)" path (no regex). */
@@ -188,15 +188,58 @@ export function toolNameCandidates(
   return [...set]
 }
 
+/** Claude Code's names that stand for one kind of this tool's calls only. */
+const PER_CALL_NAMES = new Set(['grep', 'glob', 'ls', 'webfetch', 'websearch', 'agent', 'task'])
+const PER_CALL_MORE = new Set(['sendmessage', 'taskstop', 'exitplanmode', 'multiedit'])
+const NOTEBOOK_NAMES = new Set(['notebookedit', 'notebookread'])
+
+/**
+ * The names one CALL answers to: the tool's own, its Claude Code name for this call (`Glob` for a
+ * file listing, `Grep` for a content search, `TaskStop` for a stop), and the legacy names its
+ * input still fits (`MultiEdit` for several edits, `NotebookEdit` / `NotebookRead` for a
+ * notebook). A matcher naming another kind of call of the same tool does not fire.
+ */
+export function callNameCandidates(
+  engineToolName: string,
+  input: Record<string, unknown>,
+  aliases: readonly string[] = [],
+): string[] {
+  const own = claudeCodeToolName({ name: engineToolName, aliases }, input)
+  const edits = Array.isArray(input.edits) ? input.edits : []
+  const paths = [input.path, input.file_path, ...edits.map((e) => (e as { path?: unknown })?.path)]
+  const notebook = paths.some((p) => typeof p === 'string' && p.endsWith('.ipynb'))
+  const notebookName = engineToolName === 'read' ? 'notebookread' : 'notebookedit'
+  const legacy = (cc: string) =>
+    (cc === 'multiedit' && edits.length > 1) ||
+    (cc === 'task' && own === 'Agent') ||
+    (cc === notebookName && notebook)
+  return toolNameCandidates(engineToolName, aliases)
+    .filter((name) => {
+      const lower = name.toLowerCase()
+      if (lower === engineToolName.toLowerCase() || lower === own.toLowerCase()) return true
+      if (aliases.includes(name)) return true
+      if (PER_CALL_NAMES.has(lower) || PER_CALL_MORE.has(lower) || NOTEBOOK_NAMES.has(lower))
+        return legacy(lower)
+      return true
+    })
+    .concat(own)
+}
+
 /**
  * Match a tool-event matcher against an engine tool name and the tool's own aliases
- * (translating CC↔engine names as described in the module header).
+ * (translating CC↔engine names as described in the module header). Given the call's input,
+ * the matcher meets the names of that call (`callNameCandidates`).
  */
 export function matchesToolName(
   matcher: string | undefined,
   engineToolName: string,
   aliases?: readonly string[],
+  input?: unknown,
 ): boolean {
   if (isMatchAll(matcher)) return true
-  return matchAny(matcher!, toolNameCandidates(engineToolName, aliases))
+  const candidates =
+    input && typeof input === 'object' && !Array.isArray(input)
+      ? callNameCandidates(engineToolName, input as Record<string, unknown>, aliases)
+      : toolNameCandidates(engineToolName, aliases)
+  return matchAny(matcher!, candidates)
 }

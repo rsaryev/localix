@@ -93,6 +93,8 @@ export function normalizeMcpToolAlias(name: string): string | undefined {
   const server = (split < 0 ? address : address.slice(0, split)).replace(/^plugin_/, '')
   const tool = split < 0 ? undefined : address.slice(split + 2)
   // The same sanitization the engine's `namespacedName` applies (`mcp/mcp-tools.ts`).
+  // permissions.md: "`mcp__puppeteer` matches any tool provided by the `puppeteer` server".
+  if (tool === undefined && !wildcard) return `mcp_${server}_*`.replace(/[^a-zA-Z0-9_*]/g, '_')
   const engine = `mcp_${server}${tool === undefined ? '' : `_${tool}`}`.replace(
     /[^a-zA-Z0-9_]/g,
     '_',

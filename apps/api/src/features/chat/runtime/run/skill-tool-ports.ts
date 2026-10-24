@@ -33,7 +33,7 @@ export function authorizeSkillCommands(
       ...options,
       preapprovedRules: [
         ...(options.preapprovedRules ?? []),
-        ...skillPermissionRules(skill.allowedTools),
+        ...skillPermissionRules(skill.allowedTools, options.root),
       ],
     })(TOOL.bash, { command })
     if (verdict.decision === 'allow') return undefined

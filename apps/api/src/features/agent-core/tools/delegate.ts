@@ -125,6 +125,18 @@ export function classifyDelegateCall(input: unknown): CallClass {
     : { effect: 'external' }
 }
 
+/**
+ * The agent a new task runs as, as a permission rule names it (`Agent(Explore)` in a skill's
+ * `allowed-tools`): a start that names one. Running it yourself, and every other action, names
+ * none.
+ */
+export function delegatePermissionResources(input: unknown): string[] {
+  const record = (input ?? {}) as { action?: unknown; agent?: unknown }
+  return record.action === undefined && typeof record.agent === 'string' && record.agent.trim()
+    ? [record.agent.trim()]
+    : []
+}
+
 export function createDelegateTool(port: DelegateToolPort) {
   return defineAgentTool<DelegateToolInput>({
     name: TOOL.delegate,
@@ -139,6 +151,7 @@ export function createDelegateTool(port: DelegateToolPort) {
     mutates: true,
     executionMode: 'sequential',
     classify: classifyDelegateCall,
+    permissionResources: delegatePermissionResources,
     async execute(toolCallId, input, signal) {
       switch (input.action) {
         case undefined:

@@ -19,7 +19,11 @@
  *
  * Pure module — no chat/UI imports.
  */
+import { isAbsolute, resolve } from 'node:path'
 import { mutationInputPaths } from '@localixai/agent/agents'
+
+import { claudeCodeHookCall } from '../ext/cc-tool-shapes'
+import { ccDomainRuleMatches, ccPathRuleMatches } from '../cc-settings/cc-path-rule'
 
 import { matchesToolName } from './matcher'
 import {
@@ -69,6 +73,28 @@ function stringField(input: unknown, key: string): string | undefined {
   return undefined
 }
 
+/** `Tool(param:value)`: one top-level scalar field of Claude Code's input (permissions.md). */
+const PARAM_RULE = /^([A-Za-z_][\w-]*)\s*:\s*(.*)$/s
+
+function paramMatches(specifier: string, view: Record<string, unknown>): boolean | undefined {
+  if (specifier.trim().endsWith(':*')) return undefined // `prefix:*` is a prefix, not a field
+  const m = PARAM_RULE.exec(specifier.trim())
+  if (!m || !(m[1]! in view)) return undefined
+  const value = view[m[1]!]
+  if (value === undefined || (typeof value === 'object' && value !== null)) return false
+  return specifierMatchesValue(m[2]!.trim(), String(value))
+}
+
+/** The files a call touches, absolute: a batch's every entry, else the Claude Code `file_path`. */
+function callPaths(toolInput: unknown, view: Record<string, unknown>, base?: string): string[] {
+  const own = [...mutationInputPaths(toolInput), ...filePathFields(toolInput)]
+  const viewed = ['file_path', 'notebook_path', 'path'].flatMap((key) =>
+    typeof view[key] === 'string' ? [view[key] as string] : [],
+  )
+  const absolute = (path: string) => (base && !isAbsolute(path) ? resolve(base, path) : path)
+  return [...new Set([...own, ...viewed].map(absolute))]
+}
+
 /**
  * Evaluate a handler `if` guard. Returns true when the hook SHOULD run.
  * Fails OPEN (returns true) whenever the rule can't be confidently applied.
@@ -79,33 +105,60 @@ export function evaluateIfGuard(
   toolInput: unknown,
   /** The tool's other names (an MCP tool's `mcp__…`), matched as the hook matcher matches them. */
   aliases?: readonly string[],
+  /** The hook's working directory: relative paths resolve, and rules anchor, here. */
+  cwd?: string,
 ): boolean {
   const parsed = parseRuleString(rule)
   if (!parsed) return true // unparseable rule → fail open
   // Tool part must match this call's tool (CC↔engine aware); hooks.md: "Use the same scoped
   // tool name in a handler's `if` field" — a plugin MCP tool's `mcp__plugin_<p>_<s>__<t>`.
-  if (!matchesToolName(parsed.tool, engineToolName, aliases)) return false
+  if (!matchesToolName(parsed.tool, engineToolName, aliases, toolInput)) return false
   if (specifierIsAll(parsed.specifier)) return true
   const specifier = parsed.specifier!
+  const tool = { name: engineToolName, ...(aliases ? { aliases } : {}) }
+  const call = claudeCodeHookCall(tool, toolInput, cwd)
+  const view = (call.tool_input ?? {}) as Record<string, unknown>
+  const name = call.tool_name
 
-  const toolLower = engineToolName.toLowerCase()
-  // Bash family: the specifier constrains the command string.
-  if (toolLower === 'bash' || parsed.tool.trim().toLowerCase() === 'bash') {
-    const command = stringField(toolInput, 'command')
+  const param = paramMatches(specifier, view)
+  if (param !== undefined) return param
+
+  // Bash family: the specifier constrains every command of the call (a batch's too).
+  if (name === 'Bash' || parsed.tool.trim().toLowerCase() === 'bash') {
+    const command = stringField(view, 'command') ?? stringField(toolInput, 'command')
     if (command === undefined) return true // no command to test → fail open
     const subs = bashSubcommands(command)
     if (subs === null) return true // substitution present → fail open
     return subs.some((s) => matchBashSpecifier(specifier, s))
   }
+  if (name === 'WebFetch') {
+    const url = stringField(view, 'url')
+    if (url === undefined || !specifier.trim().startsWith('domain:')) return true
+    return ccDomainRuleMatches(specifier, url)
+  }
+  if (name === 'Agent')
+    return specifierMatchesValue(specifier, stringField(view, 'subagent_type') ?? '')
+  if (name === 'Skill') return specifierMatchesValue(specifier, stringField(view, 'skill') ?? '')
 
   // File tools: match any file of the call — a batched `edit`/`write` (`edits[].path`,
   // `files[].path`) or a batched `read` (a hook guarding `Read(*.env)` must still run when the
-  // .env is the third entry); else the first stringy input value.
-  const files = [...new Set([...mutationInputPaths(toolInput), ...filePathFields(toolInput)])]
-  if (files.length > 0) return files.some((file) => fileSpecifierMatchesValue(specifier, file))
-  const field = firstStringValue(toolInput)
+  // .env is the third entry) — anchored as permissions.md anchors a path rule.
+  const base = baseOf(toolInput, cwd)
+  const files = callPaths(toolInput, view, base)
+  if (files.length > 0) {
+    if (!cwd) return files.some((file) => fileSpecifierMatchesValue(specifier, file))
+    return files.some((file) => ccPathRuleMatches(specifier, file, { cwd: base ?? cwd }))
+  }
+  const field = firstStringValue(view)
   if (field === undefined) return true // nothing to test → fail open
   return fileSpecifierMatchesValue(specifier, field)
+}
+
+/** The directory a call's relative paths resolve against: its own `cwd` below the hook's. */
+function baseOf(input: unknown, cwd?: string): string | undefined {
+  const own = stringField(input, 'cwd')
+  if (!cwd) return own && isAbsolute(own) ? own : undefined
+  return own ? resolve(cwd, own) : cwd
 }
 
 /** `file_path`, `path` and every `reads[].path` (a batched read) of a tool input. */

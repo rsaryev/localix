@@ -99,10 +99,10 @@ export function createGateHookRunners(deps: HookDispatchDeps): GateRunners {
       }
       const outcomes = await runAll(
         'PermissionRequest',
-        (m) => matchesToolName(m, toolName, ref.aliases),
+        (m) => matchesToolName(m, toolName, ref.aliases, toolInput),
         input,
         false,
-        { ifCtx: { toolName, toolInput, aliases: ref.aliases } },
+        { ifCtx: { toolName, toolInput, aliases: ref.aliases, cwd: base.cwd } },
       )
       // Only the `decision` object decides (exit 2 is not honoured); a deny from any handler
       // beats an allow from another, and the first allow's rewrite is the one applied.
@@ -133,10 +133,10 @@ export function createGateHookRunners(deps: HookDispatchDeps): GateRunners {
       }
       const outcomes = await runAll(
         'PermissionDenied',
-        (m) => matchesToolName(m, toolName, ref.aliases),
+        (m) => matchesToolName(m, toolName, ref.aliases, toolInput),
         input,
         false,
-        { ifCtx: { toolName, toolInput, aliases: ref.aliases } },
+        { ifCtx: { toolName, toolInput, aliases: ref.aliases, cwd: base.cwd } },
       )
       return { retry: outcomes.some((o) => o.retry === true) }
     },
