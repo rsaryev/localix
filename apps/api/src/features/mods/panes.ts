@@ -83,13 +83,14 @@ export function createModPanes(deps: {
       component: 'Pane',
       surface: 'desktop',
       requestId: id,
-      plugin,
       props: {
         title: pane.title ?? id,
         isFocused: true,
         bodyColumns: viewport.columns,
         placement: 'dock',
         scroll: { bodyRows: viewport.rows, offset: 0 },
+        // The main conversation's transcript is in view: Localix opens no agent's in its place.
+        view: {},
       },
       viewport: { ...viewport, isFullscreen: false },
     }

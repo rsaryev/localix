@@ -111,6 +111,8 @@ async function commandSession(dir: string, output: string, reports: string[]) {
     plugins,
   )
   await host.panes.render(instanceIdOf(PROBE_PLUGIN.name, dir), 'cc-parity-probe')
+  // The band above the conversation's prompt box, as its composer draws it.
+  await host.band.render('s-command', { columns: 100, rows: 12 })
   await host.stop()
 }
 

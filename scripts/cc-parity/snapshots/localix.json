@@ -167,7 +167,8 @@
       "kind": "call",
       "name": "ui.open",
       "shape": {
-        "isPlaced": "boolean"
+        "isPlaced": "boolean",
+        "reason": "string"
       }
     },
     {
@@ -283,16 +284,38 @@
     },
     {
       "kind": "event",
+      "name": "ui.render:AbovePrompt",
+      "shape": {
+        "component": "string",
+        "props": {
+          "bodyColumns": "number",
+          "hasSurvey": "boolean",
+          "isWorking": "boolean",
+          "maxRows": "number",
+          "scroll": "object",
+          "view": "object"
+        },
+        "requestId": "string",
+        "surface": "string",
+        "viewport": {
+          "columns": "number",
+          "isFullscreen": "boolean",
+          "rows": "number"
+        }
+      }
+    },
+    {
+      "kind": "event",
       "name": "ui.render:Pane",
       "shape": {
         "component": "string",
-        "plugin": "string",
         "props": {
           "bodyColumns": "number",
           "isFocused": "boolean",
           "placement": "string",
           "scroll": "object",
-          "title": "string"
+          "title": "string",
+          "view": "object"
         },
         "requestId": "string",
         "surface": "string",
