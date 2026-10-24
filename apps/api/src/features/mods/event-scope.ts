@@ -12,7 +12,13 @@ export interface ModEventScope {
   scene: ModScene
   /** The mod instances of the project where the run happens. */
   plugins: ReadonlySet<string>
+  /** A delegated child's run: its session id, the `agentId` its turn and tool events carry. */
+  agentId?: string
 }
+
+/** `{ agentId }` for a delegated child's event, nothing for the main conversation's. */
+export const agentOf = (scope: { agentId?: string }) =>
+  scope.agentId ? { agentId: scope.agentId } : {}
 
 export const hearsIn = (scope: ModEventScope, event: string): boolean =>
   scope.plugins.size > 0 && scope.host.hears(event, scope.plugins)

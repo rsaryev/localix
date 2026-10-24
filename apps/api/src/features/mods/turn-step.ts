@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import type { AssistantMessage, ModelStepHook, ReasoningEffort } from '@localixai/agent'
-import { fieldOf, fireIn, hearsIn, type ModEventScope } from './event-scope'
+import { agentOf, fieldOf, fireIn, hearsIn, type ModEventScope } from './event-scope'
 import { claudeCodeToolName, localToolName, toolCallEvent, toolInputOf } from './tool-shapes'
 
 /**
@@ -88,6 +88,7 @@ export function modelStepHook(scope: ModEventScope, turnId: string): ModelStepHo
       model: step.modelId,
       ...(EFFORTS.has(step.reasoningEffort) ? { effort: step.reasoningEffort } : {}),
       messageCount: step.messageCount,
+      ...agentOf(scope),
     }
     const answer = await fireIn(scope, 'turn.step', input, async (e) => {
       const model = fieldOf(e, 'model')

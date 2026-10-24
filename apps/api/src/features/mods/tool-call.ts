@@ -1,6 +1,7 @@
 import { mcpInputSchema, type AgentTool, type AgentToolResult } from '@localixai/agent/agents'
 import { isBlockedThrow } from '../agent-core/tools/tool-error-result'
 import type { ModScene } from './contracts'
+import { agentOf } from './event-scope'
 import type { ModsHost } from './host'
 import { toolCallEvent, toolInputOf } from './tool-shapes'
 
@@ -47,6 +48,8 @@ export interface ModToolScope {
   scene: ModScene
   /** The mod instances of the project where the call happens. */
   plugins: ReadonlySet<string>
+  /** A delegated child's call: its session id (`agentId`). */
+  agentId?: string
 }
 
 /** Run each tool through `tool.call`; the same array when no enabled mod hooks it. */
@@ -69,7 +72,7 @@ export function wrapInToolCall(tools: readonly AgentTool[], scope: ModToolScope)
             let refused = undefined as { error: unknown; reason: string } | undefined
             const answer = await scope.host.dispatch(
               'tool.call',
-              toolCallEvent(tool, input, toolCallId),
+              { ...toolCallEvent(tool, input, toolCallId), ...agentOf(scope) },
               async (event) => {
                 try {
                   ran = await tool.execute(
@@ -126,7 +129,7 @@ export function modTools(scope: ModToolScope): AgentTool[] {
           }
           const answer = await scope.host.dispatch(
             'tool.call',
-            toolCallEvent({ name }, input, toolCallId),
+            { ...toolCallEvent({ name }, input, toolCallId), ...agentOf(scope) },
             () => ({ result: unanswered, isError: true }),
             scope.scene,
             scope.plugins,

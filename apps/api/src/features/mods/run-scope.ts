@@ -4,7 +4,7 @@ import { offerAgents, wrapDelegate, type DirectoryAgent } from './agent-events'
 import type { RunSurface } from './api/run-api'
 import type { ModScene } from './contracts'
 import { skillPromptIn, wrapSkillTool } from './conversation-events'
-import type { ModEventScope } from './event-scope'
+import { agentOf, type ModEventScope } from './event-scope'
 import type { ModsHost } from './host'
 import { runtimeContext, type ContextSection } from './run-context'
 import { composeSystemPrompt, type ComposeFacts } from './run-prompt'
@@ -90,11 +90,11 @@ export async function createModRunScope(
   scene: ModScene,
   enabled: ReadonlySet<string>,
   /** The model the run's requests name, for the events that carry it. */
-  run: { model: string } = { model: '' },
+  run: { model: string; agentId?: string } = { model: '' },
 ): Promise<ModRunScope> {
   const plugins = await host.instancesFor(scene, enabled)
   const active = plugins.size > 0
-  const scope: ModEventScope = { host, scene, plugins }
+  const scope: ModEventScope = { host, scene, plugins, ...agentOf(run) }
   // Between turns, the conversation's events go to the mods this turn runs with.
   if (active) host.conversations.joined(scene, plugins)
   // What the turn lends `$.tool`, `$.mcp` and `$.tool.check` while it runs.
@@ -125,7 +125,13 @@ export async function createModRunScope(
     },
     async turnStart(text, turnId) {
       if (active && host.hears('turn.start', plugins))
-        await host.dispatch('turn.start', { text, turnId }, () => ({ turnId }), scene, plugins)
+        await host.dispatch(
+          'turn.start',
+          { text, turnId, ...agentOf(scope) },
+          () => ({ turnId }),
+          scene,
+          plugins,
+        )
     },
     async turnComplete(input) {
       if (scene.sessionId) host.detachRun(scene.sessionId)
@@ -133,7 +139,7 @@ export async function createModRunScope(
       if (!active || !host.hears('turn.complete', plugins)) return undefined
       const answer = (await host.dispatch(
         'turn.complete',
-        { ...input, isAborted: input.reason === 'aborted' },
+        { ...input, isAborted: input.reason === 'aborted', ...agentOf(scope) },
         () => ({ text: input.answer }),
         scene,
         plugins,
