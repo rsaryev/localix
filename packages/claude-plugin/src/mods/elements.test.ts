@@ -33,9 +33,26 @@ describe('mod elements', () => {
     expect(Object.isFrozen(Box({ gap: 1 }))).toBe(true)
   })
 
-  test('a control without a key, or two on one key, is refused', () => {
+  test('a Button without a key is addressed by its label, else its one string child', () => {
     const { Box, Button } = elementTable()
-    expect(() => serializeTree(Button({ label: 'x' }))).toThrow(InvalidTreeError)
+    const { tree, handlers } = serializeTree(
+      Box({
+        children: [
+          Button({ label: 'Proceed', onPress: () => {} }),
+          h(Button, { onPress: () => {} }, 'Cancel'),
+        ],
+      }),
+    )
+    expect([...handlers.keys()]).toEqual(['Proceed', 'Cancel'])
+    expect((tree[0] as { children: { props: unknown }[] }).children[1]!.props).toEqual({
+      key: 'Cancel',
+    })
+  })
+
+  test('a control without a key, or two on one key, is refused', () => {
+    const { Box, Button, Input } = elementTable()
+    expect(() => serializeTree(Input({ label: 'x' }))).toThrow(InvalidTreeError)
+    expect(() => serializeTree(Button({}))).toThrow(InvalidTreeError)
     expect(() =>
       serializeTree(
         Box({ children: [Button({ key: 'a', label: '1' }), Button({ key: 'a', label: '2' })] }),

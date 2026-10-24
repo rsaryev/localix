@@ -180,6 +180,12 @@ export function serializeTree(
     }
     if (child.type === 'Client') return [clientOf(props, children.length, options, clients)]
     if (CONTROLS.has(child.type)) {
+      // A Button is addressed by its label, else its one string child, when it names no key.
+      if (child.type === 'Button' && (typeof props.key !== 'string' || !props.key)) {
+        const only = children.length === 1 ? children[0] : undefined
+        const label = typeof props.label === 'string' && props.label ? props.label : only
+        if (typeof label === 'string') props.key = label
+      }
       const key = props.key
       if (typeof key !== 'string' || !key) throw new InvalidTreeError(`a ${child.type} has no key`)
       if (handlers.has(key)) throw new InvalidTreeError(`two controls share the key "${key}"`)
