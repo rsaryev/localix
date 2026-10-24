@@ -36,6 +36,8 @@ import { createPermissionRulePersister } from '../features/capabilities/availabi
 import { createAgentDirectoryPorts } from './agent-directory-ports'
 import { createTerminalPorts } from './terminal-ports'
 import { createChatFeaturePorts } from './chat-feature-ports'
+import { claudeCodeModes } from '../features/cc-settings/settings-modes'
+import { userHome } from '../lib/env'
 import type { MiniAppService } from '../features/mini-apps/service'
 import type { PluginService } from '../features/plugins/service-types'
 import type { ModsHost } from '../features/mods/host'
@@ -320,6 +322,7 @@ export function createChatServicePhase({
     vectors: semanticService.vectors,
     decisions: decisionService,
     resolveSessionAgent: createSessionSeatResolver(agentsService),
+    claudeCodeModes: (cwd) => claudeCodeModes({ homeDir: userHome(), cwd }),
     loadAgentModelDefaults: agentModelDefaultsPort(agentsService),
     ...createAgentDirectoryPorts(agentsService),
     agentManagement: agentsService,

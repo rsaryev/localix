@@ -25,6 +25,17 @@ Restrictions that modes preserve:
   recognized destructive forms, including disk formatting and recursive forced deletion of a home or
   system root. This is a lexical guard, not a guarantee about every executable's behavior.
 
+### Claude Code's mode settings
+
+A new conversation starts in the mode `permissions.defaultMode` names in the Claude Code settings
+files for its folder: `default` (or `manual`) is Default, `plan` is Plan and `bypassPermissions` is
+Bypass. `acceptEdits`, `auto` and `dontAsk` have no Localix mode of the same meaning, so such a
+conversation starts in Default. A delegated child always runs in its conversation's mode.
+
+`permissions.disableBypassPermissionsMode: "disable"` in any of those files, managed settings
+included, keeps the folder's conversations out of Bypass and Autonomous: choosing one is refused,
+and a plan approved in one of them is implemented in Default.
+
 ## How a mode works
 
 A mode rewrites the agent's rules for this conversation's runs. The rules you see in Settings never

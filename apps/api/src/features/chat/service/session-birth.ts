@@ -14,6 +14,7 @@
  * session ref spent on a request that then fails leaves a hole in a sequence the user reads.
  */
 import { InvalidRequestError, NotFoundError } from '../../../lib/domain-errors'
+import type { PermissionMode } from '../../../contracts/permission-modes'
 import type { SessionDetail } from '../contracts'
 import { toSessionSummary, type SessionRecord } from '../repository'
 import { resolveSessionRoot, sessionRootResolutionError } from '../session-ancestry'
@@ -23,6 +24,8 @@ import { DEFAULT_TITLE } from './context'
 import { bornParticipants } from './participant-routes'
 import { isDelegationParent } from '../../agent-core/delegation-policy'
 import type { CreateSessionInput, SessionLifecycleCtx } from './session-lifecycle-contracts'
+
+const stopsAsking = (mode: PermissionMode) => mode === 'bypass' || mode === 'autonomous'
 
 export async function createSession(
   ctx: SessionLifecycleCtx,
@@ -123,6 +126,16 @@ export async function createSession(
     pinnedSkills: input.pinnedSkills ?? [],
     activatedTools: [],
     archivedAt: null,
+  }
+
+  // A new conversation starts in the mode Claude Code's settings name for its folder.
+  if (!parent && sessionKind === 'chat' && ctx.claudeCodeModes && ctx.resolveSessionWorkingDir) {
+    const modes = await ctx
+      .claudeCodeModes(await ctx.resolveSessionWorkingDir(userId, session))
+      .catch(() => null)
+    const mode = modes?.defaultMode
+    if (mode && mode !== 'default' && !(modes.bypassDisabled && stopsAsking(mode)))
+      session.permissionMode = mode
   }
 
   await ctx.repo.insertSession(session)

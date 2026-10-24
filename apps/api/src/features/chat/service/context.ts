@@ -1,3 +1,4 @@
+import type { PermissionMode } from '../../../contracts/permission-modes'
 import type { SemanticVectors } from '@localixai/mini-app-sdk/backend'
 import type { DecisionService } from '../../decisions/service'
 import type { GlobalSearchPort } from '../../agent-core/tools/global-search/global-search'
@@ -44,6 +45,10 @@ export const DEFAULT_TITLE = 'New Chat'
 
 export interface ChatServiceDeps {
   agentManagement?: AgentManagementPort
+  /** Claude Code's mode settings for a folder (`cc-settings/settings-modes.ts`). */
+  claudeCodeModes?: (
+    cwd: string,
+  ) => Promise<{ defaultMode?: PermissionMode; bypassDisabled: boolean }>
   resolveSessionAgent?: ResolveSessionAgent
   /**
    * The model each agent's own card names, by agent ID — the third link of the model chain

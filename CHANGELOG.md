@@ -8,6 +8,10 @@ Changes land on `main`.
 
 ### Added
 
+- **Claude Code's starting mode**: a new conversation starts in the permission mode
+  `permissions.defaultMode` names in the folder's Claude Code settings (Default, Plan or Bypass),
+  and `disableBypassPermissionsMode: "disable"` keeps Bypass and Autonomous off there. See
+  [Permission modes](docs/features/permission-modes.md#claude-codes-mode-settings).
 - **Claude Code permission rules**: the `permissions` in your Claude Code settings files — your own,
   the project's, the local file and your organization's managed settings — now apply to Localix runs
   in that folder. A Claude Code `deny` refuses the call, an `ask` raises a card and an `allow`

@@ -18,6 +18,14 @@ export interface SessionLifecycleCtx extends Omit<SessionDeletionContext, 'repo'
   ccHookSessions?: CcHookSessions
   /** The session's working directory, for CwdChanged when a project move changes it. */
   resolveSessionWorkingDir?: (userId: string, session: SessionRecord) => Promise<string>
+  /**
+   * Claude Code's mode settings for a folder (`permissions.defaultMode`,
+   * `disableBypassPermissionsMode`): the mode a new conversation there starts in, and whether
+   * the modes that stop asking are off.
+   */
+  claudeCodeModes?: (
+    cwd: string,
+  ) => Promise<{ defaultMode?: PermissionMode; bypassDisabled: boolean }>
   activeAgentId?: (sessionId: string) => string | undefined
   cancelAgentTurn?: (userId: string, sessionId: string, agentId: string) => Promise<void>
   resolveSessionAgent?: ResolveSessionAgent

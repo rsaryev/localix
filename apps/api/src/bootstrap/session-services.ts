@@ -119,7 +119,13 @@ export function wireSessionServices({
         version: plan.version,
       }),
     setMode: async ({ userId, sessionId }, mode) => {
-      await chatService.updateSession(userId, sessionId, { permissionMode: mode })
+      await chatService
+        .updateSession(userId, sessionId, { permissionMode: mode })
+        // Claude Code's settings may disable bypass for the folder: the plan runs in Default.
+        .catch(async (error: unknown) => {
+          if ((error as { code?: string }).code !== 'bypass_disabled') throw error
+          await chatService.updateSession(userId, sessionId, { permissionMode: 'default' })
+        })
     },
     wake: (...args) => wakes.deliver(...args),
     participants: ({ userId, sessionId }) => chatService.participantHandles(userId, sessionId),

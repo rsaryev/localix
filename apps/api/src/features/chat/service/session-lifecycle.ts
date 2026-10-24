@@ -82,6 +82,19 @@ export async function updateSession(
       "A delegated session runs under its root conversation's mode; change it there",
     )
   }
+  // Claude Code's `disableBypassPermissionsMode` keeps the folder out of the modes that stop asking.
+  if (
+    (patch.permissionMode === 'bypass' || patch.permissionMode === 'autonomous') &&
+    ctx.claudeCodeModes &&
+    ctx.resolveSessionWorkingDir
+  ) {
+    const modes = await ctx.claudeCodeModes(await ctx.resolveSessionWorkingDir(userId, session))
+    if (modes.bypassDisabled)
+      throw new ConflictError(
+        'bypass_disabled',
+        "Claude Code's settings for this folder disable bypass mode (disableBypassPermissionsMode)",
+      )
+  }
   // Only a chat's membership can change: a delegated child or a job IS its one agent's task.
   if (patch.agents !== undefined && !conversationPolicy(session).membershipEditable) {
     throw new ConflictError('membership_fixed', 'Only a chat conversation can change who is in it')
