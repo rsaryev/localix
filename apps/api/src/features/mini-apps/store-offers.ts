@@ -273,13 +273,17 @@ export function createOfferReader(deps: {
   return async function read(opts: { fresh?: boolean } = {}): Promise<{
     offers: Map<string, Offer>
     problems: string[]
+    /** Why a source could not be read this time, by its address. */
+    failed: Record<string, string>
     /** Each vouched source's picks for Discover, by the source's address. */
     editorial: Array<{ source: string; editorial: MiniAppCatalogEditorial }>
   }> {
     const offers = new Map<string, Offer>()
     const editorial: Array<{ source: string; editorial: MiniAppCatalogEditorial }> = []
     const problems: string[] = []
+    const failed: Record<string, string> = {}
     for (const source of await deps.sources()) {
+      const address = source.kind === 'catalog' ? source.url : pathToFileURL(source.root).href
       let found: { offers: Offer[]; editorial?: MiniAppCatalogEditorial }
       try {
         found =
@@ -288,16 +292,13 @@ export function createOfferReader(deps: {
             : await catalogOffers(source, opts.fresh ?? false)
       } catch (error) {
         problems.push(errorMessage(error))
+        failed[address] = errorMessage(error)
         found =
           source.kind === 'catalog' ? (cache.get(source.url) ?? { offers: [] }) : { offers: [] }
       }
       for (const offer of found.offers) if (!offers.has(offer.name)) offers.set(offer.name, offer)
-      if (found.editorial)
-        editorial.push({
-          source: source.kind === 'catalog' ? source.url : pathToFileURL(source.root).href,
-          editorial: found.editorial,
-        })
+      if (found.editorial) editorial.push({ source: address, editorial: found.editorial })
     }
-    return { offers, problems, editorial }
+    return { offers, problems, failed, editorial }
   }
 }

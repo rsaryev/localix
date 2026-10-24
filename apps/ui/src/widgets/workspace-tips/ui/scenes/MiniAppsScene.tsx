@@ -1,6 +1,6 @@
 import { BadgeCheck, LayoutGrid, Store } from 'lucide-react'
 import useSWR from 'swr'
-import { isActiveJob, type Listing } from '@localixai/store'
+import { isActiveJob, LISTINGS_PAGE_MAX, type Listing } from '@localixai/store'
 import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
 import { MonogramAvatar } from '@localixai/kit/avatar'
 import { storeApi } from '@/shared/api/store-client'
@@ -75,7 +75,7 @@ function row(entry: Listing, install: (entry: Listing) => unknown): MenuEntry {
 export function MiniAppsAction() {
   const generation = useResourceGeneration('store')
   const { data } = useSWR(['tips-mini-apps', generation], () =>
-    storeApi.listings({ shelf: 'package:mini-app' }),
+    storeApi.page({ shelf: 'package:mini-app', limit: LISTINGS_PAGE_MAX }),
   )
   const entries = data?.listings ?? []
   const recommended = entries.filter((entry) => entry.recommended)

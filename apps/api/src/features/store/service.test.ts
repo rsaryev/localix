@@ -168,7 +168,7 @@ describe('the Store', () => {
 
   test('sources are listed by provider and added, previewed and removed through it', async () => {
     const { apps, store } = setup()
-    expect((await store.sources()).map((source) => source.label)).toEqual(['Localix'])
+    expect((await store.sources()).sources.map((source) => source.label)).toEqual(['Localix'])
     expect((await store.previewSource('mini-app', 'https://ada.test/c.json')).publishers).toEqual([
       'Ada',
     ])

@@ -22,6 +22,8 @@ function fixture() {
         source: { source: 'github', repo: 'anthropics/claude-plugins-official' },
         installLocation: join(root, OFFICIAL),
         gitCommitSha: 'c1',
+        lastUpdated: '2026-10-20T10:00:00.000Z',
+        autoUpdate: false,
       },
       [COMMUNITY]: {
         source: { source: 'github', repo: 'anthropics/claude-plugins-community' },
@@ -101,6 +103,12 @@ function fixture() {
       calls.push(`remove source ${input.name}`)
       return { uninstalled: [] }
     },
+    updateMarketplace: async (_user, input) => {
+      calls.push(`update source ${input.name}`)
+      return { name: input.name, count: 0, updated: [], manual: [], warnings: [] }
+    },
+    setMarketplaceAutoUpdate: async (_user, input) =>
+      void calls.push(`auto-update ${input.name} ${input.autoUpdate}`),
     refreshMarketplaces: async () => {
       calls.push('refresh')
       return { refreshed: [], updated: [], manual: [], warnings: [] }
@@ -121,6 +129,7 @@ function fixture() {
   return {
     provider,
     calls,
+    root,
     scans: () => scans,
     release: () => release(),
     install: (records: PluginRecord[]) => (installed = records),
@@ -306,5 +315,52 @@ describe('plugins in the Store', () => {
       expect.objectContaining({ id: OFFICIAL, count: 2, trust: 'official', builtIn: false }),
       expect.objectContaining({ id: COMMUNITY, count: 1, trust: 'community' }),
     ])
+  })
+
+  test('a source says when it was read, its auto-update, and is read again or switched alone', async () => {
+    const { provider, calls } = fixture()
+    const [official, community] = await provider.sources()
+    expect(official).toMatchObject({ syncedAt: '2026-10-20T10:00:00.000Z', autoUpdate: false })
+    expect(official!.problem).toBeUndefined()
+    expect(community!.autoUpdate).toBe(false)
+    await provider.refreshSource!(OFFICIAL)
+    await provider.setSourceAutoUpdate!(OFFICIAL, true)
+    expect(calls).toEqual([`update source ${OFFICIAL}`, `auto-update ${OFFICIAL} true`])
+  })
+
+  test('a marketplace that cannot be read is still a source, saying why', async () => {
+    const { provider, root } = fixture()
+    const known = JSON.parse(await Bun.file(join(root, 'known.json')).text())
+    known.gone = {
+      source: { source: 'github', repo: 'acme/gone' },
+      installLocation: join(root, 'gone'),
+    }
+    await Bun.write(join(root, 'known.json'), JSON.stringify(known))
+    const gone = (await provider.sources()).find((source) => source.id === 'gone')
+    expect(gone).toMatchObject({ count: 0, label: 'gone' })
+    expect(gone?.problem).toContain('could not be read')
+  })
+
+  test('the open project’s own installs, by listing id', async () => {
+    const { provider, install } = fixture()
+    install([
+      {
+        name: 'review',
+        version: '1.2.0',
+        description: '',
+        projectId: 'p1',
+        scope: 'project',
+        dir: '/x',
+        source: `review@${OFFICIAL}`,
+        enabled: false,
+      } as PluginRecord,
+    ])
+    expect(await provider.projectInstalls!({ ...actor, projectId: 'p1' })).toEqual([
+      {
+        id: `review@${OFFICIAL}`,
+        installs: [{ scope: 'project', version: '1.2.0', enabled: false }],
+      },
+    ])
+    expect(await provider.projectInstalls!({ ...actor, projectId: 'p2' })).toEqual([])
   })
 })

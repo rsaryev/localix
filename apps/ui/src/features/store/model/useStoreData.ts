@@ -1,5 +1,5 @@
 import useSWR from 'swr'
-import type { ListingRef, Scope } from '@localixai/store'
+import { LISTINGS_PAGE_MAX, type ListingRef, type Scope } from '@localixai/store'
 import type { StoreClient } from '@/shared/api/store-client'
 import { useResourceGeneration } from '@/shared/api/resourceGeneration'
 
@@ -12,14 +12,16 @@ export function useStoreListings(client: StoreClient, query: { shelf?: string; q
   const generation = useResourceGeneration('store')
   return useSWR(
     ['store-listings', query.shelf ?? '', query.q ?? '', generation],
-    () => client.listings(query),
+    () => client.page({ ...query, limit: LISTINGS_PAGE_MAX }),
     { keepPreviousData: true },
   )
 }
 
 export function useStoreSources(client: StoreClient) {
   const generation = useResourceGeneration('store')
-  return useSWR(['store-sources', generation], () => client.sources(), { keepPreviousData: true })
+  return useSWR(['store-sources', generation], async () => (await client.sources()).sources, {
+    keepPreviousData: true,
+  })
 }
 
 export function useListingDetail(client: StoreClient, ref: ListingRef) {

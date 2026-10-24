@@ -19,8 +19,10 @@ import { activityOf } from './activity'
 import { discoverOf, relatedOf } from './discover'
 import type { StoreIndexRepository } from './index-repository'
 import { refKey } from './index-rows'
+import { withProjectInstalls } from './project-installs'
 import { staticScore } from './ranking'
 import { createStoreSearchProvider, refOfStoreHit, STORE_SEARCH_DOMAIN } from './search-provider'
+import { sourcesOf } from './sources'
 import { createStoreSync, watchProviders } from './store-runs'
 
 /** What narrows a page: a shelf, a search, a scope, installed or not, and the facets' filters. */
@@ -151,7 +153,17 @@ export function createStoreService(deps: {
             }),
         deps.index.facets(actor.userId, filters),
       ])
-      return { ...page, facets, problems: runs.problems(actor) }
+      const shown = query.projectId
+        ? await withProjectInstalls(page, {
+            providers: deps.providers,
+            index: deps.index,
+            userId: actor.userId,
+            projectId: query.projectId,
+            filters,
+            first: !query.cursor && !query.q?.trim(),
+          })
+        : page
+      return { ...shown, facets, problems: runs.problems(actor) }
     },
 
     async detail(ref: ListingRef, actor: StoreActor) {
@@ -199,8 +211,21 @@ export function createStoreService(deps: {
       await provider.setEnabled(ref.id, scope, enabled, actor)
     },
 
-    async sources(): Promise<SourceView[]> {
-      return (await Promise.all(deps.providers.map((provider) => provider.sources()))).flat()
+    /** Every source, with when it was last read and why not, and the kinds one can be added for. */
+    sources: (): Promise<{ sources: SourceView[]; addable: PackageKind[] }> =>
+      sourcesOf(deps.providers, deps.index),
+
+    async refreshSource(kind: PackageKind, id: string) {
+      const provider = providerOf(kind)
+      if (!provider.refreshSource) throw unsupported(kind, 'read one source again')
+      await provider.refreshSource(id)
+      runs.invalidate()
+    },
+
+    async setSourceAutoUpdate(kind: PackageKind, id: string, on: boolean) {
+      const provider = providerOf(kind)
+      if (!provider.setSourceAutoUpdate) throw unsupported(kind, 'switch auto-update')
+      await provider.setSourceAutoUpdate(id, on)
     },
 
     async previewSource(kind: PackageKind, input: string) {

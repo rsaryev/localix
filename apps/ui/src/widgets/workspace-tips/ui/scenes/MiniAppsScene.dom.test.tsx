@@ -48,7 +48,7 @@ async function mountPick() {
   const { storeApi } = await import('@/shared/api/store-client')
   const installs: string[] = []
   const spies = [
-    spyOn(storeApi, 'listings').mockImplementation(async (query = {}) => answer(LISTINGS, query)),
+    spyOn(storeApi, 'page').mockImplementation(async (query = {}) => answer(LISTINGS, query)),
     spyOn(storeApi, 'install').mockImplementation(async (ref) => {
       installs.push(ref.id)
     }),

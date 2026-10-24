@@ -15,14 +15,26 @@ const kanban = makeListing({
 
 function app() {
   const apps = fakeProvider('mini-app', [chess, kanban], {
+    projectInstalls: {
+      p1: { chess: [{ scope: 'project', version: '2.0.0', enabled: true }] },
+    },
     sources: [
       {
         kind: 'mini-app',
-        id: 'https://hosted.test/c.json',
+        id: 'https://hosted.test/catalog.json',
         label: 'Localix',
         url: 'https://hosted.test/c.json',
         builtIn: true,
         count: 2,
+      },
+      {
+        kind: 'mini-app',
+        id: 'https://gone.test/c.json',
+        label: 'Gone',
+        url: 'https://gone.test/c.json',
+        builtIn: false,
+        count: 0,
+        problem: 'The catalog answered 404',
       },
     ],
   })
@@ -152,5 +164,47 @@ describe('/rpc/store', () => {
     const applied = await post('/updates/apply')
     expect(applied.status).toBe(202)
     expect(await applied.json()).toEqual({ queued: [{ kind: 'mini-app', id: 'kanban' }] })
+  })
+
+  test('sources say when they were read, what went wrong and which kinds can add one', async () => {
+    const { get } = app()
+    await get('/listings')
+    const body = await (await get('/sources')).json()
+    expect(body.addable).toEqual(['mini-app'])
+    const [hosted, gone] = body.sources
+    expect(hosted.syncedAt).toBe('2026-10-25T00:00:00.000Z')
+    expect(hosted.problem).toBeUndefined()
+    expect(gone.problem).toBe('The catalog answered 404')
+  })
+
+  test('one source is read again, and its auto-update switched', async () => {
+    const { apps, post } = app()
+    const id = 'https://hosted.test/c.json'
+    expect((await post('/sources/refresh', { kind: 'mini-app', id })).status).toBe(204)
+    const switched = await post('/sources/auto-update', { kind: 'mini-app', id, autoUpdate: false })
+    expect(switched.status).toBe(204)
+    expect(apps.calls).toContain(`refresh source ${id}`)
+    expect(apps.calls).toContain(`auto-update ${id} false`)
+    expect((await post('/sources/refresh', { kind: 'plugin', id })).status).toBe(404)
+  })
+
+  test('a listing’s page and a page of listings show the open project’s installs', async () => {
+    const { apps, get } = app()
+    const seen: unknown[] = []
+    const detail = apps.provider.detail
+    apps.provider.detail = async (id, actor) => (seen.push(actor.projectId), detail(id, actor))
+    await get('/mini-app/chess?projectId=p1')
+    expect(seen).toEqual(['p1'])
+    const page = await (await get('/listings?projectId=p1')).json()
+    const chessOf = (body: { listings: Array<{ ref: { id: string }; installs: unknown[] }> }) =>
+      body.listings.find((listing) => listing.ref.id === 'chess')
+    expect(chessOf(page)?.installs).toEqual([{ scope: 'project', version: '2.0.0', enabled: true }])
+    const installed = await (await get('/listings?shelf=installed&projectId=p1')).json()
+    expect(installed.listings.map((l: { ref: { id: string } }) => l.ref.id).sort()).toEqual([
+      'chess',
+      'kanban',
+    ])
+    const elsewhere = await (await get('/listings?shelf=installed')).json()
+    expect(elsewhere.listings.map((l: { ref: { id: string } }) => l.ref.id)).toEqual(['kanban'])
   })
 })

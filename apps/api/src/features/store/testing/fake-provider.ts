@@ -1,4 +1,11 @@
-import type { Editorial, Listing, PackageKind, SourceView, StoreProvider } from '@localixai/store'
+import type {
+  Editorial,
+  Listing,
+  PackageKind,
+  SourceView,
+  StoreInstall,
+  StoreProvider,
+} from '@localixai/store'
 import { makeListing, makeListingDetail } from '@localixai/store/testing'
 
 /** A provider over a list in memory, recording every call it is asked to make. */
@@ -10,6 +17,8 @@ export function fakeProvider(
     withoutOptional?: boolean
     fails?: string
     editorial?: Editorial[]
+    /** The installs each project has, by project id and then listing id. */
+    projectInstalls?: Record<string, Record<string, StoreInstall[]>>
   } = {},
 ) {
   let listings = initial
@@ -43,6 +52,16 @@ export function fakeProvider(
     refresh: async () => record('refresh'),
     sources: async () => opts.sources ?? [],
     ...(opts.editorial ? { editorial: async () => opts.editorial! } : {}),
+    ...(opts.projectInstalls
+      ? {
+          projectInstalls: async (actor) => {
+            record(`project installs ${actor.projectId}`)
+            return Object.entries(opts.projectInstalls![actor.projectId] ?? {}).map(
+              ([id, installs]) => ({ id, installs }),
+            )
+          },
+        }
+      : {}),
     subscribe(listener) {
       listeners.add(listener)
       return () => listeners.delete(listener)
@@ -63,6 +82,8 @@ export function fakeProvider(
           }),
           addSource: async (input) => record(`add source ${input}`),
           removeSource: async (id) => record(`remove source ${id}`),
+          refreshSource: async (id) => record(`refresh source ${id}`),
+          setSourceAutoUpdate: async (id, on) => record(`auto-update ${id} ${on}`),
         }),
   }
   return {

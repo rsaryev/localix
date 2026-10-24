@@ -1,75 +1,116 @@
-import {
-  LISTINGS_PAGE_MAX,
-  type DiscoverResponse,
-  type InstallPlan,
-  type ListingDetail,
-  type ListingRef,
-  type ListingsResponse,
-  type PackageKind,
-  type Scope,
-  type SourcePreview,
-  type SourceView,
-  type StoreActivity,
+import type {
+  DiscoverResponse,
+  InstallPlan,
+  ListingDetail,
+  ListingRef,
+  ListingsResponse,
+  PackageKind,
+  Scope,
+  SourcePreview,
+  SourcesResponse,
+  StoreActivity,
+  StoreCategory,
+  Trust,
 } from '@localixai/store'
 import { assertOk, cleanQuery, client, unwrap } from './internal'
 
 const listing = () => client.rpc.store[':kind'][':id']
 const param = (ref: ListingRef) => ({ param: { kind: ref.kind, id: ref.id } })
+/** The open project, when there is one: where a `project` install goes. */
+const project = (projectId?: string | null) => (projectId ? { projectId } : {})
+
+/** What one page of listings is narrowed by, and where it starts. */
+export interface StorePageQuery {
+  shelf?: string
+  q?: string
+  category?: StoreCategory
+  /** A source's id. */
+  source?: string
+  trust?: Trust
+  installed?: boolean
+  /** The open project: lifts what suits it and shows its installs. */
+  projectId?: string | null
+  /** Where the previous page ended (`nextCursor`). */
+  cursor?: string
+  limit?: number
+}
 
 /**
- * The Store (`/rpc/store`, `docs/internals/store.md`): listings, a listing's page and plan, the
- * jobs that change an install, and sources, across every package kind. A write answers with no
- * body: the `store` poke tells every surface to read again.
+ * The Store (`/rpc/store`, `docs/internals/store.md`): listings a page at a time, a listing's page
+ * and plan, the jobs that change an install, and sources, across every package kind. A write
+ * answers with no body: the `store` poke tells every surface to read again.
  */
 export const storeApi = {
-  /**
-   * A shelf or a search, every page of it: the server answers a page at a time, and the Store's
-   * screens show the whole list until they scroll page by page.
-   */
-  async listings(query: { shelf?: string; q?: string } = {}): Promise<ListingsResponse> {
-    const read = (cursor?: string) =>
-      client.rpc.store.listings.$get({
-        query: cleanQuery({ ...query, limit: String(LISTINGS_PAGE_MAX), cursor }),
-      })
-    const first: ListingsResponse = await unwrap(await read())
-    const listings = [...first.listings]
-    let next = first.nextCursor
-    while (next) {
-      const page: ListingsResponse = await unwrap(await read(next))
-      listings.push(...page.listings)
-      next = page.nextCursor
-    }
-    const { nextCursor: _done, ...rest } = first
-    return { ...rest, listings }
+  /** One page of a shelf or a search; `nextCursor` is where the next one starts. */
+  async page(query: StorePageQuery = {}): Promise<ListingsResponse> {
+    const { installed, limit, projectId, ...rest } = query
+    return unwrap(
+      await client.rpc.store.listings.$get({
+        query: cleanQuery({
+          ...rest,
+          ...project(projectId),
+          ...(installed === undefined ? {} : { installed: String(installed) }),
+          ...(limit === undefined ? {} : { limit: String(limit) }),
+        }),
+      }),
+    )
   },
 
-  async detail(ref: ListingRef): Promise<ListingDetail> {
-    return unwrap(await listing().$get(param(ref)))
+  /** A listing's page; with the open project, its install there too. */
+  async detail(ref: ListingRef, projectId?: string | null): Promise<ListingDetail> {
+    return unwrap(await listing().$get({ ...param(ref), query: cleanQuery(project(projectId)) }))
   },
 
-  async plan(ref: ListingRef, scope: Scope): Promise<InstallPlan> {
-    return unwrap(await listing().plan.$post({ ...param(ref), json: { scope } }))
+  async plan(ref: ListingRef, scope: Scope, projectId?: string | null): Promise<InstallPlan> {
+    return unwrap(
+      await listing().plan.$post({ ...param(ref), json: { scope, ...project(projectId) } }),
+    )
   },
 
   /** Queue an install; `consent.plan` is the person's yes to what the plan warned about. */
-  async install(ref: ListingRef, scope: Scope, consent: { plan: boolean }): Promise<void> {
-    await assertOk(await listing().install.$post({ ...param(ref), json: { scope, consent } }))
+  async install(
+    ref: ListingRef,
+    scope: Scope,
+    consent: { plan: boolean },
+    projectId?: string | null,
+  ): Promise<void> {
+    await assertOk(
+      await listing().install.$post({
+        ...param(ref),
+        json: { scope, consent, ...project(projectId) },
+      }),
+    )
   },
 
-  async update(ref: ListingRef, scope: Scope): Promise<void> {
-    await assertOk(await listing().update.$post({ ...param(ref), json: { scope } }))
+  async update(ref: ListingRef, scope: Scope, projectId?: string | null): Promise<void> {
+    await assertOk(
+      await listing().update.$post({ ...param(ref), json: { scope, ...project(projectId) } }),
+    )
   },
 
-  async remove(ref: ListingRef, scope: Scope): Promise<void> {
-    await assertOk(await listing().remove.$post({ ...param(ref), json: { scope } }))
+  async remove(ref: ListingRef, scope: Scope, projectId?: string | null): Promise<void> {
+    await assertOk(
+      await listing().remove.$post({ ...param(ref), json: { scope, ...project(projectId) } }),
+    )
   },
 
-  async setEnabled(ref: ListingRef, scope: Scope, enabled: boolean): Promise<void> {
-    await assertOk(await listing().enable.$post({ ...param(ref), json: { scope, enabled } }))
+  async setEnabled(
+    ref: ListingRef,
+    scope: Scope,
+    enabled: boolean,
+    projectId?: string | null,
+  ): Promise<void> {
+    await assertOk(
+      await listing().enable.$post({
+        ...param(ref),
+        json: { scope, enabled, ...project(projectId) },
+      }),
+    )
   },
 
-  async sources(): Promise<SourceView[]> {
-    return (await unwrap(await client.rpc.store.sources.$get())).sources
+  /** Every source, and the kinds a source can be added for. */
+  async sources(): Promise<SourcesResponse> {
+    return unwrap(await client.rpc.store.sources.$get())
   },
 
   /** Read a source before it is added; rejects with why it is not one. Writes nothing. */
@@ -85,9 +126,23 @@ export const storeApi = {
     await assertOk(await client.rpc.store.sources.remove.$post({ json: { kind, id } }))
   },
 
+  /** Read one source again now. */
+  async refreshSource(kind: PackageKind, id: string): Promise<void> {
+    await assertOk(await client.rpc.store.sources.refresh.$post({ json: { kind, id } }))
+  },
+
+  /** Whether a source is read again, and what it installed updated, on its own. */
+  async setSourceAutoUpdate(kind: PackageKind, id: string, autoUpdate: boolean): Promise<void> {
+    await assertOk(
+      await client.rpc.store.sources['auto-update'].$post({ json: { kind, id, autoUpdate } }),
+    )
+  },
+
   /** What Discover shows: the hero, its rows and every listing they name. */
-  async discover(query: { projectId?: string } = {}): Promise<DiscoverResponse> {
-    return unwrap(await client.rpc.store.discover.$get({ query: cleanQuery(query) }))
+  async discover(query: { projectId?: string | null } = {}): Promise<DiscoverResponse> {
+    return unwrap(
+      await client.rpc.store.discover.$get({ query: cleanQuery(project(query.projectId)) }),
+    )
   },
 
   async activity(): Promise<StoreActivity> {

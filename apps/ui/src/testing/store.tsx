@@ -112,7 +112,7 @@ export function fakeClient(fake: StoreFake): StoreClient {
   const call = (line: string) => void fake.calls.push(line)
   const find = (id: string) => fake.listings.find((l) => l.ref.id === id)!
   return {
-    listings: async (query = {}) => ({
+    page: async (query = {}) => ({
       ...answer(fake.listings, query),
       problems: fake.problems ?? [],
     }),
@@ -145,7 +145,7 @@ export function fakeClient(fake: StoreFake): StoreClient {
     remove: async (ref, scope) => call(`remove ${ref.kind}/${ref.id} ${scope}`),
     setEnabled: async (ref, scope, enabled) =>
       call(`${enabled ? 'enable' : 'disable'} ${ref.kind}/${ref.id} ${scope}`),
-    sources: async () => fake.sources ?? SOURCES,
+    sources: async () => ({ sources: fake.sources ?? SOURCES, addable: ['mini-app'] }),
     discover: async () => ({
       hero: null,
       updates: { count: fake.listings.filter(hasUpdate).length },
@@ -169,6 +169,8 @@ export function fakeClient(fake: StoreFake): StoreClient {
     },
     addSource: async (kind, input) => call(`add source ${kind} ${input}`),
     removeSource: async (kind, id) => call(`remove source ${kind} ${id}`),
+    refreshSource: async (kind, id) => call(`refresh source ${kind} ${id}`),
+    setSourceAutoUpdate: async (kind, id, on) => call(`auto-update ${kind} ${id} ${on}`),
     activity: async () => ({ jobs: [], updates: [] }),
     applyUpdates: async () => {
       call('update all')

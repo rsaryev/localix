@@ -259,6 +259,7 @@ describe('the mini apps in the Store', () => {
         builtIn: true,
         count: 1,
         trust: 'localix',
+        defaultSource: true,
       },
       {
         kind: 'mini-app',
@@ -283,6 +284,42 @@ describe('the mini apps in the Store', () => {
     await provider.addSource!(ADA)
     await provider.removeSource!(ADA)
     expect(calls).toEqual([`add ${ADA}`, `remove ${ADA}`])
+  })
+
+  test('a catalog that cannot be read is a source that says why, quietly', async () => {
+    const local: MiniAppStoreSource = {
+      kind: 'local',
+      root: join(root(), 'staged'),
+      publisher: { name: 'Localix', verified: true },
+    }
+    const store = createMiniAppStore({
+      homeDir: join(root(), 'home'),
+      sources: () => [local, { kind: 'catalog', url: ADA, vouches: false }],
+      fetchImpl: (async () => new Response('missing', { status: 404 })) as unknown as typeof fetch,
+      onInstalled: async () => {},
+    })
+    const calls: string[] = []
+    const provider = createMiniAppStoreProvider({
+      store: { ...store, refresh: async () => void calls.push('refresh') },
+      catalogs: {
+        list: async () => [{ url: ADA, builtIn: false }],
+        add: async () => {},
+        remove: async () => {},
+        preview: async () => {
+          throw new Error('unused')
+        },
+      },
+      apps: {
+        list: async () => ({ miniApps: [] }),
+        setEnabled: async () => {},
+        remove: async () => {},
+      },
+    })
+    const [ada] = await provider.sources()
+    expect(ada).toMatchObject({ id: ADA, count: 0 })
+    expect(ada!.problem).toContain('404')
+    await provider.refreshSource!(ADA)
+    expect(calls).toEqual(['refresh'])
   })
 
   test('every move of an install is heard', async () => {

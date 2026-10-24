@@ -7,6 +7,7 @@ import type {
   Scope,
   SourcePreview,
   SourceView,
+  StoreInstall,
 } from './contract'
 
 /**
@@ -49,6 +50,17 @@ export interface StoreProvider {
   previewSource?(input: string): Promise<SourcePreview>
   addSource?(input: string): Promise<void>
   removeSource?(id: string): Promise<void>
+  /** Read one source again now. */
+  refreshSource?(id: string): Promise<void>
+  /** Whether one source is read again, and what it installed updated, on its own. */
+  setSourceAutoUpdate?(id: string, on: boolean): Promise<void>
+  /**
+   * The open project's own installs (`actor.projectId`), by listing id: what a listing shows on
+   * top of the person's. Cheap: no listing is built. Absent for a kind with no project scope.
+   */
+  projectInstalls?(
+    actor: StoreActor & { projectId: string },
+  ): Promise<Array<{ id: string; installs: StoreInstall[] }>>
   /** The hero and collections its editorial sources pick for Discover; none when it has none. */
   editorial?(): Promise<Editorial[]>
   /** Hear every change to what `listings` would answer; returns the unsubscribe. */

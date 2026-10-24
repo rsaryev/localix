@@ -153,7 +153,10 @@ export function createMiniAppStoreProvider(deps: MiniAppStoreProviderDeps): Stor
     refresh: () => deps.store.refresh(),
 
     async sources() {
-      const [catalogs, { entries }] = await Promise.all([deps.catalogs.list(), deps.store.list()])
+      const [catalogs, { entries, failed }] = await Promise.all([
+        deps.catalogs.list(),
+        deps.store.list(),
+      ])
       return catalogs.map(({ url, builtIn }) => ({
         kind: 'mini-app' as const,
         id: url,
@@ -162,8 +165,14 @@ export function createMiniAppStoreProvider(deps: MiniAppStoreProviderDeps): Stor
         builtIn,
         count: entries.filter((entry) => entry.source === url).length,
         trust: catalogTrust(builtIn).trust,
+        // Localix's own catalog is the one a fresh profile starts with.
+        ...(builtIn ? { defaultSource: true } : {}),
+        ...(failed?.[url] ? { problem: failed[url] } : {}),
       }))
     },
+
+    /** The catalogs are read together: reading one again reads them all. */
+    refreshSource: () => deps.store.refresh(),
 
     async previewSource(input) {
       const preview = await deps.catalogs.preview(input)

@@ -167,6 +167,14 @@ export const sourceViewSchema = z.object({
   /** How many packages it offers now. */
   count: z.number().int().nonnegative(),
   trust: trustSchema.optional(),
+  /** When it was last read into the Store, as ISO 8601. */
+  syncedAt: z.string().optional(),
+  /** Why it could not be read the last time, in one sentence. */
+  problem: z.string().optional(),
+  /** Whether it is read again, and what it installed updated, on its own; absent: no such switch. */
+  autoUpdate: z.boolean().optional(),
+  /** One a fresh profile starts with: once removed, it is not added back. */
+  defaultSource: z.boolean().optional(),
 })
 export type SourceView = z.infer<typeof sourceViewSchema>
 

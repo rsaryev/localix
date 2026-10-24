@@ -35,10 +35,8 @@ async function mountPage(target?: { shelf?: string }) {
   const { SWRConfig } = await import('swr')
   const { MemoryRouter } = await import('react-router')
   const { storeApi } = await import('@/shared/api/store-client')
-  spyOn(storeApi, 'listings').mockImplementation(async (query = {}) =>
-    answer([chess, notes], query),
-  )
-  spyOn(storeApi, 'sources').mockResolvedValue(SOURCES)
+  spyOn(storeApi, 'page').mockImplementation(async (query = {}) => answer([chess, notes], query))
+  spyOn(storeApi, 'sources').mockResolvedValue({ sources: SOURCES, addable: ['mini-app'] })
   const { StorePage } = await import('./StorePage')
   const host = document.createElement('div')
   document.body.append(host)

@@ -9,10 +9,8 @@ import type {
 import { settingsEntityUiUri } from '@localixai/uri'
 
 import { ConflictError, InvalidRequestError, NotFoundError } from '../../lib/domain-errors'
-import { errorMessage } from '../../lib/errors'
 import type { PluginRecord } from './contracts'
 import type { PluginUpdatesResponse } from './contracts-updates'
-import { readKnownMarketplaces, readMarketplace } from './marketplace-catalog'
 import type { MarketplaceEntry } from './marketplace'
 import { resolveEntrySource } from './marketplace-entry-source'
 import { parseMarketplaceRef } from './marketplace-source'
@@ -21,8 +19,8 @@ import { readPluginReadme, scanPluginContents, type PluginContents } from './sto
 import { createContentsCache } from './store-contents-cache'
 import { marketEditorial } from './store-editorial'
 import { createPluginStoreJobs } from './store-jobs'
-import { marketView, pluginListing, type MarketView } from './store-listing'
-import { pluginStoreSources } from './store-sources'
+import { pluginListing, type MarketView } from './store-listing'
+import { pluginSourceMethods, readMarketViews } from './store-sources'
 
 /** What the provider asks of the plugin service. */
 export type PluginStoreService = Pick<
@@ -35,6 +33,8 @@ export type PluginStoreService = Pick<
   | 'addMarketplace'
   | 'removeMarketplace'
   | 'refreshMarketplaces'
+  | 'updateMarketplace'
+  | 'setMarketplaceAutoUpdate'
 > & { updates: Pick<PluginService['updates'], 'snapshot' | 'subscribe'> }
 
 /**
@@ -70,19 +70,7 @@ export function createPluginStoreProvider(deps: {
   const fetched = new Map<string, { dir: string; contents: PluginContents }>()
   const jobs = createPluginStoreJobs(changed)
 
-  async function views(): Promise<{ views: MarketView[]; problems: string[] }> {
-    const known = await readKnownMarketplaces(deps.root)
-    const problems: string[] = []
-    const out: MarketView[] = []
-    for (const [name, record] of Object.entries(known)) {
-      try {
-        out.push(marketView(name, record, await readMarketplace(record.installLocation)))
-      } catch (error) {
-        problems.push(`The plugin marketplace "${name}" could not be read (${errorMessage(error)})`)
-      }
-    }
-    return { views: out, problems }
-  }
+  const views = () => readMarketViews(deps.root)
 
   async function find(id: string) {
     const ref = parseMarketplaceRef(id)
@@ -285,7 +273,7 @@ export function createPluginStoreProvider(deps: {
       changed()
     },
 
-    sources: async () => pluginStoreSources((await views()).views),
+    ...pluginSourceMethods({ service: deps.service, owner: deps.owner, views, changed }),
 
     /** What the editorial marketplaces pick for Discover (`store-editorial.ts`). */
     editorial: async () => (await views()).views.flatMap((view) => marketEditorial(view) ?? []),

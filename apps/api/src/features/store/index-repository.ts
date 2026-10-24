@@ -98,6 +98,20 @@ export function createStoreIndexRepository(db: Kysely<StoreIndexTables>) {
       return row?.revision ?? null
     },
 
+    /** When each source was last indexed, and why it could not be, by `<kind>\0<source id>`. */
+    async sourceStates(): Promise<Map<string, { syncedAt: string; error: string | null }>> {
+      const rows = await db
+        .selectFrom('source_state')
+        .select(['kind', 'source_id', 'synced_at', 'error'])
+        .execute()
+      return new Map(
+        rows.map((row) => [
+          `${row.kind}\u0000${row.source_id}`,
+          { syncedAt: row.synced_at, error: row.error },
+        ]),
+      )
+    },
+
     /** Replace every listing of one source with `rows`, in one transaction. */
     async replaceSource(
       kind: string,

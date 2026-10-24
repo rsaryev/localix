@@ -8,6 +8,7 @@ import {
   listingSchema,
   packageKindSchema,
   scopeSchema,
+  sourceViewSchema,
   trustSchema,
 } from './contract'
 import { parseShelf } from './shelves'
@@ -104,6 +105,21 @@ export const sourceInputSchema = z.object({
 })
 
 export const sourceRemoveSchema = z.object({ kind: packageKindSchema, id: z.string().min(1) })
+
+/** One source, by kind and id: read again (`/sources/refresh`). */
+export const sourceRefSchema = sourceRemoveSchema
+
+export const sourceAutoUpdateSchema = sourceRemoveSchema.extend({ autoUpdate: z.boolean() })
+
+/** `GET /sources`: every source, and the kinds a source can be added for. */
+export const sourcesResponseSchema = z.object({
+  sources: z.array(sourceViewSchema),
+  addable: z.array(packageKindSchema),
+})
+export type SourcesResponse = z.infer<typeof sourcesResponseSchema>
+
+/** `GET /:kind/:id`: whose project's install the page shows beside the person's. */
+export const detailQuerySchema = z.object({ projectId: z.string().min(1).max(256).optional() })
 
 /** Jobs in flight and the updates offered, across kinds: the Event Center and the update strip. */
 export const storeActivitySchema = z.object({

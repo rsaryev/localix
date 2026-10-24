@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
-import { z } from 'zod'
 import {
+  detailQuerySchema,
   discoverQuerySchema,
   discoverResponseSchema,
   enableRequestSchema,
@@ -13,10 +13,12 @@ import {
   parseShelf,
   planRequestSchema,
   scopeRequestSchema,
+  sourceAutoUpdateSchema,
   sourceInputSchema,
   sourcePreviewSchema,
+  sourceRefSchema,
   sourceRemoveSchema,
-  sourceViewSchema,
+  sourcesResponseSchema,
   storeActivitySchema,
   updatesApplyResponseSchema,
 } from '@localixai/store'
@@ -25,8 +27,6 @@ import type { AppContext } from '../../app'
 import { defaultErrorHandler } from '../../lib/http'
 import { zValidator } from '../../lib/validator'
 import type { StoreService } from './service'
-
-const sourcesResponseSchema = z.object({ sources: z.array(sourceViewSchema) })
 
 /**
  * `/rpc/store` (`docs/internals/store.md`, "Routes"): listings, a listing's page and plan, the
@@ -63,9 +63,7 @@ export function createStoreRoutes(store: StoreService) {
     .post('/updates/apply', async (c) =>
       c.json(updatesApplyResponseSchema.parse({ queued: await store.applyUpdates(actor(c)) }), 202),
     )
-    .get('/sources', async (c) =>
-      c.json(sourcesResponseSchema.parse({ sources: await store.sources() }), 200),
-    )
+    .get('/sources', async (c) => c.json(sourcesResponseSchema.parse(await store.sources()), 200))
     .post('/sources/preview', zValidator('json', sourceInputSchema), async (c) => {
       const { kind, input } = c.req.valid('json')
       return c.json(sourcePreviewSchema.parse(await store.previewSource(kind, input)), 200)
@@ -75,13 +73,30 @@ export function createStoreRoutes(store: StoreService) {
       await store.addSource(kind, input)
       return c.body(null, 204)
     })
+    .post('/sources/refresh', zValidator('json', sourceRefSchema), async (c) => {
+      const { kind, id } = c.req.valid('json')
+      await store.refreshSource(kind, id)
+      return c.body(null, 204)
+    })
+    .post('/sources/auto-update', zValidator('json', sourceAutoUpdateSchema), async (c) => {
+      const { kind, id, autoUpdate } = c.req.valid('json')
+      await store.setSourceAutoUpdate(kind, id, autoUpdate)
+      return c.body(null, 204)
+    })
     .post('/sources/remove', zValidator('json', sourceRemoveSchema), async (c) => {
       const { kind, id } = c.req.valid('json')
       await store.removeSource(kind, id)
       return c.body(null, 204)
     })
-    .get('/:kind/:id', zValidator('param', listingParamsSchema), async (c) =>
-      c.json(listingDetailSchema.parse(await store.detail(c.req.valid('param'), actor(c))), 200),
+    .get(
+      '/:kind/:id',
+      zValidator('param', listingParamsSchema),
+      zValidator('query', detailQuerySchema),
+      async (c) => {
+        const { projectId } = c.req.valid('query')
+        const detail = await store.detail(c.req.valid('param'), actor(c, projectId))
+        return c.json(listingDetailSchema.parse(detail), 200)
+      },
     )
     .post(
       '/:kind/:id/plan',
