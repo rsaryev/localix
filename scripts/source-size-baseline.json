@@ -1,8 +1,7 @@
 {
   "apps/api/src/app.ts": 414,
   "apps/api/src/bootstrap.ts": 350,
-  "apps/api/src/bootstrap/chat-service-deps.ts": 304,
-  "apps/api/src/client.ts": 354,
+  "apps/api/src/client.ts": 348,
   "apps/api/src/db/types.ts": 657,
   "apps/api/src/features/agent-core/tools/web/research-backends.ts": 776,
   "apps/api/src/features/agent-core/tools/web/research.ts": 545,
@@ -11,9 +10,7 @@
   "apps/api/src/features/context-fabric/manager.ts": 545,
   "apps/api/src/features/context-fabric/testing/mini-app-contract-kit.ts": 399,
   "apps/api/src/features/external-agents/backend/service.ts": 416,
-  "apps/api/src/features/plugins/loader.ts": 400,
-  "apps/api/src/features/plugins/marketplace-registry.ts": 329,
-  "apps/api/src/features/plugins/service.ts": 701,
+  "apps/api/src/features/plugins/service.ts": 635,
   "apps/api/src/features/provider-connections/service.ts": 642,
   "apps/api/src/features/realtime/ws-commands.ts": 456,
   "apps/api/src/features/realtime/ws.ts": 790,
@@ -56,7 +53,7 @@
   "apps/ui/src/pages/chat/model/useUrlStoreSync.ts": 352,
   "apps/ui/src/pages/chat/ui/ChatPage.tsx": 667,
   "apps/ui/src/shared/contrib/enabledMiniApps.ts": 425,
-  "apps/ui/src/shared/hooks/useAutoScroll.ts": 313,
+  "apps/ui/src/shared/hooks/useAutoScroll.ts": 312,
   "apps/ui/src/shared/ui/MarkdownRendererImpl.tsx": 502,
   "apps/ui/src/shared/ui/code-editor/CodeEditor.tsx": 302,
   "apps/ui/src/shared/ui/code-editor/monaco/editPrediction.ts": 355,
@@ -69,7 +66,6 @@
   "apps/ui/src/widgets/editor-grid/ui/registry.tsx": 315,
   "apps/ui/src/widgets/workspace-shell/ui/WorkspaceShell.tsx": 489,
   "packages/kit/src/overlays/dialog.tsx": 314,
-  "packages/mini-app-sdk/src/backend/host-services.ts": 304,
   "packages/mini-app-sdk/src/backend/index.ts": 303,
   "packages/mini-app-sdk/src/ui/charts/CartesianChart.tsx": 369,
   "packages/mini-app-sdk/src/ui/index.ts": 362,
@@ -96,7 +92,7 @@
   "mini-apps/reader/ui/readerParts.tsx": 316,
   "mini-apps/reader/ui/useReaderTextSelection.ts": 325,
   "mini-apps/trading/backend/analysis/pattern-detect.ts": 385,
-  "mini-apps/trading/backend/indicator-spec.ts": 787,
+  "mini-apps/trading/backend/indicator-spec.ts": 667,
   "mini-apps/trading/backend/stream.ts": 378,
   "mini-apps/trading/ui/TechnicalsTab.tsx": 526,
   "mini-apps/trading/ui/TradingChartTab.tsx": 365,
@@ -105,5 +101,5 @@
   "mini-apps/trading/ui/ui/ChartHeader.tsx": 421,
   "mini-apps/trading/ui/ui/MarketPicker.tsx": 360,
   "mini-apps/trading/ui/ui/PublicMarketsSidebar.tsx": 367,
-  "mini-apps/trading/ui/ui/drawingPrimitives.ts": 326
+  "mini-apps/trading/ui/ui/drawingPrimitives.ts": 321
 }
