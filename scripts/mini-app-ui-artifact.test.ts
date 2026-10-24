@@ -17,8 +17,8 @@ import { loadMiniAppKit, type MiniAppKit } from '../apps/api/src/features/mini-a
 import {
   buildMiniAppUiArtifact,
   publishMiniAppUiArtifact,
-  sharedShim,
 } from '../apps/api/src/features/mini-apps/authoring/ui-build'
+import { sharedShim } from '../apps/api/src/features/mini-apps/authoring/ui-shared-modules'
 import { NO_SOURCE_MAPS_FLAG, stageMiniAppUi, takeStagedUiArtifact } from './stage-mini-app-ui.mjs'
 import { kitCacheRoot } from './mini-app-kit-cache.mjs'
 
