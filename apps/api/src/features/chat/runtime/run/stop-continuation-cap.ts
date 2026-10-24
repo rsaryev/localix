@@ -1,3 +1,5 @@
+import { envInt } from '../../../../lib/env'
+
 /**
  * Claude Code's loop protection for Stop / SubagentStop hooks that keep the turn going (hooks.md,
  * "Stop decision control"): after eight continuations in a row the next block is overridden and the
@@ -6,10 +8,11 @@
  */
 export const DEFAULT_STOP_HOOK_BLOCK_CAP = 8
 
+type EnvSource = Record<string, string | undefined>
+
 /** The cap in force: `CLAUDE_CODE_STOP_HOOK_BLOCK_CAP` when it is a positive integer. */
-export function stopHookBlockCap(raw = process.env.CLAUDE_CODE_STOP_HOOK_BLOCK_CAP): number {
-  const parsed = raw && /^\d+$/.test(raw.trim()) ? Number(raw.trim()) : Number.NaN
-  return parsed > 0 ? parsed : DEFAULT_STOP_HOOK_BLOCK_CAP
+export function stopHookBlockCap(env: EnvSource = process.env): number {
+  return envInt('CLAUDE_CODE_STOP_HOOK_BLOCK_CAP', DEFAULT_STOP_HOOK_BLOCK_CAP, env)
 }
 
 /**
@@ -19,8 +22,8 @@ export function stopHookBlockCap(raw = process.env.CLAUDE_CODE_STOP_HOOK_BLOCK_C
 export function nextStopContinuation(
   count: number,
   toolCalls: number,
-  cap?: string,
+  env: EnvSource = process.env,
 ): number | null {
   const consecutive = toolCalls > 0 ? 0 : count
-  return consecutive >= stopHookBlockCap(cap) ? null : consecutive + 1
+  return consecutive >= stopHookBlockCap(env) ? null : consecutive + 1
 }

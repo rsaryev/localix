@@ -6,7 +6,9 @@ import { nextStopContinuation } from './stop-continuation-cap'
 function chainOf(blocks: number, opts: { toolCallsEachRun?: number; cap?: string } = {}) {
   let count = 0
   for (let i = 0; i < blocks; i++) {
-    const next = nextStopContinuation(count, opts.toolCallsEachRun ?? 0, opts.cap)
+    const next = nextStopContinuation(count, opts.toolCallsEachRun ?? 0, {
+      CLAUDE_CODE_STOP_HOOK_BLOCK_CAP: opts.cap,
+    })
     if (next === null) return i
     count = next
   }
