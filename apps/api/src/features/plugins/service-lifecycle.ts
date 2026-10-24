@@ -4,6 +4,7 @@
  * takes the plugin's data directory with it, and validating a folder that is not installed.
  */
 import { refreshMarketplaceBeforeUpdate } from './marketplace-refresh'
+import { isAtLatestVersion } from './marketplace-latest'
 import { promises as fs } from 'node:fs'
 
 import { ConflictError, InvalidRequestError } from '../../lib/domain-errors'
@@ -111,6 +112,10 @@ export async function reinstallFromSource<R>(input: {
   plugin: DiscoveredPlugin | null
   registryDeps: MarketplaceRegistryDeps | null
   install: (source: string, projectId: string | null) => Promise<R>
+  /** The plugin as it is, returned when the marketplace offers the version already installed. */
+  current?: () => Promise<R>
+  /** The registry the version is read from when the marketplace is not refreshed first. */
+  versionDeps?: MarketplaceRegistryDeps
 }): Promise<R> {
   const { repo, userId, name, projectId, plugin } = input
   const state =
@@ -124,5 +129,13 @@ export async function reinstallFromSource<R>(input: {
   }
   // The marketplace is read again first (git, url and npm ones too), so the update sees new commits.
   if (input.registryDeps) await refreshMarketplaceBeforeUpdate(state.source, input.registryDeps)
+  // Claude Code fetches a new copy only when the computed version changed (loading.md).
+  const registry = input.registryDeps ?? input.versionDeps
+  if (
+    input.current &&
+    registry &&
+    (await isAtLatestVersion(state.source, plugin?.manifest.version, registry))
+  )
+    return input.current()
   return input.install(state.source, state.projectId || null)
 }

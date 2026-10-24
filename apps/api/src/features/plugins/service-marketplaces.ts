@@ -26,11 +26,27 @@ import {
   rememberOfficialMarketplaceRemoval,
 } from './official-marketplace'
 import type { PluginService } from './service-types'
+import { resolveEntryName, type Marketplace } from './marketplace'
+
+/** What became of an installed plugin's entry: still listed, renamed, or removed. */
+function entryFate(
+  market: Marketplace,
+  name: string,
+): { kind: 'listed' } | { kind: 'renamed'; to: string } | { kind: 'removed' } {
+  try {
+    const resolved = resolveEntryName(market, name)
+    if (!market.plugins.some((entry) => entry.name === resolved.name)) return { kind: 'removed' }
+    return resolved.renamedFrom ? { kind: 'renamed', to: resolved.name } : { kind: 'listed' }
+  } catch {
+    return { kind: 'removed' }
+  }
+}
 
 /**
  * The plugin service's marketplace registry methods (`/plugin marketplace add|list|update|remove`).
  * As in Claude Code, a marketplace owns the plugins installed from it: updating it updates them,
- * removing it uninstalls them. Ownership is read from the global install rows
+ * removing it uninstalls them. A renamed plugin is migrated to its current name, and one the
+ * catalog dropped is uninstalled only under `forceRemoveDeletedPlugins`. Ownership is read from the global install rows
  * (`<plugin>@<marketplace>`); a project-scoped install is left for its project.
  */
 export function createMarketplaceMethods(deps: {
@@ -43,6 +59,8 @@ export function createMarketplaceMethods(deps: {
   /** Listings changed: compute the available updates again (`plugin-updates.ts`). */
   recheck: (userId: string) => Promise<unknown>
   env: Record<string, string | undefined>
+  /** Install `to` from the marketplace in place of the renamed `from`. */
+  migrate?: (userId: string, from: string, to: string) => Promise<unknown>
 }): Pick<
   PluginService,
   | 'addMarketplace'
@@ -124,14 +142,32 @@ export function createMarketplaceMethods(deps: {
       const updated: string[] = []
       const manual: string[] = []
       const warnings: string[] = []
+      const root = registryDeps.root ?? marketplacesRoot()
+      const known = (await readKnownMarketplaces(root))[refreshed.name]
+      const market = known ? await readMarketplace(known.installLocation).catch(() => null) : null
       for (const row of await owned(userId, refreshed.name)) {
         if (manualNames.has(parseMarketplaceRef(row.source)?.plugin ?? row.name)) {
           manual.push(row.name)
           continue
         }
         try {
-          await deps.update(userId, row.name)
-          updated.push(row.name)
+          const fate = market ? entryFate(market, row.name) : { kind: 'listed' as const }
+          if (fate.kind === 'renamed' && deps.migrate) {
+            await deps.migrate(userId, row.name, fate.to)
+            updated.push(fate.to)
+          } else if (fate.kind === 'removed') {
+            // A plugin the catalog dropped stays installed unless it asks for the removal.
+            if (!market?.forceRemoveDeletedPlugins) {
+              warnings.push(
+                `${row.name}: Plugin "${row.name}" not found in marketplace "${refreshed.name}"`,
+              )
+              continue
+            }
+            await deps.remove(userId, row.name)
+          } else {
+            await deps.update(userId, row.name)
+            updated.push(row.name)
+          }
         } catch (err) {
           warnings.push(`${row.name}: ${errorMessage(err)}`)
         }

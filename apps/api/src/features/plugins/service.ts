@@ -235,8 +235,16 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       projectId: input.projectId ?? '',
       plugin,
       registryDeps: opts.refreshMarketplace ? registryDeps : null,
+      versionDeps: registryDeps,
       install: (source, projectId) =>
         service.install(userId, { source, projectId }, { replace: true }),
+      // Already at the version the marketplace offers: nothing is fetched or replaced.
+      current: async () => {
+        const { plugins } = await service.listPlugins(userId, { projectId: input.projectId })
+        const record = plugins.find((found) => found.name === input.name)
+        if (!record) throw new NotFoundError('plugin_not_found', `Plugin "${input.name}" not found`)
+        return record
+      },
     })
   }
 
@@ -590,6 +598,14 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       recheck: (userId) => service.updates.recheck(userId),
       update: (userId, name) => updatePlugin(userId, { name }, { refreshMarketplace: false }),
       remove: (userId, name) => service.remove(userId, { name }),
+      // A renamed plugin: its current name installs from the same marketplace, then the old goes.
+      migrate: async (userId, from, to) => {
+        const row = (await repo.listForScope(userId, '')).find((found) => found.name === from)
+        const ref = row ? parseMarketplaceRef(row.source) : null
+        if (!ref) throw new Error(`Plugin "${from}" has no marketplace to migrate from`)
+        await service.install(userId, { source: `${to}@${ref.marketplace}`, projectId: null })
+        await service.remove(userId, { name: from })
+      },
     }),
 
     // `/plugin reload` (CC's /reload-plugins) compat: fire the change notification so channels restart,

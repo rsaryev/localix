@@ -96,9 +96,11 @@ export const marketplaceSchema = z.object({
   /**
    * CC 2.1.193+ plugin renames: `{ "old-name": "new-name" }` maps a retired entry name
    * to its successor; a `null` value marks the plugin as REMOVED from the marketplace.
-   * Applied at resolution time by {@link resolveEntryName}.
+   * Applied at resolution time by {@link resolveEntryName}, following the chain.
    */
   renames: z.record(z.string(), z.string().nullable()).optional(),
+  /** Uninstall a plugin the catalog no longer lists (and did not rename) on update. */
+  forceRemoveDeletedPlugins: z.boolean().optional(),
   /**
    * CC: other marketplaces this catalog's plugins may pull DEPENDENCIES from. A
    * dependency that only exists in a marketplace NOT listed here (and not this one)
@@ -116,23 +118,30 @@ export const marketplaceSchema = z.object({
 export type Marketplace = z.infer<typeof marketplaceSchema>
 
 /**
- * Apply the catalog's `renames` map to a requested plugin name (CC 2.1.193+): an old
- * name resolves to its successor (with `renamedFrom` so callers can surface a note);
- * a `null` mapping means the plugin was removed → throw an informative error. Names
- * not in the map pass through unchanged. Single-hop by design (CC does not chain).
- *
- * DEFERRED: auto-migrating already-INSTALLED plugins on marketplace update (rewriting
- * their enable-state rows to the new name) — today renames apply at resolution time.
+ * Apply the catalog's `renames` map to a requested plugin name, following the chain from the
+ * oldest name as Claude Code does (host-marketplace.md, "Migrate users with a renames map"): each
+ * old name leads to its successor until a name that is not renamed again; a `null` link means the
+ * plugin was removed. A chain that cycles does not resolve.
  */
 export function resolveEntryName(
   market: Pick<Marketplace, 'name' | 'renames'>,
   requested: string,
 ): { name: string; renamedFrom?: string } {
-  const mapped = market.renames?.[requested]
-  if (mapped === undefined) return { name: requested }
-  if (mapped === null)
-    throw new Error(`Plugin "${requested}" was removed from marketplace "${market.name}".`)
-  return { name: mapped, renamedFrom: requested }
+  let name = requested
+  const seen = new Set<string>([requested])
+  for (;;) {
+    const mapped = market.renames?.[name]
+    if (mapped === undefined) break
+    if (mapped === null)
+      throw new Error(`Plugin "${requested}" was removed from marketplace "${market.name}".`)
+    if (seen.has(mapped))
+      throw new Error(
+        `renames.${requested}: chain does not resolve (it cycles) in marketplace "${market.name}".`,
+      )
+    seen.add(mapped)
+    name = mapped
+  }
+  return name === requested ? { name } : { name, renamedFrom: requested }
 }
 
 /** Flag a `..` segment in a source path — it can't be installed (escapes the marketplace root). */
