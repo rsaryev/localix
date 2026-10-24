@@ -151,3 +151,22 @@ describe('createSearchService', () => {
     ).toEqual(['docker'])
   })
 })
+
+describe('provider options', () => {
+  it('reach the one provider a scoped query names, untouched', async () => {
+    const seen: unknown[] = []
+    const store: SearchProvider = {
+      id: 'store',
+      title: 'Store',
+      tier: 'eager',
+      search: async (_user, query) => {
+        seen.push(query.providerOptions)
+        return []
+      },
+    }
+    const options = { filters: { category: 'Data' } }
+    await svc([store]).search('u1', { text: 'pg', domains: ['store'], providerOptions: options })
+    await svc([store]).search('u1', { text: 'pg' })
+    expect(seen).toEqual([options, undefined])
+  })
+})

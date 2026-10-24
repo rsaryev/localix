@@ -15,3 +15,13 @@ test('the Store opens from search and the command palette, in its one app-level 
     payload: {},
   })
 })
+
+test('a Store search hit opens the Store on that listing’s page', () => {
+  expect(surface.resolve({ kind: 'plugin', id: 'lint@claude-plugins-official' })).toEqual({
+    kind: 'work-item',
+    workKind: 'store',
+    id: 'store',
+    title: 'Store',
+    payload: { ref: { kind: 'plugin', id: 'lint@claude-plugins-official' } },
+  })
+})

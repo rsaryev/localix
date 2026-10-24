@@ -180,6 +180,38 @@ export function createDatabase(options: CreateDatabaseOptions = {}): Kysely<AppD
 }
 
 /**
+ * A Kysely handle over a SQLite file that is DERIVED data, not the app's database: an index its
+ * owner can delete and rebuild (P9), so it is neither migrated nor backed up. WAL, so a reader
+ * never waits on a rebuild; `close` ends both handles.
+ */
+export function openDerivedDatabase<DB>(filename: string): {
+  db: Kysely<DB>
+  sqlite: SqliteDatabase
+  close: () => Promise<void>
+} {
+  if (filename !== ':memory:') mkdirSync(dirname(resolve(filename)), { recursive: true })
+  const { sqlite, dialectDatabase } = createDialectDatabase(filename)
+  sqlite.exec('PRAGMA journal_mode = WAL;')
+  sqlite.exec('PRAGMA synchronous = NORMAL;')
+  sqlite.exec('PRAGMA foreign_keys = ON;')
+  sqlite.exec('PRAGMA busy_timeout = 5000;')
+  const db = new Kysely<DB>({
+    dialect: new TransactionalDdlSqliteDialect({
+      database: dialectDatabase,
+      onCreateConnection: async (connection) => {
+        await connection.executeQuery(CompiledQuery.raw('PRAGMA foreign_keys = ON'))
+      },
+    }),
+  })
+  return {
+    db,
+    sqlite,
+    // Kysely's driver closes the SQLite handle as it is destroyed.
+    close: () => db.destroy(),
+  }
+}
+
+/**
  * Write a transactionally consistent pre-migration snapshot and retain only the
  * two newest generations. `Database.serialize()` includes committed WAL pages,
  * unlike copying the main `.db` file while WAL mode is active.

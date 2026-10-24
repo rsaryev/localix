@@ -1,13 +1,14 @@
-import type {
-  InstallPlan,
-  ListingDetail,
-  ListingRef,
-  ListingsResponse,
-  PackageKind,
-  Scope,
-  SourcePreview,
-  SourceView,
-  StoreActivity,
+import {
+  LISTINGS_PAGE_MAX,
+  type InstallPlan,
+  type ListingDetail,
+  type ListingRef,
+  type ListingsResponse,
+  type PackageKind,
+  type Scope,
+  type SourcePreview,
+  type SourceView,
+  type StoreActivity,
 } from '@localixai/store'
 import { assertOk, cleanQuery, client, unwrap } from './internal'
 
@@ -20,8 +21,25 @@ const param = (ref: ListingRef) => ({ param: { kind: ref.kind, id: ref.id } })
  * body: the `store` poke tells every surface to read again.
  */
 export const storeApi = {
+  /**
+   * A shelf or a search, every page of it: the server answers a page at a time, and the Store's
+   * screens show the whole list until they scroll page by page.
+   */
   async listings(query: { shelf?: string; q?: string } = {}): Promise<ListingsResponse> {
-    return unwrap(await client.rpc.store.listings.$get({ query: cleanQuery(query) }))
+    const read = (cursor?: string) =>
+      client.rpc.store.listings.$get({
+        query: cleanQuery({ ...query, limit: String(LISTINGS_PAGE_MAX), cursor }),
+      })
+    const first: ListingsResponse = await unwrap(await read())
+    const listings = [...first.listings]
+    let next = first.nextCursor
+    while (next) {
+      const page: ListingsResponse = await unwrap(await read(next))
+      listings.push(...page.listings)
+      next = page.nextCursor
+    }
+    const { nextCursor: _done, ...rest } = first
+    return { ...rest, listings }
   },
 
   async detail(ref: ListingRef): Promise<ListingDetail> {

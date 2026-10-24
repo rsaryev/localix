@@ -196,8 +196,18 @@ export async function bootstrap(
     bootRepo,
     interruptedRuns,
   })
+  // The Store before global search: its `store` provider joins the search registry, and it asks
+  // that search service once it is built.
+  const store = createStorePhase({
+    miniAppService,
+    semanticService,
+    resolveProjectCwd,
+    owner: env.LOCALIX_DEFAULT_USER_ID,
+  })
+  const storeService = store.storeService
   // Handed to the app phase whole: its input extends this phase's output.
   const appServices = createAppServicesPhase({
+    storeSearchProvider: storeService.searchProvider,
     db,
     env,
     logger,
@@ -222,7 +232,7 @@ export async function bootstrap(
     chatService,
     semanticService,
   })
-  const storeService = createStorePhase({ miniAppService })
+  store.connectSearch(appServices.searchService)
   const { app } = createAppPhase({
     storeService,
     externalAgents: externalAgents.service,

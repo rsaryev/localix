@@ -101,6 +101,22 @@ describe('the mini apps in the Store', () => {
     expect(clock).toMatchObject({ displayName: 'clock', contents: { screen: 1 }, runsCode: false })
   })
 
+  test('Localix’s own catalog is trusted and editorial; one the person added is community', async () => {
+    const { source, provider, catalogs } = setup()
+    await offer(source, 'chess')
+    await fs.writeFile(join(source, 'catalog-picks.json'), JSON.stringify({ featured: ['chess'] }))
+    const [own] = (await provider.listings(actor)).listings
+    expect(own!.source).toMatchObject({ trust: 'localix', weight: 1 })
+    expect(own!.origin).toBe('catalog:chess')
+    expect(own!.featured).toBe(true)
+
+    catalogs[0]!.builtIn = false
+    const [added] = (await provider.listings(actor)).listings
+    expect(added!.source).toMatchObject({ trust: 'community', weight: 0.35 })
+    // Its picks do not reach Discover: only an editorial source's do.
+    expect(added!.featured).toBe(false)
+  })
+
   test('an install shows its version, its switch, an offered update and its settings', async () => {
     const { source, store, provider, enabled } = setup()
     await offer(source, 'chess')
@@ -198,8 +214,17 @@ describe('the mini apps in the Store', () => {
         url: pathToFileURL(source).href,
         builtIn: true,
         count: 1,
+        trust: 'localix',
       },
-      { kind: 'mini-app', id: ADA, label: 'ada.test', url: ADA, builtIn: false, count: 0 },
+      {
+        kind: 'mini-app',
+        id: ADA,
+        label: 'ada.test',
+        url: ADA,
+        builtIn: false,
+        count: 0,
+        trust: 'community',
+      },
     ])
     expect(await provider.previewSource!(ADA)).toEqual({
       kind: 'mini-app',

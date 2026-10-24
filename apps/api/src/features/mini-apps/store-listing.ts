@@ -1,4 +1,12 @@
-import type { ComponentKind, Listing, ListingDetail, StoreComponent } from '@localixai/store'
+import {
+  catalogOrigin,
+  COMMUNITY_SOURCE,
+  defaultSource,
+  type ComponentKind,
+  type Listing,
+  type ListingDetail,
+  type StoreComponent,
+} from '@localixai/store'
 import { capabilitySettingsUiUri } from '@localixai/uri'
 
 import { normalizeMiniAppSurfaces } from './contracts-base'
@@ -38,10 +46,22 @@ function contentsOf(entry: MiniAppStoreEntry): Partial<Record<ComponentKind, num
   return contents
 }
 
+/**
+ * How far a catalog is trusted: Localix's own is the default source's entry (`localix`, editorial);
+ * one the person added is community, and its picks do not reach Discover.
+ */
+export function catalogTrust(builtIn: boolean) {
+  const own = defaultSource('localix-mini-apps')
+  return builtIn && own
+    ? { trust: own.trust, weight: own.weight, editorial: own.editorial }
+    : COMMUNITY_SOURCE
+}
+
 export function miniAppListing(
   entry: MiniAppStoreEntry,
-  context: { sourceLabel: string; enabled: boolean },
+  context: { sourceLabel: string; enabled: boolean; builtIn: boolean },
 ): Listing {
+  const { trust, weight, editorial } = catalogTrust(context.builtIn)
   const displayName = entry.displayName ?? entry.name
   const updateTo = entry.update && !entry.incompatible ? entry.version : undefined
   return {
@@ -53,13 +73,14 @@ export function miniAppListing(
     ...(entry.category ? { category: entry.category } : {}),
     tags: entry.tags ?? [],
     publisher: entry.publisher,
-    source: { id: entry.source, label: context.sourceLabel },
+    source: { id: entry.source, label: context.sourceLabel, trust, weight },
+    origin: catalogOrigin(entry.name),
     ...(entry.version ? { version: entry.version } : {}),
     contents: contentsOf(entry),
     components: miniAppComponents(entry),
     runsCode: hasBackend(entry),
-    featured: entry.featured ?? false,
-    recommended: entry.recommended ?? false,
+    featured: editorial && (entry.featured ?? false),
+    recommended: editorial && (entry.recommended ?? false),
     installs: entry.installed
       ? [
           {

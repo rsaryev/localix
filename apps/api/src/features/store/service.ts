@@ -1,42 +1,87 @@
 import {
-  hasUpdate,
-  isActiveJob,
+  LISTINGS_PAGE,
   type ListingRef,
   type ListingsResponse,
   type PackageKind,
   type Scope,
+  type ShelfId,
   type SourceView,
   type StoreActivity,
   type StoreActor,
+  type StoreCategory,
   type StoreProvider,
+  type Trust,
 } from '@localixai/store'
 
 import { ConflictError, NotFoundError } from '../../lib/domain-errors'
-import { errorMessage } from '../../lib/errors'
-import { createListingIndex, type ListingIndex, type ListingQuery } from './listing-index'
+import { activityOf } from './activity'
+import type { StoreIndexRepository } from './index-repository'
+import { refKey } from './index-rows'
+import { staticScore } from './ranking'
+import { createStoreSearchProvider, refOfStoreHit, STORE_SEARCH_DOMAIN } from './search-provider'
+import { createStoreSync, watchProviders } from './store-runs'
 
-interface Built {
-  generation: number
-  index: Promise<{ index: ListingIndex; problems: string[] }>
+/** What narrows a page: a shelf, a search, a scope, installed or not, and the facets' filters. */
+export interface ListingQuery {
+  shelf?: ShelfId
+  q?: string
+  scope?: Scope
+  installed?: boolean
+  category?: StoreCategory
+  source?: string
+  trust?: Trust
+  projectId?: string
+  cursor?: string
+  limit?: number
 }
 
-/**
- * THE STORE (`docs/internals/store.md`): the one place that lists, installs, updates and removes
- * every package kind. It holds the providers `bootstrap/` hands it (A4) and imports no feature
- * (A6, X1); everything it shows is a listing a provider projected. Its index is derived: rebuilt
- * from the providers after any of them, or a change notice, says something moved (P9).
- */
-export function createStoreService(deps: { providers: readonly StoreProvider[] }) {
-  const providers = new Map(deps.providers.map((provider) => [provider.kind, provider]))
-  const listeners = new Set<() => void>()
-  const built = new Map<string, Built>()
-  let generation = 0
+/** The global search service, as the Store asks it (wired in `bootstrap/`, A4). */
+export type StoreSearchPort = (
+  userId: string,
+  request: {
+    text: string
+    domains: string[]
+    limit: number
+    cursor?: string
+    projectId?: string | null
+    providerOptions: unknown
+  },
+) => Promise<{
+  hits: Array<{ id: string }>
+  nextCursor?: string
+  strategy: { mode: 'lexical' | 'hybrid'; reason?: string }
+}>
 
-  const invalidate = () => {
-    generation++
-    for (const listener of listeners) listener()
-  }
-  for (const provider of deps.providers) provider.subscribe(invalidate)
+/**
+ * THE STORE (`docs/internals/store.md`, `store-scale.md`): the one place that lists, installs,
+ * updates and removes every package kind. It holds the providers `bootstrap/` hands it (A4) and
+ * imports no feature that owns a kind (X1); everything it shows is a listing a provider projected
+ * into its SQLite index. The index is derived: a provider's or a change notice's word that
+ * something moved starts a sync off the request path, and the poke goes out once it is written
+ * (P9, P11). A search goes through the global search service, to the Store's own provider there.
+ */
+export function createStoreService(deps: {
+  providers: readonly StoreProvider[]
+  index: StoreIndexRepository
+  /** The global search service; it reaches the provider this service registers. */
+  search: StoreSearchPort
+  /** The Store's semantic collection read its listings again. */
+  resyncMeaning?: () => void
+  /** The open project's words, for the boost (`project-signals.ts`). */
+  projectWords?: (userId: string, projectId: string | null | undefined) => Promise<Set<string>>
+  now?: () => number
+}) {
+  const now = deps.now ?? Date.now
+  const providers = new Map(deps.providers.map((provider) => [provider.kind, provider]))
+  const runs = createStoreSync({
+    providers: deps.providers,
+    index: deps.index,
+    now,
+    onSynced: (outcome) => {
+      if (outcome.cardsChanged) deps.resyncMeaning?.()
+    },
+  })
+  watchProviders(deps.providers, runs.invalidate)
 
   const providerOf = (kind: PackageKind): StoreProvider => {
     const provider = providers.get(kind)
@@ -47,49 +92,74 @@ export function createStoreService(deps: { providers: readonly StoreProvider[] }
   const unsupported = (kind: PackageKind, what: string) =>
     new ConflictError('store_unsupported', `${kind} packages cannot ${what}`)
 
-  async function build(actor: StoreActor) {
-    const answers = await Promise.all(
-      deps.providers.map((provider) =>
-        provider.listings(actor).catch((error: unknown) => ({
-          listings: [],
-          problems: [errorMessage(error)],
-        })),
-      ),
-    )
-    return {
-      index: createListingIndex(answers.flatMap((answer) => answer.listings)),
-      problems: answers.flatMap((answer) => answer.problems),
-    }
-  }
+  const searchProvider = createStoreSearchProvider({
+    index: deps.index,
+    ready: (userId) => runs.ready({ userId }),
+    ...(deps.projectWords ? { projectWords: deps.projectWords } : {}),
+    staticOf: (listing) => staticScore(listing, { now: now() }),
+  })
 
-  /** The person's index, rebuilt once something changed since it was built. */
-  function indexFor(actor: StoreActor) {
-    const current = built.get(actor.userId)
-    if (current?.generation === generation) return current.index
-    const next = { generation, index: build(actor) }
-    built.set(actor.userId, next)
-    // A failed build is not kept: the next read tries again.
-    next.index.catch(() => built.delete(actor.userId))
-    return next.index
+  /** A search, through the global search service, in its order, a page at a time. */
+  async function searched(actor: StoreActor, query: ListingQuery, filters: object, limit: number) {
+    const answer = await deps.search(actor.userId, {
+      text: query.q!,
+      domains: [STORE_SEARCH_DOMAIN],
+      limit,
+      ...(query.cursor ? { cursor: query.cursor } : {}),
+      ...(query.projectId ? { projectId: query.projectId } : {}),
+      providerOptions: { filters },
+    })
+    const refs = answer.hits.flatMap((hit) => refOfStoreHit(hit) ?? [])
+    const found = await deps.index.byRefs(actor.userId, refs)
+    return {
+      listings: refs.flatMap((ref) => found.get(refKey(ref)) ?? []),
+      ...(answer.nextCursor ? { nextCursor: answer.nextCursor } : {}),
+      strategy: answer.strategy,
+    }
   }
 
   return {
     /** A change notice the Store did not hear from a provider (`bootstrap/` relays them). */
-    invalidate,
-
-    /** Hear every change to what the Store would list; returns the unsubscribe. */
-    subscribe(listener: () => void): () => void {
-      listeners.add(listener)
-      return () => listeners.delete(listener)
-    },
+    invalidate: runs.invalidate,
+    /** Hear every change to what the Store lists, once it is indexed; returns the unsubscribe. */
+    subscribe: runs.subscribe,
+    /** Resolves when every sync started so far has been written. */
+    settled: runs.settled,
+    /** The `store` provider of the global search registry. */
+    searchProvider,
 
     async listings(actor: StoreActor, query: ListingQuery): Promise<ListingsResponse> {
-      const { index, problems } = await indexFor(actor)
-      return { listings: index.query(query), facets: index.facets(), problems }
+      await runs.ready(actor)
+      const filters = {
+        ...(query.shelf ? { shelf: query.shelf } : {}),
+        ...(query.scope ? { scope: query.scope } : {}),
+        ...(query.installed !== undefined ? { installed: query.installed } : {}),
+        ...(query.category ? { category: query.category } : {}),
+        ...(query.source ? { source: query.source } : {}),
+        ...(query.trust ? { trust: query.trust } : {}),
+      }
+      const limit = query.limit ?? LISTINGS_PAGE
+      const [page, facets] = await Promise.all([
+        query.q?.trim()
+          ? searched(actor, query, filters, limit)
+          : deps.index.page(actor.userId, filters, {
+              limit,
+              ...(query.cursor ? { cursor: query.cursor } : {}),
+              boost: [...((await deps.projectWords?.(actor.userId, query.projectId)) ?? [])],
+            }),
+        deps.index.facets(actor.userId, filters),
+      ])
+      return { ...page, facets, problems: runs.problems(actor) }
     },
 
-    detail: async (ref: ListingRef, actor: StoreActor) =>
-      providerOf(ref.kind).detail(ref.id, actor),
+    async detail(ref: ListingRef, actor: StoreActor) {
+      const detail = await providerOf(ref.kind).detail(ref.id, actor)
+      // What a fetched package contains is written back, so its card and shelves show it.
+      if ((await deps.index.rememberComponents(ref, detail.components)) && deps.resyncMeaning)
+        deps.resyncMeaning()
+      const indexed = await deps.index.get(actor.userId, ref)
+      return indexed?.alsoIn?.length ? { ...detail, alsoIn: indexed.alsoIn } : detail
+    },
 
     plan: async (ref: ListingRef, scope: Scope, actor: StoreActor) =>
       providerOf(ref.kind).plan(ref.id, scope, actor),
@@ -131,33 +201,10 @@ export function createStoreService(deps: { providers: readonly StoreProvider[] }
       await provider.removeSource(id)
     },
 
-    /** The jobs in flight and the updates offered, from the index: it reads no source. */
+    /** The jobs in flight and the updates offered, every kind's, from the index. */
     async activity(actor: StoreActor): Promise<StoreActivity> {
-      const { index } = await indexFor(actor)
-      const jobs: StoreActivity['jobs'] = []
-      const updates: StoreActivity['updates'] = []
-      for (const listing of index.all()) {
-        const label = {
-          ref: listing.ref,
-          displayName: listing.displayName,
-          ...(listing.icon ? { icon: listing.icon } : {}),
-        }
-        if (listing.job && isActiveJob(listing.job))
-          jobs.push({
-            ...label,
-            ...(listing.version ? { version: listing.version } : {}),
-            ...listing.job,
-          })
-        else if (hasUpdate(listing))
-          for (const install of listing.installs)
-            if (install.updateTo)
-              updates.push({
-                ...label,
-                ...(install.version ? { from: install.version } : {}),
-                to: install.updateTo,
-              })
-      }
-      return { jobs, updates }
+      await runs.ready(actor)
+      return activityOf(await deps.index.stated(actor.userId))
     },
 
     /**
@@ -166,12 +213,11 @@ export function createStoreService(deps: { providers: readonly StoreProvider[] }
      */
     async applyUpdates(actor: StoreActor): Promise<ListingRef[]> {
       await Promise.all(deps.providers.map((provider) => provider.refresh()))
-      invalidate()
-      const { index } = await indexFor(actor)
+      await runs.syncNow(actor)
       const queued: ListingRef[] = []
-      for (const listing of index.all()) {
-        if (!hasUpdate(listing) || isActiveJob(listing.job)) continue
+      for (const listing of await deps.index.stated(actor.userId)) {
         const scopes = listing.installs.filter((install) => install.updateTo)
+        if (scopes.length === 0 || listing.incompatible || runs.busy(listing)) continue
         try {
           for (const { scope } of scopes)
             await providerOf(listing.ref.kind).update(listing.ref.id, scope, actor)

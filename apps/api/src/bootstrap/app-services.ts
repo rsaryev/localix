@@ -1,5 +1,6 @@
 import { createAuxAssistServices } from '../boot/aux-assist'
 import { buildSearchService } from '../boot/search'
+import type { SearchProvider } from '../features/agent-core/search/provider'
 import { createBootShellCommandService } from '../boot/shell-command'
 import { createAgentConfigurationService } from '../features/effective-config/service'
 import { createTerminalService } from '../features/terminal/service'
@@ -58,6 +59,8 @@ export interface AppServicesPhaseInput
     Pick<EnginesPhase, 'auxUsageRepo'> {
   chatService: ReturnType<typeof createChatService>
   semanticService: SemanticService
+  /** The Store's provider in global search (`features/store/search-provider.ts`). */
+  storeSearchProvider?: SearchProvider
 }
 
 export interface AppServicesPhase {
@@ -99,6 +102,7 @@ export function createAppServicesPhase({
   auxUsageRepo,
   chatService,
   semanticService,
+  storeSearchProvider,
 }: AppServicesPhaseInput): AppServicesPhase {
   // Host-level system controls (keep-awake, …) — process-wide, in-memory.
   const systemService = createSystemService({ db, logger })
@@ -274,6 +278,7 @@ export function createAppServicesPhase({
     catalogService,
     semanticService,
     owner: env.LOCALIX_DEFAULT_USER_ID,
+    ...(storeSearchProvider ? { storeSearchProvider } : {}),
   })
   serviceRefs.globalSearch = searchService // the agent's `global_search`; chat is built first
 

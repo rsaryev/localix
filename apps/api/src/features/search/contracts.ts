@@ -25,6 +25,8 @@ export const searchRequestSchema = z.object({
   allProjects: z.boolean().optional(),
   /** `lexical` forces words-only matching; omitted = the person's setting decides. */
   strategy: z.enum(['auto', 'lexical']).optional(),
+  /** Options for the one provider a scoped query names (the Store's filters); opaque here. */
+  providerOptions: z.unknown().optional(),
 })
 
 export type SearchRequest = z.infer<typeof searchRequestSchema>

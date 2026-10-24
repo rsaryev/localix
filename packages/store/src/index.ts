@@ -14,6 +14,8 @@ export {
   scopeSchema,
   sourcePreviewSchema,
   sourceViewSchema,
+  TRUSTS,
+  trustSchema,
 } from './contract'
 export type {
   ComponentKind,
@@ -29,11 +31,14 @@ export type {
   StoreComponent,
   StoreInstall,
   StoreJob,
+  Trust,
 } from './contract'
 export type { ProviderListings, StoreActor, StoreProvider } from './provider'
 export {
   enableRequestSchema,
   installRequestSchema,
+  LISTINGS_PAGE,
+  LISTINGS_PAGE_MAX,
   listingParamsSchema,
   listingsQuerySchema,
   listingsResponseSchema,
@@ -59,3 +64,8 @@ export {
   shelfCounts,
 } from './shelves'
 export type { BrowsableComponentKind, ShelfId } from './shelves'
+export { STORE_CATEGORIES, storeCategory } from './categories'
+export type { StoreCategory } from './categories'
+export { catalogOrigin, gitOrigin, npmOrigin } from './identity'
+export { COMMUNITY_SOURCE, DEFAULT_SOURCES, TRUST_WEIGHTS, defaultSource } from './default-sources'
+export type { DefaultSource } from './default-sources'

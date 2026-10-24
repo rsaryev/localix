@@ -113,6 +113,10 @@ export function createSearchService(opts: {
         // `undefined` is "no project filter" to every provider; null is "unscoped chats only".
         projectId: req.allProjects ? undefined : (req.projectId ?? null),
         ...(semantic ? { semantic } : {}),
+        // Only a scoped query has the one provider its options are for.
+        ...(scoped && req.providerOptions !== undefined
+          ? { providerOptions: req.providerOptions }
+          : {}),
       }
       const { hits: raw, problems } = await registry.searchAll(userId, query)
       // The model was still loading: these hits are words only, and the answer says so.

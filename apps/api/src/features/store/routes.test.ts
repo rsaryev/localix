@@ -4,8 +4,8 @@ import { Hono } from 'hono'
 import type { AppContext } from '../../app'
 import { ConflictError } from '../../lib/domain-errors'
 import { createStoreRoutes } from './routes'
-import { createStoreService } from './service'
 import { fakeProvider, makeListing } from './testing/fake-provider'
+import { makeStore } from './testing/store'
 
 const chess = makeListing({ id: 'chess', featured: true, contents: { screen: 1 } })
 const kanban = makeListing({
@@ -36,7 +36,7 @@ function app() {
     c.set('userId', 'u1')
     await next()
   })
-  root.route('/rpc/store', createStoreRoutes(createStoreService({ providers: [apps.provider] })))
+  root.route('/rpc/store', createStoreRoutes(makeStore([apps.provider]).store))
   const post = (path: string, body?: unknown) =>
     root.request(`/rpc/store${path}`, {
       method: 'POST',
@@ -57,6 +57,25 @@ describe('/rpc/store', () => {
     ])
     expect(body.facets.shelves).toMatchObject({ discover: 1, 'package:mini-app': 2, updates: 1 })
     expect((await (await get('/listings?installed=true')).json()).listings).toHaveLength(1)
+  })
+
+  test('a page ends with where the next starts; filters and the project travel with it', async () => {
+    const { get } = app()
+    const first = await (await get('/listings?limit=1&projectId=p1')).json()
+    expect(first.listings).toHaveLength(1)
+    const second = await (await get(`/listings?limit=1&cursor=${first.nextCursor}`)).json()
+    expect(second.listings[0].ref.id).not.toBe(first.listings[0].ref.id)
+    const games = (await (await get('/listings?category=Games')).json()).listings
+    expect(games.map((listing: { ref: { id: string } }) => listing.ref.id)).toEqual(['chess'])
+    expect((await get('/listings?category=Gadgets')).status).toBe(400)
+  })
+
+  test('a project install names the project it is for', async () => {
+    const { apps, post } = app()
+    const seen: unknown[] = []
+    apps.provider.update = async (_id, scope, actor) => void seen.push([scope, actor.projectId])
+    await post('/mini-app/kanban/update', { scope: 'project', projectId: 'p1' })
+    expect(seen).toEqual([['project', 'p1']])
   })
 
   test('a shelf that does not exist is a bad request', async () => {

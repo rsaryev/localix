@@ -35,15 +35,17 @@ const sourcesResponseSchema = z.object({ sources: z.array(sourceViewSchema) })
  */
 export function createStoreRoutes(store: StoreService) {
   const app = new Hono<AppContext>()
-  const actor = (c: { get(key: 'userId'): string }) => ({ userId: c.get('userId') })
+  const actor = (c: { get(key: 'userId'): string }, projectId?: string) => ({
+    userId: c.get('userId'),
+    ...(projectId ? { projectId } : {}),
+  })
 
   const routes = app
     .get('/listings', zValidator('query', listingsQuerySchema), async (c) => {
-      const { shelf, q, scope, installed } = c.req.valid('query')
+      const { shelf, installed, ...rest } = c.req.valid('query')
       const page = await store.listings(actor(c), {
+        ...rest,
         ...(shelf ? { shelf: parseShelf(shelf)! } : {}),
-        ...(q ? { q } : {}),
-        ...(scope ? { scope } : {}),
         ...(installed ? { installed: installed === 'true' } : {}),
       })
       return c.json(listingsResponseSchema.parse(page), 200)
@@ -79,7 +81,8 @@ export function createStoreRoutes(store: StoreService) {
       zValidator('param', listingParamsSchema),
       zValidator('json', planRequestSchema),
       async (c) => {
-        const plan = await store.plan(c.req.valid('param'), c.req.valid('json').scope, actor(c))
+        const { scope, projectId } = c.req.valid('json')
+        const plan = await store.plan(c.req.valid('param'), scope, actor(c, projectId))
         return c.json(installPlanSchema.parse(plan), 200)
       },
     )
@@ -88,8 +91,8 @@ export function createStoreRoutes(store: StoreService) {
       zValidator('param', listingParamsSchema),
       zValidator('json', installRequestSchema),
       async (c) => {
-        const { scope, consent } = c.req.valid('json')
-        await store.install(c.req.valid('param'), scope, consent, actor(c))
+        const { scope, consent, projectId } = c.req.valid('json')
+        await store.install(c.req.valid('param'), scope, consent, actor(c, projectId))
         return c.body(null, 202)
       },
     )
@@ -98,7 +101,8 @@ export function createStoreRoutes(store: StoreService) {
       zValidator('param', listingParamsSchema),
       zValidator('json', scopeRequestSchema),
       async (c) => {
-        await store.update(c.req.valid('param'), c.req.valid('json').scope, actor(c))
+        const { scope, projectId } = c.req.valid('json')
+        await store.update(c.req.valid('param'), scope, actor(c, projectId))
         return c.body(null, 202)
       },
     )
@@ -107,7 +111,8 @@ export function createStoreRoutes(store: StoreService) {
       zValidator('param', listingParamsSchema),
       zValidator('json', scopeRequestSchema),
       async (c) => {
-        await store.remove(c.req.valid('param'), c.req.valid('json').scope, actor(c))
+        const { scope, projectId } = c.req.valid('json')
+        await store.remove(c.req.valid('param'), scope, actor(c, projectId))
         return c.body(null, 204)
       },
     )
@@ -116,8 +121,8 @@ export function createStoreRoutes(store: StoreService) {
       zValidator('param', listingParamsSchema),
       zValidator('json', enableRequestSchema),
       async (c) => {
-        const { scope, enabled } = c.req.valid('json')
-        await store.setEnabled(c.req.valid('param'), scope, enabled, actor(c))
+        const { scope, enabled, projectId } = c.req.valid('json')
+        await store.setEnabled(c.req.valid('param'), scope, enabled, actor(c, projectId))
         return c.body(null, 204)
       },
     )

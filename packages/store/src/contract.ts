@@ -34,6 +34,14 @@ export type ComponentKind = z.infer<typeof componentKindSchema>
 export const scopeSchema = z.enum(['user', 'project'])
 export type Scope = z.infer<typeof scopeSchema>
 
+/**
+ * How far a source is trusted (`docs/internals/store-scale.md`, "Default sources"): it sets the
+ * badge, the ranking weight and whether a plan is shown before an install.
+ */
+export const TRUSTS = ['localix', 'official', 'community'] as const
+export const trustSchema = z.enum(TRUSTS)
+export type Trust = z.infer<typeof trustSchema>
+
 /** The union of every provider's job phases. */
 export const jobPhaseSchema = z.enum(['queued', 'downloading', 'installing', 'done', 'failed'])
 export type JobPhase = z.infer<typeof jobPhaseSchema>
@@ -78,8 +86,25 @@ export const listingSchema = z.object({
   category: z.string().optional(),
   tags: z.array(z.string()),
   publisher: z.object({ name: z.string(), verified: z.boolean() }),
-  source: z.object({ id: z.string(), label: z.string() }),
+  source: z.object({
+    id: z.string(),
+    label: z.string(),
+    /** Absent: the provider does not say, and the Store counts it as `community`. */
+    trust: trustSchema.optional(),
+    /** Its ranking weight, when the source's entry sets one other than its trust's. */
+    weight: z.number().nonnegative().optional(),
+  }),
   version: z.string().optional(),
+  /** When this version was published, as ISO 8601: how fresh it is. */
+  updatedAt: z.string().optional(),
+  homepage: z.string().optional(),
+  /**
+   * Where the package comes from, normalized (`identity.ts`): two sources listing one origin show
+   * one listing, under the source with the higher weight.
+   */
+  origin: z.string().optional(),
+  /** The other sources that list the same origin. */
+  alsoIn: z.array(z.object({ id: z.string(), label: z.string() })).optional(),
   contents: z.union([
     z.partialRecord(componentKindSchema, z.number().int().nonnegative()),
     z.literal('unknown'),
@@ -137,6 +162,7 @@ export const sourceViewSchema = z.object({
   builtIn: z.boolean(),
   /** How many packages it offers now. */
   count: z.number().int().nonnegative(),
+  trust: trustSchema.optional(),
 })
 export type SourceView = z.infer<typeof sourceViewSchema>
 

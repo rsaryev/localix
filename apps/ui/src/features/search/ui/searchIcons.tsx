@@ -16,6 +16,7 @@ import {
   Table,
   ScrollText,
   Bot,
+  Store,
 } from 'lucide-react'
 import { searchDomainIcon } from '@/shared/contrib/searchDomains'
 import { resourceRefIcon } from '@/shared/contrib/iconContributions'
@@ -45,6 +46,7 @@ const ICONS: Record<string, typeof Search> = {
   command: Command,
   table: Table,
   logs: ScrollText,
+  store: Store,
 }
 
 /** Resolve an icon key → a lucide component, falling back to the magnifier. */

@@ -1,10 +1,14 @@
+import { defaultSource } from '@localixai/store'
+
 import { envString } from '../../lib/env'
 import { bundledMiniAppsSyncRoot } from './discovery'
 import type { MiniAppStoreSource } from './store-offers'
 
-/** The hosted Localix catalog, published with every release (`release.yml`). */
-export const DEFAULT_MINI_APP_CATALOG_URL =
-  'https://github.com/rsaryev/localix/releases/latest/download/mini-app-catalog.json'
+/**
+ * The hosted Localix catalog, published with every release (`release.yml`): the Store's default
+ * mini app source (`@localixai/store`'s default sources).
+ */
+export const DEFAULT_MINI_APP_CATALOG_URL = defaultSource('localix-mini-apps')!.input
 
 /**
  * The catalogs every installation reads (`catalogs.ts` adds the person's own after them). In a

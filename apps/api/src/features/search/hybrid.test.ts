@@ -3,7 +3,7 @@ import { queryTerms } from '../../lib/fts-query'
 import { fuse, isLookupQuery, unitScore, wordCoverage } from './hybrid'
 
 // Russian words, escaped so the source stays ASCII.
-const RETRIES = 'ретраи' // "retries"
+const RETRIES = '\u0440\u0435\u0442\u0440\u0430\u0438' // "retries"
 const RETRIES_GENITIVE = '\u0440\u0435\u0442\u0440\u0430\u0435\u0432' // "of retries"
 const WEBHOOKS_GENITIVE = '\u0432\u0435\u0431\u0445\u0443\u043a\u043e\u0432' // "of webhooks"
 const CONFIGURED = '\u041d\u0430\u0441\u0442\u0440\u043e\u0438\u043b\u0438' // "configured"

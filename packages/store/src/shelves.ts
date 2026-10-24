@@ -77,11 +77,19 @@ export function onShelf(listing: Listing, shelf: ShelfId): boolean {
     : componentCount(listing, kind as ComponentKind) > 0
 }
 
-/** How many listings each shelf holds; a shelf with none is left out. */
+/**
+ * How many rows each shelf shows; a shelf with none is left out. A capability shelf lists
+ * components, so it counts them: a package with three commands is three on Commands.
+ */
 export function shelfCounts(listings: readonly Listing[]): Partial<Record<ShelfId, number>> {
   const counts: Partial<Record<ShelfId, number>> = {}
   for (const shelf of SHELVES) {
-    const count = listings.filter((listing) => onShelf(listing, shelf)).length
+    const kind = shelf.startsWith('capability:') ? (shelf.slice(11) as ComponentKind) : null
+    const count = listings.reduce(
+      (sum, listing) =>
+        sum + (kind ? componentCount(listing, kind) : onShelf(listing, shelf) ? 1 : 0),
+      0,
+    )
     if (count > 0) counts[shelf] = count
   }
   return counts

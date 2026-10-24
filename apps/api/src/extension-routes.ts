@@ -14,7 +14,8 @@ import { createMcpRoutes, type McpRoutesService } from './features/mcp/routes'
 import { createMiniAppRoutes, type MiniAppRoutesService } from './features/mini-apps/routes'
 import { createPluginRoutes, type PluginRoutesService } from './features/plugins/routes'
 import { createStoreRoutes } from './features/store/routes'
-import { createStoreService, type StoreService } from './features/store/service'
+import { createEmptyStoreService } from './features/store/empty'
+import type { StoreService } from './features/store/service'
 
 export interface ExtensionRouteDeps {
   mcpService: McpRoutesService
@@ -29,5 +30,5 @@ export function createExtensionRoutes(deps: ExtensionRouteDeps) {
     .route('/mcp', createMcpRoutes(deps.mcpService))
     .route('/plugins', createPluginRoutes(deps.pluginService))
     .route('/mini-apps', createMiniAppRoutes(deps.miniAppService))
-    .route('/store', createStoreRoutes(deps.storeService ?? createStoreService({ providers: [] })))
+    .route('/store', createStoreRoutes(deps.storeService ?? createEmptyStoreService()))
 }

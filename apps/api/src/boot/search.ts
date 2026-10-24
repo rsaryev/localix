@@ -12,7 +12,10 @@
  */
 import type { Kysely } from 'kysely'
 import type { AppDatabase } from '../db/types'
-import { createSearchProviderRegistry } from '../features/agent-core/search/provider'
+import {
+  createSearchProviderRegistry,
+  type SearchProvider,
+} from '../features/agent-core/search/provider'
 import { createSearchService } from '../features/search/service'
 import { createProjectsSearchProvider } from '../features/projects/search-provider'
 import {
@@ -61,6 +64,8 @@ export interface SearchCompositionDeps {
   semanticService?: SemanticService
   /** Whose capability catalogs are indexed (the workspace owner). */
   owner: string
+  /** The Store's packages not yet installed: its group comes after everything installed. */
+  storeSearchProvider?: SearchProvider
 }
 
 export function buildSearchService(
@@ -182,6 +187,8 @@ export function buildSearchService(
       },
     }),
   )
+
+  if (deps.storeSearchProvider) registry.register(deps.storeSearchProvider)
 
   // The meaning half of the skill, plugin, MCP and agent groups: each its own collection.
   if (semanticService) {

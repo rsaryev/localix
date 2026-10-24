@@ -14,6 +14,8 @@ import type {
  */
 export interface StoreActor {
   userId: string
+  /** The open project: where a `project` install goes, and whose installs a listing shows. */
+  projectId?: string | null
 }
 
 /** What a listing page shows beside the listings: sources that could not be read this time. */

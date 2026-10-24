@@ -1,0 +1,303 @@
+import { sql, type ExpressionBuilder, type Kysely } from 'kysely'
+import type { Listing, ListingRef } from '@localixai/store'
+
+import { facetsOf } from './index-repository-facets'
+import { narrowed, visibleListings, type IndexFilters } from './index-repository-filters'
+import type { StoreIndexTables } from './index-repository-open'
+import { fromRow, refKey } from './index-rows'
+
+/**
+ * THE STORE INDEX'S READS: keyset pages ordered by score (lifted by the open project's words),
+ * facet counts by `GROUP BY` over indexed columns, word candidates by FTS5 `MATCH` and `bm25`,
+ * and the cards the Store's semantic collection embeds. Raw SQL only for `MATCH` and `bm25`.
+ */
+
+type Tables = StoreIndexTables & {
+  l: StoreIndexTables['listing']
+  s: StoreIndexTables['listing_state']
+}
+type Eb = ExpressionBuilder<Tables, 'l' | 's'>
+
+/** Where a page ended: its last row's rank, name and ref. */
+interface Cursor {
+  r: number
+  n: string
+  k: string
+  i: string
+}
+const encode = (cursor: Cursor) => Buffer.from(JSON.stringify(cursor)).toString('base64url')
+function decode(raw: string | undefined): Cursor | null {
+  if (!raw) return null
+  try {
+    const cursor = JSON.parse(Buffer.from(raw, 'base64url').toString('utf8')) as Cursor
+    return typeof cursor.r === 'number' && typeof cursor.i === 'string' ? cursor : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * A listing's rank on a page: its static score, lifted by a quarter for each of the open
+ * project's words it is about (at most two count).
+ */
+function rankOf(eb: Eb, boost: readonly string[]) {
+  if (boost.length === 0) return eb.ref('l.score')
+  const matches = boost
+    .map((word) =>
+      eb
+        .case()
+        .when(eb.fn<number>('instr', [eb.ref('l.signals'), eb.val(` ${word} `)]), '>', 0)
+        .then(eb.val<number>(1))
+        .else(eb.val<number>(0))
+        .end(),
+    )
+    .reduce((sum, match) => eb(sum, '+', match))
+  const lift = eb(eb.val<number>(0.25), '*', eb.fn<number>('min', [eb.val<number>(2), matches]))
+  return eb(eb.ref('l.score'), '*', eb(eb.val<number>(1), '+', lift))
+}
+
+const ROW = ['l.card', 's.state', 'l.origin', 'l.kind', 'l.id', 'l.display_name'] as const
+
+export function createIndexReads(db: Kysely<StoreIndexTables>) {
+  /** The other sources that list each origin, for "Also in". */
+  async function alsoIn(rows: ReadonlyArray<{ origin: string | null; kind: string; id: string }>) {
+    const origins = [...new Set(rows.flatMap((row) => (row.origin ? [row.origin] : [])))]
+    const out = new Map<string, Array<{ id: string; label: string; key: string }>>()
+    if (origins.length === 0) return out
+    const others = await db
+      .selectFrom('listing')
+      .select(['origin', 'source_id', 'source_label', 'kind', 'id'])
+      .where('origin', 'in', origins)
+      .orderBy('weight', 'desc')
+      .execute()
+    for (const other of others) {
+      const list = out.get(other.origin!) ?? []
+      list.push({
+        id: other.source_id,
+        label: other.source_label,
+        key: refKey(other as ListingRef),
+      })
+      out.set(other.origin!, list)
+    }
+    return out
+  }
+
+  async function assemble(
+    rows: ReadonlyArray<{
+      card: string
+      state: string | null
+      origin: string | null
+      kind: string
+      id: string
+    }>,
+  ): Promise<Listing[]> {
+    const copies = await alsoIn(rows)
+    return rows.map((row) => {
+      const own = refKey(row as ListingRef)
+      const others = (row.origin ? (copies.get(row.origin) ?? []) : [])
+        .filter((copy) => copy.key !== own)
+        .map(({ id, label }) => ({ id, label }))
+      return fromRow({ card: row.card, state: row.state ?? null, alsoIn: others })
+    })
+  }
+
+  return {
+    /** One page in rank order, and where the next starts. */
+    async page(
+      userId: string,
+      filters: IndexFilters,
+      opts: { limit: number; cursor?: string; boost?: readonly string[] },
+    ): Promise<{ listings: Listing[]; nextCursor?: string }> {
+      const boost = opts.boost ?? []
+      const after = decode(opts.cursor)
+      let query = narrowed(visibleListings(db, userId), filters)
+        .select(ROW)
+        .select((eb) => rankOf(eb, boost).as('rank'))
+      if (after)
+        query = query.where((eb) => {
+          const rank = rankOf(eb, boost)
+          return eb.or([
+            eb(rank, '<', after.r),
+            eb.and([
+              eb(rank, '=', after.r),
+              eb.or([
+                eb('l.display_name', '>', after.n),
+                eb.and([
+                  eb('l.display_name', '=', after.n),
+                  eb.or([
+                    eb('l.kind', '>', after.k),
+                    eb.and([eb('l.kind', '=', after.k), eb('l.id', '>', after.i)]),
+                  ]),
+                ]),
+              ]),
+            ]),
+          ])
+        })
+      const rows = await query
+        .orderBy('rank', 'desc')
+        .orderBy('l.display_name')
+        .orderBy('l.kind')
+        .orderBy('l.id')
+        .limit(opts.limit + 1)
+        .execute()
+      const shown = rows.slice(0, opts.limit)
+      const last = shown.at(-1)
+      return {
+        listings: await assemble(shown),
+        ...(rows.length > opts.limit && last
+          ? {
+              nextCursor: encode({
+                r: Number(last.rank),
+                n: last.display_name,
+                k: last.kind,
+                i: last.id,
+              }),
+            }
+          : {}),
+      }
+    },
+
+    /** These listings as the person sees them, those the filters let through, by key. */
+    async byRefs(
+      userId: string,
+      refs: readonly ListingRef[],
+      filters: IndexFilters = {},
+    ): Promise<Map<string, Listing>> {
+      const out = new Map<string, Listing>()
+      if (refs.length === 0) return out
+      const ids = [...new Set(refs.map((ref) => ref.id))]
+      const rows = await narrowed(visibleListings(db, userId), filters)
+        .select(ROW)
+        .where('l.id', 'in', ids)
+        .execute()
+      const wanted = new Set(refs.map(refKey))
+      const kept = rows.filter((row) => wanted.has(refKey(row as ListingRef)))
+      for (const listing of await assemble(kept)) out.set(refKey(listing.ref), listing)
+      return out
+    },
+
+    /** Word candidates: listings matching the FTS5 query, best `bm25` first. */
+    async wordCandidates(
+      userId: string,
+      match: string,
+      filters: IndexFilters,
+      limit: number,
+    ): Promise<Array<{ ref: ListingRef; text: string; static: number }>> {
+      if (!match) return []
+      const rows = await narrowed(
+        visibleListings(db, userId).innerJoin(
+          // Name and display name weigh most, then tags, then summary and components.
+          sql<{
+            pk: number
+            rank: number
+          }>`(SELECT rowid AS pk, bm25(listing_fts, 10.0, 10.0, 4.0, 2.0, 2.0) AS rank FROM listing_fts WHERE listing_fts MATCH ${match})`.as(
+            'f',
+          ),
+          (join) => join.onRef('f.pk', '=', 'l.pk'),
+        ),
+        filters,
+      )
+        .select([
+          'l.kind',
+          'l.id',
+          'l.score',
+          'l.name',
+          'l.display_name',
+          'l.tags_text',
+          'l.summary',
+          'l.components_text',
+        ])
+        .orderBy(sql`f.rank`)
+        .limit(limit)
+        .execute()
+      return rows.map((row) => ({
+        ref: { kind: row.kind, id: row.id } as ListingRef,
+        static: row.score,
+        text: [row.display_name, row.name, row.tags_text, row.summary, row.components_text].join(
+          ' ',
+        ),
+      }))
+    },
+
+    /** One listing as the person sees it, hidden duplicate or not. */
+    async get(userId: string, ref: ListingRef): Promise<Listing | null> {
+      const row = await db
+        .selectFrom('listing as l')
+        .leftJoin('listing_state as s', (join) =>
+          join
+            .onRef('s.kind', '=', 'l.kind')
+            .onRef('s.id', '=', 'l.id')
+            .on('s.user_id', '=', userId),
+        )
+        .select(ROW)
+        .where('l.kind', '=', ref.kind)
+        .where('l.id', '=', ref.id)
+        .executeTakeFirst()
+      return row ? ((await assemble([row]))[0] ?? null) : null
+    },
+
+    /** Every listing the person has state for: installed, or with a job. */
+    async stated(userId: string): Promise<Listing[]> {
+      const rows = await db
+        .selectFrom('listing_state as s')
+        .innerJoin('listing as l', (join) =>
+          join.onRef('l.kind', '=', 's.kind').onRef('l.id', '=', 's.id'),
+        )
+        .select(ROW)
+        .where('s.user_id', '=', userId)
+        .orderBy('l.display_name')
+        .execute()
+      return assemble(rows)
+    },
+
+    facets: (userId: string, filters: IndexFilters) => facetsOf(db, userId, filters),
+
+    /** Cards in index order for the semantic collection: after `pk`, at most `limit`. */
+    async cards(after: number, limit: number) {
+      return db
+        .selectFrom('listing')
+        .select([
+          'pk',
+          'kind',
+          'id',
+          'display_name',
+          'summary',
+          'tags_text',
+          'category',
+          'components_text',
+        ])
+        .where('pk', '>', after)
+        .orderBy('pk')
+        .limit(limit)
+        .execute()
+    },
+
+    async cardsByKey(refs: readonly ListingRef[]) {
+      if (refs.length === 0) return []
+      const rows = await db
+        .selectFrom('listing')
+        .select([
+          'pk',
+          'kind',
+          'id',
+          'display_name',
+          'summary',
+          'tags_text',
+          'category',
+          'components_text',
+        ])
+        .where('id', 'in', [...new Set(refs.map((ref) => ref.id))])
+        .execute()
+      const wanted = new Set(refs.map(refKey))
+      return rows.filter((row) => wanted.has(refKey(row as ListingRef)))
+    },
+
+    async count(): Promise<number> {
+      const row = await db
+        .selectFrom('listing')
+        .select((eb) => eb.fn.countAll<number>().as('n'))
+        .executeTakeFirst()
+      return Number(row?.n ?? 0)
+    },
+  }
+}

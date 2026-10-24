@@ -37,10 +37,15 @@ describe('shelves', () => {
       discover: 1,
       'package:mini-app': 2,
       'package:plugin': 1,
-      'capability:command': 1,
+      'capability:command': 2,
       installed: 1,
       updates: 1,
     })
+  })
+
+  test('a capability shelf counts what it lists: components, not the packages holding them', () => {
+    const three = makeListing({ id: 'git', contents: { command: 3 } })
+    expect(shelfCounts([three, chess])['capability:command']).toBe(5)
   })
 
   test('a package’s own machinery — its screen, backend, agent tools — is never a shelf', () => {
@@ -61,6 +66,21 @@ describe('shelves', () => {
     expect(parseShelf('capability:mod')).toBe('capability:mod')
     expect(parseShelf('package:theme')).toBeNull()
     expect(parseShelf(undefined)).toBeNull()
+  })
+
+  test('a listing says how far its source is trusted, where it comes from and where else it is', () => {
+    const listing = makeListing({
+      id: 'lint',
+      kind: 'plugin',
+      source: { id: 'claude-plugins-official', label: 'Claude plugins', trust: 'official' },
+      origin: 'git:github.com/acme/lint',
+      alsoIn: [{ id: 'claude-plugins-community', label: 'Claude community' }],
+      homepage: 'https://acme.test',
+    })
+    expect(listingSchema.parse(listing)).toEqual(listing)
+    expect(() =>
+      listingSchema.parse({ ...listing, source: { ...listing.source, trust: 'friends' } }),
+    ).toThrow()
   })
 
   test('a listing whose contents are not known yet still parses', () => {

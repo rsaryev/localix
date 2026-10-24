@@ -1,11 +1,13 @@
 import { z } from 'zod'
 
+import { STORE_CATEGORIES } from './categories'
 import {
   jobSchema,
   listingRefSchema,
   listingSchema,
   packageKindSchema,
   scopeSchema,
+  trustSchema,
 } from './contract'
 import { parseShelf } from './shelves'
 
@@ -26,6 +28,10 @@ export const storeFacetsSchema = z.object({
 })
 export type StoreFacets = z.infer<typeof storeFacetsSchema>
 
+/** A page of listings, and the most one request may ask for. */
+export const LISTINGS_PAGE = 40
+export const LISTINGS_PAGE_MAX = 500
+
 export const listingsQuerySchema = z.object({
   shelf: z
     .string()
@@ -34,6 +40,15 @@ export const listingsQuerySchema = z.object({
   q: z.string().max(200).optional(),
   scope: scopeSchema.optional(),
   installed: z.enum(['true', 'false']).optional(),
+  category: z.enum(STORE_CATEGORIES).optional(),
+  /** A source's id. */
+  source: z.string().min(1).max(2048).optional(),
+  trust: trustSchema.optional(),
+  /** The open project: what it is written in lifts what suits it. */
+  projectId: z.string().min(1).max(256).optional(),
+  /** Where the previous page ended (`nextCursor`); absent for the first page. */
+  cursor: z.string().max(512).optional(),
+  limit: z.coerce.number().int().min(1).max(LISTINGS_PAGE_MAX).default(LISTINGS_PAGE),
 })
 export type ListingsQuery = z.infer<typeof listingsQuerySchema>
 
@@ -42,23 +57,43 @@ export const listingsResponseSchema = z.object({
   facets: storeFacetsSchema,
   /** Sources that could not be read this time, each said in a sentence. */
   problems: z.array(z.string()),
+  /** Where the next page starts; absent on the last page. */
+  nextCursor: z.string().optional(),
+  /**
+   * How a search was answered: by words and meaning, or by words only while the meaning model is
+   * not ready (`reason`). Absent when nothing was searched.
+   */
+  strategy: z
+    .object({ mode: z.enum(['lexical', 'hybrid']), reason: z.string().optional() })
+    .optional(),
 })
 export type ListingsResponse = z.infer<typeof listingsResponseSchema>
 
 export const listingParamsSchema = z.object({ kind: packageKindSchema, id: z.string().min(1) })
 
-export const planRequestSchema = z.object({ scope: scopeSchema.default('user') })
+/** The project a `project` scope means; the open one. */
+const projectIdSchema = z.string().min(1).max(256).optional()
+
+export const planRequestSchema = z.object({
+  scope: scopeSchema.default('user'),
+  projectId: projectIdSchema,
+})
 
 export const installRequestSchema = z.object({
   scope: scopeSchema.default('user'),
+  projectId: projectIdSchema,
   /** The person saw the plan and said yes to what it warned about. */
   consent: z.object({ plan: z.boolean() }).default({ plan: false }),
 })
 
-export const scopeRequestSchema = z.object({ scope: scopeSchema.default('user') })
+export const scopeRequestSchema = z.object({
+  scope: scopeSchema.default('user'),
+  projectId: projectIdSchema,
+})
 
 export const enableRequestSchema = z.object({
   scope: scopeSchema.default('user'),
+  projectId: projectIdSchema,
   enabled: z.boolean(),
 })
 

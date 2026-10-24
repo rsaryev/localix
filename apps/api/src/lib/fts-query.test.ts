@@ -2,10 +2,10 @@ import { describe, expect, test } from 'bun:test'
 import { ftsOrQuery, queryTerms } from './fts-query'
 
 // Russian words, escaped so the source stays ASCII.
-const WHERE = 'где' // "where"
-const WE = 'мы' // "we"
-const DISCUSSED = 'обсуждали' // "discussed"
-const RETRIES = 'ретраи' // "retries"
+const WHERE = '\u0433\u0434\u0435' // "where"
+const WE = '\u043c\u044b' // "we"
+const DISCUSSED = '\u043e\u0431\u0441\u0443\u0436\u0434\u0430\u043b\u0438' // "discussed"
+const RETRIES = '\u0440\u0435\u0442\u0440\u0430\u0438' // "retries"
 
 describe('query terms', () => {
   test('drops short words, dedupes, and prefixes inflected Cyrillic words', () => {

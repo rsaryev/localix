@@ -4,7 +4,13 @@ import { InvalidRequestError } from '../../lib/domain-errors'
 import type { MiniAppCatalogPreview } from './catalog-preview'
 import type { MiniAppCatalogRecord } from './catalogs'
 import type { MiniAppStore } from './store'
-import { catalogLabel, miniAppComponents, miniAppDetail, miniAppListing } from './store-listing'
+import {
+  catalogLabel,
+  catalogTrust,
+  miniAppComponents,
+  miniAppDetail,
+  miniAppListing,
+} from './store-listing'
 
 /** What the provider needs of the mini app service: its store, catalogs and the person's apps. */
 export interface MiniAppStoreProviderDeps {
@@ -40,7 +46,10 @@ function personOnly(scope: Scope) {
 export function createMiniAppStoreProvider(deps: MiniAppStoreProviderDeps): StoreProvider {
   const labels = async () =>
     new Map(
-      (await deps.catalogs.list()).map(({ url, builtIn }) => [url, catalogLabel(url, builtIn)]),
+      (await deps.catalogs.list()).map(({ url, builtIn }) => [
+        url,
+        { label: catalogLabel(url, builtIn), builtIn },
+      ]),
     )
 
   const listingFor = async (name: string, actor: StoreActor) => {
@@ -50,8 +59,10 @@ export function createMiniAppStoreProvider(deps: MiniAppStoreProviderDeps): Stor
       deps.apps.list(actor.userId),
     ])
     const on = enabled.miniApps.find((app) => app.name === name)?.enabled ?? true
+    const catalog = label.get(page.entry.source)
     const listing = miniAppListing(page.entry, {
-      sourceLabel: label.get(page.entry.source) ?? page.entry.source,
+      sourceLabel: catalog?.label ?? page.entry.source,
+      builtIn: catalog?.builtIn ?? false,
       enabled: on,
     })
     return { page, listing }
@@ -70,7 +81,8 @@ export function createMiniAppStoreProvider(deps: MiniAppStoreProviderDeps): Stor
       return {
         listings: entries.map((entry) =>
           miniAppListing(entry, {
-            sourceLabel: label.get(entry.source) ?? entry.source,
+            sourceLabel: label.get(entry.source)?.label ?? entry.source,
+            builtIn: label.get(entry.source)?.builtIn ?? false,
             enabled: enabled.get(entry.name) ?? true,
           }),
         ),
@@ -133,6 +145,7 @@ export function createMiniAppStoreProvider(deps: MiniAppStoreProviderDeps): Stor
         url,
         builtIn,
         count: entries.filter((entry) => entry.source === url).length,
+        trust: catalogTrust(builtIn).trust,
       }))
     },
 

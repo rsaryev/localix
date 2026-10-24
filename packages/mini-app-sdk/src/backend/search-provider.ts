@@ -82,6 +82,12 @@ export interface SearchQuery {
    * word matching; every other provider ignores it and the lexical strategy is unchanged.
    */
   semantic?: SemanticQuery
+  /**
+   * Options for the one provider a scoped query names (`domains: [id]`), opaque to the service
+   * and every other provider: a surface with filters of its own (the Store's shelf, category or
+   * source) passes them here rather than the query gaining fields for one domain.
+   */
+  providerOptions?: unknown
 }
 
 /**
