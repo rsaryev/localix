@@ -125,14 +125,13 @@ describe('the mini apps in the Store', () => {
     expect(added!.featured).toBe(false)
   })
 
-  test('Localix’s picks for Discover: a hero with its first screenshot, and collections', async () => {
+  test('Localix’s picks for Discover: and collections', async () => {
     const { source, provider, catalogs } = setup()
-    await offer(source, 'chess', { screenshots: [{ path: './shot.png', caption: 'Board' }] })
+    await offer(source, 'chess')
     await offer(source, 'checkers')
     await fs.writeFile(
       join(source, 'catalog-picks.json'),
       JSON.stringify({
-        hero: { item: 'chess', title: 'Play chess with the agent' },
         collections: [
           {
             id: 'play',
@@ -145,11 +144,6 @@ describe('the mini apps in the Store', () => {
     expect(await provider.editorial!()).toEqual([
       {
         source: pathToFileURL(source).href,
-        hero: {
-          item: { kind: 'mini-app', id: 'chess' },
-          title: 'Play chess with the agent',
-          image: '/rpc/mini-apps/store/media/chess/screenshot/0',
-        },
         collections: [
           {
             id: 'play',

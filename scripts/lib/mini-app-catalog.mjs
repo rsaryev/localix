@@ -37,30 +37,24 @@ const words = (record, keys) =>
   Object.fromEntries(keys.flatMap((key) => (text(record?.[key]) ? [[key, record[key]]] : [])))
 
 /**
- * Discover's hero and collections (`docs/internals/store.md`): an item is a mini app's name, or
+ * Discover's collections (`docs/internals/store.md`): an item is a mini app's name, or
  * `<kind>:<id>` for another kind (`plugin:<name>@<marketplace>`). A pick that does not read is
  * left out alone.
  */
 function editorialPicks(parsed) {
-  const hero = text(parsed?.hero?.item)
-    ? { item: parsed.hero.item, ...words(parsed.hero, ['title', 'subtitle', 'image']) }
-    : undefined
   const collections = (Array.isArray(parsed?.collections) ? parsed.collections : []).flatMap(
     (collection) =>
       text(collection?.id) && text(collection?.title)
         ? [
             {
               ...words(collection, ['id', 'title', 'subtitle']),
-              style: ['hero', 'row', 'grid'].includes(collection.style) ? collection.style : 'row',
+              style: ['row', 'grid'].includes(collection.style) ? collection.style : 'row',
               items: names(collection.items),
             },
           ]
         : [],
   )
-  return {
-    ...(hero ? { hero } : {}),
-    ...(collections.length ? { collections } : {}),
-  }
+  return collections.length ? { collections } : {}
 }
 
 /** The checkout's picks; a list that is missing or not one is empty. */
@@ -185,7 +179,6 @@ function storeFields(dir, manifest, outDir, app) {
  *   only?: string[],
  *   featured?: string[],
  *   recommended?: string[],
- *   hero?: { item: string, title?: string, subtitle?: string, image?: string },
  *   collections?: Array<{ id: string, title: string, subtitle?: string, style: string, items: string[] }>,
  *   log?: (line: string) => void,
  * }} options
@@ -198,7 +191,6 @@ export async function packMiniAppCatalog({
   only,
   featured = [],
   recommended = [],
-  hero,
   collections,
   log = () => {},
 }) {
@@ -256,10 +248,7 @@ export async function packMiniAppCatalog({
     log(`packed ${name} ${version} (${(bytes.byteLength / 1024 / 1024).toFixed(1)} MB)`)
   }
   // Discover's picks travel with the catalog; the store honours them for Localix's own only.
-  const editorial = {
-    ...(hero ? { hero } : {}),
-    ...(collections?.length ? { collections } : {}),
-  }
+  const editorial = collections?.length ? { collections } : {}
   const catalog = {
     schema: CATALOG_SCHEMA,
     apps,

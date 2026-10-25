@@ -1,11 +1,6 @@
 {
   "featured": ["kanban", "project-space", "database", "code-graph", "chess"],
   "recommended": ["git-workspace", "documents", "kanban"],
-  "hero": {
-    "item": "code-graph",
-    "title": "See how your code fits together",
-    "subtitle": "Code Graph maps a project's files and symbols so you and the agent can find your way around"
-  },
   "collections": [
     {
       "id": "play-with-the-agent",

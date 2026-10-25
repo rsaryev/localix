@@ -212,7 +212,6 @@ export function fakeClient(fake: StoreFake): StoreClient {
     },
     sources: async () => ({ sources: fake.sources ?? SOURCES, addable: ['mini-app', 'plugin'] }),
     discover: async () => ({
-      hero: null,
       updates: { count: fake.listings.filter(hasUpdate).length },
       rows: [],
       categories: [],

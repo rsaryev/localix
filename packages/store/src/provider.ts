@@ -87,7 +87,7 @@ export interface StoreProvider {
    * files belong to that project alone. Absent for a kind that keeps nothing per project.
    */
   projectListings?(actor: StoreActor & { projectId: string }): Promise<Listing[]>
-  /** The hero and collections its editorial sources pick for Discover; none when it has none. */
+  /** The collections its editorial sources pick for Discover; none when it has none. */
   editorial?(): Promise<Editorial[]>
   /** Hear every change to what `listings` would answer; returns the unsubscribe. */
   subscribe(onChange: () => void): () => void

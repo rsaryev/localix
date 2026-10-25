@@ -31,13 +31,6 @@ const row = (id: string, title: string, ids: ReturnType<typeof ref>[], extra = {
   ...extra,
 })
 const DISCOVER = {
-  hero: {
-    id: 'hero',
-    title: 'Think with the board',
-    subtitle: 'A chess partner that never tires',
-    style: 'hero' as const,
-    items: [ref('chess')],
-  },
   rows: [
     row('start', 'Start here', [ref('kanban'), ref('lint', 'plugin')]),
     row('project', 'For this project · TypeScript', [ref('lint', 'plugin')]),
@@ -58,7 +51,7 @@ const section = (host: HTMLElement, title: string) =>
   host.querySelector<HTMLElement>(`section[aria-label="${title}"]`)
 
 describe('Discover', () => {
-  test('is the showcase: hero, updates, rows, collections and categories, top to bottom', async () => {
+  test('is the showcase: updates, rows, collections and categories, top to bottom', async () => {
     const view = await renderStore({ listings: LISTINGS, discover: DISCOVER })
     try {
       const titles = [...view.host.querySelectorAll('[data-store-scroller] section')].map((s) =>
@@ -73,52 +66,31 @@ describe('Discover', () => {
         'New & updated',
         'Categories',
       ])
-      expect(view.host.querySelector('[aria-roledescription="carousel"]')).not.toBeNull()
     } finally {
       await view.done()
     }
   })
 
-  test('the hero is the editor’s pick with its own words, and has its Get button', async () => {
+  test('opens on the next section, with no carousel above it', async () => {
     const view = await renderStore({ listings: LISTINGS, discover: DISCOVER })
     try {
-      const hero = view.host.querySelector<HTMLElement>('[aria-roledescription="carousel"]')!
-      const first = hero.querySelector<HTMLElement>('[aria-roledescription="slide"]:not([hidden])')!
-      expect(first.textContent).toContain('Think with the board')
-      expect(first.textContent).toContain('A chess partner that never tires')
-      await view.click(view.button('Get Chess', first))
-      expect(view.calls).toEqual(['install mini-app/chess user'])
+      expect(!!view.host.querySelector('[aria-roledescription="carousel"]')).toBe(false)
+      const first = view.host.querySelector('[data-store-scroller] > div > :first-child')!
+      expect(first.textContent).toContain('1 update available')
+      expect(first.nextElementSibling?.getAttribute('aria-label')).toBe('Start here')
     } finally {
       await view.done()
     }
   })
 
-  test('the hero pages by arrow, dot and key, and holds up to three slides', async () => {
-    const view = await renderStore({ listings: LISTINGS, discover: DISCOVER })
-    try {
-      const hero = view.host.querySelector<HTMLElement>('[aria-roledescription="carousel"]')!
-      const shown = () =>
-        hero.querySelector('[aria-roledescription="slide"]:not([hidden]) h3')?.textContent
-      expect(hero.querySelectorAll('[aria-roledescription="slide"]')).toHaveLength(3)
-      await view.click(view.button('Next', hero))
-      expect(shown()).toBe('Kanban')
-      await view.click(view.button('Show slide 3 of 3'))
-      expect(shown()).toBe('Lint')
-      await view.press('ArrowRight', hero)
-      expect(shown()).toBe('Think with the board')
-    } finally {
-      await view.done()
-    }
-  })
-
-  test('with no editor’s hero, Start here leads, so the top is never empty', async () => {
+  test('with no updates, Start here is the first thing Discover shows', async () => {
     const view = await renderStore({
       listings: LISTINGS,
-      discover: { ...DISCOVER, hero: null, rows: DISCOVER.rows.slice(0, 1) },
+      discover: { ...DISCOVER, updates: { count: 0 } },
     })
     try {
-      const hero = view.host.querySelector('[aria-roledescription="carousel"]')!
-      expect(hero.textContent).toContain('Kanban')
+      const first = view.host.querySelector('[data-store-scroller] > div > :first-child')!
+      expect(first.getAttribute('aria-label')).toBe('Start here')
     } finally {
       await view.done()
     }
@@ -205,11 +177,9 @@ describe('Discover', () => {
     }
   })
 
-  test('narrow, the hero puts its picture on top and rows scroll sideways', async () => {
+  test('narrow, rows scroll sideways', async () => {
     const view = await renderStore({ listings: LISTINGS, discover: DISCOVER, width: 600 })
     try {
-      const slide = view.host.querySelector('[aria-roledescription="slide"]')!
-      expect(slide.className).toContain('grid-cols-1')
       const strip = section(view.host, 'Mini apps')!.querySelector('ul')!
       expect(strip.className).toContain('snap-x')
       expect(strip.className).toContain('overflow-x-auto')

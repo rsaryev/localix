@@ -14,7 +14,6 @@ import { CATEGORY_ICONS, plural } from '../model/presentation'
 import { tilesPerView, useStoreFrame } from '../model/layout'
 import { useStoreScope } from '../model/storeContext'
 import { keyOf } from '../model/useExtrasAfterInstall'
-import { DiscoverHero } from './DiscoverHero'
 import { ListingTileCard } from './ListingCards'
 import { ListingIcon } from './StoreMarks'
 
@@ -98,11 +97,10 @@ function Categories({ categories }: { categories: DiscoverResponse['categories']
   )
 }
 
-/** The first look while Discover is read: a hero and two rows in outline. */
+/** The first look while Discover is read: two rows in outline. */
 export function DiscoverSkeleton() {
   return (
     <div aria-hidden className="flex flex-col gap-8">
-      <Skeleton className="h-64 w-full rounded-xl" />
       {[0, 1].map((row) => (
         <div key={row} className="flex flex-col gap-3">
           <Skeleton className="h-4 w-40" />
@@ -124,7 +122,7 @@ export function DiscoverSkeleton() {
 }
 
 /**
- * DISCOVER (`docs/internals/store.md`, "Discover"): the hero, the updates waiting, Start here,
+ * DISCOVER (`docs/internals/store.md`, "Discover"): the updates waiting, Start here,
  * For this project, the editors' collections as wide cards, a row per kind, New & updated, and
  * the categories — every part from one `/rpc/store/discover` answer, each left out when empty.
  */
@@ -137,7 +135,6 @@ export function Discover({ data }: { data: DiscoverResponse }) {
     return (ref: ListingRef) => map.get(keyOf(ref))
   }, [data.listings])
   const listingsOf = (collection: Collection) => collection.items.flatMap((ref) => byKey(ref) ?? [])
-  const start = data.rows.find((row) => row.id === 'start')
   const editorial = data.rows.filter((row) => row.source)
   const computed = (ids: (id: string) => boolean) =>
     data.rows.filter((row) => !row.source && ids(row.id))
@@ -170,7 +167,6 @@ export function Discover({ data }: { data: DiscoverResponse }) {
 
   return (
     <div className="flex flex-col gap-8">
-      <DiscoverHero hero={data.hero} start={start} byKey={byKey} />
       {data.updates.count > 0 && (
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border-faint px-4 py-3">
           <RefreshCw className="size-4 shrink-0 text-text-soft" aria-hidden />

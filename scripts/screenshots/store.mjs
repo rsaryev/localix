@@ -45,7 +45,7 @@ const COMPOSE = {
   async 'store-discover'(page) {
     await openStore(page)
     await goTo(page, 'Discover')
-    await page.locator('[aria-roledescription="carousel"]').waitFor()
+    await deck(page, 'Start here').waitFor()
   },
   async 'store-plugins'(page) {
     await openStore(page)
@@ -142,9 +142,9 @@ const VERIFY = {
     ).toBeVisible()
   },
   async 'store-discover'(page) {
-    const hero = page.locator('[aria-roledescription="carousel"]')
-    await expect(hero.locator('[aria-roledescription="slide"]:not([hidden]) h3')).toBeVisible()
-    await expect(hero.getByRole('button', { name: /^Get / }).first()).toBeVisible()
+    // No carousel above the rows: Start here leads, with packages a person can get.
+    await expect(page.locator('[aria-roledescription="carousel"]')).toHaveCount(0)
+    await expect(deck(page, 'Start here').locator('[data-listing]').first()).toBeVisible()
     await expect(deck(page, 'Categories')).toBeVisible()
     // Rows scroll sideways inside themselves; the page never does.
     const overflow = await page.evaluate(() => {

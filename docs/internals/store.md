@@ -367,14 +367,12 @@ The API side of step 2; the screens that use all of it come in the step's UI par
 
 ### Discover as built
 
-`GET /rpc/store/discover` answers `{ hero, updates: { count }, rows, categories, listings }`: a
-`Collection` is
-`{ id, title, subtitle?, style: 'hero' | 'row' | 'grid', items: ListingRef[], source?, image? }`,
-and every listing an item names is in `listings`.
+`GET /rpc/store/discover` answers `{ updates: { count }, rows, categories, listings }`: a
+`Collection` is `{ id, title, subtitle?, style: 'row' | 'grid', items: ListingRef[], source? }`, and
+every listing an item names is in `listings`.
 
 | Part             | From                                                                                              |
 | ---------------- | ------------------------------------------------------------------------------------------------- |
-| Hero             | An editorial source's pick; its picture is the given `image`, else a mini app's first screenshot. |
 | Start here       | What editorial sources recommend, every kind, by score.                                           |
 | For this project | Listings about at least one of the open project's words; left out without a project or a match.   |
 | Collections      | An editorial source's picks, mixing kinds, in the order it gives.                                 |
@@ -382,16 +380,15 @@ and every listing an item names is in `listings`.
 | One row per kind | "Mini apps", "Plugins", by score.                                                                 |
 
 A provider hands its picks over through the port's optional `editorial()`. The mini app catalog
-carries them as `editorial` (`hero`, `collections`) from `mini-apps/catalog-picks.json`; the
-`localix` marketplace under `metadata.localix` (`recommended`, `featured`, `hero`, `collections`),
-which `claude plugin validate` accepts with an unknown-field warning and Claude Code ignores. An
-item is a name of the source's own kind, or `<kind>:<id>`. Only an editorial source's picks are
-read, and a community listing never reaches the hero, Start here or a collection. A listing's page
-adds `related` (more from its publisher) and `similar` (its category, sharing a tag), and `linked`,
-the listings both name, so the page draws those rows in one read. When no editorial source can be
-read (offline, or a catalog not published yet), the hero is the best `localix` or `official` listing
-with an icon and Start here is those listings by score, so Discover is never empty while official
-listings exist.
+carries them as `editorial` (`collections`) from `mini-apps/catalog-picks.json`; the `localix`
+marketplace under `metadata.localix` (`recommended`, `featured`, `collections`), which
+`claude plugin validate` accepts with an unknown-field warning and Claude Code ignores. An item is a
+name of the source's own kind, or `<kind>:<id>`. Only an editorial source's picks are read, and a
+community listing never reaches Start here or a collection. A listing's page adds `related` (more
+from its publisher) and `similar` (its category, sharing a tag), and `linked`, the listings both
+name, so the page draws those rows in one read. When no editorial source can be read (offline, or a
+catalog not published yet), Start here is the `localix` and `official` listing by score, so Discover
+is never empty while official listings exist.
 
 ### Step 2c API as built
 
@@ -425,8 +422,8 @@ provider (X1, A8) and only reads or writes through the Store client.
   labelled panel opens over the content (hover after ~120 ms, keyboard focus, touch tap) and closes
   on leaving (~200 ms grace), Esc, choosing a row or focus moving away, so the content never moves;
   the kit `ShelfNav` is gone.
-- **Discover** renders `/rpc/store/discover` (hero, updates, rows, collections, categories) and
-  sends `projectId`. A row's "See all" shows a `list` view, a paged query or a fixed set of refs.
+- **Discover** renders `/rpc/store/discover` (updates, rows, collections, categories) and sends
+  `projectId`. A row's "See all" shows a `list` view, a paged query or a fixed set of refs.
 - **Lists are cursor-paged and virtualized** (`PagedList`): `useSWRInfinite` over the keyset cursor,
   the next page asked when the window nears the end, rows windowed with `@tanstack/react-virtual`. A
   card's pointer or focus prefetches its page (`prefetchDetail`, after a short intent delay).

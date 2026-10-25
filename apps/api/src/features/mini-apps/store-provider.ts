@@ -215,43 +215,23 @@ export function createMiniAppStoreProvider(deps: MiniAppStoreProviderDeps): Stor
 
     /**
      * What the catalogs Localix vouches for pick for Discover. An item is an app's name, or
-     * `<kind>:<id>` for another kind; a hero without its own picture shows its first screenshot.
+     * `<kind>:<id>` for another kind.
      */
     async editorial(): Promise<Editorial[]> {
       const [{ editorial }, label] = await Promise.all([deps.store.list(), labels()])
       const picks = editorial.filter(
         ({ source }) => catalogTrust(label.get(source)?.builtIn ?? false).editorial,
       )
-      return Promise.all(
-        picks.map(async ({ source, editorial: pick }) => {
-          const hero = pick.hero ? refOfPick(pick.hero.item) : null
-          const image =
-            pick.hero?.image ??
-            (hero?.kind === 'mini-app'
-              ? (await deps.store.detail(hero.id).catch(() => null))?.screenshots[0]?.url
-              : undefined)
-          return {
-            source,
-            ...(pick.hero && hero
-              ? {
-                  hero: {
-                    item: hero,
-                    ...(pick.hero.title ? { title: pick.hero.title } : {}),
-                    ...(pick.hero.subtitle ? { subtitle: pick.hero.subtitle } : {}),
-                    ...(image ? { image } : {}),
-                  },
-                }
-              : {}),
-            collections: pick.collections.map((collection) => ({
-              id: collection.id,
-              title: collection.title,
-              ...(collection.subtitle ? { subtitle: collection.subtitle } : {}),
-              style: collection.style,
-              items: collection.items.flatMap((item) => refOfPick(item) ?? []),
-            })),
-          }
-        }),
-      )
+      return picks.map(({ source, editorial: pick }) => ({
+        source,
+        collections: pick.collections.map((collection) => ({
+          id: collection.id,
+          title: collection.title,
+          ...(collection.subtitle ? { subtitle: collection.subtitle } : {}),
+          style: collection.style,
+          items: collection.items.flatMap((item) => refOfPick(item) ?? []),
+        })),
+      }))
     },
 
     addSource: (input) => deps.catalogs.add(input),

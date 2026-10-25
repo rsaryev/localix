@@ -257,7 +257,7 @@ export const capturePlan = {
   },
   'store/discover': {
     guide: 'features/mini-apps.md',
-    purpose: 'Discover: the hero carousel, rows by kind and the categories, from one answer',
+    purpose: 'Discover: Start here, rows by kind and the categories, from one answer',
     scenario: 'store-discover',
     start: 'home',
   },

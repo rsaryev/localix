@@ -208,7 +208,7 @@ export const storeApi = {
     )
   },
 
-  /** What Discover shows: the hero, its rows and every listing they name. */
+  /** What Discover shows: its rows and every listing they name. */
   async discover(query: { projectId?: string | null } = {}): Promise<DiscoverResponse> {
     return unwrap(
       await client.rpc.store.discover.$get({ query: cleanQuery(project(query.projectId)) }),

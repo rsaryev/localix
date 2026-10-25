@@ -15,16 +15,13 @@ import type { StoreIndexRepository } from './index-repository'
 import { refKey } from './index-rows'
 
 /**
- * WHAT DISCOVER SHOWS (`docs/internals/store.md`, "Discover as built"): the hero and collections
+ * WHAT DISCOVER SHOWS (`docs/internals/store.md`, "Discover as built"): the collections
  * editorial sources pick, and the rows the Store computes — Start here (what editorial sources
  * recommend, every kind), For this project (what suits the open project), New & updated, and one
- * row per package kind by score. A community listing never reaches the hero, Start here or a
- * collection. Every listing an item names comes with the answer.
+ * row per package kind by score. A community listing never reaches Start here or a collection. Every listing an item names comes with the answer.
  */
 
 const ROW = 12
-/** How many trusted listings a hero is looked for in when no editorial source picked one. */
-const FALLBACK = 24
 /** "New": a version published in the last quarter. */
 const NEW_MS = 90 * 24 * 60 * 60 * 1000
 const KIND_TITLES: Record<PackageKind, string> = {
@@ -67,57 +64,28 @@ export async function discoverOf(deps: {
   // What the picks name, as the person sees it, never a community listing.
   const picked = await index.byRefs(
     userId,
-    editorial.flatMap((pick) => [
-      ...(pick.hero ? [pick.hero.item] : []),
-      ...pick.collections.flatMap((collection) => collection.items),
-    ]),
+    editorial.flatMap((pick) => pick.collections.flatMap((collection) => collection.items)),
     { trusted: true },
   )
   const kept = (items: readonly ListingRef[]) => items.filter((ref) => picked.has(refKey(ref)))
-
-  const heroPick = editorial.find((pick) => pick.hero && picked.has(refKey(pick.hero.item)))
-  const picks: Collection | null = heroPick?.hero
-    ? {
-        id: 'hero',
-        title: heroPick.hero.title ?? picked.get(refKey(heroPick.hero.item))!.displayName,
-        ...(heroPick.hero.subtitle ? { subtitle: heroPick.hero.subtitle } : {}),
-        style: 'hero',
-        items: [heroPick.hero.item],
-        source: heroPick.source,
-        ...(heroPick.hero.image ? { image: heroPick.hero.image } : {}),
-      }
-    : null
-
-  // No editorial source could be read (offline, or a catalog not published yet): the best
-  // trusted listing with a picture leads, and Start here is the trusted ones by score.
-  const trustedTop = await index.page(userId, { trusted: true }, { limit: FALLBACK })
-  const fallbackHero = trustedTop.listings.find((listing) => listing.icon)
-  const hero: Collection | null =
-    picks ??
-    (fallbackHero
-      ? {
-          id: 'hero',
-          title: fallbackHero.displayName,
-          ...(fallbackHero.summary ? { subtitle: fallbackHero.summary } : {}),
-          style: 'hero',
-          items: [fallbackHero.ref],
-        }
-      : null)
 
   const row = (id: string, title: string, items: ListingRef[], subtitle?: string): Collection[] =>
     items.length ? [{ id, title, ...(subtitle ? { subtitle } : {}), style: 'row', items }] : []
 
   const [start, project, fresh, facets, ...kinds] = await Promise.all([
-    top({ recommended: true, trusted: true }),
+    // No editorial source could be read (offline, or a catalog not published yet): the trusted
+    // listings by score are what Start here leads with.
+    top({ recommended: true, trusted: true }).then((found) =>
+      found.length ? found : top({ trusted: true }),
+    ),
     deps.projectWords.size ? top({}, true) : Promise.resolve([]),
     index.newest(userId, { updatedSince: new Date(deps.now - NEW_MS).toISOString() }, ROW),
     index.facets(userId, {}),
     ...PACKAGE_KINDS.map((kind) => top({ shelf: `package:${kind}` })),
   ])
 
-  const startHere = start.length ? start : refs(trustedTop.listings.slice(0, ROW))
   const rows: Collection[] = [
-    ...row('start', 'Start here', startHere, 'What Localix suggests first'),
+    ...row('start', 'Start here', start, 'What Localix suggests first'),
     ...row('project', 'For this project', project, 'Suits what this project is written in'),
     ...editorial.flatMap((pick) =>
       pick.collections.flatMap((collection) => {
@@ -129,10 +97,11 @@ export async function discoverOf(deps: {
     ...PACKAGE_KINDS.flatMap((kind, at) => row(`kind:${kind}`, KIND_TITLES[kind], kinds[at]!)),
   ]
 
-  const named = [...(hero ? hero.items : []), ...rows.flatMap((found) => found.items)]
-  const listings = await index.byRefs(userId, named)
+  const listings = await index.byRefs(
+    userId,
+    rows.flatMap((found) => found.items),
+  )
   return {
-    hero,
     updates: { count: facets.updates },
     rows,
     categories: STORE_CATEGORIES.flatMap((id) =>

@@ -4,10 +4,10 @@ import { createContext, useContext } from 'react'
  * HOW THE STORE ADAPTS (`docs/internals/store.md`, "Adaptive layout"): by the Store pane's own
  * width, never the window's — the same window gives the Store a different width beside a chat.
  *
- * | Pane         | Sidebar      | Hero              | Rows            | Lists     | Package page          |
- * | ≥ 1100px     | full         | large, media right | 4–5 tiles      | 2–3 cols  | facts beside          |
- * | 760–1100px   | icons only   | medium            | 3 tiles         | 2 cols    | facts under the header |
- * | < 760px      | section menu | media on top      | scroll with snap | 1 col    | one column, Get pinned |
+ * | Pane         | Sidebar      | Rows            | Lists     | Package page          |
+ * | ≥ 1100px     | full         | 4–5 tiles       | 2–3 cols  | facts beside          |
+ * | 760–1100px   | icons only   | 3 tiles         | 2 cols    | facts under the header |
+ * | < 760px      | section menu | scroll with snap | 1 col    | one column, Get pinned |
  */
 export type StoreLayout = 'wide' | 'medium' | 'narrow'
 

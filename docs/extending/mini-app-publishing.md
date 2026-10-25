@@ -149,15 +149,12 @@ loads. `featured: true` puts an app in Discover's featured carousel and its rows
 Localix catalog; the Localix release sets them from `mini-apps/catalog-picks.json`.
 
 The same file may name the Store's **Discover** picks, which the catalog carries as an optional
-top-level `editorial`, also read for the Localix catalog only: a `hero` (`item`, `title`,
-`subtitle`, and an `image` address; without one, the app's first screenshot) and `collections`, each
-with an `id`, a `title`, a `subtitle`, a `style` (`row`, `grid` or `hero`) and its `items`. An item
-is an app's name, or `<kind>:<id>` for another kind of package, such as
-`plugin:neon@claude-plugins-official`.
+top-level `editorial`, also read for the Localix catalog only: `collections`, each with an `id`, a
+`title`, a `subtitle`, a `style` (`row` or `grid`) and its `items`. An item is an app's name, or
+`<kind>:<id>` for another kind of package, such as `plugin:neon@claude-plugins-official`.
 
 ```json
 {
-  "hero": { "item": "code-graph", "title": "See how your code fits together" },
   "collections": [
     {
       "id": "play-with-the-agent",

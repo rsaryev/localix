@@ -63,7 +63,7 @@ One configuration file lists the sources a fresh profile starts with; adding one
 | `input`     | What the provider's add takes: a catalog URL, `owner/repo`, a registry URL. |
 | `trust`     | `localix`, `official` or `community`.                                       |
 | `weight`    | Ranking factor: `localix` 1.0, `official` 0.7, `community` 0.35 by default. |
-| `editorial` | Whether its hero, collections and featured flags may reach Discover.        |
+| `editorial` | Whether its collections and featured flags may reach Discover.              |
 
 Starting entries: the Localix mini app catalog and the `localix` marketplace (`localix`, editorial),
 `anthropics/claude-plugins-official` (`official`, editorial) and

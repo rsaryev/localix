@@ -6,7 +6,7 @@ import type { MarketView } from './store-listing'
 /**
  * A MARKETPLACE'S PICKS FOR THE STORE: Localix's own optional key `metadata.localix` in
  * `.claude-plugin/marketplace.json`, which Claude Code ignores (it validates the known metadata
- * keys only). It names the entries Discover recommends and features, a hero and collections whose
+ * keys only). It names the entries Discover recommends and features, and collections whose
  * items are entry names, or `<kind>:<id>` for another kind. Read for an editorial marketplace
  * only (`@localixai/store`'s default sources); a community one picks nothing.
  */
@@ -18,10 +18,6 @@ const optionalText = z.string().min(1).max(240).optional().catch(undefined)
 const picksSchema = z.object({
   featured: names.optional(),
   recommended: names.optional(),
-  hero: z
-    .object({ item: z.string().min(1), title: optionalText, subtitle: optionalText })
-    .optional()
-    .catch(undefined),
   collections: z
     .array(z.unknown())
     .transform((all) =>
@@ -31,7 +27,7 @@ const picksSchema = z.object({
             id: z.string().min(1).max(64),
             title: z.string().min(1).max(120),
             subtitle: optionalText,
-            style: z.enum(['hero', 'row', 'grid']).catch('row'),
+            style: z.enum(['row', 'grid']).catch('row'),
             items: names,
           })
           .safeParse(raw)
@@ -60,7 +56,6 @@ function readPicks(view: MarketView) {
   return {
     featured: new Set(picks.featured ?? []),
     recommended: new Set(picks.recommended ?? []),
-    hero: picks.hero,
     collections: picks.collections ?? [],
   }
 }
@@ -75,19 +70,9 @@ function refOf(view: MarketView, item: string): ListingRef | null {
 
 export function marketEditorial(view: MarketView): Editorial | null {
   const picks = marketPicks(view)
-  const hero = picks.hero ? refOf(view, picks.hero.item) : null
-  if (!hero && picks.collections.length === 0) return null
+  if (picks.collections.length === 0) return null
   return {
     source: view.name,
-    ...(picks.hero && hero
-      ? {
-          hero: {
-            item: hero,
-            ...(picks.hero.title ? { title: picks.hero.title } : {}),
-            ...(picks.hero.subtitle ? { subtitle: picks.hero.subtitle } : {}),
-          },
-        }
-      : {}),
     collections: picks.collections.map((collection) => ({
       id: collection.id,
       title: collection.title,

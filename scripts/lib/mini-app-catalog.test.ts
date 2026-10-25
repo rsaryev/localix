@@ -139,10 +139,9 @@ describe('packing the staged mini apps into a catalog', () => {
     expect(readCatalogPicks(join(root(), 'nowhere'))).toEqual({ featured: [], recommended: [] })
   })
 
-  test('the picks may name a hero and collections for Discover; the catalog carries them', async () => {
+  test('the picks may name collections for Discover; the catalog carries them', async () => {
     const picks = join(root(), 'checkout')
     mkdirSync(join(picks, 'mini-apps'), { recursive: true })
-    const hero = { item: 'chess', title: 'Play chess with the agent', image: 7 }
     const play = {
       id: 'play',
       title: 'Play with the agent',
@@ -151,13 +150,12 @@ describe('packing the staged mini apps into a catalog', () => {
     }
     writeFileSync(
       join(picks, 'mini-apps', 'catalog-picks.json'),
-      JSON.stringify({ hero, collections: [play, { title: 'no id' }] }),
+      JSON.stringify({ collections: [play, { title: 'no id' }] }),
     )
     const read = readCatalogPicks(picks)
     expect(read).toEqual({
       featured: [],
       recommended: [],
-      hero: { item: 'chess', title: 'Play chess with the agent' },
       collections: [{ ...play, items: ['chess', 'plugin:games@localix'] }],
     })
     const staged = join(root(), 'staged')
@@ -167,7 +165,7 @@ describe('packing the staged mini apps into a catalog', () => {
       outDir: join(root(), 'out'),
       ...read,
     })
-    expect(catalog.editorial).toEqual({ hero: read.hero, collections: read.collections })
+    expect(catalog.editorial).toEqual({ collections: read.collections })
   })
 
   test('refuses to pack an app whose icon is missing or not a valid icon', async () => {

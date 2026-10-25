@@ -32,16 +32,15 @@ sidebar with labels. In a medium one they shrink to icons, with the labels as to
 one they become a single picker beside the search, rows scroll sideways, lists have one column and a
 package page pins **Get** to the bottom. Nothing ever scrolls the page sideways.
 
-![Discover: a hero carousel, then rows by kind and the categories](../assets/screenshots/store/discover--2026-10-25.png)
+![Discover: Start here, rows by kind and the categories](../assets/screenshots/store/discover--2026-10-25.png)
 
 ### Discover
 
-Discover is one answer from the Store, top to bottom: a carousel of up to three featured packages
-(arrows, dots, swipe or the left and right keys; it does not turn by itself when your system asks
-for reduced motion), a strip of updates when there are any, **Start here**, a row for the open
-project when its languages match something, editorial **Collections**, a row per kind and **New &
-updated**, then the categories. Every row has **See all** for the full list. When the editorial
-sources cannot be read, Discover falls back to the official ones instead of showing a broken hero.
+Discover is one answer from the Store, top to bottom: a strip of updates when there are any, **Start
+here**, a row for the open project when its languages match something, editorial **Collections**, a
+row per kind and **New & updated**, then the categories. Every row has **See all** for the full
+list. When the editorial sources cannot be read, **Start here** falls back to the official listings
+instead of being empty.
 
 ### Shelves and lists
 

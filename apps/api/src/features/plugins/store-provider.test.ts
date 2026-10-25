@@ -37,7 +37,6 @@ function fixture() {
         localix: {
           recommended: ['review'],
           featured: ['pg'],
-          hero: { item: 'review', title: 'Review every change' },
           collections: [{ id: 'data', title: 'Work with data', items: ['pg', 'mini-app:ledger'] }],
         },
       },
@@ -63,7 +62,9 @@ function fixture() {
     [`${COMMUNITY}/.claude-plugin/marketplace.json`]: JSON.stringify({
       name: COMMUNITY,
       owner: { name: 'Anthropic' },
-      metadata: { localix: { recommended: ['pg'], hero: { item: 'pg' } } },
+      metadata: {
+        localix: { recommended: ['pg'], collections: [{ id: 'x', title: 'X', items: ['pg'] }] },
+      },
       plugins: [{ name: 'pg', source: pg, description: 'Postgres tools' }],
     }),
   })
@@ -183,7 +184,6 @@ describe('plugins in the Store', () => {
     expect(await provider.editorial!()).toEqual([
       {
         source: OFFICIAL,
-        hero: { item: { kind: 'plugin', id: `review@${OFFICIAL}` }, title: 'Review every change' },
         collections: [
           {
             id: 'data',

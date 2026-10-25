@@ -179,8 +179,8 @@ export type StoreActivity = z.infer<typeof storeActivitySchema>
 export const updatesApplyResponseSchema = z.object({ queued: z.array(listingRefSchema) })
 
 /**
- * `GET /rpc/store/discover`: what Discover shows. The hero and the editorial collections come from
- * editorial sources; the rows the Store computes (Start here, For this project, New & updated, one
+ * `GET /rpc/store/discover`: what Discover shows. The editorial collections come from editorial
+ * sources; the rows the Store computes (Start here, For this project, New & updated, one
  * per kind). Every listing an item names is in `listings`, so the page needs no other read.
  */
 export const discoverQuerySchema = z.object({
@@ -188,7 +188,6 @@ export const discoverQuerySchema = z.object({
 })
 
 export const discoverResponseSchema = z.object({
-  hero: collectionSchema.nullable(),
   updates: z.object({ count: z.number().int().nonnegative() }),
   rows: z.array(collectionSchema),
   categories: z.array(

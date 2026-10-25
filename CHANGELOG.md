@@ -27,15 +27,15 @@ Changes land on `main`.
   and Cmd/Ctrl+S, a switch between your settings and the project's when it is installed in both, and
   secrets that show only that they are set. **Configure** in Installed opens it; the plugin and mini
   app lists in Settings no longer hold a settings form.
-- **A new Store UI**: **Discover** opens on a carousel of featured packages, then rows (Start here,
-  a row for the open project, collections, mini apps, plugins, new and updated) and the categories.
-  Shelves of thousands of plugins open at once and load as you scroll; a plugin without an icon
-  shows a tile with its first letters. **Get** shows its progress, then becomes **Open**, **Update**
-  or **Retry**, and asks first, in a sheet, before a community plugin or one that runs programs is
-  installed, with a choice of you or the open project. Search shows packages and what is inside
-  them, **Installed** and **Updates** list every kind together, and **Sources** has one **Add
-  source…** that works out what you pasted. The Store follows its own width: a sidebar, icons only,
-  or one picker beside the search. See [Store](docs/features/store.md).
+- **A new Store UI**: **Discover** opens on **Start here**, then rows (a row for the open project,
+  collections, mini apps, plugins, new and updated) and the categories. Shelves of thousands of
+  plugins open at once and load as you scroll; a plugin without an icon shows a tile with its first
+  letters. **Get** shows its progress, then becomes **Open**, **Update** or **Retry**, and asks
+  first, in a sheet, before a community plugin or one that runs programs is installed, with a choice
+  of you or the open project. Search shows packages and what is inside them, **Installed** and
+  **Updates** list every kind together, and **Sources** has one **Add source…** that works out what
+  you pasted. The Store follows its own width: a sidebar, icons only, or one picker beside the
+  search. See [Store](docs/features/store.md).
 - **The Store**: the mini app store grows into one Store tab, opened from the rail's **+**, setup
   and Settings → Mini apps. A search across everything sits on top and shelves on the left —
   Discover, Mini apps, the capabilities packages contain (Screens, Agent tools, Commands),

@@ -38,7 +38,6 @@ function setup(opts: Parameters<typeof makeStore>[1] = {}) {
       editorial: [
         {
           source: 'localix',
-          hero: { item: { kind: 'mini-app', id: 'chess' }, title: 'Play chess with the agent' },
           collections: [
             {
               id: 'play',
@@ -65,14 +64,9 @@ function setup(opts: Parameters<typeof makeStore>[1] = {}) {
 }
 
 describe('Discover', () => {
-  test('the hero and the collections are what an editorial source picked', async () => {
+  test('the collections are what an editorial source picked, and no hero comes with them', async () => {
     const answer = await setup().discover(actor, {})
-    expect(answer.hero).toMatchObject({
-      style: 'hero',
-      title: 'Play chess with the agent',
-      items: [{ kind: 'mini-app', id: 'chess' }],
-      source: 'localix',
-    })
+    expect('hero' in answer).toBe(false)
     expect(answer.rows.find((row) => row.id === 'play')).toMatchObject({
       title: 'Play with the agent',
       style: 'row',
@@ -142,12 +136,6 @@ describe('Discover without an editorial source', () => {
     ])
     return storeOf([plugins.provider]).store
   }
-
-  test('the hero is the best official listing with a picture, never a community one', async () => {
-    const answer = await officialOnly().discover(actor, {})
-    expect(answer.hero).toMatchObject({ style: 'hero', items: [{ id: 'review@official' }] })
-    expect(answer.hero?.title).toBe('review@official')
-  })
 
   test('Start here falls back to the official listings, never a community one', async () => {
     const answer = await officialOnly().discover(actor, {})

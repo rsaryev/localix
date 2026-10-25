@@ -18,7 +18,7 @@ export interface DefaultSource {
   trust: Trust
   /** Ranking factor (`TRUST_WEIGHTS` by default). */
   weight: number
-  /** Whether its featured flags, hero and collections may reach Discover. */
+  /** Whether its featured flags and collections may reach Discover. */
   editorial: boolean
 }
 

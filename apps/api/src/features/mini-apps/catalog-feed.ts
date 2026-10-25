@@ -109,21 +109,14 @@ const withoutEmpty = <T extends Record<string, unknown>>(record: T): T =>
   Object.fromEntries(Object.entries(record).filter(([, value]) => value !== undefined)) as T
 
 /**
- * Discover's picks a catalog may carry (`docs/internals/store.md`): a hero and collections whose
+ * Discover's picks a catalog may carry (`docs/internals/store.md`): collections whose
  * items are app names, or `<kind>:<id>` for another kind. Each that does not read is dropped alone.
  */
-const heroSchema = z.object({
-  item: z.string().min(1),
-  title: optional(z.string().max(120)),
-  subtitle: optional(z.string().max(240)),
-  /** A wide picture, against the catalog; the hero app's first screenshot when absent. */
-  image: optional(z.string().min(1)),
-})
 const collectionSchema = z.object({
   id: z.string().min(1).max(64),
   title: z.string().min(1).max(120),
   subtitle: optional(z.string().max(240)),
-  style: z.enum(['hero', 'row', 'grid']).catch('row'),
+  style: z.enum(['row', 'grid']).catch('row'),
   items: z
     .array(z.unknown())
     .transform((items) =>
@@ -131,7 +124,6 @@ const collectionSchema = z.object({
     ),
 })
 const editorialSchema = z.object({
-  hero: optional(heroSchema),
   collections: optional(z.array(z.unknown())).transform((all) =>
     (all ?? []).flatMap((raw) => {
       const parsed = collectionSchema.safeParse(raw)
@@ -194,8 +186,6 @@ export async function readMiniAppCatalogFeed(
       `${where} is not a mini app catalog (schema ${MINI_APP_CATALOG_SCHEMA} with an apps list)`,
     )
   const { editorial } = parsed.data
-  const hero = editorial?.hero
-  const image = hero?.image ? resolveMedia({ url: hero.image }, url)?.url : undefined
   const apps = parsed.data.apps.flatMap((raw) => {
     const app = catalogAppSchema.safeParse(raw)
     if (!app.success) return []
@@ -213,13 +203,6 @@ export async function readMiniAppCatalogFeed(
   })
   return {
     apps,
-    ...(editorial
-      ? {
-          editorial: {
-            ...(hero ? { hero: withoutEmpty({ ...hero, image }) } : {}),
-            collections: editorial.collections,
-          },
-        }
-      : {}),
+    ...(editorial ? { editorial: { collections: editorial.collections } } : {}),
   }
 }
