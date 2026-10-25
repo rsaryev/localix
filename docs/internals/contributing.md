@@ -123,16 +123,19 @@ validation, including the full Rust test suite.
 
 ### Workflows and releases
 
-| Workflow          | Runs when                                            | Jobs and result                                                                                                        |
-| ----------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `Checks`          | PR, push to main, manual run                         | Five parallel `App` jobs and `Desktop (Rust) and repository scans`, reported as `Checks passed`; nothing is published. |
-| `Desktop Release` | Manual run from main                                 | Prepare release and require green CI → validate changelog and signing → create draft → build → publish.                |
-| `Website Deploy`  | Website input changes, published release, manual run | Build and deploy the website; same-repository PRs get previews. Production requires `LANDING_PRODUCTION=true`.         |
+| Workflow          | Runs when                                    | Jobs and result                                                                                                        |
+| ----------------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `Checks`          | PR, push to main (not docs-only), manual run | Five parallel `App` jobs and `Desktop (Rust) and repository scans`, reported as `Checks passed`; nothing is published. |
+| `Desktop Release` | Manual run from main                         | Prepare release and require green CI → validate changelog and signing → create draft → build → publish.                |
+| `Website Deploy`  | Manual run                                   | Build and deploy the website, a preview unless `production` is chosen and `LANDING_PRODUCTION=true`.                   |
 
-A push can start both `Checks` and `Website Deploy`, because source validation and website delivery
-have separate outcomes. It never starts a desktop release. A new push to a pull request cancels its
-unfinished run; every commit on main keeps a run of its own, because a release needs the run for its
-exact commit.
+A push starts only `Checks`; the website and a desktop release are always started by hand, so a
+deploy costs a build only when someone wants one. Run `Website Deploy` again after a release is
+published, so the download buttons link its installers. A new push to a pull request cancels its
+unfinished run. Main runs one `Checks` at a time and keeps only the newest waiting one, so a burst
+of pushes costs the first run and the last; a push that changes only `docs/`, Markdown or `assets/`
+starts none. A release needs a run for its exact commit: when the tagged commit has none (or main
+superseded it), `Prepare release` asks for one and waits for it.
 
 `Checks passed` fails when any job fails or is cancelled and names each job's result, so branch
 protection needs to require only that status. The app jobs run in parallel, each building from its
@@ -143,11 +146,12 @@ does not stop the others.
 
 A failing job lists its failing tests, type errors and Turbo tasks on the run's summary page
 (`scripts/ci-failure-summary.mjs`). The other job scans the history for secrets with gitleaks, lints
-every workflow with actionlint and zizmor, and checks the Rust shell. The Rust steps are skipped
-when the change reaches none of the desktop sources, root manifest, Bun lockfile, Node version, or
-shared CI setup: a pull request's merge diff, or the commits a push to main added. A manual run, or
-a push whose previous commit is unknown, always runs them; a release compiles the Rust shell itself
-either way.
+every workflow with actionlint and zizmor, and checks the Rust shell. A push scans only the commits
+since main's last successful run (a pull request, its own), and the workflows are linted only when a
+change reaches `.github`. The Rust steps are skipped when the change reaches none of the desktop
+sources, root manifest, Bun lockfile, Node version, or shared CI setup, over the same commits. A
+manual run, or a push with no successful run to compare with, always runs everything; a release
+compiles the Rust shell itself either way.
 
 Every job runs on a GitHub-hosted runner pinned to an image: `ubuntu-24.04`, with the Rust job and
 the Linux release leg on `ubuntu-22.04` for an older glibc baseline, and the macOS release leg on
@@ -157,8 +161,9 @@ checksummed release binaries.
 The Bun package cache, the Turbo cache, and the Rust target are restored from GitHub cache archives.
 Only pushes to `main` save CI's Turbo and Rust archives, so pull requests restore them without
 evicting them; the release keeps its own `turbo-release` archive. The Turbo archive drops entries
-untouched for two weeks before it is saved, so it stays bounded. Pinned actions, workspace packages
-and crates are updated by hand; there is no Dependabot.
+untouched for two weeks before it is saved, and after each main run only the newest archive of each
+slice is kept, so the 10 GB cache quota is never filled by superseded entries. Pinned actions,
+workspace packages and crates are updated by hand; there is no Dependabot.
 
 `check:bundle` starts the staged API outside the checkout during `Checks`. Release verification does
 not rerun the CI gates: it requires a successful `Checks` run for the tagged commit, then signs a

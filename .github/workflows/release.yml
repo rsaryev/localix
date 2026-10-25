@@ -73,9 +73,11 @@ jobs:
     runs-on: ubuntu-24.04
     # Waits for CI on the tagged commit (up to 30 min, see require-green-ci.mjs) with room to report.
     timeout-minutes: 40
+    # `actions: write` lets it request a CI run for a commit main did not check (a documentation-only
+    # push, or a run main superseded); nothing else in this job writes.
     permissions:
       contents: read
-      actions: read
+      actions: write
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
       version: ${{ steps.tag.outputs.version }}
@@ -112,13 +114,14 @@ jobs:
         run: bun scripts/resolve-release-ref.mjs >> "$GITHUB_OUTPUT"
 
       # CI already built, type-checked and tested this exact commit, release tooling included, on
-      # push to main; repeating any of it here only lengthened the release. Checked here, before
+      # push to main (or is asked to now, when main skipped it); repeating any of it here only lengthened the release. Checked here, before
       # the release environment and its signing secrets are reached, so red CI stops the release
       # without touching them.
       - name: Require green CI for the tagged commit
         env:
           GH_TOKEN: ${{ github.token }}
           COMMIT: ${{ steps.tag.outputs.commit }}
+          TAG: ${{ steps.tag.outputs.tag }}
         run: bun scripts/require-green-ci.mjs
 
       # Which native legs to build. Empty builds both. Naming legs rebuilds only those: the

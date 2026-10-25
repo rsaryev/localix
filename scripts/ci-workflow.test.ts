@@ -137,6 +137,12 @@ describe('CI minute budget contract', () => {
     expect(Object.keys(on).sort()).toEqual(['pull_request', 'push', 'workflow_dispatch'])
   })
 
+  test('a push that changes only documentation or media starts no run', () => {
+    const push = (Bun.YAML.parse(read('.github/workflows/ci.yml')).on as Record<string, unknown>)
+      .push as { 'paths-ignore': string[] }
+    expect(push['paths-ignore']).toEqual(['docs/**', '**/*.md', 'assets/**'])
+  })
+
   test('history is fetched only where --affected reads it', () => {
     expect(ci.jobs.app.steps[0]?.with?.['fetch-depth']).toBe(
       "${{ github.event_name == 'pull_request' && 0 || 1 }}",
@@ -146,10 +152,11 @@ describe('CI minute budget contract', () => {
   test('the Rust gate runs unless a pull request or push changed none of its inputs', () => {
     const detect = ci.jobs.desktop.steps.find((step) => step.name === 'Detect Rust input changes')
     expect(detect?.run).toContain("base='HEAD^1'")
-    expect(detect?.run).toContain('base="$BEFORE"')
-    // An unknown or all-zero `before` (a new branch, a force-push) leaves no base: the gate runs.
-    expect(detect?.run).toContain('[ -n "${BEFORE//0/}" ]')
-    expect(detect?.run).toContain('git cat-file -e "$BEFORE^{commit}"')
+    // A push compares with main's last successful run, so the commits of a run main skipped are
+    // still checked; no such run, or one a force-push erased, leaves no base and the gate runs.
+    expect(detect?.run).toContain('--workflow ci.yml --branch main --event push --status success')
+    expect(detect?.run).toContain('base="$last"')
+    expect(detect?.run).toContain('git cat-file -e "$last^{commit}"')
     expect(detect?.run).toMatch(/^rust=true$/mu)
   })
 
@@ -157,13 +164,16 @@ describe('CI minute budget contract', () => {
     expect(existsSync(join(root, '.github/dependabot.yml'))).toBe(false)
   })
 
-  test('serialises production website deployments and cancels only superseded previews', () => {
-    expect(landing.concurrency.group).toBe(
-      "landing-${{ github.event_name == 'pull_request' && github.ref || 'production' }}",
-    )
-    expect(landing.concurrency['cancel-in-progress']).toBe(
-      "${{ github.event_name == 'pull_request' }}",
-    )
+  test('deploys the website and starts a release by hand only', () => {
+    for (const file of ['landing', 'release']) {
+      const on = Bun.YAML.parse(read(`.github/workflows/${file}.yml`)).on as Record<string, unknown>
+      expect(Object.keys(on)).toEqual(['workflow_dispatch'])
+    }
+  })
+
+  test('queues website deployments instead of cancelling one in flight', () => {
+    expect(landing.concurrency.group).toBe('landing-production')
+    expect(landing.concurrency['cancel-in-progress']).toBe(false)
   })
 
   test('checks the workspace as parallel slices that together run every gate', () => {
@@ -234,15 +244,16 @@ describe('CI minute budget contract', () => {
     for (const tool of ['gitleaks', 'actionlint', 'zizmor']) expect(install?.run).toContain(tool)
     const scan = steps.find((step) => step.name === 'Scan history for secrets')
     expect(scan?.run).toContain('--config .gitleaks.toml')
+    // Only the commits since the base are scanned; with no base, the whole history.
+    expect(scan?.run).toContain('${BASE:+--log-opts="$BASE..HEAD"}')
     const lint = steps.find((step) => step.name === 'Lint workflows')
     expect(lint?.run).toContain('"$RUNNER_TEMP/actionlint"')
     expect(lint?.run).toContain('"$RUNNER_TEMP/zizmor" --offline --min-severity medium .github')
-    for (const step of [scan, lint]) {
-      expect(step?.if).toBeUndefined()
-      expect(steps.indexOf(step!)).toBeLessThan(
-        steps.findIndex((s) => s.name === 'Detect Rust input changes'),
-      )
-    }
+    // The workflows are linted only when a change reaches `.github` (or nothing is known).
+    expect(scan?.if).toBeUndefined()
+    expect(lint?.if).toBe("steps.filter.outputs.workflows == 'true'")
+    const detect = steps.findIndex((s) => s.name === 'Detect Rust input changes')
+    for (const step of [scan, lint]) expect(steps.indexOf(step!)).toBeGreaterThan(detect)
     const rustCheck = steps.find((step) => step.run === 'bun run check:rust')
     expect(rustCheck?.if).toBe("steps.filter.outputs.rust == 'true'")
   })
@@ -279,10 +290,12 @@ describe('CI minute budget contract', () => {
     expect(scripts.build).toBe('bunx turbo build')
   })
 
-  test('cancels a superseded pull-request run, never a run for a commit on main', () => {
-    expect(ci.concurrency.group).toBe(
-      'ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.sha }}',
-    )
+  test('cancels a superseded pull-request run, never a run in progress on main', () => {
+    // Main shares one group: a run in progress finishes (and saves its cache) while only the newest
+    // waiting run is kept. A manual run, which a release asks for, has a group per commit.
+    expect(ci.concurrency.group).toContain("format('ci-pr-{0}', github.event.pull_request.number)")
+    expect(ci.concurrency.group).toContain("github.event_name == 'push' && 'ci-main'")
+    expect(ci.concurrency.group).toContain("format('ci-{0}-{1}', github.event_name, github.sha)")
     expect(ci.concurrency['cancel-in-progress']).toBe("${{ github.event_name == 'pull_request' }}")
   })
 
@@ -300,5 +313,18 @@ describe('CI minute budget contract', () => {
     expect(save?.with?.key).toBe(steps[restore]?.with?.key)
     expect(save?.if).toContain('always()')
     expect(save?.if).toContain("github.ref == 'refs/heads/main'")
+  })
+
+  test('drops superseded Turbo archives from the one job that may write to the cache', () => {
+    const checks = ci.jobs.checks as Job & { permissions?: Record<string, string> }
+    expect(checks.permissions).toEqual({ actions: 'write' })
+    const drop = checks.steps.find((step) => step.name === 'Drop superseded Turbo archives')
+    expect(drop?.if).toContain("github.ref == 'refs/heads/main'")
+    for (const slice of slices) expect(drop?.run).toContain(slice.cache)
+    expect(drop?.run).toContain("'.[1:][].id'")
+    // The job that runs repository code never holds the write access.
+    expect((ci.jobs.app as Job & { permissions?: Record<string, string> }).permissions).toEqual({
+      contents: 'read',
+    })
   })
 })

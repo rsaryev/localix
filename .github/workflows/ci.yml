@@ -2,8 +2,14 @@ name: Checks
 
 on:
   pull_request:
+  # Documentation and media alone change nothing the checks read. A release whose commit has no run
+  # asks for one (scripts/require-green-ci.mjs), so skipping them leaves no commit unverified.
   push:
     branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+      - 'assets/**'
   workflow_dispatch:
 
 # No job gets more than it asks for; every job below reads the repository and nothing else.
@@ -12,11 +18,15 @@ permissions: {}
 env:
   RUST_TOOLCHAIN: 1.96.1
 
-# A pull request keeps only its newest run: a new push cancels the one in progress. Every commit
-# on main gets a run of its own (a group per sha) that nothing cancels: a release needs the run for
-# its exact commit, and a cancelled one would also skip the cache save.
+# A pull request keeps only its newest run: a new push cancels the one in progress. Main runs one
+# CI at a time and keeps only the newest waiting one, so a burst of pushes costs the first run and
+# the last, never one per commit; a run in progress is never cancelled, so its cache is saved. A
+# release whose commit was skipped asks for a run of its own (a manual run, a group per sha).
 concurrency:
-  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.sha }}
+  group: >-
+    ${{ github.event_name == 'pull_request' && format('ci-pr-{0}', github.event.pull_request.number)
+    || github.event_name == 'push' && 'ci-main' || format('ci-{0}-{1}', github.event_name,
+    github.sha) }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 # `app` checks the JavaScript workspace as four parallel jobs (types, unit tests, integration and
@@ -163,6 +173,7 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: read
+      actions: read
     steps:
       # Full history for the secret scan; the merge commit's parents for change detection.
       - name: Checkout source
@@ -170,6 +181,47 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
+
+      # Before the scans: the same base decides how much history they read, and the Rust gate is
+      # skipped only when nothing it reads changed: the shell under
+      # apps/desktop-tauri, the lockfile and root manifest that pin the sidecar Bun, and shared CI
+      # setup. A pull request compares its merge commit's parents; a push to main compares the
+      # commits since main's last successful run, not just the push's own, because main skips
+      # runs (a newer push replaces a waiting one) and a skipped push's commits still need
+      # checking. A manual run, or a push with no successful run to compare with (or one a
+      # force-push erased), always runs it. A release compiles the Rust shell itself, so a skipped
+      # gate never ships unchecked Rust.
+      - name: Detect Rust input changes
+        id: filter
+        env:
+          EVENT: ${{ github.event_name }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          base=''
+          if [ "$EVENT" = pull_request ] && git rev-parse --verify --quiet 'HEAD^2' >/dev/null; then
+            base='HEAD^1'
+          elif [ "$EVENT" = push ]; then
+            last=$(gh run list --workflow ci.yml --branch main --event push --status success \
+              --limit 1 --json headSha --jq '.[0].headSha // empty' || true)
+            if [ -n "$last" ] && git cat-file -e "$last^{commit}" 2>/dev/null; then
+              base="$last"
+            fi
+          fi
+          rust=true
+          if [ -n "$base" ] && ! git diff --name-only "$base" HEAD |
+            grep -Eq '^(apps/desktop-tauri/|package\.json$|bun\.lock$|\.nvmrc$|\.github/workflows/ci\.yml$|\.github/actions/(setup-workspace|setup-desktop)/)'; then
+            rust=false
+          fi
+          echo "rust=$rust" >> "$GITHUB_OUTPUT"
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+          # Workflows are linted only when a change reaches them (or when nothing is known).
+          workflows=true
+          if [ -n "$base" ] && ! git diff --name-only "$base" HEAD | grep -Eq '^\.github/'; then
+            workflows=false
+          fi
+          echo "workflows=$workflows" >> "$GITHUB_OUTPUT"
+          echo "Rust gate: $rust (compared with ${base:-nothing})"
 
       # Checksummed release binaries instead of their actions: the gitleaks action needs a licence
       # key for organisation repositories, and a binary is one download with nothing to trust but
@@ -196,40 +248,20 @@ jobs:
           fetch "https://github.com/zizmorcore/zizmor/releases/download/v$ZIZMOR_VERSION" \
             zizmor-x86_64-unknown-linux-gnu.tar.gz "$ZIZMOR_SHA256" zizmor
 
+      # Each commit is scanned once, when it arrives: only the commits since the base (a pull
+      # request's, or a push's `before`). With no base the whole history is scanned.
       - name: Scan history for secrets
-        run: '"$RUNNER_TEMP/gitleaks" git --redact --no-banner --config .gitleaks.toml .'
+        env:
+          BASE: ${{ steps.filter.outputs.base }}
+        run: |
+          "$RUNNER_TEMP/gitleaks" git --redact --no-banner --config .gitleaks.toml \
+            ${BASE:+--log-opts="$BASE..HEAD"} .
 
       - name: Lint workflows
+        if: steps.filter.outputs.workflows == 'true'
         run: |
           "$RUNNER_TEMP/actionlint" -color
           "$RUNNER_TEMP/zizmor" --offline --min-severity medium .github
-
-      # The Rust gate is skipped only when nothing it reads changed: the shell under
-      # apps/desktop-tauri, the lockfile and root manifest that pin the sidecar Bun, and shared CI
-      # setup. A pull request compares its merge commit's parents; a push to main compares the
-      # commits it added (`before`..HEAD). A manual run, or a push whose `before` is unknown (a new
-      # branch, a force-push), always runs it. A release compiles the Rust shell itself, so a
-      # skipped gate never ships unchecked Rust.
-      - name: Detect Rust input changes
-        id: filter
-        env:
-          EVENT: ${{ github.event_name }}
-          BEFORE: ${{ github.event.before }}
-        run: |
-          base=''
-          if [ "$EVENT" = pull_request ] && git rev-parse --verify --quiet 'HEAD^2' >/dev/null; then
-            base='HEAD^1'
-          elif [ "$EVENT" = push ] && [ -n "${BEFORE//0/}" ] &&
-            git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
-            base="$BEFORE"
-          fi
-          rust=true
-          if [ -n "$base" ] && ! git diff --name-only "$base" HEAD |
-            grep -Eq '^(apps/desktop-tauri/|package\.json$|bun\.lock$|\.nvmrc$|\.github/workflows/ci\.yml$|\.github/actions/(setup-workspace|setup-desktop)/)'; then
-            rust=false
-          fi
-          echo "rust=$rust" >> "$GITHUB_OUTPUT"
-          echo "Rust gate: $rust (compared with ${base:-nothing})"
 
       - name: Setup workspace
         if: steps.filter.outputs.rust == 'true'
@@ -253,6 +285,8 @@ jobs:
     needs: [app, desktop]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
+    permissions:
+      actions: write
     steps:
       - name: Require every check
         env:
@@ -261,3 +295,19 @@ jobs:
           # Name each job and its result, so a red check says which job to open.
           jq -r 'to_entries[] | "\(.key): \(.value.result)"' <<<"$NEEDS"
           jq -e 'all(.[]; .result == "success" or .result == "skipped")' <<<"$NEEDS" >/dev/null
+
+      # Every main run saves one archive per slice under a key of its own, and the repository's
+      # cache quota is 10 GB: left alone the archives fill it and evict the ones still in use. A
+      # restore starts from the newest archive of its slice, so the older ones are dropped here, after
+      # every job that saves has finished. Only this step holds the token's write access.
+      - name: Drop superseded Turbo archives
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          for slice in types unit integration bundle coverage; do
+            gh cache list --key "turbo-$slice-" --sort created_at --order desc --limit 100 \
+              --json id --jq '.[1:][].id' |
+              xargs -r -n1 gh cache delete || true
+          done

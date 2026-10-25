@@ -79,18 +79,19 @@ coverage gates. `check:bundle` stages the desktop bundle and starts its API outs
 
 The workflows have separate responsibilities:
 
-| Workflow          | Trigger                                                | Result                                                                                          |
-| ----------------- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| `Checks`          | Pull requests, pushes to main, manual runs             | Four parallel `App` jobs and `Desktop (Rust)` validate the source.                              |
-| `Desktop Release` | Manual run from main                                   | Prepare and require green CI → validate changelog and signing → create draft → build → publish. |
-| `Website Deploy`  | Website input changes, published releases, manual runs | Build the website and deploy a preview or production site.                                      |
+| Workflow          | Trigger                                                    | Result                                                                                          |
+| ----------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `Checks`          | Pull requests, pushes to main (not docs-only), manual runs | Four parallel `App` jobs and `Desktop (Rust)` validate the source.                              |
+| `Desktop Release` | Manual run from main                                       | Prepare and require green CI → validate changelog and signing → create draft → build → publish. |
+| `Website Deploy`  | Manual runs                                                | Build the website and deploy a preview or production site.                                      |
 
-A push can therefore start both checks and a website deployment. It does not build a desktop
-release. A new push to a pull request cancels its older run; every commit on main keeps its own.
+A push starts only the checks; the website and a desktop release are started by hand. A new push to
+a pull request cancels its older run. Main runs one at a time and keeps only the newest waiting run;
+a release asks for a run of its commit when main skipped it.
 
 CI runs pinned Rust formatting, Clippy, and tests unless a change reaches none of the desktop
 sources, root manifest, Bun lockfile, Node version, or shared CI setup: a pull request's merge diff,
-or the commits a push to main added. A manual run, or an unknown previous commit, keeps them
+or the commits since main's last successful run. A manual run, or no run to compare with, keeps them
 enabled. Use `bun run check:rust` locally when diagnosing native failures. All jobs run on
 GitHub-hosted runners: Linux on `ubuntu-24.04` (the Rust job and Linux packaging on `ubuntu-22.04`),
 macOS release builds on `macos-15`.

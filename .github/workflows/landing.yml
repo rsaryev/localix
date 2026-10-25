@@ -4,44 +4,18 @@ name: Website Deploy
 # GitHub Actions, then published as a prebuilt artifact. Vercel's own Git integration is not used,
 # so a deploy only ever happens from a build this workflow verified.
 #
-#   • pull request           → a preview deployment (same-repository pull requests only)
-#   • push to main           → the production site, when the landing's inputs changed
-#   • a published release    → the production site again, so the download buttons go live
-#   • manual dispatch        → either, on demand
+# It runs only by hand (Actions → Website Deploy → Run workflow), never on a push, a pull request
+# or a published release: a deploy costs a full build, and the site only needs the newest one.
+# Run it after a release is published so the download buttons link its installers.
 #
-# Production is switched on with the repository variable LANDING_PRODUCTION=true. Until it is
-# set, every run deploys a preview and the live site is left alone.
+#   • production off → a preview deployment
+#   • production on  → the production site, when LANDING_PRODUCTION=true is also set
+#
+# Until the variable is set, every run deploys a preview and the live site is left alone.
 #
 # Needs: secret VERCEL_TOKEN; variables VERCEL_ORG_ID and VERCEL_PROJECT_ID.
 
 on:
-  pull_request:
-    paths:
-      - 'apps/landing/**'
-      - 'apps/ui/**'
-      - 'packages/kit/**'
-      - 'packages/markdown/**'
-      - 'docs/**'
-      - 'package.json'
-      - 'bun.lock'
-      - '.github/workflows/landing.yml'
-      - '.github/actions/setup-workspace/**'
-      - '.nvmrc'
-  push:
-    branches: [main]
-    paths:
-      - 'apps/landing/**'
-      - 'apps/ui/**'
-      - 'packages/kit/**'
-      - 'packages/markdown/**'
-      - 'docs/**'
-      - 'package.json'
-      - 'bun.lock'
-      - '.github/workflows/landing.yml'
-      - '.github/actions/setup-workspace/**'
-      - '.nvmrc'
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
       production:
@@ -52,13 +26,11 @@ on:
 permissions:
   contents: read
 
-# Every production deployment (a push to main, a published release, a manual run) shares ONE
-# group and queues instead of cancelling: two of them in flight could finish in the wrong order,
-# and a build from before a release would replace the page that links its installers. A pull
-# request previews in its own group and keeps only its newest run.
+# Deployments queue instead of cancelling: two in flight could finish in the wrong order, and a
+# build from before a release would replace the page that links its installers.
 concurrency:
-  group: landing-${{ github.event_name == 'pull_request' && github.ref || 'production' }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: landing-production
+  cancel-in-progress: false
 
 env:
   VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
@@ -70,10 +42,6 @@ jobs:
     name: Deploy website
     runs-on: ubuntu-24.04
     timeout-minutes: 20
-    # A pull request from a fork has no access to secrets, so it cannot deploy.
-    if:
-      github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name ==
-      github.repository
     steps:
       - name: Checkout source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -95,17 +63,11 @@ jobs:
       - name: Decide the target
         id: target
         env:
-          EVENT: ${{ github.event_name }}
-          REF: ${{ github.ref }}
           PRODUCTION_ENABLED: ${{ vars.LANDING_PRODUCTION }}
           DISPATCH_PRODUCTION: ${{ inputs.production }}
         run: |
           want_production=false
-          case "$EVENT" in
-            push) [ "$REF" = "refs/heads/main" ] && want_production=true ;;
-            release) want_production=true ;;
-            workflow_dispatch) [ "$DISPATCH_PRODUCTION" = "true" ] && want_production=true ;;
-          esac
+          [ "$DISPATCH_PRODUCTION" = "true" ] && want_production=true
           if [ "$want_production" = "true" ] && [ "$PRODUCTION_ENABLED" = "true" ]; then
             echo "environment=production" >> "$GITHUB_OUTPUT"
             echo "flag=--prod" >> "$GITHUB_OUTPUT"
