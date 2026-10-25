@@ -53,7 +53,13 @@ export function createConfigProposalService(deps: {
         changeSchema: registry.changeSchema,
         inspect: (target, ledger) => renderInspection(readCtx, target, ledger),
         describe: (change) => registry.describe(readCtx, change),
-        apply: ({ change, proposalId }) => registry.apply(ctx(proposalId), change),
+        async apply({ change, proposalId }) {
+          // The agent may have been deleted while the card waited; its rules were purged with it,
+          // and a write now would bring a rule list back for an agent that no longer exists.
+          if (!(await deps.ports.agents.getAgent(run.userId, run.agentId, run.projectId)))
+            throw new Error('The agent that proposed this no longer exists.')
+          return registry.apply(ctx(proposalId), change)
+        },
         async recordDecision({ proposalId, card, status, error }) {
           // One row per proposal, status overwritten as it advances: approved → applied|failed.
           await deps.db
