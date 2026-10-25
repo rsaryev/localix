@@ -224,6 +224,10 @@ Changes land on `main`.
 
 ### Changed
 
+- **One look for the Store and Settings**: both open pages with the same headings, and use the same
+  section labels, list rows, text links and tag chips, so a title, a list or a chip reads the same
+  wherever it appears. Library rows, source rows and an agent's access list now follow the kit's
+  row, spacing and divider styles.
 - **Installed and Yours no longer overlap**: Installed lists what you installed from a source (mini
   apps, plugins), and Yours lists what you wrote (skills, agents, servers in your own files). The
   agents that come with Localix or a plugin appear on the Agents shelf only, and each of the two

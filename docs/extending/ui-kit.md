@@ -50,6 +50,9 @@ The full catalog has about a hundred modules; these are the jobs that are most o
 | A status tone on a menu row's icon       | `tonedIcon` from `@localixai/mini-app-sdk/ui`                                  |
 | An agent or person in a menu row         | `monogramIcon` from `@localixai/kit/avatar`                                    |
 | An on/off setting / a filter chip        | `switch` / `toggle-pill`; `checkbox` inside forms                              |
+| A page or section heading with actions   | `section-heading`: `SectionHeading` (`level` page or section, `as` h1–h3)      |
+| A tag or category that opens something   | `chip`: `ChipButton`, the pill of `Chip` as a button                           |
+| A label that heads a group               | `section-label`: `SectionLabel` with `as="h3"`                                 |
 | A pane header, toolbar, status row       | `panel-header`, `workbench-toolbar`, `workbench-statusbar`                     |
 | Tabs inside a pane                       | `tabs` (`TabBar`, `TabStrip`)                                                  |
 | A long navigation path                   | `workbench-breadcrumb` with `scrollable` and `scrollToEndKey`                  |
@@ -127,6 +130,19 @@ the END of the row, and on an unchosen row that end slot kept empty so hints sti
 A checkbox row that put its check in the leading slot would take the icon's place: a filter menu of
 status dots or severities would show bare names while a single-choice menu beside it kept its icons.
 Only the role tells the two kinds apart; pick by what the choice means, never by how it should look.
+
+### Headings and chips
+
+`SectionHeading` is the one title block: a heading, an optional description and optional actions on
+the title's line. `level` is how large it is drawn (`page` is 1.25rem, `section` 1rem) and `as` is
+the element (`h1`, `h2` or `h3`), so a pane title can be an `h1` at section size. With actions it is
+its own container and reflows on its own width, so its parent is a block or a column flex; without
+actions it sits anywhere. The Store and Settings open every page with it.
+
+`ChipButton` is the pill of `Chip` as a native button with the focus ring: a tag that opens what
+else carries it, a category to browse. It holds no pressed state (that is `TogglePill`) and is not
+the glass pill of the composer bar (`ComposerChip`). `SectionLabel` takes `as="h2"`–`"h4"` when the
+label is the heading of the group under it.
 
 ### The catalog is the answer to "which module?"
 
