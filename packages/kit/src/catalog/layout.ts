@@ -126,7 +126,7 @@ export const LAYOUT: readonly KitCatalogEntry[] = [
     exports: ['SidebarNav'],
     summary:
       'The section sidebar of a pane: search slot, headed groups, rows with icon, label and count or badge; full, icons-only or a select.',
-    use: 'The left column of a store, settings or a library. Props: `label` (landmark name), `groups` ({ id, label?, items: { id, label, icon?, count?, badge?, description? }[] }), `active`, `onSelect(id)`, `mode` (`full` | `compact` | `select`, picked by the host from its pane width), `search` (a field: on top in full, beside the picker in select). One tab stop; ↑/↓, Home/End and typed letters move. Leave a group empty to hide it.',
+    use: 'The left column of a store, settings or a library. Props: `label` (landmark name), `groups` ({ id, label?, items: { id, label, icon?, count?, badge?, description? }[] }), `active`, `onSelect(id)`, `mode` (`full` | `compact` | `select`, picked by the host from its pane width; `compact` is a fixed-width icon rail whose labelled panel opens over the content on hover, focus or touch, so give it a width such as `w-14 shrink-0 self-stretch` and no overflow), `search` (a field: on top in full, beside the picker in select). One tab stop; ↑/↓, Home/End and typed letters move. Leave a group empty to hide it.',
     not: 'Not tabs inside a pane (`tabs`) nor the application rail.',
   },
 ]

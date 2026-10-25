@@ -213,6 +213,10 @@ Changes land on `main`.
 
 ### Changed
 
+- **The Store's icon rail opens by itself**: on a medium-width window the narrow section rail now
+  slides open over the page on hover, keyboard focus or a tap, showing labels, headings and counts,
+  and closes when you leave or press Esc. The page beside it never moves, and the heavy tooltips are
+  gone.
 - **Settings → MCP and Skills are switches and links**: they list each server and skill with its
   switch for the selected agent and a **Settings** button that opens its Store page, where it is
   edited, tested, archived or removed. **Run curator** stays on the Skills tab. A skill is renamed

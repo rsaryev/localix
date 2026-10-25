@@ -196,7 +196,7 @@ export function StoreView({
                   className={
                     layout === 'wide'
                       ? 'w-52 shrink-0 overflow-y-auto px-3 pb-4'
-                      : 'w-14 shrink-0 items-center overflow-y-auto px-2 pb-4'
+                      : 'w-14 shrink-0 self-stretch'
                   }
                 />
               )}

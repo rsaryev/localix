@@ -6,12 +6,13 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from 'react'
-import type { LucideIcon } from 'lucide-react'
+import { PanelLeft, type LucideIcon } from 'lucide-react'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { Select } from '../controls/select'
 import { createTypeaheadBuffer } from '../lib/typeahead'
-import { ActionTooltip } from '../overlays/action-tooltip'
+import { POPOVER_SURFACE } from '../overlays/popover-surface'
 import { SectionLabel } from './section-label'
+import { useSidebarNavPeek, type SidebarNavPeek } from './sidebar-nav-peek'
 
 export interface SidebarNavItem {
   id: string
@@ -48,9 +49,11 @@ const counted = (count: number) => count.toLocaleString('en-US')
 /**
  * THE SIDEBAR of a pane that has sections — a store's shelves, the settings' pages. One component
  * in three modes the host picks from its pane's width: `full` is the grouped column (a search
- * slot on top, small headings, rows of icon, label and a count or badge); `compact` is a column of
- * icons, each named by its label and count, with a tooltip; `select` is one picker for a header,
- * the search slot beside it. Rows are 32px with the selected veil, and the column is one tab stop:
+ * slot on top, small headings, rows of icon, label and a count or badge); `compact` is a rail of
+ * icons that keeps a fixed width in the layout and opens a panel OVER the content (labels, headings,
+ * counts) on hover after a short dwell, on keyboard focus and on a touch, and closes on leaving, Esc,
+ * choosing a row or focus moving away, so nothing beside it ever moves; `select` is one picker for
+ * a header, the search slot beside it. Rows are 32px with the selected veil, and the column is one tab stop:
  * ↑/↓ move, Home/End jump, typed letters find a row, Enter or Space opens it. A group with no
  * rows is not drawn, so a section that holds nothing is hidden by leaving it out.
  */
@@ -62,6 +65,7 @@ export function SidebarNav({
   mode = 'full',
   search,
   className,
+  peek,
 }: {
   /** Names the navigation landmark (and the select, in `select` mode). */
   label: string
@@ -72,12 +76,17 @@ export function SidebarNav({
   /** A search field: above the groups in `full`, beside the picker in `select`, absent in `compact`. */
   search?: ReactNode
   className?: string
+  /** Timing of the compact panel; tests inject their own timers. */
+  peek?: SidebarNavPeek
 }) {
   const shown = groups.filter((group) => group.items.length > 0)
   const items = useMemo(() => shown.flatMap((group) => group.items), [shown])
   const [focused, setFocused] = useState<string | null>(null)
   const rows = useRef(new Map<string, HTMLButtonElement>())
   const typeahead = useRef(createTypeaheadBuffer({ timeoutMs: 600 }))
+  const rail = useRef<HTMLDivElement>(null)
+  const panel = useSidebarNavPeek(mode === 'compact', rail, peek)
+  const open = panel.open
 
   if (mode === 'select') {
     const options = items.map((item) => ({
@@ -140,13 +149,12 @@ export function SidebarNav({
         tabIndex={id === stop ? 0 : -1}
         aria-current={current ? 'page' : undefined}
         {...(mode === 'compact' ? { 'aria-label': name } : {})}
-        onClick={() => onSelect(id)}
+        onClick={() => {
+          onSelect(id)
+          panel.close()
+        }}
         onFocus={() => setFocused(id)}
-        className={cn(
-          ROW,
-          mode === 'compact' ? 'size-(--chrome-control-lg) justify-center' : 'px-2.5',
-          current ? CURRENT : REST,
-        )}
+        className={cn(ROW, mode === 'compact' ? 'px-[11px]' : 'px-2.5', current ? CURRENT : REST)}
       >
         {Icon && (
           <Icon
@@ -154,7 +162,7 @@ export function SidebarNav({
             aria-hidden
           />
         )}
-        {mode === 'full' && (
+        {(mode === 'full' || open) && (
           <>
             <span className="min-w-0 flex-1 truncate">{itemLabel}</span>
             {badge ??
@@ -167,19 +175,45 @@ export function SidebarNav({
         )}
       </button>
     )
-    return mode === 'compact' ? (
-      <ActionTooltip key={id} side="right" label={name.replace(', ', ' · ')}>
-        {button}
-      </ActionTooltip>
-    ) : (
-      button
-    )
+    return button
   }
 
+  const compact = mode === 'compact'
   return (
-    <div className={cn('flex min-h-0 flex-col gap-4', className)}>
+    <div
+      ref={compact ? rail : undefined}
+      data-sidebar-rail={compact ? '' : undefined}
+      className={cn('flex min-h-0 flex-col gap-4', compact && 'relative', className)}
+      {...(compact ? panel.handlers : {})}
+    >
       {mode === 'full' && search}
-      <nav aria-label={label} onKeyDown={onKeyDown} className="flex flex-col gap-5">
+      <nav
+        aria-label={label}
+        onKeyDown={onKeyDown}
+        data-state={compact ? (open ? 'open' : 'closed') : undefined}
+        className={cn(
+          'flex flex-col gap-5',
+          // The rail's width stays reserved by the wrapper; the open panel is out of flow, above
+          // the content, so opening it never re-lays-out what sits beside it.
+          compact &&
+            cn(
+              'absolute top-0 left-0 z-20 max-h-full overflow-x-hidden overflow-y-auto border border-transparent px-2 py-2 motion-safe:transition-[width,box-shadow] motion-safe:duration-(--dur-fast)',
+              open ? `w-56 ${POPOVER_SURFACE}` : 'w-full',
+            ),
+        )}
+      >
+        {compact && (
+          <button
+            type="button"
+            tabIndex={-1}
+            aria-expanded={open}
+            aria-label={`${open ? 'Collapse' : 'Expand'} ${label}`}
+            onClick={panel.toggle}
+            className={cn(ROW, REST, 'px-[11px] text-text-faint')}
+          >
+            <PanelLeft className="size-4 shrink-0" aria-hidden />
+          </button>
+        )}
         {shown.map((group, at) => (
           <div
             key={group.id}
@@ -187,10 +221,10 @@ export function SidebarNav({
             aria-label={group.label}
             className={cn(
               'flex flex-col gap-0.5',
-              mode === 'compact' && at > 0 && '-mt-2 border-t border-border-faint pt-3',
+              compact && !open && at > 0 && '-mt-2 border-t border-border-faint pt-3',
             )}
           >
-            {group.label && mode === 'full' && (
+            {group.label && (mode === 'full' || open) && (
               <SectionLabel className="px-2.5 pb-1">{group.label}</SectionLabel>
             )}
             {group.items.map(row)}
