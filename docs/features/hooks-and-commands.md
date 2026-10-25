@@ -49,7 +49,7 @@ grants do not govern that preprocessing.
 | Autonomous        | `/loop`                                      |
 | Configuration     | `/model` (`/models`)                         |
 | Context           | client-scoped `/fork`, client-scoped `/open` |
-| Information       | `/help`, `/usage` (`/cost`)                  |
+| Information       | `/help`, `/usage` (`/cost`), `/recap`        |
 | Memory and skills | `/memory`, `/skills` (`/skill`)              |
 | Extensions        | `/mcp`, `/plugin`, `/mini-app`, `/provider`  |
 

@@ -93,10 +93,11 @@ charge. On Claude models with per-turn effort, that default is **high**.
 
 The model browser offers these optional workload settings:
 
-| Workload          | Current runtime behavior                                                                                                                                                            |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Session titles    | Requires an enabled route with an assigned model; otherwise keeps the simple title and objective. Missing route effort uses **medium**, never the session effort.                   |
-| Inline completion | Disabled by default. When enabled, tries the assigned model, then the session model if resolution fails. Always requests effort `off`, clamped to the model's minimum if necessary. |
+| Workload          | Current runtime behavior                                                                                                                                                                                                                                                          |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Session titles    | Requires an enabled route with an assigned model; otherwise keeps the simple title and objective. Missing route effort uses **medium**, never the session effort.                                                                                                                 |
+| Inline completion | Disabled by default. When enabled, tries the assigned model, then the session model if resolution fails. Always requests effort `off`, clamped to the model's minimum if necessary.                                                                                               |
+| Session recap     | On by default; has its own switch on its model picker row. Uses the assigned model, otherwise the session model, with its own effort (default **medium**). Writes one line into the transcript when you come back to a chat; see [Conversation history](conversation-history.md). |
 
 Each workload stores its own effort; picking a model for it starts at the level last chosen for that
 workload and model, otherwise the default.
@@ -213,7 +214,7 @@ their provider identity.
 | Key selection        | Enabled keys ordered by ascending numeric priority                                     |
 | Model identity       | Stored as `<providerId>/<modelId>`                                                     |
 | Required route       | Chat sessions                                                                          |
-| Context routes       | Session titles, inline completion                                                      |
+| Context routes       | Session titles, inline completion, session recap                                       |
 | Reasoning preference | Stored for the workload plus provider/model pair when supported                        |
 
 There is no separate setup flow: the model picker under a chat composer creates API-key or OAuth

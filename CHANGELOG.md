@@ -8,6 +8,9 @@ Changes land on `main`.
 
 ### Added
 
+- **Session recap**: when you come back to a chat after a break, a one-line summary of where you
+  left off is waiting in the transcript. It is on by default and has its own model and switch in the
+  model picker (**Session recap**); `/recap` writes one on demand.
 - **A new Store UI**: **Discover** opens on a carousel of featured packages, then rows (Start here,
   a row for the open project, collections, mini apps, plugins, new and updated) and the categories.
   Shelves of thousands of plugins open at once and load as you scroll; a plugin without an icon

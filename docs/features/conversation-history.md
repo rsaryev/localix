@@ -72,6 +72,22 @@ See [Context checkpoints](context-checkpoints.md),
 [Sessions and projects](sessions-and-projects.md), [Conversations](conversations.md),
 [Background work](background-work.md) and [Interactive terminals](interactive-terminals.md).
 
+## Session recap
+
+When you come back to a chat after a break, a one-line recap of where you left off (at most 400
+characters) can be waiting in the transcript, marked **Recap**. It is written in the background once
+the window has been unfocused for three minutes after the last finished turn. It needs a session
+with at least three turns, is never written twice in a row, and never in a run that nobody watches
+(a loop, a scheduled run, an API call).
+
+A recap is a record for you: it is never sent to a model and never enters the conversation's
+context. It uses the **Session recap** route in the model picker, which has its own model, effort
+and an on/off switch on that row; with no model chosen it uses the session's model. The switch is on
+by default.
+
+`/recap` writes one on demand, even when automatic recaps are off. It answers with a notice when
+there is nothing to sum up yet or no model could be reached.
+
 ## Source of truth
 
 - [Sidebar message search](https://github.com/rsaryev/localix/blob/main/apps/ui/src/entities/chat/model/useHistorySearch.ts)
