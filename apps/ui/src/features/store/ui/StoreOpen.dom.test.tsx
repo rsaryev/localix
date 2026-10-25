@@ -18,10 +18,10 @@ afterEach(async () => {
   document.body.innerHTML = ''
 })
 
-const KIND = 'kanban:board'
+const KIND = 'sample:board'
 const board = listing({
-  id: 'kanban',
-  displayName: 'Kanban board',
+  id: 'sample',
+  displayName: 'Sample board',
   version: '1.0.0',
   contents: { screen: 1 },
   installs: [{ scope: 'user', version: '1.0.0', enabled: true }],
@@ -49,16 +49,16 @@ async function mountStore(target: { shelf?: string; ref?: unknown }) {
   const { registerInspectorHandler } = await import('@/shared/lib/inspectorBus')
   const { useChatStore } = await import('@/entities/chat/model/store')
   const Nothing = () => null
-  const host = miniAppUiHostFor('kanban')
+  const host = miniAppUiHostFor('sample')
   host.workItems.register({ kind: KIND, Component: Nothing, Icon: Nothing, scope: 'session' })
   host.railViewlets.register({
     kind: KIND,
-    title: 'Kanban board',
-    label: 'Kanban',
+    title: 'Sample board',
+    label: 'Sample',
     Icon: Nothing,
     defaultArea: 'bar',
   })
-  setEnabledMiniAppNames(new Set(['kanban']))
+  setEnabledMiniAppNames(new Set(['sample']))
   registerUi(host)
   const opened: Array<Record<string, unknown>> = []
   const unregister = registerInspectorHandler((request) => void opened.push({ ...request }))
@@ -66,7 +66,7 @@ async function mountStore(target: { shelf?: string; ref?: unknown }) {
   cleanups.push(() => {
     unregister()
     withdrawUi()
-    removeMiniAppUiContributions('kanban')
+    removeMiniAppUiContributions('sample')
     setEnabledMiniAppNames(null)
     useChatStore.setState({ activeSessionId: null })
   })
@@ -104,7 +104,7 @@ describe('Open on an installed mini app in the Store', () => {
     ])
 
   test('the package page opens its screen in the chat that is open', async () => {
-    expectOpened(await mountStore({ ref: { kind: 'mini-app', id: 'kanban' } }))
+    expectOpened(await mountStore({ ref: { kind: 'mini-app', id: 'sample' } }))
   })
 
   test('a tile on the Discover shelf opens it', async () => {
