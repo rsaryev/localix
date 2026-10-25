@@ -180,6 +180,71 @@ describe('/rpc/store', () => {
     expect((await get('/mini-app/chess/config')).status).toBe(404)
   })
 
+  test('the Project shelf is the open project’s own files: another project never sees them', async () => {
+    const mine = makeListing({ id: 'deploy', kind: 'skill', authored: 'project' })
+    const other = makeListing({ id: 'lint', kind: 'skill', authored: 'project' })
+    const skills = fakeProvider('skill', [], { projectListings: { p1: [mine], p2: [other] } })
+    const root = new Hono<AppContext>()
+    root.use('*', async (c, next) => {
+      c.set('userId', 'u1')
+      await next()
+    })
+    root.route('/rpc/store', createStoreRoutes(makeStore([skills.provider]).store))
+    const read = async (query: string) =>
+      (await root.request(`/rpc/store/listings?${query}`)).json() as Promise<{
+        listings: Array<{ ref: { id: string } }>
+        facets: { shelves: Record<string, number> }
+      }>
+    const first = await read('shelf=project&projectId=p1')
+    expect(first.listings.map((l) => l.ref.id)).toEqual(['deploy'])
+    expect(first.facets.shelves.project).toBe(1)
+    expect((await read('shelf=project&projectId=p2')).listings.map((l) => l.ref.id)).toEqual([
+      'lint',
+    ])
+    expect((await read('shelf=project')).listings).toEqual([])
+    expect((await read('projectId=p1')).facets.shelves.project).toBe(1)
+    expect((await read('')).facets.shelves.project).toBeUndefined()
+  })
+
+  test('a kind that can make its own items offers a form and creates one from it', async () => {
+    const { apps, get, post } = app()
+    expect(await (await get('/create')).json()).toEqual({ kinds: [] })
+    expect((await get('/create/mini-app')).status).toBe(409)
+    const made: unknown[] = []
+    apps.provider.createFields = async () => ({
+      noun: 'chess set',
+      scopes: ['user', 'project'],
+      fields: [{ key: 'name', label: 'Name', type: 'string', required: true, secret: false }],
+    })
+    apps.provider.create = async (scope, values, actor) => {
+      made.push([scope, values, actor.projectId])
+      return { kind: 'mini-app', id: values.name as string }
+    }
+    expect(await (await get('/create')).json()).toEqual({ kinds: ['mini-app'] })
+    expect((await (await get('/create/mini-app')).json()).noun).toBe('chess set')
+    const response = await post('/create/mini-app', {
+      scope: 'project',
+      projectId: 'p1',
+      values: { name: 'blitz' },
+    })
+    expect(response.status).toBe(201)
+    expect(await response.json()).toEqual({ ref: { kind: 'mini-app', id: 'blitz' } })
+    expect(made).toEqual([['project', { name: 'blitz' }, 'p1']])
+  })
+
+  test('an install’s own actions run through its provider, and a kind without them says so', async () => {
+    const { apps, post } = app()
+    const body = { scope: 'user', action: 'test' }
+    expect((await post('/mini-app/chess/action', body)).status).toBe(409)
+    apps.provider.runAction = async (id, scope, action) => ({
+      ok: true,
+      message: `${action} ${id} ${scope}`,
+    })
+    const response = await post('/mini-app/chess/action', body)
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ ok: true, message: 'test chess user' })
+  })
+
   test('activity and Update all', async () => {
     const { get, post } = app()
     const activity = await (await get('/activity')).json()

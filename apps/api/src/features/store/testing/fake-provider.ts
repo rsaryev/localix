@@ -19,6 +19,8 @@ export function fakeProvider(
     editorial?: Editorial[]
     /** The installs each project has, by project id and then listing id. */
     projectInstalls?: Record<string, Record<string, StoreInstall[]>>
+    /** What each project keeps in its own folder, by project id. */
+    projectListings?: Record<string, Listing[]>
   } = {},
 ) {
   let listings = initial
@@ -61,6 +63,9 @@ export function fakeProvider(
             )
           },
         }
+      : {}),
+    ...(opts.projectListings
+      ? { projectListings: async (actor) => opts.projectListings![actor.projectId] ?? [] }
       : {}),
     subscribe(listener) {
       listeners.add(listener)

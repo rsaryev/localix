@@ -17,9 +17,11 @@ import {
 import { ConflictError, NotFoundError } from '../../lib/domain-errors'
 import { activityOf } from './activity'
 import { configService } from './config'
+import { itemService } from './items'
 import { discoverOf, relatedOf } from './discover'
 import type { StoreIndexRepository } from './index-repository'
 import { refKey } from './index-rows'
+import { matching, projectAuthored, withProjectCount } from './project-authored'
 import { withProjectInstalls } from './project-installs'
 import { staticScore } from './ranking'
 import { createStoreSearchProvider, refOfStoreHit, STORE_SEARCH_DOMAIN } from './search-provider'
@@ -144,6 +146,19 @@ export function createStoreService(deps: {
         ...(query.trust ? { trust: query.trust } : {}),
       }
       const limit = query.limit ?? LISTINGS_PAGE
+      // Asked beside the index reads, not before them: a slow project folder holds up nothing else.
+      const asked = projectAuthored(deps.providers, {
+        ...actor,
+        ...(query.projectId ? { projectId: query.projectId } : {}),
+      })
+      if (query.shelf === 'project') {
+        const authored = await asked
+        return {
+          listings: matching(authored, query.q),
+          facets: withProjectCount(await deps.index.facets(actor.userId, {}), authored.length),
+          problems: runs.problems(actor),
+        }
+      }
       const [page, facets] = await Promise.all([
         query.q?.trim()
           ? searched(actor, query, filters, limit)
@@ -164,7 +179,11 @@ export function createStoreService(deps: {
             first: !query.cursor && !query.q?.trim(),
           })
         : page
-      return { ...shown, facets, problems: runs.problems(actor) }
+      return {
+        ...shown,
+        facets: withProjectCount(facets, (await asked).length),
+        problems: runs.problems(actor),
+      }
     },
 
     async detail(ref: ListingRef, actor: StoreActor) {
@@ -216,6 +235,8 @@ export function createStoreService(deps: {
     },
 
     ...configService(providerOf),
+
+    ...itemService(deps.providers, providerOf, runs.invalidate),
 
     /** Every source, with when it was last read and why not, and the kinds one can be added for. */
     sources: (): Promise<{ sources: SourceView[]; addable: PackageKind[] }> =>

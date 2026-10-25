@@ -81,6 +81,20 @@ describe('the Store’s shelves', () => {
     }
   })
 
+  test('Yours is in the library once something the person wrote exists, and lists it', async () => {
+    const mine = listing({ id: 'review', displayName: 'Review', authored: 'user' })
+    const view = await renderStore({ listings: [...LISTINGS, mine], target: APPS })
+    try {
+      expect(view.shelf('Yours')?.textContent).toContain('1')
+      expect(view.shelf('Project')).toBeUndefined()
+      await view.click(view.shelf('Yours'))
+      expect(view.card('review')).not.toBeNull()
+      expect(view.card('chess')).toBeNull()
+    } finally {
+      await view.done()
+    }
+  })
+
   test('a shelf lists its packages as rows: name, trust, summary, who and what, and Get', async () => {
     const view = await renderStore({ listings: LISTINGS, target: APPS })
     try {

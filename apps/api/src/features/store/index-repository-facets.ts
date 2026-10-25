@@ -36,9 +36,6 @@ export async function facetsOf(
         eb.fn
           .sum<number>(eb.case().when('l.authored', '=', 'user').then(1).else(0).end())
           .as('yours'),
-        eb.fn
-          .sum<number>(eb.case().when('l.authored', '=', 'project').then(1).else(0).end())
-          .as('project'),
       ])
       .groupBy('l.kind')
       .execute(),
@@ -78,10 +75,6 @@ export async function facetsOf(
   set(
     'yours',
     sum((row) => row.yours),
-  )
-  set(
-    'project',
-    sum((row) => row.project),
   )
   return {
     shelves,

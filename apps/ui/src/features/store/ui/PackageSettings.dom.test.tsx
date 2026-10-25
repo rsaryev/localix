@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import type { ListingConfig } from '@localixai/store'
+import { configurePlatformCapabilities } from '@/shared/lib/platformCapabilities'
 import { listing, renderStore } from '@/testing/store'
 
 let teardown: () => Promise<void>
@@ -93,6 +94,53 @@ describe('a package’s Settings tab', () => {
       await view.click(view.button('Save'))
       expect(view.calls).toEqual(['config mini-app/chess user {"url":"https://b.test"}'])
     } finally {
+      await view.done()
+    }
+  })
+
+  test('an install’s own actions are buttons below its settings, and what they answer is said', async () => {
+    const withActions = config({
+      actions: [
+        { id: 'test', label: 'Test connection' },
+        { id: 'signout', label: 'Sign out', danger: true },
+      ],
+    })
+    const { view, tab, page } = await open({
+      listings: [CHESS],
+      configs: { chess: { user: withActions } },
+      actionResults: { test: { ok: true, message: 'Connected: 3 tools' } },
+      target: { ref: { kind: 'mini-app', id: 'chess' } },
+    })
+    try {
+      await view.click(tab('Settings'))
+      expect(view.button('Sign out', page())).toBeDefined()
+      await view.click(view.button('Test connection', page()))
+      expect(view.calls).toEqual(['action mini-app/chess user test'])
+      expect(page().textContent).toContain('Connected: 3 tools')
+    } finally {
+      await view.done()
+    }
+  })
+
+  test('an address an action hands back is opened', async () => {
+    const opened: string[] = []
+    const restore = configurePlatformCapabilities({
+      external: { open: (url) => void opened.push(url) },
+    })
+    const { view, tab, page } = await open({
+      listings: [CHESS],
+      configs: {
+        chess: { user: config({ actions: [{ id: 'signin', label: 'Sign in' }] }) },
+      },
+      actionResults: { signin: { ok: true, open: 'https://auth.test/login' } },
+      target: { ref: { kind: 'mini-app', id: 'chess' } },
+    })
+    try {
+      await view.click(tab('Settings'))
+      await view.click(view.button('Sign in', page()))
+      expect(opened).toEqual(['https://auth.test/login'])
+    } finally {
+      restore()
       await view.done()
     }
   })

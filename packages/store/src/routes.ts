@@ -113,6 +113,25 @@ export const configRequestSchema = z.object({
   values: z.record(z.string(), configValueSchema),
 })
 
+/** `POST /:kind/:id/action`: one of the install's actions, by id. */
+export const actionRequestSchema = z.object({
+  scope: scopeSchema.default('user'),
+  projectId: projectIdSchema,
+  action: z.string().min(1).max(64),
+})
+
+/** `GET /create`: the kinds whose provider can make a new item. */
+export const creatableResponseSchema = z.object({ kinds: z.array(packageKindSchema) })
+
+export const createParamsSchema = z.object({ kind: packageKindSchema })
+
+/** `POST /create/:kind`: make one from its form. */
+export const createRequestSchema = z.object({
+  scope: scopeSchema.default('user'),
+  projectId: projectIdSchema,
+  values: z.record(z.string(), configValueSchema),
+})
+
 export const sourceInputSchema = z.object({
   kind: packageKindSchema,
   input: z.string().min(1).max(2048),

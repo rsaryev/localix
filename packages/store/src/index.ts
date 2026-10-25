@@ -41,16 +41,31 @@ export type {
 } from './contract'
 export {
   CONFIG_FIELD_TYPES,
+  actionResultSchema,
   configFieldSchema,
   configValueSchema,
+  createFormSchema,
+  itemActionSchema,
   listingConfigFromFields,
   listingConfigSchema,
   scalarConfigValues,
 } from './config'
-export type { ConfigField, ConfigValue, DeclaredField, ListingConfig } from './config'
+export type {
+  ActionResult,
+  ConfigField,
+  ConfigValue,
+  CreateForm,
+  DeclaredField,
+  ItemAction,
+  ListingConfig,
+} from './config'
 export type { ProviderListings, StoreActor, StoreProvider } from './provider'
 export {
+  actionRequestSchema,
   configQuerySchema,
+  createParamsSchema,
+  createRequestSchema,
+  creatableResponseSchema,
   configRequestSchema,
   discoverQuerySchema,
   discoverResponseSchema,

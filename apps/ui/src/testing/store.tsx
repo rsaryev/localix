@@ -5,10 +5,13 @@ import {
   onShelf,
   parseShelf,
   shelfCounts,
+  type ActionResult,
+  type CreateForm,
   type DiscoverResponse,
   type Listing,
   type ListingConfig,
   type ListingsResponse,
+  type PackageKind,
   type Scope,
   type SourceView,
 } from '@localixai/store'
@@ -121,6 +124,12 @@ export interface StoreFake {
   discover?: Partial<DiscoverResponse>
   /** The settings of an install, by listing id and scope. */
   configs?: Record<string, Partial<Record<Scope, ListingConfig>>>
+  /** The kinds that can make an item, with the form of each. */
+  creates?: Partial<Record<PackageKind, CreateForm>>
+  /** A provider's refusal to create, in its words. */
+  createFails?: string
+  /** What running an install's action answers, by action id. */
+  actionResults?: Record<string, ActionResult>
   /** A provider's refusal of every save, in its words. */
   configFails?: string
   calls: string[]
@@ -189,6 +198,17 @@ export function fakeClient(fake: StoreFake): StoreClient {
     setConfig: async (ref, scope, values, projectId) => {
       if (fake.configFails) throw new ApiError(fake.configFails, 400, 'plugin_config_invalid')
       call(`config ${ref.kind}/${ref.id} ${scope}${where(projectId)} ${JSON.stringify(values)}`)
+    },
+    runAction: async (ref, scope, action) => {
+      call(`action ${ref.kind}/${ref.id} ${scope} ${action}`)
+      return fake.actionResults?.[action] ?? { ok: true }
+    },
+    creatable: async () => Object.keys(fake.creates ?? {}) as PackageKind[],
+    createFields: async (kind) => fake.creates![kind]!,
+    create: async (kind, scope, values, projectId) => {
+      if (fake.createFails) throw new ApiError(fake.createFails, 409, 'store_exists')
+      call(`create ${kind} ${scope}${where(projectId)} ${JSON.stringify(values)}`)
+      return { kind, id: (values.name as string | undefined) ?? 'new' }
     },
     sources: async () => ({ sources: fake.sources ?? SOURCES, addable: ['mini-app', 'plugin'] }),
     discover: async () => ({

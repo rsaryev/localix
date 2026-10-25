@@ -178,12 +178,16 @@ capability omits the method and the UI hides the control.
 
 A package's own settings live on its page, in a **Settings** tab, never in Settings. A listing says
 `configurable`; `GET /rpc/store/:kind/:id/config?scope=` returns a `ListingConfig` — `fields` (a
-key, label, help, a type of `string | number | boolean | choice | list | model`, `required`,
-`secret`), the `values`, which secrets are `set`, the `scope` shown and the `scopes` it is installed
-in — and `POST` of the same path saves some of the values. The provider owns the storage (X3): the
-Store only validates the request's shape. A secret's value never leaves the server, only whether it
-is set. One form renders every kind (`apps/ui/src/features/store/ui/ConfigForm.tsx`), so a field
-type is added once.
+key, label, help, a type of `string | number | boolean | choice | multichoice | list | map | model`,
+`required`, `secret`), the `values`, which secrets are `set`, the `actions`, the `scope` shown and
+the `scopes` it is installed in — and `POST` of the same path saves some of the values. The provider
+owns the storage (X3): the Store only validates the request's shape. A secret's value never leaves
+the server, only whether it is set. One form renders every kind
+(`apps/ui/src/features/store/ui/ConfigForm.tsx`), so a field type is added once.
+
+A `map` is name and value pairs (a server's environment or headers) kept as one JSON object; a
+secret map is only said to be set and replaced whole, its values masked. A `multichoice` is any of
+the field's `options`, kept as a list.
 
 **Saving is explicit**: Save, Revert and Cmd/Ctrl+S, with the unsaved state said beside them. A
 setting reaches running code (a server restarts, a plugin reloads), and a secret or a half-typed
@@ -435,14 +439,37 @@ provider (X1, A8) and only reads or writes through the Store client.
 - **Sources** shows a source's own problem on its row, quietly; the one Add dialog previews every
   addable kind and asks only when both formats match.
 
+### Create and actions as built
+
+Two optional port methods make the Store a place to write things, not only to fetch them, and both
+are generic: no kind is named.
+
+- **Create.** `createFields(actor)` answers a `CreateForm` (`noun`, `fields`, the `scopes` it can be
+  kept in) and `create(scope, values, actor)` makes the item and answers its ref. Routes:
+  `GET /create` (the kinds that can), `GET` and `POST /create/:kind`. The UI draws **Add
+  &lt;noun&gt;** on that kind's shelf (shown even while it is empty) and on Yours and Project; its
+  dialog is the one configuration form in creation mode, with a scope choice when a project is open.
+  A refusal is said in the dialog; success opens the new item's page.
+- **Actions.** A `ListingConfig` lists `actions` (`id`, `label`, `danger`);
+  `runAction(id, scope, action, actor)` does one and answers `{ ok, message?, open? }`.
+  `POST /:kind/:id/action` routes it. The Settings tab shows the buttons below the form (Test
+  connection, Sign in, Sign out), says the message beside them, opens an `open` address in the
+  browser and reads the settings again.
+
 ### Yours and Project as built
 
 A listing may say `authored: 'user' | 'project'`: written by the person (`user`) or kept in a
 project's own folder (`project`), not fetched from a source. The `yours` and `project` shelves list
-exactly those, installed or not; `onShelf`, the index's `authored` column (indexed with the listing,
-the shelf filter and the facet counts) and the UI's Library navigation entries all read the one
-field. The index is derived, so adding the column is a `STORE_INDEX_VERSION` bump: the old file is
-deleted and rebuilt, never migrated.
+exactly those, installed or not.
+
+- **Yours** is indexed: the index's `authored` column, the shelf filter, the facet count and the
+  Library navigation entry all read the field. The index is derived, so adding the column is a
+  `STORE_INDEX_VERSION` bump: the old file is deleted and rebuilt, never migrated.
+- **Project** is never indexed. The index is the person's, and a project's files belong to that
+  project alone, so a provider's `listings` must not return them. A provider that keeps files per
+  project implements `projectListings(actor)` (the open project's, like `projectInstalls`); the
+  Store asks on each read that carries a `projectId`, serves the Project shelf from the answer and
+  adds its count to the facets. With no open project the shelf is empty and hidden.
 
 ## Source of truth
 

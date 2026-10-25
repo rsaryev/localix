@@ -1,7 +1,14 @@
 import { describe, expect, test } from 'bun:test'
 
 import type { Scope } from './contract'
-import { listingConfigFromFields, scalarConfigValues, type DeclaredField } from './config'
+import {
+  CONFIG_FIELD_TYPES,
+  configFieldSchema,
+  configValueSchema,
+  listingConfigFromFields,
+  scalarConfigValues,
+  type DeclaredField,
+} from './config'
 
 const declared = (over: Partial<DeclaredField>): DeclaredField => ({
   key: 'API_URL',
@@ -77,6 +84,28 @@ describe('listingConfigFromFields', () => {
 })
 
 describe('scalarConfigValues', () => {
+  test('a map is stored as a JSON object, like a list as a JSON array', () => {
+    expect(scalarConfigValues({ env: { A: '1' }, tags: ['x'] })).toEqual({
+      env: '{"A":"1"}',
+      tags: '["x"]',
+    })
+  })
+
+  test('the field types a form can draw include a map and a multiple choice', () => {
+    expect(
+      configFieldSchema.parse({
+        key: 'env',
+        label: 'Env',
+        type: 'map',
+        required: false,
+        secret: true,
+      }).type,
+    ).toBe('map')
+    expect(configValueSchema.parse({ A: '1' })).toEqual({ A: '1' })
+    expect(() => configValueSchema.parse({ A: 1 })).toThrow()
+    expect(CONFIG_FIELD_TYPES).toContain('multichoice')
+  })
+
   test('a list is stored the way providers keep it: a JSON array of strings', () => {
     expect(scalarConfigValues({ tags: ['a', 'b'], n: 2, on: false, s: 'x' })).toEqual({
       tags: '["a","b"]',

@@ -1,5 +1,7 @@
 import type {
+  ActionResult,
   ConfigValue,
+  CreateForm,
   DiscoverResponse,
   InstallPlan,
   ListingConfig,
@@ -133,6 +135,47 @@ export const storeApi = {
         json: { scope, values, ...project(projectId) },
       }),
     )
+  },
+
+  /** Run one of an install's own actions (Test connection, Sign in) and say what happened. */
+  async runAction(
+    ref: ListingRef,
+    scope: Scope,
+    action: string,
+    projectId?: string | null,
+  ): Promise<ActionResult> {
+    return unwrap(
+      await listing().action.$post({
+        ...param(ref),
+        json: { scope, action, ...project(projectId) },
+      }),
+    )
+  },
+
+  /** The kinds whose provider can make a new item here. */
+  async creatable(): Promise<PackageKind[]> {
+    return (await unwrap(await client.rpc.store.create.$get())).kinds
+  },
+
+  /** The form for a new item of a kind. */
+  async createFields(kind: PackageKind): Promise<CreateForm> {
+    return unwrap(await client.rpc.store.create[':kind'].$get({ param: { kind } }))
+  },
+
+  /** Make an item from its form; answers its ref. */
+  async create(
+    kind: PackageKind,
+    scope: Scope,
+    values: Record<string, ConfigValue>,
+    projectId?: string | null,
+  ): Promise<ListingRef> {
+    const made = await unwrap(
+      await client.rpc.store.create[':kind'].$post({
+        param: { kind },
+        json: { scope, values, ...project(projectId) },
+      }),
+    )
+    return made.ref
   },
 
   /** Every source, and the kinds a source can be added for. */

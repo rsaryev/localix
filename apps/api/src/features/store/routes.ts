@@ -1,5 +1,11 @@
 import { Hono } from 'hono'
 import {
+  actionRequestSchema,
+  actionResultSchema,
+  createFormSchema,
+  createParamsSchema,
+  createRequestSchema,
+  creatableResponseSchema,
   configQuerySchema,
   configRequestSchema,
   detailQuerySchema,
@@ -91,6 +97,26 @@ export function createStoreRoutes(store: StoreService) {
       await store.removeSource(kind, id)
       return c.body(null, 204)
     })
+    .get('/create', (c) => c.json(creatableResponseSchema.parse({ kinds: store.creatable() }), 200))
+    .get('/create/:kind', zValidator('param', createParamsSchema), async (c) => {
+      const form = await store.createFields(c.req.valid('param').kind, actor(c))
+      return c.json(createFormSchema.parse(form), 200)
+    })
+    .post(
+      '/create/:kind',
+      zValidator('param', createParamsSchema),
+      zValidator('json', createRequestSchema),
+      async (c) => {
+        const { scope, values, projectId } = c.req.valid('json')
+        const ref = await store.create(
+          c.req.valid('param').kind,
+          scope,
+          values,
+          actor(c, projectId),
+        )
+        return c.json({ ref }, 201)
+      },
+    )
     .get(
       '/:kind/:id',
       zValidator('param', listingParamsSchema),
@@ -159,6 +185,21 @@ export function createStoreRoutes(store: StoreService) {
         const { scope, values, projectId } = c.req.valid('json')
         await store.setConfig(c.req.valid('param'), scope, values, actor(c, projectId))
         return c.body(null, 204)
+      },
+    )
+    .post(
+      '/:kind/:id/action',
+      zValidator('param', listingParamsSchema),
+      zValidator('json', actionRequestSchema),
+      async (c) => {
+        const { scope, action, projectId } = c.req.valid('json')
+        const result = await store.runAction(
+          c.req.valid('param'),
+          scope,
+          action,
+          actor(c, projectId),
+        )
+        return c.json(actionResultSchema.parse(result), 200)
       },
     )
     .post(

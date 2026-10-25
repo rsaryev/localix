@@ -6,6 +6,7 @@ import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { useStoreScope } from '../model/storeContext'
 import { useListingConfig } from '../model/useStoreData'
 import { ConfigForm } from './ConfigForm'
+import { ItemActions } from './ItemActions'
 
 /**
  * A PACKAGE'S SETTINGS TAB: what its provider lets the person set, in the one configuration form.
@@ -42,14 +43,24 @@ export function PackageSettings({ listing }: { listing: Listing }) {
         </div>
       )}
       {data ? (
-        <ConfigForm
-          key={scope}
-          config={data}
-          onSave={async (values) => {
-            await store.client.setConfig(listing.ref, scope, values, projectId ?? undefined)
-            await mutate()
-          }}
-        />
+        <>
+          <ConfigForm
+            key={scope}
+            config={data}
+            onSave={async (values) => {
+              await store.client.setConfig(listing.ref, scope, values, projectId ?? undefined)
+              await mutate()
+            }}
+          />
+          <ItemActions
+            key={`${scope}-actions`}
+            actions={data.actions ?? []}
+            run={(action) =>
+              store.client.runAction(listing.ref, scope, action, projectId ?? undefined)
+            }
+            onDone={() => void mutate()}
+          />
+        </>
       ) : error ? (
         <p role="alert" className="text-xs text-status-error">
           {errorMessage(error, 'Its settings could not be read')}

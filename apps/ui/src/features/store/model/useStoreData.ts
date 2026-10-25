@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import useSWR, { preload } from 'swr'
 import useSWRInfinite from 'swr/infinite'
-import type { ListingRef, ListingsResponse, Scope } from '@localixai/store'
+import type { ListingRef, ListingsResponse, PackageKind, Scope } from '@localixai/store'
 import type { StoreClient, StorePageQuery } from '@/shared/api/store-client'
 import {
   resourceGeneration,
@@ -46,6 +46,17 @@ export function useListingDetail(client: StoreClient, ref: ListingRef, projectId
   useResourceGeneration('store')
   return useSWR(detailKey(ref, projectId), () => client.detail(ref, projectId ?? undefined), {
     keepPreviousData: true,
+  })
+}
+
+/** The kinds whose provider can make a new item, and the form of one. */
+export function useCreatable(client: StoreClient) {
+  return useSWR('store-creatable', () => client.creatable(), { revalidateOnFocus: false })
+}
+
+export function useCreateForm(client: StoreClient, kind: PackageKind) {
+  return useSWR(['store-create-form', kind], () => client.createFields(kind), {
+    revalidateOnFocus: false,
   })
 }
 

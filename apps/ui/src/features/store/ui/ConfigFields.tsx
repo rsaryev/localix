@@ -7,6 +7,7 @@ import { Switch } from '@localixai/kit/switch'
 import { Textarea } from '@localixai/kit/textarea'
 import { ModelFieldSelect } from '@/shared/ui/ModelFieldSelect'
 import type { DraftValue } from '../model/configDraft'
+import { MapControl, MultiChoiceControl } from './ConfigStructured'
 
 /**
  * The control a configuration field's type calls for. The form decides nothing from a field's
@@ -37,7 +38,7 @@ export function ConfigControl({
         <Select
           size="xl"
           className="w-full"
-          value={String(value)}
+          value={text(value)}
           onValueChange={onChange}
           options={[
             ...(field.required ? [] : [{ value: '', label: '—' }]),
@@ -51,14 +52,24 @@ export function ConfigControl({
       )
     case 'list':
       return <ListControl value={Array.isArray(value) ? value : []} onChange={onChange} />
+    case 'map':
+      return <MapControl field={field} value={asMap(value)} onChange={onChange} />
+    case 'multichoice':
+      return (
+        <MultiChoiceControl
+          field={field}
+          value={Array.isArray(value) ? value : []}
+          onChange={onChange}
+        />
+      )
     case 'model':
-      return <ModelFieldSelect value={String(value)} onValueChange={onChange} />
+      return <ModelFieldSelect value={text(value)} onValueChange={onChange} />
     case 'number':
       return (
         <Input
           size="xl"
           type="number"
-          value={String(value)}
+          value={text(value)}
           min={field.min}
           max={field.max}
           onChange={(event) => onChange(event.target.value)}
@@ -66,10 +77,16 @@ export function ConfigControl({
       )
     case 'string':
       return (
-        <Input size="xl" value={String(value)} onChange={(event) => onChange(event.target.value)} />
+        <Input size="xl" value={text(value)} onChange={(event) => onChange(event.target.value)} />
       )
   }
 }
+
+/** What a text control shows of a draft: a map or a list has no text of its own. */
+const text = (value: DraftValue): string => (typeof value === 'object' ? '' : String(value))
+
+const asMap = (value: DraftValue): Record<string, string> =>
+  typeof value === 'object' && !Array.isArray(value) ? value : {}
 
 /** One item per line. The typed text stays as typed, so a new line can be started. */
 function ListControl({
@@ -120,13 +137,15 @@ function SecretControl({
         </Button>
       </div>
     )
+  if (field.type === 'map')
+    return <MapControl field={field} value={asMap(value)} masked onChange={onChange} />
   return (
     <Input
       size="xl"
       type="password"
       autoComplete="off"
       placeholder={held ? 'New value' : field.required ? 'Required' : ''}
-      value={String(value)}
+      value={text(value)}
       onChange={(event) => onChange(event.target.value)}
     />
   )

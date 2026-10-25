@@ -15,11 +15,21 @@ export const CONFIG_FIELD_TYPES = [
   'choice',
   'list',
   'model',
+  /** Name and value pairs: a server's environment or headers. */
+  'map',
+  /** Any of the field's `options`, as a list of their values. */
+  'multichoice',
 ] as const
 export const configFieldTypeSchema = z.enum(CONFIG_FIELD_TYPES)
 
-/** What a stored value can be: a list is its items. */
-export const configValueSchema = z.union([z.string(), z.number(), z.boolean(), z.array(z.string())])
+/** What a stored value can be: a list is its items, a map its name and value pairs. */
+export const configValueSchema = z.union([
+  z.string(),
+  z.number(),
+  z.boolean(),
+  z.array(z.string()),
+  z.record(z.string(), z.string()),
+])
 export type ConfigValue = z.infer<typeof configValueSchema>
 
 export const configFieldSchema = z.object({
@@ -45,6 +55,36 @@ export const configFieldSchema = z.object({
 })
 export type ConfigField = z.infer<typeof configFieldSchema>
 
+/** A button on an item's Settings tab that does something other than save: Test connection. */
+export const itemActionSchema = z.object({
+  id: z.string().min(1),
+  label: z.string(),
+  help: z.string().optional(),
+  /** Drawn as a destructive choice. */
+  danger: z.boolean().optional(),
+})
+export type ItemAction = z.infer<typeof itemActionSchema>
+
+/** What running an action says: shown beside the buttons; `open` is an address to open. */
+export const actionResultSchema = z.object({
+  ok: z.boolean(),
+  message: z.string().optional(),
+  open: z
+    .string()
+    .refine((address) => /^https?:\/\//u.test(address), 'Only a web address opens')
+    .optional(),
+})
+export type ActionResult = z.infer<typeof actionResultSchema>
+
+/** What making a new item asks for: the fields of its form, and where it can be kept. */
+export const createFormSchema = z.object({
+  fields: z.array(configFieldSchema),
+  scopes: z.array(scopeSchema).min(1),
+  /** A noun for the button and dialog: "MCP server". */
+  noun: z.string(),
+})
+export type CreateForm = z.infer<typeof createFormSchema>
+
 /** One scope's settings for an installed package. */
 export const listingConfigSchema = z.object({
   fields: z.array(configFieldSchema),
@@ -55,6 +95,8 @@ export const listingConfigSchema = z.object({
   /** The scope these values are for, and the scopes the package has settings in. */
   scope: scopeSchema,
   scopes: z.array(scopeSchema),
+  /** What else can be done with it, by `runAction`; absent: nothing. */
+  actions: z.array(itemActionSchema).optional(),
 })
 export type ListingConfig = z.infer<typeof listingConfigSchema>
 
@@ -124,14 +166,14 @@ export function listingConfigFromFields(
   return { fields, values, set, ...where }
 }
 
-/** Values as providers store them: a list is a JSON array of strings, the rest as given. */
+/** Values as providers store them: a list is a JSON array of strings, a map a JSON object, the rest as given. */
 export function scalarConfigValues(
   values: Record<string, ConfigValue>,
 ): Record<string, string | number | boolean> {
   return Object.fromEntries(
     Object.entries(values).map(([key, value]) => [
       key,
-      Array.isArray(value) ? JSON.stringify(value) : value,
+      typeof value === 'object' ? JSON.stringify(value) : value,
     ]),
   )
 }

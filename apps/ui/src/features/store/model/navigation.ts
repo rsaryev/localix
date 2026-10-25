@@ -5,6 +5,7 @@ import {
   packageShelf,
   parseShelf,
   type ListingRef,
+  type PackageKind,
   type StoreComponent,
   type StoreFacets,
 } from '@localixai/store'
@@ -36,12 +37,20 @@ export function parseSection(raw: unknown): StoreSection | null {
 /**
  * The Store's sections from the facets (`docs/internals/store.md`, "Hierarchy"): Discover, one
  * shelf per package kind and per component kind some listing has, the library and Sources. A
- * capability's count is how many components it lists. A shelf no listing is on is left out.
+ * capability's count is how many components it lists. A shelf no listing is on is left out,
+ * unless its kind can make a new item: that shelf is where Add is.
  */
-export function navGroups(facets: StoreFacets | undefined): SidebarNavGroup[] {
+export function navGroups(
+  facets: StoreFacets | undefined,
+  creatable: readonly PackageKind[] = [],
+): SidebarNavGroup[] {
   const count = (id: string) => facets?.shelves[id]
-  const shelf = (id: string, label: string, icon: SidebarNavGroup['items'][number]['icon']) =>
-    count(id) ? [{ id, label, icon, count: count(id) }] : []
+  const shelf = (
+    id: string,
+    label: string,
+    icon: SidebarNavGroup['items'][number]['icon'],
+    always = false,
+  ) => (count(id) || always ? [{ id, label, icon, count: count(id) ?? 0 }] : [])
   return [
     {
       id: 'discover',
@@ -57,7 +66,12 @@ export function navGroups(facets: StoreFacets | undefined): SidebarNavGroup[] {
       id: 'packages',
       label: 'Packages',
       items: PACKAGE_KINDS.flatMap((kind) =>
-        shelf(packageShelf(kind), KIND_LABELS[kind].many, KIND_LABELS[kind].icon),
+        shelf(
+          packageShelf(kind),
+          KIND_LABELS[kind].many,
+          KIND_LABELS[kind].icon,
+          creatable.includes(kind),
+        ),
       ),
     },
     {

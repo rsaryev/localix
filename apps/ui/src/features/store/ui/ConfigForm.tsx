@@ -32,9 +32,12 @@ const ROW =
 export function ConfigForm({
   config,
   onSave,
+  submitLabel,
 }: {
   config: ListingConfig
   onSave: (values: Record<string, ConfigValue>) => Promise<void>
+  /** Making a new item: its button, always ready; there is nothing saved to revert to. */
+  submitLabel?: string
 }) {
   // Only what was edited: the rest follows the saved values, so a save that comes back with new
   // ones needs no resetting. `revision` remounts the controls that keep their own typed text.
@@ -48,7 +51,7 @@ export function ConfigForm({
   const problems = shown ? draftProblems(config, draft) : {}
 
   const save = async () => {
-    if (busy || !dirty) return
+    if (busy || (!dirty && !submitLabel)) return
     if (Object.keys(draftProblems(config, draft)).length > 0) return setShown(true)
     setBusy(true)
     setFailure(null)
@@ -116,14 +119,22 @@ export function ConfigForm({
           </p>
         ) : (
           <p role="status" className="mr-auto text-xs text-text-soft">
-            {dirty ? 'Unsaved changes' : ''}
+            {dirty && !submitLabel ? 'Unsaved changes' : ''}
           </p>
         )}
-        <Button variant="ghost" size="lg" disabled={!dirty || busy} onClick={revert}>
-          Revert
-        </Button>
-        <Button variant="mono" size="lg" type="submit" disabled={!dirty || busy} aria-busy={busy}>
-          Save
+        {!submitLabel && (
+          <Button variant="ghost" size="lg" disabled={!dirty || busy} onClick={revert}>
+            Revert
+          </Button>
+        )}
+        <Button
+          variant="mono"
+          size="lg"
+          type="submit"
+          disabled={(!dirty && !submitLabel) || busy}
+          aria-busy={busy}
+        >
+          {submitLabel ?? 'Save'}
         </Button>
       </div>
     </form>

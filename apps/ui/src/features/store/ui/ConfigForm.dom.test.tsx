@@ -214,3 +214,87 @@ describe('the configuration form', () => {
     }
   })
 })
+
+const STRUCTURED: ListingConfig = {
+  fields: [
+    { key: 'env', label: 'Environment', type: 'map', required: false, secret: false },
+    {
+      key: 'tools',
+      label: 'Tools',
+      type: 'multichoice',
+      required: false,
+      secret: false,
+      options: [{ value: 'read' }, { value: 'write', label: 'Write files' }],
+    },
+    { key: 'headers', label: 'Headers', type: 'map', required: false, secret: true },
+  ],
+  values: { env: { LOG: 'info' }, tools: ['read'] },
+  set: ['headers'],
+  scope: 'user',
+  scopes: ['user'],
+}
+
+describe('the configuration form’s map and multiple-choice fields', () => {
+  test('a map shows its pairs, takes a new one and saves the whole map', async () => {
+    const saved: Array<Record<string, ConfigValue>> = []
+    const form = await render(STRUCTURED, async (values) => void saved.push(values))
+    try {
+      const byLabel = (label: string) =>
+        form.host.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`) ?? undefined
+      const named = (label: string) =>
+        form.host.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`)
+      expect(named('Environment name 1')!.value).toBe('LOG')
+      expect(named('Environment value 1')!.value).toBe('info')
+      await form.click(byLabel('Add Environment'))
+      await form.type(named('Environment name 2'), 'DEBUG')
+      await form.type(named('Environment value 2'), '1')
+      await form.click(form.button('Save'))
+      expect(saved).toEqual([{ env: { LOG: 'info', DEBUG: '1' } }])
+      await form.click(byLabel('Remove Environment 1'))
+      await form.click(form.button('Save'))
+      expect(saved[1]).toEqual({ env: {} })
+    } finally {
+      await form.done()
+    }
+  })
+
+  test('a secret map is only said to be set; replacing it asks for new pairs, masked', async () => {
+    const saved: Array<Record<string, ConfigValue>> = []
+    const form = await render(STRUCTURED, async (values) => void saved.push(values))
+    try {
+      const byLabel = (label: string) =>
+        form.host.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`) ?? undefined
+      const secrets = () => form.host.querySelectorAll('input[type="password"]')
+      expect(secrets()).toHaveLength(0)
+      await form.click(form.button('Replace'))
+      await form.click(byLabel('Add Headers'))
+      await form.type(
+        form.host.querySelector('input[aria-label="Headers name 1"]'),
+        'Authorization',
+      )
+      await form.type(secrets()[0] as HTMLInputElement, 'Bearer x')
+      await form.click(form.button('Save'))
+      expect(saved).toEqual([{ headers: { Authorization: 'Bearer x' } }])
+    } finally {
+      await form.done()
+    }
+  })
+
+  test('a multiple choice ticks any of its options and saves the list', async () => {
+    const saved: Array<Record<string, ConfigValue>> = []
+    const form = await render(STRUCTURED, async (values) => void saved.push(values))
+    try {
+      const box = (label: string) =>
+        [...form.host.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')].find((node) =>
+          node.closest('label')?.textContent?.includes(label),
+        )
+      expect(box('read')!.checked).toBe(true)
+      expect(box('Write files')!.checked).toBe(false)
+      await form.click(box('Write files'))
+      await form.click(form.button('Save'))
+      expect(saved).toEqual([{ tools: ['read', 'write'] }])
+    } finally {
+      await form.done()
+    }
+  })
+})

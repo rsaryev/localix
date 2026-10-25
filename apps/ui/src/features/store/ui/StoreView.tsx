@@ -20,7 +20,12 @@ import { StoreMemoryContext } from '../model/storeMemory'
 import { StoreScopeContext, type StoreProject, type StoreScope } from '../model/storeContext'
 import { useStoreActions } from '../model/useStoreActions'
 import { keyOf } from '../model/useExtrasAfterInstall'
-import { prefetchDetail, useStoreFacets, useStoreSources } from '../model/useStoreData'
+import {
+  prefetchDetail,
+  useCreatable,
+  useStoreFacets,
+  useStoreSources,
+} from '../model/useStoreData'
 import { useDebounced, SEARCH_DEBOUNCE_MS } from '../model/useDebounced'
 import { AddSourceDialog } from './AddSourceDialog'
 import { ConsentSheet } from './ConsentSheet'
@@ -140,7 +145,8 @@ export function StoreView({
     [client, project, actions, extras, onNavigate, push],
   )
   const frame = useMemo(() => ({ layout, width }), [layout, width])
-  const groups = navGroups(facets.data?.facets)
+  const creatable = useCreatable(client)
+  const groups = navGroups(facets.data?.facets, creatable.data)
   const choose = (id: string) => scope.goTo(id as StoreSection)
   const search = (
     <SearchInput

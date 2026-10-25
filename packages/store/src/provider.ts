@@ -1,9 +1,10 @@
-import type { ConfigValue, ListingConfig } from './config'
+import type { ActionResult, ConfigValue, CreateForm, ListingConfig } from './config'
 import type {
   Editorial,
   InstallPlan,
   Listing,
   ListingDetail,
+  ListingRef,
   PackageKind,
   Scope,
   SourcePreview,
@@ -57,6 +58,12 @@ export interface StoreProvider {
     values: Record<string, ConfigValue>,
     actor: StoreActor,
   ): Promise<void>
+  /** The form for a new item the person writes here (an MCP server, a skill); absent: none. */
+  createFields?(actor: StoreActor): Promise<CreateForm>
+  /** Makes one from the form's values and says what to open. */
+  create?(scope: Scope, values: Record<string, ConfigValue>, actor: StoreActor): Promise<ListingRef>
+  /** Does one of the install's `actions` (Test connection, Sign in) and says what happened. */
+  runAction?(id: string, scope: Scope, action: string, actor: StoreActor): Promise<ActionResult>
   /** Re-read the sources, so the next listings are fresh. */
   refresh(): Promise<void>
   sources(): Promise<SourceView[]>
@@ -74,6 +81,12 @@ export interface StoreProvider {
   projectInstalls?(
     actor: StoreActor & { projectId: string },
   ): Promise<Array<{ id: string; installs: StoreInstall[] }>>
+  /**
+   * What the open project keeps in its own folder (`actor.projectId`), as listings the Project
+   * shelf shows. Never returned by `listings`, which is the person's and indexed: a project's
+   * files belong to that project alone. Absent for a kind that keeps nothing per project.
+   */
+  projectListings?(actor: StoreActor & { projectId: string }): Promise<Listing[]>
   /** The hero and collections its editorial sources pick for Discover; none when it has none. */
   editorial?(): Promise<Editorial[]>
   /** Hear every change to what `listings` would answer; returns the unsubscribe. */

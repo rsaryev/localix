@@ -10,6 +10,7 @@ import {
 import type { StoreSection, StoreView } from '../model/navigation'
 import { useStoreScope } from '../model/storeContext'
 import { useDiscover } from '../model/useStoreData'
+import { CreateBar } from './CreateDialog'
 import { Discover, DiscoverSkeleton } from './Discover'
 import { ListingsView } from './ListingsView'
 import { PackageView } from './PackageView'
@@ -100,11 +101,14 @@ export function StoreBody({
     )
   if (section === 'yours' || section === 'project')
     return (
-      <ListingsView
-        title={LIBRARY_LABELS[section].label}
-        subtitle={AUTHORED_NOTES[section]}
-        query={{ shelf: section }}
-      />
+      <>
+        <CreateBar kinds="all" initial={section === 'project' ? 'project' : 'user'} />
+        <ListingsView
+          title={LIBRARY_LABELS[section].label}
+          subtitle={AUTHORED_NOTES[section]}
+          query={{ shelf: section }}
+        />
+      </>
     )
   if (section.startsWith('capability:')) {
     const kind = section.slice(11) as BrowsableComponentKind
@@ -120,10 +124,13 @@ export function StoreBody({
   }
   const kind = section.slice(8) as PackageKind
   return (
-    <ListingsView
-      title={KIND_LABELS[kind].many}
-      subtitle={KIND_NOTES[kind]}
-      query={{ shelf: section }}
-    />
+    <>
+      <CreateBar kinds={[kind]} />
+      <ListingsView
+        title={KIND_LABELS[kind].many}
+        subtitle={KIND_NOTES[kind]}
+        query={{ shelf: section }}
+      />
+    </>
   )
 }
