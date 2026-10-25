@@ -7,19 +7,20 @@ Localix does not do yet. It was checked against Claude Code 2.1.310.
 
 ## What works
 
-| Area                              | What Localix reads and runs                                                                                                                                           | Guide                                                                                                      |
-| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| Plugins                           | `.claude-plugin/plugin.json`, every component folder, Claude Code marketplaces, installs from `/plugin install`, Claude Code's own installs, versions and auto-update | [Claude Code plugins](claude-code-plugins.md), [Plugin updates](plugin-updates.md)                         |
-| Skills and commands               | `SKILL.md` and command files from plugins, `~/.claude/skills`, `.claude/skills` and `.claude/commands`, with their frontmatter, arguments, `!command` and `@file`     | [Skills](../features/skills.md)                                                                            |
-| Agents                            | Plugin agents, `.claude/agents` and `~/.claude/agents`, and the built-in types `general-purpose`, `Explore` and `Plan`                                                | [Delegation](../features/delegation.md#claude-code-agent-types)                                            |
-| Project instructions              | `CLAUDE.md`, `.claude/CLAUDE.md`, `CLAUDE.local.md`, `~/.claude/CLAUDE.md`, `AGENTS.md`, `.claude/rules` and `@imports`                                               | [Project instructions](../features/project-instructions.md)                                                |
-| Hooks                             | Every hook event from plugins and settings files, with Claude Code's input and output JSON                                                                            | [Hooks and commands](../features/hooks-and-commands.md), [Hook tool calls](../features/hook-tool-calls.md) |
-| Tools as hooks and rules see them | Claude Code's tool names and input and result shapes (`Bash`, `Read`, `Edit`, `Write`, `Grep`, `Glob`, `WebFetch`, `Agent`, `Skill` …)                                | [Hook tool calls](../features/hook-tool-calls.md)                                                          |
-| Mods                              | Hooks modules with Claude Code's `$` API, panes, the band above the message box, buttons and their hotkeys                                                            | [Run Claude Code mods](claude-code-mods.md)                                                                |
-| Settings                          | `permissions`, `defaultMode`, `hooks`, `env`, `statusLine`, `outputStyle`, `enabledPlugins`, `pluginConfigs`, managed settings and `CLAUDE_CONFIG_DIR`                | [Use your Claude Code settings](claude-code-settings.md)                                                   |
-| MCP servers                       | Plugin servers, `.mcp.json`, `~/.claude.json` and managed MCP, with Claude Code's tool names and timeouts                                                             | [MCP](../features/mcp.md)                                                                                  |
-| Language servers                  | Plugin `.lsp.json` with its documented fields                                                                                                                         | [Language servers](../features/lsp.md)                                                                     |
-| Permission rules                  | `Bash(git push:*)`, `Read(src/**)`, `Edit(…)`, `WebFetch(domain:…)`, `Agent(…)`, `Skill(…)` and `mcp__…`, with deny over ask over allow                               | [Permission rules](../features/permissions.md#claude-code-permission-rules)                                |
+| Area                              | What Localix reads and runs                                                                                                                                                                                                         | Guide                                                                                                      |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Plugins                           | `.claude-plugin/plugin.json`, every component folder, Claude Code marketplaces, installs from `/plugin install`, Claude Code's own installs, versions and auto-update                                                               | [Claude Code plugins](claude-code-plugins.md), [Plugin updates](plugin-updates.md)                         |
+| Skills and commands               | `SKILL.md` and command files from plugins, `~/.claude/skills`, `.claude/skills` and `.claude/commands`, with their frontmatter, arguments, `!command` and `@file`                                                                   | [Skills](../features/skills.md)                                                                            |
+| Everyday slash commands           | `/clear`, `/resume`, `/rename`, `/rewind`, `/plan`, `/context`, `/copy`, `/permissions`, `/config`, `/effort`, `/reload-plugins` and `/reload-skills`, each running what Localix already does, with its arguments offered as crumbs | [Hooks and commands](../features/hooks-and-commands.md#everyday-claude-code-commands)                      |
+| Agents                            | Plugin agents, `.claude/agents` and `~/.claude/agents`, and the built-in types `general-purpose`, `Explore` and `Plan`                                                                                                              | [Delegation](../features/delegation.md#claude-code-agent-types)                                            |
+| Project instructions              | `CLAUDE.md`, `.claude/CLAUDE.md`, `CLAUDE.local.md`, `~/.claude/CLAUDE.md`, `AGENTS.md`, `.claude/rules` and `@imports`                                                                                                             | [Project instructions](../features/project-instructions.md)                                                |
+| Hooks                             | Every hook event from plugins and settings files, with Claude Code's input and output JSON                                                                                                                                          | [Hooks and commands](../features/hooks-and-commands.md), [Hook tool calls](../features/hook-tool-calls.md) |
+| Tools as hooks and rules see them | Claude Code's tool names and input and result shapes (`Bash`, `Read`, `Edit`, `Write`, `Grep`, `Glob`, `WebFetch`, `Agent`, `Skill` …)                                                                                              | [Hook tool calls](../features/hook-tool-calls.md)                                                          |
+| Mods                              | Hooks modules with Claude Code's `$` API, panes, the band above the message box, buttons and their hotkeys                                                                                                                          | [Run Claude Code mods](claude-code-mods.md)                                                                |
+| Settings                          | `permissions`, `defaultMode`, `hooks`, `env`, `statusLine`, `outputStyle`, `enabledPlugins`, `pluginConfigs`, managed settings and `CLAUDE_CONFIG_DIR`                                                                              | [Use your Claude Code settings](claude-code-settings.md)                                                   |
+| MCP servers                       | Plugin servers, `.mcp.json`, `~/.claude.json` and managed MCP, with Claude Code's tool names and timeouts                                                                                                                           | [MCP](../features/mcp.md)                                                                                  |
+| Language servers                  | Plugin `.lsp.json` with its documented fields                                                                                                                                                                                       | [Language servers](../features/lsp.md)                                                                     |
+| Permission rules                  | `Bash(git push:*)`, `Read(src/**)`, `Edit(…)`, `WebFetch(domain:…)`, `Agent(…)`, `Skill(…)` and `mcp__…`, with deny over ask over allow                                                                                             | [Permission rules](../features/permissions.md#claude-code-permission-rules)                                |
 
 ## How it is checked
 
@@ -47,11 +48,17 @@ Where Localix has no equivalent, the feature is not offered:
   in [Not yet in Localix](claude-code-mods.md#not-yet-in-localix).
 - **Plugins.** Two plugins of the same name from different marketplaces cannot both be installed,
   and a `command` plugin source is refused.
-- **Agents.** A delegated agent cannot delegate again. An agent file's `hooks` run, while its
-  `mcpServers` and `permissionMode` are not applied. The built-in types `statusline-setup` and
-  `claude-code-guide` are not offered, and Localix has no `human` agent: describe yourself in
-  `CLAUDE.md`. Localix's own settings for an agent (`priority`, `memoryScope`, a provider route) sit
-  under a `localix:` key, which Claude Code ignores.
+- **Agents.** A delegated agent cannot delegate again, so an `Agent(worker, researcher)` list in
+  `tools` limits only an agent that runs as the main thread. In your own agent files (not a
+  plugin's) `hooks` and `mcpServers` apply to the child's runs. `permissionMode` applies as
+  [Agents](../features/agents.md#what-your-own-agent-files-can-set) describes: Localix has no
+  accept-edits, auto or dont-ask mode, so only `default` and `plan` change a child.
+- **Agent deny lists.** A `disallowedTools` entry with a specifier, such as `Bash(rm *)`, refuses
+  only the calls it matches, where Claude Code removes the whole tool.
+- **Agent built-ins.** The types `statusline-setup` and `claude-code-guide` are not offered, and
+  Localix has no `human` agent: describe yourself in `CLAUDE.md`. Localix's own settings for an
+  agent (`priority`, `memoryScope`, a provider route) sit under a `localix:` key, which Claude Code
+  ignores.
 - **Approvals.** An unapproved `.mcp.json` server does not load, since Localix has no approval
   prompt for one; imports from outside a project are skipped.
 

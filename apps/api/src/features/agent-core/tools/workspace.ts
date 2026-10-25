@@ -9,8 +9,9 @@ import { isPathWithin } from '../../../lib/path-containment'
  * The parts of `~/.localix` agents AUTHOR, and so read and write without an outside-workspace
  * prompt in every role: session scratch (`tmp/`), per-task and default-project workspaces
  * (`workspace/`), the user's own mini apps (`mini-apps/`, where `/mini-app create` puts them),
- * plugins (`plugins/`) and skills (`skills/`). A mini app's data (`mini-apps-data/`) is not authored
- * by the agent and is not among them.
+ * and plugins (`plugins/`); and outside it the person's own skills (`~/.claude/skills`, the tree
+ * shared with Claude Code, which also lets its agents edit skills there). A mini app's data
+ * (`mini-apps-data/`) is not authored by the agent and is not among them.
  *
  * Not the whole of `~/.localix`. That used to be the root, and it made the database, the vault,
  * the captured login-shell environment and the backups silently writable by any agent — while
@@ -18,13 +19,9 @@ import { isPathWithin } from '../../../lib/path-containment'
  * confined to the session workspace. An authoring session asked for approval on every read of its
  * own folder. The line is the kind of content, not the directory it happens to sit in.
  */
-export const AGENT_ALLOWED_ROOTS: string[] = [
-  'workspace',
-  'tmp',
-  'mini-apps',
-  'plugins',
-  'skills',
-].map((dir) => path.join(localixHome(), dir))
+export const AGENT_ALLOWED_ROOTS: string[] = ['workspace', 'tmp', 'mini-apps', 'plugins']
+  .map((dir) => path.join(localixHome(), dir))
+  .concat(path.join(os.homedir(), '.claude', 'skills'))
 
 /**
  * A generic session-scoped scratch directory any tool may write/read (e.g. a tool

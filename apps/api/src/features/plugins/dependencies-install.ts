@@ -2,11 +2,7 @@ import type { ExtensionTreeInput } from '../ext/publish-trees'
 import { dependencyTagVersions } from './dependency-tag-versions'
 import { loadManifest, type DiscoveredPlugin } from './discovery'
 import { applyEntryManifestOverrides } from './marketplace-entry-manifest'
-import type {
-  CapabilitySourceRepository,
-  CapabilitySourceRecord,
-} from '../capabilities/source-repository'
-import type { ContributionInput } from '../ext/contribution-kinds'
+import type { CapabilitySourceRepository } from '../capabilities/source-repository'
 import {
   findMarketplacesWithPlugin,
   marketplaceDependencyAllowList,
@@ -29,7 +25,7 @@ import {
  *     dependency graph (throws typed errors on missing/blocked dependencies) before
  *     the install writes anything, so a failing install is atomic-by-ordering.
  *  2. `publication()` supplies staged trees and metadata writes for the parent installer.
- *     The host combines them with parent files, contributions and policy in one publication.
+ *     The host combines them with parent files and policy in one publication.
  *     Dependencies never commit themselves independently from their parent.
  */
 
@@ -48,12 +44,7 @@ export interface PreparedDependencyInstall {
   toInstall: string[]
   publication(context: DependencyPublicationContext): {
     trees: ExtensionTreeInput[]
-    write: (repo: CapabilitySourceRepository) => Promise<
-      Array<{
-        source: CapabilitySourceRecord
-        contributions: ContributionInput[]
-      }>
-    >
+    write: (repo: CapabilitySourceRepository) => Promise<void>
   }
 }
 
@@ -173,15 +164,12 @@ export async function prepareDependenciesForInstall(
           },
         })),
         write: async (repo) => {
-          const records = []
           for (const [index, step] of plan.steps.entries()) {
             const plugin = plugins[index]!
-            const source = await repo.upsert(ops.userId, ops.projectId, plugin.manifest.name, {
+            await repo.upsert(ops.userId, ops.projectId, plugin.manifest.name, {
               source: `${step.name}@${step.marketplace}`,
             })
-            records.push({ source, contributions: [] })
           }
-          return records
         },
       }
     },

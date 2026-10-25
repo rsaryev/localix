@@ -41,10 +41,6 @@ export const ModelIcon = () => (
   <S d="M8 2.5l5 2.5-5 2.5-5-2.5 5-2.5zM3 8l5 2.5L13 8M3 11l5 2.5L13 11" />
 )
 
-export const CompactIcon = () => <S d="M3 4h10M5 8h6M7 12h2" />
-
-export const ClearIcon = () => <S d="M3.5 5.5h9M6 5.5V4h4v1.5M5 5.5l.6 7h4.8l.6-7" />
-
 export const UsageIcon = () => <S d="M2.5 13V7M6 13V3M9.5 13V9M13 13V5" />
 
 export const ForkIcon = () => (
@@ -83,11 +79,6 @@ export const PluginsIcon = () => (
 
 /** Mini apps — four tiles: an app with its own screens. */
 export const MiniAppIcon = () => <S d="M3 3h4v4H3zM9 3h4v4H9zM3 9h4v4H3zM9 9h4v4H9z" />
-
-/** Agent providers — a stacked-boxes metaphor for drop-in executors/LLM backends. */
-export const ProvidersIcon = () => (
-  <S d="M8 1.5l5.5 3v7l-5.5 3-5.5-3v-7l5.5-3zM2.5 4.5L8 7.5l5.5-3M8 7.5v7" />
-)
 
 /** Help — a question mark in a circle (used by /help). */
 export const HelpIcon = () => (

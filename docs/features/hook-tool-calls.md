@@ -47,22 +47,22 @@ A hook reads each Localix tool under its Claude Code name, with `tool_input` and
 that tool's shape. Localix's own fields stay beside them, and a hook's `updatedInput` is folded back
 into them. File paths are absolute.
 
-| Localix tool     | `tool_name` for the call                                               | `tool_response`                                          |
-| ---------------- | ---------------------------------------------------------------------- | -------------------------------------------------------- |
-| `bash`           | `Bash`; a batch of commands is one `command` line                      | `stdout`, `stderr`, `interrupted`, `isImage`             |
-| `read`           | `Read`; a line range is `offset` and `limit`                           | `{type: "text", file: {filePath, content, …}}`, or image |
-| `edit`, `write`  | `Edit`, `Write` for one file                                           | `filePath`, `structuredPatch`; Write's `type`, `content` |
-| `search`         | `Glob` for a file listing, otherwise `Grep`                            | Glob's `filenames`; Grep's `content`, `filenames`        |
-| `research`       | `WebFetch` for known URLs, otherwise `WebSearch`                       | WebFetch's `result`; WebSearch's `results`               |
-| `delegate`       | `Agent` to start, `SendMessage`, or `TaskStop`                         | `status`, `agentId`, `content`                           |
-| `skill`          | `Skill` (`skill`, `args`)                                              | `success`, `commandName`                                 |
-| `ask`            | `AskUserQuestion`; `answers` from `updatedInput` answer without a card | `questions`, `answers`                                   |
-| `plan`           | `ExitPlanMode` to present a plan                                       | `plan`                                                   |
-| `loops`          | `CronCreate`, `CronDelete`, `CronList` or `ScheduleWakeup`             | Localix's own                                            |
-| `jobs`           | `TaskStop` to stop a job                                               | Localix's own                                            |
-| `activate_tools` | `ToolSearch` (`select:<names>`)                                        | Localix's own                                            |
-| `mcp_resources`  | `ListMcpResourcesTool` or `ReadMcpResourceTool`                        | Localix's own                                            |
-| An MCP tool      | `mcp__<server>__<tool>`                                                | Its content blocks                                       |
+| Localix tool     | `tool_name` for the call                                                      | `tool_response`                                          |
+| ---------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `bash`           | `Bash`, or `Monitor` for a wait (`until`); a batch is one `command`           | `stdout`, `stderr`, `interrupted`, `isImage`             |
+| `read`           | `Read`; a line range is `offset` (a line) and `limit`                         | `{type: "text", file: {filePath, content, …}}`, or image |
+| `edit`, `write`  | `Edit`, `Write` for one file; a notebook edit adds `notebook_path`            | `filePath`, `structuredPatch`; Write's `type`, `content` |
+| `search`         | `Glob` for a file listing, otherwise `Grep`                                   | Glob's `filenames`; Grep's `content`, `filenames`        |
+| `research`       | `WebFetch` for known URLs, otherwise `WebSearch`                              | WebFetch's `result`; WebSearch's `results`               |
+| `delegate`       | `Agent` to start, `SendMessage`, or `TaskStop`                                | `status`, `agentId`, `content`                           |
+| `skill`          | `Skill` (`skill`, `args`) to load a skill; save, list and delete stay `skill` | `success`, `commandName`                                 |
+| `ask`            | `AskUserQuestion`; `answers` from `updatedInput` answer without a card        | `questions`, `answers`                                   |
+| `plan`           | `ExitPlanMode` to present a plan                                              | `plan`                                                   |
+| `loops`          | `CronCreate`, `CronDelete`, `CronList` or `ScheduleWakeup`                    | Localix's own                                            |
+| `jobs`           | `TaskStop` to stop a job                                                      | Localix's own                                            |
+| `activate_tools` | `ToolSearch` (`select:<names>`)                                               | Localix's own                                            |
+| `mcp_resources`  | `ListMcpResourcesTool` or `ReadMcpResourceTool`                               | Localix's own                                            |
+| An MCP tool      | `mcp__<server>__<tool>`                                                       | Its content blocks                                       |
 
 Any other tool keeps its Localix name and shape. A call with no Claude Code counterpart, such as one
 edit call over several files, keeps Localix's `{content, details}` response. `PostToolUse` and

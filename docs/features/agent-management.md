@@ -17,64 +17,30 @@ the agent's page on its **Settings** tab, where you write the instructions.
 
 ## Create from a conversation
 
-Ask your assistant to create a specialist and bring it into the conversation. With the `agents` tool
-available, it can inspect existing specialists and author a missing specialization using only a
-handle, description, standing instructions and an explicit hierarchy priority. Current task details
-belong in the handoff rather than in the reusable definition.
+Ask your assistant to create a specialist and bring it into the conversation. With the `store` tool
+available, it can look at what is installed (`search` with `kind: "agent"`) and, once you approve,
+create a missing specialization with `create`, giving a name, a description and the standing
+instructions. Current task details belong in the handoff rather than in the reusable definition.
 
-The server writes the specialist as a file in the current project's `.claude/agents/` folder;
+Every `create` shows you a card with the definition and waits for your answer; nothing is written
+before you approve. A run nobody can answer, such as an automation, refuses it. The `scope` is
+`user` (your agents, in every project) or `project` (the open project's `.claude/agents/` folder);
 creation cannot select a different project. Your own agents and plugin agents such as the starter
 team are listed in every project too, unless a project agent uses the same name. The server issues a
 stable ID and leaves model preferences, memory settings, skill preloads and turn limits at their
-existing defaults. `leadership_priority` is required: an integer from −2 to 2. Use a lower priority
-than the current leader for supporting specialists.
+existing defaults.
 
-The new specialist receives a one-time copy of its creator's **saved, ordered permission rules**,
-including tool restrictions and invocation restrictions. Identity-specific rules are redirected to
-the new ID. Session grants, one-time approvals and the current permission mode are not copied. Later
-changes to the creator's policy do not change the specialist's own rules. Edit those rules on its
-**Access** tab when needed.
-
-Manual creation in the Store or with explicit slash-command fields starts from the Localix default
-policy. Duplicating an agent copies that agent's file, policy and enabled choice into a fresh
-identity.
+A created specialist starts from the Localix default policy, as with the Store's **Add agent** form.
+It does not copy its creator's permission rules; edit them on its **Access** tab when needed.
 
 After creating a specialist, the assistant tags its handle in the reply with a concrete assignment:
 the tag invites it into the conversation and gives it the floor. A fixed-membership conversation
-cannot invite a new colleague. Child and automation runs do not receive the catalog-authoring tool.
-Parallel copies of the same agent remain the responsibility of [fork](delegation.md).
+cannot invite a new colleague. Child and automation runs do not receive the `store` tool. Parallel
+copies of the same agent remain the responsibility of [fork](delegation.md).
 
 The elected leader receives team-building instructions even while alone in the chat. It handles
 small tasks directly; when distinct specialties are useful, it reuses existing definitions and
-creates all missing roles in one `agents` call. The `create` action takes an `agents` array of
-**1–8** definitions. Every entry must be valid and handles must be distinct before anything is
-written.
-
-```json
-{
-  "action": "create",
-  "agents": [
-    {
-      "handle": "migration-reviewer",
-      "description": "Reviews migrations",
-      "instructions": "Check compatibility and recovery; return findings with evidence.",
-      "leadership_priority": 0
-    },
-    {
-      "handle": "regression-tester",
-      "description": "Tests migration failures",
-      "instructions": "Exercise failure and retry paths; report reproducible findings.",
-      "leadership_priority": -1
-    }
-  ]
-}
-```
-
-A batch returns `created` definitions with stable IDs and indexed `errors`. Successful definitions
-are retained when another member fails. Retrying the exact batch returns those same IDs and retries
-failed members. Changing the order, membership or fields after a partial success is rejected before
-more definitions are written; use a new call for a changed team. All new members share one saved
-creator-policy snapshot for that call.
+creates the missing roles one `store` call at a time, each one approved by you.
 
 ## User commands
 
@@ -103,8 +69,8 @@ built-in agents cannot be edited or deleted with them, exactly as in the Store.
 
 To describe the specialist in your own words, write the request after `create`. More than one word
 without options is a request; a single word is a handle, and the reply links to the Agents shelf.
-The chat's agent chooses the handle, description, instructions and priority, then saves the
-specialist with the `agents` tool. It does not invite or start the new agent:
+The chat's agent chooses the handle, description and instructions, then saves the specialist with
+the `store` tool after you approve. It does not invite or start the new agent:
 
 ```text
 /agents create a reviewer that checks database migrations for data loss and missing rollbacks
@@ -158,6 +124,6 @@ that operation for different instructions fails. A different creation with an oc
 without overwriting the existing agent. A successfully created specialist remains if a later
 invitation fails.
 
-Localix is the only built-in agent. Customized policies remain unchanged; enable the tool on the
-agent's **Access** tab when desired. Its permission resources are `list`, `get` and `create`,
-allowing catalog inspection to be granted independently of creation.
+Localix is the only built-in agent. Customized policies remain unchanged; enable the `store` tool on
+the agent's **Access** tab when desired. Its reads (`search`, `get`) can be granted independently of
+its changes, and a rule can name one package, such as `install:plugin:review@market:user`.

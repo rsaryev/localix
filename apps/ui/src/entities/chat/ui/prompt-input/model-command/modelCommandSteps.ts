@@ -56,7 +56,7 @@ export function skipModelStep(
   return false
 }
 
-function agentOptions(context: ModelCommandContext, query: string): SlashArgOption[] {
+export function agentOptions(context: ModelCommandContext, query: string): SlashArgOption[] {
   const { participants, models, connections, sessionConnectionId } = context
   const nameOf = (target: ModelCommandTarget) => {
     const live = resolveLiveTaskModel(models, connections, targetSlot(context, target))

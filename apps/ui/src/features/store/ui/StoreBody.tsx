@@ -1,11 +1,9 @@
-import { ArrowLeft } from 'lucide-react'
 import {
   PACKAGE_KINDS,
   type BrowsableComponentKind,
   type Listing,
   type PackageKind,
 } from '@localixai/store'
-import { Button } from '@localixai/kit/button'
 import { SectionHeading } from '@localixai/kit/section-heading'
 import {
   COMPONENT_LABELS,
@@ -18,6 +16,7 @@ import type { StoreSection, StoreView } from '../model/navigation'
 import { useStoreScope } from '../model/storeContext'
 import { useDiscover } from '../model/useStoreData'
 import { CreateBar } from './CreateDialog'
+import { ShelfActionButtons } from './ShelfActions'
 import { Discover, DiscoverSkeleton } from './Discover'
 import { ListingsView } from './ListingsView'
 import { PackageView } from './PackageView'
@@ -25,6 +24,8 @@ import { SearchResults } from './SearchResults'
 import { StoreComponents } from './StoreComponents'
 import { StoreLibrary } from './StoreLibrary'
 import { StoreSources } from './StoreSources'
+import { StoreBackButton } from './StoreBackButton'
+import { StoreReadFailure } from './StoreReadFailure'
 
 const KIND_NOTES: Partial<Record<PackageKind, string>> = {
   'mini-app': 'Screens and tools that work beside your chats. One you install appears in the rail.',
@@ -40,7 +41,16 @@ const AUTHORED_NOTES = {
 function DiscoverSection() {
   const store = useStoreScope()
   const discover = useDiscover(store.client, store.project?.id ?? null)
-  if (!discover.data) return <DiscoverSkeleton />
+  if (!discover.data)
+    return discover.error ? (
+      <StoreReadFailure
+        what="Discover"
+        error={discover.error}
+        onRetry={() => void discover.mutate()}
+      />
+    ) : (
+      <DiscoverSkeleton />
+    )
   return <Discover data={discover.data} />
 }
 
@@ -75,12 +85,7 @@ export function StoreBody({
   if (view?.type === 'list')
     return (
       <div className="flex flex-col gap-3">
-        <div>
-          <Button size="sm" variant="ghost" aria-label="Back" onClick={onBack}>
-            <ArrowLeft data-icon="inline-start" aria-hidden />
-            {backLabel}
-          </Button>
-        </div>
+        <StoreBackButton label={backLabel} onBack={onBack} />
         <ListingsView
           title={view.title}
           subtitle={view.subtitle}
@@ -108,7 +113,11 @@ export function StoreBody({
   if (section === 'yours' || section === 'project')
     return (
       <>
-        <CreateBar kinds="all" initial={section === 'project' ? 'project' : 'user'} />
+        <CreateBar
+          kinds="all"
+          initial={section === 'project' ? 'project' : 'user'}
+          before={<ShelfActionButtons scope={section === 'project' ? 'project' : 'user'} />}
+        />
         <ListingsView
           title={LIBRARY_LABELS[section].label}
           subtitle={AUTHORED_NOTES[section]}

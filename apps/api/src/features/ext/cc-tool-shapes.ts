@@ -38,6 +38,9 @@ export function claudeCodeNames(localName: string): string[] {
   return shape ? [shape.name, ...(shape.names ?? [])] : []
 }
 
+/** Localix's tools that have a Claude Code shape, in the order a shared name resolves by. */
+export const shapedToolNames = (): string[] => Object.keys(SHAPES)
+
 /** Localix's name for a tool a hook names as Claude Code does (`Bash` is `bash`). */
 export function localToolName(name: string): string {
   const named = (shape: ToolShape) => shape.name === name || shape.names?.includes(name) === true

@@ -46,32 +46,32 @@ describe('# Collaboration follows the room', () => {
   })
 
   test('creates a missing specialization only with authoring and open membership', () => {
-    const tools = [...all, TOOL.agents]
+    const tools = [...all, TOOL.store]
     const open = buildCollaborationSection(tools, { withColleagues: false, ...chat })!
-    expect(open).toContain('Create missing reusable specialists with `agents`')
-    expect(open).toContain('below the current leader’s priority')
+    expect(open).toContain('Create missing reusable specialists with `store`')
+    expect(open).toContain('only the user changes their permissions')
     expect(open).toContain('then @mention the created handles')
     expect(open).toContain('even while alone')
     expect(
       buildCollaborationSection(tools, { withColleagues: false, ...chat, membershipClosed: true }),
-    ).not.toContain('`agents`')
+    ).not.toContain('`store`')
     expect(buildCollaborationSection(all, { withColleagues: false, ...chat })).not.toContain(
-      '`agents`',
+      '`store`',
     )
   })
 
   test('only the elected leader owns proactive team assembly', () => {
-    const tools = [...all, TOOL.agents]
+    const tools = [...all, TOOL.store]
     const leader = buildCollaborationSection(tools, { withColleagues: true, isLeader: true })!
     const member = buildCollaborationSection(tools, { withColleagues: true, isLeader: false })!
-    expect(leader).toContain('Create all missing specialists in one batch')
+    expect(leader).toContain('Create all missing specialists, then @mention each ready owner')
     expect(leader).toContain('do not wait for the user to name roles')
     expect(member).not.toContain('do not wait for the user to name roles')
     expect(member).toContain('bring an agent in only for a role your own part needs')
     // A member may invite: the rule never tells it to leave every addition to the leader.
     expect(member).not.toContain('instead of bringing agents in yourself')
     expect(
-      buildCollaborationSection([TOOL.agents, TOOL.delegate], {
+      buildCollaborationSection([TOOL.store, TOOL.delegate], {
         withColleagues: false,
         isLeader: true,
       }),

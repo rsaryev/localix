@@ -213,8 +213,9 @@ the order of files and rules does not matter. `Bash(…)` rules match each subco
 line after `timeout`, `nice`, `nohup` and similar wrappers; `Read(…)` and `Edit(…)` paths use Claude
 Code's anchors (`//abs`, `~/home`, `/` for the settings file's own folder, relative for the working
 directory) and gitignore matching with `!` carve-outs; `WebFetch(domain:…)` matches the pages
-`research` reads; `mcp__<server>` and `mcp__<server>__<tool>` match MCP tools; `Agent(…)` matches a
-delegated plugin agent and `Skill(…)` a skill.
+`research` reads; `mcp__<server>` and `mcp__<server>__<tool>` match MCP tools; `Agent(…)` matches
+the agent type a task is delegated to (`general-purpose` when the call names none) and `Skill(…)` a
+skill.
 
 A shell line meets `Read` and `Edit` rules through the files it names: the operands of `cat`,
 `head`, `tail`, `grep`, `sed`, `tee`, `cp`, `mv`, `rm` and similar commands, `sed -i`, and
@@ -280,4 +281,4 @@ inspect or revoke current session grants. When no client can receive a confirmat
 - [Mode rewriting](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/capabilities/permission-mode-policy.ts)
 - [Permanent-rule insertion](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/capabilities/availability.ts)
 - [Session grants](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/confirm-requester.ts)
-- [Settings surface](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/settings/ui/capabilities/PermissionRulesView.tsx)
+- [Settings surface](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/settings/ui/permissions/PermissionRulesView.tsx)

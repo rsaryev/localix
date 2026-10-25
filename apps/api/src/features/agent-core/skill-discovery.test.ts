@@ -24,7 +24,7 @@ let dir: string
 
 beforeAll(async () => {
   dir = await fs.mkdtemp(join(tmpdir(), 'skills-'))
-  const skillDir = join(dir, '.localix', 'skills', 'deploy-helper')
+  const skillDir = join(dir, '.claude', 'skills', 'deploy-helper')
   await fs.mkdir(skillDir, { recursive: true })
   await fs.writeFile(
     join(skillDir, 'SKILL.md'),
@@ -32,12 +32,12 @@ beforeAll(async () => {
   )
 
   // A skill with no frontmatter name → falls back to the directory name.
-  const noName = join(dir, '.localix', 'skills', 'lint-fix')
+  const noName = join(dir, '.claude', 'skills', 'lint-fix')
   await fs.mkdir(noName, { recursive: true })
   await fs.writeFile(join(noName, 'SKILL.md'), '# Lint Fix\n\nFix lint errors.')
 
   // A Claude Code skill using `when_to_use` (trigger phrases folded into description).
-  const cc = join(dir, '.localix', 'skills', 'pdf-extract')
+  const cc = join(dir, '.claude', 'skills', 'pdf-extract')
   await fs.mkdir(cc, { recursive: true })
   await fs.writeFile(
     join(cc, 'SKILL.md'),
@@ -45,7 +45,7 @@ beforeAll(async () => {
   )
 
   // A CC skill using `when-to-use` (hyphen form — same as when_to_use but different convention).
-  const cc2 = join(dir, '.localix', 'skills', 'log-extract')
+  const cc2 = join(dir, '.claude', 'skills', 'log-extract')
   await fs.mkdir(cc2, { recursive: true })
   await fs.writeFile(
     join(cc2, 'SKILL.md'),
@@ -53,7 +53,7 @@ beforeAll(async () => {
   )
 
   // CC flags: disable-model-invocation, user-invocable, argument-hint, arguments.
-  const flags = join(dir, '.localix', 'skills', 'private-skill')
+  const flags = join(dir, '.claude', 'skills', 'private-skill')
   await fs.mkdir(flags, { recursive: true })
   await fs.writeFile(
     join(flags, 'SKILL.md'),
@@ -61,7 +61,7 @@ beforeAll(async () => {
   )
 
   // CC argument-hint only (no flags).
-  const hinted = join(dir, '.localix', 'skills', 'deploy-with-hint')
+  const hinted = join(dir, '.claude', 'skills', 'deploy-with-hint')
   await fs.mkdir(hinted, { recursive: true })
   await fs.writeFile(
     join(hinted, 'SKILL.md'),
@@ -69,7 +69,7 @@ beforeAll(async () => {
   )
 
   // CC context:fork + agent + model + effort + paths.
-  const forked = join(dir, '.localix', 'skills', 'research-fork')
+  const forked = join(dir, '.claude', 'skills', 'research-fork')
   await fs.mkdir(forked, { recursive: true })
   await fs.writeFile(
     join(forked, 'SKILL.md'),
@@ -77,7 +77,7 @@ beforeAll(async () => {
   )
 
   // Keyword triggers: comma-separated, so a phrase may contain spaces.
-  const keyed = join(dir, '.localix', 'skills', 'deploy-guide')
+  const keyed = join(dir, '.claude', 'skills', 'deploy-guide')
   await fs.mkdir(keyed, { recursive: true })
   await fs.writeFile(
     join(keyed, 'SKILL.md'),
@@ -85,7 +85,7 @@ beforeAll(async () => {
   )
 
   // Block-list YAML frontmatter (CC style) — allowed-tools and arguments as block lists.
-  const blockList = join(dir, '.localix', 'skills', 'block-list-skill')
+  const blockList = join(dir, '.claude', 'skills', 'block-list-skill')
   await fs.mkdir(blockList, { recursive: true })
   await fs.writeFile(
     join(blockList, 'SKILL.md'),
@@ -93,7 +93,7 @@ beforeAll(async () => {
   )
 
   // Mixed: some fields inline, some block-list.
-  const mixed = join(dir, '.localix', 'skills', 'mixed-skill')
+  const mixed = join(dir, '.claude', 'skills', 'mixed-skill')
   await fs.mkdir(mixed, { recursive: true })
   await fs.writeFile(
     join(mixed, 'SKILL.md'),
@@ -306,7 +306,7 @@ describe('discoverFilesystemSkills', () => {
     const root = await fs.mkdtemp(join(tmpdir(), 'skill-root-'))
     const home = await fs.mkdtemp(join(tmpdir(), 'skill-home-'))
     const nested = join(root, 'packages', 'app')
-    const ancestorSkill = join(root, '.localix', 'skills', 'ancestor-only')
+    const ancestorSkill = join(root, '.claude', 'skills', 'ancestor-only')
     await fs.mkdir(nested, { recursive: true })
     await fs.mkdir(ancestorSkill, { recursive: true })
     await fs.writeFile(
@@ -322,7 +322,7 @@ describe('discoverFilesystemSkills', () => {
   })
 })
 
-describe('project read sources beside .localix/skills', () => {
+describe('project read sources beside .claude/skills', () => {
   let cdir: string
   beforeAll(async () => {
     cdir = await fs.mkdtemp(join(tmpdir(), 'cmds-'))
@@ -372,7 +372,7 @@ describe('project read sources beside .localix/skills', () => {
       join(realSkill, 'SKILL.md'),
       '---\nname: formatter\ndescription: Formats code\n---\nFormat it.',
     )
-    const container = join(linkRoot, '.localix', 'skills')
+    const container = join(linkRoot, '.claude', 'skills')
     await fs.mkdir(container, { recursive: true })
     await fs.symlink(realSkill, join(container, 'formatter'), 'dir')
 
@@ -387,14 +387,14 @@ describe('CC frontmatter tolerance (metadata / license / hide-from-slash-command
   beforeAll(async () => {
     fdir = await fs.mkdtemp(join(tmpdir(), 'fm-tol-'))
     // metadata is an arbitrary nested YAML map; license is a scalar; both must not break parsing.
-    const std = join(fdir, '.localix', 'skills', 'standard-skill')
+    const std = join(fdir, '.claude', 'skills', 'standard-skill')
     await fs.mkdir(std, { recursive: true })
     await fs.writeFile(
       join(std, 'SKILL.md'),
       '---\nname: standard-skill\ndescription: Open-standard skill.\nlicense: Apache-2.0\nmetadata:\n  author: jane\n  category: build\n---\n\nDo the standard thing.',
     )
     // hide-from-slash-command-tool hides from the model listing, still user-invocable.
-    const hidden = join(fdir, '.localix', 'skills', 'hidden-from-model')
+    const hidden = join(fdir, '.claude', 'skills', 'hidden-from-model')
     await fs.mkdir(hidden, { recursive: true })
     await fs.writeFile(
       join(hidden, 'SKILL.md'),
@@ -429,7 +429,7 @@ describe('exact skill scopes', () => {
     const home = await fs.mkdtemp(join(tmpdir(), 'home-'))
     const proj = await fs.mkdtemp(join(tmpdir(), 'proj-'))
     for (const base of [home, proj]) {
-      const dir = join(base, '.localix', 'skills', 'quiet-clash')
+      const dir = join(base, '.claude', 'skills', 'quiet-clash')
       await fs.mkdir(dir, { recursive: true })
       await fs.writeFile(
         join(dir, 'SKILL.md'),
@@ -457,7 +457,7 @@ describe('exact skill scopes', () => {
     const home = await fs.mkdtemp(join(tmpdir(), 'home-'))
     const proj = await fs.mkdtemp(join(tmpdir(), 'proj-'))
     const mk = async (base: string, label: string) => {
-      const d = join(base, '.localix', 'skills', 'clash')
+      const d = join(base, '.claude', 'skills', 'clash')
       await fs.mkdir(d, { recursive: true })
       await fs.writeFile(
         join(d, 'SKILL.md'),

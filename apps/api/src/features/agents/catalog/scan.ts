@@ -2,6 +2,7 @@ import { promises as fs } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { claudeConfigDir } from '../../cc-settings/config-dir'
 import { managedSettingsDir } from '../../cc-settings/managed-settings'
+import { readPluginOnlyLocks } from '../../cc-settings/settings-policy'
 import type { LoadedPluginAgent } from '../../plugins/loader-contract'
 import { bodyHashOf, scanAgentFolder, type CatalogAgent } from './agent-file'
 import { BUILTIN_AGENT_TYPES } from './builtin-types'
@@ -16,6 +17,11 @@ export interface AgentFolders {
    * when the project's folder cannot be read now, which is never a reason to forget its agents.
    */
   project: string[] | null
+  /**
+   * `strictPluginOnlyCustomization` locks agents to plugins and the managed folder
+   * (settings-reference.md): the person's and the project's folders are then not read.
+   */
+  pluginOnly?: boolean
 }
 
 const isRepositoryRoot = (dir: string) =>
@@ -51,7 +57,14 @@ export async function agentFolders(opts: {
   home: string
   managedDir?: string
 }): Promise<AgentFolders> {
+  // The policy sits beside the managed agents folder: the machine's own, or the one injected.
+  const locks = await readPluginOnlyLocks({
+    homeDir: opts.home,
+    cwd: opts.cwd ?? null,
+    ...(opts.managedDir ? { managed: { dir: opts.managedDir } } : {}),
+  })
   return {
+    ...(locks.has('agents') ? { pluginOnly: true } : {}),
     managed: join(opts.managedDir ?? managedSettingsDir(), '.claude'),
     user: claudeConfigDir(opts.home),
     project: opts.cwd && opts.cwd !== '/' ? await projectClaudeDirs(opts.cwd, opts.home) : [],
@@ -77,8 +90,12 @@ export async function scanFileAgents(
 ): Promise<CatalogAgent[]> {
   const groups = await Promise.all([
     scanAgentFolder(folders.managed, 'managed', ''),
-    ...(folders.project ?? []).map((dir) => scanAgentFolder(dir, 'project', projectId)),
-    scanAgentFolder(folders.user, 'user', ''),
+    ...(folders.pluginOnly
+      ? []
+      : [
+          ...(folders.project ?? []).map((dir) => scanAgentFolder(dir, 'project', projectId)),
+          scanAgentFolder(folders.user, 'user', ''),
+        ]),
   ])
   return groups.flat()
 }

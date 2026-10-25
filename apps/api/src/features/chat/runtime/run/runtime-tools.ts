@@ -1,3 +1,4 @@
+import type { ForkLiveRun } from '../fork/fork-port'
 import { claudeCodeHome } from '../../../cc-settings/config-dir'
 import {
   createRuntimeToolRegistry,
@@ -69,6 +70,10 @@ export function buildRunToolRegistry(
     setTopic?: SetTopicPort
     /** The run's live assistant row (a steering split re-points it). */
     currentMessageId?: () => string
+    /** What a fork of this run is made from; empty until the request is built. */
+    forkLive?: () => ForkLiveRun | undefined
+    /** The agent types the run's agent may delegate to (`tools: Agent(a, b)`); absent: any. */
+    allowedAgentTypes?: readonly string[]
     session: SessionRecord
     /** The agent taking this turn — whose rules decided everything below. */
     agentId: string

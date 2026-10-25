@@ -139,7 +139,7 @@ function paramMatches(match: RegExpExecArray, input: unknown): boolean {
   if (!isRecord(input) || PRIMARY_FIELDS.has(name!)) return false
   const actual = input[name!]
   if (actual === undefined || actual === null || typeof actual === 'object') return false
-  return globMatch(value!.trim(), String(actual))
+  return globMatch(value!.trim(), String(actual as string | number | boolean | bigint))
 }
 
 /** Does the rule's specifier cover this call? */
@@ -176,8 +176,17 @@ function coversCall(rule: CcPermissionRule, call: CcCallFacts): boolean {
   if (rule.tool === 'WebFetch') return webFetchRuleMatches(spec, input, rule.effect)
   const param = PARAM.exec(spec)
   if (param && rule.effect !== 'allow' && paramMatches(param, input)) return true
-  if (rule.tool === 'Agent' || rule.tool === 'Task')
-    return typeof input.agent === 'string' && specifierMatchesValue(spec, input.agent)
+  if (rule.tool === 'Agent' || rule.tool === 'Task') {
+    // Only a start names a type. A call with no `agent` runs `general-purpose`, which also
+    // answers to `claude`.
+    if (input.action !== undefined && input.action !== 'start') return false
+    const named = typeof input.agent === 'string' && input.agent.trim() ? input.agent.trim() : null
+    const types =
+      named === null || named.toLowerCase() === 'claude'
+        ? [named ?? 'general-purpose', 'general-purpose']
+        : [named]
+    return types.some((type) => specifierMatchesValue(spec, type))
+  }
   if (rule.tool === 'Skill') {
     const name = input.skill ?? input.name
     return typeof name === 'string' && specifierMatchesValue(spec, name)

@@ -40,7 +40,7 @@ export function createMcpConditions(journal: ConditionJournal): McpConnectionObs
           ? `Sign in to the MCP server “${server.name}”`
           : `Could not connect to the MCP server “${server.name}”`,
         body: authRequired
-          ? 'The server asked for authorization. Its tools stay unavailable until you sign in from Settings.'
+          ? 'The server asked for authorization. Its tools stay unavailable until you sign in from its page in the Store.'
           : error,
         origin: { kind: 'application', label: server.name },
         // The server's own Store page: where it signs in, restarts and is edited.

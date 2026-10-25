@@ -97,6 +97,7 @@ export async function intakeRunTurn(
     ccHooks,
     extraAllowedTools: params.scope.extraAllowedTools,
     permissionRules: inputs.permissionRules,
+    denyPatterns: toolset.denyPatterns,
     mayConfirm: turn.policy.human.canAnswer,
     tools: toolset.dispatchTools,
     defaultCwd,

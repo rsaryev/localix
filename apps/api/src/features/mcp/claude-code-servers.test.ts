@@ -29,7 +29,12 @@ const own = (name: string, config: Record<string, unknown>): McpServerRecord => 
 let case_ = 0
 function serversFor(
   treeOf: Record<string, string> | ((project: string) => Record<string, string>),
-  input: { own?: McpServerRecord[]; plugins?: McpServerRecord[]; trusted?: boolean } = {},
+  input: {
+    own?: McpServerRecord[]
+    plugins?: McpServerRecord[]
+    extra?: McpServerRecord[]
+    trusted?: boolean
+  } = {},
 ) {
   const root = join(scratch(), `case-${case_++}`)
   const project = join(root, 'project')
@@ -44,6 +49,7 @@ function serversFor(
   const result = claudeCodeMcpServers({
     own: input.own ?? [],
     plugins: input.plugins ?? [],
+    ...(input.extra ? { extra: input.extra } : {}),
     userId: 'u',
     projectId: 'P1',
     cwd: project,
@@ -162,5 +168,81 @@ describe("Claude Code's MCP servers in a Localix run", () => {
       }),
     })
     expect(allowed.names).toEqual(['tool'])
+  })
+
+  /**
+   * A `headersHelper` is an arbitrary shell command. Claude Code runs the helper of a project
+   * `.mcp.json` or local-scope server only once the person trusted the folder, and connects with
+   * the static headers alone until then (mcp.md, "Trust a folder before its headersHelper runs").
+   */
+  test('a project or local server’s headersHelper waits for the folder to be trusted', () => {
+    const remote = {
+      type: 'http',
+      url: 'https://mcp.example.com/mcp',
+      headers: { 'X-Static': 's' },
+      headersHelper: './auth.sh',
+    }
+    const approvedProject = (project: string) => ({
+      'project/.mcp.json': JSON.stringify({ mcpServers: { api: remote } }),
+      'home/.claude/settings.json': JSON.stringify({ enabledMcpjsonServers: ['api'] }),
+      [`home/.claude.json`]: JSON.stringify({
+        mcpServers: { mine: remote },
+        projects: { [project]: { mcpServers: { here: remote } } },
+      }),
+    })
+    const config = (
+      input: ReturnType<typeof serversFor>,
+      name: string,
+    ): Record<string, unknown> | undefined => input.servers.find((s) => s.name === name)?.config
+
+    const untrusted = serversFor(approvedProject)
+    // Approved to connect, but the helper does not run: the static headers are all it has.
+    expect(config(untrusted, 'api')).toEqual({
+      url: remote.url,
+      headers: remote.headers,
+    })
+    expect(config(untrusted, 'here')).toEqual({ url: remote.url, headers: remote.headers })
+    // Claude Code's own user scope is the person's own file: its helper runs without the folder.
+    expect(config(untrusted, 'mine')?.headersHelper).toBe('./auth.sh')
+
+    const trusted = serversFor(approvedProject, { trusted: true })
+    expect(config(trusted, 'api')?.headersHelper).toBe('./auth.sh')
+    expect(config(trusted, 'here')?.headersHelper).toBe('./auth.sh')
+  })
+
+  test('a project server nobody approved is not connected at all, so its helper never runs', () => {
+    const mcpJson = JSON.stringify({
+      mcpServers: {
+        api: { type: 'http', url: 'https://mcp.example.com/mcp', headersHelper: 'touch /tmp/x' },
+      },
+    })
+    expect(serversFor({ 'project/.mcp.json': mcpJson }, { trusted: true }).names).toEqual([])
+  })
+
+  test("an agent's inline servers join the run under the organization's deny list", () => {
+    const inline = [
+      own('mine', { command: ['mine-server'] }),
+      own('blocked', { url: 'https://mcp.example.com/x' }),
+    ]
+    const { names } = serversFor(
+      {
+        'home/.claude/settings.json': JSON.stringify({
+          deniedMcpServers: [{ serverUrl: 'https://mcp.example.com/*' }],
+        }),
+      },
+      { own: [own('configured', { command: ['c'] })], extra: inline },
+    )
+    expect(names).toEqual(['configured', 'mine'])
+  })
+
+  test('a configured server keeps its name against an inline one', () => {
+    const { servers } = serversFor(
+      {},
+      {
+        own: [own('github', { command: ['configured'] })],
+        extra: [own('github', { command: ['inline'] })],
+      },
+    )
+    expect(servers.map((s) => s.config.command)).toEqual([['configured']])
   })
 })

@@ -4,10 +4,10 @@ The bundled API mini app adds a REST client for saved HTTP requests, response in
 repository exports, and bounded agent access. Use it when an API workflow should stay visible and
 addressable inside the Localix workspace.
 
-**Availability:** The bundled `api` mini app is enabled by default and can be disabled in **Settings
-→ Capabilities → Mini apps**. Requests to private or local hosts require the app’s **Allow
-private/internal hosts** option; enable it only for services you intend to call. Without it, a host
-whose address cannot be resolved is refused as well.
+**Availability:** The bundled `api` mini app is enabled by default and can be switched off in
+**Store → Installed**. Requests to private or local hosts require the app’s **Allow private/internal
+hosts** option; enable it only for services you intend to call. Without it, a host whose address
+cannot be resolved is refused as well.
 
 ![A saved release readiness request with a successful JSON response from the local demo service](../assets/screenshots/api/request-response--2026-10-08.png)
 

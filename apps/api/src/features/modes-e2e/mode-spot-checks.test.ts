@@ -57,7 +57,7 @@ const ROWS: Row[] = [
   ['context_budget', {}, [A, A, A, A]],
   ['tool_output', { action: 'get', id: 'o' }, [A, A, A, A]],
   ['skill', { action: 'get', name: 'x' }, [A, A, A, A]],
-  ['skill', { action: 'delete', name: 'x' }, [A, D, A, A]],
+  ['skill', { action: 'save', name: 'x', description: 'd', content: 'c' }, [A, D, A, A]],
   ['jobs', { action: 'read', job_id: 'bg-1' }, [A, A, A, A]],
   // Plan mode may stop a job this conversation started (a read-only monitor it let run).
   ['jobs', { action: 'stop', job_id: 'bg-1' }, [A, A, A, A]],
@@ -67,14 +67,13 @@ const ROWS: Row[] = [
   ['skip_answer', {}, [A, A, A, A]],
   // Allowed in every mode: each call the script makes is decided on its own.
   ['codemode', { code: 'return 1' }, [A, A, A, A]],
-  ['agents', { action: 'list' }, [A, A, A, A]],
+  ['store', { action: 'search', query: 'x' }, [A, A, A, A]],
+  // A change waits on a person's card: refused in plan, and in an autonomous session.
+  ['store', { action: 'install', ref: { kind: 'plugin', id: 'a@b' }, scope: 'user' }, [A, D, A, D]],
   [
-    'agents',
-    {
-      action: 'create',
-      agents: [{ handle: 'qa', description: 'd', instructions: 'i', leadership_priority: 0 }],
-    },
-    [A, D, A, A],
+    'store',
+    { action: 'create', kind: 'agent', scope: 'user', values: { name: 'qa', description: 'd' } },
+    [A, D, A, D],
   ],
   ['configure', { action: 'inspect', target: { kind: 'summary' } }, [A, A, A, A]],
   ['configure', { action: 'propose', change: {} }, [A, D, A, D]],

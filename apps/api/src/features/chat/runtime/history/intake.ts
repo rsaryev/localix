@@ -198,10 +198,20 @@ export async function intakeTurn(args: IntakeArgs): Promise<IntakeResult> {
   // Claude Code UserPromptSubmit: may block (exit 2 / decision:"block") or add context.
   let ccPromptContext: string | undefined
   if (ccHooks.active && isRealUserPrompt && promptMessage) {
-    const result = await ccHooks.runUserPromptSubmit(promptMessage.payload.content as string)
+    const submittedText = promptMessage.payload.content as string
+    const result = await ccHooks.runUserPromptSubmit(submittedText)
     await applyHookSessionTitle(args.deps, args.userId, args.session.id, result.sessionTitle)
     if (result.blocked) {
-      return { ok: false, blockedReason: result.reason ?? 'blocked', promptMessage }
+      // hooks.md: the block message "ends with `Original prompt:` followed by the submitted text"
+      // unless the hook sent `suppressOriginalPrompt`.
+      const reason = result.reason ?? 'blocked'
+      return {
+        ok: false,
+        blockedReason: result.suppressOriginalPrompt
+          ? reason
+          : `${reason}\n\nOriginal prompt: ${submittedText}`,
+        promptMessage,
+      }
     }
     ccPromptContext = result.additionalContext
     // A typed command expands after the prompt is accepted, as in Claude Code: its hooks may

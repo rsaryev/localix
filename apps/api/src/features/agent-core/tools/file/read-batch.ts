@@ -32,7 +32,7 @@ export function readItemRange(item: ReadItemInput): string | undefined {
   if (item.mode === 'outline') return 'outline'
   if (item.start_line != null) return `L${item.start_line}-${item.end_line ?? 'end'}`
   if (item.limit != null) return `L1-${item.limit}`
-  if (item.offset != null) return `from byte ${item.offset}`
+  if (item.byte_offset != null) return `from byte ${item.byte_offset}`
   if (item.pages) return `pages ${item.pages}`
   if (item.sheet) return `sheet ${item.sheet}`
   return undefined

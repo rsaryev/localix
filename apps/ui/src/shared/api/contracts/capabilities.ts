@@ -1,68 +1,26 @@
 import type {
-  SkillRecord,
-  SkillInput,
   SkillSummary,
   PluginRecord,
   PluginCommandSpec,
   MiniAppRecord,
   MiniAppCommandSpec,
   MarketplaceListing,
-  PluginUpdatesResponse,
-  PluginUpdateJob,
-  UpdateMarketplaceResponse,
-  AgentRecord,
-  AgentRecordInput,
   AgentSummary,
-  McpServer,
-  McpStdioConfig,
-  McpHttpConfig,
   CapabilitySnapshot,
   CapabilityRuleChange,
   CapabilityToolSurface,
-  ToolSurfaceDenial,
-  ToolGcReport,
 } from '@localixai/api/client'
 
 // ---- Skills -------------------------------------------------------------------
-/**
- * Same rule as MCP below: ONE owner — `features/chat/service/skills.ts`. These were
- * hand-restated here and had gone stale in the same lethal direction: the copy read
- * back `argumentHint`/`userInvocable` but `SkillInput` could express neither, so the
- * settings form rebuilt a SKILL.md from the three fields its type could see. The
- * write path preserves the file's frontmatter now, but the restatement was what let
- * a reader outrun its writer in the first place. Re-export; never restate.
- */
-export type { SkillRecord, SkillInput, SkillSummary }
+/** One owner, `features/chat/service/skills.ts`: re-exported, never restated. */
+export type { SkillSummary }
 
-/** Result of a curator pass. */
-export interface CuratorReport {
-  active: number
-  stale: number
-  archived: number
-  archivedNow: string[]
-}
-
-// ---- MCP ---------------------------------------------------------------------
-/**
- * One owner: the API's zod contracts in `features/mcp/contracts.ts`, re-exported and never
- * restated. The UI only reads a server (its switch and what kind it is); adding, configuring and
- * removing one is the Store's.
- */
-export type McpServerConfig = Partial<McpStdioConfig & McpHttpConfig>
-
-/** A server as the UI reads it: the owner's record, config left un-narrowed. */
-export type McpServerRecord = Omit<McpServer, 'config'> & {
-  config: McpServerConfig
-}
-
-// ---- Plugins, agent providers, managed agents --------------------------------
+// ---- Plugins, mini apps, agents ---------------------------------------------
 /**
  * These wire records have ONE owner: the API's zod contracts, re-exported here
  * (type-only, so no zod reaches the client chunk) rather than restated. Each was
  * previously hand-copied into this file — and the copies had silently drifted:
- * `PluginProvides` had lost `lspServers`, `AgentRecord` had lost `hooks`, and
- * `AgentRecordInput` had lost both `hooks` and `enabled` (so the UI's own type
- * could not express the inert-create the backend already accepts). Nothing —
+ * `PluginProvides` had lost `lspServers`. Nothing —
  * not tsc, not a test — said a word, because a copy agrees with its original
  * right up until it doesn't. Re-export; never restate.
  */
@@ -72,11 +30,6 @@ export type {
   MiniAppRecord,
   MiniAppCommandSpec,
   MarketplaceListing,
-  PluginUpdatesResponse,
-  PluginUpdateJob,
-  UpdateMarketplaceResponse,
-  AgentRecord,
-  AgentRecordInput,
   AgentSummary,
 }
 
@@ -106,14 +59,7 @@ export type RuleGrammar = CapabilitySnapshot['grammar']
 // kept out of this barrel because it is a pinned god-file, and because the one VALUE
 // they need must come from the api's narrow leaf rather than its client barrel.
 
-export type { CapabilitySnapshot, CapabilityRuleChange, CapabilityToolSurface, ToolSurfaceDenial }
-
-/**
- * The tool-GC report (`GET /rpc/tools/gc`). Re-exported from its API owner, never restated: the
- * whole point of the feature is that the count the pill shows and the count the run sends are the
- * same number, and a second declaration of its shape is the first step to them differing.
- */
-export type { ToolGcReport }
+export type { CapabilitySnapshot, CapabilityRuleChange, CapabilityToolSurface }
 
 // One participant of a conversation plus the model it runs on, and the two functions that read
 // it. Imported from the server's leaf rather than restated here: the shape crosses the wire

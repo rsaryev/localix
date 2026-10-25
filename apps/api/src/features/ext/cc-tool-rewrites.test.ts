@@ -9,6 +9,7 @@ import {
   claudeCodeToolName,
   localInputFromHook,
   localToolName,
+  toolCallEvent,
   toolInputOf,
 } from './cc-tool-shapes'
 
@@ -33,16 +34,45 @@ test('Read’s line offset and limit become a line range; a byte offset survives
     start_line: 5,
     end_line: 7,
   })
-  expect(localInputFromHook('read', { path: 'a.ts', offset: 4096 }, { file_path: 'b.ts' })).toEqual(
-    { path: 'b.ts', offset: 4096 },
-  )
+  expect(
+    localInputFromHook('read', { path: 'a.ts', byte_offset: 4096 }, { file_path: 'b.ts' }),
+  ).toEqual({ path: 'b.ts', byte_offset: 4096 })
 })
 
 test('Glob and Grep fold back into search’s glob and query', () => {
   expect(toolInputOf('search', { tool: 'Glob', pattern: '**/*.md' })).toEqual({ glob: '**/*.md' })
   expect(toolInputOf('search', { tool: 'Grep', pattern: 'todo', '-i': true, '-C': 2 })).toEqual({
-    query: '(?i)todo',
+    query: 'todo',
+    ignore_case: true,
     context: 2,
+  })
+  // The search tool takes Grep's output mode, limit, type and multiline as they are.
+  expect(
+    toolInputOf('search', {
+      tool: 'Grep',
+      pattern: 'todo',
+      output_mode: 'count',
+      head_limit: 5,
+      type: 'ts',
+      multiline: true,
+    }),
+  ).toEqual({
+    query: 'todo',
+    output_mode: 'count',
+    head_limit: 5,
+    type: 'ts',
+    multiline: true,
+  })
+  // A hook sees the mode the search runs in, and `-i` for ignore_case.
+  expect(
+    toolCallEvent(
+      { name: 'search' },
+      { query: 'a', output_mode: 'files_with_matches', ignore_case: true },
+      'g',
+    ),
+  ).toMatchObject({ tool: 'Grep', output_mode: 'files_with_matches', '-i': true })
+  expect(toolCallEvent({ name: 'search' }, { query: 'a' }, 'g')).toMatchObject({
+    output_mode: 'content',
   })
   expect(localToolName('Glob')).toBe('search')
   expect(claudeCodeToolName({ name: 'search' }, { glob: '*.ts' })).toBe('Glob')

@@ -104,5 +104,3 @@ export function createProjectSignals(deps: {
     },
   }
 }
-
-export type ProjectSignals = ReturnType<typeof createProjectSignals>

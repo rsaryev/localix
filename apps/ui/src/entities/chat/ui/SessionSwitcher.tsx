@@ -14,6 +14,7 @@ import {
   CommandItem,
 } from '@localixai/kit/command'
 import { CommandHints } from '@/shared/ui/command-hints'
+import { isSwitchTarget } from '../model/switchTargets'
 import { useChatStore } from '../model/store'
 import { subscribeUiOverlay } from '@/shared/lib/uiOverlayBus'
 import { SESSION_SWITCHER_OVERLAY_ID } from './SessionSwitcher.surface'
@@ -52,9 +53,7 @@ export function SessionSwitcher({
   // targets here. Group by scope: each project (in store order) that has chats.
   // Within a group, pinned-first then most-recent.
   const groups = useMemo(() => {
-    const chats = allSessions.filter(
-      (s) => s.sessionKind === 'chat' && !s.parentSessionId && !s.isArchived,
-    )
+    const chats = allSessions.filter(isSwitchTarget)
     const sortIn = (list: UiSession[]) =>
       [...list].sort((a, b) => Number(b.isPinned) - Number(a.isPinned) || b.updatedAt - a.updatedAt)
     const out: { key: string; label: string; sessions: UiSession[] }[] = []

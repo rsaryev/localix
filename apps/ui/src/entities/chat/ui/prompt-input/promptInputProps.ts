@@ -65,6 +65,8 @@ export interface PromptInputProps {
   hasInteraction?: boolean
   onSend: (textOverride?: string, bindings?: MessageBinding[], isInternal?: boolean) => void
   onStop: () => void
+  /** Roll the chat back to a message of yours — what `/rewind` asks for. A surface without it cannot. */
+  onRollback?: (messageId: string) => void
   connectionsState: ReturnType<typeof useConnections>
   /** Backend-owned queue: messages waiting behind the in-flight run. */
   serverQueue?: SessionQueueItem[]

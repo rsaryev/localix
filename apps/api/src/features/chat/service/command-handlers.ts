@@ -10,7 +10,7 @@ import {
 import { handleRecapCommand } from './command-handlers-recap'
 import { handleModelCommand } from './command-handlers-settings'
 import { handleOutputStyleCommand } from './command-handlers-output-style'
-import { handlePluginsControlCommand } from './command-handlers-plugins'
+import { handlePluginsControlCommand, reloadPlugins } from './command-handlers-plugins'
 import { handleMiniAppsControlCommand } from './command-handlers-mini-apps'
 import { handleAgentsControlCommand } from './command-handlers-agents'
 import type { SessionRecord } from '../repository'
@@ -27,10 +27,11 @@ export { handlePluginCommand } from './command-handlers-plugin-command'
 export { handleSkillCommand } from './command-handlers-skill'
 
 /**
- * Handles the built-in control slash commands (/help, /usage, /model,
- * /memory, /skills, /mcp, /plugin, /provider, /init, /commit,
- * /review, /clear). Returns null when the prompt isn't a control
- * command — the caller falls through to the next dispatch stage.
+ * Handles the built-in control slash commands the catalog marks `scope: 'server'` (/help,
+ * /usage, /model, /output-style, /memory, /skills, /mcp, /plugin, /mini-app, /loop, /agents,
+ * /recap and Claude Code's /reload-plugins). Returns null when the prompt isn't a control
+ * command — the caller falls through to the next dispatch stage. `scope: 'client'` commands
+ * (/fork, /clear, /rewind, …) never parse here: the composer runs them.
  */
 export async function handleControlCommand(
   ctx: CommandHandlerContext,
@@ -115,6 +116,10 @@ export async function handleControlCommand(
 
   if (control === 'plugins') {
     return handlePluginsControlCommand(ctx, userId, session, prompt, directReply)
+  }
+
+  if (control === 'reload-plugins') {
+    return reloadPlugins(ctx.pluginService, directReply)
   }
 
   if (control === 'mini-apps') {

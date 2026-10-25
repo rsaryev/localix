@@ -29,6 +29,36 @@ export interface SkillRenderContext {
    * refusal). The model's `skill` tool sets it; a person typing `/name` invoked it themselves.
    */
   authorize?: AuthorizeSkillCommand
+  /** `disableSkillShellExecution` applies to this skill: its commands show a placeholder. */
+  shellDisabled?: boolean
+}
+
+/** Which skill is about to render, and where the session works: what the policy is read for. */
+export interface SkillShellQuery {
+  workingDir: string
+  /** Absolute path of the `SKILL.md` (or the plugin's folder for a command); a built-in's is exempt. */
+  skillPath?: string
+}
+
+/** Whether `disableSkillShellExecution` applies to that skill, from the host's settings. */
+export type SkillShellPolicy = (query: SkillShellQuery) => Promise<boolean>
+
+/**
+ * A renderer that asks the policy before it renders: the model's `skill` tool renders through it,
+ * a skill's folder and the session's working directory deciding the answer.
+ */
+export function withSkillShellPolicy<
+  R extends (skill: RenderableSkill, args: string, ctx: SkillRenderContext) => Promise<string>,
+>(render: R, policy: SkillShellPolicy | undefined): R {
+  if (!policy) return render
+  return (async (skill, args, ctx) =>
+    render(skill, args, {
+      ...ctx,
+      shellDisabled: await policy({
+        workingDir: ctx.workingDir,
+        ...(skill.path ? { skillPath: skill.path } : {}),
+      }),
+    })) as R
 }
 
 /**
@@ -66,6 +96,7 @@ export async function renderSkillBody(
           { raw: args, ...(skill.argumentNames ? { names: skill.argumentNames } : {}) },
           ctx.authorize,
           vault,
+          ctx.shellDisabled === true,
         ),
         [ctx.workingDir, ...(skillDir ? [skillDir] : [])],
         vault,

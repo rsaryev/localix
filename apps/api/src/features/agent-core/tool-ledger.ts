@@ -49,7 +49,7 @@ export type WithholdReason =
 
 /** How a `policy` reason can be lifted — the input the `configure` tool turns into a proposal. */
 export interface RemedyRef {
-  remedyId: 'tool.enable' | 'plugin.enable' | 'mini-app.enable'
+  remedyId: 'tool.enable'
   target: string
 }
 

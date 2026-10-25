@@ -80,6 +80,9 @@ export async function materializeRunHistory(
         speakerAgentId,
       ),
       view,
+      ...(frame.fork
+        ? { fork: { toolCallId: frame.fork.toolCallId, first: frame.fork.first } }
+        : {}),
       recallToolAvailable: toolset.runtimeTools.toolNames.includes(TOOL.global_search),
       memoryToolAvailable: toolset.runtimeTools.toolNames.includes(TOOL.memory),
       state: frame.stores.context,

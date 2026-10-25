@@ -13,6 +13,8 @@ import { agentParticipant } from '../../../../../db/participant'
 import { TOOL } from '../../../../agent-core/tool-names'
 import { buildExternalizeAfterToolCall } from '../../../../context-store/externalize'
 import { agentRoute } from '../../../../../contracts/session-route'
+import { createForkLiveRun, createRecordedCalls } from '../../fork/fork-live'
+import { runCacheKey } from '../../fork/fork-run'
 import { speakerPlace } from '../../../policy/axes/seat'
 import { createItemAccumulator } from '../../items'
 import { withMidRunReminders } from '../../mid-run-reminders'
@@ -27,7 +29,7 @@ import { indexToolPresentation } from '../tool-assembly'
 import { settleRunStream } from './stream-settle'
 import type { RunInputs } from './context'
 import { promptCacheRetentionFor } from '../speaker-agent'
-import type { RunFrame } from './frame'
+import { currentAssistantMessageId, type RunFrame } from './frame'
 import type { RunHistory } from './history'
 import type { RunIntake } from './intake'
 import type { RunPrompt } from './prompt'
@@ -121,10 +123,37 @@ export async function streamRun(
       ),
     )
   }
+  // A fork of this run is made from the request it is sending now. A fork is itself sent under its
+  // parent's session id, so its provider cache key is the parent's: the prefix is already there.
+  const cache = runCacheKey(frame.fork, {
+    sessionId: session.id,
+    idleMs: turn.turnIdleMs,
+    retention: promptCacheRetentionFor(inputs.pluginSubagent),
+  })
+  // The loop runs a tool without waiting for this host's handler to store the call that made it.
+  const recordedCalls = createRecordedCalls()
+  frame.forkLive = createForkLiveRun({
+    recorded: (toolCallId) => recordedCalls.when(toolCallId, abort.signal),
+    route: {
+      providerConnectionId: connection.id,
+      modelId: turn.model.effectiveModelId,
+      ...(frame.speakerRoute.reasoningEffort
+        ? { reasoningEffort: frame.speakerRoute.reasoningEffort }
+        : {}),
+    },
+    currentRowId: () => currentAssistantMessageId(frame),
+    currentPayload: () => state.currentPayload,
+    systemPrompt: prompt.systemPrompt,
+    tools,
+    toolNames: toolset.runtimeTools.toolNames,
+    profile: toolset.agentProfile,
+    cacheSessionId: cache.sessionId,
+    ...(cache.retention ? { retention: cache.retention } : {}),
+  })
   // A synchronous adapter-startup throw needs no wrapper: it lands in the orchestrator's catch,
   // which closes the run row (`fail` is idempotent).
   const stream = deps.agentRuntime.run({
-    sessionId: session.id,
+    sessionId: cache.sessionId,
     messages: history.wire,
     systemPrompt: prompt.systemPrompt,
     model: { providerId, modelId: rawModelId },
@@ -136,11 +165,10 @@ export async function streamRun(
       ABSOLUTE_MAX_OUTPUT_TOKENS,
     ),
     // The observed idle gap, not a TTL: the adapter owns its provider's cache cost model.
-    promptCacheIdleMs: turn.turnIdleMs,
-    // A plugin agent's `experimental.cacheTtl` (`1h` → the provider's long-lived cache).
-    ...(promptCacheRetentionFor(inputs.pluginSubagent)
-      ? { promptCacheRetention: promptCacheRetentionFor(inputs.pluginSubagent) }
-      : {}),
+    promptCacheIdleMs: cache.idleMs,
+    // A plugin agent's `experimental.cacheTtl` (`1h` → the provider's long-lived cache), or the
+    // parent's, for a fork.
+    ...(cache.retention ? { promptCacheRetention: cache.retention } : {}),
     maxTurns: intake.maxTurns,
     tools,
     // `activate_tools` promotes selected full schemas from this superset into the next turn.
@@ -231,7 +259,13 @@ export async function streamRun(
   // Only the run's terminal state is journaled; the events themselves stream to the client.
   await settleRunStream({
     stream,
-    handle: (event) => handleAgentEvent(eventCtx, event),
+    handle: async (event) => {
+      try {
+        await handleAgentEvent(eventCtx, event)
+      } finally {
+        if (event.type === 'tool_execution_start') recordedCalls.note(event.toolCallId)
+      }
+    },
     record: history.runRecord,
     storeReached: () => persistNow(eventCtx, state.payload),
     onStoreFailed: (error) =>

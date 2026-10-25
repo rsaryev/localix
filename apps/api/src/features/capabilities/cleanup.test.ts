@@ -99,16 +99,6 @@ describe('capability cleanup', () => {
         { action: 'invocation:delegation', resource: 'cc:other', effect: 'allow' },
         { action: 'tool:bash', resource: '*', effect: 'ask' },
       ])
-      await t.db
-        .insertInto('capability_policy_binding')
-        .values({
-          user_id: 'u1',
-          contribution_id: 'c',
-          agent_id: 'cc:gone',
-          contribution_revision: 1,
-          policy_revision: 1,
-        })
-        .execute()
       const feed = createCoreChangeFeed(t.db)
       await feed.subscribe('capability-cleanup', t.cleanup.handlers, { kind: 'reactor' })
       return { t, feed }
@@ -125,7 +115,6 @@ describe('capability cleanup', () => {
       await feed.settle()
       expect(await actions(t, 'cc:gone')).toEqual([])
       expect(await actions(t, 'cc:kept')).toEqual(['invocation:delegation cc:other', 'tool:bash *'])
-      expect(await t.db.selectFrom('capability_policy_binding').selectAll().execute()).toEqual([])
       expect(
         await t.db
           .selectFrom('capability_policy_revision')

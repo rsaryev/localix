@@ -1,5 +1,6 @@
 import type { DiscoveredSkill } from '../agent-core/skill-discovery'
 import type { SkillUsageRecord } from './repository'
+import type { Idleness } from './staleness'
 import type { CuratorSkillRecord, SkillLifecycleState } from './contracts'
 
 export interface InventoryEntry {
@@ -7,7 +8,11 @@ export interface InventoryEntry {
   usage: SkillUsageRecord | null
   archived: boolean
   state: SkillLifecycleState
+  /** Absent for a pinned or archived skill. */
+  idle?: Idleness & { archiveOn: number | null }
 }
+
+const iso = (ms: number | null | undefined) => (ms == null ? null : new Date(ms).toISOString())
 
 export function toRecord(entry: InventoryEntry): CuratorSkillRecord {
   return {
@@ -20,6 +25,9 @@ export function toRecord(entry: InventoryEntry): CuratorSkillRecord {
     pinned: entry.usage?.pinned ?? false,
     archivedAt: entry.usage?.archivedAt ?? null,
     state: entry.state,
+    idleSince: iso(entry.idle?.idleSince),
+    staleAt: iso(entry.idle?.staleAt),
+    archiveOn: iso(entry.idle?.archiveOn),
   }
 }
 

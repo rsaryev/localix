@@ -3,11 +3,12 @@ import type { PermissionRule } from '../../agent-core/permission-engine'
  * Shared types + constants for the slash-command handlers. The CommandHandlerContext
  * interface is the closure surface createChatService hands the dispatchers; it and the
  * DirectReply helper type are imported by every per-command handler module
- * (command-handlers-{settings,loop,macros,listings,plugins,providers}). Kept in its
+ * (command-handlers-{settings,loop,listings,plugins,mini-apps,agents}). Kept in its
  * own leaf so the dispatcher file (command-handlers.ts) stays focused on dispatch.
  */
 import type { ChatServiceDeps } from './context'
 import type { SkillRecord } from './skills'
+import type { SkillShellPolicy } from './skill-render'
 import type { createChatRepository, SessionRecord } from '../repository'
 import type { createMemoryRepository } from '../../memory/repository'
 import type { createUsageRepository } from '../../usage/repository'
@@ -124,6 +125,8 @@ export interface CommandHandlerContext {
    */
   /** The agent's permission rules a typed skill's commands meet; absent, none are checked. */
   loadSkillCommandRules?: (userId: string, agentId: string) => Promise<PermissionRule[]>
+  /** `disableSkillShellExecution` for a skill or command about to render (`skill-render.ts`). */
+  skillShellDisabled?: SkillShellPolicy
   loadSkillOverrides: (
     userId: string,
     projectId: string | null,

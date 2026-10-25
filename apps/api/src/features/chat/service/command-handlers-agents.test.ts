@@ -222,7 +222,7 @@ describe('/agents management', () => {
     expect(h.membership).toEqual([])
     expect(h.replies.every((reply) => reply.startsWith('Agent command failed:'))).toBe(true)
   })
-  test('create in your own words starts an agent turn that must use the agents tool', async () => {
+  test('create in your own words starts an agent turn that must use the store tool', async () => {
     const h = harness()
     await h.run("/agents create a reviewer that doesn't skip\n- migrations\n- retries")
     expect(h.writes).toEqual([])
@@ -231,9 +231,10 @@ describe('/agents management', () => {
     expect(h.macros[0]!.instruction).toContain(
       "registry: a reviewer that doesn't skip\n- migrations\n- retries",
     )
+    expect(h.macros[0]!.instruction).toContain('Call store with action "create", kind "agent"')
     expect(h.macros[0]!.opts).toEqual({
       commandOrigin: { command: '/agents create', label: 'Agent · new' },
-      requiredTools: [{ name: 'agents' }],
+      requiredTools: [{ name: 'store' }],
     })
   })
 

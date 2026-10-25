@@ -7,12 +7,15 @@ import {
   shelfCounts,
   type ActionResult,
   type CreateForm,
+  type ItemAction,
   type DiscoverResponse,
   type Listing,
   type ListingConfig,
+  type ListingDetail,
   type ListingsResponse,
   type PackageKind,
   type Scope,
+  type ShelfPlan,
   type SourceView,
 } from '@localixai/store'
 import { makeListing, makeListingDetail } from '@localixai/store/testing'
@@ -126,6 +129,14 @@ export interface StoreFake {
   configs?: Record<string, Partial<Record<Scope, ListingConfig>>>
   /** The kinds that can make an item, with the form of each. */
   creates?: Partial<Record<PackageKind, CreateForm>>
+  /** What a kind's provider can do to a shelf, by scope. */
+  shelfActions?: Partial<Record<Scope, Array<ItemAction & { kind: PackageKind }>>>
+  /** The preview of a shelf action, by `kind/action/scope`. */
+  shelfPlans?: Record<string, ShelfPlan>
+  /** The notice a listing's page shows, by listing id. */
+  notices?: Record<string, NonNullable<ListingDetail['notice']>>
+  /** Reads that fail while set, by what is read; `recover` on the view clears them. */
+  failing?: { page?: boolean; discover?: boolean; detail?: boolean; plan?: boolean }
   /** A provider's refusal to create, in its words. */
   createFails?: string
   /** What running an install's action answers, by action id. */
@@ -153,6 +164,7 @@ export function fakeClient(fake: StoreFake): StoreClient {
   return {
     page: async (asked) => {
       const query = asked ?? {}
+      if (fake.failing?.page) throw new ApiError('The index is unreachable', 503, 'unavailable')
       fake.reads?.push(
         Object.entries(query)
           .map(([key, value]) => `${key}=${value}`)
@@ -160,27 +172,33 @@ export function fakeClient(fake: StoreFake): StoreClient {
       )
       return { ...answer(fake.listings, query), problems: fake.problems ?? [] }
     },
-    detail: async (ref) =>
-      makeListingDetail(find(ref.id), {
+    detail: async (ref) => {
+      if (fake.failing?.detail) throw new ApiError('Could not read it', 503, 'unavailable')
+      return makeListingDetail(find(ref.id), {
         facts: [
           { label: 'Version', value: find(ref.id).version ?? '1.0.0' },
           { label: 'License', value: 'MIT' },
           { label: 'Homepage', value: 'https://example.test/chess' },
         ],
+        ...(fake.notices?.[ref.id] ? { notice: fake.notices[ref.id] } : {}),
         components: find(ref.id).components ?? [
           { kind: 'screen', name: find(ref.id).displayName, description: 'A screen of its own' },
           { kind: 'command', name: `/${ref.id}:play` },
         ],
-      }),
-    plan: async (ref, scope) => ({
-      scope,
-      adds: [],
-      runs: [{ kind: 'hook', name: 'PreToolUse', command: 'node check.js' }],
-      network: ['api.example.test'],
-      requires: [],
-      warnings: needsYes(ref.id) ? ['Localix does not review what this source lists'] : [],
-      needsConsent: needsYes(ref.id),
-    }),
+      })
+    },
+    plan: async (ref, scope) => {
+      if (fake.failing?.plan) throw new ApiError('Could not fetch it', 503, 'unavailable')
+      return {
+        scope,
+        adds: [],
+        runs: [{ kind: 'hook', name: 'PreToolUse', command: 'node check.js' }],
+        network: ['api.example.test'],
+        requires: [],
+        warnings: needsYes(ref.id) ? ['Localix does not review what this source lists'] : [],
+        needsConsent: needsYes(ref.id),
+      }
+    },
     install: async (ref, scope, consent, projectId) => {
       if (needsYes(ref.id) && !consent.plan)
         throw new ApiError('Read what it runs, then say yes', 409, 'consent')
@@ -212,14 +230,24 @@ export function fakeClient(fake: StoreFake): StoreClient {
       call(`create ${kind} ${scope}${where(projectId)} ${JSON.stringify(values)}`)
       return { kind, id: (values.name as string | undefined) ?? 'new' }
     },
+    shelfActions: async (scope) => fake.shelfActions?.[scope] ?? [],
+    planShelfAction: async (kind, action, scope) =>
+      fake.shelfPlans?.[`${kind}/${action}/${scope}`] ?? { summary: '', items: [] },
+    runShelfAction: async (kind, action, scope, ids, projectId) => {
+      call(`shelf-run ${kind} ${action} ${scope} ${ids.join(',')}${where(projectId)}`)
+      return { ok: true, message: 'Done' }
+    },
     sources: async () => ({ sources: fake.sources ?? SOURCES, addable: ['mini-app', 'plugin'] }),
-    discover: async () => ({
-      updates: { count: fake.listings.filter(hasUpdate).length },
-      rows: [],
-      categories: [],
-      listings: fake.listings,
-      ...fake.discover,
-    }),
+    discover: async () => {
+      if (fake.failing?.discover) throw new ApiError('Could not read it', 503, 'unavailable')
+      return {
+        updates: { count: fake.listings.filter(hasUpdate).length },
+        rows: [],
+        categories: [],
+        listings: fake.listings,
+        ...fake.discover,
+      }
+    },
     previewSource: async (kind, input) => {
       call(`preview ${kind} ${input}`)
       if (fake.previewFails) throw new Error(fake.previewFails)
@@ -309,12 +337,15 @@ export async function renderStore(options: RenderStoreOptions) {
     ...scope.querySelectorAll<HTMLButtonElement>('button'),
   ]
   /** A button by its accessible name: its aria-label, or its text when it has none. */
-  const button = (name: string, scope: ParentNode = document.body) =>
-    buttons(scope).find(
+  const button = (name: string | RegExp, scope: ParentNode = document.body) => {
+    const is = (text: string | null | undefined) =>
+      text != null && (typeof name === 'string' ? text === name : name.test(text))
+    return buttons(scope).find(
       (candidate) =>
-        candidate.getAttribute('aria-label') === name ||
-        (!candidate.hasAttribute('aria-label') && candidate.textContent?.trim() === name),
+        is(candidate.getAttribute('aria-label')) ||
+        (!candidate.hasAttribute('aria-label') && is(candidate.textContent?.trim())),
     )
+  }
   const click = (element: Element | null | undefined) => {
     if (!element) throw new Error('nothing to click')
     return act(() => (element as HTMLElement).click())
@@ -387,6 +418,10 @@ export async function renderStore(options: RenderStoreOptions) {
     change,
     changeSources,
     retarget,
+    /** The failing reads answer again, and the Store is poked to read. */
+    recover: () => {
+      fake.failing = {}
+    },
     shelf,
     act,
     done,

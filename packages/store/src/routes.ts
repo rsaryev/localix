@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 import { STORE_CATEGORIES } from './categories'
-import { configValueSchema } from './config'
+import { configValueSchema, itemActionSchema } from './config'
 import {
   collectionSchema,
   jobSchema,
@@ -77,72 +77,52 @@ export const listingParamsSchema = z.object({ kind: packageKindSchema, id: z.str
 /** The project a `project` scope means; the open one. */
 const projectIdSchema = z.string().min(1).max(256).optional()
 
-export const planRequestSchema = z.object({
+/** Which install a call is about: the person's, or the open project's. */
+export const scopedSchema = z.object({
   scope: scopeSchema.default('user'),
   projectId: projectIdSchema,
 })
 
-export const installRequestSchema = z.object({
-  scope: scopeSchema.default('user'),
-  projectId: projectIdSchema,
+/** A form's or one install's settings to save, by key. */
+export const scopedValuesSchema = scopedSchema.extend({
+  values: z.record(z.string(), configValueSchema),
+})
+
+export const installRequestSchema = scopedSchema.extend({
   /** The person saw the plan and said yes to what it warned about. */
   consent: z.object({ plan: z.boolean() }).default({ plan: false }),
 })
 
-export const scopeRequestSchema = z.object({
-  scope: scopeSchema.default('user'),
-  projectId: projectIdSchema,
-})
-
-export const enableRequestSchema = z.object({
-  scope: scopeSchema.default('user'),
-  projectId: projectIdSchema,
-  enabled: z.boolean(),
-})
-
-/** `GET /:kind/:id/config`: whose settings, in which scope. */
-export const configQuerySchema = z.object({
-  scope: scopeSchema.default('user'),
-  projectId: projectIdSchema,
-})
-
-/** `POST /:kind/:id/config`: the keys to save for one install's settings. */
-export const configRequestSchema = z.object({
-  scope: scopeSchema.default('user'),
-  projectId: projectIdSchema,
-  values: z.record(z.string(), configValueSchema),
-})
+export const enableRequestSchema = scopedSchema.extend({ enabled: z.boolean() })
 
 /** `POST /:kind/:id/action`: one of the install's actions, by id. */
-export const actionRequestSchema = z.object({
-  scope: scopeSchema.default('user'),
-  projectId: projectIdSchema,
-  action: z.string().min(1).max(64),
-})
+export const actionRequestSchema = scopedSchema.extend({ action: z.string().min(1).max(64) })
 
 /** `GET /create`: the kinds whose provider can make a new item. */
 export const creatableResponseSchema = z.object({ kinds: z.array(packageKindSchema) })
 
-export const createParamsSchema = z.object({ kind: packageKindSchema })
-
-/** `POST /create/:kind`: make one from its form. */
-export const createRequestSchema = z.object({
-  scope: scopeSchema.default('user'),
-  projectId: projectIdSchema,
-  values: z.record(z.string(), configValueSchema),
+/** `GET /shelf-actions`: what each kind's provider can do to a shelf (`scope` as in the query). */
+export const shelfActionsResponseSchema = z.object({
+  actions: z.array(itemActionSchema.extend({ kind: packageKindSchema })),
 })
+export type ShelfActionsResponse = z.infer<typeof shelfActionsResponseSchema>
+
+/** `POST /shelf/:kind/run`: the action, and the ids of the items the person confirmed. */
+export const shelfRunRequestSchema = actionRequestSchema.extend({
+  ids: z.array(z.string().min(1)).max(LISTINGS_PAGE_MAX),
+})
+
+export const createParamsSchema = z.object({ kind: packageKindSchema })
 
 export const sourceInputSchema = z.object({
   kind: packageKindSchema,
   input: z.string().min(1).max(2048),
 })
 
-export const sourceRemoveSchema = z.object({ kind: packageKindSchema, id: z.string().min(1) })
+/** One source, by kind and id: read again or removed. */
+export const sourceRefSchema = z.object({ kind: packageKindSchema, id: z.string().min(1) })
 
-/** One source, by kind and id: read again (`/sources/refresh`). */
-export const sourceRefSchema = sourceRemoveSchema
-
-export const sourceAutoUpdateSchema = sourceRemoveSchema.extend({ autoUpdate: z.boolean() })
+export const sourceAutoUpdateSchema = sourceRefSchema.extend({ autoUpdate: z.boolean() })
 
 /** `GET /sources`: every source, and the kinds a source can be added for. */
 export const sourcesResponseSchema = z.object({
@@ -152,7 +132,8 @@ export const sourcesResponseSchema = z.object({
 export type SourcesResponse = z.infer<typeof sourcesResponseSchema>
 
 /** `GET /:kind/:id`: whose project's install the page shows beside the person's. */
-export const detailQuerySchema = z.object({ projectId: z.string().min(1).max(256).optional() })
+/** The open project, for what a page or Discover shows on top of the person's. */
+export const projectQuerySchema = z.object({ projectId: projectIdSchema })
 
 /** Jobs in flight and the updates offered, across kinds: the Event Center and the update strip. */
 export const storeActivitySchema = z.object({
@@ -183,10 +164,6 @@ export const updatesApplyResponseSchema = z.object({ queued: z.array(listingRefS
  * sources; the rows the Store computes (Start here, For this project, New & updated, one
  * per kind). Every listing an item names is in `listings`, so the page needs no other read.
  */
-export const discoverQuerySchema = z.object({
-  projectId: z.string().min(1).max(256).optional(),
-})
-
 export const discoverResponseSchema = z.object({
   updates: z.object({ count: z.number().int().nonnegative() }),
   rows: z.array(collectionSchema),

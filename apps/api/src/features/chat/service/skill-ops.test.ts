@@ -23,7 +23,7 @@ const ctxFor = (base: string): SkillOpsContext => ({
   resolveProjectWorkingDir: async () => base,
 })
 
-const skillDir = (base: string, name: string): string => join(base, '.localix/skills', name)
+const skillDir = (base: string, name: string): string => join(base, '.claude/skills', name)
 const exists = async (path: string): Promise<boolean> =>
   fs.access(path).then(
     () => true,
@@ -32,7 +32,7 @@ const exists = async (path: string): Promise<boolean> =>
 
 describe('skillNameFromId', () => {
   test('extracts the skill (directory) name from a file: id', () => {
-    expect(skillNameFromId('file:/repo/.localix/skills/deploy/SKILL.md')).toBe('deploy')
+    expect(skillNameFromId('file:/repo/.claude/skills/deploy/SKILL.md')).toBe('deploy')
     expect(skillNameFromId('file:/home/.claude/skills/lint-fix/SKILL.md')).toBe('lint-fix')
   })
 
@@ -93,7 +93,7 @@ describe('updateSkill', () => {
       const raw = await fs.readFile(join(skillDir(base, 'deploy'), 'SKILL.md'), 'utf8')
       expect(raw).toContain('description: new')
       // No second directory sprang up next to it.
-      const dirs = await fs.readdir(join(base, '.localix/skills'))
+      const dirs = await fs.readdir(join(base, '.claude/skills'))
       expect(dirs).toEqual(['deploy'])
     } finally {
       await fs.rm(base, { recursive: true, force: true })

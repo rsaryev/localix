@@ -3,6 +3,7 @@ import {
   toModelMessages,
   applyTurnSnapshot,
   createBrowserCacheSnapshot,
+  markForkCacheAnchor,
   markHistoryCacheAnchor,
   type AgentChatMessage,
 } from './chat'
@@ -839,5 +840,40 @@ describe('images a tool returned, on later turns', () => {
     const [old, live] = resultsOf([shot('s1', 'T0xE'), shot('s2', 'TkVX')])
     expect(old!.content).toContainEqual({ type: 'image', mediaType: 'image/png', data: 'T0xE' })
     expect(live!.content).toContainEqual({ type: 'image', mediaType: 'image/png', data: 'TkVX' })
+  })
+})
+
+describe('markForkCacheAnchor', () => {
+  const user = (text: string) => ({ role: 'user' as const, content: text, timestamp: 0 })
+  const call = (id: string) => ({
+    role: 'assistant' as const,
+    model: 'm',
+    timestamp: 0,
+    content: [{ type: 'tool_call' as const, id, name: 'delegate', arguments: {} }],
+  })
+  const tool = (id: string) => ({
+    role: 'tool' as const,
+    timestamp: 0,
+    results: [
+      { type: 'tool_result' as const, toolCallId: id, toolName: 'delegate', content: 'ok' },
+    ],
+  })
+  const anchored = (msgs: unknown[]) =>
+    (msgs as Array<{ cacheAnchor?: boolean }>).flatMap((m, i) => (m.cacheAnchor ? [i] : []))
+
+  test('anchors the message before the step that made the call', () => {
+    const msgs = [user('q'), user('context'), call('c1'), tool('c1'), user('directive')]
+    expect(anchored(markForkCacheAnchor(msgs as never[], 'c1'))).toEqual([1])
+  })
+
+  test('moves a stale anchor instead of adding a second one', () => {
+    const msgs = [user('q'), user('context'), call('c1'), tool('c1'), user('directive')]
+    markHistoryCacheAnchor(msgs as never[])
+    expect(anchored(markForkCacheAnchor(msgs as never[], 'c1'))).toEqual([1])
+  })
+
+  test('without the call in the wire the ordinary anchor applies', () => {
+    const msgs = [user('q'), call('other'), tool('other'), user('directive')]
+    expect(anchored(markForkCacheAnchor(msgs as never[], 'c1'))).toEqual([2])
   })
 })

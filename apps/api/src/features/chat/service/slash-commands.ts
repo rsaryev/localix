@@ -19,6 +19,7 @@ const CONTROL_COMMANDS = [
   'skills',
   'mcp',
   'plugins',
+  'reload-plugins',
   'mini-apps',
   'loop',
   'agents',

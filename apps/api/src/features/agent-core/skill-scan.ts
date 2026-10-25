@@ -7,13 +7,13 @@ import { readSkillMarkdownFile, SkillFileReadError, skillFileErrorDetail } from 
 import { type DiscoveredSkill, parseSkillFrontmatter } from './skill-frontmatter'
 
 /**
- * SKILL SCANNING — how a Localix skills tree is read from disk:
+ * SKILL SCANNING — how a skills tree is read from disk, in Claude Code's own layout:
  *
- *   `<base>/.localix/skills/<name>/SKILL.md`
+ *   `<base>/.claude/skills/<name>/SKILL.md`
  *
  * Each skill remains a directory so it can carry scripts and assets beside the
- * prompt. Claude Code's `.claude/skills` and `.claude/commands` (and a project's portable
- * `.agents/skills`) are read sources beside it; native Localix skills win by name.
+ * prompt. `.claude/skills` is the one tree Localix reads AND writes (the person's own skills);
+ * `.claude/commands` and a project's portable `.agents/skills` are read-only sources beside it.
  * `skill-discovery.ts` owns scope precedence and the write/delete side.
  */
 
@@ -34,9 +34,9 @@ export {
 
 const quietSkillScanLogger: SkillScanLogger = { warn: () => {} }
 
-/** The single Localix skills root visible under a base directory. */
+/** The skills root under a base directory: Claude Code's `.claude/skills`, shared with it. */
 export function skillRoot(baseDir: string): string {
-  return join(baseDir, '.localix/skills')
+  return join(baseDir, '.claude', 'skills')
 }
 
 function warnReadFailure(logger: SkillScanLogger, path: string, error: unknown): void {
@@ -178,15 +178,6 @@ async function readSkillsInContainer(
     .sort((a, b) => a.name.localeCompare(b.name))
 }
 
-async function scanSkillDir(
-  baseDir: string,
-  scope: SkillScanScope,
-  logger: SkillScanLogger,
-  safetyRoot: string | null,
-): Promise<DiscoveredSkill[]> {
-  return readSkillsInContainer(skillRoot(baseDir), scope, logger, safetyRoot)
-}
-
 /** Everything discoverable directly under one Localix base directory. */
 export async function scanScope(
   baseDir: string,
@@ -208,12 +199,10 @@ export async function scanScope(
       return []
     }
   }
-  // In precedence order, first name wins: Localix's own skills, Claude Code's `.claude/skills`,
-  // the portable `.agents/skills` (a project's only), then `.claude/commands` — "A skill and a
-  // file in `.claude/commands/`: the skill".
+  // In precedence order, first name wins: `.claude/skills`, the portable `.agents/skills` (a
+  // project's only), then `.claude/commands` — "A skill and a file in `.claude/commands/`: the skill".
   const layers = [
-    await scanSkillDir(baseDir, scope, logger, safetyRoot),
-    await readSkillsInContainer(join(baseDir, '.claude', 'skills'), scope, logger, safetyRoot),
+    await readSkillsInContainer(skillRoot(baseDir), scope, logger, safetyRoot),
     scope === 'project'
       ? await readSkillsInContainer(join(baseDir, '.agents', 'skills'), scope, logger, safetyRoot)
       : [],
@@ -232,7 +221,7 @@ export async function scanScope(
 /**
  * Reads skills from a single root directory whose immediate children are skill
  * folders (`<root>/<name>/SKILL.md`). Unlike scanSkillDir, `root` IS the skills
- * container (no `.localix/skills` suffix is appended). Used to fold plugin-bundled
+ * container (no `.claude/skills` suffix is appended). Used to fold plugin-bundled
  * skill directories into the same skill list the agent sees.
  */
 export async function readSkillsFromRoot(

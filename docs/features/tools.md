@@ -12,21 +12,21 @@ roster.
 
 ## What you can do
 
-| Action                        | Mechanism                                                                                                                                          | Availability and boundary                                                                                              |
-| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Read any file                 | `read` returns text, an image as a picture, PDF/office text (`pages`, `sheet`), notebook cells or a directory listing.                             | Images over 10 MB are refused; a text-only model gets an image's size as text. Documents need the Documents mini app.  |
-| Read several files at once    | `read` with `reads: [{ path, start_line?, end_line? }]`; `search` with `queries: [...]` for several patterns.                                      | One call, answered per file or per query; see [Batch reads and searches](#batch-reads-and-searches).                   |
-| Change several files at once  | One `edit` call carries `edits: [{ path, old_string, new_string }]`; one `write` call carries `files: [{ path, content }]`.                        | Each file applies or fails on its own; see [Change files in one call](#change-files-in-one-call).                      |
-| See the roster of a session   | Inspect the agent's tools in **Settings → Permissions**, or ask for `context_budget`.                                                              | Settings shows configured access; `context_budget` estimates the current run's schemas.                                |
-| Remove a tool from later runs | Add a `tool:<name>` rule with effect `deny` for the agent in Settings → Permissions.                                                               | Applies to the next run; see [Manage the tool budget](tool-budget.md).                                                 |
-| Reach a deferred tool         | The model calls `activate_tools` with the exact name.                                                                                              | The activation is remembered on the session and survives a context checkpoint.                                         |
-| Use an open mini app's tools  | Link the mini app's tab to the message (open tabs link by default), or let it wake the chat.                                                       | Uses the message's linked context; tab/chip changes take effect when you send.                                         |
-| Run a script over tools       | `codemode` runs JavaScript that calls `read`, `bash`, `edit` and `write` as `await tools.<name>(args)`.                                            | Only the script's output and return value reach the model; see [Run a script over tools](#run-a-script-over-tools).    |
-| Learn why a tool is missing   | Ask the agent; it reads the run's ledger through `configure` with `action: "inspect"`.                                                             | Read-only; requires `configure` in the run. Known withheld tools report their reasons.                                 |
-| Wait for something external   | `bash` with `until: <seconds>` polls the command and wakes the session when it exits 0.                                                            | Needs a manageable job (`jobs` present); see [Wait for something](monitors.md).                                        |
-| Plan before building          | The Kanban mini app's `kanban` tool: put the work on the chat's board before starting.                                                             | A deferred mini app tool on a passive board; see the [Kanban guide](task-board.md).                                    |
-| Show you something            | The agent links it in its reply: a file as `localix://ui/work-item/file?path=…&line=…`, a mini app view by the `App view:` link its tool returned. | Nothing opens on its own; you open a link when you choose.                                                             |
-| Create a specialist           | `agents` lists the current registry or creates 1–8 reusable definitions with explicit priorities and inherited saved permissions.                  | Root chats only; tag a created handle to invite it and give it the floor. See [Agent management](agent-management.md). |
+| Action                            | Mechanism                                                                                                                                          | Availability and boundary                                                                                                                                       |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Read any file                     | `read` returns text, an image as a picture, PDF/office text (`pages`, `sheet`), notebook cells or a directory listing.                             | Images over 10 MB are refused; a text-only model gets an image's size as text. Documents need the Documents mini app.                                           |
+| Read several files at once        | `read` with `reads: [{ path, start_line?, end_line? }]`; `search` with `queries: [...]` for several patterns.                                      | One call, answered per file or per query; see [Batch reads and searches](#batch-reads-and-searches).                                                            |
+| Change several files at once      | One `edit` call carries `edits: [{ path, old_string, new_string }]`; one `write` call carries `files: [{ path, content }]`.                        | Each file applies or fails on its own; see [Change files in one call](#change-files-in-one-call).                                                               |
+| See the roster of a session       | Inspect the agent's tools in **Settings → Permissions**, or ask for `context_budget`.                                                              | Settings shows configured access; `context_budget` estimates the current run's schemas.                                                                         |
+| Remove a tool from later runs     | Add a `tool:<name>` rule with effect `deny` for the agent in Settings → Permissions.                                                               | Applies to the next run; see [Manage the tool budget](tool-budget.md).                                                                                          |
+| Reach a deferred tool             | The model calls `activate_tools` with the exact name.                                                                                              | The activation is remembered on the session and survives a context checkpoint.                                                                                  |
+| Use an open mini app's tools      | Link the mini app's tab to the message (open tabs link by default), or let it wake the chat.                                                       | Uses the message's linked context; tab/chip changes take effect when you send.                                                                                  |
+| Run a script over tools           | `codemode` runs JavaScript that calls `read`, `bash`, `edit` and `write` as `await tools.<name>(args)`.                                            | Only the script's output and return value reach the model; see [Run a script over tools](#run-a-script-over-tools).                                             |
+| Learn why a tool is missing       | Ask the agent; it reads the run's ledger through `configure` with `action: "inspect"`.                                                             | Read-only; requires `configure` in the run. Known withheld tools report their reasons.                                                                          |
+| Wait for something external       | `bash` with `until: <seconds>` polls the command and wakes the session when it exits 0.                                                            | Needs a manageable job (`jobs` present); see [Wait for something](monitors.md).                                                                                 |
+| Plan before building              | The Kanban mini app's `kanban` tool: put the work on the chat's board before starting.                                                             | A deferred mini app tool on a passive board; see the [Kanban guide](task-board.md).                                                                             |
+| Show you something                | The agent links it in its reply: a file as `localix://ui/work-item/file?path=…&line=…`, a mini app view by the `App view:` link its tool returned. | Nothing opens on its own; you open a link when you choose.                                                                                                      |
+| Find, install or create a package | `store` searches the sources you added, shows a package's plan, and installs, updates, removes, enables, disables, or creates an agent or skill.   | Root chats only; each change waits for your approval and a run nobody can answer refuses it. See [Store](store.md) and [Agent management](agent-management.md). |
 
 For live PTY input and rendered-screen waits, see
 [Interact with a terminal](interactive-terminals.md).
@@ -69,10 +69,10 @@ key it names when that key is missing.
 
 ### Batch reads and searches
 
-One `read` call can open several files. `path` keeps every single-file option (`offset`, `limit`,
-`pages`, `sheet`, `mode`); each `reads` entry adds a file with its own optional line range and
-inherits `cwd`, `mode`, `pages` and `sheet`. A bare string entry is read as `{ path }`, and an entry
-repeated in one call is read once.
+One `read` call can open several files. `path` keeps every single-file option (`byte_offset`,
+`limit`, `pages`, `sheet`, `mode`); each `reads` entry adds a file with its own optional line range
+and inherits `cwd`, `mode`, `pages` and `sheet`. A bare string entry is read as `{ path }`, and an
+entry repeated in one call is read once.
 
 ```json
 { "reads": [{ "path": "src/a.ts" }, { "path": "src/b.ts", "start_line": 40, "end_line": 90 }] }
@@ -94,6 +94,24 @@ never a pointer at an earlier read.
 including its retries, and the results are grouped under a `### "<pattern>"` header. One call runs
 up to eight patterns and returns up to 64 KB of results; the rest are named back to run separately.
 A repeated search returns its full results again. The tool card shows a row per file or per pattern.
+
+### Claude Code arguments
+
+A prompt, skill or agent written for Claude Code calls `Read`, `Grep`, `Glob`, `Bash`, `WebFetch`
+and `WebSearch` with their own arguments. The tools take them as written, and refuse a call whose
+two spellings of one thing disagree, or that asks for what the tool cannot do, instead of running
+something else.
+
+| Tool       | Claude Code argument                                | Meaning here                                                                                      |
+| ---------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `read`     | `file_path`                                         | `path`                                                                                            |
+| `read`     | `offset`, `limit`                                   | The first line and the number of lines. A byte position is `byte_offset`, as a cut-off read says  |
+| `search`   | `pattern`, `path`                                   | The regex, or a file pattern for a listing when it is a bare glob such as `src/**/*.ts`           |
+| `search`   | `output_mode`, `head_limit`, `type`, `multiline`    | Kept. A call with `pattern` and no mode lists the matching files, as `Grep` does                  |
+| `search`   | `-i`, `-A`, `-B`, `-C`, `context`                   | `ignore_case`, and one `context` as wide as the widest. `-n` changes nothing; `offset` is refused |
+| `bash`     | `run_in_background`, `description`, `timeout` in ms | `background`; the label is dropped; a timeout above 600 is milliseconds, rounded up to seconds    |
+| `research` | `url`, `prompt`, `query`                            | A page to read for that question, or the question to search for                                   |
+| `research` | `allowed_domains`, `blocked_domains`                | `include_domains`, `exclude_domains`                                                              |
 
 ### Run a script over tools
 

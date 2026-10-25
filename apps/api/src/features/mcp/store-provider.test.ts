@@ -36,6 +36,7 @@ async function setup(opts: { tools?: string[]; probeError?: string } = {}) {
   const real = createMcpService({ db })
   const switches: Array<{ name: string; enabled: boolean }> = []
   const off = new Set<string>()
+  const outside = new Set<() => void>()
   const service: McpService = {
     ...real,
     testServer: async () =>
@@ -63,8 +64,13 @@ async function setup(opts: { tools?: string[]; probeError?: string } = {}) {
         cwd === '/work/p1' ? [fileRecord('project', 'shared', { command: ['x'] })] : [],
     },
     projectCwd: async (_user, project) => (project === 'p1' ? '/work/p1' : null),
+    onChange: (listener) => {
+      outside.add(listener)
+      return () => outside.delete(listener)
+    },
   })
-  return { provider, service, switches, off }
+  const changeOutside = () => outside.forEach((listener) => listener())
+  return { provider, service, switches, off, changeOutside }
 }
 
 const remote = {
@@ -75,6 +81,16 @@ const remote = {
 }
 
 describe('the MCP server Store provider', () => {
+  test('a switch written outside the Store tells its subscribers, until they unsubscribe', async () => {
+    const { provider, changeOutside } = await setup()
+    let heard = 0
+    const stop = provider.subscribe(() => heard++)
+    changeOutside()
+    stop()
+    changeOutside()
+    expect(heard).toBe(1)
+  })
+
   beforeAll(() => mkdir(tempDir, { recursive: true }))
   afterAll(() => rm(tempDir, { recursive: true, force: true }))
 
@@ -374,10 +390,5 @@ describe('the MCP server Store provider', () => {
     const { provider, switches } = await setup()
     await provider.setEnabled!('file:user:from-claude', 'user', false, actor)
     expect(switches).toEqual([{ name: 'from-claude', enabled: false }])
-  })
-
-  test('it is made here, not installed', async () => {
-    const { provider } = await setup()
-    await expect(provider.install('github', 'user', { plan: true }, actor)).rejects.toThrow(/Add/u)
   })
 })

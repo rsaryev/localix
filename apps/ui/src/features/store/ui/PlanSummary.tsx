@@ -6,6 +6,7 @@ import { Skeleton } from '@localixai/kit/skeleton'
 import { COMPONENT_LABELS, plural } from '../model/presentation'
 import { useStoreScope } from '../model/storeContext'
 import { useInstallPlan } from '../model/useStoreData'
+import { StoreReadFailure } from './StoreReadFailure'
 
 function Heading({ children }: { children: string }) {
   return <SectionLabel as="h3">{children}</SectionLabel>
@@ -18,15 +19,31 @@ function Heading({ children }: { children: string }) {
  * meanwhile.
  */
 export function PlanSummary({ listing, scope = 'user' }: { listing: Listing; scope?: Scope }) {
+  return <PlanView {...useListingPlan(listing, scope)} />
+}
+
+/** The plan of a listing, read now: the consent sheet gates Install on it, so it reads it too. */
+export function useListingPlan(listing: Listing, scope: Scope) {
   const store = useStoreScope()
-  const { data: plan, error } = useInstallPlan(
-    store.client,
-    listing.ref,
-    scope,
-    store.project?.id ?? null,
-    true,
-  )
-  if (error) return <p className="text-xs text-text-soft">What it would run could not be read.</p>
+  const {
+    data: plan,
+    error,
+    mutate,
+  } = useInstallPlan(store.client, listing.ref, scope, store.project?.id ?? null, true)
+  return { plan, error, retry: () => void mutate() }
+}
+
+export function PlanView({
+  plan,
+  error,
+  retry,
+}: {
+  plan: ReturnType<typeof useListingPlan>['plan']
+  error: unknown
+  retry: () => void
+}) {
+  if (error && !plan)
+    return <StoreReadFailure inline what="What it would run" error={error} onRetry={retry} />
   if (!plan)
     return (
       <div role="status" aria-label="Reading what it would run" className="flex flex-col gap-2">

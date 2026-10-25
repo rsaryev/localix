@@ -69,6 +69,12 @@ export interface SearchFilesOptions {
   glob?: string
   /** Lines of context printed around each match (ripgrep `-C`). 0/undefined = none. */
   context?: number
+  /** Match case-insensitively (ripgrep `--ignore-case`). */
+  ignoreCase?: boolean
+  /** Let a pattern span lines, `.` matching a newline (ripgrep `--multiline --multiline-dotall`). */
+  multiline?: boolean
+  /** Only files of this ripgrep type (`--type`, e.g. `ts`, `py`, `rust`). */
+  type?: string
   signal?: AbortSignal
   /**
    * Wall-clock cap in SECONDS, matching `spawnToResult`'s own unit. Absent = no cap.

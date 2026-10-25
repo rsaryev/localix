@@ -67,7 +67,7 @@ export function productionOptionalPorts(
     skill: createSkillTool(),
     jobs: createJobsTool(inert(), { terminalInput: true }),
     delegate: inert(),
-    agents: inert(),
+    store: inert(),
     loops: { userId: 'user-1', sessionId: 'session-1', agentId: 'agent-1' },
     mini_app_build: { run: async () => ({ text: '', ok: true }) },
     browser: inert(),

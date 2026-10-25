@@ -54,7 +54,8 @@ export function validatePluginCommands(plugin: DiscoveredPlugin): FieldValidatio
       }
     }
     for (const tool of cmd.disallowedTools ?? []) {
-      if (!BUILTIN_TOOL_NAMES.includes(tool)) {
+      // `bash(rm *)` names the tool before its pattern.
+      if (!BUILTIN_TOOL_NAMES.includes(tool.replace(/\(.*$/, ''))) {
         warnings.push(
           `Command "${cmd.name}" disallowedTools lists "${tool}" which isn't a known engine tool — it has no effect.`,
         )
@@ -109,7 +110,7 @@ export function validatePluginAgents(plugin: DiscoveredPlugin): FieldValidation 
     }
     if (!agent.description.trim()) {
       warnings.push(
-        `Agent role "${agent.name}" has no description — add one so users know what this role does in the Settings role picker.`,
+        `Agent role "${agent.name}" has no description — add one so users know what this role does in the Store.`,
       )
     }
     if (!agent.prompt || agent.prompt.trim().length === 0) {
@@ -125,7 +126,9 @@ export function validatePluginAgents(plugin: DiscoveredPlugin): FieldValidation 
         warnings.push(`Agent role "${agent.name}" lists tool ${unknownToolNote(tool, 'lists')}`)
       }
     }
-    for (const tool of agent.disallowedTools ?? []) {
+    for (const entry of agent.disallowedTools ?? []) {
+      // `bash(rm *)` denies calls of `bash`; the name before the specifier is what must exist.
+      const tool = entry.split('(')[0]!.trim()
       if (!BUILTIN_TOOL_NAMES.includes(tool)) {
         warnings.push(
           `Agent role "${agent.name}" disallows tool ${unknownToolNote(tool, 'disallows')}`,

@@ -1,4 +1,5 @@
 import {
+  createChangeSignal,
   listingConfigFromFields,
   scalarConfigValues,
   type InstallPlan,
@@ -7,6 +8,7 @@ import {
   type Scope,
   type StoreActor,
   type StoreProvider,
+  type InstallableProvider,
 } from '@localixai/store'
 
 import { ConflictError, InvalidRequestError, NotFoundError } from '../../lib/domain-errors'
@@ -62,11 +64,10 @@ export function createPluginStoreProvider(deps: {
   previewMarketplace?: StoreProvider['previewSource']
   /** A checkout's folder was scanned (tests count them). */
   onScan?: () => void
-}): StoreProvider & { settled(): Promise<void> } {
-  const listeners = new Set<() => void>()
-  const changed = () => {
-    for (const listener of listeners) listener()
-  }
+}): InstallableProvider & { settled(): Promise<void> } {
+  const { changed, subscribe } = createChangeSignal((listener) =>
+    deps.service.updates.subscribe(listener),
+  )
   const cache = createContentsCache(deps.cacheDir)
   /** What fetched remote entries contain, by id: learned once a page was opened. */
   const fetched = new Map<string, { dir: string; contents: PluginContents }>()
@@ -339,13 +340,6 @@ export function createPluginStoreProvider(deps: {
       changed()
     },
 
-    subscribe(onChange) {
-      listeners.add(onChange)
-      const stop = deps.service.updates.subscribe(onChange)
-      return () => {
-        listeners.delete(onChange)
-        stop()
-      }
-    },
+    subscribe,
   }
 }

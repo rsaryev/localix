@@ -11,6 +11,7 @@ import { copyableMessageText } from '@localixai/agent/agents'
 import { messageBindingDraft } from '@localixai/mini-app-sdk/ui/message-binding-drag'
 import { composerBus } from '@/shared/lib/composerBus'
 import { inspector } from '@/shared/lib/inspectorBus'
+import { copyableRowText } from '../model/copyableRowText'
 import type { Message } from '../model/types'
 import type { MessageContextActionsProps } from './MessageContextActions'
 import { isToolBacked } from './tool-parts/itemHelpers'
@@ -75,12 +76,7 @@ export function useMessageContextActions({
     () => onEdit?.(messageId, message.content ?? ''),
     [onEdit, messageId, message.content],
   )
-  const copyText = segments
-    ? segments
-        .map((part) => copyableMessageText(part))
-        .filter(Boolean)
-        .join('\n\n')
-    : copyableMessageText(message)
+  const copyText = segments ? copyableRowText(segments) : copyableMessageText(message)
 
   return {
     contextActions: {

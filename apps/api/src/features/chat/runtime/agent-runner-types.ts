@@ -35,6 +35,7 @@ import type { UiLocationCatalogService } from '../../ui-locations/service'
 import type { WorkRegistry } from '../../work/registry'
 import type { AgentNotifications } from '../../notifications/producers'
 import type { AgentManagementPort } from '../../agents/service-contract'
+import type { StoreAgentPort } from '../../store/agent-port'
 import type { ModsHost } from '../../mods/host'
 
 export interface RunnerDeps {
@@ -189,6 +190,8 @@ export interface RunnerDeps {
   plans?: PlanService
   /** The search palette's service — the agent's `global_search` (forward-held, built after chat). */
   globalSearch?: GlobalSearchPort
+  /** The Store, for the agent's `store` tool (forward-held: the Store is built after chat). */
+  store?: StoreAgentPort
   /**
    * The embedding model on demand (`embeddings/semantic-vectors.ts`), null while it cannot run.
    * Group routing's fallback when no decision model is reachable (`floor-advisor.ts`).

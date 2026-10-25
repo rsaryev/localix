@@ -3,6 +3,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { createReadTool, tryListDirectory } from './read'
+import { prepareReadArguments, readToolInputSchema } from './read-input'
 import { MAX_DIR_ENTRIES } from './read-output'
 import type { ExecutionEnvironment } from '../environment'
 
@@ -15,6 +16,21 @@ describe('createReadTool', () => {
 
   afterEach(async () => {
     if (tempDir) await rm(tempDir, { recursive: true, force: true })
+  })
+
+  test('a Claude Code read (file_path, a line offset and limit) returns those lines', async () => {
+    const file = path.join(tempDir, 'lines.txt')
+    await writeFile(file, Array.from({ length: 20 }, (_, i) => `row ${i + 1}`).join('\n'), 'utf8')
+    const tool = createReadTool(undefined, tempDir)
+    const input = readToolInputSchema.parse(
+      prepareReadArguments({ file_path: file, offset: 5, limit: 3 }),
+    )
+    const result = await tool.execute('cc', input)
+    expect(result.isError).toBeUndefined()
+    expect(result.content).toContain('row 5')
+    expect(result.content).toContain('row 7')
+    expect(result.content).not.toContain('row 4')
+    expect(result.content).not.toContain('row 8')
   })
 
   test('publishes the same detail object it returns for successful and failed reads', async () => {
@@ -51,12 +67,12 @@ describe('createReadTool', () => {
     expect(first.content).not.toContain('�')
 
     // Continue from the suggested offset — it must land on a char boundary.
-    const offsetMatch = /offset=(\d+)/.exec(first.content)
+    const offsetMatch = /byte_offset=(\d+)/.exec(first.content)
     expect(offsetMatch).not.toBeNull()
     const offset = Number(offsetMatch![1])
     expect(offset % 3).toBe(0) // 3-byte chars: a boundary is a multiple of 3
 
-    const second = await tool.execute('r2', { path: 'multibyte.txt', offset })
+    const second = await tool.execute('r2', { path: 'multibyte.txt', byte_offset: offset })
     expect(second.isError).toBeUndefined()
     expect(second.content).not.toContain('�')
     // No characters lost across the seam: the two slices cover the whole file.
@@ -82,7 +98,7 @@ describe('createReadTool', () => {
     const tool = createReadTool(undefined, tempDir)
 
     // Offset 4 points into the middle of the second character (bytes 3-5).
-    const result = await tool.execute('r3', { path: 'aligned.txt', offset: 4 })
+    const result = await tool.execute('r3', { path: 'aligned.txt', byte_offset: 4 })
     expect(result.isError).toBeUndefined()
     expect(result.content).not.toContain('�')
     // Backed up to byte 3 → 99 complete characters remain.
@@ -142,7 +158,7 @@ describe('createReadTool', () => {
     expect(res.details?.truncated).toBe(true)
     // Continuation advice must point at startLine — a line-range read ignores offset.
     expect(res.content).toMatch(/Continue with start_line=\d+/)
-    expect(res.content).not.toContain('offset=')
+    expect(res.content).not.toContain('byte_offset=')
     // The advised next line is the one right after the last shown line.
     const m = /start_line=(\d+)/.exec(res.content)
     expect(m).not.toBeNull()
@@ -365,7 +381,7 @@ describe('createReadTool — filesystem basics', () => {
       truncated: true,
     })
     expect(result.content).toContain('truncated at')
-    expect(result.content).toContain('offset=')
+    expect(result.content).toContain('byte_offset=')
     expect(result.content.length).toBeLessThan(70_000)
   })
 })

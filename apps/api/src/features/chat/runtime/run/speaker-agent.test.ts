@@ -133,3 +133,11 @@ test('the default agent, and a seat with no definition behind it, keep their own
   const input = { agent: { instructions: 'You are Localix.' }, disabledTools: [] }
   expect(applySpeakerAgent(input, undefined)).toBeNull()
 })
+
+test('the delegate ports carry the run agent’s Agent(...) allowlist', () => {
+  const base = { catalog: [], defaultCwd: '/tmp', rootSessionId: 'root' }
+  expect(delegateAgentPorts({ ...base, allowedAgentTypes: ['worker'] }).allowedAgentTypes).toEqual([
+    'worker',
+  ])
+  expect(delegateAgentPorts(base).allowedAgentTypes).toBeUndefined()
+})

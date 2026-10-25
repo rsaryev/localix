@@ -83,6 +83,18 @@ describe('resolving who a task goes to', () => {
       })
   })
 
+  test('the name fork is reserved: a catalog agent called fork is no one a task goes to', async () => {
+    const t = await fixture()
+    await t.userFile('fork')
+    await t.userFile('reviewer')
+    for (const reference of ['fork', 'Fork', '@fork'])
+      expect(await t.service.resolveDelegation('u', reference)).toEqual({ kind: 'unavailable' })
+    expect(await t.service.resolveDelegation('u', 'reviewer')).toMatchObject({ kind: 'agent' })
+    const rows = await t.service.directory('u')
+    expect(rows.find((row) => row.name === 'fork')).toMatchObject({ delegable: false })
+    expect(rows.find((row) => row.name === 'reviewer')).toMatchObject({ delegable: true })
+  })
+
   test('a file named like a built-in replaces it, even general-purpose', async () => {
     const t = await fixture()
     await t.userFile('general-purpose', 'tools: Read\n')

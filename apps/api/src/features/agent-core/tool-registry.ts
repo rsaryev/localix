@@ -8,7 +8,7 @@ import type { ResearchConfig } from './tools/web/research'
 import type { DiagnosticsReporter, EditorBufferProbe } from './tools/file/file-utils'
 import type { OutlineProvider } from './tools/file/outline'
 import type { DelegateToolPort } from './tools/delegate'
-import type { AgentsToolPort } from './tools/agents'
+import type { StoreToolPort } from './tools/store'
 import type { LoopsToolOptions } from './tools/loops'
 import type { MiniAppBuildToolOptions } from './tools/mini-app-build'
 import type { ConfigureToolOptions } from './tools/configure/configure'
@@ -135,7 +135,7 @@ export interface OptionalToolPorts {
   jobs?: AgentTool
   /** Tasks handed to child sessions, and the line to each child (`tools/delegate.ts`). */
   delegate?: DelegateToolPort
-  agents?: AgentsToolPort
+  store?: StoreToolPort
   loops?: LoopsToolOptions
   /** The host's mini app authoring: build, test and reload (or create) one user mini app. */
   mini_app_build?: MiniAppBuildToolOptions

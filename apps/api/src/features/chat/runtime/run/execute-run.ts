@@ -66,6 +66,12 @@ async function executeAdmittedRun(
   } catch (error) {
     return await failRun(frame, error)
   } finally {
+    // The MCP servers an agent file defined for this run alone disconnect with it.
+    void frame.teardown
+      .releaseMcp?.()
+      .catch((error: unknown) =>
+        console.warn('[agent-runner] releasing the agent MCP servers failed', error),
+      )
     teardownRun({
       env,
       runtimeState: env.state,

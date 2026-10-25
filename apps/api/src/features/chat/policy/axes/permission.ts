@@ -12,11 +12,28 @@ import {
   PERMISSION_MODES,
   type PermissionMode,
 } from '../../../../contracts/permission-modes'
+import { childPermissionMode } from '../../../../contracts/agent-permission-mode'
+import type { SessionProvenance } from '../../session-provenance'
 import { applyPermissionMode } from '../../../capabilities/permission-mode-policy'
 import { defineAxis } from '../axis'
 
 export interface PermissionFacts {
   permissionMode?: PermissionMode
+  /** A delegated child may carry the mode its agent's file asked for. */
+  provenance?: Pick<SessionProvenance, 'kind'> & { agentPermissionMode?: 'default' | 'plan' }
+}
+
+/**
+ * The mode the run is in: the row's, which a root's mode change writes to its whole tree, with a
+ * delegated child's agent letting it plan under a Default conversation
+ * (`contracts/agent-permission-mode.ts`). Read from the provenance, so a change of the tree's mode
+ * never erases what the agent asked for.
+ */
+const modeOf = (facts: PermissionFacts): PermissionMode => {
+  const conversation = facts.permissionMode ?? DEFAULT_PERMISSION_MODE
+  return facts.provenance?.kind === 'task-delegation'
+    ? childPermissionMode(conversation, facts.provenance.agentPermissionMode)
+    : conversation
 }
 
 export interface PermissionDecision {
@@ -31,7 +48,7 @@ export const permissionAxis = defineAxis<PermissionFacts, PermissionDecision>(
   'permission',
   PERMISSION_MODES.map((mode) => ({
     id: mode,
-    applies: (facts) => (facts.permissionMode ?? DEFAULT_PERMISSION_MODE) === mode,
+    applies: (facts) => modeOf(facts) === mode,
     decide: () => ({
       mode,
       planning: mode === 'plan',

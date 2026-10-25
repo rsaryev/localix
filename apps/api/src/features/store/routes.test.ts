@@ -245,6 +245,39 @@ describe('/rpc/store', () => {
     expect(await response.json()).toEqual({ ok: true, message: 'test chess user' })
   })
 
+  test('a shelf action is previewed, then run on the items the person confirmed', async () => {
+    const { apps, get, post } = app()
+    expect(await (await get('/shelf-actions')).json()).toEqual({ actions: [] })
+    expect((await post('/shelf/mini-app/plan', { scope: 'user', action: 'tidy' })).status).toBe(409)
+    const ran: unknown[] = []
+    apps.provider.shelfActions = async (scope) =>
+      scope === 'user' ? [{ id: 'tidy', label: 'Tidy up' }] : []
+    apps.provider.planShelfAction = async (action, scope) => ({
+      summary: `${action} on ${scope}`,
+      items: [{ ref: { kind: 'mini-app', id: 'chess' }, name: 'chess', reason: 'idle' }],
+    })
+    apps.provider.runShelfAction = async (action, scope, ids, actor) => {
+      ran.push([action, scope, ids, actor.projectId])
+      return { ok: true, message: 'done' }
+    }
+    expect(await (await get('/shelf-actions?scope=user')).json()).toEqual({
+      actions: [{ kind: 'mini-app', id: 'tidy', label: 'Tidy up' }],
+    })
+    expect(await (await get('/shelf-actions?scope=project&projectId=p1')).json()).toEqual({
+      actions: [],
+    })
+    const plan = await post('/shelf/mini-app/plan', { scope: 'user', action: 'tidy' })
+    expect((await plan.json()).items).toHaveLength(1)
+    const run = await post('/shelf/mini-app/run', {
+      scope: 'project',
+      projectId: 'p1',
+      action: 'tidy',
+      ids: ['chess'],
+    })
+    expect(await run.json()).toEqual({ ok: true, message: 'done' })
+    expect(ran).toEqual([['tidy', 'project', ['chess'], 'p1']])
+  })
+
   test('activity and Update all', async () => {
     const { get, post } = app()
     const activity = await (await get('/activity')).json()

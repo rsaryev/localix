@@ -1,3 +1,4 @@
+import { createChangeSignal } from '@localixai/store'
 import type {
   ActionResult,
   ConfigValue,
@@ -13,9 +14,11 @@ import type {
 import { ConflictError, InvalidRequestError, NotFoundError } from '../../lib/domain-errors'
 import type { AvailabilityReader } from '../capabilities/availability'
 import type { SkillsCuratorService } from './service'
+import { ARCHIVE_UNUSED, archiveUnusedPlan } from './store-idle'
 import {
   BODY_FIELDS,
   NAME_FIELD,
+  PIN,
   listingRef,
   refOf,
   skillDetail,
@@ -47,15 +50,24 @@ export interface SkillFiles {
 export interface SkillStoreDeps {
   skills: SkillFiles
   /** Archive, restore and pin: the lifecycle the curator owns. */
-  curator: Pick<SkillsCuratorService, 'listSkills' | 'archive' | 'restore' | 'setPinned'>
+  curator: Pick<
+    SkillsCuratorService,
+    'listSkills' | 'archive' | 'archiveUnused' | 'restore' | 'setPinned'
+  >
   /** Whether each skill may run: a rule, shared with the Capabilities screen. */
   availability: {
     reader(userId: string): Promise<AvailabilityReader>
     set(userId: string, switches: Array<{ name: string; enabled: boolean }>): Promise<void>
   }
+  /** The clock, for how long a skill has been idle. */
+  now?: () => Date
+  /**
+   * Hear a change made outside the Store (a switch from the Capabilities screen, a file written by
+   * a tool); returns the unsubscribe. The Store's own writes are announced here too.
+   */
+  onChange(listener: () => void): () => void
 }
 
-const PIN: ItemAction = { id: 'pin', label: 'Pin', help: 'Keep it from being archived when unused' }
 const UNPIN: ItemAction = { id: 'unpin', label: 'Unpin', help: 'Let it be archived when unused' }
 const ARCHIVE: ItemAction = {
   id: 'archive',
@@ -81,10 +93,9 @@ const textOf = (values: Record<string, ConfigValue>, key: string, fallback = '')
  * is no separate kind.
  */
 export function createSkillStoreProvider(deps: SkillStoreDeps): StoreProvider {
-  const listeners = new Set<() => void>()
-  const changed = () => {
-    for (const listener of listeners) listener()
-  }
+  const { changed, subscribe } = createChangeSignal((listener) => deps.onChange(listener))
+
+  const nowMs = () => (deps.now ?? (() => new Date()))().getTime()
 
   const enabledOf = async (userId: string) => {
     const reader = await deps.availability.reader(userId)
@@ -149,9 +160,6 @@ export function createSkillStoreProvider(deps: SkillStoreDeps): StoreProvider {
     return entries.map((entry) => skillListing(entry, enabled(entry.name)))
   }
 
-  const unsupported = () =>
-    new InvalidRequestError('skill_store_create_only', 'A skill is added with Add skill')
-
   return {
     kind: 'skill',
 
@@ -164,17 +172,7 @@ export function createSkillStoreProvider(deps: SkillStoreDeps): StoreProvider {
     async detail(id, actor) {
       const { entry } = await find(id, actor)
       const enabled = await enabledOf(actor.userId)
-      return skillDetail(skillListing(entry, enabled(entry.name)), entry)
-    },
-
-    plan: async () => {
-      throw unsupported()
-    },
-    install: async () => {
-      throw unsupported()
-    },
-    update: async () => {
-      throw unsupported()
+      return skillDetail(skillListing(entry, enabled(entry.name)), entry, nowMs())
     },
 
     async remove(id, _scope, actor) {
@@ -277,12 +275,43 @@ export function createSkillStoreProvider(deps: SkillStoreDeps): StoreProvider {
       throw new InvalidRequestError('skill_store_action', `A skill cannot "${action}"`)
     },
 
-    refresh: async () => {},
-    sources: async () => [],
-
-    subscribe(onChange) {
-      listeners.add(onChange)
-      return () => listeners.delete(onChange)
+    async shelfActions(scope, actor) {
+      return scope === 'project' && !actor.projectId ? [] : [ARCHIVE_UNUSED]
     },
+
+    async planShelfAction(action, scope, actor) {
+      knownShelfAction(action)
+      const skills = await deps.curator.listSkills(actor.userId, {
+        projectId: projectOf(scope, actor) || null,
+      })
+      return archiveUnusedPlan(skills, nowMs())
+    },
+
+    async runShelfAction(action, scope, ids, actor): Promise<ActionResult> {
+      knownShelfAction(action)
+      const names = ids.flatMap((id) => {
+        const ref = refOf(id)
+        return ref?.scope === scope ? [ref.name] : []
+      })
+      const archived = await deps.curator.archiveUnused(actor.userId, {
+        names,
+        projectId: projectOf(scope, actor) || null,
+      })
+      changed()
+      return {
+        ok: true,
+        message:
+          archived.length === 0
+            ? 'Nothing was archived: those skills were used or pinned meanwhile'
+            : `Archived ${archived.length} ${archived.length === 1 ? 'skill' : 'skills'}`,
+      }
+    },
+
+    subscribe,
   }
+}
+
+function knownShelfAction(action: string): void {
+  if (action !== ARCHIVE_UNUSED.id)
+    throw new InvalidRequestError('skill_store_action', `Skills have no shelf action "${action}"`)
 }

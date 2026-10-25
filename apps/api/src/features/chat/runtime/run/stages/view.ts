@@ -11,7 +11,7 @@
 import { createModelContextRepository } from '../../../model-context-repository'
 import { sessionAgent } from '../../message-envelope'
 import { loadModelView, type ModelView } from '../../model-view/view'
-import { delegationPlace } from '../../../session-provenance'
+import { budgetDepth } from '../../fork/fork-run'
 import type { ModRunScope } from '../../../../mods/run-scope'
 import type { CcHooksRuntime } from '../../../../cc-hooks'
 import type { RunFrame } from './frame'
@@ -33,7 +33,7 @@ export async function resolveRunView(frame: RunFrame, turn: ResolvedTurn): Promi
       ? { contextWindow: turn.catalogModel.contextLength }
       : {}),
     // The same depth the prompt stage budgets with, so a child's checkpoint fires at ITS ceiling.
-    depth: delegationPlace(session.provenance).depth,
+    depth: budgetDepth(session, frame.fork),
     contextLimit: turn.contextLimit,
     ...(forced ? { forced } : {}),
   })

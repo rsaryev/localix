@@ -46,6 +46,27 @@ const cases: Array<[SessionProvenance, 'interactive' | 'isolated-worker' | 'pass
     },
     'isolated-worker',
   ],
+  // A fork of its parent's line (`delegate` with `context: "fork"`): a delegated child like any,
+  // plus the rows it inherits and its own copy of the row the call was made in.
+  [
+    {
+      kind: 'task-delegation',
+      parentSessionId: 'p',
+      toolCallId: 'tool',
+      agentType: 'fork',
+      fork: { baseMessageId: 'user-row', snapshotMessageId: 'copy-row' },
+    },
+    'isolated-worker',
+  ],
+  [
+    {
+      kind: 'task-delegation',
+      parentSessionId: 'p',
+      toolCallId: 'tool',
+      fork: { baseMessageId: null, snapshotMessageId: 'copy-row' },
+    },
+    'isolated-worker',
+  ],
   [{ kind: 'loop', parentSessionId: 'p', loopId: 'loop' }, 'isolated-worker'],
   [{ kind: 'hook', parentSessionId: 'p', phase: 'verifier' }, 'isolated-worker'],
   [{ kind: 'skill-fork', parentSessionId: 'p' }, 'isolated-worker'],

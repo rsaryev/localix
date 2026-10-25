@@ -111,14 +111,19 @@ export function bashInputSchemaFor(opts: {
 const MAX_TIMEOUT_SECONDS = 600
 
 /**
- * The runtime's pre-validation hook. `timeout` is seconds while `wait_timeout_ms` beside it is
- * milliseconds, and models carry the millisecond habit over: LOCALIX-170 sent `timeout: 120000`
- * for two minutes and was refused. A whole number of seconds written in milliseconds that fits
- * the cap has one reading; anything else is left for the schema to refuse.
+ * The runtime's pre-validation hook, which reads Claude Code's Bash arguments as this tool's.
  *
- * A string `description` is Claude Code's Bash label, which models trained on it still send
- * (twelve recorded calls). It carries nothing the command needs, so it is dropped rather than
- * failing the call on a field the schema no longer shows.
+ * - `timeout` is seconds here and milliseconds in Claude Code (`wait_timeout_ms` beside it is
+ *   milliseconds too), and models carry the habit over: LOCALIX-170 sent `timeout: 120000` for two
+ *   minutes and was refused. Above the 600-second cap a number cannot be seconds, so it is read
+ *   as Claude Code's milliseconds (its own cap is 600000) and rounded up to whole seconds; past
+ *   that it is left for the schema to refuse.
+ * - `run_in_background` is `background`; one that disagrees with a `background` beside it is
+ *   refused rather than guessed.
+ * - A string `description` is Claude Code's Bash label, which models trained on it still send
+ *   (twelve recorded calls). It carries nothing the command needs, so it is dropped rather than
+ *   failing the call on a field the schema no longer shows. `dangerouslyDisableSandbox` is dropped
+ *   too: a command here runs under the permission gate, and the flag grants nothing.
  */
 export function prepareBashArguments(raw: unknown): unknown {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return raw
@@ -127,10 +132,20 @@ export function prepareBashArguments(raw: unknown): unknown {
     const { description: _label, ...rest } = input
     input = rest
   }
+  if ('dangerouslyDisableSandbox' in input) {
+    const { dangerouslyDisableSandbox: _sandbox, ...rest } = input
+    input = rest
+  }
+  if (input.run_in_background !== undefined) {
+    const { run_in_background: background, ...rest } = input
+    if (rest.background !== undefined && rest.background !== background)
+      throw new Error('bash got both `run_in_background` and a different `background`: pass one.')
+    input = { ...rest, background }
+  }
   const timeout = input.timeout
-  if (typeof timeout !== 'number' || timeout <= MAX_TIMEOUT_SECONDS || timeout % 1000 !== 0)
+  if (typeof timeout !== 'number' || !Number.isFinite(timeout) || timeout <= MAX_TIMEOUT_SECONDS)
     return input
-  const seconds = timeout / 1000
+  const seconds = Math.ceil(timeout / 1000)
   return seconds >= 1 && seconds <= MAX_TIMEOUT_SECONDS ? { ...input, timeout: seconds } : input
 }
 

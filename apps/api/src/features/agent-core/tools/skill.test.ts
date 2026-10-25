@@ -4,7 +4,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { classifySkillCall, createSkillTool } from './skill'
-import type { DiscoveredSkill } from '../skill-discovery'
+import { skillToolInputSchema } from './skill-call'
 
 const run = (tool: ReturnType<typeof createSkillTool>, input: Record<string, unknown>) =>
   tool.execute('t', input as never)
@@ -18,9 +18,17 @@ describe('skill tool — validation (no filesystem)', () => {
     expect((await run(tool, { action: 'save', name: 'x', description: 'd' })).isError).toBe(true)
   })
 
-  test('get and delete require a name', async () => {
+  test('get requires a name', async () => {
     expect((await run(tool, { action: 'get' })).isError).toBe(true)
-    expect((await run(tool, { action: 'delete' })).isError).toBe(true)
+  })
+
+  test('list and delete are gone: the Store lists and removes skills', async () => {
+    for (const action of ['list', 'delete']) {
+      expect(skillToolInputSchema.safeParse({ action, name: 'x' }).success).toBe(false)
+      const result = await run(tool, { action, name: 'x' })
+      expect(result.isError).toBe(true)
+      expect(result.content).toContain('save, get')
+    }
   })
 
   test('an unknown action errors', async () => {
@@ -30,10 +38,11 @@ describe('skill tool — validation (no filesystem)', () => {
 
 describe('skill tool — call classification', () => {
   test.each([
-    ['list', { action: 'list' }, { effect: 'read' }],
     ['get', { action: 'get', name: 'x' }, { effect: 'read' }],
     ['save', { action: 'save', name: 'x' }, { effect: 'files' }],
-    ['delete', { action: 'delete', name: 'x' }, { effect: 'files', irreversible: true }],
+    // Removed actions fall to the widest class, like any unknown one.
+    ['list', { action: 'list' }, { effect: 'external' }],
+    ['delete', { action: 'delete', name: 'x' }, { effect: 'external' }],
     // The old classifier read an unknown action as `read` — the one wrong direction.
     ['an unknown action', { action: 'bogus' }, { effect: 'external' }],
     ['no input', undefined, { effect: 'external' }],
@@ -57,7 +66,7 @@ describe('skill tool — project round-trip', () => {
     await rm(dir, { recursive: true, force: true })
   })
 
-  test('save → list → get → delete a project skill', async () => {
+  test('save → get a project skill', async () => {
     const tool = createSkillTool(dir)
 
     const saved = await run(tool, {
@@ -70,17 +79,13 @@ describe('skill tool — project round-trip', () => {
     expect(saved.content).toContain('Skill saved')
     expect(saved.content).toContain('(project)')
 
-    expect((await run(tool, { action: 'list' })).content).toContain(`/${NAME}`)
     expect((await run(tool, { action: 'get', name: NAME })).content).toContain('STEP ONE marker')
-
-    expect((await run(tool, { action: 'delete', name: NAME })).content).toContain('Skill deleted')
-    expect((await run(tool, { action: 'list' })).content ?? '').not.toContain(`/${NAME}`)
   })
 })
 
 // The tool wrote SKILL.md and announced nothing: the capability revision never moved, so the
 // Skills list and the next run's "# Available skills" stayed stale until an unrelated toggle.
-describe('skill tool — a save or delete announces the capability change', () => {
+describe('skill tool — a save announces the capability change', () => {
   let dir: string
   const NAME = 'zz-skilltool-announce'
   beforeAll(async () => {
@@ -90,20 +95,15 @@ describe('skill tool — a save or delete announces the capability change', () =
     await rm(dir, { recursive: true, force: true })
   })
 
-  test('save and delete each announce once; reads, refusals and misses do not', async () => {
+  test('a save announces once; reads and refusals do not', async () => {
     let announced = 0
     const tool = createSkillTool(dir, [], {}, '', () => announced++)
 
     await run(tool, { action: 'save', name: NAME, description: 'd', content: 'c' })
     expect(announced).toBe(1)
-    await run(tool, { action: 'list' })
     await run(tool, { action: 'get', name: NAME })
     await run(tool, { action: 'save', name: NAME }) // refused: no description
     expect(announced).toBe(1)
-    await run(tool, { action: 'delete', name: NAME })
-    expect(announced).toBe(2)
-    await run(tool, { action: 'delete', name: NAME }) // already gone
-    expect(announced).toBe(2)
   })
 
   test('a throwing announcement never turns a written skill into an error', async () => {
@@ -112,31 +112,11 @@ describe('skill tool — a save or delete announces the capability change', () =
     })
     const saved = await run(tool, { action: 'save', name: NAME, description: 'd', content: 'c' })
     expect(saved.isError).toBeUndefined()
-    expect((await run(tool, { action: 'delete', name: NAME })).isError).toBeUndefined()
-  })
-})
-
-describe('skill tool — plugin skills are read-only', () => {
-  test('deleting a plugin-provided skill is rejected with guidance', async () => {
-    const extra = [
-      {
-        name: 'zz-plugin-skill',
-        description: 'd',
-        content: 'c',
-        scope: 'global',
-        path: '/x/SKILL.md',
-        dir: '/x',
-      },
-    ] as unknown as DiscoveredSkill[]
-    const tool = createSkillTool(null, extra)
-    const res = await run(tool, { action: 'delete', name: 'zz-plugin-skill' })
-    expect(res.isError).toBe(true)
-    expect(res.content).toContain('read-only')
   })
 })
 
 /**
- * The same tool against a real filesystem: save/get/list/delete, plugin-contributed
+ * The same tool against a real filesystem: save/get, plugin-contributed
  * extras, and the curator usage tick. (Lived in a second skill.test.ts at the feature
  * root, orphaned when the tool moved into tools/.)
  */
@@ -163,7 +143,7 @@ describe('skill tool — filesystem', () => {
       expect(saved.content).toContain('Skill saved: "deploy-staging"')
 
       // The file exists on disk.
-      const onDisk = await fs.readFile(join(dir, '.localix/skills/deploy-staging/SKILL.md'), 'utf8')
+      const onDisk = await fs.readFile(join(dir, '.claude/skills/deploy-staging/SKILL.md'), 'utf8')
       expect(onDisk).toContain('name: deploy-staging')
       expect(onDisk).toContain('Run the deploy script.')
 
@@ -171,28 +151,10 @@ describe('skill tool — filesystem', () => {
       expect(got.content).toContain('# Skill: deploy-staging')
       expect(got.content).toContain(
         `Resolve relative references from: ${JSON.stringify(
-          join(dir, '.localix/skills/deploy-staging'),
+          join(dir, '.claude/skills/deploy-staging'),
         )}`,
       )
       expect(got.content).toEndWith('Run the deploy script.')
-    })
-
-    test('list shows saved skills, delete removes them', async () => {
-      const tool = createSkillTool(dir)
-      await tool.execute('t1', {
-        action: 'save',
-        name: 'a-skill',
-        description: 'A',
-        content: 'do a',
-        scope: 'project',
-      })
-      const list = await tool.execute('t2', { action: 'list' })
-      expect(list.content).toContain('/a-skill')
-
-      const del = await tool.execute('t3', { action: 'delete', name: 'a-skill' })
-      expect(del.content).toContain('Skill deleted')
-      const after = await tool.execute('t4', { action: 'get', name: 'a-skill' })
-      expect(after.content).toContain('not found')
     })
 
     test('get returns not found for a missing skill', async () => {
@@ -245,18 +207,9 @@ describe('skill tool — filesystem', () => {
       expect(got.content).toEndWith('Follow the design system.')
     })
 
-    test('list includes plugin-contributed skills', async () => {
-      const tool = createSkillTool(dir, [pluginSkill])
-      const list = await tool.execute('t1', { action: 'list' })
-      expect(list.content).toContain('/frontend-design')
-    })
-
-    test('off hides a skill from list/get and blocks delete by a guessed name', async () => {
+    test('off hides a skill from get and blocks a save over it by a guessed name', async () => {
       const tool = createSkillTool(dir, [pluginSkill], { 'frontend-design': 'off' })
 
-      expect((await tool.execute('t1', { action: 'list' })).content).not.toContain(
-        '/frontend-design',
-      )
       const saved = await tool.execute('t1-save', {
         action: 'save',
         name: 'frontend-design',
@@ -270,10 +223,6 @@ describe('skill tool — filesystem', () => {
       expect(got.isError).toBe(true)
       expect(got.content).toContain('not found')
       expect(got.content).not.toContain('Follow the design system')
-
-      const deleted = await tool.execute('t3', { action: 'delete', name: 'frontend-design' })
-      expect(deleted.isError).toBe(true)
-      expect(deleted.content).toBe('Skill not found: "frontend-design".')
     })
 
     test('get turns a lazy body read failure into a tool error', async () => {
@@ -303,20 +252,27 @@ describe('skill tool — filesystem', () => {
       const got = await tool.execute('t2', { action: 'get', name: 'frontend-design' })
       expect(got.content).toEndWith('Local override.')
     })
-
-    test('delete refuses a plugin-provided skill (read-only)', async () => {
-      const tool = createSkillTool(dir, [pluginSkill])
-      const del = await tool.execute('t1', { action: 'delete', name: 'frontend-design' })
-      expect(del.isError).toBe(true)
-      expect(del.content).toContain('plugin-provided')
-      // Still retrievable.
-      const got = await tool.execute('t2', { action: 'get', name: 'frontend-design' })
-      expect(got.content).toEndWith('Follow the design system.')
-    })
   })
 
   describe('skill tool (curator usage telemetry)', () => {
-    test('get fires a usage tick; misses and other actions do not', async () => {
+    test('save records the skill as created in Localix, once', async () => {
+      const { setSkillAuthoredRecorder } = await import('../skill-usage-recorder')
+      const made: string[] = []
+      setSkillAuthoredRecorder((name, scope) => {
+        made.push(`${scope}:${name}`)
+      })
+      try {
+        const tool = createSkillTool(dir)
+        const save = { action: 'save', name: 'made-here', description: 'd', content: 'x' } as const
+        await tool.execute('t1', { ...save, scope: 'project' })
+        await tool.execute('t2', { ...save, scope: 'project', content: 'y' })
+        expect(made).toEqual(['project:made-here'])
+      } finally {
+        setSkillAuthoredRecorder(null)
+      }
+    })
+
+    test('get fires a usage tick; misses and saves do not', async () => {
       const { setSkillUsageRecorder } = await import('../skill-usage-recorder')
       const ticks: Array<{ name: string; scope: string }> = []
       setSkillUsageRecorder((name, scope) => {
@@ -338,10 +294,6 @@ describe('skill tool — filesystem', () => {
 
         // A miss does not record usage.
         await tool.execute('t3', { action: 'get', name: 'missing-skill' })
-        expect(ticks.length).toBe(1)
-
-        // list does not record usage either.
-        await tool.execute('t4', { action: 'list' })
         expect(ticks.length).toBe(1)
       } finally {
         setSkillUsageRecorder(null)

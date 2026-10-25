@@ -22,6 +22,8 @@ import type { TurnEventContext } from '../event-handlers'
 import type { AgentRunRecord } from '../run-record'
 import type { RunSessionSnapshotRow } from '../session-snapshot'
 import type { SessionStores } from '../session-stores'
+import type { ForkLiveRun } from '../../fork/fork-port'
+import type { ForkRun } from '../../fork/fork-run'
 import type { RunEnv, RunParams } from '../types'
 
 export interface RunFrame {
@@ -31,6 +33,10 @@ export interface RunFrame {
   readonly speakerAgentId: string
   /** The row the run opened on; `currentAssistantMessageId` is the one it ends on. */
   readonly assistantMessageId: string
+  /** Set when the session is a fork: what its parent's run handed it (`chat/runtime/fork`). */
+  readonly fork?: ForkRun
+  /** What a fork of THIS run is made from, once the request is built; read when `delegate` forks. */
+  forkLive?: ForkLiveRun
   /** Throws once a stop or delete revoked this run's admission ticket. */
   readonly assertAdmitted: () => void
   readonly abort: AbortController
@@ -65,6 +71,8 @@ export interface RunFrame {
     ccHooks?: CcHooksRuntime
     /** Claude Code mods of the run, whose turn the failure path still ends (`turn.complete`). */
     mods?: ModRunScope
+    /** Disconnects the MCP servers an agent file defined for this run alone. */
+    releaseMcp?: () => Promise<void>
     readonly liveResolverKeys: Set<string>
   }
 }

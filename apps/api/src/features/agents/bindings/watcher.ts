@@ -163,5 +163,3 @@ export function createAgentWatcher(deps: AgentWatcherDeps) {
     },
   }
 }
-
-export type AgentWatcher = ReturnType<typeof createAgentWatcher>

@@ -103,7 +103,12 @@ if (plan.tests.length) {
   }
   for (const [owner, files] of byOwner) {
     const local = files.map((path) => `./${owner === '.' ? path : path.slice(owner.length + 1)}`)
-    run('bun', ['test', ...local], { cwd: join(process.cwd(), owner), timeout: 300_000 })
+    // Each file in its own module graph, as the suite promises (`docs/internals/testing.md`): a DOM
+    // file whose Radix bound after another file released the preload's DOM renders no dialogs.
+    run('bun', ['test', '--isolate', ...local], {
+      cwd: join(process.cwd(), owner),
+      timeout: 300_000,
+    })
   }
 }
 if (plan.rust) {

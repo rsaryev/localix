@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react'
 import { borderColorOf, fillOf, INVERSE, textColorOf } from './modColor'
 import type { ModSite } from './modSite'
 
-export { ModSiteContext, type ModSite } from './modSite'
+export type { ModSite } from './modSite'
 
 /**
  * How Claude Code's layout, text and control props read on a Localix screen — one table for every

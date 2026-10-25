@@ -33,17 +33,7 @@ export type {
   ListPluginCommandsResponse,
   PluginValidation,
   MarketplaceListing,
-  ListPluginsResponse,
-  SetPluginEnabledRequest,
-  SetPluginConfigRequest,
-  InstallPluginRequest,
-  RemovePluginRequest,
 } from './features/plugins/contracts'
-export type {
-  PluginUpdatesResponse,
-  PluginUpdateJob,
-  UpdateMarketplaceResponse,
-} from './features/plugins/contracts-updates'
 
 export type {
   MiniAppRecord,

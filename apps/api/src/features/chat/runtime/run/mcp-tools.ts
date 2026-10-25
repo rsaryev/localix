@@ -9,6 +9,7 @@ import {
 } from '../../../mcp/client-manager'
 import { buildMcpResourceTools } from '../../../mcp/mcp-resource-tools'
 import { claudeCodeMcpServers } from '../../../mcp/claude-code-servers'
+import type { AgentMcpServers } from '../../../mcp/agent-servers'
 import { hydrateMcpRecords } from '../../../mcp/store-secrets'
 import type { SessionRecord } from '../../repository'
 import { prefixedWarnLogger } from '../plugin-hook-logger'
@@ -41,6 +42,8 @@ export interface ResolvedMcpTools {
   instructions: Array<{ server: string; text: string }>
   /** Compact model-facing inventory of direct and still-connecting MCP servers. */
   inventory: McpInventoryEntry[]
+  /** Disconnects the servers only this run reached (an agent's inline ones); absent when none. */
+  release?: () => Promise<void>
 }
 
 /**
@@ -61,6 +64,12 @@ export async function resolveMcpTools(args: {
   agentId?: string
   /** Whether a channel among the servers speaks into this session; false for a delegated child. */
   bindChannels?: boolean
+  /**
+   * The servers of the agent file this delegated run is (`mcp/agent-servers.ts`). Its inline ones
+   * join the run under a scope of its own and are released with it; a named one is a configured
+   * server the run reaches already, and shares its connection.
+   */
+  agentServers?: AgentMcpServers
 }): Promise<ResolvedMcpTools> {
   const { env, userId, session, pluginMcpServers, defaultCwd, availability } = args
   const empty: ResolvedMcpTools = {
@@ -68,6 +77,13 @@ export async function resolveMcpTools(args: {
     instructions: [],
     inventory: [],
   }
+  const inline = args.agentServers?.inline ?? []
+  // Inline servers are the run's alone: a scope shared with another run of the agent would let
+  // one run's end disconnect the other's servers.
+  const scope = `${userId}:${session.projectId ?? ''}:${defaultCwd}:${args.agentId ?? ''}${
+    inline.length ? `:${session.id}` : ''
+  }`
+  const release = inline.length ? () => mcpClientManager.releaseScope(scope) : undefined
   // Named outside the try so the catch can still say WHICH servers went missing.
   let enabledServers: McpServerList = []
   try {
@@ -94,7 +110,11 @@ export async function resolveMcpTools(args: {
       projectId: session.projectId ?? '',
       cwd: defaultCwd,
       homeDir: claudeCodeHome(),
+      ...(inline.length ? { extra: inline } : {}),
     })
+    for (const name of args.agentServers?.references ?? [])
+      if (!servers.some((server) => server.name === name))
+        console.warn(`[mcp] the agent names the MCP server "${name}", which is not configured here`)
     enabledServers = servers.filter(
       (server) => availability.effectFor('mcp', server.name) !== 'deny',
     )
@@ -115,7 +135,7 @@ export async function resolveMcpTools(args: {
       // The agent too: availability is read per agent, so two chats in one project and cwd can
       // reach different servers. A shared scope let one chat's gather (an empty one, when its
       // agent reaches no server) drop and stop the other chat's live clients mid-call.
-      scope: `${userId}:${session.projectId ?? ''}:${defaultCwd}:${args.agentId ?? ''}`,
+      scope,
       // A Claude Code channel among these servers speaks into this conversation from now on. A
       // delegated child that gathers them (`tool-assembly.ts`) never takes a channel from the chat
       // that started it.
@@ -157,6 +177,7 @@ export async function resolveMcpTools(args: {
       tools: [...candidateTools, ...resourceTools],
       instructions: gather.instructions,
       inventory,
+      ...(release ? { release } : {}),
     }
   } catch (err) {
     // `required:true` is an explicit startup contract. Preserve the manager's
@@ -167,6 +188,7 @@ export async function resolveMcpTools(args: {
     // no way to tell "this server is down this turn" from "this product cannot do that".
     return {
       ...empty,
+      ...(release ? { release } : {}),
       inventory: enabledServers.map((server) => ({ server: server.name, tools: [], failed: true })),
     }
   }

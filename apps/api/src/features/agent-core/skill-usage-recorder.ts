@@ -34,3 +34,34 @@ export function recordSkillUse(
     // best-effort only
   }
 }
+
+/**
+ * Authorship sink, the same arrangement: a skill written for the first time by Localix (the Store,
+ * the `skill` tool) is recorded as created here. The folder is shared with Claude Code, whose use
+ * Localix cannot see, so the curator only archives skills made in Localix.
+ */
+export type SkillAuthoredSink = (
+  skillName: string,
+  scope: 'project' | 'global',
+  projectId: string,
+) => void | Promise<void>
+
+let authoredSink: SkillAuthoredSink | null = null
+
+export function setSkillAuthoredRecorder(next: SkillAuthoredSink | null): void {
+  authoredSink = next
+}
+
+/** Fire-and-forget, like {@link recordSkillUse}. */
+export function recordSkillAuthored(
+  skillName: string,
+  scope: 'project' | 'global',
+  projectId = '',
+): void {
+  if (!authoredSink) return
+  try {
+    void Promise.resolve(authoredSink(skillName, scope, projectId)).catch(() => {})
+  } catch {
+    // best-effort only
+  }
+}

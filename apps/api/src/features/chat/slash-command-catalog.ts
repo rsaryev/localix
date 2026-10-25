@@ -11,10 +11,21 @@
 // Browser-safe catalog: argument definitions, the arg-spec core and pure edit distance
 // keep consumers independent of server code.
 
-import { LOOP_ARGS, MINI_APP_ARGS, PLUGIN_ARGS } from './slash-catalog-arguments'
+import { LOOP_ARGS, MINI_APP_ARGS, PLUGIN_ARGS, THEME_ARGS } from './slash-catalog-arguments'
 import type { SlashArgSpec } from './slash-args'
 import { AGENTS_ARGS } from './slash-catalog-agents'
 import { MODEL_ARGS } from './slash-catalog-model'
+import {
+  COPY_ARGS,
+  EFFORT_ARGS,
+  HELP_ARGS,
+  MEMORY_ARGS,
+  OUTPUT_STYLE_ARGS,
+  PLAN_ARGS,
+  RENAME_ARGS,
+  RESUME_ARGS,
+  REWIND_ARGS,
+} from './slash-catalog-claude-code'
 
 /**
  * Ordered category catalog — the single source for grouping commands into
@@ -83,12 +94,22 @@ export const SLASH_COMMANDS: readonly SlashCommandSpec[] = [
     args: MODEL_ARGS,
   },
   {
+    // A shortcut into `/model`'s steps, at the reasoning level (`model-command/`).
+    name: 'effort',
+    title: 'Effort',
+    description: 'Set an agent’s reasoning level on the model it runs — /model’s steps, shortened',
+    scope: 'client',
+    category: 'config',
+    args: EFFORT_ARGS,
+  },
+  {
     name: 'output-style',
     title: 'Output style',
     description:
-      'Change how replies sound and look — Concise, Explanatory, Learning, your own — or list them',
+      'Change how replies sound and look — Concise, Explanatory, Learning — or list them',
     scope: 'server',
     category: 'config',
+    args: OUTPUT_STYLE_ARGS,
   },
   {
     // The look is this device's, so the composer runs it (`apps/ui/src/shared/theme/themeChoice`).
@@ -97,22 +118,77 @@ export const SLASH_COMMANDS: readonly SlashCommandSpec[] = [
     description: 'Switch the appearance or a plugin’s color theme — or list them',
     scope: 'client',
     category: 'config',
-    args: [
-      {
-        name: 'theme',
-        type: 'choice',
-        dynamic: true,
-        optional: true,
-        placeholder: 'A theme, or Enter to list them…',
-      },
-    ],
+    args: THEME_ARGS,
+  },
+  {
+    name: 'plan',
+    title: 'Plan',
+    description: 'Switch this chat to Plan mode — /plan <task> also sends the task',
+    scope: 'client',
+    category: 'config',
+    args: PLAN_ARGS,
+  },
+  {
+    name: 'permissions',
+    title: 'Permissions',
+    description: 'Open Settings at the permissions',
+    scope: 'client',
+    category: 'config',
+    argless: true,
+  },
+  {
+    name: 'config',
+    title: 'Config',
+    description: 'Open Settings at your preferences',
+    scope: 'client',
+    category: 'config',
+    argless: true,
   },
   // Context management
   {
+    name: 'clear',
+    title: 'Clear',
+    description: 'Start a new chat in this project, with an empty context',
+    scope: 'client',
+    category: 'context',
+    argless: true,
+  },
+  {
+    name: 'resume',
+    title: 'Resume',
+    description: 'Open a recent chat — /resume <chat>, or browse them all',
+    scope: 'client',
+    category: 'context',
+    args: RESUME_ARGS,
+  },
+  {
+    name: 'rename',
+    title: 'Rename',
+    description: 'Give this chat a title — /rename <title>',
+    scope: 'client',
+    category: 'context',
+    args: RENAME_ARGS,
+  },
+  {
+    name: 'rewind',
+    title: 'Rewind',
+    description: 'Roll this chat back to one of your messages; its text returns to the composer',
+    scope: 'client',
+    category: 'context',
+    args: REWIND_ARGS,
+  },
+  {
+    name: 'copy',
+    title: 'Copy',
+    description: 'Copy the latest reply — /copy <n> for an earlier one',
+    scope: 'client',
+    category: 'context',
+    args: COPY_ARGS,
+  },
+  {
     name: 'fork',
     title: 'Fork',
-    description:
-      'Duplicate this conversation into a new chat you can take in a different direction',
+    description: 'Duplicate this conversation into a new chat to take in a different direction',
     scope: 'client',
     category: 'context',
     argless: true,
@@ -128,11 +204,10 @@ export const SLASH_COMMANDS: readonly SlashCommandSpec[] = [
   {
     name: 'help',
     title: 'Help',
-    description:
-      "List all slash commands, grouped by what they do — /help <command> for one command's details",
+    description: "List all slash commands by what they do — /help <command> for one's details",
     scope: 'server',
     category: 'info',
-    argless: true,
+    args: HELP_ARGS,
   },
   {
     name: 'usage',
@@ -144,6 +219,14 @@ export const SLASH_COMMANDS: readonly SlashCommandSpec[] = [
     argless: true,
   },
   {
+    name: 'context',
+    title: 'Context',
+    description: 'Show how full this chat’s context window is',
+    scope: 'client',
+    category: 'info',
+    argless: true,
+  },
+  {
     name: 'recap',
     title: 'Recap',
     description: 'Sum up this chat in one line, for when you come back to it',
@@ -151,7 +234,6 @@ export const SLASH_COMMANDS: readonly SlashCommandSpec[] = [
     category: 'info',
     argless: true,
   },
-  // Core owns control/state commands; task macros belong to extensions.
   // Memory & skills
   {
     name: 'memory',
@@ -159,6 +241,7 @@ export const SLASH_COMMANDS: readonly SlashCommandSpec[] = [
     description: 'List saved memories, or save one — /memory <fact>',
     scope: 'server',
     category: 'memory',
+    args: MEMORY_ARGS,
   },
   {
     name: 'skills',
@@ -194,12 +277,20 @@ export const SLASH_COMMANDS: readonly SlashCommandSpec[] = [
     category: 'extensions',
     args: MINI_APP_ARGS,
   },
+  {
+    // Claude Code's spellings of `/plugin reload` (which reloads skills too); not in the menu.
+    name: 'reload-plugins',
+    aliases: ['reload-skills'],
+    title: 'Reload plugins',
+    description: 'Reload plugins and their skills — the same as /plugin reload',
+    scope: 'server',
+    category: 'extensions',
+    argless: true,
+    hidden: true,
+  },
 ] as const
 
-/**
- * Names reserved by built-in commands (canonical + aliases) — user skills cannot
- * shadow these. Derived from the catalog so it can never drift from the menus.
- */
+/** Names reserved by built-in commands (canonical + aliases): user skills cannot shadow them. */
 export const BUILTIN_COMMAND_NAMES: ReadonlySet<string> = new Set(
   SLASH_COMMANDS.flatMap((c) => [c.name, ...(c.aliases ?? [])]),
 )

@@ -1,4 +1,5 @@
 import type { OAuthClientProvider } from '@modelcontextprotocol/sdk/client/auth.js'
+import type { FetchLike } from '@modelcontextprotocol/sdk/shared/transport.js'
 
 import { resolveRuntimeAddress } from '../../../lib/runtime-address'
 import type { McpServerRecord } from '../repository'
@@ -32,16 +33,23 @@ export function mcpOAuthSecretSink(userId: string): ((value: string) => void) | 
   return secretObserver ? (value: string) => secretObserver?.(userId, value) : undefined
 }
 
-/** The absolute loopback redirect URL registered with the authorization server. */
-export function mcpOAuthRedirectUrl(): string {
+/**
+ * The absolute loopback redirect URL registered with the authorization server: the API's own
+ * callback route, or, for a server that fixes `oauth.callbackPort` as Claude Code does, the
+ * `http://localhost:PORT/callback` its authorization server was told (`callback-listener.ts`).
+ */
+export function mcpOAuthRedirectUrl(callbackPort?: number): string {
+  if (callbackPort) return `http://localhost:${callbackPort}/callback`
   return `${resolveRuntimeAddress().baseUrl}${MCP_OAUTH_CALLBACK_PATH}`
 }
 
-/** The stored config-carried OAuth overrides (pre-registered client id/secret/scope). */
+/** The config-carried OAuth settings: a pre-registered client, a scope, a port, a metadata URL. */
 function oauthConfig(server: McpServerRecord): {
   clientId?: string
   clientSecret?: string
   scope?: string
+  callbackPort?: number
+  authServerMetadataUrl?: string
 } {
   const o = (server.config as { oauth?: unknown }).oauth
   if (!o || typeof o !== 'object') return {}
@@ -49,7 +57,64 @@ function oauthConfig(server: McpServerRecord): {
   return {
     clientId: typeof c.clientId === 'string' ? c.clientId : undefined,
     clientSecret: typeof c.clientSecret === 'string' ? c.clientSecret : undefined,
-    scope: typeof c.scope === 'string' ? c.scope : undefined,
+    scope: typeof c.scope === 'string' && c.scope.trim() ? c.scope.trim() : undefined,
+    callbackPort:
+      typeof c.callbackPort === 'number' && Number.isInteger(c.callbackPort) && c.callbackPort > 0
+        ? c.callbackPort
+        : undefined,
+    authServerMetadataUrl:
+      typeof c.authServerMetadataUrl === 'string' ? c.authServerMetadataUrl : undefined,
+  }
+}
+
+/** Whether `url` is where an authorization server's metadata is looked up (RFC 8414 / OIDC). */
+function isMetadataDiscovery(url: URL): boolean {
+  return (
+    url.pathname.includes('/.well-known/oauth-authorization-server') ||
+    url.pathname.includes('/.well-known/openid-configuration')
+  )
+}
+
+/**
+ * What a server's OAuth sign-in is configured with, shared by the silent and the interactive
+ * provider so both register and use the same redirect and scope:
+ *
+ *   - `redirectUrl`: the fixed `callbackPort`'s, else the API's own callback.
+ *   - `fetch`: the SDK's discovery goes through it. A configured `authServerMetadataUrl` replaces
+ *     the metadata lookup (Claude Code: it overrides the default discovery chain), and the
+ *     metadata's `scopes_supported` is noted whichever document it came from.
+ *   - `scope()`: `oauth.scopes` when pinned, else the configured metadata URL's `scopes_supported`;
+ *     `offline_access` is appended when the authorization server lists it, so a token can refresh.
+ */
+export function mcpOAuthSession(server: McpServerRecord, baseFetch: FetchLike = fetch) {
+  const config = oauthConfig(server)
+  let supported: string[] | undefined
+  const sessionFetch: FetchLike = async (input, init) => {
+    const target = new URL(input)
+    if (!isMetadataDiscovery(target)) return baseFetch(input, init)
+    const response = await baseFetch(config.authServerMetadataUrl ?? input, init)
+    if (response.ok) {
+      try {
+        const metadata = (await response.clone().json()) as { scopes_supported?: unknown }
+        if (Array.isArray(metadata.scopes_supported))
+          supported = metadata.scopes_supported.filter((s): s is string => typeof s === 'string')
+      } catch {
+        // Not JSON: the SDK reports the bad document itself.
+      }
+    }
+    return response
+  }
+  const scope = (): string | undefined => {
+    const base = config.scope ?? (config.authServerMetadataUrl ? supported?.join(' ') : undefined)
+    if (!base) return undefined
+    const has = base.split(/\s+/).includes('offline_access')
+    return supported?.includes('offline_access') && !has ? `${base} offline_access` : base
+  }
+  return {
+    config,
+    redirectUrl: mcpOAuthRedirectUrl(config.callbackPort),
+    fetch: sessionFetch,
+    scope,
   }
 }
 
@@ -63,6 +128,7 @@ function oauthConfig(server: McpServerRecord): {
 export function silentAuthProvider(
   server: McpServerRecord,
   store: McpOAuthStore = mcpOAuthStore,
+  session = mcpOAuthSession(server),
 ): OAuthClientProvider | undefined {
   if (server.transport !== 'http') return undefined
   const url = (server.config as { url?: string }).url
@@ -72,12 +138,12 @@ export function silentAuthProvider(
     userId: server.userId,
     serverId: server.id,
     serverUrl: url,
-    redirectUrl: mcpOAuthRedirectUrl(),
+    redirectUrl: session.redirectUrl,
     state: 'silent',
-    ...oauthConfig(server),
+    clientId: session.config.clientId,
+    clientSecret: session.config.clientSecret,
+    scope: session.scope,
     onSecretResolved: mcpOAuthSecretSink(server.userId),
     // no onRedirect → silent
   })
 }
-
-export { oauthConfig as mcpServerOAuthConfig }

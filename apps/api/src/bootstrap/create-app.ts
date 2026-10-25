@@ -39,8 +39,6 @@ export interface CreateAppPhaseInput
       | 'mcpService'
       | 'pluginService'
       | 'miniAppService'
-      | 'agentsService'
-      | 'skillsCuratorService'
     >,
     AppServicesPhase {
   runtimeInfo?: BootstrapRuntimeInfo
@@ -80,8 +78,6 @@ export function createAppPhase({
   mcpService,
   pluginService,
   miniAppService,
-  agentsService,
-  skillsCuratorService,
   systemService,
   shellCommandService,
   inlineCompletionService,
@@ -170,8 +166,6 @@ export function createAppPhase({
     mcpService,
     pluginService,
     miniAppService,
-    agentsService,
-    skillsCuratorService,
     systemService,
     modsHost: serviceRefs.modsHost,
     storageService,

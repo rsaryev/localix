@@ -49,7 +49,7 @@ export function truncateOutput(output: string, startOffset = 0): ReadOutput {
   return {
     bytes: totalBytes,
     truncated: true,
-    output: `${header}${slice}\n[…truncated at ${nextOffset - start} bytes. ${totalBytes - nextOffset} bytes remain — call read again with offset=${nextOffset} to continue, OR use \`search\` to jump straight to a specific symbol/line instead of paging the whole file.]`,
+    output: `${header}${slice}\n[…truncated at ${nextOffset - start} bytes. ${totalBytes - nextOffset} bytes remain — call read again with byte_offset=${nextOffset} to continue, OR use \`search\` to jump straight to a specific symbol/line instead of paging the whole file.]`,
   }
 }
 
@@ -69,7 +69,7 @@ export function modelFacingFile(
   opts?: {
     /**
      * Byte offset of `output[0]` within the underlying FILE. When known, the
-     * truncation marker names the exact next call (`offset=N`) instead of a
+     * truncation marker names the exact next call (`byte_offset=N`) instead of a
      * generic "read again with an offset" — the model should never have to
      * guess how to get the rest (self-continuing truncation). Omit
      * for non-file content (an outline), where file offsets don't apply.
@@ -87,8 +87,8 @@ export function modelFacingFile(
     kept: 'first',
     advice:
       nextOffset !== undefined
-        ? `Call read again with offset=${nextOffset} to continue, or use \`search\` to jump straight to a specific symbol/line.`
-        : 'Read again with an offset to page further, or use `search` to jump straight to a specific symbol/line.',
+        ? `Call read again with byte_offset=${nextOffset} to continue, or use \`search\` to jump straight to a specific symbol/line.`
+        : 'Read again with a byte_offset to page further, or use `search` to jump straight to a specific symbol/line.',
   })
   return `${r.content}\n${marker}`
 }

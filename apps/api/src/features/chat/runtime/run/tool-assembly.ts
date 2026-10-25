@@ -22,6 +22,7 @@ import type { ResolvedCapabilities } from '../../../capabilities/resolve'
 import { claimSecondaryTools } from './tool-namespace'
 import { rememberActivatedTools, splitDeferredTools } from './tool-deferral'
 import { markDeferred, type ToolLedger } from '../../../agent-core/tool-ledger'
+import type { AgentMcpServers } from '../../../mcp/agent-servers'
 import { withheldToolStubs } from '../../../agent-core/tools/withheld-stub'
 import type { buildRunToolRegistry } from './runtime-tools'
 import type { RunEnv } from './types'
@@ -43,6 +44,10 @@ export interface AssembleRunToolsOptions {
   disabledTools: string[]
   /** What the run's rules say about its MCP servers. */
   availability: AvailabilityReader
+  /** The servers of the agent file this delegated run is (`agent-run-mcp.ts`). */
+  agentServers?: AgentMcpServers
+  /** Told how to disconnect the servers only this run reached, once it has connected them. */
+  registerMcpRelease?: (release: () => Promise<void>) => void
   agentId?: string // whose rules `availability` holds: the MCP gather scope (`mcp-tools.ts`)
   capabilities: ResolvedCapabilities
   modelInput?: readonly string[]

@@ -74,6 +74,8 @@ export interface CcAddedHooksRuntime {
     blocked: boolean
     reason?: string
     additionalContext?: string
+    /** `hookSpecificOutput.suppressOriginalPrompt`, which the types list for this event too. */
+    suppressOriginalPrompt?: true
   }>
   /** An approval card is about to wait on the person. Exit 2 is not honoured, as in CC. */
   runPermissionRequest(

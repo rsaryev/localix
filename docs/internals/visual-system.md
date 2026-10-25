@@ -123,17 +123,15 @@ section selector. Headers and label/control rows stack on their content containe
 viewport. Search remains present in both layouts. The full inventory and saving rules are in
 [Settings](../features/settings.md).
 
-Application settings and agent profiles use `SettingsWorkspace` for the pane layout and
-`SettingsNavigation` for the grouped rail and narrow section picker. Agent profiles group Definition
-separately from Capabilities. Both use `SettingsSection`; registry lists inside it inherit the
-section surface. `SettingsFieldGrid` aligns paired kit Fields on shared label, help, control, and
-error tracks using CSS subgrid, with a single column below 36rem of field-container width.
+Settings uses `SettingsWorkspace` for the pane layout and `SettingsNavigation` for the grouped rail
+and narrow section picker. Sections are built from `SettingsSection`; lists inside it inherit the
+section surface. A `SettingsRow` with the `responsive` layout stacks its label above the control
+until the container is 36rem wide.
 
-Form actions use the same 36px `xl` control tier as their inputs. The sticky action row wraps rather
-than overflowing a narrow pane. Switching profile sections retains the unsaved definition. A section
-containing one control omits the second heading/body tier: `SettingsSection` without children puts
-its value in the heading row, uses `p-3` padding and a medium 13px label, and stacks below 36rem.
-Keymap, recent views and spend alerts share this compact form.
+Form actions use the same 36px `xl` control tier as their inputs. A section containing one control
+omits the second heading/body tier: `SettingsSection` without children puts its value in the heading
+row, uses `p-3` padding and a medium 13px label, and stacks below 36rem. Keymap, recent views and
+spend alerts share this compact form.
 
 ### Which primitive for which job
 

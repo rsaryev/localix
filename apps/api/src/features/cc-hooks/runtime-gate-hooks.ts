@@ -82,9 +82,14 @@ export function createGateHookRunners(deps: HookDispatchDeps): GateRunners {
       const outcomes = await runInParallel(selected.sync, (h) =>
         runHandler('UserPromptExpansion', h, input, true),
       )
+      const suppressed = outcomes.some((o) => o.suppressOriginalPrompt)
       for (const o of outcomes) {
         if (refuses(o) || o.continue === false) {
-          return { blocked: true, reason: reasonOf(o) || 'Command blocked by hook' }
+          return {
+            blocked: true,
+            reason: reasonOf(o) || 'Command blocked by hook',
+            ...(suppressed ? { suppressOriginalPrompt: true as const } : {}),
+          }
         }
         contexts.push(o.additionalContext)
       }

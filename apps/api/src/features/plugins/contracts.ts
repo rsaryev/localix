@@ -150,12 +150,6 @@ export const updatePluginRequestSchema = removePluginRequestSchema.extend({
 })
 export type UpdatePluginRequest = z.infer<typeof updatePluginRequestSchema>
 
-/** Register a marketplace from a source (owner/repo, git/https URL, or absolute path). */
-export const addMarketplaceRequestSchema = z.object({ source: z.string().min(1) })
-
-/** Remove a registered marketplace by its catalog name. */
-export const removeMarketplaceRequestSchema = z.object({ name: z.string().min(1) })
-
 /**
  * Per-entry summary on a marketplace listing row. `relevance` is the CC 2.1.152+
  * project-affinity hint block (filePatterns/directoryNames/keywords), parsed + typed
@@ -195,5 +189,3 @@ export type MarketplaceListing = z.infer<typeof marketplaceListingSchema>
 export const listMarketplacesResponseSchema = z.object({
   marketplaces: z.array(marketplaceListingSchema),
 })
-
-export const addMarketplaceResponseSchema = z.object({ name: z.string(), count: z.number() })

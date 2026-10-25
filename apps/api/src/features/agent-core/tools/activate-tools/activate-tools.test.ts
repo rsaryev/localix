@@ -244,3 +244,36 @@ describe('a tool offered under a model name', () => {
     )
   })
 })
+
+describe('the Claude Code MCP address in prompt text', () => {
+  const github = tool('mcp_github_create_issue', 'Open an issue.')
+  const withAlias = { ...tool('mcp_linear_list', 'List issues.'), aliases: ['mcp__linear__list'] }
+  const entries = [buildDeferredEntry(github, 'github'), buildDeferredEntry(withAlias, 'linear')]
+
+  test('a tool is activated by mcp__server__tool even when it carries no alias', async () => {
+    const activate = createActivateToolsTool({ entries })
+    const result = await activate.execute(
+      'c',
+      { names: ['mcp__github__create_issue'] },
+      {} as never,
+    )
+    expect(result.details?.activated).toEqual(['mcp_github_create_issue'])
+    expect(result.details?.unknown).toEqual([])
+    expect(result.content).toContain('mcp__github__create_issue is mcp_github_create_issue')
+  })
+
+  test('the catalog shows the address a skill or prompt would use beside the tool’s name', () => {
+    const catalog = renderToolCatalog(entries)
+    expect(catalog).toContain('mcp_linear_list (mcp__linear__list) [linear]')
+    expect(catalog).toContain('- mcp_github_create_issue [github]')
+    const activate = createActivateToolsTool({ entries })
+    expect(activate.description).toContain('mcp__server__tool')
+    expect(JSON.stringify(zodToJsonSchema(activate.inputSchema as never))).toContain('mcp__')
+  })
+
+  test('an address that names no tool is unknown, never a near match', async () => {
+    const activate = createActivateToolsTool({ entries })
+    const result = await activate.execute('c', { names: ['mcp__github__delete_repo'] }, {} as never)
+    expect(result.details?.unknown).toEqual(['mcp__github__delete_repo'])
+  })
+})

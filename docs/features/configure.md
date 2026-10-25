@@ -38,11 +38,12 @@ nobody was looking would be the opposite of the boundary this tool exists to kee
 
 ### What can be proposed
 
-| Remedy kind                          | Changes                                    | Lands on             |
-| ------------------------------------ | ------------------------------------------ | -------------------- |
-| `tool.enable`                        | One tool's switch.                         | The proposing agent. |
-| `mini-app.enable`                    | A mini app, with its tools.                | The proposing agent. |
-| `plugin.enable`, `mcp.server.enable` | A plugin or an MCP server, with its tools. | The proposing agent. |
+| Remedy kind   | Changes            | Lands on             |
+| ------------- | ------------------ | -------------------- |
+| `tool.enable` | One tool's switch. | The proposing agent. |
+
+Mini apps, plugins and MCP servers are switched on in the [Store](store.md), or by the agent's
+`store` tool with your approval.
 
 Each change names its target and accepts optional `enabled`, defaulting to `true`. Setting it to
 `false` proposes disabling the same capability. Prompt/model editing, role creation and workload

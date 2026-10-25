@@ -17,13 +17,17 @@ const PHASES: Record<PluginUpdatesResponse['jobs'][number]['phase'], StoreJob['p
   failed: 'failed',
 }
 
+const FINISHED = new Set<StoreJob['phase']>(['done', 'failed'])
+
 export function createPluginStoreJobs(changed: () => void) {
   const jobs = new Map<string, StoreJob>()
   const running = new Set<Promise<unknown>>()
 
   return {
-    /** Run `work` as `id`'s job; returns once it is queued. */
+    /** Run `work` as `id`'s job; returns once it is queued. A plugin runs one job at a time. */
     run(id: string, action: StoreJob['action'], work: () => Promise<unknown>) {
+      const current = jobs.get(id)
+      if (current && !FINISHED.has(current.phase)) return
       jobs.set(id, { action, phase: 'downloading' })
       changed()
       const done = work()
@@ -38,10 +42,13 @@ export function createPluginStoreJobs(changed: () => void) {
       running.add(done)
     },
 
-    /** The job a listing shows: the Store's own, else the update pass's. */
+    /**
+     * The job a listing shows: the Store's own while it runs, else the update pass's, else how the
+     * Store's own last one ended.
+     */
     of(id: string, updates: PluginUpdatesResponse): StoreJob | undefined {
       const own = jobs.get(id)
-      if (own) return own
+      if (own && !FINISHED.has(own.phase)) return own
       const pass = updates.jobs.find((job) => job.id === id)
       return pass
         ? {
@@ -49,7 +56,7 @@ export function createPluginStoreJobs(changed: () => void) {
             phase: PHASES[pass.phase],
             ...(pass.error ? { error: pass.error } : {}),
           }
-        : undefined
+        : own
     },
 
     async settled(): Promise<void> {

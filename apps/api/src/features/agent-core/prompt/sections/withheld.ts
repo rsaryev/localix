@@ -52,6 +52,10 @@ export function buildWithheldToolsSection(
   }
   const propose = (kind: string, name: string) =>
     `configure {action:"propose", change:{kind:"${kind}", name:"${name}"}}`
+  // A package is switched on in the Store: with `store` the agent asks, without it the person does.
+  const switchOn = liveToolNames.includes(TOOL.store)
+    ? 'find it with `store` (search installed:true), then enable it'
+    : 'ask the user to switch it on in the Store'
   return [
     WITHHELD_TOOLS_HEADER,
     'These exist but are switched off for this run. If the task needs one, propose it with `configure` — the user approves with one click; never claim the tool does not exist:',
@@ -61,12 +65,12 @@ export function buildWithheldToolsSection(
     ),
     ...(awaitingConsentPlugins.length > 0
       ? [
-          `- ${awaitingConsentPlugins.map((name) => `plugin "${name}"`).join(', ')} — installed here and not allowed yet, so the code is not loaded and its tools are unknown until it is → ${propose('plugin.enable', awaitingConsentPlugins.length === 1 ? awaitingConsentPlugins[0]! : '<plugin>')}`,
+          `- ${awaitingConsentPlugins.map((name) => `plugin "${name}"`).join(', ')} — installed here and not allowed yet, so the code is not loaded and its tools are unknown until it is → ${switchOn}`,
         ]
       : []),
     ...(awaitingConsentMiniApps.length > 0
       ? [
-          `- ${awaitingConsentMiniApps.map((name) => `mini app "${name}"`).join(', ')} — installed here and not allowed yet, so its backend is not loaded and its tools are unknown until it is → ${propose('mini-app.enable', awaitingConsentMiniApps.length === 1 ? awaitingConsentMiniApps[0]! : '<mini app>')}`,
+          `- ${awaitingConsentMiniApps.map((name) => `mini app "${name}"`).join(', ')} — installed here and not allowed yet, so its backend is not loaded and its tools are unknown until it is → ${switchOn}`,
         ]
       : []),
   ].join('\n')

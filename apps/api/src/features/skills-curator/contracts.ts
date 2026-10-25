@@ -3,10 +3,10 @@ import { z } from 'zod'
 /**
  * Skills curator — background maintenance for filesystem skills.
  * Tracks per-skill usage, moves long-unused skills into a recoverable sibling
- * `.archive/` folder inside their skills root, and exposes pin/unpin so a user
- * can exempt a skill from auto-transitions. Bundled/plugin skills are never
- * touched — the curator only manages SKILL.md directories the discovery walk
- * finds in Localix-owned `.localix/skills` trees.
+ * archive folder outside `.claude/skills` (`~/.localix/skills-archive`), and exposes pin/unpin so
+ * a user can exempt a skill from auto-transitions. Bundled/plugin skills are never touched — the
+ * curator only manages SKILL.md directories in `.claude/skills`, and only ones created in Localix
+ * age out by themselves (Claude Code shares the folder and its use is invisible here).
  */
 
 export const skillLifecycleStates = ['active', 'stale', 'archived'] as const
@@ -16,13 +16,19 @@ export const curatorSkillRecordSchema = z.object({
   name: z.string(),
   description: z.string(),
   scope: z.enum(['project', 'global']),
-  /** Absolute path to the skill directory (archived skills point into `.archive/`). */
+  /** Absolute path to the skill directory (archived skills point into the archive folder). */
   dir: z.string(),
   getCount: z.number(),
   lastUsedAt: z.string().nullable(),
   pinned: z.boolean(),
   archivedAt: z.string().nullable(),
   state: z.enum(skillLifecycleStates),
+  /** Its last use, or when it was made when it never was; null when pinned or archived. */
+  idleSince: z.string().nullable().optional(),
+  /** When it counts as stale (past when it already does); null when pinned or archived. */
+  staleAt: z.string().nullable().optional(),
+  /** The scheduled pass that archives it; null when pinned, archived or in a project. */
+  archiveOn: z.string().nullable().optional(),
 })
 export type CuratorSkillRecord = z.infer<typeof curatorSkillRecordSchema>
 
@@ -31,13 +37,9 @@ export const curatorReportSchema = z.object({
   active: z.number(),
   /** Skills that met the staleness rule this pass (pinned ones excluded). */
   stale: z.number(),
-  /** Total skills sitting in `.archive/` after the pass. */
+  /** Total skills in the archive after the pass. */
   archived: z.number(),
   /** Names archived by THIS pass. */
   archivedNow: z.array(z.string()),
 })
 export type CuratorReport = z.infer<typeof curatorReportSchema>
-
-export const runCuratorRequestSchema = z.object({
-  projectId: z.string().nullable().optional(),
-})

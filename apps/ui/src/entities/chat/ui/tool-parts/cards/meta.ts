@@ -21,7 +21,7 @@ import {
   SlidersHorizontal,
   KeyRound,
   ClipboardList,
-  Bot,
+  Store,
   SquareCode,
 } from 'lucide-react'
 import type { ComponentType } from 'react'
@@ -75,7 +75,13 @@ export interface ToolMeta {
  * Every server-owned `ToolName` needs presentation metadata; a missing entry fails type checks.
  */
 const CORE_META: Record<ToolName, ToolMeta> = {
-  agents: { label: 'Agents', noun: 'agents', verb: 'Managing agents', icon: Bot, stackable: false },
+  store: {
+    label: 'Store',
+    noun: 'packages',
+    verb: 'Using the Store',
+    icon: Store,
+    stackable: false,
+  },
   external_agent_sessions: {
     label: 'Agent history',
     noun: 'sessions',

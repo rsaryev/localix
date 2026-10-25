@@ -95,6 +95,17 @@ describe('preset sections', () => {
     expect(lines).toContain('spec-type = draft-mtp')
   })
 
+  // Embedding is background work (indexing): it must not take the CPU from the person's chat
+  // model or the app, and must not spin a core while it waits for the next batch.
+  test('an embedding model runs at low priority and does not poll for work', () => {
+    const lines = presetSection(
+      { spec: { ...chat, kind: 'embedding', draft: null }, plan: null },
+      paths,
+    )
+    expect(lines).toEqual(expect.arrayContaining(['embeddings = true', 'prio = -1', 'poll = 0']))
+    expect(presetSection({ spec: chat, plan }, paths).some((l) => l.startsWith('prio'))).toBe(false)
+  })
+
   test('without a plan the context is bounded and the cache stays f16', () => {
     const lines = presetSection({ spec: { ...chat, draft: null }, plan: null }, paths)
     expect(lines).toContain('c = 16384')

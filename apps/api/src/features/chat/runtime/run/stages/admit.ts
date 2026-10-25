@@ -20,6 +20,7 @@ import { trackChildRun } from '../subagent-work'
 import type { RunEnv, RunParams } from '../types'
 import type { RunFrame } from './frame'
 import { historyAfterBoundary } from '../../model-view/view'
+import { loadForkRun } from '../../fork/fork-run'
 
 export async function admitRun(
   env: RunEnv,
@@ -44,6 +45,7 @@ export async function admitRun(
       `Agent is no longer in the conversation: ${speakerAgentId}`,
     )
   }
+  const fork = await loadForkRun(repo, userId, session, history.rows, assistantMessageId)
   const loadSessionSnapshot = createRunSessionSnapshot(repo, userId)
   const { targetSessionId, reachable } = resolveRunHitlRouting(
     session,
@@ -85,6 +87,7 @@ export async function admitRun(
     assertAdmitted,
     abort,
     isContinuation: params.chain.continuation,
+    ...(fork ? { fork } : {}),
     session,
     speakerRoute,
     runtimeSession: session,

@@ -97,6 +97,31 @@ describe('getSessionDetail long-history accounting', () => {
     expect(detail.participantUsage?.['builtin:localix']).toMatchObject({ totalTokens: 1_750 })
   })
 
+  test('a fork shows and counts only its own rows, not the parent line it reads', async () => {
+    const own = { ...message(9), id: 'own', sessionId: 'fork' }
+    const inherited = [message(1), message(2)]
+    const fork = { ...session, id: 'fork', parentSessionId: 's1', rootSessionId: 's1' }
+    const ctx = {
+      modelContexts: noModelContexts,
+      repo: { listMessages: async () => [...inherited, own] },
+      usageRepo: { queryStats: async () => [] },
+      projectsRepo: {},
+      hitlRegistry: createHitlRegistry(),
+      requireSession: async () => fork,
+      runner: {
+        isRunning: () => false,
+        activeAgentId: () => undefined,
+        listWork: () => [],
+        listQueued: () => [],
+      },
+      lspManager: undefined,
+    } as unknown as SessionDetailContext
+    const detail = await getSessionDetail(ctx, 'u1', 'fork')
+    expect(detail.messages.map((row) => row.id)).toEqual(['own'])
+    expect(detail.messageCount).toBe(1)
+    expect(detail.sessionUsage).toMatchObject({ totalTokens: 10 })
+  })
+
   test('a root detail carries its plans; a child, or an unreadable list, carries none', async () => {
     const asked: string[] = []
     const ctxFor = (record: SessionRecord, fail = false) =>

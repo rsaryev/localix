@@ -23,6 +23,7 @@ const root = '/tmp/workspace'
 function unattendedGate(
   tools: readonly AgentTool[],
   rules: PermissionRule[] = [],
+  extra: { denyPatterns?: readonly string[] } = {},
   session = {
     id: 'job',
     sessionKind: 'job',
@@ -46,6 +47,7 @@ function unattendedGate(
     permissionRules: rules,
     mayConfirm: false,
     defaultCwd: root,
+    ...extra,
   })
 }
 
@@ -123,14 +125,35 @@ describe('the run’s own plan directory', () => {
   const childRun = { ...rootRun, id: 'c', seq: 8, parentSessionId: 'r' } as SessionRecord
 
   test('a root run writes its own conversation’s plan, never another’s', async () => {
-    const gate = unattendedGate([write], planMode, rootRun)
+    const gate = unattendedGate([write], planMode, {}, rootRun)
     expect(await gate(writeTo('.localix/plans/LOCALIX-7/PLAN.md'))).toBeUndefined()
     expect(await gate(writeTo('.localix/plans/LOCALIX-8/PLAN.md'))).toMatchObject({ block: true })
   })
 
   test('a delegated run writes no plan file, its root’s included', async () => {
-    const gate = unattendedGate([write], planMode, childRun)
+    const gate = unattendedGate([write], planMode, {}, childRun)
     expect(await gate(writeTo('.localix/plans/LOCALIX-7/PLAN.md'))).toMatchObject({ block: true })
+  })
+})
+
+describe('deny patterns of an agent or a skill', () => {
+  const bashTool = {
+    name: 'bash',
+    description: 'sh',
+    activeVerb: 'Running',
+    inputSchema: z.unknown(),
+    execute: async () => ({ content: '' }),
+  } as AgentTool
+  const run = (command: string) =>
+    unattendedGate([bashTool], [], { denyPatterns: ['Bash(rm *)'] })({
+      toolCallId: 'c',
+      toolName: 'bash',
+      input: { command },
+    })
+
+  test('Bash(rm *) refuses an rm and leaves ls to the run', async () => {
+    expect(await run('rm x')).toMatchObject({ block: true })
+    expect(await run('ls')).toBeUndefined()
   })
 })
 

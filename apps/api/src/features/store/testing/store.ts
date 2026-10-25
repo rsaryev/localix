@@ -18,6 +18,8 @@ export function makeStore(
   opts: {
     meaning?: (text: string) => Array<{ key: string; z: number }>
     projectWords?: string[]
+    resyncMeaning?: () => void
+    meaningChanged?: (keys: string[]) => void
   } = {},
 ) {
   const { db, close } = openStoreIndexDatabase(':memory:')
@@ -52,6 +54,8 @@ export function makeStore(
     search: (userId, request) => search.search(userId, request),
     now: () => TEST_NOW,
     ...(opts.projectWords ? { projectWords: async () => new Set(opts.projectWords) } : {}),
+    ...(opts.resyncMeaning ? { resyncMeaning: opts.resyncMeaning } : {}),
+    ...(opts.meaningChanged ? { meaningChanged: opts.meaningChanged } : {}),
   })
   registry.register(store.searchProvider)
   return { store, search, index, close }

@@ -315,6 +315,12 @@ export const capturePlan = {
     scenario: 'store-yours',
     start: 'home',
   },
+  'store/archive-unused': {
+    guide: 'features/skills.md',
+    purpose: 'Archive unused on Yours previews which skills are archived and why before it does',
+    scenario: 'store-archive-unused',
+    start: 'home',
+  },
   'store/mcp-settings': {
     guide: 'features/mcp.md',
     purpose: 'An MCP server’s Settings tab: how it connects, secrets that only say they are set',

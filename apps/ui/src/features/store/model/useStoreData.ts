@@ -54,6 +54,16 @@ export function useCreatable(client: StoreClient) {
   return useSWR('store-creatable', () => client.creatable(), { revalidateOnFocus: false })
 }
 
+/** What a shelf's providers can do to it, read again on a poke. */
+export function useShelfActions(client: StoreClient, scope: Scope, projectId: string | null) {
+  const generation = useResourceGeneration('store')
+  return useSWR(
+    ['store-shelf-actions', scope, projectId, generation],
+    () => client.shelfActions(scope, projectId),
+    { keepPreviousData: true },
+  )
+}
+
 export function useCreateForm(client: StoreClient, kind: PackageKind) {
   return useSWR(['store-create-form', kind], () => client.createFields(kind), {
     revalidateOnFocus: false,
@@ -125,6 +135,7 @@ export function usePagedListings(client: StoreClient, query: StorePageQuery | nu
     first: data?.[0],
     loading: !data && !pages.error,
     error: pages.error as unknown,
+    retry: () => void pages.mutate(),
     hasMore: Boolean(last?.nextCursor),
     loadingMore,
     loadMore: () => {

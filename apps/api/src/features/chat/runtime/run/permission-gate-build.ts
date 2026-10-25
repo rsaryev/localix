@@ -13,7 +13,7 @@ import {
   type ReviewVerdict,
   type VerdictOptions,
 } from '../../../agent-core/permission-verdict'
-import { claudeCodeAllowRules } from '../../../cc-settings/cc-rule-translate'
+import { claudeCodeAllowRules, claudeCodeDenyRules } from '../../../cc-settings/cc-rule-translate'
 import { createConfirmRequester } from './confirm-requester'
 import { ownPlanDirForRun } from '../plan-view'
 import type { RunHookContext } from './run-hook-context'
@@ -55,6 +55,12 @@ export interface BuildRunPermissionGateOptions extends RunHookContext {
   outerRules?: OuterRules
   /** Claude Code's `additionalDirectories`: further working directories. */
   extraRoots?: readonly string[]
+  /**
+   * `Tool(specifier)` entries of an agent's or a skill's `disallowed-tools`: each denies the calls
+   * it matches and leaves the tool to every other call. Appended after the authored rules, so
+   * they win.
+   */
+  denyPatterns?: readonly string[]
   /** Claude Code's settings `allow` rules as pre-approvals, beside a skill's `allowed-tools`. */
   preapprovedRules?: readonly PermissionRule[]
   /** Receives the gate's inputs: a skill the model loads checks its injected commands on them. */
@@ -119,7 +125,12 @@ export function buildRunPermissionGate(
   const verdictOptions = {
     // The run's OWN copy: a skill the model loads appends its `disallowed-tools` to it for the
     // rest of this run (`skill-turn-grants.ts`), and the authored list may be a cached snapshot.
-    rules: [...permissionRules],
+    rules: [
+      ...permissionRules,
+      ...(options.denyPatterns ?? []).flatMap((spec) =>
+        claudeCodeDenyRules(spec, defaultCwd, undefined, DENY_PATTERN_MESSAGE),
+      ),
+    ],
     preapprovedRules: [
       ...skillPermissionRules(extraAllowedTools, defaultCwd),
       ...(options.preapprovedRules ?? []),
@@ -160,6 +171,8 @@ export function buildRunPermissionGate(
       : {}),
   })
 }
+
+const DENY_PATTERN_MESSAGE = "This call is on the run's disallowed-tools list."
 
 /** What the model reads when a PermissionDenied hook returned `retry: true`. */
 export const PERMISSION_RETRY_NOTE =

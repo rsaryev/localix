@@ -13,7 +13,13 @@ import { mcpConnectionKey as keyFor } from './mcp-connection-key'
 import type { McpConnectionObserver } from '../notifications/conditions/mcp'
 import { createToolMetadataStore } from './mcp-tool-metadata-store'
 import { createConnectionPool } from './mcp-connection-pool'
-import { gatherTools, serverStatusKey, type GatherState, type McpServerOutcome } from './mcp-gather'
+import {
+  evictUnreferenced,
+  gatherTools,
+  serverStatusKey,
+  type GatherState,
+  type McpServerOutcome,
+} from './mcp-gather'
 import {
   createChannelRouter,
   type ChannelBinding,
@@ -73,7 +79,7 @@ export function createMcpClientManager(options: McpClientManagerOptions = {}) {
     observer: () => connectionObserver,
     channels,
   })
-  const { cache, acquire, evict } = pool
+  const { cache } = pool
   const gatherState: GatherState = {
     pool,
     metadata,
@@ -91,7 +97,7 @@ export function createMcpClientManager(options: McpClientManagerOptions = {}) {
    */
   async function probe(server: McpServerRecord, cwd: string): Promise<McpProbeResult> {
     try {
-      const { connection } = await acquire(server, cwd)
+      const { connection } = await pool.acquire(server, cwd)
       return {
         ok: true,
         // A probe reports the SERVER's health, so it lists what the server offers. Which of
@@ -192,7 +198,7 @@ export function createMcpClientManager(options: McpClientManagerOptions = {}) {
       scoped.add(key)
       gatherState.scopeKeys.set(binding.scope, scoped)
       starts.push(
-        acquire(server, binding.cwd, logger).catch((err: unknown) =>
+        pool.acquire(server, binding.cwd, logger).catch((err: unknown) =>
           logger?.warn(`MCP channel "${server.name}" did not start again`, {
             error: errorMessage(err),
           }),
@@ -209,13 +215,20 @@ export function createMcpClientManager(options: McpClientManagerOptions = {}) {
     gatherState.scopeKeys.clear()
     const entries = [...cache.values()]
     cache.clear()
-    await Promise.all(entries.map((entry) => evict(entry)))
+    await Promise.all(entries.map((entry) => pool.evict(entry)))
   }
 
   return {
     gather: (servers: McpServerRecord[], gatherOptions: McpGatherOptions) =>
       gatherTools(gatherState, servers, gatherOptions),
     cachedToolNames,
+    /**
+     * Forget a scope: the servers only it referenced disconnect (an agent's inline servers, when
+     * its run ends); those another scope still holds stay connected.
+     */
+    releaseScope: async (scope: string): Promise<void> => {
+      if (gatherState.scopeKeys.delete(scope)) evictUnreferenced(gatherState)
+    },
     /**
      * A server's outcome in the latest gather that included it — what `/mcp` shows beside it.
      * Read only: it never connects. Undefined until a run has gathered the server.

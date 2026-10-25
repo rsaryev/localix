@@ -47,7 +47,7 @@ export interface BuildAgentSystemPromptParams {
    * they cannot ride the ledger with the withheld TOOLS and are passed separately.
    */
   awaitingConsentPlugins?: readonly string[]
-  /** Mini apps installed here and not allowed yet (`mini-app.enable`). */
+  /** Mini apps installed here and not allowed yet (the Store switches them on). */
   awaitingConsentMiniApps?: readonly string[]
   /** Absolute path to the session's working directory (workspace root / sandbox). */
   workspaceRoot?: string

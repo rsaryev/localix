@@ -56,7 +56,7 @@ export interface ParticipantsStripProps {
   floor?: ConversationFloor | null
   /**
    * The control that adds someone, rendered after the last participant. A NODE rather than a
-   * callback: who may be added is a question about the agent registry and the participant bound,
+   * callback: who may be added is a question about the agent catalog and the participant bound,
    * and the roster has no business holding either — it knows who is here and nothing else.
    */
   addControl?: React.ReactNode

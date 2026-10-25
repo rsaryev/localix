@@ -28,6 +28,7 @@ import {
   useStoreFacets,
   useStoreSources,
 } from '../model/useStoreData'
+import { createReadAhead } from '../model/readAhead'
 import { useDebounced, SEARCH_DEBOUNCE_MS } from '../model/useDebounced'
 import { AddSourceDialog } from './AddSourceDialog'
 import { ConsentSheet } from './ConsentSheet'
@@ -75,7 +76,9 @@ export function StoreView({
   const [adding, setAdding] = useState<{ kind?: PackageKind; input: string } | null>(null)
   const scrolls = useRef<number[]>([])
   const [memory] = useState(() => new Map<string, unknown>())
-  const intent = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [ahead] = useState(() =>
+    createReadAhead<() => void>({ delayMs: INTENT_MS, read: (prefetch) => prefetch() }),
+  )
   const q = useDebounced(query.trim(), searchDelay)
   const facets = useStoreFacets(client, project?.id ?? null)
   const sources = useStoreSources(client)
@@ -126,13 +129,7 @@ export function StoreView({
         setStack([])
         setQuery('')
       },
-      prefetch: (ref) => {
-        if (intent.current) clearTimeout(intent.current)
-        intent.current = setTimeout(
-          () => prefetchDetail(client, ref, project?.id ?? null),
-          INTENT_MS,
-        )
-      },
+      prefetch: (ref) => ahead.intent(() => prefetchDetail(client, ref, project?.id ?? null)),
       get: actions.get,
       update: actions.update,
       remove: actions.remove,
@@ -145,7 +142,7 @@ export function StoreView({
       removeExtra: (extra, listing) => actions.run(extra.remove(listing)),
       extraProblems: actions.extras.problems,
     }),
-    [client, project, actions, extras, onNavigate, push],
+    [client, project, actions, extras, onNavigate, push, ahead],
   )
   const frame = useMemo(() => ({ layout, width }), [layout, width])
   const creatable = useCreatable(client)
@@ -157,6 +154,12 @@ export function StoreView({
       onValueChange={setQuery}
       placeholder="Search apps, plugins, skills…"
       aria-label="Search the Store"
+      onKeyDown={(event) => {
+        if (event.key === 'Escape' && query) {
+          event.preventDefault()
+          setQuery('')
+        }
+      }}
       size="md"
       className="w-full"
     />
@@ -169,7 +172,13 @@ export function StoreView({
     <StoreScopeContext.Provider value={scope}>
       <StoreMemoryContext.Provider value={memory}>
         <StoreFrameContext.Provider value={frame}>
-          <div ref={root} data-layout={layout} className="flex h-full min-h-0 flex-col">
+          <div
+            ref={root}
+            data-layout={layout}
+            className="flex h-full min-h-0 flex-col"
+            onScrollCapture={ahead.scrolled}
+            onWheelCapture={ahead.scrolled}
+          >
             <header className="flex items-center gap-3 px-4 pt-3 pb-3">
               {layout === 'narrow' ? (
                 <SidebarNav
@@ -225,7 +234,7 @@ export function StoreView({
                   <StoreBody
                     key={
                       q
-                        ? `search:${q}`
+                        ? 'search'
                         : top
                           ? `${depth}:${top.type === 'listing' ? keyOf(top.ref) : top.title}`
                           : section

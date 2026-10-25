@@ -49,6 +49,7 @@ export {
   listingConfigFromFields,
   listingConfigSchema,
   scalarConfigValues,
+  shelfPlanSchema,
 } from './config'
 export type {
   ActionResult,
@@ -58,16 +59,17 @@ export type {
   DeclaredField,
   ItemAction,
   ListingConfig,
+  ShelfPlan,
 } from './config'
-export type { ProviderListings, StoreActor, StoreProvider } from './provider'
+export type { InstallableProvider, ProviderListings, StoreActor, StoreProvider } from './provider'
+export { createChangeSignal } from './change-signal'
 export {
   actionRequestSchema,
-  configQuerySchema,
+  projectQuerySchema,
+  scopedSchema,
+  scopedValuesSchema,
   createParamsSchema,
-  createRequestSchema,
   creatableResponseSchema,
-  configRequestSchema,
-  discoverQuerySchema,
   discoverResponseSchema,
   enableRequestSchema,
   installRequestSchema,
@@ -76,13 +78,11 @@ export {
   listingParamsSchema,
   listingsQuerySchema,
   listingsResponseSchema,
-  planRequestSchema,
-  scopeRequestSchema,
+  shelfActionsResponseSchema,
+  shelfRunRequestSchema,
   sourceInputSchema,
-  detailQuerySchema,
   sourceAutoUpdateSchema,
   sourceRefSchema,
-  sourceRemoveSchema,
   sourcesResponseSchema,
   storeActivitySchema,
   storeFacetsSchema,
@@ -92,6 +92,7 @@ export type {
   DiscoverResponse,
   ListingsQuery,
   ListingsResponse,
+  ShelfActionsResponse,
   SourcesResponse,
   StoreActivity,
   StoreFacets,

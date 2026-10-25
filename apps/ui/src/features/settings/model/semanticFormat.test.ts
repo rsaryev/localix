@@ -39,6 +39,27 @@ describe('indexLine', () => {
     expect(line).toEqual({ text: 'Building the index · 25% · 40 chunks/s · 3 s left', percent: 25 })
   })
 
+  test('a server that scanned past its count still reads as at most 100%', () => {
+    const line = indexLine(
+      status({
+        phase: 'reconciling',
+        chunksPerSecond: null,
+        collections: [
+          {
+            name: 'store.listings',
+            label: 'Store',
+            items: 0,
+            chunks: 0,
+            scanned: 134,
+            total: 100,
+            reconciling: true,
+          },
+        ],
+      }),
+    )
+    expect(line).toEqual({ text: 'Building the index · 100%', percent: 100 })
+  })
+
   test('at rest it counts what is indexed', () => {
     expect(indexLine(status({})).text).toBe('134 items indexed')
   })

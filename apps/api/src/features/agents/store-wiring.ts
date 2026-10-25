@@ -3,17 +3,17 @@ import { readFile } from 'node:fs/promises'
 
 import type { StoreProvider } from '@localixai/store'
 
-import { onCapabilityRevision } from '../capabilities/revision'
 import type { AgentsService } from './service-contract'
 import { createAgentStoreProvider } from './store-provider'
 
 /**
- * The agents provider over the agents service, as `bootstrap/` hands it to the Store. A change to
- * the files, a switch or a plugin bumps the capability revision, and the Store hears that.
+ * The agents provider over the agents service, as `bootstrap/` hands it to the Store. `bootstrap/` passes the
+ * changes made anywhere (the capability revision): a file, a switch or a plugin.
  */
 export const agentStoreProviderOf = (
   agents: AgentsService,
-  seats: { chatsOf(agentId: string): Promise<number> },
+  seats: { chatsOf: (agentId: string) => Promise<number> },
+  onChange: (listener: () => void) => () => void,
 ): StoreProvider =>
   createAgentStoreProvider({
     agents,
@@ -22,5 +22,5 @@ export const agentStoreProviderOf = (
       createHash('sha1')
         .update(await readFile(path).catch(() => ''))
         .digest('hex'),
-    onChange: (listener) => onCapabilityRevision(() => listener()),
+    onChange,
   })

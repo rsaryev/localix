@@ -40,7 +40,7 @@ export function parsePageRange(pages: string): NonNullable<DocExtractParams['pag
 }
 
 export interface DocumentReadInput {
-  offset?: number
+  byte_offset?: number
   start_line?: number
   end_line?: number
   pages?: string
@@ -65,7 +65,7 @@ export async function readDocument(
   }
   const pageRange = input.pages ? parsePageRange(input.pages) : undefined
   if (typeof pageRange === 'string') return { output: pageRange, isError: true }
-  const extracted = await extractor(targetPath, input.offset, {
+  const extracted = await extractor(targetPath, input.byte_offset, {
     ...(pageRange ? { pageRange } : {}),
     ...(input.sheet ? { sheet: input.sheet } : {}),
   })

@@ -58,6 +58,9 @@ const delegate: ToolShape = {
 
 const skill: ToolShape = {
   name: 'Skill',
+  // Claude Code's Skill loads a skill. `save`, `list` and `delete` manage skill files: no
+  // Claude Code tool does that, so those calls keep Localix's own name.
+  nameFor: (input) => (input.action === 'get' ? 'Skill' : 'skill'),
   toClaude: (input) =>
     input.action === 'get'
       ? defined({ ...input, skill: input.name, args: input.arguments })

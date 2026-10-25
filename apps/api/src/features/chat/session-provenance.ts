@@ -1,4 +1,8 @@
 import type { AgentSessionKind } from '../../db'
+import {
+  agentPermissionModeOf,
+  type AgentPermissionMode,
+} from '../../contracts/agent-permission-mode'
 import { DELEGATION_PRIORITIES, type DelegationPriority } from '../agent-core/delegation-lanes'
 
 const isDelegationPriority = (value: unknown): value is DelegationPriority =>
@@ -47,6 +51,19 @@ export type SessionProvenance =
        * for a child that runs as its delegator. SubagentStop names the same.
        */
       agentType?: string
+      /**
+       * The mode the agent's file asked for (`permissionMode`), when it is one Localix has and the
+       * agent is the person's own (a plugin's agent and a fork never carry it). The conversation's
+       * mode still decides (`contracts/agent-permission-mode.ts`); the run reads both.
+       */
+      agentPermissionMode?: AgentPermissionMode
+      /**
+       * Set on a FORK (`delegate` with `context: "fork"`): a child that continues its parent's line.
+       * It reads the parent's rows from the root up to `baseMessageId` (the last row before the
+       * turn the call was made in; null when there is none), then its own, whose first is
+       * `snapshotMessageId`: the copy of the parent's row at the call. See `chat/runtime/fork`.
+       */
+      fork?: { baseMessageId: string | null; snapshotMessageId: string }
     }
   | { kind: 'loop'; parentSessionId: string; loopId: string }
   | { kind: 'hook'; parentSessionId: string; phase: 'verifier' }
@@ -76,6 +93,13 @@ const isDepth = (value: unknown): value is number =>
   typeof value === 'number' && Number.isInteger(value) && value >= 1
 const isStringList = (value: unknown): value is string[] =>
   Array.isArray(value) && value.every(isString)
+const isForkBase = (
+  value: unknown,
+): value is { baseMessageId: string | null; snapshotMessageId: string } =>
+  isRecord(value) &&
+  hasOnlyKeys(value, ['baseMessageId', 'snapshotMessageId']) &&
+  (value.baseMessageId === null || isString(value.baseMessageId)) &&
+  isString(value.snapshotMessageId)
 
 /**
  * A session's place in the delegation tree: a conversation is depth 0 with nobody above it; a
@@ -126,6 +150,8 @@ export function parseSessionProvenance(raw: string): SessionProvenance {
         'workingDir',
         'worktreeByHook',
         'agentType',
+        'agentPermissionMode',
+        'fork',
       ]) &&
         isString(value.parentSessionId) &&
         isString(value.toolCallId) &&
@@ -135,7 +161,10 @@ export function parseSessionProvenance(raw: string): SessionProvenance {
         (value.chain === undefined || isStringList(value.chain)) &&
         optionalString(value.workingDir) &&
         (value.worktreeByHook === undefined || value.worktreeByHook === true) &&
-        optionalString(value.agentType)
+        optionalString(value.agentType) &&
+        (value.agentPermissionMode === undefined ||
+          agentPermissionModeOf(value.agentPermissionMode) === value.agentPermissionMode) &&
+        (value.fork === undefined || isForkBase(value.fork))
         ? {
             kind: 'task-delegation',
             parentSessionId: value.parentSessionId,
@@ -147,6 +176,17 @@ export function parseSessionProvenance(raw: string): SessionProvenance {
             ...(value.workingDir ? { workingDir: value.workingDir } : {}),
             ...(value.worktreeByHook === true ? { worktreeByHook: true as const } : {}),
             ...(value.agentType ? { agentType: value.agentType } : {}),
+            ...(value.agentPermissionMode
+              ? { agentPermissionMode: value.agentPermissionMode as AgentPermissionMode }
+              : {}),
+            ...(isForkBase(value.fork)
+              ? {
+                  fork: {
+                    baseMessageId: value.fork.baseMessageId,
+                    snapshotMessageId: value.fork.snapshotMessageId,
+                  },
+                }
+              : {}),
           }
         : reject(raw)
     case 'loop':

@@ -11,7 +11,10 @@ import { createSession, updateSession, type SessionLifecycleCtx } from './sessio
  * `permissions.disableBypassPermissionsMode: "disable"` keeps a conversation out of the modes that
  * stop asking (permissions.md, "Permission modes"), read for the conversation's folder.
  */
-function harness(modes: { defaultMode?: PermissionMode; bypassDisabled: boolean }) {
+function harness(
+  modes: { defaultMode?: PermissionMode; bypassDisabled: boolean },
+  parentMode: PermissionMode = 'default',
+) {
   let record: SessionRecord = sessionFixture({
     id: 'root',
     userId: 'u1',
@@ -22,7 +25,7 @@ function harness(modes: { defaultMode?: PermissionMode; bypassDisabled: boolean 
     updatedAt: '2026-01-01 00:00:00',
     lastMessageAt: '2026-01-01 00:00:00',
     rootSessionId: 'root',
-    permissionMode: 'default',
+    permissionMode: parentMode,
   })
   let inserted: SessionRecord | null = null
   const ctx = {
@@ -67,6 +70,22 @@ describe("Claude Code's permission mode settings", () => {
     const { ctx, inserted } = harness({ defaultMode: 'plan', bypassDisabled: false })
     await createSession(ctx, 'u1', { parentSessionId: 'root', sessionKind: 'job' })
     expect(inserted()?.permissionMode).toBe('default')
+  })
+
+  it('a fork runs under the mode of the conversation that made it, whatever the default is now', async () => {
+    const { ctx, inserted } = harness({ defaultMode: 'bypass', bypassDisabled: false }, 'plan')
+    await createSession(ctx, 'u1', {
+      parentSessionId: 'root',
+      sessionKind: 'subagent',
+      sourceToolCallId: 'd1',
+      provenance: {
+        kind: 'task-delegation',
+        parentSessionId: 'root',
+        toolCallId: 'd1',
+        fork: { baseMessageId: null, snapshotMessageId: 'copy' },
+      },
+    })
+    expect(inserted()?.permissionMode).toBe('plan')
   })
 
   it('a disabled bypass is refused, and never the starting mode', async () => {

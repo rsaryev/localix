@@ -62,7 +62,7 @@ export const COMPONENT_LABELS: Record<
   theme: { one: 'Theme', many: 'themes', icon: Palette },
   screen: { one: 'Screen', many: 'screens', icon: MonitorSmartphone },
   backend: { one: 'Backend', many: 'backends', icon: Cpu },
-  'agent-tool': { one: 'Agent tools', many: 'agent tools', icon: Wrench },
+  'agent-tool': { one: 'Agent tool', many: 'agent tools', icon: Wrench },
 }
 
 /** What a package kind's sources are called: a group heading and one of them. */
@@ -118,8 +118,8 @@ export const isVerified = (listing: Pick<Listing, 'source'>) => {
 
 /** The shelf heading of a component kind: "Commands", "Agent tools". */
 export function capabilityLabel(kind: ComponentKind): string {
-  const { one, many } = COMPONENT_LABELS[kind]
-  return one === 'Agent tools' ? one : many[0]!.toUpperCase() + many.slice(1)
+  const { many } = COMPONENT_LABELS[kind]
+  return many[0]!.toUpperCase() + many.slice(1)
 }
 
 /** A label inside a sentence: "mini app", but "MCP server" keeps its capitals. */

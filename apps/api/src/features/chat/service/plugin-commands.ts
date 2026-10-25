@@ -121,6 +121,8 @@ export const renderPluginPrompt = async (
     arguments?: readonly string[]
     /** Asked about every injected command before any runs (`skill-command-authorize.ts`). */
     authorize?: AuthorizeSkillCommand
+    /** `disableSkillShellExecution` applies: each command shows a placeholder and nothing runs. */
+    shellDisabled?: boolean
   },
 ): Promise<string> => {
   // The same home `session-workspace` built the command's catalog with.
@@ -168,6 +170,7 @@ export const renderPluginPrompt = async (
       { raw: trimmed, ...(ctx.arguments ? { names: ctx.arguments } : {}) },
       ctx.authorize,
       vault,
+      ctx.shellDisabled === true,
     )
     out = await expandFileReferences(
       out,

@@ -12,7 +12,7 @@ import { reloadedSkillsNote } from './cc-reload-skills'
 const dir = tempDirPerTest('cc-reload-skills-')
 
 test('names the skills that appeared after the run’s discovery, and forgets the cached scope', async () => {
-  const skill = join(dir(), '.localix', 'skills', 'deploy', 'SKILL.md')
+  const skill = join(dir(), '.claude', 'skills', 'deploy', 'SKILL.md')
   mkdirSync(join(skill, '..'), { recursive: true })
   writeFileSync(skill, '---\nname: deploy\ndescription: Ship the build\n---\nShip it.\n')
   let invalidated = 0

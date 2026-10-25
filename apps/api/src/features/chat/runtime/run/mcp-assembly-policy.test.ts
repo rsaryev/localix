@@ -52,7 +52,7 @@ async function assemble(
   let visibleLedger: ToolLedger | undefined
   const primary = input.primary ?? [tool('read')]
   const result = await assembleRunTools({
-    env: { mcpRepo: { listForScope: async () => [{ name: 'records' }] } },
+    env: { mcpRepo: { listForScope: async () => [{ name: 'records', config: {} }] } },
     userId: 'u',
     session: { id: 's', projectId: 'p', activatedTools: input.activated ?? [] },
     agentProfile: input.profile ?? resolveRunProfile({ sessionKind: 'chat' }),

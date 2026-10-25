@@ -20,10 +20,8 @@ import { providerConnectionsApi } from './providers-client'
 import { pluginsApi } from './plugins-client'
 import { miniAppsApi } from './mini-apps-client'
 import { capabilitiesApi } from './capabilities-client'
-import { toolsApi } from './tools-client'
 import { skillsApi } from './skills-client'
 import { systemApi } from './system-client'
-import { agentsApi } from './agents-client'
 import { filesApi } from './files-client'
 import { editorAssistApi } from './editor-assist-client'
 import { sessionsApi } from './client/sessions'
@@ -68,9 +66,7 @@ export const backendClient = {
   ...pluginsApi,
   ...miniAppsApi,
   ...capabilitiesApi,
-  ...toolsApi,
   ...systemApi,
-  ...agentsApi,
 
   ...usageApi,
 

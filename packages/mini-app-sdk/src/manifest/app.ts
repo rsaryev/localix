@@ -17,7 +17,7 @@ import {
  * needs to know to use the app is its guide (`guide.md`), read on demand. See
  * `docs/internals/plugins-and-mini-apps.md`.
  *
- * The host validates the contribution arrays (`views`, `promptSections`, `contributions`) and a
+ * The host validates the contribution arrays (`views`, `promptSections`) and a
  * command's `args` with the schemas of the subsystems that run them.
  */
 export const MINI_APP_MANIFEST_FILE = 'mini-app.json'
@@ -103,7 +103,6 @@ export const miniAppManifestSchema = miniAppManifestCoreSchema
       .optional(),
     views: z.array(z.unknown()).optional(),
     promptSections: z.array(z.unknown()).optional(),
-    contributions: z.array(z.unknown()).optional(),
   })
   .strict()
 /** Author-written mini app manifest, before defaults. */

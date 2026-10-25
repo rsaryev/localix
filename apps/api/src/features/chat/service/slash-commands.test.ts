@@ -66,8 +66,9 @@ describe('parseControlCommand', () => {
     expect(parseControlCommand('/HELP')).toBe('help')
     expect(parseControlCommand('/usage')).toBe('usage')
     expect(parseControlCommand('/COST')).toBe('usage')
+    // `/clear` is a client command (a new chat); it never parses as a server control command.
     expect(parseControlCommand('/clear')).toBeNull()
-    // Removed with LLM compaction; the runtime checkpoints on its own.
+    // No LLM compaction command; the runtime checkpoints on its own.
     expect(parseControlCommand('/compact')).toBeNull()
     expect(parseControlCommand('/model gpt-5')).toBe('model')
     // Valid contributed/synthetic names are not core built-ins.

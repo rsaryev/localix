@@ -174,13 +174,13 @@ describe('readItems', () => {
   test('the top-level path keeps every field; entries inherit cwd/mode and bring their range', () => {
     const input = readToolInputSchema.parse({
       path: 'a.ts',
-      offset: 10,
+      byte_offset: 10,
       mode: 'outline',
       cwd: 'src',
       reads: [{ path: 'b.ts', start_line: '3' }, 'c.ts'],
     })
     expect(readItems(input)).toEqual([
-      { path: 'a.ts', offset: 10, mode: 'outline', cwd: 'src' },
+      { path: 'a.ts', byte_offset: 10, mode: 'outline', cwd: 'src' },
       { path: 'b.ts', start_line: 3, mode: 'outline', cwd: 'src' },
       { path: 'c.ts', mode: 'outline', cwd: 'src' },
     ])

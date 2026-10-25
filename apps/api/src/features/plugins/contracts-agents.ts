@@ -35,6 +35,12 @@ export const pluginAgentSchema = z.object({
    */
   disallowedTools: z.array(z.string()).optional(),
   /**
+   * The agent types `tools: Agent(worker, researcher)` lets the agent delegate to when it runs as
+   * the main thread (sub-agents.md: an allowlist; a bare `Agent` allows every type). Absent means
+   * no restriction.
+   */
+  agentTypes: z.array(z.string()).optional(),
+  /**
    * CC `model` — preferred model alias for this agent (e.g. "opus", "sonnet", a full
    * model id). Informational hint; the canonical `agentSettings.modelRouting` takes
    * precedence, but this can be surfaced in the Settings picker as a suggested default.
@@ -97,12 +103,17 @@ export const pluginAgentSchema = z.object({
    */
   initialPrompt: z.string().optional(),
   /**
-   * CC frontmatter `hooks` — lifecycle hooks scoped to this sub-agent. PARSED +
-   * RECORDED only (raw): Claude Code ignores `hooks` on a plugin agent, and so does `delegate`.
-   * The line-based markdown frontmatter parser cannot extract nested hook objects,
-   * so this is populated from the lossless `.json` / `--agents` JSON form.
+   * CC frontmatter `hooks` — lifecycle hooks scoped to this sub-agent, read with a real YAML parse
+   * (the line-based parser cannot reach nested objects). PARSED + RECORDED only (raw): Claude Code
+   * ignores `hooks` on a plugin agent, so the plugin loader drops them (`buildLoadedAgent`); the
+   * catalog keeps them for the person's own agent files (`agents/catalog/agent-file.ts`).
    */
   hooks: z.unknown().optional(),
+  /**
+   * CC frontmatter `mcpServers` — servers named by reference or defined inline, for this
+   * sub-agent's runs. Raw, and ignored for a plugin agent exactly as `hooks` is.
+   */
+  mcpServers: z.unknown().optional(),
   /**
    * The `localix:` key of an agent file: what Claude Code has no place for. Claude Code ignores
    * unknown keys without an error, so a file stays valid there (`agents/catalog/agent-file.ts`).

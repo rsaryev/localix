@@ -2,6 +2,7 @@ import type { Kysely } from 'kysely'
 
 import type { AppDatabase } from '../../db'
 import { createActivatedToolQueries } from './repository-activated-tools'
+import { createForkQueries } from './repository-fork'
 import { createEmptyDraftQueries } from './repository-empty-draft'
 import { createHistoryQueries } from './repository-history'
 import { createMessageQueries } from './repository-messages'
@@ -50,6 +51,7 @@ export function createChatRepository(db: Kysely<AppDatabase>) {
     ...createTreeQueries(db, leaf),
     ...createRuntimeQueries(db),
     ...createHistoryQueries(db),
+    ...createForkQueries(db),
   }
 }
 

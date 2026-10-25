@@ -184,18 +184,12 @@ export const CORE_CALL_CASES: readonly CallCase[] = [
   row('memory', 'set in the project scope', { action: 'set', key: 'k', value: 'v' }, HOST),
   row('memory', 'delete', { action: 'delete', key: 'k' }, { effect: 'host', irreversible: true }),
 
-  row('skill', 'list', { action: 'list' }, READ),
+  row('skill', 'get', { action: 'get', name: 'demo' }, READ),
   row(
     'skill',
     'save in the project',
     { action: 'save', name: 'demo', description: 'd', content: 'c', scope: 'project' },
     FILES,
-  ),
-  row(
-    'skill',
-    'delete',
-    { action: 'delete', name: 'demo' },
-    { effect: 'files', irreversible: true },
   ),
 
   row('jobs', 'list', { action: 'list' }, READ),
@@ -239,15 +233,31 @@ export const CORE_CALL_CASES: readonly CallCase[] = [
   // The script reads nothing itself: every call it makes reaches the gate as its own call.
   row('codemode', 'a script', { code: 'return 1' }, READ),
 
-  row('agents', 'list', { action: 'list' }, READ),
+  row('store', 'search', { action: 'search', query: 'review' }, READ),
+  row('store', 'get', { action: 'get', ref: { kind: 'plugin', id: 'a@b' } }, READ),
   row(
-    'agents',
-    'create',
-    {
-      action: 'create',
-      agents: [{ handle: 'qa', description: 'd', instructions: 'i', leadership_priority: 0 }],
-    },
-    { effect: 'host' },
+    'store',
+    'install',
+    { action: 'install', ref: { kind: 'plugin', id: 'a@b' }, scope: 'user' },
+    { effect: 'host', needsHuman: true },
+  ),
+  row(
+    'store',
+    'remove',
+    { action: 'remove', ref: { kind: 'plugin', id: 'a@b' }, scope: 'user' },
+    { effect: 'host', needsHuman: true, irreversible: true },
+  ),
+  row(
+    'store',
+    'enable',
+    { action: 'enable', ref: { kind: 'plugin', id: 'a@b' }, scope: 'project' },
+    { effect: 'host', needsHuman: true },
+  ),
+  row(
+    'store',
+    'create an agent',
+    { action: 'create', kind: 'agent', scope: 'user', values: { name: 'qa', description: 'd' } },
+    { effect: 'host', needsHuman: true },
   ),
 
   row('configure', 'inspect', { action: 'inspect', target: { kind: 'summary' } }, READ),

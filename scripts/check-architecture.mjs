@@ -75,36 +75,15 @@ const removedInternalProviderSchemes = [
 const removedInternalProviderUri =
   /(^|[^A-Za-z0-9+.-])(capability|chat|db|doc|docker|docs|git|k8s|mcp|model|plugin|trade|vault):\/\//gimu
 const runtimeCapabilityMutationMethods = new Set([
-  'archiveSkill',
   'createAgent',
-  'createMcpServer',
   'createSkill',
-  'deleteMcpServer',
   'deleteSkill',
-  'importMcpServers',
-  'installAgentProvider',
   'installPlugin',
-  'logoutMcpServerOAuth',
-  'removeAgentProvider',
   'removePlugin',
-  'restoreSkill',
-  'runSkillsCurator',
   'setAgentEnabled',
-  'setAgentProviderConfig',
-  'setAgentProviderEnabled',
-  'setMcpServerEnabled',
-  'setMcpToolEnabled',
-  'setPluginConfig',
-  'setPluginEnabled',
   'setSessionSkills',
-  'setSkillPinned',
-  'startMcpServerOAuth',
-  'updateMcpServer',
 ])
-const auditedRuntimeMutationWrappers = new Map([
-  ['apps/ui/src/features/settings/model/useMcpServers.ts', new Set(['runServerMutation'])],
-  ['apps/ui/src/features/settings/model/useSkills.ts', new Set(['runSkillMutation'])],
-])
+const auditedRuntimeMutationWrappers = new Map()
 
 // Bundled mini app UI reaches the host only through the public SDK and the host UI kit,
 // `@localixai/kit/<id>` — a door of the `packages/kit` package (`src/entries/<id>.ts`) or a module
@@ -698,13 +677,13 @@ assert.deepEqual(
 assert.deepEqual(
   untrackedRuntimeCapabilityMutationsIn(
     'fixture.ts',
-    `trackCapabilityWrite(null, () => backendClient.setPluginEnabled('x', true))`,
+    `trackCapabilityWrite(null, () => backendClient.setAgentEnabled('x', true))`,
   ),
   [],
 )
 assert.deepEqual(
-  untrackedRuntimeCapabilityMutationsIn('fixture.ts', `backendClient.setPluginEnabled('x', true)`),
-  [{ line: 1, method: 'setPluginEnabled' }],
+  untrackedRuntimeCapabilityMutationsIn('fixture.ts', `backendClient.setAgentEnabled('x', true)`),
+  [{ line: 1, method: 'setAgentEnabled' }],
 )
 assert.deepEqual(
   untrackedRuntimeCapabilityMutationsIn(
@@ -858,13 +837,8 @@ const miniAppCommandNames = discoveredMiniApps.flatMap((app) =>
     command.name === app.name ? app.name : `${app.name}:${command.name}`,
   ),
 )
-const miniAppAgentNames = discoveredMiniApps.flatMap((app) =>
-  app.contributions.flatMap((entry) =>
-    entry.kind === 'agent' && typeof entry.value?.definition?.handle === 'string'
-      ? [`${app.name}:${entry.value.definition.handle}`]
-      : [],
-  ),
-)
+// A mini app declares no agent definitions: agents come from agent files and the catalog.
+const miniAppAgentNames = []
 // Authoring-only/lazy tools may be declared but not returned by the active register()
 // path. Their mini-app-owned declarations still define identities core must not learn.
 for (const manifest of bundledMiniAppManifests) {

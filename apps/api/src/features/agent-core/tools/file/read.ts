@@ -141,7 +141,7 @@ export function createReadTool(
         // Binary files (NUL byte sniff): return a notice, not garbage UTF-8.
         if (looksBinary(fileContent)) {
           // Office/PDF documents read as binary, but their TEXT is extractable. The extractor
-          // bounds its own output; `offset`, `pages` and `sheet` narrow it. A null result
+          // bounds its own output; `byte_offset`, `pages` and `sheet` narrow it. A null result
           // (extraction failed) falls through to the binary notice.
           const bytes = Buffer.byteLength(fileContent)
           if (isExtractableDocument(targetPath)) {
@@ -167,7 +167,7 @@ export function createReadTool(
             ? renderNotebook(fileContent, canSeeImages)
             : undefined
         if (notebook) {
-          const page = truncateOutput(notebook.text, input.offset ?? 0)
+          const page = truncateOutput(notebook.text, input.byte_offset ?? 0)
           return respond(withEditorNote(page.output), {
             bytes: Buffer.byteLength(fileContent),
             truncated: page.truncated,
@@ -196,12 +196,12 @@ export function createReadTool(
             truncated: range.truncated,
           })
         }
-        const truncated = truncateOutput(fileContent, input.offset ?? 0)
+        const truncated = truncateOutput(fileContent, input.byte_offset ?? 0)
         // What the model actually SEES: `modelFacingFile` applies a secondary LINE cap
         // (2000 lines) ON TOP of the byte cap, so a file that fits the byte budget but is
         // long in LINES is still handed back head-only.
         const modelFacing = modelFacingFile(truncated.output, {
-          continueFromByteOffset: input.offset ?? 0,
+          continueFromByteOffset: input.byte_offset ?? 0,
         })
 
         // No "next time, survey it first with mode:'outline'" hint here any more. It was a

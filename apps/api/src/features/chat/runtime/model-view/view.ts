@@ -122,6 +122,21 @@ export async function loadModelViewBoundary(
   return null
 }
 
+/** The stored view state of the rows, each looked up under the session it belongs to. */
+async function listByOwner(
+  repo: ModelContextRepository,
+  fallbackSessionId: string,
+  rows: readonly PersistedMessage[],
+) {
+  const bySession = new Map<string, string[]>()
+  for (const row of rows) {
+    const owner = row.sessionId || fallbackSessionId
+    bySession.set(owner, [...(bySession.get(owner) ?? []), row.id])
+  }
+  const found = await Promise.all([...bySession].map(([owner, ids]) => repo.list(owner, ids)))
+  return new Map(found.flatMap((rows) => [...rows]))
+}
+
 export async function loadModelView(
   repo: ModelContextRepository,
   input: {
@@ -142,8 +157,12 @@ export async function loadModelView(
   },
 ): Promise<ModelView> {
   const { rows, clearId } = rowsAfterClear(input.historyMessages)
-  const viewerRowIds = rows.filter((row) => isViewerTurn(row, input.viewer)).map((row) => row.id)
-  const stored = await repo.list(input.sessionId, viewerRowIds)
+  const viewerRows = rows.filter((row) => isViewerTurn(row, input.viewer))
+  const viewerRowIds = viewerRows.map((row) => row.id)
+  // Stored under the session that owns each row. A fork reads its parent's rows by reference
+  // (`repository-message-branches.ts`), so a history can hold rows of more than one session.
+  const stored = await listByOwner(repo, input.sessionId, viewerRows)
+  const ownerOf = new Map(viewerRows.map((row) => [row.id, row.sessionId || input.sessionId]))
 
   const turnContexts = new Map<string, StoredTurnContext>()
   let hostId: string | undefined
@@ -152,7 +171,9 @@ export async function loadModelView(
     if (row?.turnContext) turnContexts.set(id, row.turnContext)
     if (row?.hasCheckpoint) hostId = id
   }
-  const record = hostId ? await repo.getCheckpoint(input.sessionId, hostId) : undefined
+  const record = hostId
+    ? await repo.getCheckpoint(ownerOf.get(hostId) ?? input.sessionId, hostId)
+    : undefined
 
   const contexts = [...turnContexts.values()]
   let lastFull = 0

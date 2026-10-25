@@ -35,10 +35,10 @@ async function writeSkill(base: string, container: string, body: string): Promis
 describe('portable project skills', () => {
   test('native project skills shadow portable ones, and a personal skill shadows both', async () => {
     await writeSkill(root, '.agents', 'portable body')
-    await writeSkill(root, '.localix', 'native project body')
+    await writeSkill(root, '.claude', 'native project body')
     const project = await discoverFilesystemSkills(root, home)
     expect(project.map((skill) => skill.content)).toEqual(['native project body'])
-    await writeSkill(home, '.localix', 'personal body')
+    await writeSkill(home, '.claude', 'personal body')
     const skills = await discoverFilesystemSkills(root, home)
     expect(skills.map((skill) => skill.content)).toEqual(['personal body'])
   })

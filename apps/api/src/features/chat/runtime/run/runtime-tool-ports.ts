@@ -21,7 +21,7 @@ import { buildTaskDelegationOptions } from './task-delegation-options'
 import { buildDelegateOptions } from './delegate-options'
 import { delegateAgentPorts } from './speaker-agent'
 import { buildWorkflowOptions } from './workflow-options'
-import { buildAgentsOptions } from './agents-options'
+import { buildStoreOptions } from './store-options'
 import { buildConfigureOptions } from './configure-options'
 import { buildPlanOptions } from './plan-options'
 import type { RuntimeToolWiringContext } from './runtime-tools'
@@ -38,7 +38,7 @@ type RegistryParams = Parameters<typeof buildRunToolRegistry>[1]
 const EMPTY_PORT_CAPABILITY: Readonly<Record<string, string>> = {
   [TOOL.context_budget]: 'context.budget',
   [TOOL.delegate]: 'agents.delegate',
-  [TOOL.agents]: 'agents.registry',
+  [TOOL.store]: 'store.service',
   [TOOL.browser]: 'preview.control',
   [TOOL.configure]: 'config.proposals',
   [TOOL.tool_output]: 'context.store',
@@ -91,7 +91,7 @@ export function buildOptionalToolPorts(
     deps,
     ccHooks: params.ccHooks,
     subagentWork: { work: ctx.work, actionRegistry: ctx.actionRegistry },
-    ...(params.currentMessageId ? { currentMessageId: params.currentMessageId } : {}),
+    ...(params.forkLive ? { forkLive: params.forkLive } : {}),
   })
 
   // browser: OPEN + drive the Browser tabs through the injected probe — and a mini app's own view,
@@ -115,6 +115,7 @@ export function buildOptionalToolPorts(
     catalog: params.catalog?.models ?? [],
     defaultCwd,
     rootSessionId: session.rootSessionId ?? session.id,
+    ...(params.allowedAgentTypes ? { allowedAgentTypes: params.allowedAgentTypes } : {}),
     ...(worktreeHook ? { worktreeHook } : {}),
   })
 
@@ -163,7 +164,7 @@ export function buildOptionalToolPorts(
     }),
     jobs: isToolDirect(agentProfile, TOOL.jobs) ? jobsTool : undefined,
     delegate,
-    agents: buildAgentsOptions(ctx, params),
+    store: buildStoreOptions(ctx, params),
     loops: isToolDirect(agentProfile, TOOL.loops)
       ? { userId, sessionId: session.id, agentId: params.agentId }
       : undefined,

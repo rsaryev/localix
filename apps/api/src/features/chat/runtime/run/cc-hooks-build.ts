@@ -54,6 +54,7 @@ import {
 
 export { instructionFilesForHooks } from './cc-hooks-build-helpers'
 import type { PermissionMode } from '../../../../contracts/permission-modes'
+import type { ScopedCcHooks } from '../run-contract'
 
 export interface BuildRunCcHooksInput {
   signal?: AbortSignal
@@ -81,6 +82,11 @@ export interface BuildRunCcHooksInput {
   effort?: string
   /** Whether a person can answer this run; `false` is Claude Code's non-interactive mode. */
   interactive?: boolean
+  /**
+   * The frontmatter hooks of the agent this delegated child runs as (`agent-hooks.ts`): scoped to
+   * this run like a skill's, and not kept for the session.
+   */
+  agentHooks?: readonly ScopedCcHooks[]
 }
 
 export interface RunCcHooks {
@@ -167,6 +173,7 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
   const scopedHooks = [
     ...ccHookSessions.skillHooks(session.id),
     ...(params.scope.ccScopedHooks ?? []).filter((scoped) => scoped.lifetime !== 'session'),
+    ...(input.agentHooks ?? []),
   ]
   for (const scoped of fromSettings.frontmatterAllowed ? scopedHooks : []) {
     mergeCcHookRegistries(

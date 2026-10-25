@@ -13,6 +13,8 @@ export interface SkillUsageRecord {
   lastUsedAt: string | null
   pinned: boolean
   archivedAt: string | null
+  /** Created in Localix (Store, `skill` tool, or migrated from `.localix/skills`). */
+  localixAuthored: boolean
   createdAt: string
   updatedAt: string
 }
@@ -26,6 +28,7 @@ type Row = {
   last_used_at: string | null
   pinned: number
   archived_at: string | null
+  localix_authored: number
   created_at: string
   updated_at: string
 }
@@ -40,6 +43,7 @@ function toRecord(row: Row): SkillUsageRecord {
     lastUsedAt: row.last_used_at,
     pinned: row.pinned === 1,
     archivedAt: row.archived_at,
+    localixAuthored: row.localix_authored === 1,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -75,6 +79,17 @@ export interface SkillUsageRepository {
     scope: SkillScope,
     archivedAt: string | null,
   ): Promise<SkillUsageRecord>
+  /**
+   * Records the skill as created in Localix, creating its row when it has none (`createdAt`
+   * then dates the row, so an old skill is not young again). Idempotent.
+   */
+  markAuthored(
+    userId: string,
+    projectId: string,
+    skillName: string,
+    scope: SkillScope,
+    createdAt?: string,
+  ): Promise<void>
 }
 
 export function createSkillUsageRepository(db: Kysely<AppDatabase>): SkillUsageRepository {
@@ -105,6 +120,7 @@ export function createSkillUsageRepository(db: Kysely<AppDatabase>): SkillUsageR
       last_used_at: null,
       pinned: 0,
       archived_at: null,
+      localix_authored: 0,
       created_at: ts,
       updated_at: ts,
     }
@@ -155,11 +171,11 @@ export function createSkillUsageRepository(db: Kysely<AppDatabase>): SkillUsageR
       await sql`
         INSERT INTO skill_usage (
           id, user_id, project_id, skill_name, scope,
-          get_count, last_used_at, pinned, archived_at, created_at, updated_at
+          get_count, last_used_at, pinned, archived_at, localix_authored, created_at, updated_at
         )
         VALUES (
           ${randomUUID()}, ${userId}, ${projectId}, ${skillName}, ${scope},
-          1, ${ts}, 0, NULL, ${ts}, ${ts}
+          1, ${ts}, 0, NULL, 0, ${ts}, ${ts}
         )
         ON CONFLICT(user_id, project_id, skill_name, scope) DO UPDATE SET
           get_count = get_count + 1,
@@ -196,6 +212,24 @@ export function createSkillUsageRepository(db: Kysely<AppDatabase>): SkillUsageR
 
     async setArchivedAt(userId, projectId, skillName, scope, archivedAt) {
       return patch(userId, projectId, skillName, scope, { archived_at: archivedAt })
+    },
+
+    async markAuthored(userId, projectId, skillName, scope, createdAt) {
+      const ts = now()
+      const at = createdAt ?? ts
+      await sql`
+        INSERT INTO skill_usage (
+          id, user_id, project_id, skill_name, scope,
+          get_count, last_used_at, pinned, archived_at, localix_authored, created_at, updated_at
+        )
+        VALUES (
+          ${randomUUID()}, ${userId}, ${projectId}, ${skillName}, ${scope},
+          0, NULL, 0, NULL, 1, ${at}, ${ts}
+        )
+        ON CONFLICT(user_id, project_id, skill_name, scope) DO UPDATE SET
+          localix_authored = 1,
+          updated_at = ${ts}
+      `.execute(db)
     },
   }
 }

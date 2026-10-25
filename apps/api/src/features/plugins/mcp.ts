@@ -106,6 +106,9 @@ export function buildMcpRecords(
       if (input.transport === 'stdio') {
         const manifestEnv = (baseConfig.env as Record<string, string> | undefined) ?? {}
         finalConfig = { ...baseConfig, env: { ...processEnv, ...manifestEnv } }
+      } else if (typeof baseConfig.headersHelper === 'string') {
+        // The helper is a shell command run in the plugin's directory (`mcp/headers-helper.ts`).
+        finalConfig = { ...baseConfig, headersHelperRoot: plugin.dir }
       }
 
       records.push({

@@ -6,20 +6,21 @@ import { type DiscoveredSkill, renderSkillFile } from './skill-frontmatter'
 import { scanScope, skillRoot, type SkillScanLogger, type SkillScanScope } from './skill-scan'
 import { assertSkillMarkdownSize, readSkillMarkdownFile } from './skill-file'
 import { atomicWriteFile } from './tools/file/file-io'
+import { recordSkillAuthored } from './skill-usage-recorder'
+import { skillSourceLock } from './skill-source-policy'
 
 /**
  * Filesystem skill store — the portable `SKILL.md` format used by the open
  * agent-skills ecosystem (agentskills.io, Claude Code). Skills are
  * directories so they can carry scripts and other assets alongside the prompt:
  *
- *   <root>/.localix/skills/<name>/SKILL.md   (+ optional scripts, templates, …)
+ *   <root>/.claude/skills/<name>/SKILL.md    (+ optional scripts, templates, …)
  *   <project>/.agents/skills/<name>/SKILL.md (portable read source)
  *
  * This module owns the RESOLUTION policy and the write side. Resolution is
  * exact-scope: sessions without a project read PERSONAL (home) skills; project
- * sessions read the exact project working directory, then personal Localix skills. Writes
- * and deletes remain in `.localix/skills`; portable skills can be shadowed by a native copy.
- * Nothing is stored in
+ * sessions read the exact project working directory, then personal skills. Writes and deletes
+ * go to `.claude/skills`; portable skills can be shadowed by a native copy. Nothing is stored in
  * a DB — skills are just files the agent (or the user) can create/edit/ship.
  *
  * How a base dir is READ (the SKILL.md directory format, symlinks, archives)
@@ -84,8 +85,8 @@ async function projectChain(start: string, home: string): Promise<string[]> {
  * Every skill visible from here, in Claude Code's precedence (skills.md, "Resolve skills that
  * share a name"): the personal ones first — "personal over project" — then the project's, read
  * from the working directory and every parent up to the repository root, the nearest first.
- * Within one directory Localix's own `.localix/skills` come before Claude Code's
- * `.claude/skills`, the portable `.agents/skills` and `.claude/commands` (`skill-scan.ts`).
+ * Within one directory `.claude/skills` comes before the portable `.agents/skills` and
+ * `.claude/commands` (`skill-scan.ts`).
  */
 export async function discoverFilesystemSkills(
   workingDir?: string | null,
@@ -97,6 +98,12 @@ export async function discoverFilesystemSkills(
   const byName = new Map<string, DiscoveredSkill>()
   const layers = new Map<string, number>()
   const home = homeDir ?? homedir()
+  // `strictPluginOnlyCustomization`: the organization may close these folders (see the policy).
+  const lock = await skillSourceLock({
+    workingDir: workingDir && workingDir !== '/' ? resolve(workingDir) : null,
+    homeDir: home,
+  })
+  if (lock.blockFolders) return []
   let layer = 0
   for (const s of await scanScope(home, 'global', logger))
     claimSkill(byName, s, logger, layer, layers)
@@ -109,7 +116,19 @@ export async function discoverFilesystemSkills(
       }
     }
   }
-  return [...byName.values()].sort((a, b) => a.name.localeCompare(b.name))
+  return [...byName.values()]
+    .map((skill) => (lock.stripHooks ? withoutHooks(skill) : skill))
+    .sort((a, b) => a.name.localeCompare(b.name))
+}
+
+/**
+ * A skill whose frontmatter `hooks` may not run: it loses them and, as in Claude Code, its
+ * `allowed-tools` pre-approval too, unless it runs forked in a subagent.
+ */
+function withoutHooks(skill: DiscoveredSkill): DiscoveredSkill {
+  if (skill.hooks === undefined) return skill
+  const { hooks: _hooks, allowedTools, ...rest } = skill
+  return allowedTools && skill.contextFork ? { ...rest, allowedTools } : rest
 }
 
 const SKILL_NAME_RE = /^[a-z0-9][a-z0-9_-]*$/i
@@ -169,7 +188,7 @@ async function requireSafeSkillWriteDir(safetyRoot: string, skillDir: string): P
  * This is the ONE write choke point — the Settings UI (`createSkill`) and the agent's
  * `skill` tool both funnel through it — so both get the same two guarantees:
  *
- *  - It EDITS IN PLACE inside the Localix-owned `.localix/skills` tree.
+ *  - It EDITS IN PLACE inside `.claude/skills`, the tree shared with Claude Code.
  *  - It PRESERVES frontmatter. Callers hand over `name`/`description`/`content` — that
  *    is all a `SkillInput` can express — and it used to render the frontmatter from
  *    exactly those, which silently deleted `argument-hint`, `user-invocable`,
@@ -189,13 +208,18 @@ async function requireSafeSkillWriteDir(safetyRoot: string, skillDir: string): P
  * the default location — the one a save creates when there is nothing to update.
  */
 export function defaultSkillFilePath(base: string, name: string): string {
-  return join(base, '.localix/skills', name, 'SKILL.md')
+  return join(skillRoot(base), name, 'SKILL.md')
 }
 
 export async function writeSkillFile(
   base: string,
   input: { name: string; description: string; content: string },
-  _scope: SkillScanScope,
+  scope: SkillScanScope,
+  /**
+   * Where the skill is kept: when given, a NEW skill is recorded as created in Localix (Claude
+   * Code shares the folder and Localix cannot see its use, so only these are archived on idle).
+   */
+  authored?: { projectId: string },
 ): Promise<string> {
   if (!SKILL_NAME_RE.test(input.name)) throw new Error('Invalid skill name')
   const existing = await findSkillFile(base, input.name)
@@ -209,6 +233,7 @@ export async function writeSkillFile(
   // This is the ONE skill-write choke point, so the frontmatter-merge it just
   // computed (read-modify-write) lands whole or not at all.
   await atomicWriteFile(file, rendered)
+  if (!existing && authored) recordSkillAuthored(input.name, scope, authored.projectId)
   return skillDir
 }
 

@@ -3,12 +3,7 @@ import { errorMessage } from '../../../lib/errors'
 import { homedir } from 'node:os'
 import { defineAgentTool } from '@localixai/agent/agents'
 import { TOOL } from '../tool-names'
-import {
-  discoverFilesystemSkills,
-  writeSkillFile,
-  deleteSkillByName,
-  type DiscoveredSkill,
-} from '../skill-discovery'
+import { discoverFilesystemSkills, writeSkillFile, type DiscoveredSkill } from '../skill-discovery'
 import { recordSkillUse } from '../skill-usage-recorder'
 import { skillPromptDetails } from '../skill-prompt-details'
 import { ambiguousSkillNames, findSkillByName, skillCallName } from './skill-names'
@@ -38,13 +33,13 @@ export {
  * @param workingDir The session's project working dir, or null/'/' if none.
  * @param extraSkills Read-only skills contributed outside the filesystem scopes
  *   (e.g. plugin-bundled skills from `loadEnabledPlugins`). They are visible to
- *   `get`/`list` but cannot be saved over or deleted — saving always targets
+ *   `get` but cannot be saved over — saving always targets
  *   the filesystem scopes, and a filesystem skill of the same name wins.
  * @param skillOverrides User visibility policy. `off` removes a skill from every
  *   model-facing action, including guessed names.
  * @param projectId Exact project scope for usage telemetry. Empty means sessions
  *   without a project.
- * @param onSkillsChanged Host port, called after a `save` or `delete` changed the skill set.
+ * @param onSkillsChanged Host port, called after a `save` changed the skill set.
  *   A skill is a capability: it rides in the capability snapshot and in a run's
  *   "# Available skills", both of which are refreshed only when the capability revision moves.
  *   The tool wrote SKILL.md and announced nothing, so the Skills list stayed stale and the
@@ -107,20 +102,20 @@ export function createSkillTool(
     name: TOOL.skill,
     label: 'Skill',
     activeVerb: 'Managing skill',
-    // No "call list first": the skills that exist are already listed in the prompt's
-    // "# Available skills", and telling the model to list them again bought a wasted call.
+    // The skills that exist are listed in the prompt's "# Available skills"; searching and
+    // removing them is the `store` tool's.
     // The name case agrees with the `name` example below; the two used to disagree.
     description:
-      'Save, get, list and delete reusable skills (SKILL.md files; scripts/assets beside them via write/bash). After a non-trivial reusable workflow (a tricky fix, a multi-step procedure) save it under a kebab-case verb name; never save one-off answers, and fix a skill the moment it turns out wrong.',
+      'Save and get reusable skills (SKILL.md files; scripts/assets beside them via write/bash). After a non-trivial reusable workflow (a tricky fix, a multi-step procedure) save it under a kebab-case verb name; never save one-off answers, and fix a skill the moment it turns out wrong.',
     inputSchema: skillToolInputSchema,
     permissionResources: skillPermissionResources,
-    // `save` writes <base>/.localix/skills/<name>/SKILL.md and `delete` removes that dir
-    // recursively. With `scope:"global"` the base is homedir(), i.e. outside the workspace —
-    // which is exactly what the confirmation prompt exists for.
+    // `save` writes <base>/.claude/skills/<name>/SKILL.md. With `scope:"global"` the base is
+    // homedir(), i.e. outside the workspace — which is exactly what the confirmation prompt
+    // exists for.
     mutates: true,
     classify: classifySkillCall,
     executionMode: 'sequential',
-    // get/list only read, so they overlap other reads; save/delete stay a barrier in their turn.
+    // get only reads, so it overlaps other reads; save stays a barrier in its turn.
     executionModeFor: (input) =>
       classifySkillCall(input).effect === 'read' ? 'parallel' : 'sequential',
     async execute(toolCallId, input) {
@@ -141,6 +136,7 @@ export function createSkillTool(
               base,
               { name: input.name, description: input.description, content: input.content },
               isGlobal ? 'global' : 'project',
+              { projectId: isGlobal ? '' : projectId },
             )
             announce()
             return {
@@ -220,44 +216,10 @@ export function createSkillTool(
             ].join('\n'),
           }
         }
-
-        case 'list': {
-          // A `disable-model-invocation` skill is not the model's to see: "Description not in
-          // context" (Claude Code).
-          const skills = (await allSkills()).filter((s) => !s.disableModelInvocation)
-          if (skills.length === 0) return { content: 'No skills found.' }
-          return {
-            content: skills
-              .map((s) => `- /${skillCallName(s)} (${s.scope}): ${s.description}`)
-              .join('\n'),
-          }
-        }
-
-        case 'delete': {
-          if (!input.name)
-            return { content: 'name is required for action="delete".', isError: true }
-          // A disabled skill is absent from the model's capability surface. Do not
-          // let a guessed name bypass that policy through a mutating action.
-          if (isSkillDisabled(skillOverrides, input.name)) {
-            return { content: `Skill not found: "${input.name}".`, isError: true }
-          }
-          const deleted = await deleteSkillByName(projectBase, input.name)
-          if (deleted) {
-            announce()
-            return { content: `Skill deleted: "${input.name}"` }
-          }
-          if (findSkillByName(extraSkills, input.name)) {
-            return {
-              content: `Skill "${input.name}" is plugin-provided and read-only — disable the plugin to remove it.`,
-              isError: true,
-            }
-          }
-          return { content: notFoundMessage(input.name, await allSkills()), isError: true }
-        }
       }
       // Name the valid ones: "unknown action" alone left the model to guess the vocabulary.
       return {
-        content: `Unknown action "${String(input.action)}". Use one of: save, get, list, delete.`,
+        content: `Unknown action "${String(input.action)}". Use one of: save, get. The Store lists and removes skills.`,
         isError: true,
       }
     },

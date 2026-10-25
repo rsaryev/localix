@@ -7,7 +7,6 @@ import type { ColumnType, Generated } from 'kysely'
 
 import type { ReasoningEffort } from './enums'
 import type { CapabilityRuleTable, ConfigProposalsTable } from './capability-types'
-import type { ExtensionContributionTable } from './extension-types'
 import type {
   SemanticCollectionsTable,
   SemanticItemsTable,
@@ -187,8 +186,6 @@ export interface AgentSessionsTable {
  * never be a boolean on a row keyed by project.
  */
 export interface CapabilitySourceTable {
-  contribution_revision: Generated<number>
-  contribution_digest: Generated<string>
   /** Stable id. The primary key because an MCP server is addressed by it on the wire;
    *  the other kinds are addressed by (user, kind, project, name). */
   id: string
@@ -451,6 +448,8 @@ export interface SkillUsageTable {
   last_used_at: ColumnType<string | null, string | null | undefined, string | null | undefined>
   pinned: ColumnType<number, number | undefined, number | undefined>
   archived_at: ColumnType<string | null, string | null | undefined, string | null | undefined>
+  /** 1 when the skill was created in Localix (Store, `skill` tool): only those age out. */
+  localix_authored: ColumnType<number, number | undefined, number | undefined>
   created_at: ColumnType<string, string | undefined, never>
   updated_at: ColumnType<string, string | undefined, string | undefined>
 }
@@ -507,13 +506,6 @@ export interface AppDatabase {
   capability_rule: CapabilityRuleTable
   config_proposals: ConfigProposalsTable
   capability_policy_revision: { user_id: string; agent_id: string; revision: number }
-  capability_policy_binding: {
-    user_id: string
-    contribution_id: string
-    agent_id: string
-    contribution_revision: number
-    policy_revision: number
-  }
   agent_messages: AgentMessagesTable
   agent_message_usage: AgentMessageUsageTable
   agent_message_model_context: AgentMessageModelContextTable
@@ -539,7 +531,6 @@ export interface AppDatabase {
   projects: ProjectsTable
   usage_events: UsageEventsTable
   capability_source: CapabilitySourceTable
-  extension_contribution: ExtensionContributionTable
   skill_usage: SkillUsageTable
   tool_usage: ToolUsageTable
   triggers: TriggersTable

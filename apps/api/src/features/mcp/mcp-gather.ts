@@ -35,6 +35,15 @@ export interface GatherState {
   lastStatus?: Map<string, McpServerOutcome>
 }
 
+/** Dispose every cached client that no scope's latest gather references. */
+export function evictUnreferenced(state: GatherState): void {
+  const live = new Set<string>()
+  for (const keys of state.scopeKeys.values()) for (const key of keys) live.add(key)
+  for (const entry of state.pool.cache.values()) {
+    if (!live.has(entry.key)) void state.pool.evict(entry)
+  }
+}
+
 /** One server's outcome in a gather: connected, cached, still connecting, or failed. */
 export type McpServerOutcome = McpGatherResult['servers'][number]
 
@@ -243,11 +252,7 @@ export async function gatherTools(
   // Invalidation: a config that no scope's latest gather references anymore
   // (server removed/disabled, plugin turned off, config edited → new key) gets
   // its client disposed so stdio children don't linger.
-  const live = new Set<string>()
-  for (const keys of state.scopeKeys.values()) for (const key of keys) live.add(key)
-  for (const entry of state.pool.cache.values()) {
-    if (!live.has(entry.key)) void state.pool.evict(entry)
-  }
+  evictUnreferenced(state)
 
   return { tools, servers: serverResults, serverByTool, instructions, resourceServers }
 }

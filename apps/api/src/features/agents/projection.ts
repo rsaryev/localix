@@ -4,6 +4,7 @@ import type { TrustClass } from '../ext/trust'
 import type { BoundAgent } from './bindings/bindings'
 import type { CatalogAgent } from './catalog/agent-file'
 import type { AgentRecord, AgentSummary } from './contracts'
+import { preloadedSkills } from '../plugins/agent-names'
 
 /**
  * A catalog definition as the record the rest of the app reads: the file's name is the handle, its
@@ -25,6 +26,8 @@ export function recordOf(agent: CatalogAgent, id: string): AgentRecord {
   const asked = agent.localix.effort ?? agent.preferredEffort
   const effort = asked && isReasoningEffort(asked) ? asked : undefined
   const memory = agent.localix.memoryScope
+  // Claude Code preloads the first 32 distinct skills of the list.
+  const preload = preloadedSkills(agent.pinnedSkills)
   return {
     id,
     handle: agent.fullName,
@@ -42,10 +45,10 @@ export function recordOf(agent: CatalogAgent, id: string): AgentRecord {
         }
       : {}),
     ...(agent.maxTurns ? { limits: { maxTurns: agent.maxTurns } } : {}),
-    ...(agent.pinnedSkills?.length || memory
+    ...(preload.length || memory
       ? {
           context: {
-            ...(agent.pinnedSkills?.length ? { preloadSkills: agent.pinnedSkills } : {}),
+            ...(preload.length ? { preloadSkills: preload } : {}),
             ...(memory ? { memory: { scope: memory } } : {}),
           },
         }

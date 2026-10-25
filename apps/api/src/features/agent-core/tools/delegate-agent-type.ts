@@ -3,6 +3,10 @@ import type {
   DelegateAgentType,
   TaskDelegationOptions,
 } from './task-delegation-contracts'
+import {
+  agentPermissionModeOf,
+  type AgentPermissionMode,
+} from '../../../contracts/agent-permission-mode'
 import { agentModelRoute, type AgentRoute } from '../agent-model-route'
 
 /**
@@ -13,8 +17,9 @@ import { agentModelRoute, type AgentRoute } from '../agent-model-route'
  * the child takes the rest of its frontmatter: `model` and `effort` (an alias resolves against the
  * chat's provider, as a workflow agent's does; `inherit` keeps the chat's model), `skills`
  * preloaded, `maxTurns`, `background` (never held by `wait`) and `isolation: worktree` (a git
- * worktree of the chat's repository, kept for the child's life). As in Claude Code, an agent's
- * `hooks`, `mcpServers` and `permissionMode` are ignored here.
+ * worktree of the chat's repository, kept for the child's life). The person's own agent files
+ * (never a plugin's, as in Claude Code) also carry their `permissionMode` onto the child, which the run
+ * weighs against the conversation's; their `hooks` and `mcpServers` apply when the child runs.
  *
  * `general-purpose` (and `claude`) is the delegating agent itself, so is an `agent` left out.
  */
@@ -41,6 +46,11 @@ export interface DelegateAgentPorts {
     route?: string
     who: string
   }) => MaybePromise<{ route: AgentRoute; notes: string[] }>
+  /**
+   * The agent types this run may delegate to: `tools: Agent(worker, researcher)` of the agent it
+   * runs as. Absent means any type. An omitted `agent` is `general-purpose`.
+   */
+  allowedAgentTypes?: readonly string[]
   /** A fresh worktree of the chat's repository, for `isolation: worktree`. */
   isolate?: (name: string) => Promise<DelegateWorktree>
 }
@@ -69,7 +79,7 @@ export async function resolveDelegateTarget(
       return { refusal: notFound(reference) }
     case 'agent':
       // Claude Code refuses to launch an agent whose `tools` resolve to nothing.
-      if (found.type.tools && found.type.tools.length === 0)
+      if (found.type.tools?.length === 0)
         return {
           refusal: `Agent "${found.type.fullName}" would run with zero tools: none of the names in its tools list is a tool here. Fix the agent file's tools, or delegate without this agent.`,
         }
@@ -77,9 +87,32 @@ export async function resolveDelegateTarget(
   }
 }
 
+/** Whether the agent's file is the person's own: a user's, a project's or a managed one. */
+export const ownsFrontmatter = (type: Pick<DelegateAgentType, 'source'> | undefined): boolean =>
+  type?.source === 'user' || type?.source === 'project' || type?.source === 'managed'
+
+/**
+ * The refusal when the run's `Agent(...)` allowlist leaves out every name the target answers to
+ * (its handle, full name, name; `general-purpose` for the delegator itself and a fork), else none.
+ */
+export function agentTypeRefusal(
+  ports: Pick<DelegateAgentPorts, 'allowedAgentTypes'> | undefined,
+  names: readonly string[],
+): string | undefined {
+  const allowed = ports?.allowedAgentTypes
+  if (!allowed) return undefined
+  const lower = new Set(allowed.map((type) => type.toLowerCase()))
+  if (names.some((name) => lower.has(name.toLowerCase()))) return undefined
+  return `This agent may delegate only to: ${allowed.join(', ') || 'no agent type'}. ${names[0]} is not one of them.`
+}
+
 /** What a child is created with besides its seat. */
 export interface AgentChild {
-  provenance: { workingDir?: string; worktreeByHook?: true }
+  provenance: {
+    workingDir?: string
+    worktreeByHook?: true
+    agentPermissionMode?: AgentPermissionMode
+  }
   route: AgentRoute
   pinnedSkills?: string[]
   notes: string[]
@@ -155,6 +188,10 @@ export async function prepareAgentChild(
     }
   }
   const provenance: AgentChild['provenance'] = {}
+  // The person's own agent files (not a plugin's, as in Claude Code) ask for a permission mode;
+  // the run weighs it against the conversation's (`contracts/agent-permission-mode.ts`).
+  const asked = ownsFrontmatter(type) ? agentPermissionModeOf(type?.permissionMode) : undefined
+  if (asked) provenance.agentPermissionMode = asked
   if ((type?.isolation && !call.isolated) || call.isolate) {
     const isolated = await isolateChild(ports, call.toolCallId, who)
     Object.assign(provenance, isolated.provenance)

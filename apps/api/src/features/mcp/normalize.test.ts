@@ -156,4 +156,86 @@ describe('normalizeMcpServerEntry', () => {
       true,
     )
   })
+
+  describe('Claude Code headersHelper and oauth keys', () => {
+    const remote = { type: 'http', url: 'https://mcp.example.com/mcp' }
+
+    it('keeps a headersHelper next to the static headers', () => {
+      const input = normalizeMcpServerEntry(
+        'api',
+        { ...remote, headers: { 'X-A': '1' }, headersHelper: '/opt/bin/auth.sh' },
+        null,
+      )
+      expect(input.config).toMatchObject({
+        headers: { 'X-A': '1' },
+        headersHelper: '/opt/bin/auth.sh',
+      })
+    })
+
+    it('reads the oauth block: scopes is one space-separated string, kept as the scope', () => {
+      const input = normalizeMcpServerEntry(
+        'api',
+        {
+          ...remote,
+          oauth: {
+            clientId: 'cid',
+            callbackPort: 8080,
+            authServerMetadataUrl: 'https://auth.example.com/.well-known/openid-configuration',
+            scopes: 'channels:read chat:write',
+          },
+        },
+        null,
+      )
+      expect(input.config).toMatchObject({
+        oauth: {
+          clientId: 'cid',
+          callbackPort: 8080,
+          authServerMetadataUrl: 'https://auth.example.com/.well-known/openid-configuration',
+          scope: 'channels:read chat:write',
+        },
+      })
+    })
+
+    it('takes a callbackPort alone, and still reads the Localix scope key', () => {
+      const input = normalizeMcpServerEntry(
+        'api',
+        { ...remote, oauth: { callbackPort: 9000, scope: 'read' } },
+        null,
+      )
+      expect(input.config).toMatchObject({ oauth: { callbackPort: 9000, scope: 'read' } })
+    })
+
+    it('never takes a client secret from a file', () => {
+      const input = normalizeMcpServerEntry(
+        'api',
+        { ...remote, oauth: { clientId: 'cid', clientSecret: 'shh' } },
+        null,
+      )
+      expect(JSON.stringify(input.config)).not.toContain('shh')
+    })
+
+    it('refuses an authServerMetadataUrl that is not https, and a bad port', () => {
+      expect(() =>
+        normalizeMcpServerEntry(
+          'api',
+          { ...remote, oauth: { authServerMetadataUrl: 'http://auth.example.com/meta' } },
+          null,
+        ),
+      ).toThrow(/https/)
+      expect(() =>
+        normalizeMcpServerEntry('api', { ...remote, oauth: { callbackPort: 70000 } }, null),
+      ).toThrow(/callbackPort/)
+    })
+
+    it('does not carry a headersHelper onto a web socket or stdio server', () => {
+      const ws = normalizeMcpServerEntry(
+        'w',
+        { type: 'ws', url: 'wss://x/socket', headersHelper: 'echo {}' },
+        null,
+      )
+      expect(ws.config).not.toHaveProperty('headersHelper')
+      const stdio = normalizeMcpServerEntry('s', { command: 'x', headersHelper: 'echo {}' }, null)
+      expect(stdio.config).not.toHaveProperty('headersHelper')
+    })
+  })
 })

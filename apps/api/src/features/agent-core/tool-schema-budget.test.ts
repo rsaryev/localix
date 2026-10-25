@@ -37,7 +37,13 @@ import { richRegistry } from './prompt/testing/prompt-render'
 // `plugin.enable` (+52), since a mini app's tools are switched by the app (measured total 9,449).
 // `delegate` takes Claude Code's per-call `model`, `effort` and `isolation` (+74), so an agent
 // written for Claude Code can pick the child's model and folder (measured total 9,523).
-const WIRE_BUDGET_TOKENS = 9_525
+// `search` takes Claude Code's Grep fields natively (`output_mode`, `head_limit`, `ignore_case`,
+// `multiline`, `type`: +86), so a Grep call from a prompt or skill written for Claude Code runs
+// as written instead of losing its flags. The run stood at 9,584 before them: the other tools
+// in flight had already passed 9,525 (measured total 9,670).
+// `store` (431) replaces `agents` (~340), `skill` loses `list` and `delete`, and `configure` loses
+// its plugin, mini app and MCP remedies: the roster measures 9,512. The limit stays.
+const WIRE_BUDGET_TOKENS = 9_675
 /** No single tool may take more than this — `browser` was 1,900 before its diet. */
 const PER_TOOL_CEILING_TOKENS = 800
 /** `codemode` restates four tools' schemas by design; it answers to the total, not the ceiling. */
@@ -73,7 +79,7 @@ describe('default wire schema budget', () => {
       TOOL.memory,
       TOOL.jobs,
       TOOL.delegate,
-      TOOL.agents,
+      TOOL.store,
       TOOL.global_search,
       TOOL.external_agent_sessions,
       TOOL.tool_output,
@@ -90,15 +96,30 @@ describe('default wire schema budget', () => {
     expect(JSON.stringify(bash?.inputSchema.toJSONSchema?.() ?? {})).toContain('terminal_id')
   })
 
-  test('agents authors catalog entries; only delegate carries child management', () => {
+  test('store manages packages and never sources; only delegate carries child management', () => {
     const names = wire.map((tool) => tool.name)
-    expect(names).toContain('agents')
-    const agents = wire.find((tool) => tool.name === TOOL.agents)
-    const authoringSchema = JSON.stringify(agents?.inputSchema.toJSONSchema?.() ?? {})
-    for (const action of ['list', 'create']) expect(authoringSchema).toContain(action)
-    expect(authoringSchema).not.toContain('"get"')
-    for (const action of ['delegate', 'message', 'stop', 'close'])
-      expect(authoringSchema).not.toContain(`"${action}"`)
+    expect(names).toContain('store')
+    expect(names).not.toContain('agents')
+    const store = wire.find((tool) => tool.name === TOOL.store)
+    const storeSchema = JSON.stringify(store?.inputSchema.toJSONSchema?.() ?? {})
+    for (const action of [
+      'search',
+      'get',
+      'install',
+      'update',
+      'remove',
+      'enable',
+      'disable',
+      'create',
+    ])
+      expect(storeSchema).toContain(`"${action}"`)
+    for (const action of ['add_source', 'remove_source', 'refresh', 'delegate', 'message', 'stop'])
+      expect(storeSchema).not.toContain(`"${action}"`)
+    // The skill tool saves and gets; listing and removing skills are the Store's.
+    const skill = wire.find((tool) => tool.name === TOOL.skill)
+    const skillSchema = JSON.stringify(skill?.inputSchema.toJSONSchema?.() ?? {})
+    expect(skillSchema).toContain('"save"')
+    for (const action of ['list', 'delete']) expect(skillSchema).not.toContain(`"${action}"`)
     const delegate = wire.find((tool) => tool.name === TOOL.delegate)
     const schema = JSON.stringify(delegate?.inputSchema.toJSONSchema?.() ?? {})
     for (const action of ['message', 'stop', 'close', 'list']) expect(schema).toContain(action)

@@ -152,6 +152,31 @@ describe('the Store', () => {
     expect(page.listings[0]!.contents).toEqual({ skill: 1, command: 1 })
   })
 
+  // Hovering cards while scrolling opens their pages: each learned package re-embeds its own
+  // card, never the whole collection again (the status bar showed a full rescan per card).
+  test('a page that learned what a package contains re-embeds that listing alone', async () => {
+    const remote = makeListing({ id: 'remote', kind: 'plugin', contents: 'unknown' })
+    const plugins = fakeProvider('plugin', [remote])
+    plugins.provider.detail = async () => ({
+      ...remote,
+      readme: null,
+      media: [],
+      facts: [],
+      components: [{ kind: 'skill', name: 'review' }],
+    })
+    const resyncs: string[] = []
+    const changed: string[][] = []
+    const { store } = storeOf([plugins.provider], {
+      resyncMeaning: () => resyncs.push('all'),
+      meaningChanged: (keys) => changed.push(keys),
+    })
+    await store.listings(actor, {})
+    resyncs.length = 0
+    await store.detail(remote.ref, actor)
+    await store.detail(remote.ref, actor)
+    expect({ resyncs, changed }).toEqual({ resyncs: [], changed: [['plugin:remote']] })
+  })
+
   test('a kind no provider serves, or a capability its provider lacks, is refused', async () => {
     const { store } = setup()
     await expect(store.detail({ kind: 'skill', id: 'x' }, actor)).rejects.toMatchObject({
@@ -289,6 +314,25 @@ describe('the Store', () => {
       if (id === 'radio') throw new Error('A mini app of yours is already called "radio"')
       apps.calls.push(`update ${id}`)
     }
+    expect(await store.applyUpdates(actor)).toEqual([{ kind: 'mini-app', id: 'kanban' }])
+  })
+
+  test('a kind made here rather than installed is refused by the Store, and still syncs', async () => {
+    const skill = makeListing({ id: 'review', kind: 'skill' })
+    const { store } = storeOf([fakeProvider('skill', [skill], { madeHere: true }).provider])
+    const ref = { kind: 'skill', id: 'review' } as const
+    const refused = { code: 'store_unsupported' }
+    await expect(store.plan(ref, 'user', actor)).rejects.toMatchObject(refused)
+    await expect(store.install(ref, 'user', { plan: true }, actor)).rejects.toMatchObject(refused)
+    await expect(store.update(ref, 'user', actor)).rejects.toMatchObject(refused)
+    await store.refreshSources()
+    expect(await store.applyUpdates(actor)).toEqual([])
+    expect((await store.sources()).sources).toEqual([])
+  })
+
+  test('Update all still updates the other kinds when one source cannot be read', async () => {
+    const { plugins, store } = setup()
+    plugins.provider.refresh = () => Promise.reject(new Error('marketplace offline'))
     expect(await store.applyUpdates(actor)).toEqual([{ kind: 'mini-app', id: 'kanban' }])
   })
 

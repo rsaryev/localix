@@ -138,7 +138,7 @@ export const BUILTIN_TOOL_CATALOG = {
   skill: {
     name: 'skill',
     label: 'Skills',
-    description: 'Create, retrieve, list, and delete reusable agent skills.',
+    description: 'Save and retrieve reusable agent skills.',
     category: 'knowledge',
     // Delegated implementers need the same procedures as the parent. Without this,
     // the host removes both the retrieval tool and its catalog from their prompt.
@@ -160,11 +160,13 @@ export const BUILTIN_TOOL_CATALOG = {
     // Children verify their own deliverables through their own session's preview port.
     exposure: EVERYWHERE,
   },
-  agents: {
-    name: 'agents',
-    label: 'Agents',
-    description: 'Find and create reusable specialists in the current chat’s registry.',
+  store: {
+    name: 'store',
+    label: 'Store',
+    description:
+      'Find, install, update, switch and remove packages from the Store’s added sources, and create agents and skills.',
     category: 'automation',
+    // A person approves every change, and a delegated child has no one to ask.
     exposure: CHAT_ONLY,
   },
   delegate: {

@@ -1,4 +1,4 @@
-import { FilePen, Image as ImageIcon, MessageSquareDashed, SquareTerminal } from 'lucide-react'
+import { Bot, FilePen, Image as ImageIcon, MessageSquareDashed, SquareTerminal } from 'lucide-react'
 import type { ToolMeta } from './meta'
 
 /**
@@ -23,6 +23,15 @@ export interface NonCoreMeta extends ToolMeta {
  * A name only belongs here if it needs presentation meta despite having no server entry.
  */
 export const NON_CORE_META = {
+  agents: {
+    absentBecause:
+      'HISTORICAL: agents are created and listed with `store` now, but saved sessions still hold `agents` items, which keep their label.',
+    label: 'Agents',
+    noun: 'agents',
+    verb: 'Managing agents',
+    icon: Bot,
+    stackable: false,
+  },
   view_image: {
     absentBecause:
       'HISTORICAL: `read` now returns images itself, but saved sessions still hold `view_image` items, which render through ReadCard.',

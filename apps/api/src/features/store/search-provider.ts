@@ -14,7 +14,7 @@ import type { SearchHit, SearchProvider, SearchQuery } from '../agent-core/searc
 import { fuse, isLookupQuery, unitScore, wordCoverage, type FusionInput } from '../search/hybrid'
 import type { StoreIndexRepository } from './index-repository'
 import type { IndexFilters } from './index-repository-filters'
-import { refKey, refOf } from './index-rows'
+import { refOf } from './index-rows'
 
 /**
  * THE STORE IN GLOBAL SEARCH (`docs/internals/store-scale.md`, "One search, two places"): one
@@ -51,7 +51,6 @@ export const storeSearchOptionsSchema = z.object({
     trust: trustSchema.optional(),
   }),
 })
-export type StoreSearchOptions = z.infer<typeof storeSearchOptionsSchema>
 
 /** Where a Store hit leads: the Store, open on the listing's page. */
 export const storeListingUri = (ref: ListingRef) =>
@@ -167,5 +166,3 @@ export function createStoreSearchProvider(deps: {
     },
   }
 }
-
-export { refKey }

@@ -181,7 +181,7 @@ export function agentInstruction(input: {
       ].join('\n')
     : ''
   return [
-    `A new Localix mini app "${displayName}" (${name}) exists at ${dir}: a renamed copy of the ${scaffold.summary}. It is built, enabled and already visible in the running app under the "${name}:" namespace, with the tools ${scaffold.tools.map(fill).join(', ')} and its guide.md. Work only inside ${dir}.`,
+    `A new Localix mini app "${displayName}" (${name}) exists at ${dir}: a renamed copy of the ${scaffold.summary}. It is built, enabled and already visible in the running app under the "${name}:" namespace, with the tools ${scaffold.tools.map(fill).join(', ')} and its guide.md. Work only inside ${dir}, and name every file by its full path there (${dir}/ui/register.tsx, not ui/register.tsx): a relative path is read from the chat's workspace, not from the app.`,
     `Goal: make it do this instead — ${description}`,
     AGENT_PARTNERSHIP,
     [

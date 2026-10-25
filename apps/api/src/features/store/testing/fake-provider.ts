@@ -15,6 +15,8 @@ export function fakeProvider(
   opts: {
     sources?: SourceView[]
     withoutOptional?: boolean
+    /** A kind the person makes here: no plan, install, update, sources or refresh. */
+    madeHere?: boolean
     fails?: string
     editorial?: Editorial[]
     /** The installs each project has, by project id and then listing id. */
@@ -37,22 +39,26 @@ export function fakeProvider(
     async detail(id) {
       return makeListingDetail(listings.find((listing) => listing.ref.id === id)!)
     },
-    async plan(id, scope) {
-      return {
-        scope,
-        adds: [],
-        runs: [],
-        network: [],
-        requires: [],
-        warnings: [`plan for ${id}`],
-        needsConsent: false,
-      }
-    },
-    install: async (id, scope, consent) => record(`install ${id} ${scope} ${consent.plan}`),
-    update: async (id, scope) => record(`update ${id} ${scope}`),
     remove: async (id, scope) => record(`remove ${id} ${scope}`),
-    refresh: async () => record('refresh'),
-    sources: async () => opts.sources ?? [],
+    ...(opts.madeHere
+      ? {}
+      : {
+          async plan(id, scope) {
+            return {
+              scope,
+              adds: [],
+              runs: [],
+              network: [],
+              requires: [],
+              warnings: [`plan for ${id}`],
+              needsConsent: false,
+            }
+          },
+          install: async (id, scope, consent) => record(`install ${id} ${scope} ${consent.plan}`),
+          update: async (id, scope) => record(`update ${id} ${scope}`),
+          refresh: async () => record('refresh'),
+          sources: async () => opts.sources ?? [],
+        }),
     ...(opts.editorial ? { editorial: async () => opts.editorial! } : {}),
     ...(opts.projectInstalls
       ? {

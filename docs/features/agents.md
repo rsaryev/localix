@@ -18,6 +18,16 @@ Create specialists from a conversation and manage them with `/agents`; see
 | From a plugin                | the `agents/` folder of an enabled plugin                     | No              |
 | Built in                     | `general-purpose`, `Explore`, `Plan` and `localix`            | No              |
 
+A file needs a `name` and a `description`. As in Claude Code, a name is valid unless it starts with
+`-`, contains `:` or is longer than 256 characters; such a file is skipped. Localix addresses an
+agent by a handle (the `@name` you type, its file when Localix writes one), which allows letters,
+digits, `-` and `_`, so a name like `Code Reviewer` or `reviewer.v2` loads as `code-reviewer` or
+`reviewer-v2` and still answers to the name the file declares. A name with no letters or digits, or
+one cut to fit 100 characters, gets a short digest.
+
+`description` is the only text that says when to delegate: an agent has no `when_to_use`. Of the
+`skills` list the first 32 distinct names preload.
+
 When two agents share a name, Claude Code's precedence decides which one runs: managed, then the
 project (the closest folder wins), then yours, then plugins. A file with the name of a built-in type
 replaces it. Folders are watched: an agent you add or edit in an editor appears in the Store and in
@@ -30,6 +40,39 @@ as missing for a grace period (10 minutes for your own folder, 7 days for a proj
 rules and seats are cleaned up; a disabled plugin or an unreachable project folder is never a
 deletion. Deleting an agent in the Store or with `/agents delete` cleans up at once. Messages it
 wrote stay, under its last name.
+
+## What your own agent files can set
+
+Some front matter is honoured only in a file you or your organisation own (yours, the project's or a
+managed one). A plugin's agent loads without it, as in Claude Code, because a plugin is code you did
+not write.
+
+| Field            | Effect while the agent runs as a delegated child                                 |
+| ---------------- | -------------------------------------------------------------------------------- |
+| `hooks`          | Run only during that child's runs. `Stop` hooks fire as `SubagentStop`.          |
+| `mcpServers`     | Servers named by reference, or defined inline, for that child's runs only.       |
+| `permissionMode` | `plan` makes the child read-only when the conversation is in Default; see below. |
+
+Project agents' `hooks` and inline `mcpServers` wait until Claude Code trusts the project folder, as
+a project's own settings do. A [fork](delegation.md) is its delegator rather than the agent, so it
+ignores all of these and keeps the delegator's hooks, servers and mode.
+
+An inline MCP server connects when the child starts and disconnects when its run ends. A name must
+refer to a server that is already configured here; the child shares that server's connection, and
+the organisation's allow and deny lists apply to both kinds. A `tools` list that does not name a
+server's tools still withholds them.
+
+A child runs in its conversation's [permission mode](permission-modes.md). Only a conversation in
+Default lets the agent's own `permissionMode` apply, and only `default` and `plan` have a Localix
+mode: `acceptEdits`, `auto`, `dontAsk` and `bypassPermissions` change nothing. A conversation in
+Plan, Bypass or Autonomous keeps its mode in every child, whatever the file says.
+
+Two more fields apply to every agent, a plugin's included. In `disallowedTools`, a bare name removes
+the tool, and an entry with a specifier such as `Bash(rm *)` refuses only the calls it matches while
+the tool stays. In `tools`, `Agent(worker, researcher)` is an allowlist: an agent that runs as the
+main thread can delegate only to the types it names, and a call with no `agent` counts as
+`general-purpose`, so it is refused unless listed. A child cannot delegate at all, so the list has
+no other use.
 
 ## The agent's page
 

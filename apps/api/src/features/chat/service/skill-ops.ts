@@ -75,6 +75,7 @@ export async function createSkill(
     base,
     { name: input.name, description: input.description, content: input.content },
     input.projectId ? 'project' : 'global',
+    { projectId: input.projectId ?? '' },
   )
   return {
     id: `file:${dir}/SKILL.md`,

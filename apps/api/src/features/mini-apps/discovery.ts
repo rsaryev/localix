@@ -75,10 +75,9 @@ export interface DiscoveredMiniApp {
   guide?: string
   /** The folder its guide's pages live in. */
   pages?: string
-  /** Its sandboxed views, prompt sections and contributions, validated by the host. */
+  /** Its sandboxed views and prompt sections, validated by the host. */
   views: MiniAppHostFields['views']
   promptSections: MiniAppHostFields['promptSections']
-  contributions: MiniAppHostFields['contributions']
   /** Its commands, `/<app>:<name>`, with their prompts and argument pickers. */
   commands: MiniAppCommand[]
 }
@@ -97,7 +96,6 @@ export async function loadMiniApp(
     bundled: false,
     views: [],
     promptSections: [],
-    contributions: [],
     commands: [],
   }
   const fail = (error: string): DiscoveredMiniApp => ({ ...base, manifest: null, error })
@@ -120,7 +118,6 @@ export async function loadMiniApp(
   const host = miniAppHostFieldsSchema.safeParse({
     views: manifest.views,
     promptSections: manifest.promptSections,
-    contributions: manifest.contributions,
     commandArgs: Object.fromEntries(
       Object.entries(manifest.commands ?? {}).map(([name, command]) => [name, command.args ?? []]),
     ),
@@ -149,7 +146,6 @@ export async function loadMiniApp(
     manifest,
     views: host.data.views,
     promptSections: host.data.promptSections,
-    contributions: host.data.contributions,
     commands,
   }
   if (beside)
@@ -167,8 +163,8 @@ export async function loadMiniApp(
   const guidePath = resolveWithin(dir, manifest.guide)
   const pagesPath = resolveWithin(dir, 'guide')
   const [guide, pages] = await Promise.all([
-    guidePath && (await pathExists(guidePath)) ? guidePath : undefined,
-    pagesPath && (await pathExists(pagesPath)) ? pagesPath : undefined,
+    guidePath ? pathExists(guidePath).then((found) => (found ? guidePath : undefined)) : undefined,
+    pagesPath ? pathExists(pagesPath).then((found) => (found ? pagesPath : undefined)) : undefined,
   ])
   return {
     ...named,

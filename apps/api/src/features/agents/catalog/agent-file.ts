@@ -1,6 +1,5 @@
 import { createHash } from 'node:crypto'
 import { promises as fs } from 'node:fs'
-import { join } from 'node:path'
 import { parseYamlFrontmatterBlock } from '../../agent-core/frontmatter-yaml'
 import { parseMarkdownFrontmatter, scalarField } from '../../agent-core/skill-discovery'
 import { collectMarkdownFiles, parseAgentFile } from '../../plugins/discovery-cc-files'
@@ -22,6 +21,13 @@ export interface CatalogAgent extends LoadedPluginAgent {
   path: string
   bodyHash: string
   permissionMode?: string
+  /**
+   * Frontmatter `hooks`, raw: active only while this agent runs as a subagent. Only a user's,
+   * project's or managed file has them: a plugin's agent loads without (sub-agents.md).
+   */
+  hooks?: unknown
+  /** Frontmatter `mcpServers`, raw: names of configured servers and inline definitions. */
+  mcpServers?: readonly unknown[]
   localix: LocalixKey
   /** What the type does when delegated to: runs as the delegator (`general-purpose`). */
   self?: boolean
@@ -50,17 +56,23 @@ export async function readAgentFile(
   const parsed = await parseAgentFile(file, file.replace(/^.*[\\/]/, '').replace(/\.md$/i, ''))
   if (!parsed) return null
   const yaml = parseYamlFrontmatterBlock(raw)
-  const loaded = buildLoadedAgent(source, { ...parsed, name }, (text) => text)
+  // The file's own name stays an alias of the handle it was given (`Code Reviewer` → `code-reviewer`).
+  const loaded = buildLoadedAgent(source, parsed, (text) => text)
   const permissionMode = typeof yaml?.permissionMode === 'string' ? yaml.permissionMode : undefined
   return {
     ...loaded,
-    fullName: name,
+    fullName: parsed.name,
+    ...(parsed.name === name ? {} : { aliases: [name] }),
     source,
     projectId,
     path: file,
     bodyHash: bodyHashOf(parsed.prompt),
     localix: loaded.localix ?? { priority: 0 },
     ...(permissionMode ? { permissionMode } : {}),
+    ...(parsed.hooks !== undefined ? { hooks: parsed.hooks } : {}),
+    ...(Array.isArray(parsed.mcpServers) && parsed.mcpServers.length
+      ? { mcpServers: parsed.mcpServers }
+      : {}),
   }
 }
 
@@ -74,5 +86,3 @@ export async function scanAgentFolder(
   const read = await Promise.all(files.map(({ file }) => readAgentFile(file, source, projectId)))
   return read.filter((agent): agent is CatalogAgent => agent !== null)
 }
-
-export const agentsFolderOf = (claudeDir: string): string => join(claudeDir, 'agents')

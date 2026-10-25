@@ -1,9 +1,5 @@
 import { z } from 'zod'
-import {
-  agentBlueprintSchema,
-  agentDefinitionSchema,
-  AGENT_HANDLE_PATTERN,
-} from '@localixai/agent/agents'
+import { agentBlueprintSchema, agentDefinitionSchema } from '@localixai/agent/agents'
 
 /** A Claude Code agent file read as a record; access rules and identity live outside this value. */
 export const agentRecordSchema = agentDefinitionSchema
@@ -34,17 +30,3 @@ export const agentSummarySchema = z.object({
 export type AgentSummary = z.infer<typeof agentSummarySchema>
 
 export const listAgentsResponseSchema = z.object({ agents: z.array(agentSummarySchema) })
-export type ListAgentsResponse = z.infer<typeof listAgentsResponseSchema>
-
-/**
- * Scope selector for the per-name routes. '' / absent = global. A query parameter rather than
- * a path segment because the project id is optional and the name is the resource.
- */
-export const agentScopeQuerySchema = z.object({ projectId: z.string().optional() })
-
-/** `POST /:name/duplicate` — the new agent's name; everything else is copied from the source. */
-export const duplicateAgentRequestSchema = z.object({
-  name: z.string().regex(AGENT_HANDLE_PATTERN),
-  projectId: z.string().nullable().optional(),
-})
-export type DuplicateAgentRequest = z.infer<typeof duplicateAgentRequestSchema>

@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test'
-import { STORE_INSTALLED, YOURS, YOURS_SCENARIOS } from './store-seed.mjs'
+import { STALE_SKILL, STORE_INSTALLED, YOURS, YOURS_SCENARIOS } from './store-seed.mjs'
 
 /**
  * The Store (`docs/internals/store.md`): its Discover page, shelves, a package's page and consent
@@ -106,6 +106,12 @@ const COMPOSE = {
     await openStore(page)
     await goTo(page, 'Yours')
     await page.locator('[data-listing="docs-search"]').first().waitFor()
+  },
+  async 'store-archive-unused'(page) {
+    await openStore(page)
+    await goTo(page, 'Yours')
+    await page.getByRole('button', { name: 'Archive unused', exact: true }).click()
+    await page.getByRole('dialog').getByText(STALE_SKILL).waitFor()
   },
   async 'store-mcp-settings'(page) {
     await openStore(page)
@@ -232,6 +238,17 @@ const VERIFY = {
     await expect(page.locator('[data-listing="docs-search"]').first()).toContainText('docs-search')
     await expect(page.getByRole('button', { name: 'Add skill', exact: true })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Add MCP server', exact: true })).toBeVisible()
+  },
+  async 'store-archive-unused'(page) {
+    const sheet = page.getByRole('dialog')
+    await expect(sheet.getByRole('heading', { name: 'Archive unused' })).toBeVisible()
+    // The stale skill is listed with why; the one written moments ago is not.
+    await expect(sheet.getByRole('listitem').filter({ hasText: STALE_SKILL })).toContainText(
+      'Never used, 60 days old',
+    )
+    await expect(sheet).not.toContainText('release-notes')
+    await expect(sheet.getByRole('button', { name: 'Archive unused', exact: true })).toBeEnabled()
+    await expect(sheet.getByRole('button', { name: 'Cancel', exact: true })).toBeVisible()
   },
   async 'store-mcp-settings'(page) {
     const detail = page.locator('[data-store-page="docs-search"]')

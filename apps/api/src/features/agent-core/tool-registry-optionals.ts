@@ -1,6 +1,6 @@
 import { createBrowserTool } from './tools/browser/browser'
 import { createDelegateTool } from './tools/delegate'
-import { createAgentsTool } from './tools/agents'
+import { createStoreTool } from './tools/store'
 import { createLoopsTool } from './tools/loops'
 import { createMiniAppBuildTool } from './tools/mini-app-build'
 import { createSetTopicTool } from './tools/set-topic'
@@ -27,8 +27,8 @@ export function buildNamedOptionals(
   const namedOptionals: RegistryEntry[] = []
   const optional = options.optional ?? {}
 
-  if (optional.agents) {
-    namedOptionals.push({ tool: createAgentsTool(optional.agents) })
+  if (optional.store) {
+    namedOptionals.push({ tool: createStoreTool(optional.store) })
   }
 
   if (optional.delegate) {

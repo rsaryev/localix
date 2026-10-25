@@ -1,7 +1,6 @@
 import { z } from 'zod'
 import { MINI_APP_CATEGORIES } from '@localixai/mini-app-sdk/manifest'
 
-import { contributionInputSchema } from '../ext/contribution-input'
 import {
   miniAppViewSchema,
   miniAppPromptSectionSchema,
@@ -67,7 +66,6 @@ export const miniAppHostFieldsSchema = z.object({
     .array(miniAppPromptSectionSchema)
     .max(PROMPT_SECTIONS_MAX_PER_MINI_APP)
     .default([]),
-  contributions: z.array(contributionInputSchema).max(1000).default([]),
   commandArgs: z.record(z.string(), z.array(miniAppCommandArgSchema)).default({}),
 })
 export type MiniAppHostFields = z.output<typeof miniAppHostFieldsSchema>

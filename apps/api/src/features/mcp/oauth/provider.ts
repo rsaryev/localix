@@ -24,7 +24,13 @@ export interface McpOAuthProviderOptions {
   /** Optional pre-registered client credentials (skip dynamic registration). */
   clientId?: string
   clientSecret?: string
-  scope?: string
+  /**
+   * The scope to ask for: pinned by the server's config, or read late (a function) because the
+   * authorization server's metadata, which may name it, arrives during the flow. When set it wins
+   * over the scope the server's 401 or its protected-resource metadata suggests, as Claude Code's
+   * `oauth.scopes` does.
+   */
+  scope?: string | (() => string | undefined)
   /** Called with the authorization URL to open in a browser (interactive flow only). */
   onRedirect?: (url: URL) => void
   /**
@@ -68,6 +74,7 @@ export function createMcpOAuthProvider(opts: McpOAuthProviderOptions): OAuthClie
     note(typeof tokens?.refresh_token === 'string' ? tokens.refresh_token : undefined)
   }
   note(opts.clientSecret)
+  const scopeOf = () => (typeof opts.scope === 'function' ? opts.scope() : opts.scope)
 
   return {
     get redirectUrl() {
@@ -82,7 +89,7 @@ export function createMcpOAuthProvider(opts: McpOAuthProviderOptions): OAuthClie
         grant_types: ['authorization_code', 'refresh_token'],
         response_types: ['code'],
         token_endpoint_auth_method: opts.clientSecret ? 'client_secret_post' : 'none',
-        ...(opts.scope ? { scope: opts.scope } : {}),
+        ...(scopeOf() ? { scope: scopeOf() } : {}),
       }
     },
 
@@ -125,6 +132,16 @@ export function createMcpOAuthProvider(opts: McpOAuthProviderOptions): OAuthClie
     },
 
     redirectToAuthorization(authorizationUrl: URL): void {
+      const scope = scopeOf()
+      if (scope) {
+        authorizationUrl.searchParams.set('scope', scope)
+        // As the SDK does for a scope it chose itself: refresh tokens need the consent screen.
+        if (
+          /(^|\s)offline_access(\s|$)/.test(scope) &&
+          !authorizationUrl.searchParams.has('prompt')
+        )
+          authorizationUrl.searchParams.set('prompt', 'consent')
+      }
       opts.onRedirect?.(authorizationUrl)
     },
 

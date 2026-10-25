@@ -1,5 +1,6 @@
 import type { PermissionMode } from '../../../contracts/permission-modes'
 import type { PermissionRule } from '../../agent-core/permission-engine'
+import type { SkillShellPolicy } from './skill-render'
 import type { SemanticVectors } from '@localixai/mini-app-sdk/backend'
 import type { DecisionService } from '../../decisions/service'
 import type { GlobalSearchPort } from '../../agent-core/tools/global-search/global-search'
@@ -40,6 +41,7 @@ import type { AgentNotifications } from '../../notifications/producers'
 import type { ModelRoute } from '../repository-types'
 import type { WorkRegistry } from '../../work/registry'
 import type { AgentManagementPort } from '../../agents/service-contract'
+import type { StoreAgentPort } from '../../store/agent-port'
 import type { ModsHost } from '../../mods/host'
 
 export const DEFAULT_TITLE = 'New Chat'
@@ -54,7 +56,7 @@ export interface ChatServiceDeps {
   /**
    * The model each agent's own card names, by agent ID — the third link of the model chain
    * (see `agent-route-resolution.ts`). A dependency rather than a registry read, because the
-   * agent registry is the agents feature's and chat may not import it; a host that wires
+   * agent catalog is the agents feature's and chat may not import it; a host that wires
    * nothing simply has one fewer level, which the chain already handles.
    */
   loadAgentModelDefaults?: (
@@ -77,6 +79,11 @@ export interface ChatServiceDeps {
    * (`skill-command-authorize.ts`). Absent: no rules to meet, the commands run as typed.
    */
   loadSkillCommandRules?: (userId: string, agentId: string) => Promise<PermissionRule[]>
+  /**
+   * Whether `disableSkillShellExecution` applies to a skill or command about to render: the host
+   * reads the settings for the session's folder. Absent: commands run as authored.
+   */
+  skillShellDisabled?: SkillShellPolicy
   db: Kysely<AppDatabase>
   /** The process's one work registry; the runner records background work in it. */
   work: WorkRegistry
@@ -189,6 +196,11 @@ export interface ChatServiceDeps {
   /** Global search, the one the search palette uses — the agent's `global_search` tool. */
   globalSearch?: GlobalSearchPort
   /**
+   * The Store (features/store): the agent's `store` tool and the `/plugin` commands go through it.
+   * Forward-held like `globalSearch`, since the Store is composed after chat.
+   */
+  store?: StoreAgentPort
+  /**
    * The embedding model on demand (`embeddings/semantic-vectors.ts`), null while it cannot run.
    * Group routing's fallback when no decision model is reachable (`floor-advisor.ts`).
    */
@@ -200,7 +212,7 @@ export interface ChatServiceDeps {
    * Same forward-holder shape as `monitors`: the service is composed after chat.
    */
   editorBufferText?: (userId: string, file: string) => string | undefined
-  /** Native registry roster scoped to the requesting invocation host. */
+  /** Agent roster scoped to the requesting invocation host. */
   listInvocableRegistryAgents?: (
     userId: string,
     host: string,
@@ -222,7 +234,7 @@ export interface ChatServiceDeps {
     projectId: string | null,
     cwd: string | null,
   ) => Promise<LoadedPluginAgent | null>
-  /** Complete scope-aware registry roster used only to describe agents to the model. */
+  /** Complete scope-aware catalog roster used only to describe agents to the model. */
   listRegistryAgents?: (
     userId: string,
     projectId: string | null,

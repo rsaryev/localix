@@ -1,6 +1,8 @@
 [test]
+# The shared preload lets loopback through for local test servers; the UI's own guard blocks every
+# socket and must wrap it last, or an unstubbed client call reaches the person's running Localix.
 preload = [
   "../../scripts/test-deadline.ts",
-  "./src/testing/preload.ts",
   "../../packages/testing/src/preload/index.ts",
+  "./src/testing/preload.ts",
 ]

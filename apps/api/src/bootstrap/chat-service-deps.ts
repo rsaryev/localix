@@ -1,4 +1,7 @@
 import { claudeCodeHome } from '../features/cc-settings/config-dir'
+import { createSkillShellPolicy } from './skill-shell-policy'
+import { createSkillSourcePolicy } from './skill-source-lock'
+import { installSkillSourcePolicy } from '../features/agent-core/skill-source-policy'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import { withChannelPermissionRelay } from './mcp-channels'
 import { createSessionSeatResolver } from '../features/agents/session-seat'
@@ -27,6 +30,7 @@ import type { ConfigProposalService } from '../features/config-proposals/service
 import type { PlanService } from '../features/plans/service'
 import type { ResumeRegistry } from '../features/resume/registry'
 import type { SearchService } from '../features/search/service'
+import type { StoreAgentPort } from '../features/store/agent-port'
 import type { CommentRepository } from '../features/comments/repository'
 import type { createLspDocumentService } from '../features/lsp'
 import type { createAgentsService } from '../features/agents/service'
@@ -71,6 +75,8 @@ export interface BootstrapServiceRefs {
   comments?: CommentRepository
   /** Global search — built with the app services, after chat; the agent's `global_search`. */
   globalSearch?: SearchService
+  /** The Store — built after chat; the agent's `store` tool and the `/plugin` commands. */
+  store?: StoreAgentPort
 }
 
 export interface ChatServicePhaseInput extends Pick<
@@ -142,6 +148,10 @@ export function createChatServicePhase({
   announceCapabilityChange,
   serviceRefs,
 }: ChatServicePhaseInput): ChatServicePhase {
+  // `strictPluginOnlyCustomization` (managed settings) closes the person's and the project's skill
+  // folders for every discovery in the process; skill discovery lives in the core, so it is handed
+  // the answer here rather than reading Claude Code's settings itself.
+  installSkillSourcePolicy(createSkillSourcePolicy())
   // One resolver answers "which skills may this scope use", for the run pipeline and for the
   // `/skill` listings alike — they used to read the global settings document separately, and
   // the listing gave a project session the wrong answer.
@@ -176,6 +186,8 @@ export function createChatServicePhase({
         await resolveCapabilities(capabilityRules, { userId, agentId }),
         NO_ROSTERS,
       ).permissions,
+    // `disableSkillShellExecution`, read from Claude Code's settings for the session's folder.
+    skillShellDisabled: createSkillShellPolicy(),
     ports: createChatFeaturePorts(db, { pluginService, miniAppService }),
     announceCapabilityChange,
     catalogService,
@@ -250,6 +262,9 @@ export function createChatServicePhase({
     },
     get globalSearch() {
       return serviceRefs.globalSearch
+    },
+    get store() {
+      return serviceRefs.store
     },
     // The LSP document service is built after chat (it publishes on chat's stream), so the
     // file tools reach its open buffers at call time, like the holders above.

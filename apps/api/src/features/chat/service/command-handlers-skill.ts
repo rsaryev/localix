@@ -134,8 +134,15 @@ export async function handleSkillCommand(
           findPluginSkill(await ctx.gatherEnabledPluginSkills(userId, session), name),
       )
   const arg = stack.arg
-  const render = (one: SkillRecord) =>
+  const render = async (one: SkillRecord) =>
     renderSkillBody(one, arg, {
+      // `disableSkillShellExecution`: the commands of a person's, a project's or a plugin's skill
+      // show a placeholder; a built-in plugin's skill is exempt (`bootstrap/skill-shell-policy.ts`).
+      shellDisabled:
+        (await ctx.skillShellDisabled?.({
+          workingDir,
+          ...(one.path ? { skillPath: one.path } : {}),
+        })) === true,
       ...(rules
         ? {
             authorize: authorizeTypedSkillCommands(

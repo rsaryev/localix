@@ -3,7 +3,7 @@
 A skill is a directory whose `SKILL.md` gives the agent a reusable procedure. Use one to keep a
 prompt, its scripts, and its reference files together in project or personal scope.
 
-The [skills guide](../features/skills.md) owns discovery, pinning, Settings, and day-to-day use.
+The [skills guide](../features/skills.md) owns discovery, pinning, the Store, and day-to-day use.
 This page defines the package format and the behavior of each authoring field.
 
 ## What you can do
@@ -35,7 +35,7 @@ This page defines the package format and the behavior of each authoring field.
 ### Package layout
 
 ```text
-.localix/skills/
+.claude/skills/
   deploy-staging/
     SKILL.md
     scripts/
@@ -65,13 +65,14 @@ automatically execute files merely because they sit beside `SKILL.md`.
 
 ### Discovery and write scope
 
-| Session scope | Folders read, in precedence order                                                                                                                                                                              | Precedence                                                                                      |
-| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| Project       | `~/.localix/skills`, `~/.claude/skills`, `~/.claude/commands`; then the working directory and each parent up to the repository root: `.localix/skills`, `.claude/skills`, `.agents/skills`, `.claude/commands` | Personal, then nearest project folder; within a folder Localix, Claude Code, portable, commands |
-| Default       | `~/.localix/skills`, `~/.claude/skills`, `~/.claude/commands`                                                                                                                                                  | Localix, Claude Code, commands                                                                  |
+| Session scope | Folders read, in precedence order                                                                                                                                      | Precedence                                                                        |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Project       | `~/.claude/skills`, `~/.claude/commands`; then the working directory and each parent up to the repository root: `.claude/skills`, `.agents/skills`, `.claude/commands` | Personal, then nearest project folder; within a folder skills, portable, commands |
+| Default       | `~/.claude/skills`, `~/.claude/commands`                                                                                                                               | Localix, Claude Code, commands                                                    |
 
-Localix writes and deletes only its own `.localix/skills` entries. A skill in `.claude/` or
-`.agents/` can be shadowed by saving a native copy with the same name in a scope that wins.
+Localix writes and deletes only in `~/.claude/skills` and the open project's `.claude/skills`, the
+folders Claude Code reads. A skill in `.agents/skills` or `.claude/commands` can be shadowed by
+saving a skill with the same name in `.claude/skills`.
 
 The scanner accepts nested skill directories within the selected root. It ignores archive folders,
 caps traversal at six levels and 2,000 entries, and reads regular UTF-8 `SKILL.md` files up to 1
@@ -199,6 +200,12 @@ about, unless the skill's `allowed-tools` pre-approve it.
 Shell expansion is single-pass: what a command prints, and a file `@path` inlines, reach the agent
 as plain text — a printed `@path`, `!` command or `$ARGUMENTS` is not expanded again.
 
+With `"disableSkillShellExecution": true` in a Claude Code settings file (managed settings, where
+nobody can turn it off, are the usual place), no command runs: each inline `!` command and each
+fenced `!` block of a skill or custom command from your folders, a project or a plugin is replaced
+by `[shell command execution disabled by policy]`, the permission rules are not asked, and the rest
+of the skill renders as usual. A skill of a built-in plugin keeps running its commands.
+
 ### File references
 
 An `@path` at line start or after whitespace, outside code spans and fences, can inline a text file:
@@ -213,8 +220,9 @@ expansions, 128 candidates, and 128 KiB total. An unresolved reference stays lit
 
 ### Validate and test
 
-Use Settings or the `skill` tool to confirm discovery, then invoke the skill with representative
-arguments. Test both a successful path and the failure condition described by the procedure.
+Use the skill's page in the Store or the `skill` tool to confirm discovery, then invoke the skill
+with representative arguments. Test both a successful path and the failure condition described by
+the procedure.
 
 For dynamic context, keep commands read-only where possible and test their timeout, empty-output,
 and non-zero-exit behavior. For a forked skill, verify the invoking agent has every tool it needs.

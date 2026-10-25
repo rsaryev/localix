@@ -15,7 +15,7 @@ import { Select } from '@localixai/kit/select'
 import { KIND_LABELS, TRUST_LABELS, inSentence, trustOf } from '../model/presentation'
 import { useStoreScope } from '../model/storeContext'
 import { KIND_SCOPES, type ConsentRequest } from '../model/useStoreActions'
-import { PlanSummary } from './PlanSummary'
+import { PlanView, useListingPlan } from './PlanSummary'
 import { ListingIcon } from './StoreMarks'
 
 /**
@@ -37,6 +37,7 @@ export function ConsentSheet({
   const [scope, setScope] = useState<Scope>(request.scope)
   const scopes = KIND_SCOPES[listing.ref.kind].filter((s) => s === 'user' || store.project)
   const trust = trustOf(listing)
+  const read = useListingPlan(listing, scope)
   return (
     <Dialog open onOpenChange={(open) => !open && onAnswer(null)}>
       <DialogContent size="md">
@@ -54,7 +55,7 @@ export function ConsentSheet({
           </div>
         </DialogHeader>
         <DialogBody className="flex flex-col gap-5">
-          <PlanSummary listing={listing} scope={scope} />
+          <PlanView {...read} />
           {scopes.length > 1 && (
             <Field label="Install for">
               <Select
@@ -74,7 +75,12 @@ export function ConsentSheet({
           <Button size="xl" variant="ghost" onClick={() => onAnswer(null)}>
             Cancel
           </Button>
-          <Button size="xl" variant="mono" onClick={() => onAnswer({ ...request, scope })}>
+          <Button
+            size="xl"
+            variant="mono"
+            disabled={!read.plan}
+            onClick={() => onAnswer({ ...request, scope })}
+          >
             Install
           </Button>
         </DialogFooter>

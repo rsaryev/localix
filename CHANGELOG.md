@@ -8,6 +8,70 @@ Changes land on `main`.
 
 ### Added
 
+- **Claude Code's everyday commands**: `/clear`, `/resume`, `/rename`, `/rewind`, `/plan`,
+  `/context`, `/copy`, `/permissions`, `/config` and `/effort` now work in the composer, and
+  `/reload-plugins` and `/reload-skills` run `/plugin reload`. Each runs what Localix already does
+  (a new chat, the chat picker, rename, the message menu's roll back with its question, Plan mode,
+  the context gauge, Copy text, Settings, the model steps from the reasoning level on), and each
+  offers its arguments as crumbs, as do `/help <command>`, `/output-style` and `/memory`. See
+  [Everyday Claude Code commands](docs/features/hooks-and-commands.md#everyday-claude-code-commands).
+
+- **The assistant can use the Store**: a new `store` tool searches the sources you added, shows what
+  a package installs and runs, and installs, updates, removes, enables or disables it, or creates an
+  agent or a skill. Each change shows a card and waits for your approval; a run nobody can answer
+  refuses it, and the assistant cannot add sources. `/plugin install` now shows the Store's plan and
+  installs after `--yes`. See [Store](docs/features/store.md#through-the-assistant).
+
+- **Hooks, MCP servers and permission mode in your own agent files**: a user, project or managed
+  agent file's `hooks` now run only while that subagent runs (its `Stop` hooks fire as
+  `SubagentStop`), its `mcpServers` (names of configured servers, or inline definitions that connect
+  for the run and disconnect after) reach only that child, and a `permissionMode: plan` makes the
+  child read-only when the conversation is in Default. Any other conversation mode wins, as in
+  Claude Code. A plugin's agents and forks ignore all three, and a project's hooks and inline
+  servers wait for the folder's trust. See
+  [Agents](docs/features/agents.md#what-your-own-agent-files-can-set).
+- **`Agent(worker, researcher)` in an agent's `tools`**: an agent that runs as the main thread can
+  delegate only to the types it names. An `Agent(<name>)` permission rule now also judges a
+  delegation that names no agent, which runs `general-purpose`.
+- **Pattern entries in `disallowedTools`**: `disallowedTools: Bash(rm *)` in an agent file, and
+  `disallowed-tools` in a skill the model loads, now refuse only the calls that match instead of
+  removing the whole tool.
+- **Fork a subagent**: `delegate` with `context: "fork"` (or `agent: "fork"`, as in Claude Code)
+  starts a copy of the delegating agent that has seen everything it has seen, on the same model,
+  effort, system prompt and tools, so the provider's prompt cache reads the conversation instead of
+  writing it again. It works in solo and group chats, ignores `agent`, `model` and `effort`, cannot
+  fork again, runs under the conversation's permission mode, and sends back only its final reply.
+  See [Delegation](docs/features/delegation.md#what-a-child-sees).
+- **Claude Code tool names and arguments in agents, skills and prompts**: a `tools` or
+  `disallowedTools` list now resolves `ExitPlanMode`, `SendMessage`, `TaskStop`, `ToolSearch`,
+  `Workflow`, `Monitor`, the Cron tools and the MCP resource tools, and a main agent's `tools` list
+  switches off the Localix tools it leaves out. `read` takes `file_path` and a line `offset` (a byte
+  position is now `byte_offset`), `search` takes Grep's `pattern`, `-i`, `-A`/`-B`/`-C`,
+  `output_mode`, `head_limit`, `type` and `multiline`, `bash` takes `run_in_background` and a
+  millisecond `timeout`, `research` takes `url`, `prompt` and `query`, and `activate_tools` takes
+  `mcp__server__tool`. Hooks now see `Skill` only for a skill load, `Monitor` for a wait, and
+  `notebook_path` for a notebook edit. See
+  [Claude Code arguments](docs/features/tools.md#claude-code-arguments).
+- **Managed lock-downs from Claude Code's settings**: `disableSkillShellExecution` replaces every
+  `!` command of skills and custom commands from your folders, a project or a plugin with
+  `[shell command execution disabled by policy]` instead of running it, and a managed
+  `strictPluginOnlyCustomization` (`true`, or any of `skills`, `agents`, `hooks`, `mcp`) keeps those
+  kinds from loading except from plugins and managed settings. See
+  [Use your Claude Code settings](docs/extending/claude-code-settings.md#keys-that-lock-things-down).
+- **`suppressOriginalPrompt` on a blocked prompt**: a blocked prompt's message now ends with
+  `Original prompt:` and the text, as in Claude Code, unless the hook sets
+  `hookSpecificOutput.suppressOriginalPrompt`. See
+  [Hooks and commands](docs/features/hooks-and-commands.md#what-a-blocked-prompt-shows).
+- **Archive unused skills, with a preview**: **Store → Yours** and **Project** have **Archive
+  unused**, which lists the skills that would be archived and why ("Last used 100 days ago", "Never
+  used, 45 days old") and archives nothing until you confirm. A skill that is stale or nearly says
+  so at the top of its page, with **Pin** to keep it, and when the weekly pass archives skills the
+  Event Center names them with a way back to restore them. See [Skills](docs/features/skills.md).
+- **`headersHelper` and the `oauth` block of `.mcp.json`**: a remote MCP server from a Claude Code
+  file or a plugin can print its request headers from a command (run on each connection and again
+  after a 401 or 403; a project server's waits until the folder is trusted), and can pin its OAuth
+  `clientId`, `scopes`, `callbackPort` and `authServerMetadataUrl`. See
+  [MCP](docs/features/mcp.md#claude-codes-headershelper-and-oauth-block).
 - **Agents are Claude Code agent files, managed in the Store**: an agent is a Markdown file in
   `~/.claude/agents/` or a project's `.claude/agents/`, read the way Claude Code reads it, so one
   you write works in both. **Store → Agents** lists yours, the project's, managed and plugin agents;
@@ -24,7 +88,8 @@ Changes land on `main`.
   to edit, with **Pin**, **Archive** and **Restore**. An MCP server's page has its connection
   settings, **Test connection**, **Sign in** and **Sign out**, and, after a test, one switch per
   tool. Headers, environment variables and OAuth secrets are kept in the vault, and a page only says
-  they are set.
+  they are set. Each server and skill has its switch on its page, and per agent on the agent's
+  **Access** tab; a skill is renamed by adding the new name and removing the old one.
 - **Permissions in Settings**: the allow, ask and deny rules have their own section, **Settings →
   Permissions**, under Security instead of a tab in Capabilities. It shows, read-only, the rules and
   default mode from your Claude Code settings files with the file each came from, and says how rules
@@ -46,13 +111,13 @@ Changes land on `main`.
   **Updates** list every kind together, and **Sources** has one **Add source…** that works out what
   you pasted. The Store follows its own width: a sidebar, icons only, or one picker beside the
   search. See [Store](docs/features/store.md).
-- **The Store**: the mini app store grows into one Store tab, opened from the rail's **+**, setup
-  and Settings → Mini apps. A search across everything sits on top and shelves on the left —
-  Discover, Mini apps and Plugins, then what packages give (Skills, Agents, Commands, MCP servers),
-  one shelf each that lists yours and those inside plugins with one count, Installed, Updates and
-  Sources. Each card says what is inside; a package's page adds What's inside, Permissions (what
-  would run on this computer) and Versions; Installed has a switch and Update, Configure and Remove
-  for each install. See [Mini apps](docs/features/mini-apps.md).
+- **The Store**: the mini app store grows into one Store tab, opened from the rail's **+** and
+  setup. A search across everything sits on top and shelves on the left — Discover, Mini apps and
+  Plugins, then what packages give (Skills, Agents, Commands, MCP servers), one shelf each that
+  lists yours and those inside plugins with one count, Installed, Updates and Sources. Each card
+  says what is inside; a package's page adds What's inside, Permissions (what would run on this
+  computer) and Versions; Installed has a switch and Update, Configure and Remove for each install.
+  See [Mini apps](docs/features/mini-apps.md).
 - **Plugins in the Store**: the Store now lists Claude Code plugins from Anthropic's official and
   community marketplaces beside Localix's own, registered on first start for browsing only. Search
   finds packages by words and by meaning, puts a package named for your query first and Localix's
@@ -124,10 +189,10 @@ Changes land on `main`.
 - **Updates above the message box**: the update line also offers mini app and plugin updates with
   **Update all**, one at a time, when Localix itself has none; each can be hidden until there is
   something newer. See [Updates](docs/getting-started/installation.md#updates).
-- **Built-in plugins**: Localix now ships Claude Code plugins of its own, listed in Settings →
-  Capabilities → Plugins under **Built-in**. They are on by default and can be switched off, and
-  they update with Localix. The first, `localix-mini-apps`, teaches the agent to build, check, pack
-  and publish mini apps (`/localix-mini-apps:new` and the rest). See
+- **Built-in plugins**: Localix now ships Claude Code plugins of its own, listed on the Store's
+  Plugins shelf. They are on by default and can be switched off, and they update with Localix. The
+  first, `localix-mini-apps`, teaches the agent to build, check, pack and publish mini apps
+  (`/localix-mini-apps:new` and the rest). See
   [Built-in plugins and updates](docs/extending/plugin-updates.md#built-in-plugins).
 - **Plugin updates**: a plugin installed from a marketplace shows **Update now** with the versions
   it goes from and to, and plugins from marketplaces with auto-update on update themselves a few
@@ -161,25 +226,24 @@ Changes land on `main`.
   **Add catalog…** shows who publishes a catalog before you add it. `/mini-app catalog list`, `add`
   and `remove` do the same from the chat, and a publisher can link people straight to the dialog.
   See [Publish a mini app](docs/extending/mini-app-publishing.md).
-- **Mini apps**: `/plugin create <what it should do>` has the agent build an app inside Localix — a
-  calorie counter that logs a meal from a photo, a dashboard, a game — with its own screen and tools
-  the chat agent uses. A mini app can start an agent turn, ask decision models, search its own items
-  by meaning, use vault secrets and push live updates to its screen. See
-  [Build a plugin or a mini app](docs/extending/mini-apps.md#what-you-can-build).
-- **Plugin apps** (macOS): install a mini app as its own Mac app from its tab's menu, the app button
-  at the right of the tab strip, its rail button or the command palette. The app has its own Dock
-  icon, window, menu bar and project, shows the mini app with the agent beside it, keeps its
-  conversations as its history, and starts Localix in the background when it is not running. See
-  [Plugin apps](docs/features/mini-app-mac-apps.md).
+- **Mini apps**: `/mini-app create <what it should do>` has the agent build an app inside Localix —
+  a calorie counter that logs a meal from a photo, a dashboard, a game — with its own screen and
+  tools the chat agent uses. A mini app can start an agent turn, ask decision models, search its own
+  items by meaning, use vault secrets and push live updates to its screen. See
+  [Build a mini app](docs/extending/mini-apps.md#what-you-can-build).
+- **Mini apps as Mac apps** (macOS): install a mini app as its own Mac app from its tab's menu, the
+  app button at the right of the tab strip, its rail button or the command palette. The app has its
+  own Dock icon, window, menu bar and project, shows the mini app with the agent beside it, keeps
+  its conversations as its history, and starts Localix in the background when it is not running. See
+  [Mini apps as Mac apps](docs/features/mini-app-mac-apps.md).
 
 - **Mods**: a Claude Code plugin with a hooks module runs it, once per project as in a Claude Code
   session. A mod can guard or rewrite tool calls and model requests, shape the system prompt, read
   the conversation, add slash commands, tools and agents, fill the message box, draw a strip above
-  it and open panes, each its own workspace tab. Settings → Capabilities → Plugins marks each mod
-  and shows what it hooks, or why it did not load. Claude Code's own `diff` mod shows a project's
-  changes in its pane. Each mod runs in a sandbox of its own with a memory cap, so one that loops or
-  runs out of memory stops alone. See
-  [Claude Code plugins](docs/extending/claude-code-plugins.md#mods).
+  it and open panes, each its own workspace tab. A plugin's page in the Store lists each mod under
+  What's inside. Claude Code's own `diff` mod shows a project's changes in its pane. Each mod runs
+  in a sandbox of its own with a memory cap, so one that loops or runs out of memory stops alone.
+  See [Claude Code plugins](docs/extending/claude-code-plugins.md#mods).
 - **Claude Code marketplaces**: `/plugin marketplace add owner/repo` adds one, and
   `/plugin install <name>@<marketplace>` installs from it; `list`, `update` and `remove` manage it.
   Plugins you installed in Claude Code itself also appear, waiting for your approval.
@@ -196,7 +260,8 @@ Changes land on `main`.
 - **Plugin workflows** run in the background as `/<plugin>:<name>`, each agent a child task on the
   model and effort it asks for, optionally in its own git worktree; a stopped run resumes.
 - **Channels**: a plugin's MCP server can speak into the chat that last used it and answer approval
-  prompts; turn it on for your own servers with **Listen as a channel** in Settings → MCP.
+  prompts; turn it on for your own servers with **Listen as a channel** on the server's page in the
+  Store.
 - **MCP servers can ask you for input**: their request opens a form card in the chat.
 - **Project Space diagrams and text**: notes, shape labels and text take a font (sans, serif, mono,
   handwritten), size, alignment and colour from one **Text** menu, draw **bold**, _italic_, lists
@@ -224,6 +289,23 @@ Changes land on `main`.
 
 ### Changed
 
+- **Creating agents and switching things on go through the Store**: the `agents` tool is replaced by
+  `store` (an agent is created with your approval and starts from the default permissions), the
+  `skill` tool only saves and loads, and `configure` no longer proposes switching on mini apps,
+  plugins or MCP servers.
+- **Your skills are Claude Code's files**: skills you add in the Store or save through the agent now
+  live in `~/.claude/skills` (a project's in `.claude/skills`), so Claude Code loads them too and
+  you can edit them there. At the first start after updating, skills from the old `.localix/skills`
+  folders move over once (a name `.claude/skills` already has keeps that skill; the log names any
+  older copy dropped) and the old folders are removed. Because Claude Code shares the folder and its
+  use of a skill is not visible to Localix, the weekly pass and **Archive unused** only archive
+  skills made in Localix; any other skill can still be pinned, archived by hand and restored.
+  Archived skills now wait in `~/.localix/skills-archive`, outside the folders Claude Code reads.
+- **Agent names follow Claude Code**: an agent file loads unless its `name` starts with `-`,
+  contains `:` or is over 256 characters, so names such as `Code Reviewer` or `reviewer.v2` no
+  longer drop the agent (it is addressed as `code-reviewer` and still answers to its own name). An
+  agent's description no longer gets `when_to_use` appended, and its `skills` preload the first 32
+  distinct names. See [Agents](docs/features/agents.md#where-agents-live).
 - **One look for the Store and Settings**: both open pages with the same headings, and use the same
   section labels, list rows, text links and tag chips, so a title, a list or a chip reads the same
   wherever it appears. Library rows, source rows and an agent's access list now follow the kit's
@@ -235,10 +317,6 @@ Changes land on `main`.
 - **The Store's sections fold and unfold**: the sidebar is part of the page, not a panel over it. It
   starts open; the first row folds it to icons or unfolds it, the page beside it resizes, and your
   choice is remembered.
-- **Settings → MCP and Skills are switches and links**: they list each server and skill with its
-  switch for the selected agent and a **Settings** button that opens its Store page, where it is
-  edited, tested, archived or removed. **Run curator** stays on the Skills tab. A skill is renamed
-  by adding the new name and removing the old one.
 - **Mods look like the rest of the app**: the band a mod draws above the message box is part of the
   box — its surface, its padding, one hairline above the input — in the composer strips' type, with
   quiet buttons, picks as chips with keycaps and the full label in a tooltip; lines sit side by
@@ -263,8 +341,7 @@ Changes land on `main`.
   with nothing converted at install. Hooks on `PostToolUseFailure` run when a tool fails, and
   `${VAR}` in a plugin's MCP servers reads the environment as in Claude Code. Hooks run on every
   Claude Code event that has a moment in Localix; a plugin's agents are subagent types the agent
-  delegates to, with no limit per plugin. Settings → Capabilities → Plugins labels each entry
-  **Claude Code plugin**, **mini app** or **legacy manifest**. See
+  delegates to, with no limit per plugin. See
   [Claude Code plugins](docs/extending/claude-code-plugins.md).
 - **Claude Code plugins behave as in Claude Code**: hooks see Claude Code's tool names and inputs
   and decide before the approval card; allow, ask, deny, `continue: false` and replaced tool output
@@ -393,6 +470,8 @@ Changes land on `main`.
 
 ### Removed
 
+- **`context: "conversation"` on `delegate`**: a child no longer gets a text-only copy of the topic.
+  Use `context: "fork"` for a child that needs everything the agent has seen.
 - **Settings no longer manages items**: the Agents, Capabilities, MCP connections, Plugins, Skills
   and Mini apps pages are gone. Settings is Preferences, Editor, Shortcuts, Project, Permissions,
   Models and System; everything else is on the item's page in the Store. The human record is gone

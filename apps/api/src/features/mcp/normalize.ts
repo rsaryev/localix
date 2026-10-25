@@ -55,6 +55,13 @@ export function normalizeMcpServerEntry(
       throw new Error('remote server is missing a "url" or "serverUrl"')
     }
     const headers = coerceStringRecord(raw.headers)
+    // Over a web socket neither a header nor a helper's output can be sent (the SDK transport
+    // connects by URL alone), so a helper there would run for nothing.
+    const headersHelper =
+      !isWs && typeof raw.headersHelper === 'string' && raw.headersHelper.trim().length > 0
+        ? raw.headersHelper
+        : undefined
+    const oauth = extractOAuth(raw.oauth)
     return attachStartupContract(
       mcpServerInputSchema.parse({
         name,
@@ -62,7 +69,13 @@ export function normalizeMcpServerEntry(
         transport: isWs ? 'ws' : 'http',
         enabled,
         projectId,
-        config: { url, ...(headers ? { headers } : {}), ...filters },
+        config: {
+          url,
+          ...(headers ? { headers } : {}),
+          ...(headersHelper ? { headersHelper } : {}),
+          ...(oauth ? { oauth } : {}),
+          ...filters,
+        },
       }),
       raw,
     )
@@ -84,6 +97,25 @@ export function normalizeMcpServerEntry(
     }),
     raw,
   )
+}
+
+/**
+ * Claude Code's `oauth` block of a server entry: `clientId`, `callbackPort`, `authServerMetadataUrl`
+ * and `scopes` (one space-separated string, kept as Localix's `scope`; an array is joined, and
+ * Localix's own `scope` key is read too). A client secret is never taken from a file: Claude Code
+ * keeps it out of `.mcp.json`, and a committed one would be a leaked credential.
+ */
+function extractOAuth(value: unknown): Record<string, unknown> | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined
+  const o = value as Record<string, unknown>
+  const out: Record<string, unknown> = {}
+  if (typeof o.clientId === 'string' && o.clientId) out.clientId = o.clientId
+  const scopes = Array.isArray(o.scopes) ? asStringArray(o.scopes).join(' ') : o.scopes
+  const scope = typeof scopes === 'string' && scopes.trim() ? scopes : o.scope
+  if (typeof scope === 'string' && scope.trim()) out.scope = scope.trim()
+  if (o.callbackPort !== undefined) out.callbackPort = o.callbackPort
+  if (o.authServerMetadataUrl !== undefined) out.authServerMetadataUrl = o.authServerMetadataUrl
+  return Object.keys(out).length > 0 ? out : undefined
 }
 
 /**

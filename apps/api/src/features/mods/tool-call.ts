@@ -56,7 +56,10 @@ async function callThrough(
     { ...seen, ...agentOf(scope) },
     async (event) => {
       const fields = event as Fields
-      const own = fields.file_path === seen.file_path ? { ...fields, file_path: written } : fields
+      const own =
+        seen.file_path !== undefined && fields.file_path === seen.file_path
+          ? { ...fields, file_path: written }
+          : fields
       const local = toolInputOf(tool.name, own)
       try {
         ran = await tool.execute(toolCallId, local, signal, onUpdate, context)

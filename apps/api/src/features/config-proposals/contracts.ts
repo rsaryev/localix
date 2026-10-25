@@ -1,7 +1,6 @@
 import type { z } from 'zod'
 import type { ProposalCard } from '../agent-core/tools/configure/configure-contracts'
 import type { Rule, RuleOrigin } from '../agent-core/capability-rule'
-import type { RuleChange } from '../capabilities/rule-changes'
 import type { AgentSummary } from '../agents/contracts'
 
 export type { ProposalCard }
@@ -58,24 +57,6 @@ export interface RemedyPorts {
       agentId: string,
       change: (rules: Rule[]) => readonly Rule[],
     ): Promise<void>
-  }
-  /**
-   * The one write path for capability policy, in its own vocabulary.
-   *
-   * A remedy that switches a plugin or an MCP server on goes through here rather than
-   * writing the row itself, because those kinds carry consequences the rule alone does not:
-   * a dependency cascade, an inspection cache, a live host to re-wire. Rules the remedy owns
-   * outright (an agent's tool list) are written through `rules` instead, so they can carry
-   * the `origin` that says which session proposed them.
-   */
-  capabilities: {
-    apply(
-      userId: string,
-      input: {
-        agentId: string
-        changes: ReadonlyArray<RuleChange>
-      },
-    ): Promise<unknown>
   }
   /**
    * READ-ONLY, because nothing here authors an agent any more. The roster and one role's

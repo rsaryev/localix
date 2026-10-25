@@ -23,7 +23,7 @@
  *
  * Pure module — no chat/UI imports.
  */
-import { CC_TOOL_NAME_MAP } from '../ext/cc-tool-names'
+import { CC_LEGACY_TOOL_NAMES } from '../ext/cc-tool-names'
 import { claudeCodeNames, claudeCodeToolName } from '../ext/cc-tool-shapes'
 import { ccMcpMatcherVariants } from './mcp-names'
 
@@ -155,7 +155,7 @@ const CC_CASED_NAMES: ReadonlyMap<string, string> = new Map(
 /** Reverse index: engine tool name → every lowercased CC name that maps to it. */
 const ENGINE_TO_CC: Readonly<Record<string, string[]>> = (() => {
   const out: Record<string, string[]> = {}
-  for (const [cc, engine] of Object.entries(CC_TOOL_NAME_MAP)) {
+  for (const [cc, engine] of Object.entries(CC_LEGACY_TOOL_NAMES)) {
     ;(out[engine] ??= []).push(cc)
   }
   return out
@@ -205,6 +205,8 @@ export function callNameCandidates(
   const paths = [input.path, input.file_path, ...edits.map((e) => (e as { path?: unknown })?.path)]
   const notebook = paths.some((p) => typeof p === 'string' && p.endsWith('.ipynb'))
   const notebookName = engineToolName === 'read' ? 'notebookread' : 'notebookedit'
+  // Every other Claude Code name of this tool stands for a different kind of call.
+  const otherCalls = new Set(claudeCodeNames(engineToolName.toLowerCase()))
   const legacy = (cc: string) =>
     (cc === 'multiedit' && edits.length > 1) ||
     (cc === 'task' && own === 'Agent') ||
@@ -212,6 +214,8 @@ export function callNameCandidates(
   return toolNameCandidates(engineToolName, aliases)
     .filter((name) => {
       const lower = name.toLowerCase()
+      if (name === own) return true
+      if (otherCalls.has(name) && name !== engineToolName.toLowerCase()) return legacy(lower)
       if (lower === engineToolName.toLowerCase() || lower === own.toLowerCase()) return true
       if (aliases.includes(name)) return true
       if (PER_CALL_NAMES.has(lower) || PER_CALL_MORE.has(lower) || NOTEBOOK_NAMES.has(lower))

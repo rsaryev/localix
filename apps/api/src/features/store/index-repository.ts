@@ -1,3 +1,4 @@
+import { cardOfRow } from './index-rows'
 import type { Kysely } from 'kysely'
 import type { ListingRef, StoreComponent } from '@localixai/store'
 
@@ -30,7 +31,7 @@ function withLearned(
   row: IndexRow,
   parts: StoreComponent[] | undefined,
 ): IndexRow & { learned: boolean } {
-  const card = JSON.parse(row.card) as ListingCard
+  const card = cardOfRow(row)
   if (card.contents !== 'unknown' || !parts?.length) return { ...row, learned: false }
   return {
     ...row,
@@ -244,7 +245,7 @@ export function createStoreIndexRepository(db: Kysely<StoreIndexTables>) {
           .where('id', '=', ref.id)
           .executeTakeFirst()
         if (!row) return false
-        const card = JSON.parse(row.card) as ListingCard
+        const card = cardOfRow(row)
         const learned = await trx
           .selectFrom('listing_component')
           .select('learned')
@@ -252,6 +253,9 @@ export function createStoreIndexRepository(db: Kysely<StoreIndexTables>) {
           .executeTakeFirst()
         // The source's own list stands; only an unknown one, or one learned before, is replaced.
         if (card.contents !== 'unknown' && learned?.learned !== 1) return false
+        const next = JSON.stringify(learnedCard(card, parts))
+        // Learned the same again (the page was opened twice): nothing moved, nothing to re-embed.
+        if (learned?.learned === 1 && next === row.card) return false
         await trx.deleteFrom('listing_component').where('listing', '=', row.pk).execute()
         await insertComponents(
           trx,
@@ -261,7 +265,7 @@ export function createStoreIndexRepository(db: Kysely<StoreIndexTables>) {
           .updateTable('listing')
           .set({
             components_text: parts.map((part) => part.name).join(' '),
-            card: JSON.stringify(learnedCard(card, parts)),
+            card: next,
           })
           .where('pk', '=', row.pk)
           .execute()

@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { tempDirPerTest } from '@localixai/testing'
 import { mkdirSync, symlinkSync, writeFileSync } from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import { localixHome } from '../../lib/env'
 import { extractCallFacts, writeTargets } from './permission-facts'
@@ -24,8 +25,12 @@ describe('reader containment', () => {
 
   // Every read of the plugin the agent had just been asked to build used to prompt.
   test("the user's plugins and skills read and write like the workspace, in every role", () => {
-    for (const dir of ['plugins/timer/plugin.json', 'skills/review/SKILL.md', 'workspace/x/a.md']) {
-      const file = path.join(localixHome(), dir)
+    for (const file of [
+      path.join(localixHome(), 'plugins/timer/plugin.json'),
+      path.join(os.homedir(), '.claude/skills/review/SKILL.md'),
+      path.join(localixHome(), 'workspace/x/a.md'),
+    ]) {
+      const dir = path.basename(path.dirname(file))
       for (const tool of ['read', 'search', 'write']) {
         const input = tool === 'search' ? { query: 'x', path: file } : { path: file, content: 'x' }
         expect({
@@ -172,5 +177,29 @@ describe('mutation containment through a symlinked directory', () => {
     // An ordinary new file in a new folder of the workspace stays inside.
     const plain = extractCallFacts('write', { path: 'src/new/a.ts', content: 'x' }, ws)
     expect(plain.outsideWorkspace).toBe(false)
+  })
+})
+
+describe('skill call facts', () => {
+  test('a save names the SKILL.md it writes, by scope; a get and the removed actions name nothing', () => {
+    const project = extractCallFacts(
+      'skill',
+      { action: 'save', name: 'ship', scope: 'project' },
+      root,
+    )
+    expect(project.paths).toEqual([path.join(root, '.claude/skills/ship/SKILL.md')])
+    const global = extractCallFacts(
+      'skill',
+      { action: 'save', name: 'ship', scope: 'global' },
+      root,
+    )
+    expect(global.paths).toEqual([path.join(os.homedir(), '.claude/skills/ship/SKILL.md')])
+    for (const input of [
+      { action: 'get', name: 'ship' },
+      // `delete` once declared both candidate folders; it is the Store's now.
+      { action: 'delete', name: 'ship' },
+      { action: 'list' },
+    ])
+      expect(extractCallFacts('skill', input, root).paths).toEqual([])
   })
 })

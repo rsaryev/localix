@@ -65,7 +65,6 @@ The manifest is strict: unknown keys are refused, a plugin's `skills` or `hooks`
 | `icon`, `screenshots`, `tags` | Store media; see [Store media](#store-media)                                                     |
 | `views`                       | Up to 6 sandboxed HTML views, each `{ id, title, file, icon?, agentDescription? }`               |
 | `promptSections`              | Up to 3 `{ title, content }` of static prompt text                                               |
-| `contributions`               | Typed declarations, such as a native agent (`kind: "agent"`)                                     |
 | `fileAssociations`            | File types for desktop packaging; inert for an installed app                                     |
 | `private`                     | Keeps an authoring scaffold out of packaging                                                     |
 

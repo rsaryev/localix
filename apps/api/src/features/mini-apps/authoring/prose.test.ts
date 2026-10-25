@@ -85,3 +85,17 @@ describe('the authoring guidance teaches push before polling', () => {
     }
   })
 })
+
+/**
+ * The run's own folder is the chat's workspace, not the app: a copy told only "work inside" the
+ * app wrote `shared/bitcoin.ts` with `write`, which landed in the workspace, and had to move it.
+ */
+test('the instruction has the agent write the app’s files by their full path', () => {
+  const text = agentInstruction({
+    ...input,
+    description: 'Show GPU load',
+    dir: '/apps/gpu-monitor',
+  })
+  expect(text).toContain('/apps/gpu-monitor/ui/register.tsx')
+  expect(text).toMatch(/relative path[^.]*workspace/u)
+})

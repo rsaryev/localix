@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { scopeSchema, type Scope } from './contract'
+import { listingRefSchema, scopeSchema, type Scope } from './contract'
 
 /**
  * What a package lets its person set, as the Store shows it: one field list a provider supplies
@@ -77,6 +77,17 @@ export const actionResultSchema = z.object({
     .optional(),
 })
 export type ActionResult = z.infer<typeof actionResultSchema>
+
+/**
+ * What a shelf-level action would change, shown before the person confirms: each item with the
+ * reason it is in it (`docs/internals/store.md`, "Shelf actions"). An empty list is "nothing to do".
+ */
+export const shelfPlanSchema = z.object({
+  /** One line for the dialog: what confirming does. */
+  summary: z.string(),
+  items: z.array(z.object({ ref: listingRefSchema, name: z.string(), reason: z.string() })),
+})
+export type ShelfPlan = z.infer<typeof shelfPlanSchema>
 
 /** What making a new item asks for: the fields of its form, and where it can be kept. */
 export const createFormSchema = z.object({

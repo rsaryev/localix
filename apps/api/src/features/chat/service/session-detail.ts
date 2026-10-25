@@ -174,7 +174,11 @@ export async function getSessionDetail(
   // independent reads once we have the session — fetch them concurrently.
   const wantsParent = Boolean(session.parentSessionId && session.sourceToolCallId)
   const wantsProject = Boolean(lspManager && session.projectId)
-  const messagesPromise = repo.listMessages(userId, id)
+  // A fork reads its parent's line without owning it (`repository-message-branches.ts`): the
+  // transcript, the count and the spend are the rows it wrote itself.
+  const messagesPromise = repo
+    .listMessages(userId, id)
+    .then((all) => all.filter((message) => message.sessionId === id))
   // Plans belong to the root (`SessionDetail.plans`). A read that fails leaves the field absent
   // — "unknown" to the client, which keeps what it had — rather than failing the whole detail.
   const plansPromise =

@@ -4,48 +4,41 @@ import { api } from './runtime.mjs'
 export async function ensureDemoAgents(projectId) {
   const { agents } = await api(`/capabilities/snapshot?projectId=${encodeURIComponent(projectId)}`)
   const ids = { localix: 'builtin:localix' }
-  for (const [handle, label, description, instructions] of [
+  for (const [handle, description, instructions] of [
     [
       'frontend',
-      'Frontend',
       'Reviews the demo interface.',
       'Review interface states and report rendered evidence.',
     ],
     [
       'qa',
-      'QA Engineer',
       'Checks the demo release.',
       'Check release states and report concrete findings and evidence.',
     ],
     [
       'lead',
-      'Team Lead',
       'Owns the demo release notes and docs.',
       'Write release notes and keep documentation current.',
     ],
   ]) {
     const existing = agents.find((agent) => agent.record.handle === handle)
-    const agent =
-      existing ??
-      (await api('/agents', {
-        handle,
-        label,
-        description,
-        instructions,
-        leadershipPriority: 0,
+    // Made the way a person makes one, through the Store; its instructions are then its config.
+    const id =
+      existing?.record.id ??
+      (
+        await api('/store/create/agent', {
+          scope: 'project',
+          values: { name: handle, description },
+          projectId,
+        })
+      ).ref.id
+    if (!existing)
+      await api(`/store/agent/${encodeURIComponent(id)}/config`, {
+        scope: 'project',
+        values: { instructions },
         projectId,
-      }))
-    ids[handle] = agent.record.id
-    // A fresh workspace seeds a starter team with these handles switched off and barred from
-    // chat; a session refuses such a participant, so the fixture opens the ones it seats.
-    if (existing)
-      await api('/capabilities/rules/apply', {
-        agentId: agent.record.id,
-        changes: [
-          { action: `agent:${agent.record.id}`, resource: '*', effect: 'allow' },
-          { action: 'invocation:chat', resource: agent.record.id, effect: 'allow' },
-        ],
       })
+    ids[handle] = id
   }
   return ids
 }

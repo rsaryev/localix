@@ -4,8 +4,8 @@ import { ActionTooltip } from '@localixai/kit/tooltip'
 import { CMD, useChordHint } from '@/shared/lib/keybindings'
 
 /**
- * The band's pager, at the end of its first row: ‹ 1/2 › as quiet ghost controls, with the mods
- * that drew the page as a muted label where the band has room, and always in the tooltip.
+ * The band's pager, at the end of its first row: ‹ 1/2 › as quiet ghost controls. The mods that
+ * drew the page are named in its tooltip, not beside it, so the row keeps its room for their text.
  */
 export function BandPager({
   index,
@@ -34,14 +34,11 @@ export function BandPager({
       </IconButton>
       <ActionTooltip label={names ? `${position}: ${names}` : position}>
         <span
-          className="flex min-w-0 items-center gap-1.5 px-0.5 text-2xs text-text-faint tabular-nums"
+          className="px-0.5 text-2xs text-text-faint tabular-nums"
           // Read once by the group's name; the tooltip says it whole.
           aria-hidden="true"
         >
-          <span className="shrink-0">
-            {index + 1}/{count}
-          </span>
-          {names && <span className="hidden max-w-32 truncate @md:inline">{names}</span>}
+          {index + 1}/{count}
         </span>
       </ActionTooltip>
       <IconButton

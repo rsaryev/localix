@@ -72,3 +72,35 @@ test('the http hook allowlists merge across settings files', () => {
   })
   expect(settingsHooks([layer('user', {})], { projectTrusted: false }).http).toEqual({})
 })
+
+// settings-reference.md, `strictPluginOnlyCustomization.hooks`: hooks of user, project and local
+// settings stop running; managed settings' hooks and every plugin's keep running.
+test('a managed hooks lock keeps only the organization’s settings hooks and every plugin’s', () => {
+  const lock = (value: unknown) => layer('policy', { strictPluginOnlyCustomization: value })
+  const layers = (value: unknown) => [
+    layer('user', { hooks: hooks('fmt') }),
+    layer('project', { hooks: hooks('lint') }),
+    layer('local', { hooks: hooks('mine') }),
+    layer('policy', { hooks: hooks('audit') }),
+    lock(value),
+  ]
+  const commandsOf = (value: unknown) =>
+    settingsHooks(layers(value), { projectTrusted: true }).blocks.map((b) =>
+      JSON.stringify(b.raw).includes('audit') ? 'audit' : 'own',
+    )
+  expect(commandsOf(undefined)).toEqual(['own', 'own', 'own', 'audit'])
+  expect(commandsOf(true)).toEqual(['audit'])
+  expect(commandsOf(['hooks'])).toEqual(['audit'])
+  expect(commandsOf(['skills', 'mcp'])).toEqual(['own', 'own', 'own', 'audit'])
+  const locked = settingsHooks(layers(true), { projectTrusted: true })
+  expect(locked.pluginAllowed('any@market')).toBe(true)
+  expect(locked.frontmatterAllowed).toBe(true)
+})
+
+test('a hooks lock a user or project file asks for is not a lock', () => {
+  const layers = [
+    layer('user', { hooks: hooks('fmt'), strictPluginOnlyCustomization: true }),
+    layer('project', { strictPluginOnlyCustomization: ['hooks'] }),
+  ]
+  expect(settingsHooks(layers, { projectTrusted: true }).blocks).toHaveLength(1)
+})

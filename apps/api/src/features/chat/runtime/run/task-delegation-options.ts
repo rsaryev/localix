@@ -21,7 +21,9 @@ import { wrapSystemReminder } from '../system-reminder'
 import { delegationPlace } from '../../session-provenance'
 import { endSubagentWork, type SubagentWorkDeps } from './subagent-work'
 import { releaseChildSurfaces, type ChildSurfaceDeps } from './child-surfaces'
-import { copyConversationForDelegate } from './delegate-context'
+import { createModelContextRepository } from '../../model-context-repository'
+import { createForkPort } from '../fork/fork-port'
+import type { ForkLiveRun } from '../fork/fork-port'
 
 /**
  * How long a delegation call watches its child before returning "running".
@@ -45,13 +47,14 @@ export interface TaskDelegationOptionsInput {
   defaultCwd: string
   agentProfile: RunProfile
   repo: RunnerDeps['repo']
-  deps: Pick<RunnerDeps, 'providerConnectionsService' | 'streamRegistry'> & ChildSurfaceDeps
+  deps: Pick<RunnerDeps, 'providerConnectionsService' | 'streamRegistry' | 'db' | 'now'> &
+    ChildSurfaceDeps
   /** Per-run CC-hook runtime → the child run fires SubagentStart/SubagentStop. */
   ccHooks?: CcHooksRuntime
   /** Where a detached child is recorded as the session's background work (`sub-N`). */
   subagentWork: SubagentWorkDeps
-  /** The calling turn's live assistant row — left out of a child's copy of the conversation. */
-  currentMessageId?: () => string
+  /** What a fork of this run is made from, once the run is streaming (`fork/fork-live.ts`). */
+  forkLive?: () => ForkLiveRun | undefined
 }
 
 /**
@@ -102,15 +105,15 @@ export function buildTaskDelegationOptions(
     // Where this session sits (`delegation-hierarchy.ts`), as its creation wrote it, and the
     // agent delegating now.
     position: () => ({ ...place, self: input.agentId ?? null }),
-    copyConversation: async (childSessionId) => {
-      await copyConversationForDelegate(input.repo, {
-        userId,
-        sourceSessionId: session.id,
-        childSessionId,
-        delegatingAgentId: input.agentId,
-        exclude: input.currentMessageId ? [input.currentMessageId()] : [],
-      })
-    },
+    // A fork continues this run's own line in a child: nothing is copied but the row in flight.
+    fork: createForkPort({
+      userId,
+      parent: session,
+      repo: input.repo,
+      modelContext: createModelContextRepository(input.deps.db),
+      live: () => input.forkLive?.(),
+      now: () => (input.deps.now ?? (() => new Date().toISOString()))(),
+    }),
     // Keyed by ROOT: the budget counts the children the whole conversation created since the
     // person last wrote there, whichever participant delegated them.
     delegationsSinceHuman: svc.countDelegationsSinceHuman

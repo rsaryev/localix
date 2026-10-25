@@ -1,45 +1,13 @@
 import { assertOk, cleanQuery, client, unwrap } from './internal'
 import type { MiniAppCatalogEntryRecord } from '@localixai/api/client'
-import type { MiniAppRecord } from './contracts'
 
 /**
- * Mini apps (`/rpc/mini-apps`): the installed apps, their switches and settings, and what their
- * screens call. A write answers with no body: the `mini-apps` resource poke tells every surface to
- * re-read the list, so nothing here returns state to patch in. Spread into `backendClient`.
+ * Mini apps (`/rpc/mini-apps`): what their screens and commands call, their icons, catalogs and
+ * installs. Switching one on or off and removing it go through the Store; a write answers with no
+ * body, and the `mini-apps` resource poke tells every surface to re-read. Spread into
+ * `backendClient`.
  */
 export const miniAppsApi = {
-  async listMiniApps(opts?: { projectId?: string | null }): Promise<MiniAppRecord[]> {
-    const json = await unwrap(
-      await client.rpc['mini-apps'].$get({ query: cleanQuery({ projectId: opts?.projectId }) }),
-    )
-    return json.miniApps
-  },
-
-  async setMiniAppEnabled(
-    name: string,
-    enabled: boolean,
-    opts?: { projectId?: string | null; agentId?: string },
-  ): Promise<void> {
-    await assertOk(
-      await client.rpc['mini-apps'].enable.$post({
-        json: {
-          name,
-          enabled,
-          projectId: opts?.projectId ?? null,
-          ...(opts?.agentId ? { agentId: opts.agentId } : {}),
-        },
-      }),
-    )
-  },
-
-  async removeMiniApp(name: string, opts?: { projectId?: string | null }): Promise<void> {
-    await assertOk(
-      await client.rpc['mini-apps'].remove.$post({
-        json: { name, projectId: opts?.projectId ?? null },
-      }),
-    )
-  },
-
   /**
    * Resolve a mini app command arg's DYNAMIC options on demand (its composer picker). The server
    * runs the app's declared options script; failures yield `[]`.

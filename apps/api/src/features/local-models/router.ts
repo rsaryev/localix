@@ -53,8 +53,11 @@ export function presetSection(model: RoutedModel, paths: InstallPaths): string[]
   const weights = file('weights')!
   const lines = [`[${spec.id}]`, `model = ${paths.modelFile(spec.id, weights.name)}`]
   if (spec.kind === 'embedding') {
-    // Non-causal embedding inputs must fit one micro-batch whole; four parallel slots.
+    // Non-causal embedding inputs must fit one micro-batch whole; four parallel slots. It serves
+    // background indexing, so it runs at low priority and sleeps between batches instead of
+    // polling, leaving the CPU to the person's chat model and the app.
     lines.push('embeddings = true', 'c = 4096', 'np = 4', 'b = 1024', 'ub = 1024')
+    lines.push('prio = -1', 'poll = 0')
     return lines
   }
   const context = plan?.context ?? Math.min(spec.contextLength ?? 8192, CHAT_CONTEXT_FALLBACK)

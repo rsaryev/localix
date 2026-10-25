@@ -20,6 +20,8 @@ import {
   type ResearchObservation,
 } from './research-ranking'
 
+import { prepareResearchArguments } from './research-input'
+
 export { type ResearchBackend, type ResearchSourceType }
 
 const boundedQuery = z.string().trim().min(1).max(500)
@@ -526,6 +528,7 @@ export function createResearchTool(deps: ResearchDeps = {}) {
     description:
       'Research a question in one call: search, rank across providers, safely read the best pages, and return source-labelled evidence. Pass known urls to read primary sources directly.',
     inputSchema: researchInputSchema,
+    prepareArguments: prepareResearchArguments,
     permissionResources: researchPermissionResources,
     mutates: false,
     executionMode: 'parallel',

@@ -172,6 +172,11 @@ export interface CcHookOutcome {
   updatedMCPToolOutput?: unknown
   /** SessionStart / UserPromptSubmit `hookSpecificOutput.sessionTitle`: names the session. */
   sessionTitle?: string
+  /**
+   * UserPromptSubmit / UserPromptExpansion `hookSpecificOutput.suppressOriginalPrompt`: a block
+   * message leaves the prompt text out.
+   */
+  suppressOriginalPrompt?: true
   /** SessionStart `initialUserMessage`: the session's first user message when nobody types one. */
   initialUserMessage?: string
   /** SessionStart `reloadSkills`: scan the skill folders again once the hooks are done. */

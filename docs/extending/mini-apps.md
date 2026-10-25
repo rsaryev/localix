@@ -32,7 +32,6 @@ for you starts enabled. A mini app's native backend runs as trusted code in the 
 | Teach the agent your app    | Write the mini app's `guide.md`; long material goes in pages under `guide/`.                               | The agent reads it with `mini_app_guide`; nothing of it sits in every prompt. |
 | Offer a mini app command    | Declare it under `commands` in `mini-app.json`, with its `prompt` and argument pickers.                    | It runs as `/<app>:<command>`.                                                |
 | Shape runtime behavior      | Return lifecycle hooks, a channel, or one memory provider from `register`.                                 | Hook timeouts and optional host services limit these contributions.           |
-| Register native agents      | Declare typed `contributions` in the mini app.                                                             | Availability, invocation policy and review remain separate.                   |
 | Add a native workbench      | Ship `ui/register.tsx`; the app builds the artifact and swaps it in place.                                 | Bundled mini apps, and your own under `~/.localix/mini-apps` once enabled.    |
 | Add portable UI             | Declare sandboxed HTML `views`; each opens as a work-item tab.                                             | A sandboxed view cannot use the host kit or native React registrations.       |
 | Run as its own Mac app      | The person installs the mini app as an app; see [Mini apps as Mac apps](../features/mini-app-mac-apps.md). | macOS only; the mini app needs a rail viewlet, its main screen.               |
@@ -251,7 +250,6 @@ refuses unknown keys, a plugin's `skills` or `hooks` among them:
 | `commands`               | map keyed by command name                                 | Each `{ prompt, description?, args?, argumentHint?, featured?, activateTools? }` (max 8 tools).                                      |
 | `views`                  | view array; max 6                                         | Sandboxed iframe UI, each a work-item tab; HTML capped at 1.5 MiB.                                                                   |
 | `promptSections`         | `{ title, content }` array; max 3                         | Static text under the app's prompt section; title max 80, content max 2,000 characters.                                              |
-| `contributions`          | typed declaration array; max 1,000                        | Native values through host-owned schemas; unknown kinds fail closed.                                                                 |
 | `fileAssociations`       | association array                                         | File types projected into desktop packaging; only bundled declarations reach the OS.                                                 |
 
 The native UI is found by convention at `ui/register.tsx`. A `views[]` entry is
@@ -279,14 +277,6 @@ argument, and `$ARGUMENTS` and `$1` as in Claude Code. `args` adds chips and pic
 `choice`, static `options` or an `optionsScript`, and an optional `{ arg, equals }` condition. The
 command runs as `/<app>:<command>`, and `activateTools` switches on up to eight deferred tools while
 it runs.
-
-### Native agent contributions
-
-A `contributions` entry
-`{ "kind": "agent", "key": "reviewer", "value": { "definition": { "handle": "reviewer", "instructions": "Review changes." }, "policyProposals": [] } }`
-registers a native agent. The registry issues its ID and keeps it while the key stays. Policy
-proposals need review in Capabilities; definitions reject tool allowlists. An invalid entry rejects
-the installation, and files dropped into a directory register nothing: use the install operation.
 
 ### Earlier layouts
 

@@ -194,7 +194,6 @@ export function createAppServicesPhase({
         readSnapshot: (...args) => capabilityRules.readSnapshot(...args),
         mutate: (...args) => capabilityRules.mutate(...args),
       },
-      capabilities: { apply: (...args) => capabilityApplyService.apply(...args) },
       agents: agentsService,
       user: {
         getAgentSettings: async (...args) =>

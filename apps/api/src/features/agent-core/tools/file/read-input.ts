@@ -51,17 +51,17 @@ export const readToolInputSchema = z.object({
     .describe(
       "'outline': the symbol outline with line spans — the cheap first look at a big file.",
     ),
-  offset: z
-    // Same tolerance as `start_line`/`end_line` two fields down. `offset` is the field a model is
-    // MOST likely to send as a string: its own description says to reuse "the offset suggested in a
-    // previous truncated read", i.e. copy a number out of a text marker. Two fields in one schema
-    // behaving differently for the same input is the defect.
+  byte_offset: z
+    // Same tolerance as `start_line`/`end_line` two fields down. This is the field a model is
+    // MOST likely to send as a string: its own description says to reuse "the byte_offset
+    // suggested in a previous truncated read", i.e. copy a number out of a text marker. Two fields
+    // in one schema behaving differently for the same input is the defect.
     .preprocess(stringToInteger, z.number().int().min(0))
     .optional()
-    .describe('Byte offset to continue a truncated read (use the suggested value).'),
+    .describe('Byte position to continue a truncated read (use the suggested value).'),
   start_line: lineNumber
     .optional()
-    .describe('1-based first line of a range, e.g. from `search`. Ignores `offset`.'),
+    .describe('1-based first line of a range, e.g. from `search`. Ignores `byte_offset`.'),
   end_line: lineNumber.optional().describe('Inclusive last line (default: end of file).'),
   limit: z
     .preprocess(stringToInteger, z.number().int().min(1))
@@ -78,14 +78,44 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 
 /**
+ * Claude Code's Read arguments, as this tool takes them: `file_path` is `path`, and `offset` is
+ * the LINE to start at (with `limit` lines), so it is `start_line`. Localix's own byte position
+ * is `byte_offset`. Two spellings of one thing that disagree are refused: the call would
+ * otherwise read the one the tool happens to prefer.
+ */
+function claudeCodeRead(input: Record<string, unknown>): Record<string, unknown> {
+  let out = input
+  if (out.file_path !== undefined) {
+    const { file_path, ...rest } = out
+    if (rest.path !== undefined && rest.path !== file_path)
+      throw new Error('read got both `path` and `file_path`, and they differ: pass one.')
+    out = { ...rest, path: file_path }
+  }
+  if (out.offset !== undefined) {
+    const { offset, ...rest } = out
+    const line = stringToInteger(offset)
+    if (typeof line !== 'number' || !Number.isInteger(line) || line < 0)
+      throw new Error(
+        'read `offset` is the line to start at: a whole number (1 is the first line).',
+      )
+    const start = Math.max(1, line)
+    if (rest.start_line !== undefined && stringToInteger(rest.start_line) !== start)
+      throw new Error('read got both `offset` (a line) and a different `start_line`: pass one.')
+    out = { ...rest, start_line: start }
+  }
+  return out
+}
+
+/**
  * The runtime's pre-validation hook. It validates the JSON schema and never runs the zod
  * `preprocess` above, so `toReadItems` has to run here as well to reach a real call.
  *
  * One more shape has a single reading: every item of a batch naming the same `cwd`, which the
  * schema keeps at the call level (LOCALIX-175 refused a three-file read for it).
  */
-export function prepareReadArguments(raw: unknown): unknown {
-  if (!isRecord(raw)) return raw
+export function prepareReadArguments(input: unknown): unknown {
+  if (!isRecord(input)) return input
+  const raw = claudeCodeRead(input)
   // An empty `path` with nothing else to read names the base directory itself (LOCALIX-157, -171).
   if (raw.path === '' && raw.reads === undefined) return { ...raw, path: '.' }
   if (raw.reads === undefined) return raw

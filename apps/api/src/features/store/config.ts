@@ -7,10 +7,8 @@ import type {
   StoreProvider,
 } from '@localixai/store'
 
-import { ConflictError, NotFoundError } from '../../lib/domain-errors'
-
-const unsupported = (ref: ListingRef) =>
-  new ConflictError('store_unsupported', `${ref.kind} packages have no settings to change here`)
+import { NotFoundError } from '../../lib/domain-errors'
+import { unsupported } from './unsupported'
 
 /** One install's settings, from the provider that stores them. */
 export async function configOf(
@@ -19,7 +17,7 @@ export async function configOf(
   scope: Scope,
   actor: StoreActor,
 ): Promise<ListingConfig> {
-  if (!provider.config) throw unsupported(ref)
+  if (!provider.config) throw unsupported(ref.kind, 'be configured here')
   const config = await provider.config(ref.id, scope, actor)
   if (!config)
     throw new NotFoundError('store_config_not_found', `${ref.id} has no settings in ${scope}`)
@@ -34,7 +32,7 @@ export async function saveConfig(
   values: Record<string, ConfigValue>,
   actor: StoreActor,
 ): Promise<void> {
-  if (!provider.setConfig) throw unsupported(ref)
+  if (!provider.setConfig) throw unsupported(ref.kind, 'be configured here')
   await provider.setConfig(ref.id, scope, values, actor)
 }
 

@@ -142,7 +142,7 @@ function renderText(doc: DocExtractText, offset: number): string {
   let hint = ''
   if (md.length > MAX_MODEL_CHARS) {
     md = md.slice(0, MAX_MODEL_CHARS)
-    hint = `\n\n… [truncated at ${MAX_MODEL_CHARS} characters — read the document again with offset=${
+    hint = `\n\n… [truncated at ${MAX_MODEL_CHARS} characters — read the document again with byte_offset=${
       offset + MAX_MODEL_CHARS
     } to read the next part.]`
   }
@@ -170,7 +170,7 @@ function renderTable(doc: DocExtractTable, offset: number): string {
   if (rows.length > PREVIEW_ROWS) {
     lines.push('')
     lines.push(
-      `… ${rows.length - PREVIEW_ROWS} more row(s). Pass offset=${offset + PREVIEW_ROWS} to page further.`,
+      `… ${rows.length - PREVIEW_ROWS} more row(s). Pass byte_offset=${offset + PREVIEW_ROWS} to page further.`,
     )
   }
   const out = lines.join('\n')

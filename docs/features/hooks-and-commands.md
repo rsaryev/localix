@@ -44,17 +44,40 @@ An argument containing `!` command syntax or `@path` therefore does not start an
 pass. Template shell commands still execute local code directly before the macro runs; inline tool
 grants do not govern that preprocessing.
 
-| Category          | Core commands                                |
-| ----------------- | -------------------------------------------- |
-| Autonomous        | `/loop`                                      |
-| Configuration     | `/model` (`/models`)                         |
-| Context           | client-scoped `/fork`, client-scoped `/open` |
-| Information       | `/help`, `/usage` (`/cost`), `/recap`        |
-| Memory and skills | `/memory`, `/skills` (`/skill`)              |
-| Extensions        | `/mcp`, `/plugin`, `/mini-app`, `/provider`  |
+| Category          | Core commands                                                                                             |
+| ----------------- | --------------------------------------------------------------------------------------------------------- |
+| Autonomous        | `/loop`                                                                                                   |
+| Configuration     | `/agents`, `/model` (`/models`), `/effort`, `/output-style`, `/theme`, `/plan`, `/permissions`, `/config` |
+| Context           | `/clear`, `/resume`, `/rename`, `/rewind`, `/copy`, `/fork`, `/open` (client-scoped)                      |
+| Information       | `/help`, `/usage` (`/cost`), `/context`, `/recap`                                                         |
+| Memory and skills | `/memory`, `/skills` (`/skill`)                                                                           |
+| Extensions        | `/mcp`, `/plugin`, `/mini-app`                                                                            |
+
+A command that takes an argument offers it as crumbs: pick from the list, or type the value.
 
 `/plugin` manages Claude Code plugins and their marketplaces; `/mini-app` lists, creates, switches
 on and off, removes and reloads mini apps (see [Mini apps](mini-apps.md)).
+
+### Everyday Claude Code commands
+
+The commands Claude Code users reach for run in Localix as thin wrappers: each calls what the app
+already does, so it behaves as the button or menu would. Those marked client run in the composer and
+need web or desktop; any other surface answers that a compatible client must handle them.
+
+| Command                                   | What it does                                                                                      | Crumbs                                                     |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `/clear` (client)                         | Starts a new chat in this project, as **New chat** does.                                          | None                                                       |
+| `/resume [chat]` (client)                 | Opens a recent chat; with none, opens the chat picker.                                            | Recent chats, newest first                                 |
+| `/rename <title>` (client)                | Retitles this chat, as renaming in the sidebar does. Without a title it shows its usage.          | The title, as text                                         |
+| `/rewind` (client)                        | Rolls this chat back to one of your messages after the same question the message menu asks.       | Your messages, newest first                                |
+| `/plan [task]` (client)                   | Switches this chat to Plan mode, then sends the task when you gave one.                           | The task, as text                                          |
+| `/context` (client)                       | Shows how full the context window is, from the numbers the usage indicator uses.                  | None                                                       |
+| `/copy [n]` (client)                      | Copies the nth latest reply, as **Copy text** on that message does; `1`, the latest, by default.  | Replies, newest first                                      |
+| `/permissions`, `/config` (client)        | Open Settings at Permissions, or at Preferences.                                                  | None                                                       |
+| `/effort` (client)                        | Sets an agent's reasoning level on the model it already runs: `/model`'s steps from the level on. | The agent (groups only), then the levels that model offers |
+| `/reload-plugins`, `/reload-skills`       | Run `/plugin reload`, which reloads plugins and their skills. Not listed in the menu.             | None                                                       |
+| `/help [command]`                         | Lists the commands, or describes one.                                                             | Command names                                              |
+| `/output-style [style]`, `/memory [fact]` | As before; the style is offered from the styles this chat can pick, the fact is typed as text.    | Styles, or text                                            |
 
 ### Native mini app hooks
 
@@ -121,7 +144,7 @@ from any `PreToolUse` handler stops the call without stopping the others from ru
 
 | Event                       | Effect of a blocking verdict                                                                     |
 | --------------------------- | ------------------------------------------------------------------------------------------------ |
-| `UserPromptSubmit`          | Rejects the prompt on any block.                                                                 |
+| `UserPromptSubmit`          | Rejects the prompt on any block; the message ends with the prompt, unless suppressed (below).    |
 | `PreToolUse`                | Stops the tool on any deny; `allow` and `ask` remain advisory.                                   |
 | `PostToolUse`               | Cannot undo execution; a block reason becomes added result context.                              |
 | `PostToolUseFailure`        | Cannot block; added context is appended to the failed result.                                    |
@@ -271,8 +294,21 @@ turn; print the JSON alone on stdout or on a line of its own. `asyncRewake` can 
 when that command exits with code 2. That wake is armed when the hook starts and delivered at most
 once; a hook that exits any other way, or is lost to an API restart, wakes nobody.
 
+### What a blocked prompt shows
+
+A blocked prompt never reaches the model, and the run fails with the hook's reason followed by
+`Original prompt:` and the text you sent. A hook that prints `"suppressOriginalPrompt": true` inside
+`hookSpecificOutput` leaves the text out, whether it blocks with `decision: "block"` or by exiting 2
+(the JSON on stdout is still read). The flag changes only that message: the prompt stays in your
+conversation's transcript. A `UserPromptExpansion` hook may send it too, as Claude Code's types
+allow, but an expansion block never echoed the prompt, so there is nothing to leave out.
+
 ## Limits
 
+- `strictPluginOnlyCustomization` with `hooks` in managed settings stops the `hooks` of user,
+  project and local settings and of skills from your folders; the organization's hooks and plugins'
+  keep running. See
+  [Use your Claude Code settings](../extending/claude-code-settings.md#keys-that-lock-things-down).
 - Declarative hooks enter through an enabled plugin, the invoked skill or agent's run-scoped
   frontmatter, and the `hooks` of your Claude Code settings files for the conversation's folder:
   `~/.claude/settings.json` and managed settings always, a project's `.claude/settings.json` and
@@ -301,8 +337,8 @@ once; a hook that exits any other way, or is lost to an API restart, wakes nobod
   synchronous JavaScript that blocks the API event loop.
 - `onSessionStart` is fire-and-forget with rejected promises logged. A synchronous throw from the
   callback occurs before that promise handler and can propagate into run startup.
-- `/fork` and `/open` require web/desktop. A client without those surfaces omits them from its
-  forwarded server command list.
+- `/fork`, `/open` and the client commands above require web/desktop. A client without those
+  surfaces omits them from its forwarded server command list.
 - A plugin, mini app or skill macro sent while a run is active waits in the queue as a whole command
   — its badge, model override, tool grants and hooks — and runs as its own turn.
 - `/model` walks the model picker's steps in the composer — agent (groups only, with **All

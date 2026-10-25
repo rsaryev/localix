@@ -72,7 +72,7 @@ lists scroll within a bounded panel, with Manage mini apps fixed below the catal
 | Outcome                        | Mechanism                                                                                                | Boundary                                                    |
 | ------------------------------ | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
 | Arrange work side by side      | Resize the main and companion columns; reorder tabs within their strips                                  | Mobile shows only the focused group at one time             |
-| Keep session tabs together     | Session tabs appear in the named conversation's root workspace                                           | Settings, Usage and agent profiles are app-wide             |
+| Keep session tabs together     | Session tabs appear in the named conversation's root workspace                                           | Settings, Usage and the Store are app-wide                  |
 | Step into a sub-session        | Its chat opens as a tab beside its parent's; the files, terminals and Browser around it stay             | A sub-session has no workspace of its own; start a new chat |
 | Restore a working layout       | The grid saves its split tree, active group, and restorable tabs locally                                 | Ephemeral and non-restorable tabs are omitted               |
 | Reuse an open surface          | Browser, Problems, Activity and Search reuse their tab in the root workspace                             | Another root workspace gets its own copy                    |
@@ -115,9 +115,9 @@ but is disabled.
 Session tabs are placed in their root conversation's workspace; [Kanban](task-board.md), Browser,
 Problems, Activity and Search are among them. Each open names its session — the chat a tool card, a
 link or a command belongs to — and a tab never takes the session of whichever chat happens to be on
-screen. Only app-level tabs (Settings, Usage, an agent profile, and mini app views registered as
-global) belong to no session and stay available in every chat. A saved layout drops a session tab
-that names no session.
+screen. Only app-level tabs (Settings, Usage, the Store, and mini app views registered as global)
+belong to no session and stay available in every chat. A saved layout drops a session tab that names
+no session.
 
 A session's workspace is its ROOT conversation's (`apps/ui/src/shared/lib/workspaceOf.ts`). A
 sub-session of any kind — a delegated agent, a thread, a fork — has none of its own: what it opens

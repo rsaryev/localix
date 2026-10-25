@@ -1,3 +1,4 @@
+import type { AgentPermissionMode } from '../../../contracts/agent-permission-mode'
 import type { AgentRuntimeStatus, ReasoningEffort } from '../../../db/types'
 import type { DelegationPriority, LaneSpec } from '../delegation-lanes'
 import type { DelegationPosition } from '../delegation-hierarchy'
@@ -46,6 +47,10 @@ export interface DelegateAgentType {
   isolation?: 'isolated'
   /** Its exact tool list, when its file has one; empty when no entry named a tool here. */
   tools?: readonly string[]
+  /** Where the definition comes from: `plugin` and built-in agents ignore the fields below. */
+  source?: string
+  /** The file's `permissionMode`, as written. */
+  permissionMode?: string
 }
 
 /** Who a task goes to, as the catalog resolves it and Access admits it. */
@@ -98,6 +103,10 @@ export interface TaskDelegationOptions {
         worktreeByHook?: true
         /** The `agent_type` SubagentStart named (`general-purpose` for the delegator itself). */
         agentType?: string
+        /** The mode the agent's file asked for, when the person owns the file. */
+        agentPermissionMode?: AgentPermissionMode
+        /** A fork: the line it inherits, as the parent held it at the call (`fork-capture.ts`). */
+        fork?: { baseMessageId: string | null; snapshotMessageId: string }
       }
       projectId?: string
       pinnedSkills?: string[]
@@ -126,6 +135,30 @@ export interface TaskDelegationOptions {
    * nothing.
    */
   onSubagentStart?: (agentType: string, agentId: string) => Promise<string | undefined>
-  /** Copy this conversation, filtered, into a child started with `context: "conversation"`. */
-  copyConversation: (childSessionId: string) => Promise<void>
+  /**
+   * Lend the delegating run's own line to a fork (`delegate-fork.ts`): `capture` freezes, at the
+   * call, what the run was sent and where it stands; `persist` writes it for the child once its
+   * session exists. Absent where the run cannot lend it, and a fork is then refused.
+   */
+  fork?: {
+    capture: (toolCallId: string) => Promise<ForkCapture>
+    persist: (childSessionId: string, capture: ForkCapture) => Promise<void>
+  }
+}
+
+/** The route a fork runs on: its parent's, whatever the call or an agent file might name. */
+export interface ForkRoute {
+  providerConnectionId: string | null
+  modelId: string
+  reasoningEffort?: ReasoningEffort
+}
+
+/** What a fork is born with. `host` is the chat's own state, carried to `persist` untouched. */
+export interface ForkCapture {
+  /** The parent's last settled row before the call; the fork reads the parent's line up to it. */
+  baseMessageId: string | null
+  /** The fork's own copy of the row the call was made in, written by `persist`. */
+  snapshotMessageId: string
+  route: ForkRoute
+  host?: unknown
 }

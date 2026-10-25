@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { defineAgentTool, type AgentTool } from '@localixai/agent/agents'
 import { ACTIVATE_TOOLS_TOOL_NAME } from '../../tool-names'
+import { normalizeMcpToolAlias } from '../../../ext/cc-tool-names'
 
 /** One external tool advertised through the compact activation catalog. */
 export interface DeferredToolEntry {
@@ -21,7 +22,7 @@ const inputSchema = z.object({
     .array(z.string().trim().min(1))
     .min(1)
     .max(MAX_TOOLS_PER_ACTIVATION)
-    .describe('Exact tool names copied from the available-tools catalog.'),
+    .describe('Exact tool names from the catalog, or an MCP tool as mcp__server__tool.'),
 })
 
 export interface ActivateToolsDetails {
@@ -44,10 +45,13 @@ const shownName = (tool: AgentTool): string => tool.modelName ?? tool.name
 export function renderToolCatalog(entries: readonly DeferredToolEntry[]): string {
   return [...entries]
     .sort((a, b) => shownName(a.tool).localeCompare(shownName(b.tool)))
-    .map(
-      (entry) =>
-        `- ${shownName(entry.tool)} [${entry.source}]: ${shortDescription(entry.tool.description)}`,
-    )
+    .map((entry) => {
+      // A skill or prompt written for Claude Code names an MCP tool `mcp__<server>__<tool>`.
+      const address = entry.tool.aliases?.find((alias) => alias.startsWith('mcp__'))
+      const name = shownName(entry.tool)
+      const also = address && address !== name ? ` (${address})` : ''
+      return `- ${name}${also} [${entry.source}]: ${shortDescription(entry.tool.description)}`
+    })
     .join('\n')
 }
 
@@ -112,7 +116,7 @@ export function createActivateToolsTool(options: ActivateToolsToolOptions) {
     label: 'Activate tools',
     activeVerb: 'Activating tools',
     description: [
-      'Activate plugin or MCP tools by exact name: their full schemas arrive on the next model turn and stay for the session. A tool already in your tool list is active — call it directly.',
+      'Activate plugin or MCP tools by exact name (an MCP tool also by its mcp__server__tool address): their full schemas arrive on the next model turn and stay for the session. A tool already in your tool list is active — call it directly.',
       catalog
         ? `Select at most ${MAX_TOOLS_PER_ACTIVATION} names from this catalog:\n${catalog}`
         : 'No tools remain to activate. Call the tools in your tool list directly.',
@@ -138,7 +142,12 @@ export function createActivateToolsTool(options: ActivateToolsToolOptions) {
             const name = raw.trim()
             const modelNamed = nameByModelName.get(name)
             if (modelNamed) return modelNamed
-            const own = availableByName.has(name) ? name : nameByAlias.get(name)
+            // `mcp__server__tool` names the tool whose own name is `mcp_server_tool`.
+            const address = normalizeMcpToolAlias(name)
+            const own = availableByName.has(name)
+              ? name
+              : (nameByAlias.get(name) ??
+                (address && availableByName.has(address) ? address : undefined))
             if (own && shown(own) !== name) renamed.push(`${name} is ${shown(own)}`)
             return own ?? name
           }),

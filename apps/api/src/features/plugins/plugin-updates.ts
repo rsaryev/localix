@@ -20,7 +20,7 @@ import {
  * installing (`update-candidates.ts`): on demand with a refresh of the listings, and by every pass.
  * An apply runs one job at a time through checking → downloading → installing → done or failed; a
  * failed update keeps the version before, because the install only swaps a record once the new
- * version is in place. Every move tells the subscribers (the `plugin-updates` poke); a finished
+ * version is in place. Every move tells the subscribers (the Store's plugin provider); a finished
  * update is announced by the install itself, through the plugin change notices.
  *
  * In-memory status, like the mini app store's installs: it is rebuilt by the next check.

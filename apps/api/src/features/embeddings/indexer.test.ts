@@ -90,3 +90,57 @@ describe('semantic indexer', () => {
     await index.indexer.stop()
   })
 })
+
+describe('a reconcile in the background', () => {
+  // The Store's collection grows while it is scanned (fetched packages add cards): the status
+  // bar read 134% because the total was counted once, at the start.
+  async function growing(pace?: () => Promise<void>) {
+    const db = createDatabase()
+    await migrateToLatest(db)
+    const store = createSemanticStore(db)
+    const cache = createVectorCache(store, () => FAKE_DIMENSIONS)
+    const all = Array.from({ length: 100 }, (_, i) => item(`k${i}`, `card ${i}`))
+    let counted = 40
+    const source: SemanticSource = {
+      collection: 'store',
+      version: 1,
+      count: async () => counted,
+      scan: async (cursor, limit) => {
+        counted = all.length
+        const from = cursor ? Number(cursor) : 0
+        const items = all.slice(from, from + limit)
+        return { items, next: from + limit < all.length ? String(from + limit) : null }
+      },
+      read: async () => [],
+    }
+    const seen: Array<{ scanned: number | null; total: number | null }> = []
+    const indexer = createIndexer({
+      store,
+      cache,
+      sources: () => [source],
+      onProgress: () => {
+        const [c] = indexer.progress().collections
+        if (c?.reconciling) seen.push({ scanned: c.scanned, total: c.total })
+      },
+      ...(pace ? { pace } : {}),
+    })
+    indexer.start(createFakeEngine({ calls: [] }))
+    await indexer.whenSettled()
+    await indexer.stop()
+    return seen
+  }
+
+  test('progress never passes its total when the collection grows during the scan', async () => {
+    const seen = await growing()
+    expect(seen.filter((p) => (p.scanned ?? 0) > (p.total ?? Infinity))).toEqual([])
+    expect(seen.at(-1)).toEqual({ scanned: 100, total: 100 })
+  })
+
+  test('it yields to the rest of the app between pages, at a pace it is given', async () => {
+    let yields = 0
+    await growing(async () => {
+      yields++
+    })
+    expect(yields).toBe(1)
+  })
+})

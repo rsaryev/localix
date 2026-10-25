@@ -11,6 +11,7 @@ import {
   type SettingsLayer,
 } from '../cc-settings/settings-files'
 import { claudeCodeSettingsEnv } from '../cc-settings/settings-env'
+import { pluginOnlyLocks } from '../cc-settings/settings-policy'
 import { claudeCodeTrusts } from '../cc-settings/settings-trust'
 import { mcpServerPolicy } from './claude-code-mcp-policy'
 import { normalizeMcpServerEntry } from './normalize'
@@ -41,6 +42,12 @@ export interface ClaudeCodeMcpInput extends SettingsFilesInput {
   /** The person's servers in Localix's registry, and the run's plugin servers. */
   own: readonly McpServerRecord[]
   plugins: readonly McpServerRecord[]
+  /**
+   * Servers a subagent's own file defines (`agent-servers.ts`). They load after every configured
+   * one, so a name already taken keeps its configured server, and the allow and deny lists judge
+   * them like the rest.
+   */
+  extra?: readonly McpServerRecord[]
   userId: string
   projectId: string
 }
@@ -95,7 +102,8 @@ export function claudeCodeMcpServers(input: ClaudeCodeMcpInput): McpServerRecord
   const provided = layers
     .filter((l) => l.source === 'policy')
     .map((l) => (isRecord(l.settings.managedMcpServers) ? l.settings.managedMcpServers : {}))
-  const approved = approval(layers, claudeCodeTrusts(input))
+  const trusted = claudeCodeTrusts(input)
+  const approved = approval(layers, trusted)
   const mcpJson =
     readJson(join(cwd, '.mcp.json')) ?? (root ? readJson(join(root, '.mcp.json')) : undefined)
 
@@ -104,7 +112,8 @@ export function claudeCodeMcpServers(input: ClaudeCodeMcpInput): McpServerRecord
     ...(exclusive ? [['managed', serversOf(exclusive)] as [Scope, Record<string, unknown>]] : []),
     ...provided.map((servers): [Scope, Record<string, unknown>] => ['managed', servers]),
   ]
-  if (!exclusive) {
+  // `strictPluginOnlyCustomization` with `mcp`: `~/.claude.json` and `.mcp.json` are closed.
+  if (!exclusive && !pluginOnlyLocks(layers).has('mcp')) {
     for (const servers of local) ranked.push(['local', servers])
     const project = Object.fromEntries(
       Object.entries(serversOf(mcpJson)).filter(([name]) => approved(name)),
@@ -124,10 +133,11 @@ export function claudeCodeMcpServers(input: ClaudeCodeMcpInput): McpServerRecord
   for (const [scope, servers] of ranked)
     for (const [name, raw] of Object.entries(servers)) {
       if (!isRecord(raw) || taken.has(name)) continue
-      const record = recordOf(scope, name, raw, input)
+      const record = recordOf(scope, name, raw, input, trusted)
       if (record) add(record, scope === 'managed')
     }
   for (const server of exclusive ? [] : input.plugins) add(server, false)
+  for (const server of exclusive ? [] : (input.extra ?? [])) add(server, false)
   // The folder's settings `env` sets the limits Claude Code reads from its environment.
   const settingsEnv = claudeCodeSettingsEnv(input)
   return Object.keys(settingsEnv).length > 0 ? out.map((s) => ({ ...s, settingsEnv })) : out
@@ -138,10 +148,16 @@ function recordOf(
   name: string,
   raw: Record<string, unknown>,
   input: ClaudeCodeMcpInput,
+  trusted: boolean,
 ): McpServerRecord | undefined {
   try {
     const parsed = normalizeMcpServerEntry(name, raw, input.projectId)
     if (parsed.enabled === false) return undefined
+    // A `headersHelper` is a shell command: a project or local server's runs only in a trusted
+    // folder, and until then the server connects with its static headers alone (mcp.md, "Trust a
+    // folder before its headersHelper runs"). Project servers are also approved above to load at all.
+    if ((scope === 'project' || scope === 'local') && !trusted && 'headersHelper' in parsed.config)
+      delete (parsed.config as { headersHelper?: string }).headersHelper
     return {
       id: `claude-code:${scope}:${name}`,
       userId: input.userId,

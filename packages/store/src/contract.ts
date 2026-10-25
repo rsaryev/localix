@@ -152,6 +152,18 @@ export const listingDetailSchema = listingSchema.extend({
   /** License, size, API version, homepage … in the provider's words. */
   facts: z.array(z.object({ label: z.string(), value: z.string() })),
   components: z.array(componentSchema),
+  /**
+   * Something the person should know about this item now, with the one thing to do about it: a
+   * skill unused for long, archived soon unless pinned (`action` runs as the item's action).
+   */
+  notice: z
+    .object({
+      text: z.string(),
+      action: z
+        .object({ id: z.string(), label: z.string(), help: z.string().optional() })
+        .optional(),
+    })
+    .optional(),
 })
 export type ListingDetail = z.infer<typeof listingDetailSchema>
 

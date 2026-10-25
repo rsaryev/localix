@@ -32,12 +32,12 @@ describe('CC_TOOL_NAME_MAP', () => {
       'teamdelete',
     ])
       expect(CC_TOOL_NAME_MAP[name]).toBeUndefined()
-    expect(CC_TOOL_NAME_MAP['sendmessage']).toBeUndefined()
+    expect(CC_TOOL_NAME_MAP['sendmessage']).toBe('delegate')
     // One composite engine capability preserves both legacy authorities.
     expect(CC_TOOL_NAME_MAP['webfetch']).toBe('research')
     expect(CC_TOOL_NAME_MAP['websearch']).toBe('research')
     expect(CC_TOOL_NAME_MAP['askuserquestion']).toBe('ask')
-    expect(CC_TOOL_NAME_MAP['exitplanmode']).toBeUndefined()
+    expect(CC_TOOL_NAME_MAP['exitplanmode']).toBe('plan')
   })
 
   it('is immutable (Readonly)', () => {
@@ -48,19 +48,18 @@ describe('CC_TOOL_NAME_MAP', () => {
 
 describe('CC_SEMANTIC_GAPS', () => {
   it('contains the semantic-gap entries', () => {
-    expect(CC_SEMANTIC_GAPS['sendmessage']).toBeUndefined()
+    expect(CC_SEMANTIC_GAPS['sendmessage']).toContain('delegate')
     // MultiEdit is native now: `edit` takes an ordered `edits` array.
     expect(CC_SEMANTIC_GAPS['multiedit']).toBeUndefined()
     expect(CC_SEMANTIC_GAPS['notebookedit']).toContain('`edit`')
-    // An unmapped name is dropped, not approximated — a gap note would describe a mapping
-    // that no longer exists.
+    // Team lifecycle names are dropped without a note.
     expect(CC_SEMANTIC_GAPS['teamcreate']).toBeUndefined()
     expect(CC_SEMANTIC_GAPS['teamdelete']).toBeUndefined()
   })
 
-  it('no longer flags webfetch/websearch as gaps (they map to real engine tools)', () => {
-    expect(CC_SEMANTIC_GAPS['webfetch']).toBeUndefined()
-    expect(CC_SEMANTIC_GAPS['websearch']).toBeUndefined()
+  it('notes that webfetch/websearch share the one `research` grant', () => {
+    expect(CC_SEMANTIC_GAPS['webfetch']).toContain('research')
+    expect(CC_SEMANTIC_GAPS['websearch']).toContain('research')
   })
 })
 

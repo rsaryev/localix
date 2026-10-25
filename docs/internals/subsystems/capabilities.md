@@ -72,28 +72,14 @@ effect `ask` leaves it on and prompts.
 rules editor must supply its loaded revision when saving; conflicting saves write nothing. Narrow
 switch changes recompute against the current rules inside a transaction.
 
-### Registered agent policy review
-
-The same Capabilities rule editor handles registered agents. Its read response includes the owning
-project, registration revision and proposed native rules. Proposals appear separately and remain
-inert until the user adds them to the draft and explicitly publishes the complete reviewed policy.
-Every edit applies deliberately: the editor holds it and an explicit **Apply** writes it. It used to
-save 300 ms after each keystroke, and a rule field is typed one character at a time, so `tool:ba`
-was persisted on the way to `tool:bash`. Invocation and other non-tool actions retain their native
-action names in the editor.
-
-Publication checks both loaded revisions and atomically writes the policy and its
-`capability_policy_binding`. A later registration or policy change requires another review. A
-conflict retains the draft and offers an explicit reload. Publication applies exactly the reviewed
-rules; availability is not inferred from an import. Policy review follows the owner and stable ID
-even when the definition belongs to a project; invocation still requires the correct project scope.
+### Agent policy
 
 An agent is a Claude Code file, so it needs no registration review: a new file gets the default
 policy in the same transaction as its binding (`apps/api/src/features/agents/bindings/`), and
 `apps/ui/src/features/settings/ui/permissions/PermissionRulesView.tsx` edits its rules with the
-shared editor. Verified bundled mini app manifests are reconciled by
-`apps/api/src/features/mini-apps/sync-bundled-contributions.ts`; installed third-party declarations
-do not receive automatic publication or authority.
+shared editor. Every edit applies deliberately: the editor holds it and an explicit **Apply** writes
+it, because a rule field is typed one character at a time and `tool:ba` must not be persisted on the
+way to `tool:bash`.
 
 ### One list, and the last match wins
 
@@ -219,7 +205,7 @@ seed stays a seed.
 
 Between versions the way back is the editor's, not the seeder's. `readRules` answers an agent scope
 with `defaults` — `builtinAgentPresetFor(agentId)`, which is null for every agent the user or an
-extension owns — and the Permission rules tab offers **Reset to defaults** exactly while the stored
+extension owns — and Settings → Permissions offers **Reset to defaults** exactly while the stored
 list differs from it. Reset STAGES that list rather than writing it, so the shipped answer is read
 on screen before **Apply** replaces anything; the write is the ordinary rules save, so the revision
 check still refuses to land on top of a newer one. A second seeding path would have had to answer
@@ -235,12 +221,6 @@ and no marker, so a record that later grows a preset is seeded then. And an agen
 has rules with NO marker at all is an install that configured it by hand before presets existed: it
 is recorded as current and nothing is written, because those rows were never ours to replace. A
 version bump only replaces a policy that still matches a known shipped baseline.
-
-Managed bundled mini apps publish native agent contributions into each exact registry scope before
-agent catalog reads. Their verified policy proposals can seed defaults and bind policy review to the
-registration revision. User-installed lookalikes receive no such grant. An instruction-only update
-can retain a valid policy review; policy changes with custom rules require review. Removed
-declarations are archived, and source denials withdraw the registered agent immediately.
 
 ### A rule can say who wrote it
 

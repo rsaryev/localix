@@ -5,6 +5,7 @@ import { join } from 'node:path'
 
 import { MAX_SKILL_MARKDOWN_BYTES } from '../agent-core/skill-file'
 import { collectMarkdownFiles, parseAgentFile, parseCommandFile } from './discovery-cc-files'
+import { buildLoadedAgent } from './loader-contract'
 import type { PluginArtifactDiagnostic } from './discovery-entrypoints'
 
 describe('bounded plugin command/agent markdown discovery', () => {
@@ -96,13 +97,51 @@ describe('bounded plugin command/agent markdown discovery', () => {
 })
 
 describe('agent tools lists', () => {
+  test.each([
+    ['Agent(worker, researcher), Read', ['delegate', 'read'], ['worker', 'researcher']],
+    ['[Task(worker), Read]', ['delegate', 'read'], ['worker']],
+    ['Agent, Read', ['delegate', 'read'], undefined],
+    ['Read', ['read'], undefined],
+  ])('tools: %s names the types it may delegate to', async (tools, mapped, types) => {
+    const root = await fs.mkdtemp(join(tmpdir(), 'plugin-agent-types-'))
+    try {
+      const agent = join(root, 'lead.md')
+      await fs.writeFile(agent, `---\nname: lead\ndescription: d\ntools: ${tools}\n---\nLead.\n`)
+      const parsed = await parseAgentFile(agent)
+      expect(parsed?.tools).toEqual(mapped)
+      expect(parsed?.agentTypes).toEqual(types)
+      expect(buildLoadedAgent('p', parsed!, (text) => text).agentTypes).toEqual(types)
+    } finally {
+      await fs.rm(root, { recursive: true, force: true })
+    }
+  })
+
+  test('a disallowedTools entry with a specifier survives to the loaded agent as a pattern', async () => {
+    const root = await fs.mkdtemp(join(tmpdir(), 'plugin-agent-deny-'))
+    try {
+      const agent = join(root, 'safe.md')
+      await fs.writeFile(
+        agent,
+        '---\nname: safe\ndescription: d\ndisallowedTools: Bash(rm *), Write\n---\nBe safe.\n',
+      )
+      const parsed = await parseAgentFile(agent)
+      expect(parsed?.disallowedTools).toEqual(['bash(rm *)', 'write'])
+      expect(buildLoadedAgent('p', parsed!, (text) => text).disallowedTools).toEqual([
+        'bash(rm *)',
+        'write',
+      ])
+    } finally {
+      await fs.rm(root, { recursive: true, force: true })
+    }
+  })
+
   test('a tools list of only unmapped names stays an empty allowlist, not the inherited surface', async () => {
     const root = await fs.mkdtemp(join(tmpdir(), 'plugin-agent-tools-'))
     try {
       const agent = join(root, 'planner.md')
       await fs.writeFile(
         agent,
-        '---\nname: planner\ndescription: plans\ntools: TodoWrite, ExitPlanMode\ndisallowedTools: TodoWrite\n---\nPlan.\n',
+        '---\nname: planner\ndescription: plans\ntools: TodoWrite, EnterPlanMode\ndisallowedTools: TodoWrite\n---\nPlan.\n',
       )
       const parsed = await parseAgentFile(agent)
       expect(parsed?.tools).toEqual([])

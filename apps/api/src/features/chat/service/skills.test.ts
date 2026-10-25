@@ -4,7 +4,11 @@ import { makeTempDir } from '@localixai/testing'
 import { join } from 'node:path'
 import { toFileSkillRecord } from './skills'
 import type { DiscoveredSkill } from '../../agent-core/skill-discovery'
-import { discoverFilesystemSkills, writeSkillFile } from '../../agent-core/skill-discovery'
+import {
+  deleteSkillByName,
+  discoverFilesystemSkills,
+  writeSkillFile,
+} from '../../agent-core/skill-discovery'
 
 const skill = (over: Partial<DiscoveredSkill> = {}): DiscoveredSkill =>
   ({
@@ -105,7 +109,7 @@ describe('writeSkillFile — frontmatter is preserved, not rebuilt', () => {
   test('an edit that changes only the description keeps every other frontmatter key', async () => {
     const base = await tmpBase('skill-edit')
     try {
-      const dir = join(base, '.localix/skills/deploy')
+      const dir = join(base, '.claude/skills/deploy')
       await fs.mkdir(dir, { recursive: true })
       await fs.writeFile(
         join(dir, 'SKILL.md'),
@@ -151,7 +155,7 @@ describe('writeSkillFile — frontmatter is preserved, not rebuilt', () => {
   test('frontmatter keys the model does not know about survive too', async () => {
     const base = await tmpBase('skill-unmodelled')
     try {
-      const dir = join(base, '.localix/skills/deploy')
+      const dir = join(base, '.claude/skills/deploy')
       await fs.mkdir(dir, { recursive: true })
       await fs.writeFile(
         join(dir, 'SKILL.md'),
@@ -187,7 +191,7 @@ describe('writeSkillFile — frontmatter is preserved, not rebuilt', () => {
     }
   })
 
-  test('a foreign .claude skill is ignored and a Localix skill is written to .localix', async () => {
+  test('a skill already in .claude/skills is edited in place, keeping the keys Localix does not model', async () => {
     const base = await tmpBase('skill-claude')
     try {
       const dir = join(base, '.claude/skills/deploy')
@@ -200,17 +204,15 @@ describe('writeSkillFile — frontmatter is preserved, not rebuilt', () => {
 
       await writeSkillFile(base, { name: 'deploy', description: 'new', content: 'body' }, 'project')
 
-      const foreign = await fs.readFile(join(dir, 'SKILL.md'), 'utf8')
-      expect(foreign).toContain('description: old')
-      expect(foreign).toContain('version: 9')
-      const local = await fs.readFile(join(base, '.localix/skills/deploy/SKILL.md'), 'utf8')
-      expect(local).toContain('description: new')
+      const edited = await fs.readFile(join(dir, 'SKILL.md'), 'utf8')
+      expect(edited).toContain('description: new')
+      expect(edited).toContain('version: 9')
     } finally {
       await fs.rm(base, { recursive: true, force: true })
     }
   })
 
-  test('a brand-new skill gets the canonical .localix/skills path and minimal frontmatter', async () => {
+  test('a brand-new skill gets the canonical .claude/skills path and minimal frontmatter', async () => {
     const base = await tmpBase('skill-new')
     try {
       const dir = await writeSkillFile(
@@ -218,11 +220,57 @@ describe('writeSkillFile — frontmatter is preserved, not rebuilt', () => {
         { name: 'fresh', description: 'a\tb\nc', content: '  body  ' },
         'global',
       )
-      expect(dir).toBe(join(base, '.localix/skills/fresh'))
+      expect(dir).toBe(join(base, '.claude/skills/fresh'))
       const raw = await fs.readFile(join(dir, 'SKILL.md'), 'utf8')
       // Newlines/tabs collapse — YAML frontmatter values here are single-line.
       expect(raw).toBe('---\nname: fresh\ndescription: a b c\n---\n\nbody\n')
     } finally {
+      await fs.rm(base, { recursive: true, force: true })
+    }
+  })
+
+  test('a created skill is found by Claude Code-style discovery; .localix/skills is no longer read', async () => {
+    const base = await tmpBase('skill-cc-layout')
+    try {
+      const dir = await writeSkillFile(
+        base,
+        { name: 'fresh', description: 'd', content: 'body' },
+        'project',
+      )
+      const legacy = join(base, '.localix/skills/legacy')
+      await fs.mkdir(legacy, { recursive: true })
+      await fs.writeFile(join(legacy, 'SKILL.md'), '---\nname: legacy\ndescription: d\n---\nb\n')
+
+      const found = await discoverFilesystemSkills(base, join(base, 'no-home'))
+
+      expect(dir).toBe(join(base, '.claude/skills/fresh'))
+      expect(found.map((s) => s.name)).toEqual(['fresh'])
+      expect(await deleteSkillByName(base, 'fresh')).toBe(true)
+      expect(await fs.exists(dir)).toBe(false)
+    } finally {
+      await fs.rm(base, { recursive: true, force: true })
+    }
+  })
+
+  test('only a new skill is recorded as created in Localix, not an edit of one that was there', async () => {
+    const base = await tmpBase('skill-authored')
+    const { setSkillAuthoredRecorder } = await import('../../agent-core/skill-usage-recorder')
+    const made: string[] = []
+    setSkillAuthoredRecorder((name, scope, projectId) => {
+      made.push(`${scope}:${projectId}:${name}`)
+    })
+    try {
+      const input = { name: 'a', description: 'd', content: 'b' }
+      await writeSkillFile(base, input, 'project', { projectId: 'p1' })
+      await writeSkillFile(base, { ...input, description: 'e' }, 'project', { projectId: 'p1' })
+      const cc = join(base, '.claude/skills/b')
+      await fs.mkdir(cc, { recursive: true })
+      await fs.writeFile(join(cc, 'SKILL.md'), '---\nname: b\ndescription: x\n---\nb\n')
+      await writeSkillFile(base, { ...input, name: 'b' }, 'project', { projectId: 'p1' })
+
+      expect(made).toEqual(['project:p1:a'])
+    } finally {
+      setSkillAuthoredRecorder(null)
       await fs.rm(base, { recursive: true, force: true })
     }
   })

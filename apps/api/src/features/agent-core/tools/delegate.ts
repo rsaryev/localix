@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { defineAgentTool, type CallClass } from '@localixai/agent/agents'
 
 import { TOOL } from '../tool-names'
+import { asksForFork, FORK_AGENT } from './delegate-fork'
 import type { TaskDelegationResult } from './task-delegation'
 import {
   closeRun,
@@ -16,11 +17,11 @@ import {
  * `delegate` — hand one task to an agent in a child session, and keep a line to each child.
  *
  * The child is a fresh run of the delegating agent itself (`general-purpose`), or of another agent of
- * the catalog (`agent`, `delegate-agent-type.ts`). It starts from the
- * task alone, or with this conversation as filtered context (`context: "conversation"`,
- * `run/delegate-context.ts`). By default the call returns at once and the child's report arrives
- * as a later message; `wait: true` holds the call until the child reports
- * (`delegate-start.ts`).
+ * the catalog (`agent`, `delegate-agent-type.ts`). It starts from the task alone, or it is a fork
+ * (`context: "fork"`, or `agent: "fork"` as Claude Code writes it): the delegating agent's own line
+ * continued, with everything it has seen (`delegate-fork.ts`). By default the call returns at once
+ * and the child's report arrives as a later message; `wait: true` holds the call until the child
+ * reports (`delegate-start.ts`).
  *
  *   (no action)  start: `task` + `title`, optionally `agent`, `context`, `wait`
  *   message      amend a child — joins its running step, or runs a finished one again
@@ -28,23 +29,24 @@ import {
  *   close        end one or more children for good — nothing wakes them after
  *   list         this session's children: status, queue place, spend
  */
-export const DELEGATE_CONTEXTS = ['none', 'conversation'] as const
+export const DELEGATE_CONTEXTS = ['none', 'fork'] as const
 export type DelegateContext = (typeof DELEGATE_CONTEXTS)[number]
 
 export interface DelegateRequest {
   task: string
   title: string
-  /** Handle or id of the agent to run the task; the delegating agent itself when absent. */
+  /** Handle or id of the agent to run the task; the delegating agent itself when absent. Never set on a fork. */
   agent?: string
+  /** `fork`: the child continues the delegator's own line (`delegate-fork.ts`). */
   context: DelegateContext
   wait: boolean
   /**
    * The child's model, an alias (`haiku`, `sonnet`, `opus`, `inherit`) or an id: the caller's, as
    * Claude Code's Agent tool takes it, or a host's pick (a Claude Code mod's `agent.spawn`), which
-   * wins. Absent, the child runs on the parent's or its agent's.
+   * wins. Absent, the child runs on the parent's or its agent's. Never set on a fork.
    */
   model?: string
-  /** The child's reasoning effort for this call (Claude Code's Agent `effort`). */
+  /** The child's reasoning effort for this call (Claude Code's Agent `effort`). Never set on a fork. */
   effort?: string
   /** `worktree`: the child works in a fresh git worktree of the chat's repository. */
   isolation?: 'worktree'
@@ -84,7 +86,9 @@ const inputSchema = z
     context: z
       .enum(DELEGATE_CONTEXTS)
       .optional()
-      .describe('Start: what the child sees besides the task. Default none.'),
+      .describe(
+        'Start: fork to continue this conversation as you; none (default) sees only the task.',
+      ),
     wait: z.boolean().optional().describe('Start: hold this call until the report.'),
     model: z.string().trim().min(1).max(120).optional().describe('Start: child model alias or id.'),
     effort: z.enum(['low', 'medium', 'high', 'xhigh', 'max']).optional().describe('Start: effort.'),
@@ -139,10 +143,11 @@ export function classifyDelegateCall(input: unknown): CallClass {
  * none.
  */
 export function delegatePermissionResources(input: unknown): string[] {
-  const record = (input ?? {}) as { action?: unknown; agent?: unknown }
-  return record.action === undefined && typeof record.agent === 'string' && record.agent.trim()
-    ? [record.agent.trim()]
-    : []
+  const record = (input ?? {}) as { action?: unknown; agent?: unknown; context?: unknown }
+  if (record.action !== undefined) return []
+  // Both spellings of a fork are the one agent a rule can name.
+  if (asksForFork(record)) return [FORK_AGENT]
+  return typeof record.agent === 'string' && record.agent.trim() ? [record.agent.trim()] : []
 }
 
 export function createDelegateTool(port: DelegateToolPort) {
@@ -151,7 +156,7 @@ export function createDelegateTool(port: DelegateToolPort) {
     label: 'Delegate',
     activeVerb: 'Delegating',
     description: [
-      'Hand one well-scoped task to a child session, run by you or an agent from the directory (`agent`): broad investigations, reviews, long independent work — their detail stays out of this context. It sees only the task unless context:"conversation", so state what it needs. Its report arrives as a new message; integrate it. wait:true returns the report as this result instead — only when your next step needs it. 3 run at once; the rest wait.',
+      'Hand one well-scoped task to a child session, run by you or an agent from the directory (`agent`): broad investigations, reviews, long independent work — their detail stays out of this context. It sees only the task, so state what it needs; or context:"fork" (agent:"fork"): a copy of you that has seen everything you have, on your model and tools, for work that needs all of your context — it cannot fork or delegate again, and model, effort and agent do not apply. Its report arrives as a new message; integrate it. wait:true returns the report as this result instead — only when your next step needs it. 3 run at once; the rest wait.',
       'message amends a child (a finished one runs again and reports again); prefer it to a new task for follow-ups. stop ends a current run; close ends a child for good. list only to recover a missed report, never to poll.',
     ].join(' '),
     inputSchema,
@@ -166,20 +171,7 @@ export function createDelegateTool(port: DelegateToolPort) {
           if (!input.task || !input.title) {
             return { content: 'Starting a task requires task and title.', isError: true }
           }
-          return port.delegate(
-            toolCallId,
-            {
-              task: input.task,
-              title: input.title,
-              ...(input.agent ? { agent: input.agent } : {}),
-              context: input.context ?? 'none',
-              wait: input.wait ?? false,
-              ...(input.effort ? { effort: input.effort } : {}),
-              ...(input.isolation ? { isolation: input.isolation } : {}),
-              ...hostModel(input),
-            },
-            signal,
-          )
+          return port.delegate(toolCallId, startRequest(input, input.task, input.title), signal)
         case 'list':
           return listDelegations(port)
         case 'message':
@@ -201,6 +193,24 @@ export function createDelegateTool(port: DelegateToolPort) {
       }
     },
   })
+}
+
+/**
+ * The request a start becomes. A fork is the delegator itself, so what would choose another agent,
+ * model or effort is dropped here, once, for both spellings; the folder and the wait stay.
+ */
+function startRequest(input: DelegateToolInput, task: string, title: string): DelegateRequest {
+  const base = { task, title, wait: input.wait ?? false }
+  const isolation = input.isolation ? { isolation: input.isolation } : {}
+  if (asksForFork(input)) return { ...base, context: 'fork', ...isolation }
+  return {
+    ...base,
+    ...(input.agent ? { agent: input.agent } : {}),
+    context: 'none',
+    ...(input.effort ? { effort: input.effort } : {}),
+    ...isolation,
+    ...hostModel(input),
+  }
 }
 
 /** The child's model the call names, or a host set on it (`DelegateRequest.model`). */

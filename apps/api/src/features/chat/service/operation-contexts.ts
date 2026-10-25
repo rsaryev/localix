@@ -163,6 +163,7 @@ export function createOperationContexts(
 
   const commandCtx: CommandHandlerContext = {
     ...(deps.loadSkillCommandRules ? { loadSkillCommandRules: deps.loadSkillCommandRules } : {}),
+    ...(deps.skillShellDisabled ? { skillShellDisabled: deps.skillShellDisabled } : {}),
     changeAgentMembership: (userId, sessionId, change) =>
       updateConversationMembership(
         {

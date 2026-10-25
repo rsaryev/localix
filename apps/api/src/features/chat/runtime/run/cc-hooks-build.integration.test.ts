@@ -121,3 +121,41 @@ describe('a run starting', () => {
     expect((await buildRunCcHooks(build)).ccSessionStartContext).toBeUndefined()
   })
 })
+
+describe('a delegated agent’s frontmatter hooks', () => {
+  const stop = { Stop: capture('agent-stop.jsonl'), PreToolUse: capture('agent-pre.jsonl') }
+  const subagentRun = {
+    session: {
+      id: 's1',
+      projectId: null,
+      agents: [],
+      provenance: {
+        kind: 'task-delegation',
+        parentSessionId: 'p',
+        toolCallId: 't',
+        agentType: 'guard',
+      },
+    } as never,
+  }
+
+  test('live for the run that has them, with Stop read as SubagentStop', async () => {
+    const { build } = input(
+      {},
+      {
+        ...subagentRun,
+        agentHooks: [{ raw: stop, source: 'agent', asSubagent: true, agentType: 'guard' }],
+      },
+    )
+    const { ccHooks } = await buildRunCcHooks(build)
+    expect(ccHooks.hasHooks('PreToolUse')).toBe(true)
+    expect(ccHooks.hasHooks('SubagentStop')).toBe(true)
+    expect(ccHooks.hasHooks('Stop')).toBe(false)
+  })
+
+  test('gone with the run: the next run without them has none', async () => {
+    const { build } = input({}, subagentRun)
+    const { ccHooks } = await buildRunCcHooks(build)
+    expect(ccHooks.hasHooks('PreToolUse')).toBe(false)
+    expect(ccHooks.hasHooks('SubagentStop')).toBe(false)
+  })
+})

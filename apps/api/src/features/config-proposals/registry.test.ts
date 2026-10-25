@@ -59,4 +59,13 @@ describe('the remedy registry', () => {
     expect(registry.remedyIdOf({ kind: 'tool.enable', name: 'loops' })).toBe('tool.enable')
     expect(() => registry.remedyIdOf({ kind: 'nope' })).toThrow()
   })
+
+  // Installing, enabling and removing a plugin, mini app or MCP server is the Store's (`store`),
+  // where the person sees what it runs; `configure` only asks for access to a tool.
+  test('offers no remedy for a plugin, a mini app or an MCP server', () => {
+    const registry = createRemedyRegistry()
+    for (const kind of ['plugin.enable', 'mini-app.enable', 'mcp.server.enable'])
+      expect(() => registry.remedyIdOf({ kind, name: 'x' })).toThrow()
+    expect(REMEDIES.map((remedy) => remedy.id)).toEqual(['tool.enable'])
+  })
 })

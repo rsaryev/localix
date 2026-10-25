@@ -32,6 +32,7 @@ function setup(publisher = { name: 'Localix', verified: true }) {
   const calls: string[] = []
   const enabled = new Map<string, boolean>()
   const configs = new Map<string, MiniAppConfigField[]>()
+  const own: Record<string, unknown>[] = []
   const catalogs = [{ url: pathToFileURL(source).href, builtIn: true }]
   const provider = createMiniAppStoreProvider({
     store,
@@ -50,11 +51,14 @@ function setup(publisher = { name: 'Localix', verified: true }) {
     },
     apps: {
       list: async () => ({
-        miniApps: [...enabled].map(([name, on]) => ({
-          name,
-          enabled: on,
-          config: configs.get(name) ?? [],
-        })),
+        miniApps: [
+          ...[...enabled].map(([name, on]) => ({
+            name,
+            enabled: on,
+            config: configs.get(name) ?? [],
+          })),
+          ...(own as never[]),
+        ],
       }),
       setConfig: async (_userId, { name, values }) =>
         void calls.push(`config ${name} ${JSON.stringify(values)}`),
@@ -62,7 +66,7 @@ function setup(publisher = { name: 'Localix', verified: true }) {
       remove: async (_userId, { name }) => void calls.push(`remove ${name}`),
     },
   })
-  return { source, store, provider, calls, enabled, catalogs, configs }
+  return { source, store, provider, calls, enabled, catalogs, configs, own }
 }
 
 afterEach(() => __resetBundledSyncCache())
@@ -385,5 +389,39 @@ describe('the mini apps in the Store', () => {
     await provider.install('chess', 'user', { plan: false }, actor)
     await store.settled()
     expect(heard).toBeGreaterThan(1)
+  })
+
+  test('a mini app the person made, which no catalog offers, is in the Store as installed', async () => {
+    const { source, provider, own } = setup()
+    await offer(source, 'chess')
+    own.push({
+      name: 'bitcoin-price',
+      displayName: 'Bitcoin Price',
+      version: '0.1.0',
+      description: 'Shows the Bitcoin price.',
+      surfaces: ['agent', 'workbench'],
+      commands: [],
+      bundled: false,
+      enabled: true,
+      config: [],
+    })
+    const { listings } = await provider.listings(actor)
+    const mine = listings.find((listing) => listing.ref.id === 'bitcoin-price')
+    expect(mine).toMatchObject({
+      displayName: 'Bitcoin Price',
+      summary: 'Shows the Bitcoin price.',
+      installs: [{ scope: 'user', version: '0.1.0', enabled: true }],
+      source: { label: 'Made on this computer' },
+      authored: 'user',
+    })
+    expect(listings.filter((listing) => listing.ref.id === 'chess')).toHaveLength(1)
+    const page = await provider.detail('bitcoin-price', actor)
+    expect(page.components.map((component) => component.kind)).toEqual([
+      'screen',
+      'agent-tool',
+      'backend',
+    ])
+    // Nothing to install: it is already here, and no catalog has it.
+    await expect(provider.plan('bitcoin-price', 'user', actor)).rejects.toThrow()
   })
 })

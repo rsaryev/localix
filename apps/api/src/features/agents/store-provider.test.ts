@@ -128,14 +128,11 @@ test('the switch writes a rule, and a copy of a read-only agent is an editable f
   expect(await readFile(join(agentsDir, 'Explore-copy.md'), 'utf8')).toContain('name')
 })
 
-test('remove deletes the file; install, update and plan do not exist for an agent', async () => {
+test('remove deletes the file', async () => {
   const { provider, agentsDir } = await setup()
   const ref = await created(provider)
   await provider.remove(ref.id, 'user', actor)
   await expect(readFile(join(agentsDir, 'reviewer.md'), 'utf8')).rejects.toThrow()
-  await expect(provider.install(ref.id, 'user', { plan: true }, actor)).rejects.toBeInstanceOf(
-    InvalidRequestError,
-  )
 })
 
 test('a save made over a file that changed meanwhile is refused, and the page says how many chats use it', async () => {

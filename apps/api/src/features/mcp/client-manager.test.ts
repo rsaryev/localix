@@ -368,6 +368,24 @@ describe('createMcpClientManager', () => {
     expect(tracker.created.filter((c) => !c.closed)).toHaveLength(1)
   })
 
+  test('releasing a scope disconnects what only it referenced and keeps what another scope holds', async () => {
+    const tracker = makeConnectTracker()
+    const manager = createMcpClientManager({ connect: tracker.connect })
+    const shared = makeServer({ id: 's', name: 'shared' })
+    const inline = makeServer({ id: 'i', name: 'inline', config: { command: ['inline-server'] } })
+
+    await manager.gather([shared], { cwd: '/tmp', scope: 'run:parent' })
+    await manager.gather([shared, inline], { cwd: '/tmp', scope: 'run:child' })
+    expect(manager.size()).toBe(2)
+
+    await manager.releaseScope('run:child')
+    await Bun.sleep(0)
+    expect(manager.size()).toBe(1)
+    expect(tracker.created.filter((c) => c.closed)).toHaveLength(1)
+    // Releasing a scope nobody gathered is harmless.
+    await manager.releaseScope('run:nobody')
+  })
+
   test('invalidation is per-scope: another scope keeps its clients alive', async () => {
     const tracker = makeConnectTracker()
     const manager = createMcpClientManager({ connect: tracker.connect })

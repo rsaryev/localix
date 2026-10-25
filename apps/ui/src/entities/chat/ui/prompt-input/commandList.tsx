@@ -10,20 +10,30 @@
  *
  * Rules:
  * - No hooks, no logic — pure data derivation.
- * - Hidden catalog commands (e.g. `/reasoning`) are excluded from the menu; the
- *   API still accepts them when typed directly.
- * - `/yolo` is intentionally absent: use `/mode yolo` instead.
- * - `/reasoning` is absent from the menu: the Effort picker in the composer
- *   handles it in the UI.
+ * - Hidden catalog commands (e.g. `/reload-plugins`, a Claude Code spelling of
+ *   `/plugin reload`) are excluded from the menu; the API still accepts them when typed.
  */
 import { SLASH_COMMANDS, type SlashCommandSpec } from '@localixai/api/slash-catalog'
 import type { SlashCommand } from './SlashCommandMenu'
-import { Bot, History, Palette, Type } from 'lucide-react'
+import {
+  Bot,
+  Brain,
+  ClipboardList,
+  Copy,
+  Gauge,
+  History,
+  MessageSquarePlus,
+  Palette,
+  Pencil,
+  RotateCcw,
+  Settings2,
+  ShieldCheck,
+  Type,
+  Undo2,
+} from 'lucide-react'
 import {
   LoopIcon,
   ModelIcon,
-  CompactIcon,
-  ClearIcon,
   ForkIcon,
   UsageIcon,
   HelpIcon,
@@ -31,7 +41,7 @@ import {
   SkillsIcon,
   McpIcon,
   PluginsIcon,
-  ProvidersIcon,
+  MiniAppIcon,
   OpenIcon,
 } from './commandIcons'
 
@@ -57,11 +67,31 @@ const PRESENTATION: Record<string, CommandPresentation> = {
     placeholder: 'A style name, default, or Enter to list the styles',
   },
   theme: { icon: <Palette size={14} />, placeholder: 'A theme, or Enter to list them' },
-  compact: { icon: <CompactIcon />, placeholder: 'Press Enter to compact the conversation' },
-  clear: { icon: <ClearIcon />, placeholder: 'Press Enter to clear context' },
+  effort: { icon: <Brain size={14} />, placeholder: 'Pick an agent and a reasoning level…' },
+  plan: {
+    icon: <ClipboardList size={14} />,
+    placeholder: 'A task to plan, or Enter to switch to Plan mode',
+  },
+  permissions: {
+    icon: <ShieldCheck size={14} />,
+    placeholder: 'Press Enter to open the permission settings',
+  },
+  config: { icon: <Settings2 size={14} />, placeholder: 'Press Enter to open your preferences' },
+  clear: {
+    icon: <MessageSquarePlus size={14} />,
+    placeholder: 'Press Enter to start a new chat in this project',
+  },
+  resume: { icon: <RotateCcw size={14} />, placeholder: 'A recent chat, or Enter to browse them' },
+  rename: { icon: <Pencil size={14} />, placeholder: 'The new title of this chat' },
+  rewind: { icon: <Undo2 size={14} />, placeholder: 'Pick the message to rewind to…' },
+  copy: { icon: <Copy size={14} />, placeholder: 'Which reply, or Enter for the latest' },
+  context: {
+    icon: <Gauge size={14} />,
+    placeholder: 'Press Enter to show how full the context is',
+  },
   fork: { icon: <ForkIcon />, placeholder: 'Press Enter to fork this conversation' },
   open: { icon: <OpenIcon />, placeholder: 'Browse resources and UI anchors…' },
-  help: { icon: <HelpIcon />, placeholder: 'Press Enter to list all commands' },
+  help: { icon: <HelpIcon />, placeholder: 'A command, or Enter to list them all' },
   recap: { icon: <History size={14} />, placeholder: 'Press Enter to sum up this chat' },
   usage: { icon: <UsageIcon />, placeholder: 'Press Enter to show usage & cost' },
   memory: { icon: <MemoryIcon />, placeholder: 'A fact to remember, or Enter to list memories' },
@@ -71,7 +101,10 @@ const PRESENTATION: Record<string, CommandPresentation> = {
     icon: <PluginsIcon />,
     placeholder: 'list · install <src> · enable/disable/remove <name> · reload · marketplace …',
   },
-  provider: { icon: <ProvidersIcon />, placeholder: 'list · install <src> · remove <name>' },
+  'mini-app': {
+    icon: <MiniAppIcon />,
+    placeholder: 'list · create · enable · disable · remove · reload · catalog',
+  },
 }
 
 function toSlashCommand(spec: SlashCommandSpec): SlashCommand {

@@ -30,7 +30,7 @@ import { createSessionStreamRegistry } from '../runtime/session-stream-registry'
 import { createKeyedSerializer } from '../../../lib/keyed-serializer'
 import { resolveDefaultUserId } from '../../../lib/env'
 import type { ChatServiceDeps } from './context'
-import { renderSkillBody } from './skill-render'
+import { renderSkillBody, withSkillShellPolicy } from './skill-render'
 
 export function createChatServiceGraph(deps: ChatServiceDeps) {
   const now = deps.now ?? (() => new Date().toISOString())
@@ -137,13 +137,16 @@ export function createChatServiceGraph(deps: ChatServiceDeps) {
       get globalSearch() {
         return deps.globalSearch
       },
+      get store() {
+        return deps.store
+      },
       get editorBufferText() {
         return deps.editorBufferText
       },
       mediaStore: deps.mediaStore,
       documentExtract: deps.documentExtract,
       announceCapabilityChange: deps.announceCapabilityChange,
-      renderSkill: renderSkillBody,
+      renderSkill: withSkillShellPolicy(renderSkillBody, deps.skillShellDisabled),
       resolveSecret: deps.resolveSecret,
       vaultToolFor: deps.vaultToolFor,
       externalAgents: deps.externalAgents,

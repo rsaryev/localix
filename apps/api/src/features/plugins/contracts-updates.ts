@@ -1,9 +1,8 @@
 import { z } from 'zod'
 
 /**
- * Wire contracts for plugin updates, read by the background-activity center:
- * `GET /rpc/plugins/updates` (`?refresh=1` fetches the marketplace listings first) and
- * `POST /rpc/plugins/updates/apply`, whose progress arrives as `plugin-updates` pokes.
+ * Plugin update shapes: what the marketplaces offer and the updates in flight, which the Store's
+ * plugin provider reads (`store-jobs.ts`), and what updating a marketplace answers.
  */
 export const pluginUpdateAvailableSchema = z.object({
   /** `<name>@<marketplace>`. */
@@ -30,14 +29,6 @@ export const pluginUpdatesResponseSchema = z.object({
 })
 export type PluginUpdatesResponse = z.infer<typeof pluginUpdatesResponseSchema>
 
-/** `ids` omitted: every available update. */
-export const applyPluginUpdatesRequestSchema = z.object({ ids: z.array(z.string()).optional() })
-
-export const applyPluginUpdatesResponseSchema = z.object({ queued: z.array(z.string()) })
-
-/** `POST /rpc/plugins/marketplaces/update`: with a name, Claude Code's "Update marketplace". */
-export const updateMarketplaceRequestSchema = z.object({ name: z.string().min(1).optional() })
-
 export const updateMarketplaceResponseSchema = z.object({
   /** The marketplaces whose listings were fetched again. */
   refreshed: z.array(z.string()),
@@ -48,9 +39,3 @@ export const updateMarketplaceResponseSchema = z.object({
   warnings: z.array(z.string()),
 })
 export type UpdateMarketplaceResponse = z.infer<typeof updateMarketplaceResponseSchema>
-
-/** `POST /rpc/plugins/marketplaces/auto-update`: the Marketplaces toggle. */
-export const setMarketplaceAutoUpdateRequestSchema = z.object({
-  name: z.string().min(1),
-  autoUpdate: z.boolean(),
-})

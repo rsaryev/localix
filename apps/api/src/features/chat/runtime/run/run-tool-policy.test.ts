@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { resolveRunDisabledTools } from './run-tool-policy'
+import { resolveRunDenyPatterns, resolveRunDisabledTools } from './run-tool-policy'
 
 describe('resolveRunDisabledTools', () => {
   test('normalizes scoped CC aliases and preserves one stable runtime denylist', () => {
@@ -17,5 +17,13 @@ describe('resolveRunDisabledTools', () => {
 
     expect(resolved).toEqual(['localix_ui'])
     expect(resolved).not.toBe(configured)
+  })
+
+  test('a scoped entry with a specifier removes no tool, and is handed over as a pattern', () => {
+    expect(resolveRunDisabledTools(['write'], ['Bash(rm *)', 'Read'])).toEqual(['write', 'read'])
+    expect(resolveRunDenyPatterns(['bash(rm *)', 'write'], ['Bash(git push *)', 'Read'])).toEqual([
+      'bash(rm *)',
+      'Bash(git push *)',
+    ])
   })
 })

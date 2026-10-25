@@ -149,6 +149,40 @@ HTTP records may include `headers` and an `oauth` object with `clientId`, `clien
 PKCE, token exchange, and refresh. Silent runtime connections use stored tokens but never open a
 browser.
 
+### Claude Code's `headersHelper` and `oauth` block
+
+An HTTP or SSE server in a Claude Code file (`.mcp.json`, `~/.claude.json`, managed settings) or a
+plugin is read with Claude Code's two extra keys.
+
+`headersHelper` is a shell command that prints a JSON object of headers. It runs on each connection,
+with ten seconds, and its headers win a name your static `headers` set. It receives
+`CLAUDE_CODE_MCP_SERVER_NAME`, `CLAUDE_CODE_MCP_SERVER_URL` and, for a plugin's server,
+`CLAUDE_PLUGIN_ROOT`. When the server answers 401 or 403 the helper runs again and that request is
+retried once; nothing is cached, so the script reuses its own token. A helper that prints an
+`Authorization` header is the server's authentication: there is no OAuth fallback, and a rejection
+is a failed connection rather than a request to sign in. The command starts in the plugin's
+directory, in the project directory for a project or local server, and otherwise in `~/.claude`.
+
+A helper is a command, so it runs only with your consent:
+
+- A project `.mcp.json` server must first be approved (the rules above). Its helper also waits for
+  the folder to be trusted in Claude Code; until then the server connects with its static headers
+  alone. Credential-looking variables (names holding `TOKEN`, `SECRET`, `PASSWORD`, `KEY` or `AUTH`)
+  are removed from the helper's environment for a project server and for a plugin's.
+- A local or user server is your own file and needs no further step.
+- A plugin's helper runs because you enabled the plugin, as its stdio servers do. It cannot
+  reference `${user_config.*}`.
+- A server in Localix's own registry never runs a helper.
+
+The `oauth` block takes `clientId`, `callbackPort`, `authServerMetadataUrl` and `scopes` (one
+space-separated string). A client secret is never read from a file. `scopes` is asked for in place
+of what the server advertises, with `offline_access` added when the authorization server lists it.
+`authServerMetadataUrl` must be `https://`; it replaces the discovery chain, and without `scopes`
+its `scopes_supported` are requested. `callbackPort` makes the redirect
+`http://localhost:PORT/callback`: Localix listens there on the loopback addresses only while the
+sign-in is pending, and a port that is taken fails the sign-in at once. Localix's own records keep
+`scope` for the same setting.
+
 ### Complete an OAuth sign-in
 
 Open the HTTP server's page in the Store, choose **Test connection**, then **Sign in**. Approve the
@@ -176,7 +210,8 @@ OAuth tokens, dynamic client data, and the pending PKCE verifier are AES-256-GCM
 
 - MCP registry scope is exact. Add a server in every project that needs it, or contribute it through
   an enabled plugin.
-- A web socket server cannot send configured headers or use the HTTP OAuth flow.
+- A web socket server cannot send configured headers, run a `headersHelper` or use the HTTP OAuth
+  flow.
 - The seeded `grep` record belongs to the empty-project registry. Ordinary chats, including Default
   chats, have a project ID and do not gather that record automatically. A test of the record or a
   copy added to an active project can still contact `mcp.grep.app`.
@@ -225,5 +260,5 @@ OAuth tokens, dynamic client data, and the pending PKCE verifier are AES-256-GCM
 - [OAuth storage](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mcp/oauth/store.ts)
 - [Interactive sign-in and callback](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mcp/oauth/flow.ts)
 - [Pending sign-in lifetime](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mcp/oauth/pending-flow-registry.ts)
-- [Settings switches](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/settings/ui/McpSettings.tsx)
+- [Per-agent switches on the agent's Access tab](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/store/ui/AgentAccess.tsx)
 - [Default server seed](https://github.com/rsaryev/localix/blob/main/apps/api/migrations/20260601T000000_init_schema.ts)

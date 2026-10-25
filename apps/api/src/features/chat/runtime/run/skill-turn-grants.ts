@@ -1,4 +1,4 @@
-import { normalizeCcToolName } from '../../../ext/cc-tool-names'
+import { claudeCodeDenyRules } from '../../../cc-settings/cc-rule-translate'
 import type { PermissionRule } from '../../../agent-core/permission-engine'
 import type { DiscoveredSkill } from '../../../agent-core/skill-discovery'
 import { skillToolPathVars, substituteToolPathVars } from '../../../agent-core/skill-tool-path-vars'
@@ -37,12 +37,9 @@ export function applySkillTurnGrants(
     if (grants) grants.push(...skillPermissionRules(allowed, options.root))
     else options.preapprovedRules = skillPermissionRules(allowed, options.root)
   }
-  for (const spec of substituteToolPathVars(skill.disallowedTools, vars) ?? []) {
-    ;(options.rules as PermissionRule[]).push({
-      action: 'deny',
-      permission: normalizeCcToolName(spec),
-      pattern: '*',
-      message: `The skill ${skill.name} removed this tool while it is active (disallowed-tools).`,
-    })
-  }
+  const message = `The skill ${skill.name} removed this tool while it is active (disallowed-tools).`
+  for (const spec of substituteToolPathVars(skill.disallowedTools, vars) ?? [])
+    (options.rules as PermissionRule[]).push(
+      ...claudeCodeDenyRules(spec, options.root, undefined, message),
+    )
 }

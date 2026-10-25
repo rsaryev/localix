@@ -37,7 +37,7 @@ function fixture(rules: Parameters<typeof composeCapabilities>[0], disabledTools
   restore = () => gather.mockRestore()
   const capabilities = composeCapabilities(rules)
   const call = createMcpHookCaller({
-    env: { mcpRepo: { listForScope: async () => [{ name: 'records' }] } } as never,
+    env: { mcpRepo: { listForScope: async () => [{ name: 'records', config: {} }] } } as never,
     userId: 'u',
     session: { id: 's', sessionKind: 'chat' } as never,
     loadedPlugins: { mcpServers: [] } as never,

@@ -23,6 +23,11 @@ import type { VectorCache } from './vector-cache'
 const SCAN_PAGE = 64
 const OUTBOX_PAGE = 128
 const RETRY_MS = [5_000, 15_000, 60_000]
+/**
+ * Indexing is background work: between pages it steps aside for the app (requests, the UI's
+ * own reads) instead of running pages back to back.
+ */
+const PAGE_GAP_MS = 25
 
 export type IndexerPhase = 'stopped' | 'idle' | 'reconciling' | 'updating' | 'retrying' | 'paused'
 
@@ -50,6 +55,8 @@ export interface IndexerDeps {
   sources: () => readonly SemanticSource[]
   onProgress?: () => void
   log?: (event: string, fields: Record<string, unknown>) => void
+  /** Waits between scan pages, so a reconcile stays in the background. Test seam. */
+  pace?: () => Promise<void>
   /** Arms the retry after a failed pass; returns its cancel. Test seam. */
   setTimer?: (fire: () => void, ms: number) => () => void
 }
@@ -61,6 +68,7 @@ export function createIndexer(deps: IndexerDeps) {
   let lastError: string | null = null
   let failures = 0
   const setTimer = deps.setTimer ?? unrefTimer
+  const pace = deps.pace ?? (() => Bun.sleep(PAGE_GAP_MS))
   let cancelRetry: (() => void) | null = null
   let running: Promise<void> | null = null
   let rerun = false
@@ -124,6 +132,12 @@ export function createIndexer(deps: IndexerDeps) {
       for (const item of page.items) seen.add(item.key)
       await measured(name, () => ingestItems({ store, cache, engine: active }, name, page.items))
       progress.scanned += page.items.length
+      // The collection grew while it was scanned: count again, so progress stays within it.
+      if (progress.total !== null && progress.scanned > progress.total)
+        progress.total = Math.max(
+          progress.scanned,
+          (await source.count?.().catch(() => null)) ?? progress.scanned,
+        )
       cursor = page.next
       await store.writeCollection({
         ...state,
@@ -132,7 +146,7 @@ export function createIndexer(deps: IndexerDeps) {
       })
       deps.onProgress?.()
       if (cursor === null) break
-      await Bun.sleep(0)
+      await pace()
     }
     if (canPrune) {
       const gone = (await store.keysOf(name)).filter((key) => !seen.has(key))

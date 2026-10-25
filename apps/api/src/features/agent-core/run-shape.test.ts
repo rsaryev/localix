@@ -152,9 +152,10 @@ describe('run shapes', () => {
     expect(isToolDirect(sub, 'delegate')).toBe(false)
     expect(isToolDirect(child(['delegate']), 'delegate')).toBe(false)
     expect(isToolDirect(profileOf('automation'), 'delegate')).toBe(false)
-    // Registry authoring belongs to a chat; a child never creates agents.
-    expect(isToolDirect(CHAT_RUN_PROFILE, 'agents')).toBe(true)
-    expect(isToolDirect(sub, 'agents')).toBe(false)
+    // The Store belongs to a chat, where a person approves; a child never changes it.
+    expect(isToolDirect(CHAT_RUN_PROFILE, 'store')).toBe(true)
+    expect(isToolDirect(sub, 'store')).toBe(false)
+    expect(isToolDirect(profileOf('automation'), 'store')).toBe(false)
     expect(isToolDirect(sub, 'jobs')).toBe(false)
     expect(isToolDirect(sub, 'browser')).toBe(true)
     expect(isToolDirect(sub, 'ask')).toBe(false)

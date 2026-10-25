@@ -35,4 +35,24 @@ describe('tool.call', () => {
     )
     expect(outcome).toBe('abandoned')
   })
+
+  test('a tool without a path gets the input it was called with, nothing added', async () => {
+    const { scope } = await hostWithMod((on) => {
+      on('tool.call', async (_$, _e, next) => next())
+    })
+    let got: unknown
+    const store = defineAgentTool({
+      name: 'store',
+      description: 'store',
+      activeVerb: 'Searching',
+      inputSchema: z.object({ action: z.string() }).strict(),
+      execute: async (_id, input) => {
+        got = input
+        return { content: 'ok' }
+      },
+    }) as AgentTool
+    const [tool] = scope.wrapTools([store])
+    await tool!.execute('t1', { action: 'search' }, new AbortController().signal)
+    expect(Object.keys(got as object)).toEqual(['action'])
+  })
 })

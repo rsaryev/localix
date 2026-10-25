@@ -13,6 +13,8 @@ writes these files.
 | Start in the mode you set                         | `permissions.defaultMode`, `disableBypassPermissionsMode` — see [Permission modes](../features/permission-modes.md#mode-settings-from-claude-code) |
 | Run your hooks                                    | `hooks`, `disableAllHooks`, `allowManagedHooksOnly` — see [Hooks and commands](../features/hooks-and-commands.md)                                  |
 | Connect your MCP servers                          | `~/.claude.json`, `.mcp.json`, managed MCP — see [MCP](../features/mcp.md)                                                                         |
+| Stop skills from running shell commands           | `disableSkillShellExecution` — see [Keys that lock things down](#keys-that-lock-things-down)                                                       |
+| Load skills, agents, hooks, MCP from plugins only | `strictPluginOnlyCustomization` (managed) — see [Keys that lock things down](#keys-that-lock-things-down)                                          |
 | Give shell commands, hooks and servers your `env` | `env`                                                                                                                                              |
 | See your status line under the message box        | `statusLine`, `subagentStatusLine`                                                                                                                 |
 | Use your output styles                            | `outputStyle`, `.claude/output-styles/`                                                                                                            |
@@ -49,6 +51,32 @@ What a repository grants — the `allow` rules and `additionalDirectories` of it
 `.claude/settings.json`, its `env`, its hooks, and the approval of its own `.mcp.json` servers —
 applies once you trusted the folder in Claude Code (`hasTrustDialogAccepted` for the folder in
 `~/.claude.json`). Rules that only restrict, `deny` and `ask`, apply at once.
+
+### Keys that lock things down
+
+Two keys limit what loads or runs, and are meant for managed settings.
+
+- **`disableSkillShellExecution`** (any file; a managed `true` cannot be turned off). Every inline
+  `!` command and fenced `!` block of a skill or command from your folders, a project or a plugin is
+  replaced by `[shell command execution disabled by policy]` and is not run. Skills of Localix's
+  built-in plugins are not affected. See
+  [Skill authoring](skills-authoring.md#dynamic-command-context).
+- **`strictPluginOnlyCustomization`** (managed settings only; a user, project or local file with the
+  key is ignored). `true` locks all four kinds, or list the kinds to lock: `"skills"`, `"agents"`,
+  `"hooks"`, `"mcp"`. A name Localix does not know is ignored, as in Claude Code. A locked kind
+  loads only from plugins and managed settings:
+
+| Kind     | Closed                                                                                                                                                                          | Still loads                                                                           |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `skills` | skills and commands of `~/.claude/skills`, `.claude/skills`, `~/.claude/commands`, `.claude/commands`, and Localix's own `.localix/skills` and `.agents/skills`                 | plugin skills and commands, built-in plugins                                          |
+| `agents` | `~/.claude/agents/` and a project's `.claude/agents/`                                                                                                                           | built-in types, the managed folder's agents, plugin agents                            |
+| `hooks`  | `hooks` of user, project and local settings; the `hooks` of a skill still read from your folders (that skill also loses its `allowed-tools` pre-approval unless it runs forked) | the organization's settings hooks and every plugin's hooks                            |
+| `mcp`    | servers of `~/.claude.json` and `.mcp.json`                                                                                                                                     | `managed-mcp.json`, `managedMcpServers`, plugin servers, servers you added in Localix |
+
+Localix has no skills-directory plugins, `--add-dir` folders, claude.ai-synced skills or managed
+skills folder, so nothing of those kinds loads to lock. A skill you save from a conversation lands
+in `.localix/skills`, which a `skills` lock closes. The `hooks` lock reads managed settings files; a
+macOS profile applies to skills and agents, but the hooks of a run read the files only.
 
 ### Environment variables
 

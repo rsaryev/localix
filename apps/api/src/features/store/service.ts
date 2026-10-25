@@ -14,7 +14,7 @@ import {
   type Trust,
 } from '@localixai/store'
 
-import { ConflictError, NotFoundError } from '../../lib/domain-errors'
+import { NotFoundError } from '../../lib/domain-errors'
 import { activityOf } from './activity'
 import { configService } from './config'
 import { itemService } from './items'
@@ -24,6 +24,7 @@ import { refKey } from './index-rows'
 import { matching, projectAuthored, withProjectCount } from './project-authored'
 import { withProjectInstalls } from './project-installs'
 import { staticScore } from './ranking'
+import { unsupported } from './unsupported'
 import { createStoreSearchProvider, refOfStoreHit, STORE_SEARCH_DOMAIN } from './search-provider'
 import { sourcesOf } from './sources'
 import { createStoreSync, watchProviders } from './store-runs'
@@ -74,6 +75,8 @@ export function createStoreService(deps: {
   search: StoreSearchPort
   /** The Store's semantic collection read its listings again. */
   resyncMeaning?: () => void
+  /** These listings' cards changed: the semantic collection reads them alone again. */
+  meaningChanged?: (keys: string[]) => void
   /** The open project's words, for the boost (`project-signals.ts`). */
   projectWords?: (userId: string, projectId: string | null | undefined) => Promise<Set<string>>
   now?: () => number
@@ -98,8 +101,12 @@ export function createStoreService(deps: {
       throw new NotFoundError('store_kind_unknown', `The Store has no ${kind} packages`)
     return provider
   }
-  const unsupported = (kind: PackageKind, what: string) =>
-    new ConflictError('store_unsupported', `${kind} packages cannot ${what}`)
+
+  const update = async (ref: ListingRef, scope: Scope, actor: StoreActor) => {
+    const provider = providerOf(ref.kind)
+    if (!provider.update) throw unsupported(ref.kind, 'be updated')
+    await provider.update(ref.id, scope, actor)
+  }
 
   const searchProvider = createStoreSearchProvider({
     index: deps.index,
@@ -198,7 +205,7 @@ export function createStoreService(deps: {
       const learned =
         (detail.contents !== 'unknown' || detail.components.length > 0) &&
         (await deps.index.rememberComponents(ref, detail.components))
-      if (learned && deps.resyncMeaning) deps.resyncMeaning()
+      if (learned) deps.meaningChanged?.([refKey(ref)])
       const indexed = await deps.index.get(actor.userId, ref)
       if (!indexed) return detail
       return {
@@ -220,14 +227,19 @@ export function createStoreService(deps: {
       })
     },
 
-    plan: async (ref: ListingRef, scope: Scope, actor: StoreActor) =>
-      providerOf(ref.kind).plan(ref.id, scope, actor),
+    async plan(ref: ListingRef, scope: Scope, actor: StoreActor) {
+      const provider = providerOf(ref.kind)
+      if (!provider.plan) throw unsupported(ref.kind, 'be installed')
+      return provider.plan(ref.id, scope, actor)
+    },
 
-    install: async (ref: ListingRef, scope: Scope, consent: { plan: boolean }, actor: StoreActor) =>
-      providerOf(ref.kind).install(ref.id, scope, consent, actor),
+    async install(ref: ListingRef, scope: Scope, consent: { plan: boolean }, actor: StoreActor) {
+      const provider = providerOf(ref.kind)
+      if (!provider.install) throw unsupported(ref.kind, 'be installed')
+      await provider.install(ref.id, scope, consent, actor)
+    },
 
-    update: async (ref: ListingRef, scope: Scope, actor: StoreActor) =>
-      providerOf(ref.kind).update(ref.id, scope, actor),
+    update,
 
     remove: async (ref: ListingRef, scope: Scope, actor: StoreActor) =>
       providerOf(ref.kind).remove(ref.id, scope, actor),
@@ -292,24 +304,28 @@ export function createStoreService(deps: {
      * the request path. A provider that cannot is left as it was.
      */
     async refreshSources(): Promise<void> {
-      await Promise.all(deps.providers.map((provider) => provider.refresh().catch(() => {})))
+      await Promise.all(
+        deps.providers.map(async (provider) => provider.refresh?.().catch(() => {})),
+      )
       runs.invalidate()
     },
 
     /**
-     * Update all: every provider re-reads its sources, then each install a newer version is
-     * offered for is updated, unless a job already runs for it. Returns what was queued.
+     * Update all: every provider re-reads its sources (one that cannot keeps what it had), then
+     * each install a newer version is offered for is updated, unless a job already runs for it.
+     * Returns what was queued.
      */
     async applyUpdates(actor: StoreActor): Promise<ListingRef[]> {
-      await Promise.all(deps.providers.map((provider) => provider.refresh()))
+      await Promise.all(
+        deps.providers.map(async (provider) => provider.refresh?.().catch(() => {})),
+      )
       await runs.syncNow(actor)
       const queued: ListingRef[] = []
       for (const listing of await deps.index.stated(actor.userId)) {
         const scopes = listing.installs.filter((install) => install.updateTo)
         if (scopes.length === 0 || listing.incompatible || runs.busy(listing)) continue
         try {
-          for (const { scope } of scopes)
-            await providerOf(listing.ref.kind).update(listing.ref.id, scope, actor)
+          for (const { scope } of scopes) await update(listing.ref, scope, actor)
           queued.push(listing.ref)
         } catch {
           // Its provider refused (a folder of the person's own by that name): the rest still go.

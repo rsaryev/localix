@@ -129,8 +129,8 @@ or its completion hook.
 | Global memory            | `~/.localix/memories/MEMORY.md`; 2,200-code-unit write budget                          |
 | Project memory           | `~/.localix/memories/projects/<projectId>.md`; 2,200-code-unit write budget            |
 | Session memory           | `~/.localix/memories/sessions/<rootSessionId>.md`; 1,500-code-unit write budget        |
-| Project skills           | `<workspace>/.localix/skills/<name>/SKILL.md`                                          |
-| Global skills            | `~/.localix/skills/<name>/SKILL.md`                                                    |
+| Project skills           | `<workspace>/.claude/skills/<name>/SKILL.md`                                           |
+| Global skills            | `~/.claude/skills/<name>/SKILL.md`                                                     |
 | Prompt snapshots         | `LOCALIX_FREEZE_CONTEXT=0` disables the default freeze                                 |
 | External memory provider | First enabled provider only; 8,000-code-unit provider-output cap and 10-second timeout |
 

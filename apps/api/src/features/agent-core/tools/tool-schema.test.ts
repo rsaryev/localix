@@ -56,17 +56,17 @@ describe('the tolerances are wired into the tools that needed them', () => {
     expect(readToolInputSchema.safeParse({ path: 'x.ts', start_line: '0' }).success).toBe(false)
   })
 
-  test('read accepts a string `offset` — the field most likely to arrive as one', () => {
-    // Its own description tells the model to reuse "the offset suggested in a previous truncated
+  test('read accepts a string `byte_offset` — the field most likely to arrive as one', () => {
+    // Its own description tells the model to reuse "the byte_offset suggested in a previous truncated
     // read", i.e. to copy a number out of a text marker. `start_line` two fields away already
-    // tolerated that; `offset` did not, so one schema answered the same input two ways.
-    const ok = readToolInputSchema.safeParse({ path: 'x.ts', offset: '2048' })
-    expect(ok.success && ok.data.offset).toBe(2048)
-    expect(readToolInputSchema.safeParse({ path: 'x.ts', offset: 'abc' }).success).toBe(false)
+    // tolerated that; `byte_offset` did not, so one schema answered the same input two ways.
+    const ok = readToolInputSchema.safeParse({ path: 'x.ts', byte_offset: '2048' })
+    expect(ok.success && ok.data.byte_offset).toBe(2048)
+    expect(readToolInputSchema.safeParse({ path: 'x.ts', byte_offset: 'abc' }).success).toBe(false)
     // `.min(0)` still applies after the conversion, and 0 stays legal.
-    expect(readToolInputSchema.safeParse({ path: 'x.ts', offset: '-1' }).success).toBe(false)
-    const zero = readToolInputSchema.safeParse({ path: 'x.ts', offset: '0' })
-    expect(zero.success && zero.data.offset).toBe(0)
+    expect(readToolInputSchema.safeParse({ path: 'x.ts', byte_offset: '-1' }).success).toBe(false)
+    const zero = readToolInputSchema.safeParse({ path: 'x.ts', byte_offset: '0' })
+    expect(zero.success && zero.data.byte_offset).toBe(0)
   })
 
   test('the ask tool accepts a string `recommended` index', () => {

@@ -12,7 +12,6 @@ import { createAvailabilityWriter, readAvailability } from '../capabilities/avai
 import { publishPluginInstallation } from './publish-installation'
 import { withPluginSource } from './install-helpers'
 import { loadManifest } from './discovery'
-import { createContributionKindRegistry } from '../ext/contribution-kinds'
 
 const cleanup: Array<() => Promise<void>> = []
 afterEach(async () => {
@@ -59,7 +58,6 @@ async function fixture() {
       publishPluginInstallation({
         db,
         stores: capabilityStores,
-        contributionKinds: createContributionKindRegistry(),
         userId: 'u',
         projectId: '',
         scope: 'global',
@@ -78,8 +76,7 @@ async function fixture() {
           publication: () => ({
             trees: [{ source: join(root, 'helper'), name: 'helper', replace: true }],
             write: async (repo) => {
-              const source = await repo.upsert('u', '', 'helper', { source: 'new-helper' })
-              return [{ source, contributions: [] }]
+              await repo.upsert('u', '', 'helper', { source: 'new-helper' })
             },
           }),
         },

@@ -31,7 +31,7 @@ describe('bounded and symlink-safe skill discovery', () => {
   test('discovers nested portable skills and stops below a skill root', async () => {
     const { home, project, cleanup } = await fixture()
     try {
-      const category = join(project, '.localix', 'skills', 'language', 'typescript')
+      const category = join(project, '.claude', 'skills', 'language', 'typescript')
       const nestedBelowSkill = join(category, 'hidden-child')
       await fs.mkdir(nestedBelowSkill, { recursive: true })
       await fs.writeFile(
@@ -58,7 +58,7 @@ describe('bounded and symlink-safe skill discovery', () => {
     const { home, project, cleanup } = await fixture()
     try {
       const segments = Array.from({ length: MAX_SKILL_SCAN_DEPTH + 1 }, (_, i) => `level-${i}`)
-      const tooDeep = join(project, '.localix', 'skills', ...segments)
+      const tooDeep = join(project, '.claude', 'skills', ...segments)
       await fs.mkdir(tooDeep, { recursive: true })
       await fs.writeFile(
         join(tooDeep, 'SKILL.md'),
@@ -78,7 +78,7 @@ describe('bounded and symlink-safe skill discovery', () => {
   test('skips oversized SKILL.md files with actionable diagnostics', async () => {
     const { home, project, cleanup } = await fixture()
     try {
-      const skillDir = join(project, '.localix', 'skills', 'huge-skill')
+      const skillDir = join(project, '.claude', 'skills', 'huge-skill')
       await fs.mkdir(skillDir, { recursive: true })
       const oversized = 'x'.repeat(MAX_SKILL_MARKDOWN_BYTES + 1)
       await fs.writeFile(join(skillDir, 'SKILL.md'), oversized)
@@ -97,7 +97,7 @@ describe('bounded and symlink-safe skill discovery', () => {
   test('rejects invalid UTF-8 instead of injecting replacement characters', async () => {
     const { home, project, cleanup } = await fixture()
     try {
-      const skillDir = join(project, '.localix', 'skills', 'binary')
+      const skillDir = join(project, '.claude', 'skills', 'binary')
       await fs.mkdir(skillDir, { recursive: true })
       await fs.writeFile(join(skillDir, 'SKILL.md'), Buffer.from([0xff, 0xfe, 0xfd]))
 
@@ -115,7 +115,7 @@ describe('bounded and symlink-safe skill discovery', () => {
     const { home, project, cleanup } = await fixture()
     const outside = await fs.mkdtemp(join(tmpdir(), 'skill-lazy-outside-'))
     try {
-      const skillDir = join(project, '.localix', 'skills', 'lazy-safe')
+      const skillDir = join(project, '.claude', 'skills', 'lazy-safe')
       const skillPath = join(skillDir, 'SKILL.md')
       await fs.mkdir(skillDir, { recursive: true })
       await fs.writeFile(
@@ -156,7 +156,7 @@ describe('bounded and symlink-safe skill discovery', () => {
         join(externalSkill, 'SKILL.md'),
         '---\nname: escaped-skill\ndescription: must stay out\n---\nDo not load.',
       )
-      const skillContainer = join(project, '.localix', 'skills')
+      const skillContainer = join(project, '.claude', 'skills')
       await fs.mkdir(skillContainer, { recursive: true })
       await fs.symlink(externalSkill, join(skillContainer, 'escaped-skill'), 'dir')
 
@@ -173,7 +173,7 @@ describe('bounded and symlink-safe skill discovery', () => {
   test('deduplicates skill directory symlink cycles deterministically', async () => {
     const { home, project, cleanup } = await fixture()
     try {
-      const skillsRoot = join(project, '.localix', 'skills')
+      const skillsRoot = join(project, '.claude', 'skills')
       const once = join(skillsRoot, 'once')
       await fs.mkdir(once, { recursive: true })
       await fs.writeFile(
@@ -201,7 +201,7 @@ describe('bounded and symlink-safe skill discovery', () => {
   test('validation and writes fail closed on oversized skill markdown', async () => {
     const { project, cleanup } = await fixture()
     try {
-      const skillDir = join(project, '.localix', 'skills', 'huge')
+      const skillDir = join(project, '.claude', 'skills', 'huge')
       const skillPath = join(skillDir, 'SKILL.md')
       await fs.mkdir(skillDir, { recursive: true })
       await fs.writeFile(skillPath, 'x'.repeat(MAX_SKILL_MARKDOWN_BYTES + 1))
@@ -225,7 +225,7 @@ describe('bounded and symlink-safe skill discovery', () => {
     const { project, cleanup } = await fixture()
     const outside = await fs.mkdtemp(join(tmpdir(), 'skill-write-outside-'))
     try {
-      const container = join(project, '.localix', 'skills')
+      const container = join(project, '.claude', 'skills')
       const existingTarget = join(outside, 'existing')
       const newTarget = join(outside, 'new')
       await Promise.all([

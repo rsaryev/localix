@@ -137,12 +137,15 @@ export function toStateRow(listing: Listing): StateRow | null {
   }
 }
 
+/** A stored card, as the index wrote it with {@link cardOf}. */
+export const cardOfRow = (row: { card: string }): ListingCard => JSON.parse(row.card) as ListingCard
+
 export function fromRow(row: {
   card: string
   state: string | null
   alsoIn?: Listing['alsoIn']
 }): Listing {
-  const card = JSON.parse(row.card) as ListingCard
+  const card = cardOfRow(row)
   const state = row.state ? (JSON.parse(row.state) as ListingState) : { installs: [] }
   return {
     ...card,

@@ -151,6 +151,17 @@ describe('a package’s page', () => {
     }
   })
 
+  test('Back is named by the place it returns to, in the words it shows', async () => {
+    const view = await renderStore({ listings: LISTINGS, target: { shelf: 'package:mini-app' } })
+    try {
+      await view.click(view.button('Chess', view.card('chess')!))
+      const back = view.host.querySelector<HTMLButtonElement>('[data-store-back]')!
+      expect(back.getAttribute('aria-label')).toBe(`Back to ${back.textContent}`)
+    } finally {
+      await view.done()
+    }
+  })
+
   test('Back returns to the shelf with its category kept', async () => {
     const view = await renderStore({ listings: LISTINGS, target: { shelf: 'package:mini-app' } })
     try {
@@ -162,7 +173,7 @@ describe('a package’s page', () => {
       expect(view.card('kanban')).toBeNull()
       await view.click(view.button('Chess', view.card('chess')!))
       expect(view.host.querySelector('[data-store-page="chess"]')).not.toBeNull()
-      await view.click(view.button('Back'))
+      await view.click(view.button(/^Back to /))
       expect(view.card('chess')).not.toBeNull()
       expect(view.card('kanban')).toBeNull()
     } finally {
@@ -177,7 +188,7 @@ describe('a package’s page', () => {
       expect(view.host.querySelector('h2')?.textContent).toBe('Tagged “game”')
       expect(view.card('chess')).not.toBeNull()
       expect(view.card('kanban')).toBeNull()
-      await view.click(view.button('Back'))
+      await view.click(view.button(/^Back to /))
       expect(page()).not.toBeNull()
     } finally {
       await view.done()

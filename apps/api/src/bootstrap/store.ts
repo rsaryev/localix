@@ -2,7 +2,11 @@ import { join } from 'node:path'
 
 import type { Kysely } from 'kysely'
 
+import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
+
 import type { AppDatabase } from '../db'
+import { createAvailabilityWriter, readAvailability } from '../features/capabilities/availability'
+import { onCapabilityRevision } from '../features/capabilities/revision'
 import type { AgentsService } from '../features/agents/service-contract'
 import { createAgentSeatsRepository } from '../features/chat/agent-seats/seats-repository'
 import { agentStoreProviderOf } from '../features/agents/store-wiring'
@@ -46,7 +50,7 @@ export function createStorePhase(deps: {
   agentsService: AgentsService
   /** The plugin service: its marketplaces are the plugins provider's sources. */
   pluginService?: PluginService
-  semanticService?: Pick<SemanticService, 'registerSource' | 'resync'>
+  semanticService?: Pick<SemanticService, 'registerSource' | 'resync' | 'changed'>
   resolveProjectCwd: (userId: string, projectId: string) => Promise<string | null>
   owner: string
   /** The index file; `:memory:` in a harness. */
@@ -57,6 +61,15 @@ export function createStorePhase(deps: {
   const index = createStoreIndexRepository(db)
   let search: Pick<SearchService, 'search'> | null = null
   const signals = createProjectSignals({ projectDir: deps.resolveProjectCwd })
+  // The switches of skills and MCP servers are rules of the default agent, and every change to
+  // agents, skills or servers made anywhere bumps the capability revision (A4: built here).
+  const writer = createAvailabilityWriter(deps.db)
+  const availabilityOf = (kind: 'mcp' | 'skill') => ({
+    reader: (userId: string) => readAvailability(deps.db, { userId, agentId: DEFAULT_AGENT_ID }),
+    set: (userId: string, switches: Array<{ name: string; enabled: boolean }>) =>
+      writer.set(userId, DEFAULT_AGENT_ID, kind, switches),
+  })
+  const onChange = (listener: () => void) => onCapabilityRevision(() => listener())
   const storeService = createStoreService({
     providers: [
       createMiniAppStoreProvider({
@@ -68,18 +81,25 @@ export function createStorePhase(deps: {
         db: deps.db,
         service: deps.mcpService,
         resolveProjectCwd: deps.resolveProjectCwd,
+        availability: availabilityOf('mcp'),
+        onChange,
       }),
       skillStoreProviderOf({
-        db: deps.db,
         curator: deps.skills.curator,
         skills: deps.skills.files,
+        availability: availabilityOf('skill'),
+        onChange,
       }),
-      agentStoreProviderOf(deps.agentsService, {
-        chatsOf: async (agentId) =>
-          new Set(
-            (await createAgentSeatsRepository(deps.db).seats(agentId)).map((s) => s.sessionId),
-          ).size,
-      }),
+      agentStoreProviderOf(
+        deps.agentsService,
+        {
+          chatsOf: async (agentId) =>
+            new Set(
+              (await createAgentSeatsRepository(deps.db).seats(agentId)).map((s) => s.sessionId),
+            ).size,
+        },
+        onChange,
+      ),
       ...(deps.pluginService
         ? [
             pluginStoreProviderOf(deps.pluginService, {
@@ -97,7 +117,11 @@ export function createStorePhase(deps: {
     },
     projectWords: (...args) => signals.of(...args),
     ...(deps.semanticService
-      ? { resyncMeaning: () => void deps.semanticService!.resync(STORE_COLLECTION).catch(() => {}) }
+      ? {
+          resyncMeaning: () => void deps.semanticService!.resync(STORE_COLLECTION).catch(() => {}),
+          meaningChanged: (keys: string[]) =>
+            void deps.semanticService!.changed(STORE_COLLECTION, keys).catch(() => {}),
+        }
       : {}),
   })
   deps.semanticService?.registerSource(createStoreSemanticSource({ index, owner: deps.owner }))

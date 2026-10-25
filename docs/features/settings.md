@@ -1,8 +1,8 @@
 # Settings
 
-Settings opens as a workspace pane. Application settings and agent profiles share the same layout: a
-grouped sidebar at wide pane widths and a section picker in a narrow split. Application search finds
-individual controls across sections and opens the owning group, including advanced controls.
+Settings opens as a workspace pane. Every section shares the same layout: a grouped sidebar at wide
+pane widths and a section picker in a narrow split. Application search finds individual controls
+across sections and opens the owning group, including advanced controls.
 
 ## Settings map
 
@@ -99,7 +99,6 @@ conversations, then asks for confirmation; automatic removal is disabled until c
 - [Search catalog](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/lib/settings-index/settingsIndex.ts)
 - [Shared workspace layout](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/settings/ui/SettingsWorkspace.tsx)
 - [Shared section geometry](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/settings/ui/SettingsScaffold.tsx)
-- [Paired field grid](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/settings/ui/SettingsFieldGrid.tsx)
 - [Settings synchronization](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/lib/user-settings/settingsStore.ts)
 - [Initial server precedence](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/lib/user-settings/settingsSyncBarrier.ts)
 - [Peer refresh and pending edits](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/lib/user-settings/settingsSyncResult.ts)

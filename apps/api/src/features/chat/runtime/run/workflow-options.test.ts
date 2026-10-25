@@ -71,7 +71,6 @@ describe('buildWorkflowOptions', () => {
         deliverHeldReport(sessionId, { status: 'completed', text: 'done' })
         return undefined
       },
-      copyConversation: async () => {},
     } satisfies TaskDelegationOptions
     const port = build(chat(['workflow']), {
       taskDelegation: delegation,
@@ -115,7 +114,6 @@ describe('buildWorkflowOptions', () => {
         deliverHeldReport(sessionId, { status: 'completed', text: 'done' })
         return undefined
       },
-      copyConversation: async () => {},
     } satisfies TaskDelegationOptions
     const named: string[] = []
     const run = (worktreeHook: WorktreeHook) =>

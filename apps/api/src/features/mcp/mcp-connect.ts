@@ -13,7 +13,8 @@ import type { McpServerRecord } from './repository'
 import { mcpLaunch } from './mcp-settings-env'
 import { resolveConnectTimeoutMs } from './mcp-tools'
 import { serverEnv } from './mcp-timeouts'
-import { silentAuthProvider } from './oauth/runtime'
+import { mcpOAuthSession, silentAuthProvider } from './oauth/runtime'
+import { remoteRequest } from './mcp-remote-request'
 import { createElicitingClient } from './mcp-elicitation'
 
 // How long a single gather waits for a server to connect before backgrounding it.
@@ -132,24 +133,36 @@ export async function connectClient(server: McpServerRecord, cwd: string): Promi
     const config = expandedConfig(server, cwd)
     const url = config.url as string | undefined
     if (!url) throw new Error('http server has no url')
-    const headers = (config.headers as Record<string, string> | undefined) ?? undefined
-    const requestInit = headers ? { headers } : undefined
+    // The static headers with a headersHelper's over them, and the fetch that re-runs the helper
+    // after a 401/403 (`mcp-remote-request.ts`). Any helper failure fails this connect.
+    const oauth = mcpOAuthSession(server)
+    const remote = await remoteRequest(server, config, cwd, oauth.fetch)
+    const { requestInit } = remote
     // Attach a SILENT OAuth provider: it uses any stored tokens (refreshing them
     // as needed) but never opens a browser — a server needing auth with no token
     // simply fails with UnauthorizedError (surfaced as "needs auth"). Servers that
     // don't require auth are unaffected (the provider is only invoked on a 401).
-    const authProvider = silentAuthProvider(server)
+    // A helper that supplied `Authorization` is the server's authentication (Claude Code does not
+    // fall back to OAuth then), so a rejection is a connect failure, never "needs sign-in".
+    const authProvider = remote.authorizedByHelper
+      ? undefined
+      : silentAuthProvider(server, undefined, oauth)
     try {
       const transport = new StreamableHTTPClientTransport(new URL(url), {
         requestInit,
         authProvider,
+        fetch: remote.fetch,
       })
       await connectTransport(client, transport, deadline)
       return client
     } catch (httpErr) {
       // Older servers only speak the legacy SSE transport — retry once.
       try {
-        const sse = new SSEClientTransport(new URL(url), { requestInit, authProvider })
+        const sse = new SSEClientTransport(new URL(url), {
+          requestInit,
+          authProvider,
+          fetch: remote.fetch,
+        })
         await connectTransport(client, sse, deadline)
         return client
       } catch (sseErr) {

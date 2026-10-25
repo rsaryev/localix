@@ -28,7 +28,7 @@ export interface MiniAppHostRefs {
     userId: string,
   ) => Promise<readonly { id: string; name: string; workingDirectory: string | null }[]>
   chatService?: ReturnType<typeof createChatService>
-  /** The agent registry's listing, for the mini app `agents` directory. */
+  /** The agent catalog's listing, for the mini app `agents` directory. */
   listAgents?: ReturnType<typeof createAgentsService>['listAgents']
   /** The one wake delivery (`features/triggers/delivery`), bound once chat exists. */
   wakes?: WakeDelivery<WakeRequest>

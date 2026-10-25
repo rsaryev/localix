@@ -1,6 +1,6 @@
 // Scope identity for the scoped grid: every tab belongs to exactly one workspace, named by the id
 // of its root conversation (`workspaceOf`; a sub-session has none of its own). The one exception is the reserved GLOBAL_SCOPE, which holds the APP-LEVEL kinds a
-// kind declares as such (settings, usage, an agent profile) — never a tab that reads a session.
+// kind declares as such (settings, usage, the Store) — never a tab that reads a session.
 import type { WorkItemKind } from '@/shared/lib/workItem'
 import { isBuiltInWorkItemKind, isSingleton, scopeKindOf } from './capabilities'
 import { workspaceOf } from '@/shared/lib/workspaceOf'

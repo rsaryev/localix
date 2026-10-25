@@ -26,6 +26,9 @@ import type { LoadedMiniAppHook } from '../../../../mini-apps/loader-contract'
 import { publishHumanAssignment } from '../human-assignment'
 import { applyMainAgent, runToolsAgent } from '../plugin-main-agent'
 import { applySpeakerAgent, contextFilesFor } from '../speaker-agent'
+import { agentScopedHooks } from '../agent-hooks'
+import { claudeCodeHome } from '../../../../cc-settings/config-dir'
+import { claudeCodeTrusts } from '../../../../cc-settings/settings-trust'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import { adoptPluginAgentModel } from '../plugin-main-agent-model'
 import { reloadedSkillsNote } from '../cc-reload-skills'
@@ -175,6 +178,10 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
     permissionMode: turn.policy.permission.mode,
     ...(frame.speakerRoute.reasoningEffort ? { effort: frame.speakerRoute.reasoningEffort } : {}),
     interactive: turn.policy.human.canAnswer,
+    // A delegated child runs its agent file's own hooks, for this run only.
+    agentHooks: agentScopedHooks(session, turn.admittedAgent.spec, {
+      projectTrusted: claudeCodeTrusts({ homeDir: claudeCodeHome(), cwd: defaultCwd }),
+    }),
   })
   const { ccHooks, ccInitialUserMessage } = built
   // `reloadSkills`: a SessionStart hook installed skills after this run's discovery read the folders.

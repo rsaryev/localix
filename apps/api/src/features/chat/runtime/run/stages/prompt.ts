@@ -18,7 +18,7 @@ import { warnOnVolatileCachePrefix } from '../../cache-volatility-guard'
 import type { RuntimeSection } from '../../../../agent-core/prompt/runtime-sections'
 import { resolveContextBudgetFrame } from '../../context-budget'
 import { contextWindowDiagnostics, withContextWindowLimits } from '../../context-diagnostics'
-import { delegationPlace } from '../../../session-provenance'
+import { budgetDepth } from '../../fork/fork-run'
 import { buildRunSystemPrompt } from '../system-prompt-build'
 import { otherWorkspaceSessionsSection } from '../other-workspace-sessions'
 import { TOOL } from '../../../../agent-core/tool-names'
@@ -93,13 +93,17 @@ export async function buildRunPrompt(
   const baseSections = built.runtimeSections
   // Claude Code mods' `prompt.section`, `attribution.text` and `prompt.compose`, kept per
   // conversation until a mod invalidates them, so the cached prefix stays byte-stable.
+  // A fork is sent its parent's system prompt as the parent sent it: it is what the provider's
+  // cache has, and a prompt rebuilt for the child would differ in its roster and its role.
   const systemPrompt =
+    frame.fork?.seed.systemPrompt ??
     (await inputs.mods.composePrompt({
       sections: built.sections,
       model: turn.model.rawModelId,
       tools: toolset.tools,
       outputStyle: built.outputStyle,
-    })) ?? built.systemPrompt
+    })) ??
+    built.systemPrompt
   const triggerContext = buildTurnTriggerContext(params.scope, session, historyMessages)
   const installedAgents = (await deps.externalAgents?.installed().catch(() => [])) ?? []
   const externalAgentsText = installedAgentsPrompt(installedAgents)
@@ -157,7 +161,7 @@ export async function buildRunPrompt(
   const contextBudgetFrame = resolveContextBudgetFrame({
     contextWindow: turn.catalogModel?.contextLength,
     fixedOverheadTokens: fixedContext.tokens,
-    depth: delegationPlace(session.provenance).depth,
+    depth: budgetDepth(session, frame.fork),
     contextLimit: turn.contextLimit,
   })
   frame.budget.frame = contextBudgetFrame

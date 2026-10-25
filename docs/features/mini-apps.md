@@ -17,7 +17,7 @@ add yourself waits for your yes before its code runs; one the agent builds for y
 | Outcome                      | How                                                                              | Boundary                                                           |
 | ---------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | See your mini apps           | `/mini-app list`, or the Store (Mini apps)                                       | The list shows the scope of the current chat's project.            |
-| Add one from the Store       | The **+** button in the rail, **Open the Store** in Settings, or setup           | Only the recommended apps install without your choice.             |
+| Add one from the Store       | The **+** button in the rail (**Open the Store**), or setup                      | Only the recommended apps install without your choice.             |
 | Get the recommended apps     | Nothing: a new installation installs them in the background                      | Once per app; one you remove is not added again.                   |
 | Update all at once           | **Update all** in the line above the message box, or in the Event Center         | Only apps a catalog installed; your own folders are left alone.    |
 | Update one                   | **Update** on its card in the Store, or wait for the automatic update            | Shown when the catalog offers another version than yours.          |
@@ -25,7 +25,7 @@ add yourself waits for your yes before its code runs; one the agent builds for y
 | Install with its desktop app | **Install as app** beside **Install** in the Store                               | macOS desktop only, for an app with a screen of its own.           |
 | Add a publisher's catalog    | Store → **Sources** → **Add source…**, or `/mini-app catalog add <url>`          | Localix reads it first; nothing is added until you choose **Add**. |
 | See or remove catalogs       | Store → **Sources**, a shelf's sources menu, or `/mini-app catalog list`         | The Localix catalog is built in and stays.                         |
-| Turn one on or off           | `/mini-app enable <name>`, `/mini-app disable <name>`, or the row's switch       | A switch in Settings applies to the agent selected there.          |
+| Turn one on or off           | `/mini-app enable <name>`, `/mini-app disable <name>`, or the row's switch       | A per-agent switch is on the agent's **Access** tab.               |
 | Change a mini app's settings | **Settings** on its row in the Store (Mini apps)                                 | Secret settings are kept in the [vault](secrets.md).               |
 | Remove one                   | `/mini-app remove <name>`, or **Remove** on its card or in Store → **Installed** | Its data folder stays, so a reinstall finds it.                    |
 | Have the agent build one     | `/mini-app create <what it should do>`                                           | See [Build with the agent](../extending/build-with-the-agent.md).  |
@@ -144,6 +144,5 @@ that opens the app's row in the Store (Mini apps). The entry clears once the app
 - [The `/mini-app` command](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/command-handlers-mini-apps.ts)
 - [The mini apps feature](https://github.com/rsaryev/localix/tree/main/apps/api/src/features/mini-apps)
 - [Where mini apps live](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/paths.ts)
-- [the Store (Mini apps)](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/settings/ui/MiniAppsSettings.tsx)
 - [Mini app conditions in the Event Center](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/notifications/conditions/mini-apps.ts)
 - [The contract for plugins and mini apps](https://github.com/rsaryev/localix/blob/main/docs/internals/plugins-and-mini-apps.md)

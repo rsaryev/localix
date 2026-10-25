@@ -191,7 +191,7 @@ export function CompanionPage() {
             Drop to attach
           </div>
         )}
-        <div ref={content.ref} className="lx-island-content flex flex-col gap-2 px-3 pt-2">
+        <div ref={content.ref} className="lx-island-content flex flex-col gap-2 px-3 pt-2 pb-3">
           {island.expanded && (
             <IslandToolbar
               chat={chat}

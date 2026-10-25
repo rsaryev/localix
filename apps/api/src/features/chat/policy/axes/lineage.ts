@@ -28,7 +28,7 @@ export interface LineageDecision {
   depth: number
   /** May create delegated child sessions (`delegate`). */
   mayDelegate: boolean
-  /** May author registry agents (`agents`). */
+  /** May manage the Store's packages and author registry agents (`store`). */
   managesAgents: boolean
   /** Owns the conversation's plan: its approved version and its draft directory. */
   ownsPlan: boolean

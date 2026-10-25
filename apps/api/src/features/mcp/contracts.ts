@@ -48,7 +48,6 @@ export const mcpStdioConfigSchema = z.object({
   env: z.record(z.string(), z.string()).optional(),
   ...mcpToolFilterFields,
 })
-export type McpStdioConfig = z.infer<typeof mcpStdioConfigSchema>
 
 /**
  * A remote URL that is EITHER a valid absolute URL OR a string carrying a
@@ -71,8 +70,17 @@ export const mcpOAuthConfigSchema = z.object({
   clientId: z.string().optional(),
   /** Pre-registered OAuth client secret (confidential clients). */
   clientSecret: z.string().optional(),
-  /** Requested OAuth scope (else the server's advertised default). */
+  /** Requested OAuth scope (else the server's advertised default). Claude Code's `scopes`. */
   scope: z.string().optional(),
+  /** Fixed loopback port of the sign-in callback: the redirect is `http://localhost:PORT/callback`. */
+  callbackPort: z.number().int().min(1).max(65535).optional(),
+  /** Authorization server metadata document, in place of the discovery chain. */
+  authServerMetadataUrl: z
+    .string()
+    .refine((v) => v.startsWith('https://') && z.string().url().safeParse(v).success, {
+      message: 'authServerMetadataUrl must be an https:// URL',
+    })
+    .optional(),
 })
 export type McpOAuthConfig = z.infer<typeof mcpOAuthConfigSchema>
 
@@ -81,11 +89,15 @@ export const mcpHttpConfigSchema = z.object({
   url: mcpUrlSchema,
   /** Static headers sent with every request (e.g. Authorization). */
   headers: z.record(z.string(), z.string()).optional(),
+  /**
+   * Claude Code's `headersHelper`: a shell command whose stdout is a JSON object of headers, run on
+   * each connection (`headers-helper.ts`). Dynamic headers win a name the static ones set.
+   */
+  headersHelper: z.string().min(1).optional(),
   /** Optional OAuth client overrides (interactive sign-in handles the rest). */
   oauth: mcpOAuthConfigSchema.optional(),
   ...mcpToolFilterFields,
 })
-export type McpHttpConfig = z.infer<typeof mcpHttpConfigSchema>
 
 /** A fully materialized server record returned to the UI. */
 export const mcpServerSchema = z.object({

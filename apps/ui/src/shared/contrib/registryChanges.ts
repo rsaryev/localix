@@ -33,11 +33,14 @@ let scheduled: (() => void) | null = null
 const HIDDEN_WINDOW_FALLBACK_MS = 100
 function scheduleFrame(flush: Flush): () => void {
   const timeout = globalThis.setTimeout(flush, HIDDEN_WINDOW_FALLBACK_MS)
-  if (typeof globalThis.requestAnimationFrame !== 'function') return () => clearTimeout(timeout)
-  const frame = globalThis.requestAnimationFrame(() => flush())
+  const { requestAnimationFrame: request, cancelAnimationFrame: cancel } = globalThis
+  if (typeof request !== 'function' || typeof cancel !== 'function')
+    return () => clearTimeout(timeout)
+  const frame = request(() => flush())
+  // The pair the frame was asked of: a window gone by the time it is let go took its own away.
   return () => {
     clearTimeout(timeout)
-    globalThis.cancelAnimationFrame(frame)
+    cancel(frame)
   }
 }
 let schedule: (flush: Flush) => () => void = scheduleFrame

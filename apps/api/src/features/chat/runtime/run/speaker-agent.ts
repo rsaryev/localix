@@ -23,9 +23,12 @@ export function delegateAgentPorts(input: {
   rootSessionId: string
   /** The run's WorktreeCreate hooks, which replace `git worktree add` when present (CC). */
   worktreeHook?: WorktreeHook
+  /** `tools: Agent(a, b)` of the agent the run is: the only types it may delegate to. */
+  allowedAgentTypes?: readonly string[]
 }): DelegateAgentPorts {
   const { chatModel, catalog } = input
   return {
+    ...(input.allowedAgentTypes ? { allowedAgentTypes: input.allowedAgentTypes } : {}),
     ...(chatModel
       ? {
           route: (asked) =>

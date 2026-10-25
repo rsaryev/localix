@@ -9,8 +9,28 @@ import {
   loadPluginCommandArgOptions,
 } from './pluginCommandArgOptions'
 import { loadAgentCommandArgOptions } from './agentCommandArgOptions'
+import { findSessionInState } from '../../model/findSession'
+import { useChatStore } from '../../model/store'
+import { copyOptions, helpOptions, resumeOptions, rewindOptions } from './clientCommandRows'
 import type { SlashCommand } from './SlashCommandMenu'
 import type { SlashArgOption } from './SlashArgSpec'
+
+/** The default style, then every style this chat can pick (`/output-style`). */
+async function outputStyleOptions(projectId: string | null, query: string) {
+  const styles = await backendClient.listOutputStyles({ projectId }).catch(() => [])
+  const wanted = query.trim().toLowerCase()
+  const rows: SlashArgOption[] = [
+    { value: 'default', label: 'default', description: 'No style instructions' },
+    ...styles
+      .filter((style) => !style.forced)
+      .map((style) => ({
+        value: style.name,
+        label: style.name,
+        description: style.description || undefined,
+      })),
+  ]
+  return rows.filter((row) => !wanted || row.value.toLowerCase().includes(wanted))
+}
 
 /**
  * Dynamic arg options, from one of two sources depending on who owns the command: a plugin
@@ -26,6 +46,7 @@ export function useSlashArgOptions(
     argName: string,
     query: string,
     committed: Readonly<Record<string, string>>,
+    commandId: string,
   ) => Promise<SlashArgOption[]>,
 ) {
   return useCallback(
@@ -35,9 +56,23 @@ export function useSlashArgOptions(
       query: string,
       committed: Readonly<Record<string, string>>,
     ) => {
-      if (command.id === 'model' && loadModelOptions) {
-        return loadModelOptions(argName, query, committed)
+      // `/effort` reads the same steps as `/model`, from its reasoning level on.
+      if ((command.id === 'model' || command.id === 'effort') && loadModelOptions) {
+        return loadModelOptions(argName, query, committed, command.id)
       }
+      // Live chat state: the transcript's messages and replies, the roster, the command list.
+      if (command.id === 'rewind' || command.id === 'copy') {
+        const messages =
+          findSessionInState(useChatStore.getState(), activeSessionId)?.messages ?? []
+        return command.id === 'rewind'
+          ? rewindOptions(messages, query)
+          : copyOptions(messages, query)
+      }
+      if (command.id === 'resume') {
+        return resumeOptions(useChatStore.getState().allSessions, activeSessionId, query)
+      }
+      if (command.id === 'help') return helpOptions(query)
+      if (command.id === 'output-style') return outputStyleOptions(activeProjectId, query)
       if (command.id === 'plugin') {
         return loadPluginCommandArgOptions(argName, committed.action, query)
       }

@@ -129,3 +129,49 @@ test('a hook reads a file path absolute against its cwd, and an unchanged one fo
     files: [{ path: '/work/other.md', content: 'x' }],
   })
 })
+
+test('only a skill `get` is Claude Code’s Skill; save, list and delete are Localix’s own calls', () => {
+  const get = toolCallEvent({ name: 'skill' }, { action: 'get', name: 'review' }, 's')
+  expect(get).toMatchObject({ tool: 'Skill', skill: 'review' })
+  for (const action of ['save', 'list', 'delete'])
+    expect(toolCallEvent({ name: 'skill' }, { action, name: 'review' }, 's').tool).toBe('skill')
+  expect(claudeCodeHookCall({ name: 'skill' }, { action: 'list' }).tool_name).toBe('skill')
+})
+
+test('a bash `until` wait reads as Claude Code’s Monitor, and a rewrite lands on the wait', () => {
+  const input = { command: 'curl -sf localhost:3000', until: 10, timeout: 120 }
+  const event = toolCallEvent({ name: 'bash' }, input, 'm')
+  expect(event).toMatchObject({
+    tool: 'Monitor',
+    command: 'curl -sf localhost:3000',
+    timeout_ms: 120_000,
+  })
+  expect(toolInputOf('bash', event)).toEqual(input)
+  expect(toolInputOf('bash', { ...event, timeout_ms: 30_000 })).toEqual({ ...input, timeout: 30 })
+  // A plain command, and a background job, stay Bash.
+  expect(toolCallEvent({ name: 'bash' }, { command: 'ls', background: true }, 'b').tool).toBe(
+    'Bash',
+  )
+})
+
+test('an edit of a notebook carries NotebookEdit’s fields beside Edit’s', () => {
+  const input = { edits: [{ path: 'nb/a.ipynb', old_string: 'x = 1', new_string: 'x = 2' }] }
+  const view = claudeCodeHookCall({ name: 'edit' }, input, '/p').tool_input as Record<
+    string,
+    unknown
+  >
+  expect(view).toMatchObject({
+    file_path: '/p/nb/a.ipynb',
+    notebook_path: '/p/nb/a.ipynb',
+    new_source: 'x = 2',
+    edit_mode: 'replace',
+  })
+  const plain = claudeCodeHookCall(
+    { name: 'edit' },
+    { edits: [{ path: 'a.ts', old_string: 'a', new_string: 'b' }] },
+    '/p',
+  ).tool_input as Record<string, unknown>
+  expect(plain.notebook_path).toBeUndefined()
+  // The extra fields never reach the edit tool.
+  expect(localInputFromHook('edit', input, view, '/p')).toEqual(input)
+})

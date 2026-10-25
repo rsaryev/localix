@@ -11,7 +11,7 @@ import type { AgentDelegation } from './delegation'
 import type { AgentAvailability, ApprovalAnswer, RunAgentDecision } from './invocation-service'
 
 /**
- * What the registry service promises, apart from how it keeps that promise.
+ * What the agent catalog service promises, apart from how it keeps that promise.
  *
  * Split from the implementation because the composition root, the routes and three other
  * phases type against this and nothing else; the file they were pulling in to get it also
@@ -22,12 +22,12 @@ export interface AgentsServiceDeps {
   db: Kysely<AppDatabase>
   /** Opens the capability source and rule stores (supplied by the composition root). */
   capabilityStores: CapabilityStores
-  /** Host-owned registry shared by catalog reads and launch admission. */
+  /** Host-owned state shared by catalog reads and launch admission. */
   invocations?: InvocationRegistry
   /** Claude Code's folders for a scope (`project` is null when its folder cannot be read now). */
-  folders(userId: string, projectId: string): Promise<AgentFolders>
+  folders: (userId: string, projectId: string) => Promise<AgentFolders>
   /** The agents plugins bring, and whether each plugin is on. */
-  plugins?(userId: string, projectId: string): Promise<readonly PluginAgentGroup[]>
+  plugins?: (userId: string, projectId: string) => Promise<readonly PluginAgentGroup[]>
   now?: () => string
 }
 
@@ -44,7 +44,7 @@ export interface AgentsService extends AgentDelegation {
   bindings: AgentBindings
   /** The agents of one exact project or no-project scope, fused with enable-state. */
   listAgents(userId: string, opts?: { projectId?: string | null }): Promise<AgentSummary[]>
-  /** Agents admitted without approval on this host, from one current registry snapshot. */
+  /** Agents admitted without approval on this host, from one current catalog snapshot. */
   listInvocableAgents(
     userId: string,
     host: string,
@@ -58,7 +58,7 @@ export interface AgentsService extends AgentDelegation {
     projectId?: string | null,
   ): Promise<AgentAvailability>
   /**
-   * Refuse a policy change this registry cannot accept, before anything is written.
+   * Refuse a policy change this catalog cannot accept, before anything is written.
    *
    * Exactly one rule today: the agent the app itself runs on cannot be denied, in any scope.
    * A guard rather than a silent clamp, because a scope that quietly kept an agent the user
@@ -85,7 +85,7 @@ export interface AgentsService extends AgentDelegation {
    * policy in place first. Refuses a name the scope already holds; changing one is `updateAgent`.
    */
   createAgent(userId: string, input: AgentRecordInput): Promise<AgentSummary>
-  /** Author behavior in the caller's registry, inheriting its saved policy once. */
+  /** Author behavior in the caller's catalog, inheriting its saved policy once. */
   createAgentFromAgent(
     userId: string,
     input: AgentAuthoredBlueprint,

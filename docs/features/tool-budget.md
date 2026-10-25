@@ -104,4 +104,4 @@ agent's runs are judged by.
 - [Usage persistence](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/tools/usage-repository.ts)
 - [Run roster recording](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/stages/tools.ts)
 - [Tool-call recording](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/event-handlers-tools.ts)
-- [Tool settings](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/settings/ui/capabilities/ToolsRegistry.tsx)
+- [Per-agent tool switches (Access tab)](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/store/ui/AgentAccess.tsx)

@@ -121,14 +121,14 @@ describe('buildAgentSystemPrompt', () => {
       conversation: { self: 'lead', participants: [{ handle: 'lead' }] },
       activeSubAgents: [{ title: 'nested worker', task: 'child-session' }],
     })
-    expect(orchestratorRegistry.toolNames).toContain('agents')
+    expect(orchestratorRegistry.toolNames).toContain('store')
     expect(orchestratorRegistry.toolNames).toContain('delegate')
     expect(orchestratorPrompt).toContain('`delegate` action:"list"')
     expect(orchestratorPrompt).toContain('do not poll for completion')
     expect(orchestratorPrompt).toContain('results arrive automatically as new messages')
     // A child is reachable after its report: the prompt must say so, not call it one-shot.
     expect(orchestratorPrompt).toContain('`delegate` action:"message"')
-    expect(orchestratorPrompt).toContain('`agents`')
+    expect(orchestratorPrompt).toContain('`store`')
     expect(orchestratorPrompt).not.toContain('cannot receive follow-up instructions')
 
     const lockedPrompt = buildAgentSystemPrompt({

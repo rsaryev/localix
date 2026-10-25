@@ -10,8 +10,7 @@ describe('native agent definition boundary', () => {
     expect(builtinAgentId('reviewer')).toBe('builtin:reviewer')
   })
 
-  test('the person is not an agent: no human kind, and only `all` is reserved', () => {
-    expect(agentBlueprintSchema.safeParse({ ...blueprint, kind: 'human' }).success).toBe(false)
+  test('the person is not an agent: only `all` is reserved', () => {
     expect(agentBlueprintSchema.safeParse({ ...blueprint, handle: 'all' }).success).toBe(false)
     expect(agentBlueprintSchema.safeParse({ ...blueprint, handle: 'human' }).success).toBe(true)
     expect(agentBlueprintSchema.safeParse({ handle: 'reviewer', instructions: '' }).success).toBe(

@@ -1,6 +1,14 @@
-import type { ConfigField, Listing, ListingDetail, ListingRef, Scope } from '@localixai/store'
+import type {
+  ConfigField,
+  ItemAction,
+  Listing,
+  ListingDetail,
+  ListingRef,
+  Scope,
+} from '@localixai/store'
 
 import type { CuratorSkillRecord } from './contracts'
+import { unusedNote } from './store-idle'
 
 /**
  * A SKILL AS A LISTING (`docs/internals/store.md`, "Skills"). The id is built from the scope and
@@ -9,8 +17,9 @@ import type { CuratorSkillRecord } from './contracts'
  *   `user:<name>`      a skill of the person's, kept in their home
  *   `project:<name>`   a skill of a project, kept in its folder
  *
- * A plugin's skills are components of the plugin and are not listed here. A skill that a
- * Claude Code folder holds (`~/.claude/skills`, a command file) is listed and read-only.
+ * Yours and a project's are the `.claude/skills` folders Claude Code reads too. A plugin's skills
+ * are components of the plugin and are not listed here. A skill from the portable
+ * `.agents/skills`, a command file or a parent folder's `.claude/skills` is listed and read-only.
  */
 
 /** One skill as the files give it: what the person writes, and where it is. */
@@ -49,7 +58,8 @@ export const listingRef = (ref: SkillRef): ListingRef => ({ kind: 'skill', id: i
 /** Where an unmanaged skill is defined, as the page names it. */
 function folderOf(path = ''): string {
   if (path.includes('/.claude/commands/')) return 'a Claude Code command file'
-  if (path.includes('/.claude/skills/')) return 'a Claude Code skills folder'
+  if (path.includes('/.agents/skills/')) return 'the portable .agents/skills folder'
+  if (path.includes('/.claude/skills/')) return "a parent folder's .claude/skills"
   return 'a skills folder Localix does not manage'
 }
 
@@ -82,7 +92,7 @@ export function skillListing(entry: SkillEntry, enabled: boolean): Listing {
   }
 }
 
-export function skillDetail(listing: Listing, entry: SkillEntry): ListingDetail {
+export function skillDetail(listing: Listing, entry: SkillEntry, nowMs: number): ListingDetail {
   const used = entry.managed?.getCount ?? 0
   const kept = entry.scope === 'project' ? 'This project' : 'Your skills'
   const facts: [string, string | undefined][] = [
@@ -90,13 +100,21 @@ export function skillDetail(listing: Listing, entry: SkillEntry): ListingDetail 
     ['Used', used > 0 ? times(used) : undefined],
     ['Problem', entry.skill?.validation?.errors[0]],
   ]
+  const note = entry.managed ? unusedNote(entry.managed, entry.scope, nowMs) : null
   return {
     ...listing,
+    ...(note ? { notice: { text: note, action: PIN } } : {}),
     readme: entry.skill?.content || null,
     media: [],
     facts: facts.flatMap(([label, value]) => (value ? [{ label, value }] : [])),
     components: [{ kind: 'skill', name: entry.name }],
   }
+}
+
+export const PIN: ItemAction = {
+  id: 'pin',
+  label: 'Pin',
+  help: 'Keep it from being archived when unused',
 }
 
 export const NAME_FIELD: ConfigField = {

@@ -3,8 +3,8 @@
 Permission rules belong to the agent taking the turn. Its instructions describe the work it should
 do; its rules govern the calls it may make. The conversation's
 [permission mode](permission-modes.md) derives effective rules for a run without changing the stored
-list. Run shape, host services, and model compatibility can further limit tools that Settings
-allows.
+list. Run shape, host services, and model compatibility can further limit tools an agent's rules
+allow.
 
 ## What you can do
 
@@ -39,7 +39,7 @@ A conversation's [permission mode](permission-modes.md) derives the effective ru
 from the agent's list. Plan mode adds mutation denials. Bypass and Autonomous remove call-class
 confirmation rules and turn named-tool questions into allows while keeping existing denials. The
 stored agent rules stay unchanged. Run shape, host services, and model compatibility can also
-withhold a tool enabled in Settings.
+withhold a tool its rules allow.
 
 ### Mini app tools and plugins
 
@@ -48,7 +48,7 @@ A mini app's tools join the same roster as the built-in ones, so one rule shape 
 `mini-app:kanban` removes the whole mini app: its tools, its prompt line and its commands. A
 `plugin:<name>` rule does the same for a Claude Code plugin: its skills, commands, agents and MCP
 servers. The run projects the rules only after the loaded mini apps and plugins are known, so a tool
-switched off in Settings never reaches the turn.
+switched off on the agent's **Access** tab never reaches the turn.
 
 The conversation's **Plan** [permission mode](permission-modes.md) constrains project changes while
 allowing its own plan files and permitted session-state changes. Use it to investigate and prepare a

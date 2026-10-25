@@ -1,3 +1,4 @@
+import { createChangeSignal } from '@localixai/store'
 import type {
   ActionResult,
   ConfigValue,
@@ -50,6 +51,11 @@ export interface McpStoreDeps {
   /** The servers Claude Code's files define: the person's, and those of a project's folder. */
   files: { user(): McpServerRecord[]; project(cwd: string): McpServerRecord[] }
   projectCwd(userId: string, projectId: string): Promise<string | null>
+  /**
+   * Hear a change made outside the Store (a switch from the Capabilities screen, a file written by
+   * a tool); returns the unsubscribe. The Store's own writes are announced here too.
+   */
+  onChange(listener: () => void): () => void
 }
 
 interface Found {
@@ -67,10 +73,7 @@ const fileScope = (record: McpServerRecord) => record.id.split(':')[1] ?? 'user'
  * other. A server a plugin bundles is a component of that plugin and is not listed.
  */
 export function createMcpStoreProvider(deps: McpStoreDeps): StoreProvider {
-  const listeners = new Set<() => void>()
-  const changed = () => {
-    for (const listener of listeners) listener()
-  }
+  const { changed, subscribe } = createChangeSignal((listener) => deps.onChange(listener))
   /** The tools each server said it has when last tested: the switches a page can show. */
   const tools = new Map<string, string[]>()
   const toolsKey = (userId: string, record: McpServerRecord) => `${userId}:${record.id}`
@@ -141,9 +144,6 @@ export function createMcpStoreProvider(deps: McpStoreDeps): StoreProvider {
     )
   }
 
-  const unsupported = () =>
-    new InvalidRequestError('mcp_store_create_only', 'An MCP server is added with Add MCP server')
-
   return {
     kind: 'mcp-server',
 
@@ -167,16 +167,6 @@ export function createMcpStoreProvider(deps: McpStoreDeps): StoreProvider {
     async detail(id, actor) {
       const { ref, record } = await find(id, actor)
       return serverDetail(await listing(record, ref, await enabledOf(actor.userId)), record, ref)
-    },
-
-    plan: async () => {
-      throw unsupported()
-    },
-    install: async () => {
-      throw unsupported()
-    },
-    update: async () => {
-      throw unsupported()
     },
 
     async remove(id, _scope, actor) {
@@ -295,12 +285,6 @@ export function createMcpStoreProvider(deps: McpStoreDeps): StoreProvider {
       throw new InvalidRequestError('mcp_store_action', `An MCP server cannot "${action}"`)
     },
 
-    refresh: async () => {},
-    sources: async () => [],
-
-    subscribe(onChange) {
-      listeners.add(onChange)
-      return () => listeners.delete(onChange)
-    },
+    subscribe,
   }
 }

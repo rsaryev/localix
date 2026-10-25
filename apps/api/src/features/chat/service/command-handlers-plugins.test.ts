@@ -175,9 +175,9 @@ describe('plugin command system output', () => {
   })
 
   test('the dropped aliases are gone — one spelling per action', async () => {
-    // `uninstall`/`rm` for remove and `upgrade` for update were extra names the menu
-    // could never show; accepting them kept two vocabularies alive at once.
-    for (const alias of ['uninstall', 'rm', 'upgrade']) {
+    // `rm` for remove and `upgrade` for update were extra names the menu could never show.
+    // `uninstall` is not one of them: it is Claude Code's spelling (`cc-forms` test).
+    for (const alias of ['rm', 'upgrade']) {
       const reply = replyCapture()
       let removed = false
       await handlePluginsControlCommand(

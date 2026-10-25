@@ -5,7 +5,6 @@ import { tmpdir } from 'node:os'
 
 import { discoverFilesystemSkills } from '../agent-core/skill-discovery'
 import { createSkillsCuratorService, CURATOR_INTERVAL_DAYS } from './service'
-import { ARCHIVE_DIR_NAME } from './skill-fs'
 import type { SkillScope, SkillUsageRecord, SkillUsageRepository } from './repository'
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -29,6 +28,7 @@ function createFakeRepo(nowIso: () => string) {
         lastUsedAt: null,
         pinned: false,
         archivedAt: null,
+        localixAuthored: false,
         createdAt: nowIso(),
         updatedAt: nowIso(),
       }
@@ -58,15 +58,28 @@ function createFakeRepo(nowIso: () => string) {
       row.archivedAt = archivedAt
       return { ...row }
     },
+    async markAuthored(_userId, projectId, name, scope, createdAt) {
+      const fresh = !rows.has(key(projectId, name, scope))
+      const row = ensure(projectId, name, scope)
+      if (fresh && createdAt) row.createdAt = createdAt
+      row.localixAuthored = true
+    },
   }
+  fake = repo
   return { repo, rows, ensure }
 }
 
 let base: string
 let now: Date
+/** The repository of the running test, which `writeSkill` records authorship in. */
+let fake: SkillUsageRepository
 
-async function writeSkill(name: string, opts?: { ageDays?: number; sub?: string }) {
-  const dir = join(base, opts?.sub ?? '.localix/skills', name)
+/** Writes a skill; by default one created in Localix (`authored: false`: Claude Code made it). */
+async function writeSkill(
+  name: string,
+  opts?: { ageDays?: number; sub?: string; authored?: boolean },
+) {
+  const dir = join(base, opts?.sub ?? '.claude/skills', name)
   await fs.mkdir(dir, { recursive: true })
   await fs.writeFile(
     join(dir, 'SKILL.md'),
@@ -77,15 +90,24 @@ async function writeSkill(name: string, opts?: { ageDays?: number; sub?: string 
     await fs.utimes(join(dir, 'SKILL.md'), ts, ts)
     await fs.utimes(dir, ts, ts)
   }
+  if (opts?.authored !== false && !opts?.sub) {
+    const stamp = (await fs.stat(join(dir, 'SKILL.md'))).mtime.toISOString()
+    await fake.markAuthored(USER, '', name, 'global', stamp)
+  }
   return dir
 }
 
-function makeService(repo: SkillUsageRepository) {
+function makeService(
+  repo: SkillUsageRepository,
+  extra: Partial<Parameters<typeof createSkillsCuratorService>[0]> = {},
+) {
   return createSkillsCuratorService({
     usageRepo: repo,
     globalBase: base,
+    archiveRoot: join(base, 'archive'),
     stateFile: join(base, 'curator-state.json'),
     now: () => now,
+    ...extra,
   })
 }
 
@@ -120,6 +142,7 @@ describe('skills curator service', () => {
         },
       },
       globalBase: base,
+      archiveRoot: join(base, 'archive'),
       stateFile: join(base, 'curator-state.json'),
       now: () => now,
       async resolveProjectCwd() {
@@ -155,9 +178,11 @@ describe('skills curator service', () => {
     expect(report.active).toBe(1)
     expect(report.archived).toBe(1)
 
-    // Moved into the sibling .archive/ — recoverable, never deleted.
-    const archivedMd = join(base, '.localix/skills', ARCHIVE_DIR_NAME, 'old-unused', 'SKILL.md')
+    // Moved outside `.claude/skills` (Claude Code reads it) — recoverable, never deleted.
+    const archivedMd = join(base, 'archive', 'user', 'old-unused', 'SKILL.md')
     expect(await fs.readFile(archivedMd, 'utf8')).toContain('body of old-unused')
+    expect(await fs.exists(join(base, '.claude/skills', 'old-unused'))).toBe(false)
+    expect(await fs.exists(join(base, '.claude/skills/.archive'))).toBe(false)
   })
 
   test('archives skills last used more than 90 days ago (stale-by-disuse)', async () => {
@@ -221,7 +246,7 @@ describe('skills curator service', () => {
     expect(archived.archivedAt).not.toBeNull()
     expect(await fs.exists(dir)).toBe(false)
 
-    // Discovery (what the agent sees) excludes .archive entirely.
+    // Discovery (what the agent, and Claude Code, see) does not reach the archive.
     const discovered = await discoverFilesystemSkills(base)
     expect(discovered.filter((s) => s.dir.startsWith(base)).map((s) => s.name)).toEqual([])
 
@@ -247,7 +272,7 @@ describe('skills curator service', () => {
 
     // First observation: seed only, no pass.
     expect(await service.maybeRunScheduled(USER)).toBeNull()
-    expect(await fs.exists(join(base, '.localix/skills', 'old-unused'))).toBe(true)
+    expect(await fs.exists(join(base, '.claude/skills', 'old-unused'))).toBe(true)
 
     // Within the interval: still no pass.
     now = new Date(now.getTime() + (CURATOR_INTERVAL_DAYS - 1) * DAY_MS)
@@ -260,5 +285,148 @@ describe('skills curator service', () => {
 
     // Marker updated — immediately after, no second pass.
     expect(await service.maybeRunScheduled(USER)).toBeNull()
+  })
+
+  test('a skill says when it goes stale and which scheduled pass archives it', async () => {
+    const { repo } = createFakeRepo(() => now.toISOString())
+    await writeSkill('never-used', { ageDays: 20 })
+    await writeSkill('used', { ageDays: 200 })
+    await repo.recordUse(
+      USER,
+      '',
+      'used',
+      'global',
+      new Date(now.getTime() - 60 * DAY_MS).toISOString(),
+    )
+    // The last pass ran 3 days ago: the next is in 4 days, then every 7.
+    const lastRunAt = new Date(now.getTime() - 3 * DAY_MS).toISOString()
+    await fs.writeFile(join(base, 'curator-state.json'), JSON.stringify({ lastRunAt }))
+    const listed = await makeService(repo).listSkills(USER)
+    const at = (name: string) => listed.find((s) => s.name === name)!
+    // Never used: stale 30 days after it was made (10 days ahead), so the pass of day 11.
+    expect(at('never-used').staleAt).toBe(new Date(now.getTime() + 10 * DAY_MS).toISOString())
+    expect(at('never-used').archiveOn).toBe(new Date(now.getTime() + 11 * DAY_MS).toISOString())
+    // Used 60 days ago: stale 90 days after that (30 ahead), so the pass of day 32.
+    expect(at('used').idleSince).toBe(new Date(now.getTime() - 60 * DAY_MS).toISOString())
+    expect(at('used').archiveOn).toBe(new Date(now.getTime() + 32 * DAY_MS).toISOString())
+  })
+
+  test('a pinned skill, an archived one and a project one have no archive date', async () => {
+    const { repo } = createFakeRepo(() => now.toISOString())
+    await writeSkill('pinned', { ageDays: 400 })
+    await repo.setPinned(USER, '', 'pinned', 'global', true)
+    await writeSkill('mine', { ageDays: 5 })
+    const service = makeService(repo, { resolveProjectCwd: async () => base })
+    await service.archive(USER, { name: 'mine' })
+    const [pinned, archived] = await service
+      .listSkills(USER)
+      .then((all) => [all.find((s) => s.name === 'pinned')!, all.find((s) => s.name === 'mine')!])
+    expect([pinned.staleAt, pinned.archiveOn]).toEqual([null, null])
+    expect([archived.staleAt, archived.archiveOn]).toEqual([null, null])
+  })
+
+  test('a project skill is stale but is never archived by the scheduled pass', async () => {
+    const { repo } = createFakeRepo(() => now.toISOString())
+    const project = join(base, 'repo')
+    await fs.mkdir(project, { recursive: true })
+    const dir = join(project, '.claude/skills/deploy')
+    await fs.mkdir(dir, { recursive: true })
+    await fs.writeFile(join(dir, 'SKILL.md'), '---\nname: deploy\ndescription: d\n---\nbody\n')
+    const old = new Date(now.getTime() - 60 * DAY_MS)
+    await fs.utimes(join(dir, 'SKILL.md'), old, old)
+    await fake.markAuthored(USER, 'p1', 'deploy', 'project', old.toISOString())
+    const service = makeService(repo, { resolveProjectCwd: async () => project })
+    const [skill] = await service.listSkills(USER, { projectId: 'p1' })
+    expect(skill?.state).toBe('stale')
+    expect(skill?.archiveOn).toBeNull()
+  })
+
+  test('archiving the unused skips what was pinned or used since the preview', async () => {
+    const { repo } = createFakeRepo(() => now.toISOString())
+    for (const name of ['a', 'b', 'c', 'd']) await writeSkill(name, { ageDays: 45 })
+    const service = makeService(repo)
+    const previewed = (await service.listSkills(USER)).filter((s) => s.state === 'stale')
+    expect(previewed.map((s) => s.name)).toEqual(['a', 'b', 'c', 'd'])
+    await repo.setPinned(USER, '', 'b', 'global', true)
+    await repo.recordUse(USER, '', 'c', 'global', now.toISOString())
+    const done = await service.archiveUnused(USER, { names: ['a', 'b', 'c'] })
+    expect(done.map((s) => s.name)).toEqual(['a'])
+    const left = await service.listSkills(USER)
+    expect(left.filter((s) => s.state === 'archived').map((s) => s.name)).toEqual(['a'])
+    // d was stale but not confirmed: it stays.
+    expect(left.find((s) => s.name === 'd')?.state).toBe('stale')
+  })
+
+  test('a scheduled pass that archived something says so once; one that did not is silent', async () => {
+    const { repo } = createFakeRepo(() => now.toISOString())
+    await writeSkill('old-one', { ageDays: 60 })
+    await writeSkill('old-two', { ageDays: 60 })
+    const told: string[][] = []
+    const service = makeService(repo, { onArchived: (_user, names) => void told.push(names) })
+    await service.maybeRunScheduled(USER)
+    now = new Date(now.getTime() + 8 * DAY_MS)
+    await service.maybeRunScheduled(USER)
+    now = new Date(now.getTime() + 8 * DAY_MS)
+    await service.maybeRunScheduled(USER)
+    expect(told).toEqual([['old-one', 'old-two']])
+  })
+
+  test('a skill Claude Code made is never aged out: no stale state, no archive date, no scheduled archive', async () => {
+    const { repo } = createFakeRepo(() => now.toISOString())
+    await writeSkill('from-cc', { ageDays: 400, authored: false })
+    await writeSkill('mine-old', { ageDays: 400 })
+    const service = makeService(repo)
+
+    const listed = await service.listSkills(USER)
+    const cc = listed.find((s) => s.name === 'from-cc')!
+    expect([cc.state, cc.staleAt, cc.archiveOn]).toEqual(['active', null, null])
+    expect(listed.find((s) => s.name === 'mine-old')?.state).toBe('stale')
+
+    const report = await service.runCurator(USER)
+    expect(report.archivedNow).toEqual(['mine-old'])
+    expect(await service.archiveUnused(USER, { names: ['from-cc'] })).toEqual([])
+    expect(await fs.exists(join(base, '.claude/skills/from-cc/SKILL.md'))).toBe(true)
+  })
+
+  test('a skill Claude Code made can still be pinned, archived by hand and restored', async () => {
+    const { repo } = createFakeRepo(() => now.toISOString())
+    await writeSkill('from-cc', { authored: false })
+    const service = makeService(repo)
+
+    expect(
+      (await service.setPinned(USER, { name: 'from-cc', scope: 'global', pinned: true })).pinned,
+    ).toBe(true)
+    expect((await service.archive(USER, { name: 'from-cc' })).state).toBe('archived')
+    expect(await fs.exists(join(base, 'archive/user/from-cc/SKILL.md'))).toBe(true)
+    expect((await service.restore(USER, { name: 'from-cc' })).state).toBe('active')
+    expect(await fs.exists(join(base, '.claude/skills/from-cc/SKILL.md'))).toBe(true)
+  })
+
+  test('restoring does not overwrite a folder that appeared meanwhile', async () => {
+    const { repo } = createFakeRepo(() => now.toISOString())
+    await writeSkill('twin')
+    const service = makeService(repo)
+    await service.archive(USER, { name: 'twin' })
+    await fs.mkdir(join(base, '.claude/skills/twin'), { recursive: true })
+    await fs.writeFile(join(base, '.claude/skills/twin/notes.txt'), 'mine')
+
+    await expect(service.restore(USER, { name: 'twin' })).rejects.toThrow(/already exists/u)
+    expect(await fs.exists(join(base, 'archive/user/twin/SKILL.md'))).toBe(true)
+  })
+
+  test('a project archives under its own id, outside the project folder tree Claude Code reads', async () => {
+    const { repo } = createFakeRepo(() => now.toISOString())
+    const project = join(base, 'repo')
+    const dir = join(project, '.claude/skills/deploy')
+    await fs.mkdir(dir, { recursive: true })
+    await fs.writeFile(join(dir, 'SKILL.md'), '---\nname: deploy\ndescription: d\n---\nbody\n')
+    const service = makeService(repo, { resolveProjectCwd: async () => project })
+
+    await service.archive(USER, { name: 'deploy', projectId: 'p1' })
+
+    expect(await fs.exists(join(base, 'archive/p1/deploy/SKILL.md'))).toBe(true)
+    expect(await fs.exists(join(project, '.claude/skills/deploy'))).toBe(false)
+    const listed = await service.listSkills(USER, { projectId: 'p1' })
+    expect(listed.map((s) => [s.name, s.state])).toEqual([['deploy', 'archived']])
   })
 })

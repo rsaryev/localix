@@ -4,6 +4,7 @@ import type { PermissionRule } from '../../../agent-core/permission-engine'
 import { verdictOf } from '../../../agent-core/permission-verdict'
 import type { DiscoveredSkill } from '../../../agent-core/skill-discovery'
 import type { SessionRecord } from '../../repository'
+import { applySkillTurnGrants } from './skill-turn-grants'
 import { skillToolPorts, type SkillCommandPolicyRef } from './skill-tool-ports'
 
 // skills.md, frontmatter `allowed-tools`: "Tools Claude can use without asking permission during
@@ -46,5 +47,13 @@ describe('a skill the model loads applies its tool lists to the turn', () => {
     expect(check()('bash', { command: 'git push origin' }).decision).toBe('allow')
     expect(check()('bash', { command: 'rm -rf x' }).decision).toBe('ask')
     expect(check()('write', { path: 'a.txt', content: 'x' }).decision).toBe('deny')
+  })
+
+  test('a disallowed-tools entry with a specifier refuses only what it matches', () => {
+    const commandPolicy = policy()
+    applySkillTurnGrants(commandPolicy, { name: 'safe', disallowedTools: ['Bash(rm *)'] }, '/w')
+    const check = verdictOf(commandPolicy.current!)
+    expect(check('bash', { command: 'rm x' }).decision).toBe('deny')
+    expect(check('bash', { command: 'ls' }).decision).toBe('ask')
   })
 })

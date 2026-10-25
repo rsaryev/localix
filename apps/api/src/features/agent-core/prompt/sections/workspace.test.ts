@@ -421,7 +421,7 @@ describe('# Collaboration — one rule for who does the work', () => {
   it('tells a role with `delegate` how delegating works', () => {
     const out = buildCollaborationSection(['read', 'search', 'delegate'])!
     expect(out).toContain('Broad investigation goes to `delegate`')
-    expect(out).toContain('context:"conversation"')
+    expect(out).toContain('context:"fork"')
     // `agents` authors specialists; it starts no child work.
     expect(buildCollaborationSection(['read', 'search', 'agents'])).toBeNull()
     expect(out).not.toContain('`agents`')

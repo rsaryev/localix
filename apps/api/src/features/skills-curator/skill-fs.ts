@@ -1,10 +1,12 @@
 import { promises as fs } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
 
+import { localixHome } from '../../lib/env'
 import { skillRoot, readSkillsFromRoot, type DiscoveredSkill } from '../agent-core/skill-discovery'
 import type { SkillScope, SkillUsageRecord } from './repository'
 
-export const ARCHIVE_DIR_NAME = '.archive'
+/** `~/.localix/skills-archive`: the default home of archived skills. */
+export const defaultArchiveRoot = (): string => join(localixHome(), 'skills-archive')
 
 /** The one exact skill root to scan (project or no-project home; no fallback). */
 export function skillBases(
@@ -16,24 +18,50 @@ export function skillBases(
     : [{ base: globalBase, scope: 'global' }]
 }
 
-/**
- * Scans every skill root, first-wins by name. `extraSeg` lets the caller dive
- * into the sibling `.archive/` folder of each root (vs the active root).
- */
+/** Active skills of the one exact root (`.claude/skills`), first-wins by name. */
 export async function scanSkillRoots(
   workingDir: string | null,
   globalBase: string,
-  extraSeg?: string,
 ): Promise<DiscoveredSkill[]> {
   const byName = new Map<string, DiscoveredSkill>()
   for (const { base, scope } of skillBases(workingDir, globalBase)) {
-    const activeRoot = skillRoot(base)
-    const root = extraSeg ? join(activeRoot, extraSeg) : activeRoot
-    for (const s of await readSkillsFromRoot(root, scope)) {
+    for (const s of await readSkillsFromRoot(skillRoot(base), scope)) {
       if (!byName.has(s.name)) byName.set(s.name, s)
     }
   }
   return [...byName.values()]
+}
+
+/**
+ * Where archived skills wait: OUTSIDE `.claude/skills`, which Claude Code reads and watches and
+ * whose handling of nested folders is not documented, so an archived skill there could load.
+ * `<archiveRoot>/<user | projectId>/<name>`.
+ */
+export function archiveDirOf(archiveRoot: string, projectId: string): string {
+  return join(archiveRoot, projectId || 'user')
+}
+
+/** The archived skills of one shelf. */
+export async function scanArchivedSkills(
+  workingDir: string | null,
+  globalBase: string,
+  archiveRoot: string,
+  projectId: string,
+): Promise<DiscoveredSkill[]> {
+  const [{ scope }] = skillBases(workingDir, globalBase)
+  return readSkillsFromRoot(archiveDirOf(archiveRoot, projectId), scope!)
+}
+
+/** Renames a folder, copying then removing it when the two places are on different volumes. */
+export async function moveDir(from: string, to: string): Promise<void> {
+  await fs.mkdir(dirname(to), { recursive: true })
+  try {
+    await fs.rename(from, to)
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'EXDEV') throw error
+    await fs.cp(from, to, { recursive: true, errorOnExist: true, force: false })
+    await fs.rm(from, { recursive: true, force: true })
+  }
 }
 
 /** Age basis for staleness: first recorded use, else file mtime, else now. */
@@ -51,13 +79,15 @@ export async function skillAgeBasis(
   }
 }
 
-/** Moves a skill dir into the sibling `.archive/` folder of its skills root. Never deletes. */
-export async function moveToArchive(skill: DiscoveredSkill): Promise<string> {
-  const archiveRoot = join(dirname(skill.dir), ARCHIVE_DIR_NAME)
-  await fs.mkdir(archiveRoot, { recursive: true })
-  const target = join(archiveRoot, basename(skill.dir))
+/** Moves a skill dir into the archive folder of its shelf. Never deletes the skill. */
+export async function moveToArchive(
+  skill: DiscoveredSkill,
+  archiveRoot: string,
+  projectId: string,
+): Promise<string> {
+  const target = join(archiveDirOf(archiveRoot, projectId), basename(skill.dir))
   await fs.rm(target, { recursive: true, force: true })
-  await fs.rename(skill.dir, target)
+  await moveDir(skill.dir, target)
   return target
 }
 

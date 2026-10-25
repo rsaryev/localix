@@ -25,18 +25,29 @@ By default a child starts from **the task alone** (`context: "none"`): it is tol
 delegated the task, that its final reply is reported back, and nothing else. State everything it
 needs in `task`.
 
-`context: "conversation"` adds the **current topic** of the conversation, reduced to what the person
-and the delegating agent said:
+`context: "fork"` (or `agent: "fork"`, as Claude Code writes it) starts a **fork** instead: a copy
+of the delegating agent that has seen everything the agent has seen. It is that agent, on the model
+and reasoning effort it is running on, with the same system prompt and the same tools in the same
+order, and it reads exactly the conversation the agent's own request carried up to the call: every
+message and tool result, and the work the delegating turn had done so far. Its one new message is
+the directive. Use it for work that needs all of that context and would take too long to write down
+in `task`.
 
-| Copied                                                     | Not copied                                                          |
-| ---------------------------------------------------------- | ------------------------------------------------------------------- |
-| The person's messages, with attachments and linked context | A command's invocation instruction                                  |
-| The delegating agent's replies, as their text              | Its tool calls, tool results and reasoning                          |
-|                                                            | Other participants' messages, system wakes, notices, earlier topics |
-|                                                            | The delegating turn's own unfinished reply                          |
+| A fork                                               | Why                                                                                      |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Ignores `agent`, `model` and `effort`                | It is the delegating agent; the folder (`isolation`) and `wait` still apply              |
+| Cannot fork or delegate again                        | `delegate` stays in its tool list, so the tools are unchanged, and answers with an error |
+| Runs under the permission mode of the conversation   | Delegation is not a way to more permission                                               |
+| Returns only its final reply                         | What it read and did stays in its own session; the delegator receives the report         |
+| Reads the same bytes however long the parent goes on | The fork's history is the parent's line up to the call, read in place, never copied      |
 
-The child is told that the copied requests were already handled, that other participants' roles and
-tasks are not its own, and that earlier approvals do not carry over.
+The fork's request is the delegating agent's last request followed by the call, its answer and the
+directive, so the provider's prompt cache serves the shared part instead of writing it again. The
+cache is warm on providers that look up a prefix (Anthropic and Bedrock through an explicit
+breakpoint placed on the end of the parent's request; Google and OpenRouter automatically) and on
+providers keyed by session, which are given the parent's key (OpenAI-compatible providers and
+Codex). The one thing that differs between the parent's request and the fork's is what follows it.
+The `fork` name is reserved: an agent file called `fork` is listed but is never what a task goes to.
 
 A child runs under the conversation's permission mode, in the same workspace. Parallel edits must
 therefore use disjoint files or coordinate their changes. Another agent is admitted only when its
@@ -62,7 +73,7 @@ report follows.
 
 | Call                                                       | Effect                                                                                                                                 | Boundary                                                                                     |
 | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `delegate { title, task, agent?, context?, wait? }`        | Starts a child. `task` is the goal and when it is done; `title` is a short name.                                                       | Admitted against the limits below.                                                           |
+| `delegate { title, task, agent?, context?, wait? }`        | Starts a child. `task` is the goal and when it is done; `title` is a short name. `context: "fork"` starts a fork of the delegator.     | Admitted against the limits below.                                                           |
 | `delegate { …, model?, effort?, isolation? }`              | Sets the child's model (an alias such as `haiku` or an id), its reasoning effort, or `isolation: "worktree"` for a fresh git worktree. | A call's model and effort win over an agent type's own; a host's model wins over the call's. |
 | `delegate { action: "list" }`                              | This session's children: status, place in the queue, spend (tokens and cost) and public progress.                                      | Starts nothing. Not for polling.                                                             |
 | `delegate { action: "message", run, message, interrupt? }` | A running child reads it at its next step; a finished child runs again for it, in the same session.                                    | Queued, not read: the result never claims the child acted yet.                               |
@@ -168,6 +179,9 @@ requested outcome is ready: the delegator reviews the report before it calls the
 - **Built-in types**: `general-purpose` and `claude` run the task as the delegating agent itself;
   `Explore` and `Plan` run it read-only, without the project's instruction files. An agent file
   named `Explore` or `Plan` replaces the built-in.
+- **Own files only**: `hooks`, `mcpServers` and `permissionMode` in an agent file of yours, the
+  project's or a managed one apply to the child's runs, never to a plugin's agent or a fork; see
+  [What your own agent files can set](agents.md#what-your-own-agent-files-can-set).
 - **Memory**: `memory: user | project | local` gives an agent a folder
   (`~/.claude/agent-memory/<name>/`, `.claude/agent-memory/<name>/` or
   `.claude/agent-memory-local/<name>/`) whose `MEMORY.md` — its first 200 lines or 25KB — joins its
@@ -178,7 +192,10 @@ hand a task to, with their tool lists. Hooks see the agent's name as `agent_type
 `general-purpose`.
 
 In an agent's `tools`, `Agent` and `Task` mean `delegate`. An agent type whose `tools` list names no
-tool available here is refused instead of starting with none.
+tool available here is refused instead of starting with none. `Agent(worker, researcher)` limits an
+agent running as the main thread to those types; a call with no `agent` is `general-purpose`. An
+`Agent(<name>)` permission rule judges a call with no `agent` as `general-purpose`, and `claude`
+too.
 
 ## Skills that run in a child session
 
@@ -195,7 +212,8 @@ was ignored. See [Skills authoring](../extending/skills-authoring.md).
 - [Child creation and waiting](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/delegate-start.ts)
 - [Message, stop, close and list](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/delegate-control.ts)
 - [Delegate port wiring](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/delegate-options.ts)
-- [Conversation context](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/delegate-context.ts)
+- [Forks: the call and its plan](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/delegate-fork.ts)
+- [Forks: the request they share with the parent](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/fork/fork-port.ts)
 - [Child-session host](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/task-delegation-options.ts)
 - [Report waits](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/delegation-awaits.ts)
 - [Creation budget](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/delegation-budget.ts)

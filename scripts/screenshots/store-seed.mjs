@@ -1,5 +1,13 @@
 import { promises as fs } from 'node:fs'
-import { api, prepare, verifyDemoRuntime, fixtureFile } from './runtime.mjs'
+import path from 'node:path'
+import {
+  api,
+  captureRoot,
+  databaseFile,
+  prepare,
+  verifyDemoRuntime,
+  fixtureFile,
+} from './runtime.mjs'
 
 /**
  * The Store's captures need a home of their own: a person's Store has a few mini apps installed
@@ -36,7 +44,10 @@ export const YOURS = [
     },
   },
 ]
-export const YOURS_SCENARIOS = ['store-yours', 'store-mcp-settings']
+export const YOURS_SCENARIOS = ['store-yours', 'store-mcp-settings', 'store-archive-unused']
+
+/** A skill of the person's that was never used and is 60 days old: what Archive unused lists. */
+export const STALE_SKILL = 'old-standup'
 
 export async function clearYours() {
   for (const item of YOURS) {
@@ -52,6 +63,37 @@ export async function seedYours() {
   await clearYours()
   for (const item of YOURS)
     await api(`/store/create/${item.kind}`, { scope: 'user', values: item.values })
+}
+
+/**
+ * Make the stale skill for `store-archive-unused`: a skill made in Localix (its usage row says so,
+ * as the curator only ages those), written into the capture home's `.claude/skills` and dated back
+ * 60 days, as the curator ages a skill by its row and file.
+ */
+export async function seedStaleSkill() {
+  const dir = path.join(captureRoot, 'home', '.claude', 'skills', STALE_SKILL)
+  await fs.mkdir(dir, { recursive: true })
+  const file = path.join(dir, 'SKILL.md')
+  await fs.writeFile(
+    file,
+    `---\nname: ${STALE_SKILL}\ndescription: Summarize the daily standup notes\n---\nList what changed since yesterday.\n`,
+  )
+  const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)
+  await fs.utimes(file, sixtyDaysAgo, sixtyDaysAgo)
+  await fs.utimes(dir, sixtyDaysAgo, sixtyDaysAgo)
+  const { Database } = await import('bun:sqlite')
+  const db = new Database(databaseFile, { strict: true })
+  try {
+    const at = sixtyDaysAgo.toISOString()
+    db.run('DELETE FROM skill_usage WHERE skill_name = ? AND project_id = ?', [STALE_SKILL, ''])
+    db.run(
+      `INSERT INTO skill_usage(id,user_id,project_id,skill_name,scope,get_count,pinned,localix_authored,created_at,updated_at)
+       VALUES (?,?,?,?,?,0,0,1,?,?)`,
+      [crypto.randomUUID(), 'local-user', '', STALE_SKILL, 'global', at, at],
+    )
+  } finally {
+    db.close()
+  }
 }
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))

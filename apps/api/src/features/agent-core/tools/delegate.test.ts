@@ -1,6 +1,11 @@
 import { describe, expect, test } from 'bun:test'
 
-import { createDelegateTool, prepareDelegateArguments, type DelegateToolPort } from './delegate'
+import {
+  createDelegateTool,
+  delegatePermissionResources,
+  prepareDelegateArguments,
+  type DelegateToolPort,
+} from './delegate'
 import type { DelegatedRunSummary } from './delegate-control'
 
 function port(runs: DelegatedRunSummary[], over: Partial<DelegateToolPort> = {}) {
@@ -52,7 +57,6 @@ describe('delegate', () => {
       task: 'Review',
       title: 'Review',
       agent: 'design',
-      context: 'conversation',
       wait: true,
     })
     expect(calls.delegate).toEqual([
@@ -62,18 +66,81 @@ describe('delegate', () => {
       },
       {
         toolCallId: 'call-1',
-        request: {
-          task: 'Review',
-          title: 'Review',
-          agent: 'design',
-          context: 'conversation',
-          wait: true,
-        },
+        request: { task: 'Review', title: 'Review', agent: 'design', context: 'none', wait: true },
       },
     ])
     const missing = await run(value, { task: 'Verify login' })
     expect(missing.isError).toBe(true)
     expect(calls.delegate).toHaveLength(2)
+  })
+
+  describe('a fork', () => {
+    const asked = async (input: Record<string, unknown>) => {
+      const { value, calls } = port([])
+      const result = await run(value, { task: 'Audit auth', title: 'Audit', ...input })
+      return { result, calls }
+    }
+
+    test('context "fork" and agent "fork" are one request, whichever way it is written', async () => {
+      const viaContext = await asked({ context: 'fork' })
+      const viaAgent = await asked({ agent: 'fork' })
+      const viaCase = await asked({ agent: ' Fork ' })
+      const request = {
+        toolCallId: 'call-1',
+        request: { task: 'Audit auth', title: 'Audit', context: 'fork', wait: false },
+      }
+      expect(viaContext.calls.delegate).toEqual([request])
+      expect(viaAgent.calls.delegate).toEqual([request])
+      expect(viaCase.calls.delegate).toEqual([request])
+    })
+
+    test('the model, effort and agent a fork is given are ignored, as in Claude Code', async () => {
+      const { calls } = await asked({
+        context: 'fork',
+        agent: 'design',
+        model: 'opus',
+        effort: 'max',
+        wait: true,
+        isolation: 'worktree',
+      })
+      // Worktree and wait still apply: they say where it works and whether the call holds.
+      expect(calls.delegate).toEqual([
+        {
+          toolCallId: 'call-1',
+          request: {
+            task: 'Audit auth',
+            title: 'Audit',
+            context: 'fork',
+            wait: true,
+            isolation: 'worktree',
+          },
+        },
+      ])
+    })
+
+    test('the old context "conversation" is gone: the schema refuses it', async () => {
+      const tool = createDelegateTool(port([]).value)
+      expect(
+        tool.inputSchema.safeParse({ task: 't', title: 't', context: 'conversation' }).success,
+      ).toBe(false)
+      expect(tool.inputSchema.safeParse({ task: 't', title: 't', context: 'fork' }).success).toBe(
+        true,
+      )
+    })
+
+    test('a permission rule sees the same name for both forms', () => {
+      expect(delegatePermissionResources({ context: 'fork' })).toEqual(['fork'])
+      expect(delegatePermissionResources({ agent: 'fork' })).toEqual(['fork'])
+      expect(delegatePermissionResources({ agent: 'design' })).toEqual(['design'])
+      expect(delegatePermissionResources({ agent: 'design', context: 'fork' })).toEqual(['fork'])
+      expect(delegatePermissionResources({})).toEqual([])
+    })
+
+    test('the description teaches the fork and no longer the conversation copy', () => {
+      const text = createDelegateTool(port([]).value).description
+      expect(text).toContain('fork')
+      expect(text).not.toContain('conversation')
+    })
   })
 
   test('action "start" is read as the omitted action it names (LOCALIX-195)', async () => {

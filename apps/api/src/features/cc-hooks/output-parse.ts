@@ -60,6 +60,7 @@ export function foldHookOutput(text: string, allowPlainTextContext: boolean): Cc
       outcome.sessionTitle = hso.sessionTitle.trim()
     if (typeof hso.initialUserMessage === 'string' && hso.initialUserMessage.trim())
       outcome.initialUserMessage = hso.initialUserMessage
+    if (hso.suppressOriginalPrompt === true) outcome.suppressOriginalPrompt = true
     if (hso.reloadSkills === true) outcome.reloadSkills = true
     const pd = hso.permissionDecision
     if (pd === 'allow' || pd === 'deny' || pd === 'ask') outcome.permissionDecision = pd

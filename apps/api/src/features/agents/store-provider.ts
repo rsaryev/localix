@@ -60,8 +60,6 @@ const copyName = (handle: string, taken: ReadonlySet<string>) => {
  */
 export function createAgentStoreProvider(deps: AgentStoreDeps): StoreProvider {
   const { agents } = deps
-  const unsupported = () =>
-    new InvalidRequestError('agent_store_create_only', 'An agent is added with New agent')
 
   const scopeList = (userId: string, projectId: string) =>
     agents.listAgents(userId, { projectId: projectId || null })
@@ -111,16 +109,6 @@ export function createAgentStoreProvider(deps: AgentStoreDeps): StoreProvider {
     async detail(id, actor) {
       const found = await find(id, actor)
       return agentDetail(found, (await deps.chatsOf?.(found.record.id)) ?? 0)
-    },
-
-    plan: async () => {
-      throw unsupported()
-    },
-    install: async () => {
-      throw unsupported()
-    },
-    update: async () => {
-      throw unsupported()
     },
 
     async remove(id, _scope, actor) {
@@ -207,8 +195,6 @@ export function createAgentStoreProvider(deps: AgentStoreDeps): StoreProvider {
       return { ok: true, message: `Created ${copy.record.handle}` }
     },
 
-    refresh: async () => {},
-    sources: async () => [],
-    subscribe: deps.onChange,
+    subscribe: (listener) => deps.onChange(listener),
   }
 }

@@ -182,4 +182,20 @@ describe('Claude Code permission rules from settings files', () => {
     expect(fetch('https://docs.example.com/page')).toBe('allow')
     expect(fetch('https://example.com/')).toBeUndefined()
   })
+
+  test('an Agent rule judges a delegate call by the type it runs, general-purpose when none', async () => {
+    const { decide } = await rulesFor({
+      'home/.claude/settings.json': settings({
+        deny: ['Agent(general-purpose)', 'Agent(Explore)'],
+      }),
+    })
+    const start = (input: object) => decide({ toolName: 'delegate', input })
+    expect(start({ title: 't', task: 'x' })).toBe('deny')
+    expect(start({ title: 't', task: 'x', agent: 'claude' })).toBe('deny')
+    expect(start({ title: 't', task: 'x', agent: 'Explore' })).toBe('deny')
+    expect(start({ title: 't', task: 'x', agent: 'reviewer' })).toBeUndefined()
+    // Only a start names a type: listing or stopping children runs nothing.
+    expect(start({ action: 'list' })).toBeUndefined()
+    expect(start({ action: 'stop', run: 'sub-1' })).toBeUndefined()
+  })
 })

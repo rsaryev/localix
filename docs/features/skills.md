@@ -4,10 +4,11 @@ Skills are local `SKILL.md` files that give the agent a named procedure, descrip
 invocation controls. Use them once with `/name`, pin them to a session, or let the agent load one
 when its description matches the task.
 
-**Discovery boundary:** a session reads personal skills (`~/.localix/skills`, `~/.claude/skills`,
-`~/.claude/commands`), then the project's (`.localix/skills`, `.claude/skills`, `.agents/skills`,
-`.claude/commands`) in the working directory and every parent up to the repository root. A chat in
-the **Default** project reads the personal ones.
+**Discovery boundary:** a session reads personal skills (`~/.claude/skills`, `~/.claude/commands`),
+then the project's (`.claude/skills`, `.agents/skills`, `.claude/commands`) in the working directory
+and every parent up to the repository root. A chat in the **Default** project reads the personal
+ones. Your skills are Claude Code's own files: Localix writes `~/.claude/skills` and a project's
+`.claude/skills`, and Claude Code loads what it writes.
 
 ## What you can do
 
@@ -18,9 +19,9 @@ the **Default** project reads the personal ones.
 | Keep a skill active        | Pin it to the session through the session-skills API.                                                | The full skill body is added to that session's runtime prompt.                           |
 | Create or revise a skill   | Use Add skill on Store → Library → Yours (or Project), then edit it on its page.                     | Plugin-bundled skills are read-only; they follow their plugin.                           |
 | Let the agent load a skill | The runtime lists names and descriptions; the agent can fetch a matching body with the `skill` tool. | Bodies are loaded on demand rather than placing every skill in the prompt.               |
-| Archive stale skills       | Run the curator, or Archive a skill on its Store page.                                               | Archived directories are excluded from discovery until restored.                         |
-| Deny one agent a skill     | Switch it off on that agent's profile → Skills, or on the agent's Store page, Access tab.            | The switch writes one `skill:<name>` rule; the file and every other agent are untouched. |
-| Control availability       | Enable or disable a named skill for the selected agent.                                              | Disabling removes access by name, including pins and keyword triggers; files remain.     |
+| Archive stale skills       | Press **Archive unused** on Yours or Project, check the preview, confirm; or Archive one skill.      | Archived directories are excluded from discovery until restored.                         |
+| Deny one agent a skill     | Switch it off on the agent's Store page, **Access** tab.                                             | The switch writes one `skill:<name>` rule; the file and every other agent are untouched. |
+| Control availability       | Switch the skill on or off in Store → Installed, or per agent on its **Access** tab.                 | Disabling removes access by name, including pins and keyword triggers; files remain.     |
 
 ## How it works
 
@@ -29,18 +30,18 @@ the **Default** project reads the personal ones.
 | Term             | Meaning                                                   |
 | ---------------- | --------------------------------------------------------- |
 | Filesystem skill | A directory containing a readable `SKILL.md`.             |
-| Project skill    | A skill under `<working-directory>/.localix/skills`.      |
-| Personal skill   | A skill under `~/.localix/skills`, used by scratch chats. |
+| Project skill    | A skill under `<working-directory>/.claude/skills`.       |
+| Personal skill   | A skill under `~/.claude/skills`, used by scratch chats.  |
 | Plugin skill     | A read-only skill contributed by an enabled plugin.       |
 | Session pin      | A skill name whose full body is injected for one session. |
 | Curator pin      | Protection from automatic stale-skill archiving.          |
 
 ### Discovery and precedence
 
-| Session scope   | Folders read, in precedence order                                                                                                                                                                                 | Additional source     |
-| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
-| Project         | `~/.localix/skills`, `~/.claude/skills`, `~/.claude/commands`, then in the working directory and each parent up to the repository root: `.localix/skills`, `.claude/skills`, `.agents/skills`, `.claude/commands` | Enabled plugin skills |
-| Default project | `~/.localix/skills`, `~/.claude/skills`, `~/.claude/commands`                                                                                                                                                     | Enabled plugin skills |
+| Session scope   | Folders read, in precedence order                                                                                                                                         | Additional source     |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| Project         | `~/.claude/skills`, `~/.claude/commands`, then in the working directory and each parent up to the repository root: `.claude/skills`, `.agents/skills`, `.claude/commands` | Enabled plugin skills |
+| Default project | `~/.claude/skills`, `~/.claude/commands`                                                                                                                                  | Enabled plugin skills |
 
 A command file `.claude/commands/<path>.md` is a skill named by its path with each `/` a `:`
 (`commands/git/commit.md` is `/git:commit`); it takes a skill's frontmatter except `name` and
@@ -63,10 +64,10 @@ that shadows the portable procedure.
 The runtime initially gives the model a bounded roster of skill names and descriptions. The roster
 lists each description up to 1,536 characters, as Claude Code does, within an 8,000-code-unit
 budget: descriptions shorten to bare names before any name is omitted with a notice. The `skill`
-tool can list that roster or load one body; plugin skills can be read but not saved or deleted
-through the tool. Default delegated workers can also retrieve skills. An agent's explicit tool list
-and capability denials still control availability; pinning a skill supplies its body even without
-the retrieval tool.
+tool can load one body or save a skill; plugin skills can be read but not saved through the tool.
+Listing and removing skills belong to the Store. Default delegated workers can also retrieve skills.
+An agent's explicit tool list and capability denials still control availability; pinning a skill
+supplies its body even without the retrieval tool.
 
 One-shot `/name` invocation expands supported arguments before submitting the prompt. Filesystem
 skills can also opt into bounded local command expansion and confined file-reference expansion. A
@@ -92,41 +93,69 @@ the [skill authoring guide](../extending/skills-authoring.md).
 
 ### Management and curation
 
-The Store creates, edits, removes, archives, restores and curator-pins the skills Localix keeps
-(`.localix/skills`): **Add skill** on Library → Yours (yours) or Library → Project (the open
-project's), and the skill's own page for the rest. Its Settings tab holds the description and the
-instructions; **Pin**, **Archive** and **Restore** are buttons beside them. An edit replaces the
-managed description and body and preserves other frontmatter. A skill's name is its identity and is
-chosen when it is added.
+The Store creates, edits, removes, archives, restores and curator-pins the skills in
+`~/.claude/skills` and the open project's `.claude/skills`, the folders Claude Code reads too: **Add
+skill** on Library → Yours (yours) or Library → Project (the open project's), and the skill's own
+page for the rest. Its Settings tab holds the description and the instructions; **Pin**, **Archive**
+and **Restore** are buttons beside them. An edit replaces the managed description and body and
+preserves other frontmatter. A skill's name is its identity and is chosen when it is added.
 
-Skills from `.claude/` folders and command files are listed on Yours as read-only; a plugin's skills
-follow the plugin. A `.claude/commands` file is discovered as a skill, so there is no separate
-commands kind. The agent's Store page (Access tab) keeps the switches.
+A skill that is stale or close to it says so at the top of its page: "Not used for 95 days. Archived
+on 15 Jun 2026 unless pinned." with **Pin** beside it (a project's skill says to use **Archive
+unused** instead, since nothing archives it on its own). The page warns within two weeks of the pass
+that archives it.
 
-The curator classifies an unpinned filesystem skill as stale when it has never been used for more
-than 30 days or was last used more than 90 days ago. Automatic checks run once the app is idle after
-startup and then daily, but an archive pass runs at most once every seven days. The first automatic
-observation only saves the schedule marker and waits a full interval before archiving.
+Skills from the portable `.agents/skills`, from command files and from a parent folder's
+`.claude/skills` are listed read-only, and say where they live; a plugin's skills follow the plugin.
+A `.claude/commands` file is discovered as a skill, so there is no separate commands kind. The
+agent's Store page (Access tab) keeps the switches.
+
+`.claude/skills` is shared with Claude Code, whose use of a skill Localix cannot see. So the
+scheduled pass and **Archive unused** consider only skills created in Localix (the Store's **Add
+skill**, the agent's `skill` tool, or skills moved from the old `.localix/skills`). A skill Claude
+Code or you created by hand there never shows an "archived on" notice and is never archived by
+itself; it can still be pinned, archived from its page and restored.
+
+The curator classifies an unpinned skill created in Localix as stale when it has never been used for
+more than 30 days or was last used more than 90 days ago. Automatic checks run once the app is idle
+after startup and then daily, but an archive pass runs at most once every seven days. The first
+automatic observation only saves the schedule marker and waits a full interval before archiving.
+When a pass archives skills, one Event Center row names them (one skill: "Archived the review
+skill"; more: "Archived 3 unused skills") with **Open to restore**, which opens that skill's page
+(or the skills shelf) where **Restore** is.
+
+**Archive unused** on Yours and on Project is the same rule on demand. It first shows a preview,
+each skill that would be archived with why ("Last used 100 days ago", "Never used, 45 days old"),
+and archives nothing until you confirm. Confirming archives the previewed skills that are still
+stale: one you pinned or used meanwhile is left alone. Pinned skills never appear in the preview.
 
 One-shot slash preprocessing and successful `skill.get` record usage on a best-effort basis; they do
 not prove that the procedure completed. Pinning and keyword injection do not update this usage
 counter. A never-used skill's age comes from its usage record or file modification time.
 
-Curator inventory covers native Localix skills in the selected scope, without the runtime's personal
-fallback or portable sources. Archiving moves the directory into a sibling `.archive` folder;
-restoring moves it back and records a use. Archiving can replace a same-directory archive with the
-same name. Curator pins protect automatic passes, but manual archive remains available.
+Curator inventory covers the `.claude/skills` folder of the selected scope, without the runtime's
+personal fallback or portable sources. Archiving moves the directory to
+`~/.localix/skills-archive/user/<name>` (a project's: `.../<projectId>/<name>`), outside the folders
+Claude Code reads, so an archived skill never loads there; restoring moves it back (and refuses when
+a folder of that name exists) and records a use. Archiving can replace an archived skill of the same
+name.
+
+Earlier versions kept skills in `.localix/skills`. At the first start after the update they move
+once into the matching `.claude/skills` (home and every known project), the curator's archived ones
+into the archive folder, and the old folders are removed. When `.claude/skills` already holds a
+skill of that name, that one wins and the old copy is dropped; the start log names each one. Curator
+pins protect automatic passes, but manual archive remains available.
 
 ## Configuration
 
-| Setting or surface                    | Effect                                                      |
-| ------------------------------------- | ----------------------------------------------------------- |
-| `<working-directory>/.localix/skills` | Stores skills for that project scope.                       |
-| `~/.localix/skills`                   | Stores skills for scratch chats.                            |
-| Agent Store page, Access tab          | Switches skills per agent.                                  |
-| Web slash menu                        | Inserts a one-shot `/name` invocation.                      |
-| Session-skills API                    | Replaces the session's persisted pinned-skill list.         |
-| Agent skill rules                     | Enables or disables access to a named skill for that agent. |
+| Setting or surface                   | Effect                                                      |
+| ------------------------------------ | ----------------------------------------------------------- |
+| `<working-directory>/.claude/skills` | Stores skills for that project scope.                       |
+| `~/.claude/skills`                   | Stores skills for scratch chats.                            |
+| Agent Store page, Access tab         | Switches skills per agent.                                  |
+| Web slash menu                       | Inserts a one-shot `/name` invocation.                      |
+| Session-skills API                   | Replaces the session's persisted pinned-skill list.         |
+| Agent skill rules                    | Enables or disables access to a named skill for that agent. |
 
 ## Limits
 
@@ -134,8 +163,8 @@ same name. Curator pins protect automatic passes, but manual archive remains ava
   shadows a project skill of the same name.
 - Personal `.agents/skills` is not read. Skills in a folder below the working directory are not read
   either; start the session there to use them.
-- Skills read from `.claude/` and `.agents/` are read sources: the Store writes, deletes and
-  archives only `.localix/skills`.
+- Skills read from `.agents/skills`, `.claude/commands` and a parent folder's `.claude/skills` are
+  read sources: the Store writes, deletes and archives only the open scope's `.claude/skills`.
 - Project and plugin symlinks cannot extend discovery outside their safety root; personal skill
   links can. Archived and hidden subdirectories are excluded, and a discovered skill's assets are
   not scanned for nested skills.
@@ -148,8 +177,8 @@ same name. Curator pins protect automatic passes, but manual archive remains ava
   during one-shot invocation. Review skill files as executable local instructions.
 - Validator warnings are findings, not load blockers. Discovery rejects unreadable files, invalid
   UTF-8, files over 1 MiB, and empty Markdown bodies, including description-only files.
-- Automatic curator passes operate on personal skills. Run the curator explicitly for a project
-  scope.
+- Automatic curator passes operate on personal skills. Use **Archive unused** on the Project shelf
+  for a project's skills.
 - Curator pins prevent automatic archiving; they do not pin a skill into a chat session.
 - Model `skill.get` returns at most 64,000 bytes of body text, with a truncation notice and source
   path for longer procedures. This is separate from the 1 MiB file acceptance limit.

@@ -15,8 +15,8 @@ export interface LineRangeRender {
  * at `maxBytes`. Each line is prefixed with its number so the model can line up
  * `search` hits; this is the cheap, elidable alternative to `bash cat/nl/sed`.
  *
- * A line-range read IGNORES `offset` (startLine takes precedence), so on overflow
- * it advises continuing with a higher startLine — offset paging would silently
+ * A line-range read IGNORES `byte_offset` (startLine takes precedence), so on overflow
+ * it advises continuing with a higher startLine — byte paging would silently
  * re-read the same span. Always emits at least the first requested line.
  */
 export function renderLineRange(

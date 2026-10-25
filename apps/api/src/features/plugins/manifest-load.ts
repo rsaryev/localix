@@ -11,13 +11,8 @@ import {
   type PluginManifest,
   type PluginProvides,
 } from './contracts'
-import {
-  mapCcTools,
-  parseAgentFile,
-  parseCommandFile,
-  type CollectedMarkdownFile,
-} from './discovery-cc-files'
-import { mapCcAllowList } from '../ext/cc-tool-names'
+import { parseAgentFile, parseCommandFile, type CollectedMarkdownFile } from './discovery-cc-files'
+import { mapCcRuleList } from '../ext/cc-tool-names'
 import type { DiscoveredPlugin } from './discovery-types'
 import { resolveEntrypoints } from './discovery-entrypoints'
 import { parseComposedManifest } from './manifest-parse'
@@ -36,10 +31,10 @@ function parseInlineCommands(field: PluginManifest['commands']): PluginCommand[]
     const cmd = parsed.data
     // Map CC tool names to engine names (Bash→bash, Grep→search) via CC_TOOL_NAME_MAP.
     if (cmd.allowedTools?.length) {
-      cmd.allowedTools = mapCcAllowList(cmd.allowedTools) // keeps `Bash(git add:*)` patterns
+      cmd.allowedTools = mapCcRuleList(cmd.allowedTools) // keeps `Bash(git add:*)` patterns
     }
     if (cmd.disallowedTools?.length) {
-      cmd.disallowedTools = [...new Set(cmd.disallowedTools.flatMap((t) => mapCcTools(t)))]
+      cmd.disallowedTools = mapCcRuleList(cmd.disallowedTools) // keeps `Bash(rm *)` patterns
     }
     out.push(cmd)
   }
@@ -56,7 +51,7 @@ function withEntryFields(
     ...(entry.description !== undefined ? { description: entry.description } : {}),
     ...(entry.argumentHint !== undefined ? { argumentHint: entry.argumentHint } : {}),
     ...(entry.model !== undefined ? { model: entry.model } : {}),
-    ...(entry.allowedTools ? { allowedTools: mapCcAllowList(entry.allowedTools) } : {}),
+    ...(entry.allowedTools ? { allowedTools: mapCcRuleList(entry.allowedTools) } : {}),
   }
 }
 

@@ -1,5 +1,6 @@
 import { isRecord } from '../../lib/record'
 import type { SettingsLayer } from './settings-files'
+import { pluginOnlyLocks } from './settings-policy'
 
 /**
  * THE `hooks` OF CLAUDE CODE'S SETTINGS FILES, and which hooks may run at all (hooks.md;
@@ -9,6 +10,8 @@ import type { SettingsLayer } from './settings-files'
  *     `.claude/settings.local.json`) once the folder is trusted, as Claude Code holds them;
  *   - `disableAllHooks` in managed settings turns every hook off, plugins' included; outside
  *     them it turns off every hook but the organization's;
+ *   - `strictPluginOnlyCustomization` with `hooks` (managed settings only) drops the hooks of the
+ *     person's, a project's and the local files; the organization's and every plugin's still run;
  *   - `allowManagedHooksOnly` keeps the organization's hooks and those of the plugins its
  *     `enabledPlugins` force-enables.
  */
@@ -42,6 +45,7 @@ export function settingsHooks(
   const managedOnly =
     managed.some((l) => l.settings.allowManagedHooksOnly === true) ||
     layers.some((l) => l.source !== 'policy' && l.settings.disableAllHooks === true)
+  const pluginOnly = pluginOnlyLocks(layers).has('hooks')
   const forced = new Set(
     managed.flatMap((l) =>
       isRecord(l.settings.enabledPlugins)
@@ -55,7 +59,7 @@ export function settingsHooks(
   for (const layer of layers) {
     if (!isRecord(layer.settings.hooks)) continue
     const isManaged = layer.source === 'policy'
-    if (managedOnly && !isManaged) continue
+    if ((managedOnly || pluginOnly) && !isManaged) continue
     const repository = layer.source === 'project' || layer.source === 'local'
     if (repository && !options.projectTrusted) continue
     // A managed hook reads as a user one: Localix's sources name where a person writes hooks.

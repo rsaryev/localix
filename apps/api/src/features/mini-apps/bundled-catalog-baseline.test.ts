@@ -47,7 +47,6 @@ interface BaselineEntry {
   trust: string
   ruleKey: string
   commands: BaselineCommand[]
-  contributions: string[]
   tools: string[]
   views: string[]
   promptSections: string[]
@@ -76,7 +75,6 @@ function entryOf(app: DiscoveredMiniApp, tools: string[]): BaselineEntry {
     trust: miniAppTrustClass(app),
     ruleKey: actionFor('mini-app', app.name),
     commands: commandsOf(app),
-    contributions: sorted(app.contributions.map((item) => `${item.kind}:${item.key}`)),
     tools: sorted(tools),
     views: sorted(app.views.map((view) => view.id)),
     promptSections: app.promptSections.map((section) => section.title),
@@ -159,7 +157,6 @@ describe('bundled mini app baseline', () => {
       trust: 'bundled',
       ruleKey: 'mini-app:a',
       commands: [],
-      contributions: [],
       tools,
       views: [],
       promptSections: [],

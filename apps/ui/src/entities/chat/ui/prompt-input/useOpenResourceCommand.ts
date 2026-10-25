@@ -12,6 +12,15 @@ export interface OpenResourceRow {
   current?: boolean
 }
 
+/** The navigation host of one composer: it opens chats and resources for its own chat. */
+export function useComposerNavigation(sessionId: string | null) {
+  return useUiNavigation({
+    sessionId,
+    sessionProjectId: (id) =>
+      useChatStore.getState().allSessions.find((session) => session.id === id)?.projectId ?? null,
+  })
+}
+
 /**
  * `/open <uri>` in one composer. `sessionId` is the composer's own chat: what `/open` reveals are
  * that chat's tabs, and the browse is scoped to its workspace. It used to read the chat on screen,
@@ -23,11 +32,7 @@ export function useOpenResourceCommand(
   partial: string,
   setPrompt: (value: string) => void,
 ) {
-  const navigation = useUiNavigation({
-    sessionId,
-    sessionProjectId: (id) =>
-      useChatStore.getState().allSessions.find((session) => session.id === id)?.projectId ?? null,
-  })
+  const navigation = useComposerNavigation(sessionId)
   const drill = useResourceDrill({ active, partial, includeUiAnchors: true, sessionId })
   const [activeIndex, setActiveIndex] = useState(0)
   useEffect(() => setActiveIndex(0), [drill.parent, drill.segment])

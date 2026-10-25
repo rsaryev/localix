@@ -231,6 +231,36 @@ export function markHistoryCacheAnchor(messages: WireMessage[]): WireMessage[] {
   return messages
 }
 
+/**
+ * The cache anchor of a FORK's first request: the last message its parent had sent.
+ *
+ * A fork continues its parent's own conversation, so what its parent sent last is already in the
+ * provider's cache. That request ended just before the step that called the fork — the assistant
+ * message holding the call — and the fork's request adds that step, its answers and the directive.
+ * The default anchor (second-to-last) would land on those new answers, where nothing is cached; the
+ * breakpoint goes on the end of the parent's request, and the provider reads up to it.
+ *
+ * Without the call in the wire (a history that no longer holds it) the ordinary anchor applies.
+ * Idempotent; mutates in place and returns the same array.
+ */
+export function markForkCacheAnchor(messages: WireMessage[], toolCallId: string): WireMessage[] {
+  const step = messages.findIndex(
+    (m) =>
+      m.role === 'assistant' &&
+      Array.isArray(m.content) &&
+      m.content.some((part) => part.type === 'tool_call' && part.id === toolCallId),
+  )
+  if (step <= 0) return markHistoryCacheAnchor(messages)
+  for (const m of messages) if (m.cacheAnchor) delete m.cacheAnchor
+  for (let i = step - 1; i >= 0; i--) {
+    const m = messages[i]
+    if (m.role === 'assistant' && (m.stopReason === 'error' || m.stopReason === 'aborted')) continue
+    m.cacheAnchor = true
+    break
+  }
+  return messages
+}
+
 // ---- Snapshot application ------------------------------------------------------
 
 /**

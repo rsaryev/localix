@@ -100,11 +100,6 @@ export function createCapabilityCleanup(ports: CapabilityCleanupPorts) {
         .where('user_id', '=', userId)
         .where('agent_id', '=', id)
         .execute()
-      await db
-        .deleteFrom('capability_policy_binding')
-        .where('user_id', '=', userId)
-        .where('agent_id', '=', id)
-        .execute()
     }
     const holders = await db
       .selectFrom('capability_rule')

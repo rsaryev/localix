@@ -57,7 +57,6 @@ function options(
       if (report) deliverHeldReport(sessionId, report)
       return undefined
     },
-    copyConversation: async () => {},
   }
   return { opts, created, tasks, inputs, starts }
 }

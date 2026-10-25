@@ -129,6 +129,16 @@ its plan. **User** installs it for you everywhere; **Project** for the open proj
 A plugin whose files live in another repository says "unknown" until its page is opened: Localix
 fetches it then, reads what it contains, and the install that follows uses that fetch.
 
+### Through the assistant
+
+The assistant's `store` tool works over the same service and only the sources you added: it can
+search, read a package's plan, install, update, remove, enable, disable, and create an agent or a
+skill, but it cannot add or remove a source. Each change shows a card with the plan and waits for
+your yes; the plan's consent goes to the Store only after it. An install or update starts a job, so
+the assistant reads the package again to see the result. A run nobody can answer refuses every
+change. `/plugin install` shows the same plan for a plugin from a Store source, and installs once
+you repeat it with `--yes`.
+
 ![The sheet before a community plugin is installed](../assets/screenshots/store/consent--2026-10-25.png)
 
 ### Search results

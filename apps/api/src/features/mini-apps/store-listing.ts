@@ -96,6 +96,38 @@ export function miniAppListing(
   }
 }
 
+/** Where a mini app the person made comes from: no catalog, this computer. */
+export const OWN_SOURCE = { id: 'own', label: 'Made on this computer' }
+
+/** What the Store reads of an installed app that no catalog offers. */
+export interface OwnMiniApp {
+  name: string
+  displayName?: string
+  version?: string
+  description?: string
+  icon?: string
+  surfaces?: string[]
+  commands?: string[]
+  bundled?: boolean
+}
+
+/** The row of an app the person made (`mini_app_build`): installed, with nothing to install. */
+export function ownMiniAppEntry(app: OwnMiniApp): MiniAppStoreEntry {
+  return {
+    name: app.name,
+    ...(app.displayName ? { displayName: app.displayName } : {}),
+    description: app.description ?? '',
+    ...(app.version ? { version: app.version } : {}),
+    ...(app.icon ? { icon: app.icon } : {}),
+    publisher: { name: 'You', verified: false },
+    source: OWN_SOURCE.id,
+    surfaces: app.surfaces ?? [],
+    commands: app.commands ?? [],
+    installed: app.version ? { version: app.version } : {},
+    update: false,
+  }
+}
+
 /** What installing it adds: its screen, the agent's tools and backend, and its commands. */
 export function miniAppComponents(entry: MiniAppStoreEntry): StoreComponent[] {
   const surfaces = normalizeMiniAppSurfaces(entry.surfaces)

@@ -8,9 +8,9 @@ export function indexLine(status: SemanticStatus): { text: string; percent: numb
   if (building) {
     const percent =
       building.total && building.total > 0
-        ? Math.round(((building.scanned ?? 0) / building.total) * 100)
+        ? Math.min(100, Math.round(((building.scanned ?? 0) / building.total) * 100))
         : null
-    const left = building.total ? building.total - (building.scanned ?? 0) : 0
+    const left = building.total ? Math.max(0, building.total - (building.scanned ?? 0)) : 0
     const rate = index.chunksPerSecond ? `${index.chunksPerSecond} chunks/s` : null
     const eta = etaLabel(left, index.chunksPerSecond)
     return {

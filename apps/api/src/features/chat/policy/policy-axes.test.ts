@@ -186,6 +186,34 @@ describe('delivery and permission', () => {
   })
 })
 
+describe('permission of a delegated child whose agent file names a mode', () => {
+  const child = (permissionMode: 'default' | 'plan' | 'bypass' | 'autonomous', asked?: 'plan') =>
+    resolveSessionPolicy(
+      session({
+        sessionKind: 'subagent',
+        parentSessionId: 'p',
+        permissionMode,
+        provenance: {
+          kind: 'task-delegation',
+          parentSessionId: 'p',
+          toolCallId: 't',
+          ...(asked ? { agentPermissionMode: asked } : {}),
+        },
+      }),
+    ).permission
+
+  test('a Default conversation lets the agent plan; every other mode is kept', () => {
+    expect(child('default', 'plan')).toMatchObject({ mode: 'plan', planning: true })
+    expect(child('default')).toMatchObject({ mode: 'default', planning: false })
+    expect(child('bypass', 'plan')).toMatchObject({ mode: 'bypass', planning: false })
+    expect(child('autonomous', 'plan')).toMatchObject({ mode: 'autonomous', humanExpected: false })
+  })
+
+  test('the conversation changing mode rewrites the child row, and the agent still holds', () => {
+    expect(child('plan', 'plan').mode).toBe('plan')
+  })
+})
+
 describe('invocation', () => {
   test.each([
     [{ kind: 'root' }, 'chat'],

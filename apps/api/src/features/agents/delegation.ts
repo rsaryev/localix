@@ -1,4 +1,5 @@
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
+import { isForkName } from '../agent-core/tools/delegate-fork'
 import type { AgentSnapshot, BoundAgent } from './bindings/bindings'
 import type { CatalogAgent } from './catalog/agent-file'
 import type { AgentRecord, AgentSummary } from './contracts'
@@ -63,6 +64,8 @@ export function createAgentDelegation(deps: DelegationDeps) {
       reference: string,
       projectId?: string | null,
     ): Promise<DelegationTarget> {
+      // `fork` asks for a fork of the delegator (`delegate-fork.ts`); no agent can take the name.
+      if (isForkName(reference.trim().replace(/^@/, ''))) return { kind: 'unavailable' }
       const snapshot = await deps.snapshot(userId, projectId ?? '')
       const found = entryOf(snapshot, reference)
       if (!found) return { kind: 'unavailable' }
@@ -107,7 +110,7 @@ export function createAgentDelegation(deps: DelegationDeps) {
           leadershipPriority: summary.record.leadershipPriority,
           enabled: summary.enabled,
           canJoinConversation: canJoinConversation(summary),
-          delegable: delegates(summary),
+          delegable: delegates(summary) && !isForkName(summary.record.handle),
           ...(definition?.tools ? { tools: definition.tools } : {}),
           ...(definition?.self ? { self: true } : {}),
         }

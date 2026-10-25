@@ -149,7 +149,7 @@ export async function handleSkillsControlCommand(
   const skills = filterDisabledSkills(discoveredSkills, overrides)
   const reply =
     skills.length === 0
-      ? 'No skills yet. Create one in the Store (Skills), drop a `SKILL.md` in `.localix/skills/`, or ask me to save a procedure as a skill.'
+      ? 'No skills yet. Create one in the Store (Skills), drop a `SKILL.md` in `.claude/skills/`, or ask me to save a procedure as a skill.'
       : [
           '**Available skills** — run with `/<name>`:',
           '',
@@ -163,7 +163,7 @@ export async function handleSkillsControlCommand(
             return `- \`/${s.name}\` _(${tags})_ — ${s.description || 'No description'}`
           }),
           '',
-          'Set visibility with `skillOverrides` in Settings → Profile → agentSettings.',
+          'Switch a skill on or off from its page in the Store.',
         ].join('\n')
   return directReply(reply)
 }

@@ -130,30 +130,18 @@ export function extractCallFacts(
       break
     }
     case 'skill': {
-      // `save`/`delete` write a real file; discovery actions touch nothing. With no case
-      // here at all this fell through to `paths: []`, so path-pattern rules could not
-      // inspect skill writes. Global skills now live under the agent-owned
-      // `~/.localix/skills` root, which is intentionally allowed without the generic
-      // outside-workspace prompt, but the concrete path still belongs in the facts.
-      if (i.action !== 'save' && i.action !== 'delete') break
+      // `save` writes a real file; `get` touches nothing. With no case here at all this fell
+      // through to `paths: []`, so path-pattern rules could not inspect skill writes. Global
+      // skills live in `~/.claude/skills`, an agent-owned root (`AGENT_ALLOWED_ROOTS`) that needs
+      // no outside-workspace prompt, but the concrete path still belongs in the facts.
+      if (i.action !== 'save') break
       if (typeof i.name !== 'string' || !i.name) break
       // `save` honours `scope`, so its base is predictable: homedir() for a global skill,
-      // otherwise the project. `delete` does NOT honour it — it resolves the target through
-      // discovery (deleteSkillByName -> discoverFilesystemSkills), where a PERSONAL/home
-      // skill WINS a name clash and the walk reaches above the workspace. So a delete can
-      // recursively remove a directory under homedir() while `scope` says "project".
-      //
-      // This runs pre-execution and cannot await discovery, so a delete declares BOTH
-      // candidates so path-pattern rules can judge either concrete target.
-      // `cwd`/`root` may be absent; a relative path resolves against `cwd` anyway, so '.'
-      // is the honest project base when neither is known.
-      const project = root ?? cwd ?? '.'
-      const bases =
-        i.action === 'delete' ? [homedir(), project] : [i.scope === 'global' ? homedir() : project]
-      for (const base of bases) {
-        // Path from the ONE builder the writer uses, never re-derived here.
-        paths.push(resolveFileTarget(defaultSkillFilePath(base, i.name), cwd, root).path)
-      }
+      // otherwise the project. `cwd`/`root` may be absent; a relative path resolves against
+      // `cwd` anyway, so '.' is the honest project base when neither is known.
+      const base = i.scope === 'global' ? homedir() : (root ?? cwd ?? '.')
+      // Path from the ONE builder the writer uses, never re-derived here.
+      paths.push(resolveFileTarget(defaultSkillFilePath(base, i.name), cwd, root).path)
       break
     }
     case 'bash': {

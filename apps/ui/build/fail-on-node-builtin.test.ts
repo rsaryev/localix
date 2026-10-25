@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 
 import { browserLeakMessage, failOnNodeBuiltin, isBrowserLeak } from './fail-on-node-builtin'
 
-const UI_FILE = '/repo/apps/ui/src/features/settings/ui/agent-profile/AgentProfileTab.tsx'
+const UI_FILE = '/repo/apps/ui/src/features/store/ui/AgentAccess.tsx'
 const SERVER_LEAF = '/repo/apps/api/src/features/agents/policy.ts'
 const VENDOR = '/repo/node_modules/some-pkg/dist/index.js'
 

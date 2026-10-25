@@ -1,4 +1,11 @@
-import type { ActionResult, ConfigValue, CreateForm, ListingConfig } from './config'
+import type {
+  ActionResult,
+  ConfigValue,
+  CreateForm,
+  ItemAction,
+  ListingConfig,
+  ShelfPlan,
+} from './config'
 import type {
   Editorial,
   InstallPlan,
@@ -39,11 +46,14 @@ export interface StoreProvider {
   /** From the provider's cached feeds. */
   listings(actor: StoreActor): Promise<ProviderListings>
   detail(id: string, actor: StoreActor): Promise<ListingDetail>
-  /** May fetch a remote package into the provider's cache. */
-  plan(id: string, scope: Scope, actor: StoreActor): Promise<InstallPlan>
+  /**
+   * May fetch a remote package into the provider's cache. `plan`, `install` and `update` are absent
+   * for a kind the person makes here rather than installs (an agent, a skill, an MCP server).
+   */
+  plan?(id: string, scope: Scope, actor: StoreActor): Promise<InstallPlan>
   /** Queues a job; resolves once queued. Refuses a plan that needs consent without it. */
-  install(id: string, scope: Scope, consent: { plan: boolean }, actor: StoreActor): Promise<void>
-  update(id: string, scope: Scope, actor: StoreActor): Promise<void>
+  install?(id: string, scope: Scope, consent: { plan: boolean }, actor: StoreActor): Promise<void>
+  update?(id: string, scope: Scope, actor: StoreActor): Promise<void>
   remove(id: string, scope: Scope, actor: StoreActor): Promise<void>
   setEnabled?(id: string, scope: Scope, enabled: boolean, actor: StoreActor): Promise<void>
   /**
@@ -64,9 +74,26 @@ export interface StoreProvider {
   create?(scope: Scope, values: Record<string, ConfigValue>, actor: StoreActor): Promise<ListingRef>
   /** Does one of the install's `actions` (Test connection, Sign in) and says what happened. */
   runAction?(id: string, scope: Scope, action: string, actor: StoreActor): Promise<ActionResult>
-  /** Re-read the sources, so the next listings are fresh. */
-  refresh(): Promise<void>
-  sources(): Promise<SourceView[]>
+  /**
+   * What can be done to a whole shelf of its own items in one go ("Archive unused"): `user` is
+   * Yours, `project` the open project's shelf. Absent or empty: the shelf shows no button.
+   */
+  shelfActions?(scope: Scope, actor: StoreActor): Promise<ItemAction[]>
+  /** What one shelf action would change, computed and written nowhere: the preview to confirm. */
+  planShelfAction?(action: string, scope: Scope, actor: StoreActor): Promise<ShelfPlan>
+  /**
+   * Does the action to the items the person confirmed (`ids`, from the plan). An item that no
+   * longer qualifies is left alone: the plan is a preview, not a promise.
+   */
+  runShelfAction?(
+    action: string,
+    scope: Scope,
+    ids: string[],
+    actor: StoreActor,
+  ): Promise<ActionResult>
+  /** Re-read the sources, so the next listings are fresh. Absent for a kind with no sources. */
+  refresh?(): Promise<void>
+  sources?(): Promise<SourceView[]>
   previewSource?(input: string): Promise<SourcePreview>
   addSource?(input: string): Promise<void>
   removeSource?(id: string): Promise<void>
@@ -92,3 +119,7 @@ export interface StoreProvider {
   /** Hear every change to what `listings` would answer; returns the unsubscribe. */
   subscribe(onChange: () => void): () => void
 }
+
+/** A provider whose packages are installed from sources: every install-side method is there. */
+export type InstallableProvider = StoreProvider &
+  Required<Pick<StoreProvider, 'plan' | 'install' | 'update' | 'refresh' | 'sources'>>

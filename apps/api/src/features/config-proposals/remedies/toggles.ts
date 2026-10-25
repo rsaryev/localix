@@ -1,18 +1,14 @@
 import { z } from 'zod'
 import { applySwitches } from '../../capabilities/availability'
-import { actionFor } from '../../capabilities/resolve'
 import type { Remedy } from '../contracts'
 
 /**
- * Availability remedies: a built-in/plugin TOOL, a PLUGIN, an MCP SERVER.
+ * The availability remedy: a built-in or plugin TOOL.
  *
  * `tool.enable` writes the rule itself (through the repository's transactional `mutate` and
- * the same `applySwitches` the Settings screen's switch produces) rather than through the
- * capability apply path, for one reason: PROVENANCE. The row an approved proposal writes
- * carries `origin`, and the apply path has no slot for that — it is the user's own click.
- * Plugins and MCP servers have consequences their owning services must run (host re-wire,
- * cache invalidation), so they go through the apply service and their provenance lives only
- * in the proposals table.
+ * the same `applySwitches` the Settings screen's switch produces), so the row an approved
+ * proposal writes carries `origin`. Plugins, mini apps and MCP servers are the Store's: the
+ * agent switches them with `store`, where the person sees what each one runs.
  */
 
 /**
@@ -66,117 +62,5 @@ export const toolEnableRemedy: Remedy<z.infer<typeof toolEnableSchema>> = {
     )
     ctx.ports.bumpCapabilityRevision()
     return { summary: `${change.name} is now ${on ? 'enabled' : 'disabled'} for this agent.` }
-  },
-}
-
-const pluginEnableSchema = z.object({
-  kind: z.literal('plugin.enable'),
-  name: z.string().min(1),
-  // `.optional()`, never `.default()`: zod's default lands as REQUIRED in the JSON schema the
-  // model must satisfy, so a "defaulted" field silently became mandatory. The default is applied
-  // where the value is read instead.
-  enabled: z.boolean().optional(),
-})
-
-export const pluginEnableRemedy: Remedy<z.infer<typeof pluginEnableSchema>> = {
-  id: 'plugin.enable',
-  schema: pluginEnableSchema,
-  async describe(ctx, change) {
-    const on = switchedOn(change)
-    return {
-      key: `plugin.enable:${change.name}`,
-      remedyId: 'plugin.enable',
-      title: `${on ? 'Enable' : 'Disable'} the ${change.name} plugin`,
-      detail: `Switches the plugin and every tool it contributes ${on ? 'on' : 'off'}.`,
-      diff: [`${change.name} → ${on ? 'on' : 'off'}`],
-      agentId: ctx.agentId,
-      reload: 'next-run',
-    }
-  },
-  async apply(ctx, change) {
-    const on = switchedOn(change)
-    await ctx.ports.capabilities.apply(ctx.userId, {
-      agentId: ctx.agentId,
-      changes: [
-        { action: actionFor('plugin', change.name), resource: '*', effect: on ? 'allow' : 'deny' },
-      ],
-    })
-    return { summary: `Plugin "${change.name}" is now ${on ? 'enabled' : 'disabled'}.` }
-  },
-}
-
-const miniAppEnableSchema = z.object({
-  kind: z.literal('mini-app.enable'),
-  name: z.string().min(1),
-  // `.optional()`, never `.default()` (see `pluginEnableSchema`).
-  enabled: z.boolean().optional(),
-})
-
-export const miniAppEnableRemedy: Remedy<z.infer<typeof miniAppEnableSchema>> = {
-  id: 'mini-app.enable',
-  schema: miniAppEnableSchema,
-  async describe(ctx, change) {
-    const on = switchedOn(change)
-    return {
-      key: `mini-app.enable:${change.name}`,
-      remedyId: 'mini-app.enable',
-      title: `${on ? 'Enable' : 'Disable'} the ${change.name} mini app`,
-      detail: `Switches the mini app, its screens and every tool its backend gives ${on ? 'on' : 'off'}.`,
-      diff: [`${change.name} → ${on ? 'on' : 'off'}`],
-      agentId: ctx.agentId,
-      reload: 'next-run',
-    }
-  },
-  async apply(ctx, change) {
-    const on = switchedOn(change)
-    await ctx.ports.capabilities.apply(ctx.userId, {
-      agentId: ctx.agentId,
-      changes: [
-        {
-          action: actionFor('mini-app', change.name),
-          resource: '*',
-          effect: on ? 'allow' : 'deny',
-        },
-      ],
-    })
-    return { summary: `Mini app "${change.name}" is now ${on ? 'enabled' : 'disabled'}.` }
-  },
-}
-
-const mcpServerEnableSchema = z.object({
-  kind: z.literal('mcp.server.enable'),
-  // The NAME, not the row id: capability rules address every kind by name, and the name is
-  // what `inspect` shows the model. An id here meant one kind spoke a different language.
-  name: z.string().min(1).describe('As listed by inspect.'),
-  // `.optional()`, never `.default()`: zod's default lands as REQUIRED in the JSON schema the
-  // model must satisfy, so a "defaulted" field silently became mandatory. The default is applied
-  // where the value is read instead.
-  enabled: z.boolean().optional(),
-})
-
-export const mcpServerEnableRemedy: Remedy<z.infer<typeof mcpServerEnableSchema>> = {
-  id: 'mcp.server.enable',
-  schema: mcpServerEnableSchema,
-  async describe(ctx, change) {
-    const on = switchedOn(change)
-    return {
-      key: `mcp.server.enable:${change.name}`,
-      remedyId: 'mcp.server.enable',
-      title: `${on ? 'Enable' : 'Disable'} MCP server ${change.name}`,
-      detail: `Its tools ${on ? 'join' : 'leave'} the run's deferred catalog.`,
-      diff: [`${change.name} → ${on ? 'on' : 'off'}`],
-      agentId: ctx.agentId,
-      reload: 'next-run',
-    }
-  },
-  async apply(ctx, change) {
-    const on = switchedOn(change)
-    await ctx.ports.capabilities.apply(ctx.userId, {
-      agentId: ctx.agentId,
-      changes: [
-        { action: actionFor('mcp', change.name), resource: '*', effect: on ? 'allow' : 'deny' },
-      ],
-    })
-    return { summary: `MCP server "${change.name}" is now ${on ? 'enabled' : 'disabled'}.` }
   },
 }

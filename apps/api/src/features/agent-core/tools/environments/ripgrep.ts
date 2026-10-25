@@ -40,7 +40,11 @@ export function buildRipgrepArgs(pattern: string, opts?: SearchFilesOptions): st
   // multi-line regexes — enable the flag for them instead of failing the call (a recurring
   // tool-error → bash-fallback source). This MUST apply on every backend: a remote search
   // that rejects a pattern the local one accepts is the same bug wearing a different hat.
-  if (pattern.includes('\n') || pattern.includes('\\n')) args.push('--multiline')
+  if (opts?.multiline) args.push('--multiline', '--multiline-dotall')
+  else if (pattern.includes('\n') || pattern.includes('\\n')) args.push('--multiline')
+  if (opts?.ignoreCase) args.push('--ignore-case')
+  // `--type=<name>` is one token, so a name can never be read as a flag.
+  if (opts?.type) args.push(`--type=${opts.type}`)
   // `-C n` prints n lines around each hit, so the model can judge a match without reading
   // the whole file (ripgrep marks context lines `path-line-text`).
   if (opts?.context && opts.context > 0) args.push('--context', String(opts.context))

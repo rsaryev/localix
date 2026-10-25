@@ -8,6 +8,7 @@ import {
   type StoreComponent,
   type Trust,
 } from '@localixai/store'
+import { Button } from '@localixai/kit/button'
 import { ChipButton } from '@localixai/kit/chip'
 import { EmptyHint } from '@localixai/kit/empty-hint'
 import { ItemCard } from '@localixai/kit/item-card'
@@ -30,6 +31,7 @@ import { GetAction } from './GetAction'
 import { ListingRow } from './ListingCards'
 import { ListSkeleton, PagedList } from './PagedList'
 import { ListingIcon } from './StoreMarks'
+import { StoreReadFailure } from './StoreReadFailure'
 
 interface Filters {
   kind: string | null
@@ -100,6 +102,8 @@ export function SearchResults({ query }: { query: string }) {
   const facets = page.first?.facets
   const inside = useMemo(() => insideOf(page.listings, query), [page.listings, query])
   const columns = listColumns(layout, width)
+  const filtered = Object.values(filters).some(Boolean)
+  const found = page.listings.length
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
@@ -148,16 +152,28 @@ export function SearchResults({ query }: { query: string }) {
           >
             Installed
           </TogglePill>
+          {filtered && (
+            <Button size="sm" variant="ghost" onClick={() => setFilters(NONE)}>
+              Clear filters
+            </Button>
+          )}
           {page.first?.strategy?.mode === 'lexical' && (
             <span className="text-2xs text-text-faint">Matched by words only</span>
           )}
         </div>
       </div>
+      <p role="status" className="sr-only">
+        {page.loading || page.error ? '' : `${plural(found, 'result')} for “${query}”`}
+      </p>
       {page.loading ? (
         <ListSkeleton columns={columns} />
+      ) : page.error && !page.first ? (
+        <StoreReadFailure what="The search" error={page.error} onRetry={page.retry} />
       ) : page.listings.length === 0 ? (
         <div className="flex flex-col items-center gap-4 py-8">
-          <EmptyHint className="h-auto p-0">Nothing matches “{query}”.</EmptyHint>
+          <EmptyHint className="h-auto p-0">
+            Nothing matches “{query}”{filtered && ' with these filters'}.
+          </EmptyHint>
           {discover.data && discover.data.categories.length > 0 && (
             <div className="flex flex-wrap justify-center gap-1.5">
               <span className="w-full text-center text-xs text-text-soft">

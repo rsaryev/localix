@@ -1,7 +1,5 @@
 import { useState, type RefObject } from 'react'
-import { ArrowLeft } from 'lucide-react'
 import type { Listing } from '@localixai/store'
-import { Button } from '@localixai/kit/button'
 import { ChipButton } from '@localixai/kit/chip'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { KIND_LABELS } from '../model/presentation'
@@ -9,6 +7,7 @@ import { useStoreFrame } from '../model/layout'
 import { useStoreScope } from '../model/storeContext'
 import { keyOf } from '../model/useExtrasAfterInstall'
 import { PageGetAction } from './GetAction'
+import { StoreBackButton } from './StoreBackButton'
 import { ListingIcon, Publisher } from './StoreMarks'
 
 /** Tags shown before the rest fold into "+N". */
@@ -72,12 +71,7 @@ export function PackageHeader({
     listing.job?.phase === 'failed' ? listing.job.error : store.extraProblems[keyOf(listing.ref)]
   return (
     <>
-      <div>
-        <Button size="sm" variant="ghost" aria-label="Back" onClick={onBack}>
-          <ArrowLeft data-icon="inline-start" aria-hidden />
-          {backLabel}
-        </Button>
-      </div>
+      <StoreBackButton label={backLabel} onBack={onBack} />
       <header className={cn('flex min-w-0 items-start gap-5', narrow && 'gap-4')}>
         <ListingIcon listing={listing} size={narrow ? 72 : 104} />
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">

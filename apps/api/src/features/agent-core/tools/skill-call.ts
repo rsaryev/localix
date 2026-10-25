@@ -7,8 +7,8 @@ import type { CallClass } from '@localixai/agent/agents'
  */
 
 export const skillToolInputSchema = z.object({
-  action: z.enum(['save', 'get', 'list', 'delete']),
-  name: z.string().optional().describe('e.g. "deploy-staging". Required except for list.'),
+  action: z.enum(['save', 'get']),
+  name: z.string().describe('e.g. "deploy-staging".'),
   description: z.string().optional().describe('save: one line.'),
   content: z.string().optional().describe('save: the full procedure.'),
   arguments: z
@@ -19,7 +19,7 @@ export const skillToolInputSchema = z.object({
     .enum(['project', 'global'])
     .optional()
     .describe(
-      'save: "project" (default, .localix/skills) or "global" (~/.localix/skills, every project).',
+      'save: "project" (default, .claude/skills) or "global" (~/.claude/skills, every project).',
     ),
 })
 
@@ -47,19 +47,16 @@ export interface SkillToolPorts {
 }
 
 /**
- * Discovery stays available under a read-only rule: an agent should be able to SEE which skills
- * exist before proposing one, so only the two writing actions are blocked there. A `get` may run
- * the skill's injected commands, but each one meets the run's permission rules as a shell call
- * first (the host's `renderSkill`, `skill-tool-ports.ts`), so a read-only mode still refuses a
- * command that writes. Both write a
- * SKILL.md directory (`files`); a delete removes it recursively and cannot be redone. An unknown
- * action is answered with the widest effect — on the permission path a guess must not open a door.
+ * A `get` may run the skill's injected commands, but each one meets the run's permission rules as
+ * a shell call first (the host's `renderSkill`, `skill-tool-ports.ts`), so a read-only mode still
+ * refuses a command that writes. A `save` writes a SKILL.md directory (`files`). Listing and
+ * deleting skills belong to the Store (`store`); an unknown action, those two included, is
+ * answered with the widest effect — on the permission path a guess must not open a door.
  */
 export function classifySkillCall(input: unknown): CallClass {
   const action = input && typeof input === 'object' ? (input as { action?: unknown }).action : null
-  if (action === 'list' || action === 'get') return { effect: 'read' }
+  if (action === 'get') return { effect: 'read' }
   if (action === 'save') return { effect: 'files' }
-  if (action === 'delete') return { effect: 'files', irreversible: true }
   return { effect: 'external' }
 }
 

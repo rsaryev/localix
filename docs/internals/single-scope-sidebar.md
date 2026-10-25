@@ -9,7 +9,7 @@ routed navigation, session selection, sidebar projection, or per-scope workspace
 | ----------------- | --------------------------------------------------------------------- | ---------------------------------------------------------- |
 | Workspace scope   | One project id. `null` only before the route resolves one.            | Controls the routed roster and project-scoped settings.    |
 | Session scope     | The active session id used by the editor-grid visibility filter.      | Controls session tabs, not project membership.             |
-| Global grid scope | The reserved `@global` grid scope, for app-level kinds only.          | Settings, Usage, agent profiles; never a session's tab.    |
+| Global grid scope | The reserved `@global` grid scope, for app-level kinds only.          | Settings, Usage, the Store; never a session's tab.         |
 | Routed location   | Scope, session, and optional rail section encoded in the URL.         | It becomes authoritative after workspace hydration.        |
 | Scope memory      | Best-effort local state restored when returning to a workspace scope. | Memory seeds navigation; it does not replace the live URL. |
 

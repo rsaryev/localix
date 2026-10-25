@@ -81,8 +81,8 @@ export function BandScroller({
   }
 
   const fade = [
-    edges.start ? 'transparent, black 1.5rem' : 'black',
-    edges.end ? 'black calc(100% - 1.5rem), transparent' : 'black',
+    edges.start ? 'transparent, black 2.5rem' : 'black',
+    edges.end ? 'black calc(100% - 2.5rem), transparent' : 'black',
   ].join(', ')
   return (
     <div

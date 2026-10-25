@@ -1,16 +1,17 @@
 import { Hono } from 'hono'
 import {
   actionRequestSchema,
+  projectQuerySchema,
+  scopedSchema,
+  scopedValuesSchema,
   actionResultSchema,
   createFormSchema,
   createParamsSchema,
-  createRequestSchema,
   creatableResponseSchema,
-  configQuerySchema,
-  configRequestSchema,
-  detailQuerySchema,
   listingConfigSchema,
-  discoverQuerySchema,
+  shelfActionsResponseSchema,
+  shelfPlanSchema,
+  shelfRunRequestSchema,
   discoverResponseSchema,
   enableRequestSchema,
   installPlanSchema,
@@ -20,13 +21,10 @@ import {
   listingsQuerySchema,
   listingsResponseSchema,
   parseShelf,
-  planRequestSchema,
-  scopeRequestSchema,
   sourceAutoUpdateSchema,
   sourceInputSchema,
   sourcePreviewSchema,
   sourceRefSchema,
-  sourceRemoveSchema,
   sourcesResponseSchema,
   storeActivitySchema,
   updatesApplyResponseSchema,
@@ -61,7 +59,7 @@ export function createStoreRoutes(store: StoreService) {
       })
       return c.json(listingsResponseSchema.parse(page), 200)
     })
-    .get('/discover', zValidator('query', discoverQuerySchema), async (c) => {
+    .get('/discover', zValidator('query', projectQuerySchema), async (c) => {
       const { projectId } = c.req.valid('query')
       const answer = await store.discover(actor(c), projectId ? { projectId } : {})
       return c.json(discoverResponseSchema.parse(answer), 200)
@@ -92,7 +90,7 @@ export function createStoreRoutes(store: StoreService) {
       await store.setSourceAutoUpdate(kind, id, autoUpdate)
       return c.body(null, 204)
     })
-    .post('/sources/remove', zValidator('json', sourceRemoveSchema), async (c) => {
+    .post('/sources/remove', zValidator('json', sourceRefSchema), async (c) => {
       const { kind, id } = c.req.valid('json')
       await store.removeSource(kind, id)
       return c.body(null, 204)
@@ -105,7 +103,7 @@ export function createStoreRoutes(store: StoreService) {
     .post(
       '/create/:kind',
       zValidator('param', createParamsSchema),
-      zValidator('json', createRequestSchema),
+      zValidator('json', scopedValuesSchema),
       async (c) => {
         const { scope, values, projectId } = c.req.valid('json')
         const ref = await store.create(
@@ -117,10 +115,46 @@ export function createStoreRoutes(store: StoreService) {
         return c.json({ ref }, 201)
       },
     )
+    .get('/shelf-actions', zValidator('query', scopedSchema), async (c) => {
+      const { scope, projectId } = c.req.valid('query')
+      const actions = await store.shelfActions(scope, actor(c, projectId))
+      return c.json(shelfActionsResponseSchema.parse({ actions }), 200)
+    })
+    .post(
+      '/shelf/:kind/plan',
+      zValidator('param', createParamsSchema),
+      zValidator('json', actionRequestSchema),
+      async (c) => {
+        const { scope, action, projectId } = c.req.valid('json')
+        const plan = await store.planShelfAction(
+          c.req.valid('param').kind,
+          action,
+          scope,
+          actor(c, projectId),
+        )
+        return c.json(shelfPlanSchema.parse(plan), 200)
+      },
+    )
+    .post(
+      '/shelf/:kind/run',
+      zValidator('param', createParamsSchema),
+      zValidator('json', shelfRunRequestSchema),
+      async (c) => {
+        const { scope, action, ids, projectId } = c.req.valid('json')
+        const result = await store.runShelfAction(
+          c.req.valid('param').kind,
+          action,
+          scope,
+          ids,
+          actor(c, projectId),
+        )
+        return c.json(actionResultSchema.parse(result), 200)
+      },
+    )
     .get(
       '/:kind/:id',
       zValidator('param', listingParamsSchema),
-      zValidator('query', detailQuerySchema),
+      zValidator('query', projectQuerySchema),
       async (c) => {
         const { projectId } = c.req.valid('query')
         const detail = await store.detail(c.req.valid('param'), actor(c, projectId))
@@ -130,7 +164,7 @@ export function createStoreRoutes(store: StoreService) {
     .post(
       '/:kind/:id/plan',
       zValidator('param', listingParamsSchema),
-      zValidator('json', planRequestSchema),
+      zValidator('json', scopedSchema),
       async (c) => {
         const { scope, projectId } = c.req.valid('json')
         const plan = await store.plan(c.req.valid('param'), scope, actor(c, projectId))
@@ -150,7 +184,7 @@ export function createStoreRoutes(store: StoreService) {
     .post(
       '/:kind/:id/update',
       zValidator('param', listingParamsSchema),
-      zValidator('json', scopeRequestSchema),
+      zValidator('json', scopedSchema),
       async (c) => {
         const { scope, projectId } = c.req.valid('json')
         await store.update(c.req.valid('param'), scope, actor(c, projectId))
@@ -160,7 +194,7 @@ export function createStoreRoutes(store: StoreService) {
     .post(
       '/:kind/:id/remove',
       zValidator('param', listingParamsSchema),
-      zValidator('json', scopeRequestSchema),
+      zValidator('json', scopedSchema),
       async (c) => {
         const { scope, projectId } = c.req.valid('json')
         await store.remove(c.req.valid('param'), scope, actor(c, projectId))
@@ -170,7 +204,7 @@ export function createStoreRoutes(store: StoreService) {
     .get(
       '/:kind/:id/config',
       zValidator('param', listingParamsSchema),
-      zValidator('query', configQuerySchema),
+      zValidator('query', scopedSchema),
       async (c) => {
         const { scope, projectId } = c.req.valid('query')
         const config = await store.config(c.req.valid('param'), scope, actor(c, projectId))
@@ -180,7 +214,7 @@ export function createStoreRoutes(store: StoreService) {
     .post(
       '/:kind/:id/config',
       zValidator('param', listingParamsSchema),
-      zValidator('json', configRequestSchema),
+      zValidator('json', scopedValuesSchema),
       async (c) => {
         const { scope, values, projectId } = c.req.valid('json')
         await store.setConfig(c.req.valid('param'), scope, values, actor(c, projectId))

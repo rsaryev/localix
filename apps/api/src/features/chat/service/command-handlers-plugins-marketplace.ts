@@ -1,6 +1,10 @@
 import { errorMessage } from '../../../lib/errors'
 import type { MessageMutationResponse } from '../contracts'
 import type { CommandHandlerContext, DirectReply } from './command-handlers'
+import {
+  addMarketplaceThroughStore,
+  type StoreCommandContext,
+} from './command-handlers-plugins-store'
 
 /**
  * The `/plugin marketplace …` registry sub-commands (list, add, update, remove), split out of
@@ -12,7 +16,7 @@ import type { CommandHandlerContext, DirectReply } from './command-handlers'
  */
 
 /** The slice of {@link CommandHandlerContext} the marketplace sub-commands need. */
-type MarketplaceCommandContext = Pick<CommandHandlerContext, 'pluginService'>
+type MarketplaceCommandContext = Pick<CommandHandlerContext, 'pluginService'> & StoreCommandContext
 
 export async function handleMarketplaceSubcommand(
   ctx: MarketplaceCommandContext,
@@ -30,14 +34,8 @@ export async function handleMarketplaceSubcommand(
         'Usage: `/plugin marketplace add <owner/repo[#ref] | git-url | https://…/marketplace.json | ./path>`',
       )
     }
-    try {
-      const { name, count } = await pluginService.addMarketplace(userId, { source })
-      return directReply(
-        `Added marketplace \`${name}\` (${count} plugins). Install one with \`/plugin install <name>@${name}\`.`,
-      )
-    } catch (err) {
-      return directReply(`Marketplace add failed: ${errorMessage(err)}`)
-    }
+    // The Store's Add source, as the Store screen runs it.
+    return directReply(await addMarketplaceThroughStore(ctx, source))
   }
 
   if (action === 'update') {

@@ -26,10 +26,6 @@ export function provideMiniAppDesktopApps(port: MiniAppDesktopApps | null): void
   provided = port
 }
 
-export function miniAppDesktopApps(): MiniAppDesktopApps | null {
-  return provided
-}
-
 const NONE: readonly string[] = []
 const noSubscription = () => () => {}
 

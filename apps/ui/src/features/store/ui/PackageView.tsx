@@ -15,7 +15,10 @@ import { useListingDetail } from '../model/useStoreData'
 import { ListingTileCard } from './ListingCards'
 import { PackageFacts, packageFacts } from './PackageFacts'
 import { PackageHeader } from './PackageHeader'
+import { PackageNotice } from './PackageNotice'
 import { PackageSections } from './PackageSections'
+import { StoreReadFailure } from './StoreReadFailure'
+import { StoreBackButton } from './StoreBackButton'
 
 /** The package's pictures, each opening full-window, paged the same way. */
 function Pictures({ media, title }: { media: ListingDetail['media']; title: string }) {
@@ -117,11 +120,22 @@ export function PackageView({
 }) {
   const store = useStoreScope()
   const { layout } = useStoreFrame()
-  const { data: detail } = useListingDetail(store.client, reference, store.project?.id ?? null)
+  const {
+    data: detail,
+    error,
+    mutate,
+  } = useListingDetail(store.client, reference, store.project?.id ?? null)
   const listing: Listing | undefined = detail ?? inHand
   const heading = useRef<HTMLHeadingElement>(null)
   // The page replaces the list: focus its heading, so a screen reader starts here.
   useEffect(() => heading.current?.focus(), [reference.kind, reference.id])
+  if (!listing && error)
+    return (
+      <div className="flex flex-col gap-3">
+        <StoreBackButton label={backLabel} onBack={onBack} />
+        <StoreReadFailure what="This page" error={error} onRetry={() => void mutate()} />
+      </div>
+    )
   if (!listing)
     return (
       <div aria-busy className="flex flex-col gap-6">
@@ -139,6 +153,7 @@ export function PackageView({
   return (
     <article data-store-page={listing.ref.id} className="flex min-w-0 flex-col gap-6 pb-2">
       <PackageHeader listing={listing} heading={heading} backLabel={backLabel} onBack={onBack} />
+      {detail?.notice && <PackageNotice listing={listing} notice={detail.notice} />}
       {!beside && <PackageFacts facts={facts} as="strip" />}
       <div
         className={cn(
@@ -151,7 +166,16 @@ export function PackageView({
             <Pictures media={detail.media} title={listing.displayName} />
           )}
           <section aria-label="Description" className="max-w-(--reading-measure) min-w-0">
-            <Description listing={listing} detail={detail} />
+            {!detail && error ? (
+              <StoreReadFailure
+                inline
+                what="Its description"
+                error={error}
+                onRetry={() => void mutate()}
+              />
+            ) : (
+              <Description listing={listing} detail={detail} />
+            )}
           </section>
           <PackageSections listing={listing} detail={detail} focus={focus} tab={tab} />
         </div>

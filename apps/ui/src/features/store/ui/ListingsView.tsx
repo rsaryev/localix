@@ -21,6 +21,7 @@ import { FilterMenu } from './FilterMenu'
 import { ListingRow } from './ListingCards'
 import { ListSkeleton, PagedList } from './PagedList'
 import { StoreProblems } from './StoreProblems'
+import { StoreReadFailure } from './StoreReadFailure'
 
 const ALL = 'all'
 /** Category tabs shown before the rest go under "More": by the pane's width. */
@@ -35,7 +36,16 @@ function ChosenListings({ refs }: { refs: readonly ListingRef[] }) {
     const byKey = new Map((discover.data?.listings ?? []).map((l) => [keyOf(l.ref), l]))
     return refs.flatMap((ref) => byKey.get(keyOf(ref)) ?? [])
   }, [discover.data, refs])
-  if (!discover.data) return <ListSkeleton columns={listColumns(layout, width)} />
+  if (!discover.data)
+    return discover.error ? (
+      <StoreReadFailure
+        what="The list"
+        error={discover.error}
+        onRetry={() => void discover.mutate()}
+      />
+    ) : (
+      <ListSkeleton columns={listColumns(layout, width)} />
+    )
   return (
     <PagedList
       label="Packages"
@@ -132,6 +142,8 @@ function QueriedListings({ query, showKind }: { query: StorePageQuery; showKind:
       <StoreProblems problems={page.first?.problems ?? []} />
       {page.loading ? (
         <ListSkeleton columns={columns} />
+      ) : page.error && !page.first ? (
+        <StoreReadFailure what="The list" error={page.error} onRetry={page.retry} />
       ) : page.listings.length === 0 ? (
         <EmptyHint>Nothing here matches.</EmptyHint>
       ) : (

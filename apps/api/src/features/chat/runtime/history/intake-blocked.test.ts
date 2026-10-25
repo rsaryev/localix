@@ -121,3 +121,31 @@ describe('a prompt blocked by UserPromptSubmit', () => {
     expect(next.frame.messages.map((m) => m.id)).toContain('secret')
   })
 })
+
+describe("a blocked prompt's message", () => {
+  const blockWith = (extra: { suppressOriginalPrompt?: true }, reason = 'no secrets') => {
+    const rows = [message('m1', 'my password is hunter2')]
+    const h = harness(rows)
+    const hooks = {
+      ...INERT_CC_HOOKS,
+      active: true,
+      runUserPromptSubmit: async () => ({ blocked: true, reason, ...extra }),
+    } as CcHooksRuntime
+    return h.runIntake(hooks)
+  }
+
+  // hooks.md: "By default the block message ... ends with `Original prompt:` followed by the
+  // submitted text"; `suppressOriginalPrompt` leaves the text out.
+  test('ends with the submitted text by default', async () => {
+    const result = await blockWith({})
+    expect(result).toMatchObject({
+      ok: false,
+      blockedReason: 'no secrets\n\nOriginal prompt: my password is hunter2',
+    })
+  })
+
+  test('leaves the text out when the hook suppresses it', async () => {
+    const result = await blockWith({ suppressOriginalPrompt: true })
+    expect(result).toMatchObject({ ok: false, blockedReason: 'no secrets' })
+  })
+})

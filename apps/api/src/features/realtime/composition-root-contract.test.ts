@@ -260,6 +260,18 @@ const EXEMPTIONS: Exemptions = {
       'has not loaded, falls back to `pluginDataDir(plugin, userHome())`, injecting the home ' +
       'directory the port does not carry.',
   },
+  [exemptionKey('app.ts', 'workingDir(userId, projectId)')]: {
+    reason: 'Adapter: reads the project and answers its `workingDir`.',
+  },
+  [exemptionKey('bootstrap/agent-directory-ports.ts', 'listRegistryAgents(userId, projectId)')]: {
+    reason: 'Adapter: hides the agents an Agent deny names, and omits the directory on a failure.',
+  },
+  [exemptionKey('bootstrap/chat-service-deps.ts', 'cwdOf(userId, projectId)')]: {
+    reason: "Adapter: a project's working folder, null for no project or one that is gone.",
+  },
+  [exemptionKey('bootstrap/store.ts', 'chatsOf(agentId)')]: {
+    reason: 'Adapter: counts the distinct chats among the seats an agent holds.',
+  },
 }
 
 /** The exemption key for a found restatement: the whole signature, qualified by file. */

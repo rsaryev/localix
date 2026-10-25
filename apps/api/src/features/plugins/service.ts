@@ -10,7 +10,6 @@ import {
 
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import { localixWorkspaceDir } from '../../lib/env'
-import { createContributionKindRegistry } from '../ext/contribution-kinds'
 import { isGitSource } from '../ext/git-source'
 import {
   discoverPlugins,
@@ -87,7 +86,6 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
   const home = deps.homeDir
   const discover = (scope: Omit<Parameters<typeof discoverPlugins>[0], 'homeDir'>) =>
     discoverPlugins({ ...scope, homeDir: home })
-  const contributionKinds = deps.contributionKinds ?? createContributionKindRegistry()
   const now = deps.now ?? (() => new Date().toISOString())
   const repo: CapabilitySourceRepository = deps.capabilityStores.sources(deps.db, 'plugin', now)
   // Marketplace registry deps — one git clone primitive shared with plugin install.
@@ -515,7 +513,6 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
           publishPluginInstallation({
             db: deps.db,
             stores: deps.capabilityStores,
-            contributionKinds,
             userId,
             projectId,
             scope,

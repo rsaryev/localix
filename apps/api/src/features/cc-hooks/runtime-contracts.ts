@@ -42,6 +42,8 @@ export interface PromptSubmitResult {
   additionalContext?: string
   /** `hookSpecificOutput.sessionTitle`: rename the session, as `/rename` does. */
   sessionTitle?: string
+  /** `hookSpecificOutput.suppressOriginalPrompt`: the block message omits the prompt text. */
+  suppressOriginalPrompt?: true
 }
 
 export interface StopResult {

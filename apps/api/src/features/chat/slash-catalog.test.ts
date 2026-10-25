@@ -58,7 +58,8 @@ describe('SLASH_COMMANDS catalog integrity', () => {
   test('a /help command exists in the Info section', () => {
     const help = SLASH_COMMANDS.find((c) => c.name === 'help')
     expect(help?.category).toBe('info')
-    expect(help?.argless).toBe(true)
+    // `/help <command>` is advertised, so the command takes an argument.
+    expect(help?.argless).toBeFalsy()
   })
 })
 
@@ -101,7 +102,8 @@ describe('command grouping + usage', () => {
 describe('/help <command> detail helpers', () => {
   test('resolveCommandSpec folds slashes, case, and aliases', () => {
     expect(resolveCommandSpec('/Usage')?.name).toBe('usage')
-    expect(resolveCommandSpec('clear')).toBeUndefined()
+    expect(resolveCommandSpec('clear')?.scope).toBe('client')
+    expect(resolveCommandSpec('compact')).toBeUndefined()
     // `cost` is an alias of `usage`.
     expect(resolveCommandSpec('cost')?.name).toBe('usage')
     expect(resolveCommandSpec('models')?.name).toBe('model')

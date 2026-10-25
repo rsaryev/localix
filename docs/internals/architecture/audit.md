@@ -44,7 +44,6 @@ current state.
 | 1,064 cross-feature imports over 204 edges in API features; 36 two-way cycles, 20 with values.                              | `apps/api/src/features/*`                                                                                                            |
 | The chat runner builds capabilities, usage, memory, user, projects and MCP repositories itself.                             | `apps/api/src/features/chat/runtime/agent-runner.ts`                                                                                 |
 | The chat service graph builds foreign repositories and the plugin service.                                                  | `apps/api/src/features/chat/service/service-graph.ts`                                                                                |
-| A registration policy queries and inserts with Kysely and throws HTTP errors.                                               | `apps/api/src/features/agents/registration-policy.ts`                                                                                |
 | Raw SQL in chat service code outside repository modules.                                                                    | `apps/api/src/features/chat/service/delegated-runs.ts`, `apps/api/src/features/chat/service/command-handlers-agents.ts`              |
 | Availability and plugin dependency rules take Kysely directly.                                                              | `apps/api/src/features/capabilities/availability.ts`, `apps/api/src/features/plugins/dependencies-policy.ts`                         |
 | Agent tools import concrete repositories instead of ports (79 repository imports across features).                          | `apps/api/src/features/agent-core/tools/memory/memory.ts`, `apps/api/src/features/agent-core/tools/context-search/context-search.ts` |
@@ -85,8 +84,6 @@ Follow-ups driven by the writer instead of a consumer, most valuable first:
    `apps/api/src/features/chat/service/session-facade.ts`).
 6. Usage rows are written fire-and-forget and repaired at boot
    (`apps/api/src/features/chat/runtime/usage-normalize.ts`).
-7. Client topics are added by wrapping service methods, with no test of the mapping
-   (`apps/api/src/bootstrap/resource-sync.ts`).
 
 ## References that outlive their target (P10, C1)
 

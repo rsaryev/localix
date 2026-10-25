@@ -2,17 +2,16 @@ import type {
   ActionResult,
   ConfigValue,
   CreateForm,
+  ItemAction,
   ListingRef,
   PackageKind,
   Scope,
+  ShelfPlan,
   StoreActor,
   StoreProvider,
 } from '@localixai/store'
 
-import { ConflictError } from '../../lib/domain-errors'
-
-const unsupported = (kind: PackageKind, what: string) =>
-  new ConflictError('store_unsupported', `${kind} packages cannot ${what}`)
+import { unsupported } from './unsupported'
 
 /**
  * WHAT A PERSON MAKES AND DOES WITH AN ITEM, over whichever provider owns the kind
@@ -49,6 +48,47 @@ export function itemService(
       const ref = await provider.create(scope, values, actor)
       invalidate()
       return ref
+    },
+
+    /** What each kind's provider can do to a shelf of its own items, for one scope. */
+    async shelfActions(
+      scope: Scope,
+      actor: StoreActor,
+    ): Promise<Array<ItemAction & { kind: PackageKind }>> {
+      const lists = await Promise.all(
+        providers.map(async (provider) =>
+          ((await provider.shelfActions?.(scope, actor)) ?? []).map((action) => ({
+            ...action,
+            kind: provider.kind,
+          })),
+        ),
+      )
+      return lists.flat()
+    },
+
+    async planShelfAction(
+      kind: PackageKind,
+      action: string,
+      scope: Scope,
+      actor: StoreActor,
+    ): Promise<ShelfPlan> {
+      const provider = providerOf(kind)
+      if (!provider.planShelfAction) throw unsupported(kind, 'do that to a shelf')
+      return provider.planShelfAction(action, scope, actor)
+    },
+
+    async runShelfAction(
+      kind: PackageKind,
+      action: string,
+      scope: Scope,
+      ids: string[],
+      actor: StoreActor,
+    ): Promise<ActionResult> {
+      const provider = providerOf(kind)
+      if (!provider.runShelfAction) throw unsupported(kind, 'do that to a shelf')
+      const result = await provider.runShelfAction(action, scope, ids, actor)
+      invalidate()
+      return result
     },
 
     async runAction(

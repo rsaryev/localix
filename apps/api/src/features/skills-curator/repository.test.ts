@@ -116,4 +116,28 @@ describe('skills-curator repository', () => {
 
     await destroyDatabase(db)
   })
+
+  test('markAuthored flags a skill created in Localix, dates a new row, and leaves use alone', async () => {
+    const db = await makeDb()
+    const repo = createSkillUsageRepository(db)
+    expect((await repo.get('u1', '', 'cc-made', 'global'))?.localixAuthored).toBeUndefined()
+
+    await repo.markAuthored('u1', '', 'mine', 'global', '2026-01-02T00:00:00.000Z')
+    await repo.recordUse('u1', '', 'mine', 'global')
+    await repo.markAuthored('u1', '', 'mine', 'global', '2030-01-01T00:00:00.000Z')
+    await repo.recordUse('u1', '', 'used-first', 'global')
+    await repo.markAuthored('u1', '', 'used-first', 'global')
+
+    expect(await repo.get('u1', '', 'mine', 'global')).toMatchObject({
+      localixAuthored: true,
+      createdAt: '2026-01-02T00:00:00.000Z',
+      getCount: 1,
+    })
+    expect((await repo.get('u1', '', 'used-first', 'global'))?.localixAuthored).toBe(true)
+    // A row made by use alone (a skill Claude Code made) stays unflagged.
+    await repo.recordUse('u1', '', 'cc-made', 'global')
+    expect((await repo.get('u1', '', 'cc-made', 'global'))?.localixAuthored).toBe(false)
+
+    await destroyDatabase(db)
+  })
 })

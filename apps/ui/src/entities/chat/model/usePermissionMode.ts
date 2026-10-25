@@ -37,15 +37,21 @@ export function usePermissionMode(sessionId: string | null) {
     mode === 'plan' ? latestPresentedPlan(plans) : undefined
   const { approve } = usePlanDecisions(ownerId)
 
+  // Resolves once the server has the new mode (false when it refused), so a caller that acts in
+  // the new mode — `/plan <task>` sends the task — does not race the change.
   const setMode = useCallback(
-    (permissionMode: PermissionMode) => {
-      if (!sessionId) return
-      // The server publishes the stored session as `session.updated`; the stream applies it.
-      void backendClient.updateSession(sessionId, { permissionMode }).catch((err: unknown) =>
+    async (permissionMode: PermissionMode): Promise<boolean> => {
+      if (!sessionId) return false
+      try {
+        // The server publishes the stored session as `session.updated`; the stream applies it.
+        await backendClient.updateSession(sessionId, { permissionMode })
+        return true
+      } catch (err: unknown) {
         toast.error('Could not change the permission mode', {
           description: errorMessage(err, '') || undefined,
-        }),
-      )
+        })
+        return false
+      }
     },
     [sessionId],
   )

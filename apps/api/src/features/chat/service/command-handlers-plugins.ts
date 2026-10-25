@@ -11,17 +11,26 @@ import {
   validatePathReply,
 } from './command-handlers-plugins-replies'
 import { isAbsolute } from 'node:path'
+import {
+  installThroughStore,
+  isStoreInstall,
+  type StoreCommandContext,
+} from './command-handlers-plugins-store'
 
 /** The slice of {@link CommandHandlerContext} the `/plugin` sub-commands need. */
 type PluginsCommandContext = Pick<
   CommandHandlerContext,
   'pluginService' | 'buildSessionPluginCatalog' | 'resolveSessionWorkingDir'
->
+> &
+  StoreCommandContext
+
+/** Claude Code's names for sub-commands Localix spells otherwise; not shown in the menu. */
+const CLAUDE_CODE_SPELLINGS: Record<string, string> = { uninstall: 'remove', market: 'marketplace' }
 
 /** Every accepted sub-command, in menu order — the reply to an unrecognized one. */
 const PLUGIN_SUBCOMMAND_USAGE = [
   '/plugin list',
-  '/plugin install <name>@<marketplace> | <name> --marketplace <source> | <git-url> | <owner/repo> | </absolute/path> [--project] [--accept-command <sha256>]',
+  '/plugin install <name>@<marketplace> | <name> --marketplace <source> | <git-url> | <owner/repo> | </absolute/path> [--project | --scope user|project|local] [--yes] [--accept-command <sha256>]',
   '/plugin enable <name>',
   '/plugin disable <name>',
   '/plugin remove <name>',
@@ -31,6 +40,21 @@ const PLUGIN_SUBCOMMAND_USAGE = [
   '/plugin reload',
   '/plugin marketplace list [<name>] | add <source> | update [<name>] | remove <name>',
 ] as const
+
+/**
+ * `/plugin reload`, and Claude Code's `/reload-plugins` and `/reload-skills` (skills load through
+ * plugins, so one reload covers both). Nothing was mutated: a plugin directory was edited on disk,
+ * which no service call can observe, so this is what tells the catalog to re-read it.
+ */
+export function reloadPlugins(
+  pluginService: Pick<CommandHandlerContext['pluginService'], 'onChanged'>,
+  directReply: DirectReply,
+): Promise<MessageMutationResponse> {
+  pluginService.onChanged?.()
+  return directReply(
+    'Plugins reloaded. Changes to skills, agents, hooks, MCP servers, and commands take effect on the next turn.',
+  )
+}
 
 /**
  * Handles the `/plugin …` control sub-commands (marketplace, install,
@@ -55,18 +79,21 @@ export async function handlePluginsControlCommand(
   // things to keep in the composer menu, the docs and the user's head — and the menu
   // could only ever show one of them, so the rest existed for nobody.
   const tokens = prompt.trim().split(/\s+/)
-  const sub = tokens[1]?.toLowerCase() ?? 'list'
+  // Claude Code's spellings (`uninstall`, `market`): a command pasted from its docs works as is.
+  const typed = tokens[1]?.toLowerCase() ?? 'list'
+  const sub = CLAUDE_CODE_SPELLINGS[typed] ?? typed
+  /** The plugin a command names: Claude Code writes `name@marketplace`, Localix the name. */
+  const nameArg = (args: readonly string[]) =>
+    args
+      .join(' ')
+      .trim()
+      .replace(/@[\w.-]+$/u, '')
 
   // `/plugin reload` — the CC `/reload-plugins` equivalent. The MUTATIONS below need no
   // bump of their own: the service fires its own `onChanged` inside each one. Reload is
   // the exception precisely because nothing was mutated — a plugin directory was edited
   // on disk, which no service call can observe.
-  if (sub === 'reload') {
-    pluginService.onChanged?.()
-    return directReply(
-      'Plugins reloaded. Changes to skills, agents, hooks, MCP servers, and commands take effect on the next turn.',
-    )
-  }
+  if (sub === 'reload') return reloadPlugins(pluginService, directReply)
 
   // `/plugin marketplace add|list|remove …` — Claude Code-style marketplace registry.
   if (sub === 'marketplace') {
@@ -75,8 +102,12 @@ export async function handlePluginsControlCommand(
 
   if (sub === 'install') {
     // Global by default (~/.localix/plugins); `--project` targets this chat's project.
-    const { args, accepted } = takeAcceptCommand(tokens.slice(2))
-    const toProject = args.includes('--project')
+    const { args: flagged, accepted } = takeAcceptCommand(tokens.slice(2))
+    // `--yes` accepts the plan a Store install showed, as the Store screen's button does.
+    const yes = flagged.includes('--yes')
+    const scoped = takeScope(flagged.filter((arg) => arg !== '--yes'))
+    const args = scoped.args
+    const toProject = args.includes('--project') || scoped.project
     // `--marketplace <source>` adds (or refreshes) that marketplace first, as in Claude Code.
     const at = args.indexOf('--marketplace')
     const marketplace = at >= 0 ? args[at + 1] : undefined
@@ -86,6 +117,14 @@ export async function handlePluginsControlCommand(
       .trim()
     if (!source || (at >= 0 && !marketplace)) {
       return directReply(`Usage: \`${PLUGIN_SUBCOMMAND_USAGE[2]}\``)
+    }
+    // A listing of a marketplace goes through the Store, as the Store screen's Install does; an
+    // address (git URL, owner/repo, folder) names no listing, and a `headersHelper` acceptance has
+    // no place in a Store plan, so those stay the plugin service's.
+    if (!accepted && isStoreInstall(source, marketplace)) {
+      return directReply(
+        await installThroughStore(ctx, userId, session, { source, marketplace, toProject, yes }),
+      )
     }
     try {
       const added = marketplace
@@ -106,7 +145,7 @@ export async function handlePluginsControlCommand(
   }
 
   if (sub === 'enable' || sub === 'disable') {
-    const name = tokens.slice(2).join(' ').trim()
+    const name = nameArg(tokens.slice(2))
     if (!name) return directReply(`Usage: \`/plugin ${sub} <name>\``)
     try {
       const rec = await pluginService.setEnabled(
@@ -126,7 +165,7 @@ export async function handlePluginsControlCommand(
 
   if (sub === 'update') {
     const { args: updateArgs, accepted } = takeAcceptCommand(tokens.slice(2))
-    const name = updateArgs.join(' ').trim()
+    const name = nameArg(updateArgs)
     if (!name)
       return directReply('Usage: `/plugin update <name>` — re-installs from the original source.')
     try {
@@ -142,7 +181,7 @@ export async function handlePluginsControlCommand(
   }
 
   if (sub === 'remove') {
-    const name = tokens.slice(2).join(' ').trim()
+    const name = nameArg(tokens.slice(2))
     if (!name) return directReply('Usage: `/plugin remove <name>`')
     try {
       const removed = await pluginService.remove(userId, {
@@ -160,7 +199,7 @@ export async function handlePluginsControlCommand(
   }
 
   if (sub === 'details') {
-    const name = tokens.slice(2).join(' ').trim()
+    const name = nameArg(tokens.slice(2))
     if (!name) return directReply('Usage: `/plugin details <name>`.')
     const { plugins } = await pluginService.listPlugins(userId, {
       projectId: session.projectId ?? null,
@@ -272,5 +311,19 @@ function takeAcceptCommand(args: string[]): { args: string[]; accepted?: string 
   return {
     args: args.filter((_arg, i) => i !== at && i !== at + 1),
     ...(accepted ? { accepted } : {}),
+  }
+}
+
+/**
+ * Claude Code's `--scope user|project|local`. Localix installs for everyone (user) or for this
+ * project; `local` (only me, in this repo) is nearest to this project.
+ */
+function takeScope(args: readonly string[]): { args: string[]; project: boolean } {
+  const at = args.indexOf('--scope')
+  if (at < 0) return { args: [...args], project: false }
+  const value = args[at + 1]?.toLowerCase()
+  return {
+    args: args.filter((_, i) => i !== at && i !== at + 1),
+    project: value === 'project' || value === 'local',
   }
 }

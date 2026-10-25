@@ -15,11 +15,14 @@ import { agentSettingsIo } from '../model-select/useAgentModelTurns'
 import { notifyPartyRouteFailure } from '../model-select/partyRouteFailure'
 import type { SkipArgFor } from '../SlashArgSpec'
 import type { SlashCommand } from '../SlashCommandMenu'
+import { effortStepOptions, resolveEffortCommand, skipEffortStep } from './modelCommandEffort'
 import { resolveModelCommand, type ModelCommandPlan } from './modelCommandPlan'
 import { modelStepOptions, skipModelStep } from './modelCommandSteps'
 import type { ModelCommandContext } from './modelCommandTarget'
 
 export const isModelCommand = (command: SlashCommand) => command.id === 'model'
+/** `/effort`: `/model` entered at its reasoning step. */
+export const isEffortCommand = (command: SlashCommand) => command.id === 'effort'
 
 /**
  * `/model` as the picker's steps, inside the composer. Reads the same data the picker reads and,
@@ -68,7 +71,12 @@ export function useModelCommand(
   }, [sessionConnectionId, sessionId])
 
   const loadOptions = useCallback(
-    async (argName: string, query: string, committed: Readonly<Record<string, string>>) => {
+    async (
+      argName: string,
+      query: string,
+      committed: Readonly<Record<string, string>>,
+      commandId = 'model',
+    ) => {
       // Registry names and turn ceilings, as the picker's Agents column shows them.
       if (argName === 'agent' || argName === 'turns') {
         const [snapshot, join] = await Promise.all([
@@ -80,14 +88,18 @@ export function useModelCommand(
           records.current.set(agent.record.id, agent.record)
         if (snapshot) directory.current = snapshot.agents
       }
-      return modelStepOptions(context(), argName, query, committed)
+      return commandId === 'effort'
+        ? effortStepOptions(context(), argName, query, committed)
+        : modelStepOptions(context(), argName, query, committed)
     },
     [context, projectId, sessionId],
   )
 
   const skipArg = useCallback<SkipArgFor>(
     (command, name, committed) =>
-      isModelCommand(command) && skipModelStep(context(), name, committed),
+      isEffortCommand(command)
+        ? skipEffortStep(context(), name, committed)
+        : isModelCommand(command) && skipModelStep(context(), name, committed),
     [context],
   )
 
@@ -135,8 +147,18 @@ export function useModelCommand(
   const submit = useCallback(
     (detected: { command: SlashCommand; text: string } | null, clear: () => void): boolean => {
       const { command, text } = detected ?? {}
-      if (!sessionId || !command || !isModelCommand(command) || !command.args) return false
-      const plan = resolveModelCommand(context(), text ?? '', command.args)
+      if (!sessionId || !command?.args) return false
+      let plan: ModelCommandPlan | null = null
+      if (isEffortCommand(command)) {
+        const resolved = resolveEffortCommand(context(), text ?? '', command.args)
+        if ('error' in resolved) {
+          toast.message(resolved.error)
+          return true
+        }
+        plan = resolved.plan
+      } else if (isModelCommand(command)) {
+        plan = resolveModelCommand(context(), text ?? '', command.args)
+      }
       if (!plan) return false
       clear()
       void apply(plan).catch(

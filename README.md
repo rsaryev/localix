@@ -73,8 +73,8 @@
 Two separate kinds of extension that share nothing. A **plugin** is the Claude Code format — skills,
 commands, agents, hooks, mods, MCP and LSP servers — and the same folder loads in Claude Code and in
 Localix; manage plugins with `/plugin`. A **mini app** is Localix's own format: screens, a backend,
-and agent tools over Localix's own APIs; manage mini apps with `/mini-app` and in Settings →
-Capabilities → Mini apps ([mini apps](docs/features/mini-apps.md)).
+and agent tools over Localix's own APIs; manage mini apps with `/mini-app` and in the Store
+([mini apps](docs/features/mini-apps.md)).
 
 - **Compatible with Claude Code.** Plugins, skills, slash commands, agents, hooks, mods, MCP and
   language servers, output styles, `CLAUDE.md` and your `~/.claude` settings load the way Claude

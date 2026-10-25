@@ -3,43 +3,41 @@ import { promises as fs } from 'node:fs'
 import { errorMessage } from '../../lib/errors'
 import { homedir } from 'node:os'
 import { localixHome } from '../../lib/env'
-import { basename, dirname, join } from 'node:path'
-import type { SkillUsageRepository, SkillScope, SkillUsageRecord } from './repository'
+import { basename, join } from 'node:path'
+import { skillRoot } from '../agent-core/skill-discovery'
+import type { SkillUsageRepository, SkillScope } from './repository'
 import type { CuratorReport, CuratorSkillRecord } from './contracts'
-import type { DiscoveredSkill } from '../agent-core/skill-discovery'
 import { toRecord, withSkillDir, type InventoryEntry } from './inventory-record'
 import {
-  ARCHIVE_DIR_NAME,
+  defaultArchiveRoot,
+  moveDir,
   moveToArchive,
   readCuratorMarker,
+  skillBases,
+  scanArchivedSkills,
   scanSkillRoots,
-  skillAgeBasis,
   writeCuratorMarker,
 } from './skill-fs'
+import { CURATOR_INTERVAL_DAYS, DAY_MS, archivePassAfter, idlenessOf } from './staleness'
 
-// Re-export so the historical './service' import surface (curator tests) stays stable.
-
-/** Never used and older than this ⇒ stale. */
-export const STALE_AFTER_DAYS = 30
-/** Last used longer ago than this ⇒ stale. */
-export const UNUSED_AFTER_DAYS = 90
-/** Scheduled curator cadence — at most one automatic pass per this interval. */
-export const CURATOR_INTERVAL_DAYS = 7
-
-const DAY_MS = 24 * 60 * 60 * 1000
+export { CURATOR_INTERVAL_DAYS } from './staleness'
 
 export interface SkillsCuratorServiceDeps {
   usageRepo: SkillUsageRepository
   /** Resolves a project's working dir for project-scoped skills (REST passes projectId). */
   resolveProjectCwd?: (userId: string, projectId: string) => Promise<string | null>
-  /** Base dir for global skills (`<globalBase>/.localix/skills`). Defaults to the home dir. */
+  /** Base dir for global skills (`<globalBase>/.claude/skills`). Defaults to the home dir. */
   globalBase?: string
+  /** Where archived skills wait, outside `.claude/skills`. Defaults to `~/.localix/skills-archive`. */
+  archiveRoot?: string
   /** Marker file for the scheduled-run cadence. Defaults to `~/.localix/curator-state.json`. */
   stateFile?: string
   now?: () => Date
   logger?: { info?: (msg: string) => void; warn?: (msg: string) => void }
   /** A skill moved or was pinned: the capability set changed (bootstrap bumps the revision). */
   capabilitiesChanged?: () => void
+  /** A scheduled pass archived these skills (names): the person is told, with a way back. */
+  onArchived?: (userId: string, names: string[]) => void
 }
 
 export interface SkillsCuratorService {
@@ -61,6 +59,14 @@ export interface SkillsCuratorService {
     userId: string,
     input: { name: string; projectId?: string | null },
   ): Promise<CuratorSkillRecord>
+  /**
+   * Archive the named skills that are still stale: one pinned or used since a preview is left
+   * alone. Answers what was archived.
+   */
+  archiveUnused(
+    userId: string,
+    input: { names: string[]; projectId?: string | null },
+  ): Promise<CuratorSkillRecord[]>
   /** One deterministic pass: archive stale, unpinned filesystem skills. */
   runCurator(userId: string, opts?: { projectId?: string | null }): Promise<CuratorReport>
   /**
@@ -74,6 +80,7 @@ export interface SkillsCuratorService {
 
 export function createSkillsCuratorService(deps: SkillsCuratorServiceDeps): SkillsCuratorService {
   const globalBase = deps.globalBase ?? homedir()
+  const archiveRoot = deps.archiveRoot ?? defaultArchiveRoot()
   const stateFile = deps.stateFile ?? join(localixHome(), 'curator-state.json')
   const now = deps.now ?? (() => new Date())
 
@@ -87,19 +94,13 @@ export function createSkillsCuratorService(deps: SkillsCuratorServiceDeps): Skil
 
   /** Scans active skill roots. */
   const scanActive = (workingDir: string | null) => scanSkillRoots(workingDir, globalBase)
-  /** Scans `.archive/` folders inside the same skill roots. */
-  const scanArchived = (workingDir: string | null) =>
-    scanSkillRoots(workingDir, globalBase, ARCHIVE_DIR_NAME)
+  /** Scans the archive folder of the same shelf. */
+  const scanArchived = (workingDir: string | null, projectId: string) =>
+    scanArchivedSkills(workingDir, globalBase, archiveRoot, projectId)
 
-  async function isStale(skill: DiscoveredSkill, usage: SkillUsageRecord | null): Promise<boolean> {
-    const nowMs = now().getTime()
-    if (usage?.pinned) return false
-    if (usage?.lastUsedAt) {
-      return nowMs - Date.parse(usage.lastUsedAt) > UNUSED_AFTER_DAYS * DAY_MS
-    }
-    // Never used: stale once older than STALE_AFTER_DAYS.
-    const createdMs = await skillAgeBasis(skill, usage, nowMs)
-    return nowMs - createdMs > STALE_AFTER_DAYS * DAY_MS
+  const lastPassAt = async (): Promise<number | null> => {
+    const marker = await readCuratorMarker(stateFile)
+    return marker ? Date.parse(marker.lastRunAt) : null
   }
 
   async function inventory(
@@ -109,17 +110,29 @@ export function createSkillsCuratorService(deps: SkillsCuratorServiceDeps): Skil
   ): Promise<InventoryEntry[]> {
     const [active, archived, usageRows] = await Promise.all([
       scanActive(workingDir),
-      scanArchived(workingDir),
+      scanArchived(workingDir, projectId),
       deps.usageRepo.list(userId, projectId),
     ])
     const usageByKey = new Map(usageRows.map((u) => [`${u.scope}:${u.skillName}`, u]))
-    // isStale() may fs.stat() per never-used skill; the checks are independent,
+    const nowMs = now().getTime()
+    // The scheduled pass only ever covers the person's own skills; a project's wait for the
+    // shelf's "Archive unused".
+    const lastRunAt = workingDir ? null : await lastPassAt()
+    // idlenessOf() may fs.stat() per never-used skill; the checks are independent,
     // so resolve them in parallel rather than one fs.stat at a time.
     const entries: InventoryEntry[] = await Promise.all(
       active.map(async (skill): Promise<InventoryEntry> => {
         const usage = usageByKey.get(`${skill.scope}:${skill.name}`) ?? null
-        const stale = await isStale(skill, usage)
-        return { skill, usage, archived: false, state: stale ? 'stale' : 'active' }
+        // `.claude/skills` is shared with Claude Code, whose use Localix cannot see: only a skill
+        // made in Localix ages out. The others stay active, with no "will be archived" notice;
+        // they can still be archived by hand.
+        if (usage?.localixAuthored !== true)
+          return { skill, usage, archived: false, state: 'active' }
+        const idle = await idlenessOf(skill, usage, nowMs)
+        const state = idle?.stale ? 'stale' : 'active'
+        if (!idle) return { skill, usage, archived: false, state }
+        const archiveOn = workingDir ? null : archivePassAfter(idle.staleAt, nowMs, lastRunAt)
+        return { skill, usage, archived: false, state, idle: { ...idle, archiveOn } }
       }),
     )
     const activeNames = new Set(active.map((s) => s.name))
@@ -137,7 +150,7 @@ export function createSkillsCuratorService(deps: SkillsCuratorServiceDeps): Skil
     archivedAt: string,
     projectId: string,
   ): Promise<CuratorSkillRecord> {
-    const dir = await moveToArchive(entry.skill)
+    const dir = await moveToArchive(entry.skill, archiveRoot, projectId)
     // oxlint-disable-next-line react-doctor/server-sequential-independent-await -- persist archived state only after the filesystem move succeeds; otherwise inventory would claim a phantom archive
     const usage = await deps.usageRepo.setArchivedAt(
       userId,
@@ -154,6 +167,24 @@ export function createSkillsCuratorService(deps: SkillsCuratorServiceDeps): Skil
       archived: true,
       state: 'archived',
     })
+  }
+
+  /** Archive each entry, one failing not stopping the rest. */
+  async function archiveEntries(
+    userId: string,
+    entries: InventoryEntry[],
+    projectId: string,
+  ): Promise<CuratorSkillRecord[]> {
+    const archivedAt = now().toISOString()
+    const done: CuratorSkillRecord[] = []
+    for (const entry of entries) {
+      try {
+        done.push(await archiveEntry(userId, entry, archivedAt, projectId))
+      } catch (e) {
+        deps.logger?.warn?.(`curator: failed to archive "${entry.skill.name}": ${errorMessage(e)}`)
+      }
+    }
+    return done
   }
 
   return {
@@ -213,9 +244,19 @@ export function createSkillsCuratorService(deps: SkillsCuratorServiceDeps): Skil
           `An active skill named "${input.name}" already exists`,
         )
       }
-      const activeRoot = dirname(dirname(entry.skill.dir)) // …/skills/.archive/<name> → …/skills
-      const target = join(activeRoot, basename(entry.skill.dir))
-      await fs.rename(entry.skill.dir, target)
+      const [{ base }] = skillBases(workingDir, globalBase)
+      const target = join(skillRoot(base!), basename(entry.skill.dir))
+      if (
+        await fs.stat(target).then(
+          () => true,
+          () => false,
+        )
+      )
+        throw new ConflictError(
+          'skill_exists',
+          `A folder named "${basename(target)}" already exists`,
+        )
+      await moveDir(entry.skill.dir, target)
       // Reset usage so the skill isn't immediately re-archived on the next pass.
       await deps.usageRepo.recordUse(
         userId,
@@ -240,23 +281,25 @@ export function createSkillsCuratorService(deps: SkillsCuratorServiceDeps): Skil
       })
     },
 
+    async archiveUnused(userId, input) {
+      const workingDir = await workingDirFor(userId, input.projectId)
+      const projectId = input.projectId ?? ''
+      const chosen = new Set(input.names)
+      const entries = await inventory(userId, workingDir, projectId)
+      const archived = await archiveEntries(
+        userId,
+        entries.filter((e) => e.state === 'stale' && chosen.has(e.skill.name)),
+        projectId,
+      )
+      return archived
+    },
+
     async runCurator(userId, opts) {
       const workingDir = await workingDirFor(userId, opts?.projectId)
       const projectId = opts?.projectId ?? ''
       const entries = await inventory(userId, workingDir, projectId)
-      const archivedAt = now().toISOString()
       const staleEntries = entries.filter((e) => e.state === 'stale')
-      const archivedNow: string[] = []
-      for (const entry of staleEntries) {
-        try {
-          await archiveEntry(userId, entry, archivedAt, projectId)
-          archivedNow.push(entry.skill.name)
-        } catch (e) {
-          deps.logger?.warn?.(
-            `curator: failed to archive "${entry.skill.name}": ${errorMessage(e)}`,
-          )
-        }
-      }
+      const archivedNow = (await archiveEntries(userId, staleEntries, projectId)).map((r) => r.name)
       const alreadyArchived = entries.filter((e) => e.archived).length
       return {
         active: entries.length - alreadyArchived - archivedNow.length,
@@ -280,6 +323,7 @@ export function createSkillsCuratorService(deps: SkillsCuratorServiceDeps): Skil
       const report = await this.runCurator(userId)
       await writeCuratorMarker(stateFile, nowIso)
       deps.logger?.info?.(`curator: scheduled pass archived ${report.archivedNow.length} skill(s)`)
+      if (report.archivedNow.length > 0) deps.onArchived?.(userId, report.archivedNow)
       return report
     },
   }

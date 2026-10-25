@@ -154,13 +154,7 @@ export type {
 // Plugins and mini apps: their records, presentation helpers and store (`client-extensions.ts`).
 export * from './client-extensions'
 
-export type {
-  AgentRecord,
-  AgentRecordInput,
-  AgentSummary,
-  ListAgentsResponse,
-  DuplicateAgentRequest,
-} from './features/agents/contracts'
+export type { AgentSummary } from './features/agents/contracts'
 
 export type {
   ProviderConnection,
@@ -204,7 +198,6 @@ export type {
   ConsumerResolution,
   PermissionSummaryEntry,
   ToolSurface,
-  ToolSurfaceDenial,
   ReloadClass,
 } from './features/effective-config/contracts'
 export type { ToolMeta } from './features/tools/routes'
@@ -219,9 +212,6 @@ export type { CapabilitySnapshot, CapabilityToolSurface } from './contracts/capa
 // vocabulary from here pulled `features/chat/contracts` and the mini-app-sdk BACKEND into
 // the browser graph, where `node:dns` and `node:path` are externalized and blow up at
 // runtime. It is served from the `@localixai/api/tip-contracts` leaf instead.
-// The tool-GC report (`GET /rpc/tools/gc`). Separate from the snapshot on purpose — see
-// features/tools/gc-report.ts.
-export type { ToolCounts, ToolGcReport } from './features/tools/gc-report'
 export type { ToolGcReason, ToolGcSuggestion } from './features/agent-core/tool-gc'
 // Domain plugin contracts are intentionally not re-exported by the host client.
 export type {
@@ -288,12 +278,7 @@ export type {
 export type * from './features/agent-core/tools/hitl/mcp-elicitation'
 export type * from './features/agent-core/tools/hitl/mcp-elicitation-content'
 
-export type {
-  McpServer,
-  McpStdioConfig,
-  McpHttpConfig,
-  McpOAuthConfig,
-} from './features/mcp/contracts'
+export type { McpServer, McpOAuthConfig } from './features/mcp/contracts'
 
 export type {
   CreateTerminalRequest,

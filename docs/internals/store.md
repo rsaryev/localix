@@ -1,16 +1,14 @@
 # Store design
 
 The Store is the one place where a person finds, installs, updates and removes everything Localix
-can add: mini apps, Claude Code plugins, MCP servers and, later, standalone skills and agents. This
-page is the design contract for contributors: the hierarchy, the provider port, the screens and the
-order of work.
+can add: mini apps, Claude Code plugins, MCP servers, skills and agents. This page is the design
+contract for contributors: the hierarchy, the provider port, the screens and how each part is built.
 
-Status: step 1 is implemented — the contract, the Store feature with its index and routes, the mini
-apps provider and the Store UI on the kit (see [Source of truth](#source-of-truth)). Step 2's API
-side is implemented: the plugins provider, the default sources, the SQLite index, search through
-global search and Discover's data ([Step 2 as built](#step-2-as-built)); its screens follow. Steps
-3–5 are proposed. Where step 1 differs from the first draft, this page says so under
-[Step 1 as built](#step-1-as-built).
+Status: implemented. The Store feature (contract, index, routes), the providers for mini apps,
+plugins, MCP servers, skills and agents, and the Store UI on the kit are all in place (see
+[Source of truth](#source-of-truth)). Settings keeps preferences and Settings → Permissions;
+everything else a person adds is managed here. The sections after [Limits](#limits) describe what is
+built, part by part.
 
 ## Terminology
 
@@ -56,7 +54,9 @@ Store
 │   └── Skills · Agents · Commands · Mods · Hooks · MCP servers · LSP · Output styles
 ├── Library
 │   ├── Installed           what came from a source (not Yours, not bundled), with scope and state
-│   └── Updates             installs with a newer version, "Update all"
+│   ├── Updates             installs with a newer version, "Update all"
+│   ├── Yours               what the person wrote, installed or not
+│   └── Project             what the open project's own folder holds
 └── Sources                 each provider's sources, grouped by provider; add with a preview
 ```
 
@@ -129,6 +129,7 @@ interface ListingDetail extends Listing {
   media: Array<{ url: string; caption?: string }>
   facts: Array<{ label: string; value: string }> // license, size, API version, homepage …
   components: Array<{ kind: ComponentKind; name: string; description?: string }>
+  notice?: { text: string; action?: { id: string; label: string } } // shown above the page, with one action
 }
 
 interface InstallPlan {
@@ -164,6 +165,14 @@ interface StoreProvider {
     values: Record<string, ConfigValue>,
     actor: StoreActor,
   ): Promise<void>
+  shelfActions?(scope: Scope, actor: StoreActor): Promise<ItemAction[]> // see Shelf actions
+  planShelfAction?(action: string, scope: Scope, actor: StoreActor): Promise<ShelfPlan>
+  runShelfAction?(
+    action: string,
+    scope: Scope,
+    ids: string[],
+    actor: StoreActor,
+  ): Promise<ActionResult>
   refresh(): Promise<void> // re-read sources
   sources(): Promise<SourceView[]>
   previewSource?(input: string): Promise<SourcePreview>
@@ -246,6 +255,7 @@ display name; marketplace entries may add an `icon` path later, read only from t
 │ LIBRARY      │                                                                │
 │  Installed   │                                                                │
 │  Updates  3  │                                                                │
+│  Yours       │                                                                │
 │ Sources      │                                                                │
 └──────────────┴───────────────────────────────────────────────────────────────┘
 ```
@@ -255,27 +265,14 @@ display name; marketplace entries may add an `icon` path later, read only from t
   carousel, then tabs Overview · What's inside · Permissions · Versions, then "More from this
   source". Permissions is the plan.
 - **Installed** is a dense list: tile, name, kind, scope, version, enabled switch, menu (Update,
-  Configure, Remove). Configure opens the provider's own settings page.
+  Configure, Remove). Configure opens the item's page on its Settings tab.
 - **Sources** groups by provider: mini app catalogs, Claude Code marketplaces, later registries.
   Adding one previews it first, as the mini app catalog dialog does today.
-- Settings → Plugins and Settings → Mini apps keep configuration only and link to the Store.
 
 The Store is one work item kind, `store`, with payload `{ shelf?, ref?, addSource? }`. A restored
 `mini-app-store` tab opens the Store on the Mini apps shelf. Generic pieces (card, card grid,
 carousel, shelf nav) go to `packages/kit`; the screens live in one UI slice that renders the
 contract and knows no provider.
-
-## Order of work
-
-| Step | Delivers                                                                                                   | Done when                                                                      |
-| ---- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| 1    | Contract, Store feature, index, routes; mini apps provider; Store UI on kit; old tab redirects             | Every mini app store test passes against the Store; the old routes still work. |
-| 2    | Plugins provider with contents and plans; capability shelves; Installed and Updates                        | A marketplace plugin installs from its card; counts match `/plugin` output.    |
-| 3    | Remove `@builtin`; `workflows` and `localix-mini-apps` as marketplace plugins; recommended plugins offered | No code names `builtin` plugins; a fresh profile installs nothing on its own.  |
-| 4    | MCP servers provider over the official MCP Registry                                                        | A registry server installs into the person's MCP config with its plan.         |
-| 5    | Standalone skills and agents from registries                                                               | A skill folder installs into `~/.claude/skills` and shows on Skills.           |
-
-Each step lands with its tests first, a screenshot scenario for the Store and the docs it changes.
 
 ## Limits
 
@@ -283,8 +280,8 @@ Each step lands with its tests first, a screenshot scenario for the Store and th
 - No cross-kind dependencies: a plugin cannot require a mini app (X1).
 - Search is the global search service's `store` provider: FTS5 words and meaning, fused
   ([Store sources, ranking and search](store-scale.md)).
-- Project scope exists in the contract from step 1; the UI offers it for plugins from step 2 and
-  never for mini apps, which are per person.
+- Project scope is in the contract; the UI offers it for plugins and never for mini apps, which are
+  per person.
 
 ## Related guides
 
@@ -292,7 +289,7 @@ Each step lands with its tests first, a screenshot scenario for the Store and th
 - [Architecture rules](architecture/README.md)
 - [Visual system](visual-system.md)
 
-## Step 1 as built
+## Provider and listing details
 
 - **The person is named.** Every provider call but `refresh`, `subscribe` and the source methods
   takes a `StoreActor` (`{ userId }`): enabled state and the yes to run a mini app are the person's.
@@ -337,16 +334,15 @@ Each step lands with its tests first, a screenshot scenario for the Store and th
   a `store` poke for a `mini-app` or `mini-app.catalog` notice (`bootstrap/store.ts`). The mini apps
   provider lists from its catalogs as the old store page did, so a catalog older than ten minutes is
   read again on that rebuild.
-- **Activity.** `/rpc/store/activity` and `/updates/apply` exist; at step 1 the Event Center's In
-  progress and the update strip still read the mini app store's own feed, which stays until step 2
-  adds plugin jobs to the same feed.
-- **Settings → Mini apps** no longer lists catalogs: it opens the Store and its Sources.
+- **Activity.** `/rpc/store/activity` and `/updates/apply` carry every kind's jobs and updates; see
+  [Plugins, activity and trust](#plugins-activity-and-trust).
 - **Sources** offers "Add …" for every kind with a source; the contract does not yet say whether a
   provider can add one.
 
-## Step 2 as built
+## Plugins, activity and trust
 
-The API side of step 2; the screens that use all of it come in the step's UI part.
+The API side of the plugins provider and the Store's shared services; the screens that use all of it
+are under [UI](#ui).
 
 - **Plugins are listings.** `features/plugins/store-provider.ts` lists every entry of every
   registered marketplace with what the entry gives (display name, author as publisher, category,
@@ -363,7 +359,7 @@ The API side of step 2; the screens that use all of it come in the step's UI par
   `/rpc/store/activity` on the `store` poke: one row per job of any kind, opening its page in the
   Store, and one offer for every package update, whose **Update all** is `/updates/apply`. The mini
   app store's own feed and Update all routes, the `mini-app-installs` poke and the UI's plugin
-  updates client are gone; Settings → Plugins still reads `/rpc/plugins/updates`.
+  updates client are gone.
 - **Trust.** `listing.source` carries `trust` and `weight`, a `SourceView` its `trust`. A listing
   also says its `origin`, `alsoIn`, `homepage` and `updatedAt`. `trust` belongs to a source and is
   said by the provider that owns it: a catalog or marketplace sets `localix`, `official` or
@@ -405,7 +401,7 @@ name, so the page draws those rows in one read. When no editorial source can be 
 catalog not published yet), Start here is the `localix` and `official` listing by score, so Discover
 is never empty while official listings exist.
 
-### Step 2c API as built
+### Sources and project installs
 
 - **Sources say how they are.** A `SourceView` adds `syncedAt` (the provider's own fetch time, else
   when the Store last indexed it), `problem` (why it could not be read, in one sentence: a
@@ -424,7 +420,7 @@ is never empty while official listings exist.
   the fetch runs behind it, and its end is a `store` poke, after which the page reads its readme and
   components. A plan still waits for the fetch.
 
-### Step 2c UI as built
+### UI
 
 `apps/ui/src/features/store/`. Every part reads the Store through one `StoreScope` (client, open
 project, `open`, `show`, `goTo`, Get and its siblings), provided by `StoreView`; the UI knows no
@@ -550,22 +546,68 @@ SKILL.md operations of the chat service and the curator, both handed in as ports
 builds them, A4). Like an MCP server a skill is made here, so `install`, `update` and `plan` refuse
 and say to use **Add skill**.
 
-| Skill                                                  | Listing id       | Shelf   | Settings, remove |
-| ------------------------------------------------------ | ---------------- | ------- | ---------------- |
-| In `~/.localix/skills`                                 | `user:<name>`    | Yours   | yes              |
-| In a project's `.localix/skills`                       | `project:<name>` | Project | yes              |
-| In another folder (`~/.claude/skills`, a command file) | `user:<name>`    | Yours   | read-only        |
-| A plugin's                                             | not listed       |         |                  |
+| Skill                                                                             | Listing id       | Shelf   | Settings, remove |
+| --------------------------------------------------------------------------------- | ---------------- | ------- | ---------------- |
+| In `~/.claude/skills`                                                             | `user:<name>`    | Yours   | yes              |
+| In a project's `.claude/skills`                                                   | `project:<name>` | Project | yes              |
+| In another folder (`.agents/skills`, a command file, a parent's `.claude/skills`) | `user:<name>`    | Yours   | read-only        |
+| A plugin's                                                                        | not listed       |         |                  |
 
 - **Commands are skills.** A `.claude/commands/<path>.md` file is already discovered as a skill
   named with `:`, so it appears as a read-only skill. There is no `command` package kind.
 - **Settings tab.** Description and instructions (a `multiline` field, one text area). Actions:
   **Pin** or **Unpin**, **Archive**. An archived skill stays on its shelf with an `archived` tag,
   its switch off and one action, **Restore**; it cannot be removed until restored.
-- **Switch.** A `skill:<name>` rule of the default agent, the one Settings writes. The name is the
-  identity and is not changed after the skill is added.
-- **Curator.** The scheduled pass and the Run curator button of Settings → Capabilities → Skills are
-  unchanged; archive, restore and pin go through the same service.
+- **Switch.** A `skill:<name>` availability rule, set by the switch on the skill's page or Installed
+  row; an agent's **Access** tab sets it for that agent alone. The name is the identity and is not
+  changed after the skill is added.
+- **Shared folder.** `.claude/skills` is Claude Code's too, and its use of a skill is invisible
+  here. The `skill_usage.localix_authored` flag marks a skill created in Localix (the Store's
+  create, the `skill` tool's first save, and the move below); the curator's `stale` state, the
+  scheduled pass, **Archive unused** and the unused notice apply to those alone. Pin, manual archive
+  and Restore work for every skill. Archived skills wait in
+  `~/.localix/skills-archive/{user|<projectId>}/<name>`, outside Claude Code's tree.
+  `skills-curator/legacy-skills-migration.ts` is the only code that knows the old `.localix/skills`:
+  once at startup (`bootstrap.ts`, marker `~/.localix/skills-claude-layout.json`) it moves those
+  folders into `.claude/skills`, drops one a `.claude` skill shadows (logged), moves `.archive` to
+  the archive folder and removes the old folders.
+- **Curator.** The weekly scheduled pass (`bootstrap/ops-timers.ts`) archives the person's own
+  unused skills; archive, restore and pin go through the same service. Its manual run is the
+  **Archive unused** [shelf action](#shelf-actions) (the `/rpc/skills/curator` route is gone). The
+  staleness rule lives once, in `skills-curator/staleness.ts`: pinned never; used, stale 90 days
+  after the last use; never used, 30 days after it was made. The curator's records carry
+  `idleSince`, `staleAt` and `archiveOn` (the first scheduled pass on or after `staleAt`, counted
+  from the pass marker; null for a pinned, archived or project skill, which no scheduled pass
+  touches).
+- **Unused notice.** A skill's detail has a `notice` ("Not used for N days. Archived on <date>
+  unless pinned.", or "Never used, made N days ago. …") when it is stale or its `archiveOn` is
+  within two scheduled intervals, with **Pin** as its `action`; the page draws it with the kit's
+  `workbench-notice-bar` and runs the action as the item's own. A project skill says "Archive unused
+  on the Project shelf would archive it unless pinned" once stale.
+- **After a scheduled pass.** The curator's `onArchived` port reaches
+  `notifications/producers/skills-curator.ts` (wired in `bootstrap/domain-services.ts`): one journal
+  row per pass that archived something, never for a pass that archived nothing, with **Open to
+  restore** (the skill's page) or **Open skills**.
+
+### Shelf actions
+
+An action on a whole shelf of a kind's own items. The port has three optional methods:
+`shelfActions(scope, actor)` (what to offer: `user` is Yours, `project` the open project's shelf),
+`planShelfAction(action, scope, actor)` (a `ShelfPlan`: a summary and each item with `ref`, `name`
+and `reason`; computed, written nowhere) and `runShelfAction(action, scope, ids, actor)` (does it to
+the ids the person confirmed, leaving out any that no longer qualify). Plan then run mirrors
+install's plan then consent: nothing is written without the preview shown.
+
+| Route                                                        | Purpose                                                  |
+| ------------------------------------------------------------ | -------------------------------------------------------- |
+| GET `/shelf-actions?scope=&projectId=`                       | The actions each kind's provider offers for that shelf.  |
+| POST `/shelf/:kind/plan` `{ scope, action, projectId? }`     | The preview.                                             |
+| POST `/shelf/:kind/run` `{ scope, action, ids, projectId? }` | Does it to the confirmed ids; answers an `ActionResult`. |
+
+Skills offer one, **Archive unused** (`archive-unused`): the preview lists the stale, unpinned
+skills of that shelf with "Last used N days ago" or "Never used, N days old". The UI draws the
+button beside **Add skill** on Yours and Project (`ShelfActions.tsx`), shows the list in a dialog
+and sends back the ids it showed.
 
 ## Source of truth
 

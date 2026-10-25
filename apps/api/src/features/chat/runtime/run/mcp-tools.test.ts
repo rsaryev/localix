@@ -112,3 +112,52 @@ test('a chat whose agent reaches no server leaves another chat’s servers runni
   expect(clients[0].closed).toBe(false)
   await manager.disposeAll()
 })
+
+// sub-agents.md, `mcpServers`: inline servers connect when the subagent starts and disconnect
+// when it finishes — here, with its run, under a scope of that run's own.
+test('an agent’s inline servers join its run’s gather and are released with the run', async () => {
+  const gather = spyOn(mcpClientManager, 'gather').mockResolvedValue(empty)
+  const release = spyOn(mcpClientManager, 'releaseScope').mockResolvedValue()
+  restore = () => {
+    gather.mockRestore()
+    release.mockRestore()
+  }
+  const inline = {
+    id: 'agent:tester:playwright',
+    userId: 'u',
+    projectId: 'p',
+    name: 'playwright',
+    description: '',
+    transport: 'stdio',
+    config: { command: ['npx', 'x'] },
+    createdAt: '',
+    updatedAt: '',
+  } as McpServerRecord
+  const run = (sessionId: string) =>
+    resolveMcpTools({
+      env: { mcpRepo: { listForScope: async () => [] } } as unknown as RunEnv,
+      userId: 'u',
+      session: { id: sessionId, projectId: 'p' } as SessionRecord,
+      pluginMcpServers: [],
+      defaultCwd: '/work',
+      availability: UNDECIDED,
+      agentId: 'agent-1',
+      agentServers: { inline: [inline], references: [], skipped: [] },
+    })
+
+  const first = await run('child-1')
+  const second = await run('child-2')
+  expect(gather.mock.calls[0]![0].map((s) => s.name)).toEqual(['playwright'])
+  const scopes = gather.mock.calls.map((call) => call[1].scope)
+  expect(scopes[0]).not.toBe(scopes[1])
+  expect(scopes[0]).toContain('child-1')
+  await first.release?.()
+  expect(release).toHaveBeenCalledWith(scopes[0])
+  expect(release).toHaveBeenCalledTimes(1)
+  await second.release?.()
+})
+
+test('a run whose agent defines no inline server has nothing to release', async () => {
+  const { result } = resolve(empty, [])
+  expect((await result).release).toBeUndefined()
+})

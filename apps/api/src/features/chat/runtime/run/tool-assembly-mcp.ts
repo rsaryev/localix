@@ -33,6 +33,7 @@ export async function gatherRunMcpTools(options: AssembleRunToolsOptions, allToo
         availability: options.availability,
         agentId: options.agentId,
         bindChannels: options.agentProfile.shape === 'chat',
+        ...(options.agentServers ? { agentServers: options.agentServers } : {}),
       })
     : {
         gather: undefined,
@@ -40,6 +41,7 @@ export async function gatherRunMcpTools(options: AssembleRunToolsOptions, allToo
         instructions: [],
         inventory: [],
       }
+  if (mcp.release) options.registerMcpRelease?.(mcp.release)
   const external = externalToolSurface({
     tools: mcp.tools,
     profile: options.agentProfile,

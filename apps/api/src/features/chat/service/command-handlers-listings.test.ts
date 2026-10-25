@@ -35,6 +35,14 @@ describe('/help <command> detail', () => {
     expect(text).toContain('only after msub = `remove`')
   })
 
+  test('/help <command> shows the line of a command the picker offers as a crumb', async () => {
+    const text = await help('/help rewind')
+    expect(text).toContain('`/rewind [message]`')
+    expect(text).toContain('Roll this chat back to one of your messages')
+    // The menu lists /help with its argument, and the reply names the same one.
+    expect(await help('/help help')).toContain('`/help [command]`')
+  })
+
   test('lists a command and suggests a near match for a typo', async () => {
     expect(await help()).toContain('**Slash commands**')
     expect(await help('/help plugn')).toContain('/plugin')

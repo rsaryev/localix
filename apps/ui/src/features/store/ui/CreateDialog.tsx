@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Plus } from 'lucide-react'
 import type { CreateForm, PackageKind, Scope } from '@localixai/store'
 import { Button } from '@localixai/kit/button'
@@ -110,17 +110,21 @@ function CreateButton({ kind, initial }: { kind: PackageKind; initial: Scope }) 
 export function CreateBar({
   kinds,
   initial = 'user',
+  before,
 }: {
   kinds: readonly PackageKind[] | 'all'
   /** Where a new one is kept unless the person chooses: the Project shelf says the project. */
   initial?: Scope
+  /** Buttons for what else can be done to this shelf, drawn first in the same row. */
+  before?: ReactNode
 }) {
   const store = useStoreScope()
   const creatable = useCreatable(store.client).data ?? []
   const shown = kinds === 'all' ? creatable : creatable.filter((kind) => kinds.includes(kind))
-  if (shown.length === 0) return null
+  if (shown.length === 0 && !before) return null
   return (
     <div className="mb-3 flex flex-wrap justify-end gap-2">
+      {before}
       {shown.map((kind) => (
         <CreateButton key={kind} kind={kind} initial={initial} />
       ))}

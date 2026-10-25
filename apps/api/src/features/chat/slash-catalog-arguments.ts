@@ -174,3 +174,14 @@ export const MINI_APP_ARGS: SlashArgSpec[] = [
     placeholder: 'What should the mini app do?',
   },
 ]
+
+/** `/theme [theme]`: this device's looks, loaded by the composer (`shared/theme/themeChoice`). */
+export const THEME_ARGS: SlashArgSpec[] = [
+  {
+    name: 'theme',
+    type: 'choice',
+    dynamic: true,
+    optional: true,
+    placeholder: 'A theme, or Enter to list them…',
+  },
+]

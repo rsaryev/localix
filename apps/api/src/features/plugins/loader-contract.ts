@@ -1,6 +1,7 @@
 import type { PluginHookConfig } from '../cc-hooks'
 import type { McpServerRecord } from '../mcp/repository'
 import type { DiscoveredSkill } from '../agent-core/skill-discovery'
+import { mapCcRuleList } from '../ext/cc-tool-names'
 import { normalizeCcToolName } from './discovery'
 import type { LocalixKey, PluginAgent, PluginMonitor } from './contracts'
 import type { PluginOutputStyle } from './output-styles'
@@ -28,6 +29,8 @@ export interface LoadedPluginAgent {
   tools?: string[]
   /** Engine tool names blocked for this role. */
   disallowedTools?: readonly string[]
+  /** `tools: Agent(a, b)`: the agent types it may delegate to as the main thread (none: all). */
+  agentTypes?: readonly string[]
   /** Advisory model hint from frontmatter `model:`. */
   preferredModel?: string
   /** CC `skills:` — skill names to preload when this agent runs. */
@@ -155,6 +158,10 @@ export function emptyLoadedPlugins(): LoadedPlugins {
   }
 }
 
+/** A deny entry as the engine names it, keeping a `Tool(specifier)` pattern. */
+const denyEntry = (entry: string): string =>
+  entry.includes('(') ? (mapCcRuleList([entry])[0] ?? entry) : normalizeCcToolName(entry)
+
 /**
  * Discover plugins for the scope, intersect with the user's enabled set, and load
  * each enabled plugin's contributions. Failures are isolated per-plugin: a bad
@@ -184,9 +191,8 @@ export function buildLoadedAgent(
     ...(agent.tools && !agent.tools.includes('*')
       ? { tools: [...new Set(agent.tools.map(normalizeCcToolName))] }
       : {}),
-    ...(agent.disallowedTools
-      ? { disallowedTools: agent.disallowedTools.map(normalizeCcToolName) }
-      : {}),
+    ...(agent.disallowedTools ? { disallowedTools: agent.disallowedTools.map(denyEntry) } : {}),
+    ...(agent.agentTypes?.length ? { agentTypes: agent.agentTypes } : {}),
     ...(agent.preferredModel ? { preferredModel: agent.preferredModel } : {}),
     ...(agent.pinnedSkills?.length ? { pinnedSkills: agent.pinnedSkills } : {}),
     ...(agent.preferredEffort ? { preferredEffort: agent.preferredEffort } : {}),

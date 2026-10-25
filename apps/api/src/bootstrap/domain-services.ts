@@ -7,20 +7,23 @@ import { capabilitiesChanged } from '../features/capabilities/revision'
 import { createMcpService } from '../features/mcp/service'
 import { createPluginService } from '../features/plugins/service'
 import { createMiniAppService } from '../features/mini-apps/service'
-import { createContributionKindRegistry } from '../features/ext/contribution-kinds'
 import { createAgentFoldersPort, createPluginAgentGroups } from './agent-catalog-sources'
 import { createAgentsService } from '../features/agents/service'
 import { createInvocationRegistry } from '../features/capabilities/invocation'
 import { createLspManager } from '../features/lsp'
 import { createLspConditions } from '../features/notifications/conditions/lsp'
 import { createMiniAppInstallFacts } from '../features/notifications/producers/mini-app-installs'
+import { createSkillArchiveFacts } from '../features/notifications/producers/skills-curator'
 import type { InfraPhase } from './infra'
 import { toResourceExpansionResult } from '../features/projects/expand-refs'
 import { createProjectsService } from '../features/projects/service'
 import { createUserService } from '../features/user/service'
 import { createSkillUsageRepository } from '../features/skills-curator/repository'
 import { createSkillsCuratorService } from '../features/skills-curator/service'
-import { setSkillUsageRecorder } from '../features/agent-core/skill-usage-recorder'
+import {
+  setSkillAuthoredRecorder,
+  setSkillUsageRecorder,
+} from '../features/agent-core/skill-usage-recorder'
 import { createToolUsageRepository } from '../features/tools/usage-repository'
 import { setToolRosterRecorder, setToolUsageRecorder } from '../features/tools/usage-recorder'
 import type { createDatabase } from '../db'
@@ -181,7 +184,6 @@ export function createDomainServicesPhase({
   })
   // Late-bound: chatService is created below, but a command's arg-options runner needs a
   // session's cwd. Hold a ref, assign it once chatService exists.
-  const contributionKinds = createContributionKindRegistry()
   const resolveSessionCwd = async (userId: string, sessionId: string) =>
     (await hostRefs.chatServiceForCwd?.resolveSessionCwd(userId, sessionId).catch(() => null)) ??
     null
@@ -189,7 +191,6 @@ export function createDomainServicesPhase({
     db,
     capabilityStores,
     homeDir: userHome(),
-    contributionKinds,
     modCommands: () => hostRefs.mods?.commands() ?? [],
     resolveProjectCwd,
     resolveSessionCwd,
@@ -210,7 +211,6 @@ export function createDomainServicesPhase({
     db,
     capabilityStores,
     homeDir: userHome(),
-    contributionKinds,
     resolveProjectCwd,
     resolveSessionCwd,
     invokeUiAction: (...args) => backendHost.invokeUiAction(...args),
@@ -241,6 +241,8 @@ export function createDomainServicesPhase({
     usageRepo: skillUsageRepo,
     resolveProjectCwd,
     capabilitiesChanged: () => void capabilitiesChanged(),
+    // The weekly pass moved skills aside: a line in the Event Center, with a way back.
+    onArchived: createSkillArchiveFacts(notifications),
     logger: {
       info: (msg) => logger.info({ event: 'skills_curator.info', msg }),
       warn: (msg) => logger.warn({ event: 'skills_curator.warn', msg }),
@@ -250,6 +252,10 @@ export function createDomainServicesPhase({
   // this process-wide recorder instead of new tool-registry options.
   setSkillUsageRecorder((name, scope, projectId) =>
     skillUsageRepo.recordUse(env.LOCALIX_DEFAULT_USER_ID, projectId, name, scope),
+  )
+  // A skill first written by Localix is recorded as created here: only those age out.
+  setSkillAuthoredRecorder((name, scope, projectId) =>
+    skillUsageRepo.markAuthored(env.LOCALIX_DEFAULT_USER_ID, projectId, name, scope),
   )
   // Tool usage: the same singleton-sink arrangement, for the same reason — the two writers live
   // inside the run loop, which has no DB handle. Both sinks return their promise so the recorder

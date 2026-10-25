@@ -6,18 +6,20 @@ page to install one and to see which Claude Code features run in Localix.
 
 ## What you can do
 
-| Outcome                                  | How                                                                        |
-| ---------------------------------------- | -------------------------------------------------------------------------- |
-| Install a Claude Code plugin from GitHub | `/plugin install owner/repo`                                               |
-| Install from a git URL or a local folder | `/plugin install https://…/repo.git` or `/plugin install /path/to/dir`     |
-| Add a Claude Code marketplace            | `/plugin marketplace add owner/repo` (or a git URL, a folder, a URL)       |
-| Install from a marketplace               | `/plugin install <name>@<marketplace>`                                     |
-| Add a marketplace and install in one go  | `/plugin install <name> --marketplace <source>`                            |
-| Install for one project only             | Add `--project`; installs default to `~/.localix/plugins` for all chats    |
-| Drop a folder in                         | Copy it under a plugin root and run `/plugin reload`                       |
-| Update one plugin now                    | **Update now** on its row, or `/plugin update <name>`                      |
-| Update a marketplace and its plugins     | **Update marketplace** in Settings, or `/plugin marketplace update <name>` |
-| Turn auto-update on or off               | The switch on the marketplace's row in the Store (Sources)                 |
+| Outcome                                  | How                                                                                                                      |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Install a Claude Code plugin from GitHub | `/plugin install owner/repo`                                                                                             |
+| Install from a git URL or a local folder | `/plugin install https://…/repo.git` or `/plugin install /path/to/dir`                                                   |
+| Add a Claude Code marketplace            | `/plugin marketplace add owner/repo` (or a git URL, a folder, a URL)                                                     |
+| Install from a marketplace               | `/plugin install <name>@<marketplace>`                                                                                   |
+| Add a marketplace and install in one go  | `/plugin install <name> --marketplace <source>`                                                                          |
+| Install a plugin that asks for consent   | Repeat the command with `--yes` after reading the plan it shows                                                          |
+| Install for one project only             | Add `--project`; installs default to `~/.localix/plugins` for all chats                                                  |
+| Paste a command from Claude Code's docs  | Works as is: `name@marketplace`, `--scope user\|project\|local` (`local` is this project), `uninstall`, `/plugin market` |
+| Drop a folder in                         | Copy it under a plugin root and run `/plugin reload`                                                                     |
+| Update one plugin now                    | **Update** in Store → Installed, or `/plugin update <name>`                                                              |
+| Update a marketplace and its plugins     | **Update now** on its row in Store → Sources, or `/plugin marketplace update <name>`                                     |
+| Turn auto-update on or off               | The switch on the marketplace's row in the Store (Sources)                                                               |
 
 A Claude Code marketplace is a repository, folder or hosted file whose catalog is
 `.claude-plugin/marketplace.json`. `/plugin marketplace list <name>` shows its plugins,
@@ -228,6 +230,32 @@ Without `tools`, the child inherits the chat's tools, its MCP tools included beh
 recovers compressed results. It names an MCP tool as `mcp__<server>__<tool>`, a plugin's server as
 `plugin_<plugin>_<server>`, or every tool of a server as `mcp__<server>__*`; `disallowedTools` takes
 the same names.
+
+The lists use Claude Code's tool names, the same ones a hook sees a call under
+([hook tool calls](../features/hook-tool-calls.md#tool-names-and-shapes)), and Localix's own tool
+names too (`plan`, `jobs`, `browser`, `memory` …). One name can cover more than Claude Code's tool
+does, and some Claude Code tools have no counterpart:
+
+| Claude Code name                                                                                                                                          | In a `tools` list                                                                |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `Grep`, `Glob`                                                                                                                                            | Both are `search`, so one grant lists files and searches them                    |
+| `WebFetch`, `WebSearch`                                                                                                                                   | Both are `research`                                                              |
+| `SendMessage`                                                                                                                                             | `delegate`, whose other actions start and stop child agents                      |
+| `TaskStop`                                                                                                                                                | `jobs` (list, read and stop background jobs); stopping a child run is `delegate` |
+| `Monitor`                                                                                                                                                 | `bash`, whose `until` waits on a command, so it grants the shell                 |
+| `ExitPlanMode`, `ToolSearch`, `Workflow`                                                                                                                  | `plan`, `activate_tools`, `workflow`                                             |
+| `CronCreate`, `CronDelete`, `CronList`, `ScheduleWakeup`                                                                                                  | `loops`                                                                          |
+| `ListMcpResourcesTool`, `ReadMcpResourceTool`                                                                                                             | `mcp_resources`                                                                  |
+| `TodoWrite`, `TaskCreate`, `TaskUpdate`, `TaskList`, `TaskGet`, `TaskOutput`, `EnterPlanMode`, `LSP`, `EnterWorktree`, `ExitWorktree`, `PushNotification` | No Localix tool; the name is dropped                                             |
+
+A main agent's `tools` list switches off every Localix tool it leaves out, `browser`, `memory`,
+`plan` and `loops` included, as Claude Code's exact list does. Only the run's own plumbing stays on:
+`activate_tools`, `tool_output`, `context_budget`, `set_topic` and `skip_answer`.
+
+An entry with a specifier in `disallowedTools` or `disallowed-tools`, such as `Bash(rm *)` or
+`Read(.env)`, denies only what the pattern matches, written as in a `permissions.deny` rule. A
+`Read(...)` entry also covers `edit` and `write` on that path. An agent's `disallowedTools` reads
+the same way, and a skill the model loads applies its list from then on.
 
 A plugin's `settings.json` `agent` runs chats on the default agent as that plugin agent, on its
 `model`, unless you picked the chat's model yourself. `subagentStatusLine` rewrites the rows of

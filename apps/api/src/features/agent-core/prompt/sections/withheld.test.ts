@@ -29,10 +29,12 @@ describe('the unavailable section', () => {
     // The honest claim: the plugin is here and nobody has said yes. What it would contribute
     // cannot be listed, because listing it would mean importing the code the question is
     // about — a manifest declares entry files, not tool names.
-    const section = buildWithheldToolsSection(EMPTY, [TOOL.configure], ['office'])
+    const section = buildWithheldToolsSection(EMPTY, [TOOL.configure, TOOL.store], ['office'])
     expect(section).toContain('plugin "office"')
     expect(section).toContain('its tools are unknown until it is')
-    expect(section).toContain('{kind:"plugin.enable", name:"office"}')
+    // The remedy is the Store's now: a configure proposal for a plugin no longer exists.
+    expect(section).not.toContain('plugin.enable')
+    expect(section).toContain('`store`')
   })
 
   test('a waiting plugin alone is enough to render the section', () => {
@@ -62,5 +64,12 @@ describe('the unavailable section', () => {
   test('withheld tools and waiting plugins appear together, tools first', () => {
     const section = buildWithheldToolsSection(withCron, [TOOL.configure], ['office'])!
     expect(section.indexOf(TOOL.loops)).toBeLessThan(section.indexOf('plugin "office"'))
+  })
+
+  test('without the Store the user is told to switch a waiting plugin on there', () => {
+    const section = buildWithheldToolsSection(EMPTY, [TOOL.configure], ['office'], ['kanban'])!
+    expect(section).not.toContain('`store`')
+    expect(section).toContain('mini app "kanban"')
+    expect(section).toContain('ask the user to switch it on in the Store')
   })
 })

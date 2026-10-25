@@ -205,12 +205,15 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
       const outcomes = await runInParallel(selected.sync, (h) =>
         runHandler('UserPromptSubmit', h, input, true),
       )
+      // Any handler asking to keep the prompt out of the block message is heard.
+      const suppressed = outcomes.some((o) => o.suppressOriginalPrompt)
       for (const o of outcomes) {
         sessionTitle = o.sessionTitle ?? sessionTitle
         if (o.blocked || o.decision === 'block' || o.continue === false) {
           return {
             blocked: true,
             reason: o.blockReason || o.reason || o.stopReason || 'Prompt blocked by hook',
+            ...(suppressed ? { suppressOriginalPrompt: true as const } : {}),
             ...titled(),
           }
         }

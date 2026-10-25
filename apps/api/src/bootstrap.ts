@@ -1,3 +1,4 @@
+import { join } from 'node:path'
 import { createModsPhase } from './bootstrap/mods'
 import { realtimeWebSocket } from './bootstrap/realtime-websocket'
 import { bindChatHostRefs } from './bootstrap/chat-host-refs'
@@ -19,7 +20,10 @@ import { startAfterListen } from './bootstrap/post-listen'
 import { buildSemanticService } from './bootstrap/semantic'
 import { buildDecisionService } from './bootstrap/decisions'
 import { migrateLegacyPluginInstalls } from './features/plugins/legacy-install-migration'
-import { userHome } from './lib/env'
+import { migrateLegacySkills } from './features/skills-curator/legacy-skills-migration'
+import { createSkillUsageRepository } from './features/skills-curator/repository'
+import { defaultArchiveRoot } from './features/skills-curator/skill-fs'
+import { localixHome, userHome } from './lib/env'
 
 export async function bootstrap(
   envSource: Record<string, string | undefined> = process.env,
@@ -60,6 +64,23 @@ export async function bootstrap(
   const decisionService = buildDecisionService(infra)
   // Before any discovery: convert pre-native plugin installs once (idempotent, logged).
   await migrateLegacyPluginInstalls({ db, homeDir: userHome(), logger })
+  // Once: the skills Localix kept in `.localix/skills` move to Claude Code's `.claude/skills`.
+  await migrateLegacySkills({
+    userId: env.LOCALIX_DEFAULT_USER_ID,
+    homeDir: userHome(),
+    archiveRoot: defaultArchiveRoot(),
+    markerFile: join(localixHome(), 'skills-claude-layout.json'),
+    projects: async () =>
+      (
+        await db
+          .selectFrom('projects')
+          .select(['id', 'working_dir'])
+          .where('deleted_at', 'is', null)
+          .execute()
+      ).map((p) => ({ id: p.id, workingDir: p.working_dir })),
+    usage: createSkillUsageRepository(db),
+    logger,
+  }).catch((error) => logger.warn({ event: 'skills.migrate.error', error: String(error) }))
   const {
     subsystemRegistry,
     contextProviderRegistry,
@@ -221,6 +242,8 @@ export async function bootstrap(
     owner: env.LOCALIX_DEFAULT_USER_ID,
   })
   const storeService = store.storeService
+  // Chat is built first; its `store` tool and `/plugin` commands reach the Store through this.
+  serviceRefs.store = storeService
   // Handed to the app phase whole: its input extends this phase's output.
   const appServices = createAppServicesPhase({
     storeSearchProvider: storeService.searchProvider,
@@ -275,8 +298,6 @@ export async function bootstrap(
     mcpService,
     pluginService,
     miniAppService,
-    agentsService,
-    skillsCuratorService,
     ...appServices,
     localModels,
     chatService,
@@ -321,7 +342,6 @@ export async function bootstrap(
           localModels,
           semanticService,
           store: storeService,
-          pluginUpdates: pluginService.updates,
           chatService,
           env,
         },

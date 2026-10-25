@@ -7,14 +7,11 @@ import { UnauthorizedError } from '@modelcontextprotocol/sdk/client/auth.js'
 import { errorMessage } from '../../../lib/errors'
 import type { McpServerRecord } from '../repository'
 import { connectServerConfig } from '../expand'
+import { remoteRequest } from '../mcp-remote-request'
+import { listenForCallback, type CallbackListener } from './callback-listener'
 import { createMcpOAuthProvider } from './provider'
 import { createPendingOAuthRegistry } from './pending-flow-registry'
-import {
-  mcpOAuthRedirectUrl,
-  mcpOAuthSecretSink,
-  mcpOAuthStore,
-  mcpServerOAuthConfig,
-} from './runtime'
+import { mcpOAuthSecretSink, mcpOAuthSession, mcpOAuthStore } from './runtime'
 import type { McpOAuthStore } from './store'
 
 /**
@@ -36,7 +33,7 @@ interface PendingFlow {
   userId: string
   serverId: string
   serverName: string
-  transport: StreamableHTTPClientTransport
+  transport: { finishAuth(code: string): Promise<void>; close(): Promise<void> }
   client: Client
   expiresAt: number
 }
@@ -65,26 +62,39 @@ export async function startMcpOAuth(
   const url = config.url as string | undefined
   if (!url) throw new Error('server has no url')
 
+  const session = mcpOAuthSession(server)
+  const remote = await remoteRequest(server, config, process.cwd(), session.fetch)
+  if (remote.authorizedByHelper)
+    throw new Error('its headersHelper supplies the Authorization header, so there is no sign-in')
+
   const state = randomUUID()
   let captured: string | undefined
+  // A fixed `callbackPort` is received here, for as long as the sign-in is pending.
+  const listener: CallbackListener | undefined = session.config.callbackPort
+    ? await listenForCallback(session.config.callbackPort, (callbackState, code) =>
+        finishMcpOAuth(callbackState, code),
+      )
+    : undefined
   const provider = createMcpOAuthProvider({
     store,
     userId: server.userId,
     serverId: server.id,
     serverUrl: url,
-    redirectUrl: mcpOAuthRedirectUrl(),
+    redirectUrl: session.redirectUrl,
     state,
-    ...mcpServerOAuthConfig(server),
+    clientId: session.config.clientId,
+    clientSecret: session.config.clientSecret,
+    scope: session.scope,
     onSecretResolved: mcpOAuthSecretSink(server.userId),
     onRedirect: (u) => {
       captured = u.toString()
     },
   })
 
-  const headers = config.headers as Record<string, string> | undefined
   const transport = new StreamableHTTPClientTransport(new URL(url), {
     authProvider: provider,
-    requestInit: headers ? { headers } : undefined,
+    requestInit: remote.requestInit,
+    fetch: remote.fetch,
   })
   const client = new Client({ name: 'localix', version: '1.0.0' })
 
@@ -92,6 +102,7 @@ export async function startMcpOAuth(
     await client.connect(transport)
     // Connected without an auth challenge → already authorized (or no auth needed).
     await client.close().catch(() => {})
+    await listener?.close()
     return { authenticated: true }
   } catch (err) {
     if (err instanceof UnauthorizedError && captured) {
@@ -99,13 +110,23 @@ export async function startMcpOAuth(
         userId: server.userId,
         serverId: server.id,
         serverName: server.name,
-        transport,
+        // Closing the pending flow closes its listener too.
+        transport: listener
+          ? {
+              finishAuth: (code: string) => transport.finishAuth(code),
+              close: async () => {
+                await listener.close()
+                await transport.close()
+              },
+            }
+          : transport,
         client,
         expiresAt: now + PENDING_TTL_MS,
       })
       return { authorizationUrl: captured, state }
     }
     await client.close().catch(() => {})
+    await listener?.close()
     throw new Error(`Could not start MCP OAuth: ${errorMessage(err)}`)
   }
 }

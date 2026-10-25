@@ -1,7 +1,6 @@
 import type { OutputStyleSummary } from './output-style-listing'
 import type { CapabilityStores } from '../capabilities/store-factory'
 import type { Kysely } from 'kysely'
-import type { ContributionKindRegistry } from '../ext/contribution-kinds'
 import { type CapabilitySourceRecord, scalarConfig } from '../capabilities/source-repository'
 import type { RuleChange } from '../capabilities/rule-changes'
 
@@ -31,8 +30,6 @@ export interface PluginServiceDeps {
   db: Kysely<AppDatabase>
   /** Opens the capability source and rule stores (supplied by the composition root). */
   capabilityStores: CapabilityStores
-  /** Host-owned schemas. Without a registry, no contribution kind is accepted. */
-  contributionKinds?: ContributionKindRegistry
   now?: () => string
   /** Resolves a project's working directory (for project-scoped discovery/install). */
   resolveProjectCwd?: (userId: string, projectId: string) => Promise<string | null>

@@ -3,7 +3,6 @@ import type { MiniAppUiActionContext } from '@localixai/mini-app-sdk/backend'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 
 import type { AppDatabase } from '../../db'
-import { createKeyedSerializer } from '../../lib/keyed-serializer'
 import { localixWorkspaceDir } from '../../lib/env'
 import { NotFoundError } from '../../lib/domain-errors'
 import { createAvailabilityWriter, readAvailability } from '../capabilities/availability'
@@ -11,10 +10,6 @@ import { actionFor } from '../capabilities/resolve'
 import type { CapabilityStores } from '../capabilities/store-factory'
 import type { CapabilitySourceRepository } from '../capabilities/source-repository'
 import { recordCoreChanges } from '../changes/core-entities'
-import {
-  createContributionKindRegistry,
-  type ContributionKindRegistry,
-} from '../ext/contribution-kinds'
 import { isDefaultProject } from '../projects/default-project'
 import { buildMiniAppCatalog, type MiniAppCatalog } from './catalog'
 import type { InvokeMiniAppUiActionRequest, MiniAppViewSpec } from './contracts-contributions'
@@ -25,7 +20,6 @@ import { createMiniAppAuthoring } from './authoring/service'
 import { discoverMiniApps, miniAppInstallRoot } from './discovery'
 import { miniAppTrustClass } from './catalog'
 import { toMiniAppRecord } from './records'
-import { syncBundledContributions } from './sync-bundled-contributions'
 import { resolveMiniAppUiFile } from './ui-artifact'
 import { createMiniAppWrites } from './service-writes'
 import type { MiniAppInstallOutcome, MiniAppStoreSource } from './store'
@@ -43,7 +37,6 @@ export interface MiniAppServiceDeps {
   db: Kysely<AppDatabase>
   /** Opens the capability source stores (supplied by the composition root). */
   capabilityStores: CapabilityStores
-  contributionKinds?: ContributionKindRegistry
   homeDir: string
   now?: () => string
   resolveProjectCwd?: (userId: string, projectId: string) => Promise<string | null>
@@ -77,9 +70,7 @@ export type MiniAppService = ReturnType<typeof createMiniAppService>
 export function createMiniAppService(deps: MiniAppServiceDeps) {
   const now = deps.now ?? (() => new Date().toISOString())
   const repo: CapabilitySourceRepository = deps.capabilityStores.sources(deps.db, 'mini-app', now)
-  const kinds = deps.contributionKinds ?? createContributionKindRegistry()
   const inspections = createMiniAppInspections({ homeDir: deps.homeDir, logger: deps.logger })
-  const serializeContributions = createKeyedSerializer()
 
   // The Default project's folder is the parent of per-chat sandboxes: it has no mini apps root.
   const cwdFor = async (userId: string, projectId: string): Promise<string | null> => {
@@ -266,23 +257,5 @@ export function createMiniAppService(deps: MiniAppServiceDeps) {
 
     resolveArgOptions: (userId: string, input: MiniAppArgOptionsInput) =>
       resolveMiniAppArgOptions(scope, userId, input),
-
-    /** Publish the contributions (agents, …) of the mini apps Localix ships into one scope. */
-    async syncBundledContributions(userId: string, projectId: string) {
-      return serializeContributions(JSON.stringify([userId, projectId]), async () => {
-        const cwd = await cwdFor(userId, projectId)
-        if (projectId && !cwd) return
-        const { catalog } = await catalogFor(userId, projectId)
-        await syncBundledContributions({
-          db: deps.db,
-          stores: deps.capabilityStores,
-          kinds,
-          userId,
-          projectId,
-          apps: catalog.all.map(({ app }) => app),
-          now,
-        })
-      })
-    },
   }
 }

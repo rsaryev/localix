@@ -19,7 +19,11 @@
  * the stage files, both directions, the way the stream contract is pinned.
  */
 import type { AgentMessage } from '@localixai/agent/agents'
-import { markHistoryCacheAnchor, toModelMessages } from '@localixai/agent/agents/chat'
+import {
+  markForkCacheAnchor,
+  markHistoryCacheAnchor,
+  toModelMessages,
+} from '@localixai/agent/agents/chat'
 import { runHistoryStages, type StageReport } from '@localixai/agent/history'
 import type { RuntimeContextPolicy } from '@localixai/agent/runtime'
 import {
@@ -67,6 +71,19 @@ export const CHAT_STAGES = [
   'admission',
 ] as const
 
+/**
+ * A FORK's first run: it continues its parent's conversation, and the one thing it adds is the
+ * directive. Its request must be the parent's last request plus the call and that directive
+ * (`run/fork`), so it takes no runtime context of its own — the parent's was sent already — and
+ * its cache breakpoint sits where the parent's request ended.
+ */
+export interface ForkHistory {
+  /** The parent's call that made the fork. */
+  toolCallId: string
+  /** No run of the fork has answered yet. Later runs are ordinary ones over a longer history. */
+  first: boolean
+}
+
 export interface ChatHistoryRunContext {
   sessionId: string
   frame: ContextBudgetFrame
@@ -86,6 +103,8 @@ export interface ChatHistoryRunContext {
   /** The frozen view in force and whether this turn re-plans it (`model-view/view.ts`). */
   view: ModelView
   recoveryToolAvailable?: boolean
+  /** Set on a fork's runs (`ForkHistory`). */
+  fork?: ForkHistory
   /** Is `global_search` in the roster? Cards and folds point at it only when it is. */
   recallToolAvailable?: boolean
   /** Is `memory` in the roster? The checkpoint warning asks the agent to save with it. */
@@ -147,12 +166,16 @@ export function createChatHistoryRun(ctx: ChatHistoryRunContext): ChatHistoryRun
       view: ctx.view,
       rows: rowsAfterClear(frame.messages).rows,
     })
-    // A checkpoint starts a new view, and a new view's runtime context is complete.
-    const turnContext = composeTurnContext({
-      sections: [...frame.runtimeSections, ...viewSections],
-      bindings: frame.systemBindings,
-      previous: due ? undefined : ctx.view.previous,
-    })
+    // A checkpoint starts a new view, and a new view's runtime context is complete. A fork's
+    // first request adds none: its parent's was sent already, and a second one would sit
+    // before the end of what the provider has cached.
+    const turnContext = ctx.fork?.first
+      ? undefined
+      : composeTurnContext({
+          sections: [...frame.runtimeSections, ...viewSections],
+          bindings: frame.systemBindings,
+          previous: due ? undefined : ctx.view.previous,
+        })
 
     // ---- Pipeline A: persisted rows ------------------------------------------------
     const persisted = await runHistoryStages(
@@ -237,7 +260,12 @@ export function createChatHistoryRun(ctx: ChatHistoryRunContext): ChatHistoryRun
       stageBudget(ctx.frame, signal, (payload: StoredMessagePayload) => payload),
     )
     const wirePayloads = fitted.messages as StoredMessagePayload[]
-    const wire = markHistoryCacheAnchor(toModelMessages(wirePayloads)) as AgentMessage[]
+    const modelMessages = toModelMessages(wirePayloads)
+    const wire = (
+      ctx.fork?.first
+        ? markForkCacheAnchor(modelMessages, ctx.fork.toolCallId)
+        : markHistoryCacheAnchor(modelMessages)
+    ) as AgentMessage[]
     return {
       result: {
         wire,

@@ -2,6 +2,7 @@ import type {
   ActionResult,
   ConfigValue,
   CreateForm,
+  ItemAction,
   DiscoverResponse,
   InstallPlan,
   ListingConfig,
@@ -10,6 +11,7 @@ import type {
   ListingsResponse,
   PackageKind,
   Scope,
+  ShelfPlan,
   SourcePreview,
   SourcesResponse,
   StoreActivity,
@@ -176,6 +178,46 @@ export const storeApi = {
       }),
     )
     return made.ref
+  },
+
+  /** What each kind's provider can do to a whole shelf of its own items, for one scope. */
+  async shelfActions(
+    scope: Scope,
+    projectId?: string | null,
+  ): Promise<Array<ItemAction & { kind: PackageKind }>> {
+    const query = cleanQuery({ scope, ...project(projectId) })
+    return (await unwrap(await client.rpc.store['shelf-actions'].$get({ query }))).actions
+  },
+
+  /** What a shelf action would change, to show before it is confirmed. Writes nothing. */
+  async planShelfAction(
+    kind: PackageKind,
+    action: string,
+    scope: Scope,
+    projectId?: string | null,
+  ): Promise<ShelfPlan> {
+    return unwrap(
+      await client.rpc.store.shelf[':kind'].plan.$post({
+        param: { kind },
+        json: { scope, action, ...project(projectId) },
+      }),
+    )
+  },
+
+  /** Do a shelf action to the items the person confirmed (their ids from the plan). */
+  async runShelfAction(
+    kind: PackageKind,
+    action: string,
+    scope: Scope,
+    ids: string[],
+    projectId?: string | null,
+  ): Promise<ActionResult> {
+    return unwrap(
+      await client.rpc.store.shelf[':kind'].run.$post({
+        param: { kind },
+        json: { scope, action, ids, ...project(projectId) },
+      }),
+    )
   },
 
   /** Every source, and the kinds a source can be added for. */

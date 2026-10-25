@@ -80,11 +80,16 @@ function domainPattern(specifier: string): string | undefined {
   return host.startsWith('*.') ? `domain:*.${rest}` : `domain:${rest}`
 }
 
-const allow = (permission: string, pattern: string): PermissionRule => ({
-  action: 'allow',
-  permission,
-  pattern,
-})
+type Effect = 'allow' | 'deny'
+
+const rowOf =
+  (action: Effect, message?: string) =>
+  (permission: string, pattern: string): PermissionRule => ({
+    action,
+    permission,
+    pattern,
+    ...(message ? { message } : {}),
+  })
 
 /** The Localix rows that grant what this Claude Code allow rule grants (none when it cannot). */
 export function claudeCodeAllowRules(
@@ -92,23 +97,56 @@ export function claudeCodeAllowRules(
   cwd?: string,
   projectDir?: string,
 ): PermissionRule[] {
+  return claudeCodeRules(rule, 'allow', cwd, projectDir)
+}
+
+/**
+ * The Localix rows that deny what this Claude Code rule denies: a `disallowed-tools` entry of a
+ * skill, command or agent. A bare name denies the tool; `Bash(rm *)` or `Read(.env)` denies only
+ * that pattern, with the path and command patterns an allow rule uses. A specifier these rows
+ * cannot say yields no row, never a wider one: the tool stays.
+ */
+export function claudeCodeDenyRules(
+  rule: string,
+  cwd?: string,
+  projectDir?: string,
+  message?: string,
+): PermissionRule[] {
+  return claudeCodeRules(rule, 'deny', cwd, projectDir, message)
+}
+
+function claudeCodeRules(
+  rule: string,
+  effect: Effect,
+  cwd?: string,
+  projectDir?: string,
+  message?: string,
+): PermissionRule[] {
+  const allow = rowOf(effect, message)
   const parsed = parseRuleString(rule)
   if (!parsed) return []
   const ccTool = parsed.tool.trim()
   const lower = ccTool.toLowerCase()
   // `Agent` (formerly `Task`) is `delegate` here; a frontmatter `tools` list leaves it unmapped.
   const tool = lower === 'agent' || lower === 'task' ? 'delegate' : normalizeCcToolName(ccTool)
-  const covered = PATH_TOOLS[lower] ?? [tool]
+  // A bare deny takes away the one tool the name resolves to; a bare allow covers what `Read`
+  // and `Edit` rules cover ("all built-in tools that read / edit files").
+  const covered = effect === 'allow' ? (PATH_TOOLS[lower] ?? [tool]) : [tool]
   if (specifierIsAll(parsed.specifier)) return covered.map((name) => allow(name, '*'))
   const specifier = parsed.specifier!.trim()
+  // permissions.md: a `Read(...)` deny also blocks Edit and Write on the path.
+  const pathTools =
+    effect === 'deny' && lower === 'read'
+      ? [...PATH_TOOLS.read!, ...PATH_TOOLS.edit!]
+      : (PATH_TOOLS[lower] ?? [tool])
   // permissions.md: Claude Code "skips any `mcp__` rule that has parentheses".
   if (ccTool.startsWith('mcp__')) return []
   if (tool === 'bash')
     return nativeCommandPatterns(specifier).map((pattern) => allow('bash', pattern))
   if (PATH_TOOLS[lower]) {
-    if (!cwd) return covered.map((name) => allow(name, specifier))
+    if (!cwd) return pathTools.map((name) => allow(name, specifier))
     const patterns = absolutePathPatterns(specifier, cwd, projectDir)
-    return covered.flatMap((name) => patterns.map((pattern) => allow(name, pattern)))
+    return pathTools.flatMap((name) => patterns.map((pattern) => allow(name, pattern)))
   }
   if (UNMATCHED_PATH_TOOLS.has(lower)) return []
   if (lower === 'webfetch') {

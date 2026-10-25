@@ -46,7 +46,7 @@ const maximalRegistryOptions = {
     jobs: inertTool('jobs'),
     browser: {} as never,
     delegate: {} as never,
-    agents: {} as never,
+    store: {} as never,
     loops: {} as never,
     mini_app_build: { run: async () => ({ text: '', ok: true }) },
     set_topic: { save: async () => {} },
@@ -355,10 +355,9 @@ describe('createRuntimeToolRegistry', () => {
       state: 'withheld',
       reason: { layer: 'authority', kind: 'missing', capability: 'host:delegate' },
     })
-    // A removed tool has no row at all: nothing could ever build it.
-    expect(registry.ledger.get('agents')).toEqual({
+    expect(registry.ledger.get('store')).toEqual({
       state: 'withheld',
-      reason: { layer: 'authority', kind: 'missing', capability: 'host:agents' },
+      reason: { layer: 'authority', kind: 'missing', capability: 'host:store' },
     })
   })
 
@@ -414,7 +413,7 @@ describe('createRuntimeToolRegistry', () => {
     ])
     expect(registry.toolNames).not.toContain('ask')
     // Host wiring/authority is deliberately absent in this profile-only fixture.
-    expect(registry.toolNames).not.toContain('agents')
+    expect(registry.toolNames).not.toContain('store')
     expect(registry.toolNames).not.toContain('jobs')
     expect(registry.toolNames).not.toContain('render_surface')
     expect(registry.toolNames).not.toContain('stream_surface')

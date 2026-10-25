@@ -12,8 +12,9 @@ import './appearance-scene.css'
 /** Settings navigation exactly as `settingsNavigation.ts` groups it. */
 const NAV = [
   { group: 'Personal', items: ['Preferences', 'Editor', 'Shortcuts'] },
-  { group: 'Workspace', items: ['Agents', 'Capabilities', 'Project'] },
-  { group: 'Application', items: ['System'] },
+  { group: 'Workspace', items: ['Project'] },
+  { group: 'Security', items: ['Permissions'] },
+  { group: 'Application', items: ['Models', 'System'] },
 ]
 
 /** Settings → Preferences → Appearance → Theme and Window transparency, in one fixed appearance. */

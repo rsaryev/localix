@@ -412,7 +412,7 @@ describe('discoverPlugins', () => {
     ])
   })
 
-  it('parses CC effort: and when-to-use: frontmatter in agent files', async () => {
+  it('parses CC effort: in agent files and leaves when-to-use: out (an agent has no such field)', async () => {
     const found = await discoverPlugins({
       cwd: dir,
       projectId: 'proj1',
@@ -421,9 +421,8 @@ describe('discoverPlugins', () => {
     const cc = found.find((p) => p.manifest.name === 'cc-plugin')
     const analyst = cc!.agents.find((a) => a.name === 'analyst')
     expect(analyst).toBeDefined()
-    // when-to-use: appended to description
-    expect(analyst?.description).toContain('Analyzes data.')
-    expect(analyst?.description).toContain('Use when analyzing')
+    // an agent's description is its `description` alone, as in sub-agents.md
+    expect(analyst?.description).toBe('Analyzes data.')
     // effort: parsed as preferredEffort
     expect((analyst as { preferredEffort?: string })?.preferredEffort).toBe('high')
   })

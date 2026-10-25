@@ -70,6 +70,12 @@ export class SkillCommandPermissionError extends SkillCommandFailedError {
   }
 }
 
+/**
+ * What stands in for an injected command when `disableSkillShellExecution` is on (skills.md,
+ * "Inject dynamic context"): the command is not run, and its text is not shown.
+ */
+export const SKILL_SHELL_DISABLED_NOTICE = '[shell command execution disabled by policy]'
+
 /** Whether an injected command may run: `undefined` allows it, a string is why it may not. */
 export type AuthorizeSkillCommand = (command: string) => string | undefined
 
@@ -92,6 +98,9 @@ export type AuthorizeSkillCommand = (command: string) => string | undefined
  * `authorize`, when given, is asked about every command before any runs; a refusal throws
  * {@link SkillCommandPermissionError} and nothing runs.
  *
+ * `shellDisabled` is `disableSkillShellExecution`: every command and block is replaced by
+ * {@link SKILL_SHELL_DISABLED_NOTICE}, nothing runs, and `authorize` is not asked.
+ *
  * Substitution runs once — output is not re-scanned for further placeholders.
  * Only applied to filesystem skills (`source='file'`) — plugin-bundled skills
  * have already gone through the plugin trust gate.
@@ -108,6 +117,7 @@ export async function expandSkillContent(
   authorize?: AuthorizeSkillCommand,
   /** Seals each command's output so later substitutions leave it as printed. */
   vault?: InsertedTextVault,
+  shellDisabled = false,
 ): Promise<string> {
   if (!content.includes('!`') && !content.includes('```!')) return content
 
@@ -130,7 +140,9 @@ export async function expandSkillContent(
     prepared += content.slice(cursor, match.index)
     cursor = match.index + match[0].length
 
-    if (planned.length < SKILL_CMD_MAX_COUNT) {
+    if (shellDisabled) {
+      prepared += SKILL_SHELL_DISABLED_NOTICE
+    } else if (planned.length < SKILL_CMD_MAX_COUNT) {
       const index = planned.length
       const authored = match[1] ?? match[3] ?? ''
       const bound = args

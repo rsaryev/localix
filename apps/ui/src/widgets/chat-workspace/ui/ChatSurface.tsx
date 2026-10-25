@@ -554,6 +554,7 @@ export function ChatSurface({ sessionId, isFocused, resolvedTheme }: ChatSurface
             }
             onSend={onSendWithSystemContext}
             onStop={agentRuntime.stopGeneration}
+            onRollback={onRollback}
             serverQueue={activeSession?.queuedMessages}
             attachments={attachments}
             onAddFiles={(files) => void addFiles(files)}

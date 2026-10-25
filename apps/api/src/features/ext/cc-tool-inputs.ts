@@ -18,6 +18,8 @@ import {
 } from './cc-tool-fields'
 
 const EDIT_KEYS = ['file_path', 'old_string', 'new_string', 'replace_all'] as const
+/** NotebookEdit's own fields, which the `edit` tool never takes. */
+const NOTEBOOK_KEYS = ['notebook_path', 'new_source', 'edit_mode', 'cell_id', 'cell_type'] as const
 
 /** A batch of commands as the one line Claude Code's Bash would run (each stops the next). */
 export function batchCommand(input: Fields): string | undefined {
@@ -27,17 +29,37 @@ export function batchCommand(input: Fields): string | undefined {
   return list.join(input.keep_going === true ? '; ' : ' && ')
 }
 
+/** A `bash` call with `until` is the wait Claude Code's Monitor tool starts. */
+const isWait = (input: Fields) => input.until !== undefined
+
 const bash: ToolShape = {
   name: 'Bash',
-  toClaude: (input) =>
-    defined({
+  names: ['Monitor'],
+  nameFor: (input) => (isWait(input) ? 'Monitor' : 'Bash'),
+  toClaude(input) {
+    const command = input.command ?? batchCommand(input)
+    const timeout = num(input.timeout)
+    if (isWait(input))
+      // Monitor's deadline is `timeout_ms`; `timeout` (seconds) is Bash's field, not its own.
+      return defined({
+        ...without(input, ['timeout']),
+        command,
+        timeout_ms: timeout !== undefined ? timeout * 1000 : undefined,
+      })
+    return defined({
       ...input,
-      command: input.command ?? batchCommand(input),
-      timeout: num(input.timeout) !== undefined ? num(input.timeout)! * 1000 : undefined,
+      command,
+      timeout: timeout !== undefined ? timeout * 1000 : undefined,
       run_in_background: typeof input.background === 'boolean' ? input.background : undefined,
-    }),
-  fromClaude(fields) {
+    })
+  },
+  fromClaude(fields, name) {
     const out = without(fields, ['run_in_background', 'description', 'dangerouslyDisableSandbox'])
+    if (name === 'Monitor') {
+      const ms = num(fields.timeout_ms)
+      const rest = without(out, ['timeout_ms', 'ws'])
+      return ms !== undefined ? { ...rest, timeout: Math.max(1, Math.round(ms / 1000)) } : rest
+    }
     const timeout = num(fields.timeout)
     if (timeout !== undefined) out.timeout = Math.max(1, Math.round(timeout / 1000))
     if (typeof fields.run_in_background === 'boolean') out.background = fields.run_in_background
@@ -56,9 +78,10 @@ const read: ToolShape = {
     const start = num(input.start_line) ?? num(entry?.start_line)
     const end = num(input.end_line) ?? num(entry?.end_line)
     const first = start ?? (end !== undefined ? 1 : undefined)
-    // Localix's `offset` counts bytes; Claude Code's counts lines, so only a line range shows.
+    // Localix's `byte_offset` counts bytes; Claude Code's `offset` counts lines, so only a line
+    // range shows as it.
     return defined({
-      ...without(input, ['offset']),
+      ...without(input, ['byte_offset']),
       file_path: absolutePath(input.path ?? entry?.path ?? input.file_path, baseOf(input, cwd)),
       offset: first,
       limit:
@@ -83,7 +106,9 @@ const read: ToolShape = {
     return defined({ ...rest, ...range, path: fields.file_path ?? rest.path })
   },
   carry: (seen) =>
-    num(seen.offset) !== undefined && seen.start_line === undefined ? { offset: seen.offset } : {},
+    num(seen.byte_offset) !== undefined && seen.start_line === undefined
+      ? { byte_offset: seen.byte_offset }
+      : {},
 }
 
 // One edit, or one file written, reads as Claude Code's single-file call with no list beside it;
@@ -93,19 +118,27 @@ const edit: ToolShape = {
   toClaude(input, cwd) {
     const entry = only(input.edits)
     if (!entry) return input
+    const filePath = absolutePath(entry.path, baseOf(input, cwd))
+    // A notebook's cell source is a string edit of its JSON here: `notebook_path`, the new source
+    // and the (replace) mode are what a NotebookEdit hook reads; the cell id cannot be derived.
+    const notebook = typeof entry.path === 'string' && entry.path.endsWith('.ipynb')
     return defined({
       ...without(input, ['edits']),
       ...without(entry, ['path', ...EDIT_KEYS]),
-      file_path: absolutePath(entry.path, baseOf(input, cwd)),
+      file_path: filePath,
       old_string: entry.old_string,
       new_string: entry.new_string,
       replace_all: entry.replace_all,
+      notebook_path: notebook ? filePath : undefined,
+      new_source: notebook ? entry.new_string : undefined,
+      edit_mode: notebook ? 'replace' : undefined,
     })
   },
   fromClaude(fields) {
     // Several edits, or a list a hook passed, carry their fields unchanged.
-    if (fields.edits !== undefined || fields.file_path === undefined) return fields
-    const rest = without(fields, EDIT_KEYS)
+    if (fields.edits !== undefined || fields.file_path === undefined)
+      return without(fields, NOTEBOOK_KEYS)
+    const rest = without(fields, [...EDIT_KEYS, ...NOTEBOOK_KEYS])
     const entry = defined({
       path: fields.file_path,
       old_string: fields.old_string,
@@ -135,9 +168,11 @@ const write: ToolShape = {
   },
 }
 
-/** Grep's and Glob's own fields, none of which Localix's `search` takes. */
-const SEARCH_KEYS = ['pattern', 'output_mode', '-i', '-n', '-A', '-B', '-C', 'multiline']
-const SEARCH_MORE = ['head_limit', 'offset', 'type', 'context_lines']
+/**
+ * Grep's and Glob's own fields that Localix's `search` does not take under that name; its
+ * `output_mode`, `head_limit`, `type` and `multiline` are Grep's, and `-i` is `ignore_case`.
+ */
+const SEARCH_KEYS = ['pattern', '-i', '-n', '-A', '-B', '-C', 'offset', 'context_lines']
 
 /** Several regexes as one: Grep's `pattern` matches a line any of them matches. */
 const queriesPattern = (input: Fields) =>
@@ -163,21 +198,26 @@ const search: ToolShape = {
       ...input,
       pattern: input.query ?? queriesPattern(input),
       path,
-      output_mode: 'content',
+      output_mode: input.output_mode ?? 'content',
+      '-i': input.ignore_case === true ? true : undefined,
       '-C': num(input.context),
     })
   },
   fromClaude(fields, name) {
-    const rest = without(fields, [...SEARCH_KEYS, ...SEARCH_MORE])
+    const rest = without(fields, SEARCH_KEYS)
+    // `-i` is the one Grep flag with a field of its own here; a rewrite to false turns it off.
+    if (typeof fields['-i'] === 'boolean') {
+      if (fields['-i']) rest.ignore_case = true
+      else delete rest.ignore_case
+    }
     const pattern = str(fields.pattern)
     if (name === 'Glob')
       return pattern === undefined ? rest : without({ ...rest, glob: pattern }, ['query'])
     const context = num(fields['-C']) ?? num(fields.context_lines)
     const out = context !== undefined ? { ...rest, context } : rest
     if (pattern === undefined || pattern === queriesPattern(rest)) return out
-    // `-i` is ripgrep's inline flag; a rewritten pattern replaces the batch.
-    const query = fields['-i'] === true ? `(?i)${pattern}` : pattern
-    return { ...without(out, ['queries']), query }
+    // A rewritten pattern replaces the batch.
+    return { ...without(out, ['queries']), query: pattern }
   },
 }
 

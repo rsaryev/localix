@@ -110,7 +110,7 @@ export function createRouteRepairReactor(deps: CoreReactorDeps) {
         if (trigger.userId === userId && sessionIds.has(trigger.sessionId))
           deps.triggerConditions.routeStranded(trigger)
     },
-    publish: deps.publish,
+    publish: (...args) => deps.publish(...args),
   })
 }
 
@@ -220,7 +220,7 @@ export async function startCoreReactors(deps: CoreReactorDeps): Promise<void> {
     live: () => deps.triggerEngine.list({}),
     end: (...args) => deps.triggerEngine.end(...args),
     bound: (agentId) => agentBound(deps.db, deps.defaultUserId, agentId),
-    ownerGone: (trigger) => deps.triggerConditions.ownerGone(trigger),
+    ownerGone: (...args) => deps.triggerConditions.ownerGone(...args),
   })
   await deps.feed.subscribe('agent-triggers', agentTriggers.handlers, {
     kind: 'reactor',
@@ -242,7 +242,7 @@ export async function startCoreReactors(deps: CoreReactorDeps): Promise<void> {
     projectDirs: async (...args) =>
       (await deps.projectsService.listProjects(...args)).projects.map((p) => p.workingDir),
     inboxSessions: () => deps.notifications.repository.sessionsWithRows(),
-    sessionExists: deps.sessionExists,
+    sessionExists: (...args) => deps.sessionExists(...args),
   })
   await deps.feed.subscribe('session-residue', residue.handlers, {
     kind: 'reactor',
@@ -258,17 +258,24 @@ export async function startCoreReactors(deps: CoreReactorDeps): Promise<void> {
     kind: 'projector',
     reconcile: statusLine.reconcile,
   })
-  const relay = createRelay({ defaultUserId: deps.defaultUserId, publish: deps.publish })
+  const relay = createRelay({
+    defaultUserId: deps.defaultUserId,
+    publish: (...args) => deps.publish(...args),
+  })
   await deps.feed.subscribe('relay', relay.handlers, { kind: 'projector' })
   const ledger = createUsageLedgerProjector({ usage: createUsageRepository(deps.db) })
   await deps.feed.subscribe('usage-ledger', ledger.handlers, {
     kind: 'projector',
     reconcile: ledger.reconcile,
   })
-  await deps.feed.subscribe('mini-app-hosts', miniAppHostHandlers(deps.refreshMiniAppHosts), {
-    kind: 'reactor',
-    reconcile: () => deps.refreshMiniAppHosts(),
-  })
+  await deps.feed.subscribe(
+    'mini-app-hosts',
+    miniAppHostHandlers((...args) => deps.refreshMiniAppHosts(...args)),
+    {
+      kind: 'reactor',
+      reconcile: () => deps.refreshMiniAppHosts(),
+    },
+  )
   await deps.feed.subscribe(
     'notifications-cleanup',
     notificationsCleanupHandlers(deps.providerConditions),

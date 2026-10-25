@@ -17,7 +17,7 @@ export async function sourcesOf(
   index: Pick<StoreIndexRepository, 'sourceStates'>,
 ): Promise<{ sources: SourceView[]; addable: PackageKind[] }> {
   const [listed, states] = await Promise.all([
-    Promise.all(providers.map((provider) => provider.sources())),
+    Promise.all(providers.map(async (provider) => (await provider.sources?.()) ?? [])),
     index.sourceStates(),
   ])
   const sources = listed.flat().map((source): SourceView => {
@@ -33,7 +33,10 @@ export async function sourcesOf(
     }
   })
   const addable = providers
-    .filter((provider) => provider.previewSource && provider.addSource)
+    .filter(
+      (provider) =>
+        typeof provider.previewSource === 'function' && typeof provider.addSource === 'function',
+    )
     .map((provider) => provider.kind)
   return { sources, addable }
 }

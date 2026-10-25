@@ -1,4 +1,12 @@
-import { Fragment, useMemo, useRef, useState } from 'react'
+import {
+  Fragment,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type RefObject,
+} from 'react'
 import { ChevronsDownUp, ChevronsUpDown } from 'lucide-react'
 import { Button } from '@localixai/kit/button'
 import { useReducedMotion } from '@localixai/kit/environment'
@@ -55,6 +63,8 @@ export function ModBand({
   const [hovered, setHovered] = useState(false)
   const [focused, setFocused] = useState(false)
   const root = useRef<HTMLDivElement>(null)
+  const controls = useRef<HTMLDivElement>(null)
+  const controlsWidth = useWidth(controls)
   const rotation = useModBandRotation()
   const reducedMotion = useReducedMotion()
   const { activity, drafting } = useComposerActivity(root)
@@ -98,12 +108,18 @@ export function ModBand({
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocused(false)
       }}
     >
+      {/* The controls sit over the first row's end, which keeps their width free; every other row
+          has the band's whole width. */}
       <div
         data-slot="mods-band-seam"
-        className="flex items-start gap-1 border-b border-border-faint py-0.5"
+        className="relative border-b border-border-faint py-0.5"
+        style={{ '--band-controls': `${controlsWidth}px` } as CSSProperties}
       >
         {collapsed ? (
-          <BandScroller label="Mods band, collapsed" className={`${ROW} flex-1 -ml-2`}>
+          <BandScroller
+            label="Mods band, collapsed"
+            className={`${ROW} -ml-2 pr-(--band-controls)`}
+          >
             {summaries.map((parts, index) => (
               <Fragment key={index}>
                 {index > 0 && <span aria-hidden="true" className="h-3.5 w-px bg-border-faint" />}
@@ -128,14 +144,14 @@ export function ModBand({
             aria-label="Mods band"
             // The band takes the keyboard on a click or Tab, and its Buttons' hotkeys with it.
             tabIndex={0}
-            className="max-h-40 min-w-0 flex-1 overflow-x-hidden overflow-y-auto rounded-sm focus-ring"
+            className="max-h-40 min-w-0 overflow-x-hidden overflow-y-auto rounded-sm focus-ring"
             onKeyDown={(event) => pressHotkey(event, hotkeys, actHere)}
           >
             <ModSiteContext.Provider value="band">
               {/* A new page fades in over the old one's place: short, and none with reduced motion. */}
               <div
                 key={book.index}
-                className="motion-safe:animate-in motion-safe:fade-in duration-(--dur-fast)"
+                className="motion-safe:animate-in motion-safe:fade-in duration-(--dur-fast) [&>:first-child]:pr-(--band-controls)"
               >
                 {rowsOf(blocks).map((row, index) => (
                   <Row key={index} row={row} act={actHere} />
@@ -145,7 +161,7 @@ export function ModBand({
           </div>
         )}
         {/* Centred on the first row, as the composer's other strip controls sit on theirs. */}
-        <div className={`${ROW} shrink-0`}>
+        <div ref={controls} className={`${ROW} absolute top-0.5 right-0`}>
           {book.count > 1 && !collapsed && (
             <BandPager
               index={book.index}
@@ -166,4 +182,20 @@ export function ModBand({
       </div>
     </div>
   )
+}
+
+/** An element's width, kept current: the room the first row leaves for the band's controls. */
+function useWidth(ref: RefObject<HTMLElement | null>) {
+  const [width, setWidth] = useState(0)
+  useLayoutEffect(() => {
+    const node = ref.current
+    if (!node) return
+    const measure = () => setWidth(Math.ceil(node.getBoundingClientRect().width))
+    measure()
+    if (typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(measure)
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [ref])
+  return width
 }

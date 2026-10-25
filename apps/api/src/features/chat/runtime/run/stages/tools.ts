@@ -11,6 +11,7 @@ import type { PersistedMessage } from '../../../contracts'
 import { claudeCodeHome } from '../../../../cc-settings/config-dir'
 import { mkdirSync } from 'node:fs'
 
+import { forkToolSurface } from '../../../../agent-core/fork-seed'
 import { TOOL } from '../../../../agent-core/tool-names'
 import { sessionScratchDir } from '../../../../agent-core/tools/workspace'
 import { TOOL_WRAPPER_CHAIN } from '../tool-wrapper-chain'
@@ -22,7 +23,9 @@ import { resolveExecutionProfile } from '../../run-profile'
 import { createSetTopicPort } from '../set-topic-port'
 import { buildRunToolRegistry } from '../runtime-tools'
 import type { SkillCommandPolicyRef } from '../skill-tool-ports'
-import { resolveRunDisabledTools } from '../run-tool-policy'
+import { agentRunMcpServers } from '../agent-run-mcp'
+import { claudeCodeTrusts } from '../../../../cc-settings/settings-trust'
+import { resolveRunDenyPatterns, resolveRunDisabledTools } from '../run-tool-policy'
 import { surfaceMiniApps, surfaceTools } from '../surface-tools'
 import { assembleRunTools } from '../tool-assembly'
 import { assertRunToolRequirements } from '../tool-requirements'
@@ -42,10 +45,14 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
   const { state } = turn
   const { defaultCwd, loadedPlugins, loadedMiniApps, ccHooks } = inputs
 
+  // A fork holds what its parent held: the closed profile of an ordinary child would take away
+  // the tools the parent had. A host's roster still decides, as for every run.
   const agentProfile = resolveExecutionProfile(
     session,
     inputs.agent.instructions,
-    params.scope,
+    frame.fork
+      ? { hostTools: params.scope.hostTools, profileOverride: frame.fork.seed.profile }
+      : params.scope,
     inputs.toolsAgent ?? inputs.pluginSubagent,
   )
   // Protected orchestration authority comes only from the host, never from the agent.
@@ -54,6 +61,8 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
     inputs.disabledTools,
     params.scope.extraDisabledTools,
   )
+  // `Tool(specifier)` entries deny what they match; they remove no tool (`run-tool-policy.ts`).
+  const denyPatterns = resolveRunDenyPatterns(inputs.disabledTools, params.scope.extraDisabledTools)
   const { policy } = turn
   // Asked once per run: whether the browser offers `goal` (a decision model can answer now).
   const decisionsAvailable = deps.decisions
@@ -80,6 +89,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
       policy,
       setTopic: policy.seat.ownsTopic ? createSetTopicPort(env, params) : undefined,
       currentMessageId: () => currentAssistantMessageId(frame),
+      forkLive: () => frame.forkLive,
       env: inputs.env,
       defaultCwd,
       catalog: turn.catalog,
@@ -91,6 +101,10 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
       disabledTools,
       toolDenials: inputs.toolDenials,
       agentProfile,
+      // `tools: Agent(a, b)` limits the types the agent running as the main thread delegates to.
+      ...((inputs.mainAgent?.agentTypes ?? inputs.pluginSubagent?.agentTypes)
+        ? { allowedAgentTypes: inputs.mainAgent?.agentTypes ?? inputs.pluginSubagent?.agentTypes }
+        : {}),
       loadedPlugins,
       loadedMiniApps,
       toolSurface,
@@ -151,6 +165,11 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
   // (see `handleToolExecutionStart`).
   const mutatingToolNames = new Set<string>()
 
+  const agentServers = agentRunMcpServers(session, turn.admittedAgent.spec, {
+    userId,
+    projectTrusted: claudeCodeTrusts({ homeDir: claudeCodeHome(), cwd: defaultCwd }),
+  })
+
   // MCP gather + plugin tool-call hooks + repeat-failure guard, populating the two sets above.
   const assembledPromise = assembleRunTools({
     env,
@@ -172,6 +191,11 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
     surfaceTools: surfaceTools(surfaceMiniApps(params.historyMessages), loadedMiniApps.loaded),
     backgroundToolNames,
     mutatingToolNames,
+    // A delegated child connects its agent file's own MCP servers for this run and drops them after.
+    ...(agentServers ? { agentServers } : {}),
+    registerMcpRelease: (release) => {
+      frame.teardown.releaseMcp = release
+    },
   })
   // Answers "why can the model not see my tool" with the values the roster was built from.
   // Failure-proof by construction: a snapshot must never affect the run that produced it.
@@ -196,7 +220,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
   const [
     {
       tools: assembledTools,
-      dispatchTools,
+      dispatchTools: assembledDispatch,
       preflightTools,
       mcpInstructions,
       mcpInventory,
@@ -212,9 +236,15 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
   ])
   // A bare deny in Claude Code's settings (`WebFetch`, `mcp__github`) takes the tool out of the
   // model's view, as Claude Code removes it; the gate refuses a call that names it anyway.
-  const tools = assembledTools.filter(
+  const visibleTools = assembledTools.filter(
     (tool) => !settingsRemoveTool(claudeCodePermissions.rules, tool),
   )
+  // A fork is offered the tools its parent was offered, as declared there: they come first in the
+  // provider's cache prefix. What it can run stays its own (`agent-core/fork-seed.ts`).
+  const surface = frame.fork
+    ? forkToolSurface(frame.fork.seed, { tools: visibleTools, dispatchTools: assembledDispatch })
+    : { tools: visibleTools, dispatchTools: assembledDispatch }
+  const { tools, dispatchTools } = surface
   recordToolRoster(
     preflightTools.map((tool) => tool.name),
     { userId, projectId: session.projectId },
@@ -230,7 +260,14 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
 
   return {
     agentProfile,
-    runtimeTools: { ...runtimeTools, ledger, toolNames: preflightTools.map((tool) => tool.name) },
+    denyPatterns,
+    runtimeTools: {
+      ...runtimeTools,
+      ledger,
+      // The names decide what past tool work reads as (`participant-audience.ts`): a fork reads
+      // its parent's rows as its parent did.
+      toolNames: frame.fork?.seed.toolNames ?? preflightTools.map((tool) => tool.name),
+    },
     backgroundToolNames,
     mutatingToolNames,
     /** Model-visible schemas. */

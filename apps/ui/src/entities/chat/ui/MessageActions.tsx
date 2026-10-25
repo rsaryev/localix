@@ -14,7 +14,7 @@ import {
   Link2,
   MoreHorizontal,
 } from 'lucide-react'
-import { ConfirmDialog } from '@localixai/kit/confirm-dialog'
+import { RollbackConfirmDialog } from './RollbackConfirmDialog'
 import { useCopied } from '@localixai/mini-app-sdk/ui/interactions'
 import type { AgentItem } from '@localixai/agent/agents'
 import type { MessageContextBindingDraft } from '@localixai/mini-app-sdk/ui'
@@ -272,11 +272,8 @@ export function MessageActions({
         {role === 'assistant' && sources && <MessageSources {...sources} />}
       </div>
 
-      <ConfirmDialog
+      <RollbackConfirmDialog
         open={confirmOpen}
-        title="Roll back this message?"
-        description="This message and all replies after it will be removed. The text will be restored to the input."
-        confirmLabel="Roll back"
         onConfirm={() => {
           setConfirmOpen(false)
           onRollback?.()

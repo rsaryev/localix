@@ -33,9 +33,8 @@ describe('skill tool — the model’s view', () => {
       pluginSkill('zzqa', 'zz-lookup'),
       pluginSkill('zzqb', 'zz-lookup'),
     ])
-    const listed = textOf(await run(tool, { action: 'list' }))
-    expect(listed).toContain('- /zzqa:zz-lookup (global): zzqa-DESC')
-    expect(listed).toContain('- /zzqb:zz-lookup (global): zzqb-DESC')
+    const first = await run(tool, { action: 'get', name: 'zzqa:zz-lookup' })
+    expect(textOf(first)).toContain('zzqa-BODY')
     const second = await run(tool, { action: 'get', name: 'zzqb:zz-lookup' })
     expect(textOf(second)).toContain('zzqb-BODY')
     expect(textOf(second)).toContain('# Skill: zzqb:zz-lookup')
@@ -43,7 +42,7 @@ describe('skill tool — the model’s view', () => {
 
   // skills.md: "If Claude tries anyway, Claude Code blocks the call and instructs it not to
   // reproduce the deploy steps another way"; "Description not in context".
-  test('a disable-model-invocation skill is refused and left out of the list', async () => {
+  test('a disable-model-invocation skill is refused', async () => {
     const tool = createSkillTool(null, [
       pluginSkill('zzdm', 'zz-secret', { disableModelInvocation: true }),
     ])
@@ -51,7 +50,6 @@ describe('skill tool — the model’s view', () => {
     expect(got.isError).toBe(true)
     expect(textOf(got)).not.toContain('zzdm-BODY')
     expect(textOf(got)).toContain('only be run by the user as /zzdm:zz-secret')
-    expect(textOf(await run(tool, { action: 'list' }))).not.toContain('zzdm-DESC')
   })
 
   // skills.md: "When you or Claude invoke a skill, the rendered SKILL.md content enters the

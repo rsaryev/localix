@@ -138,7 +138,7 @@ describe('Discover', () => {
       await view.click(view.button('See all Mini apps'))
       expect(view.host.querySelector('h2')?.textContent).toBe('Mini apps')
       expect(view.reads.at(-1)).toContain('shelf=package:mini-app')
-      await view.click(view.button('Back'))
+      await view.click(view.button(/^Back to /))
       await view.click(view.button('Kanban', section(view.host, 'Mini apps')!))
       expect(view.host.querySelector('[data-store-page="kanban"]')).not.toBeNull()
     } finally {

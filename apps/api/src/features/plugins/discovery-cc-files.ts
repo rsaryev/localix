@@ -2,7 +2,7 @@ import { basename } from 'node:path'
 
 import { schemaIssue } from './contracts-base'
 
-import { mapCcAllowList, mapCcToolList } from '../ext/cc-tool-names'
+import { mapCcRuleList, mapCcToolList } from '../ext/cc-tool-names'
 import { coerceFrontmatterBool, trimmedFrontmatterField } from '../ext/frontmatter'
 import { argumentHintField } from '../agent-core/skill-frontmatter'
 import {
@@ -25,6 +25,7 @@ import {
   type PluginCommand,
 } from './contracts'
 import type { PluginArtifactDiagnostic } from './discovery-entrypoints'
+import { agentHandleSegment, isValidCcAgentName, preloadedSkills } from './agent-names'
 
 /**
  * Claude Code flat-file (`commands/*.md`, `agents/*.md`) discovery + parsing,
@@ -88,10 +89,10 @@ export async function parseCommandFile(
   // CC `allowed-tools` / `disallowed-tools`: map CC names → engine names via CC_TOOL_NAME_MAP. An
   // allowed `Bash(git add:*)` keeps its pattern: it pre-approves that command, not the shell.
   const allowedTools = fields['allowed-tools']
-    ? mapCcAllowList(splitTokenList(fields['allowed-tools']) ?? [])
+    ? mapCcRuleList(splitTokenList(fields['allowed-tools']) ?? [])
     : undefined
   const disallowedTools = fields['disallowed-tools']
-    ? mapCcTools(fields['disallowed-tools'])
+    ? mapCcRuleList(splitTokenList(fields['disallowed-tools']) ?? []) // keeps `Bash(rm *)`
     : undefined
   // CC `model` — preferred model for this command's run (applied as a per-run override).
   const model = trimmedFrontmatterField(fields.model)
@@ -136,6 +137,21 @@ export function isPlainRecord(v: unknown): v is Record<string, unknown> {
 export function mapCcTools(rawValue: string | string[]): string[] {
   const tokens = splitTokenList(rawValue) ?? []
   return mapCcToolList(tokens, { dropUnknown: true })
+}
+
+/**
+ * The types `Agent(worker, researcher)` in a `tools` list names (sub-agents.md): an allowlist of the
+ * agents the main thread may spawn. A bare `Agent` or `Task` allows every type, so the list is then
+ * absent; with typed entries only the named types are allowed.
+ */
+export function delegableAgentTypes(raw: string | string[] | undefined): string[] | undefined {
+  if (raw === undefined) return undefined
+  const types: string[] = []
+  for (const token of splitTokenList(raw) ?? []) {
+    const typed = /^(?:agent|task)\((.*)\)$/is.exec(token.trim())
+    if (typed) types.push(...(splitTokenList(typed[1]!.replace(/,/g, ' ')) ?? []))
+  }
+  return types.length ? [...new Set(types)] : undefined
 }
 
 /**
@@ -199,10 +215,15 @@ export async function parseAgentFile(
   // `nested/security.md` with `name: sec` → `nested:sec` (folder structure preserved).
   const scanName = nameOverride ?? basename(file).replace(/\.md$/i, '')
   const prefix = scanName.split(':').slice(0, -1)
-  // CC ignores a `name` longer than 256 characters and names the agent after its file.
-  const named = scalarField(fields.name)
-  const leaf = named && named.length <= 256 ? named : undefined
-  const name = leaf ? [...prefix, leaf].join(':') : scanName
+  // CC ignores a `name` it cannot use (over 256 characters, a leading `-`) and names the agent
+  // after its file; any other name is valid there and reaches Localix as a safe handle. A `:` in
+  // a plugin's name keeps reading as namespacing, so `validatePlugin` can say it repeats the prefix
+  // (a user's or project's file with a `:` never gets here: `readAgentFile` skips it, as CC does).
+  const named = scalarField(fields.name)?.trim()
+  const leaf = named && isValidCcAgentName(named, { namespaced: true }) ? named : undefined
+  const name = [...prefix, ...(leaf ?? scanName.split(':').pop() ?? scanName).split(':')]
+    .map(agentHandleSegment)
+    .join(':')
   if (!PLUGIN_QUALIFIED_NAME_RE.test(name)) {
     diagnostics?.push({ kind: 'agent', path: file, message: `Invalid agent name "${name}"` })
     return null
@@ -212,13 +233,17 @@ export async function parseAgentFile(
     return null
   }
   const tools = mapOptionalCcTools(fields.tools)
-  // A deny list that names nothing known here denies nothing.
-  const deniedTools = mapOptionalCcTools(fields.disallowedTools)
+  // A deny list that names nothing known here denies nothing. An entry with a specifier
+  // (`Bash(rm *)`) keeps it: the run denies those calls and leaves the tool.
+  const deniedTools = fields.disallowedTools
+    ? mapCcRuleList(splitTokenList(fields.disallowedTools) ?? [])
+    : undefined
   const disallowedTools = deniedTools?.length ? deniedTools : undefined
+  const agentTypes = delegableAgentTypes(fields.tools)
   const preferredModel = trimmedFrontmatterField(fields.model)
   // CC `skills:` — skill names to preload when this agent runs.
-  const pinnedSkillsRaw = splitTokenList(fields.skills)
-  const pinnedSkills = pinnedSkillsRaw?.length ? pinnedSkillsRaw : undefined
+  const pinnedSkillsRaw = preloadedSkills(splitTokenList(fields.skills))
+  const pinnedSkills = pinnedSkillsRaw.length ? pinnedSkillsRaw : undefined
   // CC `effort:` — preferred reasoning effort (advisory).
   const preferredEffort = trimmedFrontmatterField(fields.effort)
   // CC `maxTurns:` — cap the agent's turn count (enforced by the delegate runtime).
@@ -257,17 +282,15 @@ export async function parseAgentFile(
   // ACTIVATED for the child delegate run (see command-handlers / delegate wiring). A flat-string
   // `hooks:` value (rare) is ignored — only a mapping is a valid CC hooks block.
   const hooks = isPlainRecord(yaml?.hooks) ? yaml!.hooks : undefined
+  // CC `mcpServers:` — a list of server names and/or `{ name: definition }` maps.
+  const mcpServers = Array.isArray(yaml?.mcpServers) ? yaml!.mcpServers : undefined
   // `localix:` — what Claude Code has no place for; Claude Code ignores the key.
   const localix = isPlainRecord(yaml?.localix) ? localixKeySchema.safeParse(yaml!.localix) : null
   // CC `experimental.cacheTtl:` — `5m` or `1h`; any other value is ignored.
   const ttl = isPlainRecord(yaml?.experimental) ? yaml!.experimental.cacheTtl : undefined
   const cacheTtl = ttl === '5m' || ttl === '1h' ? ttl : undefined
-  // CC `when-to-use:` (hyphen) and `when_to_use` (underscore) — appended to description.
-  const desc =
-    [fields.description, fields['when-to-use'], fields.when_to_use]
-      .filter(Boolean)
-      .join(' ')
-      .trim() || ''
+  // An agent has no `when_to_use` (sub-agents.md): `description` alone says when to delegate.
+  const desc = scalarField(fields.description)?.trim() ?? ''
   // CC loads a file with no frontmatter too, named after the file; the loader gives it the
   // description `Agent from <plugin> plugin` (`manifest-load.ts`).
   const parsed = pluginAgentSchema.safeParse({
@@ -276,6 +299,7 @@ export async function parseAgentFile(
     prompt: body,
     ...(tools !== undefined ? { tools } : {}),
     ...(disallowedTools?.length ? { disallowedTools } : {}),
+    ...(agentTypes ? { agentTypes } : {}),
     ...(preferredModel ? { preferredModel } : {}),
     ...(pinnedSkills ? { pinnedSkills } : {}),
     ...(preferredEffort ? { preferredEffort } : {}),
@@ -289,6 +313,7 @@ export async function parseAgentFile(
     ...(color ? { color } : {}),
     ...(initialPrompt ? { initialPrompt } : {}),
     ...(hooks !== undefined ? { hooks } : {}),
+    ...(mcpServers !== undefined ? { mcpServers } : {}),
     ...(localix?.success ? { localix: localix.data } : {}),
   })
   if (parsed.success) return parsed.data

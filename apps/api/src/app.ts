@@ -40,9 +40,6 @@ import {
   holdMiniAppRoutesUntilWired,
   type MiniAppRouteHost,
 } from './features/mini-apps/mini-app-route-boot-hold'
-import { createAgentsRoutes, type AgentsRoutesService } from './features/agents/routes'
-import { createSkillsCuratorRoutes } from './features/skills-curator/routes'
-import type { SkillsCuratorService } from './features/skills-curator/service'
 import { createNotificationRoutes, type NotificationJournal } from './features/notifications'
 import { createMediaRoutes } from './features/media/routes'
 import { MEDIA_SERVE_PREFIX } from './features/media/serve-path'
@@ -119,8 +116,6 @@ export interface AppDeps extends ConversationRouteDeps, ExtensionRouteDeps {
    * a feature that only reports.
    */
   toolGcSource?: ToolGcSource
-  agentsService: AgentsRoutesService
-  skillsCuratorService: SkillsCuratorService
   /** The notification journal — the Event Center's single source of truth. */
   notifications: NotificationJournal
   /** Filesystem media store — serves uploaded media bytes by content id. */
@@ -275,10 +270,8 @@ h2{margin:0 0 .5rem}p{margin:0;color:#888;font-size:.9rem}</style></head>
       }),
     )
     .route('/rpc', createExtensionRoutes(deps))
-    .route('/rpc/agents', createAgentsRoutes(deps.agentsService))
     .route('/rpc/external-agents', createAgentSessionsRoutes(deps.externalAgents))
     .route('/rpc/external-agents', ownedAgentRoutes(deps))
-    .route('/rpc/skills/curator', createSkillsCuratorRoutes(deps.skillsCuratorService))
     .route('/rpc/notifications', createNotificationRoutes(deps.notifications))
     .route(MEDIA_SERVE_PREFIX, createMediaRoutes(deps.mediaStore))
     .route('/rpc/system', createSystemRoutes(deps.systemService))

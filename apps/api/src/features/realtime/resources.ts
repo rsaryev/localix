@@ -13,9 +13,6 @@ export const REALTIME_RESOURCES = [
   'system',
   // In-memory status a service signals as it moves (a download, an index build), not a table.
   'local-models',
-  // Claude Code plugin updates: what is offered and the updates in flight
-  // (`/rpc/plugins/updates`).
-  'plugin-updates',
   // The catalogs the mini app store reads.
   'mini-app-catalogs',
   // The Store's listings across package kinds (`/rpc/store`): a job moved, an install or a
@@ -24,8 +21,6 @@ export const REALTIME_RESOURCES = [
   // The sources the Store reads from (`/rpc/store/sources`): one was switched, read again, added,
   // removed or moved on its own. Not in `store`: sources are not in the index.
   'store-sources',
-  // Plugin updates available and in flight (`plugins/plugin-updates.ts`), with their progress.
-  'plugin-updates',
   'semantic',
   // What loaded mods put on screen: their panes and what is drawn in them.
   'mods',

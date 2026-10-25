@@ -1,7 +1,6 @@
 import { errorMessage } from '../../../../lib/errors'
 import { basename, dirname } from 'node:path'
 import { stat } from 'node:fs/promises'
-import { z } from 'zod'
 import {
   defineAgentTool,
   type AgentToolResult,
@@ -19,7 +18,8 @@ import {
   truncateOutput,
 } from './search-output'
 import { FILE_LIST_LIMIT, presentFileListing } from './search-file-listing'
-import { stringToArray } from '../tool-schema'
+import { prepareSearchArguments, searchToolInputSchema, type SearchInput } from './search-input'
+import { shapeSearchResult } from './search-modes'
 import { runSearchBatch, searchQueries } from './search-batch'
 
 /**
@@ -34,54 +34,22 @@ export { FILE_LIST_LIMIT } from './search-file-listing'
 // stable `./search` surface.
 export { hasUnescapedRegexMeta } from './search-output'
 
-const SEARCH_CONTEXT_MAX = 10
-
-export const searchToolInputSchema = z.object({
-  query: z
-    .string()
-    .optional()
-    .describe('Ripgrep regex for file contents. Omit it (pass only `glob`) to list files by name.'),
-  queries: z
-    .preprocess(stringToArray, z.array(z.string()))
-    .optional()
-    .describe('Several regexes in ONE call; results come grouped per query.'),
-  cwd: z.string().optional().describe('Directory to search in (defaults to the session root).'),
-  glob: z.string().optional().describe('e.g. "src/**/*.ts": narrows a query, or lists files.'),
-  path: z.string().optional().describe('A file or directory to search in.'),
-  context: z
-    .number()
-    .int()
-    .min(1)
-    .max(SEARCH_CONTEXT_MAX)
-    .optional()
-    .describe('Lines around each hit (2-5 often saves a `read`).'),
-})
-
-/**
- * The runtime's pre-validation hook: it never runs the zod `preprocess`, so a bare `queries`
- * string becomes its one-element list here. A `context` above the cap is read as the cap
- * (LOCALIX-34 asked for 17 lines and lost the whole search).
- */
-export function prepareSearchArguments(raw: unknown): unknown {
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return raw
-  const input = raw as Record<string, unknown>
-  const queries = input.queries === undefined ? undefined : stringToArray(input.queries)
-  const context =
-    typeof input.context === 'number' && input.context > SEARCH_CONTEXT_MAX
-      ? SEARCH_CONTEXT_MAX
-      : input.context
-  if (queries === input.queries && context === input.context) return raw
-  return {
-    ...input,
-    ...(queries !== undefined ? { queries } : {}),
-    ...(context !== undefined ? { context } : {}),
-  }
-}
+export { searchToolInputSchema, prepareSearchArguments } from './search-input'
 
 import type { SearchToolDetails } from './search-contracts'
-type SearchInput = z.infer<typeof searchToolInputSchema>
 export type { SearchToolDetails } from './search-contracts'
 import { presentEmptySearch, presentSearchMatches } from './search-results'
+
+/** What a search passes to ripgrep beyond its pattern and glob. Lines of context only go with lines. */
+function searchFlags(input: SearchInput) {
+  const lines = (input.output_mode ?? 'content') === 'content'
+  return {
+    ...(lines && input.context ? { context: input.context } : {}),
+    ...(input.ignore_case ? { ignoreCase: true } : {}),
+    ...(input.multiline ? { multiline: true } : {}),
+    ...(input.type ? { type: input.type } : {}),
+  }
+}
 
 export function createSearchTool(
   env: ExecutionEnvironment = localEnvironment,
@@ -105,13 +73,16 @@ export function createSearchTool(
     executionMode: 'parallel',
 
     async execute(_toolCallId, input, signal, onUpdate) {
+      const shaped = (result: AgentToolResult<SearchToolDetails>) =>
+        shapeSearchResult(result, { mode: input.output_mode, headLimit: input.head_limit })
       const queries = searchQueries(input)
-      if (queries.length <= 1) return searchOne({ ...input, query: queries[0] }, signal, onUpdate)
+      if (queries.length <= 1)
+        return shaped(await searchOne({ ...input, query: queries[0] }, signal, onUpdate))
       const result = await runSearchBatch(queries, (query) =>
         searchOne({ ...input, query }, signal, undefined),
       )
       if (result.details) onUpdate?.(result.details)
-      return result
+      return shaped(result)
     },
   })
 
@@ -167,7 +138,7 @@ export function createSearchTool(
     try {
       rawOutput = await env.searchFiles(query, cwd, {
         glob: input.glob,
-        context: input.context,
+        ...searchFlags(input),
         signal,
         timeoutSeconds: SEARCH_TIMEOUT_SECONDS,
       })
@@ -181,7 +152,7 @@ export function createSearchTool(
         try {
           const out = await env.searchFiles(literal, cwd, {
             glob: input.glob,
-            context: input.context,
+            ...searchFlags(input),
             signal,
             timeoutSeconds: SEARCH_TIMEOUT_SECONDS,
           })
@@ -214,7 +185,7 @@ export function createSearchTool(
         try {
           const out = await env.searchFiles(query, parent, {
             glob: fileGlob,
-            context: input.context,
+            ...searchFlags(input),
             signal,
             timeoutSeconds: SEARCH_TIMEOUT_SECONDS,
           })
@@ -264,7 +235,7 @@ export function createSearchTool(
         try {
           out = await env.searchFiles(retry.query, cwd, {
             glob: retry.glob,
-            context: input.context,
+            ...searchFlags(input),
             signal,
             timeoutSeconds: SEARCH_TIMEOUT_SECONDS,
           })

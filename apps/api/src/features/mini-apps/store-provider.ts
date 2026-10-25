@@ -7,7 +7,7 @@ import {
   type ListingRef,
   type Scope,
   type StoreActor,
-  type StoreProvider,
+  type InstallableProvider,
 } from '@localixai/store'
 
 import { InvalidRequestError } from '../../lib/domain-errors'
@@ -21,6 +21,9 @@ import {
   miniAppComponents,
   miniAppDetail,
   miniAppListing,
+  OWN_SOURCE,
+  ownMiniAppEntry,
+  type OwnMiniApp,
 } from './store-listing'
 
 /** What the provider needs of the mini app service: its store, catalogs and the person's apps. */
@@ -34,7 +37,7 @@ export interface MiniAppStoreProviderDeps {
   }
   apps: {
     list(userId: string): Promise<{
-      miniApps: { name: string; enabled: boolean; config: MiniAppConfigField[] }[]
+      miniApps: (OwnMiniApp & { enabled: boolean; config: MiniAppConfigField[] })[]
     }>
     setConfig(
       userId: string,
@@ -68,7 +71,7 @@ function personOnly(scope: Scope) {
  * the catalogs (`catalogs.ts`), which keep their own routes for the pages that read them; the
  * refusals stay theirs (an unverified publisher without a yes, a name the person already uses).
  */
-export function createMiniAppStoreProvider(deps: MiniAppStoreProviderDeps): StoreProvider {
+export function createMiniAppStoreProvider(deps: MiniAppStoreProviderDeps): InstallableProvider {
   const labels = async () =>
     new Map(
       (await deps.catalogs.list()).map(({ url, builtIn }) => [
@@ -94,6 +97,23 @@ export function createMiniAppStoreProvider(deps: MiniAppStoreProviderDeps): Stor
     return { page, listing }
   }
 
+  // The person made it, so it is on their Yours shelf beside the skills and agents they wrote.
+  const ownListing = (app: OwnMiniApp & { enabled: boolean; config: MiniAppConfigField[] }) => ({
+    ...miniAppListing(ownMiniAppEntry(app), {
+      sourceLabel: OWN_SOURCE.label,
+      builtIn: false,
+      enabled: app.enabled,
+      configurable: app.config.length > 0,
+    }),
+    authored: 'user' as const,
+  })
+  const ownPage = (app: OwnMiniApp) => ({
+    entry: ownMiniAppEntry(app),
+    readme: null,
+    screenshots: [],
+    details: { ...(app.version ? { version: app.version } : {}), author: 'You' },
+  })
+
   return {
     kind: 'mini-app',
 
@@ -104,22 +124,31 @@ export function createMiniAppStoreProvider(deps: MiniAppStoreProviderDeps): Stor
         deps.apps.list(actor.userId),
       ])
       const installed = new Map(apps.miniApps.map((app) => [app.name, app]))
+      const offered = new Set(entries.map((entry) => entry.name))
+      const own = apps.miniApps.filter((app) => !app.bundled && !offered.has(app.name))
       return {
-        listings: entries.map((entry) =>
-          miniAppListing(entry, {
-            sourceLabel: label.get(entry.source)?.label ?? entry.source,
-            builtIn: label.get(entry.source)?.builtIn ?? false,
-            enabled: installed.get(entry.name)?.enabled ?? true,
-            configurable: (installed.get(entry.name)?.config.length ?? 0) > 0,
-          }),
-        ),
+        listings: [
+          ...entries.map((entry) =>
+            miniAppListing(entry, {
+              sourceLabel: label.get(entry.source)?.label ?? entry.source,
+              builtIn: label.get(entry.source)?.builtIn ?? false,
+              enabled: installed.get(entry.name)?.enabled ?? true,
+              configurable: (installed.get(entry.name)?.config.length ?? 0) > 0,
+            }),
+          ),
+          ...own.map((app) => ownListing(app)),
+        ],
         problems,
       }
     },
 
     async detail(id, actor) {
-      const { page, listing } = await listingFor(id, actor)
-      return miniAppDetail(listing, page)
+      const offered = await listingFor(id, actor).catch(async (error: unknown) => {
+        const app = (await deps.apps.list(actor.userId)).miniApps.find((it) => it.name === id)
+        if (!app || app.bundled) throw error
+        return { listing: ownListing(app), page: ownPage(app) }
+      })
+      return miniAppDetail(offered.listing, offered.page)
     },
 
     async plan(id, scope, actor): Promise<InstallPlan> {

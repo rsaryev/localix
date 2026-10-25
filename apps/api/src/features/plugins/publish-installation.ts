@@ -8,8 +8,6 @@ import { pluginTrustClass } from './enable'
 import type { CapabilitySourceRecord } from '../capabilities/source-repository'
 import type { CapabilityStores } from '../capabilities/store-factory'
 import { publishExtensionTrees } from '../ext/publish-trees'
-import { createContributionStore } from '../ext/contribution-store'
-import type { ContributionKindRegistry } from '../ext/contribution-kinds'
 import type { PreparedDependencyInstall } from './dependencies-install'
 import { loadManifest, type DiscoveredPlugin } from './discovery'
 import type { MaterializedPluginSource } from './install-helpers'
@@ -22,7 +20,6 @@ import { claimInPlaceRecord, type InPlaceClaim } from './install-in-place'
 export async function publishPluginInstallation(input: {
   db: Kysely<AppDatabase>
   stores: CapabilityStores
-  contributionKinds: ContributionKindRegistry
   userId: string
   projectId: string
   scope: 'global' | 'project'
@@ -81,25 +78,10 @@ export async function publishPluginInstallation(input: {
     }
     const write = input.db.transaction().execute(async (transaction) => {
       const repo = input.stores.sources(transaction, 'plugin', input.now)
-      const dependencySources = (await publication?.write(repo)) ?? []
+      await publication?.write(repo)
       const saved = await repo.upsert(input.userId, input.projectId, plugin.manifest.name, {
         source: input.source,
       })
-      const contributions = createContributionStore(transaction, input.contributionKinds, input.now)
-      for (const entry of [
-        ...dependencySources,
-        // A plugin declares no typed contributions: publishing none clears any an older build kept.
-        { source: saved, contributions: [] },
-      ]) {
-        const current = await contributions.getCurrent(input.userId, entry.source.id)
-        if (!current) throw new Error('Installed contribution source is missing')
-        await contributions.publish(
-          input.userId,
-          entry.source.id,
-          current.revision,
-          entry.contributions,
-        )
-      }
       const enable = await installedSwitch(input, plugin, transaction)
       if (enable !== undefined)
         await createAvailabilityWriter(transaction).set(input.userId, DEFAULT_AGENT_ID, 'plugin', [

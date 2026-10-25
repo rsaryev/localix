@@ -111,6 +111,11 @@ export async function handlePluginCommand(
         projectDir,
         // CC dynamic content (`!\`cmd\``, `@path`) runs in the session working dir.
         cwd: projectDir,
+        shellDisabled:
+          (await ctx.skillShellDisabled?.({
+            workingDir: projectDir,
+            skillPath: match.pluginDir,
+          })) === true,
         arguments: match.command.arguments,
         ...(rules
           ? {

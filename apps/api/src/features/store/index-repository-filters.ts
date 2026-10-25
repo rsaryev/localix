@@ -43,7 +43,6 @@ export function visibleListings(db: Kysely<StoreIndexTables>, userId: string) {
   )
 }
 
-type Visible = ReturnType<typeof visibleListings>
 type Eb = ExpressionBuilder<Tables, 'l' | 's'>
 
 function onShelf(eb: Eb, shelf: ShelfId) {
@@ -92,5 +91,3 @@ export function narrowed<O>(
   if (filters.publisher) out = out.where('l.publisher', '=', filters.publisher)
   return out
 }
-
-export type { Visible }

@@ -1,4 +1,4 @@
-import { afterEach, expect, test } from 'bun:test'
+import { afterEach, describe, expect, test } from 'bun:test'
 
 import { __resetExpectedReports } from '../delegation-awaits'
 import type { DelegateRequest } from './delegate'
@@ -48,7 +48,6 @@ function host(ports: Partial<DelegateAgentPorts> = {}, catalog = CATALOG) {
       calls.create!.push(input)
       return { id: 'child', taskName: 'review' }
     },
-    copyConversation: async () => {},
     startSubagentTask: async (_u, sid, task, taskOpts) => {
       calls.start!.push({ sid, task, ...taskOpts })
       return undefined
@@ -286,4 +285,72 @@ test('an agent whose tools list resolves to nothing is refused', async () => {
   expect(out.isError).toBe(true)
   expect(out.content).toContain('zero tools')
   expect(calls.create).toEqual([])
+})
+
+// sub-agents.md, `permissionMode`: the person's own agent files carry it; a plugin's are ignored.
+test.each([
+  ['user', 'plan', 'plan'],
+  ['project', 'default', 'default'],
+  ['managed', 'plan', 'plan'],
+  ['plugin', 'plan', undefined],
+  ['user', 'acceptEdits', undefined],
+  ['user', 'bypassPermissions', undefined],
+  ['user', undefined, undefined],
+] as const)(
+  'a %s agent file with permissionMode %s leaves %s on the child',
+  async (source, permissionMode, carried) => {
+    const planner: DelegateResolution = {
+      kind: 'agent',
+      agent: { agentId: 'cc:planner', handle: 'planner' },
+      type: {
+        fullName: 'planner',
+        name: 'planner',
+        description: 'Plans',
+        source,
+        ...(permissionMode ? { permissionMode } : {}),
+      },
+    }
+    const { opts, ports, calls } = host({}, { planner })
+    await startDelegation('c', request({ agent: 'planner' }), opts, undefined, ports)
+    const provenance = (calls.create![0] as { provenance: Record<string, unknown> }).provenance
+    expect(provenance.agentPermissionMode).toBe(carried)
+  },
+)
+
+// sub-agents.md, `Agent(worker, researcher)` in `tools`: an allowlist of the types the agent may
+// spawn; an omitted `agent` is `general-purpose`, which is then refused unless it is listed.
+describe('an agent type allowlist on the delegator', () => {
+  const allowing = (...types: string[]) => ({ allowedAgentTypes: types })
+
+  test('only a listed type may be delegated to, and a refusal creates nothing', async () => {
+    const { opts, ports, calls } = host(allowing('tester'))
+    const ok = await startDelegation('c', request({ agent: 'tester' }), opts, undefined, ports)
+    expect(ok.isError).toBeUndefined()
+    for (const asked of [{ agent: 'sec:reviewer' }, {}, { agent: 'claude' }, { context: 'fork' }]) {
+      const refused = await startDelegation(
+        'c',
+        request(asked as Partial<DelegateRequest>),
+        opts,
+        undefined,
+        ports,
+      )
+      expect(refused.isError).toBe(true)
+      expect(refused.content).toContain('tester')
+    }
+    expect(calls.create).toHaveLength(1)
+  })
+
+  test('general-purpose is allowed when it is listed, and so is a plugin name by its handle', async () => {
+    const { opts, ports, calls } = host(allowing('general-purpose', 'sec:reviewer'))
+    await startDelegation('c', request(), opts, undefined, ports)
+    await startDelegation('c', request({ agent: 'sec:reviewer' }), opts, undefined, ports)
+    expect(calls.create).toHaveLength(2)
+  })
+
+  test('with no list every type is allowed', async () => {
+    const { opts, ports, calls } = host()
+    await startDelegation('c', request({ agent: 'sec:reviewer' }), opts, undefined, ports)
+    await startDelegation('c', request(), opts, undefined, ports)
+    expect(calls.create).toHaveLength(2)
+  })
 })

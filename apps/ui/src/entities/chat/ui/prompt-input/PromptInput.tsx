@@ -33,6 +33,7 @@ import { useComposerDropzone } from './useComposerDropzone'
 import { useComposerMirror } from './useComposerMirror'
 import { useComposerVoice } from './useComposerVoice'
 import { useMessageBindingDrop } from './useMessageBindingDrop'
+import { useComposerClientCommands } from './useComposerClientCommands'
 import { useOpenResourceCommand } from './useOpenResourceCommand'
 import { usePromptInputKeyboard } from './usePromptInputKeyboard'
 import { useHistoryKeyDown } from './usePromptHistory'
@@ -122,6 +123,17 @@ export function PromptInput(props: PromptInputProps) {
     props.activeTabLinks,
     contextWindow,
   )
+  // Claude Code's habitual commands (`/clear`, `/resume`, `/rewind`, …), over the app's own actions.
+  const clientCommands = useComposerClientCommands({
+    sessionId: activeSessionId,
+    setPrompt,
+    onSend,
+    onRollback: props.onRollback,
+    usage: props.usage,
+    latestAttempt: props.latestContextAttempt,
+    contextDiagnostics: props.contextDiagnostics,
+    contextWindow,
+  })
   const { tip: streamTip, dismiss: dismissTip } = useComposerStreamTip({
     activeSessionId,
     isFocused,
@@ -219,7 +231,9 @@ export function PromptInput(props: PromptInputProps) {
     onSubmitEdit: props.onSubmitEdit,
     openCommandActive,
     submitOpenResource: openResource.submit,
-    submitClientCommand: () => modelCommand.submit(slash.detected, () => setPrompt('')),
+    submitClientCommand: () =>
+      modelCommand.submit(slash.detected, () => setPrompt('')) ||
+      clientCommands.submit(slash.detected),
   })
   const hasPrompt = Boolean(prompt.trim())
   const attachmentItems = attachments ?? []
@@ -408,6 +422,7 @@ export function PromptInput(props: PromptInputProps) {
           </>
         )}
       </div>
+      {clientCommands.confirmation}
     </div>
   )
 }
