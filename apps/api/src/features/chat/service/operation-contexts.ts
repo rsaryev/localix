@@ -3,7 +3,8 @@ import { resolveDefaultProject } from '../../projects/default-project'
 import type { WakeRequest } from '../contracts'
 import { publishAgentPhase } from '../runtime/session-stream-registry'
 import { publishSessionUsageSnapshot } from '../runtime/session-usage'
-import { recordTitleGenUsage } from '../runtime/usage-normalize'
+import { recordAuxCallUsage, recordTitleGenUsage } from '../runtime/usage-normalize'
+import { createRecapService } from '../recap/service'
 import { createAuxProviderHelpers } from './aux-provider'
 import type { BranchingOpsContext } from './branching-ops'
 import type { CommandHandlerContext } from './command-handlers'
@@ -137,6 +138,29 @@ export function createOperationContexts(
     ...args: Parameters<NonNullable<ChatServiceDeps['loadSkillOverrides']>>
   ) => (await deps.loadSkillOverrides?.(...args)) ?? {}
 
+  // Written as a record only: `insertSystemNotice` binds no model context for a recap.
+  const recapService = createRecapService({
+    repo,
+    readAgentSettings,
+    buildLanguageModel,
+    insertNotice: (userId, sessionId, notice, settleOptimistic) =>
+      insertSystemNotice(userId, sessionId, notice, now(), settleOptimistic),
+    nowMs: () => Date.parse(now()),
+    recordUsage: ({ userId, sessionId, modelId, providerConnectionId, providerId, usage }) =>
+      recordAuxCallUsage({
+        usageRepo,
+        kind: 'recap',
+        userId,
+        sessionId,
+        modelId,
+        providerConnectionId,
+        providerId,
+        usage,
+        onRecorded: () =>
+          publishSessionUsageSnapshot({ repo, usageRepo, streamRegistry, userId, sessionId }),
+      }),
+  })
+
   const commandCtx: CommandHandlerContext = {
     ...(deps.loadSkillCommandRules ? { loadSkillCommandRules: deps.loadSkillCommandRules } : {}),
     changeAgentMembership: (userId, sessionId, change) =>
@@ -161,6 +185,7 @@ export function createOperationContexts(
     publishSession,
     insertDirectReply,
     insertSystemNotice,
+    recap: recapService.recap,
     runMacroCommand,
     runAgent,
     gatherSessionSkills,
@@ -248,6 +273,7 @@ export function createOperationContexts(
     buildLanguageModel,
     readAgentSettings,
     loadSkillOverrides,
+    recapService,
     commandCtx,
     branchingCtx,
     fileOpsCtx,

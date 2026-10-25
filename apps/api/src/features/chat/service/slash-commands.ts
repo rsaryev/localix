@@ -12,6 +12,7 @@ import { BUILTIN_COMMAND_NAMES, SLASH_COMMANDS } from '../slash-catalog'
 const CONTROL_COMMANDS = [
   'help',
   'usage',
+  'recap',
   'model',
   'output-style',
   'memory',

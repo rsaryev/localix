@@ -7,6 +7,7 @@ import {
   handleSkillsControlCommand,
   handleMcpControlCommand,
 } from './command-handlers-listings'
+import { handleRecapCommand } from './command-handlers-recap'
 import { handleModelCommand } from './command-handlers-settings'
 import { handleOutputStyleCommand } from './command-handlers-output-style'
 import { handlePluginsControlCommand } from './command-handlers-plugins'
@@ -64,6 +65,10 @@ export async function handleControlCommand(
       readSessionUsageRows(usageRepo, userId, sessionId),
     ])
     return directReply(formatSessionUsageFromTurns(turns, ledgerByKind))
+  }
+
+  if (control === 'recap') {
+    return handleRecapCommand(ctx, userId, sessionId, directReply)
   }
 
   if (control === 'model') {

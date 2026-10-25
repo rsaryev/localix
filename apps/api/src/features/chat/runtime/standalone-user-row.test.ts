@@ -104,3 +104,13 @@ test('UI notes and internal steering retain their distinct authorship and visibi
   expect(internal.payload.isInternal).toBe(true)
   expect(internal.payload.origin).toBe('plugin')
 })
+
+test('a session recap note is stored without any model-facing binding', async () => {
+  const { params } = fixture()
+  const row = await insertUiNote({
+    ...params,
+    systemNotice: { kind: 'session_recap', tone: 'neutral', text: 'Where you left off.' },
+  })
+  expect(row.payload.uiOnly).toBe(true)
+  expect(row.payload.bindings).toBeUndefined()
+})

@@ -28,6 +28,7 @@ import type { ToolRequirement } from '../../agent-core/required-tools'
 import type { StoredCommandOutput, StoredSystemNotice } from '../../../db'
 import type { ExistingMessages, RunAgentOptions } from './run-agent'
 import type { SpawnForkSkillFn } from './fork-skill'
+import type { RecapService } from '../recap/service'
 import type { ConversationMembershipChange } from '../runtime/run/conversation-membership'
 
 /**
@@ -81,6 +82,8 @@ export interface CommandHandlerContext {
     /** True for a standalone slash command; false when a real agent turn follows. */
     settleOptimistic: boolean,
   ) => Promise<MessageMutationResponse>
+  /** The session recap (`/recap`): written on demand, whatever the automatic switch says. */
+  recap: RecapService['recap']
   runMacroCommand: (
     userId: string,
     sessionId: string,

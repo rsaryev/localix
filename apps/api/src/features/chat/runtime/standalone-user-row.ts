@@ -7,7 +7,7 @@ import type { ChatRepository } from '../repository'
 import type { SessionStreamRegistry } from './session-stream-registry'
 import { toPersistedMessage } from './message-envelope'
 import { noticeVisibility } from '../system-notice-audience'
-import { systemNoticeBinding } from '../system-notice-bindings'
+import { carriesModelContext, systemNoticeBinding } from '../system-notice-bindings'
 
 /** What every standalone user row needs; the payload flag is what distinguishes them. */
 interface UserRowParams {
@@ -43,7 +43,7 @@ async function insertUserRow(
   const messageId = params.messageId ?? randomUUID()
   const createdAt = params.now()
   const noticeBinding =
-    'systemNotice' in mark && mark.systemNotice
+    'systemNotice' in mark && mark.systemNotice && carriesModelContext(mark.systemNotice)
       ? systemNoticeBinding(mark.systemNotice, messageId, createdAt)
       : undefined
   const message = toPersistedMessage(

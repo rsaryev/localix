@@ -67,6 +67,7 @@ export const USAGE_AUXILIARY_KINDS = [
   'hook',
   'routing',
   'decision',
+  'recap',
 ] as const
 
 export type UsageKindKey = 'turn' | (typeof USAGE_AUXILIARY_KINDS)[number]
@@ -82,6 +83,7 @@ export const USAGE_KIND_LABELS: Readonly<Record<UsageKindKey, string>> = {
   hook: 'Hook policy checks',
   routing: 'Group routing',
   decision: 'Decisions',
+  recap: 'Session recaps',
 }
 
 /** Grand totals for the dashboard summary cards. */

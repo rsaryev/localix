@@ -130,4 +130,20 @@ describe('system notice context bindings', () => {
       target: { token: 'notice:connection_change' },
     })
   })
+
+  test('a session recap is a record of the transcript, never model context', () => {
+    const recap = noticeRow('1', {
+      kind: 'session_recap',
+      tone: 'neutral',
+      text: 'You were fixing the login redirect; next is the session cookie.',
+    })
+    const legacy = noticeRow('2', {
+      kind: 'session_recap',
+      tone: 'neutral',
+      text: 'Another recap.',
+    })
+    legacy.payload.bindings = undefined
+
+    expect(currentSystemContextBindings([recap, legacy])).toEqual([])
+  })
 })

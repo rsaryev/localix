@@ -11,6 +11,7 @@ import { createChatFileFacade } from './service/file-facade'
 import { createChatUsageFacade } from './service/usage-facade'
 import { createChatQueryFacade } from './service/query-facade'
 import { createChatInboundFacade } from './service/inbound-facade'
+import { createChatRecapFacade } from './service/recap-facade'
 import { createChatSkillFacade } from './service/skill-facade'
 import { listDelegatedRuns } from './service/delegated-runs'
 import { createSubagentRows } from './service/subagent-rows'
@@ -99,6 +100,8 @@ export function createChatService(deps: ChatServiceDeps) {
     }),
 
     ...createChatUsageFacade({ repo, usageRepo, streamRegistry, requireSession }),
+
+    ...createChatRecapFacade({ recapService: contexts.recapService, requireSession }),
 
     // Claude Code's `statusLine`, drawn with the mods' status lines under the message box.
     statusLine: createStatusLine({

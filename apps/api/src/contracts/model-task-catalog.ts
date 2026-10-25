@@ -41,6 +41,13 @@ export const AUX_MODEL_TASKS = [
     toggleable: true,
     defaultEnabled: false,
   },
+  {
+    key: 'sessionRecap',
+    label: 'Session recap',
+    hint: 'Sums up a chat when you come back to it',
+    fallbackLabel: 'Use session model',
+    toggleable: true,
+  },
 ] as const satisfies readonly ({ key: string } & ModelTaskDescriptor)[]
 
 /**

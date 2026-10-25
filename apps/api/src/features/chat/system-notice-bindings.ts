@@ -12,6 +12,14 @@ const SYSTEM_EVENT_KIND = 'system-event'
 const SYSTEM_PROVIDER_ID = 'localix.system'
 const SYSTEM_PROVIDER_VERSION = '1'
 
+/**
+ * Whether a notice tells the model something. Every kind does except the recap: it summarises the
+ * transcript for the person, and the model already has the transcript.
+ */
+export function carriesModelContext(notice: StoredSystemNotice): boolean {
+  return notice.kind !== 'session_recap'
+}
+
 function eventKey(notice: StoredSystemNotice): string {
   if (
     notice.kind === 'run_failed' ||
@@ -97,7 +105,10 @@ export function currentSystemContextBindings(
     const notice = message.payload.systemNotice
     const stored = (message.payload.bindings ?? []).find(isSystemEventBinding)
     const binding =
-      stored ?? (notice ? systemNoticeBinding(notice, message.id, message.createdAt) : undefined)
+      notice && !carriesModelContext(notice)
+        ? undefined
+        : (stored ??
+          (notice ? systemNoticeBinding(notice, message.id, message.createdAt) : undefined))
     return {
       role: message.payload.role,
       ...(binding ? { bindings: [binding] } : {}),

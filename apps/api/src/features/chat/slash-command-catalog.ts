@@ -143,6 +143,14 @@ export const SLASH_COMMANDS: readonly SlashCommandSpec[] = [
     category: 'info',
     argless: true,
   },
+  {
+    name: 'recap',
+    title: 'Recap',
+    description: 'Sum up this chat in one line, for when you come back to it',
+    scope: 'server',
+    category: 'info',
+    argless: true,
+  },
   // Core owns control/state commands; task macros belong to extensions.
   // Memory & skills
   {

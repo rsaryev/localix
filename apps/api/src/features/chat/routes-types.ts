@@ -33,6 +33,7 @@ import type {
 import type { SkillRecord, SkillInput } from './service'
 import type { UsageOverviewOpts, UsageLogsOpts } from './service/usage'
 import type { UsageOverview, UsageLogsPage, UsageKeys } from '../usage/repository'
+import type { ChatRecapFacade } from './service/recap-facade'
 import type { HistorySearchHit } from './repository-types'
 import type {
   FindFilesOptions,
@@ -45,7 +46,7 @@ import type { MiniAppCommandResultPayload } from './runtime/mini-app-command-reg
 // The service contract the chat HTTP routes depend on. Extracted from routes.ts
 // so that file holds the Hono route wiring and this one the (large) interface.
 
-export interface ChatRoutesService {
+export interface ChatRoutesService extends ChatRecapFacade {
   /** Claude Code's `statusLine` per conversation (`service/status-line.ts`). */
   statusLine?: { viewed(userId: string, sessionId: string): void }
   listSessions(userId: string): Promise<{ sessions: SessionSummary[] }>

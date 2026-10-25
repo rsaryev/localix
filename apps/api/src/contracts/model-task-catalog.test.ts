@@ -8,7 +8,11 @@ import {
 
 describe('shared model task catalog', () => {
   test('keeps every runtime auxiliary role visible to the model picker', () => {
-    expect(AUX_MODEL_TASKS.map((task) => task.key)).toEqual(['titleGeneration', 'inlineCompletion'])
+    expect(AUX_MODEL_TASKS.map((task) => task.key)).toEqual([
+      'titleGeneration',
+      'inlineCompletion',
+      'sessionRecap',
+    ])
     expect(MODEL_TASKS[0]).toMatchObject({ key: 'session', required: true })
   })
 
@@ -19,6 +23,7 @@ describe('shared model task catalog', () => {
       'session',
       'titleGeneration',
       'inlineCompletion',
+      'sessionRecap',
     ])
   })
 
@@ -45,5 +50,19 @@ describe('shared model task catalog', () => {
         'inlineCompletion',
       ),
     ).toBe(true)
+  })
+
+  test('session recaps are on until the person switches them off on their picker row', () => {
+    expect(MODEL_ROUTING_TASKS.find((task) => task.key === 'sessionRecap')).toMatchObject({
+      toggleable: true,
+      fallbackLabel: 'Use session model',
+    })
+    expect(isModelRoutingTaskEnabled(undefined, 'sessionRecap')).toBe(true)
+    expect(
+      isModelRoutingTaskEnabled(
+        { modelRouting: { sessionRecap: { enabled: false } } },
+        'sessionRecap',
+      ),
+    ).toBe(false)
   })
 })

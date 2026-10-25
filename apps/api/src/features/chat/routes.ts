@@ -7,6 +7,7 @@ import { createChatSkillsRoutes } from './routes-skills'
 import { createChatFilesRoutes } from './routes-files'
 import { createChatMessagesRoutes } from './routes-messages'
 import { createChatUsageRoutes } from './routes-usage'
+import { createChatRecapRoutes } from './routes-recap'
 export type { ChatRoutesService } from './routes-types'
 
 /**
@@ -21,6 +22,7 @@ export function createChatRoutes(service: ChatRoutesService) {
     .route('/', createChatFilesRoutes(service))
     .route('/', createChatMessagesRoutes(service))
     .route('/', createChatUsageRoutes(service))
+    .route('/', createChatRecapRoutes(service))
 
   routes.onError(defaultErrorHandler)
 

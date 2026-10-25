@@ -75,6 +75,13 @@ export interface StoredSystemNotice {
     | 'plan_dismissed'
     | 'plan_resumed'
     | 'plan_completed'
+    /**
+     * A ONE-LINE RECAP of the session so far (`features/chat/recap`), written when the person
+     * comes back after a break or asks for it with `/recap`. A record for the reader of the
+     * transcript only: it never becomes model context, so unlike every other kind it carries
+     * no system context binding (`carriesModelContext`).
+     */
+    | 'session_recap'
   tone: SystemNoticeTone
   text: string
   detail?: string

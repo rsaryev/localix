@@ -30,7 +30,7 @@ import type { AgentStreamEvent, PersistedMessage } from '../contracts'
 import { toPersistedMessage } from './message-envelope'
 import { noticeVisibility } from '../system-notice-audience'
 import type { SessionAgentRoute } from '../repository-types'
-import { systemNoticeBinding } from '../system-notice-bindings'
+import { carriesModelContext, systemNoticeBinding } from '../system-notice-bindings'
 
 /** Everything a notice needs to be written and published. */
 export interface SessionNoticeIo {
@@ -134,7 +134,9 @@ export async function recordSessionNotice(
         role: 'user',
         from: SYSTEM_PARTICIPANT,
         content: notice.text,
-        bindings: [systemNoticeBinding(notice, messageId, createdAt)],
+        ...(carriesModelContext(notice)
+          ? { bindings: [systemNoticeBinding(notice, messageId, createdAt)] }
+          : {}),
         // The same visibility rule the runtime writer uses: prose stays in the transcript while
         // the binding above carries the fact into deduplicated model context.
         ...noticeVisibility(notice),
