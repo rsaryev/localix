@@ -250,8 +250,10 @@ yet):
 | First page after a restart / warm / next page       | 4–15 ms / 3–7 ms / 3–4 ms                                |
 | Search p50 / p95 with meaning, through the HTTP API | 5–11 ms / 6–13 ms (first query 1.5 s: the model loading) |
 
-The budgets' tests (`budgets.test.ts`) generate 5,000 and 20,000 listings: first page 3.5 / 14 ms,
-search p95 9 / 22 ms, next page 0.7 / 1.6 ms, re-indexing a 2,300-entry source well under a second.
+The budgets' tests (`budgets.integration.test.ts`, run with `bun run test:integration`, never in the
+unit suite: wall-clock budgets on a shared CI runner under coverage measure the runner) generate
+5,000 and 20,000 listings: first page 3.5 / 14 ms, search p95 9 / 22 ms, next page 0.7 / 1.6 ms,
+re-indexing a 2,300-entry source well under a second.
 
 ## Related guides
 
