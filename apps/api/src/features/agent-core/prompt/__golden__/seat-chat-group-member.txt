@@ -180,8 +180,6 @@ Provider: openrouter
 
 # Conversation participants
 You are qa. Other participants (agents are addressed with @):
-- @human (Alex): the person you work with — Product owner
-  About them, in their words: Prefers short answers
 - @localix (leader)
 The leader is @localix: report to them, and send board or process problems to them.
 

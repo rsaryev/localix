@@ -1,7 +1,5 @@
 import type { createAgentsService } from '../features/agents/service'
-import { HUMAN_HANDLE } from '@localixai/agent/agents'
 import { canJoinConversation } from '../features/agents/policy'
-import { builtinAgentRecord } from '../features/agents/builtin'
 
 type AgentsService = ReturnType<typeof createAgentsService>
 
@@ -38,19 +36,6 @@ export function createAgentDirectoryPorts(agentsService: AgentsService) {
         enabled: agent.enabled,
         canJoinConversation: canJoinConversation(agent),
       }))
-    },
-    // The person is described from their own record; an unreadable registry falls back to the
-    // shipped one rather than dropping `@human` from the prompt.
-    resolveHuman: async (...args: Parameters<typeof agentsService.getHuman>) => {
-      const record = await agentsService.getHuman(...args).catch((error: unknown) => {
-        console.warn('[agents] human record unavailable for this run:', error)
-        return builtinAgentRecord(HUMAN_HANDLE)!
-      })
-      return {
-        ...(record.label ? { label: record.label } : {}),
-        description: record.description,
-        instructions: record.instructions,
-      }
     },
   }
 }

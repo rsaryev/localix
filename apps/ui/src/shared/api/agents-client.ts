@@ -1,6 +1,5 @@
 import { assertOk, client, unwrap } from './internal'
-import type { AgentRecord, AgentSummary, AgentRecordInput } from './contracts'
-import type { PublishRegistrationPolicy } from '@localixai/api/client'
+import type { AgentSummary, AgentRecordInput } from './contracts'
 
 /** '' / null → no query; otherwise the exact project scope the name lives in. */
 const scopeQuery = (projectId: string | null) => (projectId ? { projectId } : {})
@@ -13,15 +12,6 @@ const scopeQuery = (projectId: string | null) => (projectId ? { projectId } : {}
  * globally AND inside a project.
  */
 export const agentsApi = {
-  async publishAgentPolicy(agentId: string, projectId: string, input: PublishRegistrationPolicy) {
-    return unwrap(
-      await client.rpc.agents[':name']['policy-review'].$put({
-        param: { name: agentId },
-        query: scopeQuery(projectId),
-        json: input,
-      }),
-    )
-  },
   async createAgent(input: AgentRecordInput): Promise<AgentSummary> {
     return unwrap(await client.rpc.agents.$post({ json: input as never }))
   },
@@ -49,21 +39,6 @@ export const agentsApi = {
   async deleteAgent(name: string, projectId: string | null): Promise<void> {
     await assertOk(
       await client.rpc.agents[':name'].$delete({ param: { name }, query: scopeQuery(projectId) }),
-    )
-  },
-
-  /** The definition this installation ships for a system agent — read-only, writes nothing. */
-  async agentDefaults(name: string): Promise<AgentRecord> {
-    return unwrap(await client.rpc.agents[':name'].defaults.$get({ param: { name } }))
-  },
-
-  /** Drop the user's override of a system agent; the shipped definition applies again. */
-  async resetAgent(name: string, projectId?: string | null): Promise<AgentSummary> {
-    return unwrap(
-      await client.rpc.agents[':name'].reset.$post({
-        param: { name },
-        query: scopeQuery(projectId ?? null),
-      }),
     )
   },
 

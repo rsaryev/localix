@@ -15,8 +15,9 @@ const agent = agentSummarySchema.parse({
   scope: 'global',
   enabled: true,
   invocations: { chat: 'allow', automation: 'ask' },
-  source: 'local',
+  source: 'user',
   path: '',
+  editable: true,
 })
 
 describe('shared invocation decisions', () => {
@@ -138,21 +139,4 @@ describe('shared invocation decisions', () => {
     ).toEqual({ status: 'approval_changed' })
     expect(reads).toBe(6)
   })
-
-  test.each(['source_disabled', 'policy_pending'] as const)(
-    'preserves registration refusal %s instead of reporting policy denial',
-    async (unavailableReason) => {
-      const service = createAgentInvocationService(
-        async () => ({
-          all: [{ ...agent, enabled: false, unavailableReason }],
-          capabilitiesByAgent: new Map(),
-        }),
-        createInvocationRegistry(),
-      )
-      expect((await service.explainAgentAvailability('u', agent.record.id, 'chat')).status).toBe(
-        unavailableReason,
-      )
-      expect(await service.listInvocableAgents('u', 'chat')).toEqual([])
-    },
-  )
 })

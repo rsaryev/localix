@@ -19,7 +19,7 @@ interface AgentIdentityFieldsProps {
   error?: string
 }
 
-/** Who the agent is: its handle, its title, and its one-line description. */
+/** Who the agent is: its handle and its one-line description. */
 export function AgentIdentityFields({
   draft,
   editing,
@@ -46,7 +46,7 @@ export function AgentIdentityFields({
           readOnly={nameLocked}
         >
           <div className="flex min-w-0 items-center gap-3">
-            <MonogramAvatar identity={draft.name.trim()} label={draft.label} size={36} />
+            <MonogramAvatar identity={draft.name.trim()} size={36} />
             <Input
               size="xl"
               className="min-w-0 flex-1 font-mono"
@@ -56,20 +56,6 @@ export function AgentIdentityFields({
               onChange={(e) => patch({ name: e.target.value })}
             />
           </div>
-        </Field>
-        <Field
-          label="Title"
-          description="Shown instead of the handle."
-          optional
-          readOnly={!canEdit('label')}
-        >
-          <Input
-            size="xl"
-            placeholder="Code Reviewer"
-            value={draft.label}
-            readOnly={!canEdit('label')}
-            onChange={(e) => patch({ label: e.target.value })}
-          />
         </Field>
       </SettingsFieldGrid>
 

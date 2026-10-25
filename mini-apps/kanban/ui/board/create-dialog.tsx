@@ -19,6 +19,7 @@ import { Select } from '@localixai/kit/select'
 import { Textarea } from '@localixai/kit/textarea'
 
 import type { KanbanTask } from '../../shared/contracts'
+import { HUMAN_ASSIGNEE_ID } from '../../shared/rules'
 import { PRIORITY_PRESENTATION, type PriorityBucket } from '../model/priorityPresentation'
 import { useBoardAgents } from '../model/useBoardAgents'
 import { AttachmentField, DependencyField, FIELD_LABEL } from './create-dialog-fields'
@@ -52,6 +53,8 @@ export function CreateTaskDialog({
   const directory = useBoardAgents(sessionId)
   const agentOptions = [
     { value: '', label: directory.loading ? 'Loading agents…' : 'Unassigned' },
+    // The directory lists agents only; a card can still wait on the person.
+    { value: HUMAN_ASSIGNEE_ID, label: 'You' },
     ...directory.agents.map((a) => ({ value: a.id, label: `@${a.handle}` })),
   ]
 

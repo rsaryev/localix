@@ -34,7 +34,6 @@ import type { UiLocationCatalogService } from '../../ui-locations/service'
 import type { WorkRegistry } from '../../work/registry'
 import type { AgentNotifications } from '../../notifications/producers'
 import type { AgentManagementPort } from '../../agents/service-contract'
-import type { HumanProfile } from '../../agent-core/prompt/sections/conversation'
 import type { ModsHost } from '../../mods/host'
 
 export interface RunnerDeps {
@@ -235,8 +234,6 @@ export interface RunnerDeps {
       canJoinConversation: boolean
     }[]
   >
-  /** The person's record (`@human`) as the scope resolves it, for the prompt and the board. */
-  resolveHuman?: (userId: string, projectId: string | null) => Promise<HumanProfile>
   now?: () => string
 }
 

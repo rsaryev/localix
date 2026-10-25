@@ -9,12 +9,12 @@ import {
 } from './agent-mentions'
 
 test('no agent may answer to a reserved address', () => {
-  // An agent handled `all` or `human` would be unaddressable or routed in the person's place.
-  for (const reserved of ['human', 'Human', 'ALL']) {
+  // An agent handled `all` would be unaddressable.
+  for (const reserved of ['all', 'ALL']) {
     expect(agentHandleSchema.safeParse(reserved).success).toBe(false)
   }
-  // Only the two conversation addresses are reserved.
-  for (const handle of ['allison', 'user', 'human-agent'])
+  // Only `@all` is reserved: the person is no address, so `human` is an ordinary name.
+  for (const handle of ['allison', 'user', 'human', 'human-agent'])
     expect(agentHandleSchema.safeParse(handle).success).toBe(true)
 })
 
@@ -77,9 +77,7 @@ describe('agentNameSpans — weak references in prose', () => {
   })
 
   test('does not reinterpret explicit mentions, substrings, emails, or reserved conversation words', () => {
-    expect(
-      agentNameSpans('@pm pmo qa@example.com all human', ['pm', 'qa', 'all', 'human']),
-    ).toEqual([])
+    expect(agentNameSpans('@pm pmo qa@example.com all', ['pm', 'qa', 'all'])).toEqual([])
   })
 })
 

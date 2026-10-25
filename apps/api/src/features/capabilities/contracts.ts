@@ -99,15 +99,6 @@ export const capabilityRulesSchema = z.object({
    * or an extension owns.
    */
   defaults: z.array(capabilityRuleSchema).optional(),
-  registration: z
-    .strictObject({
-      agentId: z.string(),
-      projectId: z.string(),
-      sourceName: z.string(),
-      revision: z.number().int().nonnegative(),
-      proposedRules: z.array(capabilityRuleSchema),
-    })
-    .optional(),
 })
 export type CapabilityRules = z.infer<typeof capabilityRulesSchema>
 

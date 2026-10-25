@@ -40,11 +40,10 @@ const directoryAgent = (id: string, extra: Record<string, unknown> = {}) =>
     invocations: { chat: 'allow' },
   }) as never
 
-/** The registry: one more agent that could join, the person's own record, and a disabled one. */
+/** The registry: one more agent that could join, and a disabled one. */
 const directory = [
   directoryAgent('localix'),
   directoryAgent('qa'),
-  directoryAgent('human', { kind: 'human' }),
   { ...(directoryAgent('off') as object), enabled: false } as never,
 ]
 
@@ -131,7 +130,7 @@ describe('the picker lists every agent and always offers All', () => {
       await ui.render(<Picker seated={[seat('localix')]} choices={{ agents: {} }} />)
       expect(ui.host.querySelector('[data-testid="party-route-row"]')).not.toBeNull()
       expect(ui.host.querySelector('[data-testid="party-route-chosen"]')).toBeNull()
-      // The agent that could join is listed, marked as not invited; @human and a disabled one are not.
+      // The agent that could join is listed, marked as not invited; a disabled one is not.
       expect(rowText(ui.host, 'QA')).toContain('not invited')
       expect(ui.host.querySelector('button[aria-label="Configure HUMAN"]')).toBeNull()
       expect(ui.host.querySelector('button[aria-label="Configure OFF"]')).toBeNull()

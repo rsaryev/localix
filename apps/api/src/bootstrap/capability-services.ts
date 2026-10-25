@@ -140,22 +140,6 @@ export function createCapabilityServices({
       // The agent IS the scope now, and an unnamed one is the agent that always exists —
       // the same answer the run would reach, so the editor and the turn cannot diverge.
       const scope = target.agentId || DEFAULT_AGENT_ID
-      const review = target.agentId
-        ? await agentsService.registrationPolicy.reviewIfRegistered(userId, target.agentId)
-        : null
-      if (review)
-        return {
-          scope,
-          revision: review.policyRevision,
-          rules: review.currentRules,
-          registration: {
-            agentId: review.agentId,
-            projectId: review.projectId,
-            sourceName: review.sourceName,
-            revision: review.registrationRevision,
-            proposedRules: review.proposedRules,
-          },
-        }
       // A system role's shipped rules travel with its own list, so the editor can say
       // whether the list still matches what we ship without a second round trip.
       const defaults = builtinAgentPresetFor(scope)

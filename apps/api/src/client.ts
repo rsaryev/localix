@@ -219,7 +219,6 @@ export type { CapabilitySnapshot, CapabilityToolSurface } from './contracts/capa
 // vocabulary from here pulled `features/chat/contracts` and the mini-app-sdk BACKEND into
 // the browser graph, where `node:dns` and `node:path` are externalized and blow up at
 // runtime. It is served from the `@localixai/api/tip-contracts` leaf instead.
-export type { PublishRegistrationPolicy } from './features/agents/registration-policy'
 // The tool-GC report (`GET /rpc/tools/gc`). Separate from the snapshot on purpose — see
 // features/tools/gc-report.ts.
 export type { ToolCounts, ToolGcReport } from './features/tools/gc-report'

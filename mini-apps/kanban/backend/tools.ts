@@ -52,7 +52,10 @@ export function createKanbanTools(ctx: MiniAppContext, boards: BoardService) {
   const createEntry = z.object({
     title: z.string().describe('The card title.'),
     description: z.string().optional(),
-    agent: z.string().optional().describe('Agent id or handle (with or without @) to assign.'),
+    agent: z
+      .string()
+      .optional()
+      .describe('Agent id or handle (with or without @) to assign, or "user" for the person.'),
     kind: z.enum(['epic', 'task']).optional(),
     parent: z.string().optional().describe('The epic this task belongs to (id or title).'),
     depends_on: z
@@ -68,7 +71,10 @@ export function createKanbanTools(ctx: MiniAppContext, boards: BoardService) {
     query: z.string().optional().describe('For "search": words every match contains.'),
     title: z.string().optional(),
     description: z.string().optional(),
-    agent: z.string().optional().describe('Agent id or handle (with or without @) to assign.'),
+    agent: z
+      .string()
+      .optional()
+      .describe('Agent id or handle (with or without @) to assign, or "user" for the person.'),
     kind: z.enum(['epic', 'task']).optional(),
     parent: z.string().optional().describe('The epic the card belongs to (id or title).'),
     status: z
@@ -131,7 +137,7 @@ export function createKanbanTools(ctx: MiniAppContext, boards: BoardService) {
       throw new BoardRefusal(
         409,
         'human_card',
-        `${task.id} is for @human; it waits for the person.`,
+        `${task.id} is assigned to the person; it waits for them.`,
       )
     const leads = leadsBoard(speaker)
     const done = (content: string, written: KanbanTask): Result => ({

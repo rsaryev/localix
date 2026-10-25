@@ -4,9 +4,14 @@ import { z } from 'zod'
 import { createDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import { createCapabilitySourceRepository } from '../capabilities/source-repository'
-import { agentContributionSchema } from '../agents/contribution'
 import { createContributionKindRegistry } from './contribution-kinds'
 import { createContributionStore } from './contribution-store'
+
+/** A typed payload for the tests' one contribution kind. */
+const agentContributionSchema = z.object({
+  definition: z.object({ handle: z.string(), instructions: z.string() }),
+  policyProposals: z.array(z.unknown()).optional(),
+})
 
 const databases: ReturnType<typeof createDatabase>[] = []
 afterEach(async () => {

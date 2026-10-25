@@ -1,6 +1,5 @@
 import { agentPolicy, canEditField, type AgentField } from '@localixai/api/agent-policy'
-import type { AgentRecord, AgentRecordInput, AgentSummary } from '@/shared/api/contracts'
-import { Button } from '@localixai/kit/button'
+import type { AgentRecordInput, AgentSummary } from '@/shared/api/contracts'
 import { Field } from '@localixai/kit/field'
 import { Input } from '@localixai/kit/input'
 import { Textarea } from '@localixai/kit/textarea'
@@ -23,24 +22,12 @@ interface AgentEditorProps {
   busy: string | null
   onSave: (input: AgentRecordInput) => Promise<void>
   onCancel: () => void
-  /**
-   * Read the definition this installation SHIPS for this agent. It fills the fields and
-   * nothing else: restoring defaults is an edit the user then reviews and saves, not a write
-   * that happens under the click — there was nothing on screen to confirm it before.
-   */
-  onLoadDefaults?: () => Promise<AgentRecord>
-  /**
-   * Remove the user's override, which is what SAVING restored defaults means: writing the
-   * shipped text back as an override would leave the agent marked customized forever.
-   */
-  onDropOverride?: () => Promise<void>
 }
 
 /**
  * The agent's DEFINITION — four sections: who it is, what it runs on, what it says, and how far
- * it may go. The same form creates and edits, and the same form edits an agent imported from
- * another tool or a system agent: the record is one schema, so the form is one form. Its
- * decisions — dirty, defaults, what a save does — are `useAgentEditorForm`; what is left here is
+ * it may go. The same form creates and edits,. Its
+ * decisions — dirty, what a save does — are `useAgentEditorForm`; what is left here is
  * the shape on screen.
  *
  * It draws NO heading and offers no verb that acts on the record: it is one tab of the profile
@@ -49,16 +36,8 @@ interface AgentEditorProps {
  * one, for the same reason — this form is what the record SAYS, and that is a ceiling composed
  * with the installation's and the project's.
  */
-export function AgentEditor({
-  agent,
-  initialHandle,
-  busy,
-  onSave,
-  onCancel,
-  onLoadDefaults,
-  onDropOverride,
-}: AgentEditorProps) {
-  const form = useAgentEditorForm({ agent, initialHandle, onSave, onLoadDefaults, onDropOverride })
+export function AgentEditor({ agent, initialHandle, busy, onSave, onCancel }: AgentEditorProps) {
+  const form = useAgentEditorForm({ agent, initialHandle, onSave })
   const { draft, patch } = form
   const editing = Boolean(agent)
   // One table, read here and enforced by `updateAgent`. A new agent has no class yet, so
@@ -78,30 +57,10 @@ export function AgentEditor({
     <SettingsRecordPage
       busy={saving}
       busyLabel={editing ? 'Saving agent' : 'Creating agent'}
-      submitLabel={
-        form.backToDefaults && onDropOverride
-          ? 'Save defaults'
-          : editing
-            ? 'Save changes'
-            : 'Create agent'
-      }
+      submitLabel={editing ? 'Save changes' : 'Create agent'}
       submitDisabled={!form.dirty}
       error={form.formError}
       notice={form.notice}
-      // Restore stands with Cancel and Save because it is about THIS form — it fills the
-      // fields back in. Keep its place while defaults load and after restoring them.
-      extraAction={
-        onLoadDefaults ? (
-          <Button
-            size="xl"
-            variant="ghost"
-            onClick={form.restore}
-            disabled={saving || !form.canRestore}
-          >
-            Restore
-          </Button>
-        ) : undefined
-      }
       onSubmit={() => void form.save()}
       onCancel={onCancel}
     >

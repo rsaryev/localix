@@ -1,7 +1,6 @@
 import { InvalidRequestError, NotFoundError } from '../../../lib/domain-errors'
-import { builtinAgentId, isHumanAgent, type AgentDefinition } from '@localixai/agent/agents'
+import { builtinAgentId, type AgentDefinition } from '@localixai/agent/agents'
 import { DEFAULT_AGENT_HANDLE } from '../../../db/participant'
-import { builtinAgentRecord } from '../../agents/builtin'
 import type { ModelRoute, SessionAgentRoute } from '../repository-types'
 
 /** A handle is accepted only when choosing a new assignment. An ID is never a handle. */
@@ -28,21 +27,11 @@ export type ResolveSessionAgent = (
 export type ResolvedSessionAgent = Pick<SessionAgentRoute, 'agentId' | 'handle'> &
   Partial<ModelRoute>
 
-/** Standalone hosts have only shipped definitions. No filesystem or handle fallback for IDs. */
+/** Standalone hosts know only the main loop. No filesystem or handle fallback for IDs. */
 const resolveBuiltin: ResolveSessionAgent = async (_userId, selection) => {
-  if (selection.agentId !== undefined) {
-    const prefix = 'builtin:'
-    if (!selection.agentId.startsWith(prefix)) return null
-    const record = runnableBuiltin(selection.agentId.slice(prefix.length))
-    return record?.id === selection.agentId ? record : null
-  }
-  return runnableBuiltin(selection.handle)
-}
-
-/** The person's record is shipped too, but it is never a session's participant. */
-const runnableBuiltin = (handle: string) => {
-  const record = builtinAgentRecord(handle)
-  return record && !isHumanAgent(record) ? record : null
+  const main = { id: builtinAgentId(DEFAULT_AGENT_HANDLE), handle: DEFAULT_AGENT_HANDLE }
+  if (selection.agentId !== undefined) return selection.agentId === main.id ? main : null
+  return selection.handle.toLowerCase() === main.handle ? main : null
 }
 
 /** Resolve before persistence; existing participants retain their historical snapshots on edit. */

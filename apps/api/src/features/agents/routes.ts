@@ -6,34 +6,22 @@ import { defaultErrorHandler } from '../../lib/http'
 import { ApiError } from '../../lib/errors'
 import type { AppContext } from '../../app'
 import {
-  publishRegistrationPolicySchema,
-  type createRegistrationPolicyService,
-} from './registration-policy'
-import { contributionReadErrorSchema, type ContributionReadError } from '../ext/contribution-reader'
-import {
   agentRecordInputSchema,
-  agentRecordSchema,
   agentScopeQuerySchema,
   agentSummarySchema,
   duplicateAgentRequestSchema,
-  type AgentRecord,
   type AgentRecordInput,
   type AgentSummary,
 } from './contracts'
 
 /**
- * Managed-Agents registry routes (`/rpc/agents`), mounted near `/rpc/plugins`.
- * Ownership-gated by userId (the app middleware sets it). CRUD over the
- * file-backed registry + its `agents` ext-state enable rows. Listing and the enable
- * toggle live on the capability endpoints; the per-name routes here carry the scope as
- * a `projectId` query parameter because the same name may exist globally AND in a project.
+ * Agent routes (`/rpc/agents`), mounted near `/rpc/plugins`.
+ * Ownership-gated by userId (the app middleware sets it). CRUD over the Claude Code agent files.
+ * Listing and the enable toggle live on the capability endpoints; the per-name routes here carry
+ * the scope as a `projectId` query parameter because the same name may exist for the person AND in
+ * a project.
  */
 export interface AgentsRoutesService {
-  registrationPolicy: ReturnType<typeof createRegistrationPolicyService>
-  listRegistrationDiagnostics(
-    userId: string,
-    projectId?: string | null,
-  ): Promise<ContributionReadError[]>
   getAgent(userId: string, name: string, projectId?: string | null): Promise<AgentSummary | null>
   createAgent(userId: string, input: AgentRecordInput): Promise<AgentSummary>
   updateAgent(
@@ -43,8 +31,6 @@ export interface AgentsRoutesService {
     projectId?: string | null,
   ): Promise<AgentSummary>
   deleteAgent(userId: string, name: string, projectId?: string | null): Promise<void>
-  resetAgent(userId: string, name: string, projectId?: string | null): Promise<AgentSummary>
-  agentDefaults(name: string): AgentRecord | null
   duplicateAgent(
     userId: string,
     name: string,
@@ -59,43 +45,6 @@ export function createAgentsRoutes(service: AgentsRoutesService) {
   const app = new Hono<AppContext>()
 
   const routes = app
-    .get(
-      '/:name/policy-review',
-      zValidator('param', nameParamSchema),
-      zValidator('query', agentScopeQuerySchema),
-      async (c) => {
-        return c.json(
-          await service.registrationPolicy.review(
-            c.get('userId'),
-            c.req.valid('query').projectId ?? '',
-            c.req.valid('param').name,
-          ),
-        )
-      },
-    )
-    .put(
-      '/:name/policy-review',
-      zValidator('param', nameParamSchema),
-      zValidator('query', agentScopeQuerySchema),
-      zValidator('json', publishRegistrationPolicySchema),
-      async (c) => {
-        return c.json(
-          await service.registrationPolicy.publish(
-            c.get('userId'),
-            c.req.valid('query').projectId ?? '',
-            c.req.valid('param').name,
-            c.req.valid('json'),
-          ),
-        )
-      },
-    )
-    .get('/registry/diagnostics', zValidator('query', agentScopeQuerySchema), async (c) => {
-      const diagnostics = await service.listRegistrationDiagnostics(
-        c.get('userId'),
-        c.req.valid('query').projectId,
-      )
-      return c.json({ diagnostics: z.array(contributionReadErrorSchema).parse(diagnostics) })
-    })
     .post('/', zValidator('json', agentRecordInputSchema), async (c) => {
       const summary = await service.createAgent(c.get('userId'), c.req.valid('json'))
       return c.json(agentSummarySchema.parse(summary), 201)
@@ -138,27 +87,6 @@ export function createAgentsRoutes(service: AgentsRoutesService) {
         const { projectId } = c.req.valid('query')
         await service.deleteAgent(c.get('userId'), name, projectId ?? null)
         return c.body(null, 204)
-      },
-    )
-    // Read-only, and deliberately not a variant of `/reset`: the editor asks for the shipped
-    // definition to PUT IN ITS FIELDS, and the user still decides by saving. Removing the
-    // override is what the save does.
-    .get('/:name/defaults', zValidator('param', nameParamSchema), async (c) => {
-      const record = service.agentDefaults(c.req.valid('param').name)
-      if (!record) throw new ApiError(404, 'agent_not_builtin', 'This agent ships no default.')
-      return c.json(agentRecordSchema.parse(record), 200)
-    })
-    .post(
-      '/:name/reset',
-      zValidator('param', nameParamSchema),
-      zValidator('query', agentScopeQuerySchema),
-      async (c) => {
-        const summary = await service.resetAgent(
-          c.get('userId'),
-          c.req.valid('param').name,
-          c.req.valid('query').projectId,
-        )
-        return c.json(agentSummarySchema.parse(summary), 200)
       },
     )
     .post(

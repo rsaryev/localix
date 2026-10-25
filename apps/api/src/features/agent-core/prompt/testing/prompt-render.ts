@@ -8,7 +8,7 @@
 import type { ScriptSandbox } from '@localixai/agent/runtime'
 import { resolveRunProfile, type RunProfile } from '../../run-shape'
 import { DEFAULT_AGENT_HANDLE } from '../../../../db/participant'
-import { builtinAgentRecord } from '../../../agents/builtin'
+import { BUILTIN_AGENT_TYPES } from '../../../agents/catalog/builtin-types'
 import {
   createRuntimeToolRegistry,
   type OptionalToolPorts,
@@ -99,10 +99,10 @@ export function fullPrompt(
   // One shipped record answers for every shape now that the task agents are retired: the
   // goldens lock the SHAPE's default surface, and the identity behind them only has to be a
   // real record with real instructions.
-  const agent = builtinAgentRecord(DEFAULT_AGENT_HANDLE)
+  const agent = BUILTIN_AGENT_TYPES.find((type) => type.fullName === DEFAULT_AGENT_HANDLE)
   const profile = resolveRunProfile(
     { sessionKind: SHAPE_SESSION_KIND[profileKey] },
-    agent ? { prompt: agent.instructions } : undefined,
+    agent ? { prompt: agent.prompt } : undefined,
   )
   // Production parity (runtime-tools.ts): a session with active loops keeps `loops`
   // direct — the loops section instructs dynamic loops to call `loops.reschedule`.

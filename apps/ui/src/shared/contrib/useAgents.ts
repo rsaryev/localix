@@ -31,7 +31,6 @@ export interface AgentsData {
   /** Copies a record under a new name in the same scope. */
   duplicate: (a: AgentSummary, newName: string) => Promise<void>
   /** Drops the user's override of a system agent so the shipped definition applies again. */
-  reset: (a: AgentSummary) => Promise<void>
 }
 
 /**
@@ -122,12 +121,6 @@ export function useAgents(scope: string): AgentsData {
       backendClient.duplicateAgent(a.record.id, newName, a.projectId || null),
     )
 
-  const reset = async (a: AgentSummary) => {
-    await write(a.record.id, `Restoring ${a.record.label || a.record.handle}`, () =>
-      backendClient.resetAgent(a.record.id, a.projectId || null),
-    )
-  }
-
   return {
     agents: registry.rows,
     loading: registry.loading,
@@ -140,6 +133,5 @@ export function useAgents(scope: string): AgentsData {
     update,
     remove,
     duplicate,
-    reset,
   }
 }

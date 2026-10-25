@@ -8,7 +8,6 @@ import { useCapabilitySnapshot } from '@/shared/contrib/useCapabilitySnapshot'
 import { usePermissionRules } from '../../model/usePermissionRules'
 import { PermissionEditor, PermissionLegend } from './PermissionEditor'
 import { SettingsSection, SettingsSurface } from '../SettingsScaffold'
-import { RegistrationPolicyReview } from './RegistrationPolicyReview'
 import { useScopeActionVocabulary } from './scopeActionVocabulary'
 
 /**
@@ -34,7 +33,7 @@ export function PermissionRulesView({ scope }: { scope: string }) {
   const agentScope = scopeAgentId(scope)
   const [confirmReset, setConfirmReset] = useState(false)
 
-  const applyLabel = rules.registration ? 'Publish' : 'Apply'
+  const applyLabel = 'Apply'
   const canApply = rules.dirty && !rules.saving && !rules.loadError
   const shipped = useMemo(() => rules.defaults, [rules.defaults])
 
@@ -77,15 +76,6 @@ export function PermissionRulesView({ scope }: { scope: string }) {
           ) : undefined
         }
       >
-        {rules.registration && (
-          <RegistrationPolicyReview
-            registration={rules.registration}
-            busy={rules.saving}
-            canPublish={!rules.loadError}
-            onAdd={() => rules.edit([...rules.rules, ...rules.registration!.proposedRules])}
-            onPublish={() => void rules.apply()}
-          />
-        )}
         {/* Nothing between the heading and the rules: the apply control rides the heading
             (see `actions` above), so an edit is never one scroll away from what commits it. */}
         <SettingsSurface>
@@ -106,14 +96,9 @@ export function PermissionRulesView({ scope }: { scope: string }) {
             Not applied yet — {applyLabel} to put these rules in force.
           </p>
         )}
-        {rules.published && (
-          <p role="status" className="text-xs text-text-soft">
-            Reviewed policy published.
-          </p>
-        )}
         {rules.saving && (
           <ActivitySignal
-            label={rules.registration ? 'Publishing permission rules' : 'Saving permission rules'}
+            label="Saving permission rules"
             className="text-xs text-text-soft"
             labelClassName="min-w-0"
           />

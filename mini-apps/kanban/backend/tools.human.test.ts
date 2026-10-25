@@ -24,10 +24,8 @@ function board() {
     z,
     sessionStorage: { resolveDataDir: async (_u: string, s: string) => join(root, s) },
     agents: {
-      list: async () => [
-        { id: 'a:lead', handle: 'lead' },
-        { id: 'user', handle: 'human', kind: 'human', description: 'Manual QA' },
-      ],
+      // The directory lists agents only; the person is not one of them.
+      list: async () => [{ id: 'a:lead', handle: 'lead' }],
       notifyHuman: async (_u: string, sessionId: string, notice: { key: string; text: string }) => {
         told.push({ sessionId, ...notice })
       },
@@ -43,11 +41,11 @@ function board() {
   return { act, told }
 }
 
-test('a card assigned to @human tells the person and cannot be taken or completed', async () => {
+test('a card assigned to the person tells the person and cannot be taken or completed', async () => {
   const { act, told } = board()
   await act({
     action: 'create',
-    creates: [{ title: 'Verify the release by hand', agent: 'human' }],
+    creates: [{ title: 'Verify the release by hand', agent: 'user' }],
   })
   await new Promise((resolve) => setTimeout(resolve, 0))
   expect(told).toEqual([
@@ -60,15 +58,15 @@ test('a card assigned to @human tells the person and cannot be taken or complete
   for (const action of ['take', 'complete']) {
     const refused = await act({ action, task_id: 'LX-1' })
     expect(refused.isError).toBe(true)
-    expect(refused.content).toBe('LX-1 is for @human; it waits for the person.')
+    expect(refused.content).toBe('LX-1 is assigned to the person; it waits for them.')
   }
 })
 
-test('reassigning a card to @human tells the person once', async () => {
+test('reassigning a card to the person tells the person once', async () => {
   const { act, told } = board()
   await act({ action: 'create', creates: [{ title: 'Pick the copy', agent: 'lead' }] })
-  await act({ action: 'update', task_id: 'LX-1', agent: 'human' })
-  await act({ action: 'update', task_id: 'LX-1', agent: 'human' })
+  await act({ action: 'update', task_id: 'LX-1', agent: 'user' })
+  await act({ action: 'update', task_id: 'LX-1', agent: 'user' })
   await new Promise((resolve) => setTimeout(resolve, 0))
   expect(told.map((notice) => notice.key)).toEqual(['kanban:LX-1'])
 })

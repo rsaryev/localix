@@ -4,8 +4,8 @@ import { agentProvenance } from './agentProvenance'
 
 const agent = (over: Partial<AgentSummary> = {}): AgentSummary =>
   ({
-    record: { id: 'builtin:lead', handle: 'lead', label: 'Tech Lead', instructions: 'x' },
-    builtin: true,
+    record: { id: 'builtin:lead', handle: 'lead', instructions: 'x' },
+    editable: false,
     enabled: true,
     source: 'builtin',
     path: '',
@@ -15,22 +15,14 @@ const agent = (over: Partial<AgentSummary> = {}): AgentSummary =>
     ...over,
   }) as AgentSummary
 
-test('a profile explains extension ownership and the scope of shipped definition edits', () => {
-  // An extension owns this definition, so the fields are read-only and the line says where to
-  // change it instead.
+test('a profile says where a read-only definition comes from and how to change it', () => {
+  expect(agentProvenance(agent({ source: 'plugin:review-pack' }))).toContain('review-pack')
+  expect(agentProvenance(agent({ source: 'managed' }))).toContain('organization')
+  expect(agentProvenance(agent())).toContain('Copy it to Yours')
+  // A file the person owns says nothing: the fields take the edit.
   expect(
     agentProvenance(
-      agent({
-        registration: { sourceId: 'x', sourceName: 'review-pack', key: 'lead', revision: 1 },
-      } as Partial<AgentSummary>),
+      agent({ source: 'user', editable: true, path: '/home/u/.claude/agents/lead.md' }),
     ),
-  ).toContain('review-pack')
-
-  // A system agent you may override says nothing: the fields take the edit, and a sentence
-  // about overrides above them is one the reader steps over on every visit.
-  expect(agentProvenance(agent())).toContain('sessions without a project')
-  expect(
-    agentProvenance(agent({ source: 'user', path: '/home/u/.localix/agents/lead.json' })),
-  ).toContain('permission rules follow this agent')
-  expect(agentProvenance(agent({ projectId: 'p', scope: 'project' }))).toContain('in this project')
+  ).toBeUndefined()
 })

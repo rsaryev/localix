@@ -7,8 +7,8 @@ import {
 import { stableStringify } from '@localixai/agent'
 import { createHash } from 'node:crypto'
 import { ApiError, errorMessage } from '../../lib/errors'
-import { createNativeAgent } from './create-native-agent'
-import { agentRecordInputSchema } from './contracts'
+import { createAgentFile, type CreatePorts } from './create'
+import { agentRecordInputSchema, type AgentSummary } from './contracts'
 import type {
   AgentsService,
   AgentCreationOrigin,
@@ -25,15 +25,16 @@ type CreationMark = AgentCreationOrigin & {
   batchOperationId?: string
   batchFingerprint?: string
 }
-type Source = NonNullable<Parameters<typeof createNativeAgent>[3]>
+type Source = NonNullable<Parameters<typeof createAgentFile>[3]>
 
 /** Single and batch writes use the same scope lock and immutable operation identities. */
 export function createAgentAuthoring(
-  ports: Parameters<typeof createNativeAgent>[0] & {
+  ports: CreatePorts & {
+    find(userId: string, name: string, projectId: string): Promise<AgentSummary | undefined>
     sources: CapabilitySourceRepository
     rules: VersionedCapabilityRuleRepository
   },
-  serialize: <T>(key: string, run: () => Promise<T>) => Promise<T>,
+  exclusive: <T>(userId: string, work: () => Promise<T>) => Promise<T>,
 ): Pick<AgentsService, 'createAgentFromAgent' | 'createAgentsFromAgent'> {
   const scopeOf = (origin: AgentCreationOrigin) => {
     if (!origin.agentId || !origin.sessionId || !origin.operationId) {
@@ -86,7 +87,7 @@ export function createAgentAuthoring(
         'The earlier creation is unavailable; inspect the registry before retrying',
       )
     }
-    return createNativeAgent(
+    return createAgentFile(
       ports,
       userId,
       agentRecordInputSchema.parse({ ...input, projectId: scope }),
@@ -99,15 +100,13 @@ export function createAgentAuthoring(
   return {
     async createAgentFromAgent(userId, raw, origin) {
       const input = agentAuthoredBlueprintSchema.parse(raw)
-      const scope = scopeOf(origin)
-      return serialize(JSON.stringify([userId, scope]), () =>
-        publish(userId, input, origin, () => sourceOf(userId, origin)),
-      )
+      scopeOf(origin)
+      return exclusive(userId, () => publish(userId, input, origin, () => sourceOf(userId, origin)))
     },
     async createAgentsFromAgent(userId, raw, origin) {
       const inputs = agentAuthoredBatchSchema.parse(raw)
       const scope = scopeOf(origin)
-      return serialize(JSON.stringify([userId, scope]), async () => {
+      return exclusive(userId, async () => {
         const batch = {
           batchOperationId: origin.operationId,
           batchFingerprint: fingerprintOf(inputs),

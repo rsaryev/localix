@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import { agentPolicy } from '@localixai/api/agent-policy'
-import { backendClient } from '@/shared/api/client'
 import { Button } from '@localixai/kit/button'
 import { ConfirmDialog } from '@localixai/kit/confirm-dialog'
 import { EmptyHint, LoadingHint } from '@localixai/kit/empty-hint'
@@ -49,8 +48,7 @@ export function AgentProfileTab({
   section,
   sectionRequestId,
 }: AgentProfilePayload) {
-  const { agents, loading, error, busy, refresh, create, update, remove, reset } =
-    useAgents(projectId)
+  const { agents, loading, error, busy, refresh, create, update, remove } = useAgents(projectId)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [tab, setTab] = useState<AgentProfileTabId>(section ?? 'definition')
   useEffect(() => {
@@ -165,21 +163,6 @@ export function AgentProfileTab({
               )
             }}
             onCancel={closeSelf}
-            {...(agent?.builtin
-              ? {
-                  // A system agent can always ask for its shipped text back — the click only
-                  // FILLS THE FIELDS. Dropping the override is the save, and there is only one
-                  // to drop once the agent has been customized.
-                  onLoadDefaults: () => backendClient.agentDefaults(agent.record.handle),
-                  ...(agent.source !== 'builtin'
-                    ? {
-                        onDropOverride: async () => {
-                          await reset(agent)
-                        },
-                      }
-                    : {}),
-                }
-              : {})}
           />
         </div>
       </div>

@@ -5,7 +5,7 @@ import {
   AGENT_HANDLE_PATTERN,
 } from '@localixai/agent/agents'
 
-/** Native definition; registry state and adapter provenance live outside this value. */
+/** A Claude Code agent file read as a record; access rules and identity live outside this value. */
 export const agentRecordSchema = agentDefinitionSchema
 export type AgentRecord = z.infer<typeof agentRecordSchema>
 
@@ -16,7 +16,7 @@ export const agentRecordInputSchema = agentBlueprintSchema.extend({
 })
 export type AgentRecordInput = z.infer<typeof agentRecordInputSchema>
 
-/** One materialized registry entry returned to the UI: definition + enable-state + provenance. */
+/** One catalog entry returned to the UI: definition + enable-state + where it comes from. */
 export const agentSummarySchema = z.object({
   record: agentRecordSchema,
   /** '' = global; otherwise the project id. */
@@ -24,25 +24,12 @@ export const agentSummarySchema = z.object({
   scope: z.enum(['global', 'project']),
   enabled: z.boolean(),
   invocations: z.record(z.string(), z.enum(['allow', 'ask', 'deny'])),
-  /** 'builtin' (served from code), 'local' (authored here) or `imported:<sourceId>`. */
+  /** 'builtin', 'managed', 'project', 'user' or `plugin:<name>`: where the definition comes from. */
   source: z.string(),
-  /** Absolute path of the definition file on disk; '' for a builtin with no override. */
+  /** Absolute path of the agent file; '' for a plugin's or a built-in type. */
   path: z.string(),
-  /**
-   * A system definition exists under this name. With `source: 'builtin'` the record IS that
-   * definition; with any other source the user's file overrides it and can be reset.
-   */
-  builtin: z.boolean().default(false),
-  /** Registration ownership belongs to the catalog, never to the authored definition. */
-  registration: z
-    .strictObject({
-      sourceId: z.string(),
-      sourceName: z.string(),
-      key: z.string(),
-      revision: z.number().int().nonnegative(),
-    })
-    .optional(),
-  unavailableReason: z.enum(['source_disabled', 'policy_pending']).optional(),
+  /** A file the person owns: its Definition is saved in place. The rest is copied to Yours. */
+  editable: z.boolean(),
 })
 export type AgentSummary = z.infer<typeof agentSummarySchema>
 

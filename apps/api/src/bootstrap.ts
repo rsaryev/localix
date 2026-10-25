@@ -288,6 +288,8 @@ export async function bootstrap(
     skillsCuratorService,
     pluginService,
     miniAppService,
+    agentsService,
+    resolveProjectCwd,
     chatService,
     maintainStorage: createStorageMaintenance({
       db,

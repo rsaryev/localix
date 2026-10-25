@@ -1,4 +1,3 @@
-import { isHumanAgent, type AgentKind } from '@localixai/agent/agents'
 import { canJoinConversation } from '@localixai/api/agent-policy'
 import type {
   AgentSummary,
@@ -12,7 +11,6 @@ import type { ParticipantRow } from './ModelTaskColumn'
 /** The registry facts a participant row shows: its name, turn ceiling and own model. */
 export interface ParticipantRecord {
   label?: string
-  kind?: AgentKind
   limits?: { maxTurns?: number }
   modelPreference?: { model?: string }
 }
@@ -63,12 +61,7 @@ export function participantRows(
   }))
   const seatedIds = new Set(seated.map((row) => row.agentId))
   const others = (invitable?.agents ?? [])
-    .filter(
-      (agent) =>
-        !seatedIds.has(agent.record.id) &&
-        !isHumanAgent(agent.record) &&
-        canJoinConversation(agent),
-    )
+    .filter((agent) => !seatedIds.has(agent.record.id) && canJoinConversation(agent))
     .map((agent): ParticipantRow => {
       const choice =
         choiceFor(invitable?.choices, agent.record.id) ??

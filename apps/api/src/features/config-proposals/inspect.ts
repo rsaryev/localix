@@ -69,9 +69,9 @@ async function renderRoster(ctx: RemedyContext): Promise<string> {
       const hosts = Object.entries(agent.invocations)
         .filter(([, effect]) => effect === 'allow')
         .map(([host]) => host)
-      return `- @${agent.record.handle} · ${agent.enabled ? 'on' : 'off'} · ${hosts.join(', ') || 'none'}${agent.builtin ? ' · shipped' : ''}`
+      return `- @${agent.record.handle} · ${agent.enabled ? 'on' : 'off'} · ${hosts.join(', ') || 'none'}${agent.source === 'builtin' ? ' · shipped' : ''}`
     }),
-    'Read-only here: roles are authored in Settings → Agents.',
+    'Read-only here: agents are files; edit them on their Store page.',
   ].join('\n')
 }
 
@@ -86,7 +86,7 @@ async function renderAgent(ctx: RemedyContext, name: string): Promise<string> {
     .map((rule) => rule.action.slice('tool:'.length))
   const hosts = Object.entries(agent.invocations).map(([host, effect]) => `${host}=${effect}`)
   return [
-    `@${agent.record.handle} (${agent.record.id})${agent.builtin ? ' · shipped' : ''} · ${agent.enabled ? 'enabled' : 'disabled'}`,
+    `@${agent.record.handle} (${agent.record.id})${agent.source === 'builtin' ? ' · shipped' : ''} · ${agent.enabled ? 'enabled' : 'disabled'}`,
     `description: ${agent.record.description || '—'}`,
     `model: ${agent.record.modelPreference ? JSON.stringify(agent.record.modelPreference) : 'session model'}`,
     `maxTurns: ${agent.record.limits?.maxTurns ?? 'default'}`,

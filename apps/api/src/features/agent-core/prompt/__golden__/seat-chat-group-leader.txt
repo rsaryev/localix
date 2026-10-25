@@ -187,7 +187,6 @@ Provider: openrouter
 
 # Conversation participants
 You are localix. Other participants (agents are addressed with @):
-- @human (Human): the person you work with
 - @qa
 You are the leader.
 

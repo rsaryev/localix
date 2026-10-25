@@ -14,7 +14,6 @@ import type { loadEnv } from '../lib/env'
 import type { InfraPhase } from './infra'
 import { createCapabilityRuleRepository } from '../features/capabilities/rule-repository'
 import { createCapabilitySourceRepository } from '../features/capabilities/source-repository'
-import { seedStarterTeam } from '../features/agents/seed-starter-team'
 import { seedAgentPresets } from '../features/capabilities/seed-agent-presets'
 import { listDelegatedRuns, readSessionSpend } from '../features/chat/service/delegated-runs'
 import { createUsageRepository } from '../features/usage/repository'
@@ -69,20 +68,6 @@ export async function createAgentFacadePhase({
   } catch (error) {
     logger.warn(`[agents] role defaults could not be applied: ${String(error)}`)
   }
-  // The starter team, written once into the person's own registry as ordinary agents they can
-  // edit or delete; only `localix` stays built in. Never fatal, like the defaults above.
-  try {
-    const created = await seedStarterTeam(
-      {
-        createAgent: (...args) => agentsService.createAgent(...args),
-        sources: presetPorts.sources,
-      },
-      env.LOCALIX_DEFAULT_USER_ID,
-    )
-    if (created.length > 0) logger.info(`[agents] added the starter team: ${created.join(', ')}`)
-  } catch (error) {
-    logger.warn(`[agents] the starter team could not be added: ${String(error)}`)
-  }
   // One admission for every delegation lookup: the `delegation` invocation host's verdict, and
   // the run defaults a child inherits — never its instructions or model preferences, which the
   // child session resolves from its own seat.
@@ -94,14 +79,10 @@ export async function createAgentFacadePhase({
       projectId ?? null,
     )
     if (!record) return null
-    const {
-      prompt: _instructions,
-      preferredProvider: _provider,
-      preferredModel: _model,
-      preferredEffort: _effort,
-      ...defaults
-    } = agentRunDefaults(record)
-    return { record, defaults }
+    return {
+      record,
+      defaults: { maxTurns: record.limits?.maxTurns, pinnedSkills: record.context?.preloadSkills },
+    }
   }
   setAgentService({
     createSession: (...args) => chatService.createSession(...args),
@@ -183,4 +164,3 @@ export async function createAgentFacadePhase({
   const redelivered = await wakes.redeliver()
   if (redelivered > 0) logger.info?.(`[boot] ${redelivered} wake(s) redelivered`)
 }
-import { agentRunDefaults } from '../features/agents/run-defaults'

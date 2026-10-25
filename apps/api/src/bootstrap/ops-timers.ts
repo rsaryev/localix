@@ -29,6 +29,7 @@ import type { StoreService } from '../features/store/service'
 import { envFlag } from '../lib/env'
 import { armMiniAppTimers } from './mini-app-timers'
 import { sessionDataSweepTask } from './session-data-sweep'
+import { createAgentFilesTask, createAgentFoldersPort } from './agent-catalog-sources'
 
 export interface OpsTimersPhaseInput
   extends
@@ -38,7 +39,12 @@ export interface OpsTimersPhaseInput
     >,
     Pick<
       DomainServicesPhase,
-      'projectsService' | 'skillsCuratorService' | 'pluginService' | 'miniAppService'
+      | 'projectsService'
+      | 'skillsCuratorService'
+      | 'pluginService'
+      | 'miniAppService'
+      | 'agentsService'
+      | 'resolveProjectCwd'
     > {
   chatService: ReturnType<typeof createChatService>
   maintainStorage: StorageMaintenance
@@ -65,6 +71,8 @@ export function createOpsTimersPhase({
   skillsCuratorService,
   pluginService,
   miniAppService,
+  agentsService,
+  resolveProjectCwd,
   chatService,
   maintainStorage,
   hostRefs,
@@ -216,6 +224,16 @@ export function createOpsTimersPhase({
     const idleTasks: IdleTask[] = [
       { name: 'mini_app_channels', run: () => channelHost.start() },
       { name: 'plugin_monitors', run: () => monitorHost.start() },
+      // Agent files are read where Claude Code keeps them; the watcher keeps their ids current.
+      createAgentFilesTask({
+        db,
+        userId: env.LOCALIX_DEFAULT_USER_ID,
+        agentsService,
+        folders: createAgentFoldersPort(resolveProjectCwd),
+        projects: async (...args: Parameters<typeof projectsService.listProjects>) =>
+          (await projectsService.listProjects(...args)).projects.map((project) => project.id),
+        signal,
+      }),
       miniAppTimers.stagingReportTask,
       { name: 'delegation_recovery', run: recoverReports },
       sessionDataSweepTask(db, logger),

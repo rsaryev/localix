@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { defineAgentTool, type AgentTool } from '@localixai/agent/agents'
 import { z } from 'zod'
 
-import { BUILTIN_AGENTS } from '../agents/builtin'
+import { DEFAULT_AGENT_HANDLE } from '../../db/participant'
 import { builtinAgentPreset } from '../capabilities/builtin-agent-presets'
 import { PERMISSION_MODES } from '../../contracts/permission-modes'
 import { loadBundledMiniAppTools, type LoadedBundledTools } from './testing/bundled-mini-app-tools'
@@ -42,15 +42,12 @@ afterAll(async () => {
  * The shipped presets. Only `localix` ships in code now: other roles are ordinary agents the user
  * owns, so the matrix pins the one preset whose roster is every tool a chat run builds.
  */
-// The person's record (`@human`) is never run, so it has no permission preset to check.
-const PRESETS: PresetUnderTest[] = BUILTIN_AGENTS.filter((agent) => agent.kind !== 'human').map(
-  (agent) => ({
-    handle: agent.handle,
-    rules: builtinAgentPreset(agent.handle),
-    onRoster: () => true,
-    expected: () => undefined,
-  }),
-)
+const PRESETS: PresetUnderTest[] = [DEFAULT_AGENT_HANDLE].map((handle) => ({
+  handle,
+  rules: builtinAgentPreset(handle),
+  onRoster: () => true,
+  expected: () => undefined,
+}))
 
 describe('the roster under test', () => {
   test('the bundled plugins load through the host loader, and some carry tools', () => {

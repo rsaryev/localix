@@ -62,32 +62,13 @@ describe('the conversation roster', () => {
     expect(section).not.toContain(TEAM_CONVERSATION)
   })
 
-  test('the person is always a participant, described by their record', () => {
+  test('the person is not a participant: no handle, no profile', () => {
     const solo = buildParticipantsSection({ self: 'qa', participants: [{ handle: 'qa' }] })
-    expect(solo).toContain('- @human (Human): the person you work with')
-    const described = buildParticipantsSection({
-      self: 'qa',
-      participants: PARTICIPANTS,
-      human: {
-        label: 'Rus',
-        description: 'Manual QA — I verify releases by hand',
-        instructions: 'Prefers short\nquestions.',
-      },
-    })
-    expect(described).toContain(
-      '- @human (Rus): the person you work with — Manual QA — I verify releases by hand\n  About them, in their words: Prefers short questions.',
+    expect(solo).not.toContain('@human')
+    expect(solo).not.toContain('the person you work with')
+    expect(buildParticipantsSection({ self: 'qa', participants: PARTICIPANTS })).not.toContain(
+      '@human',
     )
-  })
-
-  test('the description and instructions together stay within the cap', () => {
-    const section = buildParticipantsSection({
-      self: 'qa',
-      participants: [{ handle: 'qa' }],
-      human: { description: 'x'.repeat(700), instructions: 'z'.repeat(700) },
-    })
-    expect(section).toContain('x'.repeat(700))
-    expect(section).toContain('z'.repeat(300))
-    expect(section).not.toContain('z'.repeat(301))
   })
 
   test('the person does not make a solo chat a group', () => {
@@ -117,6 +98,8 @@ describe('the turn protocol', () => {
       expect(section).toContain('Never @mention the person')
       expect(section).not.toContain(HUMAN_NO_ASK_CONTROL)
       expect(section).toContain(HUMAN_BOARD_CONTROL)
+      expect(section).toContain('A card assigned to the person waits for them')
+      expect(section).not.toContain('@human')
     }
   })
 

@@ -10,13 +10,10 @@
 import { agentRoute } from '../../../../contracts/session-route'
 import type { RunPolicy } from '../../policy/run-policy'
 import type { SessionRecord } from '../../repository'
-import type { HumanProfile } from '../../../agent-core/prompt/sections/conversation'
 
 export interface ConversationPromptContext {
   self: string
   participants: readonly { handle: string }[]
-  /** The person, always listed beside the agents (`@human`). */
-  human?: HumanProfile
   isLeader: boolean
   /** The elected leader's handle (no `@`); the roster marks it, so every agent knows whom to report to. */
   leader?: string
@@ -36,7 +33,6 @@ export function conversationPromptContext(
   session: SessionRecord,
   speakerAgentId: string,
   policy: Pick<RunPolicy, 'seat' | 'conversation'>,
-  human?: HumanProfile,
 ): ConversationPromptContext | undefined {
   const speaker = agentRoute(session, speakerAgentId)
   if (!speaker) return undefined
@@ -44,7 +40,6 @@ export function conversationPromptContext(
   return {
     self: speaker.handle,
     participants: (session.agents ?? []).map((participant) => ({ handle: participant.handle })),
-    ...(human ? { human } : {}),
     isLeader: leader?.agentId === speaker.agentId,
     ...(leader ? { leader: leader.handle } : {}),
     membershipClosed: !policy.conversation.tagInvites,

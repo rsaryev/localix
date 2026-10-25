@@ -25,6 +25,5 @@ export function bootAgentDirectory(hostRefs: MiniAppHostRefs): MiniAppAgentDirec
         description: agent.record.description,
         enabled: agent.enabled,
       })),
-    human: async (...args) => hostRefs.getHuman?.(...args),
   })
 }

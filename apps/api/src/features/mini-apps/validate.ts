@@ -1,7 +1,6 @@
 import { checkApiVersion } from '../ext/manifest-validate'
 import { MINI_APP_API_VERSION } from './contracts-base'
 import type { DiscoveredMiniApp } from './discovery'
-import { validateAgentContributions } from './validate-agent-contributions'
 
 export interface MiniAppValidation {
   errors: string[]
@@ -18,7 +17,6 @@ export function validateMiniApp(app: DiscoveredMiniApp): MiniAppValidation {
   const warnings: string[] = []
   if (app.error) errors.push(app.error)
   if (!app.manifest) return { errors, warnings }
-  errors.push(...validateAgentContributions(app))
   checkApiVersion('Mini app', MINI_APP_API_VERSION, app.manifest.apiVersion, errors, warnings)
 
   const duplicates = (bucket: string[], kind: string, values: string[], suffix: string) => {

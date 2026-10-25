@@ -56,9 +56,8 @@ describe('native agent draft', () => {
   })
 
   test('cleared optional fields are removed', () => {
-    const original = record({ label: 'Reviewer', limits: { maxTurns: 4 } })
-    const out = draftToInput({ ...draftFromRecord(original), label: '', maxTurns: '' }, original)
-    expect(out.ok && out.input.label).toBeUndefined()
+    const original = record({ limits: { maxTurns: 4 } })
+    const out = draftToInput({ ...draftFromRecord(original), maxTurns: '' }, original)
     expect(out.ok && out.input.limits).toBeUndefined()
   })
 

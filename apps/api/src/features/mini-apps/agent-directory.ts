@@ -1,7 +1,4 @@
-import type { MiniAppAgentDirectory, MiniAppAgentSummary } from '@localixai/mini-app-sdk/backend'
-import { HUMAN_HANDLE } from '@localixai/agent/agents'
-
-import { USER_PARTICIPANT } from '../../db/participant'
+import type { MiniAppAgentDirectory } from '@localixai/mini-app-sdk/backend'
 
 /**
  * The host half of `ctx.agents`: which agents a chat can name, answered from the registry.
@@ -9,8 +6,8 @@ import { USER_PARTICIPANT } from '../../db/participant'
  * Two rules make it safe to hand to a mini app. The session is resolved BEFORE the registry is
  * read, through an owner-scoped lookup, so a mini app passing a foreign or deleted session id is
  * refused rather than shown another user's agents. And only ENABLED agents of the session's own
- * scope are listed — a name a mini app stores from here must be one the host would also run — plus
- * the person, marked `kind: 'human'`.
+ * scope are listed — a name a mini app stores from here must be one the host would also run. The
+ * person is not an agent and is not listed.
  *
  * Both halves are ports so the same directory serves the boot-time backend (late-bound refs)
  * and each run's tools (the run's repository), with one answer.
@@ -24,11 +21,6 @@ export function createMiniAppAgentDirectory(ports: {
   ) => Promise<
     readonly { id: string; handle: string; description?: string | null; enabled: boolean }[]
   >
-  /** The person's record in this scope, listed as `@human`. */
-  human?: (
-    userId: string,
-    projectId: string | null,
-  ) => Promise<{ label?: string; description: string } | undefined>
   /** Raise the person's mention attention for this (already owner-checked) session. */
   notifyHuman?: (
     userId: string,
@@ -46,29 +38,13 @@ export function createMiniAppAgentDirectory(ports: {
     async list(userId, sessionId) {
       const projectId = await ports.sessionProject(userId, sessionId)
       if (projectId === undefined) throw new Error('Session not found')
-      const [agents, human] = await Promise.all([
-        ports.listAgents(userId, projectId),
-        ports.human?.(userId, projectId).catch(() => undefined),
-      ])
-      // The person is always nameable, last: a card can wait on them, though no agent runs it.
-      // Their id is the stored participant ref, the one a card's owner field keeps.
-      const person: MiniAppAgentSummary = {
-        id: USER_PARTICIPANT,
-        handle: HUMAN_HANDLE,
-        kind: 'human',
-        ...(human?.label ? { label: human.label } : {}),
-        ...(human?.description ? { description: human.description } : {}),
-      }
-      return [
-        ...agents
-          .filter((agent) => agent.enabled)
-          .map((agent) => ({
-            id: agent.id,
-            handle: agent.handle,
-            ...(agent.description ? { description: agent.description } : {}),
-          })),
-        person,
-      ]
+      return (await ports.listAgents(userId, projectId))
+        .filter((agent) => agent.enabled)
+        .map((agent) => ({
+          id: agent.id,
+          handle: agent.handle,
+          ...(agent.description ? { description: agent.description } : {}),
+        }))
     },
   }
 }

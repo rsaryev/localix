@@ -138,7 +138,7 @@ export function memberMay(
   return { ok: true }
 }
 
-/** The person's directory id: a card assigned to it waits on the human, not on an agent. */
+/** The person's assignee id: a card assigned to it waits on them, not on an agent. */
 export const HUMAN_ASSIGNEE_ID = 'user'
 
 /** A card the person owns. */
@@ -147,4 +147,4 @@ export const isHumanCard = (task: Pick<KanbanTask, 'agentId'>): boolean =>
 
 /** How a card's owner reads on the board: "you" for the person's own card. */
 export const assigneeLabel = (task: Pick<KanbanTask, 'agentId' | 'assignee'>): string | null =>
-  isHumanCard(task) ? 'you (@human)' : task.assignee ? `@${task.assignee}` : null
+  isHumanCard(task) ? 'you' : task.assignee ? `@${task.assignee}` : null

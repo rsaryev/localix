@@ -72,6 +72,8 @@ export function createBoardService(deps: BoardServiceDeps) {
     if (!deps.agents)
       throw new BoardRefusal(409, 'agents_unavailable', 'This board cannot assign agents here.')
     const wanted = strip(reference)
+    // The person is not an agent and the directory does not list them: their id is the board's own.
+    if (wanted === HUMAN_ASSIGNEE_ID) return { agentId: HUMAN_ASSIGNEE_ID, assignee: 'you' }
     const agents = await deps.agents.list(seat.userId, seat.sessionId)
     const agent =
       agents.find((candidate) => candidate.id === wanted) ??
@@ -81,7 +83,7 @@ export function createBoardService(deps: BoardServiceDeps) {
     throw new BoardRefusal(
       404,
       'agent_unavailable',
-      `No agent "${reference}" here. ${available ? `Available: ${available}.` : 'No agents are available.'}`,
+      `No agent "${reference}" here. ${available ? `Available: ${available}, or "${HUMAN_ASSIGNEE_ID}" for the person.` : 'No agents are available.'}`,
     )
   }
 

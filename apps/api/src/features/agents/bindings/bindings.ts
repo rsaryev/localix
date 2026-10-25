@@ -40,6 +40,8 @@ export interface BindingDeps {
   plugins?(userId: string, projectId: string): Promise<readonly PluginAgentGroup[]>
   now?: () => number
   newId?: () => string
+  /** Called once a reconcile has committed a change, so capability readers re-read the agents. */
+  onChanged?: () => void
 }
 
 /** A definition with the identity Localix keeps for it. */
@@ -132,6 +134,7 @@ export function createAgentBindings(deps: BindingDeps) {
       }
       await recordCoreChanges(trx, changes)
     })
+    deps.onChanged?.()
   }
 
   /** One scope: scan, plan, write what changed, and answer with every definition's id. */
@@ -194,7 +197,20 @@ export function createAgentBindings(deps: BindingDeps) {
     }
   }
 
+  /**
+   * An agent deleted on purpose is purged now, not after the grace window that protects a file a
+   * checkout removed for a moment: its row's wait is marked over, and the reconcile that follows
+   * removes the row and announces the deletion. Call it after the file is gone.
+   */
+  async function forget(userId: string, scope: string, ownerProjectId: string, id: string) {
+    await deps.stores
+      .sources(deps.db, 'agent')
+      .patchConfig(userId, ownerProjectId, id, { missingSince: new Date(0).toISOString() })
+    return reconcile(userId, scope)
+  }
+
   return {
+    forget,
     /** The scope's definitions with their ids, after reconciling the bindings. */
     snapshot: (userId: string, projectId: string) =>
       serialize(userId, () => reconcile(userId, projectId)),

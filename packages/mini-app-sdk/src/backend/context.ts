@@ -105,13 +105,6 @@ export interface MiniAppAgentSummary {
   /** The name people and the model address it by, without `@`. */
   readonly handle: string
   readonly description?: string
-  /** Display title, when the entry has one (the person's record does). */
-  readonly label?: string
-  /**
-   * `human` for the one entry that is the person (`id: 'user'`, `handle: 'human'`, their record's
-   * label and description): a card can be theirs, but no agent runs it. Absent means an agent.
-   */
-  readonly kind?: 'agent' | 'human'
 }
 
 /**

@@ -39,7 +39,6 @@ import type { AgentNotifications } from '../../notifications/producers'
 import type { ModelRoute } from '../repository-types'
 import type { WorkRegistry } from '../../work/registry'
 import type { AgentManagementPort } from '../../agents/service-contract'
-import type { HumanProfile } from '../../agent-core/prompt/sections/conversation'
 import type { ModsHost } from '../../mods/host'
 
 export const DEFAULT_TITLE = 'New Chat'
@@ -213,8 +212,6 @@ export interface ChatServiceDeps {
       leadershipPriority?: number
     }[]
   >
-  /** The person's record (`@human`) as the scope resolves it, for the prompt and the board. */
-  resolveHuman?: (userId: string, projectId: string | null) => Promise<HumanProfile>
   /** Complete scope-aware registry roster used only to describe agents to the model. */
   listRegistryAgents?: (
     userId: string,

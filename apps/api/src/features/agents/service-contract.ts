@@ -4,9 +4,9 @@ import type { AgentAuthoredBlueprint } from '@localixai/agent/agents'
 
 import type { AppDatabase } from '../../db'
 import type { AgentRecord, AgentRecordInput, AgentSummary } from './contracts'
-import type { ContributionReadError } from '../ext/contribution-reader'
-import type { createRegistrationPolicyService } from './registration-policy'
 import type { InvocationRegistry } from '../capabilities/invocation'
+import type { AgentBindings, PluginAgentGroup } from './bindings/bindings'
+import type { AgentFolders } from './catalog/scan'
 import type { AgentAvailability, ApprovalAnswer, RunAgentDecision } from './invocation-service'
 
 /**
@@ -23,12 +23,11 @@ export interface AgentsServiceDeps {
   capabilityStores: CapabilityStores
   /** Host-owned registry shared by catalog reads and launch admission. */
   invocations?: InvocationRegistry
-  /** Resolve a project's working directory (for project-scoped registry dirs). */
-  resolveProjectCwd?: (userId: string, projectId: string) => Promise<string | null>
-  /** Override the global NATIVE registry dir (tests). */
-  globalDir?: string
+  /** Claude Code's folders for a scope (`project` is null when its folder cannot be read now). */
+  folders(userId: string, projectId: string): Promise<AgentFolders>
+  /** The agents plugins bring, and whether each plugin is on. */
+  plugins?(userId: string, projectId: string): Promise<readonly PluginAgentGroup[]>
   now?: () => string
-  syncBundledContributions?: (userId: string, projectId: string) => Promise<void>
 }
 
 export interface AgentsService {
@@ -40,11 +39,10 @@ export interface AgentsService {
     projectId?: string | null,
     requestApproval?: (agent: AgentRecord) => Promise<ApprovalAnswer>,
   ): Promise<RunAgentDecision>
-  registrationPolicy: ReturnType<typeof createRegistrationPolicyService>
-  /** Registry agents visible to one exact project or no-project scope, fused with enable-state. */
+  /** The bindings that tie each definition to its stable id (the watcher reconciles through them). */
+  bindings: AgentBindings
+  /** The agents of one exact project or no-project scope, fused with enable-state. */
   listAgents(userId: string, opts?: { projectId?: string | null }): Promise<AgentSummary[]>
-  /** The person's record (`@human`) as this scope resolves it: project, installation, shipped. */
-  getHuman(userId: string, projectId?: string | null): Promise<AgentRecord>
   /** Agents admitted without approval on this host, from one current registry snapshot. */
   listInvocableAgents(
     userId: string,
@@ -58,10 +56,6 @@ export interface AgentsService {
     host: string,
     projectId?: string | null,
   ): Promise<AgentAvailability>
-  listRegistrationDiagnostics(
-    userId: string,
-    projectId?: string | null,
-  ): Promise<ContributionReadError[]>
   /**
    * Refuse a policy change this registry cannot accept, before anything is written.
    *
@@ -86,8 +80,8 @@ export interface AgentsService {
   /** One agent by name inside one exact scope, or null. */
   getAgent(userId: string, name: string, projectId?: string | null): Promise<AgentSummary | null>
   /**
-   * Create a registry agent: writes a lossless `.json` file + an enabled row. Refuses a name
-   * the scope already holds — changing an existing definition is `updateAgent`.
+   * Create an agent: a Claude Code agent file in the person's folder (or the project's), with its
+   * policy in place first. Refuses a name the scope already holds; changing one is `updateAgent`.
    */
   createAgent(userId: string, input: AgentRecordInput): Promise<AgentSummary>
   /** Author behavior in the caller's registry, inheriting its saved policy once. */
@@ -102,8 +96,8 @@ export interface AgentsService {
     origin: AgentCreationOrigin,
   ): Promise<AgentCreationBatchResult>
   /**
-   * Replace behavior while retaining the registry-issued ID and capability choices.
-   * Local handles may change without changing identity; shipped handles stay fixed.
+   * Replace behavior in the agent's own file, keeping its id and access. A rename moves the file
+   * and keeps the id. Only a file the person owns (`editable`) can be changed.
    */
   updateAgent(
     userId: string,
@@ -112,18 +106,10 @@ export interface AgentsService {
     projectId?: string | null,
   ): Promise<AgentSummary>
   /**
-   * Remove every definition file carrying `name` in the scope and its enable-state row.
-   * Refused for a builtin: there is no file to remove and the roster must keep its system
-   * roles — use `resetAgent` to drop an override, or disable it.
+   * Delete the agent's file and purge its binding now. Refused for what is not a file the person
+   * owns (a plugin's agent, a built-in type): switch it off instead.
    */
   deleteAgent(userId: string, name: string, projectId?: string | null): Promise<void>
-  /** Drop the user's override of a builtin so the shipped definition applies again. */
-  resetAgent(userId: string, name: string, projectId?: string | null): Promise<AgentSummary>
-  /**
-   * The definition this installation SHIPS for a name, whatever is on disk — what the editor
-   * fills its fields with when the user asks for the defaults back, BEFORE anything is written.
-   */
-  agentDefaults(name: string): AgentRecord | null
   /** Copy definition, policy and enable choice into a fresh local identity in the same scope. */
   duplicateAgent(
     userId: string,
@@ -178,5 +164,4 @@ export type AgentManagementPort = Pick<
   | 'duplicateAgent'
   | 'setAgentEnabled'
   | 'deleteAgent'
-  | 'resetAgent'
 >

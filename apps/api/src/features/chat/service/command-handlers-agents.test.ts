@@ -18,9 +18,9 @@ const agent: AgentSummary = {
   projectId: 'p',
   scope: 'project',
   invocations: { chat: 'allow' },
-  source: 'local',
+  source: 'user',
   path: '',
-  builtin: false,
+  editable: true,
 }
 const session = sessionFixture({
   projectId: 'p',

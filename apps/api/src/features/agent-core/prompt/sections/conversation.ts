@@ -15,19 +15,11 @@ import {
   TEAM_MEMBER,
   TOPIC_CONTROL,
 } from './team-contract'
-import { HUMAN_HANDLE, HUMAN_PROFILE_MAX_CHARS } from '@localixai/agent/agents'
 import type { BuildAgentSystemPromptParams } from '../contracts'
 
 export interface ConversationParticipant {
   handle: string
   description?: string
-}
-
-/** The person's record as the prompt reads it: who they are, never instructions to follow. */
-export interface HumanProfile {
-  label?: string
-  description: string
-  instructions: string
 }
 
 /**
@@ -104,34 +96,16 @@ export function buildTurnControlSection(input: {
   ].join('\n')
 }
 
-/** One line per field: a profile is data in a list, not a block of prose. */
-const oneLine = (text: string) => text.replace(/\s+/g, ' ').trim()
-
-/** The `@human` entry, bounded like the record itself. */
-function humanEntry(human: HumanProfile | undefined): string[] {
-  const label = oneLine(human?.label ?? '') || 'Human'
-  const description = oneLine(human?.description ?? '').slice(0, HUMAN_PROFILE_MAX_CHARS)
-  const instructions = oneLine(human?.instructions ?? '').slice(
-    0,
-    Math.max(0, HUMAN_PROFILE_MAX_CHARS - description.length),
-  )
-  return [
-    `- @${HUMAN_HANDLE} (${label}): the person you work with${description ? ` — ${description}` : ''}`,
-    ...(instructions ? [`  About them, in their words: ${instructions}`] : []),
-  ]
-}
-
 /**
  * `# Conversation participants` — who is here, from the speaker's point of view.
  *
- * The person is always listed, alone or not, as data: their record says who they are and what to
- * ask them for. They are never addressed with a mention — questions go through `ask`. It rides here, in the volatile tail, so editing it never
- * rewrites the cached prefix.
+ * Only agents are listed. The person is not a participant: they are described in `CLAUDE.md`, as in
+ * Claude Code, and reached through `ask`, never a mention. It rides here, in the volatile tail, so
+ * a change of roster never rewrites the cached prefix.
  */
 export function buildParticipantsSection(input: {
   self: string
   participants: readonly ConversationParticipant[]
-  human?: HumanProfile
   /** The elected leader's handle; marked only once the conversation has colleagues. */
   leader?: string
 }): string {
@@ -140,7 +114,6 @@ export function buildParticipantsSection(input: {
   return [
     '# Conversation participants',
     `You are ${input.self}. Other participants (agents are addressed with @):`,
-    ...humanEntry(input.human),
     ...others.map(
       (participant) =>
         `- @${participant.handle}${participant.handle === leader ? ' (leader)' : ''}${participant.description ? `: ${participant.description}` : ''}`,

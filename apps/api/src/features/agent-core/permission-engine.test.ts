@@ -6,7 +6,7 @@ import type { AgentTool } from '@localixai/agent/agents'
 import type { PermissionRule } from '../projects/contracts'
 import { evaluate, extractCallFacts, createPermissionGate } from './permission-engine'
 import { resourceOnlyCall } from './permission-facts'
-import { BUILTIN_AGENTS } from '../agents/builtin'
+import { DEFAULT_AGENT_HANDLE } from '../../db/participant'
 import { builtinAgentPreset } from '../capabilities/builtin-agent-presets'
 import { composeCapabilities, NO_ROSTERS, projectCapabilities } from '../capabilities/resolve'
 
@@ -43,10 +43,7 @@ describe('the confirmation guards every shipped role carries', () => {
   // The shipped list itself, not a copy of it: a hand-written set kept naming `implementer`
   // after that role was retired, and the preset for a role we do not ship is empty — so the
   // guard was asserted over nothing for a quarter of the cases.
-  // The person's record is shipped too, but it is never run and carries no rules.
-  const SHIPPED_HANDLES = BUILTIN_AGENTS.filter((agent) => agent.kind !== 'human').map(
-    (agent) => agent.handle,
-  )
+  const SHIPPED_HANDLES = [DEFAULT_AGENT_HANDLE]
 
   test.each(SHIPPED_HANDLES)('%s confirms the two classes', (handle) => {
     const guards = guardsOf(handle)

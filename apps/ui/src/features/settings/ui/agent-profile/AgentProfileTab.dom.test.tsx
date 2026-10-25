@@ -28,9 +28,9 @@ test('agent navigation shares the settings shell and retains an unsaved definiti
       leadershipPriority: 0,
       instructions: 'Review code.',
     },
-    builtin: false,
+    editable: true,
     enabled: true,
-    source: 'local',
+    source: 'user',
     path: '',
     projectId: '',
     scope: 'global',
@@ -49,7 +49,6 @@ test('agent navigation shares the settings shell and retains an unsaved definiti
     toggle: async () => {},
     remove: async () => {},
     duplicate: async () => {},
-    reset: async () => {},
   })
   // The settings pane measures itself: 1200px is wide enough for the sections to be a column.
   const restoreWidth = stubElementWidth(1200)

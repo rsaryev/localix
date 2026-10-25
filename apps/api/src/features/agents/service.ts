@@ -1,330 +1,270 @@
-import type { CapabilitySourceRepository } from '../capabilities/source-repository'
-
+import { rm } from 'node:fs/promises'
+import { dirname } from 'node:path'
+import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import { ConflictError, InvalidRequestError, NotFoundError } from '../../lib/domain-errors'
-import { createKeyedSerializer } from '../../lib/keyed-serializer'
-import { createContributionReader } from '../ext/contribution-reader'
-import { agentContributionSchema } from './contribution'
-import { buildAgentCatalog } from './catalog'
-import { createAgentInvocationService } from './invocation-service'
-import { createRegistrationPolicyService } from './registration-policy'
-import { applySwitches, createAvailabilityWriter } from '../capabilities/availability'
+import {
+  applySwitches,
+  availabilityOf,
+  createAvailabilityWriter,
+} from '../capabilities/availability'
 import { createInvocationRegistry } from '../capabilities/invocation'
-import { createNativeAgent } from './create-native-agent'
+import { composeCapabilities, type ResolvedCapabilities } from '../capabilities/resolve'
+import { capabilitiesChanged, trackCapabilityChange } from '../capabilities/revision'
+import { createAgentBindings, type AgentSnapshot, type BoundAgent } from './bindings/bindings'
 import { createAgentAuthoring } from './authoring'
-import { globalAgentsDir, projectAgentsDir } from './discovery'
-import { visibleInScope } from './registry-identity'
-import { builtinAgentRecord } from './builtin'
-import { agentPolicy, FIELD_LABELS, lockedChanges } from './policy'
-import { assertDisablable } from './disable-guard'
-import { removeAgentRecordFiles, writeAgentRecordFile } from './registry-files'
-import type { AgentRecord, AgentSummary } from './contracts'
+import type { AgentSummary } from './contracts'
+import { createAgentFile, type CreatePorts } from './create'
+import { agentFilePath, agentFileText, readAgentFileText, writeAgentFile } from './file-writer'
+import { createAgentInvocationService } from './invocation-service'
+import { agentTrustClass, summaryOf } from './projection'
 import type { AgentsService, AgentsServiceDeps } from './service-contract'
-import { BUILTIN_OVERRIDE_FIELD, builtinOverrideHash } from './builtin-override'
-import { createAgentAnnouncer } from './announce'
 
 export type { AgentsService, AgentsServiceDeps } from './service-contract'
 
+interface Catalog {
+  /** The definitions Claude Code would run, with access applied. */
+  all: AgentSummary[]
+  capabilitiesByAgent: ReadonlyMap<string, ResolvedCapabilities>
+}
+
+/**
+ * The agents of a scope: the catalog of Claude Code agent files (and plugin and built-in types),
+ * each with the identity Localix keeps for it, and what the rules say it may do. A definition
+ * lives in its file; this service only reads it, writes it back through the same file, and
+ * answers access from the rules.
+ */
 export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
-  const repo: CapabilitySourceRepository = deps.capabilityStores.sources(deps.db, 'agent', deps.now)
-  // The one writer of availability, shared with every other kind.
+  const stores = deps.capabilityStores
+  const rules = stores.rules(deps.db)
   const availabilityWriter = createAvailabilityWriter(deps.db)
-  const { keys: announceAgent, write: announced } = createAgentAnnouncer(deps.db)
-  const ruleRepository = deps.capabilityStores.rules(deps.db)
   const invocations = deps.invocations ?? createInvocationRegistry()
-  const serialize = createKeyedSerializer()
-  const contributions = createContributionReader(deps.db, 'agent', agentContributionSchema)
+  const bindings = createAgentBindings({
+    db: deps.db,
+    stores,
+    folders: deps.folders,
+    plugins: deps.plugins,
+    onChanged: () => capabilitiesChanged(),
+  })
 
-  const cwdFor = async (userId: string, projectId: string): Promise<string | null> => {
-    if (projectId && deps.resolveProjectCwd) return deps.resolveProjectCwd(userId, projectId)
-    return null
-  }
-
-  /** The one directory a scope's definitions are written to. */
-  const dirFor = async (userId: string, projectId: string): Promise<string> => {
-    if (!projectId) return deps.globalDir ?? globalAgentsDir()
-    const cwd = await cwdFor(userId, projectId)
-    if (!cwd)
-      throw new NotFoundError('project_directory_missing', 'Project directory is unavailable')
-    return projectAgentsDir(cwd)
-  }
-
-  const buildCatalog = async (userId: string, projectId: string) => {
-    await deps.syncBundledContributions?.(userId, projectId)
-    return buildAgentCatalog({
-      db: deps.db,
-      stores: deps.capabilityStores,
-      invocations,
+  const catalogOf = async (userId: string, snapshot: AgentSnapshot): Promise<Catalog> => {
+    const active = snapshot.agents.filter((entry) => !entry.shadowedBy)
+    const byAgent = await rules.readMany(
       userId,
-      projectId,
-      cwd: await cwdFor(userId, projectId),
-      globalDir: deps.globalDir,
+      active.map((entry) => entry.id),
+    )
+    const rulesFor = (id: string) => byAgent.get(id) ?? []
+    const all = active.map((entry) => {
+      const own = rulesFor(entry.id)
+      return summaryOf(entry, {
+        enabled:
+          availabilityOf(composeCapabilities(own)).effectFor(
+            'agent',
+            entry.id,
+            agentTrustClass(entry.agent),
+          ) === 'allow',
+        invocations: invocations.availability(own, entry.id),
+      })
     })
+    return {
+      all,
+      capabilitiesByAgent: new Map(
+        active.map((entry) => [entry.id, composeCapabilities(rulesFor(entry.id))]),
+      ),
+    }
+  }
+  const read = async (userId: string, scope: string) =>
+    catalogOf(userId, await bindings.snapshot(userId, scope))
+  /** The same inside `exclusive`, where the lock is already held. */
+  const readLocked = async (userId: string, scope: string) =>
+    (await catalogOf(userId, await bindings.reconcileNow(userId, scope))).all
+
+  /** The one lookup of an agent by id, or by what a person typed: the catalog's `resolve`. */
+  const find = async (
+    userId: string,
+    name: string,
+    scope: string,
+    snapshot?: AgentSnapshot,
+  ): Promise<{ entry: BoundAgent; summary: AgentSummary } | undefined> => {
+    const current = snapshot ?? (await bindings.snapshot(userId, scope))
+    const { all } = await catalogOf(userId, current)
+    const byId = current.agents.find((entry) => entry.id === name && !entry.shadowedBy)
+    let entry = byId
+    if (!entry) {
+      const resolved = current.catalog.resolve(name)
+      if (resolved && 'ambiguous' in resolved)
+        throw new ConflictError('agent_ambiguous', 'Select an agent by ID')
+      entry = resolved
+        ? current.agents.find((candidate) => candidate.agent === resolved.agent)
+        : undefined
+    }
+    const summary = entry ? all.find((candidate) => candidate.record.id === entry!.id) : undefined
+    return entry && summary ? { entry, summary } : undefined
   }
 
-  /** Find an entry in one exact scope. */
-  const pickInScope = (
-    catalog: Awaited<ReturnType<typeof buildCatalog>>,
-    name: string,
-    projectId: string,
-  ): AgentSummary | undefined => {
-    // The person's record is managed here like a shipped agent's, though no agent list holds it.
-    const scoped = [...catalog.all, catalog.human].filter((agent) => agent.projectId === projectId)
-    const exact = scoped.find((agent) => agent.record.id === name)
-    if (exact) return exact
-    const matches = scoped.filter((agent) => agent.record.handle === name)
-    if (matches.length > 1) throw new ConflictError('agent_ambiguous', 'Select an agent by ID')
-    return matches[0]
-  }
+  const changed = <T>(run: () => Promise<T>): Promise<T> =>
+    trackCapabilityChange(async () => {
+      const result = await run()
+      capabilitiesChanged()
+      return result
+    })
 
-  /**
-   * Find an entry as the scope sees it: its own definitions first, then the installation's
-   * (`discoverAgents` lists those in every project). Writes go to the entry's own scope.
-   */
-  const pickEntry = (
-    catalog: Awaited<ReturnType<typeof buildCatalog>>,
-    name: string,
-    projectId: string,
-  ): AgentSummary | undefined =>
-    pickInScope(catalog, name, projectId) ??
-    (projectId ? pickInScope(catalog, name, '') : undefined)
-
-  /** …and the catalog read that precedes it, which every per-name verb starts with. */
-  const findEntry = async (userId: string, name: string, scope: string) =>
-    pickEntry(await buildCatalog(userId, scope), name, scope)
-
-  const creationPorts = {
-    find: findEntry,
-    // A project may shadow an installation agent's handle, so a collision is same-scope only.
-    findInScope: async (userId: string, name: string, scope: string) =>
-      pickInScope(await buildCatalog(userId, scope), name, scope),
-    dir: dirFor,
-    sources: repo,
-    rules: ruleRepository,
+  const createPorts: CreatePorts = {
+    folders: deps.folders,
+    list: readLocked,
+    sources: stores.sources(deps.db, 'agent', deps.now),
+    rules,
     availability: availabilityWriter,
   }
 
+  const requireEntry = async (userId: string, name: string, scope: string) => {
+    const found = await find(userId, name, scope)
+    if (!found) throw new NotFoundError('agent_not_found', 'Agent not found')
+    return found
+  }
+  const requireEditable = (summary: AgentSummary) => {
+    if (!summary.editable)
+      throw new InvalidRequestError(
+        'agent_not_editable',
+        'This agent comes from elsewhere. Copy it to Yours to change it.',
+      )
+  }
+  const collides = (list: readonly AgentSummary[], handle: string, projectId: string, id: string) =>
+    list.some(
+      (agent) =>
+        agent.editable &&
+        agent.projectId === projectId &&
+        agent.record.handle === handle &&
+        agent.record.id !== id,
+    )
+
   return {
-    ...createAgentAuthoring(creationPorts, serialize),
-    ...createAgentInvocationService(buildCatalog, invocations),
-    registrationPolicy: createRegistrationPolicyService(deps.db, deps.capabilityStores),
+    bindings,
+    ...createAgentAuthoring(
+      {
+        ...createPorts,
+        // Only called inside `exclusive`, so it reads without taking the lock again.
+        find: async (userId, name, scope) =>
+          (await find(userId, name, scope, await bindings.reconcileNow(userId, scope)))?.summary,
+        sources: stores.sources(deps.db, 'agent', deps.now),
+        rules,
+      },
+      bindings.exclusive,
+    ),
+    ...createAgentInvocationService((userId, scope) => read(userId, scope), invocations),
+
     async listAgents(userId, opts) {
-      const projectId = opts?.projectId ?? ''
-      const catalog = await buildCatalog(userId, projectId)
-      return catalog.all
+      return (await read(userId, opts?.projectId ?? '')).all
     },
 
-    async getHuman(userId, projectId) {
-      return (await buildCatalog(userId, projectId ?? '')).human.record
+    async assertPolicyChange(_userId, _projectId, deniedIds) {
+      if (deniedIds.includes(DEFAULT_AGENT_ID)) throw alwaysEnabled()
     },
 
-    async listRegistrationDiagnostics(userId, projectId) {
-      return (await contributions.list(userId, projectId ?? '')).errors
-    },
-
-    async assertPolicyChange(userId, projectId, deniedIds) {
-      if (deniedIds.length === 0) return
-      assertDisablable((await buildCatalog(userId, projectId ?? '')).all, deniedIds)
-    },
-
-    // `_agentId` is the caller's idea of WHOSE rules to write, and it is no longer theirs to
-    // choose: an `agent:<id>` rule belongs to that agent's own list, wherever the request
-    // came from. Kept in the signature because the route still sends it.
-    setAgentEnabled: (userId, name, enabled, projectId, _agentId) =>
-      announced(async () => {
+    setAgentEnabled: (userId, name, enabled, projectId) =>
+      changed(async () => {
         const scope = projectId ?? ''
-        const catalog = await buildCatalog(userId, scope)
-        const entry = pickEntry(catalog, name, scope)
-        if (!entry) throw new NotFoundError('agent_not_found', 'Agent not found')
-        if (!enabled && !agentPolicy(entry).disable) {
-          throw new InvalidRequestError(
-            'agent_always_enabled',
-            'This agent cannot be switched off — the app runs on it. Duplicate it to get one you own.',
-          )
-        }
-        // An `agent:<id>` rule lives in that agent's OWN list — "may this role be invoked" is a
-        // statement about the role, and keeping it beside the role's tool rules is what lets a
-        // delete drop both in one write.
-        // The rule write bumps the capability revision once; `announced` sees that bump.
-        await ruleRepository.mutate(userId, entry.record.id, (current) =>
-          applySwitches(current, 'agent', [{ name: entry.record.id, enabled }]),
+        const { summary } = await requireEntry(userId, name, scope)
+        if (!enabled && summary.record.id === DEFAULT_AGENT_ID) throw alwaysEnabled()
+        // An `agent:<id>` rule lives in that agent's OWN list: "may this role be invoked" is a
+        // statement about the role, and keeping it beside its tool rules is what lets a delete
+        // drop both in one write.
+        await rules.mutate(userId, summary.record.id, (current) =>
+          applySwitches(current, 'agent', [{ name: summary.record.id, enabled }]),
         )
-        const refreshed = await buildCatalog(userId, scope)
-        return pickEntry(refreshed, name, entry.projectId)!
+        return (await requireEntry(userId, summary.record.id, scope)).summary
       }),
 
     async getAgent(userId, name, projectId) {
-      return (await findEntry(userId, name, projectId ?? '')) ?? null
+      return (await find(userId, name, projectId ?? ''))?.summary ?? null
     },
 
     createAgent: (userId, input) =>
-      announced(() =>
-        serialize(JSON.stringify([userId, input.projectId ?? '']), () =>
-          createNativeAgent(creationPorts, userId, input),
-        ),
-      ),
+      changed(() => bindings.exclusive(userId, () => createAgentFile(createPorts, userId, input))),
 
     updateAgent: (userId, name, input, projectId) =>
-      announced(() =>
-        serialize(JSON.stringify([userId, projectId ?? '']), async () => {
+      changed(() =>
+        bindings.exclusive(userId, async () => {
           const scope = projectId ?? ''
-          const existing = pickEntry(await buildCatalog(userId, scope), name, scope)
-          if (!existing) throw new NotFoundError('agent_not_found', 'Agent not found')
-          if (existing.registration) {
-            throw new InvalidRequestError(
-              'agent_extension_owned',
-              'Update this agent through its extension',
-            )
-          }
-          const { projectId: _omit, enabled: _state, ...definition } = input
-          const record: AgentRecord = { ...definition, id: existing.record.id }
-          // One diff against the policy, rather than a guard per field: what a class may not
-          // change is stated once, in `policy.ts`, and both this and the editor read it there.
-          const locked = lockedChanges(
-            agentPolicy(existing),
-            existing.record,
-            record as AgentRecord,
+          const snapshot = await bindings.reconcileNow(userId, scope)
+          const found = await find(userId, name, scope, snapshot)
+          if (!found) throw new NotFoundError('agent_not_found', 'Agent not found')
+          const { summary } = found
+          requireEditable(summary)
+          const { id } = summary.record
+          const handle = input.handle
+          if (handle.includes(':'))
+            throw new InvalidRequestError('agent_name_invalid', 'An agent file name has no ":"')
+          const renamed = handle !== summary.record.handle
+          if (
+            renamed &&
+            collides((await catalogOf(userId, snapshot)).all, handle, summary.projectId, id)
           )
-          if (locked.length > 0) {
+            throw new ConflictError('agent_exists', `An agent named "${handle}" already exists.`)
+          const path = renamed ? agentFilePath(dirname(summary.path), handle) : summary.path
+          let text: string
+          try {
+            text = agentFileText(await readAgentFileText(summary.path), { ...input, handle })
+          } catch (error) {
             throw new InvalidRequestError(
-              'agent_field_locked',
-              `This agent ships with the app: its ${locked
-                .map((field) => FIELD_LABELS[field])
-                .join(', ')} cannot be changed. Duplicate it to get one you own.`,
+              'agent_file_unreadable',
+              error instanceof Error ? error.message : 'The agent file cannot be read',
             )
           }
-          const owner = existing.projectId
-          const collision = await findEntry(userId, record.handle, owner)
-          if (collision && collision.record.id !== record.id) {
-            throw new ConflictError(
-              'agent_exists',
-              `An agent named "${record.handle}" already exists.`,
-            )
-          }
-          const dir = await dirFor(userId, owner)
-          await writeAgentRecordFile(dir, record)
-          if (record.handle !== existing.record.handle)
-            await removeAgentRecordFiles(dir, existing.record.handle)
-          if (existing.builtin && owner) {
-            await repo.patchConfig(userId, owner, record.id, {
-              [BUILTIN_OVERRIDE_FIELD]: builtinOverrideHash(record),
-            })
-          }
-          // A rename moves the agent's catalog key: the old one is gone, the new one exists.
-          if (record.handle !== existing.record.handle)
-            await announceAgent(owner, record.id, [existing.record.handle, record.handle])
-          return pickEntry(await buildCatalog(userId, scope), record.id, scope)!
+          // The binding follows the file to its new name before the new file exists, so the
+          // reconcile that sees it is a rename of this agent, never a second one.
+          if (renamed)
+            await stores
+              .sources(deps.db, 'agent', deps.now)
+              .patchConfig(userId, summary.projectId, id, { path })
+          await writeAgentFile(path, text)
+          if (renamed) await rm(summary.path, { force: true })
+          return (await readLocked(userId, scope)).find((agent) => agent.record.id === id)!
         }),
       ),
 
     deleteAgent: (userId, name, projectId) =>
-      announced(() =>
-        serialize(JSON.stringify([userId, projectId ?? '']), async () => {
+      changed(() =>
+        bindings.exclusive(userId, async () => {
           const scope = projectId ?? ''
-          const existing = pickEntry(await buildCatalog(userId, scope), name, scope)
-          if (!existing) throw new NotFoundError('agent_not_found', 'Agent not found')
-          if (!agentPolicy(existing).delete) {
-            throw new InvalidRequestError(
-              'agent_builtin',
-              'A system agent cannot be deleted. Restore its defaults or switch it off instead.',
-            )
-          }
-          await removeAgentRecordFiles(
-            await dirFor(userId, existing.projectId),
-            existing.record.handle,
-          )
-          await repo.remove(userId, existing.projectId, existing.record.id)
-          // The rule goes with it: a same-named file dropped in later must start inert rather
-          // than inherit the deleted agent's answer.
-          // The rules go with it. Nothing reads a deleted agent's list — ids are never reissued —
-          // but the rows outlived every other trace of the agent, so a policy export or a
-          // snapshot still listed a role no screen could reach. One statement covers both the
-          // `agent:<id>` switch and the role's own tool rules, because they are the same list now.
-          await ruleRepository.replace(userId, existing.record.id, [])
-          await announceAgent(existing.projectId, existing.record.id, [existing.record.handle])
+          const found = await find(userId, name, scope, await bindings.reconcileNow(userId, scope))
+          if (!found) throw new NotFoundError('agent_not_found', 'Agent not found')
+          const { summary } = found
+          requireEditable(summary)
+          await rm(summary.path, { force: true })
+          await bindings.forget(userId, scope, summary.projectId, summary.record.id)
         }),
       ),
 
-    resetAgent: (userId, name, projectId) =>
-      announced(() => {
-        const scope = projectId ?? ''
-        return serialize(JSON.stringify([userId, scope]), async () => {
-          const existing = pickEntry(await buildCatalog(userId, scope), name, scope)
-          if (!existing) throw new NotFoundError('agent_not_found', 'Agent not found')
-          if (!existing.builtin) {
-            throw new InvalidRequestError(
-              'agent_not_builtin',
-              'Only a system agent has a default to reset to.',
-            )
-          }
-          // Files only — the enable row is the user's on/off choice, not part of the definition.
-          await removeAgentRecordFiles(
-            await dirFor(userId, existing.projectId),
-            existing.record.handle,
-          )
-          if (existing.projectId)
-            await repo.patchConfig(userId, existing.projectId, existing.record.id, {
-              [BUILTIN_OVERRIDE_FIELD]: null,
-            })
-          return pickEntry(await buildCatalog(userId, scope), name, scope)!
-        })
-      }),
-
-    agentDefaults(name) {
-      return builtinAgentRecord(name)
-    },
-
     duplicateAgent: (userId, name, newName, projectId) =>
-      announced(() => {
+      changed(async () => {
         const scope = projectId ?? ''
-        return serialize(JSON.stringify([userId, scope]), async () => {
-          const catalog = await buildCatalog(userId, scope)
-          const source = pickEntry(catalog, name, scope)
-          if (!source) throw new NotFoundError('agent_not_found', 'Agent not found')
-          if (!agentPolicy(source).duplicate) {
-            throw new InvalidRequestError('agent_not_duplicable', 'This agent cannot be copied.')
-          }
-          if (pickInScope(catalog, newName, scope)) {
-            throw new ConflictError('agent_exists', `An agent named "${newName}" already exists.`)
-          }
-          // A copy is the user's own: the import provenance describes the SOURCE file, not this one.
-          const { id: _origin, ...copied } = source.record
-          return createNativeAgent(
-            creationPorts,
+        const { summary } = await requireEntry(userId, name, scope)
+        const { id, ...copied } = summary.record
+        const policy = { id, rules: await rules.read(userId, id) }
+        return bindings.exclusive(userId, () =>
+          createAgentFile(
+            createPorts,
             userId,
-            {
-              ...copied,
-              handle: newName,
-              projectId: scope || null,
-              enabled: source.enabled,
-            },
-            { id: source.record.id, rules: await ruleRepository.read(userId, source.record.id) },
-          )
-        })
+            { ...copied, handle: newName, projectId: scope || null, enabled: summary.enabled },
+            policy,
+          ),
+        )
       }),
 
     async resolveEnabledAgent(userId, agentId, projectId) {
-      const scope = projectId ?? ''
-      const catalog = await buildCatalog(userId, scope)
-      const chosen = catalog.enabled.find(
-        (agent) => agent.record.id === agentId && visibleInScope(agent.projectId, scope),
-      )
-      return chosen?.record ?? null
+      const { all } = await read(userId, projectId ?? '')
+      return all.find((agent) => agent.record.id === agentId && agent.enabled)?.record ?? null
     },
 
     async selectEnabledAgent(userId, handle, projectId) {
-      const scope = projectId ?? ''
-      const catalog = await buildCatalog(userId, scope)
-      const named = (agent: AgentSummary) =>
-        agent.record.handle === handle ||
-        (agent.registration && `${agent.registration.sourceName}:${agent.record.handle}` === handle)
-      // The project's own definition first; an installation agent only when the project has none.
-      const own = catalog.enabled.filter((agent) => agent.projectId === scope && named(agent))
-      const matches =
-        own.length || !scope
-          ? own
-          : catalog.enabled.filter((agent) => !agent.projectId && named(agent))
-      if (matches.length > 1) throw new ConflictError('agent_ambiguous', 'Select an agent by ID')
-      return matches[0]?.record ?? null
+      const found = await find(userId, handle, projectId ?? '')
+      return found?.summary.enabled ? found.summary.record : null
     },
   }
 }
+
+const alwaysEnabled = () =>
+  new InvalidRequestError(
+    'agent_always_enabled',
+    'This agent cannot be switched off — the app runs on it. Copy one to Yours to change it.',
+  )

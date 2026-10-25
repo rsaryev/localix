@@ -8,7 +8,7 @@ import { createMcpService } from '../features/mcp/service'
 import { createPluginService } from '../features/plugins/service'
 import { createMiniAppService } from '../features/mini-apps/service'
 import { createContributionKindRegistry } from '../features/ext/contribution-kinds'
-import { agentContributionSchema } from '../features/agents/contribution'
+import { createAgentFoldersPort, createPluginAgentGroups } from './agent-catalog-sources'
 import { createAgentsService } from '../features/agents/service'
 import { createInvocationRegistry } from '../features/capabilities/invocation'
 import { createLspManager } from '../features/lsp'
@@ -182,7 +182,6 @@ export function createDomainServicesPhase({
   // Late-bound: chatService is created below, but a command's arg-options runner needs a
   // session's cwd. Hold a ref, assign it once chatService exists.
   const contributionKinds = createContributionKindRegistry()
-  contributionKinds.register('agent', agentContributionSchema)
   const resolveSessionCwd = async (userId: string, sessionId: string) =>
     (await hostRefs.chatServiceForCwd?.resolveSessionCwd(userId, sessionId).catch(() => null)) ??
     null
@@ -226,12 +225,11 @@ export function createDomainServicesPhase({
   const agentsService = createAgentsService({
     db,
     capabilityStores,
-    resolveProjectCwd,
+    folders: createAgentFoldersPort(resolveProjectCwd),
+    plugins: createPluginAgentGroups(db, resolveProjectCwd),
     invocations,
-    syncBundledContributions: (...args) => miniAppService.syncBundledContributions(...args),
   })
   hostRefs.listAgents = (...args) => agentsService.listAgents(...args)
-  hostRefs.getHuman = (...args) => agentsService.getHuman(...args)
   // A crashed language server is a low-severity Event Center row until it is ready again.
   const lspManager = createLspManager({
     health: createLspConditions(notifications, env.LOCALIX_DEFAULT_USER_ID),

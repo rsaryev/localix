@@ -27,7 +27,7 @@ interface AgentRowProps {
   onToggle: () => void
   /**
    * The row's ONE action: open this agent's profile, in the tab every other mention of it
-   * opens too. Duplicate, delete and reset live on that profile — they act on the whole
+   * opens too. Duplicate and delete live on that profile — they act on the whole
    * record, and a row that offered them put three verbs of different weight, one of them
    * destructive, a pixel apart on a list you scan.
    */
@@ -37,10 +37,9 @@ interface AgentRowProps {
 /**
  * One managed agent as a registry row: identity, where it came from, what it runs on.
  *
- * Three provenances read differently and the row says which: `system` is served from
- * code and can only be switched off; `customized` is a system agent under the user's
- * override (Reset brings the shipped one back); everything else is the user's own file,
- * possibly imported, and can be deleted.
+ * Provenances read differently and the row says which: `system` is served from code and can only
+ * be switched off; a plugin's or an organization's agent is read-only; everything else is the
+ * user's own file and can be deleted.
  */
 export function AgentRow({
   agent,
@@ -52,15 +51,8 @@ export function AgentRow({
 }: AgentRowProps) {
   const r = agent.record
   const alwaysOn = !agentPolicy(agent).disable
-  const unavailable =
-    agent.unavailableReason === 'source_disabled'
-      ? 'Enable the owning extension before using this agent.'
-      : agent.unavailableReason === 'policy_pending'
-        ? 'Review the current imported policy before this agent can run.'
-        : undefined
-  const imported = agent.source.startsWith('imported:')
   const system = agent.source === 'builtin'
-  const customized = agent.builtin && !system
+  const external = agent.source.startsWith('plugin:') || agent.source === 'managed'
   const model = r.modelPreference?.model
     ? `${r.modelPreference?.provider ? `${r.modelPreference?.provider} · ` : ''}${r.modelPreference?.model}`
     : null
@@ -70,14 +62,14 @@ export function AgentRow({
       uiTargetUri={settingsEntityUiUri('agents', 'agent', r.id, agent.projectId)}
       state={agent.enabled ? 'enabled' : 'disabled'}
       busyLabel={busyLabel}
-      leading={<MonogramAvatar identity={r.handle} label={r.label} />}
+      leading={<MonogramAvatar identity={r.handle} />}
       toggle={
         // The title rides the wrapper, not the input: a disabled control gets no pointer
         // events, so a tooltip on it would never be read.
-        <span title={alwaysOn ? ALWAYS_ON_REASON : unavailable} className="inline-flex">
+        <span title={alwaysOn ? ALWAYS_ON_REASON : undefined} className="inline-flex">
           <Switch
             checked={agent.enabled}
-            disabled={actionsDisabled || alwaysOn || Boolean(unavailable)}
+            disabled={actionsDisabled || alwaysOn}
             onChange={onToggle}
             aria-label={
               alwaysOn
@@ -102,14 +94,10 @@ export function AgentRow({
         <>
           <div className="flex min-w-0 items-baseline gap-2">
             <p className="min-w-0 truncate text-sm font-semibold text-foreground" title={r.handle}>
-              {r.label || r.handle}
+              {r.handle}
             </p>
-            {r.label && <code className="shrink-0 text-2xs text-text-soft">{r.handle}</code>}
             {agent.invocations.chat === 'allow' && <Badge>chat</Badge>}
             {system && <Badge>system</Badge>}
-            {customized && (
-              <Badge title="A system agent with your changes on top">customized</Badge>
-            )}
           </div>
           <SettingRegistryMeta
             items={[
@@ -118,8 +106,7 @@ export function AgentRow({
               ...(r.context?.preloadSkills?.length
                 ? [{ label: `${r.context?.preloadSkills.length} skills` }]
                 : []),
-              ...(imported ? [{ label: agent.registration?.sourceName ?? agent.source }] : []),
-              ...(unavailable ? [{ label: unavailable }] : []),
+              ...(external ? [{ label: agent.source.replace(/^plugin:/, '') }] : []),
             ]}
           />
           <p

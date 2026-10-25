@@ -43,87 +43,79 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
   // The session's mode rewrites the admitted agent's rules before anything reads them, so every
   // consumer below — plugin narrowing, the tool projection, the gate — sees one answer.
   const mode = capabilitiesInMode(turn.admittedAgent.capabilities, turn.policy.permission.mode)
-  const human = (user: string, projectId: string | null) =>
-    deps.resolveHuman?.(user, projectId) ?? Promise.resolve(undefined)
-  // Observer hooks (HITL, subagent stop, a card assigned to `@human`) are fire-and-forget: no loop latency. The
+  // Observer hooks (HITL, subagent stop, a card assigned to the person) are fire-and-forget: no loop latency. The
   // plugin hooks are bound once loaded below; a card assigned before then fires none.
   let miniAppHooks: readonly LoadedMiniAppHook[] = []
   const hookRunOptions: HookRunOptions = { sessionId: session.id, logger: consoleWarnLogger }
-  const [context, humanProfile] = await Promise.all([
-    prepareRunContext(
-      {
-        memoryRepo: env.memoryRepo,
-        projectsRepo: env.projectsRepo,
-        pluginRepo: env.pluginRepo,
-        miniAppRepo: env.miniAppRepo,
-        contextSnapshots: runtimeState.contextSnapshots,
-        laneSnapshots: createParticipantLaneSnapshotRepository(deps.db),
-        runScopes: runtimeState.runScopes,
-        now,
-        logger: env.deps.logger,
-        // A mini app's user-facing problem rides the same frame a Claude Code hook's
-        // non-blocking `systemMessage` does — one inline transcript warning the client renders —
-        // marked as the app's, so the client also keeps it as a standing Event Center row.
-        publishMiniAppProblem: ({ userId: owner, ...problem }) =>
-          deps.streamRegistry.publish(owner, problem.sessionId, miniAppProblemNotice(problem)),
-        // A tool's session folder, behind the same ownership gate a route's goes through: a
-        // session that is gone (or never was the user's) rejects before anything is created. Pure
-        // in its arguments — the app context it lands on is shared by every run of the scope.
-        miniAppSessionStorage: (app) => ({
-          resolveDataDir: (owner, sessionId) =>
-            resolveMiniAppSessionDataDir({
-              app,
-              userId: owner,
-              sessionId,
-              authorize: async (user, session) => {
-                if (!(await env.repo.getSession(user, session)))
-                  throw new Error('Session not found')
-              },
-            }),
-        }),
-        // The agents a mini app tool may name, behind the same ownership gate: the session is
-        // read for the user first, then only the enabled agents of its scope are listed.
-        miniAppAgentDirectory: createMiniAppAgentDirectory({
-          sessionProject: async (user, session) => {
-            const record = await env.repo.getSession(user, session)
-            return record ? (record.projectId ?? null) : undefined
-          },
-          listAgents: async (user, projectId) =>
-            ((await deps.listRegistryAgents?.(user, projectId)) ?? []).map((agent) => ({
-              id: agent.agentId,
-              handle: agent.name,
-              description: agent.description,
-              enabled: agent.enabled,
-            })),
-          human: (user, projectId) => human(user, projectId),
-          // A card assigned to `@human` waits on the person: tell them wherever they are.
-          notifyHuman: (user, sessionId, notice) =>
-            publishHumanAssignment(
-              {
-                streamRegistry: deps.streamRegistry,
-                notifications: deps.notifications,
-                onHumanAssigned: (event) =>
-                  void runHumanAssignedHooks(miniAppHooks, event, hookRunOptions),
-              },
-              user,
-              { sessionId, messageId: notice.key, from: notice.from ?? '', text: notice.text },
-            ),
-        }),
-      },
-      {
-        userId,
-        agent: { ...turn.admittedAgent, capabilities: mode.capabilities },
-        session,
-        speakerAgentId,
-        historyMessages: params.historyMessages,
-        // The prompt snapshot is frozen per view epoch (see stages/view.ts).
-        viewEpoch: view.epochId,
-        globalAgentSettings: turn.globalAgentSettings,
-      },
-    ),
-    // Volatile, not frozen: it rides `# Conversation participants`, so an edit reaches the next turn.
-    human(userId, session.projectId ?? null),
-  ])
+  const context = await prepareRunContext(
+    {
+      memoryRepo: env.memoryRepo,
+      projectsRepo: env.projectsRepo,
+      pluginRepo: env.pluginRepo,
+      miniAppRepo: env.miniAppRepo,
+      contextSnapshots: runtimeState.contextSnapshots,
+      laneSnapshots: createParticipantLaneSnapshotRepository(deps.db),
+      runScopes: runtimeState.runScopes,
+      now,
+      logger: env.deps.logger,
+      // A mini app's user-facing problem rides the same frame a Claude Code hook's
+      // non-blocking `systemMessage` does — one inline transcript warning the client renders —
+      // marked as the app's, so the client also keeps it as a standing Event Center row.
+      publishMiniAppProblem: ({ userId: owner, ...problem }) =>
+        deps.streamRegistry.publish(owner, problem.sessionId, miniAppProblemNotice(problem)),
+      // A tool's session folder, behind the same ownership gate a route's goes through: a
+      // session that is gone (or never was the user's) rejects before anything is created. Pure
+      // in its arguments — the app context it lands on is shared by every run of the scope.
+      miniAppSessionStorage: (app) => ({
+        resolveDataDir: (owner, sessionId) =>
+          resolveMiniAppSessionDataDir({
+            app,
+            userId: owner,
+            sessionId,
+            authorize: async (user, session) => {
+              if (!(await env.repo.getSession(user, session))) throw new Error('Session not found')
+            },
+          }),
+      }),
+      // The agents a mini app tool may name, behind the same ownership gate: the session is
+      // read for the user first, then only the enabled agents of its scope are listed.
+      miniAppAgentDirectory: createMiniAppAgentDirectory({
+        sessionProject: async (user, session) => {
+          const record = await env.repo.getSession(user, session)
+          return record ? (record.projectId ?? null) : undefined
+        },
+        listAgents: async (user, projectId) =>
+          ((await deps.listRegistryAgents?.(user, projectId)) ?? []).map((agent) => ({
+            id: agent.agentId,
+            handle: agent.name,
+            description: agent.description,
+            enabled: agent.enabled,
+          })),
+        // A card assigned to the person waits on them: tell them wherever they are.
+        notifyHuman: (user, sessionId, notice) =>
+          publishHumanAssignment(
+            {
+              streamRegistry: deps.streamRegistry,
+              notifications: deps.notifications,
+              onHumanAssigned: (event) =>
+                void runHumanAssignedHooks(miniAppHooks, event, hookRunOptions),
+            },
+            user,
+            { sessionId, messageId: notice.key, from: notice.from ?? '', text: notice.text },
+          ),
+      }),
+    },
+    {
+      userId,
+      agent: { ...turn.admittedAgent, capabilities: mode.capabilities },
+      session,
+      speakerAgentId,
+      historyMessages: params.historyMessages,
+      // The prompt snapshot is frozen per view epoch (see stages/view.ts).
+      viewEpoch: view.epochId,
+      globalAgentSettings: turn.globalAgentSettings,
+    },
+  )
   const { defaultCwd, loadedPlugins, loadedMiniApps } = context
   // A plugin's default `agent` setting runs the default agent's chat as that plugin agent, on its
   // model unless the person picked one — settled before anything below reads the turn's model.
@@ -242,7 +234,6 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
     mainAgent: main.mainAgent,
     // The tools list the run's surface is exact to: the agent type's, or the main agent's.
     toolsAgent: runToolsAgent(asType?.subagent, main.mainAgent),
-    ...(humanProfile ? { human: humanProfile } : {}),
     hookRunOptions,
     ccHooks,
     ccSessionStartContext,

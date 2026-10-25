@@ -3,7 +3,7 @@ import type { RunProfile } from '../run-shape'
 import type { RuntimeSection } from './runtime-sections'
 import type { ContextFile } from '../context-files'
 import type { MemoryUsage } from '../../memory/file-store'
-import type { ConversationParticipant, HumanProfile } from './sections/conversation'
+import type { ConversationParticipant } from './sections/conversation'
 import type { BackgroundJobSnapshot } from './sections/background-jobs'
 import type { ApprovedPlanPrompt } from './sections/plan'
 
@@ -72,8 +72,6 @@ export interface BuildAgentSystemPromptParams {
   conversation?: {
     self: string
     participants: readonly ConversationParticipant[]
-    /** The person (`@human`), listed in the volatile roster as data about them. */
-    human?: HumanProfile
     /** This participant is the elected leader and receives orchestration guidance. */
     isLeader?: boolean
     /** The elected leader's handle, recomputed each run; the volatile roster names it. */
@@ -82,7 +80,7 @@ export interface BuildAgentSystemPromptParams {
     membershipClosed?: boolean
     /**
      * No conversation surrounds the run: a delegated child or a job works for whoever started
-     * it, so there is no room to list — no roster, no `@human` beside a colleague.
+     * it, so there is no room to list — no roster to list.
      */
     isolated?: boolean
   }

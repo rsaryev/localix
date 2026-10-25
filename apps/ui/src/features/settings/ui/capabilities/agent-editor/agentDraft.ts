@@ -4,7 +4,6 @@ import { isReasoningEffort } from '@localixai/agent'
 
 export interface AgentDraft {
   name: string
-  label: string
   description: string
 
   provider: string
@@ -22,7 +21,6 @@ export interface AgentDraft {
 
 export const emptyAgentDraft = (): AgentDraft => ({
   name: '',
-  label: '',
   description: '',
   provider: '',
   model: '',
@@ -37,7 +35,6 @@ export const emptyAgentDraft = (): AgentDraft => ({
 export function draftFromRecord(record: AgentRecord): AgentDraft {
   return {
     name: record.handle,
-    label: record.label ?? '',
     description: record.description ?? '',
     provider: record.modelPreference?.provider ?? '',
     model: record.modelPreference?.model ?? '',
@@ -132,7 +129,6 @@ export function draftToInput(draft: AgentDraft, _existing?: AgentRecord): DraftR
     instructions: prompt,
     leadershipPriority,
     description: draft.description.trim(),
-    ...(draft.label.trim() ? { label: draft.label.trim() } : {}),
     ...(model || effort
       ? {
           modelPreference: {

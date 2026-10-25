@@ -24,17 +24,23 @@ async function fixture() {
   const db = createDatabase({ filename: join(root, 'test.sqlite') })
   cleanup.push(() => db.destroy())
   await migrateToLatest(db)
-  const globalDir = join(root, 'agents')
-  await mkdir(globalDir)
-  const projectCwd = join(root, 'project')
-  await mkdir(projectCwd)
+  // Claude Code's folders, in a temp tree: the person's `~/.claude` and one project's `.claude`.
+  const userClaude = join(root, 'home', '.claude')
+  const projectClaude = join(root, 'project', '.claude')
+  const globalDir = join(userClaude, 'agents')
+  const projectDir = join(projectClaude, 'agents')
+  await mkdir(projectDir, { recursive: true })
+  await mkdir(globalDir, { recursive: true })
   const invocations = createInvocationRegistry()
   const service = createAgentsService({
     db,
     capabilityStores,
     invocations,
-    globalDir,
-    resolveProjectCwd: async (_user, project) => (project === 'p' ? projectCwd : null),
+    folders: async (_user, project) => ({
+      managed: join(root, 'managed', '.claude'),
+      user: userClaude,
+      project: project === 'p' ? [projectClaude] : project ? null : [],
+    }),
   })
   const rules = createCapabilityRuleRepository(db)
   await seedAgentPresets(
@@ -45,7 +51,7 @@ async function fixture() {
     },
     'u',
   )
-  return { service, rules, globalDir, invocations }
+  return { service, rules, globalDir, projectDir, invocations }
 }
 const input = (handle = 'reviewer', extra: Record<string, unknown> = {}) =>
   agentRecordInputSchema.parse({
@@ -55,7 +61,7 @@ const input = (handle = 'reviewer', extra: Record<string, unknown> = {}) =>
     ...extra,
   })
 
-describe('native agent registry', () => {
+describe('agents as Claude Code files', () => {
   test('run resolution refreshes definition and policy together and rejects revoked invocation', async () => {
     const { service, rules } = await fixture()
     const { record } = await service.createAgent('u', input())
@@ -187,35 +193,42 @@ describe('native agent registry', () => {
     expect(await service.resolveInvocableAgent('u', record.id, 'automation')).toBeNull()
   })
 
-  test('authored agents receive an identity and independent invocation policy', async () => {
+  test('an authored agent is a Claude Code file with an identity and its own policy', async () => {
     const { service, globalDir } = await fixture()
     const agent = await service.createAgent('u', input())
     expect(agent.record.id).toBeTruthy()
     expect(agent.record.id).not.toBe(agent.record.handle)
     expect(agent.enabled).toBe(true)
     expect(agent.invocations.chat).toBe('allow')
-    const saved = JSON.parse(await readFile(join(globalDir, 'reviewer.json'), 'utf8'))
-    expect(saved).toEqual(agent.record)
-    expect(saved).not.toHaveProperty('tools')
-    expect(saved).not.toHaveProperty('type')
-    expect(await readdir(globalDir)).toEqual(['reviewer.json'])
+    expect(agent).toMatchObject({ source: 'user', editable: true })
+    const saved = await readFile(join(globalDir, 'reviewer.md'), 'utf8')
+    expect(saved).toContain('name: reviewer')
+    expect(saved).toContain('description: Reviews')
+    expect(saved.trim().endsWith('Review.')).toBe(true)
+    expect(await readdir(globalDir)).toEqual(['reviewer.md'])
   })
-  test('discovered native files stay inert until explicitly enabled', async () => {
+  test('a file made outside Localix is adopted with an id; a project file waits to be allowed', async () => {
+    const { service, globalDir, projectDir } = await fixture()
+    const file = (name: string) =>
+      `---
+name: ${name}
+description: Use when ${name}
+---
+Body of ${name}.
+`
+    await writeFile(join(globalDir, 'scribe.md'), file('scribe'))
+    await writeFile(join(projectDir, 'local-helper.md'), file('local-helper'))
+    const scribe = (await service.getAgent('u', 'scribe'))!
+    expect(scribe).toMatchObject({ enabled: true, source: 'user' })
+    expect(scribe.record.instructions).toBe('Body of scribe.')
+    expect((await service.getAgent('u', 'scribe'))!.record.id).toBe(scribe.record.id)
+    const helper = (await service.getAgent('u', 'local-helper', 'p'))!
+    expect(helper).toMatchObject({ enabled: false, source: 'project' })
+    expect(await service.resolveEnabledAgent('u', helper.record.id, 'p')).toBeNull()
+    expect((await service.setAgentEnabled('u', helper.record.id, true, 'p')).enabled).toBe(true)
+  })
+  test('editing keeps the ID and the file; a rename moves the file and keeps the ID', async () => {
     const { service, globalDir } = await fixture()
-    await writeFile(
-      join(globalDir, 'reviewer.json'),
-      JSON.stringify({ ...input(), id: 'native:global:dropped-id' }),
-    )
-    const discovered = (await service.getAgent('u', 'reviewer'))!
-    expect(discovered.enabled).toBe(false)
-    expect(discovered.invocations.chat).toBe('deny')
-    expect(await service.resolveEnabledAgent('u', 'native:global:dropped-id')).toBeNull()
-    expect((await service.setAgentEnabled('u', 'native:global:dropped-id', true)).enabled).toBe(
-      true,
-    )
-  })
-  test('editing retains ID; copying and recreating issue new identities', async () => {
-    const { service } = await fixture()
     const original = await service.createAgent('u', input())
     const edited = await service.updateAgent(
       'u',
@@ -224,10 +237,20 @@ describe('native agent registry', () => {
     )
     expect(edited.record.id).toBe(original.record.id)
     expect(edited.record.instructions).toBe('Edited.')
+    const renamed = await service.updateAgent('u', original.record.id, input('critic'))
+    expect(renamed.record.id).toBe(original.record.id)
+    expect(await readdir(globalDir)).toEqual(['critic.md'])
+    expect((await service.getAgent('u', 'critic'))?.record.id).toBe(original.record.id)
+    expect(await service.getAgent('u', 'reviewer')).toBeNull()
+  })
+  test('copying and recreating issue new identities; delete removes the file', async () => {
+    const { service, globalDir } = await fixture()
+    const original = await service.createAgent('u', input())
     const copied = await service.duplicateAgent('u', original.record.id, 'copy')
     expect(copied.record.id).not.toBe(original.record.id)
-    expect(copied.record.instructions).toBe('Edited.')
+    expect(copied.record.instructions).toBe('Review.')
     await service.deleteAgent('u', original.record.id)
+    expect(await readdir(globalDir)).toEqual(['copy.md'])
     expect(await service.resolveEnabledAgent('u', original.record.id)).toBeNull()
     const recreated = await service.createAgent('u', input())
     expect(recreated.record.id).not.toBe(original.record.id)
@@ -240,40 +263,32 @@ describe('native agent registry', () => {
     ])
     expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1)
     expect(results.filter((result) => result.status === 'rejected')).toHaveLength(1)
-    expect((await service.listAgents('u')).filter((agent) => !agent.builtin)).toHaveLength(1)
+    expect((await service.listAgents('u')).filter((agent) => agent.editable)).toHaveLength(1)
   })
-  test('an old identity cannot resolve as another agent handle', async () => {
+  test('an old identity never resolves to the agent that took its name', async () => {
     const { service } = await fixture()
     const original = await service.createAgent('u', input())
     await service.deleteAgent('u', original.record.id)
-    const replacement = await service.createAgent('u', input(original.record.id))
+    const replacement = await service.createAgent('u', input())
+    expect(replacement.record.id).not.toBe(original.record.id)
     expect(await service.resolveEnabledAgent('u', original.record.id)).toBeNull()
-    expect(await service.resolveEnabledAgent('u', replacement.record.id)).toEqual(
-      replacement.record,
-    )
-    expect(await service.selectEnabledAgent('u', original.record.id)).toEqual(replacement.record)
+    expect(await service.selectEnabledAgent('u', original.record.id)).toBeNull()
+    expect(await service.selectEnabledAgent('u', 'reviewer')).toEqual(replacement.record)
     expect(await service.resolveEnabledAgent('u', 'localix')).toBeNull()
     expect((await service.resolveEnabledAgent('u', 'builtin:localix'))?.handle).toBe('localix')
   })
-  test('builtin edits preserve identity and reset preserves capability choices', async () => {
-    const { service, rules } = await fixture()
-    const original = (await service.getAgent('u', 'localix'))!
-    await rules.replace('u', 'agent:builtin:localix', [
-      { action: 'tool:write', resource: '*', effect: 'deny' },
-    ])
-    const edited = await service.updateAgent(
-      'u',
-      'localix',
-      input('localix', { instructions: 'Edited lead.' }),
-    )
-    expect(edited.record.id).toBe(original.record.id)
-    expect(edited.builtin).toBe(true)
-    await expect(service.deleteAgent('u', 'localix')).rejects.toThrow(/system agent/i)
-    const reset = await service.resetAgent('u', 'localix')
-    expect(reset.record).toEqual(original.record)
-    expect(await rules.read('u', 'agent:builtin:localix')).toEqual([
-      { action: 'tool:write', resource: '*', effect: 'deny' },
-    ])
+  test('a built-in agent is read-only: copy it to change it, and the main loop stays on', async () => {
+    const { service } = await fixture()
+    const main = (await service.getAgent('u', 'localix'))!
+    expect(main).toMatchObject({ source: 'builtin', editable: false })
+    await expect(service.deleteAgent('u', 'localix')).rejects.toThrow(/copy it to yours/i)
+    await expect(
+      service.updateAgent('u', 'localix', input('localix', { instructions: 'Edited.' })),
+    ).rejects.toThrow(/copy it to yours/i)
+    await expect(service.setAgentEnabled('u', 'localix', false)).rejects.toThrow(/switched off/i)
+    const copy = await service.duplicateAgent('u', 'localix', 'lead')
+    expect(copy).toMatchObject({ source: 'user', editable: true })
+    expect(copy.record.id).not.toBe(main.record.id)
   })
   test('same handles in different places do not share capability rules', async () => {
     const { service, rules } = await fixture()
@@ -295,18 +310,14 @@ describe('native agent registry', () => {
     expect(projectPolicy.allows('tool', 'write')).toBe(true)
     expect(await service.getAgent('u', global.record.id, 'p')).toBeNull()
   })
-  test('a project agent named localix is an ordinary user definition', async () => {
-    const { service, globalDir } = await fixture()
-    const native = { ...input('localix'), id: 'native:project:p:localix' }
-    const projectDir = join(globalDir, '..', 'project', '.localix', 'agents')
-    await mkdir(projectDir, { recursive: true })
-    await writeFile(join(projectDir, 'localix.json'), JSON.stringify(native))
-    const entry = (await service.getAgent('u', 'localix', 'p'))!
-    expect(entry.builtin).toBe(false)
-    await service.setAgentEnabled('u', entry.record.id, true, 'p')
-    await service.setAgentEnabled('u', entry.record.id, false, 'p')
-    await service.deleteAgent('u', entry.record.id, 'p')
-    expect((await service.getAgent('u', 'localix', 'p'))?.record.id).toBe('builtin:localix')
+  test('a project file named like a built-in shadows it only inside that project', async () => {
+    const { service, projectDir } = await fixture()
+    await writeFile(
+      join(projectDir, 'Explore.md'),
+      '---\nname: Explore\ndescription: Project explorer\n---\nLook closely.\n',
+    )
+    expect((await service.getAgent('u', 'Explore', 'p'))?.source).toBe('project')
+    expect((await service.getAgent('u', 'Explore'))?.source).toBe('builtin')
   })
   test('a later invocation denial overrides the default the record was created with', async () => {
     // Creating an agent opens every host. Withdrawing one is a row appended to that agent's

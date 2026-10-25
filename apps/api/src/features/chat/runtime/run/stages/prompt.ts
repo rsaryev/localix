@@ -69,7 +69,6 @@ export async function buildRunPrompt(
     triggeredSkills: inputs.triggeredSkills,
     contextFiles: inputs.contextFiles,
     projectStructure: inputs.projectStructure,
-    human: inputs.human,
     defaultCwd: inputs.defaultCwd,
     scratchDir: toolset.scratchDir,
     childRuntimeSessions: env.state.childRuntimeSessions,

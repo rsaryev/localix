@@ -19,7 +19,6 @@ const shipped: AgentRecord = {
   id: 'builtin:lead',
   handle: 'lead',
   leadershipPriority: 2,
-  label: 'Tech Lead',
   description: 'Talks through approach.',
   instructions: 'You are the tech lead.',
 }
@@ -27,10 +26,10 @@ const shipped: AgentRecord = {
 const customized = (over: Partial<AgentSummary> = {}): AgentSummary =>
   ({
     record: { ...shipped, instructions: 'You are MY tech lead.' },
-    builtin: true,
     enabled: true,
     source: 'user',
-    path: '/home/u/.localix/agents/lead.json',
+    editable: true,
+    path: '/home/u/.claude/agents/lead.md',
     projectId: '',
     scope: 'global',
     invocations: { chat: 'allow' },
@@ -186,19 +185,13 @@ describe('AgentEditor', () => {
     }
   })
 
-  test('an extension-owned definition is read-only and names its actual owner', async () => {
+  test('a plugin definition is read-only', async () => {
     const { unmount } = await mount({
       agent: customized({
-        record: { ...shipped, id: 'contribution:reviewer' },
-        builtin: false,
-        source: 'imported:extension-id',
+        record: { ...shipped, id: 'builtin:reviewer' },
+        source: 'plugin:review-pack',
+        editable: false,
         path: '',
-        registration: {
-          sourceId: 'extension-id',
-          sourceName: 'review-pack',
-          key: 'lead',
-          revision: 1,
-        },
       }),
     })
     expect(document.querySelector<HTMLTextAreaElement>('textarea')!.readOnly).toBe(true)
@@ -209,13 +202,11 @@ describe('AgentEditor', () => {
     await unmount()
   })
 
-  test('a local handle can be renamed while shipped handles remain locked', async () => {
+  test('a handle can be renamed in a file the person owns; a built-in handle stays locked', async () => {
     const onSave = mock(async (_input: AgentRecordInput) => {})
     const mine = await mount({
       agent: customized({
         record: { ...shipped, id: 'custom-id', handle: 'mine' },
-        builtin: false,
-        source: 'local',
       }),
       onSave,
     })
@@ -228,7 +219,7 @@ describe('AgentEditor', () => {
     } finally {
       await mine.unmount()
     }
-    const builtin = await mount({ agent: customized() })
+    const builtin = await mount({ agent: customized({ source: 'builtin', editable: false }) })
     try {
       expect(document.querySelector<HTMLInputElement>('#agent-name')!.readOnly).toBe(true)
     } finally {
@@ -265,92 +256,21 @@ describe('AgentEditor', () => {
     await unmount()
   })
 
-  test('Restore stands with Cancel and Save, fills the fields, and writes nothing itself', async () => {
-    let dropped = 0
-    const { act, unmount } = await mount({
-      agent: customized(),
-      onLoadDefaults: async () => shipped,
-      onDropOverride: async () => {
-        dropped += 1
-      },
-    })
-
-    expect(document.querySelector<HTMLTextAreaElement>('textarea')!.value).toBe(
-      'You are MY tech lead.',
-    )
-    expect(heading()).toContain('Instructions')
-
-    const restore = () =>
-      [...document.querySelectorAll('button')].find((b) => b.textContent === 'Restore')
-    expect(restore()).toBeDefined()
-    await act(async () => restore()!.click())
-
-    expect(dropped).toBe(0)
-    expect(document.querySelector<HTMLTextAreaElement>('textarea')!.value).toBe(
-      'You are the tech lead.',
-    )
-    expect(document.body.textContent).toContain('Defaults filled in')
-    // Keep the same footer geometry; only availability changes after restoring.
-    expect(restore()!.disabled).toBe(true)
-    expect(submit().disabled).toBe(false)
-    expect(submit().textContent).toBe('Save defaults')
-
-    // Saving a draft that IS the shipped one removes the override instead of writing a copy.
-    await act(async () => submit().click())
-    expect(dropped).toBe(1)
-    await unmount()
-  })
-
   test('agent editing does not contain an invocation kind or foreign permission mode', async () => {
     // Read from the same table `updateAgent` guards with: a control the server would refuse
     // must not look live. The kind and the tool dialect belong to the definition we ship.
-    const shippedRole = await mount({ agent: customized() })
+    const shippedRole = await mount({ agent: customized({ source: 'builtin', editable: false }) })
     const kind = () => document.querySelector<HTMLInputElement>('input[type="radio"]')!
     expect(kind()).toBeNull()
-    expect(document.querySelector<HTMLTextAreaElement>('textarea')!.readOnly).toBe(false)
+    expect(document.querySelector<HTMLTextAreaElement>('textarea')!.readOnly).toBe(true)
     await shippedRole.unmount()
 
     const mine = await mount({
       agent: customized({
         record: { ...shipped, id: 'custom-id', handle: 'mine' },
-        builtin: false,
-        source: 'local',
       }),
     })
     expect(kind()).toBeNull()
     await mine.unmount()
-  })
-
-  test('an untouched system agent retains a disabled Restore in the footer', async () => {
-    const { unmount } = await mount({
-      agent: customized({ record: shipped, source: 'builtin' }),
-      onLoadDefaults: async () => shipped,
-    })
-    expect(
-      [...document.querySelectorAll('button')].find((b) => b.textContent === 'Restore'),
-    ).toHaveProperty('disabled', true)
-    await unmount()
-  })
-
-  test('loading shipped defaults changes Restore availability without adding footer controls', async () => {
-    let finish!: (record: AgentRecord) => void
-    const pending = new Promise<AgentRecord>((resolve) => {
-      finish = resolve
-    })
-    const { act, unmount } = await mount({ agent: customized(), onLoadDefaults: () => pending })
-    try {
-      const buttons = () => [...document.querySelectorAll('button')]
-      const before = buttons().map((button) => button.textContent)
-      const restore = buttons().find((button) => button.textContent === 'Restore')!
-      expect(restore.disabled).toBe(true)
-      await act(async () => {
-        finish(shipped)
-      })
-      expect(buttons().map((button) => button.textContent)).toEqual(before)
-      expect(buttons().find((button) => button.textContent === 'Restore')).toBe(restore)
-      expect(restore.disabled).toBe(false)
-    } finally {
-      await unmount()
-    }
   })
 })

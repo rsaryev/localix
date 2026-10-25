@@ -16,8 +16,7 @@
 export const SOLO_TURN_CONTROL = `You are the only agent in this conversation.`
 
 /**
- * The person is reached through `ask`, never by a mention. An `@human` address used to hand them
- * the floor, and agents kept writing it in passing; a question now blocks on the tool's own card.
+ * The person is reached through `ask`, never by a mention: a question blocks on the tool's own card.
  * A run without `ask` (nobody is at the keyboard) proceeds on a stated assumption instead.
  */
 export const HUMAN_ASK_CONTROL = `Never @mention the person. When you need their answer, decision or approval, use the ask tool; otherwise report and stop — your reply returns to them.`
@@ -27,7 +26,7 @@ export const HUMAN_NO_ASK_CONTROL = `Never @mention the person. Nobody can answe
  * The board lines below render only for a run that holds a task board: a contract naming a board
  * the run does not have once made a model invent a KANBAN.md.
  */
-export const HUMAN_BOARD_CONTROL = `A card assigned to @human waits for them; never take or do it.`
+export const HUMAN_BOARD_CONTROL = `A card assigned to the person waits for them; never take or do it.`
 export const SOLO_BOARD = `You own the whole task board.`
 
 /**

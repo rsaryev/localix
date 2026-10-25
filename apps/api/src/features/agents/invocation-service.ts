@@ -2,7 +2,6 @@ import type { InvocationHost, InvocationRegistry } from '../capabilities/invocat
 import type { AgentRecord, AgentSummary } from './contracts'
 import type { ResolvedCapabilities } from '../capabilities/resolve'
 import { stableStringify } from '@localixai/agent'
-import { visibleInScope } from './registry-identity'
 
 /** Definition and policy from the catalog snapshot that admitted this invocation. */
 export interface ResolvedRunAgent {
@@ -41,8 +40,6 @@ export interface AgentAvailability {
     | 'unknown_host'
     | 'agent_not_found'
     | 'agent_disabled'
-    | 'source_disabled'
-    | 'policy_pending'
     | 'policy_denied'
     | 'approval_required'
 }
@@ -61,7 +58,7 @@ function statusFor(
 ): AgentAvailability['status'] {
   if (!invocation) return 'unknown_host'
   if (!agent) return 'agent_not_found'
-  if (!agent.enabled) return agent.unavailableReason ?? 'agent_disabled'
+  if (!agent.enabled) return 'agent_disabled'
   const effect = agent.invocations[invocation.id]
   if (effect === 'allow') return 'allowed'
   // This is the policy's answer, not a claim that this particular run can reach a human.
@@ -78,12 +75,9 @@ export function createAgentInvocationService(
     agents: readonly AgentSummary[],
     agentId: string,
     host: string,
-    projectId: string,
   ): AgentAvailability => {
     const invocation = invocations.list().find((entry) => entry.id === host)
-    const agent = agents.find(
-      (entry) => entry.record.id === agentId && visibleInScope(entry.projectId, projectId),
-    )
+    const agent = agents.find((entry) => entry.record.id === agentId)
     return { agentId, host, status: statusFor(agent, invocation) }
   }
 
@@ -97,16 +91,14 @@ export function createAgentInvocationService(
     ): Promise<RunAgentDecision> {
       const scope = projectId ?? ''
       const catalog = await loadCatalog(userId, scope)
-      const { status } = explain(catalog.all, agentId, host, scope)
+      const { status } = explain(catalog.all, agentId, host)
       if (status === 'approval_required' && !requestApproval) {
         return { status: 'approval_unsupported' }
       }
       if (status !== 'allowed' && status !== 'approval_required') return { status }
       const capabilities = catalog.capabilitiesByAgent.get(agentId)
       if (!capabilities) return { status: 'catalog_incomplete' }
-      const entry = catalog.all.find(
-        (entry) => entry.record.id === agentId && visibleInScope(entry.projectId, scope),
-      )!
+      const entry = catalog.all.find((entry) => entry.record.id === agentId)!
       if (status === 'allowed') {
         return {
           status: 'allowed',
@@ -121,10 +113,7 @@ export function createAgentInvocationService(
         return { status: answer === 'unanswered' ? 'approval_unanswered' : 'approval_denied' }
       }
       const fresh = await loadCatalog(userId, scope)
-      const freshEntry = fresh.all.find(
-        (candidate) =>
-          candidate.record.id === agentId && visibleInScope(candidate.projectId, scope),
-      )
+      const freshEntry = fresh.all.find((candidate) => candidate.record.id === agentId)
       const freshCapabilities = fresh.capabilitiesByAgent.get(agentId)
       if (!freshEntry || !freshCapabilities) return { status: 'approval_changed' }
       if (stableStringify({ entry: freshEntry, rules: freshCapabilities.rules }) !== fingerprint) {
@@ -140,10 +129,7 @@ export function createAgentInvocationService(
       const projectId = opts?.projectId ?? ''
       const catalog = await loadCatalog(userId, projectId)
       const invocation = invocations.list().find((entry) => entry.id === host)
-      return catalog.all.filter(
-        (entry) =>
-          visibleInScope(entry.projectId, projectId) && statusFor(entry, invocation) === 'allowed',
-      )
+      return catalog.all.filter((entry) => statusFor(entry, invocation) === 'allowed')
     },
 
     async explainAgentAvailability(
@@ -154,7 +140,7 @@ export function createAgentInvocationService(
     ): Promise<AgentAvailability> {
       const scope = projectId ?? ''
       const catalog = await loadCatalog(userId, scope)
-      return explain(catalog.all, agentId, host, scope)
+      return explain(catalog.all, agentId, host)
     },
 
     async resolveInvocableAgent(
@@ -165,10 +151,8 @@ export function createAgentInvocationService(
     ) {
       const scope = projectId ?? ''
       const catalog = await loadCatalog(userId, scope)
-      if (explain(catalog.all, agentId, host, scope).status !== 'allowed') return null
-      return catalog.all.find(
-        (entry) => entry.record.id === agentId && visibleInScope(entry.projectId, scope),
-      )!.record
+      if (explain(catalog.all, agentId, host).status !== 'allowed') return null
+      return catalog.all.find((entry) => entry.record.id === agentId)!.record
     },
   }
 }

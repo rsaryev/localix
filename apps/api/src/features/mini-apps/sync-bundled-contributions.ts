@@ -3,7 +3,6 @@ import type { AppDatabase } from '../../db/types'
 import { createContributionStore } from '../ext/contribution-store'
 import type { ContributionKindRegistry } from '../ext/contribution-kinds'
 import type { CapabilityStores } from '../capabilities/store-factory'
-import { seedBundledAgentContribution } from '../agents/seed-bundled-contribution'
 import type { DiscoveredMiniApp } from './discovery'
 
 /** Reconcile only managed first-party manifests. A user-installed lookalike receives no grant. */
@@ -55,14 +54,7 @@ export async function syncBundledContributions(input: {
           source: 'bundled',
         }))
       const current = await store.getCurrent(input.userId, source.id)
-      const published = await store.publish(
-        input.userId,
-        source.id,
-        current!.revision,
-        declarations,
-      )
-      for (const entry of published.contributions)
-        await seedBundledAgentContribution(db, input.stores, input.userId, entry)
+      await store.publish(input.userId, source.id, current!.revision, declarations)
     }
   })
 }

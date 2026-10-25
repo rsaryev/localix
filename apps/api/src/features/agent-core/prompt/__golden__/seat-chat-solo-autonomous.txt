@@ -164,7 +164,6 @@ Provider: openrouter
 
 # Conversation participants
 You are localix. Other participants (agents are addressed with @):
-- @human (Human): the person you work with
 
 # Agent directory
 Current registry. Tag an available agent with @handle to bring it into this conversation.

@@ -7,7 +7,7 @@ import { createDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import { createAgentsService } from './service'
 import { agentRecordInputSchema } from './contracts'
-import { copyAgentPolicy } from './create-native-agent'
+import { copyAgentPolicy } from './create'
 import { createCapabilityRuleRepository } from '../capabilities/rule-repository'
 import { createCapabilitySourceRepository } from '../capabilities/source-repository'
 import { seedAgentPresets } from '../capabilities/seed-agent-presets'
@@ -22,16 +22,21 @@ async function fixture() {
   cleanup.push(() => rm(root, { recursive: true, force: true }))
   const db = createDatabase({ filename: join(root, 'test.sqlite') })
   cleanup.push(() => db.destroy())
-  const project = join(root, 'project')
-  const other = join(root, 'other')
-  await mkdir(project)
-  await mkdir(other)
+  const user = join(root, 'home', '.claude')
+  const project = join(root, 'project', '.claude')
+  const other = join(root, 'other', '.claude')
+  await mkdir(user, { recursive: true })
+  await mkdir(project, { recursive: true })
+  await mkdir(other, { recursive: true })
   await migrateToLatest(db)
   const service = createAgentsService({
     db,
     capabilityStores,
-    globalDir: join(root, 'agents'),
-    resolveProjectCwd: async (_u, id) => (id === 'p' ? project : id === 'q' ? other : null),
+    folders: async (_u, id) => ({
+      managed: join(root, 'managed', '.claude'),
+      user,
+      project: id === 'p' ? [project] : id === 'q' ? [other] : id ? null : [],
+    }),
   })
   const rules = createCapabilityRuleRepository(db)
   const sources = createCapabilitySourceRepository(db, 'agent')
@@ -101,8 +106,10 @@ describe('agent-authored persistent specialists', () => {
       await expect(service.createAgentsFromAgent('u', team, origin)).rejects.toThrow()
     }
     expect(
-      (await service.listAgents('u', { projectId: 'p' })).map((agent) => agent.record.handle),
-    ).toEqual(['localix'])
+      (await service.listAgents('u', { projectId: 'p' }))
+        .filter((agent) => agent.editable)
+        .map((agent) => agent.record.handle),
+    ).toEqual([])
   })
   test('copies the creator’s ordered saved policy once and leaves run defaults unset', async () => {
     const { service, rules } = await fixture()
@@ -231,7 +238,7 @@ describe('agent-authored persistent specialists', () => {
     }
     await expect(
       service.createAgentFromAgent('u', input, { ...origin, projectId: 'missing' }),
-    ).rejects.toMatchObject({ code: 'agent_creator_unavailable' })
+    ).rejects.toMatchObject({ code: 'project_directory_missing' })
     expect((await service.listAgents('u')).some((a) => a.record.handle === input.handle)).toBe(
       false,
     )

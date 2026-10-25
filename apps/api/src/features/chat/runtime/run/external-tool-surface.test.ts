@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { z } from 'zod'
 import type { AgentTool } from '@localixai/agent/agents'
-import { BUILTIN_TEAM } from '../../../agents/builtin-team'
+import { DEFAULT_AGENT_HANDLE } from '../../../../db/participant'
 import { builtinAgentPreset } from '../../../capabilities/builtin-agent-presets'
 import { composeCapabilities, NO_ROSTERS, projectCapabilities } from '../../../capabilities/resolve'
 import { applyPermissionMode } from '../../../capabilities/permission-mode-policy'
@@ -28,20 +28,17 @@ const surface = (rules: Parameters<typeof composeCapabilities>[0], tools = [exte
   })
 
 describe('dynamic tools and agent presets', () => {
-  test.each(BUILTIN_TEAM.filter((agent) => agent.kind !== 'human').map((agent) => agent.handle))(
-    '%s applies its roster in every mode',
-    (handle) => {
-      for (const mode of ['default', 'plan', 'bypass', 'autonomous'] as const) {
-        const result = surface(applyPermissionMode(mode, builtinAgentPreset(handle)).rules)
-        expect(result.tools.map((tool) => tool.name)).toEqual(
-          handle === 'localix' ? [external.name] : [],
-        )
-        expect(result.ledger.get(external.name)?.state).toBe(
-          handle === 'localix' ? 'live' : 'withheld',
-        )
-      }
-    },
-  )
+  test.each([DEFAULT_AGENT_HANDLE])('%s applies its roster in every mode', (handle) => {
+    for (const mode of ['default', 'plan', 'bypass', 'autonomous'] as const) {
+      const result = surface(applyPermissionMode(mode, builtinAgentPreset(handle)).rules)
+      expect(result.tools.map((tool) => tool.name)).toEqual(
+        handle === 'localix' ? [external.name] : [],
+      )
+      expect(result.ledger.get(external.name)?.state).toBe(
+        handle === 'localix' ? 'live' : 'withheld',
+      )
+    }
+  })
 
   test('a permitted argument exception keeps the descriptor and the gate narrows its calls', async () => {
     const capabilities = composeCapabilities([

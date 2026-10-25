@@ -37,7 +37,6 @@ import {
 } from './system-prompt-conversation'
 import type { BackgroundJobSnapshot } from '../../../agent-core/prompt/sections/background-jobs'
 import type { ApprovedPlanPrompt } from '../../../agent-core/prompt/sections/plan'
-import type { HumanProfile } from '../../../agent-core/prompt/sections/conversation'
 import type { McpInventoryEntry } from './mcp-tools'
 import type { RunSessionSnapshotRow } from './session-snapshot'
 
@@ -79,8 +78,6 @@ export interface BuildRunSystemPromptOptions {
   planMode?: { draftPath?: string }
   agentDirectory?: readonly AgentDirectoryEntry[]
   now?: () => string
-  /** The person's record, listed as `@human` in the volatile roster. */
-  human?: HumanProfile
   /** The person's default output style across chats (`outputStyle` in Settings). */
   defaultOutputStyle?: string | null
 }
@@ -175,12 +172,7 @@ export async function buildRunSystemPrompt(
   // Marks placed since this agent last spoke. Not a multi-participant-only fact: a person marks a
   // message in a one-to-one chat too, and there the mark is the whole of what they said. It rides
   // the tail rather than rewriting the rows that were marked — see `reaction-context`.
-  const conversation = conversationPromptContext(
-    session,
-    speakerRoute.agentId,
-    options.policy,
-    options.human,
-  )
+  const conversation = conversationPromptContext(session, speakerRoute.agentId, options.policy)
   // A session with no participant has nobody to tell — and `sessionAgent` refuses to guess one.
   const reactions = session.agents?.length
     ? buildReactionContext(options.historyMessages ?? [], speaker)

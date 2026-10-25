@@ -170,6 +170,17 @@ describe('renderFrontmatterFile', () => {
     )
   })
 
+  it('writes lists and mappings, and removes a key given undefined', () => {
+    const out = renderFrontmatterFile(
+      '---\nname: a\nmodel: opus\nunknown: 1\n---\nbody',
+      { name: 'a', model: undefined, tools: ['read', 'grep'], localix: { priority: 1 } },
+      'new',
+    )
+    expect(out).toBe(
+      '---\ntools:\n  - read\n  - grep\nlocalix:\n  priority: 1\nname: a\nunknown: 1\n---\n\nnew\n',
+    )
+  })
+
   it('refuses to rewrite a block it cannot read rather than drop its keys', () => {
     const broken = '---\nname: x\nhooks:\n\t- tab\n---\nbody'
     expect(() => renderFrontmatterFile(broken, { name: 'y' }, 'body')).toThrow(/not valid YAML/)

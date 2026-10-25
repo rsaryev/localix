@@ -139,12 +139,13 @@ export function parseMarkdownFrontmatter(raw: string): {
 /**
  * Rewrite `raw` with `values` set in its frontmatter and `body` after it. Every other key, its
  * comments and the key order are kept; a key not yet present is added at the top, in the order
- * given. Throws when the existing block is not YAML even after repair — writing would have to
+ * given. A value may be a list or a mapping (`localix: {priority: 1}`); `undefined` removes the
+ * key. Throws when the existing block is not YAML even after repair — writing would have to
  * drop keys it cannot read, and a save must never silently lose part of a file.
  */
 export function renderFrontmatterFile(
   raw: string,
-  values: Record<string, string>,
+  values: Record<string, unknown>,
   body: string,
 ): string {
   const block = splitFrontmatter(raw)
@@ -160,7 +161,9 @@ export function renderFrontmatterFile(
   if (!isMap(map)) throw new Error('The existing frontmatter is not a YAML mapping')
   let inserted = 0
   for (const [key, value] of Object.entries(values)) {
-    if (doc.has(key)) doc.set(key, value)
+    // `undefined` is "no value": the key goes, and a key that was never there stays absent.
+    if (value === undefined) doc.delete(key)
+    else if (doc.has(key)) doc.set(key, value)
     else map.items.splice(inserted++, 0, doc.createPair(key, value))
   }
   return `---\n${doc.toString(WRITE_OPTIONS)}---\n\n${body}\n`

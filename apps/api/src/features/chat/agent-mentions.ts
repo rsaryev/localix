@@ -13,9 +13,9 @@
  * the text name".
  */
 
-// The two reserved addresses — the person (`@human`) and everyone (`@all`) — are owned by the agent
-// definition, which refuses them as agent handles; this grammar reads them like any other address.
-import { ALL_MENTION_HANDLE, HUMAN_HANDLE } from '@localixai/agent/agents'
+// The reserved address — everyone (`@all`) — is owned by the agent definition, which refuses it as
+// an agent handle; this grammar reads it like any other address.
+import { ALL_MENTION_HANDLE } from '@localixai/agent/agents'
 
 /**
  * A candidate mention: `@` after start-of-text or a character a handle cannot end with, then a
@@ -152,10 +152,7 @@ export function agentNameSpans(
 ): { start: number; end: number; handle: string }[] {
   const canonical = new Map(
     known
-      .filter((handle) => {
-        const key = normalize(handle)
-        return key !== HUMAN_HANDLE && key !== ALL_MENTION_HANDLE
-      })
+      .filter((handle) => normalize(handle) !== ALL_MENTION_HANDLE)
       .map((handle) => [normalize(handle), handle] as const),
   )
   if (canonical.size === 0) return []

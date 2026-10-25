@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { backendClient } from '@/shared/api/client'
-import type { CapabilityRule, CapabilityRuleSnapshot } from '@/shared/api/contracts'
+import type { CapabilityRule } from '@/shared/api/contracts'
 import { parseCapabilityScope } from '@/shared/api/capabilityScope'
 import { inlineFailure } from '@/shared/lib/notifications/inlineReport'
 import { invalidateCapabilities } from '@/shared/contrib/capabilityCache'
@@ -12,12 +12,10 @@ export interface PermissionRulesData {
   rules: CapabilityRule[]
   /** The shipped list for a role the product owns; null for every scope the user owns. */
   defaults: CapabilityRule[] | null
-  registration: CapabilityRuleSnapshot['registration']
   /** Whether the edited list differs from the one last read or written. */
   dirty: boolean
   saving: boolean
   loading: boolean
-  published: boolean
   loadError: string | null
   saveError: string | null
   /** Whether Reset would change anything — a control that does nothing reads as broken. */
@@ -47,8 +45,6 @@ export function usePermissionRules(scope: string, active: boolean): PermissionRu
   const [rules, setRules] = useState<CapabilityRule[]>([])
   const [stored, setStored] = useState<CapabilityRule[]>([])
   const [defaults, setDefaults] = useState<CapabilityRule[] | null>(null)
-  const [registration, setRegistration] = useState<CapabilityRuleSnapshot['registration']>()
-  const [published, setPublished] = useState(false)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -70,8 +66,6 @@ export function usePermissionRules(scope: string, active: boolean): PermissionRu
         setStored(loaded.rules)
         revision.current = loaded.revision
         setDefaults(loaded.defaults ?? null)
-        setRegistration(loaded.registration)
-        setPublished(false)
         setLoadError(null)
       })
       // Stated, not floating. An unhandled rejection here used to surface as a bare console
@@ -90,7 +84,6 @@ export function usePermissionRules(scope: string, active: boolean): PermissionRu
 
   const edit = useCallback((next: CapabilityRule[]) => {
     setRules(next)
-    setPublished(false)
     setSaveError(null)
   }, [])
 
@@ -104,23 +97,12 @@ export function usePermissionRules(scope: string, active: boolean): PermissionRu
     try {
       const expectedPolicyRevision = revision.current
       await trackCapabilityWrite(undefined, async () => {
-        if (registration) {
-          const saved = await backendClient.publishAgentPolicy(
-            registration.agentId,
-            registration.projectId,
-            { expectedRegistrationRevision: registration.revision, expectedPolicyRevision, rules },
-          )
-          revision.current = saved.policyRevision
-          invalidateCapabilities(registration.projectId)
-          setPublished(true)
-        } else {
-          const saved = await backendClient.saveCapabilityRules(
-            rules,
-            expectedPolicyRevision,
-            parseCapabilityScope(scope),
-          )
-          revision.current = saved.revision
-        }
+        const saved = await backendClient.saveCapabilityRules(
+          rules,
+          expectedPolicyRevision,
+          parseCapabilityScope(scope),
+        )
+        revision.current = saved.revision
         invalidateCapabilities(scope)
       })
       setStored(rules)
@@ -131,7 +113,7 @@ export function usePermissionRules(scope: string, active: boolean): PermissionRu
     } finally {
       setSaving(false)
     }
-  }, [registration, rules, scope])
+  }, [rules, scope])
 
   const discard = useCallback(() => {
     setSaveError(null)
@@ -147,11 +129,9 @@ export function usePermissionRules(scope: string, active: boolean): PermissionRu
   return {
     rules,
     defaults,
-    registration,
     dirty: !sameRules(rules, stored),
     saving,
     loading,
-    published,
     loadError,
     saveError,
     resettable: defaults !== null && !sameRules(rules, defaults),

@@ -30,7 +30,6 @@ export interface MiniAppHostRefs {
   chatService?: ReturnType<typeof createChatService>
   /** The agent registry's listing, for the mini app `agents` directory. */
   listAgents?: ReturnType<typeof createAgentsService>['listAgents']
-  getHuman?: ReturnType<typeof createAgentsService>['getHuman']
   /** The one wake delivery (`features/triggers/delivery`), bound once chat exists. */
   wakes?: WakeDelivery<WakeRequest>
   publishCapabilityChange?: () => void

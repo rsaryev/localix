@@ -63,9 +63,9 @@ describe('buildAgentSystemPrompt', () => {
     })
     expect(solo.split(SOLO_TURN_CONTROL)).toHaveLength(2)
     expect(solo).not.toContain(full)
-    // The person is a participant even here: `@human` is listed, the chat stays solo.
+    // The person is not a participant: there is no `@human` entry, and the chat stays solo.
     expect(solo).toContain('# Conversation participants')
-    expect(solo).toContain('- @human (Human): the person you work with')
+    expect(solo).not.toContain('@human')
     // No conversation, nobody to tag: no turn protocol at all.
     expect(buildAgentSystemPrompt({ toolRegistry })).not.toContain('# Conversation turn control')
     const multi = buildAgentSystemPrompt({

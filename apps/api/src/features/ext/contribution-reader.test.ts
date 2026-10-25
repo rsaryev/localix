@@ -3,10 +3,15 @@ import { z } from 'zod'
 import { createDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import { createCapabilitySourceRepository } from '../capabilities/source-repository'
-import { agentContributionSchema } from '../agents/contribution'
 import { createContributionKindRegistry } from './contribution-kinds'
 import { createContributionReader } from './contribution-reader'
 import { createContributionStore } from './contribution-store'
+
+/** A typed payload for the tests' one contribution kind. */
+const agentContributionSchema = z.object({
+  definition: z.object({ handle: z.string(), instructions: z.string() }),
+  policyProposals: z.array(z.unknown()).optional(),
+})
 
 const databases: ReturnType<typeof createDatabase>[] = []
 afterEach(async () => {
@@ -108,27 +113,4 @@ test('a row cannot claim another installation owner or scope even if storage is 
     .execute()
   expect(await reader.list('u', '')).toEqual({ registrations: [], errors: [] })
   expect(await reader.list('other', '')).toEqual({ registrations: [], errors: [] })
-})
-
-test('agent contributions preserve typed native behavior without granting proposed authority', async () => {
-  const { db, source, store } = await fixture()
-  const set = await store.publish('u', source.id, 0, [
-    {
-      kind: 'agent',
-      key: 'reviewer',
-      value: {
-        definition: { handle: 'reviewer', instructions: 'Review.' },
-        policyProposals: [{ action: 'tool:*', resource: '*', effect: 'allow' }],
-      },
-    },
-  ])
-  const reader = createContributionReader(db, 'agent', agentContributionSchema)
-  const result = await reader.get('u', '', set.contributions[0]!.id)
-  if (!result || !('registration' in result)) throw new Error('Expected native registration')
-  expect(result.registration.value.definition.handle).toBe('reviewer')
-  expect(result.registration.value.definition).not.toHaveProperty('source')
-  expect(result.registration.value.definition).not.toHaveProperty('tools')
-  expect(
-    await db.selectFrom('capability_rule').selectAll().where('user_id', '=', 'u').execute(),
-  ).toEqual([])
 })

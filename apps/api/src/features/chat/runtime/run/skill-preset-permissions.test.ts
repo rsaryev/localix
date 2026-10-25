@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { BUILTIN_TEAM } from '../../../agents/builtin-team'
+import { DEFAULT_AGENT_HANDLE } from '../../../../db/participant'
 import { builtinAgentPreset } from '../../../capabilities/builtin-agent-presets'
 import { composeCapabilities, NO_ROSTERS, projectCapabilities } from '../../../capabilities/resolve'
 import { applyPermissionMode } from '../../../capabilities/permission-mode-policy'
@@ -17,7 +17,7 @@ const permissions = (handle: string) =>
   projectCapabilities(composeCapabilities(builtinAgentPreset(handle)), NO_ROSTERS).permissions
 
 describe('shipped presets with task-local skill preapprovals', () => {
-  test.each(BUILTIN_TEAM.filter((agent) => agent.kind !== 'human').map((agent) => agent.handle))(
+  test.each([DEFAULT_AGENT_HANDLE])(
     '%s retains its allowlist and argument guards',
     async (handle) => {
       const rules = permissions(handle)

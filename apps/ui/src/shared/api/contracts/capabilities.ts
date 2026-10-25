@@ -136,10 +136,7 @@ export interface CapabilityRule {
   effect: 'allow' | 'ask' | 'deny'
   message?: string
 }
-export type CapabilityRuleSnapshot = Pick<
-  CapabilityRules,
-  'revision' | 'rules' | 'defaults' | 'registration'
->
+export type CapabilityRuleSnapshot = Pick<CapabilityRules, 'revision' | 'rules' | 'defaults'>
 
 /**
  * WHICH scope a capability read or write is about — global, a project, or an agent.

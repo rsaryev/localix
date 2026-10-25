@@ -100,11 +100,6 @@ const SEATS: Record<string, Seat> = {
       conversation: {
         self: 'qa',
         participants: [{ handle: 'localix' }, { handle: 'qa' }],
-        human: {
-          label: 'Alex',
-          description: 'Product owner',
-          instructions: 'Prefers short answers',
-        },
         isLeader: false,
         leader: 'localix',
         membershipClosed: false,

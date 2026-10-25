@@ -156,7 +156,6 @@ export function createChatServiceGraph(deps: ChatServiceDeps) {
       listRegistryAgents: deps.listRegistryAgents,
       ...(deps.vectors ? { vectors: deps.vectors } : {}),
       ...(deps.decisions ? { decisions: deps.decisions } : {}),
-      resolveHuman: deps.resolveHuman,
       agentManagement: deps.agentManagement,
       now: deps.now,
     })
