@@ -48,3 +48,30 @@ export function Chip({
   // the ref so a Chip can sit directly under an asChild trigger (MetadataTooltip).
   return <span className={cn(chipVariants({ tone, size }), className)} {...rest} />
 }
+
+/**
+ * The chip that acts: the same pill as {@link Chip}, as a native button with the focus ring and a
+ * hover fill. A tag that opens what else carries it, a category to browse instead.
+ * Not ComposerChip (the glass pill floating over chat) and not TogglePill (it holds a pressed
+ * state): a ChipButton just does something.
+ */
+export function ChipButton({
+  tone,
+  size,
+  className,
+  type = 'button',
+  ...rest
+}: ComponentPropsWithRef<'button'> & VariantProps<typeof chipVariants>) {
+  return (
+    <button
+      type={type}
+      data-slot="chip-button"
+      className={cn(
+        chipVariants({ tone, size }),
+        'cursor-pointer gap-1 outline-none transition-colors duration-(--dur-fast) hover:bg-surface-active hover:text-foreground focus-ring disabled:cursor-default disabled:opacity-50',
+        className,
+      )}
+      {...rest}
+    />
+  )
+}

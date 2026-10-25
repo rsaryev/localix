@@ -1,1 +1,1 @@
-export { Chip } from '../feedback/chip'
+export { Chip, ChipButton } from '../feedback/chip'

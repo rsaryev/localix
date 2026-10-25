@@ -15,8 +15,11 @@ export function SectionLabel({
   className,
 }: {
   children: ReactNode
-  /** Element to render — `span` for inline label columns inside a flex row. */
-  as?: 'div' | 'span'
+  /**
+   * Element to render — `span` for inline label columns inside a flex row, `h2`–`h4` when the
+   * label is the heading of the group under it, so a screen reader still finds it.
+   */
+  as?: 'div' | 'span' | 'h2' | 'h3' | 'h4'
   size?: '2xs' | 'xs'
   weight?: 'medium' | 'semibold'
   className?: string

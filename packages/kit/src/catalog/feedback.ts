@@ -119,10 +119,11 @@ export const FEEDBACK: readonly KitCatalogEntry[] = [
     specifier: k('chip'),
     category: 'feedback',
     provider: 'kit',
-    exports: ['Chip'],
-    summary: 'A static pill for a count or a short label, toned by status.',
-    use: 'Badges: "3 changes", a status word, a counter on a tab.',
-    not: 'A chip that toggles is TogglePill; one that acts is ComposerChip.',
+    exports: ['Chip', 'ChipButton'],
+    summary:
+      'A pill for a count or a short label, toned by status; `ChipButton` is the same pill as a button.',
+    use: 'Badges: "3 changes", a status word, a counter on a tab (`Chip`); a tag or category that opens something when pressed (`ChipButton`, with the focus ring).',
+    not: 'A chip that toggles is TogglePill; the glass pill of the composer bar is ComposerChip. Not a hand-made rounded-full button.',
   },
   {
     specifier: k('stat'),
