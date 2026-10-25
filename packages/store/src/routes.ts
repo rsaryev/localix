@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { STORE_CATEGORIES } from './categories'
+import { configValueSchema } from './config'
 import {
   collectionSchema,
   jobSchema,
@@ -97,6 +98,19 @@ export const enableRequestSchema = z.object({
   scope: scopeSchema.default('user'),
   projectId: projectIdSchema,
   enabled: z.boolean(),
+})
+
+/** `GET /:kind/:id/config`: whose settings, in which scope. */
+export const configQuerySchema = z.object({
+  scope: scopeSchema.default('user'),
+  projectId: projectIdSchema,
+})
+
+/** `POST /:kind/:id/config`: the keys to save for one install's settings. */
+export const configRequestSchema = z.object({
+  scope: scopeSchema.default('user'),
+  projectId: projectIdSchema,
+  values: z.record(z.string(), configValueSchema),
 })
 
 export const sourceInputSchema = z.object({

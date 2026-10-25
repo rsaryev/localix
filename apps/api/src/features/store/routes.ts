@@ -1,6 +1,9 @@
 import { Hono } from 'hono'
 import {
+  configQuerySchema,
+  configRequestSchema,
   detailQuerySchema,
+  listingConfigSchema,
   discoverQuerySchema,
   discoverResponseSchema,
   enableRequestSchema,
@@ -135,6 +138,26 @@ export function createStoreRoutes(store: StoreService) {
       async (c) => {
         const { scope, projectId } = c.req.valid('json')
         await store.remove(c.req.valid('param'), scope, actor(c, projectId))
+        return c.body(null, 204)
+      },
+    )
+    .get(
+      '/:kind/:id/config',
+      zValidator('param', listingParamsSchema),
+      zValidator('query', configQuerySchema),
+      async (c) => {
+        const { scope, projectId } = c.req.valid('query')
+        const config = await store.config(c.req.valid('param'), scope, actor(c, projectId))
+        return c.json(listingConfigSchema.parse(config), 200)
+      },
+    )
+    .post(
+      '/:kind/:id/config',
+      zValidator('param', listingParamsSchema),
+      zValidator('json', configRequestSchema),
+      async (c) => {
+        const { scope, values, projectId } = c.req.valid('json')
+        await store.setConfig(c.req.valid('param'), scope, values, actor(c, projectId))
         return c.body(null, 204)
       },
     )

@@ -5,7 +5,6 @@ import { projectScopeLabel } from '@/shared/lib/projectScope'
 import { pluginSettingsAnchor, pluginSettingsUri } from '@/shared/lib/settingsAnchors'
 import { Button } from '@localixai/kit/button'
 import { Switch } from '@localixai/kit/switch'
-import { SettingsConfigForm } from '../SettingsConfigForm'
 import {
   SettingProblems,
   SettingRegistryMeta,
@@ -40,7 +39,7 @@ const UPDATE_PHASE_LABEL: Record<Exclude<PluginUpdateJob['phase'], 'failed' | 'd
 
 /**
  * One Claude Code plugin as a registry row: what it provides, where it came from, its enable
- * switch, its config form when expanded, and — for one installed from a marketplace — Update now
+ * switch, and — for one installed from a marketplace — Update now
  * when the listing offers a newer version. A built-in plugin (shipped inside Localix) can be
  * switched off but has no Remove and no Update: it updates with Localix. Mini apps have their own
  * rows.
@@ -50,14 +49,11 @@ export function PluginRow({
   projects,
   busy,
   busyLabel,
-  configOpen,
   update,
   updateJob,
   onToggle,
   onRemove,
   onUpdate,
-  onToggleConfig,
-  onSaveConfig,
   mod,
 }: {
   plugin: PluginRecord
@@ -66,7 +62,6 @@ export function PluginRow({
   projects: Project[]
   busy: boolean
   busyLabel: string | null
-  configOpen: boolean
   /** The newer version its marketplace lists, if any. */
   update?: PluginRowUpdate
   /** The update job for this plugin, while it runs or once it failed. */
@@ -74,14 +69,11 @@ export function PluginRow({
   onToggle: () => void
   onRemove: () => void
   onUpdate?: () => void
-  onToggleConfig: () => void
-  onSaveConfig: (values: Record<string, string | number | boolean>) => void
 }) {
   const builtin = plugin.builtin === true
   const offered = !builtin && update ? update : null
   const updating =
     updateJob && updateJob.phase !== 'done' && updateJob.phase !== 'failed' ? updateJob.phase : null
-  const configurable = plugin.config.length > 0
   const chips = pluginCapabilityLabels(plugin.provides)
 
   const projName = projectScopeLabel(projects, plugin.projectId)
@@ -160,11 +152,6 @@ export function PluginRow({
               Update now
             </Button>
           )}
-          {configurable && (
-            <Button variant="ghost" size="default" onClick={onToggleConfig} disabled={busy}>
-              Configure
-            </Button>
-          )}
           {!builtin && (
             <Button variant="destructive" size="default" onClick={onRemove} disabled={busy}>
               Remove
@@ -218,9 +205,6 @@ export function PluginRow({
         // Findings about the record: a plugin row never "shows the last valid version".
         consequence="none"
       />
-      {configOpen && plugin.config.length > 0 && (
-        <SettingsConfigForm fields={plugin.config} busy={busy} onSave={onSaveConfig} />
-      )}
     </SettingRegistryRow>
   )
 }

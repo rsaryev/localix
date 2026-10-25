@@ -19,6 +19,8 @@ export interface StoreScope {
   project: StoreProject | null
   /** Open a listing's page, marked at one of its components. */
   open: (listing: Listing | ListingRef, focus?: Pick<StoreComponent, 'kind' | 'name'>) => void
+  /** Open an installed listing's page on its Settings tab. */
+  configure: (listing: Listing) => void
   /** Show a full list over the current section. */
   show: (view: StoreView) => void
   /** Go to a section of the sidebar. */

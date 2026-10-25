@@ -1,6 +1,8 @@
 import type {
+  ConfigValue,
   DiscoverResponse,
   InstallPlan,
+  ListingConfig,
   ListingDetail,
   ListingRef,
   ListingsResponse,
@@ -104,6 +106,31 @@ export const storeApi = {
       await listing().enable.$post({
         ...param(ref),
         json: { scope, enabled, ...project(projectId) },
+      }),
+    )
+  },
+
+  /** The settings of one install, as its provider declares and stores them. */
+  async config(ref: ListingRef, scope: Scope, projectId?: string | null): Promise<ListingConfig> {
+    return unwrap(
+      await listing().config.$get({
+        ...param(ref),
+        query: cleanQuery({ scope, ...project(projectId) }),
+      }),
+    )
+  },
+
+  /** Save the given keys of one install's settings; the provider validates and stores them. */
+  async setConfig(
+    ref: ListingRef,
+    scope: Scope,
+    values: Record<string, ConfigValue>,
+    projectId?: string | null,
+  ): Promise<void> {
+    await assertOk(
+      await listing().config.$post({
+        ...param(ref),
+        json: { scope, values, ...project(projectId) },
       }),
     )
   },

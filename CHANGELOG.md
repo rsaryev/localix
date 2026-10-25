@@ -11,6 +11,11 @@ Changes land on `main`.
 - **Session recap**: when you come back to a chat after a break, a one-line summary of where you
   left off is waiting in the transcript. It is on by default and has its own model and switch in the
   model picker (**Session recap**); `/recap` writes one on demand.
+- **Settings on a package's own page**: an installed mini app or plugin that has options shows a
+  **Settings** tab on its Store page — the same form for every package, with **Save**, **Revert**
+  and Cmd/Ctrl+S, a switch between your settings and the project's when it is installed in both, and
+  secrets that show only that they are set. **Configure** in Installed opens it; the plugin and mini
+  app lists in Settings no longer hold a settings form.
 - **A new Store UI**: **Discover** opens on a carousel of featured packages, then rows (Start here,
   a row for the open project, collections, mini apps, plugins, new and updated) and the categories.
   Shelves of thousands of plugins open at once and load as you scroll; a plugin without an icon

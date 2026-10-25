@@ -7,7 +7,6 @@ import {
   type ListingDetail,
   type StoreComponent,
 } from '@localixai/store'
-import { capabilitySettingsUiUri } from '@localixai/uri'
 
 import { normalizeMiniAppSurfaces } from './contracts-base'
 import type { MiniAppStorePage } from './store-detail'
@@ -59,7 +58,7 @@ export function catalogTrust(builtIn: boolean) {
 
 export function miniAppListing(
   entry: MiniAppStoreEntry,
-  context: { sourceLabel: string; enabled: boolean; builtIn: boolean },
+  context: { sourceLabel: string; enabled: boolean; builtIn: boolean; configurable?: boolean },
 ): Listing {
   const { trust, weight, editorial } = catalogTrust(context.builtIn)
   const displayName = entry.displayName ?? entry.name
@@ -93,9 +92,7 @@ export function miniAppListing(
       : [],
     ...(entry.job ? { job: { action: entry.installed ? 'update' : 'install', ...entry.job } } : {}),
     ...(entry.incompatible ? { incompatible: 'Needs a newer Localix' } : {}),
-    ...(entry.installed
-      ? { configure: capabilitySettingsUiUri({ kind: 'mini-app', id: entry.name, scope: '' }) }
-      : {}),
+    ...(entry.installed && context.configurable ? { configurable: true } : {}),
   }
 }
 

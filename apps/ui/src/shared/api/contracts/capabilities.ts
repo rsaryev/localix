@@ -164,21 +164,6 @@ export type { CapabilitySnapshot, CapabilityRuleChange, CapabilityToolSurface, T
  */
 export type { ToolGcReport }
 
-/**
- * Single heuristic for "render this config field as a model picker": a key ending
- * in `_model` — e.g. agent-roles' `executor_model`.
- *
- * Structurally typed (`type?: string`) on purpose: it is a UI PRESENTATION rule,
- * not a wire type. It also still answers true for an explicit `type: 'model'`,
- * which the wire cannot currently deliver — `MINI_APP_CONFIG_TYPES` (owned by
- * `@localixai/mini-app-sdk/manifest`) has no `'model'` member, so the backend's enum
- * would reject it. The check is kept as forward-compat; adding `'model'` for real is
- * an owner-side change.
- */
-export function isModelConfigField(field: { key: string; type?: string }): boolean {
-  return field.type === 'model' || field.key.endsWith('_model')
-}
-
 // One participant of a conversation plus the model it runs on, and the two functions that read
 // it. Imported from the server's leaf rather than restated here: the shape crosses the wire
 // unchanged, so a second declaration on this side could only ever drift from it.

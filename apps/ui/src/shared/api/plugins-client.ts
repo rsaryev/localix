@@ -24,18 +24,6 @@ export const pluginsApi = {
     return json.styles
   },
 
-  async setPluginConfig(
-    name: string,
-    values: Record<string, string | number | boolean>,
-    opts?: { projectId?: string | null },
-  ): Promise<PluginRecord> {
-    return unwrap(
-      await client.rpc.plugins.config.$post({
-        json: { name, values, projectId: opts?.projectId ?? null },
-      }),
-    )
-  },
-
   async installPlugin(
     source: string,
     opts?: { projectId?: string | null; enable?: boolean },

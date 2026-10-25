@@ -95,6 +95,10 @@ function fixture() {
       calls.push(`enable ${input.name} ${input.enabled}`)
       return {} as PluginRecord
     },
+    setConfig: async (_user, input) => {
+      calls.push(`config ${input.name} ${input.projectId ?? ''} ${JSON.stringify(input.values)}`)
+      return {} as PluginRecord
+    },
     addMarketplace: async (_user, input) => {
       calls.push(`add ${input.source}`)
       return { name: 'x', count: 0 }
@@ -224,7 +228,8 @@ describe('plugins in the Store', () => {
         dir: '/x',
         source: `review@${OFFICIAL}`,
         enabled: true,
-      } as PluginRecord,
+        config: [],
+      } as unknown as PluginRecord,
     ])
     offer({
       available: [
@@ -243,7 +248,75 @@ describe('plugins in the Store', () => {
     expect(review.installs).toEqual([
       { scope: 'user', version: '1.1.0', enabled: true, updateTo: '1.2.0' },
     ])
-    expect(review.configure).toStartWith('localix://ui/settings/plugins')
+    expect(review.configurable).toBeUndefined()
+  })
+
+  describe('settings', () => {
+    const installed = (config: PluginRecord['config'], scope: 'global' | 'project' = 'global') =>
+      ({
+        name: 'review',
+        version: '1.1.0',
+        description: '',
+        projectId: scope === 'project' ? 'p1' : '',
+        scope,
+        dir: '/x',
+        source: `review@${OFFICIAL}`,
+        enabled: true,
+        config,
+      }) as PluginRecord
+    const field = (
+      over: Partial<PluginRecord['config'][number]>,
+    ): PluginRecord['config'][number] => ({
+      key: 'url',
+      type: 'string',
+      description: 'Where it runs',
+      required: false,
+      secret: false,
+      value: 'https://a.test',
+      isSet: true,
+      ...over,
+    })
+
+    test('an install that declares options is configurable, one that declares none is not', async () => {
+      const { provider, install } = fixture()
+      install([installed([field({})])])
+      expect(byId((await provider.listings(actor)).listings, `review@${OFFICIAL}`)).toMatchObject({
+        configurable: true,
+      })
+      install([installed([])])
+      expect(
+        byId((await provider.listings(actor)).listings, `review@${OFFICIAL}`).configurable,
+      ).toBeUndefined()
+    })
+
+    test('the options come typed, per scope the plugin is installed in', async () => {
+      const { provider, install } = fixture()
+      install([
+        installed([field({ key: 'tags', multiple: true, value: '["a"]' })]),
+        installed([field({ value: 'https://p.test' })], 'project'),
+      ])
+      const id = `review@${OFFICIAL}`
+      const user = await provider.config!(id, 'user', actor)
+      expect(user).toMatchObject({
+        scope: 'user',
+        scopes: ['user', 'project'],
+        values: { tags: ['a'] },
+      })
+      const project = await provider.config!(id, 'project', { ...actor, projectId: 'p1' })
+      expect(project?.values).toEqual({ url: 'https://p.test' })
+      expect(await provider.config!(`pg@${OFFICIAL}`, 'user', actor)).toBeNull()
+    })
+
+    test('saving sends the values the way the plugin keeps them, to the install of that scope', async () => {
+      const { provider, calls } = fixture()
+      await provider.setConfig!(
+        `review@${OFFICIAL}`,
+        'project',
+        { tags: ['a', 'b'], n: 2 },
+        { ...actor, projectId: 'p1' },
+      )
+      expect(calls).toContain('config review p1 {"tags":"[\\"a\\",\\"b\\"]","n":2}')
+    })
   })
 
   test('a remote plugin’s page answers at once, fetches it once behind, then says what it adds and runs', async () => {

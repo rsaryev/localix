@@ -1,5 +1,7 @@
 import {
+  listingConfigFromFields,
   packageKindSchema,
+  scalarConfigValues,
   type Editorial,
   type InstallPlan,
   type ListingRef,
@@ -11,6 +13,7 @@ import {
 import { InvalidRequestError } from '../../lib/domain-errors'
 import type { MiniAppCatalogPreview } from './catalog-preview'
 import type { MiniAppCatalogRecord } from './catalogs'
+import type { MiniAppConfigField } from './contracts'
 import type { MiniAppStore } from './store'
 import {
   catalogLabel,
@@ -30,7 +33,13 @@ export interface MiniAppStoreProviderDeps {
     preview(url: string): Promise<MiniAppCatalogPreview>
   }
   apps: {
-    list(userId: string): Promise<{ miniApps: { name: string; enabled: boolean }[] }>
+    list(userId: string): Promise<{
+      miniApps: { name: string; enabled: boolean; config: MiniAppConfigField[] }[]
+    }>
+    setConfig(
+      userId: string,
+      input: { name: string; values: Record<string, string | number | boolean> },
+    ): Promise<void>
     setEnabled(userId: string, input: { name: string; enabled: boolean }): Promise<void>
     remove(userId: string, input: { name: string }): Promise<void>
   }
@@ -74,12 +83,13 @@ export function createMiniAppStoreProvider(deps: MiniAppStoreProviderDeps): Stor
       labels(),
       deps.apps.list(actor.userId),
     ])
-    const on = enabled.miniApps.find((app) => app.name === name)?.enabled ?? true
+    const app = enabled.miniApps.find((found) => found.name === name)
     const catalog = label.get(page.entry.source)
     const listing = miniAppListing(page.entry, {
       sourceLabel: catalog?.label ?? page.entry.source,
       builtIn: catalog?.builtIn ?? false,
-      enabled: on,
+      enabled: app?.enabled ?? true,
+      configurable: (app?.config.length ?? 0) > 0,
     })
     return { page, listing }
   }
@@ -93,13 +103,14 @@ export function createMiniAppStoreProvider(deps: MiniAppStoreProviderDeps): Stor
         labels(),
         deps.apps.list(actor.userId),
       ])
-      const enabled = new Map(apps.miniApps.map((app) => [app.name, app.enabled]))
+      const installed = new Map(apps.miniApps.map((app) => [app.name, app]))
       return {
         listings: entries.map((entry) =>
           miniAppListing(entry, {
             sourceLabel: label.get(entry.source)?.label ?? entry.source,
             builtIn: label.get(entry.source)?.builtIn ?? false,
-            enabled: enabled.get(entry.name) ?? true,
+            enabled: installed.get(entry.name)?.enabled ?? true,
+            configurable: (installed.get(entry.name)?.config.length ?? 0) > 0,
           }),
         ),
         problems,
@@ -148,6 +159,20 @@ export function createMiniAppStoreProvider(deps: MiniAppStoreProviderDeps): Stor
     async setEnabled(id, scope, enabled, actor) {
       personOnly(scope)
       await deps.apps.setEnabled(actor.userId, { name: id, enabled })
+    },
+
+    /** The settings its manifest declares; a mini app is the person's, so only `user` has them. */
+    async config(id, scope, actor) {
+      if (scope !== 'user') return null
+      const app = (await deps.apps.list(actor.userId)).miniApps.find((found) => found.name === id)
+      return app && app.config.length > 0
+        ? listingConfigFromFields(app.config, { scope: 'user', scopes: ['user'] })
+        : null
+    },
+
+    async setConfig(id, scope, values, actor) {
+      personOnly(scope)
+      await deps.apps.setConfig(actor.userId, { name: id, values: scalarConfigValues(values) })
     },
 
     refresh: () => deps.store.refresh(),

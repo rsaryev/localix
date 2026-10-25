@@ -150,6 +150,36 @@ describe('/rpc/store', () => {
     expect(apps.calls).toContain('remove source https://ada.test')
   })
 
+  test('an install’s settings are read and saved through its provider, per scope', async () => {
+    const { apps, get, post } = app()
+    const saved: unknown[] = []
+    apps.provider.config = async (id, scope, actor) => ({
+      fields: [{ key: 'url', label: 'URL', type: 'string', required: false, secret: false }],
+      values: { url: `${id}@${scope}:${actor.projectId ?? '-'}` },
+      set: [],
+      scope,
+      scopes: ['user', 'project'],
+    })
+    apps.provider.setConfig = async (id, scope, values, actor) =>
+      void saved.push([id, scope, values, actor.projectId])
+    const read = await (await get('/mini-app/chess/config?scope=project&projectId=p1')).json()
+    expect(read.values).toEqual({ url: 'chess@project:p1' })
+    const write = await post('/mini-app/chess/config', {
+      scope: 'project',
+      projectId: 'p1',
+      values: { url: 'https://x.test', tags: ['a'] },
+    })
+    expect(write.status).toBe(204)
+    expect(saved).toEqual([['chess', 'project', { url: 'https://x.test', tags: ['a'] }, 'p1']])
+  })
+
+  test('a kind without settings says so, and a listing with none answers 404', async () => {
+    const { apps, get, post } = app()
+    expect((await post('/mini-app/chess/config', { values: {} })).status).toBe(409)
+    apps.provider.config = async () => null
+    expect((await get('/mini-app/chess/config')).status).toBe(404)
+  })
+
   test('activity and Update all', async () => {
     const { get, post } = app()
     const activity = await (await get('/activity')).json()
@@ -191,8 +221,9 @@ describe('/rpc/store', () => {
   test('a listing’s page and a page of listings show the open project’s installs', async () => {
     const { apps, get } = app()
     const seen: unknown[] = []
-    const detail = apps.provider.detail
-    apps.provider.detail = async (id, actor) => (seen.push(actor.projectId), detail(id, actor))
+    const provider = apps.provider
+    const detail = provider.detail.bind(provider)
+    provider.detail = async (id, actor) => (seen.push(actor.projectId), detail(id, actor))
     await get('/mini-app/chess?projectId=p1')
     expect(seen).toEqual(['p1'])
     const page = await (await get('/listings?projectId=p1')).json()

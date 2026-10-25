@@ -49,6 +49,21 @@ export function useListingDetail(client: StoreClient, ref: ListingRef, projectId
   })
 }
 
+/** One install's settings; a poke reads them again, so a change made elsewhere shows. */
+export function useListingConfig(
+  client: StoreClient,
+  ref: ListingRef,
+  scope: Scope,
+  projectId: string | null,
+) {
+  const generation = useResourceGeneration('store')
+  return useSWR(
+    ['store-config', ref.kind, ref.id, scope, projectId, generation],
+    () => client.config(ref, scope, projectId ?? undefined),
+    { keepPreviousData: true, shouldRetryOnError: false },
+  )
+}
+
 /**
  * Start reading a listing's page before it is opened — the pointer rests on its card. The read
  * lands in the cache the page reads, so the page opens on it; a second ask is the same request.

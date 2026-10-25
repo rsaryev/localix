@@ -7,7 +7,9 @@ import {
   shelfCounts,
   type DiscoverResponse,
   type Listing,
+  type ListingConfig,
   type ListingsResponse,
+  type Scope,
   type SourceView,
 } from '@localixai/store'
 import { makeListing, makeListingDetail } from '@localixai/store/testing'
@@ -117,6 +119,10 @@ export interface StoreFake {
   /** Kinds whose preview reads the address; the others refuse it. */
   understood?: string[]
   discover?: Partial<DiscoverResponse>
+  /** The settings of an install, by listing id and scope. */
+  configs?: Record<string, Partial<Record<Scope, ListingConfig>>>
+  /** A provider's refusal of every save, in its words. */
+  configFails?: string
   calls: string[]
   /** Every page read, as its query: `shelf=package:mini-app cursor=40`. */
   reads?: string[]
@@ -175,6 +181,15 @@ export function fakeClient(fake: StoreFake): StoreClient {
     remove: async (ref, scope) => call(`remove ${ref.kind}/${ref.id} ${scope}`),
     setEnabled: async (ref, scope, enabled) =>
       call(`${enabled ? 'enable' : 'disable'} ${ref.kind}/${ref.id} ${scope}`),
+    config: async (ref, scope) => {
+      const config = fake.configs?.[ref.id]?.[scope]
+      if (!config) throw new ApiError('No settings', 404, 'store_config_not_found')
+      return config
+    },
+    setConfig: async (ref, scope, values, projectId) => {
+      if (fake.configFails) throw new ApiError(fake.configFails, 400, 'plugin_config_invalid')
+      call(`config ${ref.kind}/${ref.id} ${scope}${where(projectId)} ${JSON.stringify(values)}`)
+    },
     sources: async () => ({ sources: fake.sources ?? SOURCES, addable: ['mini-app', 'plugin'] }),
     discover: async () => ({
       hero: null,

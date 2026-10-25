@@ -4,6 +4,7 @@ import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { Skeleton } from '@localixai/kit/skeleton'
 import { TabBar, TabPanel, useTabPanelIds } from '@localixai/kit/tabs'
 import { COMPONENT_LABELS } from '../model/presentation'
+import { PackageSettings } from './PackageSettings'
 import { PlanSummary } from './PlanSummary'
 
 type Part = Pick<StoreComponent, 'kind' | 'name' | 'description'>
@@ -78,6 +79,8 @@ export interface PackageSectionsProps {
   listing: Listing
   detail: ListingDetail | undefined
   focus?: Pick<StoreComponent, 'kind' | 'name'>
+  /** The tab to open on, when the page was opened for one (Configure opens Settings). */
+  tab?: string
 }
 
 /** Its components are still being read: a remote package is fetched the first time it is opened. */
@@ -134,12 +137,25 @@ export const PACKAGE_TABS: readonly PackageTab[] = [
       </dl>
     ),
   },
+  {
+    id: 'settings',
+    label: 'Settings',
+    // Only an installed package that has something to set; Configure in the library opens it.
+    available: ({ listing }) => Boolean(listing.configurable && listing.installs.length > 0),
+    render: ({ listing }) => <PackageSettings listing={listing} />,
+  },
 ]
 
 /** The page's tabs, drawn from {@link PACKAGE_TABS}; opened for a component, What's inside. */
 export function PackageSections(page: PackageSectionsProps) {
   const tabs = PACKAGE_TABS.filter((tab) => tab.available(page))
-  const [chosen, setChosen] = useState(page.focus ? 'inside' : tabs[0]?.id)
+  const [chosen, setChosen] = useState(page.tab ?? (page.focus ? 'inside' : tabs[0]?.id))
+  // Configure on a page that is already open asks for its Settings tab.
+  const [asked, setAsked] = useState(page.tab)
+  if (page.tab !== asked) {
+    setAsked(page.tab)
+    if (page.tab) setChosen(page.tab)
+  }
   const ids = useTabPanelIds('store-package')
   const active = tabs.find((tab) => tab.id === chosen) ?? tabs[0]
   if (!active) return null

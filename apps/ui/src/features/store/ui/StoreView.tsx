@@ -110,6 +110,8 @@ export function StoreView({
             ? { type: 'listing', ref: item.ref, listing: item, focus }
             : { type: 'listing', ref: item, focus },
         ),
+      configure: (item: Listing) =>
+        push({ type: 'listing', ref: item.ref, listing: item, tab: 'settings' }),
       show: push,
       goTo: (next) => {
         setSection(next)

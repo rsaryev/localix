@@ -104,12 +104,14 @@ export function PackageView({
   listing: inHand,
   reference,
   focus,
+  tab,
   backLabel,
   onBack,
 }: {
   listing?: Listing
   reference: ListingRef
   focus?: Pick<StoreComponent, 'kind' | 'name'>
+  tab?: string
   backLabel: string
   onBack: () => void
 }) {
@@ -151,7 +153,7 @@ export function PackageView({
           <section aria-label="Description" className="max-w-(--reading-measure) min-w-0">
             <Description listing={listing} detail={detail} />
           </section>
-          <PackageSections listing={listing} detail={detail} focus={focus} />
+          <PackageSections listing={listing} detail={detail} focus={focus} tab={tab} />
         </div>
         {beside && (
           <aside className="sticky top-2">

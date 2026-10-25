@@ -1,10 +1,9 @@
-import { useState } from 'react'
 import { MarketplacesPanel } from './MarketplacesPanel'
 import { useInstallForm } from '../model/useInstallForm'
 import { InstallForm } from './InstallForm'
 import { backendClient } from '@/shared/api/client'
 import { usePlugins } from '../model/usePlugins'
-import type { Project, PluginRecord } from '@/shared/api/contracts'
+import type { Project } from '@/shared/api/contracts'
 import { Button } from '@localixai/kit/button'
 import { SettingProblems } from './settingRegistry'
 import { SettingsSection } from './SettingsScaffold'
@@ -26,8 +25,10 @@ interface PluginsSettingsProps {
 }
 
 export function PluginsSettings({ scope, agentScope = '', projects }: PluginsSettingsProps) {
-  const { plugins, loading, error, busy, busyLabel, refresh, toggle, remove, saveConfig } =
-    usePlugins(scope, agentScope)
+  const { plugins, loading, error, busy, busyLabel, refresh, toggle, remove } = usePlugins(
+    scope,
+    agentScope,
+  )
   const pluginUpdates = usePluginUpdates()
   const mods = useModSummaries()
 
@@ -45,16 +46,6 @@ export function PluginsSettings({ scope, agentScope = '', projects }: PluginsSet
     refresh,
     defaultEnable: true,
   })
-
-  // Which plugin's config form is expanded.
-  const [configFor, setConfigFor] = useState<string | null>(null)
-
-  const handleSaveConfig = async (
-    p: PluginRecord,
-    values: Record<string, string | number | boolean>,
-  ) => {
-    if (await saveConfig(p, values)) setConfigFor(null)
-  }
 
   // Glanceable roll-up: how many plugins have load/validation errors vs. only warnings.
   const errorCount = plugins.filter((p) => p.error || (p.validation?.errors.length ?? 0) > 0).length
@@ -123,14 +114,11 @@ export function PluginsSettings({ scope, agentScope = '', projects }: PluginsSet
                 mod={mods.get(p.name)}
                 busy={busy === p.name}
                 busyLabel={busy === p.name ? busyLabel : null}
-                configOpen={configFor === p.name}
                 update={update}
                 updateJob={update ? pluginUpdates.jobFor(update.id) : undefined}
                 onToggle={() => void toggle(p)}
                 onRemove={() => void remove(p)}
                 onUpdate={update ? () => void pluginUpdates.updateNow(update.id) : undefined}
-                onToggleConfig={() => setConfigFor((cur) => (cur === p.name ? null : p.name))}
-                onSaveConfig={(values) => void handleSaveConfig(p, values)}
               />
             )}
           />

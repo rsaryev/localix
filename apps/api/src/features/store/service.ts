@@ -16,6 +16,7 @@ import {
 
 import { ConflictError, NotFoundError } from '../../lib/domain-errors'
 import { activityOf } from './activity'
+import { configService } from './config'
 import { discoverOf, relatedOf } from './discover'
 import type { StoreIndexRepository } from './index-repository'
 import { refKey } from './index-rows'
@@ -213,6 +214,8 @@ export function createStoreService(deps: {
       if (!provider.setEnabled) throw unsupported(ref.kind, 'be switched off')
       await provider.setEnabled(ref.id, scope, enabled, actor)
     },
+
+    ...configService(providerOf),
 
     /** Every source, with when it was last read and why not, and the kinds one can be added for. */
     sources: (): Promise<{ sources: SourceView[]; addable: PackageKind[] }> =>

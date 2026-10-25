@@ -1,12 +1,13 @@
-import type {
-  InstallPlan,
-  Listing,
-  ListingDetail,
-  Scope,
-  StoreActor,
-  StoreProvider,
+import {
+  listingConfigFromFields,
+  scalarConfigValues,
+  type InstallPlan,
+  type Listing,
+  type ListingDetail,
+  type Scope,
+  type StoreActor,
+  type StoreProvider,
 } from '@localixai/store'
-import { settingsEntityUiUri } from '@localixai/uri'
 
 import { ConflictError, InvalidRequestError, NotFoundError } from '../../lib/domain-errors'
 import type { PluginRecord } from './contracts'
@@ -30,6 +31,7 @@ export type PluginStoreService = Pick<
   | 'update'
   | 'remove'
   | 'setEnabled'
+  | 'setConfig'
   | 'addMarketplace'
   | 'removeMarketplace'
   | 'refreshMarketplaces'
@@ -155,10 +157,9 @@ export function createPluginStoreProvider(deps: {
     id: string,
     records: PluginRecord[],
     updates: PluginUpdatesResponse,
-  ): Pick<Listing, 'installs' | 'job' | 'configure'> {
+  ): Pick<Listing, 'installs' | 'job' | 'configurable'> {
     const offered = updates.available.find((found) => found.id === id)
     const job = jobs.of(id, updates)
-    const first = records[0]
     return {
       installs: records.map((record) => ({
         scope: record.scope === 'project' ? 'project' : 'user',
@@ -167,9 +168,7 @@ export function createPluginStoreProvider(deps: {
         ...(offered && record.scope === 'global' ? { updateTo: offered.to } : {}),
       })),
       ...(job ? { job } : {}),
-      ...(first
-        ? { configure: settingsEntityUiUri('plugins', 'plugin', first.name, first.projectId) }
-        : {}),
+      ...(records.some((record) => record.config.length > 0) ? { configurable: true } : {}),
     }
   }
 
@@ -291,6 +290,29 @@ export function createPluginStoreProvider(deps: {
         name: entry.name,
         projectId: projectOf(scope, actor),
         enabled,
+      })
+      changed()
+    },
+
+    /** The options its installs declare (`userConfig`), for the install in this scope. */
+    async config(id, scope, actor) {
+      const installs = (await installsBy(actor)).get(id) ?? []
+      const scopeOf = (record: PluginRecord): Scope =>
+        record.scope === 'project' ? 'project' : 'user'
+      const record = installs.find((found) => scopeOf(found) === scope)
+      if (!record || record.config.length === 0) return null
+      return listingConfigFromFields(record.config, {
+        scope,
+        scopes: installs.filter((found) => found.config.length > 0).map(scopeOf),
+      })
+    },
+
+    async setConfig(id, scope, values, actor) {
+      const { entry } = await find(id)
+      await deps.service.setConfig(actor.userId, {
+        name: entry.name,
+        projectId: projectOf(scope, actor),
+        values: scalarConfigValues(values),
       })
       changed()
     },

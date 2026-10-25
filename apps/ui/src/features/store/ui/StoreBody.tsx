@@ -57,6 +57,7 @@ export function StoreBody({
         reference={view.ref}
         listing={view.listing}
         focus={view.focus}
+        tab={view.tab}
         backLabel={backLabel}
         onBack={onBack}
       />

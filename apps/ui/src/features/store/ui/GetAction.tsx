@@ -88,13 +88,13 @@ export function PageGetAction({ listing, className }: { listing: Listing; classN
                 has ? store.removeExtra(extra, listing) : store.makeExtra(extra, listing),
             }
           }),
-          ...(listing.configure
+          ...(listing.configurable
             ? [
                 {
                   id: 'configure',
                   label: 'Configure',
                   icon: Settings2,
-                  onSelect: () => store.navigate(listing.configure!),
+                  onSelect: () => store.configure(listing),
                 },
               ]
             : []),

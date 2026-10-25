@@ -20,11 +20,6 @@ export interface MiniAppsData {
   refresh: () => void
   toggle: (app: MiniAppRecord) => Promise<void>
   remove: (app: MiniAppRecord) => Promise<void>
-  /** True on success, so the caller can close the settings form. */
-  saveConfig: (
-    app: MiniAppRecord,
-    values: Record<string, string | number | boolean>,
-  ) => Promise<boolean>
 }
 
 /**
@@ -77,26 +72,6 @@ export function useMiniApps(scope: string, agentScope = ''): MiniAppsData {
     }
   }
 
-  const saveConfig = async (
-    app: MiniAppRecord,
-    values: Record<string, string | number | boolean>,
-  ) => {
-    setBusy(app.name, `Saving settings for ${miniAppLabel(app)}`)
-    let ok = false
-    try {
-      await trackCapabilityWrite(app.projectId || null, () =>
-        backendClient.setMiniAppConfig(app.name, values, { projectId: app.projectId || null }),
-      )
-      ok = true
-      registry.refresh()
-    } catch (e) {
-      setError(inlineFailure(e, "Could not save this mini app's settings."))
-    } finally {
-      setBusy(null)
-    }
-    return ok
-  }
-
   return {
     miniApps: registry.rows,
     loading: registry.loading,
@@ -106,6 +81,5 @@ export function useMiniApps(scope: string, agentScope = ''): MiniAppsData {
     refresh,
     toggle,
     remove,
-    saveConfig,
   }
 }

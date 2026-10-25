@@ -6,6 +6,7 @@ import { tempDirPerTest } from '@localixai/testing'
 
 import { __resetBundledSyncCache } from './bundled-install'
 import { createMiniAppStore, type MiniAppStoreSource } from './store'
+import type { MiniAppConfigField } from './contracts'
 import { createMiniAppStoreProvider } from './store-provider'
 
 const root = tempDirPerTest('mini-app-store-provider-')
@@ -30,6 +31,7 @@ function setup(publisher = { name: 'Localix', verified: true }) {
   })
   const calls: string[] = []
   const enabled = new Map<string, boolean>()
+  const configs = new Map<string, MiniAppConfigField[]>()
   const catalogs = [{ url: pathToFileURL(source).href, builtIn: true }]
   const provider = createMiniAppStoreProvider({
     store,
@@ -48,13 +50,19 @@ function setup(publisher = { name: 'Localix', verified: true }) {
     },
     apps: {
       list: async () => ({
-        miniApps: [...enabled].map(([name, on]) => ({ name, enabled: on })),
+        miniApps: [...enabled].map(([name, on]) => ({
+          name,
+          enabled: on,
+          config: configs.get(name) ?? [],
+        })),
       }),
+      setConfig: async (_userId, { name, values }) =>
+        void calls.push(`config ${name} ${JSON.stringify(values)}`),
       setEnabled: async (_userId, { name, enabled: on }) => void calls.push(`enable ${name} ${on}`),
       remove: async (_userId, { name }) => void calls.push(`remove ${name}`),
     },
   })
-  return { source, store, provider, calls, enabled, catalogs }
+  return { source, store, provider, calls, enabled, catalogs, configs }
 }
 
 afterEach(() => __resetBundledSyncCache())
@@ -174,7 +182,59 @@ describe('the mini apps in the Store', () => {
       { scope: 'user', version: '1.0.0', enabled: false, updateTo: '1.1.0' },
     ])
     expect(chess!.job).toMatchObject({ action: 'update', phase: 'done' })
-    expect(chess!.configure).toStartWith('localix://ui/settings/mini-apps')
+    expect(chess!.configurable).toBeUndefined()
+  })
+
+  test('an install that declares settings is configurable; they come typed, secrets only as set', async () => {
+    const { source, store, provider, enabled, configs } = setup()
+    await offer(source, 'chess')
+    await store.install('chess')
+    await store.settled()
+    enabled.set('chess', true)
+    configs.set('chess', [
+      {
+        key: 'level',
+        type: 'number',
+        title: 'Level',
+        description: 'How strong',
+        required: false,
+        secret: false,
+        value: 3,
+        isSet: true,
+        min: 1,
+        max: 9,
+      },
+      {
+        key: 'token',
+        type: 'string',
+        description: '',
+        required: true,
+        secret: true,
+        value: null,
+        isSet: true,
+      },
+    ])
+    const [chess] = (await provider.listings(actor)).listings
+    expect(chess!.configurable).toBe(true)
+    const config = await provider.config!('chess', 'user', actor)
+    expect(config).toMatchObject({
+      scope: 'user',
+      scopes: ['user'],
+      values: { level: 3 },
+      set: ['token'],
+    })
+    expect(config!.fields[0]).toMatchObject({ label: 'Level', type: 'number', min: 1, max: 9 })
+    expect(await provider.config!('chess', 'project', actor)).toBeNull()
+    expect(await provider.config!('clock', 'user', actor)).toBeNull()
+  })
+
+  test('saving settings goes to the person’s mini app, in the way it keeps them', async () => {
+    const { provider, calls } = setup()
+    await provider.setConfig!('chess', 'user', { level: 4, tags: ['a'] }, actor)
+    expect(calls).toContain('config chess {"level":4,"tags":"[\\"a\\"]"}')
+    await expect(provider.setConfig!('chess', 'project', {}, actor)).rejects.toThrow(
+      'never for one project',
+    )
   })
 
   test('its page: README, pictures, facts and what it adds', async () => {
@@ -312,6 +372,7 @@ describe('the mini apps in the Store', () => {
       apps: {
         list: async () => ({ miniApps: [] }),
         setEnabled: async () => {},
+        setConfig: async () => {},
         remove: async () => {},
       },
     })

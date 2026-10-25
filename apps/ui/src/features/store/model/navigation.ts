@@ -20,7 +20,13 @@ export type StoreSection = NonNullable<ReturnType<typeof parseShelf>> | 'sources
  * that one marked), or a full list — a row's "See all", a category, a collection, a source.
  */
 export type StoreView =
-  | { type: 'listing'; ref: ListingRef; focus?: Pick<StoreComponent, 'kind' | 'name'> }
+  | {
+      type: 'listing'
+      ref: ListingRef
+      focus?: Pick<StoreComponent, 'kind' | 'name'>
+      /** The tab of the page to open on: `settings` for Configure. */
+      tab?: string
+    }
   | { type: 'list'; title: string; subtitle?: string; query?: StorePageQuery; refs?: ListingRef[] }
 
 export function parseSection(raw: unknown): StoreSection | null {

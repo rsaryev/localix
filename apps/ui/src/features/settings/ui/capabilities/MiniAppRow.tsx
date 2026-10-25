@@ -4,7 +4,6 @@ import { miniAppSettingsAnchor, miniAppSettingsUri } from '@/shared/lib/settings
 import { Button } from '@localixai/kit/button'
 import { Switch } from '@localixai/kit/switch'
 import { miniAppLabel } from '@localixai/mini-app-sdk/manifest-label'
-import { SettingsConfigForm } from '../SettingsConfigForm'
 import {
   SettingProblems,
   SettingRegistryMeta,
@@ -14,28 +13,22 @@ import {
 
 /**
  * One installed mini app as a registry row: what it gives the agent and the workbench, its switch,
- * and its settings form when expanded.
+ * and its Remove. Its settings are on its Store page.
  */
 export function MiniAppRow({
   app,
   projects,
   busy,
   busyLabel,
-  configOpen,
   onToggle,
   onRemove,
-  onToggleConfig,
-  onSaveConfig,
 }: {
   app: MiniAppRecord
   projects: Project[]
   busy: boolean
   busyLabel: string | null
-  configOpen: boolean
   onToggle: () => void
   onRemove: () => void
-  onToggleConfig: () => void
-  onSaveConfig: (values: Record<string, string | number | boolean>) => void
 }) {
   const label = miniAppLabel(app)
   const errors = app.error ? [app.error] : []
@@ -87,11 +80,6 @@ export function MiniAppRow({
       }
       actions={
         <>
-          {app.config.length > 0 && (
-            <Button variant="ghost" size="default" onClick={onToggleConfig} disabled={busy}>
-              Settings
-            </Button>
-          )}
           <Button variant="destructive" size="default" onClick={onRemove} disabled={busy}>
             Remove
           </Button>
@@ -131,9 +119,6 @@ export function MiniAppRow({
             {app.tools.map((tool) => tool.name).join(', ')}
           </span>
         </p>
-      )}
-      {configOpen && app.config.length > 0 && (
-        <SettingsConfigForm fields={app.config} busy={busy} onSave={onSaveConfig} />
       )}
     </SettingRegistryRow>
   )

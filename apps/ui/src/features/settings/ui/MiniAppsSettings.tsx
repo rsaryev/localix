@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import type { MiniAppRecord, Project } from '@/shared/api/contracts'
+import type { Project } from '@/shared/api/contracts'
 import { useMiniApps } from '../model/useMiniApps'
 import { SettingProblems } from './settingRegistry'
 import { SettingsSection } from './SettingsScaffold'
@@ -19,16 +18,10 @@ interface MiniAppsSettingsProps {
 
 /** Settings → Capabilities → Mini apps: the installed apps, their switches and settings. */
 export function MiniAppsSettings({ scope, agentScope = '', projects }: MiniAppsSettingsProps) {
-  const { miniApps, loading, error, busy, busyLabel, refresh, toggle, remove, saveConfig } =
-    useMiniApps(scope, agentScope)
-  const [configFor, setConfigFor] = useState<string | null>(null)
-
-  const handleSaveConfig = async (
-    app: MiniAppRecord,
-    values: Record<string, string | number | boolean>,
-  ) => {
-    if (await saveConfig(app, values)) setConfigFor(null)
-  }
+  const { miniApps, loading, error, busy, busyLabel, refresh, toggle, remove } = useMiniApps(
+    scope,
+    agentScope,
+  )
 
   return (
     <div className="w-full space-y-8">
@@ -66,11 +59,8 @@ export function MiniAppsSettings({ scope, agentScope = '', projects }: MiniAppsS
               projects={projects}
               busy={busy === app.name}
               busyLabel={busy === app.name ? busyLabel : null}
-              configOpen={configFor === app.name}
               onToggle={() => void toggle(app)}
               onRemove={() => void remove(app)}
-              onToggleConfig={() => setConfigFor((cur) => (cur === app.name ? null : app.name))}
-              onSaveConfig={(values) => void handleSaveConfig(app, values)}
             />
           ))}
         </CapabilityRegistryBody>

@@ -39,8 +39,19 @@ export type {
   StoreJob,
   Trust,
 } from './contract'
+export {
+  CONFIG_FIELD_TYPES,
+  configFieldSchema,
+  configValueSchema,
+  listingConfigFromFields,
+  listingConfigSchema,
+  scalarConfigValues,
+} from './config'
+export type { ConfigField, ConfigValue, DeclaredField, ListingConfig } from './config'
 export type { ProviderListings, StoreActor, StoreProvider } from './provider'
 export {
+  configQuerySchema,
+  configRequestSchema,
   discoverQuerySchema,
   discoverResponseSchema,
   enableRequestSchema,

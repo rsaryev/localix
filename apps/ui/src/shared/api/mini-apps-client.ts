@@ -32,18 +32,6 @@ export const miniAppsApi = {
     )
   },
 
-  async setMiniAppConfig(
-    name: string,
-    values: Record<string, string | number | boolean>,
-    opts?: { projectId?: string | null },
-  ): Promise<void> {
-    await assertOk(
-      await client.rpc['mini-apps'].config.$post({
-        json: { name, values, projectId: opts?.projectId ?? null },
-      }),
-    )
-  },
-
   async removeMiniApp(name: string, opts?: { projectId?: string | null }): Promise<void> {
     await assertOk(
       await client.rpc['mini-apps'].remove.$post({

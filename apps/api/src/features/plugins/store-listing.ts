@@ -109,7 +109,7 @@ export function pluginListing(
     contents?: PluginContents
     installs: StoreInstall[]
     job?: StoreJob
-    configure?: string
+    configurable?: boolean
   },
 ): Listing {
   const id = `${entry.name}@${view.name}`
@@ -143,6 +143,6 @@ export function pluginListing(
     recommended: flag(view, entry, 'recommended'),
     installs: state.installs,
     ...(state.job ? { job: state.job } : {}),
-    ...(state.configure ? { configure: state.configure } : {}),
+    ...(state.configurable ? { configurable: true } : {}),
   }
 }

@@ -22,11 +22,6 @@ export interface PluginsData {
   refresh: () => void
   toggle: (p: PluginRecord) => Promise<void>
   remove: (p: PluginRecord) => Promise<void>
-  /** Returns true on success so the caller can close the config form. */
-  saveConfig: (
-    p: PluginRecord,
-    values: Record<string, string | number | boolean>,
-  ) => Promise<boolean>
 }
 
 /**
@@ -89,24 +84,6 @@ export function usePlugins(scope: string, agentScope = ''): PluginsData {
     }
   }
 
-  const saveConfig = async (p: PluginRecord, values: Record<string, string | number | boolean>) => {
-    setBusy(p.name, `Saving settings for ${miniAppLabel(p)}`)
-    let ok = false
-    try {
-      await trackCapabilityWrite(p.projectId || null, async () => {
-        await backendClient.setPluginConfig(p.name, values, { projectId: p.projectId || null })
-        await refetchActiveMiniAppContrib()
-      })
-      ok = true
-      registry.refresh()
-    } catch (e) {
-      setError(inlineFailure(e, "Could not save this plugin's configuration."))
-    } finally {
-      setBusy(null)
-    }
-    return ok
-  }
-
   return {
     plugins,
     loading: registry.loading,
@@ -117,6 +94,5 @@ export function usePlugins(scope: string, agentScope = ''): PluginsData {
     refresh,
     toggle,
     remove,
-    saveConfig,
   }
 }

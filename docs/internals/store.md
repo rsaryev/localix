@@ -155,6 +155,13 @@ interface StoreProvider {
   update(id: string, scope: Scope, actor: StoreActor): Promise<void>
   remove(id: string, scope: Scope, actor: StoreActor): Promise<void>
   setEnabled?(id: string, scope: Scope, enabled: boolean, actor: StoreActor): Promise<void>
+  config?(id: string, scope: Scope, actor: StoreActor): Promise<ListingConfig | undefined>
+  setConfig?(
+    id: string,
+    scope: Scope,
+    values: Record<string, ConfigValue>,
+    actor: StoreActor,
+  ): Promise<void>
   refresh(): Promise<void> // re-read sources
   sources(): Promise<SourceView[]>
   previewSource?(input: string): Promise<SourcePreview>
@@ -166,6 +173,24 @@ interface StoreProvider {
 
 Domain errors stay the provider's; the Store routes map them to HTTP (A7). A provider that lacks a
 capability omits the method and the UI hides the control.
+
+## Configuration
+
+A package's own settings live on its page, in a **Settings** tab, never in Settings. A listing says
+`configurable`; `GET /rpc/store/:kind/:id/config?scope=` returns a `ListingConfig` — `fields` (a
+key, label, help, a type of `string | number | boolean | choice | list | model`, `required`,
+`secret`), the `values`, which secrets are `set`, the `scope` shown and the `scopes` it is installed
+in — and `POST` of the same path saves some of the values. The provider owns the storage (X3): the
+Store only validates the request's shape. A secret's value never leaves the server, only whether it
+is set. One form renders every kind (`apps/ui/src/features/store/ui/ConfigForm.tsx`), so a field
+type is added once.
+
+**Saving is explicit**: Save, Revert and Cmd/Ctrl+S, with the unsaved state said beside them. A
+setting reaches running code (a server restarts, a plugin reloads), and a secret or a half-typed
+address must not apply while it is typed; a form that saves per keystroke would restart a server for
+every character. The form sends only the keys that changed, a refusal is said beside Save and the
+edits stay. Preferences that are plain switches (Settings → Preferences) stay live: they change
+nothing running.
 
 ## How it works
 

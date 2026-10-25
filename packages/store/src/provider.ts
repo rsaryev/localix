@@ -1,3 +1,4 @@
+import type { ConfigValue, ListingConfig } from './config'
 import type {
   Editorial,
   InstallPlan,
@@ -44,6 +45,18 @@ export interface StoreProvider {
   update(id: string, scope: Scope, actor: StoreActor): Promise<void>
   remove(id: string, scope: Scope, actor: StoreActor): Promise<void>
   setEnabled?(id: string, scope: Scope, enabled: boolean, actor: StoreActor): Promise<void>
+  /**
+   * The settings of one install: what its package declares and what the person set. Null where
+   * the package has none or is not installed in that scope. The provider keeps the storage.
+   */
+  config?(id: string, scope: Scope, actor: StoreActor): Promise<ListingConfig | null>
+  /** Saves the given keys of one install's settings; a secret left out keeps its value. */
+  setConfig?(
+    id: string,
+    scope: Scope,
+    values: Record<string, ConfigValue>,
+    actor: StoreActor,
+  ): Promise<void>
   /** Re-read the sources, so the next listings are fresh. */
   refresh(): Promise<void>
   sources(): Promise<SourceView[]>

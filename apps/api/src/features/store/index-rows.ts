@@ -18,8 +18,8 @@ import { listingSignals, staticScore } from './ranking'
  */
 
 /** What a listing holds that is the person's own, not its source's. */
-export type ListingState = Pick<Listing, 'installs' | 'job' | 'configure'>
-export type ListingCard = Omit<Listing, 'installs' | 'job' | 'configure'>
+export type ListingState = Pick<Listing, 'installs' | 'job' | 'configurable'>
+export type ListingCard = Omit<Listing, 'installs' | 'job' | 'configurable'>
 
 export interface IndexRow {
   kind: string
@@ -80,7 +80,7 @@ export function componentsOf(card: ListingCard): StoreComponent[] {
 }
 
 export function cardOf(listing: Listing): ListingCard {
-  const { installs: _installs, job: _job, configure: _configure, ...card } = listing
+  const { installs: _installs, job: _job, configurable: _configurable, ...card } = listing
   return { ...card, category: storeCategory(listing) }
 }
 
@@ -116,11 +116,11 @@ export function toIndexRow(card: ListingCard, opts: { now: number }): IndexRow {
 
 /** The person's state of a listing, or null when they have none (nothing installed, no job). */
 export function toStateRow(listing: Listing): StateRow | null {
-  if (listing.installs.length === 0 && !listing.job && !listing.configure) return null
+  if (listing.installs.length === 0 && !listing.job && !listing.configurable) return null
   const state: ListingState = {
     installs: listing.installs,
     ...(listing.job ? { job: listing.job } : {}),
-    ...(listing.configure ? { configure: listing.configure } : {}),
+    ...(listing.configurable ? { configurable: listing.configurable } : {}),
   }
   return {
     kind: listing.ref.kind,

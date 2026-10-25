@@ -41,12 +41,9 @@ async function render(props: Partial<ComponentProps<typeof PluginRowComponent>>)
         projects={[]}
         busy={false}
         busyLabel={null}
-        configOpen={false}
         onToggle={() => calls.push('toggle')}
         onRemove={() => calls.push('remove')}
         onUpdate={() => calls.push('update')}
-        onToggleConfig={() => calls.push('config')}
-        onSaveConfig={() => calls.push('save')}
         {...props}
       />,
     ),

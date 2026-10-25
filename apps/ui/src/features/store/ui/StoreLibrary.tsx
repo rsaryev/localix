@@ -45,13 +45,13 @@ const InstallRow = memo(function InstallRow({
           },
         ]
       : []),
-    ...(listing.configure
+    ...(listing.configurable
       ? [
           {
             id: 'configure',
             label: 'Configure',
             icon: Settings2,
-            onSelect: () => store.navigate(listing.configure!),
+            onSelect: () => store.configure(listing),
           },
         ]
       : []),

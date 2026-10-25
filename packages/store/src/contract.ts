@@ -121,8 +121,8 @@ export const listingSchema = z.object({
   job: jobSchema.optional(),
   /** Why it cannot be installed here. */
   incompatible: z.string().optional(),
-  /** A `localix://` address of the provider's own settings for it, when it has any. */
-  configure: z.string().optional(),
+  /** It is installed and has settings: its page then shows a Settings tab (`ListingConfig`). */
+  configurable: z.boolean().optional(),
 })
 export type Listing = z.infer<typeof listingSchema>
 

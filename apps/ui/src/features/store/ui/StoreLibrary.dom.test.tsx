@@ -14,7 +14,7 @@ const LISTINGS = [
     id: 'kanban',
     displayName: 'Kanban',
     installs: [{ scope: 'user', version: '1.0.0', enabled: true }],
-    configure: 'localix://ui/settings/mini-apps#mini-app:sample-board',
+    configurable: true,
   }),
   listing({
     id: 'trading',
@@ -72,7 +72,23 @@ describe('the Store’s library', () => {
   })
 
   test('an install’s menu updates, configures and removes it', async () => {
-    const view = await renderStore({ listings: LISTINGS, target: { shelf: 'installed' } })
+    const view = await renderStore({
+      listings: LISTINGS,
+      configs: {
+        kanban: {
+          user: {
+            fields: [
+              { key: 'board', label: 'Board', type: 'string', required: false, secret: false },
+            ],
+            values: { board: 'main' },
+            set: [],
+            scope: 'user',
+            scopes: ['user'],
+          },
+        },
+      },
+      target: { shelf: 'installed' },
+    })
     try {
       await view.openMenu(view.button('Trading actions'))
       expect(view.menuItem('Configure')).toBeUndefined()
@@ -83,9 +99,9 @@ describe('the Store’s library', () => {
       expect(view.calls).toEqual(['update mini-app/trading user', 'remove mini-app/kanban user'])
       await view.openMenu(view.button('Kanban actions'))
       await view.click(view.menuItem('Configure'))
-      expect(view.calls.at(-1)).toBe(
-        'navigate localix://ui/settings/mini-apps#mini-app:sample-board',
-      )
+      // Configure opens the package's own page on its Settings tab, not a page of Settings.
+      const page = view.host.querySelector('[data-store-page="kanban"]')!
+      expect(page.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe('Settings')
     } finally {
       await view.done()
     }
