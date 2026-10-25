@@ -3,6 +3,8 @@ import { join } from 'node:path'
 import type { Kysely } from 'kysely'
 
 import type { AppDatabase } from '../db'
+import type { AgentsService } from '../features/agents/service-contract'
+import { agentStoreProviderOf } from '../features/agents/store-wiring'
 import type { McpService } from '../features/mcp/service'
 import { mcpStoreProviderOf } from '../features/mcp/store-wiring'
 import type { SkillFiles } from '../features/skills-curator/store-provider'
@@ -39,6 +41,8 @@ export function createStorePhase(deps: {
   db: Kysely<AppDatabase>
   /** The SKILL.md operations and the curator: the skills provider's. */
   skills: { files: SkillFiles; curator: SkillsCuratorService }
+  /** The agents service: the agents provider's. */
+  agentsService: AgentsService
   /** The plugin service: its marketplaces are the plugins provider's sources. */
   pluginService?: PluginService
   semanticService?: Pick<SemanticService, 'registerSource' | 'resync'>
@@ -69,6 +73,7 @@ export function createStorePhase(deps: {
         curator: deps.skills.curator,
         skills: deps.skills.files,
       }),
+      agentStoreProviderOf(deps.agentsService),
       ...(deps.pluginService
         ? [
             pluginStoreProviderOf(deps.pluginService, {
