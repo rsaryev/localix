@@ -5,13 +5,10 @@ import {
   type ListingsResponse,
   type PackageKind,
   type Scope,
-  type ShelfId,
   type SourceView,
   type StoreActivity,
   type StoreActor,
-  type StoreCategory,
   type StoreProvider,
-  type Trust,
 } from '@localixai/store'
 
 import { NotFoundError } from '../../lib/domain-errors'
@@ -29,36 +26,9 @@ import { createStoreSearchProvider, refOfStoreHit, STORE_SEARCH_DOMAIN } from '.
 import { sourcesOf } from './sources'
 import { createStoreSync, watchProviders } from './store-runs'
 
-/** What narrows a page: a shelf, a search, a scope, installed or not, and the facets' filters. */
-export interface ListingQuery {
-  shelf?: ShelfId
-  q?: string
-  scope?: Scope
-  installed?: boolean
-  category?: StoreCategory
-  source?: string
-  trust?: Trust
-  projectId?: string
-  cursor?: string
-  limit?: number
-}
-
-/** The global search service, as the Store asks it (wired in `bootstrap/`, A4). */
-export type StoreSearchPort = (
-  userId: string,
-  request: {
-    text: string
-    domains: string[]
-    limit: number
-    cursor?: string
-    projectId?: string | null
-    providerOptions: unknown
-  },
-) => Promise<{
-  hits: Array<{ id: string }>
-  nextCursor?: string
-  strategy: { mode: 'lexical' | 'hybrid'; reason?: string }
-}>
+export type { ListingQuery, StoreSearchPort } from './service-types'
+import type { ListingQuery, StoreSearchPort } from './service-types'
+import { applyUpdates, sourceActions } from './service-updates'
 
 /**
  * THE STORE (`docs/internals/store.md`, `store-scale.md`): the one place that lists, installs,
@@ -258,40 +228,7 @@ export function createStoreService(deps: {
     sources: (): Promise<{ sources: SourceView[]; addable: PackageKind[] }> =>
       sourcesOf(deps.providers, deps.index),
 
-    async refreshSource(kind: PackageKind, id: string) {
-      const provider = providerOf(kind)
-      if (!provider.refreshSource) throw unsupported(kind, 'read one source again')
-      await provider.refreshSource(id)
-      runs.announceSources()
-      runs.invalidate()
-    },
-
-    async setSourceAutoUpdate(kind: PackageKind, id: string, on: boolean) {
-      const provider = providerOf(kind)
-      if (!provider.setSourceAutoUpdate) throw unsupported(kind, 'switch auto-update')
-      await provider.setSourceAutoUpdate(id, on)
-      runs.announceSources()
-    },
-
-    async previewSource(kind: PackageKind, input: string) {
-      const provider = providerOf(kind)
-      if (!provider.previewSource) throw unsupported(kind, 'add a source')
-      return provider.previewSource(input)
-    },
-
-    async addSource(kind: PackageKind, input: string) {
-      const provider = providerOf(kind)
-      if (!provider.addSource) throw unsupported(kind, 'add a source')
-      await provider.addSource(input)
-      runs.announceSources()
-    },
-
-    async removeSource(kind: PackageKind, id: string) {
-      const provider = providerOf(kind)
-      if (!provider.removeSource) throw unsupported(kind, 'remove a source')
-      await provider.removeSource(id)
-      runs.announceSources()
-    },
+    ...sourceActions(providerOf, runs),
 
     /** The jobs in flight and the updates offered, every kind's, from the index. */
     async activity(actor: StoreActor): Promise<StoreActivity> {
@@ -310,29 +247,9 @@ export function createStoreService(deps: {
       runs.invalidate()
     },
 
-    /**
-     * Update all: every provider re-reads its sources (one that cannot keeps what it had), then
-     * each install a newer version is offered for is updated, unless a job already runs for it.
-     * Returns what was queued.
-     */
-    async applyUpdates(actor: StoreActor): Promise<ListingRef[]> {
-      await Promise.all(
-        deps.providers.map(async (provider) => provider.refresh?.().catch(() => {})),
-      )
-      await runs.syncNow(actor)
-      const queued: ListingRef[] = []
-      for (const listing of await deps.index.stated(actor.userId)) {
-        const scopes = listing.installs.filter((install) => install.updateTo)
-        if (scopes.length === 0 || listing.incompatible || runs.busy(listing)) continue
-        try {
-          for (const { scope } of scopes) await update(listing.ref, scope, actor)
-          queued.push(listing.ref)
-        } catch {
-          // Its provider refused (a folder of the person's own by that name): the rest still go.
-        }
-      }
-      return queued
-    },
+    /** Update all (`service-updates.ts`): returns what was queued. */
+    applyUpdates: (actor: StoreActor): Promise<ListingRef[]> =>
+      applyUpdates({ providers: deps.providers, index: deps.index, runs, update }, actor),
   }
 }
 

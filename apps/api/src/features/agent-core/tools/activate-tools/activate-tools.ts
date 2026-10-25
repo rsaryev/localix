@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { defineAgentTool, type AgentTool } from '@localixai/agent/agents'
 import { ACTIVATE_TOOLS_TOOL_NAME } from '../../tool-names'
-import { normalizeMcpToolAlias } from '../../../ext/cc-tool-names'
+import { normalizeMcpToolAlias } from '../../mcp-tool-alias'
 
 /** One external tool advertised through the compact activation catalog. */
 export interface DeferredToolEntry {

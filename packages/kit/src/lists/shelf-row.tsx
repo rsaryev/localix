@@ -65,7 +65,7 @@ export function ShelfRow({
   // placed rail, as tall as the strip, that centres it and lets clicks through around it.
   const arrow =
     'pointer-events-auto rounded-full lx-glass lx-glass-self opacity-0 group-hover/shelf-row:opacity-100 focus-visible:opacity-100 disabled:opacity-0'
-  const rail = 'pointer-events-none absolute inset-y-0 z-10 flex items-center'
+  const rail = 'pointer-events-none absolute inset-y-0 z-(--z-controls) flex items-center'
   return (
     <section
       aria-label={title}

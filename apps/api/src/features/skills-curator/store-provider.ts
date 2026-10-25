@@ -1,9 +1,7 @@
 import { createChangeSignal } from '@localixai/store'
 import type {
   ActionResult,
-  ConfigValue,
   CreateForm,
-  ItemAction,
   ListingConfig,
   ListingRef,
   Scope,
@@ -12,8 +10,15 @@ import type {
 } from '@localixai/store'
 
 import { ConflictError, InvalidRequestError, NotFoundError } from '../../lib/domain-errors'
-import type { AvailabilityReader } from '../capabilities/availability'
-import type { SkillsCuratorService } from './service'
+import {
+  ARCHIVE,
+  RESTORE,
+  SKILL_NAME,
+  UNPIN,
+  knownShelfAction,
+  textOf,
+} from './store-provider-actions'
+import type { SkillStoreDeps } from './store-provider-types'
 import { ARCHIVE_UNUSED, archiveUnusedPlan } from './store-idle'
 import {
   BODY_FIELDS,
@@ -25,64 +30,10 @@ import {
   skillListing,
   type SkillEntry,
   type SkillRef,
-  type StoredSkill,
 } from './store-listing'
 
 export type { StoredSkill } from './store-listing'
-
-interface SkillWrite {
-  name: string
-  description: string
-  content: string
-  projectId: string | null
-}
-
-/** What the provider asks of the skill files: the chat service's SKILL.md operations. */
-export interface SkillFiles {
-  /** Every skill the files give: a project's, and the person's. */
-  list(userId: string, projectId: string | null): Promise<{ skills: StoredSkill[] }>
-  get(userId: string, name: string, projectId: string | null): Promise<StoredSkill>
-  create(userId: string, input: SkillWrite): Promise<unknown>
-  update(userId: string, id: string, input: SkillWrite): Promise<unknown>
-  remove(userId: string, name: string, projectId: string | null): Promise<unknown>
-}
-
-export interface SkillStoreDeps {
-  skills: SkillFiles
-  /** Archive, restore and pin: the lifecycle the curator owns. */
-  curator: Pick<
-    SkillsCuratorService,
-    'listSkills' | 'archive' | 'archiveUnused' | 'restore' | 'setPinned'
-  >
-  /** Whether each skill may run: a rule, shared with the Capabilities screen. */
-  availability: {
-    reader(userId: string): Promise<AvailabilityReader>
-    set(userId: string, switches: Array<{ name: string; enabled: boolean }>): Promise<void>
-  }
-  /** The clock, for how long a skill has been idle. */
-  now?: () => Date
-  /**
-   * Hear a change made outside the Store (a switch from the Capabilities screen, a file written by
-   * a tool); returns the unsubscribe. The Store's own writes are announced here too.
-   */
-  onChange(listener: () => void): () => void
-}
-
-const UNPIN: ItemAction = { id: 'unpin', label: 'Unpin', help: 'Let it be archived when unused' }
-const ARCHIVE: ItemAction = {
-  id: 'archive',
-  label: 'Archive',
-  help: 'Take it out of use; restore it any time',
-}
-const RESTORE: ItemAction = { id: 'restore', label: 'Restore', help: 'Put it back in use' }
-
-/** What the SKILL.md writer accepts as a name (the skill's folder). */
-const SKILL_NAME = /^[a-z0-9][a-z0-9_-]*$/i
-
-const textOf = (values: Record<string, ConfigValue>, key: string, fallback = ''): string => {
-  const value = values[key]
-  return typeof value === 'string' ? value : fallback
-}
+export type { SkillFiles, SkillStoreDeps } from './store-provider-types'
 
 /**
  * SKILLS AS A STORE PROVIDER (`docs/internals/store.md`, "Skills"). A skill is a `SKILL.md`: the
@@ -309,9 +260,4 @@ export function createSkillStoreProvider(deps: SkillStoreDeps): StoreProvider {
 
     subscribe,
   }
-}
-
-function knownShelfAction(action: string): void {
-  if (action !== ARCHIVE_UNUSED.id)
-    throw new InvalidRequestError('skill_store_action', `Skills have no shelf action "${action}"`)
 }

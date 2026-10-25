@@ -24,7 +24,7 @@ export function namesTool(
 
 /**
  * `mcp_<server>_` for a Claude Code address: its server, a plugin's without `plugin_`, sanitized
- * as the engine names it (`ext/cc-tool-names.ts` `normalizeMcpToolAlias`, `mcp/mcp-tools.ts`).
+ * as the engine names it (`mcp-tool-alias.ts` `normalizeMcpToolAlias`, `mcp/mcp-tools.ts`).
  */
 function engineServerPrefix(address: string): string | undefined {
   const server = /^mcp__(.+?)__/.exec(address)?.[1]

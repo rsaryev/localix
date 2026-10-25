@@ -45,10 +45,11 @@ const EXTERNAL_FORMAT_LITERALS = new Map([
  */
 const CLAUDE_CODE_ISOLATION = [
   'apps/api/src/features/agent-core/tools/workflow/',
-  // The Agent tool's own `isolation: 'worktree'` parameter, as Claude Code declares it.
-  'apps/api/src/features/agent-core/tools/delegate.ts',
-  'apps/api/src/features/agent-core/tools/delegate-start.ts',
-  'apps/api/src/features/agent-core/tools/delegate-agent-type',
+  // The Agent tool's own `isolation: 'worktree'` parameter, as Claude Code declares it, in every
+  // delegate module (start, fork, agent type) and its tests.
+  'apps/api/src/features/agent-core/tools/delegate',
+  // Claude Code's `EnterWorktree`/`ExitWorktree` tool names, mapped to what Localix has.
+  'apps/api/src/features/ext/cc-tool-names.ts',
   'apps/api/src/features/cc-hooks/',
   'apps/api/src/features/chat/session-cwd',
   'apps/api/src/features/chat/session-provenance',

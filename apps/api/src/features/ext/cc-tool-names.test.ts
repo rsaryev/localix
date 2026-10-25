@@ -1,9 +1,9 @@
+import { normalizeMcpToolAlias } from '../agent-core/mcp-tool-alias'
 import { describe, it, expect } from 'bun:test'
 import {
   CC_TOOL_NAME_MAP,
   CC_SEMANTIC_GAPS,
   normalizeCcToolName,
-  normalizeMcpToolAlias,
   mapCcToolList,
 } from './cc-tool-names'
 

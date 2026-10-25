@@ -16,9 +16,15 @@
 import type { SemanticSource } from '@localixai/mini-app-sdk/backend'
 import type { EmbeddingEngine } from './engine'
 import { ingestItems, removeKeys, type IngestStats } from './ingest'
-import type { SemanticStore } from './store'
 import { createIndexRate, unrefTimer } from './indexer-rate'
-import type { VectorCache } from './vector-cache'
+import type { IndexerDeps, IndexerPhase, IndexerProgress } from './indexer-types'
+
+export type {
+  CollectionProgress,
+  IndexerDeps,
+  IndexerPhase,
+  IndexerProgress,
+} from './indexer-types'
 
 const SCAN_PAGE = 64
 const OUTBOX_PAGE = 128
@@ -28,38 +34,6 @@ const RETRY_MS = [5_000, 15_000, 60_000]
  * own reads) instead of running pages back to back.
  */
 const PAGE_GAP_MS = 25
-
-export type IndexerPhase = 'stopped' | 'idle' | 'reconciling' | 'updating' | 'retrying' | 'paused'
-
-export interface CollectionProgress {
-  collection: string
-  label: string
-  /** Items a running reconcile has visited / will visit (null when the source cannot count). */
-  scanned: number | null
-  total: number | null
-  reconciling: boolean
-}
-
-export interface IndexerProgress {
-  phase: IndexerPhase
-  collections: CollectionProgress[]
-  pendingChanges: number
-  /** Chunks embedded per second over the last half minute (null before the first batch). */
-  chunksPerSecond: number | null
-  lastError: string | null
-}
-
-export interface IndexerDeps {
-  store: SemanticStore
-  cache: VectorCache
-  sources: () => readonly SemanticSource[]
-  onProgress?: () => void
-  log?: (event: string, fields: Record<string, unknown>) => void
-  /** Waits between scan pages, so a reconcile stays in the background. Test seam. */
-  pace?: () => Promise<void>
-  /** Arms the retry after a failed pass; returns its cancel. Test seam. */
-  setTimer?: (fire: () => void, ms: number) => () => void
-}
 
 export function createIndexer(deps: IndexerDeps) {
   const { store, cache } = deps

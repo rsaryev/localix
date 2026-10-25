@@ -1,5 +1,5 @@
 import { errorMessage } from '../lib/errors'
-import { resolveDefaultUserId, userHome } from '../lib/env'
+import { userHome } from '../lib/env'
 import { createMiniAppChannelHost } from '../features/mini-apps/channel-host'
 import { createChannelWorkspace } from '../features/mini-apps/channel-workspace'
 import { createPluginMonitorHost } from '../features/plugins/monitor-host'
@@ -18,7 +18,6 @@ import type { MiniAppHostRefs } from './mini-app-host-refs'
 import type { MiniAppHostsPhase } from './mini-app-hosts'
 import type { createChatService } from '../features/chat/service'
 import { createCapabilitySourceRepository } from '../features/capabilities/source-repository'
-import { retireLegacyPluginCopies } from '../features/mini-apps/legacy-plugin-copies'
 import { recoverDelegationReports } from '../features/chat/service/recover-delegation'
 import { MINI_APP_WARNINGS, warnOnce } from '../lib/warn-once'
 import type { StorageMaintenance } from './storage-maintenance'
@@ -27,6 +26,7 @@ import { armPluginUpdateTimers } from './plugin-update-timers'
 import { armPluginAutoUpdate } from '../features/plugins/auto-update-schedule'
 import type { StoreService } from '../features/store/service'
 import { envFlag } from '../lib/env'
+import { createStartupWarm } from './startup-warm'
 import { armMiniAppTimers } from './mini-app-timers'
 import { sessionDataSweepTask } from './session-data-sweep'
 import { createAgentFilesTask, createAgentFoldersPort } from './agent-catalog-sources'
@@ -267,38 +267,7 @@ export function createOpsTimersPhase({
     setInterval(pruneNotifications, 24 * 60 * 60 * 1000).unref?.()
   }
 
-  /**
-   * Pay for plugin discovery before a client has to.
-   *
-   * `GET /rpc/capabilities/snapshot` and `GET /rpc/tools/gc` both resolve plugin
-   * contributions, and the first caller after boot funds the content-hash of the whole
-   * plugin directory. Measured on a packaged launch that is ~1.2s, and the client pays it
-   * — it is the single largest span between the workspace appearing and the activity rail
-   * being complete, and it lands as a visible fill-in.
-   *
-   * Called AFTER the server is listening, never before: moving it ahead of readiness would
-   * just relabel the same second as startup time and delay the window. Failures are
-   * irrelevant here — this is a cache warm, and the real request will surface any problem
-   * with its own error handling.
-   */
-  const warmStartupCaches = (): void => {
-    const userId = resolveDefaultUserId()
-    // The managed mini app copies earlier builds kept among the plugins go first, then plain-text
-    // secrets an older build stored move to the vault (`plugins/service-config.ts`).
-    void retireLegacyPluginCopies(userHome())
-      .then((removed) => {
-        if (removed.length) logger.info({ event: 'mini_apps.legacy_copies_removed', removed })
-      })
-      .catch(() => {})
-      .then(() => pluginService.reconcileStoredConfig(userId))
-      .then(() => pluginService.listPlugins(userId, { projectId: null }))
-      .then((result) => logger.debug({ event: 'startup.warm', plugins: result.plugins.length }))
-      .catch(() => {})
-    void miniAppService
-      .list(userId, { projectId: null })
-      .then((result) => logger.debug({ event: 'startup.warm', miniApps: result.miniApps.length }))
-      .catch(() => {})
-  }
+  const warmStartupCaches = createStartupWarm({ logger, pluginService, miniAppService })
 
   return { channelHost, monitorHost, startOpsTimers, warmStartupCaches }
 }

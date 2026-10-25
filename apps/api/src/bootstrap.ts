@@ -1,4 +1,3 @@
-import { join } from 'node:path'
 import { createModsPhase } from './bootstrap/mods'
 import { realtimeWebSocket } from './bootstrap/realtime-websocket'
 import { bindChatHostRefs } from './bootstrap/chat-host-refs'
@@ -14,16 +13,12 @@ import { createEnginesPhase } from './bootstrap/engines'
 import { createAgentFacadePhase } from './bootstrap/agent-facade'
 import { createAppServicesPhase } from './bootstrap/app-services'
 import { createAppPhase } from './bootstrap/create-app'
-import { createStorePhase, invalidateStoreOn } from './bootstrap/store'
+import { createStorePhase } from './bootstrap/store'
 import { createOpsTimersPhase } from './bootstrap/ops-timers'
-import { startAfterListen } from './bootstrap/post-listen'
+import { createStartPostListen } from './bootstrap/start-post-listen'
+import { runLegacyMigrations } from './bootstrap/legacy-migrations'
 import { buildSemanticService } from './bootstrap/semantic'
 import { buildDecisionService } from './bootstrap/decisions'
-import { migrateLegacyPluginInstalls } from './features/plugins/legacy-install-migration'
-import { migrateLegacySkills } from './features/skills-curator/legacy-skills-migration'
-import { createSkillUsageRepository } from './features/skills-curator/repository'
-import { defaultArchiveRoot } from './features/skills-curator/skill-fs'
-import { localixHome, userHome } from './lib/env'
 
 export async function bootstrap(
   envSource: Record<string, string | undefined> = process.env,
@@ -62,25 +57,7 @@ export async function bootstrap(
   const semanticService = buildSemanticService(infra)
   // Decisions, built from infra alone too: group routing and every mini app host ask through it.
   const decisionService = buildDecisionService(infra)
-  // Before any discovery: convert pre-native plugin installs once (idempotent, logged).
-  await migrateLegacyPluginInstalls({ db, homeDir: userHome(), logger })
-  // Once: the skills Localix kept in `.localix/skills` move to Claude Code's `.claude/skills`.
-  await migrateLegacySkills({
-    userId: env.LOCALIX_DEFAULT_USER_ID,
-    homeDir: userHome(),
-    archiveRoot: defaultArchiveRoot(),
-    markerFile: join(localixHome(), 'skills-claude-layout.json'),
-    projects: async () =>
-      (
-        await db
-          .selectFrom('projects')
-          .select(['id', 'working_dir'])
-          .where('deleted_at', 'is', null)
-          .execute()
-      ).map((p) => ({ id: p.id, workingDir: p.working_dir })),
-    usage: createSkillUsageRepository(db),
-    logger,
-  }).catch((error) => logger.warn({ event: 'skills.migrate.error', error: String(error) }))
+  await runLegacyMigrations(infra)
   const {
     subsystemRegistry,
     contextProviderRegistry,
@@ -327,56 +304,25 @@ export async function bootstrap(
     miniAppConditions,
     storeService,
   })
-  const startPostListen = (signal?: AbortSignal): Promise<void> =>
-    startAfterListen(
-      {
-        logger,
-        start: () => {
-          startBackendHost()
-          refreshMods()
-          startEngines()
-          startOpsTimers(signal)
-        },
-        semantic: { db, logger, localModels, semanticService, changes: infra.changes },
-        statusPokes: {
-          localModels,
-          semanticService,
-          store: storeService,
-          chatService,
-          env,
-        },
-        coreReactors: {
-          db,
-          feed: infra.changes.core,
-          defaultUserId: env.LOCALIX_DEFAULT_USER_ID,
-          catalogService,
-          providerConnectionsService,
-          projectsService,
-          userService,
-          agentsService,
-          secretsStore,
-          notifications,
-          sessionExists: async (...args) =>
-            Boolean(await bootRepo.getSession(...args).catch(() => true)),
-          providerConditions: infra.providerConditions,
-          triggerConditions,
-          triggerEngine,
-          refreshMiniAppHosts: () => {
-            backendHost.refresh()
-            channelHost.refresh()
-          },
-          subagentRows: chatService.subagentRowsLive,
-          statusLine: chatService.statusLine,
-          publish: invalidateStoreOn(storeService, (userId, resources) =>
-            chatService.streamRegistry.publish(userId, '', {
-              type: 'resources.changed',
-              resources,
-            }),
-          ),
-        },
-      },
-      signal,
-    )
+  const startPostListen = createStartPostListen({
+    infra,
+    semanticService,
+    chatService,
+    storeService,
+    projectsService,
+    userService,
+    agentsService,
+    backendHost,
+    channelHost,
+    triggerConditions,
+    triggerEngine,
+    start: (...args) => {
+      startBackendHost()
+      refreshMods()
+      startEngines()
+      startOpsTimers(...args)
+    },
+  })
   return {
     env,
     logger,

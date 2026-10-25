@@ -110,7 +110,7 @@ export function PackageHeader({
         </div>
       </header>
       {narrow && (
-        <div className="lx-occluder sticky bottom-0 z-10 -mx-4 order-last flex items-center justify-between gap-3 border-t border-border-faint px-4 py-2">
+        <div className="lx-occluder sticky bottom-0 z-(--z-sticky) -mx-4 order-last flex items-center justify-between gap-3 border-t border-border-faint px-4 py-2">
           <span className="min-w-0 truncate text-sm font-medium text-foreground">
             {listing.displayName}
           </span>

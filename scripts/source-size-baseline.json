@@ -35,7 +35,6 @@
   "apps/ui/src/entities/chat/ui/prompt-input/useAtRefAutocomplete.ts": 382,
   "apps/ui/src/entities/chat/ui/prompt-input/useConnections.ts": 317,
   "apps/ui/src/entities/chat/ui/tool-parts/ToolLine.tsx": 375,
-  "apps/ui/src/entities/chat/ui/tool-parts/cards/meta.ts": 308,
   "apps/ui/src/features/inspector/ui/FileTab.tsx": 401,
   "apps/ui/src/features/inspector/ui/FileTreeEntries.tsx": 453,
   "apps/ui/src/features/inspector/ui/FileTreeSidebar.tsx": 387,

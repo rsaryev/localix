@@ -24,37 +24,39 @@ import {
   markHistoryCacheAnchor,
   toModelMessages,
 } from '@localixai/agent/agents/chat'
-import { runHistoryStages, type StageReport } from '@localixai/agent/history'
-import type { RuntimeContextPolicy } from '@localixai/agent/runtime'
+import { runHistoryStages } from '@localixai/agent/history'
 import {
   estimateChatMessageTokens,
   type CheckpointReason,
   type ContextCheckpoint,
-  type TokenCalibration,
-  type WireSizeSample,
 } from '@localixai/agent'
 
 import type { PersistedMessage } from '../../contracts'
 import type { StoredMessagePayload } from '../../../../db/payload'
-import type { MediaStore } from '../../../media/store'
-import type { DocumentTextExtractor } from '../../../agent-core/tools/file/document-ports'
 import { assertFixedOverheadFits, type ContextBudgetFrame } from '../context-budget'
-import {
-  createContextAnchorIdentity,
-  lastTurnContextAnchor,
-  type ContextAnchorIdentity,
-  type ContextAnchorProof,
-} from '../context-token-estimate'
-import { composeTurnContext, type StoredTurnContext } from '../model-view/turn-context'
+import { createContextAnchorIdentity, lastTurnContextAnchor } from '../context-token-estimate'
+import { composeTurnContext } from '../model-view/turn-context'
 import { modelViewSections } from '../model-view/sections'
-import { rowsAfterClear, type ModelView } from '../model-view/view'
+import { rowsAfterClear } from '../model-view/view'
 import type { ChatTurnFrame } from './frame'
 import { clearCutStage, turnContextStage } from './stages/persisted'
-import { participantViewStage, type ParticipantAudience } from './stages/participant-view'
+import { participantViewStage } from './stages/participant-view'
 import { findActiveInvocationIndex, toModelPayloads } from './stages/media'
 import { checkpointStage } from './stages/checkpoint'
 import { admissionStage, preflightStage, type BudgetScratch } from './stages/budget'
-import { createRequestTransform, type ElisionLedger } from './request-transform'
+import { createRequestTransform } from './request-transform'
+import type {
+  ChatHistoryRun,
+  ChatHistoryRunContext,
+  ChatMaterializeResult,
+} from './chat-strategy-types'
+
+export type {
+  ChatHistoryRun,
+  ChatHistoryRunContext,
+  ChatMaterializeResult,
+  ForkHistory,
+} from './chat-strategy-types'
 
 /**
  * The ordered stage names — the contract `scripts/history-strategy-guard.test.ts` pins against
@@ -70,85 +72,6 @@ export const CHAT_STAGES = [
   'preflight',
   'admission',
 ] as const
-
-/**
- * A FORK's first run: it continues its parent's conversation, and the one thing it adds is the
- * directive. Its request must be the parent's last request plus the call and that directive
- * (`run/fork`), so it takes no runtime context of its own — the parent's was sent already — and
- * its cache breakpoint sits where the parent's request ended.
- */
-export interface ForkHistory {
-  /** The parent's call that made the fork. */
-  toolCallId: string
-  /** No run of the fork has answered yet. Later runs are ordinary ones over a longer history. */
-  first: boolean
-}
-
-export interface ChatHistoryRunContext {
-  sessionId: string
-  frame: ContextBudgetFrame
-  /** For the anchor identity: which provider/model, and the hashes of the fixed prefix. */
-  identity: {
-    providerId: string
-    modelId: string
-    systemPromptHash: string
-    toolSchemaHash: string
-  }
-  /**
-   * WHOSE VIEW of the conversation this run reads: the speaking participant, plus what it can
-   * actually do this turn. Production runs supply this even with one current participant:
-   * the shared transcript can still contain a former participant's private tool work.
-   */
-  participantAudience?: ParticipantAudience
-  /** The frozen view in force and whether this turn re-plans it (`model-view/view.ts`). */
-  view: ModelView
-  recoveryToolAvailable?: boolean
-  /** Set on a fork's runs (`ForkHistory`). */
-  fork?: ForkHistory
-  /** Is `global_search` in the roster? Cards and folds point at it only when it is. */
-  recallToolAvailable?: boolean
-  /** Is `memory` in the roster? The checkpoint warning asks the agent to save with it. */
-  memoryToolAvailable?: boolean
-  /** What this model has taught about the heuristic so far; prices appended messages. */
-  calibration?: TokenCalibration
-  media: {
-    mediaStore?: MediaStore
-    defaultCwd?: string
-    extractDocument?: DocumentTextExtractor
-    acceptsImages?: boolean
-  }
-  /** Session-scoped state, owned by the host and reused across runs. */
-  state: {
-    contextAnchorProof?: ContextAnchorProof
-    /** Set by the per-request policy when it had to prune; the next turn checkpoints. */
-    checkpointDue?: CheckpointReason
-  } & ElisionLedger
-}
-
-export interface ChatMaterializeResult {
-  wire: AgentMessage[]
-  /** The bounded persisted history the wire was derived from (the finalizer reads it). */
-  effectiveHistory: PersistedMessage[]
-  payloads: StoredMessagePayload[]
-  estimate: { tokens: number; source: 'provider_anchor' | 'heuristic'; trailingTokens?: number }
-  identity: ContextAnchorIdentity
-  reports: StageReport[]
-  /** This turn's runtime context, for the run to persist on its assistant row. */
-  turnContext?: StoredTurnContext
-  /** The checkpoint this turn took, for the run to persist before it sends. */
-  checkpoint?: ContextCheckpoint
-}
-
-/** One run's history handling: both halves over one frame. */
-export interface ChatHistoryRun {
-  materialize(frame: ChatTurnFrame, signal: AbortSignal): Promise<ChatMaterializeResult>
-  requestPolicy(init: {
-    initialEstimate: ChatMaterializeResult['estimate']
-  }): RuntimeContextPolicy & {
-    /** The wire the provider's next usage will measure. */
-    lastWireSample?: () => WireSizeSample | undefined
-  }
-}
 
 export function createChatHistoryRun(ctx: ChatHistoryRunContext): ChatHistoryRun {
   assertFixedOverheadFits(ctx.frame)

@@ -100,6 +100,10 @@ const EXEMPTIONS: Exemptions = {
     reason:
       "Spells a mod's registered tool as Claude Code names it to the model, `mcp__<plugin>__<name>`, in the charset tool names allow on the wire (`[A-Za-z0-9_-]`). The name only travels in a request's tool list and back in a tool call; nothing joins it into a path.",
   },
+  [exemptionKey('apps/api/src/features/agents/store-provider.ts', 'rule')]: {
+    reason:
+      "Spells a copied agent's NAME (`plugin:reviewer` becomes `plugin-reviewer-copy`) in the agent-name charset Claude Code accepts. The file it lands in is chosen by the agents service, which checks the name against that charset before it writes; this module joins no path.",
+  },
   [exemptionKey('apps/api/src/features/mcp/mcp-tools.ts', 'rule')]: {
     reason:
       "Spells an MCP tool as Claude Code names it, `mcp__<server>__<tool>`, with Claude Code's own replacement rule for the server and tool (`[A-Za-z0-9_-]`, every other character `_`). The name is a hook matcher alias and a wire tool name; nothing joins it into a path.",

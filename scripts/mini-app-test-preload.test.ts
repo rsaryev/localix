@@ -24,6 +24,8 @@ const WORKSPACE_ROOTS = ['apps', 'plugins']
 const DEADLINE = '../../scripts/test-deadline.ts'
 const KIT_PRELOAD = '../../packages/kit/test-preload.ts'
 const UI_PRELOAD = './src/testing/preload.ts'
+// The workspace-wide preload (HOME, git env, network) is no mini app's own: it may come first.
+const SHARED = '../../packages/testing/src/preload/index.ts'
 
 /** What is wrong with a mini app's `bunfig.toml` text, or `[]` when its preload chain is right. */
 export function preloadViolations(bunfig: string | undefined): string[] {
@@ -36,7 +38,7 @@ export function preloadViolations(bunfig: string | undefined): string[] {
   // apps/ui warms Radix synchronously in its own preload, which also works under `--isolate`.
   const kit = preload.findIndex((entry) => entry === KIT_PRELOAD || entry === UI_PRELOAD)
   if (kit === -1) problems.push(`[test].preload must include ${KIT_PRELOAD}`)
-  else if (preload.slice(1, kit).some((entry) => entry !== DEADLINE))
+  else if (preload.slice(1, kit).some((entry) => entry !== DEADLINE && entry !== SHARED))
     problems.push(`${KIT_PRELOAD} must run before the mini app's own preload`)
   return problems
 }
@@ -63,6 +65,9 @@ describe('mini app test preload', () => {
     ])
     expect(
       preloadViolations(`[test]\npreload = ["${DEADLINE}", "${KIT_PRELOAD}", "./test-preload.ts"]`),
+    ).toEqual([])
+    expect(
+      preloadViolations(`[test]\npreload = ["${DEADLINE}", "${SHARED}", "${UI_PRELOAD}"]`),
     ).toEqual([])
   })
 
