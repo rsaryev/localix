@@ -1,10 +1,12 @@
 {
   "name": "localix",
-  "owner": { "name": "Localix" },
+  "owner": {
+    "name": "Localix"
+  },
   "metadata": {
     "description": "Claude Code plugins from the Localix repository. Localix registers this marketplace on first start; in Claude Code, add it with claude plugin marketplace add rsaryev/localix.",
     "localix": {
-      "recommended": ["localix-mini-apps"],
+      "recommended": ["localix-mini-apps", "team"],
       "collections": [
         {
           "id": "build-for-localix",
@@ -21,9 +23,21 @@
       "name": "localix-mini-apps",
       "source": "./plugins/localix-mini-apps",
       "description": "Teaches the agent to build, check, pack and publish Localix mini apps.",
-      "author": { "name": "Localix" },
+      "author": {
+        "name": "Localix"
+      },
       "category": "development",
       "homepage": "https://github.com/rsaryev/localix/tree/main/plugins/localix-mini-apps"
+    },
+    {
+      "name": "team",
+      "source": "./plugins/team",
+      "description": "A starter team of agents: architect, backend, frontend, design and devops.",
+      "author": {
+        "name": "Localix"
+      },
+      "category": "development",
+      "homepage": "https://github.com/rsaryev/localix/tree/main/plugins/team"
     }
   ]
 }

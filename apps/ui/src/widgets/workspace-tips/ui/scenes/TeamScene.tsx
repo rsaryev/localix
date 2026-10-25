@@ -3,7 +3,7 @@ import { UserPlus, X } from 'lucide-react'
 import { MonogramAvatar } from '@localixai/kit/avatar'
 import './team-scene.css'
 
-/** Two agents of the starter team (`starter-team.ts`), as the Add participant menu lists them. */
+/** Two agents of the `team` plugin (`plugins/team`), as the Add participant menu lists them. */
 const CANDIDATES = [
   { id: 'frontend', label: 'Frontend' },
   { id: 'qa', label: 'QA Engineer' },

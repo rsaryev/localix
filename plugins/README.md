@@ -9,6 +9,7 @@ The Claude Code plugins built into Localix. Each folder here is one plugin in Cl
 | Plugin                                    | What it adds                                                                  |
 | ----------------------------------------- | ----------------------------------------------------------------------------- |
 | [`localix-mini-apps`](localix-mini-apps/) | A skill and commands that teach an agent to build, pack and publish mini apps |
+| [`team`](team/)                           | A starter team of agents: architect, backend, frontend, design and devops     |
 
 ## How they ship
 
