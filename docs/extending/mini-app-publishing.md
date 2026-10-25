@@ -17,18 +17,18 @@ the template, and people add it to their store.
 
 ## What you can do
 
-| Task                      | Do this                                                                             | Boundary                                                                |
-| ------------------------- | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Start an app              | Copy `mini-apps/template` to `mini-apps/<name>` and rename it                       | Or `/mini-app create`, which forks the same template.                   |
-| Give it an icon           | Put `icon.svg` in the app and set `"icon": "./icon.svg"`                            | Required to publish; see [Icon and screenshots](#icon-and-screenshots). |
-| Show it in the store      | Add `screenshots`, `tags` and `homepage` to `mini-app.json`, and a `README.md`      | Optional; the README becomes the store page's About.                    |
-| Pack it                   | `bun run pack:mini-apps --only <name> --publisher "<you>"`                          | Builds it exactly as a Localix release does; refuses a missing icon.    |
-| Pack an app Localix built | `bun run pack:mini-apps --source ~/.localix/mini-apps/<name> --publisher "<you>"`   | Run `/mini-app reload` first, so its backend and screens are built.     |
-| Host the catalog          | Upload everything in the output folder to one place: a GitHub release, a site       | Any HTTPS host, or a folder read as `file://`.                          |
-| Add a catalog to Localix  | Store → **Sources** → **Add a mini app catalog…**, or `/mini-app catalog add <url>` | Its publishers are shown as unverified.                                 |
-| Link people to it         | Share `localix://ui/work-item/mini-app-store/add-catalog?url=<encoded address>`     | Opens the Store's add dialog filled in; nothing is added until Add.     |
-| Ship an update            | Raise `version`, pack again, replace the hosted files                               | Installed copies update within six hours, or at once with Update.       |
-| Require a newer Localix   | Raise `apiVersion` in `mini-app.json`                                               | Older Localix lists the app as needing a newer version.                 |
+| Task                      | Do this                                                                           | Boundary                                                                |
+| ------------------------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Start an app              | Copy `mini-apps/template` to `mini-apps/<name>` and rename it                     | Or `/mini-app create`, which forks the same template.                   |
+| Give it an icon           | Put `icon.svg` in the app and set `"icon": "./icon.svg"`                          | Required to publish; see [Icon and screenshots](#icon-and-screenshots). |
+| Show it in the store      | Add `screenshots`, `tags` and `homepage` to `mini-app.json`, and a `README.md`    | Optional; the README becomes the store page's About.                    |
+| Pack it                   | `bun run pack:mini-apps --only <name> --publisher "<you>"`                        | Builds it exactly as a Localix release does; refuses a missing icon.    |
+| Pack an app Localix built | `bun run pack:mini-apps --source ~/.localix/mini-apps/<name> --publisher "<you>"` | Run `/mini-app reload` first, so its backend and screens are built.     |
+| Host the catalog          | Upload everything in the output folder to one place: a GitHub release, a site     | Any HTTPS host, or a folder read as `file://`.                          |
+| Add a catalog to Localix  | Store → **Sources** → **Add source…**, or `/mini-app catalog add <url>`           | Its publishers are shown as unverified.                                 |
+| Link people to it         | Share `localix://ui/work-item/mini-app-store/add-catalog?url=<encoded address>`   | Opens the Store's add dialog filled in; nothing is added until Add.     |
+| Ship an update            | Raise `version`, pack again, replace the hosted files                             | Installed copies update within six hours, or at once with Update.       |
+| Require a newer Localix   | Raise `apiVersion` in `mini-app.json`                                             | Older Localix lists the app as needing a newer version.                 |
 
 ## How it works
 
@@ -144,9 +144,9 @@ schema 1: a reader that does not know one ignores it, and one that does not read
 so a bad icon never hides its app.
 
 An app whose name, version or archive does not read is left out, and the rest of the catalog still
-loads. `featured: true` puts an app in the Store's Featured group, and `recommended: true` has a new
-installation install it on its own, but both only in the hosted Localix catalog; the Localix release
-sets them from `mini-apps/catalog-picks.json`.
+loads. `featured: true` puts an app in Discover's featured carousel and its rows, and
+`recommended: true` has a new installation install it on its own, but both only in the hosted
+Localix catalog; the Localix release sets them from `mini-apps/catalog-picks.json`.
 
 The same file may name the Store's **Discover** picks, which the catalog carries as an optional
 top-level `editorial`, also read for the Localix catalog only: a `hero` (`item`, `title`,
@@ -192,9 +192,10 @@ same name; installing one says the name is taken.
 
 ### Trust
 
-Installing an app from an unverified publisher asks **Install anyway?** in the store. Choosing it is
-the yes that lets its backend run, as for any mini app you allow. A mini app's backend runs as
-trusted local code: a catalog decides where an app comes from, not what it may do.
+Installing an app from an unverified publisher asks first in the Store, in a sheet that says what
+would run. Choosing **Install** is the yes that lets its backend run, as for any mini app you allow.
+A mini app's backend runs as trusted local code: a catalog decides where an app comes from, not what
+it may do.
 
 ### Adding a catalog
 

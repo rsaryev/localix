@@ -383,6 +383,33 @@ listings exist.
   the fetch runs behind it, and its end is a `store` poke, after which the page reads its readme and
   components. A plan still waits for the fetch.
 
+### Step 2c UI as built
+
+`apps/ui/src/features/store/`. Every part reads the Store through one `StoreScope` (client, open
+project, `open`, `show`, `goTo`, Get and its siblings), provided by `StoreView`; the UI knows no
+provider (X1, A8) and only reads or writes through the Store client.
+
+- **Layout by the pane's own width** (`model/layout.ts`): wide at 1100px and over, medium from 760,
+  narrow below, measured with `useElementWidth` on the Store's root, not the window. Tiles per row,
+  list columns and the sidebar mode follow it. Settings uses the same kit `SidebarNav` (full,
+  compact and select modes), measuring its own width; the kit `ShelfNav` is gone.
+- **Discover** renders `/rpc/store/discover` (hero, updates, rows, collections, categories) and
+  sends `projectId`. A row's "See all" shows a `list` view, a paged query or a fixed set of refs.
+- **Lists are cursor-paged and virtualized** (`PagedList`): `useSWRInfinite` over the keyset cursor,
+  the next page asked when the window nears the end, rows windowed with `@tanstack/react-virtual`. A
+  card's pointer or focus prefetches its page (`prefetchDetail`, after a short intent delay).
+- **One Get** (`GetAction`, `getState.ts`): Get, progress, Open, Update, Retry. A plan that needs
+  consent, or a community source, opens `ConsentSheet` first (what runs, hosts, source and trust,
+  scope for a plugin with an open project); nothing is sent until Install.
+- **Install extras** ("Install as app") appear on a package's page and its Get menu only, never on
+  list cards, and a failed one is said once above the content.
+- **Filters survive opening a page**: `useRemembered` in `StoreMemoryContext` keeps a list's
+  category and source by its query, so Back returns to the list as it was.
+- **Search** debounces 150 ms (`useDebounced`, the delay injected in tests) and shows packages and
+  components as two groups with chips.
+- **Sources** shows a source's own problem on its row, quietly; the one Add dialog previews every
+  addable kind and asks only when both formats match.
+
 ## Source of truth
 
 - [The contract](../../packages/store/src/contract.ts),

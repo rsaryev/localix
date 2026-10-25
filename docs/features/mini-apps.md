@@ -14,84 +14,48 @@ add yourself waits for your yes before its code runs; one the agent builds for y
 
 ## What you can do
 
-| Outcome                      | How                                                                                 | Boundary                                                           |
-| ---------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| See your mini apps           | `/mini-app list`, or Settings → Capabilities → Mini apps                            | The list shows the scope of the current chat's project.            |
-| Add one from the Store       | The **+** button in the rail, **Open the Store** in Settings, or setup              | Only the recommended apps install without your choice.             |
-| Get the recommended apps     | Nothing: a new installation installs them in the background                         | Once per app; one you remove is not added again.                   |
-| Update all at once           | **Update all** in the line above the message box, or in the Event Center            | Only apps a catalog installed; your own folders are left alone.    |
-| Update one                   | **Update** on its card in the Store, or wait for the automatic update               | Shown when the catalog offers another version than yours.          |
-| See what an app is           | Choose its card in the Store                                                        | Its page shows screenshots, its README, contents and plan.         |
-| Install with its desktop app | **Install as app** beside **Install** in the Store                                  | macOS desktop only, for an app with a screen of its own.           |
-| Add a publisher's catalog    | Store → **Sources** → **Add a mini app catalog…**, or `/mini-app catalog add <url>` | Localix reads it first; nothing is added until you choose **Add**. |
-| See or remove catalogs       | Store → **Sources**, a shelf's sources menu, or `/mini-app catalog list`            | The Localix catalog is built in and stays.                         |
-| Turn one on or off           | `/mini-app enable <name>`, `/mini-app disable <name>`, or the row's switch          | A switch in Settings applies to the agent selected there.          |
-| Change a mini app's settings | **Settings** on its row in Settings → Mini apps                                     | Secret settings are kept in the [vault](secrets.md).               |
-| Remove one                   | `/mini-app remove <name>`, or **Remove** on its card or in Store → **Installed**    | Its data folder stays, so a reinstall finds it.                    |
-| Have the agent build one     | `/mini-app create <what it should do>`                                              | See [Build with the agent](../extending/build-with-the-agent.md).  |
-| Pick up edits to its files   | `/mini-app reload`                                                                  | Rebuilds your own mini apps, then reloads every mini app.          |
-| Open the list from the rail  | **Manage mini apps…** in the rail's tools menu                                      | Opens Settings → Mini apps.                                        |
-| Run one as its own Mac app   | **Install _Name_ as App** on its tab; see [Mac apps](mini-app-mac-apps.md)          | macOS only, for a mini app with a screen of its own.               |
+| Outcome                      | How                                                                              | Boundary                                                           |
+| ---------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| See your mini apps           | `/mini-app list`, or Settings → Capabilities → Mini apps                         | The list shows the scope of the current chat's project.            |
+| Add one from the Store       | The **+** button in the rail, **Open the Store** in Settings, or setup           | Only the recommended apps install without your choice.             |
+| Get the recommended apps     | Nothing: a new installation installs them in the background                      | Once per app; one you remove is not added again.                   |
+| Update all at once           | **Update all** in the line above the message box, or in the Event Center         | Only apps a catalog installed; your own folders are left alone.    |
+| Update one                   | **Update** on its card in the Store, or wait for the automatic update            | Shown when the catalog offers another version than yours.          |
+| See what an app is           | Choose its card in the Store                                                     | Its page shows screenshots, its README, contents and plan.         |
+| Install with its desktop app | **Install as app** beside **Install** in the Store                               | macOS desktop only, for an app with a screen of its own.           |
+| Add a publisher's catalog    | Store → **Sources** → **Add source…**, or `/mini-app catalog add <url>`          | Localix reads it first; nothing is added until you choose **Add**. |
+| See or remove catalogs       | Store → **Sources**, a shelf's sources menu, or `/mini-app catalog list`         | The Localix catalog is built in and stays.                         |
+| Turn one on or off           | `/mini-app enable <name>`, `/mini-app disable <name>`, or the row's switch       | A switch in Settings applies to the agent selected there.          |
+| Change a mini app's settings | **Settings** on its row in Settings → Mini apps                                  | Secret settings are kept in the [vault](secrets.md).               |
+| Remove one                   | `/mini-app remove <name>`, or **Remove** on its card or in Store → **Installed** | Its data folder stays, so a reinstall finds it.                    |
+| Have the agent build one     | `/mini-app create <what it should do>`                                           | See [Build with the agent](../extending/build-with-the-agent.md).  |
+| Pick up edits to its files   | `/mini-app reload`                                                               | Rebuilds your own mini apps, then reloads every mini app.          |
+| Open the list from the rail  | **Manage mini apps…** in the rail's tools menu                                   | Opens Settings → Mini apps.                                        |
+| Run one as its own Mac app   | **Install _Name_ as App** on its tab; see [Mac apps](mini-app-mac-apps.md)       | macOS only, for a mini app with a screen of its own.               |
 
 Changes made with `/mini-app` take effect on the next turn.
 
 ## How it works
 
-Mini apps are added in the **Store**, which opens in its own tab on its **Mini apps** shelf from the
-rail's **+**, from Settings → Mini apps and from setup. A search across the whole Store sits on top,
-and the shelves sit on the left: **Discover** (what Localix features and recommends), one shelf per
-kind of package, one per kind of component you can look for (**Commands**, and for plugins
-**Skills**, **Agents**, **Hooks** and the like), then **Installed**, **Updates** and **Sources**. A
-shelf with nothing on it is not shown. In a narrow pane the shelves become one picker beside the
-search, and the cards stay in one column.
+Mini apps are added in the [Store](store.md), which opens in its own tab on its **Mini apps** shelf
+from the rail's **+**, from Settings → Mini apps and from setup. Each app has a tile with **Get**,
+which becomes **Open** once it is installed and **Update** when a newer version is offered. Choosing
+a tile opens the app's page: its screenshots, README, what is inside (screen, tools, backend and
+commands), what would run on this computer and the version on offer.
 
-On the Mini apps shelf, the apps the Localix catalog features and you have not installed come first,
-once, then three groups: **Updates**, **Installed** and **Available**. Each card shows the app's
-icon, name and check mark, what it does, up to three tags, what is inside only where that sets it
-apart from the other apps (an app with commands says "3 commands"), and its action: **Install**,
-**Update**, or how far a download has got. Category tabs narrow the shelf; choosing a tag shows only
-the apps that carry it, with the tag as a chip beside the tabs until you remove it.
+A check mark means Localix verified the publisher. An app from an unverified publisher asks for your
+yes first, in a sheet that says what would run and where it comes from. An app built for a newer
+Localix says so and cannot be installed.
 
-![The Store on its Mini apps shelf: featured apps first, three installed, the rest available](../assets/screenshots/store/mini-apps--2026-10-25.png)
-
-A capability shelf lists the components themselves, not the packages. **Commands** shows each
-command with what it does and the app it comes from; filter it, or switch on **Installed only**.
-Choosing a row opens that app's page on **What's inside** with the command marked, and its button
-(**Install Kanban board**, say) installs the whole app.
-
-![The Commands shelf, each command with the app it comes from](../assets/screenshots/store/commands--2026-10-25.png)
-
-A check mark means Localix verified the publisher. An app from an unverified publisher shows the
-publisher's name, and its install asks **Install anyway?** first. An app built for a newer Localix
-says so and cannot be installed.
-
-Choosing a card opens the app's page: a large icon, the publisher, category, tags, version and the
-action, then its screenshots at the resolution the app published them. Below them, **Overview**
-shows the README beside the version, size, license, author, homepage and mini app API, **What's
-inside** lists its screen, tools, backend and commands, **Permissions** says what would run on this
-computer (and that it runs code) and warns about an unverified publisher, and **Versions** compares
-the offered version with yours. Page the screenshots with the arrows, a swipe, ←/→ or the dots, and
-choose one to see it full-window. The back button returns to the shelf where you left it, filters
-and scroll kept.
-
-![A mini app's page in the Store, showing what is inside it](../assets/screenshots/store/listing--2026-10-25.png)
-
-On the macOS desktop, an app with a screen of its own has two buttons on its card: **Install**, and
-**Install as app**, which also makes it an app with its own window, Dock icon and place in Spotlight
-once the install has landed. If the desktop app cannot be made, the install stays and the card says
-why. An installed app's page has **Add desktop app** or **Remove desktop app**. See
-[Mac apps](mini-app-mac-apps.md).
-
-**Installed** lists every install with its kind, scope, version and switch; its menu updates it,
-opens its settings (**Configure**) or removes it. **Updates** lists the ones with a newer version
-and **Update all**.
+On the macOS desktop, an app with a screen of its own also offers **Install as app**, which makes it
+an app with its own window, Dock icon and place in Spotlight once the install has landed. If the
+desktop app cannot be made, the install stays and the card says why. An installed app's page has
+**Add desktop app** or **Remove desktop app**. See [Mac apps](mini-app-mac-apps.md).
 
 The Store reads the Localix catalog and any catalog you added. **Sources** lists them under **Mini
-app catalogs**, each with how many apps it offers. It removes a catalog you added, and **Add a mini
-app catalog…** reads the address you paste, shows who publishes it and how many apps it holds, and
-adds it only when you choose **Add**. The sources menu beside a shelf's tabs narrows the shelf to
-one catalog and offers the same actions. A catalog is an HTTPS address or a `file://` path to its
-`mini-app-catalog.json`. A publisher can link to theirs with
+app catalogs**, each with how many apps it offers; **Add source…** reads an address and adds it only
+when you choose **Add**. Choosing a source opens the Store filtered by it. A catalog is an HTTPS
+address or a `file://` path to its `mini-app-catalog.json`. A publisher can link to theirs with
 `localix://ui/work-item/mini-app-store/add-catalog?url=<address>`, which opens the Store with that
 dialog filled in.
 

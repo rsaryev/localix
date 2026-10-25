@@ -255,17 +255,52 @@ export const capturePlan = {
     scenario: 'unfinished-reply',
     start: 'project',
   },
+  'store/discover': {
+    guide: 'features/mini-apps.md',
+    purpose: 'Discover: the hero carousel, rows by kind and the categories, from one answer',
+    scenario: 'store-discover',
+    start: 'home',
+  },
   'store/mini-apps': {
     guide: 'features/mini-apps.md',
-    purpose:
-      'The Store on its Mini apps shelf: Featured once on top, three installed, the rest available',
+    purpose: 'The Mini apps shelf: tiles with a Get button, Open on the three installed',
     scenario: 'store',
+    start: 'home',
+  },
+  'store/plugins': {
+    guide: 'features/mini-apps.md',
+    purpose: 'The Plugins shelf: a long list read a page at a time, a monogram for a missing icon',
+    scenario: 'store-plugins',
     start: 'home',
   },
   'store/listing': {
     guide: 'features/mini-apps.md',
     purpose: 'One mini app’s page in the Store: screenshots and what is inside it',
     scenario: 'store-listing',
+    start: 'home',
+  },
+  'store/consent': {
+    guide: 'features/mini-apps.md',
+    purpose: 'Get on a community plugin asks first: what runs, where from, and for whom',
+    scenario: 'store-consent',
+    start: 'home',
+  },
+  'store/sources': {
+    guide: 'features/mini-apps.md',
+    purpose: 'Sources with one Add source dialog that reads the address it is given',
+    scenario: 'store-sources',
+    start: 'home',
+  },
+  'store/search': {
+    guide: 'features/mini-apps.md',
+    purpose: 'Searching the Store: packages and what is inside them, with filters',
+    scenario: 'store-search',
+    start: 'home',
+  },
+  'store/installed': {
+    guide: 'features/mini-apps.md',
+    purpose: 'The Library lists every install with its scope, version and enabled switch',
+    scenario: 'store-installed',
     start: 'home',
   },
   'store/commands': {

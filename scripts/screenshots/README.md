@@ -99,6 +99,13 @@ removes anything, so against a home that holds other mini apps the scenarios fai
 three rather than uninstall a person's apps. The browser has no macOS shell, so the desktop app
 (**Install as app**) is not offered in these captures; its DOM tests cover it.
 
+The mini app catalog is the checkout's staged mini apps. The plugin shelves, Sources and the consent
+sheet come from the default marketplaces, which the runtime reads over the network when it starts,
+so it needs the network, and the scenarios assert what any answer looks like rather than a named
+plugin. To look at the Store at another width or theme, set `LOCALIX_CAPTURE_VIEWPORT=2000x1100`
+(the pane is about 60% of it) and `LOCALIX_CAPTURE_THEME=light` and read the run directory;
+publishing needs the native 1600×1000 capture, so those runs are for review only.
+
 ## Demo HTTP responses
 
 The optional runner starts a small Bun HTTP fixture on `127.0.0.1:5160` for the browser preview and

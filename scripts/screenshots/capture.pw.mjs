@@ -45,8 +45,13 @@ for (const [key, spec] of Object.entries(capturePlan)) {
     const route = `${uiOrigin}/#/project/${prefix ? fixture[`${prefix}ProjectId`] : fixture.projectId}/${prefix ? fixture[`${prefix}SessionId`] : fixture.sessionId}`
     const errors = []
     page.on('pageerror', (error) => errors.push(error.message))
-    if (spec.theme)
-      await page.addInitScript((theme) => localStorage.setItem('sandbox_theme', theme), spec.theme)
+    // A spec's own theme, or the theme and size a review run asks for (`LOCALIX_CAPTURE_THEME=light`,
+    // `LOCALIX_CAPTURE_VIEWPORT=900x800`) to look at one scenario at another width.
+    const theme = process.env.LOCALIX_CAPTURE_THEME || spec.theme
+    if (theme)
+      await page.addInitScript((value) => localStorage.setItem('sandbox_theme', value), theme)
+    const size = process.env.LOCALIX_CAPTURE_VIEWPORT?.match(/^(\d+)x(\d+)$/)
+    if (size) await page.setViewportSize({ width: Number(size[1]), height: Number(size[2]) })
     // Setup opens by itself until it has been closed once on a device; a capture is not a first
     // launch, and the open dialog covered every surface a scenario reached for.
     if (!spec.firstRun)

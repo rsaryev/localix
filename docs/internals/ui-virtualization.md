@@ -71,6 +71,15 @@ The file tree computes arrow navigation, typeahead, selection, and reveal from t
 model. Its range extractor keeps the active row and inline editor mounted when either falls outside
 the normal virtual window.
 
+### The Store's lists
+
+A Store shelf, search result or collection is read by keyset cursor, a page at a time, and rendered
+through `features/store/ui/PagedList`: a `@tanstack/react-virtual` window over the loaded rows, two
+columns at a wide pane, one at a narrow one. The next page is asked when the window comes within a
+screen of the end, so a shelf of thousands of plugins mounts about a screenful of rows. The scroller
+reports its own size, so a test that renders it stubs `clientHeight` and `clientWidth`
+(`apps/ui/src/testing/storeLayout.ts`).
+
 ## Configuration
 
 These values are implementation constants, not Settings controls.
