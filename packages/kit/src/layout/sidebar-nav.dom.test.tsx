@@ -24,17 +24,7 @@ const GROUPS: SidebarNavGroup[] = [
   { id: 'empty', label: 'Capabilities', items: [] },
 ]
 
-type Timer = { run: () => void; ms: number; live: boolean }
-
-async function mount(mode: SidebarNavMode, active = 'discover') {
-  const timers: Timer[] = []
-  const peek = {
-    schedule: (run: () => void, ms: number) => {
-      const timer = { run, ms, live: true }
-      timers.push(timer)
-      return () => void (timer.live = false)
-    },
-  }
+async function mount(mode: SidebarNavMode, active = 'discover', toggles?: string[]) {
   const React = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { SidebarNav } = await import('./sidebar-nav')
@@ -51,7 +41,7 @@ async function mount(mode: SidebarNavMode, active = 'discover') {
         active={current}
         onSelect={(id) => chosen.push(id)}
         search={<input aria-label="Search the Store" />}
-        peek={peek}
+        onToggle={toggles ? () => toggles.push(mode) : undefined}
       />,
     )
   await React.act(async () => render(active))
@@ -73,25 +63,6 @@ async function mount(mode: SidebarNavMode, active = 'discover') {
     rows,
     press,
     chosen,
-    timers,
-    /** Lets the newest pending timer fire. */
-    fire: () =>
-      React.act(async () => {
-        const timer = timers.findLast((t) => t.live)
-        if (timer) {
-          timer.live = false
-          timer.run()
-        }
-      }),
-    pointer: (type: string, init: { pointerType?: string; buttons?: number } = {}) =>
-      React.act(async () => {
-        const target = host.querySelector('[data-sidebar-rail]')!
-        // React derives enter/leave from over/out whose relatedTarget is outside.
-        const real = type === 'pointerenter' ? 'pointerover' : 'pointerout'
-        const event = new Event(real, { bubbles: true })
-        Object.assign(event, { pointerType: 'mouse', buttons: 0, ...init })
-        target.dispatchEvent(event)
-      }),
     focusRow: (index: number) => React.act(async () => rows()[index]!.focus()),
     rerender: (id: string) => React.act(async () => render(id)),
     done,
@@ -137,14 +108,12 @@ describe('SidebarNav', () => {
     const compact = await mount('compact')
     expect(compact.nav()!.getAttribute('aria-label')).toBe('Store sections')
     expect(compact.rows().map((row) => row.getAttribute('aria-label'))).toEqual([
-      'Expand Store sections',
       'Discover',
       'Mini apps, 20',
       'Plugins, 2,389',
       'Pages',
     ])
     expect(compact.nav()!.textContent).toBe('')
-    expect(compact.host.querySelector('[role="tooltip"]')).toBeNull()
     expect(compact.host.querySelector('input')).toBeNull()
     await compact.done()
 
@@ -157,154 +126,36 @@ describe('SidebarNav', () => {
   })
 })
 
-describe('SidebarNav compact panel', () => {
-  const panel = (view: Awaited<ReturnType<typeof mount>>) =>
-    view.host.querySelector('[data-state]')!
-  const state = (view: Awaited<ReturnType<typeof mount>>) => panel(view).getAttribute('data-state')
-
-  test('opens after a hover dwell and closes after a grace, showing labels, headings and counts', async () => {
+describe('SidebarNav compact rail', () => {
+  test('is the column folded to icons, in the layout: no panel state, nothing floats', async () => {
     const view = await mount('compact')
-    expect(state(view)).toBe('closed')
-    await view.pointer('pointerenter')
-    expect(state(view)).toBe('closed')
-    expect(view.timers.at(-1)!.ms).toBe(120)
-    await view.fire()
-    expect(state(view)).toBe('open')
-    expect(view.nav()!.textContent).toContain('Packages')
-    expect(view.nav()!.textContent).toContain('Plugins')
-    expect(view.nav()!.textContent).toContain('2,389')
-    expect(view.rows()[0]!.getAttribute('aria-expanded')).toBe('true')
-    await view.pointer('pointerleave')
-    expect(view.timers.at(-1)!.ms).toBe(200)
-    expect(state(view)).toBe('open')
-    await view.fire()
-    expect(state(view)).toBe('closed')
+    expect(view.host.querySelector('[data-state]')).toBeNull()
+    expect(view.nav()!.className).not.toContain('absolute')
+    expect(view.nav()!.textContent).toBe('')
     await view.done()
   })
 
-  test('the toggle is the rail’s icon; open, it carries the rail’s name rather than an empty row', async () => {
-    const view = await mount('compact')
-    expect(view.rows()[0]!.textContent).toBe('')
-    await view.focusRow(1)
-    expect(view.rows()[0]!.textContent).toBe('Store sections')
-    await view.done()
+  test('the fold row is a tab stop that asks the host to switch: Collapse when full, Expand when compact', async () => {
+    const toggles: string[] = []
+    const full = await mount('full', 'discover', toggles)
+    const collapse = full.rows()[0]!
+    expect(collapse.getAttribute('aria-label')).toBe('Collapse Store sections')
+    expect(collapse.getAttribute('aria-expanded')).toBe('true')
+    expect(collapse.textContent).toBe('Store sections')
+    collapse.click()
+    await full.done()
+    const compact = await mount('compact', 'discover', toggles)
+    const expand = compact.rows()[0]!
+    expect(expand.getAttribute('aria-label')).toBe('Expand Store sections')
+    expect(expand.getAttribute('aria-expanded')).toBe('false')
+    expand.click()
+    expect(toggles).toEqual(['full', 'compact'])
+    await compact.done()
   })
 
-  test('every labelled group holds the same slot closed (a divider) and open (its heading)', async () => {
-    const view = await mount('compact')
-    const slots = () =>
-      [...view.host.querySelectorAll('[role="group"][aria-label]')].map((group) => [
-        group.firstElementChild!.tagName,
-        group.firstElementChild!.textContent,
-      ])
-    expect(slots()).toEqual([['DIV', '']])
-    await view.focusRow(1)
-    expect(slots()).toEqual([['DIV', 'Packages']])
-    await view.done()
-  })
-
-  test('re-entering within the grace keeps it open; a held button never opens it', async () => {
-    const view = await mount('compact')
-    await view.pointer('pointerenter', { buttons: 1 })
-    expect(view.timers.filter((t) => t.live)).toHaveLength(0)
-    await view.pointer('pointerenter')
-    await view.fire()
-    await view.pointer('pointerleave')
-    await view.pointer('pointerenter')
-    expect(view.timers.filter((t) => t.live && t.ms === 200)).toHaveLength(0)
-    expect(state(view)).toBe('open')
-    await view.done()
-  })
-
-  test('keyboard focus opens it, Esc closes it, focus leaving closes it', async () => {
-    const view = await mount('compact')
-    await view.focusRow(1)
-    expect(state(view)).toBe('open')
-    await view.press('Escape')
-    expect(state(view)).toBe('closed')
-    expect(document.activeElement).toBe(view.rows()[1]!)
-    const outside = document.createElement('button')
-    document.body.append(outside)
-    await view.focusRow(2)
-    expect(state(view)).toBe('open')
-    const React = await import('react')
-    await React.act(async () => outside.focus())
-    expect(state(view)).toBe('closed')
-    outside.remove()
-    await view.done()
-  })
-
-  test('choosing a row selects it and closes the panel', async () => {
-    const view = await mount('compact')
-    await view.focusRow(1)
-    const plugins = view.rows().find((row) => row.textContent?.includes('Plugins'))!
-    const React = await import('react')
-    await React.act(async () => plugins.click())
-    expect(view.chosen).toEqual(['plugins'])
-    expect(state(view)).toBe('closed')
-    await view.done()
-  })
-
-  test('the panel floats: the rail keeps its place in the layout whether open or closed', async () => {
-    const view = await mount('compact')
-    const rail = view.host.querySelector('[data-sidebar-rail]')!
-    const before = rail.className
-    expect(panel(view).className).toContain('absolute')
-    await view.focusRow(1)
-    expect(rail.className).toBe(before)
-    expect(panel(view).className).toContain('absolute')
-    await view.done()
-  })
-
-  test('touch: a tap toggles it, the first tap on a row only opens, a tap outside closes', async () => {
-    const view = await mount('compact')
-    const React = await import('react')
-    const tap = (el: Element) =>
-      React.act(async () => {
-        const down = new Event('pointerdown', { bubbles: true })
-        Object.assign(down, { pointerType: 'touch', buttons: 1 })
-        el.dispatchEvent(down)
-        ;(el as HTMLElement).click()
-      })
-    await tap(view.rows()[2]!)
-    expect(state(view)).toBe('open')
-    expect(view.chosen).toEqual([])
-    await tap(view.rows()[2]!.parentElement!)
-    expect(state(view)).toBe('closed')
-    await tap(view.rows()[0]!)
-    expect(state(view)).toBe('open')
-    await tap(view.rows()[2]!)
-    expect(view.chosen).toEqual(['apps'])
-    expect(state(view)).toBe('closed')
-    await tap(view.rows()[0]!)
-    expect(state(view)).toBe('open')
-    await React.act(async () => {
-      const down = new Event('pointerdown', { bubbles: true })
-      Object.assign(down, { pointerType: 'touch' })
-      document.body.dispatchEvent(down)
-    })
-    expect(state(view)).toBe('closed')
-    await view.done()
-  })
-
-  test('the toggle button pins the panel open until it is pressed again; hover alone never pins', async () => {
-    const view = await mount('compact')
-    const React = await import('react')
-    const toggle = () => React.act(async () => view.rows()[0]!.click())
-    await view.pointer('pointerenter')
-    await view.fire()
-    expect(state(view)).toBe('open')
-    await toggle()
-    expect(state(view)).toBe('open')
-    await view.pointer('pointerleave')
-    await view.fire()
-    await view.press('Escape')
-    expect(state(view)).toBe('open')
-    expect(view.rows()[0]!.getAttribute('aria-label')).toBe('Collapse Store sections')
-    await toggle()
-    expect(state(view)).toBe('closed')
-    await toggle()
-    expect(state(view)).toBe('open')
+  test('without onToggle there is no fold row', async () => {
+    const view = await mount('full')
+    expect(view.rows()[0]!.textContent).toBe('Discover')
     await view.done()
   })
 

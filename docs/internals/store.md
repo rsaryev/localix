@@ -437,12 +437,11 @@ provider (X1, A8) and only reads or writes through the Store client.
 - **Layout by the pane's own width** (`model/layout.ts`): wide at 1100px and over, medium from 760,
   narrow below, measured with `useElementWidth` on the Store's root, not the window. Tiles per row,
   list columns and the sidebar mode follow it. Settings uses the same kit `SidebarNav` (full,
-  compact and select modes), measuring its own width. Compact is a fixed-width icon rail whose light
-  panel (the popover fill with one hairline ring, 224px, flush with the rail's top) opens over the
-  content (hover after ~120 ms, keyboard focus, touch tap) and closes on leaving (~200 ms grace),
-  Esc, choosing a row or focus moving away, so the content never moves. The rail's icons keep their
-  x and y when it opens: a group's heading takes the slot of the divider it replaces, and the toggle
-  is the first icon, which shows the rail's name beside it while open; the kit `ShelfNav` is gone.
+  compact and select modes), measuring its own width. Compact is the same column folded to an icon
+  rail, in the layout like any column (nothing floats over the content). It starts open at every
+  width that shows a sidebar; the person's fold, from the first row of the sidebar
+  (`model/sidebarFold.ts`, kept in the browser), shrinks it to icons and the page beside it resizes.
+  The kit `ShelfNav` is gone.
 - **Discover** renders `/rpc/store/discover` (updates, rows, collections, categories) and sends
   `projectId`. A row's "See all" shows a `list` view, a paged query or a fixed set of refs.
 - **Lists are cursor-paged and virtualized** (`PagedList`): `useSWRInfinite` over the keyset cursor,

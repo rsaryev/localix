@@ -18,6 +18,7 @@ import {
 } from '../model/navigation'
 import { StoreMemoryContext } from '../model/storeMemory'
 import { StoreScopeContext, type StoreProject, type StoreScope } from '../model/storeContext'
+import { useSidebarFold } from '../model/sidebarFold'
 import { useStoreActions } from '../model/useStoreActions'
 import { keyOf } from '../model/useExtrasAfterInstall'
 import {
@@ -66,6 +67,7 @@ export function StoreView({
   const scroller = useRef<HTMLDivElement>(null)
   const width = useElementWidth(root)
   const layout = layoutFor(width)
+  const fold = useSidebarFold()
   const [section, setSection] = useState<StoreSection>('discover')
   const [stack, setStack] = useState<Opened[]>([])
   const [query, setQuery] = useState('')
@@ -188,15 +190,16 @@ export function StoreView({
             <div className="flex min-h-0 flex-1">
               {layout !== 'narrow' && (
                 <SidebarNav
-                  mode={layout === 'wide' ? 'full' : 'compact'}
+                  mode={fold.folded ? 'compact' : 'full'}
                   label="Store sections"
                   groups={groups}
                   active={q ? '' : section}
                   onSelect={choose}
+                  onToggle={fold.toggle}
                   className={
-                    layout === 'wide'
-                      ? 'w-52 shrink-0 overflow-y-auto px-3 pb-4'
-                      : 'w-14 shrink-0 self-stretch'
+                    fold.folded
+                      ? 'w-14 shrink-0 self-stretch'
+                      : 'w-52 shrink-0 overflow-y-auto px-3 pb-4'
                   }
                 />
               )}
