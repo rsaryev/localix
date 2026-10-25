@@ -1,10 +1,11 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { X } from 'lucide-react'
+import { CircleAlert } from 'lucide-react'
 import type { Listing, ListingRef, PackageKind, StoreComponent } from '@localixai/store'
-import { IconButton } from '@localixai/kit/icon-button'
 import { SearchInput } from '@localixai/kit/search-input'
+import { SectionHeading } from '@localixai/kit/section-heading'
 import { SidebarNav } from '@localixai/kit/sidebar-nav'
 import { useElementWidth } from '@localixai/kit/lib'
+import { WorkbenchNoticeBar } from '@localixai/kit/workbench-notice-bar'
 import type { StoreClient } from '@/shared/api/store-client'
 import type { StoreTarget } from '@/shared/lib/openStore'
 import type { StoreInstallExtra } from '@/shared/lib/storeInstallExtra'
@@ -182,7 +183,7 @@ export function StoreView({
                 />
               ) : (
                 <>
-                  <h1 className="shrink-0 text-base font-semibold text-foreground">Store</h1>
+                  <SectionHeading as="h1" level="section" title="Store" className="shrink-0" />
                   <div className="max-w-xl min-w-0 flex-1">{search}</div>
                 </>
               )}
@@ -209,15 +210,16 @@ export function StoreView({
                 className="flex min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto px-4 pb-6 @2xl:px-6"
               >
                 {actions.problem && (
-                  <p
+                  <WorkbenchNoticeBar
                     role="alert"
-                    className="mb-3 flex items-center gap-2 text-xs text-status-error"
-                  >
-                    <span className="min-w-0 flex-1">{actions.problem}</span>
-                    <IconButton size="xs" aria-label="Dismiss" onClick={actions.dismissProblem}>
-                      <X />
-                    </IconButton>
-                  </p>
+                    tone="error"
+                    layout="stacked"
+                    icon={<CircleAlert className="size-3.5" />}
+                    title={actions.problem}
+                    dismissLabel="Dismiss"
+                    onDismiss={actions.dismissProblem}
+                    className="mb-3 rounded-md border border-border-faint"
+                  />
                 )}
                 <StoreScrollContext.Provider value={scroller}>
                   <StoreBody

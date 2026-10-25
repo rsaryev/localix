@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Scope } from '@localixai/store'
 import { Button } from '@localixai/kit/button'
+import { Field } from '@localixai/kit/field'
 import {
   Dialog,
   DialogBody,
@@ -55,10 +56,8 @@ export function ConsentSheet({
         <DialogBody className="flex flex-col gap-5">
           <PlanSummary listing={listing} scope={scope} />
           {scopes.length > 1 && (
-            <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-semibold text-foreground">Install for</span>
+            <Field label="Install for">
               <Select
-                aria-label="Install for"
                 value={scope}
                 onValueChange={(value) => setScope(value as Scope)}
                 options={scopes.map((s) => ({
@@ -68,7 +67,7 @@ export function ConsentSheet({
                 size="md"
                 className="w-64"
               />
-            </label>
+            </Field>
           )}
         </DialogBody>
         <DialogFooter>

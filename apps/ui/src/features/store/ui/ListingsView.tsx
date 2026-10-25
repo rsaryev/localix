@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import type { ListingRef, StoreCategory } from '@localixai/store'
 import { Button } from '@localixai/kit/button'
+import { SectionHeading } from '@localixai/kit/section-heading'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -162,11 +163,8 @@ export function ListingsView({
   refs?: readonly ListingRef[]
 }) {
   return (
-    <div className="flex min-w-0 flex-col gap-4">
-      <header>
-        <h2 className="text-xl font-semibold text-foreground">{title}</h2>
-        {subtitle && <p className="text-sm text-text-soft">{subtitle}</p>}
-      </header>
+    <div className="flex min-w-0 flex-col gap-6">
+      <SectionHeading title={title} description={subtitle} />
       {refs ? (
         <ChosenListings refs={refs} />
       ) : (

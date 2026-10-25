@@ -1,4 +1,5 @@
 import type { DiscoverResponse, StoreCategory } from '@localixai/store'
+import { SectionHeading } from '@localixai/kit/section-heading'
 import { CATEGORY_ICONS } from '../model/presentation'
 import { useStoreScope } from '../model/storeContext'
 
@@ -10,8 +11,8 @@ import { useStoreScope } from '../model/storeContext'
 export function Categories({ categories }: { categories: DiscoverResponse['categories'] }) {
   const store = useStoreScope()
   return (
-    <section aria-label="Categories" className="flex flex-col gap-3">
-      <h2 className="text-base font-semibold text-foreground">Categories</h2>
+    <section aria-label="Categories" className="flex flex-col gap-4">
+      <SectionHeading level="section" as="h2" title="Categories" />
       <div className="flex flex-wrap gap-2">
         {categories.map((category) => {
           const Icon = CATEGORY_ICONS[category.id as StoreCategory] ?? CATEGORY_ICONS.Other

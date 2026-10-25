@@ -1,12 +1,14 @@
 import { CircleAlert, Globe, Terminal } from 'lucide-react'
 import type { Listing, Scope } from '@localixai/store'
+import { Chip } from '@localixai/kit/chip'
+import { SectionLabel } from '@localixai/kit/section-label'
 import { Skeleton } from '@localixai/kit/skeleton'
 import { COMPONENT_LABELS, plural } from '../model/presentation'
 import { useStoreScope } from '../model/storeContext'
 import { useInstallPlan } from '../model/useStoreData'
 
 function Heading({ children }: { children: string }) {
-  return <h3 className="text-xs font-semibold text-foreground">{children}</h3>
+  return <SectionLabel as="h3">{children}</SectionLabel>
 }
 
 /**
@@ -86,12 +88,11 @@ export function PlanSummary({ listing, scope = 'user' }: { listing: Listing; sco
           <Heading>Reaches</Heading>
           <ul className="flex flex-wrap gap-1.5">
             {plan.network.map((host) => (
-              <li
-                key={host}
-                className="inline-flex items-center gap-1 rounded-sm bg-field-fill px-1.5 py-0.5 font-mono text-2xs text-text-soft"
-              >
-                <Globe className="size-3" aria-hidden />
-                {host}
+              <li key={host}>
+                <Chip className="gap-1 font-mono">
+                  <Globe className="size-3" aria-hidden />
+                  {host}
+                </Chip>
               </li>
             ))}
           </ul>

@@ -1,6 +1,7 @@
 import { useState, type KeyboardEvent } from 'react'
 import type { ConfigValue, ListingConfig } from '@localixai/store'
 import { Button } from '@localixai/kit/button'
+import { DIVIDED_LIST } from '@localixai/kit/divided-list'
 import { Field } from '@localixai/kit/field'
 import { isPrimaryModifier } from '@/shared/lib/keybindings'
 import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
@@ -90,11 +91,11 @@ export function ConfigForm({
       }}
       onKeyDown={keys}
     >
-      <div className="divide-y divide-border-faint overflow-hidden rounded-md border border-border-faint bg-foreground/[0.02]">
+      <div className={DIVIDED_LIST}>
         {config.fields.map((field) => (
           <Field
             key={`${field.key}:${revision}`}
-            className={`px-4 py-3 ${ROW}`}
+            className={`py-3 ${ROW}`}
             label={field.label}
             description={field.help}
             error={problems[field.key]}

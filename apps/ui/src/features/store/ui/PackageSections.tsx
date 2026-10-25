@@ -2,6 +2,7 @@ import { AgentAccess } from './AgentAccess'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { Listing, ListingDetail, StoreComponent } from '@localixai/store'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
+import { DIVIDED_LIST } from '@localixai/kit/divided-list'
 import { Skeleton } from '@localixai/kit/skeleton'
 import { TabBar, TabPanel, useTabPanelIds } from '@localixai/kit/tabs'
 import { COMPONENT_LABELS } from '../model/presentation'
@@ -21,7 +22,7 @@ export function Parts({
   const markedRow = useRef<HTMLLIElement>(null)
   useEffect(() => markedRow.current?.scrollIntoView?.({ block: 'nearest' }), [])
   return (
-    <ul className="grid grid-cols-1 gap-x-6 gap-y-0.5 @3xl:grid-cols-2">
+    <ul className={DIVIDED_LIST}>
       {parts.map(({ kind, name, description }) => {
         const Icon = COMPONENT_LABELS[kind].icon
         const isMarked = marked?.kind === kind && marked.name === name
@@ -31,7 +32,7 @@ export function Parts({
             ref={isMarked ? markedRow : undefined}
             aria-current={isMarked ? 'true' : undefined}
             className={cn(
-              'flex min-h-10 min-w-0 items-start gap-2.5 rounded-md px-2 py-1.5',
+              'flex min-h-10 min-w-0 items-start gap-2.5 px-2 py-2',
               isMarked && 'bg-surface-active',
             )}
           >

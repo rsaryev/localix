@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import type { CreateForm, PackageKind, Scope } from '@localixai/store'
 import { Button } from '@localixai/kit/button'
+import { Field } from '@localixai/kit/field'
 import {
   Dialog,
   DialogBody,
@@ -47,19 +48,18 @@ function CreateDialog({
         </DialogHeader>
         <DialogBody className="flex flex-col gap-4">
           {scopes.length > 1 && (
-            <div className="flex items-center gap-2 text-xs text-text-soft">
-              <span aria-hidden>Keep it for</span>
+            <Field label="Keep it for">
               <Select
                 size="md"
-                aria-label="Keep it for"
                 value={where}
                 onValueChange={(next) => setScope(next as Scope)}
                 options={scopes.map((value) => ({
                   value,
                   label: value === 'user' ? 'You' : (store.project?.name ?? 'This project'),
                 }))}
+                className="w-64"
               />
-            </div>
+            </Field>
           )}
           <ConfigForm
             submitLabel="Add"

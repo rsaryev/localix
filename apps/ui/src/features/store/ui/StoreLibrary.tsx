@@ -12,6 +12,12 @@ import { EmptyHint } from '@localixai/kit/empty-hint'
 import { IconButton } from '@localixai/kit/icon-button'
 import { MenuEntries } from '@localixai/kit/menu-entries'
 import { Switch } from '@localixai/kit/switch'
+import {
+  WorkbenchListRow,
+  WorkbenchListRowActions,
+  WorkbenchListRowMeta,
+  WorkbenchListRowTrigger,
+} from '@localixai/kit/workbench-list-row'
 import { TogglePill } from '@localixai/kit/toggle-pill'
 import { KIND_LABELS, plural } from '../model/presentation'
 import { useStoreScope } from '../model/storeContext'
@@ -64,49 +70,46 @@ const InstallRow = memo(function InstallRow({
     },
   ]
   return (
-    <li
-      data-install={listing.ref.id}
-      className="grid min-h-11 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-md px-2 py-1 hover:bg-surface-hover @2xl:grid-cols-[auto_minmax(0,1fr)_6rem_8rem_8rem_auto]"
-    >
-      <ListingIcon listing={listing} size={32} />
-      <button
-        type="button"
-        className="min-w-0 truncate rounded-sm text-left text-sm text-foreground focus-ring"
-        onClick={() => store.open(listing)}
-      >
-        {name}
-      </button>
-      <span className="hidden truncate text-xs text-text-soft @2xl:block">
-        {KIND_LABELS[listing.ref.kind].one}
-      </span>
-      <span className="hidden truncate text-xs text-text-soft @2xl:block">{where}</span>
-      <span className="hidden truncate text-2xs text-text-faint tabular-nums @2xl:block">
-        {install.updateTo ? `${install.version ?? '?'} → ${install.updateTo}` : install.version}
-      </span>
-      <div className="flex items-center gap-1.5">
-        {updates ? (
-          <Button size="sm" variant="field" onClick={() => store.update(listing, install)}>
-            Update
-          </Button>
-        ) : (
-          <Switch
-            size="sm"
-            checked={install.enabled}
-            aria-label={`${name} on`}
-            onChange={(event) => store.setEnabled(listing, install, event.target.checked)}
-          />
-        )}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <IconButton size="sm" aria-label={`${name} actions`}>
-              <Ellipsis />
-            </IconButton>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <MenuEntries entries={entries} family="dropdown" />
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+    <li data-install={listing.ref.id}>
+      <WorkbenchListRow className="min-h-11 gap-3 py-1 text-sm">
+        <WorkbenchListRowTrigger className="gap-3" onClick={() => store.open(listing)}>
+          <ListingIcon listing={listing} size={32} />
+          <span className="min-w-0 truncate text-foreground">{name}</span>
+        </WorkbenchListRowTrigger>
+        <WorkbenchListRowMeta className="hidden w-24 truncate px-0 text-xs text-text-soft @2xl:block">
+          {KIND_LABELS[listing.ref.kind].one}
+        </WorkbenchListRowMeta>
+        <WorkbenchListRowMeta className="hidden w-32 truncate px-0 text-xs text-text-soft @2xl:block">
+          {where}
+        </WorkbenchListRowMeta>
+        <WorkbenchListRowMeta className="hidden w-32 truncate px-0 tabular-nums @2xl:block">
+          {install.updateTo ? `${install.version ?? '?'} → ${install.updateTo}` : install.version}
+        </WorkbenchListRowMeta>
+        <WorkbenchListRowActions aria-label={`${name} controls`} className="gap-1.5">
+          {updates ? (
+            <Button size="sm" variant="field" onClick={() => store.update(listing, install)}>
+              Update
+            </Button>
+          ) : (
+            <Switch
+              size="sm"
+              checked={install.enabled}
+              aria-label={`${name} on`}
+              onChange={(event) => store.setEnabled(listing, install, event.target.checked)}
+            />
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <IconButton size="sm" aria-label={`${name} actions`}>
+                <Ellipsis />
+              </IconButton>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <MenuEntries entries={entries} family="dropdown" />
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </WorkbenchListRowActions>
+      </WorkbenchListRow>
     </li>
   )
 })

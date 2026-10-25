@@ -8,8 +8,11 @@ import {
   type StoreComponent,
   type Trust,
 } from '@localixai/store'
+import { ChipButton } from '@localixai/kit/chip'
 import { EmptyHint } from '@localixai/kit/empty-hint'
 import { ItemCard } from '@localixai/kit/item-card'
+import { SectionHeading } from '@localixai/kit/section-heading'
+import { SectionLabel } from '@localixai/kit/section-label'
 import { TogglePill } from '@localixai/kit/toggle-pill'
 import { listColumns, useStoreFrame } from '../model/layout'
 import {
@@ -99,9 +102,9 @@ export function SearchResults({ query }: { query: string }) {
   const columns = listColumns(layout, width)
 
   return (
-    <div className="flex min-w-0 flex-col gap-4">
-      <header className="flex flex-col gap-2">
-        <h2 className="text-xl font-semibold text-foreground">Results for “{query}”</h2>
+    <div className="flex min-w-0 flex-col gap-6">
+      <div className="flex flex-col gap-3">
+        <SectionHeading title={`Results for “${query}”`} />
         <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filters">
           <FilterMenu
             label="Kind"
@@ -149,7 +152,7 @@ export function SearchResults({ query }: { query: string }) {
             <span className="text-2xs text-text-faint">Matched by words only</span>
           )}
         </div>
-      </header>
+      </div>
       {page.loading ? (
         <ListSkeleton columns={columns} />
       ) : page.listings.length === 0 ? (
@@ -163,9 +166,8 @@ export function SearchResults({ query }: { query: string }) {
               {discover.data.categories.map((category) => {
                 const Icon = CATEGORY_ICONS[category.id as StoreCategory] ?? CATEGORY_ICONS.Other
                 return (
-                  <TogglePill
+                  <ChipButton
                     key={category.id}
-                    active={false}
                     onClick={() =>
                       store.show({
                         type: 'list',
@@ -176,7 +178,7 @@ export function SearchResults({ query }: { query: string }) {
                   >
                     <Icon className="size-3" aria-hidden />
                     {category.label}
-                  </TogglePill>
+                  </ChipButton>
                 )
               })}
             </div>
@@ -185,8 +187,8 @@ export function SearchResults({ query }: { query: string }) {
       ) : (
         <>
           {inside.length > 0 && (
-            <section aria-label="Inside packages" className="flex flex-col gap-1">
-              <h3 className="text-xs font-semibold text-text-soft">Inside packages</h3>
+            <section aria-label="Inside packages" className="flex flex-col gap-2">
+              <SectionLabel as="h3">Inside packages</SectionLabel>
               <ul
                 className="grid gap-x-4"
                 style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
@@ -201,16 +203,16 @@ export function SearchResults({ query }: { query: string }) {
               </ul>
             </section>
           )}
-          <section aria-label="Packages" className="flex flex-col gap-1">
-            <h3 className="text-xs font-semibold text-text-soft">
+          <section aria-label="Packages" className="flex flex-col gap-2">
+            <SectionLabel as="h3">
               Packages
               {facets && (
-                <span className="ml-1.5 font-normal text-text-faint tabular-nums">
+                <span className="ml-1.5 font-normal tabular-nums normal-case tracking-normal">
                   {plural(page.listings.length, 'result')}
                   {page.hasMore && '+'}
                 </span>
               )}
-            </h3>
+            </SectionLabel>
             <PagedList
               label="Packages found"
               items={page.listings}

@@ -4,26 +4,27 @@ import { cn } from '@localixai/mini-app-sdk/ui/classes'
 type SectionHeadingProps = {
   title: ReactNode
   /** A sentence, or a node such as a monospaced path; it sits under the title in the soft tier. */
-  description?: ReactNode
+  description?: ReactNode | undefined
   /**
    * What this page or section can do, on the heading's own line: a slot rather than a row of its
    * own below, so the buttons sit beside the title and not in the gap before the content they act on.
    */
-  actions?: ReactNode
+  actions?: ReactNode | undefined
   /** How large it is drawn: `page` opens a screen, `section` heads a part of one. */
   level?: 'page' | 'section'
   /** The heading element, chosen apart from the size: a pane title is an `h1` at section size. */
   as?: 'h1' | 'h2' | 'h3'
-  className?: string
+  className?: string | undefined
 }
 
 /**
  * The title, optional description and optional actions that open a page or a section.
  *
  * The Store and Settings each wrote this block by hand at three type sizes and three gaps, so
- * moving between them moved the title. It reflows on its own width (it is its own container), so
- * it needs no container from the host and works in a mini app view. Its parent must be a block or
- * a column flex: an inline-size container collapses inside a shrink-to-fit parent.
+ * moving between them moved the title. With actions it reflows on its own width (it is its own
+ * container), so it needs no container from the host and works in a mini app view; its parent must
+ * then be a block or a column flex, as an inline-size container collapses inside a shrink-to-fit
+ * parent. Without actions it is a plain block and sits anywhere, such as a pane title in a row.
  */
 export function SectionHeading({
   title,
@@ -36,7 +37,11 @@ export function SectionHeading({
   const Heading = as ?? (level === 'page' ? 'h2' : 'h3')
   const page = level === 'page'
   return (
-    <header data-slot="section-heading" data-level={level} className={cn('@container', className)}>
+    <header
+      data-slot="section-heading"
+      data-level={level}
+      className={cn(actions != null && '@container', className)}
+    >
       <div
         className={cn(
           'flex flex-col items-stretch justify-between gap-3',

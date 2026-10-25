@@ -28,6 +28,14 @@ async function ask(project: { id: string; name: string } | null) {
   return { view, sheet }
 }
 
+/** The select a person reaches by its visible label: the combobox the label names. */
+const picker = (within: ParentNode, label: string) =>
+  [...within.querySelectorAll<HTMLElement>('[role="combobox"]')].find((node) =>
+    document
+      .getElementById(node.getAttribute('aria-labelledby') ?? '')
+      ?.textContent?.startsWith(label),
+  ) ?? null
+
 describe('the consent sheet', () => {
   test('says where the package comes from and that nothing installs before Install', async () => {
     const { view, sheet } = await ask(null)
@@ -46,7 +54,7 @@ describe('the consent sheet', () => {
   test('with no project open, a plugin has no scope to pick', async () => {
     const { view, sheet } = await ask(null)
     try {
-      expect(sheet.querySelector('[aria-label="Install for"]')).toBeNull()
+      expect(picker(sheet, 'Install for')).toBeNull()
       await view.click(view.button('Install', sheet))
       expect(view.calls).toEqual(['install plugin/lint user consent'])
     } finally {
@@ -57,9 +65,9 @@ describe('the consent sheet', () => {
   test('with a project open, Install can be for that project alone', async () => {
     const { view, sheet } = await ask({ id: 'p1', name: 'Atlas' })
     try {
-      const picker = sheet.querySelector<HTMLElement>('[aria-label="Install for"]')!
-      expect(picker).not.toBeNull()
-      await view.openMenu(picker)
+      const select = picker(sheet, 'Install for')!
+      expect(select).not.toBeNull()
+      await view.openMenu(select)
       const option = [...document.body.querySelectorAll<HTMLElement>('[role="option"]')].find((o) =>
         o.textContent?.includes('Only Atlas'),
       )!

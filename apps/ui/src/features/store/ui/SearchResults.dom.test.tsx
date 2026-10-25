@@ -103,6 +103,8 @@ describe('the Store’s search results', () => {
     const { view, results } = await search('zzz')
     try {
       expect(results().textContent).toContain('Nothing matches “zzz”')
+      // A category to browse is an action, not a filter that stays pressed.
+      expect(view.button('Games', results())?.getAttribute('aria-pressed')).toBeNull()
       await view.click(view.button('Games', results()))
       expect(view.host.querySelector('h2')?.textContent).toBe('Games')
     } finally {

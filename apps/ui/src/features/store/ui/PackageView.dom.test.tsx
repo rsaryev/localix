@@ -107,6 +107,8 @@ describe('a package’s page', () => {
       expect(panel().textContent).toContain('/chess:play')
       await view.click(tab('Permissions'))
       expect(panel().textContent).toContain('Runs on this computer')
+      const headings = [...panel().querySelectorAll('h3')].map((node) => node.textContent)
+      expect(headings).toContain('Runs on this computer')
       expect(panel().textContent).toContain('node check.js')
       expect(panel().textContent).toContain('api.example.test')
       await view.click(tab('Versions'))

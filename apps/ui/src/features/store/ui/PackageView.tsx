@@ -3,6 +3,7 @@ import type { Listing, ListingDetail, ListingRef, StoreComponent } from '@locali
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { ShelfRow } from '@localixai/kit/shelf-row'
 import { Skeleton } from '@localixai/kit/skeleton'
+import { TextAction } from '@localixai/kit/text-action'
 import { MediaCarousel } from '@localixai/kit/media-carousel'
 import { ImageLightbox, useLightboxPaging } from '@/shared/ui/image-lightbox'
 import { MarkdownRenderer } from '@/shared/ui/MarkdownRenderer'
@@ -81,13 +82,12 @@ function Description({ listing, detail }: { listing: Listing; detail: ListingDet
         <MarkdownRenderer rawHtml={false}>{detail.readme}</MarkdownRenderer>
       </div>
       {long && (
-        <button
-          type="button"
-          className="self-start rounded-sm text-xs font-medium text-foreground underline-offset-2 hover:underline focus-ring"
+        <TextAction
+          className="self-start text-xs font-medium text-foreground underline-offset-2 hover:underline"
           onClick={() => setWhole((was) => !was)}
         >
           {whole ? 'Show less' : 'Read more'}
-        </button>
+        </TextAction>
       )}
     </div>
   )

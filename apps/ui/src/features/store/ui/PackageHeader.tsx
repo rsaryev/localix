@@ -2,6 +2,7 @@ import { useState, type RefObject } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import type { Listing } from '@localixai/store'
 import { Button } from '@localixai/kit/button'
+import { ChipButton } from '@localixai/kit/chip'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { KIND_LABELS } from '../model/presentation'
 import { useStoreFrame } from '../model/layout'
@@ -13,9 +14,6 @@ import { ListingIcon, Publisher } from './StoreMarks'
 /** Tags shown before the rest fold into "+N". */
 const TAGS = 6
 
-const TAG =
-  'inline-flex h-(--chrome-control-sm) items-center rounded-full bg-field-fill px-2.5 text-2xs text-text-soft transition-colors duration-(--dur-fast) hover:bg-surface-hover hover:text-foreground focus-ring'
-
 /** Its tags, each opening what else carries it; past six, "+N" shows the rest. */
 function Tags({ tags }: { tags: readonly string[] }) {
   const store = useStoreScope()
@@ -26,28 +24,24 @@ function Tags({ tags }: { tags: readonly string[] }) {
     <ul aria-label="Tags" className="flex flex-wrap gap-1.5">
       {shown.map((tag) => (
         <li key={tag}>
-          <button
-            type="button"
-            className={TAG}
+          <ChipButton
             aria-label={`Show packages tagged ${tag}`}
             onClick={() =>
               store.show({ type: 'list', title: `Tagged “${tag}”`, query: { q: tag } })
             }
           >
             {tag}
-          </button>
+          </ChipButton>
         </li>
       ))}
       {!all && tags.length > TAGS && (
         <li>
-          <button
-            type="button"
-            className={TAG}
+          <ChipButton
             aria-label={`Show ${tags.length - TAGS} more tags`}
             onClick={() => setAll(true)}
           >
             +{tags.length - TAGS}
-          </button>
+          </ChipButton>
         </li>
       )}
     </ul>

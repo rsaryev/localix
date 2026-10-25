@@ -11,6 +11,13 @@ import {
 } from '@localixai/kit/dropdown-menu'
 import { EmptyHint } from '@localixai/kit/empty-hint'
 import { IconButton } from '@localixai/kit/icon-button'
+import { SectionHeading } from '@localixai/kit/section-heading'
+import { SectionLabel } from '@localixai/kit/section-label'
+import {
+  WorkbenchListRow,
+  WorkbenchListRowActions,
+  WorkbenchListRowTrigger,
+} from '@localixai/kit/workbench-list-row'
 import { ListSkeleton } from './PagedList'
 import { MenuEntries } from '@localixai/kit/menu-entries'
 import { Switch } from '@localixai/kit/switch'
@@ -51,76 +58,76 @@ function SourceRow({ source, onRemove }: { source: SourceView; onRemove: () => v
     store.run(write)
   }
   return (
-    <li
-      data-source={source.id}
-      className="group/source relative grid min-h-14 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-lg px-2 py-2 hover:bg-surface-hover"
-    >
-      <span className="flex size-9 items-center justify-center rounded-lg bg-field-fill text-text-soft">
-        <BookMarked className="size-4" aria-hidden />
-      </span>
-      <button
-        type="button"
-        className="flex min-w-0 flex-col rounded-sm text-left focus-ring"
-        aria-label={`Show what ${source.label} offers`}
-        onClick={() =>
-          store.show({
-            type: 'list',
-            title: source.label,
-            subtitle: source.url,
-            query: { shelf: `package:${source.kind}`, source: source.id },
-          })
-        }
-      >
-        <span className="flex min-w-0 items-center gap-1.5 text-sm font-medium text-foreground">
-          <span id={titleId} className="truncate">
-            {source.label}
+    <li data-source={source.id}>
+      <WorkbenchListRow className="min-h-14 py-1 text-sm">
+        <WorkbenchListRowTrigger
+          className="gap-3"
+          aria-label={`Show what ${source.label} offers`}
+          onClick={() =>
+            store.show({
+              type: 'list',
+              title: source.label,
+              subtitle: source.url,
+              query: { shelf: `package:${source.kind}`, source: source.id },
+            })
+          }
+        >
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-field-fill text-text-soft">
+            <BookMarked className="size-4" aria-hidden />
           </span>
-          {trust && (
-            <span className="shrink-0 text-2xs font-normal text-text-faint">
-              {TRUST_LABELS[trust]}
+          <span className="flex min-w-0 flex-col">
+            <span className="flex min-w-0 items-center gap-1.5 text-sm font-medium text-foreground">
+              <span id={titleId} className="truncate">
+                {source.label}
+              </span>
+              {trust && (
+                <span className="shrink-0 text-2xs font-normal text-text-faint">
+                  {TRUST_LABELS[trust]}
+                </span>
+              )}
             </span>
+            <span className="truncate text-xs text-text-soft">
+              {plural(source.count, 'package')}
+              {source.syncedAt && ` · read ${ago(source.syncedAt)}`}
+              {' · '}
+              {source.url}
+            </span>
+            {source.problem && (
+              <span className="flex min-w-0 items-center gap-1 text-xs text-text-soft">
+                <CircleAlert className="size-3.5 shrink-0 text-status-warning" aria-hidden />
+                <span className="truncate" title={source.problem}>
+                  {source.problem}
+                </span>
+              </span>
+            )}
+          </span>
+        </WorkbenchListRowTrigger>
+        <WorkbenchListRowActions aria-label={`${source.label} controls`} className="gap-2">
+          {source.autoUpdate !== undefined && (
+            <>
+              <span id={captionId} className="text-xs text-text-soft">
+                Auto-update
+              </span>
+              <Switch
+                size="sm"
+                checked={pressed ?? source.autoUpdate}
+                aria-labelledby={`${captionId} ${titleId}`}
+                onChange={(event) => switchTo(event.target.checked)}
+              />
+            </>
           )}
-        </span>
-        <span className="truncate text-xs text-text-soft">
-          {plural(source.count, 'package')}
-          {source.syncedAt && ` · read ${ago(source.syncedAt)}`}
-          {' · '}
-          {source.url}
-        </span>
-        {source.problem && (
-          <span className="flex min-w-0 items-center gap-1 text-xs text-text-soft">
-            <CircleAlert className="size-3.5 shrink-0 text-status-warning" aria-hidden />
-            <span className="truncate" title={source.problem}>
-              {source.problem}
-            </span>
-          </span>
-        )}
-      </button>
-      <div className="flex items-center gap-2">
-        {source.autoUpdate !== undefined && (
-          <>
-            <span id={captionId} className="text-xs text-text-soft">
-              Auto-update
-            </span>
-            <Switch
-              size="sm"
-              checked={pressed ?? source.autoUpdate}
-              aria-labelledby={`${captionId} ${titleId}`}
-              onChange={(event) => switchTo(event.target.checked)}
-            />
-          </>
-        )}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <IconButton size="sm" aria-label={`${source.label} actions`}>
-              <Ellipsis />
-            </IconButton>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-52">
-            <MenuEntries entries={entries} family="dropdown" />
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <IconButton size="sm" aria-label={`${source.label} actions`}>
+                <Ellipsis />
+              </IconButton>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <MenuEntries entries={entries} family="dropdown" />
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </WorkbenchListRowActions>
+      </WorkbenchListRow>
     </li>
   )
 }
@@ -140,41 +147,47 @@ export function StoreSources({ onAdd }: { onAdd: () => void }) {
   const kinds = [...new Set(sources.map((source) => source.kind))]
   return (
     <div className="flex min-w-0 flex-col gap-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-semibold text-foreground">Sources</h2>
-          <p className="text-sm text-text-soft">Where the Store finds what it offers.</p>
-        </div>
-        {(data?.addable.length ?? 0) > 0 && (
-          <Button size="lg" variant="field" onClick={onAdd}>
-            <Plus data-icon="inline-start" aria-hidden />
-            Add source…
-          </Button>
-        )}
-      </header>
+      <SectionHeading
+        title="Sources"
+        description="Where the Store finds what it offers."
+        actions={
+          (data?.addable.length ?? 0) > 0 ? (
+            <Button size="lg" variant="field" onClick={onAdd}>
+              <Plus data-icon="inline-start" aria-hidden />
+              Add source…
+            </Button>
+          ) : undefined
+        }
+      />
       {!data ? (
         <ListSkeleton rows={4} />
       ) : kinds.length === 0 ? (
         <EmptyHint>No sources yet.</EmptyHint>
       ) : (
-        kinds.map((kind) => (
-          <section
-            key={kind}
-            aria-label={SOURCE_LABELS[kind].group}
-            className="flex flex-col gap-1"
-          >
-            <h3 className="px-2 text-xs font-semibold text-text-soft">
-              {SOURCE_LABELS[kind].group}
-            </h3>
-            <ul className="flex flex-col">
-              {sources
-                .filter((source) => source.kind === kind)
-                .map((source) => (
-                  <SourceRow key={source.id} source={source} onRemove={() => setRemoving(source)} />
-                ))}
-            </ul>
-          </section>
-        ))
+        <div className="flex flex-col gap-8">
+          {kinds.map((kind) => (
+            <section
+              key={kind}
+              aria-label={SOURCE_LABELS[kind].group}
+              className="flex flex-col gap-2"
+            >
+              <SectionLabel as="h3" className="px-2">
+                {SOURCE_LABELS[kind].group}
+              </SectionLabel>
+              <ul className="flex flex-col">
+                {sources
+                  .filter((source) => source.kind === kind)
+                  .map((source) => (
+                    <SourceRow
+                      key={source.id}
+                      source={source}
+                      onRemove={() => setRemoving(source)}
+                    />
+                  ))}
+              </ul>
+            </section>
+          ))}
+        </div>
       )}
       <ConfirmDialog
         open={removing !== null}

@@ -6,6 +6,7 @@ import {
   type PackageKind,
 } from '@localixai/store'
 import { Button } from '@localixai/kit/button'
+import { SectionHeading } from '@localixai/kit/section-heading'
 import {
   COMPONENT_LABELS,
   KIND_LABELS,
@@ -34,15 +35,6 @@ const AUTHORED_NOTES = {
   yours:
     'What you wrote: skills, agents and servers in your own files, in every project. What you installed from a source is under Installed.',
   project: 'What this project keeps in its own folder, shared with whoever opens it.',
-}
-
-function Heading({ title, note }: { title: string; note?: string }) {
-  return (
-    <header className="mb-4">
-      <h2 className="text-xl font-semibold text-foreground">{title}</h2>
-      {note && <p className="text-sm text-text-soft">{note}</p>}
-    </header>
-  )
 }
 
 function DiscoverSection() {
@@ -101,17 +93,17 @@ export function StoreBody({
   if (section === 'sources') return <StoreSources onAdd={onAddSource} />
   if (section === 'installed' || section === 'updates')
     return (
-      <>
-        <Heading
+      <div className="flex flex-col gap-6">
+        <SectionHeading
           title={section === 'installed' ? 'Installed' : 'Updates'}
-          note={
+          description={
             section === 'installed'
               ? 'What you installed from a source, where and which version. What you wrote is under Yours.'
               : undefined
           }
         />
         <StoreLibrary updates={section === 'updates'} />
-      </>
+      </div>
     )
   if (section === 'yours' || section === 'project')
     return (
@@ -129,13 +121,17 @@ export function StoreBody({
     return (
       <>
         <CreateBar kinds={[kind as PackageKind]} />
-        <Heading
-          title={capabilityLabel(kind)}
-          note={`${
-            (PACKAGE_KINDS as readonly string[]).includes(kind) ? 'Yours, your project’s and ' : ''
-          }every ${inSentence(COMPONENT_LABELS[kind].one)} a package adds. Getting one from a package gets the whole package.`}
-        />
-        <StoreComponents kind={kind} />
+        <div className="flex flex-col gap-6">
+          <SectionHeading
+            title={capabilityLabel(kind)}
+            description={`${
+              (PACKAGE_KINDS as readonly string[]).includes(kind)
+                ? 'Yours, your project’s and '
+                : ''
+            }every ${inSentence(COMPONENT_LABELS[kind].one)} a package adds. Getting one from a package gets the whole package.`}
+          />
+          <StoreComponents kind={kind} />
+        </div>
       </>
     )
   }

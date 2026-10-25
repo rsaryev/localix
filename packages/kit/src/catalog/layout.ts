@@ -93,7 +93,7 @@ export const LAYOUT: readonly KitCatalogEntry[] = [
     summary:
       'The title, optional description and optional actions that open a page or head a section.',
     use: 'The heading of a settings page, a store page or a part of one. `level` is the size (`page` text-xl, `section` text-base); `as` is the element (`h1`–`h3`), chosen apart from the size. `actions` ride the title’s line.',
-    not: 'Not a hand-made h2 with a text-sm paragraph; not the pane title row (`panel-header`); not the small uppercase label over a group (`section-label`). Its parent is a block or column flex: it is its own container and collapses in a shrink-to-fit parent.',
+    not: 'Not a hand-made h2 with a text-sm paragraph; not the pane title row (`panel-header`); not the small uppercase label over a group (`section-label`). With `actions` it is its own container, so its parent is a block or column flex; without them it sits anywhere.',
   },
   {
     specifier: k('label-divider'),

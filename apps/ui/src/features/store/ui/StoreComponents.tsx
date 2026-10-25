@@ -9,6 +9,7 @@ import { EmptyHint } from '@localixai/kit/empty-hint'
 import { ItemCard } from '@localixai/kit/item-card'
 import { SearchInput } from '@localixai/kit/search-input'
 import { TogglePill } from '@localixai/kit/toggle-pill'
+import { WorkbenchFilterBar } from '@localixai/kit/workbench-filter-bar'
 import { listColumns, useStoreFrame } from '../model/layout'
 import { COMPONENT_LABELS, KIND_LABELS } from '../model/presentation'
 import { useStoreScope } from '../model/storeContext'
@@ -101,19 +102,18 @@ export function StoreComponents({ kind }: { kind: BrowsableComponentKind }) {
   const columns = listColumns(layout, width)
   return (
     <div className="flex min-w-0 flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-2">
+      <WorkbenchFilterBar aria-label="Filters" className="border-b-0 px-0 py-0">
         <SearchInput
           value={filter}
           onValueChange={setFilter}
           placeholder={`Filter ${many}`}
           aria-label={`Filter ${many}`}
           size="md"
-          className="w-64 max-w-full"
         />
         <TogglePill active={installedOnly} onClick={() => setInstalledOnly((on) => !on)}>
           Installed only
         </TogglePill>
-      </div>
+      </WorkbenchFilterBar>
       {page.loading ? (
         <ListSkeleton columns={columns} />
       ) : rows.length === 0 ? (

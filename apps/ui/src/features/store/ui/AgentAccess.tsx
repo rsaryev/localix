@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import type { Listing } from '@localixai/store'
 import { Button } from '@localixai/kit/button'
+import { DIVIDED_LIST } from '@localixai/kit/divided-list'
+import { SectionLabel } from '@localixai/kit/section-label'
 import { Skeleton } from '@localixai/kit/skeleton'
 import { Switch } from '@localixai/kit/switch'
 import { agentScopeValue } from '@/shared/api/capabilityScope'
@@ -150,7 +152,7 @@ export function AgentAccess({ listing }: { listing: Listing }) {
     )
 
   return (
-    <div className="flex max-w-3xl min-w-0 flex-col gap-6">
+    <div className="flex max-w-3xl min-w-0 flex-col gap-8">
       <p className="text-xs text-text-soft">
         What this agent may use. A switch here narrows what you and the project allow; it never
         widens it.
@@ -161,14 +163,11 @@ export function AgentAccess({ listing }: { listing: Listing }) {
         </p>
       )}
       {accessGroups(snapshot).map((group) => (
-        <section key={group.title} aria-label={group.title} className="flex flex-col gap-1">
-          <h3 className="text-xs font-medium text-text-faint">{group.title}</h3>
-          <ul className="flex flex-col">
+        <section key={group.title} aria-label={group.title} className="flex flex-col gap-2">
+          <SectionLabel as="h3">{group.title}</SectionLabel>
+          <ul className={DIVIDED_LIST}>
             {group.rows.map((row) => (
-              <li
-                key={row.key}
-                className="flex min-h-11 items-center gap-3 rounded-md px-2 py-1.5 hover:bg-surface-hover"
-              >
+              <li key={row.key} className="flex min-h-11 items-center gap-3 px-2 py-1.5">
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span className="truncate text-sm text-foreground">{row.label}</span>
                   {(row.locked ?? row.detail) && (

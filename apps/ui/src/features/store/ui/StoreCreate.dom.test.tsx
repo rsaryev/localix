@@ -28,6 +28,14 @@ const field = (label: string) => {
   return found ? dialog()!.querySelector<HTMLInputElement>(`#${CSS.escape(found.htmlFor)}`) : null
 }
 
+/** The select a person reaches by its visible label: the combobox the label names. */
+const picker = (within: ParentNode, label: string) =>
+  [...within.querySelectorAll<HTMLElement>('[role="combobox"]')].find((node) =>
+    document
+      .getElementById(node.getAttribute('aria-labelledby') ?? '')
+      ?.textContent?.startsWith(label),
+  ) ?? null
+
 describe('making a new item in the Store', () => {
   test('a kind that can make its own shows Add on its shelf, even while the shelf is empty', async () => {
     const view = await renderStore({
@@ -80,7 +88,7 @@ describe('making a new item in the Store', () => {
     try {
       await view.click(view.shelf('Mini apps'))
       await view.click(view.button('Add chess set'))
-      await view.openMenu(dialog()!.querySelector<HTMLElement>('[aria-label="Keep it for"]')!)
+      await view.openMenu(picker(dialog()!, 'Keep it for')!)
       const option = [...document.body.querySelectorAll<HTMLElement>('[role="option"]')].find(
         (node) => node.textContent?.includes('Atlas'),
       )

@@ -2,8 +2,10 @@ import { useMemo } from 'react'
 import { ChevronRight, RefreshCw } from 'lucide-react'
 import type { Collection, DiscoverResponse, Listing, ListingRef } from '@localixai/store'
 import { Button } from '@localixai/kit/button'
+import { SectionHeading } from '@localixai/kit/section-heading'
 import { ShelfRow } from '@localixai/kit/shelf-row'
 import { Skeleton } from '@localixai/kit/skeleton'
+import { WorkbenchNoticeBar } from '@localixai/kit/workbench-notice-bar'
 import { plural } from '../model/presentation'
 import { tilesPerView, useStoreFrame } from '../model/layout'
 import { useStoreScope } from '../model/storeContext'
@@ -128,23 +130,27 @@ export function Discover({ data }: { data: DiscoverResponse }) {
   return (
     <div className="flex flex-col gap-8">
       {data.updates.count > 0 && (
-        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border-faint px-4 py-3">
-          <RefreshCw className="size-4 shrink-0 text-text-soft" aria-hidden />
-          <p className="min-w-0 flex-1 text-sm text-foreground">
-            {plural(data.updates.count, 'update')} available
-          </p>
-          <Button size="sm" variant="ghost" onClick={() => store.goTo('updates')}>
-            See updates
-          </Button>
-          <Button size="sm" variant="field" onClick={store.updateAll}>
-            Update all
-          </Button>
-        </div>
+        <WorkbenchNoticeBar
+          icon={<RefreshCw className="size-4" />}
+          title={`${plural(data.updates.count, 'update')} available`}
+          actionsLabel="Update actions"
+          actions={
+            <>
+              <Button size="sm" variant="ghost" onClick={() => store.goTo('updates')}>
+                See updates
+              </Button>
+              <Button size="sm" variant="field" onClick={store.updateAll}>
+                Update all
+              </Button>
+            </>
+          }
+          className="rounded-lg border border-border-faint"
+        />
       )}
       {computed((id) => id === 'start' || id === 'project').map(row)}
       {editorial.length > 0 && (
-        <section aria-label="Collections" className="flex flex-col gap-2">
-          <h2 className="text-base font-semibold text-foreground">Collections</h2>
+        <section aria-label="Collections" className="flex flex-col gap-4">
+          <SectionHeading level="section" as="h2" title="Collections" />
           <div
             className="grid gap-3"
             style={{

@@ -66,6 +66,9 @@ describe('the Store’s sources', () => {
       const plugins = view.host.querySelector('section[aria-label="Claude Code marketplaces"]')!
       expect(plugins.textContent).toContain('Official')
       expect(plugins.textContent).toContain('120 packages')
+      // Each group is headed, and the page is headed once above them.
+      expect(view.host.querySelector('h2')?.textContent).toBe('Sources')
+      expect(apps.querySelector('h3')?.textContent).toBe('Mini app catalogs')
     } finally {
       await view.done()
     }
