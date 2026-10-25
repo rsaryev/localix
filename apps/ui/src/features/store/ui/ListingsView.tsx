@@ -150,7 +150,7 @@ function QueriedListings({ query, showKind }: { query: StorePageQuery; showKind:
 }
 
 /** A full list over a section: a shelf, a row's "See all", a category, a collection, a source. */
-export function ListingsPage({
+export function ListingsView({
   title,
   subtitle,
   query,

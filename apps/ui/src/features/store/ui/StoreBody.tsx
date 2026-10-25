@@ -6,8 +6,8 @@ import type { StoreSection, StoreView } from '../model/navigation'
 import { useStoreScope } from '../model/storeContext'
 import { useDiscover } from '../model/useStoreData'
 import { Discover, DiscoverSkeleton } from './Discover'
-import { ListingsPage } from './ListingsPage'
-import { PackagePage } from './PackagePage'
+import { ListingsView } from './ListingsView'
+import { PackageView } from './PackageView'
 import { SearchResults } from './SearchResults'
 import { StoreComponents } from './StoreComponents'
 import { StoreLibrary } from './StoreLibrary'
@@ -53,7 +53,7 @@ export function StoreBody({
   if (query) return <SearchResults query={query} />
   if (view?.type === 'listing')
     return (
-      <PackagePage
+      <PackageView
         reference={view.ref}
         listing={view.listing}
         focus={view.focus}
@@ -70,7 +70,7 @@ export function StoreBody({
             {backLabel}
           </Button>
         </div>
-        <ListingsPage
+        <ListingsView
           title={view.title}
           subtitle={view.subtitle}
           query={view.query}
@@ -101,7 +101,7 @@ export function StoreBody({
   }
   const kind = section.slice(8) as PackageKind
   return (
-    <ListingsPage
+    <ListingsView
       title={KIND_LABELS[kind].many}
       subtitle={KIND_NOTES[kind]}
       query={{ shelf: section }}

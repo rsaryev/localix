@@ -131,6 +131,24 @@ describe('a package’s page', () => {
     }
   })
 
+  test('a plugin can be got for the open project alone, from the chevron beside Get', async () => {
+    const view = await renderStore({
+      listings: [listing({ id: 'lint', displayName: 'Lint', ref: { kind: 'plugin', id: 'lint' } })],
+      project: { id: 'p1', name: 'Atlas' },
+      target: { shelf: 'package:plugin' },
+    })
+    try {
+      await view.click(view.button('Lint', view.card('lint')!))
+      const page = view.host.querySelector<HTMLElement>('[data-store-page="lint"]')!
+      await view.openMenu(view.button('Where to get Lint', page))
+      expect(view.menuItem('Get for you')).toBeDefined()
+      await view.click(view.menuItem('Get for Atlas'))
+      expect(view.calls).toEqual(['install plugin/lint project in p1'])
+    } finally {
+      await view.done()
+    }
+  })
+
   test('Back returns to the shelf with its category kept', async () => {
     const view = await renderStore({ listings: LISTINGS, target: { shelf: 'package:mini-app' } })
     try {

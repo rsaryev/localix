@@ -118,10 +118,6 @@ export const inSentence = (label: string) => (/^[A-Z]{2}/.test(label) ? label : 
 export const plural = (count: number, one: string, many = `${one}s`) =>
   `${count.toLocaleString('en-US')} ${count === 1 ? one : many}`
 
-/** "Ada · Plugin": who publishes it and what it is, the line under a tile's name. */
-export const byline = (listing: Listing) =>
-  `${listing.publisher.name} · ${KIND_LABELS[listing.ref.kind].one}`
-
 /** "3 hours ago", "2 days ago", "just now": how long since `iso`, for a source's last read. */
 export function ago(iso: string, now = Date.now()): string {
   const seconds = Math.max(0, Math.round((now - Date.parse(iso)) / 1000))

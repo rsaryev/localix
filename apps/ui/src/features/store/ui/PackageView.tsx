@@ -100,7 +100,7 @@ function Description({ listing, detail }: { listing: Listing; detail: ListingDet
  * from the listing in hand and fills in as the detail arrives — a remote plugin is fetched the
  * first time it is opened, so What's inside says it is reading meanwhile.
  */
-export function PackagePage({
+export function PackageView({
   listing: inHand,
   reference,
   focus,
