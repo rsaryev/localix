@@ -78,6 +78,24 @@ describe('the Store index', () => {
     expect(page.listings[0]!.alsoIn).toEqual([{ id: 'community', label: 'Community' }])
   })
 
+  test('what a person or a project wrote has its own shelf and count, installed or not', async () => {
+    const { repo, put } = index()
+    await put('s', [
+      plugin('fetched'),
+      plugin('mine', { authored: 'user' }),
+      plugin('ours', { authored: 'project' }),
+    ])
+    expect(ids((await repo.page('u1', { shelf: 'yours' }, { limit: 40 })).listings)).toEqual([
+      'mine',
+    ])
+    expect(ids((await repo.page('u1', { shelf: 'project' }, { limit: 40 })).listings)).toEqual([
+      'ours',
+    ])
+    expect((await repo.facets('u1', {})).shelves).toMatchObject({ yours: 1, project: 1 })
+    const [first] = (await repo.page('u1', { shelf: 'yours' }, { limit: 40 })).listings
+    expect(first!.authored).toBe('user')
+  })
+
   test('a source that lists one origin twice is "also in" once', async () => {
     const { repo, put } = index()
     const origin = 'git:github.com/acme/lint'

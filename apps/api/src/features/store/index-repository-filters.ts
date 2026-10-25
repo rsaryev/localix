@@ -50,6 +50,8 @@ function onShelf(eb: Eb, shelf: ShelfId) {
   if (shelf === 'discover') return eb.or([eb('l.featured', '=', 1), eb('l.recommended', '=', 1)])
   if (shelf === 'installed') return eb('s.installed', '=', 1)
   if (shelf === 'updates') return eb('s.has_update', '=', 1)
+  if (shelf === 'yours' || shelf === 'project')
+    return eb('l.authored', '=', shelf === 'yours' ? 'user' : 'project')
   const [group, kind] = shelf.split(':') as ['package' | 'capability', string]
   if (group === 'package') return eb('l.kind', '=', kind)
   return eb.exists(

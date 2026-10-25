@@ -37,6 +37,7 @@ export interface IndexRow {
   recommended: number
   origin: string | null
   publisher: string
+  authored: string | null
   updated_at: string | null
   weight: number
   score: number
@@ -105,6 +106,7 @@ export function toIndexRow(card: ListingCard, opts: { now: number }): IndexRow {
     recommended: card.recommended ? 1 : 0,
     origin: card.origin ?? null,
     publisher: card.publisher.name,
+    authored: card.authored ?? null,
     updated_at: card.updatedAt ?? null,
     weight: card.source.weight ?? TRUST_WEIGHTS[card.source.trust ?? 'community'],
     score: staticScore(asListing, opts),

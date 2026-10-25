@@ -61,6 +61,18 @@ describe('shelves', () => {
     expect(SHELVES).toContain('capability:output-style')
   })
 
+  test('what a person or a project wrote is on Yours or Project, installed or not', () => {
+    const mine = makeListing({ id: 'review', kind: 'skill', authored: 'user' })
+    const ours = makeListing({ id: 'deploy', kind: 'skill', authored: 'project' })
+    expect(onShelf(mine, 'yours')).toBe(true)
+    expect(onShelf(mine, 'project')).toBe(false)
+    expect(onShelf(ours, 'project')).toBe(true)
+    expect(onShelf(chess, 'yours')).toBe(false)
+    expect(shelfCounts([mine, ours, chess])).toMatchObject({ yours: 1, project: 1 })
+    expect(parseShelf('yours')).toBe('yours')
+    expect(parseShelf('project')).toBe('project')
+  })
+
   test('a shelf id from outside is taken only when it names a shelf', () => {
     expect(parseShelf('package:mini-app')).toBe('package:mini-app')
     expect(parseShelf('capability:mod')).toBe('capability:mod')

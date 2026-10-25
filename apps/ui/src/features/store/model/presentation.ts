@@ -8,6 +8,7 @@ import {
   Database,
   Download,
   FileText,
+  FolderOpen,
   Gamepad2,
   LayoutGrid,
   ListTodo,
@@ -27,6 +28,7 @@ import {
   Webhook,
   Wrench,
   type LucideIcon,
+  UserRound,
 } from 'lucide-react'
 import type { ComponentKind, Listing, PackageKind, StoreCategory, Trust } from '@localixai/store'
 
@@ -77,6 +79,8 @@ export const LIBRARY_LABELS = {
   discover: { label: 'Discover', icon: Compass },
   installed: { label: 'Installed', icon: Package },
   updates: { label: 'Updates', icon: RefreshCw },
+  yours: { label: 'Yours', icon: UserRound },
+  project: { label: 'Project', icon: FolderOpen },
   sources: { label: 'Sources', icon: Download },
 } as const
 

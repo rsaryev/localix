@@ -12,7 +12,7 @@ import { openDerivedDatabase } from '../../db/connection'
  */
 
 /** Bump on any change below: the old file is deleted and rebuilt from the providers. */
-export const STORE_INDEX_VERSION = 2
+export const STORE_INDEX_VERSION = 3
 
 export interface StoreIndexTables {
   meta: { key: string; value: string }
@@ -34,6 +34,8 @@ export interface StoreIndexTables {
     recommended: number
     origin: string | null
     publisher: string
+    /** `user` or `project` for what was written here, null for what a source offers. */
+    authored: string | null
     /** When its version was published (ISO 8601), when the source says. */
     updated_at: string | null
     weight: number
@@ -83,7 +85,7 @@ CREATE TABLE IF NOT EXISTS listing (
   tags_text TEXT NOT NULL, components_text TEXT NOT NULL,
   category TEXT NOT NULL, trust TEXT NOT NULL,
   featured INTEGER NOT NULL, recommended INTEGER NOT NULL,
-  origin TEXT, publisher TEXT NOT NULL, updated_at TEXT,
+  origin TEXT, publisher TEXT NOT NULL, authored TEXT, updated_at TEXT,
   weight REAL NOT NULL, hidden INTEGER NOT NULL DEFAULT 0,
   score REAL NOT NULL, signals TEXT NOT NULL, card TEXT NOT NULL,
   UNIQUE (kind, id)

@@ -121,6 +121,11 @@ export const listingSchema = z.object({
   job: jobSchema.optional(),
   /** Why it cannot be installed here. */
   incompatible: z.string().optional(),
+  /**
+   * Written by the person (`user`) or kept in a project (`project`) rather than fetched from a
+   * source: the Yours and Project shelves list it, installed or not.
+   */
+  authored: z.enum(['user', 'project']).optional(),
   /** It is installed and has settings: its page then shows a Settings tab (`ListingConfig`). */
   configurable: z.boolean().optional(),
 })

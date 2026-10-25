@@ -1,7 +1,12 @@
 import { ArrowLeft } from 'lucide-react'
 import type { BrowsableComponentKind, Listing, PackageKind } from '@localixai/store'
 import { Button } from '@localixai/kit/button'
-import { COMPONENT_LABELS, KIND_LABELS, capabilityLabel } from '../model/presentation'
+import {
+  COMPONENT_LABELS,
+  KIND_LABELS,
+  LIBRARY_LABELS,
+  capabilityLabel,
+} from '../model/presentation'
 import type { StoreSection, StoreView } from '../model/navigation'
 import { useStoreScope } from '../model/storeContext'
 import { useDiscover } from '../model/useStoreData'
@@ -16,6 +21,11 @@ import { StoreSources } from './StoreSources'
 const KIND_NOTES: Partial<Record<PackageKind, string>> = {
   'mini-app': 'Screens and tools that work beside your chats. One you install appears in the rail.',
   plugin: 'Skills, agents, commands, hooks and servers for Claude Code and the agents here.',
+}
+
+const AUTHORED_NOTES = {
+  yours: 'What you wrote, kept for you in every project.',
+  project: 'What this project keeps in its own folder, shared with whoever opens it.',
 }
 
 function Heading({ title, note }: { title: string; note?: string }) {
@@ -87,6 +97,14 @@ export function StoreBody({
         <Heading title={section === 'installed' ? 'Installed' : 'Updates'} />
         <StoreLibrary updates={section === 'updates'} />
       </>
+    )
+  if (section === 'yours' || section === 'project')
+    return (
+      <ListingsView
+        title={LIBRARY_LABELS[section].label}
+        subtitle={AUTHORED_NOTES[section]}
+        query={{ shelf: section }}
+      />
     )
   if (section.startsWith('capability:')) {
     const kind = section.slice(11) as BrowsableComponentKind

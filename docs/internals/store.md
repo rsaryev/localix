@@ -435,6 +435,15 @@ provider (X1, A8) and only reads or writes through the Store client.
 - **Sources** shows a source's own problem on its row, quietly; the one Add dialog previews every
   addable kind and asks only when both formats match.
 
+### Yours and Project as built
+
+A listing may say `authored: 'user' | 'project'`: written by the person (`user`) or kept in a
+project's own folder (`project`), not fetched from a source. The `yours` and `project` shelves list
+exactly those, installed or not; `onShelf`, the index's `authored` column (indexed with the listing,
+the shelf filter and the facet counts) and the UI's Library navigation entries all read the one
+field. The index is derived, so adding the column is a `STORE_INDEX_VERSION` bump: the old file is
+deleted and rebuilt, never migrated.
+
 ## Source of truth
 
 - [The contract](../../packages/store/src/contract.ts),

@@ -33,6 +33,12 @@ export async function facetsOf(
           .as('picked'),
         eb.fn.sum<number>(eb.fn.coalesce('s.installed', eb.lit(0))).as('installed'),
         eb.fn.sum<number>(eb.fn.coalesce('s.has_update', eb.lit(0))).as('updates'),
+        eb.fn
+          .sum<number>(eb.case().when('l.authored', '=', 'user').then(1).else(0).end())
+          .as('yours'),
+        eb.fn
+          .sum<number>(eb.case().when('l.authored', '=', 'project').then(1).else(0).end())
+          .as('project'),
       ])
       .groupBy('l.kind')
       .execute(),
@@ -69,6 +75,14 @@ export async function facetsOf(
   const updates = sum((row) => row.updates)
   set('installed', installed)
   set('updates', updates)
+  set(
+    'yours',
+    sum((row) => row.yours),
+  )
+  set(
+    'project',
+    sum((row) => row.project),
+  )
   return {
     shelves,
     kind: Object.fromEntries(kinds.map((row) => [row.kind, Number(row.n)])),

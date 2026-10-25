@@ -33,6 +33,8 @@ export type ShelfId =
   | 'discover'
   | 'installed'
   | 'updates'
+  | 'yours'
+  | 'project'
   | `package:${PackageKind}`
   | `capability:${BrowsableComponentKind}`
 
@@ -46,6 +48,8 @@ export const SHELVES: readonly ShelfId[] = [
   ...BROWSABLE_COMPONENT_KINDS.map(capabilityShelf),
   'installed',
   'updates',
+  'yours',
+  'project',
 ]
 
 const KNOWN = new Set<string>(SHELVES)
@@ -71,6 +75,8 @@ export function onShelf(listing: Listing, shelf: ShelfId): boolean {
   if (shelf === 'discover') return listing.featured || listing.recommended
   if (shelf === 'installed') return listing.installs.length > 0
   if (shelf === 'updates') return hasUpdate(listing)
+  if (shelf === 'yours' || shelf === 'project')
+    return listing.authored === (shelf === 'yours' ? 'user' : 'project')
   const [group, kind] = shelf.split(':') as ['package' | 'capability', string]
   return group === 'package'
     ? listing.ref.kind === kind

@@ -78,6 +78,8 @@ export function navGroups(facets: StoreFacets | undefined): SidebarNavGroup[] {
           count: facets?.installed ?? 0,
         },
         ...shelf('updates', LIBRARY_LABELS.updates.label, LIBRARY_LABELS.updates.icon),
+        ...shelf('yours', LIBRARY_LABELS.yours.label, LIBRARY_LABELS.yours.icon),
+        ...shelf('project', LIBRARY_LABELS.project.label, LIBRARY_LABELS.project.icon),
         { id: 'sources', label: LIBRARY_LABELS.sources.label, icon: LIBRARY_LABELS.sources.icon },
       ],
     },
