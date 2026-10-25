@@ -182,6 +182,27 @@ describe('SidebarNav compact panel', () => {
     await view.done()
   })
 
+  test('the toggle is the rail’s icon; open, it carries the rail’s name rather than an empty row', async () => {
+    const view = await mount('compact')
+    expect(view.rows()[0]!.textContent).toBe('')
+    await view.focusRow(1)
+    expect(view.rows()[0]!.textContent).toBe('Store sections')
+    await view.done()
+  })
+
+  test('every labelled group holds the same slot closed (a divider) and open (its heading)', async () => {
+    const view = await mount('compact')
+    const slots = () =>
+      [...view.host.querySelectorAll('[role="group"][aria-label]')].map((group) => [
+        group.firstElementChild!.tagName,
+        group.firstElementChild!.textContent,
+      ])
+    expect(slots()).toEqual([['DIV', '']])
+    await view.focusRow(1)
+    expect(slots()).toEqual([['DIV', 'Packages']])
+    await view.done()
+  })
+
   test('re-entering within the grace keeps it open; a held button never opens it', async () => {
     const view = await mount('compact')
     await view.pointer('pointerenter', { buttons: 1 })

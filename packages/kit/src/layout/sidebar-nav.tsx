@@ -10,7 +10,7 @@ import { PanelLeft, type LucideIcon } from 'lucide-react'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { Select } from '../controls/select'
 import { createTypeaheadBuffer } from '../lib/typeahead'
-import { POPOVER_SURFACE } from '../overlays/popover-surface'
+import { POPOVER_MATERIAL } from '../overlays/popover-surface'
 import { SectionLabel } from './section-label'
 import { useSidebarNavPeek, type SidebarNavPeek } from './sidebar-nav-peek'
 
@@ -52,7 +52,8 @@ const counted = (count: number) => count.toLocaleString('en-US')
  * slot on top, small headings, rows of icon, label and a count or badge); `compact` is a rail of
  * icons that keeps a fixed width in the layout and opens a panel OVER the content (labels, headings,
  * counts) on hover after a short dwell, on keyboard focus and on a touch, and closes on leaving, Esc,
- * choosing a row or focus moving away, so nothing beside it ever moves; `select` is one picker for
+ * choosing a row or focus moving away, so nothing beside it ever moves (the icons keep their place
+ * when it opens: each heading takes the slot of the divider it replaces); `select` is one picker for
  * a header, the search slot beside it. Rows are 32px with the selected veil, and the column is one tab stop:
  * ↑/↓ move, Home/End jump, typed letters find a row, Enter or Space opens it. A group with no
  * rows is not drawn, so a section that holds nothing is hidden by leaving it out.
@@ -192,13 +193,15 @@ export function SidebarNav({
         onKeyDown={onKeyDown}
         data-state={compact ? (open ? 'open' : 'closed') : undefined}
         className={cn(
-          'flex flex-col gap-5',
+          'flex flex-col',
+          !compact && 'gap-5',
           // The rail's width stays reserved by the wrapper; the open panel is out of flow, above
-          // the content, so opening it never re-lays-out what sits beside it.
+          // the content, so opening it never re-lays-out what sits beside it. Its edge is the
+          // material's one hairline ring: the border stays transparent so the icons keep their x.
           compact &&
             cn(
-              'absolute top-0 left-0 z-20 max-h-full overflow-x-hidden overflow-y-auto border border-transparent px-2 py-2 motion-safe:transition-[width,box-shadow] motion-safe:duration-(--dur-fast)',
-              open ? `w-56 ${POPOVER_SURFACE}` : 'w-full',
+              'absolute top-0 left-0 z-20 max-h-full gap-1 overflow-x-hidden overflow-y-auto rounded-lg border border-transparent px-2 py-2 motion-safe:transition-[width,box-shadow] motion-safe:duration-(--dur-fast)',
+              open ? `w-56 ${POPOVER_MATERIAL}` : 'w-full',
             ),
         )}
       >
@@ -209,24 +212,32 @@ export function SidebarNav({
             aria-expanded={open}
             aria-label={`${open ? 'Collapse' : 'Expand'} ${label}`}
             onClick={panel.toggle}
-            className={cn(ROW, REST, 'px-[11px] text-text-faint')}
+            className={cn(ROW, 'px-[11px] text-text-faint hover:text-foreground')}
           >
             <PanelLeft className="size-4 shrink-0" aria-hidden />
+            {open && <span className="min-w-0 flex-1 truncate">{label}</span>}
           </button>
         )}
-        {shown.map((group, at) => (
+        {shown.map((group) => (
           <div
             key={group.id}
             role="group"
             aria-label={group.label}
-            className={cn(
-              'flex flex-col gap-0.5',
-              compact && !open && at > 0 && '-mt-2 border-t border-border-faint pt-3',
-            )}
+            className="flex flex-col gap-0.5"
           >
-            {group.label && (mode === 'full' || open) && (
-              <SectionLabel className="px-2.5 pb-1">{group.label}</SectionLabel>
-            )}
+            {group.label &&
+              (compact ? (
+                // One slot, two looks: the divider between rail groups, the heading in the panel.
+                <div className="flex h-6 items-center">
+                  {open ? (
+                    <SectionLabel className="px-2.5">{group.label}</SectionLabel>
+                  ) : (
+                    <span className="mx-3 h-px flex-1 bg-border-faint" aria-hidden />
+                  )}
+                </div>
+              ) : (
+                <SectionLabel className="px-2.5 pb-1">{group.label}</SectionLabel>
+              ))}
             {group.items.map(row)}
           </div>
         ))}
