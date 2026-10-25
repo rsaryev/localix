@@ -119,7 +119,7 @@ describe('owners announce every client topic', () => {
   })
 
   test('file-owned capabilities poke on the resync their bump announces', () => {
-    expect(RELAY_TOPICS.skill.resources).toEqual(['capabilities'])
+    expect(RELAY_TOPICS.skill.resources).toEqual(['capabilities', 'store'])
     expect(RELAY_TOPICS.agent.resync).toEqual(['capabilities'])
     expect(RELAY_TOPICS.agent.resources).toContain('sessions')
   })

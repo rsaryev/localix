@@ -40,6 +40,20 @@ describe('the relay', () => {
     expect(published).toEqual([['store']])
   })
 
+  test('a skill or an MCP server changed outside the Store, by the agent or on disk, tells it too', () => {
+    for (const kind of ['skill', 'mcp']) {
+      const published: string[][] = []
+      const relay = createRelay({
+        defaultUserId: 'owner',
+        publish: (_userId, resources) => void published.push(resources),
+      })
+      const handler = (relay.handlers as Record<string, unknown>)[kind] as (c: unknown) => void
+      expect(typeof handler).toBe('function')
+      handler({ entity: kind, op: 'resync' })
+      expect(published.flat()).toContain('store')
+    }
+  })
+
   test('every provider connection mutation reaches the clients through the feed', async () => {
     const db = createDatabase()
     await migrateToLatest(db)

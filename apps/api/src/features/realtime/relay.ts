@@ -53,7 +53,9 @@ export const RELAY_TOPICS = {
   // does — a bump announces `resync` for every capability kind), and the announcements poke.
   // An agent's own change reaches its chats too; plugins and MCP servers poke as they converge.
   agent: { resources: ['capabilities', 'sessions'], resync: ['capabilities'] },
-  skill: { resources: ['capabilities'] },
+  // A skill or an MCP server also shows on the Store's Yours and Project shelves, which an agent
+  // saving a skill, a curator pass or an edited file changes without going through the Store.
+  skill: { resources: ['capabilities', 'store'] },
   // Plugins poke their own topics as they converge; the Store's listings show their installs.
   plugin: { resources: ['store'] },
   // A mini app installed, updated, removed or reconfigured: the mini apps list, what the catalog
@@ -61,7 +63,7 @@ export const RELAY_TOPICS = {
   'mini-app': { resources: ['mini-apps', 'capabilities', 'store'], bumpsCapabilities: true },
   // The store's catalogs: their list and what the Store offers.
   'mini-app.catalog': { resources: ['mini-app-catalogs', 'store'] },
-  mcp: 'ignore',
+  mcp: { resources: ['store'] },
   // What the `local` provider lists reaches clients through the catalog's own refresh; the
   // install itself through the `local-models` status poke (`status-pokes.ts`), which every
   // install and removal also signals.
