@@ -13,7 +13,20 @@ test('every settings destination has exactly one primary section', () => {
   expect(primarySettingsSection({ kind: 'project', id: 'project-1' })).toBe('project')
   expect(primarySettingsSection('permissions')).toBe('permissions')
   expect(primarySettingsSection(parseSettingsTab('rules', undefined))).toBe('permissions')
-  expect(primarySettingsSection('agents')).toBe('agents')
+  // Items (agents, skills, MCP servers, plugins, mini apps) are managed in the Store, not here.
+  const layout: Record<string, string[]> = {}
+  for (const section of SETTINGS_SECTIONS) (layout[section.group] ??= []).push(section.label)
+  expect(layout).toEqual({
+    Personal: ['Preferences', 'Editor', 'Shortcuts'],
+    Workspace: ['Project'],
+    Security: ['Permissions'],
+    Application: ['Models', 'System'],
+  })
+})
+
+test('no Settings page is left for an item the Store manages', () => {
+  for (const moved of ['capabilities', 'mcp', 'agents', 'skills', 'plugins', 'mini-apps'])
+    expect(parseSettingsTab(moved, undefined)).toBe('preferences')
 })
 
 test('every editor toggle can be found by its visible name', () => {
@@ -25,5 +38,4 @@ test('every editor toggle can be found by its visible name', () => {
   ]) {
     expect(searchSettings(SETTINGS_INDEX, title!).map((result) => result.entry.id)).toContain(id!)
   }
-  expect(SETTINGS_INDEX.find((entry) => entry.tab === 'agents')?.tabLabel).toBe('Agents')
 })

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { scopePath, isCapabilityTab, isSectionId, parseSettingsTab } from './routes'
+import { scopePath, isSectionId, parseSettingsTab } from './routes'
 
 describe('scopePath (hierarchical scope→session)', () => {
   test('every scope is a project — there is no project-less spelling', () => {
@@ -22,24 +22,18 @@ describe('isSectionId', () => {
   })
 })
 
-describe('isCapabilityTab', () => {
-  test('capability tabs true; other string tabs and project object false', () => {
-    expect(isCapabilityTab('tools')).toBe(true)
-    expect(isCapabilityTab('plugins')).toBe(true)
-    expect(isCapabilityTab('preferences')).toBe(false)
-    expect(isCapabilityTab('preferences')).toBe(false)
-    expect(isCapabilityTab({ kind: 'project', id: 'p' })).toBe(false)
-  })
-})
-
 describe('parseSettingsTab', () => {
   test('projectId always wins as a project view', () => {
-    expect(parseSettingsTab('tools', 'p1')).toEqual({ kind: 'project', id: 'p1' })
+    expect(parseSettingsTab('permissions', 'p1')).toEqual({ kind: 'project', id: 'p1' })
   })
   test('valid string tab passes through, invalid/undefined → preferences', () => {
     expect(parseSettingsTab('preferences', undefined)).toBe('preferences')
     expect(parseSettingsTab('local-models', undefined)).toBe('preferences')
     expect(parseSettingsTab('bogus', undefined)).toBe('preferences')
+    // Items are managed in the Store; Settings has no page of them to land on.
+    for (const moved of ['agents', 'tools', 'skills', 'mcp', 'plugins', 'mini-apps'])
+      expect(parseSettingsTab(moved, undefined)).toBe('preferences')
+    expect(parseSettingsTab('rules', undefined)).toBe('permissions')
     expect(parseSettingsTab(undefined, undefined)).toBe('preferences')
   })
 })

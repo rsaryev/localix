@@ -35,7 +35,7 @@ describe('scopeKindOf', () => {
   })
 
   test('app-level kinds are global', () => {
-    for (const k of ['stats', 'settings', 'agent'] as const) {
+    for (const k of ['stats', 'settings'] as const) {
       expect(scopeKindOf(k)).toBe('global')
     }
   })

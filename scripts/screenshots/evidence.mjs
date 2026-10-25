@@ -7,6 +7,7 @@ export async function verifyEvidence(page, scenario) {
     return (await import('./agent-command.mjs')).verifyAgentCommand(page)
   if (scenario === 'agent-management')
     return (await import('./agent-management.mjs')).verifyAgentManagement(page)
+  if (scenario === 'agent') return (await import('./agent-management.mjs')).verifyAgentProfile(page)
   if (['kanban-board', 'kanban-conversation'].includes(scenario))
     return (await import('./kanban-workbenches.mjs')).verifyKanban(page, scenario)
   if (scenario === 'visual-feedback')
@@ -102,10 +103,6 @@ export async function verifyEvidence(page, scenario) {
     await expect(page.getByText('Session total', { exact: true })).toHaveCount(0)
     await expect(page.getByRole('menu')).toHaveCount(0)
     await expect(page.getByText('Add participant', { exact: true })).toHaveCount(0)
-  } else if (scenario === 'agent') {
-    await expect(page.getByText('Preloaded skills', { exact: true })).toBeVisible()
-    await expect(page.getByText('Max turns', { exact: true })).toBeVisible()
-    await expect(page.getByText('Save changes', { exact: true })).toBeDisabled()
   } else if (scenario === 'resume') {
     const document = page.getByRole('document', { name: 'Page 1', exact: true })
     await expect(document).toContainText('Alex Morgan')

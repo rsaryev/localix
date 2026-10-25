@@ -1,9 +1,11 @@
-import { settingsEntityUiUri } from '@localixai/mini-app-sdk/navigation'
+import { localixUiUri } from '@localixai/uri'
 import type { SearchProvider } from '../agent-core/search/provider'
 import { catalogHits } from '../search/catalog-hybrid'
 import { AGENTS_COLLECTION } from './semantic'
 
 export interface AgentSearchRow {
+  /** The agent id: the Store lists an agent under it. */
+  id: string
   name: string
   label?: string
   description: string
@@ -29,7 +31,8 @@ export function createAgentsSearchProvider(port: AgentsSearchPort): SearchProvid
         nameOf: (agent) => agent.name,
         fields: (agent) => [agent.label, agent.name, agent.description],
         hit: (agent, score) => ({
-          id: settingsEntityUiUri('agents', 'agent', agent.name, query.projectId ?? ''),
+          // An agent's page is its Store page; there is no Settings page of agents any more.
+          id: localixUiUri('work-item', ['store'], { kind: 'agent', id: agent.id }),
           domain: 'agents',
           title: agent.label || agent.name,
           subtitle: agent.description,

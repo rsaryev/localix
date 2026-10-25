@@ -73,7 +73,7 @@ export type ComposerTipGate = z.infer<typeof composerTipGateSchema>
 /**
  * A QUICK ACTION on a tip: the one click that acts on what the tip just said.
  *
- * A tip that ends in "…in Settings → Plugins" has already lost most of its readers to
+ * A tip that ends in "…in the Store" has already lost most of its readers to
  * the navigation. Both kinds reuse a path the product already has — the composer bus
  * that stages text, and the URI navigation every agent action, search hit and `/open`
  * result goes through — so a tip opens exactly what a link in a message would, and a

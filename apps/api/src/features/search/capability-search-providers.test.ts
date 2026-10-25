@@ -15,31 +15,40 @@ import { searchHitsOf } from '@localixai/mini-app-sdk/backend'
 const scopedQuery: SearchQuery = { text: 'target', projectId: 'project/a' }
 
 describe('capability search navigation', () => {
-  test('uses exact, encoded, project-scoped settings URIs for every registry domain', async () => {
+  test('opens the Store page of every registry item, in the scope it lives in', async () => {
     const seen: Array<string | null | undefined> = []
     const providers = [
       createSkillsSearchProvider({
         listSkills: async (_userId, projectId) => {
           seen.push(projectId)
-          return [{ name: 'target/skill', description: 'Target skill' }]
+          return [{ name: 'target/skill', description: 'Target skill', projectId: 'project/a' }]
         },
       }),
       createPluginsSearchProvider({
         listPlugins: async (_userId, projectId) => {
           seen.push(projectId)
-          return [{ name: 'target/plugin', displayName: 'Target plugin', description: 'Plugin' }]
+          return [
+            {
+              name: 'target/plugin',
+              source: 'target@market',
+              displayName: 'Target plugin',
+              description: 'Plugin',
+            },
+          ]
         },
       }),
       createMcpSearchProvider({
         listServers: async (_userId, projectId) => {
           seen.push(projectId)
-          return [{ name: 'target/mcp', description: 'MCP server' }]
+          return [{ name: 'target/mcp', description: 'MCP server', projectId: 'project/a' }]
         },
       }),
       createAgentsSearchProvider({
         listAgents: async (_userId, projectId) => {
           seen.push(projectId)
-          return [{ name: 'target/agent', label: 'Target agent', description: 'Delegate' }]
+          return [
+            { id: 'cc:a1', name: 'target/agent', label: 'Target agent', description: 'Delegate' },
+          ]
         },
       }),
     ]
@@ -50,10 +59,10 @@ describe('capability search navigation', () => {
 
     expect(seen).toEqual(Array.from({ length: providers.length }, () => 'project/a'))
     expect(hits.map((group) => group[0]?.id)).toEqual([
-      'localix://ui/settings/skills/skill-target%2Fskill?scope=project%2Fa',
-      'localix://ui/settings/plugins/plugin-target%2Fplugin?scope=project%2Fa',
-      'localix://ui/settings/mcp/mcp-target%2Fmcp?scope=project%2Fa',
-      'localix://ui/settings/agents/agent-target%2Fagent?scope=project%2Fa',
+      'localix://ui/work-item/store?kind=skill&id=project%3Atarget%2Fskill',
+      'localix://ui/work-item/store?kind=plugin&id=target%40market',
+      'localix://ui/work-item/store?kind=mcp-server&id=project%3Atarget%2Fmcp',
+      'localix://ui/work-item/store?kind=agent&id=cc%3Aa1',
     ])
   })
 
@@ -67,7 +76,7 @@ describe('capability search navigation', () => {
     })
     const [hit] = searchHitsOf(await provider.search('user', { text: 'target', projectId: null }))
     expect(received).toBeNull()
-    expect(hit?.id).toBe('localix://ui/settings/plugins/plugin-target?scope=')
+    expect(hit?.id).toBe('localix://ui/work-item/store?kind=plugin')
   })
 
   test('does not turn a sparse match across a long plugin description into a result', async () => {

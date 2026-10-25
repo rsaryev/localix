@@ -1,5 +1,5 @@
 import type { ComposerTip } from './contracts'
-import { insertAction, settingsAction, vaultAction } from './tips-actions'
+import { insertAction, settingsAction, storeAction, vaultAction } from './tips-actions'
 
 /**
  * The hand-written half of the composer tip pool: what the PRODUCT can do, stated
@@ -152,11 +152,11 @@ export const CURATED_TIPS: readonly CuratedTip[] = [
   {
     id: 'agent-rules',
     text: 'Each agent carries its own rules — narrow what one may touch without touching the others.',
-    actions: [settingsAction('rules', 'Open Rules')],
+    actions: [settingsAction('permissions', 'Open Permissions')],
   },
   {
     id: 'tools-surface',
     text: 'Turning a tool off removes it from the roster the model sees — not just from the menu.',
-    actions: [settingsAction('tools', 'Open Tools')],
+    actions: [storeAction('agent', 'Open Agents')],
   },
 ]

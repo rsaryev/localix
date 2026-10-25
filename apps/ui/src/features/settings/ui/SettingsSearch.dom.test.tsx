@@ -106,7 +106,7 @@ describe('SettingsSearch combobox', () => {
       await act(async () => {
         // A query with at least two hits is what the pointer assertions below need;
         // they act on the SECOND option.
-        setInputValue(input, 'skill')
+        setInputValue(input, 'model')
         await settle()
       })
 

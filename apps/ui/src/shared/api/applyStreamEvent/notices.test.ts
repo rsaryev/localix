@@ -31,7 +31,7 @@ describe('a hook notice on the transcript', () => {
       text: 'Webhooks reported a problem',
       detail:
         'The webhook endpoint rejected the delivery.\nMini app: Webhooks · onAssistantMessage\nHTTP 404 Not Found',
-      recovery: ['open-settings:mini-apps/mini-app-webhooks'],
+      recovery: ['open-store:mini-app/webhooks'],
     })
   })
 

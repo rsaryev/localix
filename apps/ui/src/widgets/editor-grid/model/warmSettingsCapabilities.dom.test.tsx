@@ -1,6 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
-import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 
 /** An empty but STRUCTURALLY COMPLETE snapshot: these tests assert when it is fetched, never what it holds. */
 const EMPTY_CAPABILITY_SNAPSHOT = {
@@ -57,9 +56,6 @@ describe('warm-hidden Settings data sources', () => {
     const { act } = React
     const { backendClient } = await import('@/shared/api/client')
     const { useAgents } = await import('@/shared/contrib/useAgents')
-    const { useMcpServers } = await import('@/features/settings/model/useMcpServers')
-    const { usePlugins } = await import('@/features/settings/model/usePlugins')
-    const { useSkills } = await import('@/features/settings/model/useSkills')
     const { WorkItemVisibilityProvider } = await import('@localixai/mini-app-sdk/ui/visibility')
 
     // Plugins, agents and MCP servers are no longer three endpoints — they arrive in
@@ -74,10 +70,7 @@ describe('warm-hidden Settings data sources', () => {
     // own — they are fields of the document above.
 
     function Registries() {
-      useSkills('')
-      usePlugins('')
       useAgents('')
-      useMcpServers('')
       return null
     }
     function Surface({ visible }: { visible: boolean }) {
@@ -99,54 +92,8 @@ describe('warm-hidden Settings data sources', () => {
       root.render(<Surface visible />)
       await settle()
     })
-    // FIVE registries, ONE read between them: plugins, agents, agent providers and MCP
-    // servers all project the same document, so they can neither fan out nor disagree.
+    // One read: the registries project the same document, so they can neither fan out nor disagree.
     expect(snapshot).toHaveBeenCalledTimes(1)
-
-    await act(async () => root.unmount())
-    snapshot.mockRestore()
-  })
-
-  test('only the active capability leaf loads after a hidden surface becomes visible', async () => {
-    const React = await import('react')
-    const { createRoot } = await import('react-dom/client')
-    const { act } = React
-    const { backendClient } = await import('@/shared/api/client')
-    const { CapabilitiesSettings } = await import('@/features/settings/ui/CapabilitiesSettings')
-    const { WorkItemVisibilityProvider } = await import('@localixai/mini-app-sdk/ui/visibility')
-
-    // The agent picker reads the installation catalog; the active Tools leaf reads the
-    // selected agent's policy. Each scope is read once, and inactive leaves do no work.
-    const snapshot = spyOn(backendClient, 'fetchCapabilitySnapshot').mockResolvedValue(
-      EMPTY_CAPABILITY_SNAPSHOT,
-    )
-
-    function Surface({ visible }: { visible: boolean }) {
-      return (
-        <WorkItemVisibilityProvider visible={visible}>
-          <CapabilitiesSettings activeTab="tools" onTabChange={() => {}} projects={[]} />
-        </WorkItemVisibilityProvider>
-      )
-    }
-
-    const root = createRoot(document.createElement('div'))
-    await act(async () => {
-      root.render(<Surface visible={false} />)
-      await settle()
-    })
-    expect(snapshot).toHaveBeenCalledTimes(0)
-
-    await act(async () => {
-      root.render(<Surface visible />)
-      await settle()
-    })
-    expect(snapshot).toHaveBeenCalledTimes(2)
-    expect(snapshot.mock.calls.map((call) => call[0])).toEqual(
-      expect.arrayContaining([
-        { projectId: null, agentId: null },
-        { projectId: null, agentId: DEFAULT_AGENT_ID },
-      ]),
-    )
 
     await act(async () => root.unmount())
     snapshot.mockRestore()
@@ -160,12 +107,10 @@ describe('warm-hidden Settings data sources', () => {
     const { backendClient } = await import('@/shared/api/client')
     const { effectiveConfigApi } = await import('@/shared/api/effectiveConfigApi')
     const { DiagnosticsSettings } = await import('@/features/settings/ui/DiagnosticsSettings')
-    const { MarketplacesPanel } = await import('@/features/settings/ui/MarketplacesPanel')
     const { PreferencesSettings } = await import('@/features/settings/ui/PreferencesSettings')
     const { WorkItemVisibilityProvider } = await import('@localixai/mini-app-sdk/ui/visibility')
 
     const projects = spyOn(backendClient, 'listProjects').mockResolvedValue([])
-    const markets = spyOn(backendClient, 'listMarketplaces').mockResolvedValue([])
     const config = spyOn(effectiveConfigApi, 'get').mockImplementation(() => new Promise(() => {}))
 
     function Surface({ visible }: { visible: boolean }) {
@@ -174,7 +119,6 @@ describe('warm-hidden Settings data sources', () => {
           <WorkItemVisibilityProvider visible={visible}>
             <PreferencesSettings />
             <DiagnosticsSettings />
-            <MarketplacesPanel />
           </WorkItemVisibilityProvider>
         </MemoryRouter>
       )
@@ -186,7 +130,6 @@ describe('warm-hidden Settings data sources', () => {
       await settle()
     })
     expect(projects).toHaveBeenCalledTimes(0)
-    expect(markets).toHaveBeenCalledTimes(0)
     expect(config).toHaveBeenCalledTimes(0)
 
     await act(async () => {
@@ -194,12 +137,10 @@ describe('warm-hidden Settings data sources', () => {
       await settle()
     })
     expect(projects).toHaveBeenCalledTimes(1)
-    expect(markets).toHaveBeenCalledTimes(1)
     expect(config).toHaveBeenCalledTimes(1)
 
     await act(async () => root.unmount())
     projects.mockRestore()
-    markets.mockRestore()
     config.mockRestore()
   })
 })

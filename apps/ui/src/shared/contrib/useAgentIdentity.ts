@@ -31,12 +31,9 @@ export interface AgentIdentity {
  * page is somewhere you can stay.
  */
 export function agentProfileUri(identity: AgentIdentity): string {
-  // `agent`, not `agentId`: a location's parameter names are lowercase by the URI grammar
-  // (`UI_LOCATION_PARAM_KEY`), and a camelCase one is rejected with the whole destination —
-  // which shows up as a click that does nothing at all.
-  return localixUiUri('work-item', ['agent'], {
-    agent: identity.agentId ?? identity.handle,
-    scope: identity.scope,
+  return localixUiUri('work-item', ['store'], {
+    kind: 'agent',
+    id: identity.agentId ?? identity.handle,
   })
 }
 

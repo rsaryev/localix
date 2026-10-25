@@ -54,15 +54,15 @@ describe('parseCoreUiUri', () => {
       anchor: undefined,
     })
     expect(
-      parseCoreUiUri('localix://ui/settings/plugins/plugin-sample-plugin?scope=PRJ-1'),
+      parseCoreUiUri('localix://ui/settings/permissions/plugin-sample-plugin?scope=PRJ-1'),
     ).toEqual({
       kind: 'settings',
-      tab: 'plugins',
+      tab: 'permissions',
       anchor: 'plugin-sample-plugin',
       scope: 'PRJ-1',
     })
-    expect(parseCoreUiUri('localix://ui/settings/plugins?unknown=value')).toBeNull()
-    expect(parseCoreUiUri('localix://ui/settings/plugins?scope=a&scope=b')).toBeNull()
+    expect(parseCoreUiUri('localix://ui/settings/permissions?unknown=value')).toBeNull()
+    expect(parseCoreUiUri('localix://ui/settings/permissions?scope=a&scope=b')).toBeNull()
   })
   it('command', () => {
     setUiCommands([
@@ -120,9 +120,9 @@ describe('navigateUi', () => {
   it('routes each target to the right navigator', () => {
     const { calls, deps } = spyDeps()
     setUiCommands([{ id: 'c1', label: 'C1', effect: 'read', run: () => {} }])
-    navigateUi('localix://ui/settings/plugins/a/plugins.entry', deps)
+    navigateUi('localix://ui/settings/permissions/a/permissions.entry', deps)
     invokeUi('localix://ui/command/c1', deps)
-    expect(calls).toEqual(['settings:plugins:a:', 'command:c1'])
+    expect(calls).toEqual(['settings:permissions:a:', 'command:c1'])
   })
 
   it('unknown target is a no-op', () => {
@@ -170,12 +170,12 @@ describe('navigateUi', () => {
         {
           type: 'ui.navigate',
           label: 'Open sample plugin',
-          uri: 'localix://ui/settings/plugins/plugin-sample-plugin?scope=PRJ-1',
+          uri: 'localix://ui/settings/permissions/plugin-sample-plugin?scope=PRJ-1',
         },
         deps,
       ),
     ).toBe(true)
-    expect(calls).toEqual(['settings:plugins:plugin-sample-plugin:PRJ-1'])
+    expect(calls).toEqual(['settings:permissions:plugin-sample-plugin:PRJ-1'])
   })
 
   it('uses a separate navigation URI when the hit identity is not openable', () => {
@@ -184,12 +184,12 @@ describe('navigateUi', () => {
       activateSearchHit(
         {
           id: 'localix://resource/model/openai%2Fgpt',
-          uri: 'localix://ui/settings/plugins?scope=PRJ-1',
+          uri: 'localix://ui/settings/permissions?scope=PRJ-1',
         },
         deps,
       ),
     ).toBe(true)
-    expect(calls).toEqual(['settings:plugins::PRJ-1'])
+    expect(calls).toEqual(['settings:permissions::PRJ-1'])
   })
 
   it('grants write authority only to a canonical client command search hit', () => {

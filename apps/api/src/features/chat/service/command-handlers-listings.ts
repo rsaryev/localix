@@ -149,7 +149,7 @@ export async function handleSkillsControlCommand(
   const skills = filterDisabledSkills(discoveredSkills, overrides)
   const reply =
     skills.length === 0
-      ? 'No skills yet. Create one in Settings → Skills, drop a `SKILL.md` in `.localix/skills/`, or ask me to save a procedure as a skill.'
+      ? 'No skills yet. Create one in the Store (Skills), drop a `SKILL.md` in `.localix/skills/`, or ask me to save a procedure as a skill.'
       : [
           '**Available skills** — run with `/<name>`:',
           '',

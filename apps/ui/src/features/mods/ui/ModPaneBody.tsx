@@ -6,7 +6,7 @@ import { PanelHeader } from '@localixai/kit/panel-header'
 import { runMiniAppAction } from '@localixai/mini-app-sdk/ui'
 import { useGridStore } from '@/entities/workspace-grid/model'
 import { modsApi, type ModPaneRef } from '@/shared/api/modsApi'
-import { modPaneTabPayload, openPluginSettings } from '../model/paneTabs'
+import { modPaneTabPayload, openPluginPage } from '../model/paneTabs'
 import { closeModPane, useModPane, useModsOverview } from '../model/useMods'
 import { ModClientScope, type ModClientScopeValue } from './ModClient'
 import { ModActionBarContext, ModControlContext, ModSiteContext } from './modSite'
@@ -95,8 +95,8 @@ function ModPane({ pane }: { pane: ModPaneRef }) {
           <IconButton
             size="sm"
             aria-label={`${pane.plugin} settings`}
-            tooltip="Plugin settings"
-            onClick={() => openPluginSettings(pane.plugin)}
+            tooltip="Open the plugin in the Store"
+            onClick={() => openPluginPage(pane.plugin)}
           >
             <Settings2 />
           </IconButton>

@@ -28,7 +28,7 @@ test('core and mini app tools share pins, grouping and a catalog; management ope
       isMobile={false}
       statusSessionId={null}
       sidebarOpen={false}
-      miniAppsManageUri="localix://ui/settings/mini-apps"
+      miniAppsManageUri="localix://ui/work-item/mini-app-store"
       onNavigateUi={(uri) => destinations.push(uri)}
       onOpenSidebar={() => {
         sidebarOpens += 1
@@ -140,7 +140,7 @@ test('core and mini app tools share pins, grouping and a catalog; management ope
       (item) => item.textContent === 'Manage mini apps…',
     )!
     await React.act(async () => manage.click())
-    expect(destinations).toEqual(['localix://ui/settings/mini-apps'])
+    expect(destinations).toEqual(['localix://ui/work-item/mini-app-store'])
     expect(sidebarOpens).toBe(0)
   } finally {
     await React.act(async () => root.unmount())

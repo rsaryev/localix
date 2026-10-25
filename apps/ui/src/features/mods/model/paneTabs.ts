@@ -1,7 +1,6 @@
 import type { ModPaneRef } from '@/shared/api/modsApi'
-import { inspector } from '@/shared/lib/inspectorBus'
-import { pluginSettingsAnchor } from '@/shared/lib/settingsAnchors'
-import { navigateSettings } from '@/shared/lib/settingsNavBus'
+import { miniAppContribSnapshot } from '@/shared/contrib/enabledMiniApps'
+import { openStore } from '@/shared/lib/openStore'
 
 /**
  * A mod's pane is a workspace tab of its own (`mod-pane`), one per pane: the tabs mirror the panes
@@ -57,8 +56,16 @@ export function planPaneTabs(input: {
   }
 }
 
-/** Settings → Plugins, on one plugin's row: from a pane's header and its tab's menu. */
-export function openPluginSettings(plugin: string): void {
-  inspector.openSettings()
-  navigateSettings('plugins', pluginSettingsAnchor(plugin))
+/**
+ * The Store, on one plugin's page: from a pane's header and its tab's menu. The Store lists a
+ * plugin as `<plugin>@<marketplace>`, which the capability document records as its source; a
+ * plugin it cannot place there opens the Plugins shelf.
+ */
+export function openPluginPage(plugin: string): void {
+  const source = miniAppContribSnapshot().document?.plugins.find(
+    (record) => record.name === plugin,
+  )?.source
+  openStore(
+    source?.includes('@') ? { ref: { kind: 'plugin', id: source } } : { shelf: 'package:plugin' },
+  )
 }

@@ -1,4 +1,4 @@
-import { ResearchSection } from './capabilities/ResearchSection'
+import { ResearchSection } from './ResearchSection'
 import { ContextExclusionsSection } from './ContextExclusionsSection'
 
 /** Global access and context policies never depend on the selected capability agent. */

@@ -45,15 +45,15 @@ describe('searchSettings', () => {
   })
 
   it('ranks a title match above a description-only match', () => {
-    const hits = searchSettings(SETTINGS_INDEX, 'model')
-    // Resolved diagnostics has a title match; MCP servers mention models only in their description.
+    const hits = searchSettings(SETTINGS_INDEX, 'rule')
+    // Permission rules has a title match; a scrollbar marker setting only mentions it in passing.
     const ids = hits.map((hit) => hit.entry.id)
-    expect(ids.indexOf('diag.models')).toBeLessThan(ids.indexOf('cap.mcp'))
+    expect(ids.indexOf('permissions.rules')).toBeLessThan(ids.indexOf('editor.scrollbar-markers'))
   })
 
   it('applies AND semantics across terms', () => {
-    const both = searchSettings(SETTINGS_INDEX, 'tool bash')
-    expect(both.some((h) => h.entry.id === 'cap.tools')).toBe(true)
+    const both = searchSettings(SETTINGS_INDEX, 'allow deny')
+    expect(both.some((h) => h.entry.id === 'permissions.rules')).toBe(true)
     // A term that matches nothing drops the entry entirely.
     const none = searchSettings(SETTINGS_INDEX, 'permission zzzznope')
     expect(none).toEqual([])
@@ -67,13 +67,12 @@ describe('searchSettings', () => {
   it('sends a permission search to the rules tab', () => {
     const hits = searchSettings(SETTINGS_INDEX, 'permission')
     expect(hits.some((h) => h.entry.id === 'permissions.rules')).toBe(true)
-    expect(hits.some((h) => h.entry.id === 'cap.tools')).toBe(false)
   })
 
   it('restricts results with a @tab: filter token', () => {
-    const hits = searchSettings(SETTINGS_INDEX, '@tab:tools')
+    const hits = searchSettings(SETTINGS_INDEX, '@tab:permissions')
     expect(hits.length).toBeGreaterThan(0)
-    expect(hits.every((h) => h.entry.tab === 'tools')).toBe(true)
+    expect(hits.every((h) => h.entry.tab === 'permissions')).toBe(true)
   })
 
   it('combines a @tab: filter with a term', () => {

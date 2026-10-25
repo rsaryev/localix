@@ -17,7 +17,7 @@ test('deleted authors keep their snapshot and never resolve through a replacemen
     name: 'Old name',
     scope: '',
   })
-  expect(agentProfileUri(identity)).toContain('deleted-id')
+  expect(agentProfileUri(identity)).toBe('localix://ui/work-item/store?kind=agent&id=deleted-id')
   expect(
     resolveAuthorIdentity('new-id', undefined, [
       { record: { id: 'new-id', handle: 'reviewer', label: 'Reviewer' }, projectId: 'p' },

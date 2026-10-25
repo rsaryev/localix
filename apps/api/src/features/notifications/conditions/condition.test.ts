@@ -27,7 +27,7 @@ const down = (problem: string) => ({
   title: 'Could not connect to the MCP server “github”',
   body: problem,
   origin: { kind: 'application' as const, label: 'github' },
-  actions: [recoveryAction('open-settings:mcp')] as const,
+  actions: [recoveryAction('open-store:mcp-server/github')] as const,
 })
 
 describe('a standing condition', () => {

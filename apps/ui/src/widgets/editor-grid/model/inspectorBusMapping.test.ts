@@ -134,9 +134,9 @@ describe('inspectorRequestToEffects', () => {
     const global = asOpen(
       inspectorRequestToEffects({
         kind: 'work-item',
-        workKind: 'agent',
-        id: 'agent:x',
-        title: 'X',
+        workKind: 'stats',
+        id: 'stats',
+        title: 'Usage',
         scope: null,
       })[0],
     )

@@ -1,7 +1,5 @@
 import type { MiniAppProblem } from '@localixai/mini-app-sdk/backend'
 
-import { settingsEntityAnchor } from '@localixai/mini-app-sdk/navigation'
-
 import { errorMessage } from '../../../lib/errors'
 import { recoveryAction } from '../recovery'
 import type { BundledStagingFailure } from '../../mini-apps/bundled-install'
@@ -64,16 +62,11 @@ export function createMiniAppConditions(
   const labels = new Map<string, string>()
   const label = (name: string) => labels.get(name) ?? name
   const application = (name: string): InboxOrigin => ({ kind: 'application', label: label(name) })
-  // Every row lands on the app's own row in Settings → Mini apps — where it is configured or
-  // turned off — or, for the set as a whole, the Mini apps tab.
+  // Every row lands on the app's own Store page — where it is configured or turned off — or,
+  // for the set as a whole, the Mini apps shelf.
   const openApp = (name: string) =>
-    [
-      recoveryAction(
-        `open-settings:mini-apps/${settingsEntityAnchor('mini-app', name)}`,
-        'Open mini app settings',
-      ),
-    ] as const
-  const openApps = () => [recoveryAction('open-settings:mini-apps', 'Open mini apps')] as const
+    [recoveryAction(`open-store:mini-app/${name}`, 'Open mini app')] as const
+  const openApps = () => [recoveryAction('open-store:mini-app', 'Open mini apps')] as const
   const MINI_APPS = { kind: 'application', label: 'Mini apps' } as const
 
   return {

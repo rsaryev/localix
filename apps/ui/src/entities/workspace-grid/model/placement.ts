@@ -36,9 +36,6 @@ const PLACEMENT_POLICY: Record<CoreWorkItemKind, PlacementRole> = {
   'live-file-change': 'editor',
   'message-replay': 'editor',
   settings: 'editor',
-  // A profile is read and edited like a document, so it opens where documents do — beside the
-  // Settings tab it is also reachable from, not stacked into the companion column.
-  agent: 'editor',
   stats: 'editor',
   'mini-app-view': 'editor',
   'global-search': 'editor',

@@ -1,50 +1,8 @@
-import { afterEach, expect, test } from 'bun:test'
+import { expect, test } from 'bun:test'
 import type { MiniAppUiHost, UiAnchorContribution, UiAnchorNode } from '@localixai/mini-app-sdk/ui'
-import type { PluginRecord } from '@/shared/api/contracts'
-import { __resetMiniAppContrib, refetchMiniAppContrib } from '@/shared/contrib/enabledMiniApps'
 import { registerUi } from './contrib'
 
-afterEach(__resetMiniAppContrib)
-
-test('exposes exact-scope plugin rows to the centralized /open anchor tree', async () => {
-  const plugin = {
-    name: 'sample-plugin',
-    displayName: 'Sample Workspace',
-    projectId: 'PRJ-1',
-    enabled: true,
-  } as PluginRecord
-  await refetchMiniAppContrib(
-    {
-      // ONE loader, not the former panels/plugins/views fan-out: the store now reads a
-      // single server-computed snapshot, which is what makes it impossible for the
-      // plugin list and the tool list to disagree about which plugins are on.
-      loadSnapshot: async () => ({
-        revision: 1,
-        scope: { projectId: 'PRJ-1', agentId: null },
-        plugins: [plugin],
-        miniApps: [],
-        miniAppCommands: [],
-        tools: {
-          enabled: [],
-          disabled: [],
-          catalog: [],
-          categoryLabels: {},
-          mcp: [],
-          mcpUnprobedServers: [],
-        },
-        views: [],
-        agents: [],
-        commands: [],
-        mcp: [],
-        skills: [],
-        tips: [],
-        grammar: { kinds: [], effects: [], classes: [], examples: [] },
-        themes: [],
-      }),
-    },
-    async () => {},
-  )
-
+function settingsAnchors(): UiAnchorContribution {
   let contribution: UiAnchorContribution | undefined
   const noop = { register: () => true }
   registerUi({
@@ -63,11 +21,14 @@ test('exposes exact-scope plugin rows to the centralized /open anchor tree', asy
     fileFormats: noop,
     sessionEvents: noop,
   } as unknown as MiniAppUiHost)
+  return contribution!
+}
 
-  const rows = contribution?.listChildren?.('localix://ui/settings/plugins') as UiAnchorNode[]
-  expect(rows.find((row) => row.label === 'Sample Workspace')).toMatchObject({
-    uri: 'localix://ui/settings/plugins/plugin-sample-plugin?scope=PRJ-1',
-    hasChildren: false,
-    icon: 'plugin',
-  })
+test('the /open anchor tree lists the sections of a Settings page, and no page of items', () => {
+  const anchors = settingsAnchors()
+  const rows = anchors.listChildren?.('localix://ui/settings/permissions') as UiAnchorNode[]
+  expect(rows.map((row) => row.label)).toContain('Permission rules')
+  // Plugins, skills, MCP servers, agents and mini apps are managed in the Store.
+  for (const moved of ['plugins', 'skills', 'mcp', 'agents', 'mini-apps'])
+    expect(anchors.listChildren?.(`localix://ui/settings/${moved}`)).toEqual([])
 })

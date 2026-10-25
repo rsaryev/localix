@@ -1,6 +1,7 @@
 import {
-  capabilitySettingsUiUri,
+  capabilityUiUri,
   localixResourceUri,
+  localixUiUri,
   settingsUiUri,
 } from '@localixai/mini-app-sdk/navigation'
 import type { CapabilityResourceKind } from '@localixai/mini-app-sdk/navigation'
@@ -26,9 +27,14 @@ export function settingsAction(tab: string, label: string): ComposerTipAction {
   return { kind: 'navigate', label, uri: settingsUiUri(tab) }
 }
 
+/** Open the Store on one kind's shelf: where agents, skills, MCP servers and plugins are managed. */
+export function storeAction(kind: string, label: string): ComposerTipAction {
+  return { kind: 'navigate', label, uri: localixUiUri('work-item', ['store'], { kind }) }
+}
+
 /**
- * Open the settings ROW of one capability — the plugin that is off, the skill just
- * mentioned — rather than its tab. A tip that says "enable X" should land on X, not
+ * Open the Store page of one capability — the plugin that is off, the skill just
+ * mentioned — rather than its shelf. A tip that says "enable X" should land on X, not
  * on a list the user then has to search.
  */
 export function capabilityAction(
@@ -37,7 +43,7 @@ export function capabilityAction(
   scope: string,
   label: string,
 ): ComposerTipAction {
-  return { kind: 'navigate', label, uri: capabilitySettingsUiUri({ kind, id, scope }) }
+  return { kind: 'navigate', label, uri: capabilityUiUri({ kind, id, scope }) }
 }
 
 /**

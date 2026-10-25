@@ -2,24 +2,21 @@ import { describe, expect, test } from 'bun:test'
 import { classifyMarkdownLink, markdownUrlTransform } from './markdownLink'
 
 describe('classifyMarkdownLink', () => {
-  test('preserves only bounded profile destinations for the registered UI resolver', () => {
-    for (const href of [
-      'localix://ui/work-item/agent?agent=&scope=p&handle=qa',
-      'localix://ui/work-item/agent?agent=native%3Aqa&section=rules',
-    ]) {
-      expect(classifyMarkdownLink(href)).toEqual({ kind: 'agent-profile', href })
-      expect(markdownUrlTransform(href, 'href')).toBe(href)
-    }
-    for (const href of [
-      'localix://ui/work-item/agent?agent=a&agent=b',
-      'localix://ui/work-item/agent?agent=a&unknown=1',
-      'localix://ui/work-item/agent?agent=a&section=delete',
-      'localix://ui/work-item/agent?handle=qa',
-      'localix://ui/work-item/agent?agent=a#route',
-      'localix://ui/work-item/agent?agent=%00',
-      'localix://ui/action/command/agent.delete',
+  test('preserves only the Store page of one agent for the registered UI resolver', () => {
+    const href = 'localix://ui/work-item/store?kind=agent&id=native%3Aqa'
+    expect(classifyMarkdownLink(href)).toEqual({ kind: 'agent-profile', href })
+    expect(markdownUrlTransform(href, 'href')).toBe(href)
+    // Anything but a lone agent id is not an agent link; the Store resolver judges it as the
+    // ordinary view link it is.
+    for (const other of [
+      'localix://ui/work-item/store?kind=agent&id=a&id=b',
+      'localix://ui/work-item/store?kind=agent&id=a&unknown=1',
+      'localix://ui/work-item/store?kind=plugin&id=a',
+      'localix://ui/work-item/store?kind=agent',
+      'localix://ui/work-item/store?kind=agent&id=%00',
     ])
-      expect(markdownUrlTransform(href, 'href'), href).toBeUndefined()
+      expect(classifyMarkdownLink(other).kind, other).not.toBe('agent-profile')
+    expect(markdownUrlTransform('localix://ui/action/command/agent.delete', 'href')).toBeUndefined()
   })
   test('routes canonical and provider-compatible local file links in-app', () => {
     const plan = '\u041f\u043b\u0430\u043d'

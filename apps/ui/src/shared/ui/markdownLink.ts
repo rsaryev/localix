@@ -44,8 +44,8 @@ function supportedExternalHref(href: string): { href: string; newTab: boolean } 
   return null
 }
 
-/** Files and agent profiles have their own strict parsers above; a link they reject stays inert. */
-const OWNED_VIEW_PREFIXES = ['localix://ui/work-item/file', 'localix://ui/work-item/agent']
+/** Files have their own strict parser above; a link it rejects stays inert. */
+const OWNED_VIEW_PREFIXES = ['localix://ui/work-item/file']
 
 function isAppViewHref(href: string): boolean {
   if (OWNED_VIEW_PREFIXES.some((prefix) => href.startsWith(prefix))) return false

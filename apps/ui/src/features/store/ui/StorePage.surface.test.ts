@@ -25,3 +25,9 @@ test('a Store search hit opens the Store on that listing’s page', () => {
     payload: { ref: { kind: 'plugin', id: 'lint@claude-plugins-official' } },
   })
 })
+
+test('a kind alone opens the Store on that kind’s shelf', () => {
+  expect(surface.resolve({ kind: 'plugin' })).toMatchObject({
+    payload: { shelf: 'package:plugin' },
+  })
+})

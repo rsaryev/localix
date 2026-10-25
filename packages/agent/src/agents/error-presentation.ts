@@ -24,7 +24,7 @@ import { classifyAgentError, type AgentErrorInfo } from './error-classification'
  * control beside the sentence is what makes it actionable, and because a Retry offered for a
  * spent quota is a promise it cannot keep:
  *
- *   retry | open-settings:<tab>[/<anchor>] | sign-in:<connectionId> | restart:<subject>
+ *   retry | open-settings:<tab>[/<anchor>] | open-store:<kind>[/<id>] | sign-in:<connectionId> | restart:<subject>
  *
  * The host resolves each verb to a destination (`apps/api` `notifications/recovery.ts`).
  */
@@ -32,6 +32,7 @@ import { classifyAgentError, type AgentErrorInfo } from './error-classification'
 export type Recovery =
   | 'retry'
   | `open-settings:${string}`
+  | `open-store:${string}`
   | `sign-in:${string}`
   | `restart:${string}`
 

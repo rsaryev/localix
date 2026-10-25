@@ -68,12 +68,12 @@ describe('plugin conditions', () => {
     expect(open).toEqual(['plugin:kept'])
   })
 
-  it('reports a dead monitor, cleared by its next start, on the plugin’s settings row', async () => {
+  it('reports a dead monitor, cleared by its next start, on the Plugins shelf', async () => {
     const { test, plugins } = await setup()
     plugins.monitorStopped('chat', 'tail', 'Its command ended.')
     const [row] = await openRows(test)
     expect(row?.title).toBe('The chat monitor “tail” stopped')
-    expect(JSON.stringify(row?.actions)).toContain('localix://ui/settings/plugins/plugin-chat')
+    expect(JSON.stringify(row?.actions)).toContain('kind=plugin')
     plugins.monitorStarted('chat', 'tail')
     expect(await openRows(test)).toEqual([])
   })

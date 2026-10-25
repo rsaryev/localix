@@ -1,9 +1,4 @@
-import {
-  parseLocalixUri,
-  settingsEntityAnchor,
-  settingsEntityUiUri,
-  settingsUiUri,
-} from '@localixai/mini-app-sdk/navigation'
+import { parseLocalixUri, settingsUiUri } from '@localixai/mini-app-sdk/navigation'
 import { currentSettingsTab, SETTINGS_STRING_TABS } from '@/shared/routing/routes'
 
 export interface SettingsAnchorOptions {
@@ -17,26 +12,6 @@ export interface SettingsAnchorOptions {
 /** Canonical hierarchical URI for a settings tab or indexed setting. */
 export function settingsTargetUri(options: SettingsAnchorOptions = {}): string {
   return settingsUiUri(options.tab, options)
-}
-
-/** Stable DOM anchor for one plugin row in Settings → Capabilities → Plugins. */
-export function pluginSettingsAnchor(pluginName: string): string {
-  return settingsEntityAnchor('plugin', pluginName)
-}
-
-/** Canonical cross-UI link to one plugin in an exact capability scope. */
-export function pluginSettingsUri(pluginName: string, scope = ''): string {
-  return settingsEntityUiUri('plugins', 'plugin', pluginName, scope)
-}
-
-/** Stable DOM anchor for one mini app row in Settings → Capabilities → Mini apps. */
-export function miniAppSettingsAnchor(app: string): string {
-  return settingsEntityAnchor('mini-app', app)
-}
-
-/** Canonical cross-UI link to one mini app in an exact capability scope. */
-export function miniAppSettingsUri(app: string, scope = ''): string {
-  return settingsEntityUiUri('mini-apps', 'mini-app', app, scope)
 }
 
 export interface ParsedSettingsAnchor {

@@ -29,9 +29,9 @@ describe('capability resource provider', () => {
         'Scope: project PRJ-7',
         'Availability when linked: enabled',
         'Description: Run commands in the workspace.',
-        'Settings URI: localix://ui/settings/tools/tool-bash?scope=PRJ-7',
+        'Open in: localix://ui/settings/permissions?scope=PRJ-7',
         'Link semantics: User-selected context only; linking does not enable or invoke this capability.',
-        'Guidance: Use this capability only if it is available and relevant. If its settings may help, link them with their exact `localix://` URI in your reply — the workbench renders it as a button.',
+        'Guidance: Use this capability only if it is available and relevant. If its page may help, link it with their exact `localix://` URI in your reply — the workbench renders it as a button.',
       ].join('\n'),
     })
   })
@@ -54,7 +54,7 @@ describe('capability resource provider', () => {
       expect(result.ok).toBe(true)
       expect(result.content).toContain(`Kind: ${kind}`)
       expect(result.content).toContain('Availability when linked: disabled')
-      expect(result.content).toContain('Settings URI: localix://ui/settings/')
+      expect(result.content).toContain('Open in: localix://ui/')
       expect(result.content).toContain('exact `localix://` URI in your reply')
       expect(result.content).toContain(
         'Link semantics: User-selected context only; linking does not enable or invoke this capability.',

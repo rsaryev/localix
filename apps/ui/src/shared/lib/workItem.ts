@@ -17,11 +17,6 @@ export const CORE_WORK_ITEM_KINDS = [
   'preview',
   'mini-app-view',
   'live-file-change',
-  // One agent's profile — who it is, what it runs on, what it may use — opened wherever that
-  // agent is named. It is a tab rather than a dialog inside Settings because the same identity
-  // is clicked from a transcript, a mention and the registry, and a destination you can leave
-  // and come back to is the only one all three can share.
-  'agent',
   'stats',
   'problems',
   'settings',

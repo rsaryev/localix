@@ -5,7 +5,8 @@ stores named requests as workspace-local JSON, resolves environment variables, i
 formats, and can explicitly export reviewable request files into a repository.
 
 The bundled mini app is enabled by default. Its tools and workspace surface still follow the active
-agent's capability rules; inspect or change them in **Settings → Capabilities → Mini apps**.
+agent's capability rules; inspect or change them in the Store (**Mini apps**) or the agent's Access
+tab.
 
 ## Contributions
 

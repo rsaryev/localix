@@ -1,5 +1,3 @@
-import { settingsEntityAnchor } from '@localixai/mini-app-sdk/navigation'
-
 import { recoveryAction } from '../recovery'
 import { createConditions, type ConditionJournal } from './condition'
 
@@ -45,11 +43,11 @@ export function createMcpConditions(journal: ConditionJournal): McpConnectionObs
           ? 'The server asked for authorization. Its tools stay unavailable until you sign in from Settings.'
           : error,
         origin: { kind: 'application', label: server.name },
-        // The server's own row in Settings → MCP: where it signs in, restarts and is edited.
+        // The server's own Store page: where it signs in, restarts and is edited.
         actions: [
           recoveryAction(
-            `open-settings:mcp/${settingsEntityAnchor('mcp', server.name)}`,
-            authRequired ? 'Sign in' : 'Open MCP settings',
+            `open-store:mcp-server/${server.name}`,
+            authRequired ? 'Sign in' : 'Open MCP server',
           ),
         ],
       })

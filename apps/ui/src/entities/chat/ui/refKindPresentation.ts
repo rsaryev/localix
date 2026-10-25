@@ -37,10 +37,7 @@ import { scopePath } from '@/shared/routing/routes'
 import { useChatStore } from '../model/store'
 import { selectRefLabelValues } from './refLabelSelector'
 import { ringMessage } from './messageRing'
-import {
-  capabilitySettingsUiUri,
-  parseCapabilityResourceUri,
-} from '@localixai/mini-app-sdk/navigation'
+import { capabilityUiUri, parseCapabilityResourceUri } from '@localixai/mini-app-sdk/navigation'
 
 export const REF_KIND_ICONS: Record<ContextRefKind, LucideIcon> = {
   file: File,
@@ -164,7 +161,7 @@ export const REF_OPEN_ACTIONS: Record<
     if (!ref.uri) return null
     const capability = parseCapabilityResourceUri(ref.uri)
     if (capability && ctx.navigateUi) {
-      return () => ctx.navigateUi?.(capabilitySettingsUiUri(capability))
+      return () => ctx.navigateUi?.(capabilityUiUri(capability))
     }
     const target = resolveUiAnchor(ref.uri)
     if (target?.kind !== 'work-item') return null

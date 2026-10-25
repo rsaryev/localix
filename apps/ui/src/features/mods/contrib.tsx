@@ -55,7 +55,7 @@ let registered = false
 /**
  * Claude Code mods: each pane a mod opens is a workspace tab of its own, and the band above the
  * message box is a strip of the composer's header stack. Which mods are installed, and what each
- * hooks, is in Settings → Plugins.
+ * hooks, is in the Store.
  */
 export function registerUi(host: MiniAppUiHost): void {
   if (registered) return

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 /**
- * Each mod as Settings → Plugins lists it on its plugin's row: its plugin and version, what it hooks, how many panes it has
+ * Each mod as the Store lists it on its plugin's page: its plugin and version, what it hooks, how many panes it has
  * open, and whether it runs — or why it does not.
  */
 

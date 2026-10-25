@@ -275,18 +275,29 @@ export function parseCapabilityResourceUri(uri: string): CapabilityResource | nu
   }
 }
 
-/** Exact settings destination for a capability resource. */
-export function capabilitySettingsUiUri(resource: CapabilityResource): string {
-  const target = {
-    plugin: ['plugins', 'plugin'],
-    'mini-app': ['mini-apps', 'mini-app'],
-    skill: ['skills', 'skill'],
-    tool: ['tools', 'tool'],
-    agent: ['agents', 'agent'],
-    mcp: ['mcp', 'mcp'],
-  } as const
-  // A view is one of a mini app's screens: its settings are the mini app's.
-  if (resource.kind === 'view') return settingsUiUri('mini-apps', { scope: resource.scope })
-  const [tab, entity] = target[resource.kind]
-  return settingsEntityUiUri(tab, entity, resource.id, resource.scope)
+/**
+ * Where a capability resource is managed: its page in the Store, in the scope it lives in. A
+ * plugin the caller knows by name alone (no `@marketplace`) opens the Plugins shelf, a screen opens
+ * its mini app, and a tool, which no package owns, is decided in Settings → Permissions.
+ */
+export function capabilityUiUri(resource: CapabilityResource): string {
+  const store = (kind: string, id?: string) => localixUiUri('work-item', ['store'], { kind, id })
+  const project = resource.scope !== ''
+  switch (resource.kind) {
+    case 'plugin':
+      return store('plugin', resource.id.includes('@') ? resource.id : undefined)
+    case 'mini-app':
+      return store('mini-app', resource.id)
+    // A view is one of a mini app's screens: it is managed with the mini app.
+    case 'view':
+      return store('mini-app', resource.id.split(':')[0])
+    case 'skill':
+      return store('skill', `${project ? 'project' : 'user'}:${resource.id}`)
+    case 'mcp':
+      return store('mcp-server', project ? `project:${resource.id}` : resource.id)
+    case 'agent':
+      return store('agent', resource.id)
+    case 'tool':
+      return settingsUiUri('permissions', { scope: resource.scope })
+  }
 }

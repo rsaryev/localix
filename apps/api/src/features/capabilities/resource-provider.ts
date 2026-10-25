@@ -1,8 +1,5 @@
 import { buildResourceUri, type ResourceRefProvider } from '@localixai/mini-app-sdk/backend'
-import {
-  capabilitySettingsUiUri,
-  parseCapabilityResourceUri,
-} from '@localixai/mini-app-sdk/navigation'
+import { capabilityUiUri, parseCapabilityResourceUri } from '@localixai/mini-app-sdk/navigation'
 import { RESOURCE_PROVIDERS } from '../agent-core/resource-refs/providers'
 
 const PROVIDER = RESOURCE_PROVIDERS.capability
@@ -10,7 +7,7 @@ const PROVIDER = RESOURCE_PROVIDERS.capability
 const LINK_SEMANTICS =
   'User-selected context only; linking does not enable or invoke this capability.'
 const GUIDANCE =
-  'Use this capability only if it is available and relevant. If its settings may help, link them with their exact `localix://` URI in your reply — the workbench renders it as a button.'
+  'Use this capability only if it is available and relevant. If its page may help, link it with their exact `localix://` URI in your reply — the workbench renders it as a button.'
 
 /**
  * Dragged capability references are resource refs: one generic provider keeps the
@@ -47,7 +44,7 @@ export function createCapabilityResourceProvider(): ResourceRefProvider {
         `Scope: ${scope}`,
         `Availability when linked: ${availability}`,
         resource.description ? `Description: ${resource.description}` : null,
-        `Settings URI: ${capabilitySettingsUiUri(resource)}`,
+        `Open in: ${capabilityUiUri(resource)}`,
         `Link semantics: ${LINK_SEMANTICS}`,
         `Guidance: ${GUIDANCE}`,
       ].filter((line): line is string => Boolean(line))

@@ -49,10 +49,10 @@ describe('MessageAuthorLine', () => {
 })
 
 describe('agentProfileUri', () => {
-  test('addresses the record in the scope it lives in', () => {
-    // A project agent is absent from the global registry, so a scopeless link opens the
-    // profile of a record that is not there.
-    expect(agentProfileUri(author)).toContain('agent=code-reviewer')
-    expect(agentProfileUri({ ...author, scope: 'proj-7' })).toContain('scope=proj-7')
+  test('addresses the agent by its id, on its Store page', () => {
+    // An agent id is unique across scopes, so the id alone finds a project agent too.
+    expect(agentProfileUri(author)).toContain('kind=agent')
+    expect(agentProfileUri(author)).toContain('id=code-reviewer')
+    expect(agentProfileUri({ ...author, scope: 'proj-7' })).toBe(agentProfileUri(author))
   })
 })

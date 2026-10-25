@@ -28,7 +28,7 @@ export const userApi = {
   async writeViewState(input: ViewStateWrite): Promise<ViewStateWriteResult> {
     return unwrap(await client.rpc.user.state.$put({ json: input }))
   },
-  /** The agent's tool catalog + category labels (Settings → Tools). */
+  /** The agent's tool catalog + category labels (Settings → Permissions). */
 
   async getUserProfile(signal?: AbortSignal): Promise<UserProfile> {
     // A loopback connection normally fails fast while the desktop sidecar is still

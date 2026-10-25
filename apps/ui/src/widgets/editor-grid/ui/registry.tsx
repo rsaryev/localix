@@ -49,11 +49,6 @@ const ProblemsTab = lazy(() =>
 const SettingsPanel = lazy(() =>
   import('@/features/settings/ui/SettingsPanel').then((m) => ({ default: m.SettingsPanel })),
 )
-const AgentProfileTab = lazy(() =>
-  import('@/features/settings/ui/agent-profile/AgentProfileTab').then((m) => ({
-    default: m.AgentProfileTab,
-  })),
-)
 const TranscriptTab = lazy(() =>
   import('@/entities/chat/ui/TranscriptTab').then((m) => ({ default: m.TranscriptTab })),
 )
@@ -264,16 +259,6 @@ function WorkItemBodyInner({
       return <ProblemsTab />
     case 'settings':
       return <SettingsPanelTab />
-    case 'agent':
-      return (
-        <AgentProfileTab
-          agentId={p<string>(item, 'agentId') ?? ''}
-          projectId={p<string>(item, 'projectId') ?? ''}
-          initialHandle={p<string>(item, 'initialHandle')}
-          section={p<'rules' | 'definition'>(item, 'section')}
-          sectionRequestId={p<string>(item, 'sectionRequestId')}
-        />
-      )
     case 'terminal': {
       // A terminal tab is always opened into its chat (`terminalTabs.ts`); its scope says which.
       const terminalSession = sessionOfScope(item.scope)

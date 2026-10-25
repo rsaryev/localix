@@ -130,11 +130,7 @@ export async function handleMiniAppsControlCommand(
   const { miniApps } = await miniAppService.list(userId, { projectId })
   return directReply(
     miniApps.length === 0
-      ? 'No mini apps yet. Add one from the catalog in Settings → Mini apps, or describe one with `/mini-app create <what it should do>`.'
-      : [
-          '**Mini apps** — manage them in Settings → Mini apps:',
-          '',
-          ...miniApps.map(listLine),
-        ].join('\n'),
+      ? 'No mini apps yet. Add one from the catalog in the Store, or describe one with `/mini-app create <what it should do>`.'
+      : ['**Mini apps** — manage them in the Store:', '', ...miniApps.map(listLine)].join('\n'),
   )
 }

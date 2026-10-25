@@ -231,7 +231,7 @@ export function miniAppContribSourceFor(projectId: string | null): MiniAppContri
  * same install reports **4 of 19 mini apps enabled with no projectId and 13 of 17 with
  * one**. Every gated surface — rail sections, palette commands, workbench mounts —
  * reads `enabledNames`, so a snapshot taken in the wrong scope hides nine mini apps'
- * contributions until something refetches in the right one. Opening Settings → Mini apps
+ * contributions until something refetches in the right one. Opening the Store
  * is exactly such a refetch, which is why those surfaces appeared only after visiting it.
  *
  * `prepareMiniAppContribScope` already records the scope synchronously at the route

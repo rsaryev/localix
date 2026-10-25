@@ -36,7 +36,7 @@ export function statusText(status: McpServerOutcome | undefined): string {
 /** The `/mcp` reply for these rows; pure, so the wording is testable without a session. */
 export function renderMcpListing(rows: readonly McpListingRow[]): string {
   if (rows.length === 0)
-    return 'No MCP servers configured. Add one in Settings → MCP (manual form, paste a `mcpServers` JSON blob, or a one-line `npx …` command).'
+    return 'No MCP servers configured. Add one in the Store (manual form, paste a `mcpServers` JSON blob, or a one-line `npx …` command).'
   return [
     '**MCP servers** — tools appear in chat as `mcp_<server>_<tool>`:',
     '',
@@ -53,7 +53,7 @@ export function renderMcpListing(rows: readonly McpListingRow[]): string {
  * Handles `/mcp`: the MCP servers the session can reach — the person's own (global + project)
  * and those of its enabled plugins, under Claude Code's `plugin:<plugin>:<server>` name — each
  * with the outcome of its latest connection. Pure listing: it never connects (a down server
- * would block); the Settings → MCP "Test" button does a live tool probe.
+ * would block); the Store page's "Test" button does a live tool probe.
  */
 export async function handleMcpControlCommand(
   ctx: Pick<CommandHandlerContext, 'mcpRepo' | 'deps' | 'pluginService'>,

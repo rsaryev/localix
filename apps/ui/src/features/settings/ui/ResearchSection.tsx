@@ -1,6 +1,6 @@
 import { useUserSettings } from '@/shared/lib/user-settings/useUserSettings'
-import { SwitchRow } from '../SwitchRow'
-import { SettingsRows, SettingsSection } from '../SettingsScaffold'
+import { SwitchRow } from './SwitchRow'
+import { SettingsRows, SettingsSection } from './SettingsScaffold'
 
 /**
  * `research` is deliberately keyless. The only network knob is the explicit

@@ -35,6 +35,6 @@ The Claude Code plugins built into Localix. Each folder here is one plugin in Cl
 2. Add its entry to `.claude-plugin/marketplace.json` with `"source": "./plugins/<name>"`
    (`scripts/stage-builtin-plugins.test.ts` fails until every plugin here is listed).
 3. Load it in Claude Code with `claude --plugin-dir plugins/<name>`, or run `bun run dev` and find
-   it under Settings → Capabilities → Plugins → Built-in.
+   it under the Store (Plugins).
 
 See [Claude Code plugins](../docs/extending/plugin-updates.md#built-in-plugins).

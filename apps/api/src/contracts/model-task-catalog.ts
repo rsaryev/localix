@@ -56,7 +56,7 @@ export const AUX_MODEL_TASKS = [
  * There used to be a "Delegated task runs" group here: one route per shipped agent plus a
  * default and a reviewer — a third copy of the agent roster, and a second home for a worker's
  * model. An agent's model is its RECORD's (`preferredModel`/`preferredProvider`/`preferredEffort`,
- * Settings → Agents), where it applies on every dispatch path; a delegated run whose agent names
+ * the agent's Store page), where it applies on every dispatch path; a delegated run whose agent names
  * no model inherits the delegating session, like every other unrouted workload.
  */
 

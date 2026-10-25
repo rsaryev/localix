@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from 'bun:test'
+import { localixUiUri } from '@localixai/mini-app-sdk/navigation'
 
 import { createMcpClientManager } from '../../mcp/client-manager'
 import type { McpClientLike } from '../../mcp/mcp-wire'
@@ -78,9 +79,13 @@ describe('an MCP server that does not connect', () => {
       {
         title: 'Sign in to the MCP server “github”',
         severity: 'warning',
-        // The control that does it: the server's own row in Settings → MCP.
+        // The control that does it: the server's own Store page.
         actions: [
-          { label: 'Sign in', kind: 'navigate', uri: 'localix://ui/settings/mcp/mcp-github' },
+          {
+            label: 'Sign in',
+            kind: 'navigate',
+            uri: localixUiUri('work-item', ['store'], { kind: 'mcp-server', id: 'github' }),
+          },
         ],
       },
     ])

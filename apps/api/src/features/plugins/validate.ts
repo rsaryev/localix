@@ -10,7 +10,7 @@ import { validatePluginCommands, validatePluginAgents } from './validate-fields'
 
 /**
  * Core plugin/skill validation — the single source of truth surfaced as structured
- * errors/warnings in `/plugin list` and Settings → Plugins. Runs during discovery
+ * errors/warnings in `/plugin list` and the Store. Runs during discovery
  * without importing a plugin's executable code.
  *
  * Errors are blocking problems (a malformed manifest, a skill missing required
@@ -123,7 +123,7 @@ export function validatePlugin(
  * The CANONICAL full validation of a plugin: the synchronous manifest / commands /
  * agents / compat checks ({@link validatePlugin}) merged with the async SKILL.md
  * checks ({@link validatePluginSkills}). This is the single source of truth reused by
- * BOTH the plugin service (Settings → Plugins / `/plugins`) and the dev CLI
+ * BOTH the plugin service (the Store / `/plugins`) and the dev CLI
  * (`scripts/validate-plugins.ts`) — callers must not re-implement the merge. `strict`
  * promotes the COMBINED warning set (manifest + skills) to errors.
  */

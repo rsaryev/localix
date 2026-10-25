@@ -7,7 +7,7 @@ import { MINI_APP_FILE } from './layout/read'
 
 /**
  * A mini app is never a plugin (rule X2): a folder holding a `mini-app.json` does not load as one,
- * whatever Claude Code component folders sit beside it. It is added from Settings → Mini apps.
+ * whatever Claude Code component folders sit beside it. It is added from the Store.
  */
 const dir = tempDirPerTest('mini-app-discovery-')
 
@@ -20,6 +20,6 @@ describe('a mini-app.json folder among plugins', () => {
     })
     const found = await loadManifest(dir(), 'global', '')
     expect(found.error).toContain('is a mini app')
-    expect(found.error).toContain('Settings → Mini apps')
+    expect(found.error).toContain('add it from the Store')
   })
 })

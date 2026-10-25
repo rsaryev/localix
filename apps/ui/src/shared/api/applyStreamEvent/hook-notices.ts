@@ -1,5 +1,4 @@
 /** Bounded hook notices and mini app problem pointers in the transcript. */
-import { settingsEntityAnchor } from '@localixai/mini-app-sdk/navigation'
 import { miniAppLabel } from '@/shared/contrib/miniAppAttribution'
 import type { StreamEventOf, StreamReducers } from './types'
 import { noticePosition } from './notice-position'
@@ -36,7 +35,7 @@ function miniAppProblemPointer(event: StreamEventOf<'hook.notice'>, app: string)
     tone: 'neutral' as const,
     text: `${miniAppLabel(app)} reported a problem`,
     detail: [event.message, noticeDetail(event)].join('\n'),
-    recovery: [`open-settings:mini-apps/${settingsEntityAnchor('mini-app', app)}` as const],
+    recovery: [`open-store:mini-app/${app}` as const],
   }
 }
 

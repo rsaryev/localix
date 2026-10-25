@@ -38,9 +38,7 @@ describe('mini app conditions', () => {
     apps.loaded(U, { name: 'tracker', displayName: 'Tracker', projectId: '', error: 'boom' })
     const [row] = await openRows(test)
     expect(row?.title).toBe('Could not load the Tracker mini app')
-    expect(JSON.stringify(row?.actions)).toContain(
-      'localix://ui/settings/mini-apps/mini-app-tracker',
-    )
+    expect(JSON.stringify(row?.actions)).toContain('kind=mini-app&id=tracker')
     expect(JSON.stringify(row)).not.toMatch(/plugin/iu)
     apps.loaded(U, { name: 'tracker', projectId: '' })
     expect(await openRows(test)).toEqual([])

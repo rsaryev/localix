@@ -131,9 +131,10 @@ describe('/agents management', () => {
     expect(h.replies[0]).toContain('@qa')
     expect(h.replies[1]).toContain('Review.')
     expect(h.replies[2]).toContain(
-      localixUiUri('work-item', ['agent'], { agent: 'native:qa', scope: 'p', section: 'rules' }),
+      localixUiUri('work-item', ['store'], { kind: 'agent', id: 'native:qa' }),
     )
-    expect(h.replies[3]).toContain('handle=migration-reviewer')
+    // A new agent is made on the Agents shelf of the Store, where the Create button is.
+    expect(h.replies[3]).toContain(localixUiUri('work-item', ['store', 'agents']))
     expect(h.writes).toEqual([])
   })
   test('explicit creation and edits are deterministic and cannot write permissions', async () => {

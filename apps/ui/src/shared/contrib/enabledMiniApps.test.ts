@@ -516,7 +516,7 @@ describe('mini app contribution synchronization', () => {
  * in decides how much of the surface exists. Measured against the live API on one
  * install: 4 of 19 mini apps enabled with no `projectId`, 13 of 17 with one. A
  * no-argument refetch that ignored the prepared scope therefore hid nine mini apps'
- * views until Settings → Mini apps happened to refetch in the right scope.
+ * views until the Store happened to refetch in the right scope.
  */
 describe('mini app contrib default scope', () => {
   const captureScope = async (run: () => Promise<unknown>): Promise<Array<string | null>> => {

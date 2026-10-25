@@ -18,8 +18,10 @@ import type { InboxAction } from './contracts'
  *   retry                    re-run the turn (the regenerate path; the host decides it is safe)
  *   open-settings:<tab>[/<anchor>]   a settings section; `providers` is the model picker, where
  *                            provider connections and keys live
+ *   open-store:<kind>[/<id>] a Store shelf or page: where plugins, mini apps, MCP servers, skills
+ *                            and agents are managed (`kind` is the package kind, `mcp-server`)
  *   sign-in:<connectionId>   a connection whose credential was refused or expired
- *   restart:<subject>        a process the person can restart from its settings row
+ *   restart:<subject>        a process the person can restart from its Store page
  *
  * Destinations are built with the SDK's navigation helpers (`@localixai/mini-app-sdk/navigation`),
  * the same ones every tip and `/open` result uses, so a renamed tab breaks here only if it breaks
@@ -32,6 +34,7 @@ export type { Recovery }
 export type ParsedRecovery =
   | { verb: 'retry' }
   | { verb: 'open-settings'; tab: string; anchor?: string }
+  | { verb: 'open-store'; kind: string; id?: string }
   | { verb: 'sign-in'; connectionId: string }
   | { verb: 'restart'; subject: string }
 
@@ -49,16 +52,24 @@ export function parseRecovery(value: string): ParsedRecovery | null {
     const anchor = slash < 0 ? '' : param.slice(slash + 1)
     return tab ? { verb, tab, ...(anchor ? { anchor } : {}) } : null
   }
+  if (verb === 'open-store') {
+    const slash = param.indexOf('/')
+    const kind = slash < 0 ? param : param.slice(0, slash)
+    const id = slash < 0 ? '' : param.slice(slash + 1)
+    return kind ? { verb, kind, ...(id ? { id } : {}) } : null
+  }
   if (verb === 'sign-in') return { verb, connectionId: param }
   if (verb === 'restart') return { verb, subject: param }
   return null
 }
 
-/** Where a restartable subject's control lives, by the subject's kind. */
-const RESTART_TABS: Partial<Record<string, string>> = { mcp: 'mcp', plugin: 'plugins' }
+/** The Store kind whose page holds a restartable subject's control, by the subject's kind. */
+const RESTART_KINDS: Partial<Record<string, string>> = { mcp: 'mcp-server', plugin: 'plugin' }
 
 /** The model picker: provider connections, their keys and their sign-ins live there. */
 const PROVIDERS_URI = localixUiUri('picker', ['model'])
+
+const storeUri = (kind: string, id?: string) => localixUiUri('work-item', ['store'], { kind, id })
 
 /** The `localix://` destination a recovery opens; `retry` opens nothing, it runs. */
 export function recoveryUri(recovery: ParsedRecovery): string | undefined {
@@ -69,12 +80,19 @@ export function recoveryUri(recovery: ParsedRecovery): string | undefined {
       return recovery.tab === 'providers'
         ? PROVIDERS_URI
         : settingsUiUri(recovery.tab, recovery.anchor ? { anchor: recovery.anchor } : {})
+    case 'open-store':
+      return storeUri(recovery.kind, recovery.id)
     case 'sign-in':
       return PROVIDERS_URI
-    case 'restart':
-      // The restart control lives on the subject's own settings tab (`mcp:<name>` → MCP); a
-      // subject with no tab of its own is listed under Diagnostics.
-      return settingsUiUri(RESTART_TABS[recovery.subject.split(':', 1)[0] ?? ''] ?? 'diagnostics')
+    case 'restart': {
+      // The restart control lives on the subject's Store page (`mcp:<name>` → that server); a
+      // subject with no page of its own is listed under Diagnostics.
+      const [kind = '', ...name] = recovery.subject.split(':')
+      const storeKind = RESTART_KINDS[kind]
+      return storeKind
+        ? storeUri(storeKind, name.join(':') || undefined)
+        : settingsUiUri('diagnostics')
+    }
   }
 }
 
@@ -85,6 +103,8 @@ export function recoveryLabel(recovery: ParsedRecovery): string {
       return 'Retry'
     case 'open-settings':
       return recovery.tab === 'providers' ? 'Open providers' : 'Open settings'
+    case 'open-store':
+      return 'Open in the Store'
     case 'sign-in':
       return 'Sign in again'
     case 'restart':

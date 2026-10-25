@@ -114,6 +114,7 @@ describe('composerTips — the pool is derived from this scope', () => {
         plugins: [
           plugin({
             name: 'browser-drive',
+            source: 'browser-drive@localix',
             displayName: 'Browser Drive',
             enabled: false,
             description: 'Drive a real browser to click through pages. Screenshots included.',
@@ -125,10 +126,10 @@ describe('composerTips — the pool is derived from this scope', () => {
     expect(tip?.text).toContain('Browser Drive')
     // One sentence, not the whole description.
     expect(tip?.text).not.toContain('Screenshots')
-    // The quick action lands on that plugin's own row, not on the plugins list.
+    // The quick action lands on that plugin's own Store page, not on the plugins list.
     expect(tip?.actions?.[0]).toMatchObject({ kind: 'navigate' })
-    expect(tip?.actions?.[0].kind === 'navigate' ? tip.actions[0].uri : '').toContain(
-      'browser-drive',
+    expect(tip?.actions?.[0].kind === 'navigate' ? tip.actions[0].uri : '').toBe(
+      'localix://ui/work-item/store?kind=plugin&id=browser-drive%40localix',
     )
     expect(new RegExp(tip?.when?.textPattern ?? '$^', 'i').test('drive the browser for me')).toBe(
       true,
@@ -136,7 +137,7 @@ describe('composerTips — the pool is derived from this scope', () => {
     expect(new RegExp(tip?.when?.textPattern ?? '$^', 'i').test('rename this variable')).toBe(false)
   })
 
-  test('an installed-but-off mini app is offered with its own name and its own settings row', () => {
+  test('an installed-but-off mini app is offered with its own name and its own Store page', () => {
     const tips = tipsOf(
       snapshot({
         miniApps: [
@@ -153,7 +154,7 @@ describe('composerTips — the pool is derived from this scope', () => {
     expect(tip?.text).toContain('the "Tabletop" mini app')
     expect(tip?.text).not.toMatch(/plugin/iu)
     expect(tip?.actions?.[0].kind === 'navigate' ? tip.actions[0].uri : '').toContain(
-      'settings/mini-apps/mini-app-tabletop',
+      'work-item/store?kind=mini-app&id=tabletop',
     )
     expect(new RegExp(tip?.when?.textPattern ?? '$^', 'i').test('a tabletop game?')).toBe(true)
   })

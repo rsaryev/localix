@@ -110,7 +110,7 @@ export async function fetchReadablePage(
         const unsafe = await checkUrlSafety(current, deps.resolveHost)
         if (unsafe) {
           return err(
-            `Blocked: ${unsafe}. To let the agent fetch internal URLs (your own dev server, a LAN host), enable "Allow private/local URLs" under Settings → Capabilities → Tools.`,
+            `Blocked: ${unsafe}. To let the agent fetch internal URLs (your own dev server, a LAN host), enable "Allow private/local URLs" under Settings → System → Access and context.`,
           )
         }
       }

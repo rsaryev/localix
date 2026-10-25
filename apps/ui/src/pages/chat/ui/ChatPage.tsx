@@ -67,7 +67,6 @@ import { TitlebarContent } from './TitlebarContent'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import { tauriFrontendLog } from '@/shared/lib/tauri'
 import { restartDesktopApp } from '@/shared/lib/desktopRestart'
-import { settingsTargetUri } from '@/shared/lib/settingsAnchors'
 import { navigateUi } from '@/shared/lib/uiNavigation'
 import {
   runtimeStatus,
@@ -503,7 +502,7 @@ export function ChatPage() {
       railActions={railActions}
       miniAppsPending={miniAppsPending}
       miniAppCategories={miniAppCategories}
-      miniAppsManageUri={settingsTargetUri({ tab: 'mini-apps', scope: capabilityScope })}
+      miniAppsManageUri="localix://ui/work-item/mini-app-store"
       onNavigateUi={(uri) => {
         navigateUi(uri, uiNavigation)
       }}

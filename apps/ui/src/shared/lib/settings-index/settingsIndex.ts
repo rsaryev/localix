@@ -84,48 +84,6 @@ export const SETTINGS_INDEX: SettingsIndexEntry[] = [
 
   ...SYSTEM_SETTINGS_INDEX,
 
-  // Capabilities
-  {
-    id: 'cap.tools',
-    tab: 'tools',
-    tabLabel: 'Capabilities',
-    title: 'Tools',
-    description: 'Every tool this scope knows about, and whether it may run.',
-    keywords: ['tool', 'bash', 'enable', 'disable', 'catalog'],
-  },
-  {
-    id: 'cap.skills',
-    tab: 'skills',
-    tabLabel: 'Capabilities',
-    title: 'Skills',
-    description: 'Reusable skills the agent can invoke; archive stale ones.',
-    keywords: ['skill', 'archive', 'curator'],
-  },
-  {
-    id: 'cap.mcp',
-    tab: 'mcp',
-    tabLabel: 'Capabilities',
-    title: 'MCP servers',
-    description: 'Model Context Protocol servers and their connection status.',
-    keywords: ['mcp', 'server', 'stdio', 'connection', 'integration'],
-  },
-  {
-    id: 'cap.plugins',
-    tab: 'plugins',
-    tabLabel: 'Capabilities',
-    title: 'Plugins',
-    description: 'Claude Code plugins: skills, commands, agents, hooks, MCP and LSP servers.',
-    keywords: ['plugin', 'claude code', 'marketplace', 'enable'],
-  },
-  {
-    id: 'cap.mini-apps',
-    tab: 'mini-apps',
-    tabLabel: 'Capabilities',
-    title: 'Mini apps',
-    description:
-      'Apps with their own screens and tools: turn them on or off, change their settings.',
-    keywords: ['mini app', 'app', 'screens', 'enable'],
-  },
   {
     id: 'permissions.rules',
     tab: 'permissions',
@@ -134,13 +92,5 @@ export const SETTINGS_INDEX: SettingsIndexEntry[] = [
     description:
       'Ordered allow, ask and deny rules for an agent: argument patterns and which rule wins.',
     keywords: ['permission', 'rule', 'allow', 'deny', 'ask', 'order', 'security', 'policy'],
-  },
-  {
-    id: 'cap.agents',
-    tab: 'agents',
-    tabLabel: 'Agents',
-    title: 'Agents',
-    description: 'Custom sub-agent roles for delegation.',
-    keywords: ['agent', 'subagent', 'role', 'delegation'],
   },
 ]

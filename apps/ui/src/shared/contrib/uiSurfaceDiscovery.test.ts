@@ -131,11 +131,10 @@ describe('UI surface discovery architecture', () => {
     expect(
       registry
         .list({ exposure: 'agent' })
-        .find((entry) => entry.uri === 'localix://ui/settings/plugins'),
+        .find((entry) => entry.uri === 'localix://ui/settings/permissions'),
     ).toMatchObject({
-      id: 'settings.plugins.open',
-      title: 'Plugins',
-      agent: { description: 'Open installed plugin settings' },
+      id: 'settings.permissions.open',
+      title: 'Permissions',
     })
   })
 

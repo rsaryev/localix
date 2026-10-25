@@ -19,28 +19,10 @@ import { railSectionRegistry } from '@/shared/contrib/uiContrib'
 // against the core literals PLUS whatever the registry currently holds.
 export type SectionId = 'files' | 'jobs' | (string & {})
 
-/**
- * The sub-tabs of the Capabilities page — and the membership rule is exact: a tab belongs
- * here IF AND ONLY IF a scope switches its records on and off. That is what lets one scope
- * picker sit above the whole strip and mean the same thing on every tab.
- *
- * Two things used to be here and are not, both for that reason. An `agents` tab listed
- * records that are not a capability OF a scope — an agent IS a scope, with rules of its
- * own — so it is its own page and appears in the picker instead. A `secrets` tab listed
- * per-USER credentials, which have no scope at all; it needed the picker hidden above it,
- * and that carve-out was the tell. It has no settings tab any more either: it was a
- * description, three counters and a button opening the Vault work item, which the rail
- * already offers under its own name and keywords.
- */
-export const CAPABILITY_TABS = ['tools', 'skills', 'mcp', 'plugins', 'mini-apps'] as const
-export type CapabilityTabId = (typeof CAPABILITY_TABS)[number]
-
 export const SETTINGS_STRING_TABS = [
   'preferences',
   'editor',
   'shortcuts',
-  'agents',
-  ...CAPABILITY_TABS,
   'permissions',
   'project',
   'models',
@@ -59,10 +41,6 @@ const MOVED_SETTINGS_TABS: Readonly<Record<string, string>> = { rules: 'permissi
 /** The tab id a link means today: an old id mapped to the page its content moved to. */
 export function currentSettingsTab(tab: string): string {
   return MOVED_SETTINGS_TABS[tab] ?? tab
-}
-
-export function isCapabilityTab(tab: SettingsTabId): tab is CapabilityTabId {
-  return typeof tab === 'string' && (CAPABILITY_TABS as readonly string[]).includes(tab)
 }
 
 /** A settings string tab, or a project-scoped settings view. */

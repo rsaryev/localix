@@ -31,7 +31,7 @@ describe('capability context-ref presentation', () => {
 
     expect(refIcon(ref)).toBe(Blocks)
     open?.()
-    expect(navigated).toBe('localix://ui/settings/agents/agent-reviewer?scope=PRJ-4')
+    expect(navigated).toBe('localix://ui/work-item/store?kind=agent&id=reviewer')
   })
 })
 

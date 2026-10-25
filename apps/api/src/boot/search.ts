@@ -138,6 +138,7 @@ export function buildSearchService(
         (await skillsCuratorService.listSkills(userId, { projectId })).map((s) => ({
           name: s.name,
           description: s.description,
+          projectId: s.scope === 'project' ? (projectId ?? '') : '',
         })),
     }),
   )
@@ -146,6 +147,7 @@ export function buildSearchService(
       listPlugins: async (userId, projectId) =>
         (await pluginService.listPlugins(userId, { projectId })).plugins.map((p) => ({
           name: p.name,
+          source: p.source,
           displayName: p.displayName,
           description: p.description,
         })),
@@ -157,6 +159,7 @@ export function buildSearchService(
         (await mcpService.listServers(userId, { projectId })).servers.map((s) => ({
           name: s.name,
           description: s.description,
+          projectId: s.projectId,
         })),
     }),
   )
@@ -164,6 +167,7 @@ export function buildSearchService(
     createAgentsSearchProvider({
       listAgents: async (userId, projectId) =>
         (await agentsService.listAgents(userId, { projectId })).map((agent) => ({
+          id: agent.record.id,
           name: agent.record.handle,
           label: agent.record.label,
           description: agent.record.description,

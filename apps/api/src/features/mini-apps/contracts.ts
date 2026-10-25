@@ -103,7 +103,7 @@ export const miniAppConfigFieldSchema = z.object({
 })
 export type MiniAppConfigField = z.infer<typeof miniAppConfigFieldSchema>
 
-/** One installed mini app, as Settings → Mini apps, the rail and the catalog show it. */
+/** One installed mini app, as the Store, the rail and the catalog show it. */
 export const miniAppRecordSchema = z.object({
   name: z.string(),
   displayName: z.string().optional(),

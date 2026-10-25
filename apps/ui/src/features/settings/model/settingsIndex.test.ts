@@ -2,7 +2,7 @@ import { describe, expect, it } from 'bun:test'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { SETTINGS_INDEX, type SettingsIndexEntry } from '@/shared/lib/settings-index/settingsIndex'
-import { CAPABILITY_TABS } from '@/shared/routing/routes'
+import { SETTINGS_STRING_TABS } from '@/shared/routing/routes'
 
 /**
  * Anti-drift guard for the hand-maintained settings search index.
@@ -35,7 +35,7 @@ const CONTROL_FILES = [
   'EditorSettings.tsx',
   'typography/TypographySection.tsx',
   'ContextExclusionsSection.tsx',
-  'capabilities/ResearchSection.tsx',
+  'ResearchSection.tsx',
   'NotificationsSection.tsx',
   'IslandSection.tsx',
 ] as const
@@ -100,10 +100,11 @@ describe('settings index anti-drift', () => {
     expect(missing).toEqual([])
   })
 
-  it('every capability tab has an index entry', () => {
-    const indexedTabs = new Set(SETTINGS_INDEX.map((e) => e.tab))
-    const missing = CAPABILITY_TABS.filter((t) => !indexedTabs.has(t))
-    expect(missing).toEqual([])
+  it('indexes only pages Settings still has: items are managed in the Store', () => {
+    const tabs = new Set<string>(SETTINGS_STRING_TABS)
+    expect(SETTINGS_INDEX.filter((entry) => !tabs.has(entry.tab)).map((entry) => entry.id)).toEqual(
+      [],
+    )
   })
 
   it('every index anchor points at a real rendered section', () => {

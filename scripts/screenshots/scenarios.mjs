@@ -52,6 +52,8 @@ export async function compose(page, scenario) {
     return (await import('./agent-command.mjs')).composeAgentCommand(page)
   if (scenario === 'agent-management')
     return (await import('./agent-management.mjs')).composeAgentManagement(page)
+  if (scenario === 'agent')
+    return (await import('./agent-management.mjs')).composeAgentProfile(page)
   if (['kanban-board', 'kanban-conversation'].includes(scenario))
     return (await import('./kanban-workbenches.mjs')).composeKanban(page, scenario)
   if (scenario === 'visual-feedback')
@@ -110,19 +112,6 @@ export async function compose(page, scenario) {
     await page.getByRole('menu').waitFor({ state: 'visible' })
     await page.keyboard.press('Escape')
     await page.getByRole('heading', { name: 'Release checklist', exact: true }).click()
-  } else if (scenario === 'agent') {
-    await button(page, 'Settings').click()
-    await button(page, 'Agents').click()
-    await button(page, 'Open Localix').click()
-    await button(page, 'Maximize panel').first().click()
-    await page.getByText('Preloaded skills', { exact: true }).waitFor()
-    await page.locator('[data-ui-scroll-container]').evaluateAll((elements) => {
-      for (const element of elements) {
-        if (element.clientHeight && element.scrollHeight > element.clientHeight) {
-          element.scrollTop = element.scrollHeight
-        }
-      }
-    })
   } else if (scenario === 'resume' || scenario === 'resume-library') {
     await openTool(page, 'Resumes')
     await page.getByText('Product engineer — demo', { exact: true }).waitFor()

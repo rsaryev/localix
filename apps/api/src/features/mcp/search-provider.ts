@@ -6,11 +6,13 @@
 import type { SearchProvider } from '../agent-core/search/provider'
 import { catalogHits } from '../search/catalog-hybrid'
 import { MCP_COLLECTION } from './semantic'
-import { settingsEntityUiUri } from '@localixai/mini-app-sdk/navigation'
+import { capabilityUiUri } from '@localixai/mini-app-sdk/navigation'
 
 export interface McpSearchRow {
   name: string
   description: string
+  /** The project a project-scoped item belongs to; empty or absent for a personal one. */
+  projectId?: string | null
 }
 
 export interface McpSearchPort {
@@ -31,7 +33,7 @@ export function createMcpSearchProvider(port: McpSearchPort): SearchProvider {
         nameOf: (s) => s.name,
         fields: (s) => [s.name, s.description],
         hit: (s, score) => ({
-          id: settingsEntityUiUri('mcp', 'mcp', s.name, query.projectId ?? ''),
+          id: capabilityUiUri({ kind: 'mcp', id: s.name, scope: s.projectId ?? '' }),
           domain: 'mcp',
           title: s.name,
           subtitle: s.description,

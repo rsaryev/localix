@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import {
   capabilityResourceUri,
-  capabilitySettingsUiUri,
+  capabilityUiUri,
   fileOpenMarkdownLink,
   fileUiUri,
   localixResourceUri,
@@ -29,20 +29,40 @@ describe('capability resource URIs', () => {
       description: 'Kubernetes operations',
       enabled: false,
     })
-    expect(capabilitySettingsUiUri(parseCapabilityResourceUri(uri)!)).toBe(
-      'localix://ui/settings/mcp/mcp-cluster%20tools%2Fprimary?scope=PRJ%2F7',
+    expect(capabilityUiUri(parseCapabilityResourceUri(uri)!)).toBe(
+      'localix://ui/work-item/store?kind=mcp-server&id=project%3Acluster+tools%2Fprimary',
     )
   })
 })
 
-describe('a mini app in Settings', () => {
-  test('a mini app and its screens open the Mini apps tab, never Plugins', () => {
-    const app = capabilityResourceUri({ kind: 'mini-app', id: 'tracker', scope: '' })
-    expect(capabilitySettingsUiUri(parseCapabilityResourceUri(app)!)).toBe(
-      'localix://ui/settings/mini-apps/mini-app-tracker?scope=',
+describe('where a capability is managed', () => {
+  test('items open their page in the Store, in the scope they live in', () => {
+    const at = (kind: Parameters<typeof capabilityUiUri>[0]['kind'], id: string, scope = '') =>
+      capabilityUiUri({ kind, id, scope })
+    expect(at('mini-app', 'tracker')).toBe('localix://ui/work-item/store?kind=mini-app&id=tracker')
+    expect(at('agent', 'cc:a1')).toBe('localix://ui/work-item/store?kind=agent&id=cc%3Aa1')
+    expect(at('skill', 'deploy')).toBe('localix://ui/work-item/store?kind=skill&id=user%3Adeploy')
+    expect(at('skill', 'deploy', 'PRJ-1')).toBe(
+      'localix://ui/work-item/store?kind=skill&id=project%3Adeploy',
     )
-    expect(capabilitySettingsUiUri({ kind: 'view', id: 'tracker:board', scope: '' })).toBe(
-      'localix://ui/settings/mini-apps?scope=',
+    expect(at('mcp', 'github')).toBe('localix://ui/work-item/store?kind=mcp-server&id=github')
+    expect(at('plugin', 'lint@market')).toBe(
+      'localix://ui/work-item/store?kind=plugin&id=lint%40market',
+    )
+  })
+
+  test('a plugin known by name alone opens the Plugins shelf, a screen opens its mini app', () => {
+    expect(capabilityUiUri({ kind: 'plugin', id: 'lint', scope: '' })).toBe(
+      'localix://ui/work-item/store?kind=plugin',
+    )
+    expect(capabilityUiUri({ kind: 'view', id: 'tracker:board', scope: '' })).toBe(
+      'localix://ui/work-item/store?kind=mini-app&id=tracker',
+    )
+  })
+
+  test('a tool is decided in Settings → Permissions', () => {
+    expect(capabilityUiUri({ kind: 'tool', id: 'bash', scope: 'PRJ-1' })).toBe(
+      'localix://ui/settings/permissions?scope=PRJ-1',
     )
   })
 })

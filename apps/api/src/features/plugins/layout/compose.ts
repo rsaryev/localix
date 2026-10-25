@@ -38,8 +38,7 @@ export function composeManifest(files: ManifestFiles, folderName: string): Compo
     return {
       raw: null,
       issues: [],
-      error:
-        'This folder is a mini app (mini-app.json), not a plugin: add it from Settings → Mini apps',
+      error: 'This folder is a mini app (mini-app.json), not a plugin: add it from the Store',
     }
   const issues: PluginIssue[] = []
   if (files.root && !isImportArtifact(files.root))

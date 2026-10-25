@@ -1,4 +1,4 @@
-import { isCapabilityTab, type SettingsTabId } from '@/shared/routing/routes'
+import type { SettingsTabId } from '@/shared/routing/routes'
 
 /** Ordered by task: personal defaults, agent work, security, then application maintenance. */
 export const SETTINGS_SECTIONS = [
@@ -19,18 +19,6 @@ export const SETTINGS_SECTIONS = [
     label: 'Shortcuts',
     group: 'Personal',
     description: 'Keyboard commands and chords',
-  },
-  {
-    id: 'agents',
-    label: 'Agents',
-    group: 'Workspace',
-    description: 'Reusable agent identities and profiles',
-  },
-  {
-    id: 'tools',
-    label: 'Capabilities',
-    group: 'Workspace',
-    description: 'Tools, skills, MCP, plugins and mini apps',
   },
   {
     id: 'project',
@@ -62,5 +50,5 @@ export function primarySettingsSection(tab: SettingsTabId): string {
   if (typeof tab === 'object') return 'project'
   if (tab === 'diagnostics' || tab === 'context') return 'system'
   if (tab === 'model-list') return 'models'
-  return isCapabilityTab(tab) ? 'tools' : tab
+  return tab
 }

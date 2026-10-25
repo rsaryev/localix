@@ -12,7 +12,6 @@ import {
   File,
   History,
   Search,
-  Bot,
 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import {
@@ -32,7 +31,6 @@ const KIND_ICONS: Record<CoreWorkItemKind, typeof FileText> = {
   preview: Globe,
   'mini-app-view': Puzzle,
   'live-file-change': File,
-  agent: Bot,
   stats: BarChart3,
   problems: TriangleAlert,
   settings: Settings,

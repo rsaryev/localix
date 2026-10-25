@@ -65,7 +65,7 @@ describe('resolveOpenScope', () => {
   })
 
   test('only the app-level kinds live in GLOBAL_SCOPE, whatever the opener names', () => {
-    for (const k of ['stats', 'agent', 'settings'] as const) {
+    for (const k of ['stats', 'settings'] as const) {
       expect(resolveOpenScope(k, undefined)).toBe(GLOBAL_SCOPE)
       expect(resolveOpenScope(k, SESSION)).toBe(GLOBAL_SCOPE)
     }

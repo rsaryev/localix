@@ -1,14 +1,16 @@
 /**
  * PLUGINS search provider (agent-core search) — matches plugin name/displayName +
- * description over the plugin catalog. Every hit addresses one row in its exact scope.
+ * description over the plugin catalog. Every hit opens the plugin's Store page.
  */
 import type { SearchProvider } from '../agent-core/search/provider'
 import { catalogHits } from '../search/catalog-hybrid'
 import { PLUGINS_COLLECTION } from './semantic'
-import { settingsEntityUiUri } from '@localixai/uri'
+import { capabilityUiUri } from '@localixai/uri'
 
 export interface PluginSearchRow {
   name: string
+  /** `<plugin>@<marketplace>`, how the Store lists it; absent for a folder dropped in. */
+  source?: string
   displayName?: string
   description: string
 }
@@ -33,7 +35,7 @@ export function createPluginsSearchProvider(port: PluginsSearchPort): SearchProv
         nameOf: (p) => p.name,
         fields: (p) => [p.displayName, p.name, p.description],
         hit: (p, score) => ({
-          id: settingsEntityUiUri('plugins', 'plugin', p.name, query.projectId ?? ''),
+          id: capabilityUiUri({ kind: 'plugin', id: p.source ?? p.name, scope: '' }),
           domain: 'plugins',
           title: p.displayName || p.name,
           subtitle: p.description,

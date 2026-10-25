@@ -29,7 +29,7 @@ export interface WorkItemCapability {
   pathBacked?: boolean
   /** Which scope owns this kind. Omitted = 'session': the tab belongs to the chat its opener
    *  names. 'global' is reserved for APP-LEVEL kinds that read no session at all (settings,
-   *  usage, an agent profile) — a kind that reads a session is never global. */
+   *  usage, the Store) — a kind that reads a session is never global. */
   scope?: 'session' | 'global'
 }
 
@@ -52,9 +52,6 @@ export const WORK_ITEM_CAPS: Record<CoreWorkItemKind, WorkItemCapability> = {
   // sends and the session events it receives are its own chat's.
   'mini-app-view': {},
   'live-file-change': { ephemeralSlot: true, alwaysEphemeral: true, countsToFileCap: true },
-  // An agent record is not bound to a session, and its profile re-reads the registry on mount,
-  // so a restored tab comes back with what the record says NOW rather than a stale copy.
-  agent: { scope: 'global', restorable: true },
   stats: { singleton: true, restorable: true, scope: 'global' },
   // One Problems panel per chat: the diagnostics of that chat's language servers.
   problems: { singleton: true, restorable: true },

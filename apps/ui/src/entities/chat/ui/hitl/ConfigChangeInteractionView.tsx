@@ -98,7 +98,7 @@ export function ConfigChangeInteractionView({
 
         <div className="text-2xs text-text-faint">
           {RELOAD_HINT[payload.reload] ?? payload.reload}. Recorded as proposed by the agent and
-          reversible in Settings → Capabilities.
+          reversible on the agent’s Access tab in the Store.
         </div>
       </div>
     </HitlInteractionFrame>

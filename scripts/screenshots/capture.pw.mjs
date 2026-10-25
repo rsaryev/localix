@@ -29,6 +29,8 @@ for (const [key, spec] of Object.entries(capturePlan)) {
       await (await import('./diagram-board.mjs')).seedDiagramBoard(fixture)
     if (spec.scenario === 'agent-management')
       await (await import('./agent-management.mjs')).seedAgentManagement(fixture)
+    if (spec.scenario === 'agent')
+      await (await import('./agent-management.mjs')).seedAgentProfile(fixture)
     if (spec.scenario.startsWith('store')) {
       const seed = await import('./store-seed.mjs')
       await seed.seedStore()

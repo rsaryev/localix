@@ -4,7 +4,7 @@ import type { CapabilitySnapshot } from '../../contracts/capability-snapshot'
 import type { SlashCommandSpec } from '../chat/slash-command-catalog'
 import { CURATED_TIPS, TEACHABLE_COMMANDS } from './tips-curated'
 import { SESSION_TIPS } from './tips-session'
-import { capabilityAction, insertAction, settingsAction } from './tips-actions'
+import { capabilityAction, insertAction, storeAction } from './tips-actions'
 import { tipKeywordPattern } from './tips-keywords'
 
 /**
@@ -55,6 +55,8 @@ interface InactiveRow {
   enabled: boolean
   error?: string
   projectId: string
+  /** A plugin's `<plugin>@<marketplace>`, which is how the Store lists it. */
+  source?: string
 }
 
 /**
@@ -81,8 +83,15 @@ function inactiveTips(kind: 'plugin' | 'mini-app', rows: readonly InactiveRow[])
             ? `${summary} — the "${label}" ${noun} does that, and it is installed but off.`
             : `The "${label}" ${noun} is installed but off.`,
         ),
-        // Straight to its own row, not to the list: the tip's whole value is the one switch.
-        actions: [capabilityAction(kind, row.name, row.projectId, `Open ${label}`)],
+        // Straight to its own page, not to the list: the tip's whole value is the one switch.
+        actions: [
+          capabilityAction(
+            kind,
+            kind === 'plugin' && row.source?.includes('@') ? row.source : row.name,
+            row.projectId,
+            `Open ${label}`,
+          ),
+        ],
         ...(pattern ? { when: { textPattern: pattern } } : {}),
       }
     })
@@ -153,21 +162,21 @@ function onboardingTips(snapshot: Omit<CapabilitySnapshot, 'tips'>): ComposerTip
     tips.push({
       id: 'onboarding:skills',
       text: 'Save instructions you repeat as a Skill — the agent then applies them itself.',
-      actions: [settingsAction('skills', 'Open Skills')],
+      actions: [storeAction('skill', 'Open Skills')],
     })
   }
   if (snapshot.mcp.length === 0) {
     tips.push({
       id: 'onboarding:mcp',
       text: 'Connect an MCP server to give the agent tools and data from elsewhere.',
-      actions: [settingsAction('mcp', 'Open MCP')],
+      actions: [storeAction('mcp-server', 'Open MCP')],
     })
   }
   if (snapshot.commands.length === 0) {
     tips.push({
       id: 'onboarding:plugins',
       text: 'Plugins add tools, skills and slash commands to this workspace.',
-      actions: [settingsAction('plugins', 'Open Plugins')],
+      actions: [storeAction('plugin', 'Open Plugins')],
     })
   }
   return tips

@@ -8,14 +8,14 @@ beforeAll(() => {
 })
 afterAll(() => teardown())
 
-test('chat profile links resolve through the owner and never navigate the webview', async () => {
+test('a chat’s agent link opens that agent in the Store and never navigates the webview', async () => {
   const { act } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { default: MarkdownRendererImpl } = await import('@/shared/ui/MarkdownRendererImpl')
   const { registerUiLocation, unregisterUiLocation } = await import('@/shared/contrib/uiLocations')
-  const { default: profile } = await import('./AgentProfileTab.surface')
+  const { default: store } = await import('./StorePage.surface')
   const { registerInspectorHandler } = await import('@/shared/lib/inspectorBus')
-  expect(registerUiLocation(profile)).toBe(true)
+  expect(registerUiLocation(store)).toBe(true)
   const requests: unknown[] = []
   const stop = registerInspectorHandler((request) => requests.push(request))
   const host = document.createElement('div')
@@ -23,29 +23,12 @@ test('chat profile links resolve through the owner and never navigate the webvie
   try {
     for (const [href, expected] of [
       [
-        'localix://ui/work-item/agent?agent=&scope=p&handle=qa',
-        {
-          id: 'agent:new:p',
-          title: 'New agent',
-          payload: { agentId: '', projectId: 'p', initialHandle: 'qa' },
-        },
-      ],
-      [
-        'localix://ui/work-item/agent?agent=native%3Aqa&scope=p&section=rules',
-        {
-          id: 'agent:profile:p:native:qa',
-          title: 'Native:qa',
-          payload: {
-            agentId: 'native:qa',
-            projectId: 'p',
-            section: 'rules',
-            sectionRequestId: expect.any(String),
-          },
-        },
+        'localix://ui/work-item/store?kind=agent&id=native%3Aqa',
+        { payload: { ref: { kind: 'agent', id: 'native:qa' } } },
       ],
     ] as const) {
       await act(async () =>
-        mounted.render(<MarkdownRendererImpl>{`[Open profile](${href})`}</MarkdownRendererImpl>),
+        mounted.render(<MarkdownRendererImpl>{`[Open store](${href})`}</MarkdownRendererImpl>),
       )
       const link = host.querySelector('a')
       expect(link?.getAttribute('href')).toBe(href)
@@ -56,21 +39,23 @@ test('chat profile links resolve through the owner and never navigate the webvie
       expect(click.defaultPrevented).toBe(true)
       expect(requests.at(-1)).toEqual({
         kind: 'work-item',
-        workKind: 'agent',
+        workKind: 'store',
+        id: 'store',
+        title: 'Store',
         scope: null,
         ...expected,
       })
     }
     // Removing the owner withdraws the live link; no fallback navigation exists.
     await act(async () => {
-      unregisterUiLocation(profile.id)
+      unregisterUiLocation(store.id)
     })
     expect(host.querySelector('a')).toBeNull()
   } finally {
     await act(async () => {
       mounted.unmount()
     })
-    unregisterUiLocation(profile.id)
+    unregisterUiLocation(store.id)
     stop()
   }
 })

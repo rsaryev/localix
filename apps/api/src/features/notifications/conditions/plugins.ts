@@ -1,5 +1,3 @@
-import { settingsEntityAnchor } from '@localixai/mini-app-sdk/navigation'
-
 import { errorMessage } from '../../../lib/errors'
 import { recoveryAction } from '../recovery'
 import type { InboxOrigin } from '../contracts'
@@ -48,16 +46,11 @@ export function createPluginConditions(
   const labels = new Map<string, string>()
   const label = (name: string) => labels.get(name) ?? name
   const application = (name: string): InboxOrigin => ({ kind: 'application', label: label(name) })
-  // Every row lands on the plugin's own Settings row — where it is reloaded, configured or
-  // turned off — or, for the plugin set as a whole, the Plugins tab.
-  const openPlugin = (name: string) =>
-    [
-      recoveryAction(
-        `open-settings:plugins/${settingsEntityAnchor('plugin', name)}`,
-        'Open plugin settings',
-      ),
-    ] as const
-  const openPlugins = () => [recoveryAction('open-settings:plugins', 'Open plugins')] as const
+  // Every row lands on the Plugins shelf of the Store, where a plugin is reloaded, configured or
+  // turned off. A manifest name has no `@marketplace`, so it cannot name one plugin's page.
+  const openPlugin = (_name: string) =>
+    [recoveryAction('open-store:plugin', 'Open plugins')] as const
+  const openPlugins = () => [recoveryAction('open-store:plugin', 'Open plugins')] as const
 
   return {
     loaded(owner, outcome) {

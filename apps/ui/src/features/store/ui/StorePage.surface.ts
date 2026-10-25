@@ -15,13 +15,13 @@ export default defineUiLocation({
   Icon: Store,
   effect: 'read',
   surface: 'work-item',
-  // A Store search hit names one listing: the Store opens on its page.
+  // A Store search hit names one listing: the Store opens on its page. A kind alone is its shelf.
   params: {
     kind: {
       type: 'string',
       optional: true,
       maxLength: 32,
-      description: 'The package kind of the listing to open.',
+      description: 'The package kind of the listing to open, or of the shelf when no id is given.',
     },
     id: {
       type: 'string',
@@ -36,6 +36,6 @@ export default defineUiLocation({
     workKind: STORE_KIND,
     id: STORE_KIND,
     title: 'Store',
-    payload: kind && id ? { ref: { kind, id } } : {},
+    payload: kind && id ? { ref: { kind, id } } : kind ? { shelf: `package:${kind}` } : {},
   }),
 })

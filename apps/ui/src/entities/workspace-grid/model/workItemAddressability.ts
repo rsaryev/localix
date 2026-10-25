@@ -53,9 +53,6 @@ export const CORE_WORK_ITEM_ADDRESSABILITY = {
     locationId: 'work-item.focus',
     reason: 'A live mutation stream exists only while its trusted tool call is mounted.',
   },
-  // Addressable by the record's own id, which is what every caller already holds: a mention
-  // chip, an author line and the registry row all name the same agent.
-  agent: { mode: 'direct', owner: 'agent.profile.open' },
   stats: { mode: 'direct', owner: 'usage.open' },
   problems: { mode: 'direct', owner: 'problems.open' },
   settings: { mode: 'direct', owner: 'settings.open' },

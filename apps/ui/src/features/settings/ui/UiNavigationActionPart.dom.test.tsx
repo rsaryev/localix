@@ -34,9 +34,9 @@ describe('UiNavigationActionPart', () => {
       activeVerb: 'Offering destination',
       output: {
         type: 'ui.navigate',
-        uri: 'localix://ui/settings/tools/tool-loops?scope=PRJ-7',
-        label: 'Open loops settings',
-        description: 'Enable loops if you want to use it.',
+        uri: 'localix://ui/settings/permissions/permission-rules?scope=PRJ-7',
+        label: 'Open permission rules',
+        description: 'Allow or deny what the agent may do.',
       },
     }
     const targets: Array<{ tab: string; anchor?: string; scope?: string }> = []
@@ -55,13 +55,13 @@ describe('UiNavigationActionPart', () => {
 
       const buttons = host.querySelectorAll('button')
       expect(buttons).toHaveLength(1)
-      expect(buttons[0].textContent).toContain('Open loops settings')
+      expect(buttons[0].textContent).toContain('Open permission rules')
       expect(buttons[0].getAttribute('title')).toBeNull()
       expect(buttons[0].getAttribute('data-tooltip-trigger')).toBe('true')
       expect(targets).toEqual([])
 
       await act(async () => buttons[0].click())
-      expect(targets).toEqual([{ tab: 'tools', anchor: 'tool-loops', scope: 'PRJ-7' }])
+      expect(targets).toEqual([{ tab: 'permissions', anchor: 'permission-rules', scope: 'PRJ-7' }])
     } finally {
       unsubscribe()
       await act(async () => root.unmount())
@@ -172,7 +172,7 @@ describe('UiNavigationActionPart', () => {
     }
   })
 
-  test('opens the real Plugins settings surface from a find suggestion', async () => {
+  test('opens the real Permissions settings surface from a find suggestion', async () => {
     const React = await import('react')
     const { act } = React
     const { createRoot } = await import('react-dom/client')
@@ -180,35 +180,35 @@ describe('UiNavigationActionPart', () => {
     const { subscribeSettingsNav } = await import('@/shared/lib/settingsNavBus')
     const { registerUiLocation, unregisterUiLocation } =
       await import('@/shared/contrib/uiLocations')
-    const { default: pluginsSurface } =
-      await import('@/features/settings/ui/PluginsSettings.surface')
+    const { default: permissionsSurface } =
+      await import('@/features/settings/ui/permissions/PermissionsSettings.surface')
     const { ItemView } = await import('@/entities/chat/ui/tool-parts/ItemView')
     const targets: Array<{ tab: string; scope?: string }> = []
     let unsubscribe = () => {}
     const host = document.createElement('div')
     const root = createRoot(host)
     const item: ToolCallItem = {
-      id: 'ui-plugins-suggestion',
+      id: 'ui-permissions-suggestion',
       type: 'tool_call',
       status: 'completed',
-      toolCallId: 'tc-ui-plugins-suggestion',
+      toolCallId: 'tc-ui-permissions-suggestion',
       name: 'localix_ui',
-      input: { action: 'find', query: 'plugin settings enable plugins' },
+      input: { action: 'find', query: 'permission rules allow deny' },
       activeVerb: 'Finding destination',
       output: {
         type: 'ui.navigate.suggestions',
         suggestions: [
           {
             type: 'ui.navigate',
-            uri: 'localix://ui/settings/plugins?scope=project-a',
-            label: 'Plugins',
-            description: 'Open installed plugin settings',
+            uri: 'localix://ui/settings/permissions?scope=project-a',
+            label: 'Permissions',
+            description: 'Open the allow, ask and deny rules',
           },
         ],
       },
     }
 
-    expect(registerUiLocation(pluginsSurface)).toBe(true)
+    expect(registerUiLocation(permissionsSurface)).toBe(true)
     try {
       await act(async () =>
         root.render(
@@ -223,15 +223,15 @@ describe('UiNavigationActionPart', () => {
       targets.length = 0
 
       const button = host.querySelector('button')
-      expect(button?.textContent).toContain('Open Plugins')
+      expect(button?.textContent).toContain('Open Permissions')
       expect(targets).toEqual([])
 
       await act(async () => button?.click())
-      expect(targets).toEqual([{ tab: 'plugins', scope: 'project-a' }])
+      expect(targets).toEqual([{ tab: 'permissions', scope: 'project-a' }])
     } finally {
       unsubscribe()
       await act(async () => root.unmount())
-      unregisterUiLocation(pluginsSurface.id)
+      unregisterUiLocation(permissionsSurface.id)
       host.remove()
     }
   })

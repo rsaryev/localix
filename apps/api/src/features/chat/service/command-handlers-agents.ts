@@ -26,18 +26,11 @@ const HELP = [
   'Creation and invitations do not start work. Address a participant with @handle to give it a task. Parallel copies are managed by `fork`.',
 ].join('\n')
 
-function profileLink(
-  agent: string,
-  scope: string,
-  section?: 'rules' | 'definition',
-  handle?: string,
-): string {
-  return localixUiUri('work-item', ['agent'], {
-    agent,
-    scope,
-    ...(section ? { section } : {}),
-    ...(handle ? { handle } : {}),
-  })
+/** An agent is managed on its Store page; a new one is made on the Agents shelf's Create. */
+function profileLink(agent: string): string {
+  return agent
+    ? localixUiUri('work-item', ['store'], { kind: 'agent', id: agent })
+    : localixUiUri('work-item', ['store', 'agents'])
 }
 
 function describe(agent: AgentSummary, members: ReadonlySet<string>): string {
@@ -46,7 +39,7 @@ function describe(agent: AgentSummary, members: ReadonlySet<string>): string {
     : canJoinConversation(agent)
       ? 'available'
       : 'chat unavailable'
-  return `- [@${agent.record.handle}](${profileLink(agent.record.id, agent.projectId)}) · priority ${agent.record.leadershipPriority} · ${state}${members.has(agent.record.id) ? ' · in this chat' : ''} — ${agent.record.description || 'No description'}`
+  return `- [@${agent.record.handle}](${profileLink(agent.record.id)}) · priority ${agent.record.leadershipPriority} · ${state}${members.has(agent.record.id) ? ' · in this chat' : ''} — ${agent.record.description || 'No description'}`
 }
 
 /** User-owned CRUD, never an agent policy-writing channel. All membership uses chat's writer. */
@@ -104,7 +97,7 @@ export async function handleAgentsControlCommand(
       if (!hasFields) {
         if (handle) agentHandleSchema.parse(handle)
         return directReply(
-          `[Create ${handle ? `@${handle}` : 'an agent'}](${profileLink('', scope, undefined, handle)}) — fill in its definition and save.`,
+          `[Create ${handle ? `@${handle}` : 'an agent'}](${profileLink('')}) — on the Agents shelf choose Create, then fill in its definition and save.`,
         )
       }
       const input = agentAuthoredBlueprintSchema.parse({ handle, ...fields })
@@ -114,7 +107,7 @@ export async function handleAgentsControlCommand(
       )
       announce(ctx)
       return directReply(
-        `Created @${created.record.handle}. [Open profile](${profileLink(created.record.id, scope)}). Add it with \`/agents add @${created.record.handle}\`.`,
+        `Created @${created.record.handle}. [Open profile](${profileLink(created.record.id)}). Add it with \`/agents add @${created.record.handle}\`.`,
       )
     }
     if (
@@ -161,13 +154,13 @@ export async function handleAgentsControlCommand(
           '',
           agent.record.instructions,
           '',
-          `[Permissions](${profileLink(id, scope, 'rules')})`,
+          `[Permissions](${profileLink(id)})`,
         ].join('\n'),
       )
     }
     if (action === 'permissions' || (action === 'edit' && !hasFields)) {
       return directReply(
-        `[Open ${action === 'permissions' ? 'permissions' : 'definition'} for @${agent.record.handle}](${profileLink(id, scope, action === 'permissions' ? 'rules' : 'definition')})`,
+        `[Open ${action === 'permissions' ? 'permissions' : 'definition'} for @${agent.record.handle}](${profileLink(id)})`,
       )
     }
     if (action === 'add') {

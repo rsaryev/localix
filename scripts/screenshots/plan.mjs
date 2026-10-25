@@ -206,13 +206,13 @@ export const capturePlan = {
   },
   'agents/context-and-limits': {
     guide: 'features/agents.md',
-    purpose: 'Standing instructions, memory scope and turn budget in one profile',
+    purpose: 'An agent’s page in the Store: standing instructions, memory scope and turn budget',
     scenario: 'agent',
   },
   'agents/create-from-chat': {
     guide: 'features/agent-management.md',
     purpose:
-      'A user’s /agents create command opens the existing scoped form with a populated specialist definition',
+      'A user’s /agents create command opens the Store’s Add agent form with the specialist’s name and description filled in',
     scenario: 'agent-management',
   },
   'resume/editor-wide': {

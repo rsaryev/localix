@@ -5,8 +5,6 @@ import { SettingsSearch } from './SettingsSearch'
 import { PreferencesSettings } from './PreferencesSettings'
 import { EditorSettings } from './EditorSettings'
 import { KeyboardShortcutsSettings } from './KeyboardShortcutsSettings'
-import { CapabilitiesSettings } from './CapabilitiesSettings'
-import { AgentsSettings } from './AgentsSettings'
 import { SystemSettings } from './SystemSettings'
 import { PermissionsSettings } from './permissions/PermissionsSettings'
 import { ProjectSettingsForm } from './ProjectsSettings'
@@ -18,7 +16,7 @@ import { useUiNavigation } from '@/shared/hooks/useUiNavigation'
 import { SettingsNavigation } from './SettingsNavigation'
 import { SettingsWorkspace } from './SettingsWorkspace'
 import { ProjectScopeSelect } from './ScopeSwitcher'
-import { isCapabilityTab, parseSettingsTab, type SettingsTabId } from '@/shared/routing/routes'
+import { parseSettingsTab, type SettingsTabId } from '@/shared/routing/routes'
 import { subscribeSettingsNav, consumeSettingsNav } from '@/shared/lib/settingsNavBus'
 import { useSettingsAnchorMaterializer } from '../model/useSettingsAnchorMaterializer'
 import { navigateUi } from '@/shared/lib/uiNavigation'
@@ -34,7 +32,7 @@ function isProjectTab(tab: SettingsTabId): tab is { kind: 'project'; id: string 
 interface SettingsPanelProps {
   activeTab?: SettingsTabId
   onTabChange?: (tab: SettingsTabId) => void
-  /** Active project id ('' / undefined = no project) — defaults the Capabilities scope picker. */
+  /** Active project id ('' / undefined = no project) — defaults the project the Permissions page opens on. */
   defaultScope?: string
 }
 
@@ -47,11 +45,7 @@ export function SettingsPanel({
   // Settings is app-level: it acts for no chat, so a link out of it opens nothing chat-scoped.
   const uiNavigation = useUiNavigation({ sessionId: null })
   const contentRef = useRef<HTMLDivElement>(null)
-  const [requestedCapabilityScope, setRequestedCapabilityScope] = useState<string | null>(null)
-  // The Agents page picks a project of its own: an agent record is stored globally or in
-  // one project, and that choice is unrelated to which scope's ceiling you were last
-  // editing on the Capabilities page.
-  const [agentsScope, setAgentsScope] = useState(defaultScope ?? '')
+  const [requestedScope, setRequestedScope] = useState<string | null>(null)
   const projects = useSettingsProjects()
   // When rendered without controlling props (the grid mounts it bare), the panel
   // owns its own tab state so the tab bar still switches.
@@ -73,7 +67,7 @@ export function SettingsPanel({
     () =>
       subscribeSettingsNav(({ tab, scope }) => {
         onTabChange(parseSettingsTab(tab, tab === 'project' && scope ? scope : undefined))
-        setRequestedCapabilityScope(scope ?? null)
+        setRequestedScope(scope ?? null)
         consumeSettingsNav()
       }),
     [onTabChange],
@@ -121,22 +115,7 @@ export function SettingsPanel({
       return <SystemSettings activeTab={activeTab} onTabChange={onTabChange} />
     }
     if (activeTab === 'permissions') {
-      return <PermissionsSettings projectId={requestedCapabilityScope ?? defaultScope ?? ''} />
-    }
-    if (activeTab === 'agents') {
-      return (
-        <AgentsSettings scope={agentsScope} projects={projects} onScopeChange={setAgentsScope} />
-      )
-    }
-    if (isCapabilityTab(activeTab)) {
-      return (
-        <CapabilitiesSettings
-          activeTab={activeTab}
-          onTabChange={(tab) => onTabChange?.(tab)}
-          projects={projects}
-          defaultScope={requestedCapabilityScope ?? defaultScope}
-        />
-      )
+      return <PermissionsSettings projectId={requestedScope ?? defaultScope ?? ''} />
     }
     if (onProjectTab || activeTab === 'project') {
       const proj = projects.find((p) => p.id === activeProjId)

@@ -1,5 +1,5 @@
 import type { CuratedTip } from './tips-curated'
-import { insertAction, settingsAction } from './tips-actions'
+import { insertAction, storeAction } from './tips-actions'
 
 /**
  * Tips about the LIVE SESSION — the ones that are advice at a particular moment and
@@ -63,7 +63,7 @@ export const SESSION_TIPS: readonly CuratedTip[] = [
     id: 'session:first-agents',
     text: 'You can keep several agents, each with its own model, prompt and rules.',
     when: { signals: ['first-session'] },
-    actions: [settingsAction('agents', 'Open Agents')],
+    actions: [storeAction('agent', 'Open Agents')],
   },
   {
     id: 'session:first-interrupt',

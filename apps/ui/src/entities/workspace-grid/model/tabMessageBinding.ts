@@ -29,7 +29,6 @@ function coreMessageBinding(item: WorkItem): MessageBindingDragPayload | null {
         : null
     }
     // Not linkable: nothing in these tabs is a thing the composer can reference.
-    case 'agent':
     case 'chat':
     case 'global-search':
     case 'live-file-change':

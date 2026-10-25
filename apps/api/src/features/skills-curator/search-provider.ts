@@ -5,11 +5,13 @@
 import type { SearchProvider } from '../agent-core/search/provider'
 import { catalogHits } from '../search/catalog-hybrid'
 import { SKILLS_COLLECTION } from './semantic'
-import { settingsEntityUiUri } from '@localixai/mini-app-sdk/navigation'
+import { capabilityUiUri } from '@localixai/mini-app-sdk/navigation'
 
 export interface SkillSearchRow {
   name: string
   description: string
+  /** The project a project-scoped item belongs to; empty or absent for a personal one. */
+  projectId?: string | null
 }
 
 export interface SkillsSearchPort {
@@ -32,7 +34,7 @@ export function createSkillsSearchProvider(port: SkillsSearchPort): SearchProvid
         nameOf: (s) => s.name,
         fields: (s) => [s.name, s.description],
         hit: (s, score) => ({
-          id: settingsEntityUiUri('skills', 'skill', s.name, query.projectId ?? ''),
+          id: capabilityUiUri({ kind: 'skill', id: s.name, scope: s.projectId ?? '' }),
           domain: 'skills',
           title: s.name,
           subtitle: s.description,

@@ -1,15 +1,9 @@
-import { Puzzle, Settings, SlidersHorizontal, Wrench } from 'lucide-react'
+import { Settings, SlidersHorizontal, Wrench } from 'lucide-react'
 import type { MiniAppUiHost, UiAnchorNode } from '@localixai/mini-app-sdk/ui'
 import { SETTINGS_INDEX } from '@/shared/lib/settings-index/settingsIndex'
-import {
-  settingsTargetUri,
-  parseSettingsAnchorUri,
-  pluginSettingsUri,
-} from '@/shared/lib/settingsAnchors'
+import { settingsTargetUri, parseSettingsAnchorUri } from '@/shared/lib/settingsAnchors'
 import { SETTINGS_STRING_TABS } from '@/shared/routing/routes'
-import { miniAppContribSnapshot } from '@/shared/contrib/enabledMiniApps'
 import { listUiLocations } from '@/shared/contrib/uiLocations'
-import { miniAppLabel } from '@localixai/mini-app-sdk/manifest-label'
 
 function settingsChildren(parentUri: string | null): UiAnchorNode[] {
   if (parentUri === null) {
@@ -17,7 +11,7 @@ function settingsChildren(parentUri: string | null): UiAnchorNode[] {
       {
         uri: settingsTargetUri(),
         label: 'Settings',
-        detail: 'Preferences, capabilities, and diagnostics',
+        detail: 'Preferences, permissions, models and diagnostics',
         hasChildren: true,
         icon: 'settings',
         group: 'Application',
@@ -58,17 +52,6 @@ function settingsChildren(parentUri: string | null): UiAnchorNode[] {
       icon: 'settings-section',
     })
   }
-  if (parsed.tab === 'plugins') {
-    for (const plugin of miniAppContribSnapshot().document?.plugins ?? []) {
-      rows.push({
-        uri: pluginSettingsUri(plugin.name, plugin.projectId),
-        label: miniAppLabel(plugin),
-        detail: `${plugin.enabled ? 'Enabled' : 'Disabled'} · ${plugin.name}`,
-        hasChildren: false,
-        icon: 'plugin',
-      })
-    }
-  }
   return rows
 }
 
@@ -80,7 +63,6 @@ export function registerUi(host: MiniAppUiHost): void {
       settings: Settings,
       'settings-tab': SlidersHorizontal,
       'settings-section': Wrench,
-      plugin: Puzzle,
     },
     listChildren: settingsChildren,
     resolve: (uri) => {

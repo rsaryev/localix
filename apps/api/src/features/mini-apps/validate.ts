@@ -10,7 +10,7 @@ export interface MiniAppValidation {
 /**
  * A mini app's static checks, without importing its code: its manifest, its host API version, the
  * agents it contributes, and names that must be unique (views, a command's arguments, prompt
- * section titles). What Settings → Mini apps shows under the app.
+ * section titles). What the Store shows under the app.
  */
 export function validateMiniApp(app: DiscoveredMiniApp): MiniAppValidation {
   const errors: string[] = []

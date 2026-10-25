@@ -65,7 +65,7 @@ The manifest defines no mini app configuration keys. Market and chart choices li
 
 | Setting                    | Where                              | Behavior                                                                            |
 | -------------------------- | ---------------------------------- | ----------------------------------------------------------------------------------- |
-| Mini app enabled state     | Settings → Mini apps               | Makes all Trading contributions available; enabled by default                       |
+| Mini app enabled state     | The Store (Mini apps)              | Makes all Trading contributions available; enabled by default                       |
 | Data source                | Trading Workspace market browser   | Selects an exchange from the installed catalog; the initial source is `hyperliquid` |
 | Market filter and category | Market browser                     | Filters the live roster by text, favorites, market type, or third-party grouping    |
 | Favorite markets           | Star control in the market browser | Persists a set per public connection in browser local storage                       |
