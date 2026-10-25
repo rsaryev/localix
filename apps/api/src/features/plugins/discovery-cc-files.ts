@@ -18,6 +18,7 @@ import {
 import { parseYamlFrontmatterBlock } from '../agent-core/frontmatter-yaml'
 import {
   PLUGIN_QUALIFIED_NAME_RE,
+  localixKeySchema,
   pluginAgentSchema,
   pluginCommandSchema,
   type PluginAgent,
@@ -256,6 +257,8 @@ export async function parseAgentFile(
   // ACTIVATED for the child delegate run (see command-handlers / delegate wiring). A flat-string
   // `hooks:` value (rare) is ignored — only a mapping is a valid CC hooks block.
   const hooks = isPlainRecord(yaml?.hooks) ? yaml!.hooks : undefined
+  // `localix:` — what Claude Code has no place for; Claude Code ignores the key.
+  const localix = isPlainRecord(yaml?.localix) ? localixKeySchema.safeParse(yaml!.localix) : null
   // CC `experimental.cacheTtl:` — `5m` or `1h`; any other value is ignored.
   const ttl = isPlainRecord(yaml?.experimental) ? yaml!.experimental.cacheTtl : undefined
   const cacheTtl = ttl === '5m' || ttl === '1h' ? ttl : undefined
@@ -286,6 +289,7 @@ export async function parseAgentFile(
     ...(color ? { color } : {}),
     ...(initialPrompt ? { initialPrompt } : {}),
     ...(hooks !== undefined ? { hooks } : {}),
+    ...(localix?.success ? { localix: localix.data } : {}),
   })
   if (parsed.success) return parsed.data
   diagnostics?.push({

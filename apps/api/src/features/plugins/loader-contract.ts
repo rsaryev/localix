@@ -2,7 +2,7 @@ import type { PluginHookConfig } from '../cc-hooks'
 import type { McpServerRecord } from '../mcp/repository'
 import type { DiscoveredSkill } from '../agent-core/skill-discovery'
 import { normalizeCcToolName } from './discovery'
-import type { PluginAgent, PluginMonitor } from './contracts'
+import type { LocalixKey, PluginAgent, PluginMonitor } from './contracts'
 import type { PluginOutputStyle } from './output-styles'
 
 /**
@@ -50,6 +50,8 @@ export interface LoadedPluginAgent {
   memory?: 'user' | 'project' | 'local'
   /** CC `initialPrompt` — leads the chat's first turn when it runs as the main session agent. */
   initialPrompt?: string
+  /** The file's `localix:` key (priority, model route, memory scope). */
+  localix?: LocalixKey
 }
 
 /**
@@ -196,5 +198,6 @@ export function buildLoadedAgent(
     ...(agent.autoCompactWindow ? { autoCompactWindow: agent.autoCompactWindow } : {}),
     ...(agent.memory ? { memory: agent.memory } : {}),
     ...(agent.initialPrompt ? { initialPrompt: subst(agent.initialPrompt) } : {}),
+    ...(agent.localix ? { localix: agent.localix } : {}),
   }
 }

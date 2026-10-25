@@ -20,8 +20,8 @@ export type {
   PluginCommandSpec,
   ListPluginCommandsResponse,
 } from './contracts-commands'
-export { pluginAgentSchema } from './contracts-agents'
-export type { PluginAgent } from './contracts-agents'
+export { localixKeySchema, pluginAgentSchema } from './contracts-agents'
+export type { LocalixKey, PluginAgent } from './contracts-agents'
 
 export type { PluginMonitor } from './contracts-monitors'
 

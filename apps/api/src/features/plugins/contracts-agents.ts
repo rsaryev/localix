@@ -7,6 +7,17 @@ import { PLUGIN_QUALIFIED_NAME_RE } from './contracts-base'
  * tools) a forked run takes, so an enabled plugin agent rides the existing dispatch. Selected as
  * `<plugin>:<name>` (a skill's `agent:`). Pure manifest data.
  */
+export const localixKeySchema = z.object({
+  /** Conversation election, −2..2; the higher leads. */
+  priority: z.number().int().min(-2).max(2).catch(0),
+  /** A Localix model route, `<provider>/<model>`, for a file whose `model` is `inherit`. */
+  model: z.string().trim().min(1).optional().catch(undefined),
+  /** A reasoning effort Claude Code's own `effort` set does not name. */
+  effort: z.string().trim().min(1).optional().catch(undefined),
+  memoryScope: z.enum(['global', 'project', 'session']).optional().catch(undefined),
+})
+export type LocalixKey = z.infer<typeof localixKeySchema>
+
 export const pluginAgentSchema = z.object({
   // Accepts a namespaced `foo:bar` name (nested `agents/foo/bar.md`); a plain name is
   // the single-segment case (PLUGIN_QUALIFIED_NAME_RE ⊇ PLUGIN_NAME_RE). Assignee
@@ -92,5 +103,10 @@ export const pluginAgentSchema = z.object({
    * so this is populated from the lossless `.json` / `--agents` JSON form.
    */
   hooks: z.unknown().optional(),
+  /**
+   * The `localix:` key of an agent file: what Claude Code has no place for. Claude Code ignores
+   * unknown keys without an error, so a file stays valid there (`agents/catalog/agent-file.ts`).
+   */
+  localix: localixKeySchema.optional(),
 })
 export type PluginAgent = z.infer<typeof pluginAgentSchema>
