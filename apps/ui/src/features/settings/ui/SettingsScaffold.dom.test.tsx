@@ -32,6 +32,26 @@ describe('native settings rows', () => {
     expect(section.getAttribute('aria-labelledby')).toBe(host.querySelector('h3')?.id ?? null)
   })
 
+  test('a page opens with its title, then its description, then what it can do', async () => {
+    const { renderToStaticMarkup } = await import('react-dom/server')
+    const { SettingsPage } = await import('./SettingsScaffold')
+    const host = document.createElement('div')
+    host.innerHTML = renderToStaticMarkup(
+      <SettingsPage
+        title="Models"
+        description="Which models answer."
+        actions={<button type="button">Add model</button>}
+      >
+        <p>Body</p>
+      </SettingsPage>,
+    )
+    expect(host.querySelector('h2')?.textContent).toBe('Models')
+    const text = host.textContent ?? ''
+    expect(text.indexOf('Models')).toBeLessThan(text.indexOf('Which models answer.'))
+    expect(text.indexOf('Which models answer.')).toBeLessThan(text.indexOf('Add model'))
+    expect(text.indexOf('Add model')).toBeLessThan(text.indexOf('Body'))
+  })
+
   test('shortcut search and an icon-only, named reset control are both present', async () => {
     const { renderToStaticMarkup } = await import('react-dom/server')
     const { KeyboardShortcutsSettings } = await import('./KeyboardShortcutsSettings')

@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
-import { SettingsPageHeader } from './SettingsScaffold'
 import { inlineFailure } from '@/shared/lib/notifications/inlineReport'
 import { RefreshCw } from 'lucide-react'
 import { ActivitySignal } from '@localixai/kit/activity-orb'
 import { Button } from '@localixai/kit/button'
 import { Input } from '@localixai/kit/input'
+import { SectionHeading } from '@localixai/kit/section-heading'
 import { Select } from '@localixai/kit/select'
 import { effectiveConfigApi } from '@/shared/api/effectiveConfigApi'
 import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
@@ -76,7 +76,7 @@ export function DiagnosticsSettings({ embedded = false }: { embedded?: boolean }
   return (
     <div className="space-y-8 text-left">
       {!embedded && (
-        <SettingsPageHeader
+        <SectionHeading
           title="Diagnostics"
           description="Inspect the configuration applied to a project or session. This report is read-only and hides secret values."
         />

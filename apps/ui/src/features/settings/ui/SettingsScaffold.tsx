@@ -1,5 +1,6 @@
 import { createContext, useContext, useId, type ReactNode } from 'react'
 import { DIVIDED_LIST } from '@localixai/kit/divided-list'
+import { SectionHeading } from '@localixai/kit/section-heading'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 /**
@@ -18,64 +19,6 @@ const SettingsSectionContext = createContext(false)
 
 export const SETTINGS_CARD =
   'overflow-hidden rounded-md border border-border-faint bg-foreground/[0.02]'
-
-/**
- * The title + description block every settings page opens with.
- *
- * Split out of `SettingsPage` because one page — Capabilities — cannot use the
- * full scaffold: its tab strip has to sit directly under the heading and draw
- * the page's only rule. It used to restate the heading markup instead, so the
- * two headings drifted apart in type scale and gutters and the title moved when
- * you navigated between them. The heading is stated here once; a page that
- * needs a different seam passes it, and nothing else is duplicated.
- */
-export function SettingsPageHeader({
-  title,
-  description,
-  actions,
-  className,
-}: {
-  title: string
-  /** A sentence, or a node such as a monospaced path; it sits under the title in the soft tier. */
-  description?: ReactNode
-  /**
-   * What this page can do, on the heading's own line.
-   *
-   * A slot rather than a row of its own below: a page that stacked its title, its
-   * description and then its buttons spent three rows of a screen on saying its own name,
-   * and the buttons ended up floating in the gap between the heading and the content they
-   * act on.
-   */
-  actions?: ReactNode
-  className?: string
-}) {
-  return (
-    <header
-      className={cn(
-        'flex flex-col items-stretch justify-between gap-3 @xl:flex-row @xl:items-start @xl:gap-4',
-        className,
-      )}
-    >
-      <div className="min-w-0 space-y-1">
-        <h2 className="text-xl leading-7 font-semibold tracking-tight text-foreground text-balance">
-          {title}
-        </h2>
-        {description && (
-          <div className="max-w-2xl text-sm leading-5 text-text-soft text-pretty">
-            {description}
-          </div>
-        )}
-      </div>
-      {actions && (
-        // Centred on the title's line, whatever the control's height: a 36px button and a 28px
-        // picker sit on the same axis as the title instead of drifting toward the description.
-        <div className="flex min-w-0 flex-wrap items-center gap-2 @xl:h-7 @xl:shrink-0 @xl:flex-nowrap @xl:justify-end">
-          {actions}
-        </div>
-      )}
-    </header>
-  )
-}
 
 /**
  * Every settings page: its header, an optional tab strip, then its sections. One geometry for all
@@ -98,11 +41,7 @@ export function SettingsPage({
 }) {
   return (
     <div className="flex flex-col gap-6 text-left">
-      <SettingsPageHeader
-        title={title}
-        {...(description === undefined ? {} : { description })}
-        {...(actions === undefined ? {} : { actions })}
-      />
+      <SectionHeading title={title} description={description} actions={actions} />
       {tabs}
       <div className="min-w-0 space-y-8">{children}</div>
     </div>
