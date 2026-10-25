@@ -14,7 +14,6 @@ import {
   pluginRecordSchema,
   removePluginRequestSchema,
   updatePluginRequestSchema,
-  setPluginConfigRequestSchema,
 } from './contracts'
 import type { PluginService } from './service-types'
 import {
@@ -33,7 +32,6 @@ export type PluginRoutesService = Pick<
   | 'listPluginCommands'
   | 'listOutputStyles'
   | 'setEnabled'
-  | 'setConfig'
   | 'install'
   | 'update'
   | 'remove'
@@ -49,10 +47,6 @@ export function createPluginRoutes(service: PluginRoutesService) {
   const app = new Hono<AppContext>()
 
   const routes = app
-    .post('/config', zValidator('json', setPluginConfigRequestSchema), async (c) => {
-      const response = await service.setConfig(c.get('userId'), c.req.valid('json'))
-      return c.json(pluginRecordSchema.parse(response), 200)
-    })
     .post('/install', zValidator('json', installPluginRequestSchema), async (c) => {
       const response = await service.install(c.get('userId'), c.req.valid('json'))
       return c.json(pluginRecordSchema.parse(response), 201)

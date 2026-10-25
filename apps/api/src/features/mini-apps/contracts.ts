@@ -144,12 +144,6 @@ export const setMiniAppEnabledRequestSchema = z.object({
   agentId: z.string().optional(),
 })
 
-export const setMiniAppConfigRequestSchema = z.object({
-  name: z.string().min(1),
-  projectId: z.string().nullable().optional(),
-  values: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])),
-})
-
 export const removeMiniAppRequestSchema = z.object({
   name: z.string().min(1),
   projectId: z.string().nullable().optional(),

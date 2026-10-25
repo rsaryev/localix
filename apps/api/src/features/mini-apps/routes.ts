@@ -13,7 +13,6 @@ import {
 import {
   listMiniAppsResponseSchema,
   removeMiniAppRequestSchema,
-  setMiniAppConfigRequestSchema,
   setMiniAppEnabledRequestSchema,
 } from './contracts'
 import type { MiniAppService } from './service'
@@ -49,7 +48,6 @@ export type MiniAppRoutesService = Pick<
   MiniAppService,
   | 'list'
   | 'setEnabled'
-  | 'setConfig'
   | 'remove'
   | 'resolveArgOptions'
   | 'resolveUiFile'
@@ -76,10 +74,6 @@ export function createMiniAppRoutes(service: MiniAppRoutesService) {
     })
     .post('/enable', zValidator('json', setMiniAppEnabledRequestSchema), async (c) => {
       await service.setEnabled(c.get('userId'), c.req.valid('json'))
-      return c.body(null, 204)
-    })
-    .post('/config', zValidator('json', setMiniAppConfigRequestSchema), async (c) => {
-      await service.setConfig(c.get('userId'), c.req.valid('json'))
       return c.body(null, 204)
     })
     .post('/remove', zValidator('json', removeMiniAppRequestSchema), async (c) => {
