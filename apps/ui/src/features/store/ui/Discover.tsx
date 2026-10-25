@@ -45,11 +45,9 @@ function CollectionCard({ collection, listings }: { collection: Collection; list
           <span className="line-clamp-2 text-xs text-text-soft">{collection.subtitle}</span>
         )}
       </div>
-      <div aria-hidden className="flex shrink-0 -space-x-3">
+      <div aria-hidden className="flex shrink-0 gap-2">
         {listings.slice(0, 4).map((listing) => (
-          <span key={keyOf(listing.ref)} className="rounded-xl ring-2 ring-card">
-            <ListingIcon listing={listing} size={48} />
-          </span>
+          <ListingIcon key={keyOf(listing.ref)} listing={listing} size={48} />
         ))}
       </div>
       <ChevronRight className="size-4 shrink-0 text-text-faint" aria-hidden />
