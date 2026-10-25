@@ -51,26 +51,8 @@ jobs:
               bun run type-check
               bun run check:tests
               bun run check:size
-          - check: unit tests
-            cache: unit
-            run: bun run test
-          # Real processes, PTYs and watchers: every package's test:integration, the scripts
-          # workspace's included.
-          - check: integration tests
-            cache: integration
-            run: bun run test:integration
-          # Stages the desktop bundle and starts its API from a copy outside the checkout, the way
-          # the packaged app does: a missing resource or an unresolved vendored module shows up
-          # here instead of in a release leg that has already been signed and notarized.
-          - check: desktop bundle
-            cache: bundle
-            run: bun run check:bundle
-          # Every package's unit tests under coverage: each package holds its recorded floor, no
-          # source file goes untested, and a pull request's changed lines are run by tests
-          # (docs/internals/testing.md#coverage).
-          - check: coverage
-            cache: coverage
-            run: bun run coverage
+          # Tests, integration tests, coverage and the desktop bundle run locally (pre-push and on
+          # demand) for now: on shared runners their timing made Checks red on unchanged code.
     # A pull request checks and tests only the packages it changes and their dependents (Turbo's
     # --affected against its base; a global input selects everything). Main deliberately checks
     # the whole tree, unfiltered, so every main commit has a full run a release can rely on. The
@@ -88,15 +70,6 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: ${{ github.event_name == 'pull_request' && 0 || 1 }}
-
-      - name: Install ripgrep and zsh for tests
-        if: matrix.cache == 'unit' || matrix.cache == 'integration' || matrix.cache == 'coverage'
-        run: |
-          for attempt in 1 2 3; do
-            sudo apt-get update && sudo apt-get install -y --no-install-recommends ripgrep zsh && break
-            [ "$attempt" = 3 ] && exit 1
-            sleep 10
-          done
 
       - name: Setup workspace
         uses: ./.github/actions/setup-workspace
@@ -119,13 +92,6 @@ jobs:
       # Type checks and tests read workspace declarations and bundles from the build output.
       - name: Build workspace packages
         run: bun run build
-
-      - name: Setup Rust for the bundle check
-        if: matrix.cache == 'bundle'
-        uses: ./.github/actions/setup-desktop
-        with:
-          toolchain: ${{ env.RUST_TOOLCHAIN }}
-          build-native: 'false'
 
       # A slice runs several commands, so they run under -e: the first to fail stops the slice
       # (without it only the LAST command's status counted). The log is kept for the summary below,

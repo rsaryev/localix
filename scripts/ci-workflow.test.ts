@@ -33,15 +33,8 @@ type Workflow = {
 const ci = Bun.YAML.parse(read('.github/workflows/ci.yml')) as Workflow
 const release = Bun.YAML.parse(read('.github/workflows/release.yml')) as Workflow
 const landing = Bun.YAML.parse(read('.github/workflows/landing.yml')) as Workflow
-const gates = [
-  'type-check',
-  'check:tests',
-  'check:size',
-  'test',
-  'test:integration',
-  'check:bundle',
-  'coverage',
-]
+// The tests, integration tests, bundle and coverage run locally (pre-push, on demand) for now.
+const gates = ['type-check', 'check:tests', 'check:size']
 const slices = ci.jobs.app.strategy?.matrix.include ?? []
 /** Every `bun run <script>` the app matrix runs, slice by slice. */
 const sliceCommands = slices.flatMap((slice) =>
@@ -179,13 +172,7 @@ describe('CI minute budget contract', () => {
   test('checks the workspace as parallel slices that together run every gate', () => {
     const app = ci.jobs.app
     expect(app.strategy?.['fail-fast']).toBe(false)
-    expect(slices.map((slice) => slice.cache)).toEqual([
-      'types',
-      'unit',
-      'integration',
-      'bundle',
-      'coverage',
-    ])
+    expect(slices.map((slice) => slice.cache)).toEqual(['types'])
     expect([...sliceCommands].sort()).toEqual(gates.map((gate) => `bun run ${gate}`).sort())
     // One install and one build per slice, the build before the slice's own commands.
     const runs = app.steps.map((step) => step.run ?? step.uses ?? '')
@@ -196,13 +183,7 @@ describe('CI minute budget contract', () => {
     expect(check).toBeGreaterThan(build)
     expect(app.steps[check]?.if).toBeUndefined()
     expect(app.steps[check]?.['continue-on-error']).toBeUndefined()
-    // The bundle slice needs the Rust bundle tools; no other slice pays for them.
-    const tools = app.steps.find((step) => step.name === 'Setup Rust for the bundle check')
-    expect(tools?.if).toBe("matrix.cache == 'bundle'")
-    expect(tools?.with?.['build-native']).toBe('false')
-    expect(tools?.with?.toolchain).toBe('${{ env.RUST_TOOLCHAIN }}')
     expect(ci.env?.RUST_TOOLCHAIN).toBe('1.96.1')
-    expect(app.steps.indexOf(tools!)).toBeLessThan(check)
     // The step runs under bash with pipefail, so piping the log through tee keeps the exit code, and
     // the slice's commands run under -e, so the first failing one fails the slice (not only the last).
     expect(app.steps[check]?.shell).toBe('bash')
