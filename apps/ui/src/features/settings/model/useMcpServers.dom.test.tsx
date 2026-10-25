@@ -75,10 +75,6 @@ describe('MCP runtime availability mutations', () => {
             resolve({ ...document1, revision: 2, mcp: [{ ...server, enabled: true }] } as never)
         }),
     )
-    const probe = spyOn(backendClient, 'testMcpServer').mockResolvedValue({
-      ok: true,
-      tools: [],
-    })
     const latest: { current: McpServersData | null } = { current: null }
 
     function Harness() {
@@ -128,6 +124,5 @@ describe('MCP runtime availability mutations', () => {
     await act(async () => root.unmount())
     list.mockRestore()
     save.mockRestore()
-    probe.mockRestore()
   })
 })

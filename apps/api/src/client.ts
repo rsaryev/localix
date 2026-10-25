@@ -291,15 +291,10 @@ export type * from './features/agent-core/tools/hitl/mcp-elicitation-content'
 
 export type {
   McpServer,
-  McpServerInput,
-  McpServerStatus,
-  ImportMcpServersResponse,
-  McpTransport,
   McpStdioConfig,
   McpHttpConfig,
   McpOAuthConfig,
 } from './features/mcp/contracts'
-export { unwrapMcpServersBlob } from './features/mcp/unwrap'
 
 export type {
   CreateTerminalRequest,

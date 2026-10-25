@@ -17,7 +17,6 @@ import type { CatalogResponse, UiSession } from './contracts'
 export { applyStreamEventToSession, needsSessionResync } from './applyStreamEvent'
 import { client, unwrap, ApiError, apiFetch, API_BASE_URL, WS_BASE_URL } from './internal'
 import { providerConnectionsApi } from './providers-client'
-import { mcpApi } from './mcp-client'
 import { pluginsApi } from './plugins-client'
 import { miniAppsApi } from './mini-apps-client'
 import { capabilitiesApi } from './capabilities-client'
@@ -66,7 +65,6 @@ export const backendClient = {
 
   ...skillsApi,
 
-  ...mcpApi,
   ...pluginsApi,
   ...miniAppsApi,
   ...capabilitiesApi,

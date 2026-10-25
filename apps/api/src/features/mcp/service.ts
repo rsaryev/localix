@@ -11,9 +11,7 @@ import { createMcpRepository, type McpRepository, type McpServerRecord } from '.
 import { probeMcpServer } from './client-manager'
 import { oauthStatusFor, toApi } from './server-view'
 import { createAvailabilityWriter, readAvailability } from '../capabilities/availability'
-import { normalizeMcpServersJson } from './normalize'
 import { mcpOAuthStore } from './oauth/runtime'
-import { importedToolRules } from './imported-tool-rules'
 import { forgetMcpSecrets, hydrateMcpRecords, sealMcpConfig } from './store-secrets'
 import {
   startMcpOAuth,
@@ -21,12 +19,7 @@ import {
   type StartAuthResult,
   type FinishAuthResult,
 } from './oauth/flow'
-import type {
-  ImportMcpServersResponse,
-  McpServer,
-  McpServerInput,
-  McpServerStatus,
-} from './contracts'
+import type { McpServer, McpServerInput, McpServerStatus } from './contracts'
 
 export interface McpServiceDeps {
   db: Kysely<AppDatabase>
@@ -52,26 +45,11 @@ export interface McpService {
   createServer(userId: string, input: McpServerInput): Promise<McpServer>
   /** Edit an existing DB server BY ID (rename-safe — never duplicates the row). */
   updateServer(userId: string, id: string, input: McpServerInput): Promise<McpServer>
-  /** Enable / disable one server (e.g. turning on an inert imported entry). */
   /** React to this scope's `mcp:` rules having changed. No storage of its own to update. */
   onPolicyChanged(): Promise<void>
-  setServerEnabled(
-    userId: string,
-    id: string,
-    enabled: boolean,
-    /** Switch it for ONE agent's scope instead of the server's own project. */
-    agentId?: string | null,
-  ): Promise<McpServer>
-  /** Enable / disable one advertised tool while preserving the rest of the server config. */
   deleteServer(userId: string, id: string): Promise<void>
   /** Probe a server's live connection. */
   testServer(userId: string, id: string): Promise<McpServerStatus>
-  /** Bulk-import the ecosystem-standard `{ mcpServers: {…} }` shape. */
-  importServers(
-    userId: string,
-    payload: { mcpServers: Record<string, Record<string, unknown>>; defaultEnabled?: boolean },
-    projectId: string | null,
-  ): Promise<ImportMcpServersResponse>
   /** Used by the runtime to gather servers visible to a session's scope. */
   listForRuntime(userId: string, projectId: string): Promise<McpServerRecord[]>
   /** Begin an interactive OAuth sign-in for a remote server (returns the browser URL). */
@@ -196,17 +174,6 @@ export function createMcpService(deps: McpServiceDeps): McpService {
       deps.onChanged?.()
     },
 
-    async setServerEnabled(userId, id, enabled, agentId) {
-      const stored = await repo.getById(userId, id)
-      if (!stored) throw new NotFoundError('mcp_not_found', 'MCP server not found')
-      const [record = stored] = await hydrateMcpRecords(userId, [stored])
-      await availabilityWriter.set(userId, agentId || DEFAULT_AGENT_ID, 'mcp', [
-        { name: record.name, enabled },
-      ])
-      deps.onChanged?.()
-      return toApi(record, enabled)
-    },
-
     async deleteServer(userId, id) {
       const existing = await repo.getById(userId, id)
       if (!existing) throw new NotFoundError('mcp_not_found', 'MCP server not found')
@@ -221,37 +188,6 @@ export function createMcpService(deps: McpServiceDeps): McpService {
       const [record = stored] = await hydrateMcpRecords(userId, [stored])
       const cwd = await cwdFor(userId, record.projectId)
       return probeMcpServer(record, cwd)
-    },
-
-    async importServers(userId, payload, projectId) {
-      const normalized = normalizeMcpServersJson(
-        payload.mcpServers,
-        projectId,
-        payload.defaultEnabled ?? true,
-      )
-      const created: McpServer[] = []
-      const errors: Array<{ name: string; error: string }> = []
-      for (const entry of normalized) {
-        if (!entry.input) {
-          errors.push({ name: entry.name, error: entry.error ?? 'invalid server entry' })
-          continue
-        }
-        try {
-          const server = await this.createServer(userId, entry.input)
-          created.push(server)
-          // A `.mcp.json` may narrow a server to some of its tools. That is policy, so it
-          // lands as `mcp:<server>/<tool>` rules rather than as fields on the record —
-          // carrying it into the config would have recreated the second store this feature
-          // just lost, and dropping it would silently ignore what the imported file asked for.
-          const changes = importedToolRules(server.name, entry.input.config)
-          if (changes.length > 0) {
-            await availabilityWriter.apply(userId, DEFAULT_AGENT_ID, changes)
-          }
-        } catch (err) {
-          errors.push({ name: entry.name, error: errorMessage(err) })
-        }
-      }
-      return { created, errors }
     },
 
     async listForRuntime(userId, projectId) {

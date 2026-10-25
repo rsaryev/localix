@@ -1,6 +1,6 @@
 import { describe, expect, test as it } from 'bun:test'
 
-import { normalizeMcpServerEntry, normalizeMcpServersJson } from './normalize'
+import { normalizeMcpServerEntry } from './normalize'
 
 describe('normalizeMcpServerEntry', () => {
   it('flattens stdio command + args into one command array', () => {
@@ -155,32 +155,5 @@ describe('normalizeMcpServerEntry', () => {
     expect(normalizeMcpServerEntry('c', { command: 'x', enabled: true }, null, false).enabled).toBe(
       true,
     )
-  })
-})
-
-describe('normalizeMcpServersJson', () => {
-  it('returns per-entry results, isolating bad entries', () => {
-    const results = normalizeMcpServersJson(
-      {
-        good: { command: 'npx', args: ['server'] },
-        bad: {},
-      },
-      null,
-    )
-    const good = results.find((r) => r.name === 'good')
-    const bad = results.find((r) => r.name === 'bad')
-    expect(good?.input).toBeDefined()
-    expect(good?.error).toBeUndefined()
-    expect(bad?.input).toBeUndefined()
-    expect(bad?.error).toBeDefined()
-  })
-
-  it('threads defaultEnabled so imported servers can land inert', () => {
-    const results = normalizeMcpServersJson(
-      { a: { command: 'x' }, b: { url: 'https://example.com/mcp' } },
-      null,
-      false,
-    )
-    expect(results.every((r) => r.input?.enabled === false)).toBe(true)
   })
 })

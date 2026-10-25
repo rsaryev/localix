@@ -2,8 +2,7 @@ import { parse } from 'shell-quote'
 
 /**
  * Split a pasted one-line command (`npx -y @scope/server --env=FOO="a b"`) into argv — the ONE
- * splitter for the MCP import (`normalize.ts`) and the settings form (`apps/ui`, through the
- * `@localixai/api/mcp-command-line` leaf). Two hand-rolled regex copies split
+ * splitter for the Store's MCP form (`store-fields.ts`). Two hand-rolled regex copies split
  * `--env=FOO="a b"` into `--env=FOO=` + `a b`, ignored `\ ` escapes and dropped a deliberate `""`.
  *
  * shell-quote does the lexing (quotes, adjacency, escapes). The argv is spawned directly, never

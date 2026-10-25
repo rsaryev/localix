@@ -1,5 +1,4 @@
 import { mcpServerInputSchema, type McpServerInput } from './contracts'
-import { errorMessage } from '../../lib/errors'
 import { asStringArray } from '../../lib/coerce'
 import { splitCommandLine } from './command-line'
 
@@ -161,23 +160,4 @@ function coerceStringRecord(value: unknown): Record<string, string> | undefined 
     else if (typeof v === 'number' || typeof v === 'boolean') out[k] = String(v)
   }
   return Object.keys(out).length > 0 ? out : undefined
-}
-
-/**
- * Normalize a full `{ mcpServers: { … } }` blob. Returns one result per entry,
- * preserving its name and either the validated input or an error string — the
- * service inserts the good ones and surfaces the rest.
- */
-export function normalizeMcpServersJson(
-  mcpServers: Record<string, Record<string, unknown>>,
-  projectId: string | null,
-  defaultEnabled = true,
-): Array<{ name: string; input?: McpServerInput; error?: string }> {
-  return Object.entries(mcpServers).map(([name, raw]) => {
-    try {
-      return { name, input: normalizeMcpServerEntry(name, raw, projectId, defaultEnabled) }
-    } catch (err) {
-      return { name, error: errorMessage(err) }
-    }
-  })
 }

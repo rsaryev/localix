@@ -148,48 +148,6 @@ export const mcpServerInputSchema = z
   })
 export type McpServerInput = z.infer<typeof mcpServerInputSchema>
 
-/**
- * Bulk import in the ecosystem-standard `{ "mcpServers": { name: {…} } }` shape
- * (Claude Desktop / `.mcp.json` / VS Code). Each entry is a raw, loosely-typed
- * blob; the service normalizes it into our `McpServerInput`s. We accept it
- * permissively here (passthrough records) and validate per-server downstream so
- * one malformed entry doesn't reject the whole paste.
- */
-const mcpServersMapSchema = z.record(z.string(), z.record(z.string(), z.unknown()))
-
-export const importMcpServersRequestSchema = z
-  .object({
-    mcpServers: mcpServersMapSchema.optional(),
-    /** VS Code `.vscode/mcp.json` wrapper key — accepted as an alias for `mcpServers`. */
-    servers: mcpServersMapSchema.optional(),
-    /** Scope all imported servers to this project ('' / null = global). */
-    projectId: z.string().nullable().optional(),
-    /** Default enabled state for entries with no explicit `enabled`. Pass
-     *  `false` so bulk-imported servers land INERT. */
-    defaultEnabled: z.boolean().optional(),
-  })
-  .refine((v) => v.mcpServers !== undefined || v.servers !== undefined, {
-    message: 'missing "mcpServers"',
-    path: ['mcpServers'],
-  })
-
-/** Per-import outcome: which servers landed and which entries failed (and why). */
-export const importMcpServersResponseSchema = z.object({
-  created: z.array(mcpServerSchema),
-  errors: z.array(z.object({ name: z.string(), error: z.string() })),
-})
-export type ImportMcpServersResponse = z.infer<typeof importMcpServersResponseSchema>
-
-/** Response of starting an interactive OAuth sign-in for a remote server. */
-export const startMcpOAuthResponseSchema = z.object({
-  /** Open this URL in a browser to authorize (absent when already authenticated). */
-  authorizationUrl: z.string().optional(),
-  /** True when the server was already authorized — no browser needed. */
-  authenticated: z.boolean().optional(),
-  /** OAuth state correlating this flow to its loopback callback. */
-  state: z.string().optional(),
-})
-
 /** Result of a live connection probe — surfaced in the UI as a "Test" button. */
 export const mcpServerStatusSchema = z.object({
   ok: z.boolean(),
@@ -203,5 +161,3 @@ export const mcpServerStatusSchema = z.object({
   authRequired: z.boolean().optional(),
 })
 export type McpServerStatus = z.infer<typeof mcpServerStatusSchema>
-
-export const testMcpServerResponseSchema = mcpServerStatusSchema

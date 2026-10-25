@@ -18,83 +18,12 @@ async function freshService(): Promise<McpService> {
   return createMcpService({ db, now: () => '2026-06-30T00:00:00.000Z' })
 }
 
-describe('McpService import + toggle', () => {
+describe('McpService scopes and renames', () => {
   beforeAll(async () => {
     await mkdir(tempDir, { recursive: true })
   })
   afterAll(async () => {
     await rm(tempDir, { recursive: true, force: true })
-  })
-
-  test('imports servers inert when defaultEnabled is false', async () => {
-    const service = await freshService()
-    const result = await service.importServers(
-      'user-1',
-      {
-        mcpServers: {
-          filesystem: {
-            command: 'npx',
-            args: ['-y', '@modelcontextprotocol/server-filesystem', '/tmp'],
-          },
-          sentry: { url: 'https://mcp.sentry.dev/mcp' },
-        },
-        defaultEnabled: false,
-      },
-      null,
-    )
-    expect(result.errors).toHaveLength(0)
-    expect(result.created).toHaveLength(2)
-    expect(result.created.every((s) => !s.enabled)).toBe(true)
-  })
-
-  test('defaults to enabled when defaultEnabled is omitted', async () => {
-    const service = await freshService()
-    const result = await service.importServers(
-      'user-1',
-      { mcpServers: { filesystem: { command: 'npx', args: ['server'] } } },
-      null,
-    )
-    expect(result.created[0]?.enabled).toBe(true)
-  })
-
-  test('setServerEnabled flips just the enabled flag, leaving config intact', async () => {
-    const service = await freshService()
-    const created = await service.createServer('user-1', {
-      name: 'filesystem',
-      description: 'fs server',
-      transport: 'stdio',
-      projectId: null,
-      enabled: false,
-      config: { command: ['npx', 'server'] },
-    })
-    expect(created.enabled).toBe(false)
-
-    const enabled = await service.setServerEnabled('user-1', created.id, true)
-    expect(enabled.enabled).toBe(true)
-    expect(enabled.id).toBe(created.id)
-    expect(enabled.description).toBe('fs server')
-    expect(enabled.config).toEqual({ command: ['npx', 'server'] })
-
-    const disabled = await service.setServerEnabled('user-1', created.id, false)
-    expect(disabled.enabled).toBe(false)
-  })
-
-  test('setServerEnabled 404s for an unknown id', async () => {
-    const service = await freshService()
-    expect(service.setServerEnabled('user-1', 'nope', true)).rejects.toThrow(/not found/i)
-  })
-
-  test("setServerEnabled is ownership-scoped (cannot toggle another user's server)", async () => {
-    const service = await freshService()
-    const created = await service.createServer('owner', {
-      name: 'filesystem',
-      description: '',
-      transport: 'stdio',
-      projectId: null,
-      enabled: false,
-      config: { command: ['npx', 'server'] },
-    })
-    expect(service.setServerEnabled('intruder', created.id, true)).rejects.toThrow(/not found/i)
   })
 
   test('updateServer renames IN PLACE — no duplicate row, same id', async () => {

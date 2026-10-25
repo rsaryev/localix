@@ -1,7 +1,8 @@
 # Connect MCP servers
 
 Connect Model Context Protocol (MCP) servers to give a primary chat external tools and resources.
-Use Settings to scope servers, test connections, and control which tools reach the model.
+Add and configure servers in the Store, test connections there, and use Settings to choose which
+servers and tools reach the model.
 
 **Availability:** MCP is omitted from closed child, worker, and automation tool profiles. A child
 delegated as a plugin agent type without a `tools` list inherits the chat's MCP tools, and one whose
@@ -10,14 +11,16 @@ all.
 
 ## What you can do
 
-| Action                                    | Surface                                                           | Boundary                                                                           |
-| ----------------------------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Add or edit a server                      | Settings → Capabilities → MCP                                     | The form creates stdio or HTTP records; JSON import also accepts WebSocket records |
-| Import server JSON                        | Settings, or the `/mcp` manager                                   | Settings imports disabled records into the selected scope                          |
-| Enable, disable, test, or remove a server | Settings                                                          | A test uses the same process-lifetime connection cache as chat                     |
-| Enable or disable one advertised tool     | Settings server row after a successful probe                      | Filters apply on the next run; the server keeps its complete cached inventory      |
-| Sign in with OAuth                        | Settings on a challenged HTTP server                              | The button appears only after a live probe reports an authentication challenge     |
-| List and read resources                   | `mcp_resources` with `list`, `list_templates`, and `read` actions | The tool appears only after a live server advertises the `resources` capability    |
+| Action                                | Surface                                                           | Boundary                                                                              |
+| ------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Add a server                          | Store → Library → Yours (or Project) → **Add MCP server**         | A program (stdio), a web address (HTTP) or a web socket; the name is chosen once      |
+| Change a server's settings            | Its Store page → Settings tab                                     | Command, URL, environment, headers, OAuth client, tool call timeout; saved explicitly |
+| Test a connection                     | Its Settings tab → **Test connection**                            | A test uses the same process-lifetime connection cache as chat                        |
+| Enable or disable a server            | Settings → Capabilities → MCP, or its Store page                  | A rule for the selected agent; a server that is off is never connected                |
+| Enable or disable one advertised tool | Its Settings tab, **Tools**, after a successful test              | Filters apply on the next run; the server keeps its complete cached inventory         |
+| Sign in with OAuth                    | Its Settings tab → **Sign in**, on an HTTP server                 | Opens the provider's page in your browser; **Sign out** forgets the stored tokens     |
+| Remove a server                       | Its Store page                                                    | Removes its record and the secrets kept for it                                        |
+| List and read resources               | `mcp_resources` with `list`, `list_templates`, and `read` actions | The tool appears only after a live server advertises the `resources` capability       |
 
 A tool is named `mcp_<server>_<tool>`. Unsupported characters become underscores, names stop at 64
 characters, and collisions receive a numeric suffix. Permission rules, tool switches, approvals,
@@ -55,9 +58,11 @@ never written:
 A name loads once, from the highest of managed, local, project and user; a server you added in
 Localix with that name wins over Claude Code's. `deniedMcpServers` and `allowedMcpServers`
 (`serverName`, `serverCommand`, `serverUrl`) apply to every server, plugin servers and your own
-included. Such a server is offered as `mcp_<server>_<tool>`, like your own; it is not listed in
-Settings, which shows Localix's registry. Import into the registry stays explicit and accepts an
-`mcpServers` wrapper, a `servers` wrapper, or a bare name-to-config map in Settings.
+included. Such a server is offered as `mcp_<server>_<tool>`, like your own. The Store lists the
+servers of `~/.claude.json` and the managed settings under Yours, and those of a project's
+`.mcp.json` and local entries on its Project shelf, read-only: change them in the file they come
+from. Their switch still works. A server a plugin bundles is not listed on its own: it belongs to
+the plugin and follows the plugin's switch.
 
 ### Transports
 
@@ -137,10 +142,7 @@ These limits are read from the API's environment and, over it, from the `env` of
 settings for the conversation's folder, as Claude Code reads them from its own environment.
 
 Per-tool selection is stored as capability rules such as `mcp:<server>/<tool>`, applied when tools
-are gathered without rewriting the connection configuration. JSON import translates a non-empty
-`enabledTools` list into a family denial followed by named allows, then applies `disabledTools`
-denials. An empty allowlist adds no restriction. These legacy import fields are not a separate
-runtime filtering mechanism.
+are gathered without rewriting the connection configuration.
 
 HTTP records may include `headers` and an `oauth` object with `clientId`, `clientSecret`, and
 `scope`. Without pre-registered client details, the SDK performs discovery, dynamic registration,
@@ -149,11 +151,10 @@ browser.
 
 ### Complete an OAuth sign-in
 
-Test the HTTP server first. If the probe reports an authentication challenge and the server has no
-stored authorization, its row offers **Sign in**. Open it, approve the provider's consent page, and
-keep the same Localix API instance running until the callback finishes. The callback page reports
-success or failure; return to Settings and test again to check the live tool inventory. An OAuth
-badge alone does not prove that the server's tools are reachable.
+Open the HTTP server's page in the Store, choose **Test connection**, then **Sign in**. Approve the
+provider's consent page, and keep the same Localix API instance running until the callback finishes.
+The callback page reports success or failure; return to the page and test again to check the live
+tool inventory. Being signed in does not prove that the server's tools are reachable.
 
 A pending sign-in expires after ten minutes and its callback is single-use. Restarting the API loses
 pending flows; an expired, reused or failed callback needs a new sign-in attempt. At most 64 flows
@@ -164,26 +165,29 @@ Streamable HTTP; the ordinary connection path's legacy SSE fallback is a separat
 does not call the provider's authorization-revocation endpoint. Revoke access through the provider
 when that is required.
 
+Headers, environment variables and a pre-registered OAuth client secret are not kept in the server's
+record: they are sealed in the vault, the Settings tab only says that they are set, and a secret
+left out of a save keeps its value. A map you change is replaced whole.
+
 OAuth tokens, dynamic client data, and the pending PKCE verifier are AES-256-GCM encrypted under
 `~/.localix/mcp-oauth/`. The master key is stored beside that data.
 
 ## Limits
 
-- MCP registry scope is exact. Add or import a server in every project that needs it, or contribute
-  it through an enabled plugin.
-- The Settings form does not create WebSocket records. Use JSON or the API for `ws`; the transport
-  cannot send configured headers or use the HTTP OAuth flow.
+- MCP registry scope is exact. Add a server in every project that needs it, or contribute it through
+  an enabled plugin.
+- A web socket server cannot send configured headers or use the HTTP OAuth flow.
 - The seeded `grep` record belongs to the empty-project registry. Ordinary chats, including Default
-  chats, have a project ID and do not gather that record automatically. A Settings probe or a record
-  imported into an active project can still contact `mcp.grep.app`.
+  chats, have a project ID and do not gather that record automatically. A test of the record or a
+  copy added to an active project can still contact `mcp.grep.app`.
 - MCP does not sandbox a stdio server. Its process runs as the API's OS account, starts in the
   session working directory, and inherits the API process environment.
 - Cached metadata is not dispatch authority. A selected lazy tool still reconnects and checks the
   live inventory before dispatch.
 - A cold optional server that misses the 1.5-second assembly budget cannot join the run already
   being built; it can appear on a later run.
-- Imported configuration is copied into the Localix registry. Later changes to an imported
-  `.mcp.json` or editor setting have no effect on the copy; Claude Code's own files are read live.
+- Claude Code's own files are read live and never written; a server you add in Localix is a separate
+  record.
 - A `.mcp.json` server that no setting approves does not load: Localix does not show Claude Code's
   approval prompt. Approve it in Claude Code, or list it in `enabledMcpjsonServers`.
 - Resource listing rejects a server response that exceeds 100 pages or 10,000 items, or repeats a
@@ -206,9 +210,11 @@ OAuth tokens, dynamic client data, and the pending PKCE verifier are AES-256-GCM
 - [Registry contracts](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mcp/contracts.ts)
   and
   [scope repository](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mcp/repository.ts)
-- [Import normalization](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mcp/normalize.ts)
-- [Imported tool filters as rules](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mcp/imported-tool-rules.ts)
-- [Server import and availability](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mcp/service.ts)
+- [Store provider](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mcp/store-provider.ts),
+  [its form](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mcp/store-fields.ts)
+  and
+  [secrets](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mcp/store-secrets.ts)
+- [Server records and availability](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mcp/service.ts)
 - [Deferred tool assembly](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/tool-assembly.ts)
 - [Transport connection](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mcp/mcp-connect.ts)
 - [Connection and metadata lifecycle](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mcp/client-manager.ts)
@@ -219,5 +225,5 @@ OAuth tokens, dynamic client data, and the pending PKCE verifier are AES-256-GCM
 - [OAuth storage](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mcp/oauth/store.ts)
 - [Interactive sign-in and callback](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mcp/oauth/flow.ts)
 - [Pending sign-in lifetime](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mcp/oauth/pending-flow-registry.ts)
-- [Settings sign-in controls](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/settings/ui/mcpStatus.ts)
+- [Settings switches](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/settings/ui/McpSettings.tsx)
 - [Default server seed](https://github.com/rsaryev/localix/blob/main/apps/api/migrations/20260601T000000_init_schema.ts)

@@ -30,8 +30,6 @@
     "./loops-format": "./src/features/loops/format.ts",
     "./lsp-edits": "./src/features/lsp/lsp-edits.ts",
     "./notification-contracts": "./src/features/notifications/contracts.ts",
-    "./mcp-command-line": "./src/features/mcp/command-line.ts",
-    "./mcp-import": "./src/features/mcp/unwrap.ts",
     "./mcp-elicitation": "./src/features/agent-core/tools/hitl/mcp-elicitation-content.ts",
     "./participant": "./src/db/participant.ts",
     "./permission-modes": "./src/contracts/permission-modes.ts",

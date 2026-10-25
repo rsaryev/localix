@@ -14,10 +14,6 @@ import type {
   AgentRecordInput,
   AgentSummary,
   McpServer,
-  McpServerInput,
-  McpServerStatus,
-  ImportMcpServersResponse,
-  McpTransport,
   McpStdioConfig,
   McpHttpConfig,
   CapabilitySnapshot,
@@ -62,34 +58,9 @@ export interface CuratorReport {
 
 // ---- MCP ---------------------------------------------------------------------
 /**
- * Same rule as the plugin records below: ONE owner — the API's zod contracts in
- * `features/mcp/contracts.ts`. These types used to be hand-restated here, and the
- * copy had gone stale in the worst way available: `McpServerConfig` declared 4 of
- * the wire's 9 config fields, so the settings form needed a cast to reach the
- * rest — and then rebuilt `config` from only the names its type could see. The
- * server replaces `config` wholesale, so editing a server (even just renaming it)
- * silently and permanently wiped its OAuth credentials and timeout/filter
- * fields. Re-export; never restate.
- */
-export type {
-  McpTransport,
-  McpStdioConfig,
-  McpHttpConfig,
-
-  /** The SAVE payload. Its `config` is the owner's strict `stdio | http` union. */
-  McpServerInput,
-}
-
-/**
- * A config whose transport has NOT been narrowed: every field of either
- * transport, all optional. DERIVED from the owner's two schemas — add a field to
- * `mcpStdioConfigSchema`/`mcpHttpConfigSchema` and it shows up here for free, so
- * no reader or writer can silently fall behind the wire again.
- *
- * This is the shape for READING (`s.config.url` off a record) and for the
- * settings form's draft, which edits fields before the transport is settled. It
- * is deliberately NOT the save payload: `mcpDraft.ts` narrows to the owner's
- * strict union at the wire boundary, which is what forces the carry-through.
+ * One owner: the API's zod contracts in `features/mcp/contracts.ts`, re-exported and never
+ * restated. The UI only reads a server (its switch and what kind it is); adding, configuring and
+ * removing one is the Store's.
  */
 export type McpServerConfig = Partial<McpStdioConfig & McpHttpConfig>
 
@@ -97,12 +68,6 @@ export type McpServerConfig = Partial<McpStdioConfig & McpHttpConfig>
 export type McpServerRecord = Omit<McpServer, 'config'> & {
   config: McpServerConfig
 }
-
-/** Result of a live connection probe — lists discovered tool names or an error. */
-export type McpProbeResult = McpServerStatus
-
-/** Outcome of a bulk `mcpServers` JSON import: created servers + per-entry errors. */
-export type McpImportResult = ImportMcpServersResponse
 
 // ---- Plugins, agent providers, managed agents --------------------------------
 /**

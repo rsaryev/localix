@@ -51,7 +51,7 @@ describe('warm-hidden Settings data sources', () => {
     __resetCapabilityCache()
   })
 
-  test('capability registries and MCP probes wait until the work item is selected', async () => {
+  test('capability registries wait until the work item is selected', async () => {
     const React = await import('react')
     const { createRoot } = await import('react-dom/client')
     const { act } = React
@@ -76,10 +76,6 @@ describe('warm-hidden Settings data sources', () => {
     } as never)
     // Agents, agent providers and MCP servers no longer HAVE list endpoints of their
     // own — they are fields of the document above.
-    const probe = spyOn(backendClient, 'testMcpServer').mockResolvedValue({
-      ok: true,
-      tools: [],
-    })
 
     function Registries() {
       useSkills('')
@@ -103,7 +99,6 @@ describe('warm-hidden Settings data sources', () => {
     })
     expect(curator).toHaveBeenCalledTimes(0)
     expect(snapshot).toHaveBeenCalledTimes(0)
-    expect(probe).toHaveBeenCalledTimes(0)
 
     await act(async () => {
       root.render(<Surface visible />)
@@ -113,12 +108,10 @@ describe('warm-hidden Settings data sources', () => {
     // FIVE registries, ONE read between them: plugins, agents, agent providers and MCP
     // servers all project the same document, so they can neither fan out nor disagree.
     expect(snapshot).toHaveBeenCalledTimes(1)
-    expect(probe).toHaveBeenCalledTimes(1)
 
     await act(async () => root.unmount())
     curator.mockRestore()
     snapshot.mockRestore()
-    probe.mockRestore()
   })
 
   test('only the active capability leaf loads after a hidden surface becomes visible', async () => {
@@ -135,7 +128,6 @@ describe('warm-hidden Settings data sources', () => {
       EMPTY_CAPABILITY_SNAPSHOT,
     )
     const curator = spyOn(backendClient, 'listCuratorSkills').mockResolvedValue([])
-    const probe = spyOn(backendClient, 'testMcpServer').mockResolvedValue({ ok: true, tools: [] })
 
     function Surface({ visible }: { visible: boolean }) {
       return (
@@ -164,12 +156,10 @@ describe('warm-hidden Settings data sources', () => {
       ]),
     )
     expect(curator).not.toHaveBeenCalled()
-    expect(probe).not.toHaveBeenCalled()
 
     await act(async () => root.unmount())
     snapshot.mockRestore()
     curator.mockRestore()
-    probe.mockRestore()
   })
 
   test('secondary Settings viewers defer their automatic reads while warm-hidden', async () => {
