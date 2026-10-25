@@ -52,6 +52,8 @@ export type SystemNoticeKind =
   | 'plan_dismissed'
   | 'plan_resumed'
   | 'plan_completed'
+  /** A one-line recap of the chat for the reader; a record only, never model context. */
+  | 'session_recap'
 
 /**
  * What a notice offers the reader, when it offers anything.

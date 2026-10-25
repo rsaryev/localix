@@ -320,4 +320,43 @@ describe('useModelTaskRouting direct picks', () => {
       updateSettings.mockClear()
     }
   })
+
+  test('the Session recap row is on until switched off, and the switch lives on that row alone', async () => {
+    const { act } = await import('react')
+    const { createRoot } = await import('react-dom/client')
+    const { useModelTaskRouting } = await import('./useModelTaskRouting')
+    const host = document.createElement('div')
+    document.body.append(host)
+    const root = createRoot(host)
+    function Harness() {
+      const routing = useModelTaskRouting({
+        models: [model],
+        connections: connections as never,
+        orderedConnections: connections as never,
+        taskKey: 'sessionRecap',
+        sessionModelId: model.id,
+        sessionConnectionId: 'conn-openai',
+        reasoningEffort: 'medium',
+        onPickSessionModel: () => {},
+      })
+      return (
+        <button type="button" onClick={() => routing.setTaskEnabled('sessionRecap', false)}>
+          {routing.enabledForTask('sessionRecap') ? 'on' : 'off'}
+        </button>
+      )
+    }
+
+    try {
+      await act(async () => root.render(<Harness />))
+      expect(host.textContent).toBe('on')
+      await act(async () => host.querySelector('button')!.click())
+      expect(updateSettings.mock.calls.at(-1)?.[0]).toEqual({
+        agentSettings: { modelRouting: { sessionRecap: { enabled: false } } },
+      })
+    } finally {
+      await act(async () => root.unmount())
+      host.remove()
+      updateSettings.mockClear()
+    }
+  })
 })

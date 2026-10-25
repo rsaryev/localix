@@ -204,4 +204,11 @@ export const messagesApi = {
       }),
     )
   },
+  /**
+   * Ask for the automatic session recap after a break. The server decides whether one is due; a
+   * written recap arrives as a transcript row over the session stream, so only the verdict returns.
+   */
+  async requestSessionRecap(sessionId: string): Promise<{ status: string }> {
+    return unwrap(await client.rpc.sessions[':id'].recap.$post({ param: { id: sessionId } }))
+  },
 }

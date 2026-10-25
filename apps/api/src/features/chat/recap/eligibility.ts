@@ -1,9 +1,8 @@
 import type { PersistedMessage } from '../contracts'
 
-/** A recap is due once the last finished turn is this old (Claude Code's "three minutes"). */
-export const RECAP_AFTER_MS = 3 * 60_000
-/** An automatic recap needs a session with at least this many finished turns. */
-export const RECAP_MIN_TURNS = 3
+import { RECAP_AFTER_MS, RECAP_MIN_TURNS } from '../../../contracts/session-recap'
+
+export { RECAP_AFTER_MS, RECAP_MIN_TURNS }
 
 export type RecapTrigger = 'auto' | 'command'
 export type RecapSkip = 'disabled' | 'running' | 'too-few-turns' | 'too-soon' | 'already-recapped'

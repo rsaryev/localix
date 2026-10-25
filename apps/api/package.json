@@ -58,6 +58,7 @@
     "./wire-tools": "./src/features/tools/wire-tools.ts",
     "./ws-frame": "./src/features/ext/ws-frame.ts",
     "./model-task-catalog": "./src/contracts/model-task-catalog.ts",
+    "./session-recap": "./src/contracts/session-recap.ts",
     "./plugin-presentation": "./src/features/plugins/presentation.ts",
     "./message-reactions": "./src/features/chat/message-reactions.ts",
     "./vault-item-types": "./src/features/secrets/vault-item-types.ts",

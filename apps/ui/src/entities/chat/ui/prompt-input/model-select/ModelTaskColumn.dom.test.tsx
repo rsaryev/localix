@@ -95,4 +95,21 @@ describe('ModelTaskColumn', () => {
     // Rendered through JSX, so the apostrophe arrives HTML-escaped.
     expect(html).toContain('Use @ghost&#x27;s model')
   })
+
+  test('offers the Session recap workload with its own switch, on, falling back to the chat model', () => {
+    const html = renderToStaticMarkup(
+      <ModelTaskColumn
+        activeTask="session"
+        onSelectTask={() => {}}
+        modelLabelFor={() => null}
+        enabledFor={() => true}
+        onEnabledChange={() => {}}
+        participants={[]}
+      />,
+    )
+
+    expect(html).toContain('Session recap')
+    expect(html).toContain('aria-label="Disable Session recap"')
+    expect(html).toContain('Use session model')
+  })
 })

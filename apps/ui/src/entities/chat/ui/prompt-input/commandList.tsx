@@ -18,7 +18,7 @@
  */
 import { SLASH_COMMANDS, type SlashCommandSpec } from '@localixai/api/slash-catalog'
 import type { SlashCommand } from './SlashCommandMenu'
-import { Bot, Palette, Type } from 'lucide-react'
+import { Bot, History, Palette, Type } from 'lucide-react'
 import {
   LoopIcon,
   ModelIcon,
@@ -62,6 +62,7 @@ const PRESENTATION: Record<string, CommandPresentation> = {
   fork: { icon: <ForkIcon />, placeholder: 'Press Enter to fork this conversation' },
   open: { icon: <OpenIcon />, placeholder: 'Browse resources and UI anchors…' },
   help: { icon: <HelpIcon />, placeholder: 'Press Enter to list all commands' },
+  recap: { icon: <History size={14} />, placeholder: 'Press Enter to sum up this chat' },
   usage: { icon: <UsageIcon />, placeholder: 'Press Enter to show usage & cost' },
   memory: { icon: <MemoryIcon />, placeholder: 'A fact to remember, or Enter to list memories' },
   skills: { icon: <SkillsIcon />, placeholder: 'Press Enter to list your skills' },

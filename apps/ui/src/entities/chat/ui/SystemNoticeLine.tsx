@@ -6,6 +6,7 @@ import {
   ClipboardList,
   Cpu,
   FoldVertical,
+  History,
   Info,
   Play,
   Plug,
@@ -56,6 +57,8 @@ const ICONS: Partial<Record<SystemNoticeKind, LucideIcon>> = {
   plan_dismissed: ClipboardList,
   plan_resumed: Play,
   plan_completed: ClipboardCheck,
+  // Where the chat stood when the person came back; a record in the transcript, nothing more.
+  session_recap: History,
 }
 
 const TONE_CLASS: Record<SystemNoticeTone, string> = {
@@ -144,7 +147,9 @@ export const SystemNoticeLine = memo(function SystemNoticeLine({
   onRetry?: () => void
 }) {
   const clock = messageClock(createdAt)
-  const full = systemMessageLabel(cleanSystemMessageText(notice.text), repeatCount)
+  const recap = notice.kind === 'session_recap'
+  const spoken = cleanSystemMessageText(notice.text)
+  const full = systemMessageLabel(recap ? `Recap: ${spoken}` : spoken, repeatCount)
   const detail = notice.detail ? cleanSystemMessageText(notice.detail) : undefined
   const recoveries = notice.recovery ?? []
   const ending = TURN_ENDING_LABELS[notice.kind]
@@ -164,8 +169,9 @@ export const SystemNoticeLine = memo(function SystemNoticeLine({
       title={tooltip}
       // An actionable notice is the one place the clamp costs more than it saves: its
       // text says what to check BEFORE pressing the button beside it. A plan approval is the
-      // other: it carries the person's own note, and a clamp would cut their words mid-sentence.
-      wrap={Boolean(retry) || links.length > 0 || notice.kind === 'plan_approved'}
+      // other: it carries the person's own note, and a clamp would cut their words mid-sentence. A recap is
+      // the third: its whole point is the sentence, up to 400 characters.
+      wrap={Boolean(retry) || links.length > 0 || notice.kind === 'plan_approved' || recap}
     >
       {clock && (
         <time dateTime={createdAt} className="shrink-0 tabular-nums text-text-faint">

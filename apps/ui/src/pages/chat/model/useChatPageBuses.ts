@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 
 import { useChatEventStream } from '@/entities/chat/model/agent-runtime'
 import { usePlanEventFocus } from '@/entities/chat/model/planEventFocus'
+import { useSessionRecapTrigger } from '@/entities/chat/model/useSessionRecapTrigger'
 import { useMiniAppViewAgent } from '@/features/inspector/ui/useMiniAppViewAgent'
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle'
 import { subscribeRevealInTree } from '@/shared/lib/explorerBus'
@@ -15,6 +16,8 @@ export function useChatPageBuses({ hasHydrated }: { hasHydrated: boolean }): voi
   // DATA PLANE — the single realtime socket subscription that streams every
   // session into the store (so any number of ChatSurfaces just read their slice).
   useChatEventStream(hasHydrated)
+  // The recap of a chat the person left for a few minutes, waiting when they come back.
+  useSessionRecapTrigger()
   // Route every inspector open-request (file/diff/preview/work-item/agent reveals)
   // onto the editor grid as a WorkItem.
   useGridInspectorBus()

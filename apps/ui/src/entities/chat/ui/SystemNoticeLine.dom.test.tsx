@@ -113,3 +113,16 @@ describe('a notice that can be acted on', () => {
     }
   })
 })
+
+describe('a session recap', () => {
+  test('reads as a labelled line with the whole recap, not as a control', async () => {
+    const recap = 'You were fixing the login redirect; the session cookie is the next step.'
+    const view = await render({ kind: 'session_recap', tone: 'neutral', text: recap })
+    try {
+      expect(view.button()).toBeNull()
+      expect(view.host.textContent).toContain(`Recap: ${recap}`)
+    } finally {
+      await view.cleanup()
+    }
+  })
+})

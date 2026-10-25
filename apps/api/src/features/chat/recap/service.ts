@@ -1,5 +1,6 @@
 import { DEFAULT_REASONING_EFFORT, type Usage } from '@localixai/agent'
 import type { StoredSystemNotice } from '../../../db'
+import { RECAP_MAX_CHARS } from '../../../contracts/session-recap'
 import { isModelRoutingTaskEnabled } from '../../../contracts/model-task-catalog'
 import { assistantText } from '../../../lib/assistant-text'
 import { executeModelTask } from '../../model-task-runtime'
@@ -12,8 +13,7 @@ import { RECAP_SYSTEM_PROMPT, renderRecapTranscript } from './transcript'
 type AuxHelpers = ReturnType<typeof createAuxProviderHelpers>
 type Repo = ReturnType<typeof createChatRepository>
 
-/** The most a recap may say: one short paragraph's worth, like Claude Code's. */
-export const RECAP_MAX_CHARS = 400
+export { RECAP_MAX_CHARS }
 const RECAP_TASK = { id: 'session-recap', version: 1 } as const
 const RECAP_DEADLINE_MS = 20_000
 
