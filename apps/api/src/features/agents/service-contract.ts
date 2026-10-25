@@ -119,6 +119,16 @@ export interface AgentsService extends AgentDelegation {
     projectId?: string | null,
   ): Promise<AgentSummary>
   /**
+   * Move an agent file you own between your folder (`null`) and a project's: a new file and id with
+   * the same definition and policy, the old file gone. A name taken in the target refuses it.
+   */
+  moveAgent(
+    userId: string,
+    name: string,
+    toProjectId: string | null,
+    projectId?: string | null,
+  ): Promise<AgentSummary>
+  /**
    * Resolve a persisted identity in its exact scope. Never falls back to a matching handle.
    */
   resolveEnabledAgent(

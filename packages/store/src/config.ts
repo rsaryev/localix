@@ -99,6 +99,12 @@ export const listingConfigSchema = z.object({
   scopes: z.array(scopeSchema),
   /** What else can be done with it, by `runAction`; absent: nothing. */
   actions: z.array(itemActionSchema).optional(),
+  /**
+   * Which version of the stored settings these values are. A form sends it back as the reserved
+   * value `_revision` when it saves; a provider whose settings changed meanwhile refuses with a
+   * conflict, so an edit made elsewhere is never silently overwritten.
+   */
+  revision: z.string().optional(),
 })
 export type ListingConfig = z.infer<typeof listingConfigSchema>
 

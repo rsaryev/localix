@@ -270,6 +270,29 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
         )
       }),
 
+    moveAgent: (userId, name, toProjectId, projectId) =>
+      changed(async () => {
+        const { summary } = await requireEntry(userId, name, projectId ?? '')
+        requireEditable(summary)
+        const { id, ...copied } = summary.record
+        const policy = { id, rules: await rules.read(userId, id) }
+        // A new file in the other scope keeps the definition and the policy; the old one goes
+        // only once the new one stands, so a refusal (a name taken there) loses nothing.
+        const moved = await bindings.exclusive(userId, () =>
+          createAgentFile(
+            createPorts,
+            userId,
+            { ...copied, projectId: toProjectId, enabled: summary.enabled },
+            policy,
+          ),
+        )
+        await bindings.exclusive(userId, async () => {
+          await rm(summary.path, { force: true })
+          await bindings.forget(userId, projectId ?? '', summary.projectId, id)
+        })
+        return moved
+      }),
+
     async resolveEnabledAgent(userId, agentId, projectId) {
       const { all } = await read(userId, projectId ?? '')
       return all.find((agent) => agent.record.id === agentId && agent.enabled)?.record ?? null

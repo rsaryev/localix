@@ -48,7 +48,13 @@ export function PackageSettings({ listing }: { listing: Listing }) {
             key={scope}
             config={data}
             onSave={async (values) => {
-              await store.client.setConfig(listing.ref, scope, values, projectId ?? undefined)
+              await store.client.setConfig(
+                listing.ref,
+                scope,
+                // The version the form opened on: a provider refuses a save over a newer one.
+                data.revision ? { ...values, _revision: data.revision } : values,
+                projectId ?? undefined,
+              )
               await mutate()
             }}
           />

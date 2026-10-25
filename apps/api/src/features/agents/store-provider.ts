@@ -9,7 +9,7 @@ import type {
   StoreProvider,
 } from '@localixai/store'
 
-import { InvalidRequestError, NotFoundError } from '../../lib/domain-errors'
+import { ConflictError, InvalidRequestError, NotFoundError } from '../../lib/domain-errors'
 import type { AgentSummary } from './contracts'
 import type { AgentsService } from './service-contract'
 import {
@@ -30,8 +30,13 @@ export type AgentStoreDeps = {
     | 'updateAgent'
     | 'deleteAgent'
     | 'duplicateAgent'
+    | 'moveAgent'
     | 'setAgentEnabled'
   >
+  /** How many chats an agent is seated in. */
+  chatsOf?(agentId: string): Promise<number>
+  /** The version of an agent file as it is now: a save made over an older one is refused. */
+  revisionOf?(path: string): Promise<string>
   /** Hear a change to the agents (a file, a switch, a plugin); returns the unsubscribe. */
   onChange(listener: () => void): () => void
 }
@@ -86,6 +91,10 @@ export function createAgentStoreProvider(deps: AgentStoreDeps): StoreProvider {
     return found
   }
 
+  /** Duplicate and copy work on any agent; a move only on a file the person owns. */
+  const editableOrAny = (id: string, actor: StoreActor, action: string) =>
+    action === 'move' ? editable(id, actor) : find(id, actor)
+
   return {
     kind: 'agent',
 
@@ -100,7 +109,8 @@ export function createAgentStoreProvider(deps: AgentStoreDeps): StoreProvider {
     },
 
     async detail(id, actor) {
-      return agentDetail(await find(id, actor))
+      const found = await find(id, actor)
+      return agentDetail(found, (await deps.chatsOf?.(found.record.id)) ?? 0)
     },
 
     plan: async () => {
@@ -125,11 +135,18 @@ export function createAgentStoreProvider(deps: AgentStoreDeps): StoreProvider {
 
     async config(id, scope, actor): Promise<ListingConfig | null> {
       const found = await find(id, actor)
-      return scopeOf(found) === scope ? agentConfig(found) : null
+      if (scopeOf(found) !== scope) return null
+      const revision = found.editable ? await deps.revisionOf?.(found.path) : undefined
+      return agentConfig(found, revision)
     },
 
-    async setConfig(id, _scope, values, actor) {
+    async setConfig(id, _scope, { _revision, ...values }, actor) {
       const found = await editable(id, actor)
+      if (typeof _revision === 'string' && (await deps.revisionOf?.(found.path)) !== _revision)
+        throw new ConflictError(
+          'agent_changed',
+          'This agent’s file changed since you opened it. Reload to see the change, or save again to replace it.',
+        )
       await agents.updateAgent(
         actor.userId,
         found.record.id,
@@ -163,9 +180,21 @@ export function createAgentStoreProvider(deps: AgentStoreDeps): StoreProvider {
     },
 
     async runAction(id, _scope, action, actor): Promise<ActionResult> {
-      if (action !== 'duplicate' && action !== 'copy')
+      if (action !== 'duplicate' && action !== 'copy' && action !== 'move')
         throw new InvalidRequestError('agent_store_action', `An agent cannot "${action}"`)
-      const found = await find(id, actor)
+      const found = await editableOrAny(id, actor, action)
+      if (action === 'move') {
+        const toProject = found.scope === 'project' ? null : (actor.projectId ?? null)
+        if (found.scope !== 'project' && !toProject)
+          throw new InvalidRequestError('agent_store_no_project', 'Open a project to move it there')
+        const moved = await agents.moveAgent(
+          actor.userId,
+          found.record.id,
+          toProject,
+          found.projectId || null,
+        )
+        return { ok: true, message: `Moved ${moved.record.handle}` }
+      }
       const taken = new Set(
         (await scopeList(actor.userId, found.projectId)).map((agent) => agent.record.handle),
       )

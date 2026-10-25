@@ -4,6 +4,7 @@ import type { Kysely } from 'kysely'
 
 import type { AppDatabase } from '../db'
 import type { AgentsService } from '../features/agents/service-contract'
+import { createAgentSeatsRepository } from '../features/chat/agent-seats/seats-repository'
 import { agentStoreProviderOf } from '../features/agents/store-wiring'
 import type { McpService } from '../features/mcp/service'
 import { mcpStoreProviderOf } from '../features/mcp/store-wiring'
@@ -73,7 +74,12 @@ export function createStorePhase(deps: {
         curator: deps.skills.curator,
         skills: deps.skills.files,
       }),
-      agentStoreProviderOf(deps.agentsService),
+      agentStoreProviderOf(deps.agentsService, {
+        chatsOf: async (agentId) =>
+          new Set(
+            (await createAgentSeatsRepository(deps.db).seats(agentId)).map((s) => s.sessionId),
+          ).size,
+      }),
       ...(deps.pluginService
         ? [
             pluginStoreProviderOf(deps.pluginService, {

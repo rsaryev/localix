@@ -1,4 +1,5 @@
 import { afterEach, expect, test } from 'bun:test'
+import { createHash } from 'node:crypto'
 import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -17,6 +18,7 @@ afterEach(async () => {
 })
 
 const actor: StoreActor = { userId: 'u' }
+const inProject: StoreActor = { userId: 'u', projectId: 'p' }
 
 /** The provider over the real agents service and files in a temp `~/.claude`. */
 async function setup() {
@@ -29,14 +31,25 @@ async function setup() {
   const managed = join(root, 'managed', '.claude')
   await mkdir(join(userClaude, 'agents'), { recursive: true })
   await mkdir(join(managed, 'agents'), { recursive: true })
+  const projectClaude = join(root, 'project', '.claude')
+  await mkdir(join(projectClaude, 'agents'), { recursive: true })
   const service = createAgentsService({
     db,
     capabilityStores,
-    folders: async () => ({ managed, user: userClaude, project: [] }),
+    folders: async (_user, project) => ({
+      managed,
+      user: userClaude,
+      project: project === 'p' ? [projectClaude] : [],
+    }),
   })
   let heard = 0
   const provider = createAgentStoreProvider({
     agents: service,
+    chatsOf: async () => 2,
+    revisionOf: async (path) =>
+      createHash('sha1')
+        .update(await readFile(path, 'utf8'))
+        .digest('hex'),
     onChange: () => () => {
       heard++
     },
@@ -122,4 +135,54 @@ test('remove deletes the file; install, update and plan do not exist for an agen
   await expect(provider.install(ref.id, 'user', { plan: true }, actor)).rejects.toBeInstanceOf(
     InvalidRequestError,
   )
+})
+
+test('a save made over a file that changed meanwhile is refused, and the page says how many chats use it', async () => {
+  const { provider, agentsDir } = await setup()
+  const ref = await created(provider)
+  const opened = await provider.config!(ref.id, 'user', actor)
+  expect(opened?.revision).toBeTruthy()
+  expect((await provider.detail(ref.id, actor)).facts).toContainEqual({
+    label: 'Seated in',
+    value: '2 chats',
+  })
+  const path = join(agentsDir, 'reviewer.md')
+  await writeFile(path, `${await readFile(path, 'utf8')}\nEdited elsewhere.\n`)
+  await expect(
+    provider.setConfig!(
+      ref.id,
+      'user',
+      { instructions: 'Mine.', _revision: opened!.revision! },
+      actor,
+    ),
+  ).rejects.toMatchObject({ code: 'agent_changed' })
+  const fresh = await provider.config!(ref.id, 'user', actor)
+  await provider.setConfig!(
+    ref.id,
+    'user',
+    { instructions: 'Mine.', _revision: fresh!.revision! },
+    actor,
+  )
+  expect(await readFile(path, 'utf8')).toContain('Mine.')
+})
+
+test('an agent moves between Yours and the open project, with its policy, and a name taken refuses it', async () => {
+  const { provider, agentsDir } = await setup()
+  const ref = await created(provider)
+  await provider.setEnabled!(ref.id, 'user', false, actor)
+  const moved = await provider.runAction!(ref.id, 'user', 'move', inProject)
+  expect(moved.ok).toBe(true)
+  await expect(readFile(join(agentsDir, 'reviewer.md'), 'utf8')).rejects.toThrow()
+  const [there] = await provider.projectListings!({ ...inProject, projectId: 'p' })
+  expect(there).toMatchObject({ name: 'reviewer', authored: 'project' })
+  expect(there!.installs[0]!.enabled).toBe(false)
+  // Back to Yours: the project's agent offers the opposite move.
+  const config = await provider.config!(there!.ref.id, 'project', inProject)
+  expect(config?.actions?.find((a) => a.id === 'move')?.label).toBe('Move to user')
+  await created(provider)
+  await expect(
+    provider.runAction!(there!.ref.id, 'project', 'move', inProject),
+  ).rejects.toMatchObject({
+    code: 'agent_exists',
+  })
 })

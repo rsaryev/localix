@@ -55,11 +55,12 @@ export function agentListing(summary: AgentSummary): Listing {
   } as Listing
 }
 
-export function agentDetail(summary: AgentSummary): ListingDetail {
+export function agentDetail(summary: AgentSummary, chats = 0): ListingDetail {
   const { record } = summary
   const facts: [string, string | undefined][] = [
     ['Kept in', sourceOf(summary).label],
     ['File', summary.path || undefined],
+    ['Seated in', chats > 0 ? `${chats} ${chats === 1 ? 'chat' : 'chats'}` : undefined],
     ['Priority', record.leadershipPriority ? String(record.leadershipPriority) : undefined],
   ]
   return {
@@ -127,10 +128,14 @@ export const DUPLICATE: ItemAction = {
   help: 'Another agent with the same definition',
 }
 
-export function agentConfig(summary: AgentSummary): ListingConfig {
+export function agentConfig(summary: AgentSummary, revision?: string): ListingConfig {
   const scope = scopeOf(summary)
   const base = { scope, scopes: [scope], set: [] }
   if (!summary.editable) return { ...base, fields: [], values: {}, actions: [COPY] }
+  const move: ItemAction =
+    scope === 'user'
+      ? { id: 'move', label: 'Move to project', help: 'Keep it in the open project instead' }
+      : { id: 'move', label: 'Move to user', help: 'Keep it in your agents folder instead' }
   const { record } = summary
   const route = [record.modelPreference?.provider, record.modelPreference?.model]
     .filter(Boolean)
@@ -149,7 +154,8 @@ export function agentConfig(summary: AgentSummary): ListingConfig {
       priority: record.leadershipPriority,
       memoryScope: record.context?.memory?.scope ?? null,
     },
-    actions: [DUPLICATE],
+    actions: [DUPLICATE, move],
+    ...(revision ? { revision } : {}),
   }
 }
 
