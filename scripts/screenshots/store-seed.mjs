@@ -10,6 +10,50 @@ import { api, prepare, verifyDemoRuntime, fixtureFile } from './runtime.mjs'
  */
 export const STORE_INSTALLED = ['kanban', 'git-workspace', 'documents']
 
+/**
+ * What the person wrote themselves, for the Yours captures: a skill and an MCP server, made through
+ * the Store's own create route. Only those scenarios have them: the others count what is installed.
+ */
+export const YOURS = [
+  {
+    kind: 'skill',
+    id: 'user:release-notes',
+    values: {
+      name: 'release-notes',
+      description: 'Write release notes from the commits since the last tag',
+      content: 'List what a person using the app will notice, most important first.\n',
+    },
+  },
+  {
+    kind: 'mcp-server',
+    id: 'docs-search',
+    values: {
+      name: 'docs-search',
+      description: 'Search the team docs',
+      transport: 'http',
+      url: 'https://docs.example.com/mcp',
+      headers: { Authorization: 'Bearer demo-token' },
+    },
+  },
+]
+export const YOURS_SCENARIOS = ['store-yours', 'store-mcp-settings']
+
+export async function clearYours() {
+  for (const item of YOURS) {
+    try {
+      await api(`/store/${item.kind}/${encodeURIComponent(item.id)}/remove`, { scope: 'user' })
+    } catch {
+      /* Not there yet. */
+    }
+  }
+}
+
+export async function seedYours() {
+  await clearYours()
+  for (const item of YOURS)
+    await api(`/store/create/${item.kind}`, { scope: 'user', values: item.values })
+}
+
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 async function miniApps() {
@@ -17,6 +61,8 @@ async function miniApps() {
 }
 
 export async function seedStore() {
+  // What an earlier Yours capture left would count as installed.
+  await clearYours()
   const root = await prepare()
   let fixture
   try {

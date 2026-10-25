@@ -29,7 +29,11 @@ for (const [key, spec] of Object.entries(capturePlan)) {
       await (await import('./diagram-board.mjs')).seedDiagramBoard(fixture)
     if (spec.scenario === 'agent-management')
       await (await import('./agent-management.mjs')).seedAgentManagement(fixture)
-    if (spec.scenario.startsWith('store')) await (await import('./store-seed.mjs')).seedStore()
+    if (spec.scenario.startsWith('store')) {
+      const seed = await import('./store-seed.mjs')
+      await seed.seedStore()
+      if (seed.YOURS_SCENARIOS.includes(spec.scenario)) await seed.seedYours()
+    }
     if (['local-models-settings', 'semantic-search'].includes(spec.scenario))
       await (await import('./local-models.mjs')).seedLocalModels()
     const board = spec.scenario === 'answer-board'

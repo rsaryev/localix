@@ -309,6 +309,18 @@ export const capturePlan = {
     scenario: 'store-commands',
     start: 'home',
   },
+  'store/yours': {
+    guide: 'features/store.md',
+    purpose: 'Yours lists the skill and the MCP server you wrote, each with Add on top',
+    scenario: 'store-yours',
+    start: 'home',
+  },
+  'store/mcp-settings': {
+    guide: 'features/mcp.md',
+    purpose: 'An MCP server’s Settings tab: how it connects, secrets that only say they are set',
+    scenario: 'store-mcp-settings',
+    start: 'home',
+  },
   'tools/codemode-card': {
     guide: 'features/tools.md',
     purpose: 'One script run: its calls with their files, outcome and time, and its JSON report',

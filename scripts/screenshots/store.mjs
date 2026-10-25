@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test'
-import { STORE_INSTALLED } from './store-seed.mjs'
+import { STORE_INSTALLED, YOURS, YOURS_SCENARIOS } from './store-seed.mjs'
 
 /**
  * The Store (`docs/internals/store.md`): its Discover page, shelves, a package's page and consent
@@ -102,6 +102,22 @@ const COMPOSE = {
     await goTo(page, 'Commands')
     await page.locator('[data-component]').first().waitFor()
   },
+  async 'store-yours'(page) {
+    await openStore(page)
+    await goTo(page, 'Yours')
+    await page.locator('[data-listing="docs-search"]').first().waitFor()
+  },
+  async 'store-mcp-settings'(page) {
+    await openStore(page)
+    await goTo(page, 'Yours')
+    await page
+      .locator('[data-listing="docs-search"]')
+      .first()
+      .click({ position: { x: 8, y: 8 } })
+    await page.locator('[data-store-page="docs-search"]').waitFor()
+    await page.getByRole('tab', { name: 'Settings', exact: true }).click()
+    await page.getByRole('button', { name: 'Test connection', exact: true }).waitFor()
+  },
 }
 
 export async function composeStore(page, scenario) {
@@ -188,13 +204,32 @@ const VERIFY = {
     const row = page.locator('[data-component^="command:"]').first()
     await expect(row).toContainText('· Mini app')
   },
+  async 'store-yours'(page) {
+    await expect(heading(page)).toHaveText('Yours')
+    await expect(page.locator('[data-listing="user:release-notes"]').first()).toContainText(
+      'release-notes',
+    )
+    await expect(page.locator('[data-listing="docs-search"]').first()).toContainText('docs-search')
+    await expect(page.getByRole('button', { name: 'Add skill', exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Add MCP server', exact: true })).toBeVisible()
+  },
+  async 'store-mcp-settings'(page) {
+    const detail = page.locator('[data-store-page="docs-search"]')
+    await expect(detail.getByRole('heading', { level: 1 }).first()).toHaveText('docs-search')
+    await expect(detail.getByText('Listen as a channel')).toBeVisible()
+    // A header is a secret: the page says it is set and never shows it.
+    await expect(detail.getByText('Set').first()).toBeVisible()
+    await expect(detail).not.toContainText('demo-token')
+    await expect(detail.getByRole('button', { name: 'Sign in', exact: true })).toBeVisible()
+  },
 }
 
 export async function verifyStore(page, scenario) {
+  const written = YOURS_SCENARIOS.includes(scenario) ? YOURS.length : 0
   // A dialog hides the sidebar from the page's tree: its scenarios check the dialog instead.
   if ((await wide(page)) && (await page.getByRole('dialog').count()) === 0) {
     await expect(sections(page).getByRole('button', { name: /^Installed/ })).toContainText(
-      String(STORE_INSTALLED.length),
+      String(STORE_INSTALLED.length + written),
     )
     await expect(sections(page).getByRole('button', { name: /^Sources/ })).toBeVisible()
     // How a mini app works is not a shelf: no Screens, no Agent tools.
