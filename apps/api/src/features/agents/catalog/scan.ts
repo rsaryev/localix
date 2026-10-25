@@ -11,8 +11,11 @@ import { composeCatalog, type AgentCatalog } from './catalog'
 export interface AgentFolders {
   managed: string
   user: string
-  /** The project's chain, closest first: the working directory up to the repository root. */
-  project: string[]
+  /**
+   * The project's chain, closest first: the working directory up to the repository root. Null
+   * when the project's folder cannot be read now, which is never a reason to forget its agents.
+   */
+  project: string[] | null
 }
 
 const isRepositoryRoot = (dir: string) =>
@@ -56,15 +59,28 @@ export async function agentFolders(opts: {
 }
 
 /** A plugin's agent (`<plugin>:<name>`) as a catalog entry. */
-export function pluginCatalogAgent(agent: LoadedPluginAgent): CatalogAgent {
+export function pluginCatalogAgent(agent: LoadedPluginAgent, projectId = ''): CatalogAgent {
   return {
     ...agent,
     source: 'plugin',
-    projectId: '',
+    projectId,
     path: '',
     bodyHash: bodyHashOf(agent.prompt),
     localix: agent.localix ?? { priority: 0 },
   }
+}
+
+/** The agent files of one scope in Claude Code's precedence: managed, project, user. */
+export async function scanFileAgents(
+  folders: AgentFolders,
+  projectId: string,
+): Promise<CatalogAgent[]> {
+  const groups = await Promise.all([
+    scanAgentFolder(folders.managed, 'managed', ''),
+    ...(folders.project ?? []).map((dir) => scanAgentFolder(dir, 'project', projectId)),
+    scanAgentFolder(folders.user, 'user', ''),
+  ])
+  return groups.flat()
 }
 
 /** Every definition of one scope in Claude Code's precedence, built-ins last. */
@@ -73,15 +89,9 @@ export async function scanAgents(opts: {
   projectId: string
   plugins?: readonly LoadedPluginAgent[]
 }): Promise<AgentCatalog> {
-  const { folders, projectId } = opts
-  const groups = await Promise.all([
-    scanAgentFolder(folders.managed, 'managed', ''),
-    ...folders.project.map((dir) => scanAgentFolder(dir, 'project', projectId)),
-    scanAgentFolder(folders.user, 'user', ''),
-  ])
   return composeCatalog([
-    ...groups.flat(),
-    ...(opts.plugins ?? []).map(pluginCatalogAgent),
+    ...(await scanFileAgents(opts.folders, opts.projectId)),
+    ...(opts.plugins ?? []).map((agent) => pluginCatalogAgent(agent)),
     ...BUILTIN_AGENT_TYPES,
   ])
 }
