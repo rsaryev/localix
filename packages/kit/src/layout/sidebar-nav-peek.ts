@@ -19,7 +19,7 @@ const defaultSchedule = (run: () => void, ms: number) => {
 /**
  * When the compact rail's panel is open. It opens on a hovering mouse after a short dwell and on
  * keyboard focus; it closes on leaving (after a grace), Esc, choosing a row, focus leaving, and a
- * touch outside. A touch on the rail toggles it. It never opens while a button is held. The panel
+ * touch outside, unless it is pinned: the toggle button pins it open until pressed again. A touch on the rail toggles it. It never opens while a button is held. The panel
  * floats over the content, so none of this moves anything.
  */
 export function useSidebarNavPeek(
@@ -28,10 +28,11 @@ export function useSidebarNavPeek(
   { openDelayMs = 120, closeDelayMs = 200, schedule = defaultSchedule }: SidebarNavPeek = {},
 ) {
   const [open, setOpen] = useState(false)
+  const [pinned, setPinned] = useState(false)
   const cancel = useRef<(() => void) | null>(null)
   const pointerFocus = useRef(false)
   const touched = useRef({ wasOpen: false, active: false })
-  const shown = enabled && open
+  const shown = enabled && (open || pinned)
 
   const clear = useCallback(() => {
     cancel.current?.()
@@ -100,7 +101,10 @@ export function useSidebarNavPeek(
     close: () => set(false),
     // A touch already toggled on pointer down.
     toggle: () => {
-      if (!touched.current.active) set(!shown)
+      if (touched.current.active) return
+      clear()
+      setPinned(!pinned)
+      setOpen(!pinned)
     },
     handlers,
   }

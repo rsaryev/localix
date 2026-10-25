@@ -287,6 +287,27 @@ describe('SidebarNav compact panel', () => {
     await view.done()
   })
 
+  test('the toggle button pins the panel open until it is pressed again; hover alone never pins', async () => {
+    const view = await mount('compact')
+    const React = await import('react')
+    const toggle = () => React.act(async () => view.rows()[0]!.click())
+    await view.pointer('pointerenter')
+    await view.fire()
+    expect(state(view)).toBe('open')
+    await toggle()
+    expect(state(view)).toBe('open')
+    await view.pointer('pointerleave')
+    await view.fire()
+    await view.press('Escape')
+    expect(state(view)).toBe('open')
+    expect(view.rows()[0]!.getAttribute('aria-label')).toBe('Collapse Store sections')
+    await toggle()
+    expect(state(view)).toBe('closed')
+    await toggle()
+    expect(state(view)).toBe('open')
+    await view.done()
+  })
+
   test('full mode has no panel state', async () => {
     const view = await mount('full')
     expect(view.host.querySelector('[data-state]')).toBeNull()
