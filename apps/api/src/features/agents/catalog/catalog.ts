@@ -12,7 +12,7 @@ export interface AgentCatalog {
   shadowedBy(agent: CatalogAgent): CatalogAgent | undefined
   /**
    * THE one lookup of an agent by what a person or model typed: its name (`reviewer`,
-   * `@reviewer`, `@agent-reviewer`, a plugin's `team:reviewer`), case-insensitive only when that
+   * `@reviewer`, `@agent-reviewer`, a plugin's `acme:reviewer`), case-insensitive only when that
    * is unambiguous, and a plugin's bare name only when one plugin alone has it. Chat, delegation,
    * loops, mentions and `/skill` call this; none of them matches names itself.
    */

@@ -102,18 +102,18 @@ describe('resolving who a task goes to', () => {
   })
 
   test('a plugin agent answers to its full name, and to a bare name only one plugin has', async () => {
-    const t = await fixture({ team: ['reviewer', 'writer'], docs: ['writer'] })
-    expect(await t.service.resolveDelegation('u', 'team:reviewer')).toMatchObject({
+    const t = await fixture({ acme: ['reviewer', 'writer'], docs: ['writer'] })
+    expect(await t.service.resolveDelegation('u', 'acme:reviewer')).toMatchObject({
       kind: 'agent',
-      agent: { handle: 'team:reviewer' },
+      agent: { handle: 'acme:reviewer' },
     })
     expect(await t.service.resolveDelegation('u', 'reviewer')).toMatchObject({
       kind: 'agent',
-      agent: { handle: 'team:reviewer' },
+      agent: { handle: 'acme:reviewer' },
     })
     expect(await t.service.resolveDelegation('u', 'writer')).toEqual({
       kind: 'ambiguous',
-      names: ['team:writer', 'docs:writer'],
+      names: ['acme:writer', 'docs:writer'],
     })
   })
 
@@ -181,7 +181,7 @@ describe('the definition a run is admitted with', () => {
 
 describe('the directory a run reads', () => {
   test('lists every agent with whether it can be tagged in and whether a task can go to it', async () => {
-    const t = await fixture({ team: ['reviewer'] })
+    const t = await fixture({ acme: ['reviewer'] })
     await t.userFile('scribe', 'tools: Read\n')
     await t.userFile('critic')
     const critic = (await t.service.getAgent('u', 'critic'))!
@@ -197,7 +197,7 @@ describe('the directory a run reads', () => {
       tools: ['read'],
     })
     expect(row('critic')).toMatchObject({ canJoinConversation: true, delegable: false })
-    expect(row('team:reviewer')).toMatchObject({ delegable: true })
+    expect(row('acme:reviewer')).toMatchObject({ delegable: true })
     expect(row('Explore')).toMatchObject({ delegable: true })
     expect(row('general-purpose')).toMatchObject({ delegable: true, self: true })
   })

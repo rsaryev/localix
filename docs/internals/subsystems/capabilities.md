@@ -88,12 +88,12 @@ conflict retains the draft and offers an explicit reload. Publication applies ex
 rules; availability is not inferred from an import. Policy review follows the owner and stable ID
 even when the definition belongs to a project; invocation still requires the correct project scope.
 
-`apps/api/src/features/agents/registration-policy.ts` owns the registration review operation;
-`apps/ui/src/features/settings/ui/permissions/PermissionRulesView.tsx` uses the shared editor and
-`apps/ui/src/features/settings/ui/permissions/RegistrationPolicyReview.tsx` displays proposals. This
-applies to contributions published in the native registry. Verified bundled mini app manifests are
-reconciled by `apps/api/src/features/mini-apps/sync-bundled-contributions.ts`; installed third-party
-declarations do not receive automatic publication or authority.
+An agent is a Claude Code file, so it needs no registration review: a new file gets the default
+policy in the same transaction as its binding (`apps/api/src/features/agents/bindings/`), and
+`apps/ui/src/features/settings/ui/permissions/PermissionRulesView.tsx` edits its rules with the
+shared editor. Verified bundled mini app manifests are reconciled by
+`apps/api/src/features/mini-apps/sync-bundled-contributions.ts`; installed third-party declarations
+do not receive automatic publication or authority.
 
 ### One list, and the last match wins
 
@@ -227,8 +227,8 @@ check still refuses to land on top of a newer one. A second seeding path would h
 
 A grant also has to be REACHABLE. A preset names candidates; whether a run holds one is the ledger's
 answer, and its first layer is the shape — so an allow no host surface carries is a claim the
-product does not honour, not a harmless extra. `builtin-team.test.ts` fails on any such grant, with
-a positive control.
+product does not honour, not a harmless extra. a test fails on any such grant, with a positive
+control.
 
 Two cases the seeder refuses. An agent whose record states nothing is left alone entirely — no rows
 and no marker, so a record that later grows a preset is seeded then. And an agent whose list already

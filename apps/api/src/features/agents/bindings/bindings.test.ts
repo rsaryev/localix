@@ -53,9 +53,9 @@ describe('agent bindings', () => {
       .filter((entry) => entry.agent.source === 'user')
       .map((entry) => [entry.agent.name, entry.id])
   const pluginAgent = (name: string): LoadedPluginAgent => ({
-    pluginName: 'team',
+    pluginName: 'acme',
     name,
-    fullName: `team:${name}`,
+    fullName: `acme:${name}`,
     label: name,
     description: name,
     prompt: `You are ${name}.`,
@@ -137,21 +137,21 @@ describe('agent bindings', () => {
 
   test('a plugin that is off is not a deletion; an uninstalled one is purged at once', async () => {
     const b = bindings()
-    plugins = [{ plugin: 'team', projectId: '', enabled: true, agents: [pluginAgent('lead')] }]
+    plugins = [{ plugin: 'acme', projectId: '', enabled: true, agents: [pluginAgent('lead')] }]
     const first = await b.snapshot('u', '')
-    expect(first.agents.find((entry) => entry.agent.fullName === 'team:lead')?.id).toBe('cc:test-1')
-    plugins = [{ plugin: 'team', projectId: '', enabled: false, agents: [] }]
+    expect(first.agents.find((entry) => entry.agent.fullName === 'acme:lead')?.id).toBe('cc:test-1')
+    plugins = [{ plugin: 'acme', projectId: '', enabled: false, agents: [] }]
     const off = await b.snapshot('u', '')
-    expect(off.agents.some((entry) => entry.agent.fullName === 'team:lead')).toBe(false)
+    expect(off.agents.some((entry) => entry.agent.fullName === 'acme:lead')).toBe(false)
     expect((await notices()).filter(([op]) => op === 'deleted')).toEqual([])
-    plugins = [{ plugin: 'team', projectId: '', enabled: true, agents: [pluginAgent('lead')] }]
+    plugins = [{ plugin: 'acme', projectId: '', enabled: true, agents: [pluginAgent('lead')] }]
     const on = await b.snapshot('u', '')
-    expect(on.agents.find((entry) => entry.agent.fullName === 'team:lead')?.id).toBe('cc:test-1')
+    expect(on.agents.find((entry) => entry.agent.fullName === 'acme:lead')?.id).toBe('cc:test-1')
     plugins = []
     await b.snapshot('u', '')
     expect((await notices()).at(-1)).toEqual([
       'deleted',
-      { id: 'team:lead', scope: 'global', agentId: 'cc:test-1' },
+      { id: 'acme:lead', scope: 'global', agentId: 'cc:test-1' },
     ])
   })
 

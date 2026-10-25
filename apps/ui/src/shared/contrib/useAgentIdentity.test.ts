@@ -39,7 +39,7 @@ describe('agentAuthorId', () => {
   })
 
   test('a handle may contain the separator', () => {
-    expect(agentAuthorId('agent:team:reviewer')).toBe('team:reviewer')
+    expect(agentAuthorId('agent:acme:reviewer')).toBe('acme:reviewer')
   })
 })
 

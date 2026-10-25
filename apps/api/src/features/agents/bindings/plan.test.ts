@@ -96,10 +96,10 @@ describe('agent binding plan', () => {
   })
 
   test('a group that was not scanned is left alone and a gone one is purged', () => {
-    const plugin = { projectId: '', source: 'plugin:team' }
+    const plugin = { projectId: '', source: 'plugin:acme' }
     const project = { projectId: 'p', source: 'project' }
     const rows: BoundRow[] = [
-      { ...plugin, id: 'id-plugin', name: 'team:a', path: '', bodyHash: 'x' },
+      { ...plugin, id: 'id-plugin', name: 'acme:a', path: '', bodyHash: 'x' },
       { ...project, id: 'id-project', name: 'p1', path: '/p/p1.md', bodyHash: 'y' },
     ]
     const untouched = plan(rows, [])

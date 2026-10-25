@@ -102,8 +102,8 @@ describe('the agent catalog', () => {
     const repo = join(base(), 'repo')
     await write(join(repo, '.claude', 'agents', 'reviewer.md'), agent('reviewer', 'mine'))
     const catalog = await scan(repo, [
-      pluginAgent('team', 'architect'),
-      pluginAgent('team', 'shared'),
+      pluginAgent('acme', 'architect'),
+      pluginAgent('acme', 'shared'),
       pluginAgent('other', 'shared'),
     ])
     const named = (reference: string) => {
@@ -113,9 +113,9 @@ describe('the agent catalog', () => {
     expect(named('reviewer')).toBe('reviewer')
     expect(named('@Reviewer')).toBe('reviewer')
     expect(named('@agent-reviewer')).toBe('reviewer')
-    expect(named('team:architect')).toBe('team:architect')
-    expect(named('architect')).toBe('team:architect')
-    expect(named('shared')).toEqual({ ambiguous: ['team:shared', 'other:shared'] })
+    expect(named('acme:architect')).toBe('acme:architect')
+    expect(named('architect')).toBe('acme:architect')
+    expect(named('shared')).toEqual({ ambiguous: ['acme:shared', 'other:shared'] })
     expect(named('nobody')).toBeNull()
     expect(named('   ')).toBeNull()
   })
