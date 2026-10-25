@@ -244,6 +244,27 @@ describe('the MCP server Store provider', () => {
       })
     })
 
+    test('Listen as a channel is a switch on the page, kept when other settings are saved', async () => {
+      const { provider, service } = await setup()
+      await service.createServer('u1', remote)
+
+      const before = await provider.config!('github', 'user', actor)
+      expect(before!.fields).toContainEqual(
+        expect.objectContaining({ key: 'channel', label: 'Listen as a channel', type: 'boolean' }),
+      )
+      expect(before!.values.channel).toBe(false)
+
+      await provider.setConfig!('github', 'user', { channel: true }, actor)
+      expect((await service.listForRuntime('u1', ''))[0]?.config.channel).toBe(true)
+      expect((await provider.config!('github', 'user', actor))!.values.channel).toBe(true)
+
+      await provider.setConfig!('github', 'user', { timeout: 60000 }, actor)
+      expect((await service.listForRuntime('u1', ''))[0]?.config.channel).toBe(true)
+
+      await provider.setConfig!('github', 'user', { channel: false }, actor)
+      expect((await service.listForRuntime('u1', ''))[0]?.config.channel).toBeUndefined()
+    })
+
     test('refuses a change that leaves it unable to connect', async () => {
       const { provider, service } = await setup()
       await service.createServer('u1', remote)

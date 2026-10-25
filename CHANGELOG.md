@@ -8,6 +8,13 @@ Changes land on `main`.
 
 ### Added
 
+- **Your own skills and MCP servers in the Store**: **Library → Yours** lists the skills and MCP
+  servers you wrote, with **Add skill** and **Add MCP server**; with a project open, **Library →
+  Project** lists the ones kept in that project. A skill's page has its description and instructions
+  to edit, with **Pin**, **Archive** and **Restore**. An MCP server's page has its connection
+  settings, **Test connection**, **Sign in** and **Sign out**, and, after a test, one switch per
+  tool. Headers, environment variables and OAuth secrets are kept in the vault, and a page only says
+  they are set.
 - **Permissions in Settings**: the allow, ask and deny rules have their own section, **Settings →
   Permissions**, under Security instead of a tab in Capabilities. It shows, read-only, the rules and
   default mode from your Claude Code settings files with the file each came from, and says how rules
@@ -206,6 +213,10 @@ Changes land on `main`.
 
 ### Changed
 
+- **Settings → MCP and Skills are switches and links**: they list each server and skill with its
+  switch for the selected agent and a **Settings** button that opens its Store page, where it is
+  edited, tested, archived or removed. **Run curator** stays on the Skills tab. A skill is renamed
+  by adding the new name and removing the old one.
 - **Mods look like the rest of the app**: the band a mod draws above the message box is part of the
   box — its surface, its padding, one hairline above the input — in the composer strips' type, with
   quiet buttons, picks as chips with keycaps and the full label in a tooltip; lines sit side by
@@ -346,6 +357,9 @@ Changes land on `main`.
 
 ### Removed
 
+- **Import MCP servers from JSON**: the paste-a-JSON import in Settings → MCP is gone with the form
+  it belonged to. Add servers one at a time with **Add MCP server** in the Store, or define them in
+  `.mcp.json`.
 - **Code Review, Deliverables and Webhook Notifier**: the three bundled plugins without a screen of
   their own are gone, with the `/review` command.
 

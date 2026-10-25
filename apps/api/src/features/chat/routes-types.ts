@@ -30,7 +30,6 @@ import type {
   updateSessionRequestSchema,
   WakeSource,
 } from './contracts'
-import type { SkillRecord, SkillInput } from './service'
 import type { UsageOverviewOpts, UsageLogsOpts } from './service/usage'
 import type { UsageOverview, UsageLogsPage, UsageKeys } from '../usage/repository'
 import type { ChatRecapFacade } from './service/recap-facade'
@@ -51,13 +50,6 @@ export interface ChatRoutesService extends ChatRecapFacade {
   statusLine?: { viewed(userId: string, sessionId: string): void }
   listSessions(userId: string): Promise<{ sessions: SessionSummary[] }>
   searchHistory(userId: string, query: string, limit?: number): Promise<HistorySearchHit[]>
-  getSkill(userId: string, name: string, opts?: { projectId?: string | null }): Promise<SkillRecord>
-  listSkills(
-    userId: string,
-    opts?: { projectId?: string | null },
-  ): Promise<{ skills: SkillRecord[] }>
-  createSkill(userId: string, input: SkillInput): Promise<SkillRecord>
-  deleteSkill(userId: string, id: string, projectId?: string | null): Promise<void>
   setSessionSkills(userId: string, sessionId: string, names: string[]): Promise<SessionDetail>
   createSession(
     userId: string,

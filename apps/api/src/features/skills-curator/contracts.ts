@@ -26,10 +26,6 @@ export const curatorSkillRecordSchema = z.object({
 })
 export type CuratorSkillRecord = z.infer<typeof curatorSkillRecordSchema>
 
-export const listCuratorSkillsResponseSchema = z.object({
-  skills: z.array(curatorSkillRecordSchema),
-})
-
 export const curatorReportSchema = z.object({
   /** Skills left active after the pass. */
   active: z.number(),
@@ -41,20 +37,6 @@ export const curatorReportSchema = z.object({
   archivedNow: z.array(z.string()),
 })
 export type CuratorReport = z.infer<typeof curatorReportSchema>
-
-export const setSkillPinnedRequestSchema = z.object({
-  name: z.string().min(1),
-  scope: z.enum(['project', 'global']).default('global'),
-  pinned: z.boolean(),
-  projectId: z.string().nullable().optional(),
-})
-
-export const archiveSkillRequestSchema = z.object({
-  name: z.string().min(1),
-  projectId: z.string().nullable().optional(),
-})
-
-export const restoreSkillRequestSchema = archiveSkillRequestSchema
 
 export const runCuratorRequestSchema = z.object({
   projectId: z.string().nullable().optional(),

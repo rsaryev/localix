@@ -76,6 +76,15 @@ export function ConfigControl({
         />
       )
     case 'string':
+      if (field.multiline)
+        return (
+          <Textarea
+            size="xl"
+            className="min-h-40"
+            value={text(value)}
+            onChange={(event) => onChange(event.target.value)}
+          />
+        )
       return (
         <Input size="xl" value={text(value)} onChange={(event) => onChange(event.target.value)} />
       )

@@ -34,20 +34,6 @@ import type {
  */
 export type { SkillRecord, SkillInput, SkillSummary }
 
-/** Per-skill curator/usage record (filesystem skills only — never plugin/bundled ones). */
-export interface CuratorSkillRecord {
-  name: string
-  description: string
-  scope: 'global' | 'project'
-  /** Absolute path to the skill directory (archived skills live in `.archive/`). */
-  dir: string
-  getCount: number
-  lastUsedAt: string | null
-  pinned: boolean
-  archivedAt: string | null
-  state: 'active' | 'stale' | 'archived'
-}
-
 /** Result of a curator pass. */
 export interface CuratorReport {
   active: number

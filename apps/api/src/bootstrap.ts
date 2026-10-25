@@ -201,6 +201,16 @@ export async function bootstrap(
   const store = createStorePhase({
     miniAppService,
     mcpService,
+    skills: {
+      curator: skillsCuratorService,
+      files: {
+        list: (userId, projectId) => chatService.listSkills(userId, { projectId }),
+        get: (userId, name, projectId) => chatService.getSkill(userId, name, { projectId }),
+        create: (userId, input) => chatService.createSkill(userId, input),
+        update: (userId, id, input) => chatService.updateSkill(userId, id, input),
+        remove: (userId, name, projectId) => chatService.deleteSkill(userId, name, projectId),
+      },
+    },
     db,
     pluginService,
     semanticService,

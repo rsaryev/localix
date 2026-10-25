@@ -57,6 +57,14 @@ export const SERVER_FIELDS: ConfigField[] = [
   text('oauthClientSecret', 'OAuth client secret', 'Its secret, if it has one.', { secret: true }),
   text('oauthScope', 'OAuth scope', 'What to ask for; blank takes what the server advertises.'),
   {
+    key: 'channel',
+    label: 'Listen as a channel',
+    help: 'Let the server speak into the chat that last used it, as Claude Code’s --channels does.',
+    type: 'boolean',
+    required: false,
+    secret: false,
+  },
+  {
     key: 'timeout',
     label: 'Tool call timeout (ms)',
     help: 'How long one tool call may take; blank takes the default.',
@@ -102,7 +110,7 @@ export function settingsOf(
   const { config } = record
   const oauth = isRecord(config.oauth) ? config.oauth : {}
   const argv = Array.isArray(config.command) ? config.command.map(String) : []
-  const open: Record<string, string | number | null> = {
+  const open: Record<string, string | number | boolean | null> = {
     description: record.description,
     transport: record.transport,
     command: argv.length > 0 ? joinCommandLine(argv) : null,
@@ -110,6 +118,7 @@ export function settingsOf(
     oauthClientId: typeof oauth.clientId === 'string' ? oauth.clientId : null,
     oauthScope: typeof oauth.scope === 'string' ? oauth.scope : null,
     timeout: typeof config.timeout === 'number' ? config.timeout : null,
+    channel: config.channel === true,
   }
   return {
     fields: [...SERVER_FIELDS, ...(extra.tools ? [toolsField(extra.tools.names)] : [])],
@@ -154,6 +163,7 @@ export function applyValues(base: ServerShape, values: Record<string, ConfigValu
   if (has('url')) set('url', asText(values.url).trim())
   if (has('env')) set('env', asMap(values.env))
   if (has('headers')) set('headers', asMap(values.headers))
+  if (has('channel')) set('channel', values.channel === true ? true : undefined)
   if (has('timeout'))
     set('timeout', typeof values.timeout === 'number' ? values.timeout : undefined)
   const oauth: Record<string, unknown> = isRecord(config.oauth) ? { ...config.oauth } : {}

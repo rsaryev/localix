@@ -298,3 +298,40 @@ describe('the configuration form’s map and multiple-choice fields', () => {
     }
   })
 })
+
+describe('the configuration form’s long text', () => {
+  test('a multiline string is a text area that keeps its line breaks and saves them', async () => {
+    const saved: Array<Record<string, ConfigValue>> = []
+    const form = await render(
+      {
+        fields: [
+          { key: 'name', label: 'Name', type: 'string', required: true, secret: false },
+          {
+            key: 'content',
+            label: 'Instructions',
+            type: 'string',
+            required: true,
+            secret: false,
+            multiline: true,
+          },
+        ],
+        values: { name: 'review', content: 'One\nTwo' },
+        set: [],
+        scope: 'user',
+        scopes: ['user'],
+      },
+      async (values) => void saved.push(values),
+    )
+    try {
+      expect(form.field('Name')!.tagName).toBe('INPUT')
+      const area = form.field('Instructions')!
+      expect(area.tagName).toBe('TEXTAREA')
+      expect(area.value).toBe('One\nTwo')
+      await form.type(area, 'One\nTwo\nThree')
+      await form.click(form.button('Save'))
+      expect(saved).toEqual([{ content: 'One\nTwo\nThree' }])
+    } finally {
+      await form.done()
+    }
+  })
+})

@@ -236,9 +236,9 @@ running subagents in the agent sessions panel under the message box.
 ### Channels
 
 A plugin MCP server that declares `claude/channel` speaks into the chat that last used it; enabling
-the plugin opts it in. For a server you added, turn on **Listen as a channel** in Settings → MCP, as
-Claude Code's `--channels` does. Localix remembers which chat a channel speaks into, so after a
-restart its messages arrive before your next message. A channel that declares
+the plugin opts it in. For a server you added, turn on **Listen as a channel** on its Store page
+(Settings tab), as Claude Code's `--channels` does. Localix remembers which chat a channel speaks
+into, so after a restart its messages arrive before your next message. A channel that declares
 `claude/channel/permission` receives each approval prompt opened in its chat and may answer
 `yes <id>` or `no <id>`; the first answer applies to that one call.
 

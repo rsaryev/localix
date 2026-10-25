@@ -28,17 +28,6 @@ export const usageLogsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(200).optional(),
 })
 
-export const skillInputSchema = z.object({
-  name: z
-    .string()
-    .min(1)
-    .regex(/^[a-z0-9][a-z0-9_-]*$/i, 'Use letters, numbers, dashes or underscores'),
-  description: z.string().min(1),
-  content: z.string().min(1),
-  tags: z.array(z.string()).optional(),
-  projectId: z.string().nullable().optional(),
-})
-
 // ── File browser (viewer/editor, explorer tree, search panel) ──────────────────
 
 export const fileReadQuerySchema = z.object({
@@ -128,8 +117,6 @@ export const historySearchQuerySchema = z.object({
   q: z.string(),
   limit: z.coerce.number().int().positive().max(100).optional(),
 })
-
-export const skillScopeQuerySchema = z.object({ projectId: z.string().optional() })
 
 export const sessionSkillsRequestSchema = z.object({ skills: z.array(z.string()) })
 

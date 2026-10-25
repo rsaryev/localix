@@ -511,6 +511,30 @@ downloaded, it is made here, so the provider has no sources and no install: `ins
 - **Names are the handle.** A name is chosen when the server is added and not changed: it names the
   server's rules and its vault items.
 
+### Skills
+
+The `skill` kind is served by `apps/api/src/features/skills-curator/store-provider.ts`, over the
+SKILL.md operations of the chat service and the curator, both handed in as ports (`bootstrap/`
+builds them, A4). Like an MCP server a skill is made here, so `install`, `update` and `plan` refuse
+and say to use **Add skill**.
+
+| Skill                                                  | Listing id       | Shelf   | Settings, remove |
+| ------------------------------------------------------ | ---------------- | ------- | ---------------- |
+| In `~/.localix/skills`                                 | `user:<name>`    | Yours   | yes              |
+| In a project's `.localix/skills`                       | `project:<name>` | Project | yes              |
+| In another folder (`~/.claude/skills`, a command file) | `user:<name>`    | Yours   | read-only        |
+| A plugin's                                             | not listed       |         |                  |
+
+- **Commands are skills.** A `.claude/commands/<path>.md` file is already discovered as a skill
+  named with `:`, so it appears as a read-only skill. There is no `command` package kind.
+- **Settings tab.** Description and instructions (a `multiline` field, one text area). Actions:
+  **Pin** or **Unpin**, **Archive**. An archived skill stays on its shelf with an `archived` tag,
+  its switch off and one action, **Restore**; it cannot be removed until restored.
+- **Switch.** A `skill:<name>` rule of the default agent, the one Settings writes. The name is the
+  identity and is not changed after the skill is added.
+- **Curator.** The scheduled pass and the Run curator button of Settings → Capabilities → Skills are
+  unchanged; archive, restore and pin go through the same service.
+
 ## Source of truth
 
 - [The contract](../../packages/store/src/contract.ts),

@@ -80,7 +80,6 @@ test('a skill switch writes its agent’s rule, not the default assistant’s', 
     updatedAt: '2026-09-01T00:00:00.000Z',
   }
   spyOn(backendClient, 'fetchCapabilitySnapshot').mockResolvedValue(snapshotWith([skill]))
-  spyOn(backendClient, 'listCuratorSkills').mockResolvedValue([] as never)
   const apply = spyOn(backendClient, 'applyCapabilityRules').mockResolvedValue(
     snapshotWith([{ ...skill, enabled: false }]),
   )

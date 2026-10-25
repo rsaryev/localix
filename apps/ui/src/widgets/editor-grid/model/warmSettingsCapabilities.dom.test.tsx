@@ -62,10 +62,6 @@ describe('warm-hidden Settings data sources', () => {
     const { useSkills } = await import('@/features/settings/model/useSkills')
     const { WorkItemVisibilityProvider } = await import('@localixai/mini-app-sdk/ui/visibility')
 
-    // Skills have no list endpoint of their own any more — the catalog is in the
-    // document below. What the Skills screen still reads for itself is CURATOR data:
-    // pins, usage, archives, which describe how a skill has been used.
-    const curator = spyOn(backendClient, 'listCuratorSkills').mockResolvedValue([])
     // Plugins, agents and MCP servers are no longer three endpoints — they arrive in
     // the scope's ONE capability document, which is what stops them from disagreeing.
     // The laziness under test is the same; the call that witnesses it moved, and the
@@ -97,20 +93,17 @@ describe('warm-hidden Settings data sources', () => {
       root.render(<Surface visible={false} />)
       await settle()
     })
-    expect(curator).toHaveBeenCalledTimes(0)
     expect(snapshot).toHaveBeenCalledTimes(0)
 
     await act(async () => {
       root.render(<Surface visible />)
       await settle()
     })
-    expect(curator).toHaveBeenCalledTimes(1)
     // FIVE registries, ONE read between them: plugins, agents, agent providers and MCP
     // servers all project the same document, so they can neither fan out nor disagree.
     expect(snapshot).toHaveBeenCalledTimes(1)
 
     await act(async () => root.unmount())
-    curator.mockRestore()
     snapshot.mockRestore()
   })
 
@@ -127,7 +120,6 @@ describe('warm-hidden Settings data sources', () => {
     const snapshot = spyOn(backendClient, 'fetchCapabilitySnapshot').mockResolvedValue(
       EMPTY_CAPABILITY_SNAPSHOT,
     )
-    const curator = spyOn(backendClient, 'listCuratorSkills').mockResolvedValue([])
 
     function Surface({ visible }: { visible: boolean }) {
       return (
@@ -155,11 +147,9 @@ describe('warm-hidden Settings data sources', () => {
         { projectId: null, agentId: DEFAULT_AGENT_ID },
       ]),
     )
-    expect(curator).not.toHaveBeenCalled()
 
     await act(async () => root.unmount())
     snapshot.mockRestore()
-    curator.mockRestore()
   })
 
   test('secondary Settings viewers defer their automatic reads while warm-hidden', async () => {

@@ -5,6 +5,9 @@ import type { Kysely } from 'kysely'
 import type { AppDatabase } from '../db'
 import type { McpService } from '../features/mcp/service'
 import { mcpStoreProviderOf } from '../features/mcp/store-wiring'
+import type { SkillFiles } from '../features/skills-curator/store-provider'
+import type { SkillsCuratorService } from '../features/skills-curator/service'
+import { skillStoreProviderOf } from '../features/skills-curator/store-wiring'
 import { createMiniAppStoreProvider } from '../features/mini-apps/store-provider'
 import type { createMiniAppService } from '../features/mini-apps/service'
 import type { SemanticService } from '../features/embeddings/service'
@@ -34,6 +37,8 @@ export function createStorePhase(deps: {
   /** The MCP service and the database its rules live in: the MCP servers provider's. */
   mcpService: McpService
   db: Kysely<AppDatabase>
+  /** The SKILL.md operations and the curator: the skills provider's. */
+  skills: { files: SkillFiles; curator: SkillsCuratorService }
   /** The plugin service: its marketplaces are the plugins provider's sources. */
   pluginService?: PluginService
   semanticService?: Pick<SemanticService, 'registerSource' | 'resync'>
@@ -58,6 +63,11 @@ export function createStorePhase(deps: {
         db: deps.db,
         service: deps.mcpService,
         resolveProjectCwd: deps.resolveProjectCwd,
+      }),
+      skillStoreProviderOf({
+        db: deps.db,
+        curator: deps.skills.curator,
+        skills: deps.skills.files,
       }),
       ...(deps.pluginService
         ? [

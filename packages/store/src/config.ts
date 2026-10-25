@@ -52,6 +52,8 @@ export const configFieldSchema = z.object({
     .optional(),
   min: z.number().optional(),
   max: z.number().optional(),
+  /** A `string` written over several lines: the form gives it a text area. */
+  multiline: z.boolean().optional(),
 })
 export type ConfigField = z.infer<typeof configFieldSchema>
 
