@@ -1,3 +1,4 @@
+import { AgentAccess } from './AgentAccess'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { Listing, ListingDetail, StoreComponent } from '@localixai/store'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
@@ -136,6 +137,13 @@ export const PACKAGE_TABS: readonly PackageTab[] = [
         )}
       </dl>
     ),
+  },
+  {
+    id: 'access',
+    label: 'Access',
+    // What an agent may use is a page of the agent, not of a package.
+    available: ({ listing }) => listing.ref.kind === 'agent',
+    render: ({ listing }) => <AgentAccess listing={listing} />,
   },
   {
     id: 'settings',
