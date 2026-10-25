@@ -2,10 +2,18 @@ import type { OptionVaultPort } from '../features/ext/option-vault'
 import type { SecretsStore } from '../features/secrets/store-contracts'
 
 /** Who an option belongs to, read from its key: each kind's options have their own prefix. */
-function consumerOf(key: string): { type: 'plugin' | 'mini-app'; noun: string } {
-  return key.startsWith('mini-app-option.')
-    ? { type: 'mini-app', noun: 'mini app' }
-    : { type: 'plugin', noun: 'plugin' }
+function consumerOf(key: string): {
+  type: 'plugin' | 'mini-app' | 'mcp-server'
+  noun: string
+  actor: string
+  /** What the vault records as the origin of the item. */
+  origin: 'plugin' | 'mini-app' | 'system'
+} {
+  if (key.startsWith('mini-app-option.'))
+    return { type: 'mini-app', noun: 'mini app', actor: 'mini-apps', origin: 'mini-app' }
+  if (key.startsWith('mcp-option.'))
+    return { type: 'mcp-server', noun: 'MCP server', actor: 'mcp', origin: 'system' }
+  return { type: 'plugin', noun: 'plugin', actor: 'plugins', origin: 'plugin' }
 }
 
 /**
@@ -20,7 +28,7 @@ export function optionVaultPortOf(
 ): OptionVaultPort {
   const audit = (key: string, owner: string) => ({
     actorType: 'system' as const,
-    actorId: consumerOf(key).type === 'mini-app' ? 'mini-apps' : 'plugins',
+    actorId: consumerOf(key).actor,
     consumerType: consumerOf(key).type,
     consumerId: owner,
   })
@@ -30,7 +38,7 @@ export function optionVaultPortOf(
       await store.set(userId, key, value, {
         label: `${owner} option ${key.split('.').at(-1)}`,
         type: 'secret',
-        source: consumer.type,
+        source: consumer.origin,
         tags: [consumer.type, owner],
         audit: audit(key, owner),
       })

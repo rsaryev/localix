@@ -200,6 +200,8 @@ export async function bootstrap(
   // that search service once it is built.
   const store = createStorePhase({
     miniAppService,
+    mcpService,
+    db,
     pluginService,
     semanticService,
     resolveProjectCwd,

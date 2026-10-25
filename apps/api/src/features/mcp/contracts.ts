@@ -111,16 +111,19 @@ export const mcpServerSchema = z.object({
 })
 export type McpServer = z.infer<typeof mcpServerSchema>
 
+/** The stable handle of a server, unique per scope: it names its rules and its vault items. */
+export const mcpServerNameSchema = z
+  .string()
+  .min(1)
+  .regex(
+    /^[a-z0-9][a-z0-9_.-]*$/i,
+    'Name must start alphanumeric and use only letters, numbers, dots, dashes or underscores.',
+  )
+
 /** Create / update payload. `name` is the stable handle (unique per scope). */
 export const mcpServerInputSchema = z
   .object({
-    name: z
-      .string()
-      .min(1)
-      .regex(
-        /^[a-z0-9][a-z0-9_.-]*$/i,
-        'Name must start alphanumeric and use only letters, numbers, dots, dashes or underscores.',
-      ),
+    name: mcpServerNameSchema,
     description: z.string().default(''),
     transport: z.enum(MCP_TRANSPORTS),
     projectId: z.string().nullable().optional(),

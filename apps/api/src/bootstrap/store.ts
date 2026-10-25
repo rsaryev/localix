@@ -1,5 +1,10 @@
 import { join } from 'node:path'
 
+import type { Kysely } from 'kysely'
+
+import type { AppDatabase } from '../db'
+import type { McpService } from '../features/mcp/service'
+import { mcpStoreProviderOf } from '../features/mcp/store-wiring'
 import { createMiniAppStoreProvider } from '../features/mini-apps/store-provider'
 import type { createMiniAppService } from '../features/mini-apps/service'
 import type { SemanticService } from '../features/embeddings/service'
@@ -26,6 +31,9 @@ export const storeIndexFile = (home = localixHome()) => join(home, 'cache', 'sto
  */
 export function createStorePhase(deps: {
   miniAppService: ReturnType<typeof createMiniAppService>
+  /** The MCP service and the database its rules live in: the MCP servers provider's. */
+  mcpService: McpService
+  db: Kysely<AppDatabase>
   /** The plugin service: its marketplaces are the plugins provider's sources. */
   pluginService?: PluginService
   semanticService?: Pick<SemanticService, 'registerSource' | 'resync'>
@@ -45,6 +53,11 @@ export function createStorePhase(deps: {
         store: miniAppService.store,
         catalogs: miniAppService.catalogs,
         apps: miniAppService,
+      }),
+      mcpStoreProviderOf({
+        db: deps.db,
+        service: deps.mcpService,
+        resolveProjectCwd: deps.resolveProjectCwd,
       }),
       ...(deps.pluginService
         ? [

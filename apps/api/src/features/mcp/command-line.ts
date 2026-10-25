@@ -67,3 +67,17 @@ function neutralize(line: string): string {
   // than shell-quote silently dropping it and splitting the quoted words apart.
   return quote ? out + quote : out
 }
+
+/** What needs no quoting: a word `splitCommandLine` reads back as itself. */
+const BARE = /^[A-Za-z0-9_@%+=:,./~-]+$/
+
+/**
+ * The inverse of {@link splitCommandLine}: an argv as one line the form shows and the splitter
+ * reads back unchanged. A word with anything else in it goes in single quotes, where nothing is
+ * special; a quote inside it closes, is escaped and reopens.
+ */
+export function joinCommandLine(argv: readonly string[]): string {
+  return argv
+    .map((word) => (BARE.test(word) ? word : `'${word.replaceAll("'", `'\\''`)}'`))
+    .join(' ')
+}

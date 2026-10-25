@@ -14,6 +14,7 @@ import { createAvailabilityWriter, readAvailability } from '../capabilities/avai
 import { normalizeMcpServersJson } from './normalize'
 import { mcpOAuthStore } from './oauth/runtime'
 import { importedToolRules } from './imported-tool-rules'
+import { forgetMcpSecrets, hydrateMcpRecords, sealMcpConfig } from './store-secrets'
 import {
   startMcpOAuth,
   finishMcpOAuth,
@@ -110,9 +111,12 @@ export function createMcpService(deps: McpServiceDeps): McpService {
   return {
     async listServers(userId, opts) {
       const projectId = opts?.projectId ?? null
-      const records = projectId
-        ? await repo.listForScope(userId, projectId)
-        : (await repo.listForScope(userId, '')).filter((r) => r.projectId === '')
+      const records = await hydrateMcpRecords(
+        userId,
+        projectId
+          ? await repo.listForScope(userId, projectId)
+          : (await repo.listForScope(userId, '')).filter((r) => r.projectId === ''),
+      )
       const availability = await readAvailability(deps.db, { userId, agentId: DEFAULT_AGENT_ID })
       const servers = await Promise.all(
         records.map(async (r) =>
@@ -132,7 +136,7 @@ export function createMcpService(deps: McpServiceDeps): McpService {
         name: input.name,
         description: input.description ?? '',
         transport: input.transport,
-        config: input.config as Record<string, unknown>,
+        config: await sealMcpConfig(userId, { name: input.name, projectId }, input.config),
         createdAt: timestamp,
         updatedAt: timestamp,
       })
@@ -145,7 +149,8 @@ export function createMcpService(deps: McpServiceDeps): McpService {
         ])
       }
       deps.onChanged?.()
-      return toApi(record, input.enabled ?? true)
+      const [shown] = await hydrateMcpRecords(userId, [record])
+      return toApi(shown ?? record, input.enabled ?? true)
     },
 
     async updateServer(userId, id, input) {
@@ -156,7 +161,11 @@ export function createMcpService(deps: McpServiceDeps): McpService {
           name: input.name,
           description: input.description ?? '',
           transport: input.transport,
-          config: input.config as Record<string, unknown>,
+          config: await sealMcpConfig(
+            userId,
+            { name: input.name, projectId: existing.projectId },
+            input.config,
+          ),
           updatedAt: now(),
         })
         if (!record) throw new NotFoundError('mcp_not_found', 'MCP server not found')
@@ -166,7 +175,8 @@ export function createMcpService(deps: McpServiceDeps): McpService {
           ])
         }
         deps.onChanged?.()
-        return toApi(record, await isAvailable(userId, record))
+        const [shown] = await hydrateMcpRecords(userId, [record])
+        return toApi(shown ?? record, await isAvailable(userId, record))
       } catch (err) {
         // Renaming onto a name that already exists in this scope violates the
         // (user, scope, name) unique index — surface it instead of a 500.
@@ -187,8 +197,9 @@ export function createMcpService(deps: McpServiceDeps): McpService {
     },
 
     async setServerEnabled(userId, id, enabled, agentId) {
-      const record = await repo.getById(userId, id)
-      if (!record) throw new NotFoundError('mcp_not_found', 'MCP server not found')
+      const stored = await repo.getById(userId, id)
+      if (!stored) throw new NotFoundError('mcp_not_found', 'MCP server not found')
+      const [record = stored] = await hydrateMcpRecords(userId, [stored])
       await availabilityWriter.set(userId, agentId || DEFAULT_AGENT_ID, 'mcp', [
         { name: record.name, enabled },
       ])
@@ -200,12 +211,14 @@ export function createMcpService(deps: McpServiceDeps): McpService {
       const existing = await repo.getById(userId, id)
       if (!existing) throw new NotFoundError('mcp_not_found', 'MCP server not found')
       await repo.delete(userId, id)
+      await forgetMcpSecrets(userId, existing)
       deps.onChanged?.()
     },
 
     async testServer(userId, id) {
-      const record = await repo.getById(userId, id)
-      if (!record) throw new NotFoundError('mcp_not_found', 'MCP server not found')
+      const stored = await repo.getById(userId, id)
+      if (!stored) throw new NotFoundError('mcp_not_found', 'MCP server not found')
+      const [record = stored] = await hydrateMcpRecords(userId, [stored])
       const cwd = await cwdFor(userId, record.projectId)
       return probeMcpServer(record, cwd)
     },
@@ -242,12 +255,13 @@ export function createMcpService(deps: McpServiceDeps): McpService {
     },
 
     async listForRuntime(userId, projectId) {
-      return repo.listForScope(userId, projectId)
+      return hydrateMcpRecords(userId, await repo.listForScope(userId, projectId))
     },
 
     async startServerOAuth(userId, id) {
-      const record = await repo.getById(userId, id)
-      if (!record) throw new NotFoundError('mcp_not_found', 'MCP server not found')
+      const stored = await repo.getById(userId, id)
+      if (!stored) throw new NotFoundError('mcp_not_found', 'MCP server not found')
+      const [record = stored] = await hydrateMcpRecords(userId, [stored])
       if (record.transport !== 'http') {
         throw new InvalidRequestError(
           'mcp_oauth_unsupported',

@@ -4,6 +4,8 @@ import { join } from 'node:path'
 
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 
+import { observeOptionVault } from '../ext/option-vault'
+
 import { createDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import { createMcpService, type McpService } from './service'
@@ -175,5 +177,42 @@ describe('McpService import + toggle', () => {
 
     const globalOnly = await service.listForRuntime('user-1', '')
     expect(globalOnly.find((server) => server.name === 'grep')?.id).toBe(global.id)
+  })
+})
+
+describe('McpService secrets', () => {
+  test('a header never reaches the row, and a run still gets it', async () => {
+    const items = new Map<string, string>()
+    observeOptionVault({
+      store: async (_user, key, value) => void items.set(key, value),
+      resolve: async (_user, key) => items.get(key) ?? null,
+      versions: async (_user, prefix) =>
+        new Map([...items.keys()].filter((key) => key.startsWith(prefix)).map((key) => [key, 1])),
+      remove: async (_user, key) => void items.delete(key),
+    })
+    try {
+      const db = createDatabase({ filename: join(tempDir, `${randomUUID()}.sqlite`) })
+      await migrateToLatest(db)
+      const service = createMcpService({ db })
+      await service.createServer('user-1', {
+        name: 'remote',
+        description: '',
+        transport: 'http',
+        config: { url: 'https://x.example/mcp', headers: { Authorization: 'Bearer abc' } },
+      })
+
+      const row = await db
+        .selectFrom('capability_source')
+        .select('config')
+        .executeTakeFirstOrThrow()
+      expect(row.config).not.toContain('Bearer abc')
+      const [server] = await service.listForRuntime('user-1', '')
+      expect(server?.config.headers).toEqual({ Authorization: 'Bearer abc' })
+
+      await service.deleteServer('user-1', server!.id)
+      expect(items.size).toBe(0)
+    } finally {
+      observeOptionVault(undefined)
+    }
   })
 })

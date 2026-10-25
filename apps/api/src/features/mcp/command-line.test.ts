@@ -1,6 +1,19 @@
 import { describe, expect, test } from 'bun:test'
 
-import { splitCommandLine } from './command-line'
+import { joinCommandLine, splitCommandLine } from './command-line'
+
+describe('joinCommandLine', () => {
+  test('quotes what a split would break apart, so a line reads back as the same argv', () => {
+    const argv = ['node', './my server.js', '--name=a "b"', '', 'C:\\Program Files\\x.exe', '$HOME']
+    expect(splitCommandLine(joinCommandLine(argv))).toEqual(argv)
+  })
+
+  test('leaves plain words bare', () => {
+    expect(joinCommandLine(['npx', '-y', '@scope/server', '/tmp'])).toBe(
+      'npx -y @scope/server /tmp',
+    )
+  })
+})
 
 describe('splitCommandLine', () => {
   test('splits a plain install line on whitespace, collapsing runs of it', () => {

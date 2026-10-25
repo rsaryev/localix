@@ -9,6 +9,7 @@ import {
 } from '../../../mcp/client-manager'
 import { buildMcpResourceTools } from '../../../mcp/mcp-resource-tools'
 import { claudeCodeMcpServers } from '../../../mcp/claude-code-servers'
+import { hydrateMcpRecords } from '../../../mcp/store-secrets'
 import type { SessionRecord } from '../../repository'
 import { prefixedWarnLogger } from '../plugin-hook-logger'
 import type { RunEnv } from './types'
@@ -70,7 +71,10 @@ export async function resolveMcpTools(args: {
   // Named outside the try so the catch can still say WHICH servers went missing.
   let enabledServers: McpServerList = []
   try {
-    const mcpServers = await env.mcpRepo.listForScope(userId, session.projectId ?? '')
+    const mcpServers = await hydrateMcpRecords(
+      userId,
+      await env.mcpRepo.listForScope(userId, session.projectId ?? ''),
+    )
     // Availability is a rule now, composed across global / project / agent — so a server
     // this agent may not reach is dropped here, and the connection is never opened. A
     // server nobody has ruled on is available: it exists because the user added it.

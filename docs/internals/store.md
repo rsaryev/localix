@@ -471,6 +471,46 @@ exactly those, installed or not.
   Store asks on each read that carries a `projectId`, serves the Project shelf from the answer and
   adds its count to the facets. With no open project the shelf is empty and hidden.
 
+### MCP servers
+
+The `mcp-server` kind is served by `apps/api/src/features/mcp/store-provider.ts`. A server is not
+downloaded, it is made here, so the provider has no sources and no install: `install`, `update` and
+`plan` refuse and say to use **Add MCP server**. Everything else is the generic contract.
+
+- **Where the servers come from, and what can be done with each.**
+
+  | Server                                                         | Listing id            | Shelf   | Settings, remove |
+  | -------------------------------------------------------------- | --------------------- | ------- | ---------------- |
+  | Added by the person                                            | `<name>`              | Yours   | yes              |
+  | Added for a project                                            | `project:<name>`      | Project | yes              |
+  | In Claude Code's files: `~/.claude.json`, managed settings     | `file:<scope>:<name>` | Yours   | read-only        |
+  | In Claude Code's files: a project's `.mcp.json`, local entries | `file:<scope>:<name>` | Project | read-only        |
+
+  Ids are built from the name, so they survive a recreation. A server of a file has no Settings tab
+  and cannot be removed here (the refusal names the file); its page says where it is defined and
+  shows how it connects, never what it holds. Its switch still works: availability is a rule by
+  name, not an edit of the file. The project's servers are served by `projectListings` and never
+  indexed.
+
+- **Plugin servers are not listed.** A server a plugin bundles is a component of that plugin: it
+  appears on the plugin's page under "What's inside", follows the plugin's own switch and is removed
+  with it. Listing it as an item of its own would give one server two switches and two owners, and
+  would make the MCP provider read plugin state (A4). The rules editor can still name it
+  (`mcp:<plugin>_<server>`).
+- **Secrets.** Headers, environment variables and a pre-registered OAuth client secret are sealed in
+  the vault under `mcp-option.…` (`store-secrets.ts`, the option vault plugins and mini apps use);
+  the row keeps a handle. A secret map is one vault item, replaced whole, and the Settings tab only
+  learns that it is set. Every read a connection is made from, a run's or a test's, puts them back.
+  Clearing a map leaves its vault item until the server is removed.
+- **Settings tab.** Description, how it connects (a program, a web address or a web socket),
+  command, URL, environment, headers, OAuth client id, secret and scope, and the tool call timeout.
+  Actions: **Test connection** for all, **Sign in** and **Sign out** for a web address. A test
+  remembers the tools the server has, and the tab then shows **Tools**, one switch each, saved as
+  the `mcp:<server>/<tool>` rules the run already reads. Saving refuses a server that could not
+  connect (a program without a command, a web address without a URL).
+- **Names are the handle.** A name is chosen when the server is added and not changed: it names the
+  server's rules and its vault items.
+
 ## Source of truth
 
 - [The contract](../../packages/store/src/contract.ts),
@@ -483,6 +523,8 @@ exactly those, installed or not.
   [routes](../../apps/api/src/features/store/routes.ts)
 - [Mini apps provider](../../apps/api/src/features/mini-apps/store-provider.ts) and
   [its listings](../../apps/api/src/features/mini-apps/store-listing.ts)
+- [MCP servers provider](../../apps/api/src/features/mcp/store-provider.ts) and
+  [its secrets](../../apps/api/src/features/mcp/store-secrets.ts)
 - [Plugins provider](../../apps/api/src/features/plugins/store-provider.ts) and
   [default marketplaces](../../apps/api/src/features/plugins/default-marketplaces.ts)
 - [Wiring](../../apps/api/src/bootstrap/store.ts)
