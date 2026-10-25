@@ -13,6 +13,7 @@ import { capabilitiesChanged, trackCapabilityChange } from '../capabilities/revi
 import type { Rule } from '../agent-core/capability-rule'
 import { createAgentBindings, type AgentSnapshot, type BoundAgent } from './bindings/bindings'
 import { createAgentAuthoring } from './authoring'
+import type { CatalogAgent } from './catalog/agent-file'
 import type { AgentSummary } from './contracts'
 import { createAgentFile, type CreatePorts } from './create'
 import { agentFilePath, agentFileText, readAgentFileText, writeAgentFile } from './file-writer'
@@ -27,6 +28,7 @@ interface Catalog {
   /** The definitions Claude Code would run, with access applied. */
   all: AgentSummary[]
   capabilitiesByAgent: ReadonlyMap<string, ResolvedCapabilities>
+  definitionsByAgent: ReadonlyMap<string, CatalogAgent>
 }
 
 /**
@@ -79,6 +81,7 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
     })
     return {
       all,
+      definitionsByAgent: new Map(active.map((entry) => [entry.id, entry.agent])),
       capabilitiesByAgent: new Map(
         active.map((entry) => [entry.id, composeCapabilities(rulesFor(entry.id))]),
       ),

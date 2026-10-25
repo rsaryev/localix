@@ -144,22 +144,38 @@ describe('resolving who a task goes to', () => {
     expect(await t.service.resolveDelegation('u', 'critic')).toEqual({ kind: 'unavailable' })
     expect(scribe.record.id).toBeTruthy()
   })
+
+  test('a shipped type starts allowed, and a person’s switch or deny still decides', async () => {
+    const t = await fixture()
+    await t.rules.mutate('u', 'builtin:Explore', (rules) => [
+      ...rules,
+      { action: 'invocation:delegation', resource: 'builtin:Explore', effect: 'deny' },
+    ])
+    expect(await t.service.resolveDelegation('u', 'Explore')).toEqual({ kind: 'unavailable' })
+    await t.service.setAgentEnabled('u', 'Plan', false)
+    expect(await t.service.resolveDelegation('u', 'Plan')).toEqual({ kind: 'unavailable' })
+  })
 })
 
-describe('the definition a run applies', () => {
-  test('is the file’s own, for its id, in the scope that asks', async () => {
+describe('the definition a run is admitted with', () => {
+  test('a seat on a shipped type or a file carries the ceiling its file states', async () => {
     const t = await fixture()
     await t.userFile('scribe', 'tools: Read, Grep\nmaxTurns: 4\n')
+    const explore = await t.service.resolveRunAgent('u', 'builtin:Explore', 'delegation')
+    expect(explore).toMatchObject({
+      status: 'allowed',
+      agent: { spec: { omitClaudeMd: true, disallowedTools: ['write', 'edit'] } },
+    })
     const id = (await t.service.getAgent('u', 'scribe'))!.record.id
-    expect(await t.service.definitionOf('u', id)).toMatchObject({
-      name: 'scribe',
-      tools: ['read', 'search'],
-      maxTurns: 4,
+    expect(await t.service.resolveRunAgent('u', id, 'delegation')).toMatchObject({
+      agent: { spec: { tools: ['read', 'search'], maxTurns: 4 } },
     })
-    expect(await t.service.definitionOf('u', 'builtin:Plan')).toMatchObject({
-      disallowedTools: ['write', 'edit'],
+    await t.projectFile('Explore')
+    await t.service.setAgentEnabled('u', 'Explore', true, 'p')
+    // The project's own Explore replaced the shipped one, which no longer admits.
+    expect(await t.service.resolveRunAgent('u', 'builtin:Explore', 'delegation', 'p')).toEqual({
+      status: 'agent_not_found',
     })
-    expect(await t.service.definitionOf('u', 'cc:missing')).toBeNull()
   })
 })
 

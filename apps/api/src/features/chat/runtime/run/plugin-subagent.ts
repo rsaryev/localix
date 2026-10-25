@@ -99,6 +99,18 @@ export function applyPluginSubagent<Agent extends { instructions?: string | null
   return { ...runAsPluginAgent(input, subagent), subagent }
 }
 
+/**
+ * Run the seat as the catalog agent behind it: its prompt is the run's identity and its tool
+ * ceiling applies, as for a Claude Code subagent. Null when nothing stands behind the seat (the
+ * default agent has no file, and a test builds an agent by hand).
+ */
+export function applySpeakerAgent<Agent extends { instructions?: string | null }>(
+  input: { agent: Agent; disabledTools: readonly string[] },
+  spec: LoadedPluginAgent | undefined,
+): { agent: Agent; disabledTools: string[]; subagent: LoadedPluginAgent } | null {
+  return spec ? { ...runAsPluginAgent(input, spec), subagent: spec } : null
+}
+
 /** The workspace instruction files (`AGENTS.md`, `CLAUDE.md`) an `omitClaudeMd` agent runs without. */
 const INSTRUCTION_FILE = /(^|[\\/])(AGENTS|CLAUDE)(\.local)?\.md$/
 

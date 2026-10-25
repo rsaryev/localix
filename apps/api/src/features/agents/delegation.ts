@@ -4,7 +4,7 @@ import type { AgentRecord, AgentSummary } from './contracts'
 import { canJoinConversation } from './policy'
 
 /**
- * Who a task goes to, and what a run reads of an agent besides its record.
+ * Who a task goes to.
  *
  * `resolveDelegation` is the one lookup behind `delegate`, a workflow's `agent()` and a skill's
  * `context: fork`: the catalog's own `resolve` (so a file or plugin agent replaces a built-in of
@@ -57,16 +57,6 @@ export function createAgentDelegation(deps: DelegationDeps) {
   }
 
   return {
-    /** The definition behind an id, in the scope that asks: the file as it is now. */
-    async definitionOf(
-      userId: string,
-      agentId: string,
-      projectId?: string | null,
-    ): Promise<CatalogAgent | null> {
-      const snapshot = await deps.snapshot(userId, projectId ?? '')
-      return snapshot.agents.find((entry) => entry.id === agentId)?.agent ?? null
-    },
-
     async resolveDelegation(
       userId: string,
       reference: string,

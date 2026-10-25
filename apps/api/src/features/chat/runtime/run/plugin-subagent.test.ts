@@ -8,6 +8,7 @@ import {
   AGENT_TYPES_HEADING,
   agentTypesSection,
   applyPluginSubagent,
+  applySpeakerAgent,
   contextFilesFor,
   promptCacheRetentionFor,
   delegatePluginPorts,
@@ -186,4 +187,36 @@ test('a plugin agent with cacheTtl asks its runs for that cache lifetime', () =>
   expect(promptCacheRetentionFor({ ...REVIEWER, cacheTtl: '5m' })).toBe('short')
   expect(promptCacheRetentionFor(REVIEWER)).toBeUndefined()
   expect(promptCacheRetentionFor(null)).toBeUndefined()
+})
+
+// The agent a run is seated as brings its own ceiling, whoever seated it: a child delegated to it,
+// a speaker tagged into a conversation, or a session started on it.
+test('a run seated as a catalog agent takes its prompt, tool ceiling and instruction files', () => {
+  const input = {
+    agent: { id: 'cc:1', instructions: 'ignored' },
+    disabledTools: ['ask'],
+  }
+  const applied = applySpeakerAgent(input, { ...REVIEWER, omitClaudeMd: true })
+  expect(applied?.agent.instructions).toBe('You are the security reviewer.')
+  expect(applied?.subagent.omitClaudeMd).toBe(true)
+  expect(applied?.disabledTools).toEqual(
+    expect.arrayContaining(['ask', 'research', 'bash', 'write']),
+  )
+  expect(applied?.disabledTools).not.toContain('read')
+})
+
+test('a file agent that lists only Read leaves every other Claude Code tool off', () => {
+  const applied = applySpeakerAgent(
+    { agent: { instructions: 'x' }, disabledTools: [] },
+    { ...REVIEWER, tools: ['read'], disallowedTools: undefined },
+  )
+  expect(applied?.disabledTools).toEqual(
+    expect.arrayContaining(['write', 'edit', 'bash', 'search']),
+  )
+  expect(applied?.disabledTools).not.toContain('read')
+})
+
+test('the default agent, and a seat with no definition behind it, keep their own run', () => {
+  const input = { agent: { instructions: 'You are Localix.' }, disabledTools: [] }
+  expect(applySpeakerAgent(input, undefined)).toBeNull()
 })

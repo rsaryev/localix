@@ -2,10 +2,17 @@ import type { InvocationHost, InvocationRegistry } from '../capabilities/invocat
 import type { AgentRecord, AgentSummary } from './contracts'
 import type { ResolvedCapabilities } from '../capabilities/resolve'
 import { stableStringify } from '@localixai/agent'
+import type { CatalogAgent } from './catalog/agent-file'
 
 /** Definition and policy from the catalog snapshot that admitted this invocation. */
 export interface ResolvedRunAgent {
   definition: AgentRecord
+  /**
+   * The file (or shipped type) behind it as this snapshot read it: its tool ceiling,
+   * `omitClaudeMd`, cache and compaction choices, which the record leaves out. Absent only for an
+   * agent a test builds by hand.
+   */
+  spec?: CatalogAgent
   capabilities: ResolvedCapabilities
   approval: 'policy' | 'user'
 }
@@ -50,7 +57,16 @@ type CatalogLoader = (
 ) => Promise<{
   all: AgentSummary[]
   capabilitiesByAgent: ReadonlyMap<string, ResolvedCapabilities>
+  definitionsByAgent?: ReadonlyMap<string, CatalogAgent>
 }>
+
+const specOf = (
+  catalog: { definitionsByAgent?: ReadonlyMap<string, CatalogAgent> },
+  id: string,
+) => {
+  const spec = catalog.definitionsByAgent?.get(id)
+  return spec ? { spec } : {}
+}
 
 function statusFor(
   agent: AgentSummary | undefined,
@@ -102,7 +118,12 @@ export function createAgentInvocationService(
       if (status === 'allowed') {
         return {
           status: 'allowed',
-          agent: { definition: entry.record, capabilities, approval: 'policy' },
+          agent: {
+            definition: entry.record,
+            ...specOf(catalog, agentId),
+            capabilities,
+            approval: 'policy',
+          },
         }
       }
       // An ask approves only this exact definition and policy snapshot. A concurrent edit
@@ -121,7 +142,12 @@ export function createAgentInvocationService(
       }
       return {
         status: 'allowed',
-        agent: { definition: freshEntry.record, capabilities: freshCapabilities, approval: 'user' },
+        agent: {
+          definition: freshEntry.record,
+          ...specOf(fresh, agentId),
+          capabilities: freshCapabilities,
+          approval: 'user',
+        },
       }
     },
 
