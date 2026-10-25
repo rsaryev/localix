@@ -21,7 +21,21 @@ import type {
   CapabilitySnapshot,
 } from './contracts'
 
+/** What the person's Claude Code settings files say about permissions (read-only). */
+export interface ClaudeCodePermissions {
+  defaultMode: string | null
+  bypassDisabled: boolean
+  rules: Array<{ effect: 'allow' | 'ask' | 'deny'; rule: string; file: string }>
+}
+
 export const capabilitiesApi = {
+  /** The permission rules and default mode of the person's Claude Code settings. */
+  async fetchClaudeCodePermissions(projectId?: string): Promise<ClaudeCodePermissions> {
+    return unwrap(
+      await client.rpc['claude-code'].permissions.$get({ query: cleanQuery({ projectId }) }),
+    )
+  },
+
   /**
    * The capability snapshot for one scope. `projectId: null` (or omitted) is the
    * no-project scope.

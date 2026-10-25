@@ -62,9 +62,9 @@ explicitly calls `delegate`, whose child runs as itself or a directory agent und
 
 The roles Localix ships with — `localix`, `lead`, `pm`, `architect`, `backend`, `frontend`, `qa`,
 `design` and `devops` — start from rules we wrote, and after that the rules are yours. When an
-agent's list no longer matches ours, the **Permission rules** tab grows a **Reset to defaults**
-button; when it already matches, there is nothing to reset and no button. An agent you created has
-no default to return to, so it never shows one. Reset STAGES our answer rather than writing it — you
+agent's list no longer matches ours, the **Permissions** page grows a **Reset to defaults** button;
+when it already matches, there is nothing to reset and no button. An agent you created has no
+default to return to, so it never shows one. Reset STAGES our answer rather than writing it — you
 read it on screen, then press **Apply**, and nothing is stored until you do.
 
 ### Spending fewer tokens
@@ -94,7 +94,7 @@ assembled roster with `context_budget`; enabled tools can still be withheld by s
 | Surface                                                              | Operation                                                  |
 | -------------------------------------------------------------------- | ---------------------------------------------------------- |
 | Settings → Capabilities → Tools / Skills / MCP / Plugins / Mini apps | Switch any one of them on or off for an agent              |
-| Settings → Capabilities → Permission rules                           | Argument patterns, **ask**, whole families, and rule order |
+| Settings → Permissions                                               | Argument patterns, **ask**, whole families, and rule order |
 | Confirmation card                                                    | **Once**, **This session**, or **Always**; a folder level  |
 
 The five registry tabs and the rules tab write the same thing. A switch is a rule: turning a skill

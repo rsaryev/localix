@@ -5,7 +5,7 @@ import { parseCapabilityScope } from '@/shared/api/capabilityScope'
 import { inlineFailure } from '@/shared/lib/notifications/inlineReport'
 import { invalidateCapabilities } from '@/shared/contrib/capabilityCache'
 import { trackCapabilityWrite } from '@/shared/contrib/capabilityWrites'
-import { sameRules } from '../ui/capabilities/ruleDefaults'
+import { sameRules } from '../ui/permissions/ruleDefaults'
 
 export interface PermissionRulesData {
   /** The list being edited. Local until `apply`. */

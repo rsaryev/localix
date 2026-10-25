@@ -32,7 +32,7 @@ export type SectionId = 'files' | 'jobs' | (string & {})
  * description, three counters and a button opening the Vault work item, which the rail
  * already offers under its own name and keywords.
  */
-export const CAPABILITY_TABS = ['tools', 'skills', 'mcp', 'plugins', 'mini-apps', 'rules'] as const
+export const CAPABILITY_TABS = ['tools', 'skills', 'mcp', 'plugins', 'mini-apps'] as const
 export type CapabilityTabId = (typeof CAPABILITY_TABS)[number]
 
 export const SETTINGS_STRING_TABS = [
@@ -41,6 +41,7 @@ export const SETTINGS_STRING_TABS = [
   'shortcuts',
   'agents',
   ...CAPABILITY_TABS,
+  'permissions',
   'project',
   'models',
   'model-list',
@@ -48,6 +49,17 @@ export const SETTINGS_STRING_TABS = [
   'context',
   'diagnostics',
 ] as const
+
+/**
+ * Settings pages that moved, by their old tab id. A link, a restored tab or a palette hit that
+ * names an old id opens the new page: the permission rules left Capabilities for Permissions.
+ */
+const MOVED_SETTINGS_TABS: Readonly<Record<string, string>> = { rules: 'permissions' }
+
+/** The tab id a link means today: an old id mapped to the page its content moved to. */
+export function currentSettingsTab(tab: string): string {
+  return MOVED_SETTINGS_TABS[tab] ?? tab
+}
 
 export function isCapabilityTab(tab: SettingsTabId): tab is CapabilityTabId {
   return typeof tab === 'string' && (CAPABILITY_TABS as readonly string[]).includes(tab)
@@ -119,6 +131,9 @@ export function parseSettingsTab(
   projectId: string | undefined,
 ): SettingsTabId {
   if (projectId) return { kind: 'project', id: projectId }
-  if (tab && (SETTINGS_STRING_TABS as readonly string[]).includes(tab)) return tab as SettingsTabId
+  const current = tab ? currentSettingsTab(tab) : undefined
+  if (current && (SETTINGS_STRING_TABS as readonly string[]).includes(current)) {
+    return current as SettingsTabId
+  }
   return 'preferences'
 }

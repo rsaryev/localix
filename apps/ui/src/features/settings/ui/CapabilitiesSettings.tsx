@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { LucideIcon } from 'lucide-react'
-import { Wrench, BookOpen, LayoutGrid, Plug, Puzzle, ShieldCheck } from 'lucide-react'
+import { Wrench, BookOpen, LayoutGrid, Plug, Puzzle } from 'lucide-react'
 import type { Project } from '@/shared/api/contracts'
 import type { TabItem } from '@localixai/kit/tabs'
 import { CAPABILITY_TABS, type CapabilityTabId } from '@/shared/routing/routes'
@@ -12,13 +12,9 @@ import { SkillsSettings } from './SkillsSettings'
 import { McpSettings } from './McpSettings'
 import { PluginsSettings } from './PluginsSettings'
 import { MiniAppsSettings } from './MiniAppsSettings'
-import { PermissionRulesView } from './capabilities/PermissionRulesView'
 import { settingsUiUri } from '@localixai/mini-app-sdk/navigation'
 import { useUiTarget } from '@/shared/hooks/useUiTarget'
-import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
-import { agentScopeValue } from '@/shared/api/capabilityScope'
-import { useAgents } from '@/shared/contrib/useAgents'
-import { useActiveSessionAgentId } from '@/entities/chat/model/store'
+import { useRulesAgent } from '../model/useRulesAgent'
 
 interface CapabilitiesSettingsProps {
   activeTab: CapabilityTabId
@@ -40,10 +36,6 @@ const TAB_META: Record<CapabilityTabId, { label: string; icon: LucideIcon }> = {
   mcp: { label: 'MCP', icon: Plug },
   plugins: { label: 'Plugins', icon: Puzzle },
   'mini-apps': { label: 'Mini apps', icon: LayoutGrid },
-  // Last, and deliberately a peer of the four rather than a section inside one. The four
-  // registries answer "is this on"; this answers everything else a rule can say, for all of
-  // them at once — it lived under Tools while governing five kinds.
-  rules: { label: 'Permission rules', icon: ShieldCheck },
 }
 
 const TABS: TabItem<CapabilityTabId>[] = CAPABILITY_TABS.map((id) => ({
@@ -79,29 +71,7 @@ export function CapabilitiesSettings({
     setProject(defaultScope ?? '')
   }, [defaultScope])
 
-  const { agents } = useAgents(project)
-  const pickableAgents = useMemo(
-    () => agents.map(({ record }) => ({ id: record.id, label: record.label || record.handle })),
-    [agents],
-  )
-  // WHOSE rules: the agent the rule tabs read and write. Empty means the one that always
-  // exists, which is also what the server answers for a request naming none.
-  //
-  // It OPENS on the agent of the chat you came from. Every one of these tabs answers "what
-  // may this agent do", and the question a person has while looking at a conversation is
-  // about the agent in it — landing on the default assistant meant reading, and worse
-  // editing, the wrong list. A manual pick wins from then on: the switcher is not a display
-  // of the session, and following it afterwards would drag the page out from under someone
-  // who had deliberately gone to look at another role.
-  const [picked, setPicked] = useState<string | null>(null)
-  const sessionAgentId = useActiveSessionAgentId()
-  // An id the picker cannot offer (a sub-agent's, a project the page is not showing) falls
-  // back to the default rather than selecting a row that is not there.
-  const fromSession = pickableAgents.some((agent) => agent.id === sessionAgentId)
-    ? (sessionAgentId ?? '')
-    : ''
-  const agentId = picked ?? fromSession
-  const agentScope = agentScopeValue(agentId || DEFAULT_AGENT_ID)
+  const { agents: pickableAgents, agentId, agentScope, pick } = useRulesAgent(project)
 
   return (
     <div ref={targetRef} tabIndex={-1} className="outline-none">
@@ -121,7 +91,7 @@ export function CapabilitiesSettings({
           //
           // There is no project picker: the lists show everything visible from here, and
           // where a NEW artifact is installed is stated by the form that installs it.
-          <AgentSwitcher agents={pickableAgents} agentId={agentId} onChange={setPicked} />
+          <AgentSwitcher agents={pickableAgents} agentId={agentId} onChange={pick} />
         }
         tabs={
           <CapabilityTabRow
@@ -145,8 +115,6 @@ export function CapabilitiesSettings({
         {activeTab === 'mini-apps' && (
           <MiniAppsSettings scope={project} agentScope={agentScope} projects={projects} />
         )}
-        {/* Keyed on the agent so no staged edit survives a switch from one role to another. */}
-        {activeTab === 'rules' && <PermissionRulesView key={agentScope} scope={agentScope} />}
       </SettingsPage>
     </div>
   )

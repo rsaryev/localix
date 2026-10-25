@@ -127,11 +127,12 @@ export const SETTINGS_INDEX: SettingsIndexEntry[] = [
     keywords: ['mini app', 'app', 'screens', 'enable'],
   },
   {
-    id: 'cap.rules',
-    tab: 'rules',
-    tabLabel: 'Capabilities',
+    id: 'permissions.rules',
+    tab: 'permissions',
+    tabLabel: 'Permissions',
     title: 'Permission rules',
-    description: 'One ordered list for every kind: argument patterns, ask, and which rule wins.',
+    description:
+      'Ordered allow, ask and deny rules for an agent: argument patterns and which rule wins.',
     keywords: ['permission', 'rule', 'allow', 'deny', 'ask', 'order', 'security', 'policy'],
   },
   {

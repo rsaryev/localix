@@ -89,11 +89,11 @@ rules; availability is not inferred from an import. Policy review follows the ow
 even when the definition belongs to a project; invocation still requires the correct project scope.
 
 `apps/api/src/features/agents/registration-policy.ts` owns the registration review operation;
-`apps/ui/src/features/settings/ui/capabilities/PermissionRulesView.tsx` uses the shared editor and
-`apps/ui/src/features/settings/ui/capabilities/RegistrationPolicyReview.tsx` displays proposals.
-This applies to contributions published in the native registry. Verified bundled mini app manifests
-are reconciled by `apps/api/src/features/mini-apps/sync-bundled-contributions.ts`; installed
-third-party declarations do not receive automatic publication or authority.
+`apps/ui/src/features/settings/ui/permissions/PermissionRulesView.tsx` uses the shared editor and
+`apps/ui/src/features/settings/ui/permissions/RegistrationPolicyReview.tsx` displays proposals. This
+applies to contributions published in the native registry. Verified bundled mini app manifests are
+reconciled by `apps/api/src/features/mini-apps/sync-bundled-contributions.ts`; installed third-party
+declarations do not receive automatic publication or authority.
 
 ### One list, and the last match wins
 

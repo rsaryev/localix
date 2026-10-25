@@ -8,6 +8,7 @@ import { KeyboardShortcutsSettings } from './KeyboardShortcutsSettings'
 import { CapabilitiesSettings } from './CapabilitiesSettings'
 import { AgentsSettings } from './AgentsSettings'
 import { SystemSettings } from './SystemSettings'
+import { PermissionsSettings } from './permissions/PermissionsSettings'
 import { ProjectSettingsForm } from './ProjectsSettings'
 import { backendClient } from '@/shared/api/client'
 import { toast } from '@/shared/lib/notify'
@@ -118,6 +119,9 @@ export function SettingsPanel({
     }
     if (activeTab === 'system' || activeTab === 'context' || activeTab === 'diagnostics') {
       return <SystemSettings activeTab={activeTab} onTabChange={onTabChange} />
+    }
+    if (activeTab === 'permissions') {
+      return <PermissionsSettings projectId={requestedCapabilityScope ?? defaultScope ?? ''} />
     }
     if (activeTab === 'agents') {
       return (

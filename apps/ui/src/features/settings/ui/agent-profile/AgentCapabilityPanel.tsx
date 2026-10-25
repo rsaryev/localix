@@ -7,10 +7,10 @@ import { SkillsSettings } from '../SkillsSettings'
 import { McpSettings } from '../McpSettings'
 import { PluginsSettings } from '../PluginsSettings'
 import { MiniAppsSettings } from '../MiniAppsSettings'
-import { PermissionRulesView } from '../capabilities/PermissionRulesView'
+import { PermissionRulesView } from '../permissions/PermissionRulesView'
 
 /** The profile's first tab is the record itself; the rest are what it may use. */
-export type AgentProfileTabId = 'definition' | CapabilityTabId
+export type AgentProfileTabId = 'definition' | CapabilityTabId | 'rules'
 
 const TAB_LABELS: Record<AgentProfileTabId, string> = {
   definition: 'Definition',
@@ -23,7 +23,7 @@ const TAB_LABELS: Record<AgentProfileTabId, string> = {
 }
 
 export const AGENT_PROFILE_TABS: (SettingsNavigationItem & { id: AgentProfileTabId })[] = (
-  ['definition', ...CAPABILITY_TABS] as const
+  ['definition', ...CAPABILITY_TABS, 'rules'] as const
 ).map((id) => ({
   id,
   label: TAB_LABELS[id],
@@ -55,7 +55,7 @@ export function AgentCapabilityPanel({
   projectId,
   projects,
 }: {
-  tab: CapabilityTabId
+  tab: Exclude<AgentProfileTabId, 'definition'>
   agentId: string
   /** '' = the global registry; otherwise the project the record lives in. */
   projectId: string

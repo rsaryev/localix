@@ -8,6 +8,10 @@ Changes land on `main`.
 
 ### Added
 
+- **Permissions in Settings**: the allow, ask and deny rules have their own section, **Settings →
+  Permissions**, under Security instead of a tab in Capabilities. It shows, read-only, the rules and
+  default mode from your Claude Code settings files with the file each came from, and says how rules
+  combine. Old links to the Permission rules tab open it.
 - **Session recap**: when you come back to a chat after a break, a one-line summary of where you
   left off is waiting in the transcript. It is on by default and has its own model and switch in the
   model picker (**Session recap**); `/recap` writes one on demand.

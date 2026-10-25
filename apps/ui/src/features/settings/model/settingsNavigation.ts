@@ -1,6 +1,6 @@
 import { isCapabilityTab, type SettingsTabId } from '@/shared/routing/routes'
 
-/** Ordered by task: personal defaults, agent work, then application maintenance. */
+/** Ordered by task: personal defaults, agent work, security, then application maintenance. */
 export const SETTINGS_SECTIONS = [
   {
     id: 'preferences',
@@ -30,13 +30,19 @@ export const SETTINGS_SECTIONS = [
     id: 'tools',
     label: 'Capabilities',
     group: 'Workspace',
-    description: 'Tools, skills, MCP, plugins and permission rules',
+    description: 'Tools, skills, MCP, plugins and mini apps',
   },
   {
     id: 'project',
     label: 'Project',
     group: 'Workspace',
     description: 'Project name and shared instructions',
+  },
+  {
+    id: 'permissions',
+    label: 'Permissions',
+    group: 'Security',
+    description: 'What agents may do: allow, ask and deny rules',
   },
   {
     id: 'models',

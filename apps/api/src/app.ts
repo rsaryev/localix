@@ -26,6 +26,8 @@ import {
 import { createProjectsRoutes, type ProjectsRoutesService } from './features/projects/routes'
 import { createUserRoutes, type UserRoutesService } from './features/user/routes'
 import { createToolsRoutes, type ToolGcSource } from './features/tools/routes'
+import { claudeCodeHome } from './features/cc-settings/config-dir'
+import { createClaudeCodeSettingsRoutes } from './features/cc-settings/routes'
 import {
   createEffectiveConfigRoutes,
   type EffectiveConfigRoutesService,
@@ -254,6 +256,14 @@ h2{margin:0 0 .5rem}p{margin:0;color:#888;font-size:.9rem}</style></head>
     .route('/rpc/projects', createProjectsRoutes(deps.projectsService))
     .route('/rpc/user', createUserRoutes(deps.userService))
     .route('/rpc/tools', createToolsRoutes(deps.toolGcSource))
+    .route(
+      '/rpc/claude-code',
+      createClaudeCodeSettingsRoutes({
+        homeDir: claudeCodeHome(),
+        workingDir: async (userId, projectId) =>
+          (await deps.projectsService.getProject(userId, projectId)).workingDir,
+      }),
+    )
     .route('/rpc/effective-config', createEffectiveConfigRoutes(deps.effectiveConfigService))
     .route(
       '/rpc/capabilities',

@@ -28,8 +28,8 @@ test('grouped navigation switches sections and marks the current destination', a
   try {
     await act(async () => root.render(<Harness />))
     const nav = container.querySelector('nav')!
-    expect(nav.querySelectorAll('[role="group"]').length).toBe(3)
-    expect(nav.querySelectorAll('button').length).toBe(8)
+    expect(nav.querySelectorAll('[role="group"]').length).toBe(4)
+    expect(nav.querySelectorAll('button').length).toBe(9)
     expect(nav.querySelector('[aria-current="page"]')?.textContent).toBe('Preferences')
     const system = Array.from(nav.querySelectorAll('button')).find(
       (button) => button.textContent === 'System',

@@ -6,7 +6,7 @@ import { Button } from '@localixai/kit/button'
 import { ConfirmDialog } from '@localixai/kit/confirm-dialog'
 import { useCapabilitySnapshot } from '@/shared/contrib/useCapabilitySnapshot'
 import { usePermissionRules } from '../../model/usePermissionRules'
-import { PermissionEditor, PermissionLegend } from '../PermissionEditor'
+import { PermissionEditor, PermissionLegend } from './PermissionEditor'
 import { SettingsSection, SettingsSurface } from '../SettingsScaffold'
 import { RegistrationPolicyReview } from './RegistrationPolicyReview'
 import { useScopeActionVocabulary } from './scopeActionVocabulary'
@@ -54,15 +54,6 @@ export function PermissionRulesView({ scope }: { scope: string }) {
           <>
             One ordered list for every kind — tools, skills, MCP servers and their tools, plugins
             and agents. <span className="text-text-soft">Last match wins.</span>
-            {!agentScope && (
-              <>
-                {' '}
-                <span className="text-text-soft">
-                  Rules belong to an agent; pick one above to edit its own list. These are the
-                  default assistant&apos;s.
-                </span>
-              </>
-            )}
           </>
         }
         actions={

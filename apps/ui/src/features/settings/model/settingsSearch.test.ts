@@ -66,7 +66,7 @@ describe('searchSettings', () => {
    */
   it('sends a permission search to the rules tab', () => {
     const hits = searchSettings(SETTINGS_INDEX, 'permission')
-    expect(hits.some((h) => h.entry.id === 'cap.rules')).toBe(true)
+    expect(hits.some((h) => h.entry.id === 'permissions.rules')).toBe(true)
     expect(hits.some((h) => h.entry.id === 'cap.tools')).toBe(false)
   })
 

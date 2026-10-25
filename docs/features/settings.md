@@ -6,36 +6,36 @@ individual controls across sections and opens the owning group, including advanc
 
 ## Settings map
 
-| Group       | Section                         | Controls and destinations                                                                                | Applies to                                                                          |
-| ----------- | ------------------------------- | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| Personal    | Preferences → Appearance        | Theme, window transparency, interface font, code font, font size, live code preview                      | Theme and transparency stay on this device; fonts use synchronized UI settings      |
-| Personal    | Preferences → Recent views      | Recent views: collapsed, expanded, hidden                                                                | This browser or desktop webview                                                     |
-| Personal    | Preferences → Notifications     | Interruption condition, waiting count or Windows taskbar indicator; terminal protocol under Advanced     | This browser or desktop webview; app icon indicators require desktop support        |
-| Personal    | Preferences → Spend alerts      | Session spend threshold in US dollars                                                                    | Local advisory alert; wholly subscription sessions are skipped                      |
-| Personal    | Editor → Editing                | Auto save, preview tabs                                                                                  | Stay local to this device                                                           |
-| Personal    | Editor → On save                | Format, trim trailing whitespace, insert final newline                                                   | Synchronized save policy for all projects                                           |
-| Personal    | Editor → Code display           | Git scrollbar markers, bracket colors, word wrap, render whitespace                                      | Markers and bracket colors are synchronized; wrap and whitespace display stay local |
-| Personal    | Editor → Annotations            | Inline Git blame, inlay hints                                                                            | Git blame is synchronized; inlay hints stay local                                   |
-| Personal    | Shortcuts                       | Base keymap, command search, editable chords, conflicts, reset                                           | Keyboard commands; interaction keys are reference-only                              |
-| Workspace   | Agents                          | Agent registry, project selection, create, open profile, availability                                    | Global or project agent definitions                                                 |
-| Workspace   | Capabilities → Tools            | Tool availability by category                                                                            | The selected agent’s rules                                                          |
-| Workspace   | Capabilities → Skills           | Create, edit, availability, curator, archive, restore                                                    | Shared skill files; availability belongs to the selected agent                      |
-| Workspace   | Capabilities → MCP              | Add servers, transport, connection status, tool availability                                             | Shared server connections and the selected agent’s rules                            |
-| Workspace   | Capabilities → Plugins          | Claude Code plugins: install, configuration, availability, marketplaces                                  | Shared plugin installations and the selected agent’s rules                          |
-| Workspace   | Capabilities → Mini apps        | Installed mini apps: availability, settings, remove                                                      | Shared mini app installations and the selected agent’s rules                        |
-| Workspace   | Capabilities → Permission rules | Ordered rules, argument patterns, allow/ask/deny, apply, restore defaults                                | The selected agent                                                                  |
-| Workspace   | Project                         | Project selector, display name, project instructions, delete                                             | The selected project                                                                |
-| Application | System → Application            | Updates, model list check, terminal command, storage usage, reviewed conversation removal, retention     | This installation and local conversation storage                                    |
-| Application | System → Access & context       | Private/local research URLs, context exclusion paths                                                     | Current user profile; applies across that user's agents and projects                |
-| Application | System → Diagnostics            | Scope, refresh, validation, resolved models, tool policy, permissions, values and provenance, extensions | Read-only resolved runtime configuration                                            |
+| Group       | Section                     | Controls and destinations                                                                                | Applies to                                                                          |
+| ----------- | --------------------------- | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Personal    | Preferences → Appearance    | Theme, window transparency, interface font, code font, font size, live code preview                      | Theme and transparency stay on this device; fonts use synchronized UI settings      |
+| Personal    | Preferences → Recent views  | Recent views: collapsed, expanded, hidden                                                                | This browser or desktop webview                                                     |
+| Personal    | Preferences → Notifications | Interruption condition, waiting count or Windows taskbar indicator; terminal protocol under Advanced     | This browser or desktop webview; app icon indicators require desktop support        |
+| Personal    | Preferences → Spend alerts  | Session spend threshold in US dollars                                                                    | Local advisory alert; wholly subscription sessions are skipped                      |
+| Personal    | Editor → Editing            | Auto save, preview tabs                                                                                  | Stay local to this device                                                           |
+| Personal    | Editor → On save            | Format, trim trailing whitespace, insert final newline                                                   | Synchronized save policy for all projects                                           |
+| Personal    | Editor → Code display       | Git scrollbar markers, bracket colors, word wrap, render whitespace                                      | Markers and bracket colors are synchronized; wrap and whitespace display stay local |
+| Personal    | Editor → Annotations        | Inline Git blame, inlay hints                                                                            | Git blame is synchronized; inlay hints stay local                                   |
+| Personal    | Shortcuts                   | Base keymap, command search, editable chords, conflicts, reset                                           | Keyboard commands; interaction keys are reference-only                              |
+| Workspace   | Agents                      | Agent registry, project selection, create, open profile, availability                                    | Global or project agent definitions                                                 |
+| Workspace   | Capabilities → Tools        | Tool availability by category                                                                            | The selected agent’s rules                                                          |
+| Workspace   | Capabilities → Skills       | Create, edit, availability, curator, archive, restore                                                    | Shared skill files; availability belongs to the selected agent                      |
+| Workspace   | Capabilities → MCP          | Add servers, transport, connection status, tool availability                                             | Shared server connections and the selected agent’s rules                            |
+| Workspace   | Capabilities → Plugins      | Claude Code plugins: install, configuration, availability, marketplaces                                  | Shared plugin installations and the selected agent’s rules                          |
+| Workspace   | Capabilities → Mini apps    | Installed mini apps: availability, settings, remove                                                      | Shared mini app installations and the selected agent’s rules                        |
+| Security    | Permissions                 | Ordered rules, argument patterns, allow/ask/deny, apply, restore defaults; Claude Code rules, read-only  | The selected agent; Claude Code settings apply to every agent                       |
+| Workspace   | Project                     | Project selector, display name, project instructions, delete                                             | The selected project                                                                |
+| Application | System → Application        | Updates, model list check, terminal command, storage usage, reviewed conversation removal, retention     | This installation and local conversation storage                                    |
+| Application | System → Access & context   | Private/local research URLs, context exclusion paths                                                     | Current user profile; applies across that user's agents and projects                |
+| Application | System → Diagnostics        | Scope, refresh, validation, resolved models, tool policy, permissions, values and provenance, extensions | Read-only resolved runtime configuration                                            |
 
 Choose an editor-style preset in **Shortcuts → Base keymap**. The
 [keymap inventory](keyboard-shortcuts.md) lists compatible commands, platform differences, and
 source references for all 17 choices.
 
-Capabilities initially uses the current conversation's agent when it is available in the picker;
-otherwise it falls back to the default assistant. A manual choice stays selected while that page
-remains mounted. Check the agent name before changing availability or permission rules.
+Capabilities and Permissions initially use the current conversation's agent when it is available in
+the picker; otherwise they fall back to the default assistant. A manual choice stays selected while
+that page remains mounted. Check the agent name before changing availability or permission rules.
 
 **Plugins** lists Claude Code plugins, the ones `/plugin` manages. **Mini apps** lists Localix's own
 apps with screens, the ones `/mini-app` manages; see [Mini apps](mini-apps.md) and
@@ -63,7 +63,7 @@ the same navigation, section surfaces, field sizes, and spacing as application s
 | Capabilities | MCP                       | Server and tool availability, shared connection management | Switches apply immediately; server configuration has an explicit save action |
 | Capabilities | Plugins                   | Availability, shared installation and configuration        | Switches apply immediately; configuration has an explicit save action        |
 | Capabilities | Mini apps                 | Availability, shared mini app settings                     | Switches apply immediately; settings have an explicit save action            |
-| Capabilities | Permission rules          | Ordered policy for the agent                               | Apply commits the staged list                                                |
+| Permissions  | Permission rules          | Ordered policy for the agent                               | Apply commits the staged list                                                |
 
 An unsaved definition stays in the form when switching to another section of the same profile and
 back. Paired fields align their labels, help, controls, and errors; they stack when their own

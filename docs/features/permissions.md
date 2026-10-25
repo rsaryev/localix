@@ -229,9 +229,12 @@ managed rules.
 
 ## Configuration
 
-Edit rules in **Settings → Capabilities → Permission rules**. The picker selects whose list you are
-editing; with no agent selected it is the default assistant's (`localix`), which is also the agent
-that answers for work happening beside a turn rather than inside one.
+Edit rules in **Settings → Permissions**. The picker selects whose list you are editing; it opens on
+the agent of the chat you came from, and the default assistant (`localix`) also answers for work
+happening beside a turn rather than inside one. Below the editor, **From Claude Code settings**
+shows, read-only, the rules, the default mode and the bypass lock of your Claude Code settings files
+with the file each came from, and **How rules combine** says which verdict wins. Older links to the
+Permission rules tab open this page.
 
 The confirmation card offers **Approve** and **Deny**, a duration (**Once**, **This session**,
 **Always**) and, on a path card, the folder level from which down not to ask; see

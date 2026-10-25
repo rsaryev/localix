@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { SETTINGS_STRING_TABS } from '@/shared/routing/routes'
+import { parseSettingsTab, SETTINGS_STRING_TABS } from '@/shared/routing/routes'
 import { primarySettingsSection, SETTINGS_SECTIONS } from './settingsNavigation'
 import { SETTINGS_INDEX } from '@/shared/lib/settings-index/settingsIndex'
 import { searchSettings } from './settingsSearch'
@@ -11,7 +11,8 @@ test('every settings destination has exactly one primary section', () => {
     expect(ids).toContain(primarySettingsSection(tab))
   }
   expect(primarySettingsSection({ kind: 'project', id: 'project-1' })).toBe('project')
-  expect(primarySettingsSection('rules')).toBe('tools')
+  expect(primarySettingsSection('permissions')).toBe('permissions')
+  expect(primarySettingsSection(parseSettingsTab('rules', undefined))).toBe('permissions')
   expect(primarySettingsSection('agents')).toBe('agents')
 })
 
