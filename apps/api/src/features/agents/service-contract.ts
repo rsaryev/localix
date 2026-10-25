@@ -7,6 +7,7 @@ import type { AgentRecord, AgentRecordInput, AgentSummary } from './contracts'
 import type { InvocationRegistry } from '../capabilities/invocation'
 import type { AgentBindings, PluginAgentGroup } from './bindings/bindings'
 import type { AgentFolders } from './catalog/scan'
+import type { AgentDelegation } from './delegation'
 import type { AgentAvailability, ApprovalAnswer, RunAgentDecision } from './invocation-service'
 
 /**
@@ -30,7 +31,7 @@ export interface AgentsServiceDeps {
   now?: () => string
 }
 
-export interface AgentsService {
+export interface AgentsService extends AgentDelegation {
   /** Resolve definition and execution policy from the same admitted catalog snapshot. */
   resolveRunAgent(
     userId: string,

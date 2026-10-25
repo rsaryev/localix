@@ -10,11 +10,13 @@ import {
 import { createInvocationRegistry } from '../capabilities/invocation'
 import { composeCapabilities, type ResolvedCapabilities } from '../capabilities/resolve'
 import { capabilitiesChanged, trackCapabilityChange } from '../capabilities/revision'
+import type { Rule } from '../agent-core/capability-rule'
 import { createAgentBindings, type AgentSnapshot, type BoundAgent } from './bindings/bindings'
 import { createAgentAuthoring } from './authoring'
 import type { AgentSummary } from './contracts'
 import { createAgentFile, type CreatePorts } from './create'
 import { agentFilePath, agentFileText, readAgentFileText, writeAgentFile } from './file-writer'
+import { createAgentDelegation } from './delegation'
 import { createAgentInvocationService } from './invocation-service'
 import { agentTrustClass, summaryOf } from './projection'
 import type { AgentsService, AgentsServiceDeps } from './service-contract'
@@ -26,6 +28,16 @@ interface Catalog {
   all: AgentSummary[]
   capabilitiesByAgent: ReadonlyMap<string, ResolvedCapabilities>
 }
+
+/**
+ * A shipped type (`Explore`, `Plan`, `general-purpose`) has no row and no rules, and silence denies
+ * a host; it is meant to take a delegated task, so that is its starting answer. Any rule a person
+ * writes for it comes after and decides.
+ */
+const shippedInvocations = (entry: BoundAgent): Rule[] =>
+  entry.agent.source === 'builtin' && entry.id !== DEFAULT_AGENT_ID
+    ? [{ action: 'invocation:delegation', resource: entry.id, effect: 'allow' }]
+    : []
 
 /**
  * The agents of a scope: the catalog of Claude Code agent files (and plugin and built-in types),
@@ -62,7 +74,7 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
             entry.id,
             agentTrustClass(entry.agent),
           ) === 'allow',
-        invocations: invocations.availability(own, entry.id),
+        invocations: invocations.availability([...shippedInvocations(entry), ...own], entry.id),
       })
     })
     return {
@@ -150,6 +162,10 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
       },
       bindings.exclusive,
     ),
+    ...createAgentDelegation({
+      snapshot: (userId, scope) => bindings.snapshot(userId, scope),
+      summaries: async (userId, snapshot) => (await catalogOf(userId, snapshot)).all,
+    }),
     ...createAgentInvocationService((userId, scope) => read(userId, scope), invocations),
 
     async listAgents(userId, opts) {
