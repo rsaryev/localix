@@ -47,6 +47,30 @@ describe('which marketplaces auto-update', () => {
   })
 })
 
+describe('writing the registry from several places at once', () => {
+  test('switches made together are all kept, and a reader never sees a half-written file', async () => {
+    const root = join(dir(), 'marketplaces')
+    const names = Array.from({ length: 12 }, (_, i) => `m${i}`)
+    await writeKnownMarketplaces(
+      root,
+      Object.fromEntries(
+        names.map((name) => [name, { ...thirdParty, installLocation: `/m/${name}` }]),
+      ),
+    )
+    let sawGap = false
+    const watching = (async () => {
+      for (let i = 0; i < 60; i++) {
+        if (Object.keys(await readKnownMarketplaces(root)).length !== names.length) sawGap = true
+      }
+    })()
+    await Promise.all(names.map((name, i) => setMarketplaceAutoUpdate(root, name, i % 2 === 0)))
+    await watching
+    const known = await readKnownMarketplaces(root)
+    expect(names.map((name) => known[name]?.autoUpdate)).toEqual(names.map((_, i) => i % 2 === 0))
+    expect(sawGap).toBe(false)
+  })
+})
+
 describe('the environment variables that turn the whole pass off', () => {
   test('DISABLE_UPDATES, DISABLE_AUTOUPDATER and CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC', () => {
     expect(autoUpdatePassAllowed({})).toBe(true)

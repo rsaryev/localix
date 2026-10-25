@@ -283,6 +283,10 @@ Changes land on `main`.
 
 ### Fixed
 
+- **Store → Sources updates as you use it**: switching a marketplace's auto-update, reading it
+  again, adding or removing a source shows at once, without leaving the section and coming back, and
+  a source that changes on its own (a background update) shows too. Two changes to the marketplace
+  list made together no longer lose one of them.
 - **Open on an installed mini app in the Store** opens its screen again, in the chat that is open;
   for a mini app with one screen per chat, such as the Kanban board, the button did nothing.
 - **Store Discover tiles**: a tile is now one even row: the icon, the name, one quiet line of who

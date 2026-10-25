@@ -178,6 +178,53 @@ describe('the Store', () => {
     expect(apps.calls).toContain('remove source https://ada.test/c.json')
   })
 
+  test('a source write is announced at once to those who read the sources, though no listing moved', async () => {
+    const { store, apps, pokes } = setup()
+    await store.listings(actor, {})
+    await store.settled()
+    const heard: string[] = []
+    store.subscribeSources(() => heard.push('sources'))
+    const before = pokes()
+    await store.setSourceAutoUpdate('mini-app', 'https://hosted.test/c.json', true)
+    expect(heard).toEqual(['sources'])
+    await store.refreshSource('mini-app', 'https://hosted.test/c.json')
+    await store.addSource('mini-app', 'https://ada.test/c.json')
+    await store.removeSource('mini-app', 'https://ada.test/c.json')
+    expect(heard).toHaveLength(4)
+    await store.settled()
+    expect(pokes()).toBe(before)
+    expect(apps.calls).toContain('auto-update https://hosted.test/c.json true')
+  })
+
+  test('a source that changed on its own is announced once the Store has read again', async () => {
+    const sources = [
+      {
+        kind: 'mini-app' as const,
+        id: 'https://hosted.test/c.json',
+        label: 'Localix',
+        url: 'https://hosted.test/c.json',
+        builtIn: true,
+        count: 2,
+        autoUpdate: false,
+      },
+    ]
+    const apps = fakeProvider('mini-app', [chess], { sources })
+    const { store } = storeOf([apps.provider])
+    await store.listings(actor, {})
+    await store.settled()
+    const heard: string[] = []
+    store.subscribeSources(() => heard.push('sources'))
+    await store.settled()
+    expect(heard).toEqual([])
+    sources[0]!.autoUpdate = true
+    apps.change([chess])
+    await store.settled()
+    expect(heard).toEqual(['sources'])
+    apps.change([chess])
+    await store.settled()
+    expect(heard).toEqual(['sources'])
+  })
+
   test('activity: the jobs in flight and the updates offered, across kinds', async () => {
     const { apps, plugins, store } = setup()
     await store.listings(actor, {})

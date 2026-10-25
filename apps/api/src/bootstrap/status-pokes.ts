@@ -10,7 +10,11 @@ export function startModelStatusPokes(deps: {
   localModels: Pick<LocalModelsService, 'subscribe'>
   semanticService: Pick<SemanticService, 'subscribe'>
   /** The Store: any provider's listings moved (`features/store/service.ts`). */
-  store: { subscribe(listener: () => void): () => void }
+  store: {
+    subscribe(listener: () => void): () => void
+    /** A source was written or moved on its own (`features/store/store-runs.ts`). */
+    subscribeSources(listener: () => void): () => void
+  }
   /** Plugin updates available and in flight (`plugins/plugin-updates.ts`). */
   pluginUpdates: { subscribe(listener: () => void): () => void }
   chatService: {
@@ -24,6 +28,7 @@ export function startModelStatusPokes(deps: {
       { resource: 'local-models', subscribe: deps.localModels.subscribe },
       { resource: 'semantic', subscribe: deps.semanticService.subscribe },
       { resource: 'store', subscribe: deps.store.subscribe },
+      { resource: 'store-sources', subscribe: deps.store.subscribeSources },
       { resource: 'plugin-updates', subscribe: deps.pluginUpdates.subscribe },
     ],
     (resources) =>

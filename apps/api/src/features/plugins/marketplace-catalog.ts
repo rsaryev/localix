@@ -58,7 +58,11 @@ export async function writeKnownMarketplaces(
   known: Record<string, KnownMarketplace>,
 ): Promise<void> {
   await fs.mkdir(root, { recursive: true })
-  await fs.writeFile(knownFile(root), JSON.stringify(known, null, 2) + '\n')
+  // Written aside and renamed in: a reader sees the old file or the new one, never half of one
+  // (which reads as an empty registry).
+  const aside = `${knownFile(root)}.${process.pid}.${Math.random().toString(36).slice(2)}.tmp`
+  await fs.writeFile(aside, JSON.stringify(known, null, 2) + '\n')
+  await fs.rename(aside, knownFile(root))
 }
 
 /** Locate a marketplace catalog: `.localix-plugin/marketplace.json`, else Claude Code's. */

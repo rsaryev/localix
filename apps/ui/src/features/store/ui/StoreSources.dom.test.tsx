@@ -105,6 +105,27 @@ describe('the Store’s sources', () => {
     }
   })
 
+  test('the list follows the server: a switch it announces shows without leaving the page', async () => {
+    const view = await open()
+    try {
+      const toggle = () =>
+        view.host.querySelector<HTMLElement>(
+          '[aria-label="Update claude-plugins-official on its own"]',
+        )!
+      expect(toggle().getAttribute('aria-checked')).toBe('true')
+      await view.changeSources(
+        SOURCES.map((source) =>
+          source.id === 'anthropics/claude-plugins-official'
+            ? { ...source, autoUpdate: false }
+            : source,
+        ),
+      )
+      expect(toggle().getAttribute('aria-checked')).toBe('false')
+    } finally {
+      await view.done()
+    }
+  })
+
   test('removing asks first; a default source says it will not come back', async () => {
     const view = await open()
     try {

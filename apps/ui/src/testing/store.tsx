@@ -347,6 +347,14 @@ export async function renderStore(options: RenderStoreOptions) {
       await new Promise<void>((resolve) => setTimeout(resolve, 1))
       await revalidate()
     })
+  /** The server's sources changed and it poked the Store's sources. */
+  const changeSources = (sources: SourceView[]) =>
+    act(async () => {
+      fake.sources = sources
+      resourceSync.invalidate(['store-sources'])
+      await new Promise<void>((resolve) => setTimeout(resolve, 1))
+      await revalidate()
+    })
   /** The tab was opened again at another target. */
   const retarget = (at: StoreTarget) => act(() => root.render(tree(at)))
   const shelf = (label: string) =>
@@ -372,6 +380,7 @@ export async function renderStore(options: RenderStoreOptions) {
     type,
     press,
     change,
+    changeSources,
     retarget,
     shelf,
     act,

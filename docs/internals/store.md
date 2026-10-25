@@ -200,14 +200,14 @@ nothing running.
 
 ## How it works
 
-| Piece         | Owner                  | What it does                                                                                    |
-| ------------- | ---------------------- | ----------------------------------------------------------------------------------------------- |
-| Store feature | `features/store` (new) | Holds the provider list, the index, `/rpc/store` routes and the `store` poke.                   |
-| Index         | Store feature          | A SQLite FTS5 file in the cache folder: listings, components, state, facets (`store-scale.md`). |
-| Mini apps     | `features/mini-apps`   | Adapts `store.ts`, `store-detail.ts`, `catalogs.ts`; its routes stay for its own pages.         |
-| Plugins       | `features/plugins`     | Lists marketplace entries with full fields, counts components, installs by `name@marketplace`.  |
-| Wiring        | `bootstrap/`           | Builds each provider and hands the list to the Store (A4).                                      |
-| Activity      | Store feature          | One jobs-and-updates feed for the Event Center and the update strip.                            |
+| Piece         | Owner                  | What it does                                                                                       |
+| ------------- | ---------------------- | -------------------------------------------------------------------------------------------------- |
+| Store feature | `features/store` (new) | Holds the provider list, the index, `/rpc/store` routes and the `store` and `store-sources` pokes. |
+| Index         | Store feature          | A SQLite FTS5 file in the cache folder: listings, components, state, facets (`store-scale.md`).    |
+| Mini apps     | `features/mini-apps`   | Adapts `store.ts`, `store-detail.ts`, `catalogs.ts`; its routes stay for its own pages.            |
+| Plugins       | `features/plugins`     | Lists marketplace entries with full fields, counts components, installs by `name@marketplace`.     |
+| Wiring        | `bootstrap/`           | Builds each provider and hands the list to the Store (A4).                                         |
+| Activity      | Store feature          | One jobs-and-updates feed for the Event Center and the update strip.                               |
 
 Routes, all under `/rpc/store`:
 
@@ -456,6 +456,11 @@ provider (X1, A8) and only reads or writes through the Store client.
   category and source by its query, so Back returns to the list as it was.
 - **Search** debounces 150 ms (`useDebounced`, the delay injected in tests) and shows packages and
   components as two groups with chips.
+- **Sources are not in the index, so they have their own poke.** `store-sources` fires the moment a
+  source write (switch, read again, add, remove) is done, and after a sync when what the sources
+  look like (`sourcesOf`, compared as text) moved on its own; the Sources page reads on it, never on
+  `store`. The plugin provider's marketplace list is one `known.json`: every change to it takes the
+  one registry lock and is written aside and renamed in.
 - **Sources** shows a source's own problem on its row, quietly; the one Add dialog previews every
   addable kind and asks only when both formats match.
 

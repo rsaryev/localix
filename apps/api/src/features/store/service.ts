@@ -84,6 +84,8 @@ export function createStoreService(deps: {
     providers: deps.providers,
     index: deps.index,
     now,
+    sourcesSignature: async () =>
+      JSON.stringify((await sourcesOf(deps.providers, deps.index)).sources),
     onSynced: (outcome) => {
       if (outcome.cardsChanged) deps.resyncMeaning?.()
     },
@@ -130,6 +132,8 @@ export function createStoreService(deps: {
     invalidate: runs.invalidate,
     /** Hear every change to what the Store lists, once it is indexed; returns the unsubscribe. */
     subscribe: runs.subscribe,
+    /** Hear every write to, or change of, the sources the Store reads from. */
+    subscribeSources: runs.subscribeSources,
     /** Resolves when every sync started so far has been written. */
     settled: runs.settled,
     /** The `store` provider of the global search registry. */
@@ -246,6 +250,7 @@ export function createStoreService(deps: {
       const provider = providerOf(kind)
       if (!provider.refreshSource) throw unsupported(kind, 'read one source again')
       await provider.refreshSource(id)
+      runs.announceSources()
       runs.invalidate()
     },
 
@@ -253,6 +258,7 @@ export function createStoreService(deps: {
       const provider = providerOf(kind)
       if (!provider.setSourceAutoUpdate) throw unsupported(kind, 'switch auto-update')
       await provider.setSourceAutoUpdate(id, on)
+      runs.announceSources()
     },
 
     async previewSource(kind: PackageKind, input: string) {
@@ -265,12 +271,14 @@ export function createStoreService(deps: {
       const provider = providerOf(kind)
       if (!provider.addSource) throw unsupported(kind, 'add a source')
       await provider.addSource(input)
+      runs.announceSources()
     },
 
     async removeSource(kind: PackageKind, id: string) {
       const provider = providerOf(kind)
       if (!provider.removeSource) throw unsupported(kind, 'remove a source')
       await provider.removeSource(id)
+      runs.announceSources()
     },
 
     /** The jobs in flight and the updates offered, every kind's, from the index. */

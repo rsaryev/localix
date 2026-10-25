@@ -10,15 +10,23 @@ import { createProviderSync, type SyncOutcome } from './store-sync'
  * request never waits on a re-index. Only the very first read of an empty index waits for it.
  * Subscribers hear of a sync that changed something once it is written: that is the `store`
  * poke, and clients read the fresh index.
+ *
+ * The sources are not in the index: a source write announces them at once (`announceSources`),
+ * and a source that moved on its own is found after a sync by comparing what they look like now
+ * with what they looked like then, so a client that shows them reads again either way.
  */
 export function createStoreSync(deps: {
   providers: readonly StoreProvider[]
   index: StoreIndexRepository
   now: () => number
   onSynced?: (outcome: SyncOutcome) => void
+  /** What the sources look like now, as one string: equal text, nothing moved. */
+  sourcesSignature?: () => Promise<string>
 }) {
   const sync = createProviderSync({ index: deps.index, now: deps.now })
   const listeners = new Set<() => void>()
+  const sourceListeners = new Set<() => void>()
+  let lastSources: string | null = null
   const people = new Map<
     string,
     { actor: StoreActor; running: Promise<void> | null; dirty: boolean; problems: string[] }
@@ -35,6 +43,18 @@ export function createStoreSync(deps: {
     return person
   }
 
+  const announceSources = () => {
+    for (const listener of sourceListeners) listener()
+  }
+
+  async function checkSources() {
+    const now = await deps.sourcesSignature?.().catch(() => null)
+    if (now == null) return
+    const moved = lastSources !== null && lastSources !== now
+    lastSources = now
+    if (moved) announceSources()
+  }
+
   async function syncAll(person: ReturnType<typeof personOf>) {
     const outcomes = await Promise.all(
       deps.providers.map((provider) => sync(provider, person.actor)),
@@ -47,6 +67,7 @@ export function createStoreSync(deps: {
     }
     deps.onSynced?.(merged)
     if (merged.changed) for (const listener of listeners) listener()
+    await checkSources()
   }
 
   function kick(person: ReturnType<typeof personOf>): Promise<void> {
@@ -98,6 +119,14 @@ export function createStoreSync(deps: {
     subscribe: (listener: () => void): (() => void) => {
       listeners.add(listener)
       return () => listeners.delete(listener)
+    },
+
+    /** A source was written: those who show the sources read them again. */
+    announceSources,
+
+    subscribeSources: (listener: () => void): (() => void) => {
+      sourceListeners.add(listener)
+      return () => sourceListeners.delete(listener)
     },
 
     settled: async (): Promise<void> => {

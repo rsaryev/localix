@@ -35,7 +35,7 @@ export function useDiscover(client: StoreClient, projectId: string | null) {
 }
 
 export function useStoreSources(client: StoreClient) {
-  const generation = useResourceGeneration('store')
+  const generation = useResourceGeneration('store-sources')
   return useSWR(['store-sources', generation], () => client.sources(), { keepPreviousData: true })
 }
 

@@ -12,6 +12,7 @@ import {
   type MarketplaceRegistryDeps,
   type MarketplaceSource,
 } from './marketplace-registry'
+import { withMarketplaceMutationLock } from './marketplace-lock'
 import { writeKnownMarketplaces } from './marketplace-catalog'
 
 /**
@@ -104,12 +105,14 @@ export async function registerDeclaredMarketplaces(
       const result = await addMarketplace(entry.source, deps)
       added.push(result.name)
       if (entry.autoUpdate !== undefined) {
-        const records = await readKnownMarketplaces(root)
-        const record = records[result.name]
-        if (record) {
-          records[result.name] = { ...record, autoUpdate: entry.autoUpdate }
-          await writeKnownMarketplaces(root, records)
-        }
+        await withMarketplaceMutationLock(root, async () => {
+          const records = await readKnownMarketplaces(root)
+          const record = records[result.name]
+          if (record) {
+            records[result.name] = { ...record, autoUpdate: entry.autoUpdate }
+            await writeKnownMarketplaces(root, records)
+          }
+        })
       }
     } catch (error) {
       warnings.push(

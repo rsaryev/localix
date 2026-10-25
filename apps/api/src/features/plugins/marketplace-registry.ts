@@ -1,3 +1,4 @@
+import { withMarketplaceMutationLock } from './marketplace-lock'
 import { randomUUID } from 'node:crypto'
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
@@ -79,27 +80,6 @@ export interface MarketplaceRegistryDeps {
   listTags?: (url: string) => Promise<string[]>
   /** Timestamp for `lastUpdated` (tests pass a fixed value; `new Date()` is avoided in code paths that resume). */
   now?: () => string
-}
-
-const marketplaceMutationTails = new Map<string, Promise<void>>()
-
-async function withMarketplaceMutationLock<T>(
-  root: string,
-  operation: () => Promise<T>,
-): Promise<T> {
-  const previous = marketplaceMutationTails.get(root) ?? Promise.resolve()
-  let release!: () => void
-  const tail = new Promise<void>((resolve) => {
-    release = resolve
-  })
-  marketplaceMutationTails.set(root, tail)
-  await previous
-  try {
-    return await operation()
-  } finally {
-    release()
-    if (marketplaceMutationTails.get(root) === tail) marketplaceMutationTails.delete(root)
-  }
 }
 
 /**

@@ -21,6 +21,9 @@ export const REALTIME_RESOURCES = [
   // The Store's listings across package kinds (`/rpc/store`): a job moved, an install or a
   // source changed.
   'store',
+  // The sources the Store reads from (`/rpc/store/sources`): one was switched, read again, added,
+  // removed or moved on its own. Not in `store`: sources are not in the index.
+  'store-sources',
   // Plugin updates available and in flight (`plugins/plugin-updates.ts`), with their progress.
   'plugin-updates',
   'semantic',

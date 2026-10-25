@@ -5,6 +5,7 @@ import {
   writeKnownMarketplaces,
   type KnownMarketplace,
 } from './marketplace-catalog'
+import { withMarketplaceMutationLock } from './marketplace-lock'
 import type { MarketplaceSource } from './marketplace-source'
 
 /**
@@ -62,9 +63,11 @@ export async function setMarketplaceAutoUpdate(
   name: string,
   autoUpdate: boolean,
 ): Promise<void> {
-  const known = await readKnownMarketplaces(root)
-  const record = known[name]
-  if (!record) throw new NotFoundError('marketplace_not_found', `Unknown marketplace "${name}".`)
-  known[name] = { ...record, autoUpdate }
-  await writeKnownMarketplaces(root, known)
+  await withMarketplaceMutationLock(root, async () => {
+    const known = await readKnownMarketplaces(root)
+    const record = known[name]
+    if (!record) throw new NotFoundError('marketplace_not_found', `Unknown marketplace "${name}".`)
+    known[name] = { ...record, autoUpdate }
+    await writeKnownMarketplaces(root, known)
+  })
 }
