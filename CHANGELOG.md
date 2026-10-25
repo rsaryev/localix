@@ -273,6 +273,8 @@ Changes land on `main`.
 
 ### Fixed
 
+- **Open on an installed mini app in the Store** opens its screen again, in the chat that is open;
+  for a mini app with one screen per chat, such as the Kanban board, the button did nothing.
 - **A plugin's data folder is keyed by `name@marketplace`**, as Claude Code keys
   `${CLAUDE_PLUGIN_DATA}`; a folder an earlier Localix kept under the bare name moves there once.
 - **Options of plugins installed in Claude Code** start from the values you gave them there
