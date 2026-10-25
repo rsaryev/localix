@@ -129,7 +129,7 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
     dataRoot: deps.sessionDataRoot,
     warn: ccHooksConsoleLogger.warn,
   })
-  const subagent = ccSubagentOf(session, speakerAgentId)
+  const subagent = ccSubagentOf(session)
 
   // Claude Code's settings files add their own `hooks`, and may hold plugins' back
   // (`disableAllHooks`, `allowManagedHooksOnly`).

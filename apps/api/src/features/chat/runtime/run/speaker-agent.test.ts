@@ -3,16 +3,12 @@ import { realpath } from 'node:fs/promises'
 import { tempDirPerTest } from '@localixai/testing'
 
 import type { LoadedPluginAgent } from '../../../plugins/loader-contract'
-import { parseSessionProvenance, serializeSessionProvenance } from '../../session-provenance'
 import {
-  AGENT_TYPES_HEADING,
-  agentTypesSection,
-  applyPluginSubagent,
   applySpeakerAgent,
   contextFilesFor,
   promptCacheRetentionFor,
-  delegatePluginPorts,
-} from './plugin-subagent'
+  delegateAgentPorts,
+} from './speaker-agent'
 
 const REVIEWER: LoadedPluginAgent = {
   pluginName: 'sec',
@@ -25,65 +21,8 @@ const REVIEWER: LoadedPluginAgent = {
   disallowedTools: ['research'],
 }
 
-const child = (pluginAgent?: string) =>
-  parseSessionProvenance(
-    serializeSessionProvenance({
-      kind: 'task-delegation',
-      parentSessionId: 'parent',
-      toolCallId: 'call',
-      depth: 1,
-      ...(pluginAgent ? { pluginAgent } : {}),
-    }),
-  )
-
-test('a child stored as a plugin agent type keeps it across a reload of its provenance', () => {
-  expect(child('sec:reviewer')).toEqual(expect.objectContaining({ pluginAgent: 'sec:reviewer' }))
-})
-
-test("every run of the child takes the type's prompt and tool limits", () => {
-  const input = {
-    agent: { id: 'builtin:localix', instructions: 'You are Localix.' },
-    disabledTools: ['ask'],
-  }
-  const applied = applyPluginSubagent(input, child('sec:reviewer'), [REVIEWER])
-  expect(applied?.agent).toEqual({
-    id: 'builtin:localix',
-    instructions: 'You are the security reviewer.',
-  })
-  expect(applied?.subagent).toBe(REVIEWER)
-  // Its own denial, and every Claude Code tool its `tools` list leaves out.
-  expect(applied?.disabledTools).toEqual(
-    expect.arrayContaining(['ask', 'research', 'bash', 'write', 'edit']),
-  )
-  expect(applied?.disabledTools).not.toContain('read')
-  expect(applied?.disabledTools).not.toContain('search')
-})
-
-test('a child that is not a type, or whose plugin is gone, runs as its seated agent', () => {
-  const input = { agent: { instructions: 'You are Localix.' }, disabledTools: [] }
-  expect(applyPluginSubagent(input, child(), [REVIEWER])).toBeNull()
-  expect(applyPluginSubagent(input, { kind: 'root' }, [REVIEWER])).toBeNull()
-  const warned: string[] = []
-  expect(
-    applyPluginSubagent(input, child('gone:agent'), [REVIEWER], (m) => warned.push(m)),
-  ).toBeNull()
-  expect(warned).toEqual([expect.stringContaining('"gone:agent" is not enabled')])
-})
-
-test('# Agent types lists each type with when to use it and its tools', () => {
-  const text = agentTypesSection([REVIEWER, { fullName: 'qa:tester', description: '' }])
-  expect(text?.split('\n')[0]).toBe(AGENT_TYPES_HEADING)
-  expect(text).toContain('agent: "<type>"')
-  expect(text).toContain(
-    '- sec:reviewer: Reviews code for security issues. Use after auth changes. (tools: read, search)',
-  )
-  expect(text).toContain('- qa:tester: No description.')
-  expect(agentTypesSection([])).toBeNull()
-})
-
 test("the delegate ports resolve a type's model alias against the chat's provider", async () => {
-  const ports = delegatePluginPorts({
-    agents: [REVIEWER],
+  const ports = delegateAgentPorts({
     chatModel: { providerId: 'anthropic', connectionId: 'conn', modelId: 'claude-sonnet-5' },
     catalog: [
       { id: 'claude-haiku-4-5', providerId: 'anthropic' },
@@ -92,7 +31,6 @@ test("the delegate ports resolve a type's model alias against the chat's provide
     defaultCwd: '/tmp',
     rootSessionId: 'root',
   })
-  expect(ports.agents()).toEqual([REVIEWER])
   expect(await ports.route?.({ model: 'haiku', effort: 'low', who: 'agent sec:reviewer' })).toEqual(
     {
       route: { providerConnectionId: 'conn', modelId: 'claude-haiku-4-5', reasoningEffort: 'low' },
@@ -107,8 +45,7 @@ test("the delegate ports resolve a type's model alias against the chat's provide
 })
 
 test("a catalog that names its models with their provider still routes a type's model", async () => {
-  const ports = delegatePluginPorts({
-    agents: [REVIEWER],
+  const ports = delegateAgentPorts({
     chatModel: { providerId: 'openai', connectionId: 'conn', modelId: 'gpt-4o' },
     catalog: [
       { id: 'openai/gpt-4o', providerId: 'openai' },
@@ -124,13 +61,12 @@ test("a catalog that names its models with their provider still routes a type's 
     })
 })
 
-const scratch = tempDirPerTest('plugin-subagent-hook', {})
+const scratch = tempDirPerTest('speaker-agent-hook', {})
 
 test("a type's isolated child works where the run's WorktreeCreate hook made its worktree", async () => {
   const dir = scratch()
   const named: string[] = []
-  const ports = delegatePluginPorts({
-    agents: [],
+  const ports = delegateAgentPorts({
     catalog: [],
     defaultCwd: dir,
     rootSessionId: 'root',
@@ -143,29 +79,6 @@ test("a type's isolated child works where the run's WorktreeCreate hook made its
   expect(named).toEqual(['delegate-call-1'])
   expect(worktree).toMatchObject({ byHook: true })
   expect(await realpath(worktree.workingDir)).toBe(await realpath(dir))
-})
-
-// skills.md: "Claude Code starts a new subagent of the type set in the `agent` field"; "The `agent`
-// field determines the execution environment (model, tools, and permissions)".
-test('a context: fork skill whose agent names a plugin agent runs as that agent', () => {
-  const fork = (pluginAgent?: string) =>
-    parseSessionProvenance(
-      serializeSessionProvenance({
-        kind: 'skill-fork',
-        parentSessionId: 'parent',
-        ...(pluginAgent ? { pluginAgent } : {}),
-      }),
-    )
-  const input = { agent: { instructions: 'You are Localix.' }, disabledTools: [] }
-  expect(fork('sec:reviewer')).toEqual(expect.objectContaining({ pluginAgent: 'sec:reviewer' }))
-  expect(applyPluginSubagent(input, fork('sec:reviewer'), [REVIEWER])?.agent.instructions).toBe(
-    'You are the security reviewer.',
-  )
-  // By a bare name only one enabled agent has.
-  expect(applyPluginSubagent(input, fork('reviewer'), [REVIEWER])?.subagent).toBe(REVIEWER)
-  const other = { ...REVIEWER, pluginName: 'ops', fullName: 'ops:reviewer' }
-  expect(applyPluginSubagent(input, fork('reviewer'), [REVIEWER, other])).toBeNull()
-  expect(applyPluginSubagent(input, fork(), [REVIEWER])).toBeNull()
 })
 
 // plugins/components, "Frontmatter fields in plugin agents": `omitClaudeMd` runs the agent without

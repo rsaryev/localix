@@ -22,8 +22,10 @@ import type { SubagentCloseResult } from '../service/subagent-close'
 import type { DelegationPriority } from '../../agent-core/delegation-lanes'
 
 export interface AgentServiceBinding {
-  /** An agent named by id OR handle, admitted for child work (how `delegate` resolves it). */
+  /** The delegating agent, by id, admitted for child work. */
   resolveDelegateAgent?: TaskDelegationOptions['resolveAgent']
+  /** The agent a task goes to for the name `delegate`, a workflow or a skill's fork wrote. */
+  resolveDelegation?: TaskDelegationOptions['resolveTarget']
   /**
    * Create a child session. Returns its id plus `taskName` — the child's addressable canonical
    * name (`/root/audit_repo`), assigned by the store at insert (see

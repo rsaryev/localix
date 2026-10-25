@@ -8,6 +8,7 @@
 import { join } from 'node:path'
 
 import type { PermissionMode } from '../../../../contracts/permission-modes'
+import { GENERAL_PURPOSE_TYPE } from '../../../agent-core/tools/delegate-agent-type'
 import { ccSessionEnvFiles, type CcSessionEnvFiles } from '../../../cc-hooks'
 import { sessionDataDir } from '../../../mini-apps/session-storage'
 import type { SessionRecord } from '../../repository'
@@ -29,15 +30,14 @@ export function ccPermissionMode(mode: PermissionMode): string {
 
 /**
  * The subagent a delegated child's hooks fire in: its id is the one SubagentStart reported (the
- * child session's), its type the plugin agent type or the seated agent, as the parent named it.
+ * child session's), its type the one the parent named.
  */
 export function ccSubagentOf(
   session: Pick<SessionRecord, 'id' | 'provenance'>,
-  speakerAgentId: string,
 ): { id: string; type: string } | undefined {
   const provenance = session.provenance
   if (provenance?.kind !== 'task-delegation') return undefined
-  return { id: session.id, type: provenance.pluginAgent ?? speakerAgentId }
+  return { id: session.id, type: provenance.agentType ?? GENERAL_PURPOSE_TYPE }
 }
 
 /**

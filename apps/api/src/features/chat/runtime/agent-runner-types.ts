@@ -232,6 +232,10 @@ export interface RunnerDeps {
       leadershipPriority?: number
       enabled: boolean
       canJoinConversation: boolean
+      /** `delegate` can hand it a task. */
+      delegable?: boolean
+      tools?: readonly string[]
+      self?: boolean
     }[]
   >
   now?: () => string

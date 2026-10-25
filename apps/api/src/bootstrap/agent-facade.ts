@@ -112,20 +112,35 @@ export async function createAgentFacadePhase({
     listDelegatedRuns: (...args) => listDelegatedRuns(db, usageRepo, ...args),
     sessionSpend: (...args) => readSessionSpend(db, usageRepo, ...args),
     resolveRunAgent: (...args) => agentsService.resolveRunAgent(...args),
-    // How `delegate` resolves the agent a task goes to (by id; a handle is accepted too), admitted
-    // through its `delegation` host with the defaults its child run takes.
-    resolveDelegateAgent: async (reference, { projectId }) => {
-      const wanted = reference.trim().replace(/^@/, '').trim()
-      const byHandle = async () =>
-        (await agentsService
-          .selectEnabledAgent(env.LOCALIX_DEFAULT_USER_ID, wanted, projectId ?? null)
-          .catch(() => null)) ?? null
-      const admitted =
-        (await admitDelegate(wanted, projectId)) ??
-        (await byHandle().then((record) => (record ? admitDelegate(record.id, projectId) : null)))
+    // The agent that is delegating, by id, admitted through its `delegation` host with the defaults
+    // its child run takes.
+    resolveDelegateAgent: async (agentId, { projectId }) => {
+      const admitted = await admitDelegate(agentId, projectId)
       return admitted
         ? { ...admitted.defaults, agentId: admitted.record.id, handle: admitted.record.handle }
         : null
+    },
+    // The agent a task goes to for a name written in `delegate` (or a workflow, or a skill's
+    // fork): the catalog's own resolution, then Access.
+    resolveDelegation: async (reference, { projectId }) => {
+      const target = await agentsService.resolveDelegation(
+        env.LOCALIX_DEFAULT_USER_ID,
+        reference,
+        projectId ?? null,
+      )
+      if (target.kind === 'ambiguous') return target
+      if (target.kind !== 'agent') return target
+      const { agent, definition } = target
+      return {
+        kind: 'agent',
+        agent: {
+          agentId: agent.id,
+          handle: agent.handle,
+          maxTurns: agent.limits?.maxTurns,
+          pinnedSkills: agent.context?.preloadSkills,
+        },
+        type: definition,
+      }
     },
   })
   // Reload persisted user-stop intents BEFORE the first tick. `runtime_status='stopped'`

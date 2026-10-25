@@ -43,10 +43,10 @@ export type SessionProvenance =
       /** A WorktreeCreate hook made {@link workingDir}: honoured wherever the hook put it. */
       worktreeByHook?: true
       /**
-       * The plugin subagent type it runs as (`<plugin>:<name>`): every run of the child takes that
-       * agent's prompt and tool limits while the plugin is enabled (`run/plugin-subagent.ts`).
+       * The `agent_type` the parent's SubagentStart named: the agent's name, or `general-purpose`
+       * for a child that runs as its delegator. SubagentStop names the same.
        */
-      pluginAgent?: string
+      agentType?: string
     }
   | { kind: 'loop'; parentSessionId: string; loopId: string }
   | { kind: 'hook'; parentSessionId: string; phase: 'verifier' }
@@ -54,11 +54,6 @@ export type SessionProvenance =
       kind: 'skill-fork'
       parentSessionId: string
       parentParticipant?: string
-      /**
-       * The plugin subagent type a `context: fork` skill's `agent:` names: the fork runs with that
-       * agent's prompt and tool limits, as a delegated one does (`run/plugin-subagent.ts`).
-       */
-      pluginAgent?: string
     }
   | { kind: 'thread'; parentSessionId: string; phase: 'message' }
   | { kind: 'fork'; parentSessionId: string }
@@ -130,7 +125,7 @@ export function parseSessionProvenance(raw: string): SessionProvenance {
         'chain',
         'workingDir',
         'worktreeByHook',
-        'pluginAgent',
+        'agentType',
       ]) &&
         isString(value.parentSessionId) &&
         isString(value.toolCallId) &&
@@ -140,7 +135,7 @@ export function parseSessionProvenance(raw: string): SessionProvenance {
         (value.chain === undefined || isStringList(value.chain)) &&
         optionalString(value.workingDir) &&
         (value.worktreeByHook === undefined || value.worktreeByHook === true) &&
-        optionalString(value.pluginAgent)
+        optionalString(value.agentType)
         ? {
             kind: 'task-delegation',
             parentSessionId: value.parentSessionId,
@@ -151,7 +146,7 @@ export function parseSessionProvenance(raw: string): SessionProvenance {
             ...(isStringList(value.chain) ? { chain: value.chain } : {}),
             ...(value.workingDir ? { workingDir: value.workingDir } : {}),
             ...(value.worktreeByHook === true ? { worktreeByHook: true as const } : {}),
-            ...(value.pluginAgent ? { pluginAgent: value.pluginAgent } : {}),
+            ...(value.agentType ? { agentType: value.agentType } : {}),
           }
         : reject(raw)
     case 'loop':
@@ -167,15 +162,13 @@ export function parseSessionProvenance(raw: string): SessionProvenance {
         ? { kind: 'hook', parentSessionId: value.parentSessionId, phase: 'verifier' }
         : reject(raw)
     case 'skill-fork':
-      return hasOnlyKeys(value, ['kind', 'parentSessionId', 'parentParticipant', 'pluginAgent']) &&
+      return hasOnlyKeys(value, ['kind', 'parentSessionId', 'parentParticipant']) &&
         isString(value.parentSessionId) &&
-        optionalString(value.parentParticipant) &&
-        optionalString(value.pluginAgent)
+        optionalString(value.parentParticipant)
         ? {
             kind: 'skill-fork',
             parentSessionId: value.parentSessionId,
             ...(value.parentParticipant ? { parentParticipant: value.parentParticipant } : {}),
-            ...(value.pluginAgent ? { pluginAgent: value.pluginAgent } : {}),
           }
         : reject(raw)
     case 'thread':

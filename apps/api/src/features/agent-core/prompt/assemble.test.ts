@@ -421,9 +421,59 @@ describe('buildAgentSystemPrompt', () => {
     expect(prompt).toContain('Tag an available agent with @handle')
     expect(prompt).toContain('- @lead (participant, priority 100): Coordinates | delivery')
     expect(prompt).toContain('- @designer (available, priority 30): Design specialist')
-    expect(prompt).toContain('- @retired (unavailable, priority 10): Disabled specialist')
+    expect(prompt).toContain('- retired (unavailable, priority 10): Disabled specialist')
     // Handles address agents now; registry IDs are not repeated on every request.
     expect(prompt).not.toContain('`agent-lead`')
+  })
+
+  test('the one agent directory also names who `delegate` can hand a task to', () => {
+    const toolRegistry = richRegistry(SHAPE.orchestrator)
+    expect(toolRegistry.toolNames).toContain('delegate')
+    const prompt = buildAgentSystemPrompt({
+      toolRegistry,
+      agentDirectory: [
+        { id: 'a', handle: 'lead', leadershipPriority: 0, inConversation: true, available: true },
+        {
+          id: 'b',
+          handle: 'Explore',
+          description: 'Read-only search',
+          leadershipPriority: 0,
+          inConversation: false,
+          available: false,
+          delegable: true,
+          tools: ['read', 'search'],
+        },
+        {
+          id: 'c',
+          handle: 'general-purpose',
+          leadershipPriority: 0,
+          inConversation: false,
+          available: false,
+          delegable: true,
+          self: true,
+        },
+      ],
+    })
+    expect(prompt).toContain('as `agent: "<name>"`')
+    expect(prompt).toContain(
+      '- Explore (unavailable, delegable, priority 0): Read-only search (tools: read, search)',
+    )
+    expect(prompt).toContain('- general-purpose (unavailable, delegable, yourself, priority 0)')
+    // Without the tool there is nothing to delegate with: the rows stay, the marks do not.
+    const without = buildAgentSystemPrompt({
+      agentDirectory: [
+        { id: 'a', handle: 'lead', leadershipPriority: 0, inConversation: true, available: true },
+        {
+          id: 'b',
+          handle: 'Explore',
+          leadershipPriority: 0,
+          inConversation: false,
+          available: false,
+          delegable: true,
+        },
+      ],
+    })
+    expect(without).not.toContain('delegable')
   })
 
   test('# Available skills section appears only when the `skill` tool is present', () => {

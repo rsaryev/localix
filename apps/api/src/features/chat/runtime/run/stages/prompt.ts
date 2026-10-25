@@ -30,8 +30,6 @@ import type { RunToolset } from './tools'
 import type { ResolvedTurn } from './turn'
 import { approvedPlanForRun, planModeForRun } from '../../plan-view'
 import { installedAgentsPrompt } from '../../../../external-agents/installed'
-import { agentTypesSection } from '../plugin-subagent'
-import { withBuiltinSubagentTypes } from '../builtin-subagent-types'
 import { touchedInstructionsSection } from '../touched-instructions'
 import { preloadedSkillsThroughMods } from '../preload-skill-prompt'
 import { initialPromptSection } from '../initial-prompt'
@@ -112,21 +110,6 @@ export async function buildRunPrompt(
       text: externalAgentsText,
     })
   }
-  // Claude Code's subagent types: the enabled plugins' agents `delegate` runs a task as, past the
-  // mods' `agent.offer`.
-  const agentTypes = toolset.tools.some((tool) => tool.name === TOOL.delegate)
-    ? agentTypesSection(
-        await inputs.mods.offerAgents(
-          withBuiltinSubagentTypes(inputs.loadedPlugins.agents).map((agent) => ({
-            ...agent,
-            agentId: agent.fullName,
-            name: agent.fullName,
-            source: 'plugin' as const,
-          })),
-        ),
-      )
-    : null
-  if (agentTypes) baseSections.push({ key: 'agent-types', scope: 'state', text: agentTypes })
   // A subdirectory's instruction files and path-scoped rules, once the work reaches them.
   const touchedInstructions = inputs.pluginSubagent?.omitClaudeMd
     ? null

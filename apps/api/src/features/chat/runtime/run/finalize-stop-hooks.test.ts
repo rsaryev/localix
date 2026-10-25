@@ -24,7 +24,7 @@ function hooks(block: { stop?: string; subagentStop?: string } = {}) {
   return { ccHooks, calls }
 }
 
-const delegated = (pluginAgent?: string) =>
+const delegated = (agentType?: string) =>
   ({
     id: 'child',
     provenance: {
@@ -34,7 +34,7 @@ const delegated = (pluginAgent?: string) =>
       priority: 'normal',
       depth: 1,
       chain: ['builtin:localix'],
-      ...(pluginAgent ? { pluginAgent } : {}),
+      ...(agentType ? { agentType } : {}),
     },
   }) as unknown as SessionRecord
 const root = { id: 'chat', provenance: { kind: 'root' } } as unknown as SessionRecord

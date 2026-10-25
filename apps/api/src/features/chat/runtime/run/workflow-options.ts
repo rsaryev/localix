@@ -15,7 +15,7 @@ import {
 import { agentModelRoute, type ChatModel } from '../../../agent-core/agent-model-route'
 import { workflowConcurrency } from '../../../agent-core/tools/workflow/agent-route'
 import { createWorkflowRunStore } from '../../../agent-core/tools/workflow/journal'
-import type { DelegatePluginPorts } from '../../../agent-core/tools/delegate-plugin-agent'
+import type { DelegateAgentPorts } from '../../../agent-core/tools/delegate-agent-type'
 import { createAgentWorktree } from '../../../agent-core/tools/workflow/worktree'
 import {
   adoptHookWorktree,
@@ -45,8 +45,8 @@ export interface WorkflowOptionsInput {
   defaultCwd: string
   /** The run's WorktreeCreate hooks, when it has any: they make the worktree in git's place. */
   worktreeHook?: WorktreeHook
-  /** The run's plugin agent types, which an `agentType` names (`plugin-subagent.ts`). */
-  pluginAgents?: DelegatePluginPorts
+  /** The run's plugin agent types, which an `agentType` names (`speaker-agent.ts`). */
+  pluginAgents?: DelegateAgentPorts
   /** Where the conversations' run journals live; `~/.localix/workflow-runs` by default. */
   runsRoot?: string
 }

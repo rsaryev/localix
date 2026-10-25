@@ -24,6 +24,25 @@ function options(
       reference === 'builtin:localix' || reference === 'reviewer'
         ? { agentId: reference === 'reviewer' ? 'agent:reviewer' : reference, handle: reference }
         : null,
+    resolveTarget: (reference) =>
+      ({
+        reviewer: {
+          kind: 'agent' as const,
+          agent: { agentId: 'agent:reviewer', handle: 'reviewer' },
+          type: { fullName: 'reviewer', name: 'reviewer', description: '' },
+        },
+        'sec-kit:reviewer': {
+          kind: 'agent' as const,
+          agent: { agentId: 'cc:sec-reviewer', handle: 'sec-kit:reviewer' },
+          type: {
+            fullName: 'sec-kit:reviewer',
+            name: 'reviewer',
+            description: 'Reviews code for security problems',
+            maxTurns: 4,
+            pinnedSkills: ['threat-model'],
+          },
+        },
+      })[reference] ?? { kind: 'unavailable' as const },
     // Many agents run in one workflow: the per-turn delegation budget is never asked.
     delegationsSinceHuman: () => 10_000,
     createSession: async (_user, input) => {
@@ -79,27 +98,18 @@ describe('startWorkflowAgent', () => {
     ).rejects.toThrow('No enabled agent "ghost"')
   })
 
-  test('an agentType naming a plugin agent runs the child as that type', async () => {
+  test('an agentType naming a catalog agent seats it and runs the child on its definition', async () => {
     const { opts, created, inputs, starts } = options({ status: 'completed', text: 'x' })
-    const reviewer = {
-      plugin: 'sec-kit',
-      name: 'reviewer',
-      fullName: 'sec-kit:reviewer',
-      description: 'Reviews code for security problems',
-      maxTurns: 4,
-      pinnedSkills: ['threat-model'],
-    }
-    const plugins = { agents: () => [reviewer] } as unknown as WorkflowAgentDeps['plugins']
     await startWorkflowAgent(
       'c',
       'w',
       { ...request, agentType: 'sec-kit:reviewer' },
-      deps(opts, undefined, { plugins }),
+      deps(opts),
       new AbortController().signal,
     )
-    // The delegating agent is seated; the stored type gives every run the agent's prompt and tools.
-    expect(created[0]?.agentId).toBe('builtin:localix')
-    expect(inputs[0]?.provenance).toMatchObject({ pluginAgent: 'sec-kit:reviewer' })
+    // The agent itself is seated, so every run of the child takes its prompt, tools and model.
+    expect(created[0]?.agentId).toBe('cc:sec-reviewer')
+    expect(inputs[0]?.provenance).toMatchObject({ agentType: 'sec-kit:reviewer' })
     expect(inputs[0]).toMatchObject({ pinnedSkills: ['threat-model'] })
     expect(starts[0]).toMatchObject({ maxTurns: 4, label: 'agent sec-kit:reviewer' })
   })

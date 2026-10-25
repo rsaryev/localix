@@ -60,7 +60,7 @@ export const pluginAgentSchema = z.object({
   maxTurns: z.number().int().positive().optional(),
   /**
    * CC `background` — a `delegate` start as this agent never holds the call for its report, even
-   * with `wait: true` (`agent-core/tools/delegate-plugin-agent.ts`).
+   * with `wait: true` (`agent-core/tools/delegate-agent-type.ts`).
    */
   background: z.boolean().optional(),
   /**

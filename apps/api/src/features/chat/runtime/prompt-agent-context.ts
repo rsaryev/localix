@@ -1,5 +1,6 @@
 import type { AgentDefinition } from '@localixai/agent/agents'
 import type { DiscoveredSkill } from '../../agent-core/skill-discovery'
+import { GENERAL_PURPOSE_TYPE } from '../../agent-core/tools/delegate-agent-type'
 import {
   filterDisabledSkills,
   skillOverridesRevision,
@@ -114,8 +115,11 @@ export async function resolveAgentPromptContext(input: {
   const pinnedNames = [
     ...new Set([...(session.pinnedSkills ?? []), ...(context?.preloadSkills ?? [])]),
   ]
-  // A child delegated as an agent type got its pins from the agent file's `skills`: preloads.
-  const preload = session.provenance?.kind === 'task-delegation' && !!session.provenance.pluginAgent
+  // A child delegated to an agent got its pins from the agent file's `skills`: preloads.
+  const preload =
+    session.provenance?.kind === 'task-delegation' &&
+    !!session.provenance.agentType &&
+    session.provenance.agentType !== GENERAL_PURPOSE_TYPE
   const pinnedSkills = resolvePinnedSkills(allSkills, pinnedNames, skillOverrides, { preload })
   const triggeredSkills = resolveTriggeredSkills(
     filterDisabledSkills(allSkills, skillOverrides),

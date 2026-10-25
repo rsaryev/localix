@@ -4,7 +4,8 @@ import { randomUUID } from 'node:crypto'
 
 import { isModelAliasFamily, resolveModelAlias } from '../../agent-core/model-alias'
 import { isDelegationParent } from '../../agent-core/delegation-policy'
-import { GENERAL_PURPOSE_AGENT } from '../../ext/cc-agent-selection'
+import { GENERAL_PURPOSE_TYPE } from '../../agent-core/tools/delegate-agent-type'
+import { awaitAgentService } from '../runtime/agent-service-binding'
 import { resolveDeclaredReasoningEffort } from '../../../db/types'
 import { childExecutionContext } from '../runtime/execution-context'
 import type { createChatRepository, SessionRecord } from '../repository'
@@ -47,18 +48,19 @@ export type SpawnForkSkillFn = (
      */
     invokedBy?: string
     /**
-     * CC `agent:` — the subagent type the fork runs as. A plugin agent's prompt and tool limits
-     * apply to the child (`run/plugin-subagent.ts`); the invoking agent still seats it.
+     * CC `agent:` — the agent the fork runs as. A catalog agent (a file, a plugin's, `Explore`) is
+     * seated in the child and runs on its own definition; `general-purpose` or none is the
+     * invoking agent itself.
      */
-    pluginAgent?: string
+    agent?: string
   },
 ) => Promise<string>
 
 /**
- * Run a skill task in its own child session, seated by the INVOKING agent. The child shares the
- * parent's workspace. A skill's `agent:` naming a plugin agent is recorded on the child, whose
- * runs then take that agent's prompt and tool limits — Claude Code: "The `agent` field determines
- * the execution environment". The factory closes over the required service ports instead of the
+ * Run a skill task in its own child session, seated by the INVOKING agent unless the skill's
+ * `agent:` names another: that agent is seated instead and every run takes its prompt, tool limits
+ * and model — Claude Code: "The `agent` field determines the execution environment". The child
+ * shares the parent's workspace. The factory closes over the required service ports instead of the
  * full chat service.
  */
 export function createSpawnForkSkill(deps: ForkSkillDeps): SpawnForkSkillFn {
@@ -76,16 +78,30 @@ export function createSpawnForkSkill(deps: ForkSkillDeps): SpawnForkSkillFn {
       sessionRoute(parentSession)
     // Map a declared CC effort string to a level this system can actually carry: an unknown
     // value means "not specified" and inherits — see `resolveDeclaredReasoningEffort`.
-    const effort = resolveDeclaredReasoningEffort(opts?.preferredEffort)
+    const named = opts?.agent
+      ? await (
+          await awaitAgentService()
+        )?.resolveDelegation?.(opts.agent, {
+          projectId: parentSession.projectId ?? undefined,
+        })
+      : undefined
+    if (named && (named.kind === 'ambiguous' || named.kind === 'unavailable'))
+      throw new Error(
+        named.kind === 'ambiguous'
+          ? `The skill's agent "${opts?.agent}" names several agents: ${named.names.join(', ')}.`
+          : `The skill's agent "${opts?.agent}" is not an enabled agent here.`,
+      )
+    const type = named?.kind === 'agent' ? named.type : undefined
+    const effort = resolveDeclaredReasoningEffort(opts?.preferredEffort ?? type?.preferredEffort)
     // A family alias needs the catalog to become a concrete id; nothing else does, so the read is
     // skipped for the common cases (no declaration, or an already-qualified id).
-    const declaredModel = opts?.preferredModel
+    const declaredModel = opts?.preferredModel ?? type?.preferredModel
     const modelIds =
       declaredModel && isModelAliasFamily(declaredModel) ? await deps.listModelIds?.() : undefined
     const modelId =
       resolveModelAlias(declaredModel, parentRoute.modelId ?? undefined, modelIds) ?? undefined
     const providerConnectionId = parentRoute.providerConnectionId
-    const childAgentId = parentRoute.agentId
+    const childAgentId = named?.kind === 'agent' ? named.agent.agentId : parentRoute.agentId
     const child = await sessionLifecycle.createSession(sessionLifecycleCtx, userId, {
       agents: [{ agentId: childAgentId }],
       title: opts?.title ?? 'Forked skill',
@@ -100,7 +116,6 @@ export function createSpawnForkSkill(deps: ForkSkillDeps): SpawnForkSkillFn {
         ...(parentSession.agents?.length
           ? { parentParticipant: agentParticipant(parentRoute.agentId) }
           : {}),
-        ...(opts?.pluginAgent ? { pluginAgent: opts.pluginAgent } : {}),
       },
       providerConnectionId,
       // A fork is created fresh, so it must not end up holding authority its parent did not have.
@@ -121,7 +136,7 @@ export function createSpawnForkSkill(deps: ForkSkillDeps): SpawnForkSkillFn {
                 raw: opts.hooks,
                 source: 'skill' as const,
                 asSubagent: true,
-                agentType: opts.pluginAgent ?? GENERAL_PURPOSE_AGENT,
+                agentType: named?.kind === 'agent' ? named.agent.handle : GENERAL_PURPOSE_TYPE,
                 ...(opts.hooksPlugin ? { plugin: opts.hooksPlugin } : {}),
               },
             ],

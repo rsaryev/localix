@@ -4,11 +4,13 @@ import { delegationNote } from '../../delegation-hierarchy'
 import type { LaneSpec } from '../../delegation-lanes'
 import { ONE_SHOT_EXECUTION } from '../../prompt/sections/team-contract'
 import {
-  preparePluginAgentChild,
+  GENERAL_PURPOSE_TYPE,
+  prepareAgentChild,
+  type AgentChild,
   resolveDelegateTarget,
-  type DelegatePluginPorts,
+  type DelegateAgentPorts,
   type DelegateTarget,
-} from '../delegate-plugin-agent'
+} from '../delegate-agent-type'
 import type { TaskDelegationOptions } from '../task-delegation'
 import type { WorkflowAgentOutcome, WorkflowAgentRequest } from './runner'
 import type { AgentWorktree } from './worktree'
@@ -44,8 +46,8 @@ export interface WorkflowAgentDeps {
   isolate?: (name: string) => Promise<AgentWorktree>
   /** What a finished child spent, from the usage ledger. */
   spend?: (childId: string) => Promise<{ outputTokens: number; costUsd: number | null } | null>
-  /** The run's plugin agent types: an `agentType` of `<plugin>:<name>` runs as one. */
-  plugins?: DelegatePluginPorts
+  /** The route and worktree a catalog agent's child is created with, as `delegate`'s are. */
+  plugins?: DelegateAgentPorts
 }
 
 /** What the child is told before its task: its reply is data for a script, not a message. */
@@ -71,21 +73,21 @@ export async function startWorkflowAgent(
   const delegator = await opts.resolveAgent(self, scope)
   if (!delegator) throw new Error('The agent running this workflow is unavailable')
   const target: DelegateTarget = request.agentType
-    ? await resolveDelegateTarget(request.agentType, delegator, opts, deps.plugins)
+    ? await resolveDelegateTarget(request.agentType, delegator, opts)
     : { agent: delegator }
   if ('refusal' in target) throw new Error(`agentType: ${target.refusal}`)
-  const { agent, plugin } = target
-  // A plugin agent type brings its prompt, tools, model and skills; the call's own options win.
-  const typed =
-    plugin && deps.plugins
-      ? await preparePluginAgentChild(
-          plugin,
-          request.isolation === 'worktree' ? withoutIsolation(deps.plugins) : deps.plugins,
-          { toolCallId, hostModel: Boolean(request.model) },
-        )
-      : null
-  const notes: string[] = [...(typed?.notes ?? [])]
-  let route: AgentRoute = typed?.route ?? {}
+  const { agent, type } = target
+  // An agent brings its own model, skills and limits; the script's own model and effort win
+  // below. The workflow makes the worktree itself, so the agent's own isolation adds none.
+  const typed: AgentChild = type
+    ? await prepareAgentChild(`agent ${agent.handle}`, type, deps.plugins, {
+        toolCallId,
+        ...(request.model ? { model: request.model } : {}),
+        isolated: true,
+      })
+    : { provenance: {}, route: {}, notes: [] }
+  const notes: string[] = [...typed.notes]
+  let route: AgentRoute = typed.route
   if ((request.model || request.effort) && deps.route) {
     const resolved = await deps.route({ model: request.model, effort: request.effort })
     route = resolved.route
@@ -113,17 +115,19 @@ export async function startWorkflowAgent(
         priority: 'normal',
         depth: depth + 1,
         chain: [...chain, self],
-        ...typed?.provenance,
+        agentType: type ? agent.handle : GENERAL_PURPOSE_TYPE,
         ...(worktree ? { workingDir: worktree.workingDir } : {}),
         ...(worktree?.byHook ? { worktreeByHook: true as const } : {}),
       },
       ...route,
-      ...(typed?.pinnedSkills ? { pinnedSkills: typed.pinnedSkills } : {}),
+      ...(typed.pinnedSkills ? { pinnedSkills: typed.pinnedSkills } : {}),
       ...(opts.projectId ? { projectId: opts.projectId } : {}),
     })
-    const runAs = plugin
-      ? { ...agent, handle: plugin.fullName, maxTurns: plugin.maxTurns ?? agent.maxTurns }
-      : agent
+    const runAs = {
+      ...agent,
+      agentType: type ? agent.handle : GENERAL_PURPOSE_TYPE,
+      maxTurns: type?.maxTurns ?? agent.maxTurns,
+    }
     const text = await runChild(child.id, runAs, delegator.handle, workflow, request, deps, signal)
     const spent = await deps.spend?.(child.id).catch(() => null)
     return {
@@ -148,7 +152,7 @@ export async function startWorkflowAgent(
 /** Start the child's run in its lane and wait for its report: the text, or null. */
 async function runChild(
   childId: string,
-  agent: { agentId: string; handle: string; maxTurns?: number },
+  agent: { agentType: string; handle: string; maxTurns?: number },
   delegator: string,
   workflow: string,
   request: WorkflowAgentRequest,
@@ -158,7 +162,7 @@ async function runChild(
   const { opts } = deps
   const { depth } = await opts.position()
   // CC: a SubagentStart hook's `additionalContext` reaches the child before its first prompt.
-  const startContext = await opts.onSubagentStart?.(agent.agentId, childId)
+  const startContext = await opts.onSubagentStart?.(agent.agentType, childId)
   // Held before the start, so a child that ends at once still reports to this call.
   const giveUp = new AbortController()
   const held = holdReport(childId, {
@@ -175,7 +179,7 @@ async function runChild(
       `${workflowAgentFraming(delegator, workflow)}\n\n${startContext ? `${startContext}\n\n` : ''}# Task\n${request.prompt}\n\n${ONE_SHOT_EXECUTION}\n${delegationNote(depth + 1)}`,
       {
         ...(agent.maxTurns ? { maxTurns: agent.maxTurns } : {}),
-        agentType: agent.agentId,
+        agentType: agent.agentType,
         label: `agent ${agent.handle}`,
         priority: 'normal',
         ...(deps.run.lane ? { lane: deps.run.lane } : {}),
@@ -188,10 +192,4 @@ async function runChild(
   } finally {
     signal.removeEventListener('abort', onAbort)
   }
-}
-
-/** The call isolates the agent itself: the type's own isolation must not make a second worktree. */
-function withoutIsolation(ports: DelegatePluginPorts): DelegatePluginPorts {
-  const { isolate: _ours, ...rest } = ports
-  return rest
 }

@@ -31,6 +31,32 @@ export interface DelegateAgent {
   pinnedSkills?: readonly string[]
 }
 
+/** One catalog agent's definition, as delegation needs it (`CatalogAgent` is one). */
+export interface DelegateAgentType {
+  fullName: string
+  name: string
+  description: string
+  preferredModel?: string
+  preferredEffort?: string
+  /** `localix.model`: a `<provider>/<model>` route Claude Code has no place for. */
+  localix?: { model?: string }
+  pinnedSkills?: readonly string[]
+  maxTurns?: number
+  background?: boolean
+  isolation?: 'isolated'
+  /** Its exact tool list, when its file has one; empty when no entry named a tool here. */
+  tools?: readonly string[]
+}
+
+/** Who a task goes to, as the catalog resolves it and Access admits it. */
+export type DelegateResolution =
+  /** Seat this agent in the child: it runs on its own definition. */
+  | { kind: 'agent'; agent: DelegateAgent; type: DelegateAgentType }
+  /** `general-purpose`: the delegating agent itself. */
+  | { kind: 'self' }
+  | { kind: 'ambiguous'; names: string[] }
+  | { kind: 'unavailable' }
+
 type MaybePromise<T> = T | Promise<T>
 
 export interface TaskDelegationOptions {
@@ -39,7 +65,12 @@ export interface TaskDelegationOptions {
   projectId?: string
   /** Where the delegating session sits in the tree, and which agent delegates. Read per call. */
   position: () => MaybePromise<DelegationPosition>
-  /** Resolve an agent by id or handle for child work; null when it is not enabled here. */
+  /** The agent a task goes to for a name a person or model wrote (`resolveDelegation`). */
+  resolveTarget: (
+    reference: string,
+    scope: { projectId?: string },
+  ) => MaybePromise<DelegateResolution>
+  /** The delegating agent itself, by id; null when it is not enabled here. */
   resolveAgent: (
     reference: string,
     scope: { projectId?: string },
@@ -65,8 +96,8 @@ export interface TaskDelegationOptions {
         workingDir?: string
         /** A WorktreeCreate hook made that worktree, wherever it put it. */
         worktreeByHook?: true
-        /** The plugin subagent type the child runs as (`<plugin>:<name>`). */
-        pluginAgent?: string
+        /** The `agent_type` SubagentStart named (`general-purpose` for the delegator itself). */
+        agentType?: string
       }
       projectId?: string
       pinnedSkills?: string[]

@@ -91,7 +91,14 @@ export interface BuildAgentSystemPromptParams {
     description?: string
     leadershipPriority: number
     inConversation: boolean
+    /** A tag in a reply can bring it into the conversation. */
     available: boolean
+    /** `delegate` can hand it a task. */
+    delegable?: boolean
+    /** Its exact tool list, when its file has one. */
+    tools?: readonly string[]
+    /** It runs as you (`general-purpose`). */
+    self?: boolean
   }[]
   /** Marks placed since this agent last spoke — a rendered section for the volatile tail. */
   reactionContext?: string

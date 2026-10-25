@@ -129,21 +129,49 @@ export function buildParticipantsSection(input: {
 }
 
 /**
- * `# Agent directory` — who a tag can reach: an agent addressed in a reply joins and answers.
- * Every agent of an open chat reads it, whichever of them leads; it is the only listing of the
- * registry the model gets.
+ * `# Agent directory` — every agent of the registry and what can be done with it: an agent
+ * addressed in a reply joins and answers (`@handle`), and `delegate` hands one a task as
+ * `agent: "<name>"`. Every agent of an open chat reads it, whichever of them leads; it is the only
+ * listing of the registry the model gets, and the only place the agents `delegate` can reach are
+ * named: your `.claude/agents` files, the enabled plugins' agents and the built-in Explore and Plan.
  */
 export function buildAgentDirectorySection(
   agents: NonNullable<BuildAgentSystemPromptParams['agentDirectory']>,
-): string {
+  opts: { canDelegate: boolean },
+): string | null {
+  const canTag = agents.some((agent) => agent.inConversation || agent.available)
+  const delegable = opts.canDelegate && agents.some((agent) => agent.delegable)
+  if (!canTag && !delegable) return null
   return [
     '# Agent directory',
-    'Current registry. Tag an available agent with @handle to bring it into this conversation.',
-    ...agents.map(
-      (agent) =>
-        `- @${agent.handle} (${
-          agent.inConversation ? 'participant' : agent.available ? 'available' : 'unavailable'
-        }, priority ${agent.leadershipPriority})${agent.description ? `: ${agent.description}` : ''}`,
-    ),
+    ...(canTag
+      ? [
+          'Current registry. Tag an available agent with @handle to bring it into this conversation.',
+        ]
+      : []),
+    ...(delegable
+      ? [
+          'Agents `delegate` can hand a task to as `agent: "<name>"` are marked delegable. Each runs with its own instructions, tools and model and sees only the task; `general-purpose` is yourself.',
+        ]
+      : []),
+    ...agents.map((agent) => {
+      const tagged = agent.inConversation || agent.available
+      const marks = [
+        ...(canTag
+          ? [agent.inConversation ? 'participant' : agent.available ? 'available' : 'unavailable']
+          : []),
+        ...(opts.canDelegate && agent.delegable
+          ? [agent.self ? 'delegable, yourself' : 'delegable']
+          : []),
+        ...(canTag ? [`priority ${agent.leadershipPriority}`] : []),
+      ]
+      const tools =
+        opts.canDelegate && agent.delegable && agent.tools
+          ? ` (tools: ${agent.tools.join(', ')})`
+          : ''
+      return `- ${tagged ? '@' : ''}${agent.handle} (${marks.join(', ')})${
+        agent.description ? `: ${agent.description}` : ''
+      }${tools}`
+    }),
   ].join('\n')
 }

@@ -19,6 +19,16 @@ function host(overrides: Partial<TaskDelegationOptions> = {}) {
     parentSessionId: 'parent',
     position: () => ({ depth: 0, chain: [], self: 'builtin:qa' }),
     resolveAgent: (reference) => AGENTS[reference.replace(/^@/, '')] ?? null,
+    resolveTarget: (reference) => {
+      const agent = AGENTS[reference.replace(/^@/, '')]
+      return agent
+        ? {
+            kind: 'agent',
+            agent,
+            type: { fullName: agent.handle, name: agent.handle, description: '' },
+          }
+        : { kind: 'unavailable' }
+    },
     createSession: async (_u, input) => {
       calls.create!.push(input)
       return { id: 'child', taskName: 'check-login' }

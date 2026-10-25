@@ -79,7 +79,9 @@ export const TAIL_SECTIONS: readonly PromptSection[] = [
     heading: '# Agent directory',
     render: (f) =>
       nonEmpty(f.params.agentDirectory)
-        ? buildAgentDirectorySection(f.params.agentDirectory)
+        ? buildAgentDirectorySection(f.params.agentDirectory, {
+            canDelegate: f.hasTool(TOOL.delegate),
+          })
         : null,
   },
   {

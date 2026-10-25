@@ -2,17 +2,14 @@ import { afterEach, expect, test } from 'bun:test'
 
 import { __resetExpectedReports } from '../delegation-awaits'
 import type { DelegateRequest } from './delegate'
-import {
-  matchPluginAgent,
-  type DelegatePluginPorts,
-  type PluginAgentType,
-} from './delegate-plugin-agent'
+import type { DelegateAgentPorts } from './delegate-agent-type'
 import { startDelegation } from './delegate-start'
 import type { TaskDelegationOptions } from './task-delegation'
+import type { DelegateAgentType, DelegateResolution } from './task-delegation-contracts'
 
 afterEach(() => __resetExpectedReports())
 
-const REVIEWER: PluginAgentType = {
+const REVIEWER: DelegateAgentType = {
   fullName: 'sec:reviewer',
   name: 'reviewer',
   description: 'Reviews code for security issues',
@@ -21,24 +18,32 @@ const REVIEWER: PluginAgentType = {
   pinnedSkills: ['threat-model'],
   maxTurns: 7,
 }
-const OTHER_REVIEWER: PluginAgentType = {
-  fullName: 'style:reviewer',
-  name: 'reviewer',
-  description: '',
-}
-const TESTER: PluginAgentType = { fullName: 'qa-kit:tester', name: 'tester', description: 'Tests' }
+const TESTER: DelegateAgentType = { fullName: 'tester', name: 'tester', description: 'Tests' }
 
-function host(plugins: Partial<DelegatePluginPorts> = {}) {
+/** The catalog as `resolveDelegation` answers: the agent with its own seat, `self`, or nothing. */
+const CATALOG: Record<string, DelegateResolution> = {
+  'sec:reviewer': {
+    kind: 'agent',
+    agent: { agentId: 'cc:reviewer', handle: 'sec:reviewer', maxTurns: 7 },
+    type: REVIEWER,
+  },
+  tester: { kind: 'agent', agent: { agentId: 'cc:tester', handle: 'tester' }, type: TESTER },
+  'general-purpose': { kind: 'self' },
+  claude: { kind: 'self' },
+  reviewer: { kind: 'ambiguous', names: ['sec:reviewer', 'style:reviewer'] },
+}
+
+function host(ports: Partial<DelegateAgentPorts> = {}, catalog = CATALOG) {
   const calls: Record<string, unknown[]> = { create: [], start: [], route: [], subagent: [] }
   const opts: TaskDelegationOptions = {
     userId: 'u',
     parentSessionId: 'parent',
     position: () => ({ depth: 0, chain: [], self: 'builtin:localix' }),
     resolveAgent: (reference) =>
-      ({
-        'builtin:localix': { agentId: 'builtin:localix', handle: 'localix', maxTurns: 40 },
-        tester: { agentId: 'native:tester', handle: 'tester' },
-      })[reference] ?? null,
+      reference === 'builtin:localix'
+        ? { agentId: 'builtin:localix', handle: 'localix', maxTurns: 40 }
+        : null,
+    resolveTarget: (reference) => catalog[reference] ?? { kind: 'unavailable' },
     createSession: async (_u, input) => {
       calls.create!.push(input)
       return { id: 'child', taskName: 'review' }
@@ -53,18 +58,21 @@ function host(plugins: Partial<DelegatePluginPorts> = {}) {
       return undefined
     },
   }
-  const ports: DelegatePluginPorts = {
-    agents: () => [REVIEWER, TESTER],
+  const all: DelegateAgentPorts = {
     route: (asked) => {
       calls.route!.push(asked)
       return {
-        route: { providerConnectionId: 'conn', modelId: 'claude-haiku-5', reasoningEffort: 'high' },
+        route: {
+          providerConnectionId: 'conn',
+          modelId: asked.model && !/^haiku$/.test(asked.model) ? asked.model : 'claude-haiku-5',
+          reasoningEffort: 'high',
+        },
         notes: [],
       }
     },
-    ...plugins,
+    ...ports,
   }
-  return { opts, ports, calls }
+  return { opts, ports: all, calls }
 }
 
 const request = (over: Partial<DelegateRequest> = {}): DelegateRequest => ({
@@ -75,18 +83,7 @@ const request = (over: Partial<DelegateRequest> = {}): DelegateRequest => ({
   ...over,
 })
 
-test('a plugin agent is named by its full name, or by a bare name one plugin alone defines', () => {
-  const agents = [REVIEWER, OTHER_REVIEWER, TESTER]
-  expect(matchPluginAgent('sec:reviewer', agents)).toEqual({ agent: REVIEWER })
-  expect(matchPluginAgent('@QA-KIT:Tester', agents)).toEqual({ agent: TESTER })
-  expect(matchPluginAgent('tester', agents)).toEqual({ agent: TESTER })
-  expect(matchPluginAgent('reviewer', agents)).toEqual({
-    ambiguous: ['sec:reviewer', 'style:reviewer'],
-  })
-  expect(matchPluginAgent('sec:nobody', agents)).toBeNull()
-})
-
-test('delegating to a plugin agent seats the delegator as that type, with its frontmatter', async () => {
+test('delegating to a catalog agent seats that agent, with its frontmatter', async () => {
   const { opts, ports, calls } = host()
   const result = await startDelegation(
     'call-1',
@@ -100,8 +97,8 @@ test('delegating to a plugin agent seats the delegator as that type, with its fr
   expect(calls.route).toEqual([{ model: 'haiku', effort: 'high', who: 'agent sec:reviewer' }])
   expect(calls.create).toEqual([
     expect.objectContaining({
-      agents: [{ agentId: 'builtin:localix' }],
-      provenance: expect.objectContaining({ pluginAgent: 'sec:reviewer', depth: 1 }),
+      agents: [{ agentId: 'cc:reviewer' }],
+      provenance: expect.objectContaining({ agentType: 'sec:reviewer', depth: 1 }),
       providerConnectionId: 'conn',
       modelId: 'claude-haiku-5',
       reasoningEffort: 'high',
@@ -119,27 +116,26 @@ test('delegating to a plugin agent seats the delegator as that type, with its fr
   )
 })
 
-test('a registry agent keeps its name; a bare name falls through to a plugin type', async () => {
-  const registry = host()
-  await startDelegation('c', request({ agent: 'tester' }), registry.opts, undefined, registry.ports)
-  expect(registry.calls.create).toEqual([
-    expect.objectContaining({ agents: [{ agentId: 'native:tester' }] }),
-  ])
-  expect((registry.calls.create![0] as { provenance: object }).provenance).not.toHaveProperty(
-    'pluginAgent',
-  )
-
-  const bare = host()
-  await startDelegation('c', request({ agent: 'reviewer' }), bare.opts, undefined, bare.ports)
-  expect(bare.calls.create).toEqual([
-    expect.objectContaining({
-      provenance: expect.objectContaining({ pluginAgent: 'sec:reviewer' }),
-    }),
-  ])
+test('the agent’s own localix route stands in for its model, and gives way to the call’s', async () => {
+  const routed: DelegateResolution = {
+    kind: 'agent',
+    agent: { agentId: 'cc:r', handle: 'router' },
+    type: {
+      fullName: 'router',
+      name: 'router',
+      description: '',
+      localix: { model: 'openai/gpt-6' },
+    },
+  }
+  const { opts, ports, calls } = host({}, { router: routed })
+  await startDelegation('c', request({ agent: 'router' }), opts, undefined, ports)
+  expect(calls.route).toEqual([{ route: 'openai/gpt-6', who: 'agent router' }])
+  await startDelegation('c', request({ agent: 'router', model: 'gpt-4o' }), opts, undefined, ports)
+  expect(calls.route![1]).toEqual({ model: 'gpt-4o', who: 'agent router' })
 })
 
-test('an ambiguous or unknown type is refused before anything is created', async () => {
-  const { opts, ports, calls } = host({ agents: () => [REVIEWER, OTHER_REVIEWER] })
+test('an ambiguous or unknown agent is refused before anything is created', async () => {
+  const { opts, ports, calls } = host()
   const ambiguous = await startDelegation(
     'c',
     request({ agent: 'reviewer' }),
@@ -157,7 +153,7 @@ test('an ambiguous or unknown type is refused before anything is created', async
     ports,
   )
   expect(unknown.isError).toBe(true)
-  expect(unknown.content).toContain('agent types')
+  expect(unknown.content).toContain('agent directory')
   expect(calls.create).toEqual([])
 })
 
@@ -170,22 +166,38 @@ test("a host's model wins over the agent's; its effort still applies", async () 
     undefined,
     ports,
   )
-  expect(calls.route).toEqual([{ effort: 'high', who: 'agent sec:reviewer' }])
+  expect(calls.route).toEqual([{ model: 'gpt-4o', effort: 'high', who: 'agent sec:reviewer' }])
+  expect(calls.create).toEqual([expect.objectContaining({ modelId: 'gpt-4o' })])
+})
+
+test('a model the chat’s provider does not offer is still used as written', async () => {
+  const { opts, calls } = host()
+  await startDelegation('c', request({ agent: 'sec:reviewer', model: 'gpt-4o' }), opts, undefined, {
+    route: () => ({ route: {}, notes: ['not offered'] }),
+  })
   expect(calls.create).toEqual([expect.objectContaining({ modelId: 'gpt-4o' })])
 })
 
 test('background never holds the call; isolation works in a worktree kept for the child', async () => {
   const isolated: string[] = []
-  const { opts, ports, calls } = host({
-    agents: () => [{ ...TESTER, background: true, isolation: 'isolated' }],
-    isolate: async (name) => {
-      isolated.push(name)
-      return { dir: '/wt/top', workingDir: '/wt/top/app', branch: 'localix/x' }
+  const { opts, ports, calls } = host(
+    {
+      isolate: async (name) => {
+        isolated.push(name)
+        return { dir: '/wt/top', workingDir: '/wt/top/app', branch: 'localix/x' }
+      },
     },
-  })
+    {
+      tester: {
+        kind: 'agent',
+        agent: { agentId: 'cc:tester', handle: 'tester' },
+        type: { ...TESTER, background: true, isolation: 'isolated' },
+      },
+    },
+  )
   const result = await startDelegation(
     'call/9',
-    request({ agent: 'qa-kit:tester', wait: true }),
+    request({ agent: 'tester', wait: true }),
     opts,
     undefined,
     ports,
@@ -196,35 +208,26 @@ test('background never holds the call; isolation works in a worktree kept for th
   expect(isolated).toEqual(['delegate-call-9'])
   expect(calls.create).toEqual([
     expect.objectContaining({
-      provenance: expect.objectContaining({
-        pluginAgent: 'qa-kit:tester',
-        workingDir: '/wt/top/app',
-      }),
+      provenance: expect.objectContaining({ agentType: 'tester', workingDir: '/wt/top/app' }),
     }),
   ])
-})
-
-test('without plugin ports a type is an unknown agent', async () => {
-  const { opts, calls } = host()
-  const result = await startDelegation('c', request({ agent: 'sec:reviewer' }), opts)
-  expect(result.isError).toBe(true)
-  expect(calls.create).toEqual([])
 })
 
 // sub-agents.md, "Built-in subagents": general-purpose (and the catch-all `claude`) is the
 // delegator itself with every tool. A plugin command written for Claude Code names it
 // (hookify: `"subagent_type": "general-purpose"`), so it must not be refused as unknown.
 test('general-purpose and claude run the task as the delegator itself', async () => {
-  for (const type of ['general-purpose', 'claude', 'General-Purpose']) {
+  for (const type of ['general-purpose', 'claude']) {
     const { opts, ports, calls } = host()
     const out = await startDelegation('c', request({ agent: type }), opts, undefined, ports)
     expect(JSON.stringify(out)).not.toContain('No enabled agent')
     expect(calls.create).toEqual([
-      expect.objectContaining({ agents: [{ agentId: 'builtin:localix' }] }),
+      expect.objectContaining({
+        agents: [{ agentId: 'builtin:localix' }],
+        provenance: expect.objectContaining({ agentType: 'general-purpose' }),
+      }),
     ])
-    expect((calls.create![0] as { provenance: object }).provenance).not.toHaveProperty(
-      'pluginAgent',
-    )
+    expect(calls.subagent).toEqual([{ agentType: 'general-purpose', id: 'child' }])
   }
 })
 
@@ -268,15 +271,18 @@ test('a call names the child model, effort and a worktree of its own', async () 
 
 // sub-agents.md, `tools`: "If no entry in the list resolves to a tool, the subagent usually fails
 // to launch with an error naming the entries."
-test('an agent type whose tools list resolves to nothing is refused', async () => {
-  const { opts, ports, calls } = host({ agents: () => [{ ...TESTER, tools: [] }] })
-  const out = await startDelegation(
-    'c',
-    request({ agent: 'qa-kit:tester' }),
-    opts,
-    undefined,
-    ports,
+test('an agent whose tools list resolves to nothing is refused', async () => {
+  const { opts, ports, calls } = host(
+    {},
+    {
+      tester: {
+        kind: 'agent',
+        agent: { agentId: 'cc:tester', handle: 'tester' },
+        type: { ...TESTER, tools: [] },
+      },
+    },
   )
+  const out = await startDelegation('c', request({ agent: 'tester' }), opts, undefined, ports)
   expect(out.isError).toBe(true)
   expect(out.content).toContain('zero tools')
   expect(calls.create).toEqual([])

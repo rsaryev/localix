@@ -105,7 +105,7 @@ export interface LoadedPlugins {
   /**
    * Custom worker ROLES (sub-agents) from enabled plugins — manifest data,
    * namespaced `<plugin>:<name>`: the subagent types `delegate` runs a task as, as Claude Code's
-   * Agent tool does (`agent-core/tools/delegate-plugin-agent.ts`).
+   * Agent tool does (`agent-core/tools/delegate-agent-type.ts`).
    */
   agents: LoadedPluginAgent[]
   /**

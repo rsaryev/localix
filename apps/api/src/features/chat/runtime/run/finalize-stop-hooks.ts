@@ -14,7 +14,7 @@
  * still keep the child working; the delegating parent learns of the end too late to.
  */
 import type { CcHooksRuntime } from '../../../cc-hooks'
-import { GENERAL_PURPOSE_AGENT } from '../../../ext/cc-agent-selection'
+import { GENERAL_PURPOSE_TYPE } from '../../../agent-core/tools/delegate-agent-type'
 import type { SessionRecord } from '../../repository'
 import type { RunParams } from './types'
 
@@ -37,8 +37,8 @@ export async function runStopHooks(args: {
   if (ccHooks.stoppedBy()) return undefined
   const provenance = session.provenance
   if (provenance.kind === 'task-delegation') {
-    // The type the parent's SubagentStart named: the plugin agent type, else the seated agent.
-    const agentType = provenance.pluginAgent ?? scope.speakerAgentId
+    // The type the parent's SubagentStart named.
+    const agentType = provenance.agentType ?? GENERAL_PURPOSE_TYPE
     const stop = await ccHooks.runSubagentStop(agentType, session.id, content, { stopHookActive })
     return stop.blocked ? stop.reason || SUBAGENT_STOP_REASON : undefined
   }
@@ -50,7 +50,7 @@ export async function runStopHooks(args: {
   const subScoped = (scope.ccScopedHooks ?? []).find((s) => s.asSubagent)
   if (subScoped) {
     const selfStop = await ccHooks.runSubagentStop(
-      subScoped.agentType ?? GENERAL_PURPOSE_AGENT,
+      subScoped.agentType ?? GENERAL_PURPOSE_TYPE,
       session.id,
       content,
       { sourcesOnly: ['skill', 'agent'], stopHookActive },

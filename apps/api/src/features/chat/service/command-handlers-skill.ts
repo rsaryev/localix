@@ -24,7 +24,6 @@ import { skillPrompt } from '../../mods/conversation-events'
 import type { CommandHandlerContext } from './command-handlers-context'
 import { errorMessage } from '../../../lib/errors'
 import { filterDisabledSkills } from '../../agent-core/skill-overrides'
-import { roleNameOfSubagentType } from '../../ext/cc-agent-selection'
 
 /**
  * A plugin skill by the name typed: `<plugin>:<skill>`, or the bare `<skill>` when exactly one
@@ -198,12 +197,12 @@ export async function handleSkillCommand(
   })
 
   // CC `context: fork` — run the skill in a child session, seated by the invoking agent and run
-  // as the subagent type its `agent:` names (a plugin agent; general-purpose when omitted).
+  // as the agent its `agent:` names (general-purpose when omitted).
   if (skill.contextFork && spawnForkSkill) {
-    const forkAgent = roleNameOfSubagentType(skill.forkAgent)
+    const forkAgent = skill.forkAgent?.trim()
     const childId = await spawnForkSkill(userId, sessionId, instruction, {
       ...(speaker ? { invokedBy: speaker.agentId } : {}),
-      ...(forkAgent ? { pluginAgent: forkAgent } : {}),
+      ...(forkAgent ? { agent: forkAgent } : {}),
       title: `/${skill.name}${arg ? ' ' + arg : ''}`,
       preferredModel: skill.preferredModel,
       preferredEffort: skill.preferredEffort,

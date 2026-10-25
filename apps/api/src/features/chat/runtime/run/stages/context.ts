@@ -8,7 +8,6 @@
  * the frame the moment they exist, because teardown must release exactly what was acquired
  * even when a later stage throws.
  */
-import { withBuiltinSubagentTypes } from '../builtin-subagent-types'
 import { subagentRunOptions, withSubagentRunOptions } from '../subagent-file-options'
 import { userHome } from '../../../../../lib/env'
 import type { HookRunOptions } from '../event-handlers'
@@ -26,7 +25,7 @@ import { runHumanAssignedHooks } from '../../../../mini-apps/hooks'
 import type { LoadedMiniAppHook } from '../../../../mini-apps/loader-contract'
 import { publishHumanAssignment } from '../human-assignment'
 import { applyPluginMainAgent, runToolsAgent } from '../plugin-main-agent'
-import { applyPluginSubagent, applySpeakerAgent, contextFilesFor } from '../plugin-subagent'
+import { applySpeakerAgent, contextFilesFor } from '../speaker-agent'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import { adoptPluginAgentModel } from '../plugin-main-agent-model'
 import { reloadedSkillsNote } from '../cc-reload-skills'
@@ -118,21 +117,11 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
     },
   )
   const { defaultCwd, loadedPlugins, loadedMiniApps } = context
-  // A plugin's default `agent` setting runs the default agent's chat as that plugin agent, on its
-  // model unless the person picked one — settled before anything below reads the turn's model.
-  // A child delegated as a plugin agent type runs as that agent on every run (`plugin-subagent.ts`).
+  // The agent the seat is: a file, plugin or shipped agent runs as its definition — its prompt,
+  // tool ceiling, instruction files, compaction window and memory — whoever seated it. The default
+  // agent has no file; a plugin's `agent` setting is applied below.
   const typed =
-    applyPluginSubagent(
-      context,
-      session.provenance,
-      withBuiltinSubagentTypes(loadedPlugins.agents),
-      (message) => env.deps.logger?.warn(message),
-    ) ??
-    // The agent the seat is: a file, plugin or shipped agent runs as its definition, whoever
-    // seated it. The default agent has none.
-    (speakerAgentId === DEFAULT_AGENT_ID
-      ? null
-      : applySpeakerAgent(context, turn.admittedAgent.spec))
+    speakerAgentId === DEFAULT_AGENT_ID ? null : applySpeakerAgent(context, turn.admittedAgent.spec)
   // The agent file's own run options: no instruction files, its compaction window, its memory.
   const typeOptions = typed
     ? await subagentRunOptions(typed.subagent, { projectDir: defaultCwd, homeDir: userHome() })

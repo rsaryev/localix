@@ -21,12 +21,15 @@ describe('cc hook session facts', () => {
       toolCallId: 't',
       priority: 'normal',
     } as const
-    expect(ccSubagentOf(session(delegated), 'agent-a')).toEqual({ id: 'child-1', type: 'agent-a' })
-    expect(ccSubagentOf(session({ ...delegated, pluginAgent: 'p:helper' }), 'agent-a')).toEqual({
+    expect(ccSubagentOf(session(delegated))).toEqual({
+      id: 'child-1',
+      type: 'general-purpose',
+    })
+    expect(ccSubagentOf(session({ ...delegated, agentType: 'p:helper' }))).toEqual({
       id: 'child-1',
       type: 'p:helper',
     })
-    expect(ccSubagentOf(session({ kind: 'unknown-origin' }), 'agent-a')).toBeUndefined()
+    expect(ccSubagentOf(session({ kind: 'unknown-origin' }))).toBeUndefined()
   })
 
   it('keeps the env files with the root session, so a child sources what it exported', () => {

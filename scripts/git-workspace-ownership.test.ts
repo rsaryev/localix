@@ -48,11 +48,11 @@ const CLAUDE_CODE_ISOLATION = [
   // The Agent tool's own `isolation: 'worktree'` parameter, as Claude Code declares it.
   'apps/api/src/features/agent-core/tools/delegate.ts',
   'apps/api/src/features/agent-core/tools/delegate-start.ts',
-  'apps/api/src/features/agent-core/tools/delegate-plugin-agent',
+  'apps/api/src/features/agent-core/tools/delegate-agent-type',
   'apps/api/src/features/cc-hooks/',
   'apps/api/src/features/chat/session-cwd',
   'apps/api/src/features/chat/session-provenance',
-  'apps/api/src/features/chat/runtime/run/plugin-subagent',
+  'apps/api/src/features/chat/runtime/run/speaker-agent',
   'apps/api/src/features/chat/runtime/run/workflow-options',
 ]
 const WORKTREE_WORD = /\bworktrees?\b/giu

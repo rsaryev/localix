@@ -74,14 +74,16 @@ export function buildTaskDelegationOptions(
   // gating the port on it once removed delegation from a chat whose user had merely not
   // picked a delegation model, and the agent told them the tool did not exist.
   const svc = getAgentService()
-  if (!svc?.resolveDelegateAgent || !svc.wakeSession) return undefined
+  if (!svc?.resolveDelegateAgent || !svc.resolveDelegation || !svc.wakeSession) return undefined
   const resolveDelegateAgent = svc.resolveDelegateAgent
+  const resolveDelegation = svc.resolveDelegation
 
   return {
     userId,
     parentSessionId: session.id,
     projectId: session.projectId,
     resolveAgent: (reference, scope) => resolveDelegateAgent(reference, scope),
+    resolveTarget: (reference, scope) => resolveDelegation(reference, scope),
     // The child inherits the parent's permission mode. Without this it was created
     // with `createSession`'s `auto` default, so a delegate spawned from an `ask`
     // session ran bash and wrote files with no confirmation — delegation is not a

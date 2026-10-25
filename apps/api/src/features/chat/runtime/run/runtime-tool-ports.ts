@@ -19,8 +19,7 @@ import { buildDirectToolInstances } from './runtime-tool-instances'
 import { buildBrowserOptions } from './browser-options'
 import { buildTaskDelegationOptions } from './task-delegation-options'
 import { buildDelegateOptions } from './delegate-options'
-import { delegatePluginPorts } from './plugin-subagent'
-import { withBuiltinSubagentTypes } from './builtin-subagent-types'
+import { delegateAgentPorts } from './speaker-agent'
 import { buildWorkflowOptions } from './workflow-options'
 import { buildAgentsOptions } from './agents-options'
 import { buildConfigureOptions } from './configure-options'
@@ -110,9 +109,8 @@ export function buildOptionalToolPorts(
   const worktreeHook = ccHooks?.hasHooks('WorktreeCreate')
     ? (name: string) => ccHooks.runWorktreeCreate(name)
     : undefined
-  // A plugin's agents are subagent types for `delegate` and a workflow's `agent()` alike.
-  const pluginAgents = delegatePluginPorts({
-    agents: withBuiltinSubagentTypes(loadedPlugins.agents),
+  // How `delegate` and a workflow's `agent()` create a child: its route and its worktree.
+  const pluginAgents = delegateAgentPorts({
     ...(params.chatModel ? { chatModel: params.chatModel } : {}),
     catalog: params.catalog?.models ?? [],
     defaultCwd,

@@ -61,6 +61,7 @@ describe('buildWorkflowOptions', () => {
       parentSessionId: 's',
       position: () => ({ depth: 0, chain: [], self: 'builtin:localix' }),
       resolveAgent: (reference: string) => ({ agentId: reference, handle: 'localix' }),
+      resolveTarget: () => ({ kind: 'unavailable' as const }),
       createSession: async (_user, input) => {
         inputs.push(input)
         return { id: `child-${inputs.length}` }
@@ -105,6 +106,7 @@ describe('buildWorkflowOptions', () => {
       parentSessionId: 's',
       position: () => ({ depth: 0, chain: [], self: 'builtin:localix' }),
       resolveAgent: (reference: string) => ({ agentId: reference, handle: 'localix' }),
+      resolveTarget: () => ({ kind: 'unavailable' as const }),
       createSession: async (_user, input) => {
         inputs.push(input)
         return { id: `child-${inputs.length}` }

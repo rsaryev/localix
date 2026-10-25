@@ -89,7 +89,7 @@ describe('a skill invoked as /<plugin>:<skill>', () => {
     const forked = plugin('review', { contextFork: true, forkAgent: 'cc:reviewer' })
     const { ctx, forks, replies } = context(forked)
     await handleSkillCommand(ctx, 'u1', 's1', session, '/cc:review')
-    expect(forks[0]).toMatchObject({ pluginAgent: 'cc:reviewer' })
+    expect(forks[0]).toMatchObject({ agent: 'cc:reviewer' })
     expect(replies[0]).not.toContain('no longer honoured')
   })
 

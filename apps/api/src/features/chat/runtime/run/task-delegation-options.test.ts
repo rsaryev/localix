@@ -11,7 +11,11 @@ import { setAgentService } from '../agent-service-binding'
 import { lineagePolicy } from '../../policy/session-policy'
 
 beforeEach(() => {
-  setAgentService({ resolveDelegateAgent: async () => null, wakeSession: async () => {} } as never)
+  setAgentService({
+    resolveDelegateAgent: async () => null,
+    resolveDelegation: async () => ({ kind: 'unavailable' }),
+    wakeSession: async () => {},
+  } as never)
 })
 afterEach(() => setAgentService(null as never))
 
@@ -61,6 +65,7 @@ test("the delegate port manages only the session's own children, never a deeper 
   const messages: unknown[] = []
   setAgentService({
     resolveDelegateAgent: async () => null,
+    resolveDelegation: async () => ({ kind: 'unavailable' }),
     wakeSession: async () => {},
     listDelegatedRuns: async () => [
       { sessionId: 'f1', taskName: 'check', status: 'completed', level: 1 },

@@ -6,7 +6,7 @@ import { dropExpectedReport } from '../../../agent-core/delegation-awaits'
 import { startDelegation } from '../../../agent-core/tools/delegate-start'
 import type { TaskDelegationOptions } from '../../../agent-core/tools/task-delegation'
 import type { DelegatedRunSummary } from '../../../agent-core/tools/delegate-control'
-import type { DelegatePluginPorts } from '../../../agent-core/tools/delegate-plugin-agent'
+import type { DelegateAgentPorts } from '../../../agent-core/tools/delegate-agent-type'
 import type { SessionRecord } from '../../repository'
 import { getAgentService } from '../agent-service-binding'
 
@@ -15,8 +15,8 @@ export interface DelegateOptionsInput {
   session: SessionRecord
   agentProfile: RunProfile
   taskDelegation?: TaskDelegationOptions
-  /** The enabled plugins' agents, delegable as subagent types (`plugin-subagent.ts`). */
-  plugins?: DelegatePluginPorts
+  /** The enabled plugins' agents, delegable as subagent types (`speaker-agent.ts`). */
+  plugins?: DelegateAgentPorts
 }
 
 /**

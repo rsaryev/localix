@@ -5,14 +5,13 @@ import { delegatesAt, delegationNote } from '../delegation-hierarchy'
 import { ONE_SHOT_EXECUTION } from '../prompt/sections/team-contract'
 import { reportBody } from './child-report'
 import type { DelegateRequest } from './delegate'
-import { agentModelRoute, type AgentRoute } from '../agent-model-route'
 import {
-  isolateChild,
-  preparePluginAgentChild,
+  GENERAL_PURPOSE_TYPE,
+  prepareAgentChild,
   resolveDelegateTarget,
-  type DelegatePluginPorts,
+  type DelegateAgentPorts,
   type DelegateTarget,
-} from './delegate-plugin-agent'
+} from './delegate-agent-type'
 import {
   describeStartedTask,
   type TaskDelegationOptions,
@@ -47,14 +46,15 @@ const OUTCOME_WORD: Record<HeldReport['status'], string> = {
 
 /**
  * Start one delegated task: resolve the agent, create the child, give it context, and run it. An
- * `agent` that names a plugin's subagent type runs as that agent (`delegate-plugin-agent.ts`).
+ * `agent` that names a catalog agent seats it, and the child runs as that agent
+ * (`delegate-agent-type.ts`).
  */
 export async function startDelegation(
   toolCallId: string,
   request: DelegateRequest,
   opts: TaskDelegationOptions,
   signal?: AbortSignal,
-  plugins?: DelegatePluginPorts,
+  ports?: DelegateAgentPorts,
 ): Promise<TaskDelegationResult> {
   const title = request.title.trim()
   const task = request.task.trim()
@@ -73,31 +73,25 @@ export async function startDelegation(
     const delegator = await opts.resolveAgent(self, scope)
     if (!delegator) return refuse('Your own agent is unavailable, so it cannot delegate.')
     const target: DelegateTarget = request.agent
-      ? await resolveDelegateTarget(request.agent, delegator, opts, plugins)
+      ? await resolveDelegateTarget(request.agent, delegator, opts)
       : { agent: delegator }
     if ('refusal' in target) return refuse(target.refusal)
-    const { agent, plugin } = target
-    // A host's pick of the child's model: an alias resolves to a concrete id, or to the parent's.
-    const typed =
-      plugin && plugins
-        ? await preparePluginAgentChild(plugin, plugins, {
-            toolCallId,
-            hostModel: !!request.model,
-            ...(request.effort ? { effort: request.effort } : {}),
-            ...(request.isolation === 'worktree' ? { isolate: true } : {}),
-          })
-        : null
-    // The call's own model, effort and worktree for a child that is not a plugin type (Claude
-    // Code's Agent `model` / `effort` / `isolation`): routed against the chat's provider.
-    const own = !plugin ? await callChildSetup(request, plugins, toolCallId, agent.handle) : null
-    const modelId = request.model
-      ? (own?.route.modelId ?? agentModelRoute({ model: request.model }, {}).route.modelId)
-      : undefined
+    const { agent, type } = target
+    // The call's own model, effort and worktree win over the agent's: routed against the chat's
+    // provider, an alias resolving to a concrete id.
+    const prepared = await prepareAgentChild(`agent ${agent.handle}`, type, ports, {
+      toolCallId,
+      ...(request.model ? { model: request.model } : {}),
+      ...(request.effort ? { effort: request.effort } : {}),
+      ...(request.isolation === 'worktree' ? { isolate: true } : {}),
+    })
     // Claude Code's `background: true`: the call never holds for its report.
-    const wait = request.wait && !plugin?.background
-    const name = plugin?.fullName ?? agent.handle
-    const maxTurns = plugin?.maxTurns ?? agent.maxTurns
-    const notes = typed?.notes ?? own?.notes ?? []
+    const wait = request.wait && !type?.background
+    const name = agent.handle
+    const maxTurns = type?.maxTurns ?? agent.maxTurns
+    const notes = prepared.notes
+    // Claude Code's `agent_type`: the agent's name, `general-purpose` for the delegator itself.
+    const agentType = type ? agent.handle : GENERAL_PURPOSE_TYPE
     const child = await opts.createSession(opts.userId, {
       agents: [{ agentId: agent.agentId }],
       title,
@@ -111,18 +105,15 @@ export async function startDelegation(
         priority: 'normal',
         depth: depth + 1,
         chain: [...chain, self],
-        ...typed?.provenance,
-        ...own?.provenance,
+        agentType,
+        ...prepared.provenance,
       },
       ...(opts.projectId ? { projectId: opts.projectId } : {}),
-      ...typed?.route,
-      ...own?.route,
-      ...(typed?.pinnedSkills ? { pinnedSkills: typed.pinnedSkills } : {}),
-      ...(modelId ? { modelId } : {}),
+      ...prepared.route,
+      ...(prepared.pinnedSkills ? { pinnedSkills: prepared.pinnedSkills } : {}),
     })
     // The copy precedes the run: the child's first model call must already see the conversation.
     if (request.context === 'conversation') await opts.copyConversation(child.id)
-    const agentType = plugin?.fullName ?? agent.agentId
     // CC: a SubagentStart hook's `additionalContext` reaches the child before its first prompt.
     const startContext = await opts.onSubagentStart?.(agentType, child.id)
     // Held before the start, so a child that ends inside the launch's settle window still
@@ -185,32 +176,4 @@ export async function startDelegation(
   } catch (error) {
     return refuse(`Could not delegate "${title}": ${errorMessage(error)}`)
   }
-}
-
-/** A non-type child's route and folder from the call's `model`, `effort` and `isolation`. */
-async function callChildSetup(
-  request: DelegateRequest,
-  plugins: DelegatePluginPorts | undefined,
-  toolCallId: string,
-  handle: string,
-): Promise<{ route: AgentRoute; provenance: object; notes: string[] }> {
-  const who = `agent ${handle}`
-  const notes: string[] = []
-  let route: AgentRoute = {}
-  if ((request.model || request.effort) && plugins?.route) {
-    const resolved = await plugins.route({
-      ...(request.model ? { model: request.model } : {}),
-      ...(request.effort ? { effort: request.effort } : {}),
-      who,
-    })
-    route = resolved.route
-    notes.push(...resolved.notes)
-  }
-  let provenance: object = {}
-  if (request.isolation === 'worktree' && plugins) {
-    const isolated = await isolateChild(plugins, toolCallId, who)
-    provenance = isolated.provenance
-    notes.push(isolated.note)
-  }
-  return { route, provenance, notes }
 }

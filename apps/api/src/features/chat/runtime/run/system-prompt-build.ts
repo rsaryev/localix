@@ -251,8 +251,10 @@ export async function buildRunSystemPrompt(
     projectStructure,
     projectInstructions: frozenContext.projectInstructions,
     conversation,
-    // Only where a tag can reach someone: the directory is who an @mention would bring in.
-    agentDirectory: agentDirectoryRows(session, options.policy, options.agentDirectory),
+    // Who an @mention would bring in, and who `delegate` can hand a task to.
+    agentDirectory: agentDirectoryRows(session, options.policy, options.agentDirectory, {
+      canDelegate: hasRuntimeTool(TOOL.delegate),
+    }),
     ...(reactions ? { reactionContext: reactions } : {}),
     scratchDir,
     activeSubAgents,

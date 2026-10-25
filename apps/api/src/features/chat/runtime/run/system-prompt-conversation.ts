@@ -55,29 +55,42 @@ export interface AgentDirectoryEntry {
   leadershipPriority?: number
   enabled: boolean
   canJoinConversation: boolean
+  /** `delegate` can hand it a task. */
+  delegable?: boolean
+  tools?: readonly string[]
+  self?: boolean
 }
 
 /**
- * The directory of agents an @mention could bring in, with the conversation's own members marked.
- * Only where a tag can reach someone (`policy.conversation.showsDirectory`); a member no longer in
- * the registry is still listed, unranked.
+ * The directory of agents an @mention could bring in, with the conversation's own members marked,
+ * and the agents `delegate` can hand a task to. Where a tag reaches no one it lists only the
+ * delegable ones, and nothing when the run cannot delegate either
+ * (`policy.conversation.showsDirectory`); a member no longer in the registry is still listed,
+ * unranked.
  */
 export function agentDirectoryRows(
   session: SessionRecord,
   policy: RunPolicy,
   directory: readonly AgentDirectoryEntry[] | undefined,
+  opts: { canDelegate: boolean } = { canDelegate: false },
 ) {
-  if (!policy.conversation.showsDirectory) return undefined
+  const tags = policy.conversation.showsDirectory
+  if (!tags && !opts.canDelegate) return undefined
   const available = new Map((directory ?? []).map((agent) => [agent.agentId, agent]))
-  const rows = [...(directory ?? [])].map((agent) => ({
-    id: agent.agentId,
-    handle: agent.name,
-    description: agent.description,
-    leadershipPriority: agent.leadershipPriority ?? 0,
-    inConversation: session.agents.some((member) => member.agentId === agent.agentId),
-    available: agent.enabled && agent.canJoinConversation,
-  }))
-  for (const member of session.agents) {
+  const rows = [...(directory ?? [])]
+    .filter((agent) => tags || agent.delegable)
+    .map((agent) => ({
+      id: agent.agentId,
+      handle: agent.name,
+      description: agent.description,
+      leadershipPriority: agent.leadershipPriority ?? 0,
+      inConversation: session.agents.some((member) => member.agentId === agent.agentId),
+      available: tags && agent.enabled && agent.canJoinConversation,
+      ...(agent.delegable ? { delegable: true } : {}),
+      ...(agent.tools ? { tools: agent.tools } : {}),
+      ...(agent.self ? { self: true } : {}),
+    }))
+  for (const member of tags ? session.agents : []) {
     if (available.has(member.agentId)) continue
     rows.push({
       id: member.agentId,

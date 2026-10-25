@@ -1,5 +1,4 @@
 import type { createAgentsService } from '../features/agents/service'
-import { canJoinConversation } from '../features/agents/policy'
 
 type AgentsService = ReturnType<typeof createAgentsService>
 
@@ -23,19 +22,10 @@ export function createAgentDirectoryPorts(agentsService: AgentsService) {
     },
     // The directory is advisory prompt context, so a failed read omits it rather than failing
     // the run — but it says so, instead of presenting an empty registry as the truth.
-    listRegistryAgents: async (userId: string, projectId?: string | null) => {
-      const list = await agentsService.listAgents(userId, { projectId }).catch((error: unknown) => {
+    listRegistryAgents: (userId: string, projectId?: string | null) =>
+      agentsService.directory(userId, projectId).catch((error: unknown) => {
         console.warn('[agents] directory unavailable for this run:', error)
         return []
-      })
-      return list.map((agent) => ({
-        agentId: agent.record.id,
-        name: agent.record.handle,
-        description: agent.record.description,
-        leadershipPriority: agent.record.leadershipPriority,
-        enabled: agent.enabled,
-        canJoinConversation: canJoinConversation(agent),
-      }))
-    },
+      }),
   }
 }
