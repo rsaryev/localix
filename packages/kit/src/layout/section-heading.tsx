@@ -74,13 +74,15 @@ export function SectionHeading({
         {actions != null && (
           // Centred on the title's line, whatever the control's height: a 36px button and a 28px
           // picker sit on the same axis as the title instead of drifting toward the description.
+          // The height is a minimum, never a fixed box: a control taller than the title's line
+          // grows the box instead of overflowing it, where a scroller's edge would cut it off.
           <div
             data-slot="section-heading-actions"
             className={cn(
               'flex min-w-0 flex-wrap items-center gap-2',
               page
-                ? '@xl:h-7 @xl:shrink-0 @xl:flex-nowrap @xl:justify-end'
-                : '@lg:h-6 @lg:shrink-0 @lg:flex-nowrap @lg:justify-end',
+                ? '@xl:min-h-7 @xl:shrink-0 @xl:flex-nowrap @xl:justify-end'
+                : '@lg:min-h-6 @lg:shrink-0 @lg:flex-nowrap @lg:justify-end',
             )}
           >
             {actions}
