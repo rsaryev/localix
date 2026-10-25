@@ -32,25 +32,27 @@ function CollectionCard({ collection, listings }: { collection: Collection; list
           refs: collection.items,
         })
       }
-      className="group/collection flex min-w-0 items-center gap-4 rounded-xl border border-border-faint bg-card p-4 text-left transition-colors duration-(--dur-fast) hover:bg-surface-hover focus-ring"
+      className="@container/collection min-w-0 rounded-xl border border-border-faint bg-card p-4 text-left transition-colors duration-(--dur-fast) hover:bg-surface-hover focus-ring"
     >
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="text-2xs font-semibold tracking-wide text-text-soft uppercase">
-          Collection · {plural(collection.items.length, 'package')}
+      <span className="flex min-w-0 flex-col gap-3 @md/collection:flex-row @md/collection:items-center @md/collection:gap-4">
+        <span className="flex min-w-0 flex-1 flex-col gap-1">
+          <span className="text-2xs font-semibold tracking-wide text-text-soft uppercase">
+            Collection · {plural(collection.items.length, 'package')}
+          </span>
+          <span className="text-base font-semibold text-balance text-foreground">
+            {collection.title}
+          </span>
+          {collection.subtitle && (
+            <span className="line-clamp-2 text-xs text-text-soft">{collection.subtitle}</span>
+          )}
         </span>
-        <span className="text-base font-semibold text-balance text-foreground">
-          {collection.title}
+        <span aria-hidden className="flex shrink-0 items-center gap-2">
+          {listings.slice(0, 4).map((listing) => (
+            <ListingIcon key={keyOf(listing.ref)} listing={listing} size={48} />
+          ))}
+          <ChevronRight className="ml-auto size-4 shrink-0 text-text-faint" aria-hidden />
         </span>
-        {collection.subtitle && (
-          <span className="line-clamp-2 text-xs text-text-soft">{collection.subtitle}</span>
-        )}
-      </div>
-      <div aria-hidden className="flex shrink-0 gap-2">
-        {listings.slice(0, 4).map((listing) => (
-          <ListingIcon key={keyOf(listing.ref)} listing={listing} size={48} />
-        ))}
-      </div>
-      <ChevronRight className="size-4 shrink-0 text-text-faint" aria-hidden />
+      </span>
     </button>
   )
 }
