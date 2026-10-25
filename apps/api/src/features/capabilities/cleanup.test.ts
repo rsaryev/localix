@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 
 import { createDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
-import { createCoreChangeFeed } from '../changes/core-entities'
+import { createCoreChangeFeed, recordCoreChanges } from '../changes/core-entities'
 import { createMcpRepository } from '../mcp/repository'
 import { createCapabilityCleanup } from './cleanup'
 import { createCapabilityRuleRepository } from './rule-repository'
@@ -83,5 +83,86 @@ describe('capability cleanup', () => {
       false,
     )
     await feed.close()
+  })
+
+  describe('an agent that is gone', () => {
+    const bind = (t: Awaited<ReturnType<typeof setup>>, id: string) =>
+      createCapabilitySourceRepository(t.db, 'agent').upsert('u1', '', id, { source: 'user' })
+    async function agents() {
+      const t = await setup()
+      await t.rules.replace('u1', 'cc:gone', [
+        { action: 'tool:bash', resource: '*', effect: 'allow' },
+      ])
+      await t.rules.replace('u1', 'cc:kept', [
+        { action: 'agent:cc:gone', resource: '*', effect: 'allow' },
+        { action: 'invocation:delegation', resource: 'cc:gone', effect: 'allow' },
+        { action: 'invocation:delegation', resource: 'cc:other', effect: 'allow' },
+        { action: 'tool:bash', resource: '*', effect: 'ask' },
+      ])
+      await t.db
+        .insertInto('capability_policy_binding')
+        .values({
+          user_id: 'u1',
+          contribution_id: 'c',
+          agent_id: 'cc:gone',
+          contribution_revision: 1,
+          policy_revision: 1,
+        })
+        .execute()
+      const feed = createCoreChangeFeed(t.db)
+      await feed.subscribe('capability-cleanup', t.cleanup.handlers, { kind: 'reactor' })
+      return { t, feed }
+    }
+    const ref = (agentId: string) => ({ id: 'gone', scope: 'global', agentId })
+    const actions = async (t: Awaited<ReturnType<typeof setup>>, id: string) =>
+      (await t.rules.read('u1', id)).map((r) => `${r.action} ${r.resource}`)
+
+    test('a purge empties its list and strips what other lists say about it; a duplicate is harmless', async () => {
+      const { t, feed } = await agents()
+      const purge = [{ entity: 'agent' as const, op: 'deleted' as const, ref: ref('cc:gone') }]
+      await recordCoreChanges(t.db, purge)
+      await recordCoreChanges(t.db, purge)
+      await feed.settle()
+      expect(await actions(t, 'cc:gone')).toEqual([])
+      expect(await actions(t, 'cc:kept')).toEqual(['invocation:delegation cc:other', 'tool:bash *'])
+      expect(await t.db.selectFrom('capability_policy_binding').selectAll().execute()).toEqual([])
+      expect(
+        await t.db
+          .selectFrom('capability_policy_revision')
+          .selectAll()
+          .where('agent_id', '=', 'cc:gone')
+          .execute(),
+      ).toEqual([])
+      await feed.close()
+    })
+
+    test('a rename (old key deleted, same id still bound) keeps everything', async () => {
+      const { t, feed } = await agents()
+      await bind(t, 'cc:gone')
+      await recordCoreChanges(t.db, [{ entity: 'agent', op: 'deleted', ref: ref('cc:gone') }])
+      await feed.settle()
+      expect(await actions(t, 'cc:gone')).toEqual(['tool:bash *'])
+      expect((await actions(t, 'cc:kept')).length).toBe(4)
+      await feed.close()
+    })
+
+    test('a resync drops the lists of ids with no row, never a built-in or a bound agent', async () => {
+      const { t, feed } = await agents()
+      await bind(t, 'cc:kept')
+      await t.rules.replace('u1', 'builtin:localix', [
+        { action: 'tool:bash', resource: '*', effect: 'allow' },
+      ])
+      await t.rules.replace('u1', 'native:old', [
+        { action: 'tool:bash', resource: '*', effect: 'allow' },
+      ])
+      await recordCoreChanges(t.db, [{ entity: 'agent', op: 'resync' }])
+      await feed.settle()
+      expect(await actions(t, 'cc:gone')).toEqual([])
+      expect(await actions(t, 'native:old')).toEqual([])
+      expect(await actions(t, 'builtin:localix')).toEqual(['tool:bash *'])
+      // The survivor loses what it said about the id that is gone.
+      expect(await actions(t, 'cc:kept')).toEqual(['invocation:delegation cc:other', 'tool:bash *'])
+      await feed.close()
+    })
   })
 })

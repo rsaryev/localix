@@ -168,23 +168,25 @@ export async function bootstrap(
   // The mini app hosts' late-bound references to chat, and the ONE wake delivery `wakes`.
   const { wakes } = bindChatHostRefs({ hostRefs, chatService, env, logger, notifications, db })
 
-  const { auxUsageRepo, startEngines, triggerConditions } = await createEnginesPhase({
-    db,
-    logger,
-    serviceRefs,
-    // The monitor service resolves `${secret:KEY}` references from the vault and redacts
-    // resolved values out of a watch's output before it becomes a persisted wake.
-    secretsStore,
-    secretExposureShield,
-    work,
-    notifications,
-    agentNotifications,
-    chatService,
-    wakes,
-    finalAssistantText,
-    resolveProjectCwd,
-    lspManager,
-  })
+  const { auxUsageRepo, startEngines, triggerConditions, triggerEngine } = await createEnginesPhase(
+    {
+      db,
+      logger,
+      serviceRefs,
+      // The monitor service resolves `${secret:KEY}` references from the vault and redacts
+      // resolved values out of a watch's output before it becomes a persisted wake.
+      secretsStore,
+      secretExposureShield,
+      work,
+      notifications,
+      agentNotifications,
+      chatService,
+      wakes,
+      finalAssistantText,
+      resolveProjectCwd,
+      lspManager,
+    },
+  )
   await createAgentFacadePhase({
     db,
     env,
@@ -337,6 +339,7 @@ export async function bootstrap(
             Boolean(await bootRepo.getSession(...args).catch(() => true)),
           providerConditions: infra.providerConditions,
           triggerConditions,
+          triggerEngine,
           refreshMiniAppHosts: () => {
             backendHost.refresh()
             channelHost.refresh()

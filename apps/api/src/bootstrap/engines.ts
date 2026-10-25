@@ -6,6 +6,7 @@
  * `./session-services`.
  */
 import type { TriggerConditions } from '../features/notifications/conditions/triggers'
+import type { TriggerEngine } from '../features/triggers/engine'
 import type { createChatService } from '../features/chat/service'
 import type { LoopService } from '../features/loops/service'
 import { createUsageRepository } from '../features/usage/repository'
@@ -42,6 +43,7 @@ export interface EnginesPhase {
   auxUsageRepo: ReturnType<typeof createUsageRepository>
   loops: LoopService
   triggerConditions: TriggerConditions
+  triggerEngine: Pick<TriggerEngine, 'list' | 'end'>
   startEngines: () => void
 }
 
@@ -99,6 +101,7 @@ export async function createEnginesPhase({
     auxUsageRepo,
     loops,
     triggerConditions,
+    triggerEngine,
     startEngines,
   }
 }

@@ -13,11 +13,14 @@ async function setup() {
     ['a1', 'writer'],
     ['a2', 'critic'],
   ])
+  // Ids with a binding row: an agent whose file or plugin is away is still bound.
+  const bound = new Set(['a1', 'a2'])
   const forgotten: string[] = []
   const published: string[][] = []
   const seats = createAgentSeats({
     seats: createAgentSeatsRepository(db),
     handles: async () => new Map(agents),
+    bound: async (id) => bound.has(id),
     forgetModelSettings: async (id) => void forgotten.push(id),
     publish: (resources) => void published.push(resources),
   })
@@ -50,7 +53,7 @@ async function setup() {
       .orderBy('session_id')
       .orderBy('agent_id')
       .execute()
-  return { db, agents, seats, forgotten, published, rows }
+  return { db, agents, bound, seats, forgotten, published, rows }
 }
 
 const ref = (id: string, agentId: string) => ({ id, scope: 'p1', agentId })
@@ -120,7 +123,7 @@ describe('agent seats', () => {
     expect(t.seats.handlers['chat.session']).toBe('ignore')
   })
 
-  test('the reconcile repairs handles and never removes a seat of a missing agent', async () => {
+  test('the reconcile repairs handles and keeps the seats of a bound agent that is away', async () => {
     const t = await setup()
     t.agents.set('a1', 'author')
     t.agents.delete('a2')
@@ -130,5 +133,23 @@ describe('agent seats', () => {
       { session_id: 'group', agent_id: 'a2', handle: 'a2' },
       { session_id: 'solo', agent_id: 'a2', handle: 'a2' },
     ])
+    expect(t.forgotten).toEqual([])
+  })
+
+  test('a resync leaves the rooms of an id with no row at all, and a repeat changes nothing', async () => {
+    const t = await setup()
+    t.agents.delete('a2')
+    t.bound.delete('a2')
+    const handler = t.seats.handlers.agent
+    if (handler === 'ignore') throw new Error('expected a handler')
+    await handler({ entity: 'agent', op: 'resync' })
+    await handler({ entity: 'agent', op: 'resync' })
+    expect(await t.rows()).toEqual([
+      { session_id: 'group', agent_id: 'a1', handle: 'writer' },
+      { session_id: 'solo', agent_id: 'a2', handle: 'a2' },
+    ])
+    const choices = await t.db.selectFrom('agent_sessions').select('model_choices').execute()
+    for (const row of choices) expect(row.model_choices).not.toContain('a2')
+    expect(t.forgotten).toContain('a2')
   })
 })

@@ -5,9 +5,10 @@
  * is renamed, the snapshot follows; when it is deleted, it leaves the rooms it shared, its entries
  * in the choice maps go (they were its "recent" model) and its remembered model parameters go.
  *
- * Only an explicit deletion notice whose agent can no longer be found removes anything. A resync
- * (files edited, a plugin toggled) and the reconcile only repair handles: an agent that is
- * missing because its plugin is switched off must keep its seats for when it comes back.
+ * Only an explicit deletion notice whose agent can no longer be found removes anything, and a
+ * resync does the same for ids that have no binding row at all (a purge this reactor never saw).
+ * Handles are repaired either way: an agent that is missing because its plugin is switched off
+ * keeps its binding, so it keeps its seats for when it comes back.
  */
 import type { ConsumerHandlers, EntityRef } from '@localixai/change-feed'
 
@@ -19,6 +20,8 @@ export interface AgentSeatsPorts {
   seats: AgentSeatsRepository
   /** Every agent a project sees (`''` = installation), by id → its current handle. */
   handles(projectId: string): Promise<ReadonlyMap<string, string>>
+  /** Whether the agent has a binding row: a built-in, or a file or plugin definition not purged. */
+  bound(agentId: string): Promise<boolean>
   /** Forget what the person tuned for this agent's models (user settings). */
   forgetModelSettings(agentId: string): Promise<void>
   publish(resources: RealtimeResource[]): void
@@ -37,23 +40,31 @@ export function createAgentSeats(ports: AgentSeatsPorts) {
     const handle = (await ports.handles(projectOf(ref))).get(ref.agentId)
     if (await renamed(ref.agentId, handle)) ports.publish(['sessions'])
     if (op !== 'deleted' || handle) return
-    const left = await ports.seats.leaveRooms(ref.agentId)
-    const forgot = await ports.seats.forgetChoices(ref.agentId)
-    await ports.forgetModelSettings(ref.agentId)
+    await forget(ref.agentId)
+  }
+
+  async function forget(agentId: string): Promise<void> {
+    const left = await ports.seats.leaveRooms(agentId)
+    const forgot = await ports.seats.forgetChoices(agentId)
+    await ports.forgetModelSettings(agentId)
     if (left.length + forgot.length > 0) ports.publish(['sessions'])
   }
 
-  /** Bring every seat's handle up to date. Never removes a seat. */
+  /** Bring every seat's handle up to date, and let go of ids that have no row anywhere. */
   async function reconcile(): Promise<void> {
     const views = new Map<string, Promise<ReadonlyMap<string, string>>>()
     let moved = false
+    const orphans = new Set<string>()
     for (const seat of await ports.seats.seats()) {
       let view = views.get(seat.projectId)
       if (!view) views.set(seat.projectId, (view = ports.handles(seat.projectId)))
       const handle = (await view).get(seat.agentId)
       if (handle && handle !== seat.handle && (await renamed(seat.agentId, handle))) moved = true
+      if (!handle && !orphans.has(seat.agentId) && !(await ports.bound(seat.agentId)))
+        orphans.add(seat.agentId)
     }
     if (moved) ports.publish(['sessions'])
+    for (const agentId of orphans) await forget(agentId)
   }
 
   const handlers: ConsumerHandlers<CoreRefs, CoreCascades> = {

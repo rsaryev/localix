@@ -37,6 +37,11 @@ export interface TriggerConditions {
    * Settled with the loop's other rows by the next fire that succeeds.
    */
   routeStranded(trigger: TriggerRecord): void
+  /**
+   * The loop was stopped because the agent that armed it was deleted. Its record stays; nothing
+   * will fire it again, so the row is information, not a problem to settle.
+   */
+  ownerGone(trigger: TriggerRecord): void
 }
 
 /** Only loops are reported: a monitor's and an exit notice's failures belong to their own work. */
@@ -88,6 +93,20 @@ export function createTriggerConditions(journal: ConditionJournal): TriggerCondi
         severity: 'error',
         title: 'A scheduled loop has no model to run on',
         body: 'The provider account its chat used was removed. Connect the provider again or pick another model in the chat.',
+        ...fromLoop(trigger),
+      })
+    },
+    ownerGone(trigger) {
+      if (!reported(trigger)) return
+      const prompt = typeof trigger.payload.prompt === 'string' ? trigger.payload.prompt : ''
+      conditions.raise(trigger.userId, {
+        subject: [...subject(trigger), 'agent-gone'],
+        problem: 'agent-gone',
+        severity: 'info',
+        title: 'A scheduled loop stopped: its agent was deleted',
+        body: prompt
+          ? `“${headline(prompt, 80)}” will not run again. Start a new loop in the chat if you still need it.`
+          : 'It will not run again. Start a new loop in the chat if you still need it.',
         ...fromLoop(trigger),
       })
     },

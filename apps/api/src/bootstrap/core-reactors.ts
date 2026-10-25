@@ -35,6 +35,8 @@ import type { TriggerConditions } from '../features/notifications/conditions/tri
 import type { createProjectsService } from '../features/projects/service'
 import type { ProviderConnectionsService } from '../features/provider-connections/service'
 import type { RealtimeResource } from '../features/realtime/resources'
+import { createAgentTriggerCleanup } from '../features/triggers/agent-cleanup'
+import type { TriggerEngine } from '../features/triggers/engine'
 import { createTriggerRepository } from '../features/triggers/repository'
 import type { UserService } from '../features/user/service'
 
@@ -51,7 +53,9 @@ export interface CoreReactorDeps {
   notifications: Pick<NotificationJournal, 'forgetSession' | 'repository'>
   sessionExists(userId: string, sessionId: string): Promise<boolean>
   providerConditions: Pick<ProviderConditions, 'connectionRemoved' | 'connectionsRemaining'>
-  triggerConditions: Pick<TriggerConditions, 'routeStranded'>
+  triggerConditions: Pick<TriggerConditions, 'routeStranded' | 'ownerGone'>
+  /** The loops an agent armed stop with it. */
+  triggerEngine: Pick<TriggerEngine, 'list' | 'end'>
   publish(userId: string, resources: RealtimeResource[]): void
   /** Re-converge the mini app backends and channels (each host debounces). */
   refreshMiniAppHosts(): void
@@ -110,6 +114,20 @@ export function createRouteRepairReactor(deps: CoreReactorDeps) {
   })
 }
 
+/** An agent is bound when it is a built-in or its file or plugin definition has a binding row. */
+async function agentBound(db: Kysely<AppDatabase>, userId: string, agentId: string) {
+  if (agentId.startsWith('builtin:')) return true
+  return Boolean(
+    await db
+      .selectFrom('capability_source')
+      .select('id')
+      .where('user_id', '=', userId)
+      .where('kind', '=', 'agent')
+      .where('name', '=', agentId)
+      .executeTakeFirst(),
+  )
+}
+
 export function createAgentSeatsReactor(deps: CoreReactorDeps) {
   const userId = deps.defaultUserId
   return createAgentSeats({
@@ -118,6 +136,7 @@ export function createAgentSeatsReactor(deps: CoreReactorDeps) {
       const agents = await deps.agentsService.listAgents(userId, { projectId: projectId || null })
       return new Map(agents.map((agent) => [agent.record.id, agent.record.handle]))
     },
+    bound: (agentId) => agentBound(deps.db, userId, agentId),
     async forgetModelSettings(agentId) {
       const settings = (await deps.userService.getProfile(userId)).agentSettings?.agentModelSettings
       if (!settings?.some((entry) => entry.agentId === agentId)) return
@@ -196,6 +215,16 @@ export async function startCoreReactors(deps: CoreReactorDeps): Promise<void> {
   await deps.feed.subscribe('agent-seats', agentSeats.handlers, {
     kind: 'reactor',
     reconcile: () => agentSeats.reconcile(),
+  })
+  const agentTriggers = createAgentTriggerCleanup({
+    live: () => deps.triggerEngine.list({}),
+    end: (...args) => deps.triggerEngine.end(...args),
+    bound: (agentId) => agentBound(deps.db, deps.defaultUserId, agentId),
+    ownerGone: (trigger) => deps.triggerConditions.ownerGone(trigger),
+  })
+  await deps.feed.subscribe('agent-triggers', agentTriggers.handlers, {
+    kind: 'reactor',
+    reconcile: () => agentTriggers.reconcile(),
   })
   const cleanup = createCapabilityCleanup({
     db: deps.db,

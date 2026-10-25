@@ -132,6 +132,23 @@ describe('what a loop row offers', () => {
   })
 })
 
+describe('a loop whose agent was deleted', () => {
+  it('tells the person after the loop ended, naming the chat to open', async () => {
+    const test = await journal()
+    const triggers = createTriggerConditions(test.journal)
+    triggers.loopEnded(U, 'T1')
+    triggers.ownerGone(loop({ state: 'ended' }))
+    triggers.ownerGone(loop({ state: 'ended' }))
+    triggers.ownerGone(loop({ id: 'M1', action: 'monitor' }))
+    const open = await openRows(test)
+    expect(open).toHaveLength(1)
+    expect(open[0]).toMatchObject({
+      title: 'A scheduled loop stopped: its agent was deleted',
+      origin: { kind: 'session', sessionId: 'S1' },
+    })
+  })
+})
+
 describe('a wake that did not land', () => {
   const request = { userId: U, sessionId: 'S1', content: 'hi', source: 'external' as const }
 
