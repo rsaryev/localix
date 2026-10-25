@@ -8,6 +8,7 @@ import type { AgentRuntime, LanguageModelFactory, ScriptSandbox } from '@localix
 import type { AgentTool, AgentToolResult } from '@localixai/agent/agents'
 import type { ExternalAgentsPort } from '../../external-agents/contracts'
 
+import type { LoadedPluginAgent } from '../../plugins/loader-contract'
 import type { AppDatabase } from '../../../db'
 import type { CatalogService } from '../../catalog/service'
 import type { ProviderConnectionsService } from '../../provider-connections/service'
@@ -212,6 +213,15 @@ export interface ChatServiceDeps {
       leadershipPriority?: number
     }[]
   >
+  /**
+   * The agent the `agent` setting names for a folder (Claude Code's settings files, then the
+   * agents' catalog): the main thread runs as it. Null: none named, or it is not available.
+   */
+  resolveMainAgent?: (
+    userId: string,
+    projectId: string | null,
+    cwd: string | null,
+  ) => Promise<LoadedPluginAgent | null>
   /** Complete scope-aware registry roster used only to describe agents to the model. */
   listRegistryAgents?: (
     userId: string,

@@ -35,3 +35,13 @@ export async function claudeCodeModes(
   )
   return { ...(named ? { defaultMode: named } : {}), bypassDisabled }
 }
+
+/**
+ * The `agent` setting (sub-agents.md, "Run the whole session as a subagent"): the name of the agent
+ * the main thread runs as, from the same files and in the same order as every other setting. A
+ * plugin's own `agent` is the lowest layer and is read with the plugin, not here.
+ */
+export async function claudeCodeMainAgent(input: SettingsFilesInput): Promise<string | undefined> {
+  const named = mergeSettingsSources(await readSettingsLayers(input)).agent
+  return typeof named === 'string' && named.trim() ? named.trim() : undefined
+}

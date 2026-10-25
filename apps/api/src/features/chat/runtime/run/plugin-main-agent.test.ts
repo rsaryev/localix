@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 
-import { applyPluginMainAgent, runAsPluginAgent, runToolsAgent } from './plugin-main-agent'
+import { applyMainAgent, runAsPluginAgent, runToolsAgent } from './plugin-main-agent'
 import type { LoadedPluginAgent } from '../../../plugins/loader-contract'
 
 const reviewer: LoadedPluginAgent = {
@@ -21,9 +21,9 @@ const input = {
 }
 const chat = { speakerAgentId: DEFAULT_AGENT_ID, host: 'chat' }
 
-describe('a plugin’s default agent setting', () => {
+describe('the agent setting', () => {
   test('runs the default agent’s chat as the plugin agent, with its tool restrictions', () => {
-    const applied = applyPluginMainAgent(input, reviewer, chat)
+    const applied = applyMainAgent(input, reviewer, chat)
     expect(applied.agent.instructions).toBe('You are a security reviewer.')
     expect(applied.mainAgent).toBe(reviewer)
     // `tools: Read, Grep` leaves out the shell, the writes and the web; `disallowedTools` adds to
@@ -43,7 +43,7 @@ describe('a plugin’s default agent setting', () => {
 
   test('an agent without a tools list keeps every tool', () => {
     const open = { ...reviewer, tools: undefined, disallowedTools: undefined }
-    expect(applyPluginMainAgent(input, open, chat).disabledTools).toEqual(['loops'])
+    expect(applyMainAgent(input, open, chat).disabledTools).toEqual(['loops'])
   })
 
   test('a chat with an agent the person chose, a child or no setting keeps its own agent', () => {
@@ -51,11 +51,11 @@ describe('a plugin’s default agent setting', () => {
       { speakerAgentId: 'builtin:reviewer', host: 'chat' },
       { speakerAgentId: DEFAULT_AGENT_ID, host: 'subagent' },
     ]) {
-      const kept = applyPluginMainAgent(input, reviewer, run)
+      const kept = applyMainAgent(input, reviewer, run)
       expect(kept.agent.instructions).toBe('You are Localix.')
       expect(kept.mainAgent).toBeNull()
     }
-    expect(applyPluginMainAgent(input, null, chat).agent).toBe(input.agent)
+    expect(applyMainAgent(input, null, chat).agent).toBe(input.agent)
   })
 })
 

@@ -262,7 +262,13 @@ export function createChatServicePhase({
     resolveSessionAgent: createSessionSeatResolver(agentsService),
     claudeCodeModes: (cwd) => claudeCodeModes({ homeDir: claudeCodeHome(), cwd }),
     loadAgentModelDefaults: agentModelDefaultsPort(agentsService),
-    ...createAgentDirectoryPorts(agentsService),
+    ...createAgentDirectoryPorts(agentsService, {
+      cwdOf: async (userId, projectId) =>
+        projectId
+          ? ((await projectsService.getProject(userId, projectId).catch(() => null))?.workingDir ??
+            null)
+          : null,
+    }),
     agentManagement: agentsService,
   })
 

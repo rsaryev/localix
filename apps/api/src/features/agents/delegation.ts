@@ -1,3 +1,4 @@
+import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import type { AgentSnapshot, BoundAgent } from './bindings/bindings'
 import type { CatalogAgent } from './catalog/agent-file'
 import type { AgentRecord, AgentSummary } from './contracts'
@@ -73,6 +74,25 @@ export function createAgentDelegation(deps: DelegationDeps) {
       if (!delegates(summary)) return { kind: 'unavailable' }
       if (entry.agent.self) return { kind: 'self', type: entry.agent.fullName }
       return { kind: 'agent', agent: summary!.record, definition: entry.agent }
+    },
+
+    /**
+     * The definition the `agent` setting names, for the main thread to run as. Only an agent that is
+     * on: the default agent and `general-purpose` are what the thread already is.
+     */
+    async resolveMainAgent(
+      userId: string,
+      reference: string,
+      projectId?: string | null,
+    ): Promise<CatalogAgent | null> {
+      const snapshot = await deps.snapshot(userId, projectId ?? '')
+      const found = entryOf(snapshot, reference)
+      if (!found || 'ambiguous' in found || found.agent.self || found.id === DEFAULT_AGENT_ID)
+        return null
+      const summary = (await deps.summaries(userId, snapshot)).find(
+        (candidate) => candidate.record.id === found.id,
+      )
+      return summary?.enabled ? found.agent : null
     },
 
     async directory(userId: string, projectId?: string | null): Promise<AgentDirectoryRow[]> {

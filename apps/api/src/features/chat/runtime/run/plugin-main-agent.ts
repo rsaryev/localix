@@ -7,17 +7,16 @@ import type { LoadedPluginAgent } from '../../../plugins/loader-contract'
 const CC_TOOLS: ReadonlySet<string> = new Set(Object.values(CC_TOOL_NAME_MAP))
 
 /**
- * A plugin's default `agent` setting (`settings.json`), as Claude Code applies it: the main thread
- * runs as that agent, with its system prompt and tool restrictions. Plugin defaults are the lowest
- * layer there, so here they apply only where the person made no choice of their own: a chat run by
- * the default Localix agent. A chat with an agent the person picked, a delegated child and a job
- * keep their own.
+ * The `agent` setting (`settings.json` of the person, the project or a plugin), as Claude Code
+ * applies it: the main thread runs as that agent, with its system prompt and tool restrictions.
+ * The caller picks the agent in Claude Code's order; it applies only to a chat run by the default
+ * Localix agent. A chat with an agent the person picked, a delegated child and a job keep their own.
  *
  * The agent's prompt becomes the run's identity; its `disallowedTools` are switched off, and a
  * `tools` list switches off the other tools a Claude Code agent could have named. Its `model`
  * applies unless the person picked the chat's model (`plugin-main-agent-model.ts`).
  */
-export function applyPluginMainAgent<Agent extends { id: string; instructions?: string | null }>(
+export function applyMainAgent<Agent extends { id: string; instructions?: string | null }>(
   input: { agent: Agent; disabledTools: readonly string[] },
   mainAgent: LoadedPluginAgent | null,
   run: { speakerAgentId: string; host: string },

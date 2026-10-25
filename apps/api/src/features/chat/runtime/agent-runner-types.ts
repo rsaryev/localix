@@ -8,6 +8,7 @@ import type { ExternalAgentsPort } from '../../external-agents/contracts'
 import type { AgentToolResult } from '@localixai/agent/agents'
 import type { Kysely } from 'kysely'
 
+import type { LoadedPluginAgent } from '../../plugins/loader-contract'
 import type { AppDatabase } from '../../../db'
 import type { ChatRepository } from '../repository'
 import type { CatalogService } from '../../catalog/service'
@@ -220,6 +221,15 @@ export interface RunnerDeps {
       leadershipPriority?: number
     }[]
   >
+  /**
+   * The agent the `agent` setting names for a folder (Claude Code's settings files, then the
+   * agents' catalog): the main thread runs as it. Null: none named, or it is not available.
+   */
+  resolveMainAgent?: (
+    userId: string,
+    projectId: string | null,
+    cwd: string | null,
+  ) => Promise<LoadedPluginAgent | null>
   /** Complete scope-aware registry roster for prompt context, including disabled entries. */
   listRegistryAgents?: (
     userId: string,

@@ -154,6 +154,7 @@ export function createChatServiceGraph(deps: ChatServiceDeps) {
       persistPermissionRule: deps.persistPermissionRule,
       listInvocableRegistryAgents: deps.listInvocableRegistryAgents,
       listRegistryAgents: deps.listRegistryAgents,
+      resolveMainAgent: deps.resolveMainAgent,
       ...(deps.vectors ? { vectors: deps.vectors } : {}),
       ...(deps.decisions ? { decisions: deps.decisions } : {}),
       agentManagement: deps.agentManagement,

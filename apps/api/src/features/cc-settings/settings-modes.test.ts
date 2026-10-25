@@ -3,7 +3,7 @@ import { join } from 'node:path'
 
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 
-import { claudeCodeModes } from './settings-modes'
+import { claudeCodeMainAgent, claudeCodeModes } from './settings-modes'
 
 const scratch = tempDirPerTest('cc-modes-')
 
@@ -12,6 +12,17 @@ async function modesOf(tree: Record<string, string>) {
   const root = join(scratch(), `case-${case_++}`)
   writeTree(root, tree)
   return claudeCodeModes({
+    homeDir: join(root, 'home'),
+    cwd: join(root, 'project'),
+    env: {},
+    managed: { dir: join(root, 'managed') },
+  })
+}
+
+async function mainAgentOf(tree: Record<string, string>) {
+  const root = join(scratch(), `case-${case_++}`)
+  writeTree(root, tree)
+  return claudeCodeMainAgent({
     homeDir: join(root, 'home'),
     cwd: join(root, 'project'),
     env: {},
@@ -44,4 +55,18 @@ test('disableBypassPermissionsMode holds from any file', async () => {
       'project/.claude/settings.local.json': perms({ defaultMode: 'bypassPermissions' }),
     }),
   ).toEqual({ defaultMode: 'bypass', bypassDisabled: true })
+})
+
+test('the `agent` setting is the main agent: the higher file wins, a blank one is none', async () => {
+  const agent = (name: unknown) => JSON.stringify({ agent: name })
+  expect(
+    await mainAgentOf({
+      'home/.claude/settings.json': agent('reviewer'),
+      'project/.claude/settings.json': agent('auditor'),
+    }),
+  ).toBe('auditor')
+  expect(await mainAgentOf({ 'home/.claude/settings.json': agent('reviewer') })).toBe('reviewer')
+  expect(await mainAgentOf({ 'home/.claude/settings.json': agent('  ') })).toBeUndefined()
+  expect(await mainAgentOf({ 'home/.claude/settings.json': agent(3) })).toBeUndefined()
+  expect(await mainAgentOf({})).toBeUndefined()
 })

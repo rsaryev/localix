@@ -202,3 +202,26 @@ describe('the directory a run reads', () => {
     expect(row('general-purpose')).toMatchObject({ delegable: true, self: true })
   })
 })
+
+describe('the agent the main thread runs as', () => {
+  test('the settings name resolves to an enabled file agent; the rest is no override', async () => {
+    const t = await fixture({ sec: ['auditor'] })
+    await t.userFile('reviewer')
+    expect(await t.service.resolveMainAgent('u', 'reviewer')).toMatchObject({
+      fullName: 'reviewer',
+      prompt: expect.stringContaining('Body of reviewer'),
+    })
+    // A plugin agent by its qualified or its unique bare name, as Claude Code resolves it.
+    expect(await t.service.resolveMainAgent('u', 'sec:auditor')).toMatchObject({ name: 'auditor' })
+    // Nothing by that name, the default agent itself and `general-purpose` change nothing.
+    for (const name of ['nobody', 'localix', 'general-purpose'])
+      expect(await t.service.resolveMainAgent('u', name)).toBeNull()
+  })
+
+  test('a switched-off agent is not run as', async () => {
+    const t = await fixture()
+    await t.userFile('reviewer')
+    await t.service.setAgentEnabled('u', 'reviewer', false)
+    expect(await t.service.resolveMainAgent('u', 'reviewer')).toBeNull()
+  })
+})

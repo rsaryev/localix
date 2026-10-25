@@ -24,7 +24,7 @@ import { createMiniAppAgentDirectory } from '../../../../mini-apps/agent-directo
 import { runHumanAssignedHooks } from '../../../../mini-apps/hooks'
 import type { LoadedMiniAppHook } from '../../../../mini-apps/loader-contract'
 import { publishHumanAssignment } from '../human-assignment'
-import { applyPluginMainAgent, runToolsAgent } from '../plugin-main-agent'
+import { applyMainAgent, runToolsAgent } from '../plugin-main-agent'
 import { applySpeakerAgent, contextFilesFor } from '../speaker-agent'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import { adoptPluginAgentModel } from '../plugin-main-agent-model'
@@ -134,10 +134,14 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
   }
   // `omitClaudeMd` (and the built-in Explore and Plan): no workspace instruction files.
   const contextFiles = contextFilesFor(context.contextFiles, asType?.subagent ?? null)
-  const main = applyPluginMainAgent(asType ?? context, asType ? null : loadedPlugins.mainAgent, {
-    speakerAgentId,
-    host: turn.policy.host.kind,
-  })
+  // The `agent` setting, in Claude Code's order: the person's files, then the plugin's own.
+  const run = { speakerAgentId, host: turn.policy.host.kind }
+  const chosen =
+    asType || speakerAgentId !== DEFAULT_AGENT_ID || run.host !== 'chat'
+      ? null
+      : ((await deps.resolveMainAgent?.(userId, session.projectId ?? null, defaultCwd ?? null)) ??
+        loadedPlugins.mainAgent)
+  const main = applyMainAgent(asType ?? context, chosen, run)
   await adoptPluginAgentModel(frame, turn, main.mainAgent)
   frame.teardown.miniAppHooks = loadedMiniApps.hooks
   frame.teardown.defaultCwd = defaultCwd
