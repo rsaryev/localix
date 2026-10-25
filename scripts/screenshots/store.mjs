@@ -152,6 +152,26 @@ const VERIFY = {
       return root.scrollWidth - root.clientWidth
     })
     expect(overflow).toBeLessThanOrEqual(1)
+    // Tiles are one even row each: the same height, the action on the name's row, and no
+    // category cut short while there is room for it.
+    const shape = await page.evaluate(() => {
+      const tiles = [...document.querySelectorAll('[data-store-scroller] section [data-listing]')]
+      const heights = new Set(tiles.map((tile) => Math.round(tile.getBoundingClientRect().height)))
+      const apart = tiles.filter((tile) => {
+        const name = tile.querySelector('p')?.getBoundingClientRect()
+        const action = tile.querySelector('.pointer-events-auto')
+        const box = action?.getBoundingClientRect()
+        return !name || !box || box.top > name.bottom
+      }).length
+      const cut = [
+        ...document.querySelectorAll('section[aria-label="Categories"] button span.truncate'),
+      ].filter((label) => label.scrollWidth > label.clientWidth).length
+      return { tiles: tiles.length, heights: heights.size, apart, cut }
+    })
+    expect(shape.tiles).toBeGreaterThan(0)
+    expect(shape.heights).toBe(1)
+    expect(shape.apart).toBe(0)
+    expect(shape.cut).toBe(0)
   },
   async 'store-plugins'(page) {
     await expect(heading(page)).toHaveText('Plugins')
@@ -191,9 +211,9 @@ const VERIFY = {
   },
   async 'store-installed'(page) {
     await expect(heading(page)).toHaveText('Installed')
-    await expect(page.locator('[data-install]')).toHaveCount(STORE_INSTALLED.length, {
-      timeout: 15_000,
-    })
+    // The three mini apps the seed installed are there, beside the agents that come with Localix.
+    for (const id of STORE_INSTALLED)
+      await expect(page.locator(`[data-install="${id}"]`)).toHaveCount(1, { timeout: 15_000 })
     await expect(page.getByRole('switch').first()).toBeVisible()
   },
   async 'store-commands'(page) {
