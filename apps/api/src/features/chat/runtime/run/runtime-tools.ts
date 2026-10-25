@@ -35,7 +35,7 @@ import type { SetTopicPort } from '../../../agent-core/tools/set-topic'
 import type { MemoryScope } from '../../../agent-core/memory-scope-policy'
 import type { RunPolicy } from '../../policy/run-policy'
 import type { WorkflowEntry } from '../../../agent-core/tools/workflow/workflow'
-import type { ChatModel } from '../../../agent-core/tools/workflow/agent-route'
+import type { ChatModel } from '../../../agent-core/agent-model-route'
 import type { SkillCommandPolicyRef } from './skill-tool-ports'
 import type { LoadedMiniApps } from '../../../mini-apps/loader-contract'
 

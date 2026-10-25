@@ -10,7 +10,9 @@ import { sessionFixture } from '../../../../testing/session-fixture'
 import { createChatRepository } from '../../repository'
 import { pluginAgentModelFor } from './plugin-main-agent-model'
 
-const CATALOG = ['openai/gpt-4o', 'anthropic/claude-sonnet-4-5', 'anthropic/claude-3-5-sonnet']
+const CATALOG = ['openai/gpt-4o', 'anthropic/claude-sonnet-4-5', 'anthropic/claude-3-5-sonnet'].map(
+  (id) => ({ id, providerId: id.split('/')[0]! }),
+)
 
 describe('the model a plugin main agent asks for', () => {
   test('applies over a seat the person did not pick, alias resolved to the newest match', () => {
@@ -19,13 +21,13 @@ describe('the model a plugin main agent asks for', () => {
         declared: 'sonnet',
         seatModelId: 'openai/gpt-4o',
         seatChosen: false,
-        catalogModelIds: CATALOG,
+        catalog: CATALOG,
       }),
     ).toBe('anthropic/claude-sonnet-4-5')
   })
 
   test('the person’s own pick, `inherit`, no model or the same model change nothing', () => {
-    const seat = { seatModelId: 'openai/gpt-4o', catalogModelIds: CATALOG }
+    const seat = { seatModelId: 'openai/gpt-4o', catalog: CATALOG }
     expect(pluginAgentModelFor({ ...seat, declared: 'sonnet', seatChosen: true })).toBeNull()
     expect(pluginAgentModelFor({ ...seat, declared: 'inherit', seatChosen: false })).toBeNull()
     expect(pluginAgentModelFor({ ...seat, declared: undefined, seatChosen: false })).toBeNull()

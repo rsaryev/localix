@@ -16,18 +16,8 @@
  *     user's credentials, not the agent's — and the run resolves a live connection for the model
  *     anyway, rebinding one that has since been replaced.
  */
-import { REASONING_EFFORTS, type ReasoningEffort } from '../../db/types'
+import { agentModelRoute, type AgentRoute } from '../agent-core/agent-model-route'
 import type { AgentSummary } from './contracts'
-
-/**
- * What a card can say about the model chain. Structurally the chat feature's model route, stated
- * here so the registry does not import the host that asks it (`features/host-boundaries.test.ts`).
- */
-export interface AgentCardRoute {
-  modelId?: string
-  providerConnectionId?: null
-  reasoningEffort?: ReasoningEffort
-}
 
 /**
  * The port the chat service is handed: ask the registry, translate, answer.
@@ -56,22 +46,25 @@ export function agentModelDefaultsPort(agents: {
 /** Card-authored route for each agent that states one, keyed by agent ID. */
 export function agentModelDefaults(
   agents: readonly Pick<AgentSummary, 'record'>[],
-): Map<string, AgentCardRoute> {
-  const routes = new Map<string, AgentCardRoute>()
+): Map<string, AgentRoute> {
+  const routes = new Map<string, AgentRoute>()
   for (const agent of agents) {
     const preference = agent.record.modelPreference
     if (!preference?.model && !preference?.effort) continue
-    const model =
+    // A card names a provider and a model, while a run wants one identifier: the provider is
+    // prefixed unless the model already carries one.
+    const route =
       preference.model && preference.provider && !preference.model.includes('/')
         ? `${preference.provider}/${preference.model}`
-        : preference.model
-    // The card's effort is free text, so it is validated rather than trusted into a typed chain.
-    const effort = REASONING_EFFORTS.find((known) => known === preference.effort)
-    const route: AgentCardRoute = {
-      ...(model ? { modelId: model, providerConnectionId: null } : {}),
-      ...(effort ? { reasoningEffort: effort } : {}),
-    }
-    if (Object.keys(route).length > 0) routes.set(agent.record.id, route)
+        : undefined
+    const answer = agentModelRoute(
+      {
+        ...(route ? { route } : { model: preference.model }),
+        effort: preference.effort,
+      },
+      {},
+    ).route
+    if (Object.keys(answer).length > 0) routes.set(agent.record.id, answer)
   }
   return routes
 }

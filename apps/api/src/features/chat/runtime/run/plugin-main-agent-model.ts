@@ -2,7 +2,7 @@ import { agentModelSettingsFor } from '@localixai/agent'
 import { findCatalogModel } from '@localixai/agent/catalog'
 
 import { agentRoute, withRoute } from '../../../../contracts/session-route'
-import { resolveModelAlias } from '../../../agent-core/model-alias'
+import { agentModelRoute } from '../../../agent-core/agent-model-route'
 import type { LoadedPluginAgent } from '../../../plugins/loader-contract'
 import { toSessionSummary } from '../../repository'
 import { resolveRunModel } from './model-selection'
@@ -19,10 +19,13 @@ export function pluginAgentModelFor(input: {
   declared: string | undefined
   seatModelId: string
   seatChosen: boolean
-  catalogModelIds: readonly string[]
+  catalog: readonly { id: string; providerId: string }[]
 }): string | null {
   if (input.seatChosen || !input.declared) return null
-  const resolved = resolveModelAlias(input.declared, input.seatModelId, input.catalogModelIds)
+  const resolved = agentModelRoute(
+    { model: input.declared },
+    { catalog: input.catalog, inherit: input.seatModelId },
+  ).route.modelId
   return resolved && resolved !== input.seatModelId ? resolved : null
 }
 
@@ -47,7 +50,7 @@ export async function adoptPluginAgentModel(
     declared: mainAgent.preferredModel,
     seatModelId: seat.modelId,
     seatChosen: await env.repo.isSeatModelChosen(userId, frame.session.id, speakerAgentId),
-    catalogModelIds: turn.catalog.models.map((model) => model.id),
+    catalog: turn.catalog.models,
   })
   if (!modelId) return
   // The seat's connection is the hint: a model id several providers list resolves on the account

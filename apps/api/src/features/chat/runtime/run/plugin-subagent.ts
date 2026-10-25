@@ -1,5 +1,5 @@
 import type { DelegatePluginPorts } from '../../../agent-core/tools/delegate-plugin-agent'
-import { workflowAgentRoute, type ChatModel } from '../../../agent-core/tools/workflow/agent-route'
+import { agentModelRoute, type ChatModel } from '../../../agent-core/agent-model-route'
 import {
   adoptHookWorktree,
   type WorktreeHook,
@@ -55,7 +55,13 @@ export function delegatePluginPorts(input: {
   return {
     agents: () => input.agents,
     ...(chatModel
-      ? { route: (asked) => workflowAgentRoute({ ...asked, chat: chatModel, catalog }) }
+      ? {
+          route: (asked) =>
+            agentModelRoute(
+              { model: asked.model, effort: asked.effort },
+              { chat: chatModel, catalog, who: asked.who },
+            ),
+        }
       : {}),
     isolate: async (name) => {
       const made = await input.worktreeHook?.(name)

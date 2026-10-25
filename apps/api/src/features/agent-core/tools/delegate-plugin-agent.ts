@@ -1,5 +1,5 @@
 import type { DelegateAgent, TaskDelegationOptions } from './task-delegation-contracts'
-import type { WorkflowAgentRoute } from './workflow/agent-start'
+import type { AgentRoute } from '../agent-model-route'
 
 /**
  * A Claude Code plugin's agents as `delegate`'s SUBAGENT TYPES, as Claude Code's Agent tool runs
@@ -50,7 +50,7 @@ export interface DelegatePluginPorts {
     model?: string
     effort?: string
     who: string
-  }) => MaybePromise<{ route: WorkflowAgentRoute; notes: string[] }>
+  }) => MaybePromise<{ route: AgentRoute; notes: string[] }>
   /** A fresh worktree of the chat's repository, for `isolation: worktree`. */
   isolate?: (name: string) => Promise<PluginAgentWorktree>
 }
@@ -124,7 +124,7 @@ export async function resolveDelegateTarget(
 /** What a plugin agent adds to its child's creation. */
 export interface PluginAgentChild {
   provenance: { pluginAgent: string; workingDir?: string; worktreeByHook?: true }
-  route: WorkflowAgentRoute
+  route: AgentRoute
   pinnedSkills?: string[]
   notes: string[]
 }
@@ -164,7 +164,7 @@ export async function preparePluginAgentChild(
   const model = call.hostModel ? undefined : agent.preferredModel
   const effort = call.effort ?? agent.preferredEffort
   const notes: string[] = []
-  let route: WorkflowAgentRoute = {}
+  let route: AgentRoute = {}
   if (model || effort) {
     if (ports.route) {
       const resolved = await ports.route({ model, effort, who })

@@ -1,4 +1,4 @@
-import type { ReasoningEffort } from '../../../../db/types'
+import type { AgentRoute } from '../../agent-model-route'
 import { holdReport } from '../../delegation-awaits'
 import { delegationNote } from '../../delegation-hierarchy'
 import type { LaneSpec } from '../../delegation-lanes'
@@ -29,13 +29,6 @@ export const WORKFLOW_AGENT_WAIT_MS = 6 * 60 * 60_000
 
 const TITLE_MAX = 120
 
-/** A child's own route: the parts the script chose, the rest inherited from the chat. */
-export interface WorkflowAgentRoute {
-  providerConnectionId?: string | null
-  modelId?: string
-  reasoningEffort?: ReasoningEffort
-}
-
 export interface WorkflowAgentDeps {
   opts: TaskDelegationOptions
   /** Stop a child the run gave up on. */
@@ -46,7 +39,7 @@ export interface WorkflowAgentDeps {
   route?: (request: {
     model?: string
     effort?: string
-  }) => Promise<{ route: WorkflowAgentRoute; notes: string[] }>
+  }) => Promise<{ route: AgentRoute; notes: string[] }>
   /** A fresh worktree of the chat's repository, for `isolation: 'worktree'`. */
   isolate?: (name: string) => Promise<AgentWorktree>
   /** What a finished child spent, from the usage ledger. */
@@ -92,7 +85,7 @@ export async function startWorkflowAgent(
         )
       : null
   const notes: string[] = [...(typed?.notes ?? [])]
-  let route: WorkflowAgentRoute = typed?.route ?? {}
+  let route: AgentRoute = typed?.route ?? {}
   if ((request.model || request.effort) && deps.route) {
     const resolved = await deps.route({ model: request.model, effort: request.effort })
     route = resolved.route

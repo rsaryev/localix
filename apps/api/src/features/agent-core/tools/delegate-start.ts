@@ -2,11 +2,10 @@ import { errorMessage } from '../../../lib/errors'
 import { admitDelegation, DEFAULT_DELEGATION_BUDGET } from '../delegation-budget'
 import { holdReport, type HeldReport } from '../delegation-awaits'
 import { delegatesAt, delegationNote } from '../delegation-hierarchy'
-import { resolveModelAlias } from '../model-alias'
 import { ONE_SHOT_EXECUTION } from '../prompt/sections/team-contract'
 import { reportBody } from './child-report'
 import type { DelegateRequest } from './delegate'
-import type { WorkflowAgentRoute } from './workflow/agent-start'
+import { agentModelRoute, type AgentRoute } from '../agent-model-route'
 import {
   isolateChild,
   preparePluginAgentChild,
@@ -92,7 +91,7 @@ export async function startDelegation(
     // Code's Agent `model` / `effort` / `isolation`): routed against the chat's provider.
     const own = !plugin ? await callChildSetup(request, plugins, toolCallId, agent.handle) : null
     const modelId = request.model
-      ? (own?.route.modelId ?? resolveModelAlias(request.model, undefined) ?? undefined)
+      ? (own?.route.modelId ?? agentModelRoute({ model: request.model }, {}).route.modelId)
       : undefined
     // Claude Code's `background: true`: the call never holds for its report.
     const wait = request.wait && !plugin?.background
@@ -194,10 +193,10 @@ async function callChildSetup(
   plugins: DelegatePluginPorts | undefined,
   toolCallId: string,
   handle: string,
-): Promise<{ route: WorkflowAgentRoute; provenance: object; notes: string[] }> {
+): Promise<{ route: AgentRoute; provenance: object; notes: string[] }> {
   const who = `agent ${handle}`
   const notes: string[] = []
-  let route: WorkflowAgentRoute = {}
+  let route: AgentRoute = {}
   if ((request.model || request.effort) && plugins?.route) {
     const resolved = await plugins.route({
       ...(request.model ? { model: request.model } : {}),

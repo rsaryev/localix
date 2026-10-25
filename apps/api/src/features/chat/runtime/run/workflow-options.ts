@@ -12,11 +12,8 @@ import {
   startWorkflowAgent,
   type WorkflowAgentDeps,
 } from '../../../agent-core/tools/workflow/agent-start'
-import {
-  workflowAgentRoute,
-  workflowConcurrency,
-  type ChatModel,
-} from '../../../agent-core/tools/workflow/agent-route'
+import { agentModelRoute, type ChatModel } from '../../../agent-core/agent-model-route'
+import { workflowConcurrency } from '../../../agent-core/tools/workflow/agent-route'
 import { createWorkflowRunStore } from '../../../agent-core/tools/workflow/journal'
 import type { DelegatePluginPorts } from '../../../agent-core/tools/delegate-plugin-agent'
 import { createAgentWorktree } from '../../../agent-core/tools/workflow/worktree'
@@ -82,7 +79,7 @@ export function buildWorkflowOptions(input: WorkflowOptionsInput): OptionalToolP
       stop,
       run: { id: runId, lane: { key: `workflow:${runId}`, cap: workflowConcurrency() } },
       ...(chatModel
-        ? { route: async (asked) => workflowAgentRoute({ ...asked, chat: chatModel, catalog }) }
+        ? { route: async (asked) => agentModelRoute(asked, { chat: chatModel, catalog }) }
         : {}),
       isolate: async (name) => {
         const made = await input.worktreeHook?.(name)
