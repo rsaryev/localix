@@ -287,6 +287,9 @@ Changes land on `main`.
 
 ### Fixed
 
+- **Store → Sources switches say what they do**: each switch is labelled "Auto-update" (it keeps the
+  marketplace and the plugins from it up to date; it does not turn the source on or off), and it
+  answers a press at once and goes back if the change is refused.
 - **Store → Sources updates as you use it**: switching a marketplace's auto-update, reading it
   again, adding or removing a source shows at once, without leaving the section and coming back, and
   a source that changes on its own (a background update) shows too. Two changes to the marketplace

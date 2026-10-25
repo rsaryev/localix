@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { BookMarked, CircleAlert, Ellipsis, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import type { SourceView } from '@localixai/store'
 import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
@@ -21,6 +21,8 @@ import { useStoreSources } from '../model/useStoreData'
 /** One source: who it is, how many packages, when it was read, its switch and its menu. */
 function SourceRow({ source, onRemove }: { source: SourceView; onRemove: () => void }) {
   const store = useStoreScope()
+  const captionId = useId()
+  const titleId = useId()
   const entries: MenuEntry[] = [
     {
       id: 'update',
@@ -36,6 +38,18 @@ function SourceRow({ source, onRemove }: { source: SourceView; onRemove: () => v
         ]),
   ]
   const { trust } = source
+  // The press shows at once; the list takes over once it agrees, and the press is undone if the
+  // write is refused.
+  const [pressed, setPressed] = useState<boolean | null>(null)
+  useEffect(() => {
+    if (pressed !== null && source.autoUpdate === pressed) setPressed(null)
+  }, [pressed, source.autoUpdate])
+  const switchTo = (on: boolean) => {
+    const write = store.client.setSourceAutoUpdate(source.kind, source.id, on)
+    setPressed(on)
+    write.catch(() => setPressed(null))
+    store.run(write)
+  }
   return (
     <li
       data-source={source.id}
@@ -58,7 +72,9 @@ function SourceRow({ source, onRemove }: { source: SourceView; onRemove: () => v
         }
       >
         <span className="flex min-w-0 items-center gap-1.5 text-sm font-medium text-foreground">
-          <span className="truncate">{source.label}</span>
+          <span id={titleId} className="truncate">
+            {source.label}
+          </span>
           {trust && (
             <span className="shrink-0 text-2xs font-normal text-text-faint">
               {TRUST_LABELS[trust]}
@@ -82,16 +98,17 @@ function SourceRow({ source, onRemove }: { source: SourceView; onRemove: () => v
       </button>
       <div className="flex items-center gap-2">
         {source.autoUpdate !== undefined && (
-          <Switch
-            size="sm"
-            checked={source.autoUpdate}
-            aria-label={`Update ${source.label} on its own`}
-            onChange={(event) =>
-              store.run(
-                store.client.setSourceAutoUpdate(source.kind, source.id, event.target.checked),
-              )
-            }
-          />
+          <>
+            <span id={captionId} className="text-xs text-text-soft">
+              Auto-update
+            </span>
+            <Switch
+              size="sm"
+              checked={pressed ?? source.autoUpdate}
+              aria-labelledby={`${captionId} ${titleId}`}
+              onChange={(event) => switchTo(event.target.checked)}
+            />
+          </>
         )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

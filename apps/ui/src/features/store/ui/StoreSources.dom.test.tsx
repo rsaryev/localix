@@ -43,6 +43,10 @@ const SOURCES = [
     problem: 'The marketplace answered 404 — dev has not pushed it',
   },
 ]
+const official = (host: HTMLElement) =>
+  host.querySelector<HTMLElement>(
+    '[data-source="anthropics/claude-plugins-official"] [role="switch"]',
+  )!
 const dialog = () =>
   document.body.querySelector<HTMLElement>('[role="dialog"], [role="alertdialog"]')
 const field = () =>
@@ -90,13 +94,28 @@ describe('the Store’s sources', () => {
     }
   })
 
+  test('the switch is named by text you can see in its row: it is auto-update, not whether the source is on', async () => {
+    const view = await open()
+    try {
+      const toggle = official(view.host)
+      const named = toggle
+        .getAttribute('aria-labelledby')!
+        .split(' ')
+        .map((id) => view.host.querySelector<HTMLElement>(`[id="${id}"]`))
+      expect(named.every((el) => el !== null && el.getAttribute('aria-hidden') === null)).toBe(true)
+      const name = named.map((el) => el!.textContent).join(' ')
+      expect(name).toContain('Auto-update')
+      expect(name).toContain('claude-plugins-official')
+    } finally {
+      await view.done()
+    }
+  })
+
   test('the switch sets a marketplace to update on its own; a catalog has none', async () => {
     const view = await open()
     try {
-      expect(view.button('Update Localix on its own')).toBeUndefined()
-      const toggle = view.host.querySelector<HTMLElement>(
-        '[aria-label="Update claude-plugins-official on its own"]',
-      )!
+      expect(view.host.querySelector('[data-source="' + HOSTED + '"] [role="switch"]')).toBeNull()
+      const toggle = official(view.host)
       expect(toggle.getAttribute('aria-checked')).toBe('true')
       await view.click(toggle)
       expect(view.calls).toEqual(['auto-update plugin anthropics/claude-plugins-official false'])
@@ -108,10 +127,7 @@ describe('the Store’s sources', () => {
   test('the list follows the server: a switch it announces shows without leaving the page', async () => {
     const view = await open()
     try {
-      const toggle = () =>
-        view.host.querySelector<HTMLElement>(
-          '[aria-label="Update claude-plugins-official on its own"]',
-        )!
+      const toggle = () => official(view.host)
       expect(toggle().getAttribute('aria-checked')).toBe('true')
       await view.changeSources(
         SOURCES.map((source) =>
@@ -123,6 +139,34 @@ describe('the Store’s sources', () => {
       expect(toggle().getAttribute('aria-checked')).toBe('false')
     } finally {
       await view.done()
+    }
+  })
+
+  test('a switch answers the press at once, keeps the answer until the list agrees, and goes back when the write fails', async () => {
+    const view = await open()
+    try {
+      const toggle = () => official(view.host)
+      await view.click(toggle())
+      expect(toggle().getAttribute('aria-checked')).toBe('false')
+      await view.changeSources(
+        SOURCES.map((source) =>
+          source.id === 'anthropics/claude-plugins-official'
+            ? { ...source, autoUpdate: false }
+            : source,
+        ),
+      )
+      expect(toggle().getAttribute('aria-checked')).toBe('false')
+    } finally {
+      await view.done()
+    }
+    const refused = await open({ autoUpdateFails: 'The marketplace list is locked' })
+    try {
+      const toggle = official(refused.host)
+      await refused.click(toggle)
+      expect(toggle.getAttribute('aria-checked')).toBe('true')
+      expect(refused.host.textContent).toContain('The marketplace list is locked')
+    } finally {
+      await refused.done()
     }
   })
 

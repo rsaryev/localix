@@ -132,6 +132,8 @@ export interface StoreFake {
   actionResults?: Record<string, ActionResult>
   /** A provider's refusal of every save, in its words. */
   configFails?: string
+  /** A provider's refusal of every auto-update switch, in its words. */
+  autoUpdateFails?: string
   calls: string[]
   /** Every page read, as its query: `shelf=package:mini-app cursor=40`. */
   reads?: string[]
@@ -237,7 +239,10 @@ export function fakeClient(fake: StoreFake): StoreClient {
     addSource: async (kind, input) => call(`add source ${kind} ${input}`),
     removeSource: async (kind, id) => call(`remove source ${kind} ${id}`),
     refreshSource: async (kind, id) => call(`refresh source ${kind} ${id}`),
-    setSourceAutoUpdate: async (kind, id, on) => call(`auto-update ${kind} ${id} ${on}`),
+    setSourceAutoUpdate: async (kind, id, on) => {
+      if (fake.autoUpdateFails) throw new Error(fake.autoUpdateFails)
+      call(`auto-update ${kind} ${id} ${on}`)
+    },
     activity: async () => ({ jobs: [], updates: [] }),
     applyUpdates: async () => {
       call('update all')
