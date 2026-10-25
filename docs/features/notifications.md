@@ -102,16 +102,16 @@ per outage source, settled when the connection returns, reopened with ×2, ×3 o
 A provider connection that rate-limits you, runs out of its plan, or refuses its key is one standing
 entry for that connection, whichever chat hit it; the next run that completes on it settles the
 entry. A set of mini apps that fails to load for a workspace is one entry too, settled by the next
-load that works; its **Open mini apps** action opens Settings → Capabilities → Mini apps. A plugin
-that fails to load is its own entry, which opens Settings → Capabilities → Plugins. A question a
-participant asked you settles once you write in that conversation.
+load that works; its **Open mini apps** action opens the Store (Mini apps). A plugin that fails to
+load is its own entry, which opens the Store (Plugins). A question a participant asked you settles
+once you write in that conversation.
 
 ### Entries from mini apps
 
 An entry a mini app published is labelled with that mini app's display name and still opens the
 session it happened in. A mini app backend's problem, such as a webhook URL that rejects every
 delivery, is a standing entry per mini app and source, and its **Open mini app settings** action
-opens that app's row in Settings → Capabilities → Mini apps.
+opens that app's row in the Store (Mini apps).
 
 ### Actions on an entry
 

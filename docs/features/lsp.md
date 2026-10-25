@@ -172,9 +172,8 @@ The server process also receives `CLAUDE_PLUGIN_ROOT`, `CLAUDE_PLUGIN_DATA` and
 `CLAUDE_PROJECT_DIR`. A server config is a strict object: an unknown key keeps that server from
 loading, and the plugin's validation notes name the key.
 
-For each enabled plugin server, Localix reports two things in the plugin's validation notes
-(Settings → Capabilities → Plugins and `/plugin details`) and in the agent's `# Plugins` prompt
-section:
+For each enabled plugin server, Localix reports two things in the plugin's validation notes (the
+Store (Plugins) and `/plugin details`) and in the agent's `# Plugins` prompt section:
 
 - Extensions a built-in server already handles. The built-in server is kept for those files, and the
   plugin server registers only the remaining extensions.

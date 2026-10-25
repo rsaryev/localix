@@ -19,6 +19,14 @@ happens before anything is installed.
 
 ## How it works
 
+### Agents
+
+**Agents** is a package kind of its own: each agent is a Claude Code agent file, listed under
+**Yours**, **This project**, **Managed**, **From plugins** and **Built in**. **Add agent** makes
+one; an agent's page has **Overview**, **Settings** (its definition, written back to the file) and
+**Access** (its per-agent switches). The `team` plugin, Recommended here, adds a starter team. See
+[Agents](agents.md).
+
 ### Finding your way
 
 The Store opens in its own tab. A search across everything sits on top and the sections sit beside

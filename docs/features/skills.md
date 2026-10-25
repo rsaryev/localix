@@ -19,7 +19,7 @@ the **Default** project reads the personal ones.
 | Create or revise a skill   | Use Add skill on Store → Library → Yours (or Project), then edit it on its page.                     | Plugin-bundled skills are read-only; they follow their plugin.                           |
 | Let the agent load a skill | The runtime lists names and descriptions; the agent can fetch a matching body with the `skill` tool. | Bodies are loaded on demand rather than placing every skill in the prompt.               |
 | Archive stale skills       | Run the curator, or Archive a skill on its Store page.                                               | Archived directories are excluded from discovery until restored.                         |
-| Deny one agent a skill     | Switch it off on that agent's profile → Skills, or on Settings → Capabilities → Skills.              | The switch writes one `skill:<name>` rule; the file and every other agent are untouched. |
+| Deny one agent a skill     | Switch it off on that agent's profile → Skills, or on the agent's Store page, Access tab.            | The switch writes one `skill:<name>` rule; the file and every other agent are untouched. |
 | Control availability       | Enable or disable a named skill for the selected agent.                                              | Disabling removes access by name, including pins and keyword triggers; files remain.     |
 
 ## How it works
@@ -101,7 +101,7 @@ chosen when it is added.
 
 Skills from `.claude/` folders and command files are listed on Yours as read-only; a plugin's skills
 follow the plugin. A `.claude/commands` file is discovered as a skill, so there is no separate
-commands kind. Settings → Capabilities → Skills keeps the switches and **Run curator**.
+commands kind. The agent's Store page (Access tab) keeps the switches.
 
 The curator classifies an unpinned filesystem skill as stale when it has never been used for more
 than 30 days or was last used more than 90 days ago. Automatic checks run once the app is idle after
@@ -119,14 +119,14 @@ same name. Curator pins protect automatic passes, but manual archive remains ava
 
 ## Configuration
 
-| Setting or surface                    | Effect                                                           |
-| ------------------------------------- | ---------------------------------------------------------------- |
-| `<working-directory>/.localix/skills` | Stores skills for that project scope.                            |
-| `~/.localix/skills`                   | Stores skills for scratch chats.                                 |
-| Settings → Capabilities → Skills      | Switches skills per agent, runs the curator, links to the Store. |
-| Web slash menu                        | Inserts a one-shot `/name` invocation.                           |
-| Session-skills API                    | Replaces the session's persisted pinned-skill list.              |
-| Agent skill rules                     | Enables or disables access to a named skill for that agent.      |
+| Setting or surface                    | Effect                                                      |
+| ------------------------------------- | ----------------------------------------------------------- |
+| `<working-directory>/.localix/skills` | Stores skills for that project scope.                       |
+| `~/.localix/skills`                   | Stores skills for scratch chats.                            |
+| Agent Store page, Access tab          | Switches skills per agent.                                  |
+| Web slash menu                        | Inserts a one-shot `/name` invocation.                      |
+| Session-skills API                    | Replaces the session's persisted pinned-skill list.         |
+| Agent skill rules                     | Enables or disables access to a named skill for that agent. |
 
 ## Limits
 

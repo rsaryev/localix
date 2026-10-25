@@ -47,8 +47,11 @@ Where Localix has no equivalent, the feature is not offered:
   in [Not yet in Localix](claude-code-mods.md#not-yet-in-localix).
 - **Plugins.** Two plugins of the same name from different marketplaces cannot both be installed,
   and a `command` plugin source is refused.
-- **Agents.** A delegated agent cannot delegate again, and an agent file's `hooks`, `mcpServers` and
-  `permissionMode` are ignored.
+- **Agents.** A delegated agent cannot delegate again. An agent file's `hooks` run, while its
+  `mcpServers` and `permissionMode` are not applied. The built-in types `statusline-setup` and
+  `claude-code-guide` are not offered, and Localix has no `human` agent: describe yourself in
+  `CLAUDE.md`. Localix's own settings for an agent (`priority`, `memoryScope`, a provider route) sit
+  under a `localix:` key, which Claude Code ignores.
 - **Approvals.** An unapproved `.mcp.json` server does not load, since Localix has no approval
   prompt for one; imports from outside a project are skipped.
 

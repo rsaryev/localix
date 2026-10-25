@@ -8,6 +8,16 @@ Changes land on `main`.
 
 ### Added
 
+- **Agents are Claude Code agent files, managed in the Store**: an agent is a Markdown file in
+  `~/.claude/agents/` or a project's `.claude/agents/`, read the way Claude Code reads it, so one
+  you write works in both. **Store → Agents** lists yours, the project's, managed and plugin agents;
+  **Add agent** makes one, and an agent's page has **Overview**, **Settings** (its definition,
+  written back to the file) and **Access** (switches for tools, skills, MCP servers, plugins and
+  mini apps). **Copy to Yours**, **Duplicate** and **Move** work from the page. A delegated task
+  runs the agent it names, with that agent's own tools, model and skills. `/agents`, `@` links,
+  search and the palette open the Store. The `team` plugin (architect, backend, frontend, design,
+  devops) is Recommended in the Store instead of being added to your folder on first start. See
+  [Agents](docs/features/agents.md).
 - **Your own skills and MCP servers in the Store**: **Library → Yours** lists the skills and MCP
   servers you wrote, with **Add skill** and **Add MCP server**; with a project open, **Library →
   Project** lists the ones kept in that project. A skill's page has its description and instructions
@@ -368,6 +378,11 @@ Changes land on `main`.
   and an npm plugin source without its own registry uses the one your `~/.npmrc` names for it.
 
 ### Removed
+
+- **Settings no longer manages items**: the Agents, Capabilities, MCP connections, Plugins, Skills
+  and Mini apps pages are gone. Settings is Preferences, Editor, Shortcuts, Project, Permissions,
+  Models and System; everything else is on the item's page in the Store. The human record is gone
+  too: describe yourself in `CLAUDE.md`. Agents saved in Localix's earlier JSON format are not read.
 
 - **Import MCP servers from JSON**: the paste-a-JSON import in Settings → MCP is gone with the form
   it belonged to. Add servers one at a time with **Add MCP server** in the Store, or define them in

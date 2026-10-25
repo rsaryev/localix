@@ -16,7 +16,7 @@ all.
 | Add a server                          | Store → Library → Yours (or Project) → **Add MCP server**         | A program (stdio), a web address (HTTP) or a web socket; the name is chosen once      |
 | Change a server's settings            | Its Store page → Settings tab                                     | Command, URL, environment, headers, OAuth client, tool call timeout; saved explicitly |
 | Test a connection                     | Its Settings tab → **Test connection**                            | A test uses the same process-lifetime connection cache as chat                        |
-| Enable or disable a server            | Settings → Capabilities → MCP, or its Store page                  | A rule for the selected agent; a server that is off is never connected                |
+| Enable or disable a server            | the Store (MCP servers), or its Store page                        | A rule for the selected agent; a server that is off is never connected                |
 | Enable or disable one advertised tool | Its Settings tab, **Tools**, after a successful test              | Filters apply on the next run; the server keeps its complete cached inventory         |
 | Sign in with OAuth                    | Its Settings tab → **Sign in**, on an HTTP server                 | Opens the provider's page in your browser; **Sign out** forgets the stored tokens     |
 | Remove a server                       | Its Store page                                                    | Removes its record and the secrets kept for it                                        |

@@ -69,8 +69,8 @@ report follows.
 | `delegate { action: "stop", run }`                         | Requests a stop of the current run of one child or a list. No report follows.                                                          | The child can still be messaged later.                                                       |
 | `delegate { action: "close", run }`                        | Stops one child or a list and ends them for good: nothing wakes them, their chats turn read-only.                                      | Irreversible. Transcripts stay readable; no report follows.                                  |
 
-`agent` is an agent's handle (or id); omitted, the delegating agent runs the task itself. `run` is
-the session id or task name that `list` prints, and it must be one of this session's own children. A
+`agent` is an agent's name (or id); omitted, the delegating agent runs the task itself. `run` is the
+session id or task name that `list` prints, and it must be one of this session's own children. A
 follow-up on the same task is a message, not a new child: the child keeps everything it has already
 read and done.
 
@@ -156,12 +156,15 @@ requested outcome is ready: the delegator reviews the report before it calls the
 
 ## Claude Code agent types
 
-`agent` names a Claude Code agent type as well as a Localix agent:
+`agent` names an agent from the one catalog every surface reads (see [Agents](agents.md)):
 
-- **Agent files**: a plugin's `agents/*.md` (`<plugin>:<name>`), and outside a plugin
-  `.claude/agents/**/*.md` in the working directory and each parent up to the repository root (the
-  closest definition of a name wins), then `~/.claude/agents/**/*.md`, named by their `name`
-  frontmatter. A file outside a plugin without a `name` or a `description` is skipped.
+- **Agent files**: yours (`~/.claude/agents/`), the project's (`.claude/agents/` in the working
+  directory and each parent up to the repository root, the closest definition of a name winning),
+  managed ones and a plugin's `agents/*.md` (`<plugin>:<name>`), named by their `name` front matter.
+  A file without a `name` or a `description` is skipped.
+- **A child is that agent**: a fresh run of the named agent on its own prompt, tool ceiling,
+  instruction files, model and skills, as in Claude Code, subject to its Access rules. An agent
+  whose Access denies `Agent(<name>)` is hidden from the directory and refused.
 - **Built-in types**: `general-purpose` and `claude` run the task as the delegating agent itself;
   `Explore` and `Plan` run it read-only, without the project's instruction files. An agent file
   named `Explore` or `Plan` replaces the built-in.
@@ -169,6 +172,10 @@ requested outcome is ready: the delegator reviews the report before it calls the
   (`~/.claude/agent-memory/<name>/`, `.claude/agent-memory/<name>/` or
   `.claude/agent-memory-local/<name>/`) whose `MEMORY.md` — its first 200 lines or 25KB — joins its
   instructions, with the file tools to keep it.
+
+The prompt has one `# Agent directory`, listing the agents a tag can reach and those `delegate` can
+hand a task to, with their tool lists. Hooks see the agent's name as `agent_type`, or
+`general-purpose`.
 
 In an agent's `tools`, `Agent` and `Task` mean `delegate`. An agent type whose `tools` list names no
 tool available here is refused instead of starting with none.

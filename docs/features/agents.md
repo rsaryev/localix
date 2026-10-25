@@ -1,62 +1,81 @@
-# Agent presets
+# Agents
 
-Open an agent profile to edit its **Definition**, tools, skills, plugins, mini apps, MCP access and
-ordered permission rules. Instructions describe the work; permission rules decide which actions can
-run. Each turn resolves the current definition and policy together.
+An agent is a Claude Code agent file: a Markdown file whose front matter names it and describes it
+and whose body is its standing instructions. Localix reads the same folders Claude Code does, so an
+agent you write for one works in the other. There is no second agent format and no Agents page in
+Settings: agents are Store items, found and edited in the [Store](store.md).
 
-Create specialists from a conversation and manage the registry with `/agents`; see
+Create specialists from a conversation and manage them with `/agents`; see
 [Create and manage specialists](agent-management.md).
 
-## Shipped assistant
+## Where agents live
 
-`localix` is the only shipped agent. It coordinates the requested outcome and handles
-straightforward work directly. Its default hierarchy priority is **2**. The elected leader in a chat
-owns team assembly regardless of its handle: for work that needs distinct specialties, it reuses
-suitable definitions or creates the smallest useful team and invites it into the chat.
+| Kept in                      | Folder                                                        | You can edit it |
+| ---------------------------- | ------------------------------------------------------------- | --------------- |
+| Yours                        | `~/.claude/agents/` (or the folder `CLAUDE_CONFIG_DIR` names) | Yes             |
+| This project                 | `<project>/.claude/agents/`, up to the repository root        | Yes             |
+| Managed by your organisation | the managed `.claude/agents/` folder                          | No              |
+| From a plugin                | the `agents/` folder of an enabled plugin                     | No              |
+| Built in                     | `general-purpose`, `Explore`, `Plan` and `localix`            | No              |
 
-`localix` is built in: it cannot be deleted or disabled, and every conversation can fall back to it.
+When two agents share a name, Claude Code's precedence decides which one runs: managed, then the
+project (the closest folder wins), then yours, then plugins. A file with the name of a built-in type
+replaces it. Folders are watched: an agent you add or edit in an editor appears in the Store and in
+`@` suggestions within a moment, and a file you delete leaves every list at once.
 
-## Human
+Localix keeps in its own database only what a file cannot hold: the agent's **access** rules, a
+stable identity that survives a rename, and chat history. The identity is why a renamed or moved
+file keeps its seat in a conversation and its permission choices. A file that disappears is treated
+as missing for a grace period (10 minutes for your own folder, 7 days for a project) before its
+rules and seats are cleaned up; a disabled plugin or an unreachable project folder is never a
+deletion. Deleting an agent in the Store or with `/agents delete` cleans up at once. Messages it
+wrote stay, under its last name.
 
-`human` is the second shipped record: it describes you, the person agents work with, and is never
-run. Agents never address you with an `@` mention: to get your answer, a decision or an approval
-they use the `ask` tool ([HITL](hitl.md)); otherwise they report and stop, and the reply returns to
-you. A run with no way to ask proceeds on its best assumption and states it. The record holds only a
-title, a description and notes for agents; description and notes together are limited to 1,000
-characters. It has no model, tools, skills, permissions or hierarchy priority, never joins a
-conversation as a participant, and cannot be deleted, disabled or copied.
+## The agent's page
 
-Edit it on the pinned **Human** card in **Settings → Agents**, next to Localix. The scope picker
-decides where a save lands:
+Open **Store → Agents**, or follow an `@name` link in a chat. The page has these tabs:
 
-| Scope        | Stored in                              | Applies to                                                                                |
-| ------------ | -------------------------------------- | ----------------------------------------------------------------------------------------- |
-| Installation | `~/.localix/agents/human.json`         | Every chat, unless a project has its own card                                             |
-| Project      | `<project>/.localix/agents/human.json` | Chats of that project (the save is approved in the app database, like a Localix override) |
+- **Overview**: description, where the file is, how many chats it is seated in, and the actions that
+  fit: Edit, Duplicate, Copy to Yours, Move to a project or to Yours, Delete.
+- **Settings**: the definition, written back to the file. Name, description, instructions, model,
+  effort, turn limit, preloaded skills, priority and memory scope are fields; front matter Localix
+  does not edit (`tools`, `hooks`, `mcpServers` and unknown keys) is kept as it is. A save that
+  would overwrite a change made in an editor in the meantime is refused, and the page asks you to
+  reload.
+- **Access**: per-agent switches for tools, skills, MCP servers, plugins and mini apps. A switch is
+  a rule for this agent only. Use **Open** on a row to go to that item's own page.
 
-A chat reads the project card, then the installation card, then the shipped default. **Restore**
-removes the card of the current scope and returns to the next one.
+Agents from a plugin or a managed folder are read-only: **Copy to Yours** makes an editable copy
+with a fresh identity and no inherited permissions beyond the Localix default.
 
-Every agent's prompt lists you under **Conversation participants**, in solo chats too, as
-`@human (<title>): the person you work with — <description>`, with your notes on the next line. The
-entry is information about you, not instructions or an address. A board card may still be assigned
-to you ([Cards for you](task-board.md#cards-for-you)). `human` and `all` are reserved handles: an
-agent saved under `human` before this release is moved to `human-agent.json` with the handle
-`human-agent` when the registry is read, and the move is logged.
+## Localix, and the built-in types
+
+`localix` is the main loop, not a file. It coordinates the requested outcome and handles
+straightforward work directly, its priority is **2**, and it cannot be deleted or disabled. Every
+conversation can fall back to it. To change how it behaves, edit `CLAUDE.md` or an output style, or
+set `"agent"` in your Claude Code settings.
+
+`general-purpose` (also `claude`), `Explore` and `Plan` are Claude Code's built-in subagent types
+and behave as in Claude Code. `statusline-setup` and `claude-code-guide` are not offered. See
+[Claude Code compatibility](../extending/claude-code-compatibility.md).
+
+You are not an agent. There is no `@human` record: describe yourself and your preferences in
+`~/.claude/CLAUDE.md` or the project's `CLAUDE.md`. Agents never address you with an `@` mention; to
+get your answer, a decision or an approval they use the `ask` tool ([HITL](hitl.md)); otherwise they
+report and stop, and the reply returns to you. `@all` addresses every participant. A board card may
+still be assigned to you ([Cards for you](task-board.md#cards-for-you)).
 
 ## Starter team
 
-On first start, Localix adds a starter team to your global registry: `architect` (priority **1**),
-and `backend`, `frontend`, `design` and `devops` (priority **0**). Coordination is the elected
-leader's, so the team ships no project manager or team lead; agents seeded by an earlier version
-stay in your registry until you delete them. They are ordinary agents, created exactly like one from
-`/agents create`, with the same default permission rules. Edit or delete any of them; a deleted role
-is not added again, and a handle you already use keeps your definition. Tag one in a conversation to
-bring it in.
+The `team` plugin in the `localix` marketplace is Recommended in the Store. It adds `architect`,
+`backend`, `frontend`, `design` and `devops` as ordinary plugin agents. Nothing is added to your
+folders until you install it, and uninstalling removes them. Use **Copy to Yours** to change one.
+Tag an agent in a conversation to bring it in.
 
-Specialists have explicit priorities from **−2** to **2**. Higher priority elects the leader; equal
-priorities retain participant order. Explicit user routing and existing work ownership still take
-precedence. Supporting specialists should have a lower priority than the coordinator.
+Specialists have priorities from **−2** to **2** (`localix: priority:` in the file). Higher priority
+elects the leader; equal priorities keep participant order. Explicit user routing and existing work
+ownership still take precedence. Supporting specialists should have a lower priority than the
+coordinator.
 
 ## Default tool candidates
 
@@ -64,79 +83,49 @@ Localix has an open candidate policy, so newly installed tools can join its runs
 needs a compatible run shape, host port and model. A child cannot acquire a tool that requires
 direct human interaction merely by allowing it in policy.
 
-An agent-authored specialist receives a copy of its creator's saved permission rules. Manual
-creation starts from the Localix default; the user can narrow an agent's ordered rules in its
-profile. Definitions and priorities never grant permission. See [Permissions](permissions.md).
-
-## Definitions, copies and updates
-
-Native definitions belong to one registry: a project, or the installation. Every project also lists
-the installation's agents, including the starter team; a project agent with the same handle takes
-its place there. Editing an installation agent from a project still edits the installation's
-definition. Editing a shipped definition in a project saves an override for that project and retains
-its stable agent ID. A repository file cannot claim this override's authority without an
-authenticated save. External edits invalidate the saved override and the shipped definition applies
-again. Global definition edits do not replace a project's definition.
-
-Permission rules belong to the agent ID. Shipped identities are stable across registries, so their
-permission choices follow them across projects. A duplicated agent receives a fresh identity and
-copies its definition, permission constraints, invocation restrictions and enabled choice. A copy of
-a disabled agent stays disabled. Local agents can change their handle while retaining their ID;
-shipped handles stay fixed. Extension-owned definitions are updated through their extension.
-
-**Restore** fills the definition form with shipped values for review. Saving that restored draft
-removes the override in the selected registry and preserves permission choices. The permission rules
-tab has a separate reset for the shipped policy.
-
-Definition fields stack in narrow panes and share aligned control tracks when the section is wide
-enough for two columns. Restore remains in place while defaults load and after restoring, with its
-availability reflected by its disabled state.
-
-On upgrade, untouched shipped policies can advance to new defaults. Explicit enabled choices
-survive. Customized ordered policies are retained rather than merged in a way that changes their
-exceptions. Legacy policies with no known baseline are preserved. Bundled contribution updates use
-the same principle; third-party contributions still require policy review and activation.
+An agent-authored specialist receives a copy of its creator's saved permission rules. An agent made
+in the Store starts from the Localix default; narrow it on its **Access** tab and in
+[Permissions](permissions.md). Definitions and priorities never grant permission.
 
 ## Model, limits and context
 
 In a new chat, the model route resolves from session choices, recent choices for that agent, its
-card preference, the project and the primary route. A delegated child snapshots the parent's
-effective route and effort, unless the caller explicitly selects a route. Editing a card therefore
-does not silently reroute work already delegated. External aliases such as `opus`, `sonnet` or
-`haiku` require an explicit catalog model before native import.
+`model` setting, the project and the primary route. A delegated child snapshots the parent's
+effective route and effort, unless the caller explicitly selects a route. Editing an agent therefore
+does not silently reroute work already delegated. A Localix route (`provider/model`) is kept under
+the file's `localix:` key with `model: inherit`, so the file stays valid in Claude Code. Aliases
+such as `opus`, `sonnet` or `haiku` need an explicit catalog model to run on a Localix route.
 
-**Max turns** can lower a run's limit. Blank inherits the run limit, whose built-in default is 1,000
-tool-loop turns; user settings and delegated task caps can lower it. The editor shows the inherited
-and effective maximum before task-specific caps.
+**Turn limit** (`maxTurns`) can lower a run's limit. Blank inherits the run limit, whose built-in
+default is 1,000 tool-loop turns; user settings and delegated task caps can lower it.
 
 In the composer, click the turn-limit control to cycle through **1 → 5 → 20 → 100 → ∞ → 1**. The
 tooltip shows the next value. **∞** uses the built-in 1,000-turn ceiling; the agent normally stops
 when its work is finished.
 
-**Preloaded skills** are applied to this agent in ordinary and delegated turns. Session-pinned
-skills are added, duplicates are removed, and denied skills remain unavailable. A team's members do
-not inherit one another's skill preload lists. Loading a skill never grants denied tools or silences
-outside-workspace and dangerous-command confirmations.
+**Skills** (`skills`, at most 32) are preloaded for this agent in ordinary and delegated turns.
+Session-pinned skills are added, duplicates are removed, and denied skills remain unavailable. A
+team's members do not inherit one another's skill lists. Loading a skill never grants denied tools
+or silences outside-workspace and dangerous-command confirmations.
 
-**Memory scope** limits both recall and saved notes to conversation, project or global notes. With
-**All available scopes**, recall searches conversation, project and global notes, while default
-writes stay in the project or conversation. A selected scope does not fall back to another scope
-when unavailable. Changing it refreshes the agent's saved memory context on the next run. Unscoped
-external memory-provider prompt recall is used only with **All available scopes**. This selection
-does not disable an enabled provider’s completion hook, which can still receive the finished turn.
+**Memory scope** (`localix: memoryScope:`) limits both recall and saved notes to conversation,
+project or global notes. With **All available scopes**, recall searches conversation, project and
+global notes, while default writes stay in the project or conversation. A selected scope does not
+fall back to another scope when unavailable. Changing it refreshes the agent's saved memory context
+on the next run. Claude Code's own `memory:` key (a memory folder) is separate and keeps working.
 See [stored context](learning-loop.md#recall-and-courses).
 
-![Agent instructions, preloaded skills, memory scope and turn limit](../assets/screenshots/agents/context-and-limits--2026-10-12.png)
+![An agent's page in the Store: standing instructions, memory scope and turn limit](../assets/screenshots/agents/context-and-limits--2026-10-12.png)
 
 ## Older conversations
 
-The former shipped specialist roles are no longer preset definitions. Saved conversation history,
-user-created agents and permission decisions are retained. A participant whose definition is no
-longer available remains visible in `/agents members`; add `localix` with `/agents add localix`
-before removing unavailable participants.
+Saved conversation history is kept. A participant whose definition is no longer available remains
+visible in `/agents members`; add `localix` with `/agents add localix` before removing unavailable
+participants. Agents saved in Localix's earlier JSON format are not read: recreate one you want to
+keep as a file, or install the `team` plugin.
 
-Agents [delegate](delegation.md) self-contained tasks to child sessions, run by themselves or an
-authored specialist, or invite colleagues into the conversation. A specialist definition is
+Agents [delegate](delegation.md) self-contained tasks to child sessions, run by themselves or by an
+agent file named in the task, or invite colleagues into the conversation. An agent file is
 persistent; it is not a child run.
 
 Handing the floor between participants needs no tool: the host routes each reply by its `@handle`

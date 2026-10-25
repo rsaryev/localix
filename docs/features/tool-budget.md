@@ -1,17 +1,17 @@
 # Manage the tool budget
 
 The tool budget estimates how many enabled model-facing tools the next agent run can place on model
-requests. Narrow the surface with the permission rules in **Settings → Capabilities → Tools**.
+requests. Narrow the surface with the permission rules in **Settings → Permissions**.
 
 **Effect and coverage:** The report is advisory and changes nothing automatically. MCP servers with
 no cached tool inventory are named but not counted.
 
 ## What you can do
 
-| Action                        | Mechanism                                                            | Boundary                                                                  |
-| ----------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| Check the current surface     | Inspect Settings → Capabilities → Tools, or ask for `context_budget` | Settings shows configured tools; `context_budget` estimates schema tokens |
-| Remove a tool from later runs | A `tool:<name>` rule with effect `deny` for the agent                | The change applies to the next run; it does not interrupt a running turn  |
+| Action                        | Mechanism                                                   | Boundary                                                                  |
+| ----------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Check the current surface     | Inspect Settings → Permissions, or ask for `context_budget` | Settings shows configured tools; `context_budget` estimates schema tokens |
+| Remove a tool from later runs | A `tool:<name>` rule with effect `deny` for the agent       | The change applies to the next run; it does not interrupt a running turn  |
 
 ## How it works
 
@@ -62,11 +62,11 @@ or `set_topic`.
 
 ## Configuration
 
-| Control                   | Scope and value                                          | Effect                                                        |
-| ------------------------- | -------------------------------------------------------- | ------------------------------------------------------------- |
-| Built-in or mini app tool | A permission rule in **Settings → Capabilities → Tools** | Stores a `tool:<name>` rule in that agent's list              |
-| MCP tool switch           | **Settings → Capabilities → MCP**; per server            | Updates the server's `enabledTools` or `disabledTools` filter |
-| Warning threshold         | Backend `toolBudgetWarn`; default `48`                   | Rides the report; no surface renders it today                 |
+| Control                   | Scope and value                                 | Effect                                                        |
+| ------------------------- | ----------------------------------------------- | ------------------------------------------------------------- |
+| Built-in or mini app tool | A permission rule in **Settings → Permissions** | Stores a `tool:<name>` rule in that agent's list              |
+| MCP tool switch           | **the Store (MCP servers)**; per server         | Updates the server's `enabledTools` or `disabledTools` filter |
+| Warning threshold         | Backend `toolBudgetWarn`; default `48`          | Rides the report; no surface renders it today                 |
 
 The Tools page passes the agent whose rules it is showing, so the estimate reflects the rules that
 agent's runs are judged by.

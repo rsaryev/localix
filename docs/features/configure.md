@@ -5,12 +5,12 @@ would restore it. Nothing is applied until you approve the card it raises.
 
 ## Terminology
 
-| Term     | Meaning                                                                    | Where it appears                                         |
-| -------- | -------------------------------------------------------------------------- | -------------------------------------------------------- |
-| Ledger   | One verdict per tool for a run: live, deferred, or withheld with a reason. | The agent's `# Unavailable tools` section and `inspect`. |
-| Remedy   | One kind of change the agent may propose, such as `tool.enable`.           | The `change.kind` field and the card's subtitle.         |
-| Proposal | One remedy plus the change, awaiting your Approve or Deny.                 | The `config_change` card in the chat.                    |
-| Withheld | The run does not hold a tool; the reason says which layer removed it.      | `inspect`, the card, Settings → Capabilities.            |
+| Term     | Meaning                                                                    | Where it appears                                          |
+| -------- | -------------------------------------------------------------------------- | --------------------------------------------------------- |
+| Ledger   | One verdict per tool for a run: live, deferred, or withheld with a reason. | The agent's `# Unavailable tools` section and `inspect`.  |
+| Remedy   | One kind of change the agent may propose, such as `tool.enable`.           | The `change.kind` field and the card's subtitle.          |
+| Proposal | One remedy plus the change, awaiting your Approve or Deny.                 | The `config_change` card in the chat.                     |
+| Withheld | The run does not hold a tool; the reason says which layer removed it.      | `inspect`, the card, the agent's Store page (Access tab). |
 
 ## What you can do
 
@@ -69,7 +69,7 @@ schema and are never told it exists, so they cannot spend a turn discovering the
 
 | Control                   | Effect                                                           | Boundary                                                                |
 | ------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| `configure` switch        | Removes the tool, and with it the `# Unavailable tools` section. | Per agent, in Settings → Capabilities.                                  |
+| `configure` switch        | Removes the tool, and with it the `# Unavailable tools` section. | Per agent, on the agent's Store page (Access tab).                      |
 | Declines within a run     | Remembered until the run ends.                                   | A new run starts with a clean slate.                                    |
 | Five-minute card lifetime | An unanswered proposal becomes a refusal.                        | The same deadline every HITL card has, counted down on the card itself. |
 

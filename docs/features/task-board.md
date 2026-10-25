@@ -133,10 +133,10 @@ write queue.
 
 ## Configuration
 
-| Control                         | Effect                                                                                       | Default      |
-| ------------------------------- | -------------------------------------------------------------------------------------------- | ------------ |
-| The **Kanban board** mini app   | Settings → Capabilities → Mini apps, `/mini-app disable kanban`, or a `mini-app:kanban` rule | On (bundled) |
-| The `kanban` tool for one agent | A `tool:kanban` rule with effect `deny` removes it                                           | Allowed      |
+| Control                         | Effect                                                                         | Default      |
+| ------------------------------- | ------------------------------------------------------------------------------ | ------------ |
+| The **Kanban board** mini app   | the Store (Mini apps), `/mini-app disable kanban`, or a `mini-app:kanban` rule | On (bundled) |
+| The `kanban` tool for one agent | A `tool:kanban` rule with effect `deny` removes it                             | Allowed      |
 
 See [Capabilities](capabilities.md#mini-app-tools-and-plugins) for how a mini app rule and a tool
 rule differ.

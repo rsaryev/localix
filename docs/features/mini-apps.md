@@ -6,8 +6,8 @@ the games are mini apps. Use this page to see your mini apps, switch them on or 
 settings, and create one of your own.
 
 Mini apps are not plugins. A [Claude Code plugin](../extending/claude-code-plugins.md) adds skills,
-commands, hooks and servers to the agent and is managed in Settings → Capabilities → Plugins and
-with `/plugin`; a mini app is managed here.
+commands, hooks and servers to the agent and is managed in the Store (Plugins) and with `/plugin`; a
+mini app is managed here.
 
 **Trust boundary:** A mini app's backend runs as trusted code in the Localix API process. One you
 add yourself waits for your yes before its code runs; one the agent builds for you starts on.
@@ -16,7 +16,7 @@ add yourself waits for your yes before its code runs; one the agent builds for y
 
 | Outcome                      | How                                                                              | Boundary                                                           |
 | ---------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| See your mini apps           | `/mini-app list`, or Settings → Capabilities → Mini apps                         | The list shows the scope of the current chat's project.            |
+| See your mini apps           | `/mini-app list`, or the Store (Mini apps)                                       | The list shows the scope of the current chat's project.            |
 | Add one from the Store       | The **+** button in the rail, **Open the Store** in Settings, or setup           | Only the recommended apps install without your choice.             |
 | Get the recommended apps     | Nothing: a new installation installs them in the background                      | Once per app; one you remove is not added again.                   |
 | Update all at once           | **Update all** in the line above the message box, or in the Event Center         | Only apps a catalog installed; your own folders are left alone.    |
@@ -26,11 +26,11 @@ add yourself waits for your yes before its code runs; one the agent builds for y
 | Add a publisher's catalog    | Store → **Sources** → **Add source…**, or `/mini-app catalog add <url>`          | Localix reads it first; nothing is added until you choose **Add**. |
 | See or remove catalogs       | Store → **Sources**, a shelf's sources menu, or `/mini-app catalog list`         | The Localix catalog is built in and stays.                         |
 | Turn one on or off           | `/mini-app enable <name>`, `/mini-app disable <name>`, or the row's switch       | A switch in Settings applies to the agent selected there.          |
-| Change a mini app's settings | **Settings** on its row in Settings → Mini apps                                  | Secret settings are kept in the [vault](secrets.md).               |
+| Change a mini app's settings | **Settings** on its row in the Store (Mini apps)                                 | Secret settings are kept in the [vault](secrets.md).               |
 | Remove one                   | `/mini-app remove <name>`, or **Remove** on its card or in Store → **Installed** | Its data folder stays, so a reinstall finds it.                    |
 | Have the agent build one     | `/mini-app create <what it should do>`                                           | See [Build with the agent](../extending/build-with-the-agent.md).  |
 | Pick up edits to its files   | `/mini-app reload`                                                               | Rebuilds your own mini apps, then reloads every mini app.          |
-| Open the list from the rail  | **Manage mini apps…** in the rail's tools menu                                   | Opens Settings → Mini apps.                                        |
+| Open the list from the rail  | **Manage mini apps…** in the rail's tools menu                                   | Opens the Store (Mini apps).                                       |
 | Run one as its own Mac app   | **Install _Name_ as App** on its tab; see [Mac apps](mini-app-mac-apps.md)       | macOS only, for a mini app with a screen of its own.               |
 
 Changes made with `/mini-app` take effect on the next turn.
@@ -38,7 +38,7 @@ Changes made with `/mini-app` take effect on the next turn.
 ## How it works
 
 Mini apps are added in the [Store](store.md), which opens in its own tab on its **Mini apps** shelf
-from the rail's **+**, from Settings → Mini apps and from setup. Each app has a tile with **Get**,
+from the rail's **+**, from the Store (Mini apps) and from setup. Each app has a tile with **Get**,
 which becomes **Open** once it is installed and **Update** when a newer version is offered. Choosing
 a tile opens the app's page: its screenshots, README, what is inside (screen, tools, backend and
 commands), what would run on this computer and the version on offer.
@@ -95,9 +95,9 @@ A catalog's app arrives as an archive whose checksum the catalog pins. An archiv
 match is discarded, and the version you had keeps running. Apps installed from a catalog take its
 newer versions by themselves, a minute after start and then every six hours.
 
-Each row in Settings → Capabilities → Mini apps shows the app's version, project scope, category and
-what it brings: tools, screens, commands, a guide. A row marked **awaiting your yes** came from
-outside Localix and has not run yet; **runs code** means its backend runs while it is on.
+Each row in the Store (Mini apps) shows the app's version, project scope, category and what it
+brings: tools, screens, commands, a guide. A row marked **awaiting your yes** came from outside
+Localix and has not run yet; **runs code** means its backend runs while it is on.
 
 | Where it lives                         | What is there                                             |
 | -------------------------------------- | --------------------------------------------------------- |
@@ -114,7 +114,7 @@ their arguments. The agent sees one line per enabled mini app and reads the app'
 first uses it.
 
 When a mini app fails to load, or reports a problem itself, the Event Center shows it with an action
-that opens the app's row in Settings → Mini apps. The entry clears once the app works again.
+that opens the app's row in the Store (Mini apps). The entry clears once the app works again.
 
 ## Limits
 
@@ -144,6 +144,6 @@ that opens the app's row in Settings → Mini apps. The entry clears once the ap
 - [The `/mini-app` command](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/command-handlers-mini-apps.ts)
 - [The mini apps feature](https://github.com/rsaryev/localix/tree/main/apps/api/src/features/mini-apps)
 - [Where mini apps live](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/paths.ts)
-- [Settings → Mini apps](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/settings/ui/MiniAppsSettings.tsx)
+- [the Store (Mini apps)](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/settings/ui/MiniAppsSettings.tsx)
 - [Mini app conditions in the Event Center](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/notifications/conditions/mini-apps.ts)
 - [The contract for plugins and mini apps](https://github.com/rsaryev/localix/blob/main/docs/internals/plugins-and-mini-apps.md)

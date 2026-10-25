@@ -143,7 +143,7 @@ A project session sees your personal mini apps as well as its own. On a name col
 and the project's copy is hidden, so a repository cannot run its code under a permission you gave
 your own app. A mini app keeps its data in `~/.localix/mini-apps-data/<name>/`, which outlives
 updates and reinstalls. A personal mini app has one configuration in every project; a `secret`
-setting is kept in the [vault](../features/secrets.md). Use Settings → Capabilities → Mini apps or
+setting is kept in the [vault](../features/secrets.md). Use the Store (Mini apps) or
 [`/mini-app`](../features/mini-apps.md) to switch one on or off and configure it; after copying a
 folder into a root, run `/mini-app reload`.
 

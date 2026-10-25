@@ -10,7 +10,7 @@ allows.
 
 | Goal                                  | How                                                                            |
 | ------------------------------------- | ------------------------------------------------------------------------------ |
-| Restrict which tools an agent may use | Switch tools off for that agent in **Settings → Capabilities**                 |
+| Restrict which tools an agent may use | Switch tools off on the agent's Store page, **Access** tab                     |
 | Require confirmation before a change  | Add an `ask` rule to the agent (see [Permissions](permissions.md))             |
 | Stop being asked about one command    | Choose **Always** under **Allow** on the confirmation card, then **Approve**   |
 | Stop being asked inside one folder    | Click the folder in the path on a file's confirmation card                     |
@@ -74,7 +74,7 @@ schemas are deferred until activated or brought by a linked workbench. Use `cont
 inspect the current request cost; the [tool roster guide](tools.md) explains the measured boundary.
 
 There is no session switch for this. A run that should be lean is an AGENT that is lean: switch off
-the tools it does not need in **Settings → Capabilities**, and its mini apps, plugins and MCP
+the tools it does not need on its Store page, **Access** tab, and its mini apps, plugins and MCP
 servers with them — a server denied by the agent's rules is not connected for that run. A whole-tool
 denial with no later argument exception removes the candidate's schema. A conditional allow or
 named-tool question can keep the schema available, while the permission gate judges each call's
@@ -91,18 +91,18 @@ assembled roster with `context_budget`; enabled tools can still be withheld by s
 
 ## Configuration
 
-| Surface                                                              | Operation                                                  |
-| -------------------------------------------------------------------- | ---------------------------------------------------------- |
-| Settings → Capabilities → Tools / Skills / MCP / Plugins / Mini apps | Switch any one of them on or off for an agent              |
-| Settings → Permissions                                               | Argument patterns, **ask**, whole families, and rule order |
-| Confirmation card                                                    | **Once**, **This session**, or **Always**; a folder level  |
+| Surface                                                                  | Operation                                                  |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------- |
+| Agent Store page, Access tab: Tools / Skills / MCP / Plugins / Mini apps | Switch any one of them on or off for an agent              |
+| Settings → Permissions                                                   | Argument patterns, **ask**, whole families, and rule order |
+| Confirmation card                                                        | **Once**, **This session**, or **Always**; a folder level  |
 
-The five registry tabs and the rules tab write the same thing. A switch is a rule: turning a skill
-off stores `skill:<name>` over `*` with effect `deny`, which is exactly the row the rules tab would
-show. The registry switches send their changes immediately. The rules editor and **Reset to
-defaults** stage a draft until **Apply**. Turning a switch on writes an explicit `allow`; clearing a
-rule in the editor instead restores the artifact's default/trust behavior. The rules tab also
-supports argument patterns and order, which a whole-item switch cannot express.
+The Access tab switches and the Permissions rules write the same thing. A switch is a rule: turning
+a skill off stores `skill:<name>` over `*` with effect `deny`, which is exactly the row Settings →
+Permissions would show. The registry switches send their changes immediately. The rules editor and
+**Reset to defaults** stage a draft until **Apply**. Turning a switch on writes an explicit `allow`;
+clearing a rule in the editor instead restores the artifact's default/trust behavior. Settings →
+Permissions also supports argument patterns and order, which a whole-item switch cannot express.
 
 ## Limits
 

@@ -65,7 +65,7 @@ from the first source that names one:
 | Order | Source                                       | Set from                                                 |
 | ----- | -------------------------------------------- | -------------------------------------------------------- |
 | 1     | The conversation's choice **for this agent** | The model picker (including **All agents**), or `/model` |
-| 2     | The agent's default                          | **Settings → Agents**                                    |
+| 2     | The agent's default                          | **the agent's Store page**                               |
 | 3     | Your last choice **for this agent**          | Every pick for that agent, in any conversation           |
 | 4     | The project                                  | **Settings → Project**                                   |
 
@@ -102,7 +102,7 @@ The model browser offers these optional workload settings:
 Each workload stores its own effort; picking a model for it starts at the level last chosen for that
 workload and model, otherwise the default.
 
-The board has no route of its own. A worker's model is its agent's — **Settings → Agents** — so it
+The board has no route of its own. A worker's model is its agent's — set on its Store page — so it
 applies on every dispatch path rather than only on a card; a card that names no model inherits the
 session that owns the board, like any other unrouted workload.
 

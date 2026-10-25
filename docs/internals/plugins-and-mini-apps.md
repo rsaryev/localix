@@ -38,7 +38,7 @@ loaders enforce X2.
 | Runtime  | `apps/api/src/features/plugins/`: discovery, loading, marketplaces, enable state, versions and updates.                                                                                       |
 | Disk     | `~/.localix/plugins/<name>/`, `~/.localix/plugins/cache/<marketplace>/<plugin>/<version>/`, `<project>/.localix/plugins/<name>/`, plugin data folders.                                        |
 | Built-in | The repository's `plugins/<name>/`, staged into `resources/builtin-plugins/`: Claude Code plugins listed as Built-in (source `builtin`), on by default, switchable off, updated with Localix. |
-| Surfaces | `/rpc/plugins` (with `/rpc/plugins/updates`), Settings → Capabilities → Plugins, `/plugin`.                                                                                                   |
+| Surfaces | `/rpc/plugins` (with `/rpc/plugins/updates`), the Store (Plugins), `/plugin`.                                                                                                                 |
 | Agent    | Skills, commands and agents, namespaced `/<plugin>:<name>` as in Claude Code.                                                                                                                 |
 
 A part Claude Code defines and Localix does not run is reported in the plugin's validation, never
@@ -87,7 +87,7 @@ chess/
 | SDK      | `packages/mini-app-sdk` (`@localixai/mini-app-sdk`): manifest, backend and UI contracts. The host serves its modules. |
 | Runtime  | `apps/api/src/features/mini-apps/`: catalog, install and update, backend host, UI artifacts, views, authoring.        |
 | Disk     | `~/.localix/mini-apps/<name>/` (the installed build) and `~/.localix/mini-apps-data/<name>/` (its state).             |
-| Surfaces | `/rpc/mini-apps`, Settings → Capabilities → Mini apps, `/mini-app`.                                                   |
+| Surfaces | `/rpc/mini-apps`, the Store (Mini apps), `/mini-app`.                                                                 |
 | Agent    | Backend tools, `guide.md`, commands, the `mini_app_build` tool.                                                       |
 
 ### State and events
@@ -98,7 +98,7 @@ Mini apps follow the [architecture](architecture/README.md) like any owned model
   install, update, removal and settings change records that notice; whether one may run is a
   `capability.rule` notice (`mini-app:<name>`).
 - The relay turns a `mini-app` notice into the `mini-apps` client resource and moves the capability
-  revision. Every surface (the rail, Settings → Mini apps, the catalog) re-reads the list from the
+  revision. Every surface (the rail, the Store (Mini apps), the catalog) re-reads the list from the
   owner; none patches another's state (C6).
 - The backend host, the channel host and the contribution sync are reactors on those notices, each
   with its own cursor, never a callback from the writer (C5).
@@ -157,7 +157,7 @@ Only developer mode builds on the person's machine; every other source ships bui
    archive and writes its catalog entry. The same version with other content is refused by its
    sha256.
 2. **Choose.** The [Store](store.md) is its own workspace tab, opened on its Mini apps shelf from
-   the rail's add button, from setup and from Settings → Mini apps. The mini apps provider
+   the rail's add button, from setup and from the Store (Mini apps). The mini apps provider
    (`store-provider.ts`) serves the catalogs' offers through the Store's port. Category tabs, a tag
    filter and a sources menu, then Featured, Updates, Installed and Available as cards: the app's
    own icon, name, what is inside, description, tags, publisher when not verified, and Install and

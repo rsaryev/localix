@@ -89,7 +89,7 @@ check before retrying: a command that was dispatched and never reported back may
 already.
 
 The tile and name are one link: selecting them opens that agent's **profile** as a workspace tab —
-the same page a mention chip, a chat group's heading and the row in Settings → Agents open, in the
+the same page a mention chip, a chat group's heading and the row in the Store (Agents) open, in the
 scope the record lives in. The profile is where the agent is read and edited, so it can sit beside
 the conversation it is about. The header appears as soon as the reply starts, before its first
 character, so a session with several agents says who is thinking.

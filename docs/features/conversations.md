@@ -54,7 +54,7 @@ order addressed, and reads that reply as its assignment.
 - Agents never address you with `@human`. When an agent needs your answer, a decision or an
   approval, it uses the `ask` tool, which blocks its run for up to 5 minutes and notifies you like
   any [HITL](hitl.md) request; otherwise it reports and stops, and the reply returns to you.
-  `@human` written in a reply is plain text and routes nothing. See [Human](agents.md#human).
+  `@human` written in a reply is plain text and routes nothing. See [Agents](agents.md).
 - Only the leader hands work out. A member @mentions only the leader, never a colleague, and answers
   you only about its own part; questions about the whole work are the leader's.
 - Whether work waits for your approval is the chat's permission mode (**Plan**), not a team rule.

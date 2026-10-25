@@ -6,13 +6,13 @@ state.
 
 ## What you can do
 
-| Symptom                               | First check                                                               | Owning guide                                                                                |
-| ------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| Source build does not open            | Read the first error from `bun run dev`                                   | [Installation](installation.md)                                                             |
-| Session will not run                  | Resolve its provider connection and model in **Settings → Diagnostics**   | [Providers and models](../features/providers.md)                                            |
-| A tool is missing or denied           | Inspect the project, effective tool list, and permission summary          | [Capabilities](../features/capabilities.md)                                                 |
-| A workbench is absent                 | Check its project-scoped state in **Settings → Capabilities → Mini apps** | [Mini apps](../features/mini-apps.md)                                                       |
-| A workbench cannot reach a dependency | Test the daemon, cluster, database, or network independently              | [DevOps Workspace](../features/devops.md) and [Database workbench](../features/database.md) |
+| Symptom                               | First check                                                             | Owning guide                                                                                |
+| ------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Source build does not open            | Read the first error from `bun run dev`                                 | [Installation](installation.md)                                                             |
+| Session will not run                  | Resolve its provider connection and model in **Settings → Diagnostics** | [Providers and models](../features/providers.md)                                            |
+| A tool is missing or denied           | Inspect the project, effective tool list, and permission summary        | [Capabilities](../features/capabilities.md)                                                 |
+| A workbench is absent                 | Check its project-scoped state in **the Store (Mini apps)**             | [Mini apps](../features/mini-apps.md)                                                       |
+| A workbench cannot reach a dependency | Test the daemon, cluster, database, or network independently            | [DevOps Workspace](../features/devops.md) and [Database workbench](../features/database.md) |
 
 ### Terms used in this guide
 
@@ -69,7 +69,7 @@ different provider or model.
 Confirm that the session points to the intended project. Then use **Settings → Diagnostics** to
 inspect its tool surface and permission summary. The current capability report resolves the default
 agent, and a session model report follows its main participant; it is not a complete per-participant
-trace. Check the intended agent's **Settings → Capabilities** as well.
+trace. Check the intended agent's Store page, **Access** tab, as well.
 
 Capability rules can narrow tools or require confirmation. The agent's own tool set, project
 settings, mini apps, plugins, skills, and host dependencies can narrow the surface further. Change
@@ -77,9 +77,9 @@ the owning setting, then ask the agent to retry the action.
 
 ### A workbench is missing or disconnected
 
-Open **Settings → Capabilities → Mini apps** in the intended project scope, or run `/mini-app list`
-in a chat of that project. An inactive mini app contributes neither its gated workbench views nor
-its model-facing tools. `/mini-app enable <name>` turns one back on.
+Open **the Store (Mini apps)** in the intended project scope, or run `/mini-app list` in a chat of
+that project. An inactive mini app contributes neither its gated workbench views nor its
+model-facing tools. `/mini-app enable <name>` turns one back on.
 
 For a visible workbench that cannot connect, test its external dependency separately:
 
@@ -178,16 +178,16 @@ Report suspected vulnerabilities through the private process in
 
 ## Configuration
 
-| Control                                 | Effect                                                                            |
-| --------------------------------------- | --------------------------------------------------------------------------------- |
-| `bun run dev`                           | Starts the desktop development process from the repository root                   |
-| `LOCALIX_DEV_UI_PORT`                   | Overrides the development frontend port; default is `5050`                        |
-| `LOCALIX_DEV_API_PORT`                  | Overrides the development API port; default is `5051`                             |
-| **Settings → Diagnostics**              | Resolves models, tools, permissions, and validation messages for a selected scope |
-| **Settings → Capabilities → Plugins**   | Shows and changes the Claude Code plugin state for the selected project scope     |
-| **Settings → Capabilities → Mini apps** | Shows and changes the mini app state for the selected project scope               |
-| Model picker                            | Binds a provider connection and model to the current session                      |
-| **Settings → Capabilities**             | Edits the selected agent's tool availability and permission rules                 |
+| Control                      | Effect                                                                            |
+| ---------------------------- | --------------------------------------------------------------------------------- |
+| `bun run dev`                | Starts the desktop development process from the repository root                   |
+| `LOCALIX_DEV_UI_PORT`        | Overrides the development frontend port; default is `5050`                        |
+| `LOCALIX_DEV_API_PORT`       | Overrides the development API port; default is `5051`                             |
+| **Settings → Diagnostics**   | Resolves models, tools, permissions, and validation messages for a selected scope |
+| **the Store (Plugins)**      | Shows and changes the Claude Code plugin state for the selected project scope     |
+| **the Store (Mini apps)**    | Shows and changes the mini app state for the selected project scope               |
+| Model picker                 | Binds a provider connection and model to the current session                      |
+| **Agent Store page, Access** | Edits the selected agent's tool availability and permission rules                 |
 
 ## Limits
 

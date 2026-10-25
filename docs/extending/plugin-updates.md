@@ -8,7 +8,7 @@ Use this page to see what is built in, where a plugin's version comes from, and 
 
 | Outcome                                       | How                                                                       |
 | --------------------------------------------- | ------------------------------------------------------------------------- |
-| Turn a built-in plugin off                    | Its switch in Settings → Capabilities → Plugins → **Built-in**            |
+| Turn a built-in plugin off                    | Its switch in the Store (Plugins), **Built-in** group                     |
 | Update one plugin now                         | **Update now** on its row, or `/plugin update <name>`                     |
 | Update a marketplace and its plugins          | **Update marketplace** on its row, or `/plugin marketplace update <name>` |
 | Refresh every listing, installing nothing     | `/plugin marketplace update`                                              |
@@ -20,10 +20,10 @@ Use this page to see what is built in, where a plugin's version comes from, and 
 ### Built-in plugins
 
 A built-in plugin ships inside Localix, like Claude Code's `<name>@builtin` ones: its source is
-`builtin`, and Settings → Capabilities → Plugins lists it in a **Built-in** group. It is on unless
-its manifest sets `defaultEnabled: false`, and its switch turns it off like any plugin's. It has no
-**Remove** and no **Update now**: `/plugin remove` and `/plugin update` refuse it, and it updates
-when Localix does. `builtin` is a reserved origin, so no marketplace can register under it.
+`builtin`, and the Store (Plugins) lists it in a **Built-in** group. It is on unless its manifest
+sets `defaultEnabled: false`, and its switch turns it off like any plugin's. It has no **Remove**
+and no **Update now**: `/plugin remove` and `/plugin update` refuse it, and it updates when Localix
+does. `builtin` is a reserved origin, so no marketplace can register under it.
 
 | Built-in plugin     | What it adds                                                                                           |
 | ------------------- | ------------------------------------------------------------------------------------------------------ |
@@ -95,10 +95,10 @@ plugin monitors and mods reload when the update lands.
 
 **Update now** on a plugin's row updates it at once, with its progress on the row; it appears when
 the marketplace's listing resolves to another version. What is available is computed from the
-listings without installing anything: Settings → Capabilities → Plugins fetches the listings when it
-opens, and every marketplace refresh checks again. An unpinned git entry is compared by its remote
-commit. **Update marketplace** refreshes the listing and updates the plugins installed from it, and
-names any it leaves for you, such as an entry with a `headersHelper`. Localix does not read
+listings without installing anything: the Store (Plugins) fetches the listings when it opens, and
+every marketplace refresh checks again. An unpinned git entry is compared by its remote commit.
+**Update marketplace** refreshes the listing and updates the plugins installed from it, and names
+any it leaves for you, such as an entry with a `headersHelper`. Localix does not read
 `extraKnownMarketplaces` from Claude Code's settings files: a marketplace's `autoUpdate` lives on
 its record in `~/.localix/marketplaces/known.json`.
 

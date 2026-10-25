@@ -10,16 +10,16 @@ import { parseAgentsCommand } from './agents-command-input'
 import { agentCreateRequest, runAgentCreateRequest } from './command-handlers-agents-create'
 
 const HELP = [
-  '**Agents** — persistent specialists in this conversation’s registry.',
+  '**Agents** — Claude Code agent files, managed in the Store.',
   '',
   '`/agents list` · `/agents members` · `/agents show @handle`',
-  '`/agents create [handle]` — open the definition form.',
+  '`/agents create [handle]` — open the Agents shelf of the Store, where Add agent is.',
   '`/agents create <what it should do>` — have the agent draft and save a specialist.',
   '`/agents create <handle> --description "…" --instructions "…" --priority 0` — save directly.',
   '`/agents edit @handle [--handle new-name] [--description "…"] [--instructions "…"] [--priority 0]`',
   '`/agents copy @handle <new-handle>`',
   '`/agents enable @handle` · `/agents disable @handle`',
-  '`/agents permissions @handle` — open the permission editor.',
+  '`/agents permissions @handle` — open the agent’s Store page (Access).',
   '`/agents add @handle` · `/agents remove @handle` — change this chat’s membership.',
   '`/agents delete @handle [--confirm]` — preview, then delete an unused local agent.',
   '',
@@ -154,13 +154,13 @@ export async function handleAgentsControlCommand(
           '',
           agent.record.instructions,
           '',
-          `[Permissions](${profileLink(id)})`,
+          `[Open in the Store](${profileLink(id)})`,
         ].join('\n'),
       )
     }
     if (action === 'permissions' || (action === 'edit' && !hasFields)) {
       return directReply(
-        `[Open ${action === 'permissions' ? 'permissions' : 'definition'} for @${agent.record.handle}](${profileLink(id)})`,
+        `[Open @${agent.record.handle} in the Store](${profileLink(id)}) — ${action === 'permissions' ? 'the Access tab' : 'the Settings tab'}.`,
       )
     }
     if (action === 'add') {
