@@ -69,6 +69,11 @@ Changes land on `main`.
   box; the mark at its right end collapses it. Next Steps, Token Weather and Replay Theater run
   unchanged. A pane a mod opens with focus opens the **Mods** view on it, with its hotkeys and
   Escape. See [Install Claude Code plugins](docs/extending/claude-code-plugins.md#mods).
+- **Pages in the mods band**: when a mod draws the band and hides the mods after it, those mods now
+  show as further pages, with a `‹ 1/2 ›` pager and ⌥[ and ⌥] to turn them. The band turns to the
+  next page slowly while you are not using the message box, never with reduced motion; Settings →
+  Preferences → Mods band turns that off. See
+  [Mods](docs/extending/claude-code-mods.md#the-band-above-the-message-box).
 - **In progress in the Event Center**: the top of the Event Center shows what runs in the background
   — mini app installs and updates, model downloads, a Localix update, plugin updates — with progress
   and actions, and the updates on offer. The bell shows a thin ring and says how many tasks are in
