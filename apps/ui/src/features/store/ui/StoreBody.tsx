@@ -31,7 +31,8 @@ const KIND_NOTES: Partial<Record<PackageKind, string>> = {
 }
 
 const AUTHORED_NOTES = {
-  yours: 'What you wrote, kept for you in every project.',
+  yours:
+    'What you wrote: skills, agents and servers in your own files, in every project. What you installed from a source is under Installed.',
   project: 'What this project keeps in its own folder, shared with whoever opens it.',
 }
 
@@ -101,7 +102,14 @@ export function StoreBody({
   if (section === 'installed' || section === 'updates')
     return (
       <>
-        <Heading title={section === 'installed' ? 'Installed' : 'Updates'} />
+        <Heading
+          title={section === 'installed' ? 'Installed' : 'Updates'}
+          note={
+            section === 'installed'
+              ? 'What you installed from a source, where and which version. What you wrote is under Yours.'
+              : undefined
+          }
+        />
         <StoreLibrary updates={section === 'updates'} />
       </>
     )

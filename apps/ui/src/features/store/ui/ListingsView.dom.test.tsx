@@ -284,14 +284,19 @@ describe('the Store’s shelves', () => {
     }
   })
 
-  test('at a medium width the sidebar is icons named by their labels, in one column of rows', async () => {
+  test('at a medium width the sidebar is open; its first row folds it to icons named by their labels, and unfolds it', async () => {
     const view = await renderStore({ listings: LISTINGS, target: APPS, width: 900 })
     try {
-      const nav = view.host.querySelector('nav[aria-label="Store sections"]')!
-      expect(nav.textContent).toBe('')
-      expect(nav.querySelector('[aria-label="Mini apps, 6"][aria-current="page"]')).not.toBeNull()
+      const nav = () => view.host.querySelector('nav[aria-label="Store sections"]')!
+      expect(nav().textContent).toContain('Mini apps')
+      await view.click(view.button('Collapse Store sections'))
+      expect(nav().textContent).toBe('')
+      expect(nav().querySelector('[aria-label="Mini apps, 6"][aria-current="page"]')).not.toBeNull()
+      await view.click(view.button('Expand Store sections'))
+      expect(nav().textContent).toContain('Mini apps')
     } finally {
       await view.done()
+      localStorage.clear()
     }
   })
 })

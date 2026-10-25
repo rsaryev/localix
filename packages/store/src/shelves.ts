@@ -79,7 +79,9 @@ export const hasUpdate = (listing: Listing): boolean =>
 /** Whether `listing` is on `shelf`. */
 export function onShelf(listing: Listing, shelf: ShelfId): boolean {
   if (shelf === 'discover') return listing.featured || listing.recommended
-  if (shelf === 'installed') return listing.installs.length > 0
+  // What came from a source: not what a person wrote, and not what comes bundled with something.
+  if (shelf === 'installed')
+    return listing.installs.length > 0 && !listing.authored && !listing.bundled
   if (shelf === 'updates') return hasUpdate(listing)
   if (shelf === 'yours' || shelf === 'project')
     return listing.authored === (shelf === 'yours' ? 'user' : 'project')

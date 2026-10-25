@@ -224,6 +224,10 @@ Changes land on `main`.
 
 ### Changed
 
+- **Installed and Yours no longer overlap**: Installed lists what you installed from a source (mini
+  apps, plugins), and Yours lists what you wrote (skills, agents, servers in your own files). The
+  agents that come with Localix or a plugin appear on the Agents shelf only, and each of the two
+  sections now says what it holds.
 - **The Store's sections fold and unfold**: the sidebar is part of the page, not a panel over it. It
   starts open; the first row folds it to icons or unfolds it, the page beside it resizes, and your
   choice is remembered.

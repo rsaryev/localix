@@ -75,6 +75,7 @@ test('the shipped types are listed read-only, and cannot be removed or edited', 
   const { listings } = await provider.listings(actor)
   const explore = listings.find((listing) => listing.name === 'Explore')!
   expect(explore.authored).toBeUndefined()
+  expect(explore.bundled).toBe(true)
   expect((await provider.config!(explore.ref.id, 'user', actor))?.fields).toEqual([])
   await expect(provider.remove(explore.ref.id, 'user', actor)).rejects.toBeInstanceOf(
     InvalidRequestError,

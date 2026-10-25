@@ -50,6 +50,9 @@ export function agentListing(summary: AgentSummary): Listing {
     featured: false,
     recommended: false,
     installs: [{ scope: scopeOf(summary), enabled: summary.enabled }],
+    ...(summary.source === 'builtin' || summary.source.startsWith('plugin:')
+      ? { bundled: true }
+      : {}),
     ...(summary.editable ? { authored: summary.scope === 'project' ? 'project' : 'user' } : {}),
     configurable: true,
   } as Listing

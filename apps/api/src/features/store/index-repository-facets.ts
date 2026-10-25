@@ -31,7 +31,22 @@ export async function facetsOf(
               .end(),
           )
           .as('picked'),
-        eb.fn.sum<number>(eb.fn.coalesce('s.installed', eb.lit(0))).as('installed'),
+        eb.fn
+          .sum<number>(
+            eb
+              .case()
+              .when(
+                eb.and([
+                  eb('s.installed', '=', 1),
+                  eb('l.authored', 'is', null),
+                  eb('l.bundled', '=', 0),
+                ]),
+              )
+              .then(1)
+              .else(0)
+              .end(),
+          )
+          .as('installed'),
         eb.fn.sum<number>(eb.fn.coalesce('s.has_update', eb.lit(0))).as('updates'),
         eb.fn
           .sum<number>(eb.case().when('l.authored', '=', 'user').then(1).else(0).end())

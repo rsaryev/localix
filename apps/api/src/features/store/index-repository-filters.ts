@@ -48,7 +48,12 @@ type Eb = ExpressionBuilder<Tables, 'l' | 's'>
 
 function onShelf(eb: Eb, shelf: ShelfId) {
   if (shelf === 'discover') return eb.or([eb('l.featured', '=', 1), eb('l.recommended', '=', 1)])
-  if (shelf === 'installed') return eb('s.installed', '=', 1)
+  if (shelf === 'installed')
+    return eb.and([
+      eb('s.installed', '=', 1),
+      eb('l.authored', 'is', null),
+      eb('l.bundled', '=', 0),
+    ])
   if (shelf === 'updates') return eb('s.has_update', '=', 1)
   // The Project shelf is the open project's own files, laid over by `project-authored.ts`; the
   // index is the person's and holds nothing of any project.

@@ -140,6 +140,22 @@ describe('the Store index', () => {
     ])
   })
 
+  test('the Installed shelf and its count leave out what you wrote and what comes bundled', async () => {
+    const { repo, put } = index()
+    const installs = [{ scope: 'user' as const, enabled: true }]
+    await put('s', [
+      plugin('fetched', { installs }),
+      plugin('mine', { authored: 'user', installs }),
+      plugin('builtin', { bundled: true, installs }),
+    ])
+    expect(ids((await repo.page('u1', { shelf: 'installed' }, { limit: 40 })).listings)).toEqual([
+      'fetched',
+    ])
+    expect((await repo.facets('u1', {})).shelves).toMatchObject({ installed: 1, yours: 1 })
+    const page = await repo.page('u1', { shelf: 'package:plugin' }, { limit: 40 })
+    expect(page.listings.find((l) => l.ref.id === 'builtin')?.bundled).toBe(true)
+  })
+
   test('facets count components on capability shelves, and the filtered set by category', async () => {
     const { repo, put } = index()
     await put('s', [

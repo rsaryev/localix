@@ -55,7 +55,7 @@ Store
 ├── What packages give      one shelf per component kind, filled from listings' contents
 │   └── Skills · Agents · Commands · Mods · Hooks · MCP servers · LSP · Output styles
 ├── Library
-│   ├── Installed           every install, any kind, with scope and enabled state
+│   ├── Installed           what came from a source (not Yours, not bundled), with scope and state
 │   └── Updates             installs with a newer version, "Update all"
 └── Sources                 each provider's sources, grouped by provider; add with a preview
 ```
@@ -486,6 +486,13 @@ are generic: no kind is named.
 A listing may say `authored: 'user' | 'project'`: written by the person (`user`) or kept in a
 project's own folder (`project`), not fetched from a source. The `yours` and `project` shelves list
 exactly those, installed or not.
+
+**Installed and Yours do not overlap.** Installed is what came from a source: a listing with an
+install that is neither `authored` nor `bundled`. A listing says `bundled: true` when it comes with
+Localix or with an installed plugin (the shipped agent types, a plugin's agents): it has an install
+state to switch, but the unit that was installed is the package it comes with, so it is not on
+Installed. What the person wrote is on Yours (or Project) and nowhere else in the Library. The index
+keeps `bundled` as a column, next to `authored`.
 
 - **Yours** is indexed: the index's `authored` column, the shelf filter, the facet count and the
   Library navigation entry all read the field. The index is derived, so adding the column is a

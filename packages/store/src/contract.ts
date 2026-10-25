@@ -130,6 +130,11 @@ export const listingSchema = z.object({
    * source: the Yours and Project shelves list it, installed or not.
    */
   authored: z.enum(['user', 'project']).optional(),
+  /**
+   * It comes with Localix or with an installed plugin and is not installed on its own: it has an
+   * install state (it can be switched), but the Installed shelf lists the package it comes with.
+   */
+  bundled: z.boolean().optional(),
   /** It is installed and has settings: its page then shows a Settings tab (`ListingConfig`). */
   configurable: z.boolean().optional(),
 })

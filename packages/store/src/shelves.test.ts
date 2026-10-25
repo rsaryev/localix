@@ -90,6 +90,27 @@ describe('shelves', () => {
     expect(parseShelf('project')).toBe('project')
   })
 
+  test('Installed is what came from a source; what you wrote and what comes with Localix or a plugin is not on it', () => {
+    const installed = [{ scope: 'user' as const, enabled: true }]
+    const fetched = makeListing({ id: 'lint', kind: 'plugin', installs: installed })
+    const mine = makeListing({ id: 'review', kind: 'skill', authored: 'user', installs: installed })
+    const ours = makeListing({
+      id: 'deploy',
+      kind: 'skill',
+      authored: 'project',
+      installs: installed,
+    })
+    const bundled = makeListing({
+      id: 'builtin:Plan',
+      kind: 'agent',
+      bundled: true,
+      installs: installed,
+    })
+    for (const listing of [mine, ours, bundled]) expect(onShelf(listing, 'installed')).toBe(false)
+    expect(onShelf(fetched, 'installed')).toBe(true)
+    expect(shelfCounts([fetched, mine, ours, bundled])).toMatchObject({ installed: 1, yours: 1 })
+  })
+
   test('a shelf id from outside is taken only when it names a shelf', () => {
     expect(parseShelf('package:mini-app')).toBe('package:mini-app')
     expect(parseShelf('capability:mod')).toBe('capability:mod')
