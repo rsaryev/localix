@@ -1,63 +1,55 @@
-import { BadgeCheck, X } from 'lucide-react'
+import { BadgeCheck } from 'lucide-react'
 import type { Listing } from '@localixai/store'
-import { MiniAppIcon } from '@/shared/ui/MiniAppIcon'
+import { AppTile } from '@localixai/kit/app-tile'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@localixai/kit/tooltip'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
+import { storeMediaSrc } from '@/shared/ui/MiniAppIcon'
+import { TRUST_LABELS, trustOf } from '../model/presentation'
 
-const TAG =
-  'inline-flex h-(--chrome-control-xs) items-center gap-1 rounded-full bg-field-fill px-2 text-2xs text-text-soft focus-ring'
-
-/** A tag on a listing: choosing it shows the listings that carry it. */
-export function TagButton({ tag, onTag }: { tag: string; onTag: (tag: string) => void }) {
+/** The listing's own icon as its provider serves it, or its monogram tile. Decorative. */
+export function ListingIcon({ listing, size }: { listing: Listing; size: number }) {
   return (
-    <button
-      type="button"
-      data-tag={tag}
-      aria-label={`Show packages tagged ${tag}`}
-      className={`${TAG} hover:bg-surface-hover hover:text-foreground`}
-      onClick={() => onTag(tag)}
-    >
-      {tag}
-    </button>
-  )
-}
-
-/** The tag a shelf is filtered by; choosing it removes the filter. */
-export function TagFilterChip({ tag, onClear }: { tag: string; onClear: () => void }) {
-  return (
-    <button
-      type="button"
-      aria-label={`Remove the tag filter ${tag}`}
-      className={`${TAG} shrink-0 text-foreground hover:bg-surface-hover`}
-      onClick={onClear}
-    >
-      {tag}
-      <X className="size-3" aria-hidden />
-    </button>
-  )
-}
-
-/** Verified mark, or who publishes it when Localix does not vouch for them. */
-export function PublisherMark({ listing }: { listing: Listing }) {
-  return listing.publisher.verified ? (
-    <BadgeCheck
-      className="size-3.5 shrink-0 text-text-faint"
-      role="img"
-      aria-label="Verified publisher"
-    />
-  ) : (
-    <span className="shrink-0 text-2xs font-normal text-status-warning">
-      Unverified · {listing.publisher.name}
-    </span>
-  )
-}
-
-/** The listing's own icon as its provider serves it, or a monogram tile. Decorative. */
-export function ListingTile({ listing, size }: { listing: Listing; size: number }) {
-  return (
-    <MiniAppIcon
-      name={listing.ref.id}
+    <AppTile
+      identity={`${listing.ref.kind}/${listing.ref.id}`}
       label={listing.displayName}
-      icon={listing.icon}
+      src={listing.icon ? storeMediaSrc(listing.icon) : undefined}
       size={size}
     />
+  )
+}
+
+/**
+ * How far its source is trusted: a verified mark for Localix's own and the official sources, a
+ * quiet "Community" for the rest — said, never alarming.
+ */
+export function TrustMark({ listing, className }: { listing: Listing; className?: string }) {
+  const trust = trustOf(listing)
+  if (trust === 'community')
+    return (
+      <span className={cn('shrink-0 text-2xs font-normal text-text-faint', className)}>
+        Community
+      </span>
+    )
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <BadgeCheck
+          role="img"
+          aria-label={`Verified · ${TRUST_LABELS[trust]}`}
+          className={cn('size-3.5 shrink-0 text-text-soft', className)}
+        />
+      </TooltipTrigger>
+      <TooltipContent>Verified · {TRUST_LABELS[trust]}</TooltipContent>
+    </Tooltip>
+  )
+}
+
+/** Who publishes it, and how far its source is trusted. */
+export function Publisher({ listing, className }: { listing: Listing; className?: string }) {
+  return (
+    <span className={cn('flex min-w-0 items-center gap-1', className)}>
+      <span className="truncate">{listing.publisher.name}</span>
+      <TrustMark listing={listing} />
+    </span>
   )
 }

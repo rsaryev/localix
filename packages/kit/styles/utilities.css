@@ -156,6 +156,10 @@
 .lx-fade-x[data-fade='end'] {
   mask-image: linear-gradient(to left, transparent, #000 var(--fade-x, 2.5rem));
 }
+/* The same for a block cut short to a preview ("Read more"): it fades out at its foot. */
+.lx-fade-y[data-fade='end'] {
+  mask-image: linear-gradient(to top, transparent, #000 var(--fade-y, 4rem));
+}
 .lx-fade-x[data-fade='both'] {
   mask-image: linear-gradient(
     to right,

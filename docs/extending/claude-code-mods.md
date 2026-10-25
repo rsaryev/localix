@@ -144,14 +144,16 @@ Two or more `plain` Buttons each alone on a row, with an optional text-only line
 their label, are a list of picks: one row of chips with their keys, each label cut short with its
 whole text in a tooltip. Rows of text and buttons one line high sit side by side in one row. A row
 that does not fit scrolls sideways, with the wheel and with ← and →, its edge fading into the box.
-Anything else (a framed box, a field, code) is drawn as it is, and the band scrolls past 10 rows. A
-mod that draws its own band and does not call `next(e)` hides the mods after it, which in Claude
+Anything else (a framed box, a field, code) is drawn as it is, and the band scrolls past 10 rows.
+
+A mod that draws its own band and does not call `next(e)` hides the mods after it, which in Claude
 Code's terminal simply never show. Localix keeps them: the band has one **page** for each such
-drawing, the first being what Claude Code draws, and the rest the mods that mod hid. With more than
-one page, the end of the band's first row shows a pager, `‹ 1/2 ›`, and the mods that drew the page
-(in a tooltip where the band is narrow). `‹` and `›`, or ⌥[ and ⌥] in the message box, turn the
-pages; only the page showing answers its hotkeys and digits, and a collapsed band sums up every
-page. A page you pick stays for that chat until its mods stop drawing it.
+drawing, the first being what Claude Code draws, and the rest the mods that mod hid.
+
+With more than one page, the end of the band's first row shows a pager, `‹ 1/2 ›`, and the mods that
+drew the page (in a tooltip where the band is narrow). `‹` and `›`, or ⌥[ and ⌥] in the message box,
+turn the pages; only the page showing answers its hotkeys and digits, and a collapsed band sums up
+every page. A page you pick stays for that chat until its mods stop drawing it.
 
 Until you pick one, the band turns to the next page every eight seconds, so each mod is seen without
 a click. It holds still while you hover or focus the band, type in the message box, or a turn runs,

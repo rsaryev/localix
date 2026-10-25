@@ -38,10 +38,11 @@ The top of the Event Center shows what Localix is doing in the background, live:
 installs, updates and removals of mini apps and plugins, local model downloads and the download of a
 Localix update. Each row has the package's icon, its name, what is happening ("Downloading · 3.0 MB
 of 4.8 MB"), a progress bar and what can be done: pause, resume or cancel a model download, or open
-the package in the Store. Under **Updates** are the updates on offer: Localix's own, and the Store's
-packages of every kind together, with **Update all**. While anything runs, the bell has a thin ring
-that fills as the jobs do and its label says how many tasks are in progress; the unread count stays
-as it is.
+the package in the Store.
+
+Under **Updates** are the updates on offer: Localix's own, and the Store's packages of every kind
+together, with **Update all**. While anything runs, the bell has a thin ring that fills as the jobs
+do and its label says how many tasks are in progress; the unread count stays as it is.
 
 These rows are not history. When a job ends, its owner records one entry: "Installed Git", "Updated
 3 mini apps", or "Could not install Kanban" with the reason and **Try again**, which queues the app

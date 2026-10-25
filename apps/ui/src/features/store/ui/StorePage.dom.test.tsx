@@ -1,6 +1,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, mock, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { answer, installExtra, listing, SOURCES } from '@/testing/store'
+import { stubStoreLayout } from '@/testing/storeLayout'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -13,9 +14,11 @@ afterAll(async () => {
   await teardown()
 })
 let withdraw = () => {}
+let restoreLayout = () => {}
 afterEach(() => {
   withdraw()
   withdraw = () => {}
+  restoreLayout()
   document.body.innerHTML = ''
 })
 
@@ -35,9 +38,10 @@ async function mountPage(target?: { shelf?: string }) {
   const { SWRConfig } = await import('swr')
   const { MemoryRouter } = await import('react-router')
   const { storeApi } = await import('@/shared/api/store-client')
-  spyOn(storeApi, 'page').mockImplementation(async (query = {}) => answer([chess, notes], query))
+  spyOn(storeApi, 'page').mockImplementation(async (query) => answer([chess, notes], query ?? {}))
   spyOn(storeApi, 'sources').mockResolvedValue({ sources: SOURCES, addable: ['mini-app'] })
   const { StorePage } = await import('./StorePage')
+  restoreLayout = stubStoreLayout(1400)
   const host = document.createElement('div')
   document.body.append(host)
   const root = createRoot(host)
@@ -82,12 +86,13 @@ describe('the Store tab', () => {
 
   test('without an app of its own here, the Store offers none', async () => {
     const page = await mountPage({ shelf: 'package:mini-app' })
-    expect(page.button('Install Notes', page.card('notes')!)).toBeDefined()
+    expect(page.button('Get Notes', page.card('notes')!)).toBeDefined()
     expect(page.button('Install as app: Notes')).toBeUndefined()
     await page.unmount()
   })
 
   test('with an install extra provided, an installed listing’s page adds one', async () => {
+    const React = await import('react')
     const { provideStoreInstallExtra } = await import('@/shared/lib/storeInstallExtra')
     const made: string[] = []
     const { extra } = installExtra({ made, only: ['chess'] })
@@ -97,8 +102,18 @@ describe('the Store tab', () => {
     spyOn(storeApi, 'detail').mockResolvedValue(makeListingDetail(chess))
     const page = await mountPage({ shelf: 'package:mini-app' })
     await page.click(page.button('Chess', page.card('chess')!))
-    await page.until(() => page.button('Add desktop app') !== undefined)
-    await page.click(page.button('Add desktop app'))
+    await page.until(() => page.button('Chess options') !== undefined)
+    await React.act(async () => {
+      const trigger = page.button('Chess options')!
+      trigger.focus()
+      trigger.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    })
+    const item = () =>
+      [...document.body.querySelectorAll<HTMLElement>('[role="menuitem"]')].find((entry) =>
+        entry.textContent?.includes('Add desktop app'),
+      )
+    await page.until(() => item() !== undefined)
+    await page.click(item())
     expect(made).toEqual(['chess'])
     await page.unmount()
   })

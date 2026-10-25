@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, expect, mock, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import type { AgentSummary } from '@/shared/api/contracts'
+import { stubElementWidth } from '@/testing/elementWidth'
 
 await mock.module('../capabilities/agent-editor/AgentModelField', () => ({
   AgentModelField: () => null,
@@ -50,6 +51,8 @@ test('agent navigation shares the settings shell and retains an unsaved definiti
     duplicate: async () => {},
     reset: async () => {},
   })
+  // The settings pane measures itself: 1200px is wide enough for the sections to be a column.
+  const restoreWidth = stubElementWidth(1200)
   const host = document.createElement('div')
   document.body.append(host)
   const root = createRoot(host)
@@ -65,7 +68,7 @@ test('agent navigation shares the settings shell and retains an unsaved definiti
     const navigation = host.querySelector('nav[aria-label="Agent profile sections"]')!
     expect(navigation.querySelectorAll('[role="group"]')).toHaveLength(2)
     expect(navigation.querySelectorAll('button')).toHaveLength(7)
-    expect(host.querySelector('[aria-label="Agent section"]')).not.toBeNull()
+    expect(host.querySelector('[aria-label="Agent section"]')).toBeNull()
     const prompt = host.querySelector<HTMLTextAreaElement>('#agent-instructions')!
     await act(async () => {
       Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')!.set!.call(
@@ -118,5 +121,6 @@ test('agent navigation shares the settings shell and retains an unsaved definiti
     await act(async () => root.unmount())
     host.remove()
     registry.mockRestore()
+    restoreWidth()
   }
 })

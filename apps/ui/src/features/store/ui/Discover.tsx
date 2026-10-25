@@ -1,0 +1,213 @@
+import { useMemo } from 'react'
+import { ChevronRight, RefreshCw } from 'lucide-react'
+import type {
+  Collection,
+  DiscoverResponse,
+  Listing,
+  ListingRef,
+  StoreCategory,
+} from '@localixai/store'
+import { Button } from '@localixai/kit/button'
+import { ShelfRow } from '@localixai/kit/shelf-row'
+import { Skeleton } from '@localixai/kit/skeleton'
+import { CATEGORY_ICONS, plural } from '../model/presentation'
+import { tilesPerView, useStoreFrame } from '../model/layout'
+import { useStoreScope } from '../model/storeContext'
+import { keyOf } from '../model/useExtrasAfterInstall'
+import { DiscoverHero } from './DiscoverHero'
+import { ListingTileCard } from './ListingCards'
+import { ListingIcon } from './StoreMarks'
+
+/** What a computed row's "See all" opens: the shelf it previews, or just its own items. */
+const SEE_ALL: Record<string, { shelf: string } | undefined> = {
+  'kind:mini-app': { shelf: 'package:mini-app' },
+  'kind:plugin': { shelf: 'package:plugin' },
+}
+
+/** An editor's collection as a wide card: its title, its line, and the icons of what it holds. */
+function CollectionCard({ collection, listings }: { collection: Collection; listings: Listing[] }) {
+  const store = useStoreScope()
+  return (
+    <button
+      type="button"
+      onClick={() =>
+        store.show({
+          type: 'list',
+          title: collection.title,
+          subtitle: collection.subtitle,
+          refs: collection.items,
+        })
+      }
+      className="group/collection flex min-w-0 items-center gap-4 rounded-xl border border-border-faint bg-card p-4 text-left transition-colors duration-(--dur-fast) hover:bg-surface-hover focus-ring"
+    >
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <span className="text-2xs font-semibold tracking-wide text-text-soft uppercase">
+          Collection · {plural(collection.items.length, 'package')}
+        </span>
+        <span className="text-base font-semibold text-balance text-foreground">
+          {collection.title}
+        </span>
+        {collection.subtitle && (
+          <span className="line-clamp-2 text-xs text-text-soft">{collection.subtitle}</span>
+        )}
+      </div>
+      <div aria-hidden className="flex shrink-0 -space-x-3">
+        {listings.slice(0, 4).map((listing) => (
+          <span key={keyOf(listing.ref)} className="rounded-xl ring-2 ring-card">
+            <ListingIcon listing={listing} size={48} />
+          </span>
+        ))}
+      </div>
+      <ChevronRight className="size-4 shrink-0 text-text-faint" aria-hidden />
+    </button>
+  )
+}
+
+/** The Store's categories with how many each holds; one opens its list. */
+function Categories({ categories }: { categories: DiscoverResponse['categories'] }) {
+  const store = useStoreScope()
+  return (
+    <section aria-label="Categories" className="flex flex-col gap-2">
+      <h2 className="text-base font-semibold text-foreground">Categories</h2>
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] gap-2">
+        {categories.map((category) => {
+          const Icon = CATEGORY_ICONS[category.id as StoreCategory] ?? CATEGORY_ICONS.Other
+          return (
+            <button
+              key={category.id}
+              type="button"
+              onClick={() =>
+                store.show({
+                  type: 'list',
+                  title: category.label,
+                  query: { category: category.id as StoreCategory },
+                })
+              }
+              className="flex h-12 items-center gap-3 rounded-lg bg-field-fill px-3 text-left text-sm text-foreground transition-colors duration-(--dur-fast) hover:bg-surface-hover focus-ring"
+            >
+              <Icon className="size-4 shrink-0 text-text-soft" aria-hidden />
+              <span className="min-w-0 flex-1 truncate">{category.label}</span>
+              <span className="text-2xs text-text-faint tabular-nums">
+                {category.count.toLocaleString('en-US')}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
+/** The first look while Discover is read: a hero and two rows in outline. */
+export function DiscoverSkeleton() {
+  return (
+    <div aria-hidden className="flex flex-col gap-8">
+      <Skeleton className="h-64 w-full rounded-xl" />
+      {[0, 1].map((row) => (
+        <div key={row} className="flex flex-col gap-3">
+          <Skeleton className="h-4 w-40" />
+          <div className="grid grid-cols-4 gap-4">
+            {[0, 1, 2, 3].map((tile) => (
+              <div key={tile} className="flex gap-3 p-2">
+                <Skeleton className="size-14 rounded-xl" />
+                <div className="flex flex-1 flex-col gap-2 pt-1">
+                  <Skeleton className="h-3 w-3/4" />
+                  <Skeleton className="h-2.5 w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/**
+ * DISCOVER (`docs/internals/store.md`, "Discover"): the hero, the updates waiting, Start here,
+ * For this project, the editors' collections as wide cards, a row per kind, New & updated, and
+ * the categories — every part from one `/rpc/store/discover` answer, each left out when empty.
+ */
+export function Discover({ data }: { data: DiscoverResponse }) {
+  const store = useStoreScope()
+  const { layout, width } = useStoreFrame()
+  const perView = tilesPerView(layout, width)
+  const byKey = useMemo(() => {
+    const map = new Map(data.listings.map((listing) => [keyOf(listing.ref), listing]))
+    return (ref: ListingRef) => map.get(keyOf(ref))
+  }, [data.listings])
+  const listingsOf = (collection: Collection) => collection.items.flatMap((ref) => byKey(ref) ?? [])
+  const start = data.rows.find((row) => row.id === 'start')
+  const editorial = data.rows.filter((row) => row.source)
+  const computed = (ids: (id: string) => boolean) =>
+    data.rows.filter((row) => !row.source && ids(row.id))
+
+  const row = (collection: Collection) => {
+    const listings = listingsOf(collection)
+    if (listings.length === 0) return null
+    const seeAll = SEE_ALL[collection.id]
+    return (
+      <ShelfRow
+        key={collection.id}
+        title={collection.title}
+        subtitle={collection.subtitle}
+        perView={perView}
+        onSeeAll={() =>
+          store.show({
+            type: 'list',
+            title: collection.title,
+            subtitle: collection.subtitle,
+            ...(seeAll ? { query: seeAll } : { refs: collection.items }),
+          })
+        }
+      >
+        {listings.map((listing) => (
+          <ListingTileCard key={keyOf(listing.ref)} listing={listing} />
+        ))}
+      </ShelfRow>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-8">
+      <DiscoverHero hero={data.hero} start={start} byKey={byKey} />
+      {data.updates.count > 0 && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border-faint px-4 py-3">
+          <RefreshCw className="size-4 shrink-0 text-text-soft" aria-hidden />
+          <p className="min-w-0 flex-1 text-sm text-foreground">
+            {plural(data.updates.count, 'update')} available
+          </p>
+          <Button size="sm" variant="ghost" onClick={() => store.goTo('updates')}>
+            See updates
+          </Button>
+          <Button size="sm" variant="field" onClick={store.updateAll}>
+            Update all
+          </Button>
+        </div>
+      )}
+      {computed((id) => id === 'start' || id === 'project').map(row)}
+      {editorial.length > 0 && (
+        <section aria-label="Collections" className="flex flex-col gap-2">
+          <h2 className="text-base font-semibold text-foreground">Collections</h2>
+          <div
+            className="grid gap-3"
+            style={{
+              gridTemplateColumns: `repeat(${layout === 'narrow' ? 1 : 2}, minmax(0, 1fr))`,
+            }}
+          >
+            {editorial.map((collection) => (
+              <CollectionCard
+                key={collection.id}
+                collection={collection}
+                listings={listingsOf(collection)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+      {computed((id) => id.startsWith('kind:')).map(row)}
+      {computed((id) => id === 'new').map(row)}
+      {data.categories.length > 0 && <Categories categories={data.categories} />}
+    </div>
+  )
+}

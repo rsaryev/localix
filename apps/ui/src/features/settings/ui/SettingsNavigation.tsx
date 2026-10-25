@@ -1,9 +1,7 @@
 import type { ReactNode } from 'react'
-import { Button } from '@localixai/kit/button'
-import { Select } from '@localixai/kit/select'
-import { SectionLabel } from '@localixai/kit/section-label'
-import { cn } from '@localixai/mini-app-sdk/ui/classes'
+import { SidebarNav, type SidebarNavGroup } from '@localixai/kit/sidebar-nav'
 import { SETTINGS_SECTIONS } from '../model/settingsNavigation'
+import { useSettingsWide } from './SettingsWorkspace'
 
 export interface SettingsNavigationItem {
   id: string
@@ -12,7 +10,10 @@ export interface SettingsNavigationItem {
   description: string
 }
 
-/** Pane-width navigation: compact selector in a split, grouped rail in a wide workbench. */
+/**
+ * The settings' sections, as the kit's sidebar nav (the Store uses the same one): a grouped
+ * column beside the page in a wide pane, one picker above it — the search beside it — in a split.
+ */
 export function SettingsNavigation({
   active,
   onChange,
@@ -28,51 +29,41 @@ export function SettingsNavigation({
   'aria-label'?: string
   pickerLabel?: string
 }) {
-  const groups = [...new Set(sections.map((section) => section.group))]
-  const options = sections.map((section) => ({
-    value: section.id,
-    label: section.label,
-    description: `${section.group} · ${section.description}`,
-  }))
-  return (
-    <div className="shrink-0 border-b border-border-soft @4xl/settings:w-48 @4xl/settings:overflow-y-auto @4xl/settings:border-r @4xl/settings:border-b-0">
-      <div className="space-y-3 p-4 @4xl/settings:p-3">
-        <div className="@4xl/settings:hidden">
-          <Select
-            aria-label={pickerLabel}
-            size="xl"
-            className="w-full"
-            value={active}
-            options={options}
-            onValueChange={onChange}
-          />
-        </div>
-        {search}
-        <nav aria-label={ariaLabel} className="hidden space-y-5 pt-2 @4xl/settings:block">
-          {groups.map((group) => (
-            <div key={group} role="group" aria-label={group} className="space-y-1">
-              <SectionLabel className="px-2 pb-1">{group}</SectionLabel>
-              {sections
-                .filter((section) => section.group === group)
-                .map((section) => (
-                  <Button
-                    key={section.id}
-                    variant="ghost"
-                    size="xl"
-                    aria-current={active === section.id ? 'page' : undefined}
-                    className={cn(
-                      'w-full justify-start text-text-soft',
-                      active === section.id && 'bg-surface-active text-foreground',
-                    )}
-                    onClick={() => onChange(section.id)}
-                  >
-                    {section.label}
-                  </Button>
-                ))}
-            </div>
-          ))}
-        </nav>
-      </div>
+  const wide = useSettingsWide()
+  const groups: SidebarNavGroup[] = [...new Set(sections.map((section) => section.group))].map(
+    (group) => ({
+      id: group,
+      label: group,
+      items: sections
+        .filter((section) => section.group === group)
+        .map(({ id, label, description }) => ({
+          id,
+          label,
+          description: `${group} · ${description}`,
+        })),
+    }),
+  )
+  return wide ? (
+    <div className="w-48 shrink-0 overflow-y-auto border-r border-border-soft p-3 pt-4">
+      <SidebarNav
+        mode="full"
+        label={ariaLabel}
+        groups={groups}
+        active={active}
+        onSelect={onChange}
+        search={search}
+      />
+    </div>
+  ) : (
+    <div className="shrink-0 border-b border-border-soft p-4">
+      <SidebarNav
+        mode="select"
+        label={pickerLabel}
+        groups={groups}
+        active={active}
+        onSelect={onChange}
+        search={search}
+      />
     </div>
   )
 }

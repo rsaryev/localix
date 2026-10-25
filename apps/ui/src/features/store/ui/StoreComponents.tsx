@@ -1,4 +1,4 @@
-import { useId, useState } from 'react'
+import { memo, useMemo, useState } from 'react'
 import {
   componentCount,
   type BrowsableComponentKind,
@@ -8,11 +8,16 @@ import {
 import { EmptyHint } from '@localixai/kit/empty-hint'
 import { ItemCard } from '@localixai/kit/item-card'
 import { SearchInput } from '@localixai/kit/search-input'
-import { Switch } from '@localixai/kit/switch'
-import { keyOf } from '../model/filters'
+import { TogglePill } from '@localixai/kit/toggle-pill'
+import { listColumns, useStoreFrame } from '../model/layout'
 import { COMPONENT_LABELS, KIND_LABELS } from '../model/presentation'
-import { InstallAction, type ListingActions } from './InstallAction'
-import { ListingTile } from './StoreMarks'
+import { useStoreScope } from '../model/storeContext'
+import { keyOf } from '../model/useExtrasAfterInstall'
+import { useDebounced } from '../model/useDebounced'
+import { usePagedListings } from '../model/useStoreData'
+import { GetAction } from './GetAction'
+import { ListSkeleton, PagedList } from './PagedList'
+import { ListingIcon } from './StoreMarks'
 
 interface Row {
   listing: Listing
@@ -24,50 +29,70 @@ interface Row {
  * not name them yet gives one row for the lot ("3 commands"), so they are not lost.
  */
 function rowsOf(listings: readonly Listing[], kind: BrowsableComponentKind): Row[] {
-  return listings
-    .flatMap((listing) => {
-      const named = (listing.components ?? []).filter((part) => part.kind === kind)
-      if (named.length > 0) return named.map((component) => ({ listing, component }))
-      const count = componentCount(listing, kind)
-      const { one, many } = COMPONENT_LABELS[kind]
-      return count > 0
-        ? [{ listing, component: { kind, name: count === 1 ? one : `${count} ${many}` } }]
-        : []
-    })
-    .sort((a, b) => a.component.name.localeCompare(b.component.name))
+  return listings.flatMap((listing) => {
+    const named = (listing.components ?? []).filter((part) => part.kind === kind)
+    if (named.length > 0) return named.map((component) => ({ listing, component }))
+    const count = componentCount(listing, kind)
+    const { one, many } = COMPONENT_LABELS[kind]
+    return count > 0
+      ? [{ listing, component: { kind, name: count === 1 ? one : `${count} ${many}` } }]
+      : []
+  })
 }
 
-const matches = ({ listing, component }: Row, words: string[]) => {
-  const text = [component.name, component.description, listing.displayName].join(' ').toLowerCase()
-  return words.every((word) => text.includes(word))
-}
+const ComponentRow = memo(function ComponentRow({ listing, component }: Row) {
+  const store = useStoreScope()
+  const from = `${listing.displayName} · ${KIND_LABELS[listing.ref.kind].one}`
+  return (
+    <ItemCard
+      data-component={`${component.kind}:${component.name}`}
+      data-from={listing.ref.id}
+      tile={<ListingIcon listing={listing} size={36} />}
+      title={component.name}
+      openLabel={component.name}
+      description={component.description ?? `From ${from}`}
+      footer={
+        component.description ? (
+          <span className="pointer-events-none truncate text-2xs text-text-faint">From {from}</span>
+        ) : undefined
+      }
+      actions={<GetAction listing={listing} />}
+      onOpen={() => store.open(listing, component)}
+      onPointerEnter={() => store.prefetch(listing.ref)}
+    />
+  )
+})
 
 /**
  * A capability shelf: the components themselves, not the packages — each command, skill or mod
- * with what it does and the package it comes from. A row opens that package on What's inside
- * with the component marked; installing from a row installs the whole package, and says so.
+ * with what it does and the package it comes from, page by page. A row opens that package on
+ * What's inside with the component marked; its Get button gets the whole package. The filter
+ * searches the Store for them.
  */
-export function StoreComponents({
-  kind,
-  listings,
-  onOpen,
-  ...actions
-}: {
-  kind: BrowsableComponentKind
-  listings: readonly Listing[]
-  onOpen: (listing: Listing, component: StoreComponent) => void
-} & ListingActions) {
+export function StoreComponents({ kind }: { kind: BrowsableComponentKind }) {
+  const store = useStoreScope()
+  const { layout, width } = useStoreFrame()
   const [filter, setFilter] = useState('')
   const [installedOnly, setInstalledOnly] = useState(false)
-  const switchId = useId()
   const many = COMPONENT_LABELS[kind].many
-  const words = filter.toLowerCase().split(/\s+/).filter(Boolean)
-  const rows = rowsOf(listings, kind).filter(
-    (row) => (!installedOnly || row.listing.installs.length > 0) && matches(row, words),
-  )
+  const asked = useDebounced(filter.trim())
+  const page = usePagedListings(store.client, {
+    shelf: `capability:${kind}`,
+    ...(asked ? { q: asked } : {}),
+    ...(installedOnly ? { installed: true } : {}),
+    ...(store.project ? { projectId: store.project.id } : {}),
+  })
+  const rows = useMemo(() => {
+    const words = filter.toLowerCase().split(/\s+/).filter(Boolean)
+    return rowsOf(page.listings, kind).filter(({ listing, component }) => {
+      const text = `${component.name} ${component.description ?? ''} ${listing.displayName}`
+      return words.every((word) => text.toLowerCase().includes(word))
+    })
+  }, [page.listings, kind, filter])
+  const columns = listColumns(layout, width)
   return (
     <div className="flex min-w-0 flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-3 px-2">
+      <div className="flex flex-wrap items-center gap-2">
         <SearchInput
           value={filter}
           onValueChange={setFilter}
@@ -76,44 +101,25 @@ export function StoreComponents({
           size="md"
           className="w-64 max-w-full"
         />
-        <div className="flex items-center gap-2 text-xs text-text-soft">
-          <Switch
-            id={switchId}
-            size="sm"
-            checked={installedOnly}
-            onChange={(event) => setInstalledOnly(event.target.checked)}
-          />
-          <label htmlFor={switchId}>Installed only</label>
-        </div>
+        <TogglePill active={installedOnly} onClick={() => setInstalledOnly((on) => !on)}>
+          Installed only
+        </TogglePill>
       </div>
-      {rows.length === 0 ? (
+      {page.loading ? (
+        <ListSkeleton columns={columns} />
+      ) : rows.length === 0 ? (
         <EmptyHint>Nothing matches.</EmptyHint>
       ) : (
-        <ul className="flex flex-col">
-          {rows.map(({ listing, component }) => {
-            const from = `from ${listing.displayName} · ${KIND_LABELS[listing.ref.kind].one}`
-            return (
-              <ItemCard
-                key={`${keyOf(listing)}:${component.name}`}
-                data-component={`${component.kind}:${component.name}`}
-                data-from={listing.ref.id}
-                tile={<ListingTile listing={listing} size={32} />}
-                title={component.name}
-                openLabel={component.name}
-                description={component.description ?? from}
-                footer={
-                  component.description ? (
-                    <span className="pointer-events-none truncate text-2xs text-text-faint">
-                      {from}
-                    </span>
-                  ) : undefined
-                }
-                actions={<InstallAction listing={listing} whole {...actions} />}
-                onOpen={() => onOpen(listing, component)}
-              />
-            )
-          })}
-        </ul>
+        <PagedList
+          label={many}
+          items={rows}
+          columns={columns}
+          keyOf={({ listing, component }) => `${keyOf(listing.ref)}:${component.name}`}
+          render={(row) => <ComponentRow {...row} />}
+          hasMore={page.hasMore}
+          loadMore={page.loadMore}
+          loadingMore={page.loadingMore}
+        />
       )}
     </div>
   )

@@ -29,34 +29,21 @@ const appExtra = (opts: Parameters<typeof installExtra>[0] = {}) => {
   return { ...made, extras: [made.extra] }
 }
 
-describe('installing with or without an app of its own', () => {
-  test('two icon buttons side by side: install, and install as an app, each named', async () => {
+const page = (view: Awaited<ReturnType<typeof renderStore>>) =>
+  view.host.querySelector<HTMLElement>('[data-store-page="chess"]')!
+
+describe('getting with or without an app of its own', () => {
+  test('on a package’s page, Get and the extra sit side by side, each named', async () => {
     const { extras, made } = appExtra()
     const view = await renderStore({ listings: [chess, notes], target: SHELF, extras })
     try {
-      const card = () => view.card('chess')!
-      expect(view.button('Install as app: Chess', card())).toBeDefined()
-      await view.click(view.button('Install Chess', card()))
+      // A row has the one control; the extra is offered on the page, where there is room to say it.
+      expect(view.button('Install as app: Chess', view.card('chess')!)).toBeUndefined()
+      await view.click(view.button('Chess', view.card('chess')!))
+      expect(view.button('Install as app: Chess', page(view))).toBeDefined()
+      await view.click(view.button('Get Chess', page(view)))
       expect(view.calls).toEqual(['install mini-app/chess user'])
       expect(made).toEqual([])
-      expect(view.button('Install as app: Chess', card())).toBeDefined()
-      expect(view.button('Install as app: Notes', view.card('notes')!)).toBeUndefined()
-    } finally {
-      await view.done()
-    }
-  })
-
-  test('a listing’s page has both, labelled: Install, and the extra’s own action', async () => {
-    const { extras, made } = appExtra()
-    const view = await renderStore({ listings: [chess], target: SHELF, extras })
-    try {
-      await view.click(view.button('Chess', view.card('chess')!))
-      const page = view.host.querySelector('[data-store-page="chess"]')!
-      expect(view.button('Install', page)).toBeDefined()
-      await view.click(view.button('Install as app', page))
-      expect(view.calls).toEqual(['install mini-app/chess user'])
-      await view.change([landed(chess)])
-      expect(made).toEqual(['chess'])
     } finally {
       await view.done()
     }
@@ -67,7 +54,8 @@ describe('installing with or without an app of its own', () => {
     const extras = [{ ...synced.extra, id: 'sync', label: 'Install and sync', makes: 'sync' }]
     const view = await renderStore({ listings: [chess], target: SHELF, extras })
     try {
-      await view.click(view.button('Install and sync: Chess', view.card('chess')!))
+      await view.click(view.button('Chess', view.card('chess')!))
+      await view.click(view.button('Install and sync: Chess', page(view)))
       await view.change([landed(chess)])
       expect(synced.made).toEqual(['chess'])
     } finally {
@@ -75,10 +63,11 @@ describe('installing with or without an app of its own', () => {
     }
   })
 
-  test('where no app can be made, the action is a plain Install', async () => {
+  test('where no app can be made, the page offers Get alone', async () => {
     const view = await renderStore({ listings: [chess], target: SHELF })
     try {
-      await view.click(view.button('Install Chess', view.card('chess')!))
+      await view.click(view.button('Chess', view.card('chess')!))
+      await view.click(view.button('Get Chess', page(view)))
       expect(view.calls).toEqual(['install mini-app/chess user'])
       expect(view.button('Install as app: Chess')).toBeUndefined()
     } finally {
@@ -90,7 +79,8 @@ describe('installing with or without an app of its own', () => {
     const { extras, made } = appExtra()
     const view = await renderStore({ listings: [chess], target: SHELF, extras })
     try {
-      await view.click(view.button('Install as app: Chess', view.card('chess')!))
+      await view.click(view.button('Chess', view.card('chess')!))
+      await view.click(view.button('Install as app: Chess', page(view)))
       expect(view.calls).toEqual(['install mini-app/chess user'])
       expect(made).toEqual([])
       await view.change([
@@ -106,22 +96,23 @@ describe('installing with or without an app of its own', () => {
     }
   })
 
-  test('an app that cannot be made leaves the install, and says why in the card', async () => {
+  test('an app that cannot be made leaves the install, and says why on the page', async () => {
     const { extras } = appExtra({ fails: 'Chess has no icon of its own' })
     const view = await renderStore({ listings: [chess], target: SHELF, extras })
     try {
-      await view.click(view.button('Install as app: Chess', view.card('chess')!))
+      await view.click(view.button('Chess', view.card('chess')!))
+      await view.click(view.button('Install as app: Chess', page(view)))
       await view.change([landed(chess)])
       expect(view.calls).toEqual(['install mini-app/chess user'])
-      expect(view.card('chess')?.textContent).toContain(
-        'Installed, but the desktop app was not made: Chess has no icon of its own',
+      expect(page(view).querySelector('[role="alert"]')?.textContent).toBe(
+        'The desktop app was not made: Chess has no icon of its own',
       )
     } finally {
       await view.done()
     }
   })
 
-  test('an installed listing’s page adds or removes its app', async () => {
+  test('an installed package’s menu adds or removes its app', async () => {
     const without = appExtra()
     const first = await renderStore({
       listings: [landed(chess)],
@@ -130,7 +121,8 @@ describe('installing with or without an app of its own', () => {
     })
     try {
       await first.click(first.button('Chess', first.card('chess')!))
-      await first.click(first.button('Add desktop app'))
+      await first.openMenu(first.button('Chess options'))
+      await first.click(first.menuItem('Add desktop app'))
       expect(without.made).toEqual(['chess'])
     } finally {
       await first.done()
@@ -143,8 +135,9 @@ describe('installing with or without an app of its own', () => {
     })
     try {
       await second.click(second.button('Chess', second.card('chess')!))
-      expect(second.button('Add desktop app')).toBeUndefined()
-      await second.click(second.button('Remove desktop app'))
+      await second.openMenu(second.button('Chess options'))
+      expect(second.menuItem('Add desktop app')).toBeUndefined()
+      await second.click(second.menuItem('Remove desktop app'))
       expect(withApp.removed).toEqual(['chess'])
     } finally {
       await second.done()

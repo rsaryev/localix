@@ -11,67 +11,145 @@ afterAll(async () => teardown())
 
 const LISTINGS = [listing({ id: 'chess', displayName: 'Chess' })]
 const SOURCES = [
-  { kind: 'mini-app' as const, id: HOSTED, label: 'Localix', url: HOSTED, builtIn: true, count: 1 },
+  {
+    kind: 'mini-app' as const,
+    id: HOSTED,
+    label: 'Localix',
+    url: HOSTED,
+    builtIn: true,
+    count: 1,
+    trust: 'localix' as const,
+    syncedAt: new Date(Date.now() - 3 * 3_600_000).toISOString(),
+  },
   { kind: 'mini-app' as const, id: ADA, label: 'ada.test', url: ADA, builtIn: false, count: 0 },
+  {
+    kind: 'plugin' as const,
+    id: 'anthropics/claude-plugins-official',
+    label: 'claude-plugins-official',
+    url: 'https://github.com/anthropics/claude-plugins-official',
+    builtIn: false,
+    defaultSource: true,
+    trust: 'official' as const,
+    count: 120,
+    autoUpdate: true,
+  },
+  {
+    kind: 'plugin' as const,
+    id: 'broken/market',
+    label: 'broken/market',
+    url: 'https://github.com/broken/market',
+    builtIn: false,
+    count: 0,
+    problem: 'The marketplace answered 404 — dev has not pushed it',
+  },
 ]
-const dialog = () => document.body.querySelector<HTMLElement>('[role="dialog"]')
+const dialog = () =>
+  document.body.querySelector<HTMLElement>('[role="dialog"], [role="alertdialog"]')
 const field = () =>
   dialog()?.querySelector<HTMLInputElement>('input[aria-label="Source address"]') ?? null
 
+const open = (extra: Parameters<typeof renderStore>[0] extends infer O ? Partial<O> : never = {}) =>
+  renderStore({ listings: LISTINGS, sources: SOURCES, target: { shelf: 'sources' }, ...extra })
+
 describe('the Store’s sources', () => {
-  test('Sources lists each provider’s sources; one someone added is removed, Localix’s stays', async () => {
-    const view = await renderStore({
-      listings: LISTINGS,
-      sources: SOURCES,
-      target: { shelf: 'sources' },
-    })
+  test('are grouped by kind, each saying who stands behind it, how many it offers and when it was read', async () => {
+    const view = await open()
     try {
-      const group = view.host.querySelector('section[aria-label="Mini app catalogs"]')!
-      expect(group.textContent).toContain('Localix')
-      expect(group.textContent).toContain('Comes with Localix')
-      expect(group.textContent).toContain('ada.test')
-      expect(view.button('Remove Localix')).toBeUndefined()
-      await view.click(view.button('Remove ada.test'))
-      expect(view.calls).toEqual([`remove source mini-app ${ADA}`])
+      const apps = view.host.querySelector('section[aria-label="Mini app catalogs"]')!
+      expect(apps.textContent).toContain('Localix')
+      expect(apps.textContent).toContain('1 package')
+      expect(apps.textContent).toContain('read 3 hours ago')
+      const plugins = view.host.querySelector('section[aria-label="Claude Code marketplaces"]')!
+      expect(plugins.textContent).toContain('Official')
+      expect(plugins.textContent).toContain('120 packages')
     } finally {
       await view.done()
     }
   })
 
-  test('the shelf’s source menu removes one someone added; the Localix one cannot be', async () => {
-    const view = await renderStore({
-      listings: LISTINGS,
-      sources: SOURCES,
-      target: { shelf: 'package:mini-app' },
-    })
+  test('a source that could not be read says why, quietly, and is still listed', async () => {
+    const view = await open()
     try {
-      await view.openMenu(view.button('Sources: All sources'))
-      expect(view.menuItem('Remove ada.test')).toBeDefined()
-      expect(view.menuItems().some((item) => item.textContent?.includes('Remove Localix'))).toBe(
-        false,
-      )
-      await view.click(view.menuItem('Remove ada.test'))
-      expect(view.calls).toEqual([`remove source mini-app ${ADA}`])
+      const row = view.host.querySelector<HTMLElement>('[data-source="broken/market"]')!
+      expect(row.textContent).toContain('answered 404')
+      expect(row.textContent).toContain('0 packages')
     } finally {
       await view.done()
     }
   })
 
-  test('adding one reads it first and says who publishes it; nothing is added before Add', async () => {
-    const view = await renderStore({
-      listings: LISTINGS,
-      sources: SOURCES,
-      target: { shelf: 'sources' },
-    })
+  test('the menu updates a source now; one that comes with Localix cannot be removed', async () => {
+    const view = await open()
     try {
-      await view.click(view.button('Add a mini app catalog…'))
-      expect(dialog()?.querySelector('h2')?.textContent).toBe('Add a mini app catalog')
+      await view.openMenu(view.button('Localix actions'))
+      expect(view.menuItem('Remove…')).toBeUndefined()
+      await view.click(view.menuItem('Update now'))
+      expect(view.calls).toEqual([`refresh source mini-app ${HOSTED}`])
+    } finally {
+      await view.done()
+    }
+  })
+
+  test('the switch sets a marketplace to update on its own; a catalog has none', async () => {
+    const view = await open()
+    try {
+      expect(view.button('Update Localix on its own')).toBeUndefined()
+      const toggle = view.host.querySelector<HTMLElement>(
+        '[aria-label="Update claude-plugins-official on its own"]',
+      )!
+      expect(toggle.getAttribute('aria-checked')).toBe('true')
+      await view.click(toggle)
+      expect(view.calls).toEqual(['auto-update plugin anthropics/claude-plugins-official false'])
+    } finally {
+      await view.done()
+    }
+  })
+
+  test('removing asks first; a default source says it will not come back', async () => {
+    const view = await open()
+    try {
+      await view.openMenu(view.button('ada.test actions'))
+      await view.click(view.menuItem('Remove…'))
+      expect(dialog()?.textContent).toContain('What you installed from it stays')
+      await view.click(view.button('Remove', dialog()!))
+      expect(view.calls).toEqual([`remove source mini-app ${ADA}`])
+      await view.openMenu(view.button('claude-plugins-official actions'))
+      await view.click(view.menuItem('Remove…'))
+      expect(dialog()?.textContent).toContain('will not come back')
+      await view.click(view.button('Cancel', dialog()!))
+      expect(view.calls).toHaveLength(1)
+    } finally {
+      await view.done()
+    }
+  })
+
+  test('pressing a source opens what it offers', async () => {
+    const view = await open()
+    try {
+      await view.click(view.button('Show what ada.test offers'))
+      expect(view.host.querySelector('h2')?.textContent).toBe('ada.test')
+      expect(view.reads.at(-1)).toContain(`source=${ADA}`)
+    } finally {
+      await view.done()
+    }
+  })
+
+  test('one Add source… button takes any address and reads it with every kind that can add one', async () => {
+    const view = await open({ understood: ['mini-app'] })
+    try {
+      await view.click(view.button('Add source…'))
+      expect(dialog()?.querySelector('h2')?.textContent).toBe('Add a source')
       await view.type(field(), 'https://bob.test/mini-app-catalog.json')
       await view.click(view.button('Read', dialog()!))
-      expect(view.calls).toEqual(['preview mini-app https://bob.test/mini-app-catalog.json'])
+      expect(view.calls).toEqual([
+        'preview mini-app https://bob.test/mini-app-catalog.json',
+        'preview plugin https://bob.test/mini-app-catalog.json',
+      ])
+      expect(dialog()?.textContent).toContain('Mini app catalog')
       expect(dialog()?.textContent).toContain('Ada')
       expect(dialog()?.textContent).toContain('3 packages')
-      expect(dialog()?.textContent).toContain('unverified')
+      expect(dialog()?.textContent).toContain('Community')
+      expect(view.calls.some((call) => call.startsWith('add'))).toBe(false)
       await view.click(view.button('Add', dialog()!))
       expect(view.calls.at(-1)).toBe('add source mini-app https://bob.test/mini-app-catalog.json')
       expect(dialog()).toBeNull()
@@ -80,14 +158,25 @@ describe('the Store’s sources', () => {
     }
   })
 
-  test('an address that is not a source is refused inside the dialog, the text kept', async () => {
-    const view = await renderStore({
-      listings: LISTINGS,
-      target: { shelf: 'sources' },
-      previewFails: 'The mini app catalog at broken.test answered 404',
-    })
+  test('an address both formats match asks which one', async () => {
+    const view = await open()
     try {
-      await view.click(view.button('Add a mini app catalog…'))
+      await view.click(view.button('Add source…'))
+      await view.type(field(), 'bob/both')
+      await view.click(view.button('Read', dialog()!))
+      expect(dialog()?.textContent).toContain('It is both')
+      await view.click(view.button('Claude Code marketplace', dialog()!))
+      await view.click(view.button('Add', dialog()!))
+      expect(view.calls.at(-1)).toBe('add source plugin bob/both')
+    } finally {
+      await view.done()
+    }
+  })
+
+  test('an address that is not a source is refused inside the dialog, the text kept', async () => {
+    const view = await open({ previewFails: 'The catalog at broken.test answered 404' })
+    try {
+      await view.click(view.button('Add source…'))
       await view.type(field(), 'https://broken.test/c.json')
       await view.click(view.button('Read', dialog()!))
       expect(dialog()?.textContent).toContain('answered 404')
@@ -98,7 +187,7 @@ describe('the Store’s sources', () => {
     }
   })
 
-  test('a link to add a source opens the dialog with its address, read and waiting for a yes', async () => {
+  test('a link that names a source opens the dialog with its address, read and waiting for a yes', async () => {
     const view = await renderStore({
       listings: LISTINGS,
       target: { addSource: { kind: 'mini-app', input: 'https://bob.test/mini-app-catalog.json' } },

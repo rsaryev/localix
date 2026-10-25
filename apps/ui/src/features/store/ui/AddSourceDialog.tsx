@@ -11,114 +11,124 @@ import {
   DialogTitle,
 } from '@localixai/kit/dialog'
 import { Input } from '@localixai/kit/input'
+import { SelectionTile } from '@localixai/kit/selection-tile'
 import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { plural, SOURCE_LABELS } from '../model/presentation'
 
 /** What the read source says, before the person adds it. */
-function PreviewCard({ preview }: { preview: SourcePreview }) {
-  const from = preview.publishers.length ? ` from ${preview.publishers.join(', ')}` : ''
+function PreviewBody({ preview }: { preview: SourcePreview }) {
+  const from = preview.publishers.length ? ` from ${preview.publishers.slice(0, 3).join(', ')}` : ''
   return (
-    <div className="flex flex-col gap-2 rounded-md bg-field-fill p-3" aria-live="polite">
-      {preview.icons.length > 0 && (
-        <div className="flex items-center gap-2">
-          {preview.icons.map((icon) => (
-            <img key={icon.name} src={icon.src} alt={icon.label} width={32} height={32} />
-          ))}
-        </div>
-      )}
-      <p className="text-sm text-foreground">
-        {plural(preview.count, 'package')}
+    <span className="flex min-w-0 flex-col gap-1.5">
+      <span className="text-xs font-semibold text-foreground">
+        {SOURCE_LABELS[preview.kind].one}
+      </span>
+      <span className="text-sm text-foreground">
+        {preview.label} · {plural(preview.count, 'package')}
         {from}
-      </p>
-      <p className="text-xs text-text-soft">
+      </span>
+      {preview.icons.length > 0 && (
+        <span className="flex items-center gap-1.5">
+          {preview.icons.slice(0, 6).map((icon) => (
+            <img key={icon.name} src={icon.src} alt={icon.label} width={28} height={28} />
+          ))}
+        </span>
+      )}
+      <span className="text-xs text-text-soft">
         {preview.added
-          ? 'This source is already in the Store.'
+          ? 'It is already in the Store.'
           : preview.verified
             ? 'Localix verifies its publisher.'
-            : 'Its packages are shown as unverified; installing one asks you first.'}
-      </p>
-    </div>
+            : 'Its packages show as Community; installing one asks you first.'}
+      </span>
+    </span>
   )
 }
 
 /**
- * Add a source by its address: the provider reads it first and says who publishes it and how
- * many packages it holds, and only "Add" keeps it. Opened from Sources, a shelf's source menu and
- * a `localix://` link that fills the address in — nothing is added without that "Add".
+ * "Add source…": paste anything — `owner/repo`, a git address, a marketplace.json or
+ * mini-app-catalog.json address, a local folder. Every kind that can add a source reads it, and
+ * the dialog shows what the ones that understood it found; when both formats match, the person
+ * picks. Nothing is added without "Add".
  */
 export function AddSourceDialog({
-  kind,
-  open,
-  initialInput = '',
+  kinds,
+  initial,
   preview: read,
   add,
-  onOpenChange,
+  onClose,
 }: {
-  kind: PackageKind
-  open: boolean
-  initialInput?: string
+  /** The kinds whose provider can add a source. */
+  kinds: readonly PackageKind[]
+  /** A link that named a source fills the address in and reads it. */
+  initial?: { kind?: PackageKind; input: string }
   preview: (kind: PackageKind, input: string) => Promise<SourcePreview>
   add: (kind: PackageKind, input: string) => Promise<void>
-  onOpenChange: (open: boolean) => void
+  onClose: () => void
 }) {
-  const [draft, setDraft] = useState(initialInput)
-  const [preview, setPreview] = useState<SourcePreview | null>(null)
+  const [draft, setDraft] = useState(initial?.input ?? '')
+  const [found, setFound] = useState<SourcePreview[] | null>(null)
+  const [chosen, setChosen] = useState<PackageKind | null>(null)
   const [problem, setProblem] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const readFor = useRef<string | null>(null)
-  const noun = SOURCE_LABELS[kind].one
 
   const readSource = async (input: string) => {
     if (!input.trim() || busy) return
     setBusy(true)
     setProblem(null)
-    setPreview(null)
-    try {
-      setPreview(await read(kind, input.trim()))
-    } catch (error) {
-      setProblem(errorMessage(error, `That address is not a ${noun}`))
-    } finally {
-      setBusy(false)
+    setFound(null)
+    const asked = initial?.kind && input === initial.input ? [initial.kind] : kinds
+    const answers = await Promise.allSettled(asked.map((kind) => read(kind, input.trim())))
+    const previews = answers.flatMap((answer) =>
+      answer.status === 'fulfilled' ? [answer.value] : [],
+    )
+    setBusy(false)
+    if (previews.length === 0) {
+      const reason = answers.find((answer) => answer.status === 'rejected')
+      setProblem(
+        reason?.status === 'rejected'
+          ? errorMessage(reason.reason, 'That address is not a source')
+          : 'That address is not a source',
+      )
+      return
     }
+    setFound(previews)
+    setChosen(previews[0]!.kind)
   }
 
-  // A link that names a source reads it as the dialog opens; adding still waits for "Add".
   useEffect(() => {
-    if (!open || !initialInput || readFor.current === initialInput) return
-    readFor.current = initialInput
-    setDraft(initialInput)
-    void readSource(initialInput)
-    // `readSource` is recreated each render; the address is what this follows.
-  }, [open, initialInput])
+    if (!initial?.input || readFor.current === initial.input) return
+    readFor.current = initial.input
+    void readSource(initial.input)
+    // `readSource` is new each render; the address is what this follows.
+  }, [initial?.input])
 
+  const picked = found?.find((preview) => preview.kind === chosen)
   const addSource = async () => {
-    if (!preview || busy) return
+    if (!picked || busy) return
     setBusy(true)
     try {
-      await add(kind, preview.id)
-      setDraft('')
-      setPreview(null)
-      onOpenChange(false)
+      await add(picked.kind, picked.id)
+      onClose()
     } catch (error) {
       setProblem(errorMessage(error, 'It could not be added'))
-    } finally {
       setBusy(false)
     }
   }
-
   const submit = (event: FormEvent) => {
     event.preventDefault()
-    void (preview && preview.id === draft.trim() ? addSource() : readSource(draft))
+    void (picked ? addSource() : readSource(draft))
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent size="sm">
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent size="md">
         <DialogHeader>
-          <DialogTitle>Add a {noun}</DialogTitle>
+          <DialogTitle>Add a source</DialogTitle>
           <DialogDescription>
-            Paste the address a publisher gave you: an HTTPS address, or a file:// path to a folder
-            on this computer.
+            Paste what a publisher gave you: owner/repo, a git or HTTPS address, a marketplace.json
+            or mini-app-catalog.json, or a folder on this computer.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit}>
@@ -128,9 +138,9 @@ export function AddSourceDialog({
                 value={draft}
                 onChange={(event) => {
                   setDraft(event.target.value)
-                  setPreview(null)
+                  setFound(null)
                 }}
-                placeholder="https://…"
+                placeholder="owner/repo or https://…"
                 aria-label="Source address"
                 aria-invalid={problem ? true : undefined}
                 aria-describedby={problem ? 'add-source-problem' : undefined}
@@ -138,12 +148,12 @@ export function AddSourceDialog({
               />
               <Button
                 type="button"
-                size="default"
+                size="xl"
                 variant="field"
                 disabled={!draft.trim() || busy}
                 onClick={() => void readSource(draft)}
               >
-                {busy && !preview ? 'Reading…' : 'Read'}
+                {busy && !found ? 'Reading…' : 'Read'}
               </Button>
             </div>
             {problem && (
@@ -151,25 +161,31 @@ export function AddSourceDialog({
                 {problem}
               </p>
             )}
-            {preview && <PreviewCard preview={preview} />}
+            {found && (
+              <div aria-live="polite" className="flex flex-col gap-2">
+                {found.length > 1 && (
+                  <p className="text-xs text-text-soft">It is both. Which one do you want?</p>
+                )}
+                {found.map((preview) => (
+                  <SelectionTile
+                    key={preview.kind}
+                    selected={preview.kind === chosen}
+                    aria-label={SOURCE_LABELS[preview.kind].one}
+                    onClick={() => setChosen(preview.kind)}
+                    className="p-3"
+                  >
+                    <PreviewBody preview={preview} />
+                  </SelectionTile>
+                ))}
+              </div>
+            )}
           </DialogBody>
           <DialogFooter>
-            <Button
-              type="button"
-              size="default"
-              variant="ghost"
-              onClick={() => onOpenChange(false)}
-            >
+            <Button type="button" size="xl" variant="ghost" onClick={onClose}>
               Cancel
             </Button>
-            {preview && !preview.added && (
-              <Button
-                type="button"
-                size="default"
-                variant="mono"
-                disabled={busy}
-                onClick={() => void addSource()}
-              >
+            {picked && !picked.added && (
+              <Button type="submit" size="xl" variant="mono" disabled={busy}>
                 Add
               </Button>
             )}

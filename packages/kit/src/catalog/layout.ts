@@ -120,12 +120,13 @@ export const LAYOUT: readonly KitCatalogEntry[] = [
     use: 'Keyboard handling or polling that must run only in the focused tab, not every visible one.',
   },
   {
-    specifier: k('shelf-nav'),
+    specifier: k('sidebar-nav'),
     category: 'layout',
     provider: 'kit',
-    exports: ['ShelfNav'],
-    summary: 'Grouped section navigation for a browsing pane, one section current, with counts.',
-    use: 'The left column of a store or library: Discover, kinds, library views. Leave a section out to hide it.',
+    exports: ['SidebarNav'],
+    summary:
+      'The section sidebar of a pane: search slot, headed groups, rows with icon, label and count or badge; full, icons-only or a select.',
+    use: 'The left column of a store, settings or a library. Props: `label` (landmark name), `groups` ({ id, label?, items: { id, label, icon?, count?, badge?, description? }[] }), `active`, `onSelect(id)`, `mode` (`full` | `compact` | `select`, picked by the host from its pane width), `search` (a field: on top in full, beside the picker in select). One tab stop; ↑/↓, Home/End and typed letters move. Leave a group empty to hide it.',
     not: 'Not tabs inside a pane (`tabs`) nor the application rail.',
   },
 ]

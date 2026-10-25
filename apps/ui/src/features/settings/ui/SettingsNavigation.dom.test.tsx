@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
+import { stubElementWidth } from '@/testing/elementWidth'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -36,10 +37,43 @@ test('grouped navigation switches sections and marks the current destination', a
     await act(async () => system.click())
     expect(nav.querySelectorAll('[aria-current="page"]').length).toBe(1)
     expect(nav.querySelector('[aria-current="page"]')?.textContent).toBe('System')
+    expect(container.querySelector('input[aria-label="Search settings"]')).not.toBeNull()
+  } finally {
+    await act(async () => root.unmount())
+  }
+})
+
+test('in a split pane the sections are one picker with the search beside it', async () => {
+  const { act } = await import('react')
+  const { createRoot } = await import('react-dom/client')
+  const { SettingsNavigation } = await import('./SettingsNavigation')
+  const { SettingsWorkspace } = await import('./SettingsWorkspace')
+  const restoreWidth = stubElementWidth(600)
+  const container = document.createElement('div')
+  const root = createRoot(container)
+  try {
+    await act(async () =>
+      root.render(
+        <SettingsWorkspace
+          navigation={
+            <SettingsNavigation
+              active="system"
+              onChange={() => {}}
+              search={<input aria-label="Search settings" />}
+            />
+          }
+        >
+          <p>Page</p>
+        </SettingsWorkspace>,
+      ),
+    )
+    expect(container.querySelector('nav')).toBeNull()
     expect(container.querySelector('[aria-label="Settings section"]')?.textContent).toContain(
       'System',
     )
+    expect(container.querySelector('input[aria-label="Search settings"]')).not.toBeNull()
   } finally {
+    restoreWidth()
     await act(async () => root.unmount())
   }
 })

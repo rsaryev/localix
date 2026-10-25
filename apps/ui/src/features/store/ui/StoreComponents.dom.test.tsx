@@ -43,18 +43,16 @@ describe('a capability shelf lists the components themselves', () => {
     const view = await renderStore({ listings: LISTINGS, target: COMMANDS })
     try {
       expect(rows(view.host)).toEqual([
-        'command:/chess:hint',
         'command:/chess:play',
+        'command:/chess:hint',
         'command:/kanban:plan',
       ])
       const play = view.host.querySelector<HTMLElement>('[data-component="command:/chess:play"]')!
       expect(play.textContent).toContain('/chess:play')
       expect(play.textContent).toContain('Start a game')
-      expect(play.textContent).toContain('from Chess · Mini app')
+      expect(play.textContent).toContain('From Chess · Mini app')
       expect(view.card('clock')).toBeNull()
       expect(view.host.querySelector('[aria-label="Categories"]')).toBeNull()
-      expect(view.host.querySelector('section[aria-label="Featured"]')).toBeNull()
-      expect(view.host.querySelector('section[aria-label="Available"]')).toBeNull()
     } finally {
       await view.done()
     }
@@ -66,7 +64,7 @@ describe('a capability shelf lists the components themselves', () => {
       await view.type(view.host.querySelector('input[aria-label="Filter commands"]'), 'game')
       expect(rows(view.host)).toEqual(['command:/chess:play'])
       await view.type(view.host.querySelector('input[aria-label="Filter commands"]'), '')
-      await view.click(view.host.querySelector<HTMLElement>('[role="switch"]'))
+      await view.click(view.button('Installed only'))
       expect(rows(view.host)).toEqual(['command:/kanban:plan'])
     } finally {
       await view.done()
@@ -89,17 +87,16 @@ describe('a capability shelf lists the components themselves', () => {
     }
   })
 
-  test('installing from a row installs the whole package, and says so', async () => {
+  test('getting from a row gets the whole package, which the row names', async () => {
     const view = await renderStore({ listings: LISTINGS, target: COMMANDS })
     try {
       const play = view.host.querySelector<HTMLElement>('[data-component="command:/chess:play"]')!
-      const install = view.button('Install the mini app Chess', play)!
-      expect(install.textContent).toBe('Install Chess')
-      await view.click(install)
+      expect(play.textContent).toContain('From Chess')
+      await view.click(view.button('Get Chess', play))
       expect(view.calls).toEqual(['install mini-app/chess user'])
       const plan = view.host.querySelector<HTMLElement>('[data-component="command:/kanban:plan"]')!
       expect(plan.textContent).toContain('Installed')
-      expect(view.button('Install the mini app Kanban', plan)).toBeUndefined()
+      expect(view.button('Get Kanban', plan)).toBeUndefined()
     } finally {
       await view.done()
     }

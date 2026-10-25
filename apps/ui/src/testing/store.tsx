@@ -5,26 +5,31 @@ import {
   onShelf,
   parseShelf,
   shelfCounts,
+  type DiscoverResponse,
   type Listing,
   type ListingsResponse,
   type SourceView,
 } from '@localixai/store'
 import { makeListing, makeListingDetail } from '@localixai/store/testing'
-import type { StoreClient } from '@/shared/api/store-client'
+import { ApiError } from '@/shared/api/internal'
+import type { StoreClient, StorePageQuery } from '@/shared/api/store-client'
 import { MonitorDown } from 'lucide-react'
 import type { StoreInstallExtra } from '@/shared/lib/storeInstallExtra'
 import type { StoreTarget } from '@/shared/lib/openStore'
+import type { StoreProject } from '@/features/store/model/storeContext'
+import { resourceSync } from '@/shared/api/resourceSync'
+import { stubStoreLayout } from './storeLayout'
 
 /**
- * Renders the Store as a person meets it, over a client that answers from memory and records
- * every call. Menus and dialogs portal to the body, so queries look there too.
+ * Renders the Store as a person meets it, over a client that answers from memory, a page at a
+ * time, and records every call. Menus and dialogs portal to the body, so queries look there too.
  */
 
 export const HOSTED = 'https://hosted.test/mini-app-catalog.json'
 export const ADA = 'https://ada.test/mini-app-catalog.json'
 
 export const listing = (over: Partial<Listing> & { id: string }): Listing =>
-  makeListing({ source: { id: HOSTED, label: 'Localix' }, ...over })
+  makeListing({ source: { id: HOSTED, label: 'Localix', trust: 'localix' }, ...over })
 
 const count = (listings: Listing[], keys: (l: Listing) => (string | undefined)[]) => {
   const counts: Record<string, number> = {}
@@ -32,37 +37,46 @@ const count = (listings: Listing[], keys: (l: Listing) => (string | undefined)[]
   return counts
 }
 
-/** The server's answer for a query, the way the Store's index gives it. */
-export function answer(
-  listings: Listing[],
-  query: { shelf?: string; q?: string },
-): ListingsResponse {
+const text = (l: Listing) =>
+  [
+    l.name,
+    l.displayName,
+    l.summary,
+    ...l.tags,
+    ...(l.components ?? []).flatMap((c) => [c.name, c.description ?? '']),
+  ]
+    .join(' ')
+    .toLowerCase()
+
+/** The server's answer for a query, the way the Store's index gives it: one page and a cursor. */
+export function answer(listings: Listing[], query: StorePageQuery): ListingsResponse {
   const shelf = parseShelf(query.shelf)
   const words = (query.q ?? '').toLowerCase().split(/\s+/).filter(Boolean)
-  const text = (l: Listing) =>
-    [
-      l.name,
-      l.displayName,
-      l.summary,
-      ...l.tags,
-      ...(l.components ?? []).flatMap((c) => [c.name, c.description ?? '']),
-    ]
-      .join(' ')
-      .toLowerCase()
+  const found = listings.filter(
+    (l) =>
+      (!shelf || onShelf(l, shelf)) &&
+      (!query.category || l.category === query.category) &&
+      (!query.source || l.source.id === query.source) &&
+      (!query.trust || (l.source.trust ?? 'community') === query.trust) &&
+      (query.installed === undefined || l.installs.length > 0 === query.installed) &&
+      words.every((word) => text(l).includes(word)),
+  )
+  const from = Number(query.cursor ?? 0)
+  const limit = query.limit ?? 40
+  const next = from + limit < found.length ? String(from + limit) : undefined
   return {
-    listings: listings.filter(
-      (l) => (!shelf || onShelf(l, shelf)) && words.every((word) => text(l).includes(word)),
-    ),
+    listings: found.slice(from, from + limit),
     facets: {
       shelves: shelfCounts(listings),
-      kind: count(listings, (l) => [l.ref.kind]),
-      component: count(listings, (l) => COMPONENT_KINDS.filter((k) => componentCount(l, k) > 0)),
-      category: count(listings, (l) => [l.category]),
-      source: count(listings, (l) => [l.source.id]),
+      kind: count(found, (l) => [l.ref.kind]),
+      component: count(found, (l) => COMPONENT_KINDS.filter((k) => componentCount(l, k) > 0)),
+      category: count(found, (l) => [l.category]),
+      source: count(found, (l) => [l.source.id]),
       installed: listings.filter((l) => l.installs.length > 0).length,
       updates: listings.filter(hasUpdate).length,
     },
     problems: [],
+    ...(next ? { nextCursor: next } : {}),
   }
 }
 
@@ -100,7 +114,12 @@ export interface StoreFake {
   problems?: string[]
   sources?: SourceView[]
   previewFails?: string
+  /** Kinds whose preview reads the address; the others refuse it. */
+  understood?: string[]
+  discover?: Partial<DiscoverResponse>
   calls: string[]
+  /** Every page read, as its query: `shelf=package:mini-app cursor=40`. */
+  reads?: string[]
 }
 
 export const SOURCES: SourceView[] = [
@@ -111,11 +130,19 @@ export const SOURCES: SourceView[] = [
 export function fakeClient(fake: StoreFake): StoreClient {
   const call = (line: string) => void fake.calls.push(line)
   const find = (id: string) => fake.listings.find((l) => l.ref.id === id)!
+  const needsYes = (id: string) =>
+    !find(id).publisher.verified || (find(id).source.trust ?? 'community') === 'community'
+  const where = (projectId?: string | null) => (projectId ? ` in ${projectId}` : '')
   return {
-    page: async (query = {}) => ({
-      ...answer(fake.listings, query),
-      problems: fake.problems ?? [],
-    }),
+    page: async (asked) => {
+      const query = asked ?? {}
+      fake.reads?.push(
+        Object.entries(query)
+          .map(([key, value]) => `${key}=${value}`)
+          .join(' '),
+      )
+      return { ...answer(fake.listings, query), problems: fake.problems ?? [] }
+    },
     detail: async (ref) =>
       makeListingDetail(find(ref.id), {
         facts: [
@@ -123,7 +150,7 @@ export function fakeClient(fake: StoreFake): StoreClient {
           { label: 'License', value: 'MIT' },
           { label: 'Homepage', value: 'https://example.test/chess' },
         ],
-        components: [
+        components: find(ref.id).components ?? [
           { kind: 'screen', name: find(ref.id).displayName, description: 'A screen of its own' },
           { kind: 'command', name: `/${ref.id}:play` },
         ],
@@ -131,35 +158,41 @@ export function fakeClient(fake: StoreFake): StoreClient {
     plan: async (ref, scope) => ({
       scope,
       adds: [],
-      runs: [{ kind: 'backend', name: find(ref.id).displayName }],
-      network: [],
+      runs: [{ kind: 'hook', name: 'PreToolUse', command: 'node check.js' }],
+      network: ['api.example.test'],
       requires: [],
-      warnings: find(ref.id).publisher.verified
-        ? []
-        : ['Someone is not a publisher Localix verifies'],
-      needsConsent: !find(ref.id).publisher.verified,
+      warnings: needsYes(ref.id) ? ['Localix does not review what this source lists'] : [],
+      needsConsent: needsYes(ref.id),
     }),
-    install: async (ref, scope, consent) =>
-      call(`install ${ref.kind}/${ref.id} ${scope}${consent.plan ? ' consent' : ''}`),
+    install: async (ref, scope, consent, projectId) => {
+      if (needsYes(ref.id) && !consent.plan)
+        throw new ApiError('Read what it runs, then say yes', 409, 'consent')
+      call(
+        `install ${ref.kind}/${ref.id} ${scope}${consent.plan ? ' consent' : ''}${where(projectId)}`,
+      )
+    },
     update: async (ref, scope) => call(`update ${ref.kind}/${ref.id} ${scope}`),
     remove: async (ref, scope) => call(`remove ${ref.kind}/${ref.id} ${scope}`),
     setEnabled: async (ref, scope, enabled) =>
       call(`${enabled ? 'enable' : 'disable'} ${ref.kind}/${ref.id} ${scope}`),
-    sources: async () => ({ sources: fake.sources ?? SOURCES, addable: ['mini-app'] }),
+    sources: async () => ({ sources: fake.sources ?? SOURCES, addable: ['mini-app', 'plugin'] }),
     discover: async () => ({
       hero: null,
       updates: { count: fake.listings.filter(hasUpdate).length },
       rows: [],
       categories: [],
-      listings: [],
+      listings: fake.listings,
+      ...fake.discover,
     }),
     previewSource: async (kind, input) => {
       call(`preview ${kind} ${input}`)
       if (fake.previewFails) throw new Error(fake.previewFails)
+      if (fake.understood && !fake.understood.includes(kind))
+        throw new Error(`Not a ${kind} source`)
       return {
         kind,
         id: input,
-        label: new URL(input).host,
+        label: input,
         publishers: ['Ada'],
         count: 3,
         icons: [],
@@ -179,13 +212,12 @@ export function fakeClient(fake: StoreFake): StoreClient {
   }
 }
 
-export interface RenderStoreOptions {
-  listings: Listing[]
-  problems?: string[]
-  sources?: SourceView[]
-  previewFails?: string
+export interface RenderStoreOptions extends Omit<StoreFake, 'calls'> {
   target?: StoreTarget
   extras?: StoreInstallExtra[]
+  project?: StoreProject | null
+  /** The Store pane's width in px: 1400 (wide) unless a test asks for another. */
+  width?: number
 }
 
 /** Let reads answer: event-loop turns, never a timer. */
@@ -195,11 +227,13 @@ const turns = (act: (run: () => Promise<void>) => Promise<void>, n = 12) =>
   })
 
 export async function renderStore(options: RenderStoreOptions) {
-  const fake: StoreFake = { calls: [], ...options }
+  const { target, extras, project, width = 1400, ...rest } = options
+  const fake: StoreFake = { calls: [], reads: [], ...rest }
   const React = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { SWRConfig, useSWRConfig } = await import('swr')
   const { StoreView } = await import('@/features/store/ui/StoreView')
+  const restoreLayout = stubStoreLayout(width)
   const host = document.createElement('div')
   document.body.append(host)
   const root = createRoot(host)
@@ -210,18 +244,20 @@ export async function renderStore(options: RenderStoreOptions) {
     return null
   }
   const client = fakeClient(fake)
-  const tree = (target?: StoreTarget) => (
+  const tree = (at?: StoreTarget) => (
     <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>
       <Probe />
       <StoreView
         client={client}
-        target={target}
-        extras={options.extras ?? []}
-        onConfigure={(uri) => fake.calls.push(`configure ${uri}`)}
+        target={at}
+        extras={extras ?? []}
+        project={project ?? null}
+        searchDelay={0}
+        onNavigate={(uri) => fake.calls.push(`navigate ${uri}`)}
       />
     </SWRConfig>
   )
-  await React.act(async () => root.render(tree(options.target)))
+  await React.act(async () => root.render(tree(target)))
   await turns(React.act)
   const act = async (run: () => unknown) => {
     await React.act(async () => {
@@ -265,30 +301,34 @@ export async function renderStore(options: RenderStoreOptions) {
       Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, value)
       input.dispatchEvent(new Event('input', { bubbles: true }))
     })
-  const press = (key: string, target: Element | null = document.activeElement) =>
+  const press = (key: string, at: Element | null = document.activeElement) =>
     act(() => {
-      target?.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }))
+      at?.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }))
     })
   /** The server's listings changed and it poked the Store. */
   const change = (listings: Listing[]) =>
     act(async () => {
       fake.listings = listings
+      resourceSync.invalidate(['store'])
+      await new Promise<void>((resolve) => setTimeout(resolve, 1))
       await revalidate()
     })
   /** The tab was opened again at another target. */
-  const retarget = (target: StoreTarget) => act(() => root.render(tree(target)))
+  const retarget = (at: StoreTarget) => act(() => root.render(tree(at)))
   const shelf = (label: string) =>
     buttons(host.querySelector('nav[aria-label="Store sections"]') ?? host).find((b) =>
       b.textContent?.startsWith(label),
     )
   const done = async () => {
     await React.act(async () => root.unmount())
+    restoreLayout()
     host.remove()
     document.body.innerHTML = ''
   }
   return {
     host,
     calls: fake.calls,
+    reads: fake.reads!,
     card,
     button,
     click,

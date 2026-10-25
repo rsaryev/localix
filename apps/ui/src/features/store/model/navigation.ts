@@ -4,13 +4,24 @@ import {
   capabilityShelf,
   packageShelf,
   parseShelf,
+  type ListingRef,
+  type StoreComponent,
   type StoreFacets,
 } from '@localixai/store'
-import type { ShelfNavGroup } from '@localixai/kit/shelf-nav'
+import type { SidebarNavGroup } from '@localixai/kit/sidebar-nav'
+import type { StorePageQuery } from '@/shared/api/store-client'
 import { capabilityLabel, COMPONENT_LABELS, KIND_LABELS, LIBRARY_LABELS } from './presentation'
 
 /** Where the Store is: a shelf, or its Sources page. */
 export type StoreSection = NonNullable<ReturnType<typeof parseShelf>> | 'sources'
+
+/**
+ * What the Store shows over its section: a package's page (opened for one of its components,
+ * that one marked), or a full list — a row's "See all", a category, a collection, a source.
+ */
+export type StoreView =
+  | { type: 'listing'; ref: ListingRef; focus?: Pick<StoreComponent, 'kind' | 'name'> }
+  | { type: 'list'; title: string; subtitle?: string; query?: StorePageQuery; refs?: ListingRef[] }
 
 export function parseSection(raw: unknown): StoreSection | null {
   return raw === 'sources' ? 'sources' : parseShelf(raw)
@@ -19,16 +30,22 @@ export function parseSection(raw: unknown): StoreSection | null {
 /**
  * The Store's sections from the facets (`docs/internals/store.md`, "Hierarchy"): Discover, one
  * shelf per package kind and per component kind some listing has, the library and Sources. A
- * shelf no listing is on is left out, so it is hidden.
+ * capability's count is how many components it lists. A shelf no listing is on is left out.
  */
-export function navGroups(facets: StoreFacets | undefined): ShelfNavGroup[] {
+export function navGroups(facets: StoreFacets | undefined): SidebarNavGroup[] {
   const count = (id: string) => facets?.shelves[id]
-  const shelf = (id: string, label: string, icon: ShelfNavGroup['items'][number]['icon']) =>
+  const shelf = (id: string, label: string, icon: SidebarNavGroup['items'][number]['icon']) =>
     count(id) ? [{ id, label, icon, count: count(id) }] : []
   return [
     {
       id: 'discover',
-      items: shelf('discover', LIBRARY_LABELS.discover.label, LIBRARY_LABELS.discover.icon),
+      items: [
+        {
+          id: 'discover',
+          label: LIBRARY_LABELS.discover.label,
+          icon: LIBRARY_LABELS.discover.icon,
+        },
+      ],
     },
     {
       id: 'packages',

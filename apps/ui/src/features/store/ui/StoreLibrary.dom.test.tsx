@@ -23,6 +23,12 @@ const LISTINGS = [
     installs: [{ scope: 'user', version: '1.0.0', enabled: false, updateTo: '2.0.0' }],
   }),
   listing({ id: 'chess', displayName: 'Chess' }),
+  listing({
+    id: 'lint',
+    displayName: 'Lint',
+    ref: { kind: 'plugin', id: 'lint' },
+    installs: [{ scope: 'project', version: '0.3.0', enabled: true }],
+  }),
 ]
 const row = (host: HTMLElement, id: string) =>
   host.querySelector<HTMLElement>(`[data-install="${id}"]`)
@@ -46,6 +52,25 @@ describe('the Store’s library', () => {
     }
   })
 
+  test('chips filter the installs by kind, and a project install says which project', async () => {
+    const view = await renderStore({
+      listings: LISTINGS,
+      target: { shelf: 'installed' },
+      project: { id: 'p1', name: 'Atlas' },
+    })
+    try {
+      expect(row(view.host, 'lint')?.textContent).toContain('In Atlas')
+      expect(row(view.host, 'lint')?.textContent).toContain('Plugin')
+      await view.click(view.button('Plugins', view.host.querySelector('[aria-label="Kinds"]')!))
+      expect(row(view.host, 'lint')).not.toBeNull()
+      expect(row(view.host, 'kanban')).toBeNull()
+      await view.click(view.button('Everything'))
+      expect(row(view.host, 'kanban')).not.toBeNull()
+    } finally {
+      await view.done()
+    }
+  })
+
   test('an install’s menu updates, configures and removes it', async () => {
     const view = await renderStore({ listings: LISTINGS, target: { shelf: 'installed' } })
     try {
@@ -59,7 +84,7 @@ describe('the Store’s library', () => {
       await view.openMenu(view.button('Kanban actions'))
       await view.click(view.menuItem('Configure'))
       expect(view.calls.at(-1)).toBe(
-        'configure localix://ui/settings/mini-apps#mini-app:sample-board',
+        'navigate localix://ui/settings/mini-apps#mini-app:sample-board',
       )
     } finally {
       await view.done()

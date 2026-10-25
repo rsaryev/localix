@@ -41,19 +41,31 @@ async function open(id = 'chess', name = 'Chess') {
   return { view, page, shown, tab }
 }
 
-describe('a listing’s page', () => {
-  test('opens from its card: icon, name, publisher, category, tags, version and action', async () => {
+describe('a package’s page', () => {
+  test('opens from its row: icon, name, publisher and trust, kind, category, tags and Get', async () => {
     const { view, page } = await open()
     try {
       expect(page()!.querySelector('h1')?.textContent).toBe('Chess')
       expect(page()!.querySelector('img')?.getAttribute('src')).toEndWith('/chess/icon')
       expect(page()!.textContent).toContain('Localix')
-      expect(page()!.querySelector('[aria-label="Verified publisher"]')).not.toBeNull()
-      expect(page()!.textContent).toContain('Games')
-      expect(page()!.textContent).toContain('board-game')
-      expect(page()!.textContent).toContain('1.0.0')
-      await view.click(view.button('Install', page()!))
+      expect(page()!.querySelector('[aria-label="Verified · Localix"]')).not.toBeNull()
+      expect(page()!.textContent).toContain('games')
+      expect(view.button('Show packages tagged board-game', page()!)).toBeDefined()
+      await view.click(view.button('Get Chess', page()!))
       expect(view.calls).toEqual(['install mini-app/chess user'])
+    } finally {
+      await view.done()
+    }
+  })
+
+  test('the facts say kind, version, source, license and whether it runs code', async () => {
+    const { view, page } = await open()
+    try {
+      const facts = page()!.querySelector('[aria-label="Information"]')!
+      for (const text of ['Mini app', '1.0.0', 'Localix', 'MIT', 'Runs code']) {
+        expect(facts.textContent).toContain(text)
+      }
+      expect(facts.querySelector('a[href="https://example.test/chess"]')).not.toBeNull()
     } finally {
       await view.done()
     }
@@ -76,14 +88,12 @@ describe('a listing’s page', () => {
     }
   })
 
-  test('Overview is the README without its raw HTML, with the facts beside it', async () => {
+  test('the description is the README as the chat renders markdown, without raw HTML', async () => {
     const { view, page } = await open()
     try {
-      const about = page()!.querySelector('[role="tabpanel"]')!
+      const about = page()!.querySelector('section[aria-label="Description"]')!
       expect(about.querySelector('strong')?.textContent).toBe('real')
       expect(about.querySelector('b')).toBeNull()
-      expect(about.textContent).toContain('MIT')
-      expect(about.querySelector('a[href="https://example.test/chess"]')).not.toBeNull()
     } finally {
       await view.done()
     }
@@ -92,42 +102,93 @@ describe('a listing’s page', () => {
   test('What’s inside lists its parts; Permissions is the plan', async () => {
     const { view, page, tab } = await open()
     try {
-      await view.click(tab('What’s inside'))
       const panel = () => page()!.querySelector('[role="tabpanel"]')!
       expect(panel().textContent).toContain('A screen of its own')
       expect(panel().textContent).toContain('/chess:play')
       await view.click(tab('Permissions'))
       expect(panel().textContent).toContain('Runs on this computer')
-      expect(panel().textContent).toContain('Chess')
+      expect(panel().textContent).toContain('node check.js')
+      expect(panel().textContent).toContain('api.example.test')
+      await view.click(tab('Versions'))
+      expect(panel().textContent).toContain('Offered')
     } finally {
       await view.done()
     }
   })
 
-  test('an unverified publisher’s plan warns before anything is installed', async () => {
-    const { view, page, tab } = await open('radio', 'Radio')
+  test('a community package asks first, and its sheet carries the plan’s warning', async () => {
+    const { view, page } = await open('radio', 'Radio')
     try {
-      await view.click(tab('Permissions'))
-      expect(page()!.textContent).toContain('Someone is not a publisher Localix verifies')
-      await view.click(view.button('Install', page()!))
+      await view.click(view.button('Get Radio', page()!))
       expect(view.calls).toEqual([])
-      await view.click(view.button('Install anyway', page()!))
+      const sheet = document.body.querySelector<HTMLElement>('[role="dialog"]')!
+      expect(sheet.textContent).toContain('Localix does not review what this source lists')
+      expect(sheet.textContent).toContain('node check.js')
+      await view.click(view.button('Install', sheet))
       expect(view.calls).toEqual(['install mini-app/radio user consent'])
     } finally {
       await view.done()
     }
   })
 
-  test('Back returns to the shelf with its filter kept', async () => {
+  test('Back returns to the shelf with its category kept', async () => {
     const view = await renderStore({ listings: LISTINGS, target: { shelf: 'package:mini-app' } })
     try {
-      await view.click(view.button('Show packages tagged game'))
+      const tab = (label: string) =>
+        [...view.host.querySelectorAll('[role="tab"]')].find((node) =>
+          node.textContent?.startsWith(label),
+        )
+      await view.click(tab('games'))
       expect(view.card('kanban')).toBeNull()
       await view.click(view.button('Chess', view.card('chess')!))
-      await view.click(view.button('Back to the store'))
+      expect(view.host.querySelector('[data-store-page="chess"]')).not.toBeNull()
+      await view.click(view.button('Back'))
       expect(view.card('chess')).not.toBeNull()
       expect(view.card('kanban')).toBeNull()
-      expect(view.button('Remove the tag filter game')).toBeDefined()
+    } finally {
+      await view.done()
+    }
+  })
+
+  test('a tag opens a list of what carries it, and Back returns to the page', async () => {
+    const { view, page } = await open()
+    try {
+      await view.click(view.button('Show packages tagged game', page()!))
+      expect(view.host.querySelector('h2')?.textContent).toBe('Tagged “game”')
+      expect(view.card('chess')).not.toBeNull()
+      expect(view.card('kanban')).toBeNull()
+      await view.click(view.button('Back'))
+      expect(page()).not.toBeNull()
+    } finally {
+      await view.done()
+    }
+  })
+
+  test('narrow, the facts go under the header and Get is pinned to the bottom', async () => {
+    const view = await renderStore({
+      listings: LISTINGS,
+      target: { ref: { kind: 'mini-app', id: 'chess' } },
+      width: 600,
+    })
+    try {
+      const page = view.host.querySelector('[data-store-page="chess"]')!
+      const pinned = page.querySelector('.sticky.bottom-0')!
+      expect(view.button('Get Chess', pinned)).toBeDefined()
+      expect(page.querySelectorAll('[aria-label="Information"]')).toHaveLength(1)
+      expect(page.querySelector('aside')).toBeNull()
+    } finally {
+      await view.done()
+    }
+  })
+
+  test('wide, the facts sit beside the description', async () => {
+    const view = await renderStore({
+      listings: LISTINGS,
+      target: { ref: { kind: 'mini-app', id: 'chess' } },
+    })
+    try {
+      const page = view.host.querySelector('[data-store-page="chess"]')!
+      expect(page.querySelector('aside [aria-label="Information"]')).not.toBeNull()
     } finally {
       await view.done()
     }

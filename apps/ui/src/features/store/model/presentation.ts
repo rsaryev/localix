@@ -1,10 +1,16 @@
 import {
+  BookOpen,
   Bot,
   Boxes,
+  Code2,
   Compass,
   Cpu,
+  Database,
   Download,
+  FileText,
+  Gamepad2,
   LayoutGrid,
+  ListTodo,
   MonitorSmartphone,
   Package,
   Palette,
@@ -12,6 +18,9 @@ import {
   RefreshCw,
   ScrollText,
   Server,
+  ServerCog,
+  Shapes,
+  ShieldCheck,
   Sparkles,
   SquareTerminal,
   Wand2,
@@ -19,18 +28,12 @@ import {
   Wrench,
   type LucideIcon,
 } from 'lucide-react'
-import {
-  BROWSABLE_COMPONENT_KINDS,
-  componentCount,
-  type ComponentKind,
-  type Listing,
-  type PackageKind,
-} from '@localixai/store'
+import type { ComponentKind, Listing, PackageKind, StoreCategory, Trust } from '@localixai/store'
 
 /**
- * How the Store names and draws what the contract carries: a label and a glyph per package kind
- * and per component kind (`docs/internals/store.md`, principle 7). It names no provider: a new
- * kind is one row here.
+ * How the Store names and draws what the contract carries: a label and a glyph per package kind,
+ * component kind, category and trust (`docs/internals/store.md`, principle 7). It names no
+ * provider: a new kind is one row here.
  */
 
 export const KIND_LABELS: Record<PackageKind, { one: string; many: string; icon: LucideIcon }> = {
@@ -62,14 +65,14 @@ export const COMPONENT_LABELS: Record<
 
 /** What a package kind's sources are called: a group heading and one of them. */
 export const SOURCE_LABELS: Record<PackageKind, { group: string; one: string }> = {
-  'mini-app': { group: 'Mini app catalogs', one: 'mini app catalog' },
-  plugin: { group: 'Claude Code marketplaces', one: 'marketplace' },
+  'mini-app': { group: 'Mini app catalogs', one: 'Mini app catalog' },
+  plugin: { group: 'Claude Code marketplaces', one: 'Claude Code marketplace' },
   'mcp-server': { group: 'MCP registries', one: 'MCP registry' },
-  skill: { group: 'Skill registries', one: 'skill registry' },
-  agent: { group: 'Agent registries', one: 'agent registry' },
+  skill: { group: 'Skill registries', one: 'Skill registry' },
+  agent: { group: 'Agent registries', one: 'Agent registry' },
 }
 
-/** The shelves that are not a kind: their label and glyph. */
+/** The sections that are not a kind: their label and glyph. */
 export const LIBRARY_LABELS = {
   discover: { label: 'Discover', icon: Compass },
   installed: { label: 'Installed', icon: Package },
@@ -77,14 +80,31 @@ export const LIBRARY_LABELS = {
   sources: { label: 'Sources', icon: Download },
 } as const
 
-/** How the Store names each category a package declares. */
-export const CATEGORY_LABELS: Readonly<Record<string, string>> = {
-  games: 'Games',
-  data: 'Data',
-  development: 'Development',
-  content: 'Content',
-  utilities: 'Utilities',
+export const CATEGORY_ICONS: Record<StoreCategory, LucideIcon> = {
+  Development: Code2,
+  Data: Database,
+  Content: FileText,
+  Productivity: ListTodo,
+  Design: Palette,
+  Security: ShieldCheck,
+  Operations: ServerCog,
+  Learning: BookOpen,
+  Games: Gamepad2,
+  Utilities: Wrench,
+  Other: Shapes,
 }
+
+/** Who stands behind a source: Localix and Anthropic's official one are verified. */
+export const TRUST_LABELS: Record<Trust, string> = {
+  localix: 'Localix',
+  official: 'Official',
+  community: 'Community',
+}
+
+export const trustOf = (listing: Pick<Listing, 'source'>): Trust =>
+  listing.source.trust ?? 'community'
+
+export const isVerified = (listing: Pick<Listing, 'source'>) => trustOf(listing) !== 'community'
 
 /** The shelf heading of a component kind: "Commands", "Agent tools". */
 export function capabilityLabel(kind: ComponentKind): string {
@@ -95,22 +115,25 @@ export function capabilityLabel(kind: ComponentKind): string {
 /** A label inside a sentence: "mini app", but "MCP server" keeps its capitals. */
 export const inSentence = (label: string) => (/^[A-Z]{2}/.test(label) ? label : label.toLowerCase())
 
-/**
- * What a card says is inside, only where it tells the package apart from the others of its kind
- * in `peers`: the browsable components it has that not every one of them has ("2 commands").
- * How a package works — a screen, a backend, agent tools — and whether it runs code are on its
- * page, not on every card.
- */
-export function distinctInside(listing: Listing, peers: readonly Listing[]): string {
-  if (listing.contents === 'unknown') return ''
-  const kin = peers.filter((peer) => peer.ref.kind === listing.ref.kind)
-  return BROWSABLE_COMPONENT_KINDS.flatMap((kind) => {
-    const count = componentCount(listing, kind)
-    if (!count || (kin.length > 1 && kin.every((peer) => componentCount(peer, kind) > 0))) return []
-    const { one, many } = COMPONENT_LABELS[kind]
-    return [count === 1 ? `1 ${inSentence(one)}` : `${count} ${many}`]
-  }).join(' · ')
-}
-
 export const plural = (count: number, one: string, many = `${one}s`) =>
-  `${count} ${count === 1 ? one : many}`
+  `${count.toLocaleString('en-US')} ${count === 1 ? one : many}`
+
+/** "Ada · Plugin": who publishes it and what it is, the line under a tile's name. */
+export const byline = (listing: Listing) =>
+  `${listing.publisher.name} · ${KIND_LABELS[listing.ref.kind].one}`
+
+/** "3 hours ago", "2 days ago", "just now": how long since `iso`, for a source's last read. */
+export function ago(iso: string, now = Date.now()): string {
+  const seconds = Math.max(0, Math.round((now - Date.parse(iso)) / 1000))
+  const steps: [number, string][] = [
+    [60 * 60 * 24 * 30, 'month'],
+    [60 * 60 * 24, 'day'],
+    [60 * 60, 'hour'],
+    [60, 'minute'],
+  ]
+  for (const [size, unit] of steps) {
+    const count = Math.floor(seconds / size)
+    if (count >= 1) return `${count} ${unit}${count === 1 ? '' : 's'} ago`
+  }
+  return 'just now'
+}

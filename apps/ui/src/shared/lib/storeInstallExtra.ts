@@ -43,6 +43,34 @@ export function provideStoreInstallExtra(hook: UseStoreInstallExtra): () => void
   }
 }
 
+/**
+ * Where an installed listing opens — a mini app's screen — as a `localix://` address, offered by
+ * the feature that knows; undefined when it has nothing to open. The Store's Get button says Open
+ * for a listing one of these answers for, and Installed otherwise; it names no kind.
+ */
+export type StoreOpener = (listing: Listing) => string | undefined
+
+const openers: StoreOpener[] = []
+
+/** Offer an opener; returns its withdrawal. */
+export function provideStoreOpener(opener: StoreOpener): () => void {
+  if (!openers.includes(opener)) openers.push(opener)
+  return () => {
+    const at = openers.indexOf(opener)
+    if (at >= 0) openers.splice(at, 1)
+  }
+}
+
+/** Where an installed listing opens, by the first opener that knows. */
+export function storeOpenAddress(listing: Listing): string | undefined {
+  if (listing.installs.length === 0) return undefined
+  for (const opener of openers) {
+    const address = opener(listing)
+    if (address) return address
+  }
+  return undefined
+}
+
 /** Every extra offered here. */
 export function useStoreInstallExtras(): StoreInstallExtra[] {
   return hooks.flatMap((hook) => {

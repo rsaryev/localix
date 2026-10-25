@@ -1,52 +1,77 @@
-import { useLayoutEffect, useRef, useState } from 'react'
-import type { Listing, ListingRef, PackageKind, Scope, StoreComponent } from '@localixai/store'
-import { LoadingHint } from '@localixai/kit/empty-hint'
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { X } from 'lucide-react'
+import type { Listing, ListingRef, PackageKind, StoreComponent } from '@localixai/store'
+import { IconButton } from '@localixai/kit/icon-button'
 import { SearchInput } from '@localixai/kit/search-input'
-import { ShelfNav } from '@localixai/kit/shelf-nav'
-import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
+import { SidebarNav } from '@localixai/kit/sidebar-nav'
+import { useElementWidth } from '@localixai/kit/lib'
 import type { StoreClient } from '@/shared/api/store-client'
 import type { StoreTarget } from '@/shared/lib/openStore'
 import type { StoreInstallExtra } from '@/shared/lib/storeInstallExtra'
-import { NO_FILTER, type ShelfFilter } from '../model/filters'
-import { navGroups, parseSection, sectionLabel, type StoreSection } from '../model/navigation'
-import { useExtrasAfterInstall } from '../model/useExtrasAfterInstall'
-import { useStoreListings, useStoreSources } from '../model/useStoreData'
+import { layoutFor, StoreFrameContext } from '../model/layout'
+import {
+  navGroups,
+  parseSection,
+  sectionLabel,
+  type StoreSection,
+  type StoreView as View,
+} from '../model/navigation'
+import { StoreMemoryContext } from '../model/storeMemory'
+import { StoreScopeContext, type StoreProject, type StoreScope } from '../model/storeContext'
+import { useStoreActions } from '../model/useStoreActions'
+import { keyOf } from '../model/useExtrasAfterInstall'
+import { prefetchDetail, useStoreFacets, useStoreSources } from '../model/useStoreData'
+import { useDebounced, SEARCH_DEBOUNCE_MS } from '../model/useDebounced'
 import { AddSourceDialog } from './AddSourceDialog'
-import { SectionSelect } from './SectionSelect'
-import { StoreContent } from './StoreContent'
+import { ConsentSheet } from './ConsentSheet'
+import { StoreScrollContext } from './PagedList'
+import { StoreBody } from './StoreBody'
 
-const scopeOf = (listing: Listing): Scope => listing.installs[0]?.scope ?? 'user'
-const sameRef = (a: ListingRef, b: ListingRef) => a.kind === b.kind && a.id === b.id
+/** A view over the section, with the listing in hand when it was opened from a card. */
+type Opened = View & { listing?: Listing }
+
+/** How long the pointer rests on a card before its page is read ahead. */
+const INTENT_MS = 120
 
 /**
- * THE STORE (`docs/internals/store.md`, "Screens"): a search across everything on top, the
- * shelves on the left — Discover, Packages, Capabilities, Library, Sources, each hidden while
- * empty — and the shelf, a listing's page, the library or the sources beside them. It renders the
- * contract and names no provider; `target` is where the tab was opened.
+ * THE STORE (`docs/internals/store.md`, "Screens"): the search on top; the sections beside it —
+ * a full column, a column of icons, or one picker in the header, by the pane's own width — and
+ * Discover, a shelf, a package's page, the library or the sources. It renders the contract and
+ * names no provider; `target` is where the tab was opened.
  */
 export function StoreView({
   client,
   target,
   extras,
-  onConfigure,
+  project = null,
+  onNavigate,
+  searchDelay = SEARCH_DEBOUNCE_MS,
 }: {
   client: StoreClient
   target?: StoreTarget
   /** What a listing can get beside a plain install, as other features offer it. */
   extras: readonly StoreInstallExtra[]
-  /** Open a provider's own settings for an install (a `localix://` address). */
-  onConfigure: (uri: string) => void
+  /** The project open beside the Store. */
+  project?: StoreProject | null
+  /** Open a `localix://` address: an installed package, a provider's settings. */
+  onNavigate: (uri: string) => void
+  searchDelay?: number
 }) {
-  const [chosen, setSection] = useState<StoreSection>('discover')
-  const [query, setQuery] = useState('')
-  const [opened, setOpened] = useState<ListingRef | null>(null)
-  const [focus, setFocus] = useState<Pick<StoreComponent, 'kind' | 'name'> | undefined>()
-  const [filter, setFilter] = useState<ShelfFilter>(NO_FILTER)
-  const [adding, setAdding] = useState<{ kind: PackageKind; input?: string } | null>(null)
-  const [problem, setProblem] = useState<string | null>(null)
+  const root = useRef<HTMLDivElement>(null)
   const scroller = useRef<HTMLDivElement>(null)
-  const listScroll = useRef(0)
-  const returnTo = useRef<string | null>(null)
+  const width = useElementWidth(root)
+  const layout = layoutFor(width)
+  const [section, setSection] = useState<StoreSection>('discover')
+  const [stack, setStack] = useState<Opened[]>([])
+  const [query, setQuery] = useState('')
+  const [adding, setAdding] = useState<{ kind?: PackageKind; input: string } | null>(null)
+  const scrolls = useRef<number[]>([])
+  const [memory] = useState(() => new Map<string, unknown>())
+  const intent = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const q = useDebounced(query.trim(), searchDelay)
+  const facets = useStoreFacets(client, project?.id ?? null)
+  const sources = useStoreSources(client)
+  const actions = useStoreActions({ client, project, navigate: onNavigate })
 
   // Each open of the tab is a new target: go where it says.
   const [arrived, setArrived] = useState<StoreTarget | undefined>(undefined)
@@ -54,172 +79,169 @@ export function StoreView({
     setArrived(target)
     const next = parseSection(target.shelf)
     if (next) setSection(next)
-    if (next || target.ref) setFilter(NO_FILTER)
-    setOpened(target.ref ? (target.ref as ListingRef) : null)
-    setFocus(undefined)
+    setStack(target.ref ? [{ type: 'listing', ref: target.ref as ListingRef }] : [])
+    if (target.ref || next) setQuery('')
     if (target.addSource)
       setAdding({ kind: target.addSource.kind as PackageKind, input: target.addSource.input })
   }
 
-  const q = query.trim()
-  const everything = useStoreListings(client, {})
-  const facets = everything.data?.facets
-  // Discover holds nothing yet: show the first shelf that has something.
-  const firstShelf = Object.keys(facets?.shelves ?? {}).find((id) => id.startsWith('package:'))
-  const section =
-    chosen === 'discover' && facets && !facets.shelves.discover && firstShelf
-      ? (firstShelf as StoreSection)
-      : chosen
-  const shelf = section === 'sources' ? undefined : section
-  const page = useStoreListings(client, q ? { q } : { shelf })
-  const sources = useStoreSources(client)
-  const all = everything.data?.listings ?? []
-  const after = useExtrasAfterInstall(all, extras)
-
-  // Back on the shelf: where it was scrolled to, and focus on the card that was opened.
+  // Back from a page: where the list was scrolled to.
+  const depth = stack.length
   useLayoutEffect(() => {
-    if (opened || !returnTo.current) return
-    if (scroller.current) scroller.current.scrollTop = listScroll.current
-    scroller.current
-      ?.querySelector<HTMLButtonElement>(
-        `[data-listing="${CSS.escape(returnTo.current)}"] > button`,
-      )
-      ?.focus()
-    returnTo.current = null
-  }, [opened])
+    const saved = scrolls.current[depth]
+    if (scroller.current) scroller.current.scrollTop = saved ?? 0
+  }, [depth, section])
 
-  const refresh = () => Promise.all([everything.mutate(), page.mutate(), sources.mutate()])
-  const run = (write: Promise<unknown>) =>
-    void write
-      .then(() => setProblem(null))
-      .catch((error: unknown) => setProblem(errorMessage(error, 'The Store could not do that')))
-      .finally(() => void refresh())
-  const actions = {
-    onInstall: (listing: Listing, consent: boolean) =>
-      run(client.install(listing.ref, 'user', { plan: consent })),
-    onUpdate: (listing: Listing) => run(client.update(listing.ref, scopeOf(listing))),
-    onRemove: (listing: Listing) => run(client.remove(listing.ref, scopeOf(listing))),
-  }
-  const offered = (listing: Listing) => extras.filter((extra) => extra.available(listing))
-  const extrasFor = (listing: Listing) =>
-    offered(listing).map((extra) => ({
-      extra,
-      choose: (consent: boolean) => {
-        after.afterInstall(extra, listing)
-        actions.onInstall(listing, consent)
+  const push = useCallback(
+    (view: Opened) => {
+      scrolls.current[depth] = scroller.current?.scrollTop ?? 0
+      setQuery('')
+      setStack((current) => [...current, view])
+    },
+    [depth],
+  )
+  const scope: StoreScope = useMemo(
+    () => ({
+      client,
+      project,
+      open: (item: Listing | ListingRef, focus?: Pick<StoreComponent, 'kind' | 'name'>) =>
+        push(
+          'ref' in item
+            ? { type: 'listing', ref: item.ref, listing: item, focus }
+            : { type: 'listing', ref: item, focus },
+        ),
+      show: push,
+      goTo: (next) => {
+        setSection(next)
+        setStack([])
+        setQuery('')
       },
-    }))
-  const madeFor = (listing: Listing) =>
-    offered(listing).map((extra) => ({
-      extra,
-      has: extra.has(listing),
-      add: () => after.make(extra, listing),
-      remove: () => void extra.remove(listing),
-    }))
-  const openListing = (listing: Listing, component?: StoreComponent) => {
-    listScroll.current = scroller.current?.scrollTop ?? 0
-    setOpened(listing.ref)
-    setFocus(component ? { kind: component.kind, name: component.name } : undefined)
-  }
-  const back = () => {
-    returnTo.current = opened?.id ?? null
-    setOpened(null)
-  }
-  const choose = (id: string) => {
-    setSection(id as StoreSection)
-    setOpened(null)
-    setQuery('')
-    setFilter(NO_FILTER)
-  }
+      prefetch: (ref) => {
+        if (intent.current) clearTimeout(intent.current)
+        intent.current = setTimeout(
+          () => prefetchDetail(client, ref, project?.id ?? null),
+          INTENT_MS,
+        )
+      },
+      get: actions.get,
+      update: actions.update,
+      remove: actions.remove,
+      setEnabled: actions.setEnabled,
+      updateAll: actions.updateAll,
+      run: actions.run,
+      navigate: onNavigate,
+      extrasFor: (listing) => extras.filter((extra) => extra.available(listing)),
+      makeExtra: (extra, listing) => actions.extras.make(extra, listing),
+      removeExtra: (extra, listing) => actions.run(extra.remove(listing)),
+      extraProblems: actions.extras.problems,
+    }),
+    [client, project, actions, extras, onNavigate, push],
+  )
+  const frame = useMemo(() => ({ layout, width }), [layout, width])
+  const groups = navGroups(facets.data?.facets)
+  const choose = (id: string) => scope.goTo(id as StoreSection)
+  const search = (
+    <SearchInput
+      value={query}
+      onValueChange={setQuery}
+      placeholder="Search apps, plugins, skills…"
+      aria-label="Search the Store"
+      size="md"
+      className="w-full"
+    />
+  )
+  const top = stack.at(-1)
+  const back = () => setStack((current) => current.slice(0, -1))
+  const backLabel = stack.length > 1 ? 'Back' : sectionLabel(section)
 
-  const groups = navGroups(facets)
-  const openedListing = opened ? all.find((listing) => sameRef(listing.ref, opened)) : undefined
-  const loading = !everything.data && !everything.error
   return (
-    <div className="@container/store flex h-full min-h-0 flex-col">
-      <header className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 pt-4 pb-3 @2xl/store:px-6">
-        <h1 className="text-base font-semibold text-foreground">Store</h1>
-        <SearchInput
-          value={query}
-          onValueChange={(value) => {
-            setQuery(value)
-            setOpened(null)
-          }}
-          placeholder="Search everything"
-          aria-label="Search the Store"
-          size="md"
-          className="w-72 max-w-full min-w-0 flex-1 @2xl/store:flex-none"
-        />
-        <SectionSelect
-          groups={groups}
-          active={q ? '' : section}
-          onSelect={choose}
-          className="@2xl/store:hidden"
-        />
-      </header>
-      <div className="flex min-h-0 flex-1">
-        <ShelfNav
-          label="Store sections"
-          groups={groups}
-          active={q ? '' : section}
-          onSelect={choose}
-          className="hidden w-48 shrink-0 overflow-y-auto px-3 pb-4 @2xl/store:flex"
-        />
-        <div
-          ref={scroller}
-          className="@container min-w-0 flex-1 overflow-y-auto px-4 pb-6 @2xl/store:px-6"
-        >
-          {problem && <p className="px-2 pb-2 text-xs text-status-error">{problem}</p>}
-          {loading ? (
-            <LoadingHint>Loading the Store…</LoadingHint>
-          ) : (
-            <StoreContent
-              client={client}
-              section={section}
-              query={q}
-              listings={page.data?.listings ?? []}
-              problems={everything.data?.problems ?? []}
-              sources={sources.data ?? []}
-              everything={all}
-              opened={openedListing}
-              focus={focus}
-              backLabel={q ? 'Results' : sectionLabel(section)}
-              filter={filter}
-              onFilter={(patch) => setFilter((current) => ({ ...current, ...patch }))}
-              onBack={back}
-              onOpen={openListing}
-              onTag={(tag) => {
-                setFilter((current) => ({ ...current, tag }))
-                if (opened) back()
-              }}
-              extrasFor={extrasFor}
-              madeFor={madeFor}
-              extraProblems={after.problems}
-              onRemoveSource={(source) => run(client.removeSource(source.kind, source.id))}
-              onAddSource={(kind) => setAdding({ kind })}
-              onUpdateAll={() => run(client.applyUpdates())}
-              onEnable={(listing, install, enabled) =>
-                run(client.setEnabled(listing.ref, install.scope, enabled))
-              }
-              onConfigure={onConfigure}
-              {...actions}
-            />
-          )}
-        </div>
-      </div>
-      {adding && (
-        <AddSourceDialog
-          kind={adding.kind}
-          open
-          initialInput={adding.input}
-          preview={client.previewSource}
-          add={async (kind, input) => {
-            await client.addSource(kind, input)
-            await refresh()
-          }}
-          onOpenChange={(open) => !open && setAdding(null)}
-        />
-      )}
-    </div>
+    <StoreScopeContext.Provider value={scope}>
+      <StoreMemoryContext.Provider value={memory}>
+        <StoreFrameContext.Provider value={frame}>
+          <div ref={root} data-layout={layout} className="flex h-full min-h-0 flex-col">
+            <header className="flex items-center gap-3 px-4 pt-3 pb-3">
+              {layout === 'narrow' ? (
+                <SidebarNav
+                  mode="select"
+                  label="Store sections"
+                  groups={groups}
+                  active={q ? '' : section}
+                  onSelect={choose}
+                  search={search}
+                  className="w-full"
+                />
+              ) : (
+                <>
+                  <h1 className="shrink-0 text-base font-semibold text-foreground">Store</h1>
+                  <div className="max-w-xl min-w-0 flex-1">{search}</div>
+                </>
+              )}
+            </header>
+            <div className="flex min-h-0 flex-1">
+              {layout !== 'narrow' && (
+                <SidebarNav
+                  mode={layout === 'wide' ? 'full' : 'compact'}
+                  label="Store sections"
+                  groups={groups}
+                  active={q ? '' : section}
+                  onSelect={choose}
+                  className={
+                    layout === 'wide'
+                      ? 'w-52 shrink-0 overflow-y-auto px-3 pb-4'
+                      : 'w-14 shrink-0 items-center overflow-y-auto px-2 pb-4'
+                  }
+                />
+              )}
+              <div
+                ref={scroller}
+                data-store-scroller
+                className="flex min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto px-4 pb-6 @2xl:px-6"
+              >
+                {actions.problem && (
+                  <p
+                    role="alert"
+                    className="mb-3 flex items-center gap-2 text-xs text-status-error"
+                  >
+                    <span className="min-w-0 flex-1">{actions.problem}</span>
+                    <IconButton size="xs" aria-label="Dismiss" onClick={actions.dismissProblem}>
+                      <X />
+                    </IconButton>
+                  </p>
+                )}
+                <StoreScrollContext.Provider value={scroller}>
+                  <StoreBody
+                    key={
+                      q
+                        ? `search:${q}`
+                        : top
+                          ? `${depth}:${top.type === 'listing' ? keyOf(top.ref) : top.title}`
+                          : section
+                    }
+                    section={section}
+                    query={q}
+                    view={top}
+                    backLabel={backLabel}
+                    onBack={back}
+                    onAddSource={() => setAdding({ input: '' })}
+                  />
+                </StoreScrollContext.Provider>
+              </div>
+            </div>
+            {actions.asking && <ConsentSheet request={actions.asking} onAnswer={actions.answer} />}
+            {adding && (
+              <AddSourceDialog
+                kinds={sources.data?.addable ?? []}
+                initial={adding.input ? adding : undefined}
+                preview={(kind, input) => client.previewSource(kind, input)}
+                add={async (kind, input) => {
+                  await client.addSource(kind, input)
+                }}
+                onClose={() => setAdding(null)}
+              />
+            )}
+          </div>
+        </StoreFrameContext.Provider>
+      </StoreMemoryContext.Provider>
+    </StoreScopeContext.Provider>
   )
 }
