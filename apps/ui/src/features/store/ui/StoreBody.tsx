@@ -1,11 +1,17 @@
 import { ArrowLeft } from 'lucide-react'
-import type { BrowsableComponentKind, Listing, PackageKind } from '@localixai/store'
+import {
+  PACKAGE_KINDS,
+  type BrowsableComponentKind,
+  type Listing,
+  type PackageKind,
+} from '@localixai/store'
 import { Button } from '@localixai/kit/button'
 import {
   COMPONENT_LABELS,
   KIND_LABELS,
   LIBRARY_LABELS,
   capabilityLabel,
+  inSentence,
 } from '../model/presentation'
 import type { StoreSection, StoreView } from '../model/navigation'
 import { useStoreScope } from '../model/storeContext'
@@ -114,9 +120,12 @@ export function StoreBody({
     const kind = section.slice(11) as BrowsableComponentKind
     return (
       <>
+        <CreateBar kinds={[kind as PackageKind]} />
         <Heading
           title={capabilityLabel(kind)}
-          note={`Every ${COMPONENT_LABELS[kind].one.toLowerCase()} a package adds. Getting one gets the package it comes in.`}
+          note={`${
+            (PACKAGE_KINDS as readonly string[]).includes(kind) ? 'Yours, your project’s and ' : ''
+          }every ${inSentence(COMPONENT_LABELS[kind].one)} a package adds. Getting one from a package gets the whole package.`}
         />
         <StoreComponents kind={kind} />
       </>

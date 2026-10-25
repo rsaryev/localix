@@ -38,10 +38,11 @@ Changes land on `main`.
   search. See [Store](docs/features/store.md).
 - **The Store**: the mini app store grows into one Store tab, opened from the rail's **+**, setup
   and Settings → Mini apps. A search across everything sits on top and shelves on the left —
-  Discover, Mini apps, the capabilities packages contain (Screens, Agent tools, Commands),
-  Installed, Updates and Sources. Each card says what is inside; a package's page adds What's
-  inside, Permissions (what would run on this computer) and Versions; Installed has a switch and
-  Update, Configure and Remove for each install. See [Mini apps](docs/features/mini-apps.md).
+  Discover, Mini apps and Plugins, then what packages give (Skills, Agents, Commands, MCP servers),
+  one shelf each that lists yours and those inside plugins with one count, Installed, Updates and
+  Sources. Each card says what is inside; a package's page adds What's inside, Permissions (what
+  would run on this computer) and Versions; Installed has a switch and Update, Configure and Remove
+  for each install. See [Mini apps](docs/features/mini-apps.md).
 - **Plugins in the Store**: the Store now lists Claude Code plugins from Anthropic's official and
   community marketplaces beside Localix's own, registered on first start for browsing only. Search
   finds packages by words and by meaning, puts a package named for your query first and Localix's

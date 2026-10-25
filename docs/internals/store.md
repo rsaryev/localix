@@ -21,7 +21,7 @@ global search and Discover's data ([Step 2 as built](#step-2-as-built)); its scr
 | Source    | Where a provider reads packages from: a catalog, a marketplace, a registry.      | Owned by its provider; the Store only shows sources side by side.     |
 | Provider  | The feature that owns one package kind and serves it through the Store port.     | Keeps its own records, routes, storage and slash command (X3).        |
 | Listing   | The Store's read-only projection of one package for display and search.          | A view, rebuilt from providers; never a record anything else trusts.  |
-| Shelf     | A Store section: a package kind, a component kind, or a library view.            | Shelves are derived from listings; an empty shelf is hidden.          |
+| Shelf     | A Store section: a package kind, a component kind, or a library view.            | Derived from listings; an empty shelf is hidden; no name is on two.   |
 | Install   | A package present in one scope, with its version and enabled state.              | Scopes: `user` and `project` (Claude Code's `local`).                 |
 | Plan      | What an install will add and run, computed before anything is written.           | Shown before install whenever the package runs code or is unverified. |
 
@@ -49,22 +49,24 @@ global search and Discover's data ([Step 2 as built](#step-2-as-built)); its scr
 ```text
 Store
 ├── Discover                featured and recommended, across kinds
-├── Packages                one shelf per package kind
+├── Packages                one shelf per kind that is only ever a package
 │   ├── Mini apps           provider: features/mini-apps   sources: mini app catalogs
-│   ├── Plugins             provider: features/plugins     sources: Claude Code marketplaces
-│   ├── MCP servers         provider: features/mcp         sources: MCP Registry       (step 4)
-│   └── Skills, Agents      standalone packages            sources: skill registries   (step 5)
-├── Capabilities            one shelf per component kind, filled from listings' contents
-│   └── Skills · Agents · Commands · Mods · Hooks · MCP · LSP · Output styles
+│   └── Plugins             provider: features/plugins     sources: Claude Code marketplaces
+├── What packages give      one shelf per component kind, filled from listings' contents
+│   └── Skills · Agents · Commands · Mods · Hooks · MCP servers · LSP · Output styles
 ├── Library
 │   ├── Installed           every install, any kind, with scope and enabled state
 │   └── Updates             installs with a newer version, "Update all"
 └── Sources                 each provider's sources, grouped by provider; add with a preview
 ```
 
-A listing appears on its kind's shelf and on one capability shelf per component it contains. The
-"Skills" capability shelf therefore shows a standalone skill and a plugin with three skills, each
-card saying what it is.
+A listing appears on its kind's shelf (mini apps, plugins) and on one capability shelf per component
+it contains. A skill, an agent and an MCP server are package kinds too, but they have no shelf of
+packages: each has ONE capability shelf, so the same word never names two lists with two counts. A
+standalone one (yours, the project's, a Claude Code folder's, a registry's) is a component of its
+own listing, so the "Skills" shelf shows it and the skills of every plugin together, with one count,
+each row saying where it is from: its source, or "In <plugin>". The shelf is also where **Add
+skill** is, and an old `package:skill` link or tab opens it.
 
 ## Contract
 
@@ -236,8 +238,8 @@ display name; marketplace entries may add an `icon` path later, read only from t
 │ PACKAGES     │  ┌────────┐ ┌────────┐ ┌────────┐                              │
 │  Mini apps   │  │ ▣ Git  │ │ ◆ wf   │ │ ▣ Docs │   card: tile, name, kind,    │
 │  Plugins     │  │ app    │ │ plugin │ │ app    │   publisher ✓, summary,      │
-│  MCP servers │  └────────┘ └────────┘ └────────┘   "2 skills · 1 mod · runs", │
-│ CAPABILITIES │                                     install icon buttons       │
+│ WHAT PACKAGES│  └────────┘ └────────┘ └────────┘   "2 skills · 1 mod · runs", │
+│ GIVE         │                                     install icon buttons       │
 │  Skills      │  Recommended for you                                           │
 │  Agents      │  …                                                             │
 │  Mods        │                                                                │
@@ -300,9 +302,12 @@ Each step lands with its tests first, a screenshot scenario for the Store and th
   shelves list it. `configure` is the address the Installed menu's **Configure** opens. Neither
   names a provider.
 - **A capability shelf lists components, not packages.** Commands shows one row per command: its
-  name, what it does and "from Chess · Mini app" beside the package's tile, with a filter and an
+  name, what it does and "In Chess · Mini app" beside the package's tile, with a filter and an
   "Installed only" switch and no category tabs or groups. A row opens the package on What's inside
-  with that component marked; its button says it installs the package ("Install Chess").
+  with that component marked; its button says it installs the package ("Install Chess"). On Skills,
+  Agents and MCP servers a standalone item is one row of its own, named for itself, with its source
+  ("Your skills", "This project") where a plugin's component says "In <plugin> · Plugin"; it opens
+  its own page.
 - **Cards** keep the mini app rows' layout: tile, name and verified mark, one line of summary, tags,
   actions. The kind is said off its own shelf; what is inside only where it tells the package apart
   from the others of its kind (a screen and agent tools never; "Runs code" only on the page). A
@@ -315,8 +320,12 @@ Each step lands with its tests first, a screenshot scenario for the Store and th
   names no provider.
 - **Narrow panes.** The cards are one column until the content column itself is wide, and below
   42rem of Store width the shelf column becomes one section picker beside the search.
-- **Shelf ids** are `discover`, `installed`, `updates`, `package:<kind>` and
-  `capability:<component>` (`shelves.ts`); the UI adds `sources`. Only the components a person
+- **Shelf ids** are `discover`, `installed`, `updates`, `yours`, `project`, `package:<kind>` and
+  `capability:<component>` (`shelves.ts`); the UI adds `sources`. Only `PACKAGE_SHELF_KINDS` (mini
+  app, plugin) are in the navigation and the facet counts; `package:skill`, `package:agent` and
+  `package:mcp-server` still parse as list filters (a source's page, the library's kind filter), and
+  `parseSection` sends an old link to them to the capability shelf. A capability shelf is shown
+  while its kind can make a new item, so **Add skill** has a home. Only the components a person
   browses by get a capability shelf (`BROWSABLE_COMPONENT_KINDS`: skill, agent, command, hook, mod,
   MCP and LSP server, output style). A screen, a backend, agent tools, monitors and themes are how a
   package works: they stay facts in What's inside, and a backend counts toward "Runs code".
@@ -361,7 +370,8 @@ The API side of step 2; the screens that use all of it come in the step's UI par
   `source`, `trust` and `projectId`, and answers `nextCursor` and, for a search, `strategy`. The UI
   client reads one page per call (`storeApi.page`).
 - **Capability counts are components.** A capability shelf's count is how many components it lists,
-  not how many packages hold them.
+  not how many packages hold them; a standalone skill is one component (its own), counted with those
+  of plugins, so a name has one count.
 - **Search hits open the Store.** A `store` hit's address is
   `localix://ui/work-item/store?kind=<kind>&id=<id>`; the Store's UI location opens on that page.
 
@@ -418,10 +428,12 @@ provider (X1, A8) and only reads or writes through the Store client.
 - **Layout by the pane's own width** (`model/layout.ts`): wide at 1100px and over, medium from 760,
   narrow below, measured with `useElementWidth` on the Store's root, not the window. Tiles per row,
   list columns and the sidebar mode follow it. Settings uses the same kit `SidebarNav` (full,
-  compact and select modes), measuring its own width. Compact is a fixed-width icon rail whose
-  labelled panel opens over the content (hover after ~120 ms, keyboard focus, touch tap) and closes
-  on leaving (~200 ms grace), Esc, choosing a row or focus moving away, so the content never moves;
-  the kit `ShelfNav` is gone.
+  compact and select modes), measuring its own width. Compact is a fixed-width icon rail whose light
+  panel (the popover fill with one hairline ring, 224px, flush with the rail's top) opens over the
+  content (hover after ~120 ms, keyboard focus, touch tap) and closes on leaving (~200 ms grace),
+  Esc, choosing a row or focus moving away, so the content never moves. The rail's icons keep their
+  x and y when it opens: a group's heading takes the slot of the divider it replaces, and the toggle
+  is the first icon, which shows the rail's name beside it while open; the kit `ShelfNav` is gone.
 - **Discover** renders `/rpc/store/discover` (updates, rows, collections, categories) and sends
   `projectId`. A row's "See all" shows a `list` view, a paged query or a fixed set of refs.
 - **Lists are cursor-paged and virtualized** (`PagedList`): `useSWRInfinite` over the keyset cursor,

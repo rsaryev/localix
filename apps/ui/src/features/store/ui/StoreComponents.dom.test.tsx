@@ -50,7 +50,7 @@ describe('a capability shelf lists the components themselves', () => {
       const play = view.host.querySelector<HTMLElement>('[data-component="command:/chess:play"]')!
       expect(play.textContent).toContain('/chess:play')
       expect(play.textContent).toContain('Start a game')
-      expect(play.textContent).toContain('From Chess · Mini app')
+      expect(play.textContent).toContain('In Chess · Mini app')
       expect(view.card('clock')).toBeNull()
       expect(view.host.querySelector('[aria-label="Categories"]')).toBeNull()
     } finally {
@@ -91,12 +91,79 @@ describe('a capability shelf lists the components themselves', () => {
     const view = await renderStore({ listings: LISTINGS, target: COMMANDS })
     try {
       const play = view.host.querySelector<HTMLElement>('[data-component="command:/chess:play"]')!
-      expect(play.textContent).toContain('From Chess')
+      expect(play.textContent).toContain('In Chess')
       await view.click(view.button('Get Chess', play))
       expect(view.calls).toEqual(['install mini-app/chess user'])
       const plan = view.host.querySelector<HTMLElement>('[data-component="command:/kanban:plan"]')!
       expect(plan.textContent).toContain('Installed')
       expect(view.button('Get Kanban', plan)).toBeUndefined()
+    } finally {
+      await view.done()
+    }
+  })
+})
+
+describe('Skills is one shelf: the skills a person has and those inside plugins', () => {
+  const REVIEW = listing({
+    id: 'user:review',
+    ref: { kind: 'skill', id: 'user:review' },
+    displayName: 'review',
+    summary: 'Review a diff',
+    source: { id: 'skills:yours', label: 'Your skills' },
+    contents: { skill: 1 },
+    authored: 'user',
+    installs: [{ scope: 'user', enabled: true }],
+  })
+  const LINT = listing({
+    id: 'lint',
+    ref: { kind: 'plugin', id: 'lint' },
+    displayName: 'Lint',
+    contents: { skill: 2 },
+    components: [
+      { kind: 'skill', name: 'fix', description: 'Fix what lint found' },
+      { kind: 'skill', name: 'explain' },
+    ],
+  })
+
+  test('one Skills entry counts both, and the packages group names only mini apps and plugins', async () => {
+    const view = await renderStore({
+      listings: [REVIEW, LINT],
+      target: { shelf: 'capability:skill' },
+    })
+    try {
+      const nav = view.host.querySelector('nav[aria-label="Store sections"]')!
+      const skills = [...nav.querySelectorAll('button')].filter((b) =>
+        b.textContent?.startsWith('Skills'),
+      )
+      expect(skills).toHaveLength(1)
+      expect(skills[0]!.textContent).toContain('3')
+      expect(nav.querySelector('[role="group"][aria-label="Packages"]')?.textContent).toContain(
+        'Plugins',
+      )
+      expect(nav.querySelector('[role="group"][aria-label="Packages"]')?.textContent).not.toContain(
+        'Skills',
+      )
+      expect(nav.querySelector('[role="group"][aria-label="Capabilities"]')).toBeNull()
+      expect(
+        nav.querySelector('[role="group"][aria-label="What packages give"]')?.textContent,
+      ).toContain('Skills')
+    } finally {
+      await view.done()
+    }
+  })
+
+  test('each row says where it is from: its own source, or the plugin it is in', async () => {
+    const view = await renderStore({
+      listings: [REVIEW, LINT],
+      target: { shelf: 'capability:skill' },
+    })
+    try {
+      const mine = view.host.querySelector<HTMLElement>('[data-component="skill:review"]')!
+      expect(mine.textContent).toContain('Review a diff')
+      expect(mine.textContent).toContain('Your skills')
+      expect(mine.textContent).not.toContain('In review')
+      const fix = view.host.querySelector<HTMLElement>('[data-component="skill:fix"]')!
+      expect(fix.textContent).toContain('In Lint · Plugin')
     } finally {
       await view.done()
     }

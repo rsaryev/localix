@@ -1,6 +1,6 @@
 import {
   BROWSABLE_COMPONENT_KINDS,
-  PACKAGE_KINDS,
+  PACKAGE_SHELF_KINDS,
   capabilityShelf,
   packageShelf,
   parseShelf,
@@ -30,15 +30,26 @@ export type StoreView =
     }
   | { type: 'list'; title: string; subtitle?: string; query?: StorePageQuery; refs?: ListingRef[] }
 
+/**
+ * A section from a link or a restored tab. A skill, an agent or an MCP server no longer has a shelf
+ * of packages; an old link to it lands on the one shelf that lists them.
+ */
 export function parseSection(raw: unknown): StoreSection | null {
-  return raw === 'sources' ? 'sources' : parseShelf(raw)
+  if (raw === 'sources') return 'sources'
+  const shelf = parseShelf(raw)
+  const kind = shelf?.startsWith('package:') ? shelf.slice(8) : ''
+  return kind && !(PACKAGE_SHELF_KINDS as readonly string[]).includes(kind)
+    ? (`capability:${kind}` as StoreSection)
+    : shelf
 }
 
 /**
  * The Store's sections from the facets (`docs/internals/store.md`, "Hierarchy"): Discover, one
- * shelf per package kind and per component kind some listing has, the library and Sources. A
- * capability's count is how many components it lists. A shelf no listing is on is left out,
- * unless its kind can make a new item: that shelf is where Add is.
+ * shelf for each package kind that is only a package (mini apps, plugins) and per component kind
+ * some listing has, the library and Sources. A skill, an agent and an MCP server have ONE shelf,
+ * under what packages give, listing the ones a person has and those inside plugins; its count is
+ * how many it lists. A shelf no listing is on is left out, unless its kind can make a new item:
+ * that shelf is where Add is.
  */
 export function navGroups(
   facets: StoreFacets | undefined,
@@ -65,7 +76,7 @@ export function navGroups(
     {
       id: 'packages',
       label: 'Packages',
-      items: PACKAGE_KINDS.flatMap((kind) =>
+      items: PACKAGE_SHELF_KINDS.flatMap((kind) =>
         shelf(
           packageShelf(kind),
           KIND_LABELS[kind].many,
@@ -75,10 +86,15 @@ export function navGroups(
       ),
     },
     {
-      id: 'capabilities',
-      label: 'Capabilities',
+      id: 'gives',
+      label: 'What packages give',
       items: BROWSABLE_COMPONENT_KINDS.flatMap((kind) =>
-        shelf(capabilityShelf(kind), capabilityLabel(kind), COMPONENT_LABELS[kind].icon),
+        shelf(
+          capabilityShelf(kind),
+          capabilityLabel(kind),
+          COMPONENT_LABELS[kind].icon,
+          creatable.includes(kind as PackageKind),
+        ),
       ),
     },
     {
@@ -102,8 +118,7 @@ export function navGroups(
 
 /** The label of a section, for its heading and the Back button. */
 export function sectionLabel(section: StoreSection): string {
-  if (section.startsWith('package:'))
-    return KIND_LABELS[section.slice(8) as keyof typeof KIND_LABELS].many
+  if (section.startsWith('package:')) return KIND_LABELS[section.slice(8) as PackageKind].many
   if (section.startsWith('capability:'))
     return capabilityLabel(section.slice(11) as (typeof BROWSABLE_COMPONENT_KINDS)[number])
   return LIBRARY_LABELS[section as keyof typeof LIBRARY_LABELS].label

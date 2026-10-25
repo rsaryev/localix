@@ -24,6 +24,23 @@ describe('shelves', () => {
     expect(onShelf(remote, 'capability:skill')).toBe(false)
   })
 
+  test('Skills, Agents and MCP servers are one shelf each: standalone ones and those inside packages', () => {
+    const mine = makeListing({ id: 'review', kind: 'skill', contents: { skill: 1 } })
+    const plugin = makeListing({ id: 'lint', kind: 'plugin', contents: { skill: 3, agent: 1 } })
+    expect(onShelf(mine, 'capability:skill')).toBe(true)
+    expect(onShelf(plugin, 'capability:skill')).toBe(true)
+    expect(shelfCounts([mine, plugin, chess])).toMatchObject({
+      'capability:skill': 4,
+      'capability:agent': 1,
+    })
+    const shelves: readonly string[] = SHELVES
+    for (const kind of ['skill', 'agent', 'mcp-server']) {
+      expect(shelves).not.toContain(`package:${kind}`)
+      expect(shelves).toContain(`capability:${kind}`)
+    }
+    expect(Object.keys(shelfCounts([mine]))).toEqual(['capability:skill'])
+  })
+
   test('Discover holds featured and recommended packages; the library holds installs and updates', () => {
     expect(onShelf(chess, 'discover')).toBe(true)
     expect(onShelf(notes, 'discover')).toBe(false)

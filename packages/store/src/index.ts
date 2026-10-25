@@ -98,6 +98,7 @@ export type {
 } from './routes'
 export {
   BROWSABLE_COMPONENT_KINDS,
+  PACKAGE_SHELF_KINDS,
   SHELVES,
   capabilityShelf,
   componentCount,

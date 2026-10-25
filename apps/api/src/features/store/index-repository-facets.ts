@@ -1,5 +1,5 @@
 import type { Kysely } from 'kysely'
-import { BROWSABLE_COMPONENT_KINDS, type StoreFacets } from '@localixai/store'
+import { BROWSABLE_COMPONENT_KINDS, PACKAGE_SHELF_KINDS, type StoreFacets } from '@localixai/store'
 
 import { narrowed, visibleListings, type IndexFilters } from './index-repository-filters'
 import type { StoreIndexTables } from './index-repository-open'
@@ -63,10 +63,15 @@ export async function facetsOf(
     'discover',
     sum((row) => row.picked),
   )
-  for (const row of kinds) set(`package:${row.kind}`, Number(row.n))
+  // Only the kinds that are packages and nothing else have a shelf of packages; a skill, agent or
+  // MCP server is counted once, on its capability shelf, with the ones inside plugins.
+  for (const row of kinds)
+    if ((PACKAGE_SHELF_KINDS as readonly string[]).includes(row.kind))
+      set(`package:${row.kind}`, Number(row.n))
   const component: Record<string, number> = {}
   for (const row of parts) component[row.kind] = Number(row.n)
-  // A capability shelf lists components, so it counts them, not the packages holding them.
+  // A capability shelf lists components, so it counts them, not the packages holding them. A
+  // standalone skill is one component of its own listing, so it is counted here with the rest.
   for (const kind of BROWSABLE_COMPONENT_KINDS) set(`capability:${kind}`, component[kind] ?? 0)
   const installed = sum((row) => row.installed)
   const updates = sum((row) => row.updates)

@@ -155,6 +155,25 @@ describe('the Store index', () => {
     expect(facets.installed).toBe(1)
   })
 
+  test('Skills is one shelf and one count: standalone skills and the skills inside plugins', async () => {
+    const { repo, put } = index()
+    await put('s', [
+      makeListing({ id: 'user:review', kind: 'skill', contents: { skill: 1 } }),
+      plugin('lint', {
+        components: [
+          { kind: 'skill', name: 'fix' },
+          { kind: 'skill', name: 'explain' },
+        ],
+        contents: { skill: 2 },
+      }),
+      plugin('empty'),
+    ])
+    const page = await repo.page('u1', { shelf: 'capability:skill' }, { limit: 40 })
+    expect(ids(page.listings).sort()).toEqual(['lint', 'user:review'])
+    const facets = await repo.facets('u1', {})
+    expect(facets.shelves).toEqual({ 'package:plugin': 2, 'capability:skill': 3 })
+  })
+
   test('word candidates come from FTS5, best match first, prefixes as one types', async () => {
     const { repo, put } = index()
     await put('s', [

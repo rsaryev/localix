@@ -25,11 +25,16 @@ interface Row {
 }
 
 /**
- * The components of `kind` the listings contain, by name. A provider that counts them but does
- * not name them yet gives one row for the lot ("3 commands"), so they are not lost.
+ * The components of `kind` the listings contain, by name. A standalone package of that kind (a
+ * skill of the person's) is one row of its own. A provider that counts components but does not
+ * name them yet gives one row for the lot ("3 commands"), so they are not lost.
  */
 function rowsOf(listings: readonly Listing[], kind: BrowsableComponentKind): Row[] {
   return listings.flatMap((listing) => {
+    if (listing.ref.kind === kind)
+      return [
+        { listing, component: { kind, name: listing.displayName, description: listing.summary } },
+      ]
     const named = (listing.components ?? []).filter((part) => part.kind === kind)
     if (named.length > 0) return named.map((component) => ({ listing, component }))
     const count = componentCount(listing, kind)
@@ -42,7 +47,11 @@ function rowsOf(listings: readonly Listing[], kind: BrowsableComponentKind): Row
 
 const ComponentRow = memo(function ComponentRow({ listing, component }: Row) {
   const store = useStoreScope()
-  const from = `${listing.displayName} · ${KIND_LABELS[listing.ref.kind].one}`
+  // A standalone item says whose it is; one inside a package says which package.
+  const alone = listing.ref.kind === component.kind
+  const from = alone
+    ? listing.source.label
+    : `In ${listing.displayName} · ${KIND_LABELS[listing.ref.kind].one}`
   return (
     <ItemCard
       data-component={`${component.kind}:${component.name}`}
@@ -50,14 +59,14 @@ const ComponentRow = memo(function ComponentRow({ listing, component }: Row) {
       tile={<ListingIcon listing={listing} size={36} />}
       title={component.name}
       openLabel={component.name}
-      description={component.description ?? `From ${from}`}
+      description={component.description ?? from}
       footer={
         component.description ? (
-          <span className="pointer-events-none truncate text-2xs text-text-faint">From {from}</span>
+          <span className="pointer-events-none truncate text-2xs text-text-faint">{from}</span>
         ) : undefined
       }
       actions={<GetAction listing={listing} />}
-      onOpen={() => store.open(listing, component)}
+      onOpen={() => (alone ? store.open(listing) : store.open(listing, component))}
       onPointerEnter={() => store.prefetch(listing.ref)}
     />
   )
@@ -65,9 +74,9 @@ const ComponentRow = memo(function ComponentRow({ listing, component }: Row) {
 
 /**
  * A capability shelf: the components themselves, not the packages — each command, skill or mod
- * with what it does and the package it comes from, page by page. A row opens that package on
- * What's inside with the component marked; its Get button gets the whole package. The filter
- * searches the Store for them.
+ * with what it does and where it is from, page by page: its own source, or the package it is in.
+ * A row inside a package opens that package on What's inside with the component marked; its Get
+ * button gets the whole package. The filter searches the Store for them.
  */
 export function StoreComponents({ kind }: { kind: BrowsableComponentKind }) {
   const store = useStoreScope()

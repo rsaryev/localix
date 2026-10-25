@@ -22,15 +22,18 @@ happens before anything is installed.
 ### Finding your way
 
 The Store opens in its own tab. A search across everything sits on top and the sections sit beside
-it: **Discover**, one shelf per kind of package (**Mini apps**, **Plugins**), one per kind of
-capability you can look for (**Skills**, **Agents**, **Commands**, **Hooks**, **MCP servers** and
-the like), then **Installed**, **Updates** and **Sources**. A section with nothing on it is not
-shown, and a capability's count is how many of that component there are.
+it: **Discover**, a shelf for each kind of package you install (**Mini apps**, **Plugins**), then
+**What packages give**, one shelf for each thing you can look for (**Skills**, **Agents**,
+**Commands**, **Hooks**, **MCP servers** and the like), then **Installed**, **Updates** and
+**Sources**. A section with nothing on it is not shown. A skill, an agent or an MCP server has one
+shelf and one count: it lists the ones you or your project have and the ones inside plugins, each
+saying where it is from (**Your skills**, **In Lint · Plugin**), so no name appears twice.
 
 The Store lays itself out by its own width, not the window's. In a wide tab the sections are a
-sidebar with labels. In a medium one they shrink to icons, with the labels as tooltips. In a narrow
-one they become a single picker beside the search, rows scroll sideways, lists have one column and a
-package page pins **Get** to the bottom. Nothing ever scrolls the page sideways.
+sidebar with labels. In a medium one they shrink to icons, and hovering, focusing or touching the
+icons opens a light panel with the labels over the page, which does not move. In a narrow one they
+become a single picker beside the search, rows scroll sideways, lists have one column and a package
+page pins **Get** to the bottom. Nothing ever scrolls the page sideways.
 
 ![Discover: Start here, rows by kind and the categories](../assets/screenshots/store/discover--2026-10-25.png)
 

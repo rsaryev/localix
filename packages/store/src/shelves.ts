@@ -7,11 +7,16 @@ import {
 } from './contract'
 
 /**
- * A Store section, derived from listings (`docs/internals/store.md`, "Hierarchy"): Discover, one
- * shelf per package kind, one per browsable component kind a listing contains, and the person's
- * library.
+ * A Store section, derived from listings (`docs/internals/store.md`, "Hierarchy"): Discover, a
+ * shelf for each package kind that is only ever a package (mini apps, plugins), one per browsable
+ * component kind, and the person's library. A skill, an agent and an MCP server are also package
+ * kinds, but each has ONE shelf, its capability: it lists the standalone ones and those inside
+ * plugins together, so no word names two shelves.
  * A shelf no listing is on is hidden, so a new kind needs no screen of its own.
  */
+/** The package kinds that have a shelf of packages of their own. */
+export const PACKAGE_SHELF_KINDS = ['mini-app', 'plugin'] as const satisfies readonly PackageKind[]
+
 /**
  * The component kinds a person browses by, each a capability shelf. The rest — a mini app's
  * screen, its backend and the tools it gives the agent, a plugin's monitors and themes — are how
@@ -44,7 +49,7 @@ export const capabilityShelf = (kind: BrowsableComponentKind): ShelfId => `capab
 /** Every shelf, in the order the Store lists them. */
 export const SHELVES: readonly ShelfId[] = [
   'discover',
-  ...PACKAGE_KINDS.map(packageShelf),
+  ...PACKAGE_SHELF_KINDS.map(packageShelf),
   ...BROWSABLE_COMPONENT_KINDS.map(capabilityShelf),
   'installed',
   'updates',
@@ -52,7 +57,8 @@ export const SHELVES: readonly ShelfId[] = [
   'project',
 ]
 
-const KNOWN = new Set<string>(SHELVES)
+// `package:<kind>` also narrows a list for any kind (a source's page, the library's kind filter).
+const KNOWN = new Set<string>([...SHELVES, ...PACKAGE_KINDS.map(packageShelf)])
 
 /** A shelf id from a query or a tab payload, or null when it names no shelf. */
 export function parseShelf(raw: unknown): ShelfId | null {
@@ -78,22 +84,28 @@ export function onShelf(listing: Listing, shelf: ShelfId): boolean {
   if (shelf === 'yours' || shelf === 'project')
     return listing.authored === (shelf === 'yours' ? 'user' : 'project')
   const [group, kind] = shelf.split(':') as ['package' | 'capability', string]
-  return group === 'package'
-    ? listing.ref.kind === kind
-    : componentCount(listing, kind as ComponentKind) > 0
+  return group === 'package' ? listing.ref.kind === kind : capabilityCount(listing, kind) > 0
 }
 
 /**
+ * How many rows `listing` makes on the capability shelf of `kind`: a standalone package of that
+ * kind is one row, any other lists the components it contains.
+ */
+const capabilityCount = (listing: Listing, kind: string): number =>
+  listing.ref.kind === kind ? 1 : componentCount(listing, kind as ComponentKind)
+
+/**
  * How many rows each shelf shows; a shelf with none is left out. A capability shelf lists
- * components, so it counts them: a package with three commands is three on Commands.
+ * components, so it counts them: a package with three commands is three on Commands, and a
+ * standalone skill is one on Skills.
  */
 export function shelfCounts(listings: readonly Listing[]): Partial<Record<ShelfId, number>> {
   const counts: Partial<Record<ShelfId, number>> = {}
   for (const shelf of SHELVES) {
-    const kind = shelf.startsWith('capability:') ? (shelf.slice(11) as ComponentKind) : null
+    const kind = shelf.startsWith('capability:') ? shelf.slice(11) : null
     const count = listings.reduce(
       (sum, listing) =>
-        sum + (kind ? componentCount(listing, kind) : onShelf(listing, shelf) ? 1 : 0),
+        sum + (kind ? capabilityCount(listing, kind) : onShelf(listing, shelf) ? 1 : 0),
       0,
     )
     if (count > 0) counts[shelf] = count

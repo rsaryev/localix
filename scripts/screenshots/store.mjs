@@ -202,7 +202,7 @@ const VERIFY = {
       /^Commands/,
     )
     const row = page.locator('[data-component^="command:"]').first()
-    await expect(row).toContainText('· Mini app')
+    await expect(row).toContainText(/In .+ · Mini app/)
   },
   async 'store-yours'(page) {
     await expect(heading(page)).toHaveText('Yours')
@@ -232,6 +232,18 @@ export async function verifyStore(page, scenario) {
       String(STORE_INSTALLED.length + written),
     )
     await expect(sections(page).getByRole('button', { name: /^Sources/ })).toBeVisible()
+    // Skills, Agents and MCP servers are one shelf each, never a second list of packages.
+    for (const name of ['Skills', 'Agents', 'MCP servers'])
+      expect(
+        await sections(page)
+          .getByRole('button', { name: new RegExp(`^${name}`) })
+          .count(),
+      ).toBeLessThanOrEqual(1)
+    await expect(
+      sections(page)
+        .getByRole('group', { name: 'Packages' })
+        .getByRole('button', { name: /^(Skills|Agents|MCP servers)/ }),
+    ).toHaveCount(0)
     // How a mini app works is not a shelf: no Screens, no Agent tools.
     await expect(
       sections(page).getByRole('button', { name: /^(Screens|Agent tools)/ }),
