@@ -60,12 +60,16 @@ export function ShelfRow({
       behavior: motionSafeScrollBehavior('smooth'),
     })
   const fade = edge.start && edge.end ? undefined : edge.start ? 'end' : edge.end ? 'start' : 'both'
+  // `.lx-glass` sets `position: relative` outside Tailwind's layers, which beats an `absolute`
+  // on the button itself and drops it under the strip. So each arrow sits in an absolutely
+  // placed rail, as tall as the strip, that centres it and lets clicks through around it.
   const arrow =
-    'absolute top-1/2 z-10 -translate-y-1/2 rounded-full lx-glass lx-glass-self opacity-0 group-hover/shelf-row:opacity-100 focus-visible:opacity-100 disabled:opacity-0'
+    'pointer-events-auto rounded-full lx-glass lx-glass-self opacity-0 group-hover/shelf-row:opacity-100 focus-visible:opacity-100 disabled:opacity-0'
+  const rail = 'pointer-events-none absolute inset-y-0 z-10 flex items-center'
   return (
     <section
       aria-label={title}
-      className={cn('group/shelf-row flex min-w-0 flex-col gap-2', className)}
+      className={cn('group/shelf-row flex min-w-0 flex-col gap-3', className)}
     >
       <header className="flex min-w-0 items-end gap-3">
         <div className="min-w-0 flex-1">
@@ -94,26 +98,30 @@ export function ShelfRow({
             <li className="min-w-0 snap-start">{child}</li>
           ))}
         </ul>
-        <Button
-          size="icon"
-          variant="ghost"
-          aria-label={`Scroll ${title} back`}
-          disabled={edge.start}
-          onClick={() => page(-1)}
-          className={cn(arrow, 'left-1')}
-        >
-          <ChevronLeft aria-hidden />
-        </Button>
-        <Button
-          size="icon"
-          variant="ghost"
-          aria-label={`Scroll ${title} forward`}
-          disabled={edge.end}
-          onClick={() => page(1)}
-          className={cn(arrow, 'right-1')}
-        >
-          <ChevronRight aria-hidden />
-        </Button>
+        <div data-slot="shelf-arrow" className={cn(rail, 'left-1')}>
+          <Button
+            size="icon"
+            variant="ghost"
+            aria-label={`Scroll ${title} back`}
+            disabled={edge.start}
+            onClick={() => page(-1)}
+            className={arrow}
+          >
+            <ChevronLeft aria-hidden />
+          </Button>
+        </div>
+        <div data-slot="shelf-arrow" className={cn(rail, 'right-1')}>
+          <Button
+            size="icon"
+            variant="ghost"
+            aria-label={`Scroll ${title} forward`}
+            disabled={edge.end}
+            onClick={() => page(1)}
+            className={arrow}
+          >
+            <ChevronRight aria-hidden />
+          </Button>
+        </div>
       </div>
     </section>
   )

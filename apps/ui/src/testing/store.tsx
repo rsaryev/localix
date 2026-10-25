@@ -62,7 +62,7 @@ export function answer(listings: Listing[], query: StorePageQuery): ListingsResp
       (!shelf || onShelf(l, shelf)) &&
       (!query.category || l.category === query.category) &&
       (!query.source || l.source.id === query.source) &&
-      (!query.trust || (l.source.trust ?? 'community') === query.trust) &&
+      (!query.trust || l.source.trust === query.trust) &&
       (query.installed === undefined || l.installs.length > 0 === query.installed) &&
       words.every((word) => text(l).includes(word)),
   )
@@ -146,7 +146,7 @@ export function fakeClient(fake: StoreFake): StoreClient {
   const call = (line: string) => void fake.calls.push(line)
   const find = (id: string) => fake.listings.find((l) => l.ref.id === id)!
   const needsYes = (id: string) =>
-    !find(id).publisher.verified || (find(id).source.trust ?? 'community') === 'community'
+    !find(id).publisher.verified || find(id).source.trust === 'community'
   const where = (projectId?: string | null) => (projectId ? ` in ${projectId}` : '')
   return {
     page: async (asked) => {

@@ -7,7 +7,7 @@ export interface TileCardProps {
   title: string
   /** One line under the name: who publishes it, or what kind it is. */
   subtitle?: ReactNode
-  /** The card's one action, under the text: a Get pill. */
+  /** The card's one action, at the tile's right edge on the same row: a Get pill. */
   action?: ReactNode
   /** The accessible name of the whole-card button. */
   openLabel: string
@@ -19,7 +19,8 @@ export interface TileCardProps {
 
 /**
  * A storefront row's compact tile, the lockup app stores use: the icon, the name in up to two
- * lines — wrapped at words, never cut to its first one — a line under it, and its one action.
+ * lines — wrapped at words, never cut to its first one — one quiet line under it, and its one
+ * action at the right edge. Every tile is as tall as its icon plus padding, so a row is even.
  * The whole tile opens the item; the action is its own control above that. Belongs in a
  * `ShelfRow`, which sizes it.
  */
@@ -39,7 +40,7 @@ export const TileCard = memo(function TileCard({
       onPointerEnter={onIntent}
       onFocus={onIntent}
       className={cn(
-        'group/tile-card relative flex h-full min-w-0 items-start gap-3 rounded-lg p-2 hover:bg-surface-hover',
+        'group/tile-card relative flex h-full min-w-0 items-center gap-3 rounded-lg p-2 hover:bg-surface-hover',
         className,
       )}
     >
@@ -51,17 +52,17 @@ export const TileCard = memo(function TileCard({
         onClick={onOpen}
       />
       <span className="pointer-events-none shrink-0">{tile}</span>
-      <div className="pointer-events-none flex min-w-0 flex-1 flex-col gap-0.5 self-stretch">
+      <div className="pointer-events-none flex min-w-0 flex-1 flex-col gap-0.5">
         <p className="line-clamp-2 text-sm leading-snug font-medium break-words text-foreground">
           {title}
         </p>
         {subtitle && (
-          <p id={subtitleId} className="truncate text-xs text-text-soft">
+          <p id={subtitleId} className="min-w-0 truncate text-2xs text-text-soft">
             {subtitle}
           </p>
         )}
-        {action && <div className="pointer-events-auto relative mt-auto pt-1.5">{action}</div>}
       </div>
+      {action && <div className="pointer-events-auto relative shrink-0">{action}</div>}
     </div>
   )
 })

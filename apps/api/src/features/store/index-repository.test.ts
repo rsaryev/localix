@@ -21,6 +21,20 @@ const ids = (listings: readonly Listing[]) => listings.map((listing) => listing.
 const plugin = (id: string, over: Partial<Listing> = {}) =>
   makeListing({ id, kind: 'plugin', summary: `${id} helps`, ...over })
 
+describe('trust in the index', () => {
+  test('a listing whose provider rates no source is neither community nor trusted', async () => {
+    const { repo, put } = index()
+    await put('mcp:yours', [
+      plugin('own', { authored: 'user', source: { id: 'mcp:yours', label: 'Your servers' } }),
+    ])
+    await put('c', [plugin('theirs', { source: { id: 'c', label: 'C', trust: 'community' } })])
+    const only = async (filters: Parameters<typeof repo.page>[1]) =>
+      ids((await repo.page('u1', filters, { limit: 40 })).listings)
+    expect(await only({ trust: 'community' })).toEqual(['theirs'])
+    expect(await only({ trusted: true })).toEqual([])
+  })
+})
+
 describe('the Store index', () => {
   test('replacing one source leaves the others as they were', async () => {
     const { repo, put } = index()

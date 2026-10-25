@@ -35,7 +35,7 @@ function SourceRow({ source, onRemove }: { source: SourceView; onRemove: () => v
           { id: 'remove', label: 'Remove…', icon: Trash2, danger: true, onSelect: onRemove },
         ]),
   ]
-  const trust = source.trust ?? 'community'
+  const { trust } = source
   return (
     <li
       data-source={source.id}
@@ -59,9 +59,11 @@ function SourceRow({ source, onRemove }: { source: SourceView; onRemove: () => v
       >
         <span className="flex min-w-0 items-center gap-1.5 text-sm font-medium text-foreground">
           <span className="truncate">{source.label}</span>
-          <span className="shrink-0 text-2xs font-normal text-text-faint">
-            {TRUST_LABELS[trust]}
-          </span>
+          {trust && (
+            <span className="shrink-0 text-2xs font-normal text-text-faint">
+              {TRUST_LABELS[trust]}
+            </span>
+          )}
         </span>
         <span className="truncate text-xs text-text-soft">
           {plural(source.count, 'package')}

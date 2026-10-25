@@ -55,7 +55,7 @@ const LISTINGS = [
     displayName: 'Radio',
     category: 'content',
     publisher: { name: 'Someone', verified: false },
-    source: { id: ADA, label: 'ada.test' },
+    source: { id: ADA, label: 'ada.test', trust: 'community' },
     tags: ['music'],
   }),
   listing({ id: 'future', displayName: 'Future', incompatible: 'Needs a newer Localix' }),

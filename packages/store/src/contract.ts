@@ -89,7 +89,11 @@ export const listingSchema = z.object({
   source: z.object({
     id: z.string(),
     label: z.string(),
-    /** Absent: the provider does not say, and the Store counts it as `community`. */
+    /**
+     * What a source says of itself. Absent: there is no source to rate — the person's own item,
+     * a built-in type, a file of theirs — and the Store shows no trust label; it is ranked as
+     * `community` would be.
+     */
     trust: trustSchema.optional(),
     /** Its ranking weight, when the source's entry sets one other than its trust's. */
     weight: z.number().nonnegative().optional(),

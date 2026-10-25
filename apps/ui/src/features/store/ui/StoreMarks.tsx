@@ -4,7 +4,7 @@ import { AppTile } from '@localixai/kit/app-tile'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@localixai/kit/tooltip'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { storeMediaSrc } from '@/shared/ui/MiniAppIcon'
-import { TRUST_LABELS, trustOf } from '../model/presentation'
+import { TRUST_LABELS, isVerified, trustOf } from '../model/presentation'
 
 /** The listing's own icon as its provider serves it, or its monogram tile. Decorative. */
 export function ListingIcon({ listing, size }: { listing: Listing; size: number }) {
@@ -18,18 +18,10 @@ export function ListingIcon({ listing, size }: { listing: Listing; size: number 
   )
 }
 
-/**
- * How far its source is trusted: a verified mark for Localix's own and the official sources, a
- * quiet "Community" for the rest — said, never alarming.
- */
-export function TrustMark({ listing, className }: { listing: Listing; className?: string }) {
+/** The mark of a listing from Localix or an official source; nothing for any other. */
+export function VerifiedMark({ listing, className }: { listing: Listing; className?: string }) {
   const trust = trustOf(listing)
-  if (trust === 'community')
-    return (
-      <span className={cn('shrink-0 text-2xs font-normal text-text-faint', className)}>
-        Community
-      </span>
-    )
+  if (!trust || !isVerified(listing)) return null
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -42,6 +34,21 @@ export function TrustMark({ listing, className }: { listing: Listing; className?
       <TooltipContent>Verified · {TRUST_LABELS[trust]}</TooltipContent>
     </Tooltip>
   )
+}
+
+/**
+ * How far its source is trusted: a verified mark for Localix's own and the official sources, a
+ * quiet "Community" for a community one — said, never alarming. What has no source (the person's
+ * own, built in) says nothing: the provider leaves `trust` out.
+ */
+export function TrustMark({ listing, className }: { listing: Listing; className?: string }) {
+  if (trustOf(listing) === 'community')
+    return (
+      <span className={cn('shrink-0 text-2xs font-normal text-text-faint', className)}>
+        Community
+      </span>
+    )
+  return <VerifiedMark listing={listing} className={className} />
 }
 
 /** Who publishes it, and how far its source is trusted. */

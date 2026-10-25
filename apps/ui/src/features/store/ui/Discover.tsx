@@ -1,19 +1,14 @@
 import { useMemo } from 'react'
 import { ChevronRight, RefreshCw } from 'lucide-react'
-import type {
-  Collection,
-  DiscoverResponse,
-  Listing,
-  ListingRef,
-  StoreCategory,
-} from '@localixai/store'
+import type { Collection, DiscoverResponse, Listing, ListingRef } from '@localixai/store'
 import { Button } from '@localixai/kit/button'
 import { ShelfRow } from '@localixai/kit/shelf-row'
 import { Skeleton } from '@localixai/kit/skeleton'
-import { CATEGORY_ICONS, plural } from '../model/presentation'
+import { plural } from '../model/presentation'
 import { tilesPerView, useStoreFrame } from '../model/layout'
 import { useStoreScope } from '../model/storeContext'
 import { keyOf } from '../model/useExtrasAfterInstall'
+import { Categories } from './DiscoverCategories'
 import { ListingTileCard } from './ListingCards'
 import { ListingIcon } from './StoreMarks'
 
@@ -59,41 +54,6 @@ function CollectionCard({ collection, listings }: { collection: Collection; list
       </div>
       <ChevronRight className="size-4 shrink-0 text-text-faint" aria-hidden />
     </button>
-  )
-}
-
-/** The Store's categories with how many each holds; one opens its list. */
-function Categories({ categories }: { categories: DiscoverResponse['categories'] }) {
-  const store = useStoreScope()
-  return (
-    <section aria-label="Categories" className="flex flex-col gap-2">
-      <h2 className="text-base font-semibold text-foreground">Categories</h2>
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] gap-2">
-        {categories.map((category) => {
-          const Icon = CATEGORY_ICONS[category.id as StoreCategory] ?? CATEGORY_ICONS.Other
-          return (
-            <button
-              key={category.id}
-              type="button"
-              onClick={() =>
-                store.show({
-                  type: 'list',
-                  title: category.label,
-                  query: { category: category.id as StoreCategory },
-                })
-              }
-              className="flex h-12 items-center gap-3 rounded-lg bg-field-fill px-3 text-left text-sm text-foreground transition-colors duration-(--dur-fast) hover:bg-surface-hover focus-ring"
-            >
-              <Icon className="size-4 shrink-0 text-text-soft" aria-hidden />
-              <span className="min-w-0 flex-1 truncate">{category.label}</span>
-              <span className="text-2xs text-text-faint tabular-nums">
-                {category.count.toLocaleString('en-US')}
-              </span>
-            </button>
-          )
-        })}
-      </div>
-    </section>
   )
 }
 

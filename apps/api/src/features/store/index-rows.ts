@@ -32,7 +32,7 @@ export interface IndexRow {
   tags_text: string
   components_text: string
   category: string
-  trust: string
+  trust: string | null
   featured: number
   recommended: number
   origin: string | null
@@ -101,7 +101,7 @@ export function toIndexRow(card: ListingCard, opts: { now: number }): IndexRow {
       .map((part) => [part.name, part.description ?? ''].join(' '))
       .join(' '),
     category: card.category ?? 'Other',
-    trust: card.source.trust ?? 'community',
+    trust: card.source.trust ?? null,
     featured: card.featured ? 1 : 0,
     recommended: card.recommended ? 1 : 0,
     origin: card.origin ?? null,

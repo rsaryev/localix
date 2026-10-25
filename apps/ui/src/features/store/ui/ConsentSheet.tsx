@@ -45,8 +45,8 @@ export function ConsentSheet({
             <div className="flex min-w-0 flex-col">
               <DialogTitle>Install {listing.displayName}?</DialogTitle>
               <DialogDescription>
-                A {inSentence(KIND_LABELS[listing.ref.kind].one)} from {listing.source.label} ·{' '}
-                {TRUST_LABELS[trust]}
+                A {inSentence(KIND_LABELS[listing.ref.kind].one)} from {listing.source.label}
+                {trust && ` · ${TRUST_LABELS[trust]}`}
                 {trust === 'community' && ' — Localix does not review what this source lists'}
               </DialogDescription>
             </div>

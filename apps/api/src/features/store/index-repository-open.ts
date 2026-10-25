@@ -12,7 +12,7 @@ import { openDerivedDatabase } from '../../db/connection'
  */
 
 /** Bump on any change below: the old file is deleted and rebuilt from the providers. */
-export const STORE_INDEX_VERSION = 3
+export const STORE_INDEX_VERSION = 4
 
 export interface StoreIndexTables {
   meta: { key: string; value: string }
@@ -29,7 +29,7 @@ export interface StoreIndexTables {
     tags_text: string
     components_text: string
     category: string
-    trust: string
+    trust: string | null
     featured: number
     recommended: number
     origin: string | null
@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS listing (
   source_id TEXT NOT NULL, source_label TEXT NOT NULL,
   name TEXT NOT NULL, display_name TEXT NOT NULL, summary TEXT NOT NULL,
   tags_text TEXT NOT NULL, components_text TEXT NOT NULL,
-  category TEXT NOT NULL, trust TEXT NOT NULL,
+  category TEXT NOT NULL, trust TEXT,
   featured INTEGER NOT NULL, recommended INTEGER NOT NULL,
   origin TEXT, publisher TEXT NOT NULL, authored TEXT, updated_at TEXT,
   weight REAL NOT NULL, hidden INTEGER NOT NULL DEFAULT 0,

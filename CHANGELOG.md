@@ -276,6 +276,11 @@ Changes land on `main`.
 
 - **Open on an installed mini app in the Store** opens its screen again, in the chat that is open;
   for a mini app with one screen per chat, such as the Kanban board, the button did nothing.
+- **Store Discover tiles**: a tile is now one even row: the icon, the name, one quiet line of who
+  publishes it and what it is, and Get, Open or Installed at its right. Your own skills, agents and
+  MCP servers, and the built-in agents, no longer say "Community"; only what a catalog or
+  marketplace lists carries a label. Rows no longer leave a stray arrow under a tile, the arrows
+  appear over a row's edges on hover, and the categories wrap without cutting a name.
 - **A plugin's data folder is keyed by `name@marketplace`**, as Claude Code keys
   `${CLAUDE_PLUGIN_DATA}`; a folder an earlier Localix kept under the bare name moves there once.
 - **Options of plugins installed in Claude Code** start from the values you gave them there

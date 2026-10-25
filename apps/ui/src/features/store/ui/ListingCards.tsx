@@ -6,11 +6,11 @@ import { KIND_LABELS } from '../model/presentation'
 import { keyOf } from '../model/useExtrasAfterInstall'
 import { useStoreScope } from '../model/storeContext'
 import { GetAction } from './GetAction'
-import { ListingIcon, Publisher, TrustMark } from './StoreMarks'
+import { ListingIcon, TrustMark, VerifiedMark } from './StoreMarks'
 
 /**
- * A listing in a Discover row: the compact lockup — icon, name, who publishes it and what it is,
- * and its Get button. Resting on it starts reading its page, so the page opens at once.
+ * A listing in a Discover row: the compact lockup — icon, name, one quiet line of who publishes it
+ * and what it is (the name gives way before the kind does), and its Get button at the right. Resting on it starts reading its page, so the page opens at once.
  */
 export const ListingTileCard = memo(function ListingTileCard({ listing }: { listing: Listing }) {
   const store = useStoreScope()
@@ -20,10 +20,10 @@ export const ListingTileCard = memo(function ListingTileCard({ listing }: { list
         tile={<ListingIcon listing={listing} size={56} />}
         title={listing.displayName}
         subtitle={
-          <span className="flex min-w-0 items-center gap-1">
-            <Publisher listing={listing} />
-            <span aria-hidden>·</span>
-            <span className="shrink-0">{KIND_LABELS[listing.ref.kind].one}</span>
+          <span data-slot="tile-meta" className="flex min-w-0 items-center gap-1">
+            <span className="min-w-0 truncate">{listing.publisher.name}</span>
+            <VerifiedMark listing={listing} className="size-3" />
+            <span className="shrink-0">{` · ${KIND_LABELS[listing.ref.kind].one}`}</span>
           </span>
         }
         action={<GetAction listing={listing} />}

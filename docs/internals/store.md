@@ -365,7 +365,12 @@ The API side of step 2; the screens that use all of it come in the step's UI par
   app store's own feed and Update all routes, the `mini-app-installs` poke and the UI's plugin
   updates client are gone; Settings → Plugins still reads `/rpc/plugins/updates`.
 - **Trust.** `listing.source` carries `trust` and `weight`, a `SourceView` its `trust`. A listing
-  also says its `origin`, `alsoIn`, `homepage` and `updatedAt`.
+  also says its `origin`, `alsoIn`, `homepage` and `updatedAt`. `trust` belongs to a source and is
+  said by the provider that owns it: a catalog or marketplace sets `localix`, `official` or
+  `community`; what has no source to rate (a skill, agent or MCP server the person made, a built-in
+  agent, a server from `.mcp.json`) leaves it out. The UI labels only what carries it (a verified
+  mark, or a quiet "Community") and never infers a label for the rest; the index keeps `null` for
+  it, so it is neither a `community` nor a trusted result, and ranks it with community's weight.
 - **Paging and filters.** `/listings` takes `cursor`, `limit` (40, at most 500), `category`,
   `source`, `trust` and `projectId`, and answers `nextCursor` and, for a search, `strategy`. The UI
   client reads one page per call (`storeApi.page`).
@@ -425,6 +430,10 @@ is never empty while official listings exist.
 project, `open`, `show`, `goTo`, Get and its siblings), provided by `StoreView`; the UI knows no
 provider (X1, A8) and only reads or writes through the Store client.
 
+- **Tiles** (`TileCard`): the icon, the name in up to two lines, one quiet meta line (publisher, a
+  verified mark, then the kind, which is kept when the publisher is cut) and the Get pill at the
+  right of the same row. Every tile is as tall as its icon, so a row is even; a row's arrows sit in
+  rails over its edges, centred, and show on hover or focus. Categories are chips that wrap.
 - **Layout by the pane's own width** (`model/layout.ts`): wide at 1100px and over, medium from 760,
   narrow below, measured with `useElementWidth` on the Store's root, not the window. Tiles per row,
   list columns and the sidebar mode follow it. Settings uses the same kit `SidebarNav` (full,

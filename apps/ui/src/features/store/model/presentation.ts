@@ -105,10 +105,16 @@ export const TRUST_LABELS: Record<Trust, string> = {
   community: 'Community',
 }
 
-export const trustOf = (listing: Pick<Listing, 'source'>): Trust =>
-  listing.source.trust ?? 'community'
+/**
+ * What the listing's source says of itself. None for what has no source to rate — the person's own
+ * items, built-in types, files of theirs: the provider leaves `trust` out and nothing is labelled.
+ */
+export const trustOf = (listing: Pick<Listing, 'source'>): Trust | undefined => listing.source.trust
 
-export const isVerified = (listing: Pick<Listing, 'source'>) => trustOf(listing) !== 'community'
+export const isVerified = (listing: Pick<Listing, 'source'>) => {
+  const trust = trustOf(listing)
+  return trust === 'localix' || trust === 'official'
+}
 
 /** The shelf heading of a component kind: "Commands", "Agent tools". */
 export function capabilityLabel(kind: ComponentKind): string {

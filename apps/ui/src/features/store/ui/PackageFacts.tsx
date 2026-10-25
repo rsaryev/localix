@@ -29,7 +29,10 @@ export function packageFacts(listing: Listing, detail?: ListingDetail): Fact[] {
     ...(listing.category ? [{ label: 'Category', value: listing.category }] : []),
     ...(listing.version ? [{ label: 'Version', value: listing.version }] : []),
     ...(size ? [{ label: 'Size', value: size }] : []),
-    { label: 'Source', value: `${listing.source.label} · ${TRUST_LABELS[trust]}` },
+    {
+      label: 'Source',
+      value: trust ? `${listing.source.label} · ${TRUST_LABELS[trust]}` : listing.source.label,
+    },
     {
       label: 'Runs code',
       value: runs === 'unknown' ? 'Not known yet' : runs ? 'Yes, on this computer' : 'No',

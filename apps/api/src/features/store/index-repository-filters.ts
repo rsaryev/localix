@@ -82,7 +82,7 @@ export function narrowed<O>(
   if (filters.source) out = out.where('l.source_id', '=', filters.source)
   if (filters.trust) out = out.where('l.trust', '=', filters.trust)
   if (filters.recommended) out = out.where('l.recommended', '=', 1)
-  if (filters.trusted) out = out.where('l.trust', '!=', 'community')
+  if (filters.trusted) out = out.where('l.trust', 'in', ['localix', 'official'])
   if (filters.updatedSince) out = out.where('l.updated_at', '>=', filters.updatedSince)
   if (filters.publisher) out = out.where('l.publisher', '=', filters.publisher)
   return out
