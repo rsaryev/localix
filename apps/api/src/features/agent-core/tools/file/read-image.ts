@@ -116,7 +116,7 @@ export async function prepareImage(
     return {
       sniff,
       isError: true,
-      text: `${name} (${facts}) is too large to show even after resizing (limit ${formatSize(MAX_IMAGE_PART_BYTES)}). Convert or crop it with \`bash\` first, e.g. to a smaller PNG or JPEG.`,
+      text: `${name} (${facts}) is too large to show even after resizing (limit ${formatSize(MAX_IMAGE_PART_BYTES)}). Convert or crop it with \`Bash\` first, e.g. to a smaller PNG or JPEG.`,
     }
   }
   const before = formatDimensions(sniff.width, sniff.height)

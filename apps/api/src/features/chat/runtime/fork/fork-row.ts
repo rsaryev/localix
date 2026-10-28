@@ -1,7 +1,7 @@
 import { isToolBackedItem, type AgentItem } from '@localixai/agent/agents'
 
 import type { StoredMessagePayload } from '../../../../db'
-import { FORK_CALL_RESULT } from '../../../agent-core/tools/delegate-fork'
+import { FORK_CALL_RESULT } from '../../../agent-core/tools/agent/agent-fork'
 
 const FINISHED = new Set(['completed', 'failed', 'aborted'])
 

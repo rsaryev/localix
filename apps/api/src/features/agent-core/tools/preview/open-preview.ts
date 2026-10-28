@@ -167,7 +167,7 @@ export async function openPreviewCore(
         ok: false,
         content:
           `Can't preview a static file directly. Start a server FIRST (bash, background:true): ` +
-          `\`python3 -m http.server 8000 --directory ${dir}\`  — then call browser action="open" with \`http://localhost:8000/${name}\`.`,
+          `\`python3 -m http.server 8000 --directory ${dir}\`  — then call \`Browser\` action="open" with \`http://localhost:8000/${name}\`.`,
       }
     }
   }

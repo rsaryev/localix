@@ -21,9 +21,8 @@ export function classifyCostSource(
   base: ChatUsagePayload['costSource'],
 ): ChatUsagePayload['costSource'] {
   // Subscription keys are stored as 'oauth-pkce' (the KeyAuthType domain is
-  // 'api-key' | 'oauth-pkce'); accept the legacy 'oauth' spelling too.
-  if (base === 'estimated' && (authType === 'oauth-pkce' || authType === 'oauth'))
-    return 'subscription'
+  // 'api-key' | 'oauth-pkce').
+  if (base === 'estimated' && authType === 'oauth-pkce') return 'subscription'
   return base
 }
 

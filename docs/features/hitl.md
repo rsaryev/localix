@@ -5,12 +5,12 @@ a structured decision and Confirm before permission-gated work proceeds.
 
 ## What you can do
 
-| Request                     | Mechanism                                                                                      | Availability and boundary                                                                         |
-| --------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| **Ask**                     | The built-in `ask` tool presents one or more single- or multi-select questions with free text. | Web/desktop and any channel that implements HITL can answer it.                                   |
-| **Confirm**                 | The permission gate or a foreground external CLI requests approval.                            | Web/desktop supports one-call and session grants. A channel may support approve or deny only.     |
-| **Configuration change**    | The `configure` tool proposes a change to a tool, a mini app, a plugin or an MCP server.       | See [Propose configuration changes](configure.md).                                                |
-| **Cross-session attention** | One dialog raises a request, a plan or a mention from a chat you are not viewing.              | Closing the dialog snoozes it in that window; it does not resolve the request or decide the plan. |
+| Request                     | Mechanism                                                                                                  | Availability and boundary                                                                         |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| **Ask**                     | The built-in `AskUserQuestion` tool presents one or more single- or multi-select questions with free text. | Web/desktop and any channel that implements HITL can answer it.                                   |
+| **Confirm**                 | The permission gate or a foreground external CLI requests approval.                                        | Web/desktop supports one-call and session grants. A channel may support approve or deny only.     |
+| **Configuration change**    | The `Configure` tool proposes a change to a tool, a mini app, a plugin or an MCP server.                   | See [Propose configuration changes](configure.md).                                                |
+| **Cross-session attention** | One dialog raises a request, a plan or a mention from a chat you are not viewing.                          | Closing the dialog snoozes it in that window; it does not resolve the request or decide the plan. |
 
 Every Ask question offers custom text in web/desktop, and the backend always accepts it. Each
 question needs an `id`: the answer returns to the agent as `<id>: <choice>`. `loading_messages` is
@@ -31,7 +31,7 @@ Every request that blocks a run is answered the same way, whatever raised it.
 An expired card changes nothing — no rule is written, no secret stored, no agent started, no setting
 touched — and the agent is told nobody answered, in different words from the ones a person's Deny
 produces. That difference matters: a model that cannot tell them apart either gives up on work
-because a room was empty, or asks again after a real refusal.
+because nobody was there to ask, or asks again after a real refusal.
 
 The blocking deadline starts when the backend creates the request, rather than when its card becomes
 visible. A request waiting behind an older one can therefore use part of its five-minute budget

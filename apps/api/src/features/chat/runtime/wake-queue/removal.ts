@@ -9,7 +9,7 @@
  * (`dead-letter.ts`) is removable like a pending one.
  */
 import type { QueueItem } from '../../../../lib/priority-queue'
-import type { QueueClearResult, QueueRemovalResult } from '../../contracts'
+import type { QueueClearResult, QueueRemovalResult, QueueReturnedMessage } from '../../contracts'
 import type { WakeQueueStore } from '../wake-queue-repository'
 import type { ContinuationOperations } from './continuations'
 import type { PendingTurn } from './entry'
@@ -114,5 +114,47 @@ export const createRemovalOperations = (
     return { removed, retained }
   }
 
-  return { remove, clear }
+  /**
+   * Take back every message of the person's that nobody holds, for Stop: they leave the queue (and
+   * the durable store) in one step, so the drain a stopped run's teardown starts finds nothing of
+   * theirs to deliver. Machine wakes stay: they belong to other producers. What a drain or a steer
+   * already holds is being delivered and stays too.
+   */
+  const takeForReturn = async (
+    userId: string,
+    sessionId: string,
+  ): Promise<QueueReturnedMessage[]> => {
+    if (store) await ready
+    const q = shared.queues.get(sessionId)
+    if (!q) return []
+    const returned: QueueReturnedMessage[] = []
+    const seen = new Set<string>()
+    for (const item of q.list()) {
+      if (seen.has(item.id)) continue
+      const band = bandOf(sessionId, item)
+      for (const entry of band) seen.add(entry.id)
+      if (band.some((entry) => entry.value.kind !== 'user' || entry.value.failure)) continue
+      if (held(sessionId, band)) continue
+      if (
+        !(await removeDurable(
+          userId,
+          sessionId,
+          band.map((entry) => entry.id),
+        ))
+      )
+        continue
+      dismiss(sessionId, band, 'Queued run was returned to the composer by Stop.')
+      for (const { value } of band) {
+        returned.push({
+          content: value.content,
+          ...(value.bindings?.length ? { bindings: value.bindings } : {}),
+          ...(value.clientMessageId ? { clientMessageId: value.clientMessageId } : {}),
+        })
+      }
+    }
+    if (returned.length > 0) publishQueue(userId, sessionId)
+    return returned
+  }
+
+  return { remove, clear, takeForReturn }
 }

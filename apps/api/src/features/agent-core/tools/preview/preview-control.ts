@@ -1,5 +1,5 @@
 /**
- * Capability the `browser` tool uses to drive the live preview the user
+ * Capability the `Browser` tool uses to drive the live preview the user
  * has open (snapshot the page, click/type/scroll, screenshot an element, read
  * console). The host is injected (bootstrap → a command registry that relays over
  * the firehose to the open inspector's probe and awaits the reply), so agent-core

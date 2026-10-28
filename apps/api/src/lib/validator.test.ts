@@ -73,7 +73,8 @@ describe('the validation failure body', () => {
   })
 
   test('a valid request still passes through untouched', async () => {
-    const res = await post({ name: 'ok', port: 8080 })
+    const port = 8080 // a number to validate, never bound
+    const res = await post({ name: 'ok', port })
     expect(res.status).toBe(200)
     expect(await res.json()).toEqual({ ok: true })
   })

@@ -10,6 +10,7 @@ import type {
 import { useVisiblePolling } from '@localixai/mini-app-sdk/ui/visibility'
 import { DockerApiError, dockerApi } from '../dockerApi'
 import { stableList } from '../../../ui/model/stableList'
+import { useStableCallback } from '@localixai/mini-app-sdk/ui/runtime-hooks'
 import {
   cachedDockerComposeAvailable,
   readDockerComposeAvailable,
@@ -154,7 +155,8 @@ export function useDocker(pollMs = 4000, enabled = true) {
     }
   }, [])
 
-  const coordinator = useMemo(() => createDockerRefreshCoordinator(runInventory), [runInventory])
+  const runLatest = useStableCallback(runInventory)
+  const coordinator = useMemo(() => createDockerRefreshCoordinator(runLatest), [runLatest])
 
   const refresh = useCallback(async () => {
     visibleRefreshes.current += 1
@@ -183,8 +185,11 @@ export function useDocker(pollMs = 4000, enabled = true) {
     event: (frame) => batcher.push(dockerEventScope(frame.type)),
     resync: () => batcher.push('all'),
   })
+  // The stream's state as of the last render, for the poll to read when it fires.
   const liveRef = useRef(live)
-  liveRef.current = live
+  useEffect(() => {
+    liveRef.current = live
+  }, [live])
 
   const poll = useCallback(() => {
     const scope = dockerInventoryPollScope(

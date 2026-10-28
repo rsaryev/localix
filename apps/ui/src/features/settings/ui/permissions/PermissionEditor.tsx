@@ -1,4 +1,3 @@
-import { useRef } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
@@ -17,19 +16,15 @@ import {
 
 import { ACTION_COLORS, effectOptions } from './permissionActionColors'
 import type { RuleGrammar } from '@/shared/api/contracts'
-import {
-  markUnshipped,
-  reconcilePermissionRuleKeys,
-  resourceSuggestions,
-  type PermissionRuleKeyEntry,
-} from './permissionRuleRows'
+import { markUnshipped, resourceSuggestions } from './permissionRuleRows'
+import { usePermissionRuleKeys } from './usePermissionRuleKeys'
 
 export { PermissionLegend } from './PermissionLegend'
 
 interface PermissionEditorProps {
   rules: CapabilityRule[]
   /**
-   * Every action this scope could name, already prefixed — `tool:bash`, `skill:deploy`,
+   * Every action this scope could name, already prefixed — `tool:Bash`, `skill:deploy`,
    * `mcp:github/create_pr`, `plugin:office`, `agent:builtin:qa`.
    *
    * One list rather than a parameter per kind: the editor is the general form of every
@@ -66,7 +61,7 @@ const EMPTY_GRAMMAR: RuleGrammar = { kinds: [], effects: [], classes: [], exampl
 /**
  * What each column is, said once above the rows instead of guessed from the values.
  *
- * `resource` is the column that needed it: for `tool:bash` it is a command pattern, for
+ * `resource` is the column that needed it: for `tool:Bash` it is a command pattern, for
  * `invocation:<host>` it is an agent id — the same box means different things depending on
  * the row above it, and nothing on screen said so.
  */
@@ -82,11 +77,7 @@ export function PermissionEditor({
   shipped = null,
   onChange,
 }: PermissionEditorProps) {
-  const keyedRulesRef = useRef<PermissionRuleKeyEntry[]>([])
-  const nextRuleKey = useRef(1)
-  const reconciled = reconcilePermissionRuleKeys(keyedRulesRef.current, rules, nextRuleKey.current)
-  keyedRulesRef.current = reconciled.entries
-  nextRuleKey.current = reconciled.nextKey
+  const reconciled = usePermissionRuleKeys(rules)
 
   /**
    * Suggestions, never a closed list.
@@ -122,13 +113,13 @@ export function PermissionEditor({
   /**
    * Reordering, by the row's grip or by Alt+arrow on it.
    *
-   * Order is the semantics — the LAST match wins, so `tool:* deny` followed by `tool:read
+   * Order is the semantics — the LAST match wins, so `tool:* deny` followed by `tool:Read
    * allow` means "nothing except read", and the same two rules the other way round mean
    * nothing at all. Before this the only way to change precedence was to delete a rule and
    * re-add it at the end: a policy edit performed by retyping.
    *
    * Keyed on the row KEY, not the rule's action, because two rules may legitimately name the
-   * same action — `tool:bash` over `*` and over `git push*` are the general rule and its
+   * same action — `tool:Bash` over `*` and over `git push*` are the general rule and its
    * exception, and the exception's whole meaning is that it comes second.
    */
   const rowIds = reconciled.entries.map((entry) => String(entry.key))
@@ -240,7 +231,7 @@ export function PermissionEditor({
                 className="min-w-44 flex-1 font-mono"
                 aria-label={`Rule ${i + 1} permission scope`}
                 value={rule.action}
-                placeholder="tool:bash"
+                placeholder="tool:Bash"
                 onChange={(e) => updateRule(i, { action: e.target.value })}
               />
               <Input

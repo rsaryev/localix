@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@localixai/kit/button'
 import { ConfirmDialog } from '@localixai/kit/confirm-dialog'
 import { Select } from '@localixai/kit/select'
@@ -50,23 +50,36 @@ function UsageRow() {
   const visible = useWorkItemVisible()
   const revision = useResourceRevision('storage', visible)
   const [usage, setUsage] = useState<StorageUsage | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [readError, setError] = useState<string | null>(null)
+  // A read is named by the resource revision and the Refresh presses it was started under, and
+  // `loading` is whatever visible read has not settled yet: no flag to set when one starts.
+  const [refreshes, setRefreshes] = useState(0)
+  const readKey = `${revision}:${refreshes}`
+  const [settledKey, setSettledKey] = useState<string | null>(null)
+  const loading = visible && settledKey !== readKey
+  // The last failure is not shown over a read that is retrying it.
+  const error = loading ? null : readError
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      setUsage(await storageApi.usage())
-    } catch (e) {
-      setError(inlineFailure(e, 'Storage use could not be read.'))
-    } finally {
-      setLoading(false)
-    }
-  }, [])
   useEffect(() => {
-    if (visible) void load()
-  }, [visible, load, revision])
+    if (!visible) return
+    let current = true
+    storageApi
+      .usage()
+      .then((next) => {
+        if (!current) return
+        setUsage(next)
+        setError(null)
+      })
+      .catch((e: unknown) => {
+        if (current) setError(inlineFailure(e, 'Storage use could not be read.'))
+      })
+      .finally(() => {
+        if (current) setSettledKey(readKey)
+      })
+    return () => {
+      current = false
+    }
+  }, [visible, readKey])
 
   const lines = usage ? usageLines(usage) : []
   const saved = usage ? usage.toolOutputRawBytes - usage.toolOutputBytes : 0
@@ -98,11 +111,11 @@ function UsageRow() {
         )}
       </div>
       <Button
-        variant="outline"
+        variant="ghost"
         size="xl"
         aria-busy={loading || undefined}
         disabled={loading}
-        onClick={() => void load()}
+        onClick={() => setRefreshes((count) => count + 1)}
       >
         {loading ? <SettingsActionActivity label="Reading" /> : 'Refresh'}
       </Button>
@@ -167,7 +180,7 @@ function RemoveOldRow() {
         />
         {counted && counted.sessions > 0 ? (
           <Button
-            variant="outline"
+            variant="ghost"
             size="xl"
             aria-busy={busy === 'remove' || undefined}
             disabled={busy !== null}
@@ -177,7 +190,7 @@ function RemoveOldRow() {
           </Button>
         ) : (
           <Button
-            variant="outline"
+            variant="ghost"
             size="xl"
             aria-busy={busy === 'count' || undefined}
             disabled={busy !== null}

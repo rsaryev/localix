@@ -11,12 +11,6 @@ import { SETTINGS_INDEX } from '@/shared/lib/settings-index/settingsIndex'
 import { searchSettings } from '../model/settingsSearch'
 import type { SettingsIndexEntry } from '@/shared/lib/settings-index/settingsIndex'
 import { settingsTargetUri } from '@/shared/lib/settingsAnchors'
-import { isDesktop, IS_MAC } from '@localixai/kit/environment'
-
-// The island exists only in the macOS desktop shell; elsewhere its rows would lead nowhere.
-const availableSettings = SETTINGS_INDEX.filter(
-  (entry) => !entry.id.startsWith('prefs.island') || (isDesktop && IS_MAC),
-)
 
 /**
  * A single search box that filters EVERY setting across all tabs and jumps to
@@ -37,7 +31,7 @@ export function SettingsSearch({
   const listRef = useRef<HTMLDivElement>(null)
   const listId = useId()
 
-  const results = useMemo(() => searchSettings(availableSettings, query).slice(0, 8), [query])
+  const results = useMemo(() => searchSettings(SETTINGS_INDEX, query).slice(0, 8), [query])
   const showResults = open && query.trim().length > 0
   const activeOptionId =
     showResults && results.length > 0 ? `${listId}-option-${active}` : undefined
@@ -84,7 +78,6 @@ export function SettingsSearch({
           <div>
             <SearchInput
               size="xl"
-              inset
               value={query}
               onValueChange={(value) => {
                 setQuery(value)

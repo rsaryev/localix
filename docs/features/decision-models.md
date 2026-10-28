@@ -16,19 +16,17 @@ configured: features that can use a decision model start using it as soon as the
 
 ## Where Localix uses them
 
-| Where                                                                | What the model decides                                                   | Without one                                   |
-| -------------------------------------------------------------------- | ------------------------------------------------------------------------ | --------------------------------------------- |
-| [Group routing](group-routing.md)                                    | Who takes the next turn in a group conversation                          | The embedding model, then the `@handle` rules |
-| [Browser](workspace.md#the-browser)                                  | The next click or field during a `goal` run, from the agent's own values | The agent uses ordinary steps                 |
-| [Games](games.md)                                                    | The opponent's move, when the table plays the decision model             | The chat agent plays                          |
-| [Mini apps](../extending/mini-app-semantics.md#ask-a-decision-model) | Small choices a mini app makes itself, through `ctx.host.decisions`      | The mini app's own fallback                   |
+| Where                                                                | What the model decides                                                   | Without one                   |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------ | ----------------------------- |
+| [Browser](workspace.md#the-browser)                                  | The next click or field during a `goal` run, from the agent's own values | The agent uses ordinary steps |
+| [Games](games.md)                                                    | The opponent's move, when the table plays the decision model             | The chat agent plays          |
+| [Mini apps](../extending/mini-app-semantics.md#ask-a-decision-model) | Small choices a mini app makes itself, through `ctx.host.decisions`      | The mini app's own fallback   |
 
 Every caller keeps its own fallback. A decision that comes back late, refused, or with no connection
 leaves the feature on that fallback; it never fails the feature.
 
 ## Spend and privacy
 
-Each call is recorded in the usage ledger under **Decisions** (group routing under **Group
-routing**), against the conversation it served. The request carries the state the question needs: a
-transcript window for routing, the page's controls and visible text for the Browser, the board for a
-game. Decisions are logged without that state.
+Each call is recorded in the usage ledger under **Decisions**, against the conversation it served.
+The request carries the state the question needs: the page's controls and visible text for the
+Browser, the board for a game. Decisions are logged without that state.

@@ -10,7 +10,7 @@
  *     watchdog at the last delay (`triggers/kinds/delay`) — so a loop that is done is REMOVED, and
  *     the words have to say so or the agent would believe silence stops it.
  *   - subsession target: the previous round's handoff, then the task, in a fresh child that manages
- *     no loops (`loops` disabled). The transcript is deliberately not carried: piping it in would
+ *     no loops (`Loops` disabled). The transcript is deliberately not carried: piping it in would
  *     reintroduce the growth the subsession target exists to avoid.
  */
 import type { SessionLoop } from './contracts'
@@ -24,7 +24,7 @@ export function buildLoopWake(loop: SessionLoop): {
     const inherited = loop.handoff
       ? `${renderInheritedHandoff(loop.handoff, Math.max(1, loop.runCount))}\n\n`
       : ''
-    return { content: `${inherited}${loop.prompt}`, extraDisabledTools: ['loops'] }
+    return { content: `${inherited}${loop.prompt}`, extraDisabledTools: ['Loops'] }
   }
   if (loop.kind === 'dynamic') {
     const content =

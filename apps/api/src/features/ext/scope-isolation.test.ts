@@ -1,3 +1,4 @@
+import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -8,7 +9,7 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { createDatabase, destroyDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 
-const tempDir = join(process.cwd(), 'tmp', 'ext-scope-isolation-tests')
+const tempDir = join(tmpdir(), `localix-ext-scope-isolation-tests-${process.pid}`)
 
 describe('capability state scope isolation', () => {
   beforeAll(async () => {

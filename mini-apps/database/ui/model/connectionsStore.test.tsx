@@ -48,19 +48,31 @@ async function mountReaders() {
     status?: ReturnType<typeof useDatabaseStatusItem>
   } = {}
   function Workspace() {
-    seen.workspace = useDbConnections()
+    const workspace = useDbConnections()
+    React.useEffect(() => {
+      seen.workspace = workspace
+    })
     return null
   }
   function ConnectionTab() {
-    seen.tab = useDbConnections()
+    const tab = useDbConnections()
+    React.useEffect(() => {
+      seen.tab = tab
+    })
     return null
   }
   function SqlFile() {
-    seen.sqlFile = useSqlFileConnections()
+    const sqlFile = useSqlFileConnections()
+    React.useEffect(() => {
+      seen.sqlFile = sqlFile
+    })
     return null
   }
   function Titlebar() {
-    seen.status = useDatabaseStatusItem('chat-a')
+    const status = useDatabaseStatusItem('chat-a')
+    React.useEffect(() => {
+      seen.status = status
+    })
     return null
   }
   function Harness({ visible }: { visible: boolean }) {

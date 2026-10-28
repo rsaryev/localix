@@ -1,5 +1,5 @@
 /**
- * The `external_agent_sessions` tool body: validate → fix-it → act → render.
+ * The `ExternalAgentSessions` tool body: validate → fix-it → act → render.
  *
  * Purely read-only: every action answers a question about a session and none of them mutates
  * anything, here or in another agent's files. It also never starts an agent — the plugin's
@@ -192,7 +192,7 @@ export async function runAgentSessions(
           content: `Native terminal continuation is not supported for ${input.key}. You can read its transcript or import it in Localix.`,
         }
       return {
-        content: `To open this exact session in ${result.resume.providerName}, run bash with ${JSON.stringify({ action: 'open', command: result.resume.command })}. This lookup has not opened a terminal; execute that command before reporting the session as opened.`,
+        content: `To open this exact session in ${result.resume.providerName}, run \`Bash\` with ${JSON.stringify({ action: 'open', command: result.resume.command })}. This lookup has not opened a terminal; execute that command before reporting the session as opened.`,
       }
     }
 

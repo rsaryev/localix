@@ -353,7 +353,7 @@ describe('discoverPlugins', () => {
     const restricted = cc!.commands.find((c) => c.name === 'restricted')
     expect(restricted).toBeDefined()
     // Write, Edit, Bash are CC names → normalized to engine names write, edit, bash
-    expect(restricted?.disallowedTools?.sort()).toEqual(['bash', 'edit', 'write'])
+    expect(restricted?.disallowedTools?.sort()).toEqual(['Bash', 'Edit', 'Write'])
   })
 
   it('parses argument-hint and allowed-tools from CC command files', async () => {
@@ -367,7 +367,7 @@ describe('discoverPlugins', () => {
     expect(hinted).toBeDefined()
     expect(hinted?.argumentHint).toBe('[env] [tag]')
     // CC tool names (Bash, Read) normalized to engine names (bash, read)
-    expect(hinted?.allowedTools?.sort()).toEqual(['bash', 'read'])
+    expect(hinted?.allowedTools?.sort()).toEqual(['Bash', 'Read'])
   })
 
   it('loads Claude Code agent files from the default agents/ dir into worker roles', async () => {
@@ -392,27 +392,28 @@ describe('discoverPlugins', () => {
     const cc = found.find((p) => p.manifest.name === 'cc-plugin')
     // Glob+Grep→search (deduped), Read→read; WebFetch→research. No write/bash.
     expect(cc!.agents.find((a) => a.name === 'reviewer')?.tools?.sort()).toEqual([
-      'read',
-      'research',
-      'search',
+      'Read',
+      'Research',
+      'Search',
     ])
     // disallowedTools: Write, Edit → engine names (write, edit); model hint preserved.
     expect(cc!.agents.find((a) => a.name === 'reviewer')?.disallowedTools?.sort()).toEqual([
-      'edit',
-      'write',
+      'Edit',
+      'Write',
     ])
-    expect(cc!.agents.find((a) => a.name === 'reviewer')?.preferredModel).toBe('sonnet')
+    // the file's `model` is not read: the person chooses a model in settings
+    expect(cc!.agents.find((a) => a.name === 'reviewer')).not.toHaveProperty('preferredModel')
     // Both legacy CC network authorities converge on one composite capability.
-    expect(cc!.agents.find((a) => a.name === 'webber')?.tools).toEqual(['research'])
+    expect(cc!.agents.find((a) => a.name === 'webber')?.tools).toEqual(['Research'])
     // YAML quoted-array form ["Read", "Grep", "Bash"] — inner quotes stripped.
     expect(cc!.agents.find((a) => a.name === 'quoted-tools')?.tools?.sort()).toEqual([
-      'bash',
-      'read',
-      'search',
+      'Bash',
+      'Read',
+      'Search',
     ])
   })
 
-  it('parses CC effort: in agent files and leaves when-to-use: out (an agent has no such field)', async () => {
+  it('reads no effort: from agent files and leaves when-to-use: out (an agent has no such field)', async () => {
     const found = await discoverPlugins({
       cwd: dir,
       projectId: 'proj1',
@@ -423,8 +424,7 @@ describe('discoverPlugins', () => {
     expect(analyst).toBeDefined()
     // an agent's description is its `description` alone, as in sub-agents.md
     expect(analyst?.description).toBe('Analyzes data.')
-    // effort: parsed as preferredEffort
-    expect((analyst as { preferredEffort?: string })?.preferredEffort).toBe('high')
+    expect(analyst).not.toHaveProperty('preferredEffort')
   })
 
   it('maps newer CC tool names (AskUserQuestion→ask); an unmapped one (EnterPlanMode) is dropped', async () => {
@@ -436,7 +436,7 @@ describe('discoverPlugins', () => {
     const cc = found.find((p) => p.manifest.name === 'cc-plugin')
     const plan = cc!.agents.find((a) => a.name === 'plan-agent')
     expect(plan).toBeDefined()
-    expect(plan?.tools?.sort()).toEqual(['ask', 'read'])
+    expect(plan?.tools?.sort()).toEqual(['AskUserQuestion', 'Read'])
   })
 
   it("treats tools: * as undefined and inherits the role's default tool surface", async () => {

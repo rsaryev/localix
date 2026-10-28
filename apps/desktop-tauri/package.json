@@ -24,6 +24,7 @@
     "tauri:tabs": "bun scripts/check-native-tabs.mjs"
   },
   "devDependencies": {
+    "@localixai/mini-app-sdk": "workspace:*",
     "@tauri-apps/cli": "^2.12.4"
   }
 }

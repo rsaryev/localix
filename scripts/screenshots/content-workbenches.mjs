@@ -33,7 +33,10 @@ export async function seedContent(fixture) {
   )
   // Native API routes instantiate one mini app backend: this is global within the
   // verified disposable database, not a change to the person's workspace.
-  await api('/mini-apps/config', { name: 'api', values: { ALLOW_PRIVATE_NETWORK: true } })
+  await api('/store/mini-app/api/config', {
+    scope: 'user',
+    values: { ALLOW_PRIVATE_NETWORK: true },
+  })
   const requests = await api(scoped('/api/requests'))
   if (!requests.requests.some((request) => request.name === requestName)) {
     await api(scoped('/api/requests'), {

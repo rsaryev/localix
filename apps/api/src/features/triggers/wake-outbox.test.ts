@@ -32,13 +32,18 @@ describe('the wake outbox', () => {
   test('a wake lost with its process is redelivered at boot under its key', async () => {
     const { outbox } = await fixture()
     // The first process recorded the wake, then died before the queue took it.
+    const sentToQueue = Promise.withResolvers<void>()
     const dead = createWakeDelivery<WakeShape>({
-      wake: () => new Promise<WakeAnswer>(() => {}),
+      wake: () => {
+        sentToQueue.resolve()
+        return new Promise<WakeAnswer>(() => {})
+      },
       logger: quiet,
       outbox,
     })
     void dead.deliver(wake('trg:t1:3'))
-    await new Promise((resolve) => setTimeout(resolve, 20))
+    // The wake is recorded before it is sent, so this is after the row landed.
+    await sentToQueue.promise
 
     const sent: string[] = []
     const next = createWakeDelivery<WakeShape>({
@@ -71,13 +76,17 @@ describe('the wake outbox', () => {
 
   test('a once-ever receipt delivery keeps its own recovery', async () => {
     const { outbox } = await fixture()
+    const sentToQueue = Promise.withResolvers<void>()
     const wakes = createWakeDelivery<WakeShape>({
-      wake: () => new Promise<WakeAnswer>(() => {}),
+      wake: () => {
+        sentToQueue.resolve()
+        return new Promise<WakeAnswer>(() => {})
+      },
       logger: quiet,
       outbox,
     })
     void wakes.deliver(wake('report:c1:r1', { receipt: true }))
-    await new Promise((resolve) => setTimeout(resolve, 20))
+    await sentToQueue.promise
     expect(await outbox.pending(Date.now())).toEqual([])
   })
 

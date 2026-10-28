@@ -1,5 +1,6 @@
 import type { MessageBindingDraft } from '@localixai/mini-app-sdk/ui'
 import type { MessageBinding } from '@/shared/api/contracts'
+import { loadHeldInserts, saveHeldInserts } from './composerHeldStore'
 
 /**
  * Agnostic "prefill the chat composer" bus. Any feature — code/preview review
@@ -19,7 +20,7 @@ export interface ComposerInsert {
   /**
    * `text` continues the sentence rather than starting a paragraph — joined to the draft with a
    * single space instead of a blank line. For tokens a person builds a message out of, such as
-   * a colleague's `@handle`: three of those on their own lines are a column, not an address.
+   * a fragment a mod fills in: several of those on their own lines are a column, not a phrase.
    */
   inline?: boolean
   /**
@@ -48,6 +49,12 @@ export interface ComposerInsert {
    * composer minutes later.
    */
   buffer?: boolean
+  /**
+   * Like `buffer`, but the insert never expires: it is words the person wrote and cannot get
+   * back any other way (a stopped session's queue, taken off the server). It waits for the
+   * addressed composer, however long the session stays closed.
+   */
+  hold?: boolean
   /** Keep focus on the source surface while staging context for a later message. */
   focus?: boolean
 }
@@ -79,6 +86,21 @@ const BUFFER_TTL_MS = 30_000
 const handlers = new Set<Handler>()
 const retractHandlers = new Set<RetractHandler>()
 const pending: Array<{ req: ComposerInsert; expiresAt: number }> = []
+const NEVER = Number.POSITIVE_INFINITY
+let restored = false
+
+/** Held inserts of a previous page life rejoin the queue, ahead of anything held since. */
+function restoreHeld(): void {
+  if (restored) return
+  restored = true
+  const entries = loadHeldInserts().map((req) => ({ req, expiresAt: NEVER }))
+  pending.unshift(...entries)
+}
+
+/** Mirror the held entries to storage; called whenever one is added, delivered or retracted. */
+function persistHeld(): void {
+  saveHeldInserts(pending.filter((entry) => entry.expiresAt === NEVER).map((entry) => entry.req))
+}
 
 /**
  * Addressing rule shared by every composerBus subscriber: an insert reaches the composer of the
@@ -103,15 +125,21 @@ function offer(handler: Handler, req: ComposerInsert): boolean {
 export const composerBus = {
   /** Prefill the composer. No-op until a subscriber (the composer) is mounted. */
   insert(req: ComposerInsert): void {
+    restoreHeld()
     let applied = false
     for (const h of handlers) {
       if (offer(h, req)) applied = true
     }
-    if (!applied && req.buffer) pending.push({ req, expiresAt: Date.now() + BUFFER_TTL_MS })
+    if (applied) return
+    if (req.hold) {
+      pending.push({ req, expiresAt: NEVER })
+      persistHeld()
+    } else if (req.buffer) pending.push({ req, expiresAt: Date.now() + BUFFER_TTL_MS })
   },
   /** Unstage bindings by token. No-op when nothing holds them. */
   retract(req: ComposerRetract): void {
     if (req.tokens.length === 0) return
+    restoreHeld()
     for (const h of retractHandlers) {
       try {
         h(req)
@@ -120,28 +148,64 @@ export const composerBus = {
       }
     }
     // A buffered insert has not reached a composer yet, so its retraction has to catch it here.
+    let changedHeld = false
     for (let i = pending.length - 1; i >= 0; i -= 1) {
       const bindings = pending[i]!.req.bindings ?? []
       const retracted = bindings.some(
         (binding) => binding.kind === 'context' && req.tokens.includes(binding.target.token),
       )
-      if (retracted) pending.splice(i, 1)
+      if (!retracted) continue
+      if (pending[i]!.expiresAt === NEVER) changedHeld = true
+      pending.splice(i, 1)
     }
+    if (changedHeld) persistHeld()
   },
   /** Subscribe to retractions (the composer's context-ref owner). */
   subscribeRetract(handler: RetractHandler): () => void {
     retractHandlers.add(handler)
     return () => retractHandlers.delete(handler)
   },
-  /** Subscribe (the composer owner). Returns an unsubscribe. */
+  /**
+   * Subscribe (the composer owner). Returns an unsubscribe. Held inserts are delivered right
+   * after the current task, not inside this call: a composer subscribes several handlers (text,
+   * attachments, context chips) one after another, and offering the entry to the first alone
+   * let it take the whole insert, leaving the others' share of it undelivered.
+   */
   subscribe(handler: Handler): () => void {
+    restoreHeld()
     handlers.add(handler)
-    // Drain buffered inserts that were waiting for their composer to mount.
-    for (let i = 0; i < pending.length;) {
-      const entry = pending[i]!
-      if (entry.expiresAt <= Date.now() || offer(handler, entry.req)) pending.splice(i, 1)
-      else i += 1
+    if (pending.length > 0 && !flushScheduled) {
+      flushScheduled = true
+      queueMicrotask(flushPending)
     }
     return () => handlers.delete(handler)
   },
+}
+
+let flushScheduled = false
+
+/** Offer every waiting insert to every live subscriber, as `insert` does; drop the expired. */
+function flushPending(): void {
+  flushScheduled = false
+  let changedHeld = false
+  for (let i = 0; i < pending.length;) {
+    const entry = pending[i]!
+    let applied = false
+    if (entry.expiresAt > Date.now()) {
+      for (const handler of handlers) {
+        if (offer(handler, entry.req)) applied = true
+      }
+    }
+    if (applied || entry.expiresAt <= Date.now()) {
+      if (entry.expiresAt === NEVER) changedHeld = true
+      pending.splice(i, 1)
+    } else i += 1
+  }
+  if (changedHeld) persistHeld()
+}
+
+/** Tests: forget the in-memory queue as a page reload would (storage is NOT touched). */
+export function reloadComposerBusForTests(): void {
+  pending.length = 0
+  restored = false
 }

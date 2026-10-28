@@ -25,7 +25,6 @@ export function uiSessionSummary(session: UiSession): UiSession {
     isArchived: session.isArchived ?? false,
     createdAt: session.createdAt,
     updatedAt: session.updatedAt,
-    revision: session.revision,
     pendingInteraction: null,
     pendingInteractionQueue: [],
     isRunning: session.isRunning,
@@ -33,12 +32,10 @@ export function uiSessionSummary(session: UiSession): UiSession {
     parentSessionId: session.parentSessionId,
     rootSessionId: session.rootSessionId,
     sessionKind: session.sessionKind,
-    agents: session.agents,
-    ...(session.modelChoices ? { modelChoices: session.modelChoices } : {}),
+    agent: session.agent,
     permissionMode: session.permissionMode,
     closedAt: session.closedAt ?? null,
     description: session.description,
-    avatar: session.avatar,
     runtimeStatus: session.runtimeStatus,
     ...(session.externalAgentProvider
       ? { externalAgentProvider: session.externalAgentProvider }

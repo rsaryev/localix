@@ -44,14 +44,14 @@ An argument containing `!` command syntax or `@path` therefore does not start an
 pass. Template shell commands still execute local code directly before the macro runs; inline tool
 grants do not govern that preprocessing.
 
-| Category          | Core commands                                                                                             |
-| ----------------- | --------------------------------------------------------------------------------------------------------- |
-| Autonomous        | `/loop`                                                                                                   |
-| Configuration     | `/agents`, `/model` (`/models`), `/effort`, `/output-style`, `/theme`, `/plan`, `/permissions`, `/config` |
-| Context           | `/clear`, `/resume`, `/rename`, `/rewind`, `/copy`, `/fork`, `/open` (client-scoped)                      |
-| Information       | `/help`, `/usage` (`/cost`), `/context`, `/recap`                                                         |
-| Memory and skills | `/memory`, `/skills` (`/skill`)                                                                           |
-| Extensions        | `/mcp`, `/plugin`, `/mini-app`                                                                            |
+| Category          | Core commands                                                                                                         |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Autonomous        | `/loop`                                                                                                               |
+| Configuration     | `/agents`, `/model` (`/models`), `/effort`, `/output-style`, `/theme`, `/plan`, `/permissions`, `/config`, `/add-dir` |
+| Context           | `/clear`, `/resume`, `/rename`, `/rewind`, `/copy`, `/fork`, `/open` (client-scoped), `/compact`, `/export`           |
+| Information       | `/help`, `/usage` (`/cost`), `/context`, `/recap`, `/status`, `/diff`                                                 |
+| Memory and skills | `/memory`, `/skills` (`/skill`), `/init`                                                                              |
+| Extensions        | `/mcp`, `/plugin`, `/mini-app`, `/hooks`                                                                              |
 
 A command that takes an argument offers it as crumbs: pick from the list, or type the value.
 
@@ -60,24 +60,8 @@ on and off, removes and reloads mini apps (see [Mini apps](mini-apps.md)).
 
 ### Everyday Claude Code commands
 
-The commands Claude Code users reach for run in Localix as thin wrappers: each calls what the app
-already does, so it behaves as the button or menu would. Those marked client run in the composer and
-need web or desktop; any other surface answers that a compatible client must handle them.
-
-| Command                                   | What it does                                                                                      | Crumbs                                                     |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| `/clear` (client)                         | Starts a new chat in this project, as **New chat** does.                                          | None                                                       |
-| `/resume [chat]` (client)                 | Opens a recent chat; with none, opens the chat picker.                                            | Recent chats, newest first                                 |
-| `/rename <title>` (client)                | Retitles this chat, as renaming in the sidebar does. Without a title it shows its usage.          | The title, as text                                         |
-| `/rewind` (client)                        | Rolls this chat back to one of your messages after the same question the message menu asks.       | Your messages, newest first                                |
-| `/plan [task]` (client)                   | Switches this chat to Plan mode, then sends the task when you gave one.                           | The task, as text                                          |
-| `/context` (client)                       | Shows how full the context window is, from the numbers the usage indicator uses.                  | None                                                       |
-| `/copy [n]` (client)                      | Copies the nth latest reply, as **Copy text** on that message does; `1`, the latest, by default.  | Replies, newest first                                      |
-| `/permissions`, `/config` (client)        | Open Settings at Permissions, or at Preferences.                                                  | None                                                       |
-| `/effort` (client)                        | Sets an agent's reasoning level on the model it already runs: `/model`'s steps from the level on. | The agent (groups only), then the levels that model offers |
-| `/reload-plugins`, `/reload-skills`       | Run `/plugin reload`, which reloads plugins and their skills. Not listed in the menu.             | None                                                       |
-| `/help [command]`                         | Lists the commands, or describes one.                                                             | Command names                                              |
-| `/output-style [style]`, `/memory [fact]` | As before; the style is offered from the styles this chat can pick, the fact is typed as text.    | Styles, or text                                            |
+[Claude Code commands in Localix](claude-code-commands.md) lists the built-in Claude Code commands
+Localix runs, what each does here, and what the others answer.
 
 ### Native mini app hooks
 
@@ -107,19 +91,27 @@ per binding. These caps do not impose an aggregate limit on replacement message 
 Declarative hooks use the supported hooks JSON schema from enabled plugins or `hooks` frontmatter on
 the invoked skill or delegated agent. Localix dispatches these events:
 
-`SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, `Stop`,
-`SessionEnd`, `SubagentStart`, `SubagentStop`, `PreCompact`, and `Notification`.
+Session events are `SessionStart`, `SessionEnd`, `InstructionsLoaded`, `ConfigChange`, `CwdChanged`,
+`FileChanged`, `PreCompact`, `PostCompact`, `PreModelSwitch`, `PostModelSwitch` and `Notification`.
+Turn events are `UserPromptSubmit`, `UserPromptExpansion`, `Stop`, `StopFailure` and
+`MessageDisplay`. Tool events are `PreToolUse`, `PermissionRequest`, `PermissionDenied`,
+`PostToolUse`, `PostToolUseFailure` and `PostToolBatch`. Agent events are `SubagentStart`,
+`SubagentStop`, `TaskCreated` and `TaskCompleted`. `Elicitation`, `ElicitationResult` and
+`WorktreeCreate` complete the twenty-nine.
+
+`Setup`, `DirectoryAdded` and `WorktreeRemove` are accepted but never fire, as Localix has no
+matching moment; a hook on any other event is reported in validation and never fires.
 
 `PostToolUseFailure` runs in place of `PostToolUse` when a tool throws; its handlers receive the
-error and can add context to the failed result. A plugin's hooks on any other event are listed in
-its validation and never fire.
+error, and their context or `decision: "block"` reason is added to the failed result.
 
 `PreCompact` fires with trigger `auto` before a [context checkpoint](context-checkpoints.md) is
-committed. A block skips a proactive checkpoint, and the turn continues with the uncompacted view. A
-block on a checkpoint that recovers from a context-limit error fails the turn. A checkpoint taken
-only because the history does not fit the request is announced to `PreCompact` after it is taken,
-and that call cannot block. After a checkpoint, the next run fires `SessionStart` with source
-`compact`.
+committed, and with trigger `manual` and the typed text as `custom_instructions` when `/compact`
+asked for it; `PostCompact` follows with the same trigger. A block skips a proactive checkpoint, and
+the turn continues with the uncompacted view. A block on a checkpoint that recovers from a
+context-limit error fails the turn. A checkpoint taken only because the history does not fit the
+request is announced to `PreCompact` after it is taken, and that call cannot block. After a
+checkpoint, the next run fires `SessionStart` with source `compact`.
 
 `SessionStart` fires on a session's first run in the API process. Its source is `startup` for a new
 session, `fork` for a forked one, `resume` for a session that ran before the API last started, and
@@ -127,8 +119,10 @@ session, `fork` for a forked one, `resume` for a session that ran before the API
 scheduled one, its `initialUserMessage` is the user turn before the run's prompt; with
 `reloadSkills`, skills the hook installed are named to the agent and listed from the next run on.
 
-`SessionEnd` fires when a session ends, not when a run ends. Deleting a session fires it with reason
-`other`.
+`SessionEnd` fires when a session ends, not a run: `/clear` fires it with reason `clear`, deleting a
+session with `other`, and quitting the app with `prompt_input_exit` for each session that started
+and is still open. At quit all the hooks share Claude Code's 1.5 second budget; one that runs longer
+is left behind so the app can close.
 
 A handler's `statusMessage` is the chat's activity line while it runs. A non-blocking error (another
 exit code, a timeout, a hook that cannot start, output that is not valid JSON) shows a
@@ -145,7 +139,7 @@ from any `PreToolUse` handler stops the call without stopping the others from ru
 | Event                       | Effect of a blocking verdict                                                                     |
 | --------------------------- | ------------------------------------------------------------------------------------------------ |
 | `UserPromptSubmit`          | Rejects the prompt on any block; the message ends with the prompt, unless suppressed (below).    |
-| `PreToolUse`                | Stops the tool on any deny; `allow` and `ask` remain advisory.                                   |
+| `PreToolUse`                | Stops the tool on any deny; `ask` and `allow` shape the permission prompt (below).               |
 | `PostToolUse`               | Cannot undo execution; a block reason becomes added result context.                              |
 | `PostToolUseFailure`        | Cannot block; added context is appended to the failed result.                                    |
 | `Stop`                      | Requests another run with the reason; eight in a row end the turn, and a tool call resets that.  |
@@ -157,11 +151,14 @@ from any `PreToolUse` handler stops the call without stopping the others from ru
 A `command` or `http` handler with `"onFailure": "block"` turns its own failure into a block: when
 it cannot start, exits with a code other than 0 or 2, times out, or answers with invalid output, the
 event acts as on exit 2, and a `PermissionRequest` is denied. The error names the hook and says
-`failed; blocking because onFailure is "block"`. `Stop`, `SubagentStop`, `TaskCompleted`,
-`TeammateIdle` and background (`async`) handlers ignore the field.
+`failed; blocking because onFailure is "block"`. `Stop`, `SubagentStop`, `TaskCompleted` and
+background (`async`) handlers ignore the field.
 
-Tool calls reach hooks under Claude Code's names and in its shapes; see
-[Hook tool calls](hook-tool-calls.md).
+Tool calls reach hooks in Claude Code's names and shapes: [Hook tool calls](hook-tool-calls.md).
+
+A `PreToolUse` `ask` asks even where your rules allow the call, with its reason on the card. An
+`allow` skips only a mode's questions about how a call is made; deny rules, named ask rules and
+irreversible calls stand. `defer` needs a headless caller: it is warned about and ignored.
 
 ### Matcher, `if`, and `once`
 
@@ -181,9 +178,9 @@ rewrites, read in Claude Code's shape. A Bash rule matches any command of a batc
 anchors as in Claude Code: `src/**` is the working directory's `src`, `//` the filesystem root and
 `~/` your home folder. `Agent(Explore)`, `Skill(deploy)`, `WebFetch(domain:example.com)` and
 `Tool(param:value)` read the agent type, the skill, the host and the named field. It applies only to
-`PreToolUse`, `PostToolUse` and `PostToolUseFailure`; carrying it on another event prevents that
-handler from running. Unparseable rules or unavailable comparison fields let the handler run. This
-filter does not grant tool permission.
+`PreToolUse`, `PostToolUse`, `PostToolUseFailure`, `PermissionRequest` and `PermissionDenied`;
+carrying it on another event prevents that handler from running. Unparseable rules or unavailable
+comparison fields let the handler run. This filter does not grant tool permission.
 
 ## Configuration
 
@@ -249,13 +246,15 @@ outside Bash tool approval. Treat it as executable mini app code, rather than a 
 
 ### Declarative handler support
 
-| Handler    | Primary mechanism                                                                                                   | Boundary                                                                                                |
-| ---------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `command`  | Runs the agent's Bash (`bash -c`; Git Bash on Windows), sends event JSON on stdin, and folds exit code plus output. | Supported on every dispatched event.                                                                    |
-| `http`     | POSTs event JSON and folds a successful response like command output.                                               | Unsupported on `SessionStart`; network and non-2xx failures do not block.                               |
-| `mcp_tool` | Calls a gathered MCP tool with the event JSON.                                                                      | Missing, disconnected, or failed tools do not block.                                                    |
-| `prompt`   | Uses one auxiliary model call to return an allow/block verdict.                                                     | Only `Stop`, `SubagentStop`, `UserPromptSubmit`, and `PreToolUse`; requires a live provider connection. |
-| `agent`    | Runs a bounded read-only verifier with `read` and `search`.                                                         | Same four events; requires the agent service and a live provider connection.                            |
+| Handler    | Primary mechanism                                                                                                   | Boundary                                                                                             |
+| ---------- | ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `command`  | Runs the agent's Bash (`bash -c`; Git Bash on Windows), sends event JSON on stdin, and folds exit code plus output. | Supported on every dispatched event.                                                                 |
+| `http`     | POSTs event JSON and folds a successful response like command output.                                               | Unsupported on `SessionStart`; network and non-2xx failures do not block.                            |
+| `mcp_tool` | Calls a gathered MCP tool with the handler's `input` as its arguments.                                              | Missing, disconnected, or failed tools do not block; skipped on `SessionStart` at launch and resume. |
+| `prompt`   | Uses one auxiliary model call to return an allow/block verdict.                                                     | The events listed below; requires a live provider connection.                                        |
+| `agent`    | Runs a bounded read-only verifier with `Read` and `Search`.                                                         | The same events except `PermissionRequest`; needs the agent service and a live provider connection.  |
+
+For `mcp_tool` arguments and `prompt` and `agent` verdicts, see [Hook handlers](hook-handlers.md).
 
 | Handler                       | Default timeout | Additional cap                                                   |
 | ----------------------------- | --------------- | ---------------------------------------------------------------- |
@@ -318,13 +317,14 @@ allow, but an expansion block never echoed the prompt, so there is nothing to le
   hooks can run local code; HTTP hooks make network requests; MCP, prompt, and agent hooks invoke
   their named runtimes.
 - Unsupported event and handler combinations are skipped during parsing. They do not execute.
-- Declarative `PreToolUse` `allow` is advisory and cannot bypass the Localix permission gate. A deny
-  can still stop the tool.
+- A declarative `PreToolUse` `allow` cannot bypass the Localix permission gate: it lifts only the
+  mode-level questions about how a call is made, and a deny rule, a named ask rule or an
+  irreversible call still stands. An `ask` always asks, and a deny always stops the tool.
 - Prompt, agent, MCP, HTTP, and command handler failures are non-blocking unless the handler returns
   a supported blocking verdict. Missing provider or MCP connections therefore fail open.
-- Malformed auxiliary-model verdicts also allow the event to continue. Prompt hooks make billed
-  model calls; agent hooks create verifier jobs, with a default of 50 turns rather than a fixed
-  maximum for every declaration.
+- A malformed auxiliary-model verdict also allows the event to continue, and says so in a hook error
+  line. Prompt hooks make billed model calls; agent hooks create verifier jobs, with a default of 50
+  turns rather than a fixed maximum for every declaration.
 - MCP hook calls still obey agent capability and permission rules. Calls requiring denial or
   confirmation do not execute through the hook path; their hook verdict fails open.
 - Command hooks spawn directly through the resolved shell, outside Bash tool approval. Timeout or
@@ -341,11 +341,10 @@ allow, but an expansion block never echoed the prompt, so there is nothing to le
   surfaces omits them from its forwarded server command list.
 - A plugin, mini app or skill macro sent while a run is active waits in the queue as a whole command
   — its badge, model override, tool grants and hooks — and runs as its own turn.
-- `/model` walks the model picker's steps in the composer — agent (groups only, with **All
-  agents**), provider, model, then optional reasoning, turns and context limit settings — and never
-  prints a model list. See [Switch models with `/model`](conversations.md#switch-models-with-model).
-  Typed as `/model <name>`, it acts on one participant: the one named first (`/model @qa sonnet`),
-  otherwise the participant your unaddressed message would go to.
+- `/model` walks the model picker's steps in the composer — provider, model, then optional
+  reasoning, turns and context limit settings — and never prints a model list. See
+  [Switch models with `/model`](providers.md#switch-models-with-model). Typed as `/model <name>`, it
+  switches the conversation's model by name.
 
 ## Related guides
 

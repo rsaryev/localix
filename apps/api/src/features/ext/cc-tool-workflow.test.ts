@@ -6,8 +6,8 @@ import { claudeCodeHookCall, claudeCodeToolName, localInputFromHook } from './cc
 describe('the workflow tool in Claude Code’s shape', () => {
   test('reaches a hook as Workflow, its input unchanged', () => {
     const input = { name: 'ops:audit', args: { system: 'billing' } }
-    expect(claudeCodeToolName({ name: 'workflow' }, input)).toBe('Workflow')
-    expect(claudeCodeHookCall({ name: 'workflow' }, input)).toMatchObject({
+    expect(claudeCodeToolName({ name: 'Workflow' }, input)).toBe('Workflow')
+    expect(claudeCodeHookCall({ name: 'Workflow' }, input)).toMatchObject({
       tool_name: 'Workflow',
       tool_input: input,
     })

@@ -1,0 +1,81 @@
+{
+  "$comment": "Language servers Localix installs on first use (lsp-registry.ts). `source` is a package URL: pkg:npm (installed with Localix's Bun), pkg:github (a release asset per platform, checked by sha256), pkg:golang (built with the user's Go). `bin` names the commands it provides. `hold` keeps a package within a range when updating. Update every version with `bun run --cwd apps/api lsp:update`.",
+  "servers": {
+    "typescript": {
+      "source": "pkg:npm/%40vtsls/language-server@0.3.0",
+      "bin": ["vtsls"]
+    },
+    "vscode-langservers": {
+      "source": "pkg:npm/vscode-langservers-extracted@4.10.0",
+      "bin": [
+        "vscode-json-language-server",
+        "vscode-css-language-server",
+        "vscode-html-language-server"
+      ]
+    },
+    "yaml": {
+      "source": "pkg:npm/yaml-language-server@2.0.0",
+      "bin": ["yaml-language-server"]
+    },
+    "dockerfile": {
+      "source": "pkg:npm/dockerfile-language-server-nodejs@0.15.0",
+      "bin": ["docker-langserver"]
+    },
+    "pyright": {
+      "source": "pkg:npm/pyright@1.1.414",
+      "bin": ["pyright-langserver"]
+    },
+    "typescript-language-server": {
+      "source": "pkg:npm/typescript-language-server@6.0.2",
+      "with": ["pkg:npm/typescript@5.9.3"],
+      "hold": {
+        "typescript": "<6"
+      },
+      "bin": ["typescript-language-server"]
+    },
+    "intelephense": {
+      "source": "pkg:npm/intelephense@1.18.5",
+      "bin": ["intelephense"]
+    },
+    "gopls": {
+      "source": "pkg:golang/golang.org/x/tools/gopls@v0.24.0",
+      "bin": ["gopls"]
+    },
+    "rust-analyzer": {
+      "source": "pkg:github/rust-lang/rust-analyzer@2026-10-19",
+      "bin": ["rust-analyzer"],
+      "assets": {
+        "darwin-arm64": {
+          "file": "rust-analyzer-aarch64-apple-darwin.gz",
+          "bytes": 14071674,
+          "sha256": "eedad08a96f7bf92afd0890463787337d17591ea2e3df216033c6bc3ccc9d802"
+        },
+        "darwin-x64": {
+          "file": "rust-analyzer-x86_64-apple-darwin.gz",
+          "bytes": 14805239,
+          "sha256": "bdfd46e82731a8d3502d852d28b6462c1f1c13eed0b3e76bbcf1ba839028249c"
+        },
+        "linux-x64": {
+          "file": "rust-analyzer-x86_64-unknown-linux-gnu.gz",
+          "bytes": 15066130,
+          "sha256": "8fde1c9dae81459f98e99eedae3654846a9166abea686306c26e57773be558da"
+        },
+        "linux-arm64": {
+          "file": "rust-analyzer-aarch64-unknown-linux-gnu.gz",
+          "bytes": 14480382,
+          "sha256": "d31ee384ab788b9abd8e7aa8e1322f23e6cd4310471d373e9a79ce4656e21896"
+        },
+        "win32-x64": {
+          "file": "rust-analyzer-x86_64-pc-windows-msvc.zip",
+          "bytes": 17750891,
+          "sha256": "7df6e1a2595d1906e8441cb83fd58170b47d32eb09bc52c1b2184538cfd49a71"
+        },
+        "win32-arm64": {
+          "file": "rust-analyzer-aarch64-pc-windows-msvc.zip",
+          "bytes": 15884787,
+          "sha256": "dc2b6c35e2be0bf13f4ae2a6c69adca5730c91d011bfac31371279a4e55bcb2b"
+        }
+      }
+    }
+  }
+}

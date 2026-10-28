@@ -52,7 +52,7 @@ Routes mount at `/rpc/docker`. Every service failure is mapped to a typed Docker
 a missing object to 404, and other action or engine failures to 400.
 
 The workbench contributes **no agent tool**: a wrapper around the read verbs of a CLI the agent
-already runs through `bash` would pay roughly 220 tokens of schema on every request. The panel,
+already runs through `Bash` would pay roughly 220 tokens of schema on every request. The panel,
 routes, and the resource/search/context providers are unaffected.
 
 ### UI state and refresh

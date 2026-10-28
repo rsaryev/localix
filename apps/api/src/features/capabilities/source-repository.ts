@@ -78,8 +78,6 @@ export interface CapabilitySourceRepository {
    * lifecycle's "removed from the last place it was installed" asks it.
    */
   scopesOf?(userId: string, name: string): Promise<string[]>
-  /** Every row of the user, in every scope. Optional: only the boot-time config repair reads it. */
-  listAll?(userId: string): Promise<CapabilitySourceRecord[]>
 }
 
 function parseConfig(raw: string): Record<string, unknown> {
@@ -236,11 +234,6 @@ export function createCapabilitySourceRepository(
     async scopesOf(userId, name) {
       const rows = await ofKind().where('user_id', '=', userId).where('name', '=', name).execute()
       return rows.map((row) => row.project_id)
-    },
-
-    async listAll(userId) {
-      const rows = await ofKind().where('user_id', '=', userId).execute()
-      return rows.map(mapRow)
     },
 
     async remove(userId, projectId, name) {

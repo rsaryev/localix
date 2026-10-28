@@ -35,13 +35,16 @@ export function useUsageMetrics({
   const [podUsage, setPodUsage] = useState<Map<string, PodUsage>>(() => new Map())
   const [nodeUsage, setNodeUsage] = useState<Map<string, NodeUsage>>(() => new Map())
 
+  const idle = !enabled || (!wantPods && !wantNodes)
+  // Drop stale numbers instead of leaving the last cluster's usage on screen. Decided while
+  // rendering, as soon as polling stops, so a later start never shows the old numbers first.
+  if (idle && (podUsage.size > 0 || nodeUsage.size > 0)) {
+    setPodUsage(new Map())
+    setNodeUsage(new Map())
+  }
+
   useEffect(() => {
-    if (!enabled || (!wantPods && !wantNodes)) {
-      // Drop stale numbers instead of leaving the last cluster's usage on screen.
-      setPodUsage(new Map())
-      setNodeUsage(new Map())
-      return
-    }
+    if (idle) return
     let stopped = false
     let timer: ReturnType<typeof setTimeout> | undefined
 
@@ -84,7 +87,7 @@ export function useUsageMetrics({
       if (timer) clearTimeout(timer)
       document.removeEventListener('visibilitychange', onVisibility)
     }
-  }, [enabled, context, namespace, wantPods, wantNodes])
+  }, [idle, context, namespace, wantPods, wantNodes])
 
   return { podUsage, nodeUsage }
 }

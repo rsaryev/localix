@@ -21,7 +21,7 @@ import type { RunInvocation } from '../chat/runtime/execution-context'
 export interface SubsessionRunnerDeps {
   /**
    * Parent-session fields the child inherits — the route of `agentId` when the loop has an owner,
-   * else the conversation's. Null when the parent (or that participant) is gone.
+   * else the conversation's. Null when the parent (or that agent) is gone.
    */
   getParentSession: (
     userId: string,

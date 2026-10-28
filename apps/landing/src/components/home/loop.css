@@ -1,0 +1,81 @@
+/* The app as a stack: each card sticks near the top and the next slides over it, a little lower,
+   so the edges of those under it show. Words on the left, what the app shows on the right. */
+.loop {
+  padding-block: clamp(3rem, 8vw, 6rem) clamp(4rem, 10vw, 8rem);
+}
+.loop h2 {
+  margin: 0 0 clamp(2rem, 4vw, 3rem);
+  font: 700 clamp(1.875rem, 1.3rem + 2.4vw, 3rem) / 1.05 var(--font-heading);
+  letter-spacing: -0.04em;
+  text-align: center;
+}
+.loop-stack {
+  display: grid;
+  gap: clamp(1.5rem, 4vw, 3rem);
+}
+.loop-card {
+  position: sticky;
+  top: calc(1.5rem + var(--n) * 0.85rem);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+  padding: clamp(1.25rem, 3vw, 2.25rem);
+  border: 1px solid color-mix(in oklch, var(--foreground) 14%, transparent);
+  border-radius: 20px;
+  background: var(--card);
+  box-shadow: 0 -24px 60px -30px rgb(0 0 0 / 0.9);
+}
+.loop-text h3 {
+  margin: 0;
+  font: 600 clamp(1.5rem, 1.1rem + 1.6vw, 2.25rem) / 1.1 var(--font-heading);
+  letter-spacing: -0.035em;
+}
+.loop-text p {
+  max-width: 30em;
+  margin: 1rem 0 0;
+  color: var(--text-soft);
+  line-height: 1.55;
+}
+.loop-link {
+  display: inline-block;
+  margin-top: 1.25rem;
+  color: var(--foreground);
+  font-size: 0.9375rem;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklch, var(--foreground) 30%, transparent);
+  text-underline-offset: 4px;
+}
+.loop-link:hover {
+  text-decoration-color: currentColor;
+}
+/* The panel is the capture itself: 16:10, no frame or margin of its own. */
+.loop-panel {
+  align-self: center;
+  min-width: 0;
+}
+
+@media (min-width: 60rem) {
+  .loop-card {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    /* Every card the same height: the 16:10 capture sets it, and the words fit beside it. */
+    align-items: center;
+    gap: clamp(2rem, 4vw, 4rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loop-card {
+    position: relative;
+    top: 0;
+  }
+}
+.loop-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.5rem;
+  max-width: none;
+  margin: 1.25rem 0 0;
+}
+.loop-links .loop-link {
+  margin-top: 0;
+}

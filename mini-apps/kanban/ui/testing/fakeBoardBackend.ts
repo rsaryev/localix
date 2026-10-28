@@ -61,7 +61,7 @@ export function fakeBoardBackend(initial: Record<string, KanbanTask[]> = {}) {
     boards.set(sessionId, tasks)
     const id = decodeURIComponent(route.split('/')[2] ?? '')
     if (route === '/board') return reply({ version: 1, nextSeq: tasks.length + 1, tasks })
-    if (route === '/agents') return reply({ agents: [{ id: 'a1', handle: 'implementer' }] })
+    if (route === '/agents') return reply({ agents: [{ id: 'a1', name: 'implementer' }] })
     if (route === '/moves') {
       const moved = (body as { moves: KanbanMove[] }).moves.map((move) => {
         const index = tasks.findIndex((task) => task.id === move.id)

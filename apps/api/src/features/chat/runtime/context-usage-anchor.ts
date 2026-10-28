@@ -7,8 +7,6 @@ export interface ContextUsageAnchor {
   messageId: string
   /** Proof that the measured request used the same static context envelope. */
   identity?: ContextAnchorIdentity
-  /** Durable legacy proof available before full context identity was persisted. */
-  legacyProvider?: { providerId: string; modelId: string }
 }
 
 export type ContextAnchorIdentity = ChatContextAnchorIdentity
@@ -84,11 +82,7 @@ export function estimateContextFromMessages<T extends { id: string }>(
   if (
     lastUsage &&
     measuredTokens !== undefined &&
-    (contextAnchorIdentityMatches(lastUsage.identity, currentIdentity) ||
-      (lastUsage.identity === undefined &&
-        currentIdentity !== undefined &&
-        lastUsage.legacyProvider?.providerId === currentIdentity.providerId &&
-        lastUsage.legacyProvider.modelId === currentIdentity.modelId))
+    contextAnchorIdentityMatches(lastUsage.identity, currentIdentity)
   ) {
     const idx = messages.findIndex((message) => message.id === lastUsage.messageId)
     if (idx >= 0) {
@@ -97,13 +91,8 @@ export function estimateContextFromMessages<T extends { id: string }>(
         trailingTokens += estimateMessage(messages[i])
       }
       return {
-        // A full identity proves the measured usage already includes the same
-        // static floor. Legacy rows prove only provider/model; charge the FULL
-        // current floor again so changed prompts/schemas cannot undercount.
-        tokens:
-          measuredTokens +
-          trailingTokens +
-          (lastUsage.identity === undefined ? normalizeTokenCount(fixedOverheadTokens) : 0),
+        // The identity proves the measured usage already includes the same static floor.
+        tokens: measuredTokens + trailingTokens,
         source: 'provider_anchor',
         trailingTokens,
         anchorMessageId: lastUsage.messageId,
@@ -130,7 +119,7 @@ export function estimateContextFromMessages<T extends { id: string }>(
  * context size at that turn (input + output of the run's final request, set in
  * turn-state/event-handlers). The other `usage` token fields are SUMS over every
  * turn of a run (a 30-turn tool run re-bills its context each turn), so a
- * legacy row without `contextTokens` is deliberately skipped — the char
+ * row without `contextTokens` is deliberately skipped — the char
  * heuristic (items-aware) is far closer than a run-sum.
  */
 export function lastTurnContextAnchor(
@@ -152,8 +141,6 @@ export function lastTurnContextAnchor(
       const appliesToCurrentPrefix = !timestampIsKnown || timestamp >= newestPrefixTimestamp
       if (appliesToCurrentPrefix && typeof ctx === 'number' && Number.isFinite(ctx) && ctx > 0) {
         const persistedIdentity = m.payload.usage?.contextIdentity
-        const providerId = m.payload.providerMeta?.providerId
-        const modelId = m.payload.providerMeta?.modelId
         anchor = {
           tokens: Math.floor(ctx),
           messageId: m.id,
@@ -162,13 +149,6 @@ export function lastTurnContextAnchor(
             : proof?.messageId === m.id
               ? { identity: proof.identity }
               : {}),
-          ...(!persistedIdentity &&
-          typeof providerId === 'string' &&
-          providerId.length > 0 &&
-          typeof modelId === 'string' &&
-          modelId.length > 0
-            ? { legacyProvider: { providerId, modelId } }
-            : {}),
         }
       }
     }

@@ -16,7 +16,7 @@ describe('StateNotice', () => {
             <Button variant="mono" size="sm">
               Reload
             </Button>
-            <Button variant="outline" size="sm">
+            <Button variant="ghost" size="sm">
               Open in browser
             </Button>
           </>
@@ -30,7 +30,7 @@ describe('StateNotice', () => {
     expect(html).toContain('aria-label="Preview recovery actions"')
     expect(html).toContain('flex-wrap')
     expect(html).toContain('data-variant="mono"')
-    expect(html).toContain('data-variant="outline"')
+    expect(html).toContain('data-variant="ghost"')
   })
 
   test('does not render an empty action group', () => {

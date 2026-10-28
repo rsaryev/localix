@@ -1,8 +1,8 @@
 import { ConflictError, NotFoundError } from '../../../lib/domain-errors'
-import type { SeatRouteFor } from './session-route-defaults'
+import type { StartingRouteFor } from './session-route-defaults'
 import { assetBindings, type MessageAttachment } from '@localixai/agent'
 import type { ResolveSessionAgent } from './session-agent-selection'
-import { bornParticipants } from './participant-routes'
+import { bornAgent } from './session-agent-birth'
 import type { ChannelRunEvent } from '../../mini-apps/native'
 import type { createChatRepository, SessionRecord } from '../repository'
 import type { SessionStreamRegistry } from '../runtime/session-stream-registry'
@@ -74,9 +74,9 @@ export interface ExternalSessionsContext {
    * is the last place an UNATTENDED turn should be filed under.
    */
   resolveDefaultProjectId: (userId: string) => Promise<string>
-  /** How a participant is resolved and what effort it is born with — the birth path's ports. */
+  /** How an agent is resolved and what effort it is born with — the birth path's ports. */
   resolveSessionAgent?: ResolveSessionAgent
-  seatRoute?: SeatRouteFor
+  startingRoute?: StartingRouteFor
 }
 
 /**
@@ -99,12 +99,12 @@ export async function resolveExternalSession(
   if (existing) return { session: existing, created: false }
   const timestamp = ctx.now()
   const projectId = input.projectId ?? (await ctx.resolveDefaultProjectId(userId))
-  const agents = await bornParticipants({
+  const agent = await bornAgent({
     userId,
     projectId,
     host: 'chat',
     resolve: ctx.resolveSessionAgent,
-    seat: ctx.seatRoute,
+    startingRoute: ctx.startingRoute,
   })
   const created = await ctx.repo.getOrCreateExternalSession(userId, input.key, ({ seq, id }) => ({
     id,
@@ -117,11 +117,10 @@ export async function resolveExternalSession(
     rootSessionId: null,
     sessionKind: 'chat',
     // An externally-driven turn is an ordinary chat: the human on one side, the default agent
-    // on the other, seated the way every birth seats it. The channel that drove it is
-    // provenance, not a participant.
-    agents,
+    // on the other, started the way every birth routes it. The channel that drove it is
+    // provenance, not a second agent.
+    agent,
     description: null,
-    avatar: null,
     runtimeStatus: 'idle',
     sourceToolCallId: input.key,
     provenance: { kind: 'root' },

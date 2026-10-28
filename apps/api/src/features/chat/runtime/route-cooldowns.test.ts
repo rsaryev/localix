@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { addressedCooldownUntil } from './addressed-route-cooldown'
+import { sessionCooldownUntil } from './session-route-cooldown'
 import { createRouteCooldowns } from './route-cooldowns'
 
 const A = { providerConnectionId: 'conn-a', modelId: 'openai/gpt-5' }
@@ -41,28 +41,19 @@ describe('route cooldowns', () => {
   })
 })
 
-describe('the addressed participant’s cooldown', () => {
-  const seat = (agentId: string, route: typeof A) => ({
-    agentId,
-    handle: agentId,
+describe('the conversation’s cooldown', () => {
+  const agent = (route: typeof A) => ({
+    agentId: 'lead',
+    name: 'lead',
     reasoningEffort: 'medium' as const,
     ...route,
   })
-  const party = { agents: [seat('lead', A), seat('qa', B)] }
   const untilOf =
     (held: Record<string, number>) => (route: { providerConnectionId: string | null }) =>
       held[route.providerConnectionId ?? ''] ?? null
 
-  test('the addressee’s route answers, whatever the others are on', () => {
-    expect(addressedCooldownUntil(party, 'qa', untilOf({ 'conn-a': T0 }))).toBeNull()
-    expect(addressedCooldownUntil(party, 'lead', untilOf({ 'conn-a': T0 }))).toBe(T0)
-  })
-
-  test('unaddressed (or the addressee left): held only while everyone is, until the first frees', () => {
-    expect(addressedCooldownUntil(party, undefined, untilOf({ 'conn-a': T0 }))).toBeNull()
-    expect(addressedCooldownUntil(party, 'gone', untilOf({ 'conn-a': T0 }))).toBeNull()
-    expect(
-      addressedCooldownUntil(party, undefined, untilOf({ 'conn-a': T0 + 5, 'conn-b': T0 + 1 })),
-    ).toBe(T0 + 1)
+  test('the agent’s route answers', () => {
+    expect(sessionCooldownUntil({ agent: agent(A) }, untilOf({ 'conn-a': T0 }))).toBe(T0)
+    expect(sessionCooldownUntil({ agent: agent(B) }, untilOf({ 'conn-a': T0 }))).toBeNull()
   })
 })

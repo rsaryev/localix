@@ -28,6 +28,8 @@ import {
 } from './mcp-channels'
 import type { PermissionAnswerer, PermissionPrompt } from './mcp-channel-permissions'
 import * as resources from './mcp-resource-access'
+import { reconnectServer } from './mcp-reconnect'
+import * as prompts from './mcp-prompt-access'
 import type {
   McpClientManagerOptions,
   McpGatherOptions,
@@ -69,6 +71,7 @@ export {
 export function createMcpClientManager(options: McpClientManagerOptions = {}) {
   /** Set once by the composition root: this manager is a process-lifetime module singleton. */
   let connectionObserver: McpConnectionObserver | undefined
+  let promptsListener: (() => void) | undefined
   // Injected test managers stay process-local so tests cannot read or mutate the user's cache.
   const metadata = createToolMetadataStore(!options.connect)
   const channels = createChannelRouter({ random: options.random })
@@ -76,7 +79,9 @@ export function createMcpClientManager(options: McpClientManagerOptions = {}) {
     connect: options.connect ?? connectClient,
     metadata,
     startupTimeoutMs: Math.max(1, options.startupTimeoutMs ?? resolveConnectTimeoutMs()),
+    promptListTimeoutMs: options.promptListTimeoutMs,
     observer: () => connectionObserver,
+    promptsChanged: () => promptsListener,
     channels,
   })
   const { cache } = pool
@@ -241,8 +246,19 @@ export function createMcpClientManager(options: McpClientManagerOptions = {}) {
       resources.listResourceTemplates(pool, servers, cwd),
     readResource: (servers: McpServerRecord[], cwd: string, serverName: string, uri: string) =>
       resources.readResource(pool, servers, cwd, serverName, uri),
+    /** Prompts of live connections (`mcp-prompt-access.ts`); never connects. */
+    cachedPrompts: (servers: McpServerRecord[], cwd: string) =>
+      prompts.cachedPrompts(pool, servers, cwd),
+    promptsOf: (server: McpServerRecord, cwd: string) => prompts.promptsOf(pool, server, cwd),
+    getPrompt: (server: McpServerRecord, cwd: string, name: string, args: Record<string, string>) =>
+      prompts.getPrompt(pool, server, cwd, name, args),
     probe,
+    reconnect: (server: McpServerRecord, cwd: string) => reconnectServer(gatherState, server, cwd),
     disposeAll,
+    /** Called when a server's prompts appear or change; set once by the composition root. */
+    observePrompts(listener: (() => void) | undefined) {
+      promptsListener = listener
+    },
     observeConnections(observer: McpConnectionObserver | undefined) {
       connectionObserver = observer
     },

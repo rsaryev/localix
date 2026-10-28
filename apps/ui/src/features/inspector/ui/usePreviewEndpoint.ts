@@ -78,23 +78,29 @@ export function usePreviewEndpoint({
 }: PreviewEndpointOptions): PreviewEndpoint {
   const key = `${url}|${version}`
   const [resolved, setResolved] = useState<Resolved | null>(null)
-  const [resolving, setResolving] = useState(false)
-  const [failure, setFailure] = useState<Problem | null>(null)
+  // True from the start: the first read begins with the first active render, and each effect's
+  // cleanup marks the next one as pending again (see below).
+  const [resolving, setResolving] = useState(true)
+  // A failure belongs to the address it was found for, and to the ask that found it.
+  const [failed, setFailed] = useState<{ key: string; problem: Problem } | null>(null)
+  const failure = failed?.key === key ? failed.problem : null
   // Incremented to ask again for the same key (reconnect, wake, recovery action).
   const [ask, setAsk] = useState(0)
-  const refresh = useCallback(() => setAsk((n) => n + 1), [])
+  const refresh = useCallback(() => {
+    setFailed(null)
+    setAsk((n) => n + 1)
+  }, [])
 
   const isAutoServed = !!rootDir && !!servedFile
 
   useEffect(() => {
     if (!active) return
     let cancelled = false
-    setResolving(true)
-    setFailure(null)
     void resolve({ url, rootDir, servedFile })
       .then((answer) => {
         if (cancelled) return
         setResolving(false)
+        setFailed(null)
         // A re-served file came back on a new port: re-point the entry (the store bumps the
         // version, so the next effect run resolves the new key and settles there).
         if (isAutoServed && answer.url !== url) {
@@ -112,8 +118,9 @@ export function usePreviewEndpoint({
       .catch((error: unknown) => {
         if (cancelled) return
         setResolving(false)
-        setFailure(
-          isAutoServed
+        setFailed({
+          key,
+          problem: isAutoServed
             ? {
                 message: 'Could not re-serve this preview file.',
                 hint: 'The file may have moved or been deleted since the preview was opened.',
@@ -124,18 +131,20 @@ export function usePreviewEndpoint({
                 hint: 'The app’s server may be restarting; it retries once it reconnects.',
                 detail: errorMessage(error, '') || undefined,
               },
-        )
+        })
       })
+    // A new question starts from "resolving", with no failure left over from the last one.
     return () => {
       cancelled = true
+      setResolving(true)
     }
   }, [active, key, url, version, ask, rootDir, servedFile, isAutoServed, sessionId, resolve])
 
   // The API came back: whatever port it handed out before is gone with the old process.
   useEffect(() => {
     if (!active) return
-    return onReconnect(() => setAsk((n) => n + 1))
-  }, [active, onReconnect])
+    return onReconnect(refresh)
+  }, [active, onReconnect, refresh])
 
   const problem = useProblemReport(
     failure
@@ -152,7 +161,7 @@ export function usePreviewEndpoint({
     ready: resolved?.key === key,
     injectUrl: resolved?.key === key ? resolved.injectUrl : undefined,
     epoch: resolved?.epoch ?? 0,
-    resolving,
+    resolving: active && resolving,
     problem,
     refresh,
   }

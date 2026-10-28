@@ -46,7 +46,7 @@ export async function seedAnswerBoard(fixture) {
     const session = await api('/sessions', {
       title: 'Review the rendered components',
       projectId: project.id,
-      agentIds: ['builtin:localix'],
+      agentId: 'builtin:localix',
     })
     fixture.boardSessionId = session.id
   }

@@ -20,7 +20,10 @@ export type ExternalAnchorProps = Omit<
  * intercepting activation avoids dead `_blank` links in desktop webviews.
  */
 export const ExternalAnchor = forwardRef<HTMLAnchorElement, ExternalAnchorProps>(
-  ({ href, newTab = true, systemBrowser = false, onClick, onAuxClick, ...props }, ref) => {
+  (
+    { href, newTab = true, systemBrowser = false, onClick, onAuxClick, children, ...props },
+    ref,
+  ) => {
     const open = () => platformCapabilities().external.open(href, systemBrowser)
     /**
      * NO `target="_blank"` IN THE DESKTOP SHELL. Stopping propagation is not enough there: a link
@@ -70,7 +73,9 @@ export const ExternalAnchor = forwardRef<HTMLAnchorElement, ExternalAnchorProps>
         onClick={activate}
         onAuxClick={activateAux}
         {...props}
-      />
+      >
+        {children}
+      </a>
     )
   },
 )

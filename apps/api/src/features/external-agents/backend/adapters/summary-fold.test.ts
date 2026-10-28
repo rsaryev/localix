@@ -152,9 +152,9 @@ describe('append-only summary folds', () => {
       JSON.stringify({ type: 'assistant.message', data: { content: 'Done' } }),
       JSON.stringify({ type: 'user.message', data: { content: 'Thanks' } }),
     ].join('\n')
-    const fold = githubCopilotAdapter.foldSummary!
     const { stepped, whole } = await foldInSteps(
-      (ref, previous) => fold(ref, previous, { env: {}, homeDir: '/nonexistent' }),
+      (ref, previous) =>
+        githubCopilotAdapter.foldSummary!(ref, previous, { env: {}, homeDir: '/nonexistent' }),
       text,
       [text.indexOf('{"type":"tool'), text.lastIndexOf('{"type":"user')],
     )

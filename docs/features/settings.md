@@ -1,8 +1,11 @@
 # Settings
 
-Settings opens as a workspace pane. Every section shares the same layout: a grouped sidebar at wide
-pane widths and a section picker in a narrow split. Application search finds individual controls
-across sections and opens the owning group, including advanced controls.
+Settings opens as a workspace pane. Every section shares the same layout at any pane width: a search
+field above a scrollable strip of section tabs, and the section's page below them. Application
+search finds individual controls across sections and opens the owning group, including advanced
+controls.
+
+![Settings in a split beside a conversation: the section picker and the search field side by side, one strip of the same height](../assets/screenshots/settings/section-picker--2026-10-28.png)
 
 ## Settings map
 

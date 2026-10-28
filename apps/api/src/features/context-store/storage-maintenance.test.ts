@@ -63,7 +63,7 @@ describe('stored artifacts', () => {
       userId: 'u1',
       sessionId: 's1',
       toolCallId: 'c1',
-      toolName: 'bash',
+      toolName: 'Bash',
       text,
       toolInput: {},
       isError: false,
@@ -86,7 +86,7 @@ describe('stored artifacts', () => {
         user_id: 'u1',
         session_id: 's1',
         tool_call_id: 'old',
-        tool_name: 'bash',
+        tool_name: 'Bash',
         content: text,
         encoding: 'plain',
         content_z: null,
@@ -118,7 +118,7 @@ describe('orphan search sections', () => {
         userId: 'u1',
         sessionId,
         toolCallId: 'c',
-        toolName: 'bash',
+        toolName: 'Bash',
         text: 'alpha beta',
       })
     }
@@ -141,7 +141,7 @@ describe('session deletion', () => {
         userId: 'u1',
         sessionId,
         toolCallId: 'c',
-        toolName: 'bash',
+        toolName: 'Bash',
         text: 'alpha beta',
       })
     }

@@ -5,7 +5,7 @@
  * and unless the person happened to open that chat nothing told them a decision was owed. So this
  * body carries enough to decide on the spot — who presented which version, its title, the first
  * lines of its body — and the same decisions the composer strip offers: Approve ▾ (which is also
- * the mode and the agent who starts, `ApprovePlanPopover`), Set aside, or
+ * the mode, `ApprovePlanPopover`), Set aside, or
  * Open plan to read all of it first.
  * Request changes is deliberately absent: it sends the comments made ON the plan, which only
  * exist once the person has read it in its tab. So the suggested step (`planNextStep`) is Approve
@@ -49,7 +49,7 @@ export function PlanAttentionBody({
   const { busy, approve, dismiss } = usePlanDecisions(ownerId)
   const planId = item.subject.planId
   const version = item.subject.version
-  const handle = item.subject.agentHandle
+  const agentName = item.subject.agentName
   const excerpt = planExcerpt(item.summary)
   // Request changes lives in the tab, so with open comments the step is going there to send them.
   const next = planNextStep(true, openComments(usePlanComments(planId)).length)
@@ -75,7 +75,7 @@ export function PlanAttentionBody({
           <ClipboardList className="size-3.5 shrink-0 text-status-info" aria-hidden />
           <span className="truncate text-text-soft">{sessionTitle}</span>
           <span className="shrink-0 font-normal text-text-faint">
-            — {handle ? `@${handle}` : 'the agent'} presented plan
+            — {agentName ?? 'the agent'} presented plan
             {version ? ` v${version}` : ''}
           </span>
         </DialogTitle>
@@ -100,7 +100,7 @@ export function PlanAttentionBody({
           Set aside
         </Button>
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
           onClick={openPlan}
           recommended={next === 'request-changes' && busy === null}
@@ -109,13 +109,11 @@ export function PlanAttentionBody({
           <ArrowUpRight data-icon="inline-end" aria-hidden />
         </Button>
         <ApprovePlanPopover
-          ownerId={ownerId}
-          author={{ handle }}
           version={version}
           busy={busy === 'approve'}
           disabled={!planId || busy !== null}
           recommended={next === 'approve'}
-          onApprove={(mode, to) => decide((plan) => approve(plan, mode, to))}
+          onApprove={(mode) => decide((plan) => approve(plan, mode))}
         />
       </DialogFooter>
     </DialogContent>

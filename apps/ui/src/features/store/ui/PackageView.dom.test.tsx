@@ -236,4 +236,24 @@ describe('a package’s page', () => {
       await view.done()
     }
   })
+
+  test('removed elsewhere, its page says it is gone instead of still showing Installed', async () => {
+    const mine = listing({
+      id: 'tracker',
+      displayName: 'Tracker',
+      installs: [{ scope: 'user' as const, version: '1.0.0', enabled: true }],
+    })
+    const view = await renderStore({ listings: [mine], target: { ref: mine.ref } })
+    try {
+      const page = () => view.host.querySelector<HTMLElement>('[data-store-page="tracker"]')
+      expect(page()!.textContent).toContain('Installed')
+      await view.change([])
+      expect(page()).toBeNull()
+      const gone = view.host.querySelector('[role="status"][aria-label="Not in the Store"]')
+      expect(gone?.textContent).toContain('Tracker is no longer installed or offered')
+      expect(view.host.querySelector('[data-store-back]')).not.toBeNull()
+    } finally {
+      await view.done()
+    }
+  })
 })

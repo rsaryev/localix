@@ -23,6 +23,4 @@ export interface RailPlacement {
 
 export interface RailLayoutState {
   entries: RailPlacement[]
-  /** Restore former mini app overflow defaults and move built-in tools from the lower rail. */
-  legacyMiniAppPins?: boolean
 }

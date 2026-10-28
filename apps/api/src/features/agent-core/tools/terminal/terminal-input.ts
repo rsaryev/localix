@@ -1,19 +1,9 @@
 import type { TerminalToolDeps } from './terminal'
+import { sleep } from '@localixai/agent/backoff'
 import { encodeKeys } from './terminal-keys'
 
 /** Separate input bursts so text + Enter is not mistaken for pasted multiline text. */
-function pause(signal?: AbortSignal): Promise<void> {
-  if (signal?.aborted) return Promise.resolve()
-  return new Promise((resolve) => {
-    const done = () => {
-      clearTimeout(timer)
-      signal?.removeEventListener('abort', done)
-      resolve()
-    }
-    const timer = setTimeout(done, 50)
-    signal?.addEventListener('abort', done, { once: true })
-  })
-}
+const pause = (signal?: AbortSignal) => sleep(50, signal)
 
 export async function sendTerminalInput(
   deps: TerminalToolDeps,

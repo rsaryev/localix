@@ -13,7 +13,7 @@ import { runPolicyFixture } from '../../../../testing/run-policy-fixture'
 import { buildPluginsPromptContext } from './plugins-prompt-context'
 import { buildMiniAppsPromptContext } from './mini-apps-prompt-context'
 import { emptyLoadedMiniApps, type LoadedMiniApps } from '../../../mini-apps/loader-contract'
-import { routedParticipants, sessionFixture } from '../../../../testing/session-fixture'
+import { routedAgent, sessionFixture } from '../../../../testing/session-fixture'
 
 const session = (
   id: string,
@@ -116,7 +116,7 @@ describe('buildPluginsPromptContext', () => {
       ],
     } as unknown as LoadedPlugins
 
-    const out = buildPluginsPromptContext(loadedPlugins, ['skill', 'agents'])!
+    const out = buildPluginsPromptContext(loadedPlugins, ['Skill', 'agents'])!
 
     expect(out).toContain('- actionable — 1 skill')
     expect(out).not.toContain('ui-only')
@@ -153,7 +153,7 @@ describe('buildMiniAppsPromptContext', () => {
   })
 
   test('counts a deferred mini app tool as one to activate, never as direct', () => {
-    // Mini app tools wait behind `activate_tools` until the session activates them; this index
+    // Mini app tools wait behind `ToolSearch` until the session activates them; this index
     // used to call every one of them direct.
     const loadedMiniApps = {
       loaded: [
@@ -185,28 +185,30 @@ describe('buildMiniAppsPromptContext', () => {
       promptSections: [],
     } as unknown as LoadedMiniApps
 
-    const out = buildMiniAppsPromptContext(loadedMiniApps, ['tiles', 'notes', 'mini_app_guide'])!
+    const out = buildMiniAppsPromptContext(loadedMiniApps, ['tiles', 'notes', 'MiniAppGuide'])!
     expect(out).toContain('- tiles — 1 direct tool; guide')
     expect(out).toContain('- notes — 1 direct tool\n')
-    expect(out).toContain('mini_app_guide')
+    expect(out).toContain('MiniAppGuide')
     // Without the tool on the wire, a guide is nothing the model can act on.
     const without = buildMiniAppsPromptContext(loadedMiniApps, ['tiles', 'notes'])!
     expect(without).not.toContain('guide')
   })
 })
 
-describe('the run roster', () => {
-  test('the roster lists only what deferral left on the wire', () => {
+describe('the run tools', () => {
+  test('the run holds only what deferral left on the wire', () => {
     const registry = {
       tools: [],
-      toolNames: ['read', 'acme_query', 'acme_migrate'],
-      promptSection: '',
+      toolNames: ['Read', 'acme_query', 'acme_migrate'],
       ledger: new Map(),
     } as unknown as Parameters<typeof onTheWire>[0]
-    const wire = onTheWire(registry, ['read', 'acme_query', 'activate_tools'])
-    expect(wire.promptSection).toBe('# Available tools\n- read\n- acme_query\n- activate_tools')
-    expect(wire.toolNames).not.toContain('acme_migrate')
-    // No wire list (a caller outside a run) leaves the registry's own roster.
+    const wire = onTheWire(registry, [
+      { name: 'Read', modelName: 'Read' },
+      { name: 'acme_query' },
+      { name: 'ToolSearch', modelName: 'ToolSearch' },
+    ])
+    expect(wire.toolNames).toEqual(['Read', 'acme_query', 'ToolSearch'])
+    // No wire list (a caller outside a run) leaves the registry as it is.
     expect(onTheWire(registry, undefined)).toBe(registry)
   })
 
@@ -230,27 +232,27 @@ describe('the run roster', () => {
 })
 
 describe('buildRunSystemPrompt pinned skills', () => {
-  test('every participant receives the live session topic in the system prompt, including a solo chat', async () => {
+  test('the agent receives the live session topic in its runtime context', async () => {
     const chat = sessionFixture({
       title: 'Release',
       goal: 'Ship the parser.',
       previousTopicSummary: 'Keep Bun; parser tests passed.',
-      agents: ['lead', 'qa'].map((agentId) => ({
-        agentId,
-        handle: agentId,
+      agent: {
+        agentId: 'lead',
+        name: 'lead',
         modelId: '',
         providerConnectionId: null,
         reasoningEffort: 'medium',
-      })),
+      },
     })
     const agentProfile = resolveRunProfile({ sessionKind: 'chat' })
     const runtimeTools = createRuntimeToolRegistry({ policy: { agentProfile } })
-    const build = (current: SessionRecord, speakerAgentId: string) =>
+    const build = (current: SessionRecord, agentId: string) =>
       buildRunSystemPrompt({
         userId: current.userId,
         session: current,
-        speakerAgentId,
-        policy: runPolicyFixture(current, speakerAgentId),
+        agentId,
+        policy: runPolicyFixture(current),
         providerId: 'test',
         agentProfile,
         runtimeTools,
@@ -265,21 +267,21 @@ describe('buildRunSystemPrompt pinned skills', () => {
         childRuntimeSessions: new Map(),
         now: () => '2026-10-08',
       })
-    for (const agent of chat.agents) {
+    // The objective is one session's own, so it rides the tail: a system prompt that held it would
+    // differ from every other session's, and a new objective would rewrite the history after it.
+    const tailOf = (built: Awaited<ReturnType<typeof build>>) =>
+      built.runtimeSections.map((s) => s.text).join('\n')
+    for (const agent of [chat.agent!]) {
       const built = await build(chat, agent.agentId)
-      expect(built.systemPrompt).toContain(chat.goal!)
-      expect(built.systemPrompt).toContain(chat.previousTopicSummary!)
-      expect(built.runtimeSections.map((s) => s.text).join('\n')).not.toContain(
-        '# Session objective',
-      )
+      expect(tailOf(built)).toContain(chat.goal!)
+      expect(tailOf(built)).toContain(chat.previousTopicSummary!)
+      expect(built.systemPrompt).not.toContain('# Session objective')
+      expect(built.systemPrompt).not.toContain(chat.goal!)
     }
-    const next = await build(
-      { ...chat, agents: [chat.agents[0]!], goal: 'Deploy the parser.' },
-      'lead',
-    )
-    expect(next.systemPrompt).toContain('Deploy the parser.')
-    expect(next.systemPrompt).not.toContain(chat.goal!)
-    expect(next.systemPrompt).toContain(chat.previousTopicSummary!)
+    const next = await build({ ...chat, goal: 'Deploy the parser.' }, 'lead')
+    expect(tailOf(next)).toContain('Deploy the parser.')
+    expect(tailOf(next)).not.toContain(chat.goal!)
+    expect(tailOf(next)).toContain(chat.previousTopicSummary!)
   })
 
   test("a chat with no style of its own speaks in the person's default style; `default` opts out", async () => {
@@ -287,12 +289,12 @@ describe('buildRunSystemPrompt pinned skills', () => {
     const runtimeTools = createRuntimeToolRegistry({ policy: { agentProfile } })
     const build = (outputStyle: string | null) => {
       const chat = { ...sessionFixture(), outputStyle }
-      const speaker = chat.agents[0]!.agentId
+      const answeringAgent = chat.agent!.agentId
       return buildRunSystemPrompt({
         userId: chat.userId,
         session: chat,
-        speakerAgentId: speaker,
-        policy: runPolicyFixture(chat, speaker),
+        agentId: answeringAgent,
+        policy: runPolicyFixture(chat),
         providerId: 'test',
         agentProfile,
         runtimeTools,
@@ -309,19 +311,21 @@ describe('buildRunSystemPrompt pinned skills', () => {
         defaultOutputStyle: 'Explanatory',
       })
     }
-    expect((await build(null)).systemPrompt).toContain(
+    const tailOf = (built: Awaited<ReturnType<typeof build>>) =>
+      built.runtimeSections.map((section) => section.text).join('\n')
+    expect(tailOf(await build(null))).toContain(
       'This conversation uses the "Explanatory" output style.',
     )
-    expect((await build('default')).systemPrompt).not.toContain('# Output style')
+    expect(tailOf(await build('default'))).not.toContain('# Output style')
   })
 
   test('keeps inline pinned instructions when the runtime has no skill tool', async () => {
     const runtimeTools = createRuntimeToolRegistry({
       policy: { agentProfile: SHAPE.subagent },
     })
-    expect(runtimeTools.toolNames).not.toContain('skill')
+    expect(runtimeTools.toolNames).not.toContain('Skill')
     const loadedPlugins = { loaded: [], agents: [] } as unknown as LoadedPlugins
-    const agents = routedParticipants()
+    const agent = routedAgent()
     const session = {
       id: 'sub',
       sessionKind: 'subagent',
@@ -330,12 +334,12 @@ describe('buildRunSystemPrompt pinned skills', () => {
       sourceToolCallId: null,
       parentSessionId: 'root',
       provenance: { kind: 'unknown-origin' },
-      agents,
+      agent,
     } as unknown as SessionRecord
     const built = await buildRunSystemPrompt({
       userId: 'u',
       session,
-      speakerAgentId: agents[0].agentId,
+      agentId: agent.agentId,
       policy: runPolicyFixture(session),
       providerId: 'test',
       agentProfile: SHAPE.subagent,
@@ -354,8 +358,70 @@ describe('buildRunSystemPrompt pinned skills', () => {
       now: () => '2026-07-22T00:00:00.000Z',
     })
 
-    expect(built.systemPrompt).toContain('# Active skills (applied to this session)')
-    expect(built.systemPrompt).toContain('Always inspect the final diff.')
-    expect(built.systemPrompt).not.toContain('# Available skills')
+    const tail = built.runtimeSections.map((section) => section.text).join('\n')
+    expect(tail).toContain('# Active skills (applied to this session)')
+    expect(tail).toContain('Always inspect the final diff.')
+    expect(tail).not.toContain('# Available skills')
+  })
+})
+
+describe('the system prompt across two turns of one conversation', () => {
+  test('is the same bytes when only what moves under the agent has changed', async () => {
+    const agentProfile = resolveRunProfile({ sessionKind: 'chat' })
+    const runtimeTools = createRuntimeToolRegistry({ policy: { agentProfile } })
+    const chat = sessionFixture({ title: 'Release', goal: 'Ship the parser.' })
+    const answeringAgent = chat.agent!.agentId
+    const build = (volatile: Partial<Parameters<typeof buildRunSystemPrompt>[0]>) =>
+      buildRunSystemPrompt({
+        userId: chat.userId,
+        session: chat,
+        agentId: answeringAgent,
+        policy: runPolicyFixture(chat),
+        providerId: 'test',
+        agentProfile,
+        runtimeTools,
+        loadedPlugins: { loaded: [], agents: [], outputStyles: [] } as unknown as LoadedPlugins,
+        loadedMiniApps: emptyLoadedMiniApps(),
+        frozenContext: {},
+        pinnedSkills: [],
+        triggeredSkills: [],
+        contextFiles: [],
+        defaultCwd: '/tmp',
+        scratchDir: '/tmp/localix-test',
+        childRuntimeSessions: new Map(),
+        now: () => '2026-10-08',
+        ...volatile,
+      })
+    const first = await build({})
+    // A day later, a job started, a server connected, a child at work and a turn's own trigger.
+    const second = await build({
+      now: () => '2026-10-09',
+      backgroundJobs: [
+        { jobId: 'j1', command: 'bun test', startedAt: 1, output: 'ok', running: true },
+      ],
+      mcpInventory: [{ server: 'docs', tools: ['Search'] }],
+      mcpInstructions: [{ server: 'docs', text: 'Prefer search.' }],
+      descendantSessions: [
+        {
+          id: 'child',
+          userId: chat.userId,
+          parentSessionId: chat.id,
+          runtimeStatus: 'running',
+          title: 'Indexing',
+          sessionKind: 'subagent',
+        } as RunSessionSnapshotRow,
+      ],
+      triggeredSkills: [{ name: 'review', keyword: 'review', content: 'Inspect the diff.' }],
+    })
+
+    expect(second.systemPrompt).toBe(first.systemPrompt)
+    // What changed rides the turn's runtime context in the conversation, after everything cached.
+    const tail = second.runtimeSections.map((section) => section.text).join('\n')
+    expect(tail).toContain('bun test')
+    expect(tail).toContain('Indexing')
+    expect(tail).toContain('Inspect the diff.')
+    expect(first.runtimeSections.map((section) => section.text).join('\n')).not.toContain(
+      'bun test',
+    )
   })
 })

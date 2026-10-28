@@ -8,8 +8,7 @@ import { handleSkillCommand } from './command-handlers'
 import type { CommandHandlerContext } from './command-handlers-context'
 import { renderPluginPrompt } from './plugin-commands'
 import type { SkillRecord } from './skills'
-import { routedParticipants, sessionFixture } from '../../../testing/session-fixture'
-import { noLeadership } from '../runtime/conversation-strategy'
+import { routedAgent, sessionFixture } from '../../../testing/session-fixture'
 
 // skills.md, "Permission checks on injected commands": "Claude Code checks each one against your
 // permission rules first. A command a deny rule matches aborts the invocation … when a command's
@@ -19,11 +18,11 @@ const dir = tempDirPerTest('skill-perm-')
 const session = sessionFixture({
   id: 's1',
   userId: 'u1',
-  agents: routedParticipants({ providerConnectionId: 'p1', modelId: 'gpt-4o' }),
+  agent: routedAgent({ providerConnectionId: 'p1', modelId: 'gpt-4o' }),
 })
 const RULES: PermissionRule[] = [
-  { permission: 'bash', pattern: '*', action: 'ask' },
-  { permission: 'bash', pattern: 'touch *', action: 'deny', message: 'no touching' },
+  { permission: 'Bash', pattern: '*', action: 'ask' },
+  { permission: 'Bash', pattern: 'touch *', action: 'deny', message: 'no touching' },
 ]
 
 function context(content: string, allowedTools?: string[]) {
@@ -44,7 +43,7 @@ function context(content: string, allowedTools?: string[]) {
   }
   const ctx = {
     repo: { listMessages: async () => [] },
-    runner: { isBusy: () => false, isRunning: () => false, leadership: () => noLeadership },
+    runner: { isBusy: () => false, isRunning: () => false },
     now: () => 'now',
     gatherSessionSkills: async () => [skill],
     gatherEnabledPluginSkills: async () => [],

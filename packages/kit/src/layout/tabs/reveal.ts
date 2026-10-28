@@ -19,7 +19,7 @@
 // `[0, scrollWidth - clientWidth]` is what makes the FIRST and LAST item reliably
 // reachable — aiming past an end lands exactly on it instead of leaving a sliver
 // permanently clipped.
-import { useCallback, useEffect, useRef, type RefObject } from 'react'
+import { useCallback, useEffect, type RefObject } from 'react'
 
 /** Container geometry plus the target's position within the scrollable content. */
 export interface RevealMetrics {
@@ -137,17 +137,17 @@ export function useRevealActiveTab<T extends string, E extends HTMLElement>({
   activeId,
   padding,
 }: RevealActiveTabOptions<T, E>): () => void {
-  // Held in a ref so a fresh padding object per render doesn't churn the callback
-  // identity (and with it the effect below).
-  const paddingRef = useRef(padding)
-  paddingRef.current = padding
+  // Keyed by the two numbers, not the object, so a fresh padding object per render doesn't
+  // churn the callback identity (and with it the effect below).
+  const start = padding?.start
+  const end = padding?.end
 
   const reveal = useCallback(() => {
     const container = containerRef.current
     if (!container || activeId == null) return
     const item = itemRefs.current?.get(activeId)
-    if (item) revealItemInStrip(container, item, paddingRef.current)
-  }, [containerRef, itemRefs, activeId])
+    if (item) revealItemInStrip(container, item, { start, end })
+  }, [containerRef, itemRefs, activeId, start, end])
 
   useEffect(() => {
     reveal()

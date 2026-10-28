@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import type { UiSession } from '@/shared/api/contracts'
+import { turns } from '@/testing/settle'
 
 /** A preview's module cache is keyed by the tab-wide 'sessions' generation. */
 let teardown: () => Promise<void>
@@ -13,7 +14,11 @@ afterAll(async () => {
   await teardown()
 })
 
-const settle = () => new Promise((done) => setTimeout(done, 10))
+/** The resource sync schedules its read on a zero-delay timer: pass that timer, then let reads land. */
+async function settle() {
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  await turns()
+}
 
 describe('linked session previews', () => {
   test('a linked session preview is read again after the sessions topic fires', async () => {
@@ -22,12 +27,13 @@ describe('linked session previews', () => {
     const { resourceSync } = await import('@/shared/api/resourceSync')
     const { backendClient } = await import('@/shared/api/client')
     const { useLinkedSession } = await import('./useLinkedSession')
+    const sessionId = `unlisted-session-${crypto.randomUUID()}`
     let title = 'Before'
     const read = spyOn(backendClient, 'getSession').mockImplementation(
       async (id: string) => ({ id, title, messages: [] }) as unknown as UiSession,
     )
     function Preview() {
-      const linked = useLinkedSession('unlisted-session')
+      const linked = useLinkedSession(sessionId)
       return <span>{linked.state === 'ready' ? linked.session.title : linked.state}</span>
     }
     const host = document.createElement('div')

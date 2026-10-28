@@ -93,9 +93,7 @@ const EXEMPTIONS: Record<string, string> = {
   // anything is a blessing nobody can check.
   'apps/api/src/features/context-fabric/policy.ts::sep-template':
     'Matches an already-RELATIVE path against a user EXCLUSION PREFIX (a glob-ish pattern, not a root). The real root-containment check in this file goes through the owner.',
-  'apps/api/src/features/agent-core/tools/workspace.ts::sep-prefix':
-    'A SAFE_SYSTEM_PREFIXES allow-list scan (`/usr`, `/etc`, …) — dirs a token MAY name, with no root to be contained in. Its root-containment check adopted the owner (isPathWithin).',
-  'apps/api/src/features/mini-apps/backend-host.ts::sep-template':
+  'apps/api/src/features/mini-apps/backend-host-dispatch.ts::sep-template':
     'Matches an HTTP route path against a mounted URL prefix. Not a filesystem path.',
 
   // ── syntax sniffs: "does this string LOOK like a path/URL?", before anything is resolved ──
@@ -103,6 +101,10 @@ const EXEMPTIONS: Record<string, string> = {
     'Sniffs whether a marketplace `source` LOOKS like a local path (`./`, `../`, `/`, `~`) before it is resolved. The containment check in this same file goes through the owner.',
   'apps/api/src/features/agent-core/tools/preview/open-preview-detect.ts::rel-escape':
     'Sniffs whether an argument looks like a file path vs a URL. No root, nothing to contain.',
+
+  // ── a tree that cannot import the owner ──
+  'plugins/mini-app-authoring/src/lib/paths.ts::rel-escape':
+    'The mini-app-authoring plugin runs from its own source on any Bun, installed from a catalog with no dependencies, so it cannot import this package. Its copy is `path.relative` + `..` (no `startsWith(root)` trap) and its own paths.test.ts pins the sibling, root and escape cases.',
 }
 
 /**

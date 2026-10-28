@@ -22,7 +22,7 @@ async function fixture() {
       type: 'tool_call',
       status: 'completed',
       toolCallId: id,
-      name: 'browser',
+      name: 'Browser',
       activeVerb: 'Controlling browser',
       resultText: `Screenshot ${id}`,
       supersedeKey: 'browser:screenshot',

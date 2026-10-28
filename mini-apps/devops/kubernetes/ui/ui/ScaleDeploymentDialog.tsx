@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from '@localixai/kit/dialog'
 import { Button } from '@localixai/kit/button'
+import { Field } from '@localixai/kit/field'
 import { Input } from '@localixai/kit/input'
 import { kubernetesApi } from '../api/kubernetesApi'
 import { KubeApiError } from '../api/transport'
@@ -89,8 +90,7 @@ export function ScaleDeploymentDialog({
           </DialogDescription>
         </DialogHeader>
         <DialogBody className="grid gap-3">
-          <label className="grid min-w-0 gap-1.5 text-xs font-medium text-foreground">
-            Replicas
+          <Field label="Replicas">
             <Input
               type="number"
               min={0}
@@ -99,7 +99,7 @@ export function ScaleDeploymentDialog({
               onChange={(e) => setReplicas(e.target.value)}
               placeholder="1"
             />
-          </label>
+          </Field>
           {error && (
             <p role="alert" className="text-xs text-status-error">
               {error}
@@ -110,7 +110,7 @@ export function ScaleDeploymentDialog({
           <Button variant="ghost" size="sm" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
-          <Button variant="outline" size="sm" onClick={() => void scale()} disabled={busy}>
+          <Button variant="ghost" size="sm" onClick={() => void scale()} disabled={busy}>
             {busy ? 'Scaling…' : 'Scale'}
           </Button>
         </DialogFooter>

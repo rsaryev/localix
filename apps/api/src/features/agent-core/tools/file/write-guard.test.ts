@@ -24,7 +24,7 @@ const rules = projectCapabilities(
 
 /** The loop's admission order (`packages/engine-loop/src/tools/call.ts` `admitParsed`). */
 async function admit(tool: AgentTool<WriteToolInput>, root: string, input: WriteToolInput) {
-  const requestConfirm = mock(async () => false)
+  const requestConfirm = mock(async () => ({ approved: false }))
   const gate = createPermissionGate({
     rules,
     toolsByName: new Map([['write', tool as unknown as AgentTool]]),
@@ -33,7 +33,7 @@ async function admit(tool: AgentTool<WriteToolInput>, root: string, input: Write
   })
   const guard = await tool.guard?.({ toolCallId: 'c1', input })
   if (guard?.block) return { result: guard.result, requestConfirm, settledBy: 'guard' as const }
-  const verdict = await gate({ toolCallId: 'c1', toolName: 'write', input })
+  const verdict = await gate({ toolCallId: 'c1', toolName: 'Write', input })
   return { result: verdict, requestConfirm, settledBy: 'gate' as const }
 }
 

@@ -53,7 +53,7 @@ test('a run suspended on ancestry cannot register after overlapping teardown', a
   const session = sessionFixture({ id: 'child', userId: 'u', parentSessionId: 'parent' })
   const params = dispatchParams(
     { userId: 'u', session, historyMessages: [], assistantMessageId: 'assistant' },
-    { speakerAgentId: 'builtin:localix', executionContext: sessionExecutionContext(session) },
+    { executionContext: sessionExecutionContext(session) },
   )
   const pending = executeRun(env, params)
   await runtimeRunAdmission(state).quiesce(['child'], async () => {})

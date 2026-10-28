@@ -43,11 +43,3 @@ test('usage details distinguish missing data and subscription estimates', () => 
   expect(markup).toContain('Uncached input')
   expect(markup).toContain('>50<')
 })
-
-test('a single-participant session shows no per-participant breakdown', () => {
-  const markup = renderToStaticMarkup(
-    <SessionUsageIndicator usage={{ totalTokens: 10 }} sessionId="missing" />,
-  )
-  expect(markup).toContain('Total session usage')
-  expect(markup).not.toContain('By participant')
-})

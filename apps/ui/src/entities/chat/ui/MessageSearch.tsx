@@ -11,6 +11,7 @@ import {
 } from '../model/messageSearch'
 import { subscribeUiOverlay } from '@/shared/lib/uiOverlayBus'
 import { MESSAGE_SEARCH_OVERLAY_ID } from './MessageSearch.surface'
+import { focusOnMount } from './focusOnMount'
 import { FindWidgetCount, FindWidgetInput, FindWidgetSurface } from '@localixai/kit/find-widget'
 
 interface MessageSearchProps {
@@ -34,6 +35,11 @@ export function MessageSearch({ messages, sessionId }: MessageSearchProps) {
   const [query, setQuery] = useState('')
   const [index, setIndex] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
+  // The field mounts when the find bar opens, and takes the caret as it does.
+  const attachInput = useCallback((element: HTMLInputElement | null) => {
+    inputRef.current = element
+    focusOnMount(element)
+  }, [])
   const requestedQuery = useRef<string | null>(null)
 
   useEffect(
@@ -154,8 +160,7 @@ export function MessageSearch({ messages, sessionId }: MessageSearchProps) {
     <FindWidgetSurface aria-label="Find in conversation">
       <Search className="ml-1 size-3.5 shrink-0 text-text-faint" />
       <FindWidgetInput
-        ref={inputRef}
-        autoFocus
+        ref={attachInput}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onKeyDown={(e) => {

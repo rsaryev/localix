@@ -36,7 +36,7 @@ function probe(name: string, extra: Partial<AgentTool> = {}): AgentTool {
     async execute(_id, input) {
       const { id } = input as { id: string }
       log.push(`start:${id}`)
-      await Bun.sleep(15)
+      await new Promise((resolve) => setTimeout(resolve, 0)) // yield, so parallel calls overlap
       log.push(`end:${id}`)
       return { content: id }
     },
@@ -226,9 +226,10 @@ describe('guard, gate and after-hook shape the result', () => {
 
 describe('what a running tool reaches', () => {
   test('a question to a person is announced before it is asked and after it is answered', async () => {
-    let answer: (value: unknown) => void = () => {}
     const controller = {
-      request: () => new Promise((resolve) => (answer = resolve)),
+      // The person answers on a later turn, after the request was announced.
+      request: () =>
+        new Promise((resolve) => setTimeout(() => resolve({ id: 'q', approved: true }), 0)),
     } as unknown as HumanInLoopController
     const asking = probe('ask', {
       execute: async (_id, _input, _signal, _update, context) => {
@@ -240,7 +241,6 @@ describe('what a running tool reaches', () => {
         return { content: JSON.stringify(response) }
       },
     })
-    setTimeout(() => answer({ id: 'q', approved: true }), 20)
     const { events } = await runCalls([{ name: 'ask', arguments: { id: 'a' } }], {
       tools: [asking],
       toolExecutionContext: { humanInLoop: controller },

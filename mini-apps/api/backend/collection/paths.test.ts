@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import path from 'node:path'
 import {
-  LEGACY_REQUEST_EXT,
   REQUEST_EXT,
   folderOf,
   normalizeRequestName,
@@ -29,7 +28,6 @@ describe('a name is a path, and the path is the name', () => {
     ['users//list', 'users/list'],
     ['users\\list', 'users/list'],
     ['users/list.request.json', 'users/list'],
-    ['users/list.json', 'users/list'],
   ])('%p normalizes to %p', (raw, expected) => {
     expect(normalizeRequestName(raw)).toBe(expected)
   })
@@ -37,7 +35,6 @@ describe('a name is a path, and the path is the name', () => {
   test('the extension is never part of the name', () => {
     // Otherwise the logical name and either on-disk spelling could address separate requests.
     expect(normalizeRequestName('users/list')).toBe(normalizeRequestName('users/list.request.json'))
-    expect(normalizeRequestName('users/list')).toBe(normalizeRequestName('users/list.json'))
   })
 
   test('round-trips through the file path', () => {
@@ -46,11 +43,8 @@ describe('a name is a path, and the path is the name', () => {
     expect(requestNameFor(ROOT, file!)).toBe('users/list')
   })
 
-  test('reads the legacy suffix without making it the canonical write path', () => {
-    expect(requestNameFor(ROOT, path.join(ROOT, `users/list${LEGACY_REQUEST_EXT}`))).toBe(
-      'users/list',
-    )
-    expect(requestFilePath(ROOT, 'users/list')).toBe(path.join(ROOT, 'users/list.request.json'))
+  test('a plain .json file is not a request', () => {
+    expect(requestNameFor(ROOT, path.join(ROOT, 'users/list.json'))).toBeNull()
   })
 })
 

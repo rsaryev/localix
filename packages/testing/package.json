@@ -14,7 +14,7 @@
   },
   "scripts": {
     "test": "bun test src",
-    "type-check": "tsc --noEmit"
+    "type-check": "node ../../scripts/tsc.mjs --noEmit"
   },
   "devDependencies": {
     "@types/bun": "1.4.3",

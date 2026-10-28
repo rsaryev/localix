@@ -3,7 +3,7 @@ import type { ConfigReloadClass } from '@localixai/mini-app-sdk/backend'
 import type { ToolLedger } from '../../tool-ledger'
 
 /**
- * The host PORT of the `configure` tool — everything it needs from the runtime, as callbacks.
+ * The host PORT of the `Configure` tool — everything it needs from the runtime, as callbacks.
  *
  * agent-core owns the tool's shape (its actions, the HITL exchange, the per-run memory of
  * declines); it owns NO configuration kind. What can be changed, how a change is described

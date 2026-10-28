@@ -54,10 +54,13 @@ export function parseWorkflowMeta(source: string): WorkflowMetaResult {
 
 /** A reader for the JavaScript literals `meta` may hold: objects, arrays, strings, numbers. */
 class LiteralReader {
-  constructor(
-    private readonly text: string,
-    public at: number,
-  ) {}
+  private readonly text: string
+  public at: number
+
+  constructor(text: string, at: number) {
+    this.text = text
+    this.at = at
+  }
 
   value(): unknown {
     this.space()

@@ -1,5 +1,6 @@
 import type { McpServerRecord } from './repository'
 import type { McpClientLike, McpToolDef } from './mcp-wire'
+import type { McpPromptDef } from './mcp-prompts'
 import type { ToolMetadataEntry } from './mcp-tool-metadata-cache'
 
 export type McpLogger = { warn(msg: string, meta?: unknown): void }
@@ -8,6 +9,8 @@ export interface ClientConnection {
   client: McpClientLike
   /** Listed on (re)connect; re-listed in place on a `tools/list_changed` notification. */
   toolDefs: McpToolDef[]
+  /** Listed on (re)connect, and again on `prompts/list_changed`; empty for a server without any. */
+  prompts: McpPromptDef[]
   /** The server's `InitializeResult.instructions` (capped), surfaced in the prompt. */
   instructions?: string
 }
@@ -40,6 +43,8 @@ export interface McpClientManagerOptions {
   logger?: McpLogger
   /** Overall connect + discovery deadline; injectable only to keep timeout tests fast. */
   startupTimeoutMs?: number
+  /** How long a connection waits for `prompts/list` before serving without prompts. */
+  promptListTimeoutMs?: number
   /** Source of a channel permission request's id letters; injectable for tests. */
   random?: () => number
 }

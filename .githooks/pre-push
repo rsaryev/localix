@@ -1,5 +1,5 @@
 #!/bin/sh
-# Every push runs the CI gates over the whole tree; Turbo replays every unchanged package.
+# Every push checks the types of what it changes; CI runs the tests (scripts/pre-push-plan.mjs).
 
 set -e
 

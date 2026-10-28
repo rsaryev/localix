@@ -61,7 +61,7 @@ export interface BuildRunCcHooksInput {
   env: RunEnv
   userId: string
   session: SessionRecord
-  speakerAgentId: string
+  agentId: string
   params: RunParams
   catalog: RunCatalog
   /** Model this run resolved to — the fallback for a prompt hook that names none. */
@@ -78,7 +78,7 @@ export interface BuildRunCcHooksInput {
   contextFiles?: readonly { path: string }[]
   /** The run's permission mode (its policy), reported to hooks as `permission_mode`. */
   permissionMode?: PermissionMode
-  /** The speaker's reasoning effort, reported to hooks as `effort.level`. */
+  /** The agent's reasoning effort, reported to hooks as `effort.level`. */
   effort?: string
   /** Whether a person can answer this run; `false` is Claude Code's non-interactive mode. */
   interactive?: boolean
@@ -107,7 +107,7 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
     env,
     userId,
     session,
-    speakerAgentId,
+    agentId,
     params,
     catalog,
     effectiveModelId,
@@ -210,16 +210,22 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
       env,
       userId,
       session,
-      agentId: speakerAgentId,
+      agentId,
       catalog,
       effectiveModelId,
     }),
-    runAgentHook: createAgentHookRunner({ userId, session, agentId: speakerAgentId }),
+    runAgentHook: createAgentHookRunner({
+      userId,
+      session,
+      agentId,
+      catalog,
+      effectiveModelId,
+    }),
     callMcpTool: createMcpHookCaller({
       env,
       userId,
       session,
-      agentId: speakerAgentId,
+      agentId,
       loadedPlugins,
       defaultCwd,
       disabledTools,
@@ -233,7 +239,6 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
       (await env.deps.exitNotices?.arm({
         userId,
         sessionId: session.id,
-        agentId: speakerAgentId,
         source: 'hook',
       })) ?? null,
     // An `async` hook that exited 0 speaks to Claude on the session's next turn (below).

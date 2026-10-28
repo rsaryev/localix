@@ -13,7 +13,7 @@ import { resetNotificationsForTests, useNotificationsStore } from './store'
  */
 
 let stop: (() => void) | null = null
-let banners: [kind: string, title: string][] = []
+let banners: string[] = []
 
 async function live(syncRows: ReturnType<typeof inboxRow>[] = [], focused = false) {
   const socket = fakeSocket()
@@ -31,7 +31,7 @@ async function live(syncRows: ReturnType<typeof inboxRow>[] = [], focused = fals
     interruption: {
       desktop: true,
       focused: () => focused,
-      notify: (kind, title) => void banners.push([kind, title]),
+      notify: (title) => void banners.push(title),
     },
   })
   socket.connect()
@@ -84,10 +84,7 @@ describe('interrupting for a row that opens live', () => {
         }),
       ),
     )
-    expect(banners).toEqual([
-      ['run', 'Agent run failed'],
-      ['hitl', 'Approve?'],
-    ])
+    expect(banners).toEqual(['Agent run failed', 'Approve?'])
   })
 
   test('what waits on the person is decided by its category, not by a list of topics', async () => {
@@ -117,7 +114,7 @@ describe('interrupting for a row that opens live', () => {
         }),
       ),
     )
-    expect(banners).toEqual([['hitl', 'Review plan']])
+    expect(banners).toEqual(['Review plan'])
   })
 
   test('a change to a row already open — read elsewhere, repeated — is not a new interruption', async () => {
@@ -147,7 +144,7 @@ describe('interrupting for a row that opens live', () => {
         title: 'Down',
         origin: { kind: 'application' },
       },
-      { hint: { nativeKind: null } },
+      { hint: { native: false } },
     )
     socket.frame(change(10, inboxRow(key, { severity: 'error', title: 'Down', lastSeenAt: now() })))
     expect(banners).toEqual([])
@@ -198,5 +195,5 @@ test('an inactive native tab cannot mark its chat read', async () => {
   )
   expect(useNotificationsStore.getState().entries[0]!.read).toBe(false)
   expect(pendingOps().some((op) => op.op === 'read')).toBe(false)
-  expect(banners).toEqual([['hitl', 'Review plan']])
+  expect(banners).toEqual(['Review plan'])
 })

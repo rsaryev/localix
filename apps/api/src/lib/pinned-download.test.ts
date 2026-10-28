@@ -96,4 +96,56 @@ describe('downloadPinned', () => {
       downloadPinned({ name: 'model.bin', url: url('/missing'), bytes: 1, sha256: sha }, dest),
     ).rejects.toMatchObject({ code: 'http' })
   })
+
+  describe('a stalled connection', () => {
+    /** A stream that sends one chunk, then waits for the request to be aborted. */
+    function stalling(onHung: () => void): typeof fetch {
+      return (async (_url: unknown, init?: RequestInit) => {
+        let sent = false
+        const stream = new ReadableStream<Uint8Array>({
+          pull(controller) {
+            if (!sent) {
+              sent = true
+              controller.enqueue(body.slice(0, 10))
+              return
+            }
+            onHung()
+            return new Promise<void>((_, reject) => {
+              init?.signal?.addEventListener('abort', () => reject(new Error('aborted')))
+            })
+          },
+        })
+        return new Response(stream)
+      }) as unknown as typeof fetch
+    }
+
+    test('gives up with a timeout and keeps the partial file when no bytes arrive', async () => {
+      const dest = path.join(await temp(), 'model.bin')
+      const timers: Array<() => void> = []
+      let hung!: () => void
+      const reachedStall = new Promise<void>((resolve) => (hung = resolve))
+      const run = downloadPinned(
+        { name: 'model.bin', url: url('/ok'), bytes: body.length, sha256: sha },
+        dest,
+        {
+          fetchImpl: stalling(hung),
+          stallTimeoutMs: 5_000,
+          setTimer: (fn) => {
+            timers.push(fn)
+            return () => {}
+          },
+        },
+      )
+      const settled = run.then(
+        () => 'resolved',
+        (err: unknown) => err,
+      )
+      await reachedStall
+      timers.at(-1)!()
+      const err = await settled
+      expect(err).toBeInstanceOf(DownloadError)
+      expect(err).toMatchObject({ code: 'timeout' })
+      expect((await stat(`${dest}.part`)).size).toBe(10)
+    })
+  })
 })

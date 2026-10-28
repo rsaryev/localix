@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { collectHostThemeCss } from '@/shared/lib/hostThemeVars'
@@ -93,10 +93,13 @@ export function BridgedMiniAppView({
     setError(null)
   }
 
+  // `fetchHtml` is a fresh closure each render; the read it starts belongs to `fetchKey`, which
+  // encodes the mini app, view and reload it was made for.
+  const loadHtml = useEffectEvent(() => fetchHtml())
   useEffect(() => {
     if (!workItemVisible || loadedFetchKeyRef.current === fetchKey) return
     let cancelled = false
-    fetchHtml()
+    loadHtml()
       .then((content) => {
         if (!cancelled) {
           loadedFetchKeyRef.current = fetchKey
@@ -111,8 +114,6 @@ export function BridgedMiniAppView({
     return () => {
       cancelled = true
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchKey encodes mini app/view/reload
-    // identity; fetchHtml is a fresh closure each render.
   }, [workItemVisible, fetchKey])
 
   const iframeRef = useRef<HTMLIFrameElement>(null)

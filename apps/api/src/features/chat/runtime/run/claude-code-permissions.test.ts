@@ -32,7 +32,7 @@ async function gateFor(
     managed: { dir: join(root, 'managed') },
   })
   const asked: string[] = []
-  const tools = [tool('bash'), tool('read', { classify: () => ({ effect: 'read' }) })]
+  const tools = [tool('Bash'), tool('Read', { classify: () => ({ effect: 'read' }) })]
   const gate = createPermissionGate({
     rules,
     toolsByName: new Map(tools.map((t) => [t.name, t])),
@@ -40,7 +40,7 @@ async function gateFor(
     ...claudeCodeGateOptions(loaded, { homeDir: join(root, 'home'), mode }),
     requestConfirm: async (args) => {
       asked.push(args.toolName)
-      return true
+      return { approved: true }
     },
   })
   const run = (toolName: string, input: unknown) => gate({ toolCallId: 'c', toolName, input })
@@ -60,9 +60,9 @@ describe("Claude Code's permission rules in a Localix run", () => {
       },
       ALLOW_ALL,
     )
-    expect((await run('bash', { command: 'rm -rf build' }))?.block).toBe(true)
-    expect((await run('read', { path: '.env' }))?.block).toBe(true)
-    expect((await run('bash', { command: 'ls' }))?.block).toBeUndefined()
+    expect((await run('Bash', { command: 'rm -rf build' }))?.block).toBe(true)
+    expect((await run('Read', { path: '.env' }))?.block).toBe(true)
+    expect((await run('Bash', { command: 'ls' }))?.block).toBeUndefined()
   })
 
   test('an ask raises a card; a mode that stops asking lets it through', async () => {
@@ -72,10 +72,10 @@ describe("Claude Code's permission rules in a Localix run", () => {
       }),
     }
     const asking = await gateFor(tree, ALLOW_ALL)
-    expect((await asking.run('bash', { command: 'git push origin main' }))?.block).toBeUndefined()
-    expect(asking.asked).toEqual(['bash'])
+    expect((await asking.run('Bash', { command: 'git push origin main' }))?.block).toBeUndefined()
+    expect(asking.asked).toEqual(['Bash'])
     const bypass = await gateFor(tree, ALLOW_ALL, 'bypass')
-    await bypass.run('bash', { command: 'git push origin main' })
+    await bypass.run('Bash', { command: 'git push origin main' })
     expect(bypass.asked).toEqual([])
   })
 
@@ -86,13 +86,13 @@ describe("Claude Code's permission rules in a Localix run", () => {
           permissions: { allow: ['Bash(npm test *)', 'Bash(rm *)'] },
         }),
       },
-      [...ASK_ALL, { permission: 'bash', pattern: 'rm *', action: 'deny' }],
+      [...ASK_ALL, { permission: 'Bash', pattern: 'rm *', action: 'deny' }],
     )
-    expect((await run('bash', { command: 'npm test' }))?.block).toBeUndefined()
+    expect((await run('Bash', { command: 'npm test' }))?.block).toBeUndefined()
     expect(asked).toEqual([])
-    expect((await run('bash', { command: 'rm x' }))?.block).toBe(true)
-    await run('bash', { command: 'make' })
-    expect(asked).toEqual(['bash'])
+    expect((await run('Bash', { command: 'rm x' }))?.block).toBe(true)
+    await run('Bash', { command: 'make' })
+    expect(asked).toEqual(['Bash'])
   })
 
   test('Read and Edit rules guard the files a shell line names', async () => {
@@ -104,10 +104,10 @@ describe("Claude Code's permission rules in a Localix run", () => {
       },
       ALLOW_ALL,
     )
-    expect((await run('bash', { command: 'cat .env' }))?.block).toBe(true)
-    expect((await run('bash', { command: 'echo hi > src/app.ts' }))?.block).toBe(true)
-    expect((await run('bash', { command: 'sed -i s/a/b/ src/app.ts' }))?.block).toBe(true)
-    expect((await run('bash', { command: 'cat src/app.ts' }))?.block).toBeUndefined()
+    expect((await run('Bash', { command: 'cat .env' }))?.block).toBe(true)
+    expect((await run('Bash', { command: 'echo hi > src/app.ts' }))?.block).toBe(true)
+    expect((await run('Bash', { command: 'sed -i s/a/b/ src/app.ts' }))?.block).toBe(true)
+    expect((await run('Bash', { command: 'cat src/app.ts' }))?.block).toBeUndefined()
   })
 
   test('additionalDirectories count as inside the workspace', async () => {
@@ -122,9 +122,9 @@ describe("Claude Code's permission rules in a Localix run", () => {
       },
       [...ALLOW_ALL, ...outside],
     )
-    await run('read', { path: join(cwd, '../shared/notes.md') })
+    await run('Read', { path: join(cwd, '../shared/notes.md') })
     expect(asked).toEqual([])
-    await run('read', { path: join(cwd, '../elsewhere/x.md') })
-    expect(asked).toEqual(['read'])
+    await run('Read', { path: join(cwd, '../elsewhere/x.md') })
+    expect(asked).toEqual(['Read'])
   })
 })

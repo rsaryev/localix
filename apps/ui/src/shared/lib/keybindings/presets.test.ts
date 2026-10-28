@@ -77,9 +77,9 @@ describe('keymap presets', () => {
 
   it('detection is order- and token-order-independent (canonical)', () => {
     // reversed insertion order + non-canonical modifier order still matches
-    expect(
-      detectActivePreset({ [CMD.goToSymbolWorkspace]: 'shift+mod+r', [CMD.goToSymbol]: 'mod+r' }),
-    ).toBe('sublime')
+    const sublime = presetOverrides('sublime', 'mac')
+    const reversed = Object.fromEntries(Object.entries(sublime).reverse())
+    expect(detectActivePreset(reversed, undefined, 'mac')).toBe('sublime')
   })
 
   it('a hand-edit on top of a preset flips detection to Custom', () => {
@@ -124,21 +124,6 @@ describe('keymap presets', () => {
     const custom = { ...windows, [CMD.goToFile]: 'mod+9' }
     expect(resolvePresetOverrides(custom, 'jetbrains', 'mac')).toEqual(custom)
     expect(detectActivePreset(custom, 'jetbrains', 'mac')).toBe(CUSTOM_PRESET_ID)
-  })
-
-  it('retains old shipped batches and their identity until the user reapplies the preset', () => {
-    const oldSublime = { [CMD.goToSymbol]: 'mod+r', [CMD.goToSymbolWorkspace]: 'mod+shift+r' }
-    expect(resolvePresetOverrides(oldSublime, 'sublime', 'mac')).toEqual(oldSublime)
-    expect(detectActivePreset(oldSublime, 'sublime', 'mac')).toBe('sublime')
-    const oldJetBrains = {
-      [CMD.commandPalette]: 'mod+shift+a',
-      [CMD.goToFile]: 'mod+shift+n',
-      [CMD.goToSymbol]: 'mod+f12',
-      [CMD.goToSymbolWorkspace]: 'mod+alt+o',
-      [CMD.switchSession]: 'mod+e',
-    }
-    expect(resolvePresetOverrides(oldJetBrains, 'jetbrains', 'linux')).toEqual(oldJetBrains)
-    expect(detectActivePreset(oldJetBrains, 'jetbrains', 'linux')).toBe('jetbrains')
   })
 
   it('uses physical Control for terminal-editor jump history on macOS', () => {

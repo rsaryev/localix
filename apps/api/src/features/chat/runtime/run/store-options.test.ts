@@ -19,7 +19,7 @@ afterEach(async () => {
 
 const actor = {
   agentId: 'builtin:localix',
-  handle: 'localix',
+  name: 'localix',
   providerConnectionId: null,
   modelId: '',
   reasoningEffort: 'high' as const,
@@ -28,13 +28,13 @@ const actor = {
 /** The model's side: the `store` tool built the way a chat run builds it, over a real Store. */
 function setup(providers: StoreProvider[], opts: { profile?: typeof CHAT_RUN_PROFILE } = {}) {
   open = makeStore(providers)
-  const session = sessionFixture({ projectId: 'p', agents: [actor] })
+  const session = sessionFixture({ projectId: 'p', agent: actor })
   const ctx = { deps: { store: open.store } } as unknown as RuntimeToolWiringContext
   const params = {
     userId: 'u1',
     agentId: actor.agentId,
     session,
-    policy: runPolicyFixture(session, actor.agentId),
+    policy: runPolicyFixture(session),
     agentProfile: opts.profile ?? CHAT_RUN_PROFILE,
   } as Parameters<typeof buildRunToolRegistry>[1]
   const port = buildStoreOptions(ctx, params)
@@ -227,12 +227,12 @@ test('child, automation and non-root hosts never acquire the Store', () => {
 })
 
 test('a root chat gets the port only when the host composed a Store', () => {
-  const session = sessionFixture({ projectId: 'p', agents: [actor] })
+  const session = sessionFixture({ projectId: 'p', agent: actor })
   const params = {
     userId: 'u1',
     agentId: actor.agentId,
     session,
-    policy: runPolicyFixture(session, actor.agentId),
+    policy: runPolicyFixture(session),
     agentProfile: CHAT_RUN_PROFILE,
   } as Parameters<typeof buildRunToolRegistry>[1]
   const composed = { deps: { store: {} } } as unknown as RuntimeToolWiringContext

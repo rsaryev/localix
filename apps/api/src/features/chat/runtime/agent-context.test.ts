@@ -1,33 +1,40 @@
 import { expect, test } from 'bun:test'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { agentDefinitionSchema } from '@localixai/agent/agents'
 import { composeCapabilities } from '../../capabilities/resolve'
 import { emptyLoadedPlugins } from '../../plugins/loader-contract'
 import { emptyLoadedMiniApps } from '../../mini-apps/loader-contract'
-import { sessionFixture, routedParticipants } from '../../../testing/session-fixture'
+import { sessionFixture, routedAgent } from '../../../testing/session-fixture'
 import { createSessionSnapshotCache } from './session-snapshot'
 import type { FrozenSessionContext } from './frozen-session-context'
 import { prepareRunContext, type PromptContextDeps } from './prompt-context'
-import type { MemoryScope } from '../../agent-core/memory-scope-policy'
+import { claudeProjectKey } from '../../memory/auto-memory'
 
-test('per-agent skills and memory selection reach ordinary and delegated turns without leaking', async () => {
-  const cwd = await mkdtemp(join(tmpdir(), 'localix-agent-context-'))
+test('per-agent skills and the repository memory reach ordinary and delegated turns without leaking', async () => {
+  const cwd = await realpath(await mkdtemp(join(tmpdir(), 'localix-agent-context-')))
+  const home = join(cwd, 'home')
+  const memoryDir = join(home, '.claude', 'projects', claudeProjectKey(cwd), 'memory')
+  await mkdir(memoryDir, { recursive: true })
+  await writeFile(join(memoryDir, 'MEMORY.md'), '- [Role](role.md) — QA lead\n')
   try {
-    const reads: string[][] = []
+    let providerOn = false
     const snapshots = new Map<string, FrozenSessionContext>()
     const externalMemoryReads: string[] = []
+    const memoryProvider = {
+      app: 'fixture-memory',
+      provider: {
+        loadContext: async () => {
+          externalMemoryReads.push('recall')
+          return { context: 'External unscoped notes.' }
+        },
+      },
+    }
     const loadedMiniApps = {
       ...emptyLoadedMiniApps(),
-      memory: {
-        app: 'fixture-memory',
-        provider: {
-          loadContext: async () => {
-            externalMemoryReads.push('recall')
-            return { context: 'External unscoped notes.' }
-          },
-        },
+      get memory() {
+        return providerOn ? memoryProvider : null
       },
     }
     const skills = ['shared', 'alpha', 'beta', 'blocked'].map((name) => ({
@@ -39,19 +46,11 @@ test('per-agent skills and memory selection reach ordinary and delegated turns w
       dir: cwd,
     }))
     const deps = {
-      memoryRepo: {
-        listWithUsage: async (_u: string, scopes: string[]) => {
-          reads.push(scopes)
-          return {
-            notes: scopes.map((scope) => ({ key: scope || 'global', value: scope || 'global' })),
-            usage: { chars: scopes.length, limit: 100, pct: scopes.length },
-          }
-        },
-      },
+      claudeHome: home,
       projectsRepo: { getProject: async () => ({ workingDir: cwd, settings: null }) },
       pluginRepo: {},
       contextSnapshots: createSessionSnapshotCache<FrozenSessionContext>(),
-      laneSnapshots: {
+      promptSnapshots: {
         get: async (_u: string, address: unknown) => snapshots.get(JSON.stringify(address)),
         set: async (
           _u: string,
@@ -70,15 +69,15 @@ test('per-agent skills and memory selection reach ordinary and delegated turns w
         projectId: 'p',
         sessionKind,
         pinnedSkills: ['shared'],
-        agents: routedParticipants({ agentId: 'native:project:alpha', handle: 'alpha' }),
+        agent: routedAgent({ agentId: 'native:project:alpha', name: 'alpha' }),
       })
-      const prepare = (name: string, scope?: MemoryScope) => {
+      const prepare = (name: string) => {
         const agentId = `native:project:${name}`
-        session.agents = routedParticipants({ agentId, handle: name })
+        session.agent = routedAgent({ agentId, name: name })
         return prepareRunContext(deps, {
           userId: 'u',
           session,
-          speakerAgentId: agentId,
+          agentId,
           historyMessages: [],
           viewEpoch: '',
           globalAgentSettings: null,
@@ -86,13 +85,10 @@ test('per-agent skills and memory selection reach ordinary and delegated turns w
             approval: 'policy',
             definition: agentDefinitionSchema.parse({
               id: agentId,
-              handle: name,
+              name,
               description: '',
               instructions: 'Follow the task.',
-              context: {
-                preloadSkills: [name, 'shared', 'blocked'],
-                memory: scope ? { scope } : undefined,
-              },
+              skills: [name, 'shared', 'blocked'],
             }),
             capabilities: composeCapabilities([
               { action: 'skill:blocked', resource: '*', effect: 'deny' },
@@ -100,32 +96,28 @@ test('per-agent skills and memory selection reach ordinary and delegated turns w
           },
         })
       }
-      const alpha = await prepare('alpha', 'global')
+      providerOn = false
+      const alpha = await prepare('alpha')
       expect(alpha.pinnedSkills.map((skill) => skill.name)).toEqual(['shared', 'alpha'])
-      expect(reads.at(-1)).toEqual([''])
-      expect(alpha.frozenContext.memoryContext).toBe('global: global')
-      const beta = await prepare('beta', 'project')
+      expect(alpha.frozenContext).toMatchObject({
+        memoryDir,
+        memoryContext: '- [Role](role.md) — QA lead',
+        memoryClipped: false,
+      })
+      const beta = await prepare('beta')
       expect(beta.pinnedSkills.map((skill) => skill.name)).toEqual(['shared', 'beta'])
-      expect(beta.frozenContext.memoryContext).toBe('p: p')
-      const changed = await prepare('alpha', 'session')
-      expect(reads.at(-1)).toEqual([`session:${session.id}`])
-      expect(changed.frozenContext.memoryContext).toBe(
-        `session:${session.id}: session:${session.id}`,
-      )
-      expect(changed.frozenContext.memoryUsage?.chars).toBe(1)
+      expect(beta.frozenContext.memoryDir).toBe(memoryDir)
+
+      // A mini app's memory provider recalls into the same section, once per snapshot boundary
+      // (a chat's; other runs build their context fresh and keep no project memory).
+      if (sessionKind !== 'chat') continue
+      providerOn = true
       deps.contextSnapshots = createSessionSnapshotCache<FrozenSessionContext>()
-      expect((await prepare('alpha', 'session')).frozenContext).toEqual(changed.frozenContext)
-      if (sessionKind === 'chat') {
-        expect(externalMemoryReads).toEqual([])
-        expect((await prepare('alpha')).frozenContext.memoryContext).toBe(
-          'External unscoped notes.',
-        )
-        expect(externalMemoryReads).toEqual(['recall'])
-        expect((await prepare('alpha', 'session')).frozenContext.memoryContext).toBe(
-          changed.frozenContext.memoryContext,
-        )
-        expect(externalMemoryReads).toEqual(['recall'])
-      }
+      snapshots.clear()
+      const reads = externalMemoryReads.length
+      expect((await prepare('alpha')).frozenContext.memoryContext).toBe('External unscoped notes.')
+      expect((await prepare('alpha')).frozenContext.memoryContext).toBe('External unscoped notes.')
+      expect(externalMemoryReads.length).toBe(reads + 1)
     }
   } finally {
     await rm(cwd, { recursive: true, force: true })

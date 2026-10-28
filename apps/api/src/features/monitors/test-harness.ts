@@ -102,7 +102,6 @@ export async function monitorHarness(
     if (started.ok)
       work.start({
         owner,
-        agentId: 'lead',
         kind: 'monitor',
         label: started.label,
         toolCallId: owner.toolCallId,

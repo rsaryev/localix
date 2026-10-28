@@ -82,7 +82,7 @@ export interface RealtimeDeps {
     value: string,
     callerUserId?: string,
   ) => Promise<{ ok: boolean; error?: string }> | { ok: boolean; error?: string }
-  // Settle a pending `browser` tool command from the host probe's reply.
+  // Settle a pending `Browser` tool command from the host probe's reply.
   previewResult?: (
     commandId: string,
     payload: PreviewResultPayload,
@@ -693,7 +693,7 @@ export function createRealtimeRoute(deps: RealtimeDeps) {
           return
         }
         if (command.kind === 'preview-result') {
-          // The host probe finished a `browser` tool command — settle its promise.
+          // The host probe finished a `Browser` tool command — settle its promise.
           const { commandId, ok, result, error, errorCode, notEngaged, claim, release, hostId } =
             command.body
           const settled = deps.previewResult?.(

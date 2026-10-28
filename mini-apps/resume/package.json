@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "test": "bun test .",
-    "type-check": "tsc --noEmit -p tsconfig.json"
+    "type-check": "node ../../scripts/tsc.mjs --noEmit -p tsconfig.json"
   },
   "dependencies": {
     "@localixai/mini-app-sdk": "workspace:*",

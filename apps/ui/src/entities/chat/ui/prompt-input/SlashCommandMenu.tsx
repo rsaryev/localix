@@ -33,6 +33,12 @@ export interface SlashCommand {
   argSource?: { app: string; command: string }
   /** Shown first, under "Suggested" (a plugin command's manifest `featured`). */
   featured?: boolean
+  /**
+   * A row that does something when chosen instead of inserting text (a plugin that waits for its
+   * OK opens its Store page). It stands for the plugin named by its trigger, so it is offered
+   * for `/<plugin>:<anything>` as well, and never becomes the composer's active command.
+   */
+  onChoose?: () => void
 }
 
 interface SlashCommandMenuProps {

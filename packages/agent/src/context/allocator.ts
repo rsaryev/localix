@@ -83,7 +83,7 @@ function nextDowngrade(
 /**
  * @param drainLossless apply `lossless` downgrades even when already under budget.
  *   They cost ~no task value, but they are only RECOVERABLE, not free: the model
- *   pays a `tool_output` round-trip (or a full re-read) to get the bytes back.
+ *   pays a `ToolOutput` round-trip (or a full re-read) to get the bytes back.
  *   Draining them with an empty window is a pure loss, so the caller gates this on
  *   real context pressure. `false` ⇒ nothing is downgraded while cost ≤ budget.
  * @returns the chosen op index per message (0 = verbatim). Total cost is ≤ budget

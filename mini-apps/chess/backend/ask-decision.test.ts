@@ -18,7 +18,7 @@ afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true })
 })
 
-const SEAT = { userId: 'u1', sessionId: 's1' }
+const CHAT = { userId: 'u1', sessionId: 's1' }
 const AT = '2026-10-20T10:00:00.000Z'
 
 /** A decision host that answers each ask with `pick`, or with `outcome` when it misses. */
@@ -93,13 +93,13 @@ describe('against the decision model', () => {
   test('the person’s move answers at once, and the model’s pick lands after it', async () => {
     const model = decisions(() => 'e5')
     const { games, woke } = setup(model.host)
-    await games.setOpponent(SEAT, 'decision')
+    await games.setOpponent(CHAT, 'decision')
     // The request does not wait for the model: the person's move is back with the model thinking.
-    const moved = await games.personMove(SEAT, 'e2e4')
+    const moved = await games.personMove(CHAT, 'e2e4')
     expect(moved.moves.map((move) => move.san)).toEqual(['e4'])
     expect(moved.waiting).toMatchObject({ status: 'thinking' })
     await games.settled()
-    const game = await games.read(SEAT)
+    const game = await games.read(CHAT)
     expect(game.moves.map((move) => move.san)).toEqual(['e4', 'e5'])
     expect(game.moves[1]!.by).toBe('agent')
     expect(game.waiting).toBeNull()
@@ -110,71 +110,71 @@ describe('against the decision model', () => {
   test('a miss leaves the move owed, with the reason the board shows, and Ask again retries', async () => {
     let answer: string | DecisionOutcome = { status: 'unavailable', ms: 1 }
     const { games } = setup(decisions(() => answer).host)
-    await games.setOpponent(SEAT, 'decision')
-    await games.personMove(SEAT, 'e2e4')
+    await games.setOpponent(CHAT, 'decision')
+    await games.personMove(CHAT, 'e2e4')
     await games.settled()
-    const missed = await games.read(SEAT)
+    const missed = await games.read(CHAT)
     expect(missed.moves).toHaveLength(1)
     expect(missed.waiting).toMatchObject({
       status: 'unreachable',
       reason: expect.stringContaining('No decision model is connected'),
     })
     answer = 'c5'
-    await games.remind(SEAT)
+    await games.remind(CHAT)
     await games.settled()
-    expect((await games.read(SEAT)).moves.at(-1)?.san).toBe('c5')
+    expect((await games.read(CHAT)).moves.at(-1)?.san).toBe('c5')
   })
 
   test('a new table plays the decision model when one can answer, else the agent', async () => {
-    expect((await setup(decisions(() => 'e5').host).games.read(SEAT)).opponent).toBe('decision')
+    expect((await setup(decisions(() => 'e5').host).games.read(CHAT)).opponent).toBe('decision')
     const none: DecisionHost = {
       available: async () => null,
       decide: async () => ({ status: 'unavailable', ms: 0 }),
     }
-    expect((await setup(none).games.read(SEAT)).opponent).toBe('agent')
+    expect((await setup(none).games.read(CHAT)).opponent).toBe('agent')
     // A tool call cannot ask, and leaves the table to settle on the next look from the board.
-    expect((await setup().games.read(SEAT)).opponent).toBeNull()
+    expect((await setup().games.read(CHAT)).opponent).toBeNull()
   })
 
   test('a chosen opponent stays chosen', async () => {
     const { games } = setup(decisions(() => 'e5').host)
-    await games.setOpponent(SEAT, 'agent')
-    expect((await games.newGame(SEAT)).opponent).toBe('agent')
+    await games.setOpponent(CHAT, 'agent')
+    expect((await games.newGame(CHAT)).opponent).toBe('agent')
   })
 
   test('switching while the other colour owes a move asks the new opponent at once', async () => {
     const { games, woke } = setup(decisions(firstOption).host)
-    await games.setOpponent(SEAT, 'agent')
-    await games.personMove(SEAT, 'e2e4')
+    await games.setOpponent(CHAT, 'agent')
+    await games.personMove(CHAT, 'e2e4')
     expect(woke).toHaveLength(1)
-    await games.setOpponent(SEAT, 'decision')
+    await games.setOpponent(CHAT, 'decision')
     await games.settled()
-    const game = await games.read(SEAT)
+    const game = await games.read(CHAT)
     expect(game.moves).toHaveLength(2)
     expect(game.opponent).toBe('decision')
   })
 
   test('the opponent carries to the next game, and the agent cannot move or resign for the model', async () => {
     const { games } = setup(decisions(firstOption).host)
-    await games.setOpponent(SEAT, 'decision')
-    await games.personMove(SEAT, 'e2e4')
+    await games.setOpponent(CHAT, 'decision')
+    await games.personMove(CHAT, 'e2e4')
     await games.settled()
     // The next game gives the person black, so the model opens it at once.
-    await games.newGame(SEAT)
+    await games.newGame(CHAT)
     await games.settled()
-    const next = await games.read(SEAT)
+    const next = await games.read(CHAT)
     expect(next.opponent).toBe('decision')
     expect(next.moves).toHaveLength(1)
-    await expect(games.agentMove(SEAT, 'e7e5')).rejects.toThrow(
+    await expect(games.agentMove(CHAT, 'e7e5')).rejects.toThrow(
       'The decision model plays your side',
     )
-    await expect(games.agentResign(SEAT)).rejects.toThrow('The decision model plays your side')
+    await expect(games.agentResign(CHAT)).rejects.toThrow('The decision model plays your side')
   })
 
   test('a new game the agent opens against the model lets the user play white', async () => {
     const { games } = setup(decisions(firstOption).host)
-    await games.setOpponent(SEAT, 'decision')
-    const game = await games.agentNewGame(SEAT, 'black')
+    await games.setOpponent(CHAT, 'decision')
+    const game = await games.agentNewGame(CHAT, 'black')
     expect(game.you).toBe('white')
     expect(game.moves).toEqual([])
   })

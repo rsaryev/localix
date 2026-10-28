@@ -2,7 +2,7 @@
  * THE SOURCES OF ATTENTION — each kind's seam, turned into items on the one registry.
  *
  * Each adapter keeps the interface its seam already calls (the HITL registry's `lifecycle`, the
- * handoff's mention and the turn entry's reply, the plans
+ * turn entry's reply, the plans
  * service's lifecycle port), so moving the journal rows behind the registry changed no seam. What
  * an adapter decides is only the item: its key, its title, what it summarises. The item builders
  * for the durable kinds are exported because a boot rebuilds those items from their own rows
@@ -78,7 +78,7 @@ export interface UserMentioned {
   userId: string
   sessionId: string
   messageId: string
-  /** Who asked, by handle ('' when the author has none). */
+  /** Who asked, by name ('' when the author has none). */
   from: string
   /** What they asked, already trimmed to a notice by the producer. */
   text?: string
@@ -108,7 +108,7 @@ export function mentionAttention(registry: AttentionRegistry): MentionAttention 
         ...(text ? { summary: text } : {}),
         subject: {
           messageId: mention.messageId,
-          ...(mention.from ? { agentHandle: mention.from } : {}),
+          ...(mention.from ? { agentName: mention.from } : {}),
         },
       })
     },
@@ -131,7 +131,7 @@ const excerpt = (body: string): string => {
 
 export function planItem(
   plan: Pick<SessionPlan, 'id' | 'sessionId' | 'version' | 'title' | 'body' | 'createdAt'>,
-  authorHandle: string | null,
+  authorName: string | null,
 ): AttentionItem {
   return {
     key: planAttentionKey(plan.sessionId, plan.id),
@@ -143,14 +143,14 @@ export function planItem(
     subject: {
       planId: plan.id,
       version: plan.version,
-      ...(authorHandle ? { agentHandle: authorHandle } : {}),
+      ...(authorName ? { agentName: authorName } : {}),
     },
   }
 }
 
 export interface PlanAttention {
   /** A version waits on the person; every older waiting version of the conversation is superseded. */
-  awaiting(userId: string, plan: SessionPlan, authorHandle: string | null): void
+  awaiting(userId: string, plan: SessionPlan, authorName: string | null): void
   /** A version (or, with `null`, every version of the root) stopped waiting. */
   settled(
     userId: string,
@@ -162,9 +162,9 @@ export interface PlanAttention {
 
 export function planAttention(registry: AttentionRegistry): PlanAttention {
   return {
-    awaiting(userId, plan, authorHandle) {
+    awaiting(userId, plan, authorName) {
       registry.settle(userId, { prefix: planAttentionPrefix(plan.sessionId) }, 'superseded')
-      registry.raise(userId, planItem(plan, authorHandle))
+      registry.raise(userId, planItem(plan, authorName))
     },
     settled(userId, rootSessionId, planId, reason) {
       registry.settle(
@@ -189,7 +189,7 @@ export function restoreDurableAttention(
   registry: AttentionRegistry,
   sources: {
     plans: readonly PlanRecord[]
-    /** The presenting participant's handle, by plan id — the live item names it too. */
+    /** The presenting agent's name, by plan id — the live item names it too. */
     planAuthors?: ReadonlyMap<string, string>
   },
 ): void {
@@ -209,14 +209,14 @@ export async function rebuildDurableAttention(
     getSession: (
       userId: string,
       sessionId: string,
-    ) => Promise<{ agents: readonly { agentId: string; handle: string }[] } | null>
+    ) => Promise<{ agent: { agentId: string; name: string } | null } | null>
   },
 ): Promise<void> {
   const planAuthors = new Map<string, string>()
   for (const plan of sources.plans) {
     const root = await sources.getSession(plan.userId, plan.sessionId).catch(() => null)
-    const handle = root?.agents.find((member) => member.agentId === plan.authorAgentId)?.handle
-    if (handle) planAuthors.set(plan.id, handle)
+    const name = root?.agent?.name
+    if (name) planAuthors.set(plan.id, name)
   }
   restoreDurableAttention(registry, { ...sources, planAuthors })
 }

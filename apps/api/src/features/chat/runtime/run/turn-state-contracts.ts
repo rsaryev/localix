@@ -1,4 +1,5 @@
 /** Type-only state and telemetry contracts for one agent run. */
+import type { ChatLastRequestUsage } from '@localixai/agent'
 import type { AgentStopReason } from '@localixai/agent/agents'
 import type { MessageTiming } from '../../contracts'
 import type { StoredMessagePayload } from '../../../../db'
@@ -73,6 +74,8 @@ export interface RunTurnState {
    * decision (`model-view/view.ts`) and admission estimate anchor on it.
    */
   lastTurnContextTokens: number | undefined
+  /** The same turn's request by kind (persisted as `usage.lastRequest`). */
+  lastTurnUsage: ChatLastRequestUsage | undefined
   /**
    * Pre-call estimate of the FIRST request of this run, with its provenance. Set by
    * the caller that computed it; compared once against the provider's real count.

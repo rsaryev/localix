@@ -120,7 +120,10 @@ describe('buildChartSnapshot — never-opened tab reads PER-TAB prefs', () => {
 
   test("a never-opened tab reports its OWN per-tab chart type + indicators, not another tab's", () => {
     store.setItem(`localix.trading.chartType:${TAB}`, JSON.stringify('line'))
-    store.setItem(`localix.trading.indicators:${TAB}`, JSON.stringify(['ema:200']))
+    store.setItem(
+      `localix.trading.indicators:${TAB}`,
+      JSON.stringify({ v: 2, items: [{ id: 'ema:200' }] }),
+    )
     // A different tab's prefs must not bleed into this one's snapshot.
     store.setItem('localix.trading.chartType:trading:chart:c1:ETH', JSON.stringify('bars'))
     const snap = buildChartSnapshot(CHAT, TAB, CONN, SYMBOL, store)
@@ -128,13 +131,5 @@ describe('buildChartSnapshot — never-opened tab reads PER-TAB prefs', () => {
     expect(snap.chartType).toBe('line')
     expect(snap.indicators).toEqual(['ema:200'])
     expect(parseChartSnapshotResult(snap)).toEqual(snap)
-  })
-
-  test('with no per-tab entry it falls back to the legacy GLOBAL seed', () => {
-    store.setItem('localix.trading.chartType', JSON.stringify('area'))
-    store.setItem('localix.trading.indicators', JSON.stringify(['rsi:14']))
-    const snap = buildChartSnapshot(CHAT, TAB, CONN, SYMBOL, store)
-    expect(snap.chartType).toBe('area')
-    expect(snap.indicators).toEqual(['rsi:14'])
   })
 })

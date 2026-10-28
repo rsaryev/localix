@@ -7,17 +7,14 @@ import type { ModelRoutingTaskKey } from '@localixai/api/client'
  *
  *   - A WORKLOAD (`titleGeneration`, …) is a global route stored under
  *     `agentSettings.modelRouting`. There is a fixed catalog of them.
- *   - A PARTICIPANT of the open conversation is stored on that conversation, as the route of
- *     one agent inside it. There is no catalog: the party is whatever the session says it is.
+ *   - The AGENT of the open conversation is stored on that conversation, as the route of its one
+ *     agent.
  *
- * The participant case is spelled `agent:<id>`. The route update is keyed by agent ID;
- * the display handle must never be passed as that ID. The prefix keeps targets distinct
- * from workload keys, which are bare words.
- *
- * Nothing here knows a particular handle, or whether the conversation has one participant or
- * seven. A private chat is a party of one, not a special case.
+ * The agent case is spelled `agent:<id>`. The route update is keyed by agent ID; the display
+ * handle must never be passed as that ID. The prefix keeps targets distinct from workload keys,
+ * which are bare words.
  */
-export type PickerTarget = ModelRoutingTaskKey | `agent:${string}` | 'party'
+export type PickerTarget = ModelRoutingTaskKey | `agent:${string}`
 
 const AGENT_PREFIX = 'agent:'
 
@@ -28,12 +25,7 @@ export function targetAgentId(target: PickerTarget): string | null {
   return target.startsWith(AGENT_PREFIX) ? target.slice(AGENT_PREFIX.length) : null
 }
 
-/**
- * Does this target write to the conversation rather than to global settings?
- *
- * The predicate the routing hook branches on. It replaces a `key === 'session'` check that
- * could only ever describe a chat with one counterpart.
- */
+/** Does this target write to the conversation rather than to global settings? */
 export const isAgentTarget = (target: PickerTarget): boolean => targetAgentId(target) !== null
 
 /**
@@ -43,19 +35,17 @@ export const isAgentTarget = (target: PickerTarget): boolean => targetAgentId(ta
  * and the routes record has no assignment to store for it.
  */
 export function workloadKey(target: PickerTarget): Exclude<ModelRoutingTaskKey, 'session'> | null {
-  if (isAgentTarget(target) || target === 'session' || target === 'party') return null
+  if (isAgentTarget(target) || target === 'session') return null
   return target as Exclude<ModelRoutingTaskKey, 'session'>
 }
 
-/** Legacy workload bucket; named agents use agentModelSettings instead. */
+/** The workload bucket a reasoning level is remembered under; named agents share `session`. */
 export function reasoningMemoryKey(target: PickerTarget): ModelRoutingTaskKey {
-  return isAgentTarget(target) || target === 'party' ? 'session' : (target as ModelRoutingTaskKey)
+  return isAgentTarget(target) ? 'session' : (target as ModelRoutingTaskKey)
 }
 
 export type ModelPickDestination =
   | { kind: 'conversation'; agentId?: string }
-  /** Every participant of the conversation at once (`partyRoute.ts`). */
-  | { kind: 'party' }
   | { kind: 'workload'; key: Exclude<ModelRoutingTaskKey, 'session'> }
 
 /**
@@ -69,21 +59,12 @@ export function modelPickDestination(target: PickerTarget): ModelPickDestination
   const agentId = targetAgentId(target)
   if (agentId !== null) return { kind: 'conversation', agentId }
   if (target === 'session') return { kind: 'conversation' }
-  if (target === 'party') return { kind: 'party' }
   const key = workloadKey(target)
   if (!key) throw new Error(`Picker target has no persistence strategy: ${target}`)
   return { kind: 'workload', key }
 }
 
-/**
- * The row the picker opens on: the participant the composer shows, else the first seat, else the
- * conversation itself. A pick that has left the roster falls back rather than opening on nobody.
- */
-export function initialPickerTarget(
-  participants: readonly { agentId: string }[],
-  initialAgentId?: string | null,
-): PickerTarget {
-  const initial =
-    participants.find((member) => member.agentId === initialAgentId) ?? participants[0]
-  return initial ? agentTarget(initial.agentId) : 'session'
+/** The row the picker opens on: the conversation's agent, else the conversation itself. */
+export function initialPickerTarget(agent: { agentId: string } | undefined): PickerTarget {
+  return agent ? agentTarget(agent.agentId) : 'session'
 }

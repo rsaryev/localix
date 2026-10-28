@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useId, useState } from 'react'
 import { AlertTriangle, PlugZap } from 'lucide-react'
 
 import type { SecretBinding, SecretMeta } from '@localixai/api/client'
@@ -46,9 +46,15 @@ export function VaultDeleteDialogBody({
     { scope: VAULT_PROBLEM_SCOPE, sourceVisible: true },
   )
 
-  useEffect(() => {
-    if (open) setConfirmation('')
-  }, [open, item?.key])
+  // Each opening of the dialog, and each item it is opened on, starts with an empty confirmation:
+  // reset while rendering, when the (open, item) pair it was typed for changes.
+  const sessionKey = open ? (item?.key ?? '') : null
+  const [typedFor, setTypedFor] = useState(sessionKey)
+  if (typedFor !== sessionKey) {
+    setTypedFor(sessionKey)
+    setConfirmation('')
+  }
+  const confirmationId = useId()
 
   const inUse = bindings.length > 0
   const confirmed = !inUse || confirmation === item?.key
@@ -98,11 +104,12 @@ export function VaultDeleteDialogBody({
                 ))}
               </ul>
             </div>
-            <label className="grid gap-1.5">
+            <label htmlFor={confirmationId} className="grid gap-1.5">
               <span>
                 Type <code className="font-mono text-foreground">{item?.key}</code> to confirm
               </span>
               <Input
+                id={confirmationId}
                 size="lg"
                 value={confirmation}
                 spellCheck={false}
@@ -121,7 +128,7 @@ export function VaultDeleteDialogBody({
       </DialogBody>
 
       <DialogFooter>
-        <Button variant="outline" onClick={() => onOpenChange(false)} disabled={deleting}>
+        <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={deleting}>
           Cancel
         </Button>
         <Button

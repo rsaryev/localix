@@ -3,6 +3,7 @@ import type { MessageContextBindingDraft } from '@localixai/mini-app-sdk/ui'
 import { createMessageBindingDraft } from '@localixai/mini-app-sdk/ui/message-binding-drag'
 import type { UiSession } from '@/shared/api/contracts'
 import { registerDom } from '@localixai/kit/testing/dom'
+import { turns } from '@/testing/settle'
 
 /**
  * A link dropped outside the chat (a mini app's board) is drawn by the host from the conversation
@@ -24,7 +25,7 @@ const session = {
   projectId: 'p1',
   runtimeStatus: 'completed',
   isRunning: false,
-  agents: [{ handle: 'dev', modelId: 'claude-opus-5-5' }],
+  agent: { handle: 'dev', modelId: 'claude-opus-5-5' },
   updatedAt: Date.now() - 3 * 60_000,
   messages: [
     { id: 'm1', role: 'user', content: 'Why does login loop?', items: [] },
@@ -38,7 +39,7 @@ const session = {
           type: 'tool_call',
           status: 'completed',
           toolCallId: 'call-read-1',
-          name: 'read',
+          name: 'Read',
           activeVerb: 'Reading',
           input: { path: '/repo/src/login.ts' },
         },
@@ -68,7 +69,7 @@ async function mount(binding: MessageContextBindingDraft) {
       </MemoryRouter>,
     ),
   )
-  await act(async () => new Promise((resolve) => setTimeout(resolve, 20)))
+  await act(async () => turns())
   return {
     text: () => host.textContent ?? '',
     host,

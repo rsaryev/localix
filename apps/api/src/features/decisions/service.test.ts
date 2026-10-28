@@ -12,7 +12,7 @@ const ask: DecisionAsk = {
     next: { type: 'choice', instructions: 'Who?', criteria: { lawyer: 'Law.', design: 'Looks.' } },
   },
 }
-const options = { purpose: 'routing', sessionId: 's1' }
+const options = { purpose: 'goal-check', sessionId: 's1' }
 
 function service(decide?: ResolvedDecider['decide'] | null) {
   const asked: DecisionRequest[] = []
@@ -49,7 +49,7 @@ describe('the decision service', () => {
   test('answers with the default model, records the spend, logs without the state', async () => {
     const { decisions, ledger, records } = service()
     expect(await decisions.available('u1')).toEqual({ model: MODEL })
-    const outcome = await decisions.decide('u1', ask, { ...options, usageKind: 'routing' })
+    const outcome = await decisions.decide('u1', ask, { ...options, usageKind: 'decision' })
     expect(outcome).toMatchObject({
       status: 'answered',
       model: MODEL,
@@ -61,11 +61,11 @@ describe('the decision service', () => {
         sessionId: 's1',
         model: MODEL,
         providerConnectionId: 'or-connection',
-        kind: 'routing',
+        kind: 'decision',
       }),
     ])
     expect(records).toEqual([
-      expect.objectContaining({ purpose: 'routing', status: 'answered', questions: ['next'] }),
+      expect.objectContaining({ purpose: 'goal-check', status: 'answered', questions: ['next'] }),
     ])
     expect(JSON.stringify(records)).not.toContain('photos')
   })
@@ -113,7 +113,11 @@ describe('the decision service', () => {
   })
 
   test('the caller’s signal cancels, before and during the call', async () => {
-    const { decisions, asked } = service(() => new Promise(() => {}))
+    const reached = Promise.withResolvers<void>()
+    const { decisions, asked } = service(() => {
+      reached.resolve()
+      return new Promise(() => {})
+    })
     const before = new AbortController()
     before.abort()
     expect(await decisions.decide('u1', ask, { ...options, signal: before.signal })).toMatchObject({
@@ -123,7 +127,7 @@ describe('the decision service', () => {
 
     const during = new AbortController()
     const pending = decisions.decide('u1', ask, { ...options, signal: during.signal })
-    await Bun.sleep(5)
+    await reached.promise
     during.abort()
     expect(await pending).toMatchObject({ status: 'cancelled' })
     expect(asked[0]!.signal?.aborted).toBe(true)

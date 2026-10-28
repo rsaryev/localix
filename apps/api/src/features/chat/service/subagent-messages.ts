@@ -45,13 +45,8 @@ const parentOf = (session: SessionRecord): string =>
     ? session.provenance.parentSessionId
     : (session.parentSessionId ?? session.id)
 
-/** Who the child reports to: its delegator's session, and the participant who delegated. */
-const delegatorOf = (session: SessionRecord) => ({
-  sessionId: parentOf(session),
-  ...(session.provenance.kind === 'task-delegation' && session.provenance.parentParticipant
-    ? { participant: session.provenance.parentParticipant }
-    : {}),
-})
+/** Who the child reports to: its delegator's session. */
+const delegatorOf = (session: SessionRecord) => ({ sessionId: parentOf(session) })
 
 /** The task's priority as delegated; a child from before priorities is `normal`. */
 const priorityOf = (session: SessionRecord): DelegationPriority =>

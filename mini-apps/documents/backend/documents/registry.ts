@@ -38,10 +38,6 @@ const EXT_TO_FORMAT: Record<string, DocumentFormat> = {
   xls: 'xlsx',
   xlsm: 'xlsx',
   xlsb: 'xlsx',
-  // Media ids minted BEFORE the media store learned the legacy Office types kept
-  // the raw subtype as their extension — tolerate them so an already-dropped
-  // file keeps extracting.
-  msword: 'doc',
   pdf: 'pdf',
   odt: 'odt',
   csv: 'csv',

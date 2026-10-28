@@ -227,6 +227,17 @@ describe('normalizeMcpServerEntry', () => {
       ).toThrow(/callbackPort/)
     })
 
+    it('keeps the headers of a web socket server', () => {
+      for (const type of ['ws', 'websocket']) {
+        const ws = normalizeMcpServerEntry(
+          'w',
+          { type, url: 'wss://x/socket', headers: { Authorization: 'Bearer t' } },
+          null,
+        )
+        expect(ws.config).toHaveProperty('headers', { Authorization: 'Bearer t' })
+      }
+    })
+
     it('does not carry a headersHelper onto a web socket or stdio server', () => {
       const ws = normalizeMcpServerEntry(
         'w',

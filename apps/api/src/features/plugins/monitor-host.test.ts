@@ -110,8 +110,16 @@ const ARM_WATCH = {
   monitorName: 'watch',
 } as const
 
-async function waitFor(pred: () => boolean, ms = 2000): Promise<void> {
-  for (let i = 0; i < ms / 15 && !pred(); i++) await new Promise((r) => setTimeout(r, 15))
+/**
+ * Conditions whose `monitorStopped` settles `drained`: a spawner that is not `keepOpen` ends its
+ * output after the last line, and the host reports the stop only once every line was handled.
+ */
+function drainSignal() {
+  const drained = Promise.withResolvers<void>()
+  return {
+    drained: drained.promise,
+    conditions: { monitorStarted: () => {}, monitorStopped: () => drained.resolve() },
+  }
 }
 
 let dir: string
@@ -340,20 +348,24 @@ describe('monitor host lifecycle + delivery', () => {
   it('spawns when:always monitors, streams lines to the deliver seam, and stops', async () => {
     const notes: MonitorNotification[] = []
     const killed = { count: 0 }
+    const third = Promise.withResolvers<void>()
     const host = createPluginMonitorHost({
       availabilityFor: async () => on('always-mon'),
       repo: fakeRepo([state('always-mon')]),
       userId: 'u1',
       cwd: dir,
       homeDir: dir,
-      deliver: (n) => notes.push(n),
+      deliver: (n) => {
+        notes.push(n)
+        if (notes.length >= 3) third.resolve()
+      },
       spawn: fakeSpawner({ lines: ['one\n', 'two\nthree\n'], killed, keepOpen: true }),
     })
 
     expect(await host.arm(ARM_WATCH)).toEqual({ status: 'armed' })
     await host.start()
     expect(host.running()).toEqual(['always-mon:watch'])
-    await waitFor(() => notes.length >= 3)
+    await third.promise
     expect(notes.map((n) => n.line)).toEqual(['one', 'two', 'three'])
     expect(notes[0]).toMatchObject({
       pluginName: 'always-mon',
@@ -456,6 +468,7 @@ describe('monitor host lifecycle + delivery', () => {
     const notes: MonitorNotification[] = []
     const long = 'x'.repeat(5000)
     const lines = Array.from({ length: 30 }, (_, i) => (i === 0 ? `${long}\n` : `line${i}\n`))
+    const { drained, conditions } = drainSignal()
     const host = createPluginMonitorHost({
       availabilityFor: async () => on('always-mon'),
       repo: fakeRepo([state('always-mon')]),
@@ -464,13 +477,14 @@ describe('monitor host lifecycle + delivery', () => {
       homeDir: dir,
       deliver: (n) => notes.push(n),
       now: () => 1000,
-      spawn: fakeSpawner({ lines, keepOpen: true }),
+      spawn: fakeSpawner({ lines }),
+      conditions,
     })
     await host.arm(ARM_WATCH)
     await host.start()
-    await waitFor(() => notes.length >= 20, 1000)
-    // Give any (incorrect) extra deliveries a chance to land, then assert the cap held.
-    await new Promise((r) => setTimeout(r, 50))
+    // The output ends after the last line, so the stop report means every line was handled
+    // and any (incorrect) extra delivery has already landed.
+    await drained
     expect(notes.length).toBe(20)
     expect(notes[0].line.endsWith('… [truncated]')).toBe(true)
     expect(notes[0].line.length).toBeLessThan(long.length)
@@ -479,11 +493,14 @@ describe('monitor host lifecycle + delivery', () => {
 
   it('reports a monitor that dies as a condition, and not one the host stopped', async () => {
     const events: string[] = []
+    const died = Promise.withResolvers<void>()
     const conditions = {
       monitorStarted: (plugin: string, monitor: string) =>
         events.push(`started ${plugin}/${monitor}`),
-      monitorStopped: (plugin: string, monitor: string, detail: string) =>
-        events.push(`stopped ${plugin}/${monitor}: ${detail}`),
+      monitorStopped: (plugin: string, monitor: string, detail: string) => {
+        events.push(`stopped ${plugin}/${monitor}: ${detail}`)
+        died.resolve()
+      },
     }
     // Output ends on its own: the command exited.
     const dying = createPluginMonitorHost({
@@ -497,7 +514,7 @@ describe('monitor host lifecycle + delivery', () => {
       conditions,
     })
     await dying.start()
-    await waitFor(() => events.length >= 2)
+    await died.promise
     expect(events).toEqual([
       'started always-mon/watch',
       'stopped always-mon/watch: Its command exited with code 0.',
@@ -518,7 +535,6 @@ describe('monitor host lifecycle + delivery', () => {
     })
     await stopped.start()
     await stopped.stop()
-    await new Promise((r) => setTimeout(r, 30))
     expect(events).toEqual(['started always-mon/watch'])
   })
 })
@@ -528,6 +544,7 @@ describe('monitor host targeting — a line wakes only the sessions it was armed
     notes: MonitorNotification[],
     unaddressed: string[],
     lines = ['one\n', 'two\n', 'three\n'],
+    drain?: ReturnType<typeof drainSignal>['conditions'],
   ) =>
     createPluginMonitorHost({
       availabilityFor: async () => on('always-mon'),
@@ -538,17 +555,18 @@ describe('monitor host targeting — a line wakes only the sessions it was armed
       deliver: (n) => notes.push(n),
       unaddressed: (n) => unaddressed.push(n.line),
       now: () => 1000,
-      spawn: fakeSpawner({ lines, keepOpen: true }),
+      spawn: fakeSpawner({ lines, keepOpen: !drain }),
+      conditions: drain,
     })
 
   it('delivers a line nobody armed to no one, and reports the silence once', async () => {
     // The old wiring woke every root chat of the user for each of these lines.
     const notes: MonitorNotification[] = []
     const unaddressed: string[] = []
-    const h = host(notes, unaddressed)
+    const { drained, conditions } = drainSignal()
+    const h = host(notes, unaddressed, undefined, conditions)
     await h.start()
-    await waitFor(() => unaddressed.length >= 1)
-    await new Promise((r) => setTimeout(r, 30))
+    await drained
     expect(notes).toEqual([])
     expect(unaddressed).toEqual(['one'])
     await h.stop()
@@ -556,12 +574,13 @@ describe('monitor host targeting — a line wakes only the sessions it was armed
 
   it('carries exactly the armed sessions, and drops one that is disarmed', async () => {
     const notes: MonitorNotification[] = []
-    const h = host(notes, [], ['one\n'])
+    const { drained, conditions } = drainSignal()
+    const h = host(notes, [], ['one\n'], conditions)
     await h.arm(ARM_WATCH)
     await h.arm({ ...ARM_WATCH, sessionId: 'chat-2' })
     h.disarm({ ...ARM_WATCH, sessionId: 'chat-2' })
     await h.start()
-    await waitFor(() => notes.length >= 1)
+    await drained
     expect(notes.map((n) => n.sessionIds)).toEqual([['chat-1']])
     await h.stop()
   })

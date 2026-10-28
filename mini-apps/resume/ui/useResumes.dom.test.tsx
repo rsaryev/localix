@@ -23,7 +23,7 @@ afterAll(async () => {
 })
 
 test('dirty editor survives remote edits, merges independent fields, saves, and recovers unfinished input after remount', async () => {
-  const { act } = await import('react')
+  const { act, useEffect } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { useResumes } = await import('./useResumes')
   const folder = await mkdtemp(join(tmpdir(), 'resume-editor-'))
@@ -42,8 +42,11 @@ test('dirty editor survives remote edits, merges independent fields, saves, and 
   })
   let hook!: ReturnType<typeof useResumes>
   function Probe() {
-    hook = useResumes(true, 'session', created.id)
-    return <p>{hook.draft?.header.name}</p>
+    const value = useResumes(true, 'session', created.id)
+    useEffect(() => {
+      hook = value
+    })
+    return <p>{value.draft?.header.name}</p>
   }
   const host = document.createElement('div')
   document.body.append(host)
@@ -99,7 +102,7 @@ test('dirty editor survives remote edits, merges independent fields, saves, and 
 })
 
 test('same-field conflict never silently chooses a writer and local Undo/Redo survives an unchanged refresh', async () => {
-  const { act } = await import('react')
+  const { act, useEffect } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { useResumes } = await import('./useResumes')
   const folder = await mkdtemp(join(tmpdir(), 'resume-conflict-'))
@@ -118,8 +121,11 @@ test('same-field conflict never silently chooses a writer and local Undo/Redo su
   })
   let hook!: ReturnType<typeof useResumes>
   function Probe() {
-    hook = useResumes(true, 'session', created.id)
-    return <p>{hook.draft?.header.name}</p>
+    const value = useResumes(true, 'session', created.id)
+    useEffect(() => {
+      hook = value
+    })
+    return <p>{value.draft?.header.name}</p>
   }
   const host = document.createElement('div')
   document.body.append(host)

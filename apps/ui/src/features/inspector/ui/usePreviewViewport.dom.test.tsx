@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
-import { act } from 'react'
+import { act, useEffect } from 'react'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { usePreviewStore } from '../model/previewStore'
 import { usePreviewViewport } from './usePreviewViewport'
@@ -31,12 +31,15 @@ test('manual presets keep their selection while agent dimensions share the same 
   let current: ReturnType<typeof usePreviewViewport> | undefined
   function Host() {
     const viewport = usePreviewStore((s) => s.previewBySession[sessionId]?.viewport)
-    current = usePreviewViewport({
+    const value = usePreviewViewport({
       sessionId,
       previewId,
       initialViewport: viewport,
       active: true,
       backgroundHost: false,
+    })
+    useEffect(() => {
+      current = value
     })
     return null
   }

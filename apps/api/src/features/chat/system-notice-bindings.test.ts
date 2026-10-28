@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { SYSTEM_PARTICIPANT } from '../../db'
+import { SYSTEM_AUTHOR } from '../../db'
 import type { StoredSystemNotice } from '../../db/payload'
 import type { PersistedMessage } from './contracts'
 import { systemContextSelectionBinding } from '@localixai/agent'
@@ -16,7 +16,7 @@ function noticeRow(id: string, notice: StoredSystemNotice): PersistedMessage {
     payload: {
       id,
       role: 'user',
-      from: SYSTEM_PARTICIPANT,
+      from: SYSTEM_AUTHOR,
       content: notice.text,
       uiOnly: true,
       systemNotice: notice,
@@ -25,35 +25,24 @@ function noticeRow(id: string, notice: StoredSystemNotice): PersistedMessage {
   }
 }
 
-const model = (participant: string, id: string) => ({
+const model = (name: string, id: string) => ({
   kind: 'model_change' as const,
   tone: 'neutral' as const,
-  participant,
-  text: `${participant} is now on ${id}.`,
+  text: `${name} is now on ${id}.`,
 })
 
 describe('system notice context bindings', () => {
-  test('model and membership spam collapses to the newest value in each slot', () => {
+  test('model-change spam collapses to the newest value in its slot', () => {
     const rows = [
       noticeRow('1', model('lead', 'model-b')),
-      noticeRow('2', { kind: 'participants_change', tone: 'neutral', text: 'qa joined.' }),
-      noticeRow('3', model('lead', 'model-a')),
-      noticeRow('4', { kind: 'participants_change', tone: 'neutral', text: 'qa left.' }),
-      noticeRow('5', model('lead', 'model-b')),
+      noticeRow('2', model('lead', 'model-a')),
+      noticeRow('3', model('lead', 'model-b')),
     ]
 
     const bindings = currentSystemContextBindings(rows)
 
-    // A model change is keyed by the participant it names; membership has one slot, the current
-    // roster itself being in the runtime context's participants section.
-    expect(bindings.map((binding) => binding.target.token)).toEqual([
-      'notice:participants_change',
-      'notice:model_change:participant:lead',
-    ])
-    expect(bindings.map((binding) => binding.target.label)).toEqual([
-      'qa left.',
-      'lead is now on model-b.',
-    ])
+    expect(bindings.map((binding) => binding.target.token)).toEqual(['notice:model_change'])
+    expect(bindings.map((binding) => binding.target.label)).toEqual(['lead is now on model-b.'])
   })
 
   test('only the newest run outcome survives across interruption kinds', () => {

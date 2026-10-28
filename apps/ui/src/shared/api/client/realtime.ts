@@ -27,7 +27,7 @@ export const realtimeApi = {
     return res.autoApprovedTools ?? []
   },
 
-  // Reply to an agent `browser` tool command after the open preview's probe ran
+  // Reply to an agent `Browser` tool command after the open preview's probe ran
   // it — settles the server-side pending promise (preview-command-registry).
   async previewResult(commandId: string, payload: Record<string, unknown>): Promise<boolean> {
     const result = await eventSocket.request<{ resolved: boolean }>({

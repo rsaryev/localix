@@ -63,7 +63,7 @@ export function QuizStepView({
               key={option.id}
               ref={index === 0 ? firstOption : undefined}
               type="button"
-              variant="outline"
+              variant="ghost"
               disabled={selected !== null || saving}
               aria-pressed={picked}
               className={cn(

@@ -4,12 +4,12 @@ import { LINES, cellName, freeCells, type Game, type GameRecord } from './game'
  * The game as TEXT for the agent — tool results, the wake that asks for its move, and the context
  * the view publishes. One module, so every one of them describes the same position.
  *
- * Written from the agent's seat: it plays O, the user plays X — unless the table's opponent is the
+ * Written from the agent's side: it plays O, the user plays X — unless the table's opponent is the
  * decision model, which then plays O and the agent only watches.
  */
 
-/** Who O is, from the agent's seat: itself, or the decision model the user chose. */
-const oSeat = (game: Pick<Game, 'opponent'>) =>
+/** Who O is, from the agent's side: itself, or the decision model the user chose. */
+const oSide = (game: Pick<Game, 'opponent'>) =>
   game.opponent === 'decision'
     ? { who: 'The decision model', whose: 'The decision model’s' }
     : { who: 'You', whose: 'Your' }
@@ -42,17 +42,17 @@ export function drawBoard(game: Game): string {
 export function statusLine(game: Game): string {
   const line = game.line ? ` with ${lineName(game.line)}` : ''
   if (game.status === 'won') return `The user won${line}.`
-  if (game.status === 'lost') return `${oSeat(game).who} won${line}.`
+  if (game.status === 'lost') return `${oSide(game).who} won${line}.`
   if (game.status === 'draw') return 'Draw — the board is full.'
   if (game.turn === 'X') return 'The user’s turn (X).'
-  return `${oSeat(game).whose} turn (O).`
+  return `${oSide(game).whose} turn (O).`
 }
 
 /** The last move, as a sentence: "The user played X in the centre (cell 5)." */
 export function lastMoveLine(game: Game): string | null {
   const move = game.moves.at(-1)
   if (!move) return null
-  const who = move.by === 'you' ? 'The user' : oSeat(game).who
+  const who = move.by === 'you' ? 'The user' : oSide(game).who
   return `${who} played ${move.mark} in ${cellName(move.cell)}.`
 }
 

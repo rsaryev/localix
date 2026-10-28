@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { ExternalLink } from 'lucide-react'
 import { miniAppExternal } from '@localixai/mini-app-sdk/ui/runtime'
 import { Button } from '@localixai/kit/button'
@@ -35,17 +35,14 @@ export function WebLink({ url, children }: { url: string; children: string }) {
 }
 
 export function LinkedText({ text }: { text: string }) {
-  let end = 0
-  const parts = webLinksInText(text).flatMap((link) => {
-    const before = text.slice(end, link.start)
-    end = link.end
-    return [
-      before,
-      <WebLink key={link.start} url={link.url}>
-        {link.text}
-      </WebLink>,
-    ]
-  })
+  const links = webLinksInText(text)
+  const parts = links.flatMap((link, index) => [
+    text.slice(links[index - 1]?.end ?? 0, link.start),
+    <WebLink key={link.start} url={link.url}>
+      {link.text}
+    </WebLink>,
+  ])
+  const end = links.at(-1)?.end ?? 0
   return (
     <>
       {parts}
@@ -69,7 +66,13 @@ export function LinkForm({
   const [address, setAddress] = useState(url)
   const [name, setName] = useState(title)
   const valid = asWebUrl(address)
+  const addressId = useId()
+  const nameId = useId()
+  // The form opens to be typed into: the address field takes the focus once it is on screen.
+  const addressField = useRef<HTMLInputElement>(null)
+  useEffect(() => addressField.current?.focus(), [])
   return (
+    // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- delegated keys: Escape and the keys the board would take come from the fields and buttons inside, the form is never the target
     <form
       className="nodrag flex flex-col gap-3"
       onSubmit={(event) => {
@@ -84,18 +87,20 @@ export function LinkForm({
         }
       }}
     >
-      <label className="flex flex-col gap-1.5 text-xs font-medium">
+      <label htmlFor={addressId} className="flex flex-col gap-1.5 text-xs font-medium">
         Website URL
         <Input
-          autoFocus
+          id={addressId}
+          ref={addressField}
           value={address}
           onChange={(event) => setAddress(event.target.value)}
           placeholder="https://example.com"
         />
       </label>
-      <label className="flex flex-col gap-1.5 text-xs font-medium">
+      <label htmlFor={nameId} className="flex flex-col gap-1.5 text-xs font-medium">
         Title (optional)
         <Input
+          id={nameId}
           value={name}
           onChange={(event) => setName(event.target.value)}
           placeholder="Website name"

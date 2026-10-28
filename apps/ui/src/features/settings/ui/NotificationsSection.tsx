@@ -106,7 +106,7 @@ function AppIconBadgeRow() {
       <div className="min-w-0 space-y-0.5">
         <p className="text-sm font-medium text-foreground">{title}</p>
         <p className="max-w-prose text-xs leading-5 text-text-soft text-pretty">
-          Show how many conversations are waiting on you — a request, a plan to review, a mention —
+          Show how many conversations are waiting on you — a request or a plan to review —
           {OS_FAMILY === 'windows'
             ? 'as a dot on the taskbar icon.'
             : 'as a badge on the app icon.'}

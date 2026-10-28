@@ -98,7 +98,7 @@ export interface InterruptedRunNotice {
   runId: string
   sessionId: string
   userId: string
-  /** The participant that was interrupted — whose reply and tools the notice is about. */
+  /** The agent that was interrupted — whose reply and tools the notice is about. */
   agentId: string
 }
 

@@ -50,7 +50,7 @@ export function DismissibleHint({
         action && onAction ? (
           <Button
             size="xs"
-            variant="outline"
+            variant="ghost"
             onClick={() => {
               onAction()
               dismiss()

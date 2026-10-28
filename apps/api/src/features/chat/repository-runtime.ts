@@ -78,8 +78,8 @@ export function createRuntimeQueries(db: Kysely<AppDatabase>) {
      * the count would let an agent refill its own budget by being woken. A conversation the
      * person has never written in counts from its start.
      *
-     * Columns that already exist, as before: a tree is exactly a root and its children
-     * (nesting is forbidden), which `root_session_id` describes.
+     * Every subagent of the tree counts, a subagent's own included: each carries the root's id in
+     * `root_session_id`, however deep it sits.
      */
     async countDelegationsSinceHuman(userId: string, rootSessionId: string): Promise<number> {
       const lastHuman = db

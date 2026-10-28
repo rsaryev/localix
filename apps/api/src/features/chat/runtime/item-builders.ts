@@ -87,7 +87,7 @@ function extractFileChanges(
   input: unknown,
 ): FileChange[] {
   const kindOf = (record: Record<string, unknown>): FileChangeKind =>
-    name === 'write' && record.created === true ? 'add' : 'modify'
+    name === 'Write' && record.created === true ? 'add' : 'modify'
   // write/edit batch: one change per file the call named, the failed ones included — a file
   // that was left unchanged is still part of what the call tried, and the card says why.
   if (Array.isArray(details?.files)) {
@@ -164,7 +164,7 @@ export function buildToolItem(spec: ToolItemSpec): ToolBackedItem {
   // `bash` with an interactive `action` (open/screen/keys/type/...) isn't a shell
   // command — render it via the generic tool_call path (the terminal card) so the
   // rendered screen shows, not the command card.
-  const isInteractiveBash = spec.name === 'bash' && typeof asRecord(spec.input)?.action === 'string'
+  const isInteractiveBash = spec.name === 'Bash' && typeof asRecord(spec.input)?.action === 'string'
   const itemType = isInteractiveBash ? 'tool_call' : classifyTool(spec.name)
 
   switch (itemType) {

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { runIdleTasks, waitForQuietLoop } from './idle-tasks'
+import { runIdleTasks } from './idle-tasks'
 
 /** A fake clock whose sleep advances time by the requested ms plus a scripted lag. */
 function fakeClock(lags: number[] = []) {
@@ -18,15 +18,17 @@ function fakeClock(lags: number[] = []) {
 
 const never = new AbortController().signal
 
-describe('waitForQuietLoop', () => {
+describe('the quiet window before idle work', () => {
   test('waits for a whole quiet window, restarting it on every laggy tick', async () => {
     // Two quiet ticks, one busy one (the window restarts), then quiet again.
     const clock = fakeClock([0, 0, 40, 0, 0, 0, 0])
-    await waitForQuietLoop({
+    await runIdleTasks([], {
+      delayMs: 0,
       quietMs: 200,
       quietLagMs: 10,
       maxWaitMs: 10_000,
       signal: never,
+      onTaskDone: () => {},
       ...clock,
     })
     // 7 ticks of 50 ms plus the 40 ms of lag: the busy tick cost the window its first 100 ms.
@@ -35,11 +37,13 @@ describe('waitForQuietLoop', () => {
 
   test('a loop that is never quiet still gets its work, at maxWaitMs', async () => {
     const clock = fakeClock(Array.from({ length: 100 }, () => 30))
-    await waitForQuietLoop({
+    await runIdleTasks([], {
+      delayMs: 0,
       quietMs: 200,
       quietLagMs: 10,
       maxWaitMs: 1_000,
       signal: never,
+      onTaskDone: () => {},
       ...clock,
     })
     expect(clock.now()).toBeGreaterThanOrEqual(1_000)
@@ -60,7 +64,7 @@ describe('runIdleTasks', () => {
         running += 1
         expect(running).toBe(1)
         order.push(name)
-        await Bun.sleep(1)
+        await new Promise((resolve) => setTimeout(resolve, 0))
         running -= 1
       },
     })

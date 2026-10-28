@@ -24,13 +24,10 @@ const tool = (name: string, description = name): AgentTool =>
   }) satisfies AgentTool
 
 describe('recordMutatingTools', () => {
-  test('a declared writer and a tool that calls tools are stored at their start; a reader is not', () => {
+  test('a declared writer is stored at its start; a reader is not', () => {
     const names = new Set<string>()
-    recordMutatingTools(
-      [{ ...tool('write'), mutates: true }, { ...tool('codemode'), mutates: false }, tool('read')],
-      names,
-    )
-    expect([...names]).toEqual(['write', 'codemode'])
+    recordMutatingTools([{ ...tool('Write'), mutates: true }, tool('Read')], names)
+    expect([...names]).toEqual(['Write'])
   })
 })
 
@@ -59,8 +56,8 @@ describe('claimSecondaryTools', () => {
   test('a model name another tool already answers to is dropped; the tool stays', () => {
     const first = { ...tool('mcp_a_b_c_t'), modelName: 'mcp__plugin_a_b_c__t' }
     const clash = { ...tool('mcp_a_b_c_t_2'), modelName: 'mcp__plugin_a_b_c__t' }
-    const ownName = { ...tool('mcp_x_y_t'), modelName: 'read' }
-    const { tools, conflicts } = claimSecondaryTools([tool('read')], [first, clash, ownName])
+    const ownName = { ...tool('mcp_x_y_t'), modelName: 'Read' }
+    const { tools, conflicts } = claimSecondaryTools([tool('Read')], [first, clash, ownName])
     expect(conflicts).toEqual([])
     expect(tools.map((t) => [t.name, t.modelName])).toEqual([
       ['mcp_a_b_c_t', 'mcp__plugin_a_b_c__t'],
@@ -76,7 +73,7 @@ describe('claimSecondaryTools', () => {
  * implementations remain dispatchable, while the activator itself exists in both projections.
  */
 describe('deferred tool assembly', () => {
-  const core = [tool('read'), tool('bash'), tool('write')]
+  const core = [tool('Read'), tool('Bash'), tool('Write')]
   const plugins = [tool('catalog_query', 'Run a SQL query against a connected database.')]
   const mcpTools = [tool('github_create_issue', 'Open an issue on a GitHub repository.')]
 
@@ -93,7 +90,7 @@ describe('deferred tool assembly', () => {
 
   test('core tools stay on the wire; plugin and MCP tools leave it', () => {
     const { direct, deferred } = assemble()
-    expect(direct.map((t) => t.name)).toEqual(['read', 'bash', 'write'])
+    expect(direct.map((t) => t.name)).toEqual(['Read', 'Bash', 'Write'])
     expect(deferred.map((t) => t.name)).toEqual(['catalog_query', 'github_create_issue'])
   })
 
@@ -118,8 +115,8 @@ describe('deferred tool assembly', () => {
     const dispatchTools = [...wrapped, activator]
 
     expect(() => validateToolRegistry(modelTools, dispatchTools)).not.toThrow()
-    expect(modelTools.map((candidate) => candidate.name)).toContain('activate_tools')
-    expect(dispatchTools.map((candidate) => candidate.name)).toContain('activate_tools')
+    expect(modelTools.map((candidate) => candidate.name)).toContain('ToolSearch')
+    expect(dispatchTools.map((candidate) => candidate.name)).toContain('ToolSearch')
   })
 
   test('deferred tools retain descriptor-owned standalone presentation', () => {
@@ -130,7 +127,7 @@ describe('deferred tool assembly', () => {
       standalone: true,
       presentation: { transcript: 'content' as const },
     }
-    const direct = [tool('read')]
+    const direct = [tool('Read')]
     const modelTools = [
       ...direct,
       createActivateToolsTool({
@@ -184,8 +181,8 @@ describe('remembering what a session activated', () => {
 
 describe('what a session carries on the wire', () => {
   const wrapped = [
-    tool('read'),
-    tool('bash'),
+    tool('Read'),
+    tool('Bash'),
     tool('plugin_board_edit'),
     tool('github_create_issue'),
     tool('catalog_query'),
@@ -198,7 +195,7 @@ describe('what a session carries on the wire', () => {
 
   test('with nothing activated, only core tools ride along', () => {
     const split = splitDeferredTools(wrapped, sourceByTool, [])
-    expect(split.direct.map((t) => t.name)).toEqual(['read', 'bash'])
+    expect(split.direct.map((t) => t.name)).toEqual(['Read', 'Bash'])
     expect(split.promoted).toEqual([])
     expect(split.deferredEntries.map((e) => e.tool.name)).toEqual([
       'plugin_board_edit',
@@ -236,9 +233,9 @@ describe('what a session carries on the wire', () => {
   test('a remembered CORE name cannot duplicate a tool that is already on the wire', () => {
     // Core tools ride regardless of the remembered set. A second copy would be a duplicate name in the
     // model-visible list, which `validateToolRegistry` rejects outright.
-    const split = splitDeferredTools(wrapped, sourceByTool, ['read'])
+    const split = splitDeferredTools(wrapped, sourceByTool, ['Read'])
     expect(split.promoted).toEqual([])
-    expect(split.direct.map((t) => t.name)).toEqual(['read', 'bash'])
+    expect(split.direct.map((t) => t.name)).toEqual(['Read', 'Bash'])
   })
 })
 
@@ -259,7 +256,7 @@ describe('a second activation in the same session', () => {
   })
 
   test('both end up on the wire, in activation order', () => {
-    const wrapped = [tool('read'), tool('plugin_board_edit'), tool('github_create_issue')]
+    const wrapped = [tool('Read'), tool('plugin_board_edit'), tool('github_create_issue')]
     const sourceByTool = new Map([
       ['plugin_board_edit', 'plugins'],
       ['github_create_issue', 'github'],

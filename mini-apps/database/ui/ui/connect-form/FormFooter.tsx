@@ -28,7 +28,7 @@ export function FormFooter({
           self-signed server cert and re-test — the common local/internal-DB case. */}
       {f.errorCode === 'tls_failed' && f.isNetwork && (
         <Button
-          variant="outline"
+          variant="ghost"
           size="xs"
           onClick={f.trustCertAndRetry}
           disabled={f.testing || f.busy}
@@ -50,7 +50,7 @@ export function FormFooter({
         )}
         {onCancel && (
           <Button
-            variant="outline"
+            variant="ghost"
             onClick={onCancel}
             disabled={f.busy || f.testing}
             className="text-text-soft"
@@ -60,7 +60,7 @@ export function FormFooter({
           </Button>
         )}
         <Button
-          variant="outline"
+          variant="ghost"
           onClick={() => void f.test()}
           disabled={f.busy || f.testing || !f.config}
           aria-busy={f.testing || undefined}

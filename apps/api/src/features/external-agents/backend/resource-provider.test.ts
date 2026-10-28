@@ -367,10 +367,10 @@ describe('external agent resource provider', () => {
     )
     expect(content).toContain("turns 25–30 of 30 — the session's most recent; the 24 earlier")
     expect(content).toEndWith(
-      '(Compact digest of an external claude-code session. Full transcript: external_agent_sessions { action: "transcript", key: "claude-code:abc" }. Several sessions at once: { action: "context", keys: [...] }. Live state: { action: "explain", key: "claude-code:abc" }.)',
+      '(Compact digest of an external claude-code session. Full transcript: ExternalAgentSessions { action: "transcript", key: "claude-code:abc" }. Several sessions at once: { action: "context", keys: [...] }. Live state: { action: "explain", key: "claude-code:abc" }.)',
     )
     expect(content).toContain('action: "resume", key: "claude-code:abc"')
-    expect(content).toContain('then execute the returned command with bash action:"open"')
+    expect(content).toContain('then execute the returned command with `Bash` action:"open"')
     expect(content).toContain('Reading its transcript does not open a terminal.')
     // The tail, never the whole transcript: 30 turns were read, 6 at most are shown.
     expect(content.match(/^\[(user|assistant)] /gm)).toHaveLength(6)
@@ -468,7 +468,7 @@ describe('external agent resource provider', () => {
 
 describe('the digest tells the truth about how far one read gets', () => {
   /**
-   * The footer said "Full transcript: external_agent_sessions { action: transcript … }" for every
+   * The footer said "Full transcript: ExternalAgentSessions { action: transcript … }" for every
    * session. One read returns at most `MAX_TRANSCRIPT_EVENTS`, so on a session of several thousand
    * events that pointer promised all of them and delivers 2,000. The same overclaim was corrected
    * in the transcript answer and the import note; this is the third surface, and the one a person

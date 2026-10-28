@@ -9,7 +9,7 @@ export { elapsed, opponentName }
 /**
  * The game in the PERSON's words — the view's headline and what a screen reader announces.
  *
- * `shared/describe.ts` speaks from the agent's seat ("Your turn (O)"); the view speaks to whoever
+ * `shared/describe.ts` speaks from the agent's side ("Your turn (O)"); the view speaks to whoever
  * is looking at the board ("Your turn", "The agent won with the top row"). Pure, so every state the
  * board can be in has a sentence a test can read.
  */

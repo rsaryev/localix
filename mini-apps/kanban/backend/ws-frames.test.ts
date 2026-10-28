@@ -6,6 +6,10 @@ import { join } from 'node:path'
 import { createBoardService } from './service'
 import { createBoardWsFrames } from './ws-frames'
 
+const turns = async (n = 10) => {
+  for (let i = 0; i < n; i++) await new Promise((r) => setImmediate(r))
+}
+
 const roots: string[] = []
 afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true })
@@ -25,7 +29,7 @@ function setup() {
   return { boards, stream: stream! }
 }
 
-const settle = () => new Promise((resolve) => setTimeout(resolve, 10))
+const settle = () => turns()
 
 describe('board live stream', () => {
   test('streams the owner’s board changes', async () => {

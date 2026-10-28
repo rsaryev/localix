@@ -48,7 +48,7 @@ async function hostedCatalog(apps: Published[]) {
     })
   }
   const fetchImpl = (async (input: string | URL | Request) => {
-    const url = new URL(String(input))
+    const url = new URL(String(input instanceof Request ? input.url : input))
     if (url.href === CATALOG) return Response.json({ schema: 1, apps: listed })
     const bytes = archives.get(url.pathname.split('/').pop() ?? '')
     return bytes

@@ -45,11 +45,15 @@ function deferred<T>() {
 }
 
 async function mount(sessionId: string) {
-  const { act } = await import('react')
+  const { act, useEffect } = await import('react')
   const { createRoot } = await import('react-dom/client')
   let state!: SpaceState
   function Probe({ id }: { id: string }) {
-    state = useSpace(id)
+    const value = useSpace(id)
+    // Read by the test once the commit is done, not written while rendering.
+    useEffect(() => {
+      state = value
+    })
     return null
   }
   const root = createRoot(document.createElement('div'))

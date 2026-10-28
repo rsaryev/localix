@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
+import { turns } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -41,13 +42,13 @@ async function render(value: number | undefined, disabled = false) {
         if (button.disabled) return
         button.focus()
         button.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
-        await new Promise((resolve) => setTimeout(resolve, 30))
+        await turns()
       })
     },
     cleanup: async () => {
       await React.act(async () => {
         root.unmount()
-        await new Promise((resolve) => setTimeout(resolve, 30))
+        await turns()
       })
       host.remove()
     },

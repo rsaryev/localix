@@ -131,7 +131,7 @@ export function createMonitorService(deps: MonitorServiceDeps) {
       if (running.length >= MONITOR_MAX_PER_SESSION) {
         return {
           ok: false,
-          error: `This session already has ${running.length} monitors running (the limit). Stop one with jobs action="stop" before starting another: ${running
+          error: `This session already has ${running.length} monitors running (the limit). Stop one with TaskStop before starting another: ${running
             .map((t) => `${monitorPayload(t).displayId} (${monitorPayload(t).description})`)
             .join(', ')}`,
         }

@@ -145,7 +145,7 @@ describe('interpolateEnv (http header/url env interpolation)', () => {
 // HTTP hooks — live local server
 // ===========================================================================
 describe('http hooks fire through the runtime (live server)', () => {
-  let server: ReturnType<typeof Bun.serve> | null = null
+  let server: { stop: (force?: boolean) => unknown; port?: number } | null = null
   afterEach(async () => {
     await server?.stop(true)
     server = null
@@ -167,7 +167,7 @@ describe('http hooks fire through the runtime (live server)', () => {
       }),
     )
     const rt = runtimeWith(block('PreToolUse', { type: 'http', url }))
-    const res = await rt.runPreToolUse('bash', { command: 'rm -rf /' })
+    const res = await rt.runPreToolUse('Bash', { command: 'rm -rf /' })
     expect(res.decision).toBe('deny')
     expect(res.reason).toBe('blocked by endpoint')
   })
@@ -191,7 +191,7 @@ describe('http hooks fire through the runtime (live server)', () => {
         allowedEnvVars: ['CC_HOOK_HDR'],
       }),
     )
-    await rt.runPreToolUse('bash', { command: 'ls' })
+    await rt.runPreToolUse('Bash', { command: 'ls' })
     expect((seenBody as { tool_name?: string }).tool_name).toBe('Bash')
     expect(seenHeaders).toEqual(['Bearer tok-123'])
     delete process.env.CC_HOOK_HDR
@@ -200,23 +200,26 @@ describe('http hooks fire through the runtime (live server)', () => {
   it('non-2xx is non-blocking (fail-open → proceed)', async () => {
     const url = serve(() => new Response('nope', { status: 500 }))
     const rt = runtimeWith(block('PreToolUse', { type: 'http', url }))
-    const res = await rt.runPreToolUse('bash', { command: 'ls' })
+    const res = await rt.runPreToolUse('Bash', { command: 'ls' })
     expect(res.decision).toBe('proceed')
   })
 
   it('a slow endpoint past the timeout fails open (proceed)', async () => {
+    let release: () => void = () => {}
+    const gate = new Promise<void>((resolve) => (release = resolve))
     const url = serve(async () => {
-      await new Promise((r) => setTimeout(r, 200))
+      await gate
       return Response.json({ hookSpecificOutput: { permissionDecision: 'deny' } })
     })
-    // 20 ms timeout → aborts before the 200 ms response.
+    // 20 ms timeout → aborts while the endpoint is still holding its response.
     const reg = parseHooksBlock(
       { PreToolUse: [{ hooks: [{ type: 'http', url, timeout: 0.02 }] }] },
       'project',
       { projectDir: '/p' },
     )
     const rt = runtimeWith(reg)
-    const res = await rt.runPreToolUse('bash', { command: 'ls' })
+    const res = await rt.runPreToolUse('Bash', { command: 'ls' })
+    release()
     expect(res.decision).toBe('proceed')
   })
 })
@@ -244,7 +247,7 @@ describe('mcp_tool hooks fire through the runtime (stubbed caller)', () => {
         callMcpTool: caller,
       },
     )
-    const res = await rt.runPreToolUse('bash', { command: 'x' })
+    const res = await rt.runPreToolUse('Bash', { command: 'x' })
     expect(seenNames).toEqual(['mcp__guard__check'])
     expect(res.decision).toBe('deny')
     expect(res.reason).toBe('mcp says no')
@@ -259,21 +262,8 @@ describe('mcp_tool hooks fire through the runtime (stubbed caller)', () => {
     const rt = runtimeWith(block('PreToolUse', { type: 'mcp_tool', tool: 'mcp_guard_check' }), {
       callMcpTool: caller,
     })
-    await rt.runPreToolUse('bash', { command: 'x' })
+    await rt.runPreToolUse('Bash', { command: 'x' })
     expect(seenNames).toEqual(['mcp_guard_check'])
-  })
-
-  it('receives the hook input JSON as tool arguments', async () => {
-    let seenInput: unknown = null
-    const caller: CcMcpToolCaller = async (_name, input) => {
-      seenInput = input
-      return { text: '' }
-    }
-    const rt = runtimeWith(block('PreToolUse', { type: 'mcp_tool', tool: 'mcp_g_c' }), {
-      callMcpTool: caller,
-    })
-    await rt.runPreToolUse('write', { file_path: '/a.ts' })
-    expect((seenInput as { tool_name?: string }).tool_name).toBe('Write')
   })
 
   it('notConnected fails open (proceed)', async () => {
@@ -281,7 +271,7 @@ describe('mcp_tool hooks fire through the runtime (stubbed caller)', () => {
     const rt = runtimeWith(block('PreToolUse', { type: 'mcp_tool', tool: 'mcp_g_c' }), {
       callMcpTool: caller,
     })
-    const res = await rt.runPreToolUse('bash', { command: 'x' })
+    const res = await rt.runPreToolUse('Bash', { command: 'x' })
     expect(res.decision).toBe('proceed')
   })
 
@@ -290,13 +280,13 @@ describe('mcp_tool hooks fire through the runtime (stubbed caller)', () => {
     const rt = runtimeWith(block('PreToolUse', { type: 'mcp_tool', tool: 'mcp_g_c' }), {
       callMcpTool: caller,
     })
-    const res = await rt.runPreToolUse('bash', { command: 'x' })
+    const res = await rt.runPreToolUse('Bash', { command: 'x' })
     expect(res.decision).toBe('proceed')
   })
 
   it('fails open when NO caller is injected', async () => {
     const rt = runtimeWith(block('PreToolUse', { type: 'mcp_tool', tool: 'mcp_g_c' }))
-    const res = await rt.runPreToolUse('bash', { command: 'x' })
+    const res = await rt.runPreToolUse('Bash', { command: 'x' })
     expect(res.decision).toBe('proceed')
   })
 })
@@ -310,7 +300,7 @@ describe('agent hooks fire through the runtime (stubbed evaluator)', () => {
     const rt = runtimeWith(block('PreToolUse', { type: 'agent', prompt: 'verify' }), {
       runAgentHook: stub,
     })
-    const res = await rt.runPreToolUse('bash', { command: 'rm -rf /' })
+    const res = await rt.runPreToolUse('Bash', { command: 'rm -rf /' })
     expect(res.decision).toBe('deny')
     expect(res.reason).toBe('verifier blocked')
   })
@@ -347,7 +337,7 @@ describe('agent hooks fire through the runtime (stubbed evaluator)', () => {
       { projectDir: '/p' },
     )
     const rt = runtimeWith(reg, { runAgentHook: stub })
-    await rt.runPreToolUse('bash', { command: 'echo hi' })
+    await rt.runPreToolUse('Bash', { command: 'echo hi' })
     expect(seen!.timeoutMs).toBe(45_000)
     expect(seen!.maxTurns).toBe(12)
     expect(JSON.parse(seen!.inputJson).tool_name).toBe('Bash')
@@ -355,7 +345,7 @@ describe('agent hooks fire through the runtime (stubbed evaluator)', () => {
 
   it('fails open when NO evaluator is injected', async () => {
     const rt = runtimeWith(block('PreToolUse', { type: 'agent', prompt: 'verify' }))
-    const res = await rt.runPreToolUse('bash', { command: 'x' })
+    const res = await rt.runPreToolUse('Bash', { command: 'x' })
     expect(res.decision).toBe('proceed')
   })
 
@@ -366,7 +356,7 @@ describe('agent hooks fire through the runtime (stubbed evaluator)', () => {
     const rt = runtimeWith(block('PreToolUse', { type: 'agent', prompt: 'verify' }), {
       runAgentHook: stub,
     })
-    const res = await rt.runPreToolUse('bash', { command: 'x' })
+    const res = await rt.runPreToolUse('Bash', { command: 'x' })
     expect(res.decision).toBe('proceed')
   })
 })

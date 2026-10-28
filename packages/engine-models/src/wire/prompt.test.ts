@@ -239,4 +239,22 @@ describe('provider rules', () => {
     const point = { bedrock: { cachePoint: { type: 'default' } } }
     expect(prompt.map((message) => message.providerOptions)).toEqual([point, point, point])
   })
+
+  test('Anthropic reads the system prompt back at its own breakpoint, so another session’s first request hits it', () => {
+    const first = (text: string) =>
+      buildPrompt(
+        {
+          systemPrompt: 'stable system',
+          messages: [{ role: 'user', content: text, timestamp: 0 }],
+        },
+        anthropic,
+        origin,
+      )
+    const [a, b] = [first('fix the parser'), first('write the release notes')]
+    // Tools and system come before every message, so a breakpoint on the system entry names a
+    // prefix that two sessions with different first messages still share.
+    expect(a[0]).toEqual(b[0]!)
+    expect(a[0]!.providerOptions).toEqual({ anthropic: { cacheControl: { type: 'ephemeral' } } })
+    expect(a[1]).not.toEqual(b[1]!)
+  })
 })

@@ -56,35 +56,28 @@ export function RailRecentsDock({ entries, renderEntry, dragging }: RailRecentsD
   // unmounted, and the menu vanished before it could be read, let alone clicked.
   const [menuOpen, setMenuOpen] = useState(false)
   const contentRef = useRef<HTMLDivElement | null>(null)
-  const timer = useRef<number | null>(null)
   // True when THIS open came from the keyboard/pointer activating the trigger, so
   // focus should move into the flyout and back out again. A hover-open must never
   // take focus away from whatever the user was doing.
   const focusOnOpen = useRef(false)
 
-  const cancelTimer = useCallback(() => {
-    if (timer.current !== null) window.clearTimeout(timer.current)
-    timer.current = null
-  }, [])
-
-  // Defer BOTH edges: opening on intent, closing on a grace period that spans the
-  // trigger→flyout gap. Every path funnels through here, so no timer outlives the
-  // component or races a second one.
-  const scheduleHover = useCallback(
-    (next: boolean) => {
-      cancelTimer()
-      timer.current = window.setTimeout(
-        () => {
-          timer.current = null
-          setHovered(next)
-        },
-        next ? OPEN_DELAY_MS : CLOSE_DELAY_MS,
-      )
-    },
-    [cancelTimer],
-  )
-
-  useEffect(() => cancelTimer, [cancelTimer])
+  // The hover edge waiting for its delay (null = none). Opening is deferred on intent and closing
+  // on a grace period that spans the trigger→flyout gap. Every path sets or clears this one value,
+  // and its timer lives in the effect below, so none outlives the component or races a second one.
+  const [intent, setIntent] = useState<boolean | null>(null)
+  useEffect(() => {
+    if (intent === null) return
+    const timer = window.setTimeout(
+      () => {
+        setIntent(null)
+        setHovered(intent)
+      },
+      intent ? OPEN_DELAY_MS : CLOSE_DELAY_MS,
+    )
+    return () => window.clearTimeout(timer)
+  }, [intent])
+  const cancelTimer = useCallback(() => setIntent(null), [])
+  const scheduleHover = setIntent
 
   const close = useCallback(() => {
     cancelTimer()
@@ -92,10 +85,12 @@ export function RailRecentsDock({ entries, renderEntry, dragging }: RailRecentsD
     setSticky(false)
   }, [cancelTimer])
 
-  // A drag started while the dock was open: shut it in the same beat.
-  useEffect(() => {
+  // A drag started while the dock was open: shut it in the same beat, while rendering.
+  const [wasDragging, setWasDragging] = useState(dragging)
+  if (wasDragging !== dragging) {
+    setWasDragging(dragging)
     if (dragging) close()
-  }, [dragging, close])
+  }
 
   const open = !dragging && (sticky || hovered || menuOpen)
   // The dock stands in for whichever recent view is on screen, so the trigger

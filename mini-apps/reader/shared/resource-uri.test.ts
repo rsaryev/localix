@@ -41,11 +41,7 @@ describe('reader resource URI', () => {
     expect(parseReaderUri(`${readerRootUri()}/chapter?path=a.epub&chapter=nope`)).toBeNull()
   })
 
-  test('keeps old query-based links readable during migration', () => {
-    expect(parseReaderUri(`${readerRootUri()}/chapter?path=book.epub&chapter=2`)).toEqual({
-      kind: 'chapter',
-      source: { path: 'book.epub' },
-      chapter: 2,
-    })
+  test('query-based links are not Reader resources', () => {
+    expect(parseReaderUri(`${readerRootUri()}/chapter?path=book.epub&chapter=2`)).toBeNull()
   })
 })

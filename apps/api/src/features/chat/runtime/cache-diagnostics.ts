@@ -30,7 +30,7 @@ export function computeCacheDiagnostics(params: {
   runtimeTools: { toolNames: readonly string[] }
 }): ChatCacheDiagnosticsPayload {
   const historyPayloads = params.historyMessages.map((message) => message.payload)
-  const route = agentRoute(params.session, params.agentId)
+  const route = agentRoute(params.session)
   if (!route) throw new Error(`Agent is unavailable: ${params.agentId}`)
 
   // Cache-stability guard: warn if a per-turn-volatile token leaked into the

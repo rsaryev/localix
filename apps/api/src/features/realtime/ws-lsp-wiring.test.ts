@@ -117,12 +117,8 @@ async function withRealtimeSocket<T>(
     let nextId = 0
     const rpc = (body: Record<string, unknown>) => {
       const id = `q${++nextId}`
-      return new Promise<Record<string, unknown>>((resolve, reject) => {
-        const timer = setTimeout(() => reject(new Error('rpc timed out')), 5000)
-        pending.set(id, (reply) => {
-          clearTimeout(timer)
-          resolve(reply)
-        })
+      return new Promise<Record<string, unknown>>((resolve) => {
+        pending.set(id, resolve)
         socket.send(JSON.stringify({ id, ...body }))
       })
     }

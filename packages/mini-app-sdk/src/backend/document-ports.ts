@@ -62,7 +62,7 @@ export interface DocumentExtractPort {
 export type DocExtractWindow = Pick<DocExtractParams, 'pageRange' | 'sheet'>
 
 /**
- * Callback form used by the `read` tool: an office/PDF path → its extracted text
+ * Callback form used by the `Read` tool: an office/PDF path → its extracted text
  * (already bounded + rendered), or null when extraction isn't possible. Injected so
  * `read` on a `.docx` yields text instead of a binary-file refusal, without `read`
  * importing an implementation. `window` forwards `read`'s `pages` / `sheet` inputs.

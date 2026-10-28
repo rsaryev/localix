@@ -48,10 +48,12 @@ export function MediaCarousel({
 
   return (
     <div className="flex flex-col gap-2">
+      {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Arrow keys and swipe step the slides; the region is the carousel widget itself */}
       <div
         role="region"
         aria-roledescription="carousel"
         aria-label={`${title} screenshots`}
+        // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- the carousel is one focus stop whose Arrow keys step the slides
         tabIndex={0}
         onKeyDown={onKeyDown}
         onPointerDown={(event) => (swipeFrom.current = event.clientX)}

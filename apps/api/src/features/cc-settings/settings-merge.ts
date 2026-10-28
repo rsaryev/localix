@@ -63,7 +63,6 @@ export function mergeSettingsSources(
       merged.modelPicker = modelPicker
   }
   const managed = layers.find((layer) => layer.source === 'policy')?.settings
-  if (managed && managed.availableModels !== undefined)
-    merged.availableModels = managed.availableModels
+  if (managed?.availableModels !== undefined) merged.availableModels = managed.availableModels
   return merged
 }

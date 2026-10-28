@@ -38,7 +38,7 @@ const delegated = (agentType?: string) =>
     },
   }) as unknown as SessionRecord
 const root = { id: 'chat', provenance: { kind: 'root' } } as unknown as SessionRecord
-const scope = { speakerAgentId: 'builtin:localix' }
+const scope = {}
 
 describe('the end-of-turn hooks', () => {
   test('a delegated child fires SubagentStop, from every source, and never Stop', async () => {

@@ -4,6 +4,7 @@ import { installTestLocalStorage, removeTestLocalStorage } from '@localixai/kit/
 import type { UiSession } from '@/shared/api/contracts'
 import { rememberShellSessions } from '@/shared/lib/shellSnapshot'
 
+import { recordChatLocation, rememberLastWorkspace } from './persistence'
 import { restoreShellFrame } from './restoreShellFrame'
 import { useChatStore } from './store'
 
@@ -49,7 +50,7 @@ afterEach(() => removeTestLocalStorage())
 describe('restoring the shell frame', () => {
   test('the first frame already has the roster the last launch confirmed', () => {
     rememberShellSessions(PROJECT, [session('LOCALIX-1'), session('LOCALIX-2')])
-    localStorage.setItem('localix_active_project_id', PROJECT)
+    rememberLastWorkspace(PROJECT, null)
 
     expect(restoreShellFrame()).toBe(true)
     const state = useChatStore.getState()
@@ -61,8 +62,7 @@ describe('restoring the shell frame', () => {
 
   test('the remembered session is the active one, not just the first', () => {
     rememberShellSessions(PROJECT, [session('LOCALIX-1'), session('LOCALIX-2')])
-    localStorage.setItem('localix_active_project_id', PROJECT)
-    localStorage.setItem(`localix_active_session_id_${PROJECT}`, 'LOCALIX-2')
+    recordChatLocation(PROJECT, 'LOCALIX-2')
 
     restoreShellFrame()
     expect(useChatStore.getState().activeSessionId).toBe('LOCALIX-2')
@@ -70,8 +70,7 @@ describe('restoring the shell frame', () => {
 
   test('a remembered session the roster no longer has falls back rather than sticking', () => {
     rememberShellSessions(PROJECT, [session('LOCALIX-1')])
-    localStorage.setItem('localix_active_project_id', PROJECT)
-    localStorage.setItem(`localix_active_session_id_${PROJECT}`, 'LOCALIX-DELETED')
+    recordChatLocation(PROJECT, 'LOCALIX-DELETED')
 
     restoreShellFrame()
     expect(useChatStore.getState().activeSessionId).toBe('LOCALIX-1')
@@ -100,7 +99,7 @@ describe('the frame is a roster, never a body', () => {
   test('a record that holds a body is restored as not loaded, without its plans', () => {
     // A record written before the projection existed — exactly what is on disk today.
     rememberShellSessions(PROJECT, [body('LOCALIX-206')])
-    localStorage.setItem('localix_active_project_id', PROJECT)
+    rememberLastWorkspace(PROJECT, null)
 
     restoreShellFrame()
     const restored = useChatStore.getState().sessions[0]!

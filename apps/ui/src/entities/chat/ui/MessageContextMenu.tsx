@@ -18,7 +18,7 @@
  * a single further click the whole interaction.
  */
 import type { ReactNode } from 'react'
-import { MESSAGE_REACTIONS as AGENT_REACTIONS } from '@localixai/api/message-reactions'
+import { MESSAGE_REACTIONS } from '@localixai/api/message-reactions'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@localixai/kit/context-menu'
@@ -92,7 +92,7 @@ export function MessageContextMenu({
             'mb-1.5 flex items-center gap-0.5 rounded-full border border-control-border p-1',
           )}
         >
-          {Object.entries(AGENT_REACTIONS).map(([emoji, meaning]) => {
+          {Object.entries(MESSAGE_REACTIONS).map(([emoji, meaning]) => {
             const on = mine?.includes(emoji)
             return (
               <button

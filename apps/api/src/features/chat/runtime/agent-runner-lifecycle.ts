@@ -2,6 +2,7 @@ import { mcpClientManager } from '../../mcp/client-manager'
 import type { RunnerDeps } from './agent-runner-types'
 import {
   endCcHookSession,
+  endCcHookSessionsOnExit,
   forgetSessionRuntimeState,
   type RuntimeState,
 } from './agent-runner-state'
@@ -108,6 +109,8 @@ export function createRunnerLifecycle({ deps, state, wakeQueue }: RunnerLifecycl
         runs.map(([sessionId, abort]) => waitForRunSettlement(activeRuns, sessionId, abort)),
       )
       await queueClosed
+      // Quitting ends the sessions that are open, as exiting Claude Code does (`SessionEnd`).
+      await endCcHookSessionsOnExit(state)
       await Promise.all([...runtimeSessionIds].map(disposeRuntimeSession))
       runtimeSessionIds.clear()
       for (const entry of actionRegistry.values()) {

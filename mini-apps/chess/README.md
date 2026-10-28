@@ -34,8 +34,8 @@ that chat's, and deleting the chat closes it. The game lives in the chat's sessi
 (`ctx.sessionStorage`), which the host removes with the chat. Every route and tool acts on the chat
 the board belongs to — `c.env.sessionId` in a route (set only once the host checked the user owns
 it), the call's own session in a tool. When a game ends, the result asks the agent to save
-observations about play through its configured memory tool. Persistence depends on its permission
-rules and memory scope.
+observations about play in its memory, where the agent has one. Whether it can write there depends
+on its permission rules.
 
 ## The agent's tool
 

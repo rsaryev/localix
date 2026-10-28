@@ -1,3 +1,4 @@
+import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -7,7 +8,7 @@ import { createDatabase, destroyDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import { createProviderConnectionsService } from './service'
 
-const tempDir = join(process.cwd(), 'tmp', 'provider-connection-settings-guard-tests')
+const tempDir = join(tmpdir(), `localix-provider-connection-settings-guard-tests-${process.pid}`)
 
 /**
  * What guards a connection's settings beyond the names `cleanSettings` refuses: a refused change

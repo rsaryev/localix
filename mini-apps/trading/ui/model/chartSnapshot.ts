@@ -49,7 +49,7 @@ export function buildChartSnapshot(
   }
   // Never opened this page session: report the remembered preferences the tab WOULD open with.
   // Timeframe is per-connection; chart type, indicators and drawings are the tab's own per-tab
-  // prefs (each falling back to the old global seed if this tab has no per-tab entry yet).
+  // prefs.
   const timeframe = loadTimeframe(connectionId, storage)
   const drawings = loadDrawings(tabId, storage)
   const prefs = loadIndicatorPrefsV2(tabId, storage)

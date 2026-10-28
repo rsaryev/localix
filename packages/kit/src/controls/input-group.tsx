@@ -59,6 +59,9 @@ function InputGroupAddon({
     focusOnClick?: boolean
   }) {
   return (
+    // The click only hands the POINTER to the field the addon decorates; a keyboard user already
+    // reaches that input with Tab, so there is no key path to add to this surface.
+    // oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- pointer-only focus forwarding to the input the keyboard reaches directly
     <div
       role="group"
       data-slot="input-group-addon"

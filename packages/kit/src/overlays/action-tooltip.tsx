@@ -36,6 +36,7 @@ function ActionTooltip({
   const trigger = disabled ? (
     <span
       data-disabled-tooltip-anchor="true"
+      // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- the focus stop IS the point: a disabled control emits no focus, so this anchor carries the tooltip to keyboard users
       tabIndex={0}
       aria-label={accessibleLabel}
       className="inline-flex min-w-0 max-w-full shrink-0 cursor-not-allowed"

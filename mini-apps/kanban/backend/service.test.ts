@@ -5,16 +5,16 @@ import { join } from 'node:path'
 
 import type { BoardEvent } from '../shared/contracts'
 import { BoardRefusal } from '../shared/errors'
-import { createBoardService, type BoardSeat } from './service'
+import { createBoardService, type BoardChat } from './service'
 
 let root: string
-const seat: BoardSeat = { userId: 'u1', sessionId: 's1' }
+const chat: BoardChat = { userId: 'u1', sessionId: 's1' }
 const dirOf = (userId: string, sessionId: string) => join(root, userId, sessionId)
 
 const agents = {
   list: async () => [
-    { id: 'builtin:frontend', handle: 'frontend' },
-    { id: 'builtin:qa', handle: 'qa' },
+    { id: 'builtin:frontend', name: 'frontend' },
+    { id: 'builtin:qa', name: 'qa' },
   ],
 }
 
@@ -33,61 +33,61 @@ describe('board service', () => {
     // the board's file, and must still not lose a write.
     const [a, b] = [service(), service()]
     const created = await Promise.all([
-      a.create(seat, { title: 'one' }, 'user'),
-      b.create(seat, { title: 'two' }, 'agent'),
-      a.create(seat, { title: 'three' }, 'user'),
+      a.create(chat, { title: 'one' }, 'user'),
+      b.create(chat, { title: 'two' }, 'agent'),
+      a.create(chat, { title: 'three' }, 'user'),
     ])
     expect(created.map((task) => task.id).sort()).toEqual(['LX-1', 'LX-2', 'LX-3'])
-    expect((await b.read(seat)).tasks).toHaveLength(3)
+    expect((await b.read(chat)).tasks).toHaveLength(3)
   })
 
   test('announces a change to every subscriber of that board only, after it is written', async () => {
     const boards = service()
     const seen: BoardEvent[] = []
     const other: BoardEvent[] = []
-    const stop = await boards.subscribe(seat, (event) => seen.push(event))
+    const stop = await boards.subscribe(chat, (event) => seen.push(event))
     await boards.subscribe({ userId: 'u1', sessionId: 's2' }, (event) => other.push(event))
-    const task = await boards.create(seat, { title: 'watched' }, 'user')
+    const task = await boards.create(chat, { title: 'watched' }, 'user')
     const onDisk = JSON.parse(await readFile(join(dirOf('u1', 's1'), 'board.json'), 'utf8'))
     expect(onDisk.tasks[0].id).toBe(task.id)
     expect(seen).toEqual([{ type: 'task.created', sessionId: 's1', task }])
     expect(other).toEqual([])
     stop()
-    await boards.remove(seat, task.id)
+    await boards.remove(chat, task.id)
     expect(seen).toHaveLength(1)
   })
 
   test('a failed write changes nothing and announces nothing', async () => {
     const boards = service()
     const seen: BoardEvent[] = []
-    await boards.subscribe(seat, (event) => seen.push(event))
-    await expect(boards.create(seat, { title: 'x', dependsOn: ['LX-7'] }, 'user')).rejects.toThrow(
+    await boards.subscribe(chat, (event) => seen.push(event))
+    await expect(boards.create(chat, { title: 'x', dependsOn: ['LX-7'] }, 'user')).rejects.toThrow(
       BoardRefusal,
     )
-    expect((await boards.read(seat)).tasks).toEqual([])
+    expect((await boards.read(chat)).tasks).toEqual([])
     expect(seen).toEqual([])
   })
 
   test('an unreadable file reads as an empty board instead of throwing at every read', async () => {
     const boards = service()
-    await boards.create(seat, { title: 'x' }, 'user')
+    await boards.create(chat, { title: 'x' }, 'user')
     await writeFile(join(dirOf('u1', 's1'), 'board.json'), '{ not json')
-    expect((await boards.read(seat)).tasks).toEqual([])
+    expect((await boards.read(chat)).tasks).toEqual([])
   })
 
   test('an invalid input is a refusal that names the field', async () => {
     const refusal = await service()
-      .create(seat, { title: 'x'.repeat(201) }, 'user')
+      .create(chat, { title: 'x'.repeat(201) }, 'user')
       .catch((error: unknown) => error)
     expect(refusal).toBeInstanceOf(BoardRefusal)
     expect((refusal as BoardRefusal).message).toStartWith('title:')
   })
 
   describe('assignment', () => {
-    test('resolves an id, a handle and an @handle to the stored id', async () => {
+    test('resolves an id and a name to the stored id', async () => {
       const boards = service()
-      for (const reference of ['builtin:qa', 'qa', '@qa']) {
-        const task = await boards.create(seat, { title: reference, agent: reference }, 'agent')
+      for (const reference of ['builtin:qa', 'qa']) {
+        const task = await boards.create(chat, { title: reference, agent: reference }, 'agent')
         expect({ agentId: task.agentId, assignee: task.assignee }).toEqual({
           agentId: 'builtin:qa',
           assignee: 'qa',
@@ -97,19 +97,19 @@ describe('board service', () => {
 
     test('an unknown agent is refused with the agents that exist', async () => {
       const refusal = await service()
-        .create(seat, { title: 'x', agent: 'designer' }, 'agent')
+        .create(chat, { title: 'x', agent: 'designer' }, 'agent')
         .then(
           () => null,
           (error: unknown) => error as BoardRefusal,
         )
       expect(refusal?.code).toBe('agent_unavailable')
-      expect(refusal?.message).toContain('@frontend (builtin:frontend)')
+      expect(refusal?.message).toContain('frontend (builtin:frontend)')
     })
 
     test('null unassigns', async () => {
       const boards = service()
-      const task = await boards.create(seat, { title: 'x', agent: 'qa' }, 'agent')
-      const cleared = await boards.update(seat, task.id, { agent: null }, 'user')
+      const task = await boards.create(chat, { title: 'x', agent: 'qa' }, 'agent')
+      const cleared = await boards.update(chat, task.id, { agent: null }, 'user')
       expect({ agentId: cleared.agentId, assignee: cleared.assignee }).toEqual({
         agentId: null,
         assignee: null,

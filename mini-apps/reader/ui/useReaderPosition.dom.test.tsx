@@ -26,11 +26,15 @@ describe('reader position owner', () => {
 
     let position: ReaderPosition | null = null
     function Probe({ viewMode }: { viewMode: 'scroll' | 'page' }) {
-      position = useReaderPosition({
+      const value = useReaderPosition({
         sourceKey: 'book.epub',
         chapterIndex: 4,
         chapterCount: 12,
         viewMode,
+      })
+      // Read by the test once the commit is done, not written while rendering.
+      React.useEffect(() => {
+        position = value
       })
       return null
     }

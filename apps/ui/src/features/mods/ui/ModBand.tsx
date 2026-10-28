@@ -139,10 +139,12 @@ export function ModBand({
             ))}
           </BandScroller>
         ) : (
+          // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- delegated hotkeys: the keydown comes from the Buttons inside, the region is never the target
           <div
             role="region"
             aria-label="Mods band"
             // The band takes the keyboard on a click or Tab, and its Buttons' hotkeys with it.
+            // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- the region is the focus scope for the hotkeys of the Buttons inside it
             tabIndex={0}
             className="max-h-40 min-w-0 overflow-x-hidden overflow-y-auto rounded-sm focus-ring"
             onKeyDown={(event) => pressHotkey(event, hotkeys, actHere)}

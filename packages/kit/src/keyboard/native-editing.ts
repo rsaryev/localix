@@ -1,4 +1,4 @@
-import { useEffect, useRef, type RefObject } from 'react'
+import { useEffect, useEffectEvent, type RefObject } from 'react'
 
 /** Native Edit menu commands follow the focused editor or board before DOM text editing. */
 export type NativeEditCommand = 'undo' | 'redo' | 'select_all'
@@ -17,8 +17,7 @@ export function useNativeEditTarget(
   root: RefObject<HTMLElement | null>,
   run: (command: NativeEditCommand) => void,
 ) {
-  const latest = useRef(run)
-  latest.current = run
+  const runLatest = useEffectEvent(run)
   useEffect(
     () =>
       registerNativeEditTarget((command) => {
@@ -28,7 +27,7 @@ export function useNativeEditTarget(
           focused?.closest('input, textarea, select, [contenteditable="true"]')
         )
           return false
-        latest.current(command)
+        runLatest(command)
         return true
       }),
     [root],

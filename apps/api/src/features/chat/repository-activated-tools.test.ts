@@ -1,4 +1,5 @@
-import { routedParticipants } from '../../testing/session-fixture'
+import { tmpdir } from 'node:os'
+import { routedAgent } from '../../testing/session-fixture'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -8,7 +9,7 @@ import { createDatabase, destroyDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import { createChatRepository, type SessionRecord } from './repository'
 
-const tempDir = join(process.cwd(), 'tmp', 'chat-repository-activated-tools-tests')
+const tempDir = join(tmpdir(), `localix-chat-repository-activated-tools-tests-${process.pid}`)
 
 function session(id: string, overrides: Partial<SessionRecord> = {}): SessionRecord {
   const timestamp = '2026-08-18T00:00:00.000Z'
@@ -27,9 +28,8 @@ function session(id: string, overrides: Partial<SessionRecord> = {}): SessionRec
     parentSessionId: null,
     rootSessionId: id,
     sessionKind: 'chat',
-    agents: routedParticipants(),
+    agent: routedAgent(),
     description: null,
-    avatar: null,
     runtimeStatus: 'idle',
     sourceToolCallId: null,
     provenance: { kind: 'root' },

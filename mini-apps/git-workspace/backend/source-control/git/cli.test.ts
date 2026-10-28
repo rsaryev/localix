@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from 'bun:test'
+import { afterEach, describe, expect, jest, test } from 'bun:test'
 import { execFileSync } from 'node:child_process'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -214,9 +214,11 @@ describe('runGit wall-clock timeout', () => {
     __setGitSpawnForTest(slowNetworkSpawn)
 
     // No explicit timeout → a network subcommand gets no deadline.
+    jest.useFakeTimers()
     const pending = runGit('/repo', ['fetch', '--prune'])
-    // Give any (wrongly-armed) timer ample time to fire.
-    await new Promise((r) => setTimeout(r, 120))
+    // Past the local default deadline, a wrongly-armed timer would have fired by now.
+    jest.advanceTimersByTime(DEFAULT_GIT_TIMEOUT_MS * 2)
+    jest.useRealTimers()
     expect(killed).toBe(false)
 
     // Let it complete so we don't leak a pending promise.

@@ -2,7 +2,7 @@
  * Which agent file is which identity.
  *
  * Claude Code names an agent by (scope, name) and has no stable id; Localix needs one that
- * survives a rename, because rules, seats and history are keyed by it (P10). A binding row ties an
+ * survives a rename, because rules, routes and history are keyed by it (P10). A binding row ties an
  * id to what was last seen of its definition. `planBindings` compares the rows with a fresh scan
  * and says what to write; it touches nothing, so the rules below are tested without a clock or a
  * disk. The grace window is 30 s: a file that vanishes and comes back (a git checkout, a sync

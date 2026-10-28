@@ -44,12 +44,16 @@ loaders enforce X2.
 A part Claude Code defines and Localix does not run is reported in the plugin's validation, never
 dropped silently. A key Claude Code does not define is a validation warning, as in Claude Code.
 
-A built-in plugin is still only a plugin. The first one, `localix-mini-apps`, teaches an agent to
-build mini apps in plain Markdown — a skill and commands that name `/mini-app create`,
-`mini_app_build` and the repository's scripts — and imports no Localix code, so X1 and X2 hold: no
-code path joins the two layers, and its folder holds no `mini-app.json`. Staging keeps them apart
-too: a folder under `plugins/` whose only manifest is `.claude-plugin/plugin.json` is never staged
-as a mini app.
+A built-in plugin is still only a plugin. `mini-app-authoring` is where mini apps are made: its
+skills, reviewer agent, edit hook and `mini-app` command scaffold, check, build, pack and install
+them, and it imports no Localix code, so X1 and X2 hold: no code path joins the two layers, and its
+folder holds no `mini-app.json`. It reaches Localix only through data — the mini app kit, whose
+`tools/authoring.mjs` carries Localix's own validation (`features/mini-apps/kit-tools.ts`), and
+`GET /rpc/mini-apps/kit` and `POST /rpc/mini-apps/install-local` — so it can leave the repository
+unchanged. The core keeps no authoring: no build tool for the agent and no `/mini-app create` (X3:
+creating is the plugin's command, not a `/mini-app` subcommand). Staging keeps them apart too: a
+folder under `plugins/` whose only manifest is `.claude-plugin/plugin.json` is never staged as a
+mini app.
 
 A mod must get what Claude Code gives it. `scripts/cc-parity/` runs one probe mod in the installed
 Claude Code and in Localix's mods host and compares the shapes each hands it, per event and `$`
@@ -73,8 +77,8 @@ chess/
 - `mini-app.json` is the only manifest, validated by `packages/mini-app-sdk/src/manifest/`.
 - `guide.md` tells the agent which tool does what and what to tell the person. It is read on demand:
   the prompt lists each enabled mini app in one line, marked when it has a guide, and the agent
-  reads one with `mini_app_guide` before it first uses the app (as it reads a skill). It replaces
-  the skills a mini app used to carry.
+  reads one with `MiniAppGuide` before it first uses the app (as it reads a skill). It replaces the
+  skills a mini app used to carry.
 - A **command** is declared in `mini-app.json`: its `prompt` (with `${name}` for each argument),
   `description`, `args` with chips and pickers, `featured`, and the tools it switches on
   (`activateTools`). It runs as `/<app>:<command>`.
@@ -85,10 +89,10 @@ chess/
 | Part     | Where                                                                                                                 |
 | -------- | --------------------------------------------------------------------------------------------------------------------- |
 | SDK      | `packages/mini-app-sdk` (`@localixai/mini-app-sdk`): manifest, backend and UI contracts. The host serves its modules. |
-| Runtime  | `apps/api/src/features/mini-apps/`: catalog, install and update, backend host, UI artifacts, views, authoring.        |
+| Runtime  | `apps/api/src/features/mini-apps/`: catalog, install and update, backend host, UI artifacts, views, the kit.          |
 | Disk     | `~/.localix/mini-apps/<name>/` (the installed build) and `~/.localix/mini-apps-data/<name>/` (its state).             |
 | Surfaces | `/rpc/mini-apps`, the Store (Mini apps), `/mini-app`.                                                                 |
-| Agent    | Backend tools, `guide.md`, commands, the `mini_app_build` tool.                                                       |
+| Agent    | Backend tools, `guide.md`, commands.                                                                                  |
 
 ### State and events
 
@@ -173,18 +177,18 @@ Only developer mode builds on the person's machine; every other source ships bui
    build. An update never touches the app's data folder.
 5. **Trust.** Installing from the store is the person's yes to run the app. An unverified publisher
    is named in the row, and its install asks again first.
-6. **Create.** `mini_app_build` forks the template into `~/.localix/mini-apps/<name>/` and builds it
-   with the host's build: the person's own app, updated by no catalog.
+6. **Create.** The mini-app-authoring plugin forks the template from the kit into a folder of the
+   person's, builds the package, and `POST /rpc/mini-apps/install-local` validates it and copies it
+   into `~/.localix/mini-apps/<name>/` with a local install record: the person's own app, updated by
+   no catalog and never installed over a catalog's app.
 
 In development the catalog is built from the checkout, so a change to `mini-apps/` is installed
 without a release.
 
 ## Migration
 
-None: mini apps start clean. Their settings, secrets and data live under new names
-(`mini-app-option.`, `mini-app:` rules, `mini-apps-data/`); what earlier versions kept under the
-plugin names is no longer read. The managed copies earlier versions synchronized into
-`~/.localix/plugins/` are removed on start.
+None: mini apps start clean. Their settings, secrets and data live under `mini-app-option.`,
+`mini-app:` rules and `mini-apps-data/`.
 
 ## Status
 

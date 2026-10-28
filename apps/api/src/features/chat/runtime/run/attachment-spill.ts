@@ -12,7 +12,7 @@
  * Files land under `<cwd>/.localix/attachments/<sessionId>/<messageId>/<file>` —
  * inside the session cwd (so the cwd-relative file tools reach them) and under the
  * standard `.localix/` workspace namespace (so they stay out of the user's tree).
- * The `read` tool reaches this dotdir directly (verified); ripgrep skips hidden
+ * The `Read` tool reaches this dotdir directly (verified); ripgrep skips hidden
  * dirs by default, so the manifest steers the model to `read` (the path is known,
  * so discovery-grep isn't needed — line-range reads cover within-file search).
  */

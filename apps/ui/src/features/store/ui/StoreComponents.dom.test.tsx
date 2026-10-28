@@ -125,28 +125,22 @@ describe('Skills is one shelf: the skills a person has and those inside plugins'
     ],
   })
 
-  test('one Skills entry counts both, and the packages group names only mini apps and plugins', async () => {
+  test('one Skills tab, after the package kinds', async () => {
     const view = await renderStore({
       listings: [REVIEW, LINT],
       target: { shelf: 'capability:skill' },
     })
     try {
-      const nav = view.host.querySelector('nav[aria-label="Store sections"]')!
-      const skills = [...nav.querySelectorAll('button')].filter((b) =>
-        b.textContent?.startsWith('Skills'),
-      )
+      const tabs = [
+        ...view.host.querySelectorAll<HTMLElement>(
+          '[role="tablist"][aria-label="Store sections"] [role="tab"]',
+        ),
+      ].map((tab) => tab.textContent ?? '')
+      const skills = tabs.filter((text) => text.startsWith('Skills'))
       expect(skills).toHaveLength(1)
-      expect(skills[0]!.textContent).toContain('3')
-      expect(nav.querySelector('[role="group"][aria-label="Packages"]')?.textContent).toContain(
-        'Plugins',
+      expect(tabs.findIndex((text) => text.startsWith('Plugins'))).toBeLessThan(
+        tabs.indexOf(skills[0]!),
       )
-      expect(nav.querySelector('[role="group"][aria-label="Packages"]')?.textContent).not.toContain(
-        'Skills',
-      )
-      expect(nav.querySelector('[role="group"][aria-label="Capabilities"]')).toBeNull()
-      expect(
-        nav.querySelector('[role="group"][aria-label="What packages give"]')?.textContent,
-      ).toContain('Skills')
     } finally {
       await view.done()
     }

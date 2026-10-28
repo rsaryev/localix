@@ -11,6 +11,10 @@ import { mapDbError } from './errors'
 import { createDatabaseService } from './service'
 import { createConnectionStore } from './store'
 
+const turns = async (n = 10) => {
+  for (let i = 0; i < n; i++) await new Promise((r) => setImmediate(r))
+}
+
 const newService = () =>
   createDatabaseService({
     store: createConnectionStore({
@@ -772,7 +776,7 @@ describe('query lifecycle (timeout + cancel)', () => {
     const conn = await service.connect('u', { config: { dialect: 'sqlite', file: ':memory:' } })
     const pending = service.query('u', conn.id, 'SLEEP 5000', [], { timeoutMs: 0 })
     // Let the query register itself as in-flight before we cancel.
-    await new Promise((r) => setTimeout(r, 10))
+    await turns()
     expect(service.cancel('u', conn.id)).toBe(1)
     expect(pending).rejects.toMatchObject({ code: 'cancelled' })
     // Nothing left to cancel afterwards.
@@ -788,7 +792,7 @@ describe('query lifecycle (timeout + cancel)', () => {
       timeoutMs: 0,
       signal: ac.signal,
     })
-    await new Promise((r) => setTimeout(r, 10))
+    await turns()
     ac.abort()
     expect(pending).rejects.toMatchObject({ code: 'cancelled' })
     await service.closeAll()
@@ -1055,7 +1059,7 @@ describe('query abort semantics (resolved-but-aborted)', () => {
       defaultSchema: '',
     }),
     async query() {
-      await new Promise((r) => setTimeout(r, 20))
+      await turns()
       return { columns: [{ name: 'v' }], rows: [[1]], durationMs: 20 }
     },
     async browse() {

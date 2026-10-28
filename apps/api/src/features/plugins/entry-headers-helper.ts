@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import { execFile } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { homedir } from 'node:os'
@@ -50,10 +51,14 @@ export async function entryHelperHeaders(input: {
   const env = Object.fromEntries(
     Object.entries(childEnvNonInteractive()).filter(([name]) => !isCredentialEnvName(name)),
   )
+  // Claude Code's folder when there is one; a computer that never ran Claude Code has none, and a
+  // missing working folder fails the spawn itself (as an ENOENT for `sh`).
+  const home = input.homeDir ?? homedir()
+  const configDir = claudeConfigDir(home)
   let stdout: string
   try {
     ;({ stdout } = await execFileAsync('sh', ['-c', input.command], {
-      cwd: claudeConfigDir(input.homeDir ?? homedir()),
+      cwd: existsSync(configDir) ? configDir : home,
       timeout: HELPER_TIMEOUT_MS,
       env: {
         ...env,

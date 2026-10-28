@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 
-import { DEFAULT_AGENT_PARTICIPANT, USER_PARTICIPANT } from '../../db'
+import { DEFAULT_AGENT_AUTHOR, USER_AUTHOR } from '../../db'
 import { createDatabase, destroyDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
-import { routedParticipants, sessionFixture } from '../../testing/session-fixture'
+import { routedAgent, sessionFixture } from '../../testing/session-fixture'
 import type { PersistedMessage } from './contracts'
 import { createChatRepository } from './repository'
 
@@ -33,7 +33,7 @@ const row = (id: string, sessionId: string, role: 'user' | 'assistant', content:
   payload: {
     id,
     role,
-    from: role === 'user' ? USER_PARTICIPANT : DEFAULT_AGENT_PARTICIPANT,
+    from: role === 'user' ? USER_AUTHOR : DEFAULT_AGENT_AUTHOR,
     content,
   },
   createdAt: AT,
@@ -45,7 +45,7 @@ async function parentWith(ids: Array<[string, 'user' | 'assistant']>) {
     sessionFixture({
       id: 'parent',
       userId: 'u',
-      agents: routedParticipants(),
+      agent: routedAgent(),
       rootSessionId: 'parent',
     }),
   )
@@ -61,7 +61,7 @@ async function forkOf(base: string | null) {
       sessionKind: 'subagent',
       parentSessionId: 'parent',
       rootSessionId: 'parent',
-      agents: routedParticipants(),
+      agent: routedAgent(),
       provenance: {
         kind: 'task-delegation',
         parentSessionId: 'parent',

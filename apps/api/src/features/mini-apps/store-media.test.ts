@@ -68,7 +68,7 @@ async function hosted(opts: { badShot?: boolean; featured?: boolean } = {}) {
     archive: pin('chess.tar.gz', archive),
   }
   const fetchImpl = (async (input: string | URL | Request) => {
-    const url = String(input)
+    const url = String(input instanceof Request ? input.url : input)
     fetched.push(url)
     if (url === CATALOG) return Response.json({ schema: 1, apps: [app] })
     const body = files[url.split('/').pop() ?? '']

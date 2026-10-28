@@ -51,6 +51,15 @@ export function explainStartFailure(code: number | null, stderr: string): string
   return `llama-server exited during start (${code}): ${stderr.split('\n').slice(-5).join(' ')}`
 }
 
+/** A request to a llama-server at `baseUrl`, carrying the key it was started with. */
+export function keyedRequest(baseUrl: string, apiKey: string) {
+  return (pathname: string, init: RequestInit = {}) => {
+    const headers = new Headers(init.headers)
+    headers.set('authorization', `Bearer ${apiKey}`)
+    return fetch(`${baseUrl}${pathname}`, { ...init, headers })
+  }
+}
+
 async function freeLoopbackPort(): Promise<number> {
   const probe = Bun.listen({ hostname: '127.0.0.1', port: 0, socket: { data() {} } })
   const port = probe.port
@@ -120,11 +129,7 @@ export async function startLlamaServer(options: LlamaServerOptions): Promise<Lla
     get running() {
       return !exited
     },
-    request(pathname, init = {}) {
-      const headers = new Headers(init.headers)
-      headers.set('authorization', `Bearer ${apiKey}`)
-      return fetch(`${baseUrl}${pathname}`, { ...init, headers })
-    },
+    request: keyedRequest(baseUrl, apiKey),
     async stop() {
       if (exited) return
       stoppedOnPurpose = true

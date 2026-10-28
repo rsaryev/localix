@@ -18,15 +18,15 @@ export function authorizeTypedSkillCommands(
   allowedTools: readonly string[] | undefined,
   root: string,
 ): AuthorizeSkillCommand {
-  const bash = { name: TOOL.bash, classify: classifyBashCall } as unknown as AgentTool
+  const bash = { name: TOOL.Bash, classify: classifyBashCall } as unknown as AgentTool
   const verdict = verdictOf({
     rules,
     preapprovedRules: skillPermissionRules(allowedTools, root),
-    toolsByName: new Map([[TOOL.bash, bash]]),
+    toolsByName: new Map([[TOOL.Bash, bash]]),
     root,
   })
   return (command) => {
-    const result = verdict(TOOL.bash, { command })
+    const result = verdict(TOOL.Bash, { command })
     if (result.decision === 'allow') return undefined
     const why = result.reason ?? (result.rule ? `rule ${result.rule}` : '')
     return result.decision === 'deny'

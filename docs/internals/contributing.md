@@ -25,6 +25,7 @@ catch regressions.
 | Build a native bundle             | `bun run build:desktop`                                          | Produces a host-platform local build, not a verified public release. |
 | Run one API test file             | `cd apps/api && bun test src/features/projects/projects.test.ts` | Build workspace dependencies first.                                  |
 | Validate public Markdown          | `bun run --cwd apps/landing docs:gen`                            | Formats nothing; use Oxfmt separately on the files you own.          |
+| Update the language servers       | `bun run --cwd apps/api lsp:update`                              | Newest releases a week old into `language-servers.json`; review it.  |
 
 Start a fresh checkout with the pinned tools, install dependencies, and seed package outputs:
 
@@ -64,8 +65,29 @@ own extension boundaries; do not duplicate those contracts inside feature change
 ### Turbo and focused commands
 
 Root `build`, `test`, `type-check`, and `check:tests` tasks use the dependency graph in
-`turbo.json`. Their `dependsOn` entries build upstream packages and generate public documentation
-before the consumer task runs.
+`turbo.json`. `build` and `test` build upstream packages first. `type-check` and `check:tests`
+depend on the `type-check` of the packages they import, which keeps their cache keys correct, and
+need no build.
+
+Every internal package lists a `@localixai/source` condition in its `exports`, pointing at `src`,
+and `tsconfig.base.json` sets it as a `customConditions` entry. The compiler therefore reads
+dependencies from source. The `tsconfig.build.json` files clear the condition, so a build still
+emits against `dist`, and the packaged app, Bun and Vite never see it.
+
+A workspace that reads another workspace's files through tsconfig `paths` must hash them: depend on
+the target's `type-check` in its `turbo.json`, or list the target in `inputs`. Mini apps do both for
+the kit and `apps/ui/src`. `scripts/type-check-inputs-guard.test.ts` fails when a `paths` target is
+neither.
+
+Source checking applies the consumer's strictness to a dependency's files; fix the dependency file
+rather than relaxing the consumer. Each package keeps an incremental build info under
+`node_modules/.cache/tsc`, so a re-check only revisits what changed.
+
+Type checks run through `scripts/tsc.mjs`, which bounds the checker threads TypeScript 7 starts (2
+per process by default; `LOCALIX_TSC_CHECKERS` overrides). With Turbo running two tasks at a time
+(`TURBO_CONCURRENCY`, default 2), a full run uses about half of a 10-core machine. Raise both on CI
+or a large machine. A new package that other packages import adds the condition to its `exports`,
+and the one script that generates landing documentation still builds the packages it imports.
 
 A raw package command bypasses that preparation. Use it for iteration only after the root build, or
 run the corresponding root task with an appropriate Turbo filter.
@@ -90,23 +112,19 @@ owns the ordered gate list. The public-repository check compares that list with 
 removing a required gate must update the policy and workflow together.
 
 Use a focused test while editing. Ordinary commits run formatting and lint on staged files through
-`.githooks/pre-commit`, source and test type checks for affected packages and their transitive
-consumers, and changed or co-located tests. Turbo prepares upstream builds for those type checks.
-Shared compiler settings and dependency manifests at the root select all workspaces. Mini app
-backend changes also select the API compile project.
+`.githooks/pre-commit`, and changed or co-located tests.
 
 Rust source, dependency, and Tauri configuration changes run formatting and Clippy on the current
 platform when Cargo is available. Missing Clippy or rustfmt blocks a Rust commit once Cargo is
-available. The hook does not rewrite or stage tracked files, but type checks may generate ignored
-output. Staged files and affected packages must have no unstaged edits; stage or stash them before
-committing.
+available. The hook does not rewrite or stage tracked files. A file it checks must have no unstaged
+edits; stage or stash it before committing.
 
-Before every push, `.githooks/pre-push` runs the CI gates `type-check`, `check:tests`, and `test`
-for the packages that differ from `origin/main` and every package that depends on them (Turbo's
-`--affected`; a global input selects all of them), three tasks at a time. `TURBO_FILTER= git push`
-checks the whole tree. Pull-request CI runs the same selection against the pull request's base;
-`main` checks the whole tree. The gates check the working tree, so commit or stash tracked changes
-before pushing.
+Before every push, `.githooks/pre-push` runs `type-check` and `check:tests` for the packages the
+pushed commits change and every package that depends on them (Turbo's `--affected` against the
+remote branch, or `origin/main` for a new one), two tasks at a time. `TURBO_FILTER= git push` checks
+the whole tree. The unit tests run in CI on our own runner: pull requests for the packages they
+change, `main` over the whole tree. The gates check the working tree, so commit or stash tracked
+changes before pushing.
 
 Hooks never pass git's repository variables (`GIT_DIR`, `GIT_INDEX_FILE` and the rest) to the tools
 and tests they start: a test that creates a scratch repository would otherwise act on this one,
@@ -123,11 +141,11 @@ validation, including the full Rust test suite.
 
 ### Workflows and releases
 
-| Workflow          | Runs when                                    | Jobs and result                                                                                                                                 |
-| ----------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Checks`          | PR, push to main (not docs-only), manual run | `App (types)` (types, test layout, size) and `Desktop (Rust) and repository scans`, reported as `Checks passed`; tests run locally in pre-push. |
-| `Desktop Release` | Manual run from main                         | Prepare release and require green CI → validate changelog and signing → create draft → build → publish.                                         |
-| `Website Deploy`  | Manual run                                   | Build and deploy the website, a preview unless `production` is chosen and `LANDING_PRODUCTION=true`.                                            |
+| Workflow          | Runs when                                    | Jobs and result                                                                                                                              |
+| ----------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Checks`          | PR, push to main (not docs-only), manual run | `App (types)` (types, test layout, size), `App (tests)` (unit tests) and `Desktop (Rust) and repository scans`, reported as `Checks passed`. |
+| `Desktop Release` | Manual run from main                         | Prepare release and require green CI → validate changelog and signing → create draft → build → publish.                                      |
+| `Website Deploy`  | Manual run                                   | Build and deploy the website, a preview unless `production` is chosen and `LANDING_PRODUCTION=true`.                                         |
 
 A push starts only `Checks`; the website and a desktop release are always started by hand, so a
 deploy costs a build only when someone wants one. Run `Website Deploy` again after a release is
@@ -153,10 +171,16 @@ sources, root manifest, Bun lockfile, Node version, or shared CI setup, over the
 manual run, or a push with no successful run to compare with, always runs everything; a release
 compiles the Rust shell itself either way.
 
-Every job runs on a GitHub-hosted runner pinned to an image: `ubuntu-24.04`, with the Rust job and
-the Linux release leg on `ubuntu-22.04` for an older glibc baseline, and the macOS release leg on
-`macos-15`. Workflows grant no default token permissions; each job names its own. Scanners are
-checksummed release binaries.
+`Checks` and `Website Deploy` run on our own runner, labelled `localix`: a service on the CI server
+(`localix-runner.service`) registers an ephemeral runner in a fresh Docker container, takes one job
+and leaves, so no job sees another's files. The image is Ubuntu 24.04 with Rust, sccache and the
+webview's libraries; Node and Bun come from the setup actions and stay in a cache volume. A pull
+request from a fork runs on GitHub's `ubuntu-24.04` instead, so code from outside never runs on our
+machine.
+
+The release stays on GitHub-hosted runners: the Linux leg on `ubuntu-22.04` for an older glibc
+baseline, and the macOS leg on `macos-15`. Workflows grant no default token permissions; each job
+names its own. Scanners are checksummed release binaries.
 
 The Bun package cache, the Turbo cache, and the Rust target are restored from GitHub cache archives.
 Only pushes to `main` save CI's Turbo and Rust archives, so pull requests restore them without

@@ -23,7 +23,8 @@ export function switchTypeOps(space: SpaceDocument, id: string, to: Switchable):
   const target = spaceTypes.get(to)
   const read = spaceTypes.read(element.type, element.props, space.typeVersions[element.type])
   if (!from || !target || read.status !== 'ok') return null
-  const text = from.textProp ? String(read.props[from.textProp] ?? '') : ''
+  const carried = from.textProp ? read.props[from.textProp] : undefined
+  const text = typeof carried === 'string' ? carried : ''
   const props: Record<string, unknown> = {}
   for (const prop of CARRIED) {
     if (read.props[prop] === undefined) continue

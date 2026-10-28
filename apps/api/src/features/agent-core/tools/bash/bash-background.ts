@@ -128,7 +128,7 @@ export async function runBackgroundCommand(
     kill: {
       label: 'Kill',
       icon: 'square',
-      // `jobs stop` passes `{ by: 'agent' }`; the person's Stop button passes nothing.
+      // `TaskStop` passes `{ by: 'agent' }`; the person's Stop button passes nothing.
       execute: (payload?: unknown) => {
         doBgKill((payload as { by?: string } | undefined)?.by === 'agent' ? 'agent' : 'person')
       },

@@ -2,7 +2,8 @@ import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import type { ComposerCommands } from '../useComposerCommands'
 import type { ModelCommandContext } from './modelCommandTarget'
-import { context, member } from './testing/modelCommandFixture'
+import { turns } from '@/testing/settle'
+import { agentRow, context } from './testing/modelCommandFixture'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -13,7 +14,7 @@ afterAll(() => teardown())
 
 /** The composer's real command engine, chips and argument menu, fed `/model`'s step data. */
 async function mount(ctx: ModelCommandContext, initial = '/model ') {
-  const { act, useState } = await import('react')
+  const { act, useEffect, useState } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { useComposerCommands } = await import('../useComposerCommands')
   const { CommandChipPrefix } = await import('../CommandChipPrefix')
@@ -27,14 +28,17 @@ async function mount(ctx: ModelCommandContext, initial = '/model ') {
   const state = { current: null as unknown as ComposerCommands, prompt: initial }
   function Harness() {
     const [value, setValue] = useState(initial)
-    state.prompt = value
-    state.current = useComposerCommands(value, setValue, [], load as never, skip as never)
-    const { slashArgs } = state.current
+    const commands = useComposerCommands(value, setValue, [], load as never, skip as never, 0)
+    useEffect(() => {
+      state.prompt = value
+      state.current = commands
+    })
+    const { slashArgs } = commands
     return (
       <Autocomplete open={slashArgs.isMenuOpen}>
         <AutocompleteAnchor asChild>
           <div>
-            <CommandChipPrefix slash={state.current.slash} slashArgs={slashArgs} />
+            <CommandChipPrefix slash={commands.slash} slashArgs={slashArgs} />
           </div>
         </AutocompleteAnchor>
         <SlashArgMenu
@@ -49,8 +53,12 @@ async function mount(ctx: ModelCommandContext, initial = '/model ') {
   const host = document.createElement('div')
   document.body.append(host)
   const root = createRoot(host)
-  // The dynamic rows load after the hook's 200ms debounce.
-  const settle = () => act(() => new Promise<void>((resolve) => setTimeout(resolve, 260)))
+  // The dynamic rows load after the hook's debounce timer (0 here); then the reads land.
+  const settle = () =>
+    act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      await turns()
+    })
   const key = (name: string) =>
     act(async () => {
       state.current.handleKeyDown({ key: name, preventDefault() {} } as never)
@@ -66,38 +74,25 @@ async function mount(ctx: ModelCommandContext, initial = '/model ') {
   return { state, host, act, settle, key, listbox, rows, unmount }
 }
 
-test('a group walks Agents → Provider → Model → Settings with keyboard and mouse', async () => {
-  const ui = await mount(
-    context([
-      member('lead', 'openai/gpt', 'high', { label: 'Lead' }),
-      member('qa', 'anthropic/opus'),
-    ]),
-  )
+test('the agent’s model walks Provider → Model → Settings with keyboard and mouse', async () => {
+  const ui = await mount(context(agentRow('lead', 'openai/gpt', 'high', { name: 'lead' })))
   try {
-    // Step 1, an accessible listbox of the room: All agents first.
+    // Step 1, an accessible listbox of the connections.
     expect(ui.listbox()?.getAttribute('aria-label')).toBe('Command arguments')
     expect(ui.rows().map((row) => row.textContent)).toEqual([
-      expect.stringContaining('All agents'),
-      expect.stringContaining('Lead'),
-      expect.stringContaining('@qa'),
+      expect.stringContaining('Anthropic'),
+      expect.stringContaining('OpenAI'),
     ])
     expect(ui.rows()[0]?.getAttribute('aria-selected')).toBe('true')
     await ui.key('ArrowDown')
     expect(ui.rows()[1]?.getAttribute('aria-selected')).toBe('true')
     await ui.key('Enter')
-    expect(ui.state.prompt).toBe('/model @lead ')
-    // The breadcrumb names the member as the menu did.
-    expect(ui.host.querySelector('[title="agent: GPT · High"]')?.textContent).toContain('Lead')
-    await ui.settle()
-    // Step 2 by mouse.
-    const openai = ui.rows().find((row) => row.textContent?.includes('OpenAI'))!
-    await ui.act(async () => openai.dispatchEvent(new MouseEvent('click', { bubbles: true })))
-    expect(ui.state.prompt).toBe('/model @lead conn-openai ')
+    expect(ui.state.prompt).toBe('/model conn-openai ')
     await ui.settle()
     expect(ui.state.current.slashArgs.activeSpec?.name).toBe('model')
     await ui.key('Tab')
     await ui.settle()
-    // Step 4: only the levels GPT offers, Off included because it publishes it.
+    // Reasoning: only the levels GPT offers, Off included because it publishes it.
     expect(ui.state.current.slashArgs.options.map((row) => row.value)).toEqual([
       'off',
       'minimal',
@@ -109,47 +104,23 @@ test('a group walks Agents → Provider → Model → Settings with keyboard and
     expect(ui.state.current.handleKeyDown({ key: 'Enter', preventDefault() {} } as never)).toBe(
       false,
     )
-    // Back: Backspace on an empty step clears the last crumb; the × clears from that crumb on.
-    await ui.key('Backspace')
-    expect(ui.state.prompt).toBe('/model @lead conn-openai ')
-    const clearProvider = ui.host.querySelector('[aria-label="Clear provider"]')!
-    await ui.act(async () =>
-      clearProvider.dispatchEvent(new MouseEvent('click', { bubbles: true })),
-    )
-    expect(ui.state.prompt).toBe('/model @lead ')
-    expect(ui.state.current.slashArgs.activeSpec?.name).toBe('provider')
   } finally {
     await ui.unmount()
   }
 })
 
-test('a one-agent chat names its agent, and a non-reasoning model skips Reasoning', async () => {
+test('a non-reasoning model skips Reasoning', async () => {
   const ui = await mount(
-    context([member('solo', 'openai/gpt')]),
-    '/model @solo conn-openai openai/plain ',
+    context(agentRow('solo', 'openai/gpt')),
+    '/model conn-openai openai/plain ',
   )
   try {
     expect(ui.state.current.slashArgs.chips.map((chip) => chip.spec.name)).toEqual([
-      'agent',
       'provider',
       'model',
     ])
     expect(ui.state.current.slashArgs.activeSpec?.name).toBe('turns')
     expect(ui.rows()[0]?.textContent).toContain('Keep')
-  } finally {
-    await ui.unmount()
-  }
-})
-
-test('All agents ends after Reasoning — the per-agent settings do not apply to the room', async () => {
-  const ui = await mount(
-    context([member('lead', 'openai/gpt'), member('qa', 'anthropic/opus')]),
-    '/model all conn-anthropic anthropic/opus high ',
-  )
-  try {
-    expect(ui.state.current.slashArgs.activeSpec).toBeNull()
-    expect(ui.state.current.slashArgs.placeholder).toBe('Enter to run…')
-    expect(ui.listbox()).toBeNull()
   } finally {
     await ui.unmount()
   }

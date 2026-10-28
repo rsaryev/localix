@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto'
+import { CLAUDE_CODE_BASE_VERSION } from '../../cc-settings/claude-code-version'
 import type { ModScene, ModsPorts } from '../contracts'
+import { apiMessagesOf, newestRows } from './session-messages'
 
 /**
  * `$.session`: the conversation a hook runs in, shaped as Claude Code answers it. Localix shows a
@@ -13,13 +15,15 @@ import type { ModScene, ModsPorts } from '../contracts'
  */
 const VERSION = {
   version: 'localix',
-  base: '2.1.310',
+  base: CLAUDE_CODE_BASE_VERSION,
   builtAt: new Date(Date.now() - Math.round(process.uptime() * 1000)).toISOString(),
 }
 
 export function createSessionApi(input: {
   scene: () => ModScene
   ports: Pick<ModsPorts, 'readSession'>
+  /** The ids of the conversation's agents: the children `$.agent.list` names. */
+  agentIds: () => Promise<readonly string[]>
   /** `$.session.append`: a note the model reads with the conversation's next prompt. */
   append: (sessionId: string, text: string) => void
   run: (argv: string[], cwd: string) => Promise<{ exitCode: number; stdout: string }>
@@ -27,7 +31,8 @@ export function createSessionApi(input: {
   compact: () => Promise<unknown>
 }) {
   const { scene, ports, run } = input
-  const read = () => ports.readSession?.(scene()) ?? Promise.resolve(null)
+  const read = (sessionId?: string) =>
+    ports.readSession?.(sessionId ? { ...scene(), sessionId } : scene()) ?? Promise.resolve(null)
   const git = async (cwd: string, ...args: string[]) => {
     const result = await run(['git', '-C', cwd, ...args], cwd).catch(() => null)
     return result?.exitCode === 0 ? result.stdout.trim() : null
@@ -36,14 +41,34 @@ export function createSessionApi(input: {
     const { cwd } = scene()
     const root = await git(cwd, 'rev-parse', '--show-toplevel')
     if (!root) return null
-    return { root, remote: await git(cwd, 'remote', 'get-url', 'origin'), internal: false }
+    // No repository is Localix's own, so none is `internal` and none is named.
+    return {
+      root,
+      remote: await git(cwd, 'remote', 'get-url', 'origin'),
+      internal: false,
+      name: null,
+    }
   }
   return {
-    id: () => scene().sessionId ?? '',
+    id: async () => {
+      const id = scene().sessionId
+      if (!id) throw new Error('session.id: no conversation here')
+      return id
+    },
     cwd: () => scene().cwd,
     root: async () => (await repo())?.root ?? scene().cwd,
     repo,
-    messages: async () => (await read())?.messages ?? [],
+    /** The main conversation, or with `agentId` one of its agents'; `as: 'api'` for the API form. */
+    async messages(args?: unknown) {
+      const { agentId, as } = (args ?? {}) as { agentId?: unknown; as?: unknown }
+      if (agentId !== undefined && !(typeof agentId === 'string' && agentId)) {
+        throw new Error('session.messages: agentId is an agent id')
+      }
+      if (typeof agentId === 'string' && !(await input.agentIds()).includes(agentId))
+        return { deny: `No agent ${agentId} in this conversation to read` }
+      const rows = (await read(agentId as string | undefined))?.messages ?? []
+      return as === 'api' ? apiMessagesOf(rows) : newestRows(rows)
+    },
     model: async () => (await read())?.model ?? '',
     turns: async () =>
       ((await read())?.messages ?? []).filter((message) => message.role === 'user').length,

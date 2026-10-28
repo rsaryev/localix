@@ -34,13 +34,12 @@ describe('workflow commands', () => {
     const command = plugin!.commands.find((entry) => entry.name === 'release-audit')
     expect(command).toMatchObject({
       description: 'Audit the release',
-      activateTools: ['workflow'],
+      activateTools: ['Workflow'],
       argumentHint: '[input]',
     })
-    expect(command!.prompt).toContain('`acme:release-audit` now with the `workflow` tool')
+    expect(command!.prompt).toContain('`acme:release-audit` now with the `Workflow` tool')
     expect(command!.prompt).toContain('$ARGUMENTS')
-    // A "+500k" in the input is the run's token target, as Claude Code reads it.
-    expect(command!.prompt).toContain('pass it as budget')
+    expect(command!.prompt).not.toContain('budget')
     expect(plugin!.provides.commands).toEqual(['ship', 'release-audit'])
 
     const catalog = { enabled: [{ plugin }] } as unknown as PluginCatalog

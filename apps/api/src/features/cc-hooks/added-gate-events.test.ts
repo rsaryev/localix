@@ -59,7 +59,7 @@ describe('UserPromptExpansion', () => {
     const result = await rt.runUserPromptExpansion({
       commandName: 'x',
       commandArgs: '',
-      commandSource: 'skill',
+      commandSource: 'Skill',
       prompt: '/x',
     })
     expect(result).toEqual({ blocked: true, reason: 'no' })
@@ -80,7 +80,7 @@ describe('PermissionRequest', () => {
         { matcher: 'Bash', handlers: [cmd(`cat >/dev/null; ${json(deny)}`)] },
       ],
     })
-    expect(await rt.runPermissionRequest('bash', { command: 'ls' })).toEqual({
+    expect(await rt.runPermissionRequest('Bash', { command: 'ls' })).toEqual({
       behavior: 'deny',
       message: 'no',
       interrupt: true,
@@ -102,12 +102,12 @@ describe('PermissionRequest', () => {
         { handlers: [cmd('cat >/dev/null; exit 2'), cmd(`cat >/dev/null; ${json(allow)}`)] },
       ],
     })
-    expect(await rt.runPermissionRequest('edit', {})).toEqual({
+    expect(await rt.runPermissionRequest('Edit', {})).toEqual({
       behavior: 'allow',
       updatedInput: { a: 1 },
     })
     const exitOnly = make({ PermissionRequest: [{ handlers: [cmd('cat >/dev/null; exit 2')] }] })
-    expect(await exitOnly.runPermissionRequest('edit', {})).toEqual({})
+    expect(await exitOnly.runPermissionRequest('Edit', {})).toEqual({})
   })
 
   it('hands an allowed rewrite to the call exactly once', () => {
@@ -124,7 +124,7 @@ describe('PermissionDenied', () => {
     const rt = make({
       PermissionDenied: [{ matcher: 'Bash', handlers: [capture('pd.json', json(retry))] }],
     })
-    expect(await rt.runPermissionDenied('bash', { command: 'rm x' }, 'tc9', 'Plan mode')).toEqual({
+    expect(await rt.runPermissionDenied('Bash', { command: 'rm x' }, 'tc9', 'Plan mode')).toEqual({
       retry: true,
     })
     expect(input('pd.json')).toMatchObject({
@@ -132,7 +132,7 @@ describe('PermissionDenied', () => {
       tool_use_id: 'tc9',
       reason: 'Plan mode',
     })
-    expect(await rt.runPermissionDenied('edit', {}, 'tc1', 'x')).toEqual({ retry: false })
+    expect(await rt.runPermissionDenied('Edit', {}, 'tc1', 'x')).toEqual({ retry: false })
   })
 })
 
@@ -169,8 +169,8 @@ describe('PostToolBatch', () => {
   })
 })
 
-describe('TaskCreated / TaskCompleted / TeammateIdle', () => {
-  const task = { id: 'LX-1', subject: 'Ship', description: 'all of it', teammateName: 'bob' }
+describe('TaskCreated / TaskCompleted', () => {
+  const task = { id: 'LX-1', subject: 'Ship', description: 'all of it' }
 
   it('TaskCreated: the card fields, and exit 2 or decision:block refuses', async () => {
     const rt = make({ TaskCreated: [{ handlers: [capture('tc.json', 'echo bad >&2; exit 2')] }] })
@@ -180,7 +180,6 @@ describe('TaskCreated / TaskCompleted / TeammateIdle', () => {
       task_id: 'LX-1',
       task_subject: 'Ship',
       task_description: 'all of it',
-      teammate_name: 'bob',
       team_name: 'session-s1',
     })
     const byJson = make({
@@ -200,29 +199,5 @@ describe('TaskCreated / TaskCompleted / TeammateIdle', () => {
       TaskCompleted: [{ handlers: [cmd(`cat >/dev/null; ${json({ continue: false })}`)] }],
     })
     expect(await stopping.runTaskCompleted(task)).toEqual({ blocked: false })
-  })
-
-  it('TeammateIdle: exit 2 keeps the member working; continue:false stops it', async () => {
-    const working = make({
-      TeammateIdle: [{ handlers: [capture('ti.json', 'echo more >&2; exit 2')] }],
-    })
-    expect(await working.runTeammateIdle({ name: 'researcher', agentId: 'a1' })).toEqual({
-      blocked: true,
-      reason: 'more',
-    })
-    expect(input('ti.json')).toMatchObject({
-      teammate_name: 'researcher',
-      team_name: 'session-s1',
-      agent_id: 'a1',
-    })
-    const stopped = make({
-      TeammateIdle: [
-        { handlers: [cmd(`cat >/dev/null; ${json({ continue: false, stopReason: 'done' })}`)] },
-      ],
-    })
-    expect(await stopped.runTeammateIdle({ name: 'r', agentId: 'a1' })).toEqual({
-      blocked: false,
-      stopReason: 'done',
-    })
   })
 })

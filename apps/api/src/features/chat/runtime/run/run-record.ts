@@ -65,7 +65,7 @@ export async function startAgentRunRecord(input: {
   runtime: AgentRuntime
   userId: string
   sessionId: string
-  /** The participant whose run this is. */
+  /** The agent whose run this is. */
   agentId: string
   providerId: string
   modelId: string

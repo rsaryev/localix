@@ -309,13 +309,13 @@ describe('capability snapshot scoping', () => {
     const svc = createCapabilitySnapshotService(
       makePorts({
         loadCapabilities: async () =>
-          composeCapabilities([{ action: 'tool:bash', resource: '*', effect: 'deny' }]),
+          composeCapabilities([{ action: 'tool:Bash', resource: '*', effect: 'deny' }]),
       }),
     )
     const scoped = await svc.getSnapshot({ userId: 'u1', projectId: 'PRJ-A' })
 
-    expect(scoped.tools.enabled).toContain('read')
-    expect(scoped.tools.disabled.map((entry) => entry.name)).toContain('bash')
+    expect(scoped.tools.enabled).toContain('Read')
+    expect(scoped.tools.disabled.map((entry) => entry.name)).toContain('Bash')
   })
 })
 
@@ -426,5 +426,36 @@ describe('disabling a mini app removes its tools', () => {
     const snapshot = await svc.getSnapshot({ userId: 'u1' })
 
     expect(snapshot.tools.mcpUnprobedServers).toEqual(['shared'])
+  })
+})
+
+describe('MCP prompts in the snapshot', () => {
+  test('are what the prompts port returns, ready for the composer', async () => {
+    const specs = [
+      {
+        server: 'github',
+        name: 'plain',
+        fullName: 'mcp__github__plain',
+        description: '',
+        args: [],
+      },
+    ]
+    const svc = createCapabilitySnapshotService(makePorts({ cachedMcpPrompts: async () => specs }))
+
+    expect((await svc.getSnapshot({ userId: 'u1' })).mcpPrompts).toEqual(specs)
+  })
+
+  test('are none when the port is not wired or fails', async () => {
+    expect(
+      (await createCapabilitySnapshotService(makePorts()).getSnapshot({ userId: 'u1' })).mcpPrompts,
+    ).toEqual([])
+    const failing = createCapabilitySnapshotService(
+      makePorts({
+        cachedMcpPrompts: async () => {
+          throw new Error('boom')
+        },
+      }),
+    )
+    expect((await failing.getSnapshot({ userId: 'u1' })).mcpPrompts).toEqual([])
   })
 })

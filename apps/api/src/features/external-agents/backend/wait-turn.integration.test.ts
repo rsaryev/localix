@@ -54,7 +54,7 @@ async function serviceWith(records: readonly unknown[]) {
   // The hook path, as the host drives it: a terminal opens running claude-code, then a screen no
   // manifest rule matches arrives — the degraded case.
   service.handleToolCall({
-    toolName: 'bash',
+    toolName: 'Bash',
     input: {},
     result: {
       content: '',
@@ -68,7 +68,7 @@ async function serviceWith(records: readonly unknown[]) {
     sessionId: 'lx1',
   })
   service.handleToolCall({
-    toolName: 'bash',
+    toolName: 'Bash',
     input: {},
     result: {
       content: '',

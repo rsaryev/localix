@@ -60,12 +60,10 @@ export function useVaultWorkspace(requestedKey?: string) {
     [],
   )
 
-  const refresh = useCallback(
-    async (quiet = false) => {
-      const generation = ++readGeneration.current
-      if (quiet) setRefreshing(true)
-      else setLoading(true)
-      setError(null)
+  // Reads the list for one generation; a newer read (or the cleanup of the effect that asked)
+  // retires it, so a slow answer never lands over a fresher one.
+  const settle = useCallback(
+    async (generation: number) => {
       try {
         const next = await secretsApi.list()
         if (generation !== readGeneration.current) return
@@ -84,16 +82,36 @@ export function useVaultWorkspace(requestedKey?: string) {
     [requestedKey],
   )
 
-  useEffect(() => {
-    void refresh()
-    return () => {
-      readGeneration.current++
-    }
-  }, [refresh, revision])
+  /** A read the person (or a write) asks for: `quiet` keeps the list on screen while it runs. */
+  const refresh = useCallback(
+    async (quiet = false) => {
+      const generation = ++readGeneration.current
+      if (quiet) setRefreshing(true)
+      else setLoading(true)
+      setError(null)
+      await settle(generation)
+    },
+    [settle],
+  )
 
+  // The read the vault's revision (and the requested key) ask for. Its cleanup retires the
+  // answer in flight and puts the next read back to "loading", with no failure left over.
   useEffect(() => {
+    const generations = readGeneration
+    void settle(++generations.current)
+    return () => {
+      generations.current++
+      setLoading(true)
+      setError(null)
+    }
+  }, [settle, revision])
+
+  // A different key asked for from outside (a link, a command) selects it.
+  const [seenRequestedKey, setSeenRequestedKey] = useState(requestedKey)
+  if (seenRequestedKey !== requestedKey) {
+    setSeenRequestedKey(requestedKey)
     if (requestedKey) setSelectedKey(requestedKey)
-  }, [requestedKey])
+  }
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase()

@@ -1,5 +1,6 @@
 /// <reference types="bun" />
 
+import { tmpdir } from 'node:os'
 import { createChatFeaturePorts } from '../../bootstrap/chat-feature-ports'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm } from 'node:fs/promises'
@@ -8,7 +9,7 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 
 import { createDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
-import { USER_PARTICIPANT } from '../../db'
+import { USER_AUTHOR } from '../../db'
 import { createProviderConnectionsService } from '../provider-connections/service'
 import { createChatRepository } from './repository'
 import {
@@ -17,7 +18,7 @@ import {
 } from './test-harness'
 import { testWork } from '../../testing/work-fixture'
 
-const tempDir = join(process.cwd(), 'tmp', 'session-draft-reuse-tests')
+const tempDir = join(tmpdir(), `localix-session-draft-reuse-tests-${process.pid}`)
 
 async function setup() {
   const db = createDatabase({ filename: join(tempDir, `${randomUUID()}.sqlite`) })
@@ -72,7 +73,7 @@ describe('landing on an empty draft', () => {
       id: 'msg_used',
       sessionId: used.id,
       userId,
-      payload: { id: 'msg_used', role: 'user', from: USER_PARTICIPANT, content: 'hi' },
+      payload: { id: 'msg_used', role: 'user', from: USER_AUTHOR, content: 'hi' },
       createdAt: at,
       updatedAt: at,
     })
@@ -83,13 +84,13 @@ describe('landing on an empty draft', () => {
     expect([used.id, renamed.id, archived.id]).not.toContain(landed.id)
   })
 
-  test('reuses only a draft with the same participant', async () => {
+  test('reuses only a draft with the same agent', async () => {
     const { chat } = await setup()
     const userId = 'user_participant'
     const plain = await chat.createSession(userId, { reuseEmptyDraft: true })
     const again = await chat.createSession(userId, {
       reuseEmptyDraft: true,
-      agents: [{ agentId: plain.agents![0]!.agentId }],
+      agent: { agentId: plain.agent!.agentId },
     })
     expect(again.id).toBe(plain.id)
   })

@@ -27,14 +27,11 @@ afterEach(() => destroyDatabase(db))
 const registry = () => createWorkRegistry({ repo: createWorkRepository(db) })
 const job = (toolCallId: string, userId: string, sessionId: string): StartWork => ({
   owner: { userId, sessionId },
-  agentId: 'lead',
   kind: 'job',
   label: `run ${toolCallId}`,
   toolCallId,
   messageId: 'm1',
 })
-/** Rows are written behind the index; let them land before reading the table. */
-const settle = () => new Promise((resolve) => setTimeout(resolve, 5))
 
 describe('one owner filter', () => {
   test("a session sees its own work, never another session's or another user's", () => {
@@ -68,7 +65,7 @@ describe('one id namespace per session', () => {
     before.start(job('tc-2', 'u1', 'sA'))
     before.mint({ userId: 'u1', sessionId: 'sA' }, 'monitor')
     before.start({ ...job('tc-m', 'u1', 'sA'), kind: 'monitor', displayId: 'mon-1' })
-    await settle()
+    await before.flushWrites()
 
     const after = registry()
     await after.hydrate()
@@ -83,7 +80,7 @@ describe('what a restart says about running work', () => {
     before.start(job('tc-live', 'u1', 'sA'))
     before.start(job('tc-done', 'u1', 'sA'))
     before.end('tc-done', { status: 'failed', exitCode: 1 })
-    await settle()
+    await before.flushWrites()
 
     const lost = await registry().hydrate()
     expect(lost.map((record) => [record.toolCallId, record.status, record.messageId])).toEqual([
@@ -101,7 +98,7 @@ describe('what a restart says about running work', () => {
     before.start({ ...job('tc-poll', 'u1', 'sA'), kind: 'monitor', displayId: 'mon-1' })
     before.start({ ...job('tc-watch', 'u1', 'sA'), kind: 'monitor', displayId: 'mon-2' })
     before.recordEvents('tc-poll', [{ text: 'deploying', at: 0 }])
-    await settle()
+    await before.flushWrites()
 
     const after = registry()
     // Not lost at hydrate: its schedule is a trigger's row, which has not loaded yet.
@@ -129,7 +126,7 @@ describe('what a restart says about running work', () => {
     work.start(job('tc-1', 'u1', 'sA'))
     work.release('tc-1')
     work.end('tc-1', { status: 'succeeded', exitCode: 0 })
-    await settle()
+    await work.flushWrites()
     const row = await db.selectFrom('work_records').select('status').executeTakeFirstOrThrow()
     expect(row.status).toBe('cancelled')
   })

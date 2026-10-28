@@ -1,4 +1,4 @@
-import { Bot, FilePen, Image as ImageIcon, MessageSquareDashed, SquareTerminal } from 'lucide-react'
+import { SquareTerminal } from 'lucide-react'
 import type { ToolMeta } from './meta'
 
 /**
@@ -23,50 +23,12 @@ export interface NonCoreMeta extends ToolMeta {
  * A name only belongs here if it needs presentation meta despite having no server entry.
  */
 export const NON_CORE_META = {
-  agents: {
-    absentBecause:
-      'HISTORICAL: agents are created and listed with `store` now, but saved sessions still hold `agents` items, which keep their label.',
-    label: 'Agents',
-    noun: 'agents',
-    verb: 'Managing agents',
-    icon: Bot,
-    stackable: false,
-  },
-  view_image: {
-    absentBecause:
-      'HISTORICAL: `read` now returns images itself, but saved sessions still hold `view_image` items, which render through ReadCard.',
-    label: 'Viewed',
-    noun: 'images',
-    verb: 'Viewing image',
-    icon: ImageIcon,
-    stackable: true,
-    readOnly: true,
-  },
-  apply_patch: {
-    absentBecause:
-      'HISTORICAL: the patch tool was removed (agents edit with `edit`/`write`), but saved sessions still hold `apply_patch` items, which keep their label.',
-    label: 'Patched',
-    noun: 'patches',
-    verb: 'Patching',
-    icon: FilePen,
-    stackable: true,
-  },
-  conversation_control: {
-    absentBecause:
-      'HISTORICAL: group turns hand the floor through `@handle` addresses in the reply now and `set_topic` changes the topic, but saved sessions still hold `conversation_control` items, which keep their label.',
-    label: 'Conversation updated',
-    noun: 'conversation updates',
-    verb: 'Updating conversation',
-    icon: MessageSquareDashed,
-    stackable: false,
-    readOnly: true,
-  },
   terminal: {
     absentBecause:
       'NOT A TOOL: the interactive PTY actions are folded INTO `bash` (agent-core/tools/terminal/terminal.ts). This is the icon key TerminalToolCard looks up by literal for those bash calls.',
-    label: 'Terminal',
+    label: 'Used',
     noun: 'terminals',
-    verb: 'Driving terminal',
+    verb: 'Using',
     icon: SquareTerminal,
     stackable: false,
   },

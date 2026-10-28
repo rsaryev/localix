@@ -68,7 +68,7 @@ export function freshChain(completion?: RunCompletion): RunChain {
 /**
  * Params for a freshly dispatched run: this turn, the dispatcher's scope, an empty chain.
  *
- * The persisted participant order is never changed for execution. The explicit speaker address
+ * The persisted agent order is never changed for execution. The explicit agent address
  * is carried in `RunScope` through every continuation, retry and compact-and-rerun segment.
  */
 export function dispatchParams(

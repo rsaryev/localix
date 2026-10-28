@@ -3,6 +3,9 @@ import type { Kysely } from 'kysely'
 
 import type { AppDatabase } from '../db'
 import { mcpClientManager } from '../features/mcp/client-manager'
+import { mcpPromptSpecs } from '../features/mcp/mcp-prompt-specs'
+import { claudeCodeMcpServers } from '../features/mcp/claude-code-servers'
+import { claudeCodeHome } from '../features/cc-settings/config-dir'
 import { createCapabilitySnapshotService } from '../features/capabilities/snapshot'
 import { SLASH_COMMANDS } from '../features/chat/slash-catalog'
 import { createCapabilityApplyService, namesOf } from '../features/capabilities/apply'
@@ -71,6 +74,22 @@ export function createCapabilityServices({
   // The scoped verdict store every capability question is answered from. One instance, so a
   // toggle and the run that follows it read the same rows.
   const capabilityRules = createCapabilityRuleRepository(db)
+  /**
+   * What the cache-only MCP reads share: the person's own servers, the agent's availability rules
+   * and the cwd. Cache-only, so a Settings request can never start an stdio child. The cwd has to
+   * match the one the run keyed its connections under, which is the project's working directory —
+   * `resolveMcpTools` passes the same `defaultCwd`. A scope with no project, or a project whose
+   * directory cannot be resolved, has no warm entry to find, so every server lands in `unprobed`
+   * and the UI says "not yet connected" instead of inventing a zero.
+   */
+  async function mcpScope(userId: string, projectId: string, agentId?: string | null) {
+    const cwd = projectId ? await resolveProjectCwd(userId, projectId) : null
+    const [own, availability] = await Promise.all([
+      mcpService.listForRuntime(userId, projectId),
+      readAvailability(db, { userId, agentId: agentId || DEFAULT_AGENT_ID }),
+    ])
+    return { cwd: cwd ?? '', own, availability }
+  }
   const capabilitySnapshotService = createCapabilitySnapshotService({
     builtinCommands: SLASH_COMMANDS,
     listPluginContributions: async (userId, projectId) => {
@@ -94,29 +113,33 @@ export function createCapabilityServices({
       (await userService.getProfile(...args).catch(() => null))?.agentSettings ?? null,
     loadProjectSettings: async (...args) =>
       (await projectsService.getProject(...args).catch(() => null))?.settings ?? null,
-    // Cache-only, so a Settings request can never start an stdio child. The cwd has to match the
-    // one the run keyed its connections under, which is the project's working directory —
-    // `resolveMcpTools` passes the same `defaultCwd`. A scope with no project, or a project whose
-    // directory cannot be resolved, has no warm entry to find, so every server lands in
-    // `unprobed` and the UI says "not yet connected" instead of inventing a zero.
-    //
-    // Plugin-BUNDLED MCP servers are absent here on purpose: they are contributed by
+    // Plugin-BUNDLED MCP servers are absent on purpose: they are contributed by
     // `loadEnabledPlugins` at run assembly, and reaching them would mean running that load from a
-    // settings request. They show up in the count once the run publishes its real roster; until
-    // then the estimate is a lower bound, which is the direction that stays honest.
+    // settings request. They show up once the run publishes its real roster; until then the
+    // estimate is a lower bound, which is the direction that stays honest.
+    cachedMcpPrompts: async (...args) => {
+      const [userId, projectId] = args
+      const { cwd, own, availability } = await mcpScope(...args)
+      // The prompts of the connected servers, cache-only like the tools: the person's own and
+      // those of Claude Code's files.
+      const servers = claudeCodeMcpServers({
+        own,
+        plugins: [],
+        userId,
+        projectId,
+        cwd,
+        homeDir: claudeCodeHome(),
+      }).filter((server) => availability.effectFor('mcp', server.name) !== 'deny')
+      return mcpPromptSpecs(mcpClientManager.cachedPrompts(servers, cwd))
+    },
     cachedMcpTools: async (...args) => {
-      const [userId, projectId, agentId] = args
-      const cwd = projectId ? await resolveProjectCwd(userId, projectId) : null
-      const [servers, availability] = await Promise.all([
-        mcpService.listForRuntime(userId, projectId),
-        readAvailability(db, { userId, agentId: agentId || DEFAULT_AGENT_ID }),
-      ])
+      const { cwd, own, availability } = await mcpScope(...args)
       // The screen reports what the RUN would send, so it applies the same per-tool rules
       // the gather does. Reading them here rather than showing the server's full listing is
       // what keeps the tool count and the roster from disagreeing.
       return mcpClientManager.cachedToolNames(
-        servers,
-        cwd ?? '',
+        own,
+        cwd,
         (serverName, toolName) =>
           availability.effectFor('mcp', `${serverName}/${toolName}`) !== 'deny',
       )

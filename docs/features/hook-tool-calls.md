@@ -47,28 +47,28 @@ A hook reads each Localix tool under its Claude Code name, with `tool_input` and
 that tool's shape. Localix's own fields stay beside them, and a hook's `updatedInput` is folded back
 into them. File paths are absolute.
 
-| Localix tool     | `tool_name` for the call                                                      | `tool_response`                                          |
-| ---------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------- |
-| `bash`           | `Bash`, or `Monitor` for a wait (`until`); a batch is one `command`           | `stdout`, `stderr`, `interrupted`, `isImage`             |
-| `read`           | `Read`; a line range is `offset` (a line) and `limit`                         | `{type: "text", file: {filePath, content, …}}`, or image |
-| `edit`, `write`  | `Edit`, `Write` for one file; a notebook edit adds `notebook_path`            | `filePath`, `structuredPatch`; Write's `type`, `content` |
-| `search`         | `Glob` for a file listing, otherwise `Grep`                                   | Glob's `filenames`; Grep's `content`, `filenames`        |
-| `research`       | `WebFetch` for known URLs, otherwise `WebSearch`                              | WebFetch's `result`; WebSearch's `results`               |
-| `delegate`       | `Agent` to start, `SendMessage`, or `TaskStop`                                | `status`, `agentId`, `content`                           |
-| `skill`          | `Skill` (`skill`, `args`) to load a skill; save, list and delete stay `skill` | `success`, `commandName`                                 |
-| `ask`            | `AskUserQuestion`; `answers` from `updatedInput` answer without a card        | `questions`, `answers`                                   |
-| `plan`           | `ExitPlanMode` to present a plan                                              | `plan`                                                   |
-| `loops`          | `CronCreate`, `CronDelete`, `CronList` or `ScheduleWakeup`                    | Localix's own                                            |
-| `jobs`           | `TaskStop` to stop a job                                                      | Localix's own                                            |
-| `activate_tools` | `ToolSearch` (`select:<names>`)                                               | Localix's own                                            |
-| `mcp_resources`  | `ListMcpResourcesTool` or `ReadMcpResourceTool`                               | Localix's own                                            |
-| An MCP tool      | `mcp__<server>__<tool>`                                                       | Its content blocks                                       |
+| Localix tool      | `tool_name` for the call                                                      | `tool_response`                                          |
+| ----------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `Bash`            | `Bash`, or `Monitor` for a wait (`until`); a batch is one `command`           | `stdout`, `stderr`, `interrupted`, `isImage`             |
+| `Read`            | `Read`; a line range is `offset` (a line) and `limit`                         | `{type: "text", file: {filePath, content, …}}`, or image |
+| `Edit`, `Write`   | `Edit`, `Write` for one file; a notebook edit adds `notebook_path`            | `filePath`, `structuredPatch`; Write's `type`, `content` |
+| `Search`          | `Glob` for a file listing, otherwise `Grep`                                   | Glob's `filenames`; Grep's `content`, `filenames`        |
+| `Research`        | `WebFetch` for known URLs, otherwise `WebSearch`                              | WebFetch's `result`; WebSearch's `results`               |
+| `Agent`           | `Agent`; `SendMessage` and `TaskStop` are Claude Code's own too               | `Agent`'s `status`, `agentId`, `content`                 |
+| `Skill`           | `Skill` (`Skill`, `args`) to load a skill; save, list and delete stay `Skill` | `success`, `commandName`                                 |
+| `AskUserQuestion` | `AskUserQuestion`; `answers` from `updatedInput` answer without a card        | `questions`, `answers`                                   |
+| `Plan`            | `ExitPlanMode` to present a plan, otherwise `Plan`                            | `Plan`                                                   |
+| `Loops`           | `CronCreate`, `CronDelete`, `CronList`, `ScheduleWakeup`, otherwise `Loops`   | Localix's own                                            |
+| `ToolSearch`      | `ToolSearch` (`query`: `select:<names>` or keywords)                          | Localix's own                                            |
+| `McpResources`    | `ListMcpResourcesTool` or `ReadMcpResourceTool`                               | Localix's own                                            |
+| An MCP tool       | `mcp__<server>__<tool>`                                                       | Its content blocks                                       |
 
-Any other tool keeps its Localix name and shape. A call with no Claude Code counterpart, such as one
-edit call over several files, keeps Localix's `{content, details}` response. `PostToolUse` and
-`PostToolUseFailure` carry `tool_use_id` and `duration_ms`. `updatedToolOutput` in the shape of
-Read, Grep, Glob, WebFetch or WebSearch replaces the text the model reads. Bash output arrives
-merged in `stdout`.
+Any other core tool reads under the name the model calls it, such as `Browser`, `Store` or `Jobs`
+(see [Tool names](tools.md#tool-names)), in Localix's shape; a matcher written with its own name
+(`Browser`) matches too. A call with no Claude Code counterpart, such as one edit call over several
+files, keeps Localix's `{content, details}` response. `PostToolUse` and `PostToolUseFailure` carry
+`tool_use_id` and `duration_ms`. `updatedToolOutput` in the shape of Read, Grep, Glob, WebFetch or
+WebSearch replaces the text the model reads. Bash output arrives merged in `stdout`.
 
 `once: true` applies only to hooks in skill frontmatter; a plugin's `hooks.json` and agent
 frontmatter ignore it. The hook is removed after its first successful run. A run that fails, blocks

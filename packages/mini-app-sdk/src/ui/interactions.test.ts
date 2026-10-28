@@ -152,12 +152,13 @@ describe('mini app clipboard interaction', () => {
  * which is enough because every failure path returns before touching state.
  */
 function captureCopy(): (text: string) => Promise<void> {
-  let copy: ((text: string) => Promise<void>) | undefined
+  const copies: ((text: string) => Promise<void>)[] = []
   function Probe() {
-    copy = useCopied(1000).copy
+    copies.push(useCopied(1000).copy)
     return null
   }
   renderToStaticMarkup(createElement(Probe))
+  const copy = copies.at(-1)
   if (!copy) throw new Error('useCopied did not expose a copy callback')
   return copy
 }

@@ -32,14 +32,14 @@ Source: https://code.claude.com/docs/en/sub-agents.md
 | Key                                           | Values and behaviour                                                                                                                                                                           |
 | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `tools`, `disallowedTools`                    | tool lists                                                                                                                                                                                     |
-| `model`                                       | `sonnet`, `opus`, `haiku`, `fable`, a full id, or `inherit`                                                                                                                                    |
+| `model`                                       | read by Claude Code; Localix does not read it (the person's choice sets the model)                                                                                                             |
 | `permissionMode`                              | `default`, `acceptEdits`, `auto`, `dontAsk`, `bypassPermissions`, `plan`, `manual`                                                                                                             |
 | `maxTurns`, `autoCompactWindow`               | limits                                                                                                                                                                                         |
 | `skills`                                      | preloaded at start, first 32                                                                                                                                                                   |
 | `mcpServers`, `hooks`                         | MCP servers and hooks for this agent                                                                                                                                                           |
 | `memory`                                      | `user`, `project` or `local`, mapping to `~/.claude/agent-memory/<n>/`, `.claude/agent-memory/<n>/`, `.claude/agent-memory-local/<n>/`; the first 200 lines or 25 KB of `MEMORY.md` are loaded |
 | `background`, `omitClaudeMd`, `initialPrompt` | run behaviour                                                                                                                                                                                  |
-| `effort`                                      | `low` to `max`                                                                                                                                                                                 |
+| `effort`                                      | read by Claude Code; Localix does not read it                                                                                                                                                  |
 | `isolation`                                   | `worktree`                                                                                                                                                                                     |
 | `color`                                       | one of 8 names                                                                                                                                                                                 |
 | `experimental.cacheTtl`                       | prompt-cache lifetime                                                                                                                                                                          |
@@ -48,8 +48,8 @@ Source: https://code.claude.com/docs/en/sub-agents.md
 
 - Plugin agents ignore `permissionMode`, `mcpServers`, `hooks` and `initialPrompt`.
 - **Unknown keys are ignored without an error.** `claude --debug` logs
-  `does not recognize or apply`. That makes room for a namespaced `localix:` key. The marketplace's
-  `metadata.localix` already relies on the same behaviour (`docs/internals/store.md`).
+  `does not recognize or apply`. The marketplace's `metadata.localix` relies on the same behaviour
+  (`docs/internals/store.md`).
 - **Precedence**, highest first:
   1. managed `.claude/agents/`
   2. `--agents` JSON
@@ -66,7 +66,8 @@ Source: https://code.claude.com/docs/en/sub-agents.md
 
 - Ways to invoke an agent: by its description, by natural language, `@agent-<name>`, or `--agent` /
   settings `"agent"`.
-- Subagents can nest 3 levels deep.
+- Subagents do not nest: only the main conversation has `Agent`, and a fork's call to it errors
+  (`delegation-hierarchy.ts`). `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` is not read.
 - Disable one with `permissions.deny: ["Agent(<name>)"]`.
 - Agent folders are watched live.
 - `/agents` only points at the folders now.
@@ -79,7 +80,7 @@ in `CLAUDE.md`.
 **Main loop and built-in types.** `localix` is the main loop, not a file: it is read-only in the
 Store with an Access tab, and a user or project Claude Code setting `"agent"` customises it. The
 built-in types `general-purpose`/`claude`, `Explore` and `Plan` are catalog entries; a file with the
-same name replaces one. `statusline-setup` and `claude-code-guide` are not offered.
+same name replaces one.
 
 **Identity.** Claude Code identifies an agent by scope and name; Localix needs an id that survives a
 rename. A binding row (`capability_source`, `kind='agent'`,
@@ -92,9 +93,9 @@ permissions. Precedence follows Claude Code, and a shadowed definition keeps its
 against the binding rows, and records each change notice in the same transaction as the row. A
 vanished file is "missing", not deleted: it leaves every list and the prompt at once, and keeps its
 id if it reappears within 30 seconds (`GRACE_MS`). A delete in the Store or `/agents`, or removing a
-plugin, purges at once. On a purge consumers clean up after their own data: seats and model choices,
-Access rules, the semantic and Store indexes, the realtime relay, mini app followers, loops and
-pending config proposals. Messages, runs, usage and the seat-handle snapshot in transcripts are
+plugin, purges at once. On a purge consumers clean up after their own data: session agents and model
+choices, Access rules, the semantic and Store indexes, the realtime relay, mini app followers, loops
+and pending config proposals. Messages, runs, usage and the agent name recorded in transcripts are
 never deleted, and `memory:` folders belong to Claude Code.
 
 **In the Store.** The agents owner is the `agent` `StoreProvider` (`agents/store-provider.ts`),
@@ -111,8 +112,9 @@ search hits open `localix://ui/work-item/store?kind=agent&id=<id>`.
 - Disabling an agent is Access only; Localix never writes `Agent(name)` into Claude Code settings.
 - Agent-created specialists go to the user scope unless the person chooses "This project".
 - `localix.title` is dropped: the Store shows `name` and the first line of `description`.
-- A `localix:` frontmatter key keeps what Claude Code has no field for (`priority`, `memoryScope`, a
-  non-Claude model route with `model: inherit`); Claude Code ignores unknown keys.
+- An agent's model and effort are the person's choice, kept in `agentSettings.agentModelChoices` and
+  edited on the agent's Store page. No file key holds them. `importLegacyAgentModels` moves a
+  `localix:` model of an older file into that setting once and removes the key.
 - There is no migration: the native registry and the human record were removed with their code.
 
 **Heuristics stay out of the core.** The core keeps mechanisms (run a loop, enforce a ceiling,

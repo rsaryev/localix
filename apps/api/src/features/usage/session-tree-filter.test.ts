@@ -1,3 +1,4 @@
+import { tmpdir } from 'node:os'
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm } from 'node:fs/promises'
@@ -19,7 +20,7 @@ import { createUsageRepository } from './repository'
 describe('usage filters: one session versus its whole tree', () => {
   let db: ReturnType<typeof createDatabase>
   let repo: ReturnType<typeof createUsageRepository>
-  const dir = join(process.cwd(), 'tmp', 'usage-session-tree-tests')
+  const dir = join(tmpdir(), `localix-usage-session-tree-tests-${process.pid}`)
   const userId = 'u-tree'
 
   const tokensFor = async (filter: { session?: string; sessionTree?: string }) => {

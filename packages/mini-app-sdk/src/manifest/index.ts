@@ -24,10 +24,8 @@ export {
 export type { MiniAppCategory, MiniAppConfigType } from './primitives'
 
 /**
- * One user-config option declared under `mini-app.json` `config`. Values remain scalar
- * even when `multiple` is set: that Claude Code compatibility field is an authoring
- * hint, not an array storage mode. `title`, `min`, and `max` are hints too; a host may
- * choose whether to render or enforce them.
+ * One user-config option declared under `mini-app.json` `config`. Values are scalar.
+ * `title`, `min`, and `max` are hints; a host may choose whether to render or enforce them.
  */
 export const miniAppConfigOptionSchema = z.object({
   type: z.enum(MINI_APP_CONFIG_TYPES).default('string'),
@@ -36,7 +34,6 @@ export const miniAppConfigOptionSchema = z.object({
   secret: z.boolean().default(false),
   default: z.union([z.string(), z.number(), z.boolean()]).optional(),
   title: z.string().optional(),
-  multiple: z.boolean().optional(),
   min: z.number().optional(),
   max: z.number().optional(),
 })
@@ -141,7 +138,7 @@ export type MiniAppFileAssociation = z.output<typeof miniAppFileAssociationSchem
  *
  * `surfaces` stays optional and unnormalized here. Parsing preserves the manifest
  * as authored; consumers call {@link normalizeMiniAppSurfaces} when they need the
- * legacy `['agent']` default and canonical values.
+ * `['agent']` default and canonical values.
  */
 export const miniAppManifestCoreSchema = z.object({
   name: z

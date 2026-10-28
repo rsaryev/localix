@@ -2,8 +2,7 @@
  * THE SESSION'S POLICY: every decision a session record alone answers, resolved in one place.
  *
  * Five axes, in a fixed order, each a pure function of the record (`axes/*`). Being pure is
- * what lets every layer ask: the wake queue choosing who answers, the service refusing a
- * membership change, a run's stages, its failure path long after the stages are gone, and the
+ * what lets every layer ask: the wake queue choosing who answers, a run's stages, its failure path long after the stages are gone, and the
  * browser. A run adds the axes that need the run itself (`run-policy.ts`).
  */
 import { chooseOn, type AxisChoice } from './axis'
@@ -64,7 +63,7 @@ export function resolveSessionPolicy(session: SessionPolicyFacts): SessionPolicy
   }
 }
 
-/** The conversation decision alone — what dispatch and the membership writer need. */
+/** The conversation decision alone — what dispatch needs. */
 export function conversationPolicy(session: ConversationFacts): ConversationDecision {
   return chooseOn(conversationAxis, session).decision
 }

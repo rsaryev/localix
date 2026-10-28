@@ -10,6 +10,7 @@ import {
 } from '@localixai/kit/dialog'
 import { Button } from '@localixai/kit/button'
 import { Combobox } from '@localixai/kit/combobox'
+import { Field } from '@localixai/kit/field'
 import { Input } from '@localixai/kit/input'
 import { Spinner } from '@localixai/kit/spinner'
 import { DevOpsProblem } from '../../../ui/DevOpsProblem'
@@ -71,8 +72,7 @@ export function PortForwardDialogView(props: PortForwardDialogViewProps) {
           </div>
 
           <div className="grid gap-3">
-            <label className="grid min-w-0 gap-1.5 text-xs font-medium text-foreground">
-              Pod port
+            <Field label="Pod port">
               <Combobox
                 value={props.portChoice}
                 onValueChange={props.onPortChoiceChange}
@@ -82,11 +82,10 @@ export function PortForwardDialogView(props: PortForwardDialogViewProps) {
                 emptyLabel="No matching ports"
                 aria-label="Pod port"
               />
-            </label>
+            </Field>
 
             {props.portChoice === CUSTOM_POD_PORT && (
-              <label className="grid min-w-0 gap-1.5 text-xs font-medium text-foreground">
-                Custom pod port
+              <Field label="Custom pod port">
                 <Input
                   size="lg"
                   type="number"
@@ -98,7 +97,7 @@ export function PortForwardDialogView(props: PortForwardDialogViewProps) {
                   placeholder="e.g. 8080"
                   aria-invalid={props.validationError ? true : undefined}
                 />
-              </label>
+              </Field>
             )}
 
             {selected?.port && (
@@ -121,8 +120,7 @@ export function PortForwardDialogView(props: PortForwardDialogViewProps) {
               </div>
             )}
 
-            <label className="grid min-w-0 gap-1.5 text-xs font-medium text-foreground">
-              Local port
+            <Field label="Local port">
               <Input
                 size="lg"
                 type="number"
@@ -137,7 +135,7 @@ export function PortForwardDialogView(props: PortForwardDialogViewProps) {
               <span className="text-2xs font-normal text-text-faint">
                 Leave empty to choose an available loopback port automatically.
               </span>
-            </label>
+            </Field>
           </div>
 
           <div className="flex min-w-0 items-center gap-2 border-y border-border-soft py-2 font-mono text-xs">
@@ -167,7 +165,7 @@ export function PortForwardDialogView(props: PortForwardDialogViewProps) {
           </Button>
           <Button
             className="min-w-28"
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={props.onStart}
             disabled={

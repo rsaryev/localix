@@ -15,28 +15,27 @@ export function useFunding(
   symbol: string,
   enabled = true,
 ): FundingRead | null {
-  const [read, setRead] = useState<FundingRead | null>(null)
   const isPerp = symbol.includes(':')
+  // A read belongs to the market it was fetched for: another market (or a parked hook) reads as
+  // null at once, with no reset effect — the previous market's funding is not this one's.
+  const target = enabled && isPerp ? `${connectionId}/${symbol}` : null
+  const [stored, setStored] = useState<{ target: string; read: FundingRead | null } | null>(null)
 
   useEffect(() => {
-    if (!enabled || !isPerp) {
-      setRead(null)
-      return
-    }
+    if (!target) return
     let alive = true
-    setRead(null)
     tradingApi.funding(connectionId, symbol).then(
       (f) => {
-        if (alive) setRead(fundingRead(f))
+        if (alive) setStored({ target, read: fundingRead(f) })
       },
       () => {
-        if (alive) setRead(null)
+        if (alive) setStored({ target, read: null })
       },
     )
     return () => {
       alive = false
     }
-  }, [connectionId, symbol, enabled, isPerp])
+  }, [connectionId, symbol, target])
 
-  return read
+  return stored?.target === target ? (stored?.read ?? null) : null
 }

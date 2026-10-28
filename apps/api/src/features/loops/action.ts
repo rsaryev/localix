@@ -5,12 +5,12 @@
  * runs, and whether the session can take it now:
  *
  *   gate     a SESSION-target fire waits while its session is busy (a queued wake would pile up
- *            behind the slow turn) or while the provider route of the participant it is
+ *            behind the slow turn) or while the provider route of the agent it is
  *            addressed to is rate-limited (it would burn an exhausted quota); a subsession fire
  *            touches neither and is never gated;
  *   content  the task, with the self-pacing instruction for a delay loop and the previous round's
  *            handoff for a subsession one;
- *   deliver  into the owning session through the wake queue — addressed to the participant that
+ *   deliver  into the owning session through the wake queue — addressed to the agent that
  *            armed it — or into a fresh child session.
  */
 import type { FireGate, FireOutcome, TriggerAction, TriggerRecord } from '../triggers/contracts'
@@ -24,14 +24,9 @@ export interface LoopActionDeps {
   /** True while the session has a run in flight or one about to start. */
   isSessionBusy: (sessionId: string) => boolean
   /**
-   * Epoch ms the provider route of the participant this fire is addressed to is exhausted until,
-   * or null. `agentId` absent: nobody is addressed and the conversation chooses the speaker.
+   * Epoch ms the provider route of the session's agent is exhausted until, or null.
    */
-  rateLimitedUntilMs: (
-    userId: string,
-    sessionId: string,
-    agentId?: string,
-  ) => Promise<number | null>
+  rateLimitedUntilMs: (userId: string, sessionId: string) => Promise<number | null>
   /** Inject into the owning session and resolve when that run ends. */
   wakeSession: (
     loop: SessionLoop,
@@ -54,10 +49,7 @@ export function createLoopAction(deps: LoopActionDeps): TriggerAction {
     async gate(trigger: TriggerRecord): Promise<FireGate | null> {
       if (trigger.payload.target === 'subsession') return null
       if (deps.isSessionBusy(trigger.sessionId)) return { hold: 'busy' }
-      // The route asked about is the ADDRESSEE's — the same participant `fire` wakes below — so
-      // another participant's exhausted provider never holds this fire.
-      const addressee = loopOfTrigger(trigger).ownerAgentId
-      const until = await deps.rateLimitedUntilMs(trigger.userId, trigger.sessionId, addressee)
+      const until = await deps.rateLimitedUntilMs(trigger.userId, trigger.sessionId)
       return until != null && until > now() ? { hold: 'rate-limited', untilMs: until } : null
     },
 

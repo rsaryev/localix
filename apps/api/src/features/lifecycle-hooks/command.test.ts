@@ -69,17 +69,6 @@ describe('native hook command transport', () => {
     expect(result.aborted).toBe(false)
   })
 
-  test.skipIf(process.platform === 'win32')(
-    'a timeout kills what the shell started, not only the shell',
-    async () => {
-      const result = await runHookCommand(options('sleep 30 & echo $!; wait', { timeoutMs: 200 }))
-      expect(result.timedOut).toBe(true)
-      const pid = Number(result.stdout.trim())
-      expect(pid).toBeGreaterThan(0)
-      expect(() => process.kill(pid, 0)).toThrow()
-    },
-  )
-
   test('exec form passes each argument verbatim, with no shell to expand it', async () => {
     const result = await runHookCommand(
       options(process.execPath, {

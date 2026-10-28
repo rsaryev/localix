@@ -5,6 +5,7 @@ import { eventSocket } from '@/shared/api/eventSocket'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { useChatEventStream } from './agent-runtime'
 import { useChatStore } from './store'
+import { turns } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -53,7 +54,7 @@ describe('useChatEventStream reconnect', () => {
       await React.act(async () => root.render(<Host />))
       await React.act(async () => {
         reconnect?.()
-        await new Promise((resolve) => setTimeout(resolve, 20))
+        await turns()
       })
       // What the fetched body does to the store is `reconnect-watched.test.ts`'s and
       // `mergeSessionBody`'s concern; this pins that the reconnect asks for it at all.

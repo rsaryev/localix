@@ -43,7 +43,7 @@ describe('MCP resource tools', () => {
   test.each([
     ['list', { action: 'list' }],
     ['list_templates', { action: 'list_templates' }],
-    ['read', { action: 'read', server: 'github', uri: 'issue://1' }],
+    ['Read', { action: 'read', server: 'github', uri: 'issue://1' }],
     ['an unknown action', { action: 'write' }],
   ])('%s classifies as a read', (_label, input) => {
     expect(classifyToolCall(tool, input)).toEqual({ effect: 'read' })
@@ -164,7 +164,7 @@ describe('MCP resource tools', () => {
         readResource: async () => [],
       },
     })
-    expect(tools.map((t) => t.name)).toEqual(['mcp_resources'])
+    expect(tools.map((t) => t.name)).toEqual(['McpResources'])
   })
 
   test('buildMcpResourceTools applies the same user denylist as every other tool source', () => {
@@ -180,7 +180,7 @@ describe('MCP resource tools', () => {
       disabledTools: new Set(['list_mcp_resources', 'read_mcp_resource']),
       manager,
     })
-    expect(tools.map((tool) => tool.name)).toEqual(['mcp_resources'])
+    expect(tools.map((tool) => tool.name)).toEqual(['McpResources'])
     expect(JSON.stringify(zodToJsonSchema(tools[0]!.inputSchema))).toContain('list_templates')
     expect(JSON.stringify(zodToJsonSchema(tools[0]!.inputSchema))).not.toContain('"read"')
 

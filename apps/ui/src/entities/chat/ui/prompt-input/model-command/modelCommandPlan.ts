@@ -3,33 +3,23 @@ import { clampMaxTurns } from '@localixai/api/turn-budget'
 import { parseCommandArgs, type SlashArgSpec } from '../SlashArgSpec'
 import { isReasoningEffort, type ReasoningEffort } from '../../../model/reasoning'
 import { modelReasoningOptions } from '../../../model/modelReasoning'
-import {
-  commandTarget,
-  connectionModel,
-  startReasoning,
-  type ModelCommandContext,
-} from './modelCommandTarget'
+import { connectionModel, startReasoning, type ModelCommandContext } from './modelCommandTarget'
 import { contextLimitOptions } from '../model-select/modelSettingChoices'
 import { KEEP, skipModelStep, USE_DEFAULT } from './modelCommandSteps'
 
 /**
- * What a completed `/model` does — the write the picker would make for the same choices:
- *   - one member: its seat route (`setModelSelection`) plus, when chosen, its per-model
- *     Turns / Context limit settings (`rememberAgentModelSettings`, as the details panel writes);
- *   - All agents: one batch route for the room (`applyPartyRoute`).
- * A setting is `null` to clear it back to the default and absent to leave it as it is.
+ * What a completed `/model` does — the write the picker would make for the same choices: the
+ * agent's route (`setModelSelection`) plus, when chosen, its per-model Turns / Context limit
+ * settings (`rememberAgentModelSettings`, as the details panel writes). A setting is `null` to clear it back to the default and absent to leave it as it is.
  */
-export type ModelCommandPlan =
-  | {
-      kind: 'agent'
-      agentId: string
-      connectionId: string
-      modelId: string
-      providerId: string
-      reasoningEffort: ReasoningEffort
-      settings: { maxTurns?: number | null; contextLimit?: ContextLimit | null }
-    }
-  | { kind: 'party'; connectionId: string; modelId: string; reasoningEffort: ReasoningEffort }
+export interface ModelCommandPlan {
+  agentId: string
+  connectionId: string
+  modelId: string
+  providerId: string
+  reasoningEffort: ReasoningEffort
+  settings: { maxTurns?: number | null; contextLimit?: ContextLimit | null }
+}
 
 function settingValue(
   value: string | undefined,
@@ -49,7 +39,7 @@ function contextLimitValue(
   const arg = raw.trim().toLowerCase()
   if (arg === USE_DEFAULT || arg === 'auto') return null
   const option = contextLimitOptions(contextWindow).options.find((row) => row.arg === arg)
-  return option && option.value !== undefined ? option.value : false
+  return option?.value !== undefined ? option.value : false
 }
 
 /**
@@ -71,21 +61,18 @@ export function resolveModelCommand(
   if (parsed.activeSpec && tail && !/\s/.test(tail)) committed.set(parsed.activeSpec.name, tail)
   else if (tail) return null
 
-  const target = commandTarget(context, committed.get('agent'))
+  const { agent } = context
   const connectionId = committed.get('provider')
   const model = connectionModel(context, connectionId, committed.get('model'))
-  if (!target || !connectionId || !model) return null
+  if (!agent || !connectionId || !model) return null
 
   const chosen = committed.get('reasoning')
-  let reasoningEffort = startReasoning(context, target, model)
+  let reasoningEffort = startReasoning(context, model)
   if (chosen !== undefined) {
     const offered = modelReasoningOptions(model.reasoningEfforts).some((o) => o.value === chosen)
     if (!isReasoningEffort(chosen) || !offered || !model.supportsReasoning) return null
     reasoningEffort = chosen
   }
-  if (target.kind === 'party')
-    return { kind: 'party', connectionId, modelId: model.id, reasoningEffort }
-
   const maxTurns = settingValue(committed.get('turns'), (raw) =>
     /^\d+$/.test(raw) ? clampMaxTurns(Number(raw)) : null,
   )
@@ -93,8 +80,7 @@ export function resolveModelCommand(
   // A limit this model does not offer is refused, as an unoffered reasoning level is.
   if (contextLimit === false) return null
   return {
-    kind: 'agent',
-    agentId: target.member.agentId,
+    agentId: agent.agentId,
     connectionId,
     modelId: model.id,
     providerId: model.providerId,

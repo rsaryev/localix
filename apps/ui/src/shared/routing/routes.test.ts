@@ -33,7 +33,7 @@ describe('parseSettingsTab', () => {
     // Items are managed in the Store; Settings has no page of them to land on.
     for (const moved of ['agents', 'tools', 'skills', 'mcp', 'plugins', 'mini-apps'])
       expect(parseSettingsTab(moved, undefined)).toBe('preferences')
-    expect(parseSettingsTab('rules', undefined)).toBe('permissions')
+    expect(parseSettingsTab('rules', undefined)).toBe('preferences')
     expect(parseSettingsTab(undefined, undefined)).toBe('preferences')
   })
 })

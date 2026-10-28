@@ -64,7 +64,7 @@ describe('a script that floods its tools', () => {
       inputSchema: { type: 'object' },
       execute: async () => {
         peak = Math.max(peak, ++running)
-        await sleep(5)
+        await sleep(0)
         running--
         return 'ok'
       },
@@ -85,7 +85,7 @@ describe('a script that floods its tools', () => {
       inputSchema: { type: 'object' },
       execute: async () => {
         executed++
-        await sleep(1)
+        await sleep(0)
         return ''
       },
     }

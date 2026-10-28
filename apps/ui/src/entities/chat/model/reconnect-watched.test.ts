@@ -20,7 +20,7 @@ function harness(sessions: Session[], watched: string[], active: string | null) 
       fetched.push(id)
       inFlight += 1
       maxInFlight = Math.max(maxInFlight, inFlight)
-      await new Promise((resolve) => setTimeout(resolve, 1))
+      await new Promise((resolve) => setImmediate(resolve))
       inFlight -= 1
       return { id, version: (store.get(id)?.version ?? 0) + 1 }
     },

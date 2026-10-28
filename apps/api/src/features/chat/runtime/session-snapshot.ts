@@ -20,7 +20,6 @@
  */
 
 import { createBoundedCache } from '../../../lib/bounded-cache'
-import { agentLaneSessionPrefix } from '../../agent-core/execution-address'
 
 export interface SessionSnapshotCacheOptions {
   /** Max retained sessions; the least-recently-used entry beyond this is evicted. Default 200. */
@@ -82,8 +81,6 @@ export function createSessionSnapshotCache<T>(
     },
     invalidate(rootSessionId) {
       entries.delete(rootSessionId)
-      const prefix = agentLaneSessionPrefix(rootSessionId)
-      entries.deleteWhere((_entry, key) => key.startsWith(prefix))
     },
     size() {
       return entries.size

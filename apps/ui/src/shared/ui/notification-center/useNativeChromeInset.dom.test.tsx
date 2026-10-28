@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { useNativeChromeInset } from './useNativeChromeInset'
+import { turns } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -34,7 +35,7 @@ test('excludes measured native chrome and follows tab and fullscreen changes', a
       change()
       window.dispatchEvent(new Event('resize'))
       // Deliver the root's MutationObserver before checking the next render.
-      await new Promise((resolve) => setTimeout(resolve, 10))
+      await turns(3)
     })
   }
   try {

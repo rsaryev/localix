@@ -61,7 +61,7 @@ describe('an enabled plugin’s output styles and default agent', () => {
     expect(result.mainAgent).toMatchObject({
       fullName: 'sec:security-reviewer',
       prompt: 'You review.',
-      tools: ['read', 'search'],
+      tools: ['Read', 'Search'],
     })
   })
 

@@ -3,7 +3,7 @@
  *
  * The report used to be sent by the delegation's continuation, which watches exactly ONE run:
  * the one the delegation launched. A child can now run again — its delegator messages it
- * (`delegate` action message) — and those later runs ended in a transcript nobody was reading: the
+ * (`SendMessage`) — and those later runs ended in a transcript nobody was reading: the
  * parent had its first report and never heard another word.
  *
  * So the report hangs off the run's LOGICAL END, the one seam every run passes exactly once
@@ -18,8 +18,8 @@
  * Order at one run's end: end the child's work record → give its lane to the next child waiting
  * (`delegation-lanes.ts`) → stop here if the child was CLOSED (its delegator closed it and needs
  * no report saying so) → skip the report for a stopped run, a run whose session still has work
- * going (a teammate's queued turn, a child of its own), or one nobody waits on → read the run's
- * final text → wake the delegator's session, where the report waits for the delegator's other
+ * going (a queued turn, a child of its own), or one nobody waits on → read the run's
+ * whole text (every reply since the run began) → wake the delegator's session, where the report waits for the delegator's other
  * children (`wake-queue/holds.ts`) → start the next run for any delegator messages no run took.
  * The record ends first so the parent's woken turn does not still list the child as running.
  */
@@ -31,13 +31,13 @@ import {
   settleReport,
   takeExpectedReport,
 } from '../../../agent-core/delegation-awaits'
-import { participantAgentId } from '../../../../db/participant'
 import type { SessionRecord } from '../../repository'
 import { getAgentService } from '../agent-service-binding'
 import {
   delegationReportKey,
   delegationReportSession,
   delegationReportWake,
+  readRunReplies,
 } from '../delegation-report'
 import { recordDecidedDelivery } from '../delivery-receipts'
 import { endSubagentWork } from './subagent-work'
@@ -95,7 +95,7 @@ export async function reportChildRun(env: RunEnv, run: EndedChildRun): Promise<v
     }
     return skip()
   }
-  // A child is not done when ONE of its runs ends while its work goes on: a teammate's turn
+  // A child is not done when ONE of its runs ends while its work goes on: a turn
   // queued in its session, or a child of its own still running — whose report will wake it
   // again. It reports once, when it has gone quiet; the delegator's wait stands until then.
   if ((await env.hasPendingQueue(session.id)) || hasChildrenAtWork(session.id)) return skip()
@@ -116,7 +116,7 @@ export async function reportChildRun(env: RunEnv, run: EndedChildRun): Promise<v
 
 /**
  * Hand the run's report to the delegator: to its open call when it waits (`wait: true`, no wake —
- * false), or as a wake addressed to the delegating participant, by the handle it has in the
+ * false), or as a wake addressed to the delegating agent, by the handle it has in the
  * session the report lands in — the delegator's own, which for a nested child is a team's.
  */
 async function sendReport(
@@ -127,29 +127,32 @@ async function sendReport(
   const { session, userId } = run
   if (session.provenance.kind !== 'task-delegation') return false
   const provenance = session.provenance
-  const message = await env.repo.getMessage(userId, session.id, run.runId).catch(() => null)
-  const text = message?.payload.role === 'assistant' ? (message.payload.content ?? null) : null
+  // The whole run: a message that arrived mid-run split it into rows (`readRunReplies`).
+  const { text, waiting } = await readRunReplies(run.runId, async (messageId) => {
+    const row = await env.repo.getMessage(userId, session.id, messageId).catch(() => null)
+    return row?.payload.role === 'assistant'
+      ? {
+          content: row.payload.content,
+          items: row.payload.items,
+          continuedFromMessageId: row.payload.continuedFromMessageId,
+        }
+      : null
+  })
   const partial = run.partial ? { partial: true } : {}
-  if (deliverHeldReport(session.id, { status: run.outcome, text, ...partial })) return false
-  const delegatingAgentId = provenance.parentParticipant
-    ? participantAgentId(provenance.parentParticipant)
-    : null
-  const delegator = delegatingAgentId
-    ? await env.repo.getSession(userId, provenance.parentSessionId).catch(() => null)
-    : null
-  const handle = delegator?.agents.find((member) => member.agentId === delegatingAgentId)?.handle
+  const asked = waiting ? { waiting: true } : {}
+  if (deliverHeldReport(session.id, { status: run.outcome, text, ...partial, ...asked }))
+    return false
   await wake(
     delegationReportWake({
       userId,
       parent: { id: provenance.parentSessionId },
-      delegatingAgentId,
-      handle,
       label: session.title,
       childSessionId: session.id,
       runId: run.runId,
       status: run.outcome,
       text,
       ...partial,
+      ...asked,
     }),
   )
   return true

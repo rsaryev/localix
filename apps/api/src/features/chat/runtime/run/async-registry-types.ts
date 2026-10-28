@@ -11,8 +11,7 @@ export interface RunAsyncRegistryArgs {
   userId: string
   session: SessionRecord
   /**
-   * The participant whose run this is: a job's mid-run note and its exit notice go back to it,
-   * not its colleagues.
+   * The agent whose run this is: a job's mid-run note and its exit notice go back to it.
    */
   agentId: string
   assistantMessageId: string

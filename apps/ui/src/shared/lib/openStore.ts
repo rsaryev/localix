@@ -8,6 +8,8 @@ export interface StoreTarget {
   shelf?: string
   ref?: { kind: string; id: string }
   addSource?: { kind: string; input: string }
+  /** Open on the recommendations for the work, ranked. */
+  recommended?: boolean
 }
 
 /** Open the Store in its tab, or focus it, at `target` — it belongs to no chat. */
@@ -21,5 +23,5 @@ export function openStore(target: StoreTarget = {}): void {
   })
 }
 
-/** The Store on its Mini apps shelf: where every "add a mini app" entry point leads. */
-export const openMiniAppStore = (): void => openStore({ shelf: 'package:mini-app' })
+/** The Store on Discover: where every "add a mini app" entry point leads, as a plain open does. */
+export const openMiniAppStore = (): void => openStore({ shelf: 'discover' })

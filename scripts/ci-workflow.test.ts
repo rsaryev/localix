@@ -33,8 +33,9 @@ type Workflow = {
 const ci = Bun.YAML.parse(read('.github/workflows/ci.yml')) as Workflow
 const release = Bun.YAML.parse(read('.github/workflows/release.yml')) as Workflow
 const landing = Bun.YAML.parse(read('.github/workflows/landing.yml')) as Workflow
-// The tests, integration tests, bundle and coverage run locally (pre-push, on demand) for now.
-const gates = ['type-check', 'check:tests', 'check:size']
+// Unit tests run in CI on our own runner, where a busy laptop cannot make them flaky; integration
+// tests, the bundle and coverage run on demand.
+const gates = ['type-check', 'check:tests', 'check:size', 'test']
 const slices = ci.jobs.app.strategy?.matrix.include ?? []
 /** Every `bun run <script>` the app matrix runs, slice by slice. */
 const sliceCommands = slices.flatMap((slice) =>
@@ -45,15 +46,10 @@ const sliceCommands = slices.flatMap((slice) =>
 )
 
 describe('CI minute budget contract', () => {
-  test('runs every job on GitHub-hosted runners', () => {
-    for (const workflow of [ci, release, landing]) {
-      for (const job of Object.values(workflow.jobs)) {
-        expect(JSON.stringify(job['runs-on'])).not.toContain('self-hosted')
-      }
-    }
-    expect(ci.jobs.app['runs-on']).toBe('ubuntu-24.04')
-    expect(ci.jobs.desktop['runs-on']).toBe('ubuntu-22.04')
-    expect(landing.jobs.deploy['runs-on']).toBe('ubuntu-24.04')
+  test('Checks and the website run on our runner; a fork and the release stay on GitHub', () => {
+    const ours = "${{ github.event.pull_request.head.repo.fork && 'ubuntu-24.04' || 'localix' }}"
+    for (const job of Object.values(ci.jobs)) expect(job['runs-on']).toBe(ours)
+    expect(landing.jobs.deploy['runs-on']).toBe('localix')
     for (const [name, job] of Object.entries(release.jobs)) {
       expect(job['runs-on']).toBe(name === 'build-desktop' ? '${{ matrix.os }}' : 'ubuntu-24.04')
     }
@@ -172,7 +168,7 @@ describe('CI minute budget contract', () => {
   test('checks the workspace as parallel slices that together run every gate', () => {
     const app = ci.jobs.app
     expect(app.strategy?.['fail-fast']).toBe(false)
-    expect(slices.map((slice) => slice.cache)).toEqual(['types'])
+    expect(slices.map((slice) => slice.cache)).toEqual(['types', 'unit'])
     expect([...sliceCommands].sort()).toEqual(gates.map((gate) => `bun run ${gate}`).sort())
     // One install and one build per slice, the build before the slice's own commands.
     const runs = app.steps.map((step) => step.run ?? step.uses ?? '')

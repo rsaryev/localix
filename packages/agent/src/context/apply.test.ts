@@ -48,7 +48,7 @@ describe('applyPlan', () => {
     expect(text).toContain(ELISION_MARKER)
     // Non-recoverable output has no disk copy: without the handle the model's only
     // recovery is re-running the command.
-    expect(text).toContain('tool_output(action="get", tool_call_id="tc1")')
+    expect(text).toContain('ToolOutput(action="get", tool_call_id="tc1")')
   })
 
   test('pointer falls back to the bare placeholder when there is no tool_call_id', () => {
@@ -63,7 +63,7 @@ describe('applyPlan', () => {
     })
     const text = resultOf(out[0])
     expect(text).toContain(ELISION_MARKER)
-    expect(text).not.toContain('tool_output')
+    expect(text).not.toContain('ToolOutput')
     expect(text).toContain('full original is unavailable in this run')
   })
 

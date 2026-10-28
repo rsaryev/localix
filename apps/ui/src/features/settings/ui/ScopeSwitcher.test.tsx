@@ -3,6 +3,7 @@ import type { ReactElement } from 'react'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import type { Project } from '@/shared/api/contracts'
+import { turns as settle } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -13,8 +14,6 @@ afterAll(async () => {
   await new Promise((resolve) => setTimeout(resolve, 0))
   await teardown()
 })
-
-const settle = () => new Promise((resolve) => setTimeout(resolve, 30))
 
 const project: Project = {
   id: 'project-1',

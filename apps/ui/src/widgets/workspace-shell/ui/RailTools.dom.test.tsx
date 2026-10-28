@@ -2,6 +2,7 @@ import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { RAIL_LAYOUT_STORAGE_KEY } from '../model/railLayout'
 import { RAIL_RECENTS_STORAGE_KEY } from '../model/railRecents'
+import { turns } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -81,7 +82,7 @@ test('core and mini app tools share pins, grouping and a catalog; management ope
       button('All tools')!.dispatchEvent(
         new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
       )
-      await new Promise((resolve) => setTimeout(resolve, 30))
+      await turns(3)
     })
   }
   const toggle = async (label: string) => {

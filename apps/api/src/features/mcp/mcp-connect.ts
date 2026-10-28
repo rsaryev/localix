@@ -6,7 +6,6 @@ import { UnauthorizedError } from '@modelcontextprotocol/sdk/client/auth.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js'
-import { WebSocketClientTransport } from '@modelcontextprotocol/sdk/client/websocket.js'
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
 
 import type { McpServerRecord } from './repository'
@@ -16,6 +15,7 @@ import { serverEnv } from './mcp-timeouts'
 import { mcpOAuthSession, silentAuthProvider } from './oauth/runtime'
 import { remoteRequest } from './mcp-remote-request'
 import { createElicitingClient } from './mcp-elicitation'
+import { HeadersWebSocketTransport } from './mcp-ws-transport'
 
 // How long a single gather waits for a server to connect before backgrounding it.
 // Kept well below typical model prefill so a cold/slow MCP server (e.g. a remote
@@ -122,10 +122,10 @@ export async function connectClient(server: McpServerRecord, cwd: string): Promi
     const config = expandedConfig(server, cwd)
     const url = config.url as string | undefined
     if (!url) throw new Error('ws server has no url')
-    // The SDK's WebSocket transport connects by URL only (browser-WebSocket ctor);
-    // header auth isn't supported over WS — put a token in the URL if the server
-    // needs one, or use the http transport (which supports headers + OAuth).
-    await connectTransport(client, new WebSocketClientTransport(new URL(url)), deadline)
+    // The configured (expanded) headers go with the upgrade request. OAuth and `headersHelper`
+    // are for http servers only, as in Claude Code's documentation.
+    const headers = (config.headers as Record<string, string> | undefined) ?? undefined
+    await connectTransport(client, new HeadersWebSocketTransport(new URL(url), headers), deadline)
     return client
   }
 

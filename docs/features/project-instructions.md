@@ -6,15 +6,16 @@ Claude Code gives the agent the same instructions here.
 
 ## What you can do
 
-| Task                           | Mechanism                                                                                | Boundary                                                            |
-| ------------------------------ | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| Keep your own preferences      | Write `~/.claude/CLAUDE.md` or `~/.localix/context.md`, and rules in `~/.claude/rules/`. | Applies to every chat on this machine.                              |
-| Share a project's instructions | Commit `CLAUDE.md`, `.claude/CLAUDE.md`, `AGENTS.md` or `.localix/context.md`.           | Read from the working directory and every folder above it.          |
-| Keep private project notes     | Write `CLAUDE.local.md` beside the project's `CLAUDE.md` and ignore it in git.           | Read after the folder's `CLAUDE.md`.                                |
-| Split instructions by topic    | Put Markdown files in `.claude/rules/` or `.localix/rules/`.                             | A rule without `paths` always applies.                              |
-| Scope a rule to some files     | Add `paths:` globs to the rule's frontmatter.                                            | Loads once the agent reads, writes or edits a matching file.        |
-| Give a subfolder its own rules | Put a `CLAUDE.md`, `AGENTS.md` or `.claude/rules/` in the subfolder.                     | Loads once the agent works with a file in that subfolder.           |
-| Pull in another file           | Write `@path/to/file` in an instruction file.                                            | Up to four levels deep; files outside the project are not imported. |
+| Task                           | Mechanism                                                                                   | Boundary                                                            |
+| ------------------------------ | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Start a project's instructions | Run `/init`: the agent reads the project and writes `CLAUDE.md`, or improves the one there. | A normal turn; the agent's `Write` asks for approval as usual.      |
+| Keep your own preferences      | Write `~/.claude/CLAUDE.md` or `~/.localix/context.md`, and rules in `~/.claude/rules/`.    | Applies to every chat on this machine.                              |
+| Share a project's instructions | Commit `CLAUDE.md`, `.claude/CLAUDE.md`, `AGENTS.md` or `.localix/context.md`.              | Read from the working directory and every folder above it.          |
+| Keep private project notes     | Write `CLAUDE.local.md` beside the project's `CLAUDE.md` and ignore it in git.              | Read after the folder's `CLAUDE.md`.                                |
+| Split instructions by topic    | Put Markdown files in `.claude/rules/` or `.localix/rules/`.                                | A rule without `paths` always applies.                              |
+| Scope a rule to some files     | Add `paths:` globs to the rule's frontmatter.                                               | Loads once the agent reads, writes or edits a matching file.        |
+| Give a subfolder its own rules | Put a `CLAUDE.md`, `AGENTS.md` or `.claude/rules/` in the subfolder.                        | Loads once the agent works with a file in that subfolder.           |
+| Pull in another file           | Write `@path/to/file` in an instruction file.                                               | Up to four levels deep; files outside the project are not imported. |
 
 ## How it works
 

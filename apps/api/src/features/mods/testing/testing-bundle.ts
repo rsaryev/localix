@@ -8,6 +8,7 @@ import { Fragment, h } from '@localixai/claude-plugin/mods'
 export function runBundle(code: string): Record<string, unknown> {
   const runtime = { [Symbol.for('localix.mods.claude-code')]: { h, Fragment } }
   const module = { exports: {} as Record<string, unknown> }
+  // oxlint-disable-next-line typescript/no-implied-eval -- running the bundle's code is this helper's purpose
   const compiled = new Function(
     'globalThis',
     'exports',

@@ -30,13 +30,13 @@ time, newest first; changing filters resets it, and scrolling loads older pages.
 
 ### Spend per agent
 
-Recorded turns carry the producing agent when that attribution is available, so a group chat's cost
-can divide between members even when they share a session and model. Group by `Agent` for the
-breakdown, or filter by one agent to see everything it spent across every session it took part in.
+Recorded turns carry the producing agent when that attribution is available, so cost can divide
+between agents, including the main agent and its subagents. Group by `Agent` for the breakdown, or
+filter by one agent to see everything it spent across every session it took part in.
 
-Background calls a session makes for itself, such as title generation, have no speaker and group
-under `No agent`. That bucket is shown rather than dropped, so the breakdown still adds up to the
-total on the summary card.
+Background calls a session makes for itself, such as title generation, have no agent and group under
+`No agent`. That bucket is shown rather than dropped, so the breakdown still adds up to the total on
+the summary card.
 
 ## How it works
 
@@ -110,7 +110,7 @@ session totals but do not provide exact request-by-request daily auxiliary spend
 Boot reconciliation uses persisted assistant-message usage to repair ordinary turn rows. It does not
 replay model calls, recover missing auxiliary usage, or reprice history using today's catalog. When
 an older message lacks its own model or agent attribution, repair can fall back to the session's
-first participant; that historical attribution is approximate.
+agent; that historical attribution is approximate.
 
 Usage is not attributed to [Kanban](task-board.md) cards. A child session's rows carry the child's
 own `session_id`, so the workbench lists it as its own session; a query that bounds a session's work
@@ -170,5 +170,4 @@ whole multiple of its threshold after dismissal.
 - [Usage range calculation](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/hooks/usageRange.ts)
 - [Usage queries and paging lifecycle](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/hooks/useUsageStats.ts)
 - [Usage workbench](https://github.com/rsaryev/localix/blob/main/apps/ui/src/widgets/editor-grid/ui/StatsPanel.tsx)
-- [Composer usage indicator](https://github.com/rsaryev/localix/blob/main/apps/ui/src/entities/chat/ui/prompt-input/ParticipantUsageRow.tsx)
 - [Spend alert policy](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/lib/spendAlert.ts)

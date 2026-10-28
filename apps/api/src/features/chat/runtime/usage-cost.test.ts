@@ -117,10 +117,6 @@ describe('classifyCostSource', () => {
     expect(classifyCostSource('oauth-pkce', 'estimated')).toBe('subscription')
   })
 
-  test('legacy oauth spelling + estimated → subscription', () => {
-    expect(classifyCostSource('oauth', 'estimated')).toBe('subscription')
-  })
-
   test('api-key + estimated → stays estimated', () => {
     expect(classifyCostSource('api-key', 'estimated')).toBe('estimated')
   })

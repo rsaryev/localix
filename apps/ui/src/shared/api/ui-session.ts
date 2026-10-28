@@ -16,7 +16,6 @@ import type {
   LastMessagePreview,
   ResumePoint,
   SessionAgentRoute,
-  SessionModelChoicesView,
   SessionPlan,
 } from '@localixai/api/client'
 import type { PermissionMode } from '@localixai/api/permission-modes'
@@ -47,8 +46,6 @@ export interface UiSession {
   bodyLoaded?: boolean
   /** Server-computed all-history usage; live message snapshots replace their prior contribution. */
   sessionUsage?: ChatUsagePayload
-  /** Whole-history assistant usage by author, including participants who left. */
-  participantUsage?: Record<string, ChatUsagePayload>
   isPinned: boolean
   /** Soft-archived: hidden from the sidebar by default, but not deleted. */
   isArchived: boolean
@@ -63,12 +60,6 @@ export interface UiSession {
   readOnly?: boolean
   createdAt: number
   updatedAt: number
-  /**
-   * The server's `updatedAt`, verbatim. An edit that replaces the participant list sends it back
-   * so the server can refuse a list built from a stale view. Kept separate from `updatedAt`,
-   * which the client also bumps locally and parses to a number, so it cannot be compared back.
-   */
-  revision?: string
 
   /**
    * The HITL request the overlay is showing — the HEAD of the queue below, kept as
@@ -104,25 +95,16 @@ export interface UiSession {
   rootSessionId: string | null
   sessionKind: 'chat' | 'subagent' | 'job' | 'system'
   /**
-   * WHO this conversation is with and what each of them runs on — never empty; several make
-   * it a group. The model picker offers this list and writes back to one entry: a model
-   * belongs to an agent inside a conversation, not to the conversation.
+   * The conversation's one agent and the model its turns run on, fixed at creation. The model
+   * picker offers it and writes back to it. Null for a session that runs no model.
    */
-  agents: SessionAgentRoute[]
-  /**
-   * The person's model choices here, independent of membership: per agent, seated or not, and
-   * `all` for agents without their own. An agent that joins starts on its entry, else `all`.
-   * Absent on a session the client built before the server answered — nothing chosen.
-   */
-  modelChoices?: SessionModelChoicesView
+  agent: SessionAgentRoute | null
   /** How the agent's rules are rewritten for this conversation (`@localixai/api/permission-modes`). */
   permissionMode: PermissionMode
   /** A delegated child its delegator closed; nothing wakes it, and its composer is read-only. */
   closedAt?: string | null
   /** Optional conversation description. */
   description: string | null
-  /** A group's avatar ref (media id or emoji). Null = generated. */
-  avatar: string | null
   runtimeStatus: 'idle' | 'running' | 'completed' | 'failed' | 'stopped'
   externalAgentProvider?: string | null
   externalAgentSessionKey?: string | null
@@ -139,7 +121,6 @@ export interface UiSession {
    * supplies it — a live `session.updated` omits it, so the merge keeps the prior value
    * rather than blanking the row mid-run.
    *
-   * Carries its author, so a session with several agents can say WHO spoke last.
    */
   lastMessage?: LastMessagePreview
   lspServers: LspServerState[]
@@ -183,6 +164,4 @@ export interface UiSession {
     id: string
     label: string
   } | null
-  /** Agent whose addressed execution currently owns this session's serial partition. */
-  activeAgentId?: string | null
 }

@@ -9,6 +9,10 @@ import {
   type RawMarketTable,
 } from './market-table-cache'
 
+const turns = async (n = 10) => {
+  for (let i = 0; i < n; i++) await new Promise((r) => setImmediate(r))
+}
+
 const TMP_ROOT = makeTempDir('localix-market-cache')
 afterAll(async () => {
   await rm(TMP_ROOT, { recursive: true, force: true })
@@ -89,7 +93,7 @@ describe('createMarketTableCache — round-trip', () => {
     const cache = createMarketTableCache({ dir: freshDir() })
     await cache.write('hyperliquid', { markets: { 'A/B': { symbol: 'A/B' } } })
     const first = await cache.read('hyperliquid')
-    await new Promise((r) => setTimeout(r, 2))
+    await turns()
     await cache.write('hyperliquid', { markets: { 'C/D': { symbol: 'C/D' } } })
     const second = await cache.read('hyperliquid')
 

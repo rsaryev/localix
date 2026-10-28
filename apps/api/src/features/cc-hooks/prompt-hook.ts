@@ -8,7 +8,8 @@
  * pieces: (1) lenient parsing of the model's reply, (2) the per-event mapping of
  * `ok:false` onto a {@link CcHookOutcome}, exactly as the CC spec table dictates.
  *
- * Fail-open is the contract: an unparseable reply is treated as `ok:true`.
+ * Fail-open is the contract: an unparseable reply is treated as `ok:true`, marked `failed` so the
+ * person sees a hook error rather than a silent allow.
  */
 import { isPromptHookEvent, type CcHookEvent, type CcHookOutcome } from './contracts'
 import { resolveLifecycleGate } from '@localixai/agent/runtime'
@@ -17,6 +18,14 @@ import { nativeLifecycleEvent } from './lifecycle-events'
 export interface PromptHookResult {
   ok: boolean
   reason?: string
+  /** `ok:false` with `impossible`: the model judges the condition can never hold (prompt hooks). */
+  impossible?: boolean
+  /**
+   * Why no verdict was reached (no provider, an unusable model, a failed call, a reply without a
+   * verdict). The gate stays open, as the hook page names no fail-closed rule for these two
+   * types, but the person is told: it reaches the run as a non-blocking hook error.
+   */
+  failed?: string
 }
 
 /**
@@ -55,20 +64,62 @@ export function hookPromptText(prompt: string, inputJson: string): string {
  */
 export function parsePromptHookResult(text: string): PromptHookResult {
   const obj = firstJsonObject(text)
-  if (!obj) return { ok: true }
-  const ok = coerceOk(obj.ok)
-  if (ok === undefined) return { ok: true }
+  const ok = obj ? coerceOk(obj.ok) : undefined
+  if (!obj || ok === undefined) return { ok: true, failed: NO_VERDICT }
   const reason = typeof obj.reason === 'string' && obj.reason.trim() ? obj.reason.trim() : undefined
-  return reason ? { ok, reason } : { ok }
+  return {
+    ok,
+    ...(reason ? { reason } : {}),
+    ...(!ok && obj.impossible === true ? { impossible: true } : {}),
+  }
 }
 
-/** Map a prompt hook's `{ok, reason}` onto the event's outcome (CC §7 response schema). */
-export function mapPromptOutcome(event: CcHookEvent, result: PromptHookResult): CcHookOutcome {
+const NO_VERDICT = 'the model reply held no {"ok": …} verdict'
+
+/** What the hook's own settings and type change about an `ok:false` (hooks.md, Response schema). */
+export interface PromptVerdictOptions {
+  /** An `agent` hook: handled as a prompt hook with `continueOnBlock: true`, `impossible` ignored. */
+  agent?: boolean
+  continueOnBlock?: boolean
+}
+
+/**
+ * Map a prompt or agent hook's `{ok, reason}` onto the event's outcome (hooks.md, Response
+ * schema). Where the page lets the turn go on, the reason goes back to Claude; where it ends the
+ * turn by default, `continueOnBlock` (prompt hooks; an agent hook always) goes back instead.
+ */
+export function mapPromptOutcome(
+  event: CcHookEvent,
+  result: PromptHookResult,
+  options: PromptVerdictOptions = {},
+): CcHookOutcome {
   // The format owns its support matrix.
   if (!isPromptHookEvent(event)) return {}
+  if (result.failed) return { failed: 'error', failureDetail: result.failed }
+  if (result.ok) return {}
+  const reason = result.reason
+  const continues = options.agent === true || options.continueOnBlock === true
+  // The turn ends with the reason as a warning line (`continue:false`), or Claude gets it back.
+  const endsTurn = { continue: false as const, stopReason: reason || 'A hook stopped the run.' }
+  if (event === 'Stop' || event === 'SubagentStop') {
+    // `impossible` lets the turn end, so a condition that cannot hold never loops. Agent hooks
+    // do not support it.
+    return options.agent || !result.impossible ? { decision: 'block', reason } : {}
+  }
+  if (event === 'PreToolUse') {
+    return {
+      permissionDecision: 'deny',
+      permissionDecisionReason: reason,
+      ...(continues ? {} : endsTurn),
+    }
+  }
+  if (event === 'PostToolUse') {
+    return continues ? { decision: 'block', reason } : endsTurn
+  }
+  if (event === 'PostToolUseFailure') return { decision: 'block', reason }
   const effect = resolveLifecycleGate(nativeLifecycleEvent(event), {
-    accepted: result.ok,
-    reason: result.reason,
+    accepted: false,
+    reason,
   })
   switch (effect.kind) {
     case 'deny-tool':

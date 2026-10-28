@@ -14,9 +14,10 @@ import { createAgentFacadePhase } from './bootstrap/agent-facade'
 import { createAppServicesPhase } from './bootstrap/app-services'
 import { createAppPhase } from './bootstrap/create-app'
 import { createStorePhase } from './bootstrap/store'
+import { createStoreWorkingContext } from './bootstrap/store-context'
 import { createOpsTimersPhase } from './bootstrap/ops-timers'
 import { createStartPostListen } from './bootstrap/start-post-listen'
-import { runLegacyMigrations } from './bootstrap/legacy-migrations'
+import { agentModelChoicesPort } from './features/agents/model-choices-port'
 import { buildSemanticService } from './bootstrap/semantic'
 import { buildDecisionService } from './bootstrap/decisions'
 
@@ -55,9 +56,8 @@ export async function bootstrap(
   } = infra
   // Semantic search, built from infra alone; every later phase that consumes it gets this one.
   const semanticService = buildSemanticService(infra)
-  // Decisions, built from infra alone too: group routing and every mini app host ask through it.
+  // Decisions, built from infra alone too: chat and every mini app host ask through it.
   const decisionService = buildDecisionService(infra)
-  await runLegacyMigrations(infra)
   const {
     subsystemRegistry,
     contextProviderRegistry,
@@ -126,8 +126,8 @@ export async function bootstrap(
     contextProviderRegistry,
     resourceRefsRegistry,
   })
+  const agentModelChoices = agentModelChoicesPort(userService)
   const { chatService } = createChatServicePhase({
-    semanticService,
     decisionService,
     externalAgents: externalAgents.port,
     db,
@@ -154,7 +154,7 @@ export async function bootstrap(
     // whose `onChanged` bumped the revision but reconciled none of the live hosts.
     pluginService,
     miniAppService,
-    // The `skill` tool's save/delete announces through the same bump + poke as MCP.
+    // The `Skill` tool's save/delete announces through the same bump + poke as MCP.
     announceCapabilityChange,
     serviceRefs,
   })
@@ -201,6 +201,7 @@ export async function bootstrap(
   const store = createStorePhase({
     miniAppService,
     agentsService,
+    agentModelChoices,
     mcpService,
     skills: {
       curator: skillsCuratorService,
@@ -216,10 +217,19 @@ export async function bootstrap(
     pluginService,
     semanticService,
     resolveProjectCwd,
+    workingContext: createStoreWorkingContext({
+      contextManager,
+      workspace: {
+        resolveSessionWorkspaceMetadata: (...args) =>
+          chatService.resolveSessionWorkspaceMetadata(...args),
+        getProfile: (...args) => userService.getProfile(...args),
+        getProject: (...args) => projectsService.getProject(...args),
+      },
+    }),
     owner: env.LOCALIX_DEFAULT_USER_ID,
   })
   const storeService = store.storeService
-  // Chat is built first; its `store` tool and `/plugin` commands reach the Store through this.
+  // Chat is built first; its `Store` tool and `/plugin` commands reach the Store through this.
   serviceRefs.store = storeService
   // Handed to the app phase whole: its input extends this phase's output.
   const appServices = createAppServicesPhase({

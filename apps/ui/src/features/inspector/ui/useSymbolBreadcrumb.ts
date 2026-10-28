@@ -27,6 +27,8 @@ export function useSymbolBreadcrumb(
   editPath: string,
   reloadKey: string,
   buffer: string,
+  /** Quiet time before the symbols are read; a test passes 0. */
+  debounceMs = 400,
 ): SymbolBreadcrumb {
   const workItemVisible = useWorkItemVisible()
   const [docSymbols, setDocSymbols] = useState<LspDocumentSymbol[]>([])
@@ -37,7 +39,7 @@ export function useSymbolBreadcrumb(
   // unsaved edits cannot leave breadcrumb destinations on old lines. reloadKey changes on each
   // successful save → re-derive symbols against the saved file. A hidden tab keeps its outline.
   const hasFile = !!sessionId && !!editPath
-  useDebouncedQuery([workItemVisible, sessionId, editPath, reloadKey, buffer], 400, {
+  useDebouncedQuery([workItemVisible, sessionId, editPath, reloadKey, buffer], debounceMs, {
     run:
       hasFile && workItemVisible
         ? () => backendClient.lspDocumentSymbols(sessionId, editPath)

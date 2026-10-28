@@ -85,6 +85,7 @@ export function BandScroller({
     edges.end ? 'black calc(100% - 2.5rem), transparent' : 'black',
   ].join(', ')
   return (
+    // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- arrow-key roving between the focusable buttons inside; the keydown comes from them, the group is never the target
     <div
       ref={ref}
       role="group"

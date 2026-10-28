@@ -50,7 +50,7 @@ export function LabelEditor({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="outline"
+          variant="ghost"
           size="xs"
           disabled={full}
           title={full ? `A task carries at most ${KANBAN_MAX_LABELS} labels` : 'Add a label'}

@@ -39,7 +39,7 @@ export type HistorySearchRepo = Pick<
 export type HistoryModeResult = Awaited<ReturnType<typeof runBrowse>> & { isError?: boolean }
 
 /**
- * The conversation-history reads `global_search` offers beside search: SCROLL (the messages
+ * The conversation-history reads `GlobalSearch` offers beside search: SCROLL (the messages
  * around one, or a session's end), BROWSE (recent sessions) and the full-text DISCOVERY it falls
  * back to in a host without the search service. Errors become a tool error, never a throw.
  */

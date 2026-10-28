@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, spyOn, test } from 'bun:test'
 import type { SecretMeta } from '@localixai/api/client'
 import { registerDom } from '@localixai/kit/testing/dom'
+import { turns as settle } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 beforeAll(async () => {
@@ -11,8 +12,6 @@ afterAll(async () => {
   await new Promise((resolve) => setTimeout(resolve, 0))
   await teardown()
 })
-
-const settle = () => new Promise((resolve) => setTimeout(resolve, 30))
 
 const item = (overrides: Partial<SecretMeta>): SecretMeta => ({
   id: 'secret-1',

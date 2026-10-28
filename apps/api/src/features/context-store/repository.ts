@@ -3,13 +3,12 @@ import { sql, type Kysely } from 'kysely'
 import type { AppDatabase } from '../../db'
 import { decodeArtifactText, encodeArtifactText } from './artifact-codec'
 import { chunkToolOutput, MAX_CHUNKS } from './chunking'
-import { participantOutputPredicate } from './repository-participant-output'
 import { MAX_CHUNKS_PER_SESSION } from '../agent-core/context-index-policy'
 
 /**
  * Durable exact tool I/O plus its disposable FTS5 search projection. The exact
  * artifact is committed synchronously at the runtime tool boundary; chunks may be
- * rebuilt or evicted without invalidating `tool_output`.
+ * rebuilt or evicted without invalidating `ToolOutput`.
  */
 
 export interface ContextChunkHit {
@@ -47,7 +46,6 @@ export function createContextStoreRepository(db: Kysely<AppDatabase>) {
       text: string
       toolInput: unknown
       isError: boolean
-      participant?: string
     }): Promise<void> {
       const now = new Date().toISOString()
       const inputJson = JSON.stringify(input.toolInput) ?? 'null'
@@ -59,7 +57,6 @@ export function createContextStoreRepository(db: Kysely<AppDatabase>) {
           session_id: input.sessionId,
           tool_call_id: input.toolCallId,
           tool_name: input.toolName,
-          participant: input.participant ?? null,
           content: stored.content,
           encoding: stored.encoding,
           content_z: stored.content_z,
@@ -88,7 +85,6 @@ export function createContextStoreRepository(db: Kysely<AppDatabase>) {
       userId: string,
       sessionId: string,
       toolCallId: string,
-      participant?: string,
     ): Promise<ToolOutputArtifact | null> {
       const row = await db
         .selectFrom('tool_output_artifacts')
@@ -104,7 +100,6 @@ export function createContextStoreRepository(db: Kysely<AppDatabase>) {
         .where('user_id', '=', userId)
         .where('session_id', '=', sessionId)
         .where('tool_call_id', '=', toolCallId)
-        .where(participantOutputPredicate(participant, 'tool_output_artifacts'))
         .executeTakeFirst()
       if (!row) return null
       let toolInput: unknown = null
@@ -214,7 +209,7 @@ export function createContextStoreRepository(db: Kysely<AppDatabase>) {
       return Number(result.rows[0]?.n ?? 0)
     },
 
-    /** Whether a tool call already has chunks — the lazy-index probe of tool_output. */
+    /** Whether a tool call already has chunks — the lazy-index probe of ToolOutput. */
     async hasChunks(userId: string, sessionId: string, toolCallId: string): Promise<boolean> {
       const result = await sql<{ n: number }>`
         SELECT COUNT(*) AS n FROM tool_output_chunks
@@ -235,7 +230,7 @@ export function createContextStoreRepository(db: Kysely<AppDatabase>) {
       userId: string,
       sessionId: string,
       match: string,
-      options?: { toolCallId?: string; limit?: number; participant?: string },
+      options?: { toolCallId?: string; limit?: number },
     ): Promise<ContextChunkHit[]> {
       const limit = options?.limit ?? 8
       const toolCallFilter = options?.toolCallId ?? null
@@ -259,7 +254,6 @@ export function createContextStoreRepository(db: Kysely<AppDatabase>) {
           AND user_id = ${userId}
           AND session_id = ${sessionId}
           AND (${toolCallFilter} IS NULL OR tool_call_id = ${toolCallFilter})
-          AND ${participantOutputPredicate(options?.participant, 'tool_output_chunks')}
         ORDER BY bm25(tool_output_chunks, 1.0, 5.0)
         LIMIT ${limit}
       `.execute(db)

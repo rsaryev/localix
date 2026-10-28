@@ -129,7 +129,7 @@ export function TerminalToolCard({ item }: { item: ToolCallItem }) {
     >
       <ToolBody>
         {screen && (
-          <IORow label="SCREEN">
+          <IORow label="Out">
             {/* `overscroll-contain`: nested inside the transcript scroller — hitting
                 the end of the captured screen must not scroll the conversation. */}
             <pre className="scrollbar-thin max-h-72 overflow-auto overscroll-contain px-1 py-1.5 font-mono text-2xs leading-[1.4] text-text-soft whitespace-pre">
@@ -138,7 +138,7 @@ export function TerminalToolCard({ item }: { item: ToolCallItem }) {
           </IORow>
         )}
         {!screen && item.resultText && (
-          <IORow label="OUT">
+          <IORow label="Out">
             <OutputBlock>{item.resultText}</OutputBlock>
           </IORow>
         )}

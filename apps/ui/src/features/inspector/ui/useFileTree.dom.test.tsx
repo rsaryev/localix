@@ -6,6 +6,7 @@ import { publishFsChange } from '@/shared/lib/fsChangeBus'
 import { revealInTree } from '@/shared/lib/explorerBus'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { useFileTree } from './useFileTree'
+import { turns } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -31,13 +32,16 @@ type TreeSnapshot = ReturnType<typeof useFileTree>
 
 async function mountTree(initialSessionId: string) {
   const React = await import('react')
-  const { act } = React
+  const { act, useEffect } = React
   const { createRoot } = await import('react-dom/client')
   const root = createRoot(document.createElement('div'))
   let current: TreeSnapshot | null = null
 
   function SessionTree({ sessionId }: { sessionId: string }) {
-    current = useFileTree(sessionId)
+    const value = useFileTree(sessionId, { refreshDelayMs: 0 })
+    useEffect(() => {
+      current = value
+    })
     return null
   }
 
@@ -435,7 +439,7 @@ describe('useFileTree async ownership', () => {
       active++
       peak = Math.max(peak, active)
       // Hold the read open across a macrotask so overlap is observable.
-      await new Promise((r) => setTimeout(r, 1))
+      await new Promise((r) => setImmediate(r))
       active--
       return listing(path ?? '/workspace', [])
     })
@@ -451,7 +455,7 @@ describe('useFileTree async ownership', () => {
       list.mockImplementation(async (_s, path) => {
         active++
         peak = Math.max(peak, active)
-        await new Promise((r) => setTimeout(r, 1))
+        await new Promise((r) => setImmediate(r))
         active--
         return listing(path ?? '/workspace', path === '/workspace' ? names : [])
       })
@@ -471,7 +475,8 @@ describe('useFileTree async ownership', () => {
       await tree.act(async () => {
         // Empty paths IS the coarse "reload everything visible" frame.
         publishFsChange({ sessionId: 'session-fan', paths: [] })
-        await new Promise((r) => setTimeout(r, 400))
+        await new Promise((r) => setTimeout(r, 0))
+        await turns(80)
       })
 
       const issued = list.mock.calls.length - before
@@ -510,7 +515,8 @@ describe('useFileTree async ownership', () => {
       errors.mockClear()
       await tree.act(async () => {
         publishFsChange({ sessionId: 'session-quiet', paths: ['/workspace'] })
-        await new Promise((resolve) => setTimeout(resolve, 200))
+        await new Promise((resolve) => setTimeout(resolve, 0))
+        await turns()
       })
       expect(list.mock.calls.length).toBeGreaterThan(1)
       expect(errors.mock.calls.length).toBe(0)

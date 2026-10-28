@@ -76,12 +76,9 @@ describe('stageDropins', () => {
         readdirSync(root, { withFileTypes: true })
           .filter((entry) => entry.isDirectory())
           .flatMap((entry) =>
-            [
-              'mini-app.json',
-              '.claude-plugin/plugin.json',
-              '.localix-app/app.json',
-              'plugin.json',
-            ].map((file) => join(root, entry.name, file)),
+            ['mini-app.json', '.claude-plugin/plugin.json'].map((file) =>
+              join(root, entry.name, file),
+            ),
           ),
       )
       .filter(existsSync)
@@ -98,7 +95,7 @@ describe('stageDropins', () => {
     const outMiniApps = join(root, 'staged', 'plugins')
     const miniAppDir = join(root, 'plugins', 'licensed')
     write(
-      join(miniAppDir, 'plugin.json'),
+      join(miniAppDir, 'mini-app.json'),
       JSON.stringify({ name: 'licensed', version: '1.0.0', license: 'MIT' }),
     )
     write(join(miniAppDir, 'ATTRIBUTION.md'), 'upstream attribution one\n')
@@ -138,13 +135,13 @@ describe('stageDropins', () => {
     const outMiniApps = join(root, 'staged', 'plugins')
 
     write(
-      join(root, 'plugins', 'healthy', 'plugin.json'),
-      JSON.stringify({ name: 'healthy', version: '1.0.0', tools: './backend/index.ts' }),
+      join(root, 'plugins', 'healthy', 'mini-app.json'),
+      JSON.stringify({ name: 'healthy', version: '1.0.0', backend: './backend/index.ts' }),
     )
     write(join(root, 'plugins', 'healthy', 'backend', 'index.ts'), 'export const tools = []\n')
     write(
-      join(root, 'plugins', 'broken', 'plugin.json'),
-      JSON.stringify({ name: 'broken', version: '1.0.0', tools: './backend/index.ts' }),
+      join(root, 'plugins', 'broken', 'mini-app.json'),
+      JSON.stringify({ name: 'broken', version: '1.0.0', backend: './backend/index.ts' }),
     )
     write(
       join(root, 'plugins', 'broken', 'backend', 'index.ts'),
@@ -181,7 +178,7 @@ describe('stageDropins', () => {
     roots.push(root)
     const outMiniApps = join(root, 'staged', 'plugins')
     write(
-      join(root, 'mini-apps', 'trading', '.localix-app', 'app.json'),
+      join(root, 'mini-apps', 'trading', 'mini-app.json'),
       JSON.stringify({ name: 'trading', backend: './backend/index.ts' }),
     )
     write(join(root, 'mini-apps', 'trading', 'backend', 'index.ts'), 'export const tools = []\n')
@@ -220,8 +217,8 @@ describe('stageDropins', () => {
     const outMiniApps = join(root, 'staged', 'plugins')
     const entry = join(root, 'plugins', 'flaky', 'backend', 'index.ts')
     write(
-      join(root, 'plugins', 'flaky', 'plugin.json'),
-      JSON.stringify({ name: 'flaky', version: '1.0.0', tools: './backend/index.ts' }),
+      join(root, 'plugins', 'flaky', 'mini-app.json'),
+      JSON.stringify({ name: 'flaky', version: '1.0.0', backend: './backend/index.ts' }),
     )
     write(entry, "import { gone } from './missing-module'\nexport const tools = [gone]\n")
     const unavailable = () =>
@@ -267,8 +264,8 @@ describe('stageDropins', () => {
     const root = mkdtempSync(join(tmpdir(), 'localix-stage-dropins-'))
     roots.push(root)
     write(
-      join(root, 'plugins', 'broken', 'plugin.json'),
-      JSON.stringify({ name: 'broken', version: '1.0.0', tools: './backend/index.ts' }),
+      join(root, 'plugins', 'broken', 'mini-app.json'),
+      JSON.stringify({ name: 'broken', version: '1.0.0', backend: './backend/index.ts' }),
     )
     write(
       join(root, 'plugins', 'broken', 'backend', 'index.ts'),
@@ -287,8 +284,8 @@ describe('stageDropins', () => {
     roots.push(root)
     const outMiniApps = join(root, 'staged', 'plugins')
     write(
-      join(root, 'plugins', 'small', 'plugin.json'),
-      JSON.stringify({ name: 'small', version: '1.0.0', tools: './backend/index.ts' }),
+      join(root, 'plugins', 'small', 'mini-app.json'),
+      JSON.stringify({ name: 'small', version: '1.0.0', backend: './backend/index.ts' }),
     )
     write(
       join(root, 'plugins', 'small', 'backend', 'index.ts'),
@@ -321,14 +318,14 @@ describe('stageDropins', () => {
     roots.push(root)
     const outMiniApps = join(root, 'staged', 'plugins')
     write(
-      join(root, 'mini-apps', 'built-locally', 'plugin.json'),
+      join(root, 'mini-apps', 'built-locally', 'mini-app.json'),
       JSON.stringify({ name: 'built-locally', version: '1.0.0' }),
     )
     write(join(root, 'mini-apps', 'built-locally', 'dist', 'preview', 'index.html'), '<p>local</p>')
     write(join(root, 'mini-apps', 'built-locally', 'docs', 'dist', 'kept.md'), 'nested\n')
     write(join(root, 'mini-apps', 'built-locally', 'ui', 'register.tsx'), 'export {}\n')
     write(
-      join(root, 'plugins', 'prebuilt', 'plugin.json'),
+      join(root, 'plugins', 'prebuilt', 'mini-app.json'),
       JSON.stringify({ name: 'prebuilt', version: '1.0.0', skills: './dist/skills' }),
     )
     write(join(root, 'plugins', 'prebuilt', 'dist', 'skills', 'SKILL.md'), 'declared\n')
@@ -365,11 +362,11 @@ describe('stageDropins', () => {
     const outMiniApps = join(root, 'staged', 'plugins')
     const miniAppDir = join(root, 'mini-apps', 'compiled-ui')
     write(
-      join(miniAppDir, 'plugin.json'),
+      join(miniAppDir, 'mini-app.json'),
       JSON.stringify({
         name: 'compiled-ui',
         version: '1.0.0',
-        tools: './backend/index.ts',
+        backend: './backend/index.ts',
         commands: [
           {
             name: 'fixture',
@@ -446,12 +443,12 @@ describe('stageDropins', () => {
     expect(existsSync(join(stagedMiniApp, 'arg-sources', 'options.ts'))).toBe(true)
     expect(existsSync(join(stagedMiniApp, 'arg-sources', 'options-helper.ts'))).toBe(true)
 
-    const manifest = JSON.parse(readFileSync(join(stagedMiniApp, 'plugin.json'), 'utf8')) as {
-      tools: string
+    const manifest = JSON.parse(readFileSync(join(stagedMiniApp, 'mini-app.json'), 'utf8')) as {
+      backend: string
     }
-    expect(manifest.tools).toBe('./backend/index.bundle.mjs')
+    expect(manifest.backend).toBe('./backend/index.bundle.mjs')
     const bundled = (await import(
-      `${pathToFileURL(join(stagedMiniApp, manifest.tools)).href}?compiled-ui`
+      `${pathToFileURL(join(stagedMiniApp, manifest.backend)).href}?compiled-ui`
     )) as {
       implementation: string
       loadRuntime: () => Promise<string>
@@ -475,7 +472,7 @@ describe('stageDropins', () => {
     const outMiniApps = join(root, 'staged', 'plugins')
     const miniAppDir = join(root, 'plugins', 'clean')
     write(
-      join(miniAppDir, 'plugin.json'),
+      join(miniAppDir, 'mini-app.json'),
       JSON.stringify({ name: 'clean', version: '1.0.0', license: 'MIT' }),
     )
     write(join(miniAppDir, '.turbo', 'cache.json'), '{}')
@@ -517,8 +514,8 @@ describe('stageDropins', () => {
 
     for (const [name, tools, source] of entries) {
       write(
-        join(root, 'plugins', name, 'plugin.json'),
-        JSON.stringify({ name, version: '1.0.0', tools }),
+        join(root, 'plugins', name, 'mini-app.json'),
+        JSON.stringify({ name, version: '1.0.0', backend: tools }),
       )
       write(
         join(root, 'plugins', name, tools),
@@ -564,11 +561,11 @@ describe('stageDropins', () => {
 
     for (const [name] of entries) {
       const stagedMiniApp = join(outMiniApps, name)
-      const manifest = JSON.parse(readFileSync(join(stagedMiniApp, 'plugin.json'), 'utf8')) as {
-        tools: string
+      const manifest = JSON.parse(readFileSync(join(stagedMiniApp, 'mini-app.json'), 'utf8')) as {
+        backend: string
       }
-      expect(manifest.tools).toBe('./backend/index.bundle.mjs')
-      const bundledEntry = join(stagedMiniApp, manifest.tools)
+      expect(manifest.backend).toBe('./backend/index.bundle.mjs')
+      const bundledEntry = join(stagedMiniApp, manifest.backend)
       expect(existsSync(bundledEntry)).toBe(true)
       const chunksDir = join(stagedMiniApp, 'backend', 'chunks')
       const chunks = readdirSync(chunksDir)

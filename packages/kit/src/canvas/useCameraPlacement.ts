@@ -57,6 +57,7 @@ export function useCameraPlacement(
     if (placedKey === key || !ready || width <= 0 || height <= 0) return
     const next = latest.current({ width, height })
     cleanup.current = typeof next === 'function' ? next : null
+    // oxlint-disable-next-line react/set-state-in-effect -- placing moves an imperative camera; recording that it happened is what un-hides the board, and it must follow the move
     setPlacedKey(key)
     // `width`/`height` only gate the FIRST placement of a key: a resize afterwards keeps the
     // camera where the person left it, which is why `placedKey` short-circuits above.

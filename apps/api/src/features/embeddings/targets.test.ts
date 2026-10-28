@@ -20,7 +20,8 @@ function harness(related: Array<{ collection: string; key: string }> = []) {
       note: 'ignore',
     },
     {
-      changed: async (collection, keys) => void work.push(`changed ${collection} ${keys}`),
+      changed: async (collection, keys) =>
+        void work.push(`changed ${collection} ${keys.join(',')}`),
       resync: async (collection) => void work.push(`resync ${collection}`),
       removeUnder: async (collection, parent) => void work.push(`remove ${collection} ${parent}`),
     },

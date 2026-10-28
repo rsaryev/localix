@@ -40,7 +40,7 @@ import { modelViewSections } from '../model-view/sections'
 import { rowsAfterClear } from '../model-view/view'
 import type { ChatTurnFrame } from './frame'
 import { clearCutStage, turnContextStage } from './stages/persisted'
-import { participantViewStage } from './stages/participant-view'
+import { agentHistoryStage } from './stages/agent-history'
 import { findActiveInvocationIndex, toModelPayloads } from './stages/media'
 import { checkpointStage } from './stages/checkpoint'
 import { admissionStage, preflightStage, type BudgetScratch } from './stages/budget'
@@ -65,7 +65,7 @@ export type {
  */
 export const CHAT_STAGES = [
   'clear-cut',
-  'participant-view',
+  'agent-history',
   'turn-context',
   'media',
   'checkpoint',
@@ -105,9 +105,9 @@ export function createChatHistoryRun(ctx: ChatHistoryRunContext): ChatHistoryRun
       frame.messages,
       [
         clearCutStage(),
-        // Before anything measures or compresses: rewrite authorship into the speaking
-        // participant's point of view. Every stage after it reasons about what the MODEL sees.
-        participantViewStage(ctx.participantAudience),
+        // Before anything measures or compresses: the agent's own rows as its model reads them.
+        // Every stage after it reasons about what the MODEL sees.
+        agentHistoryStage(ctx.availableTools),
         turnContextStage({
           past: ctx.view.turnContexts,
           ...(turnContext

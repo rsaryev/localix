@@ -19,6 +19,7 @@ const own = (event: SyntheticEvent) => event.stopPropagation()
 
 function Controls({ children }: { children: ReactNode }) {
   return (
+    // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- the handlers only stop events reaching the row; they add no interaction of their own
     <span
       role="group"
       className="flex shrink-0 items-center gap-1"

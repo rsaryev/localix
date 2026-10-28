@@ -29,7 +29,7 @@ function buildWire(reads: number): Message[] {
   const calls = Array.from({ length: reads }, (_, i) => ({
     type: 'tool_call' as const,
     id: `r${i}`,
-    name: 'read',
+    name: 'Read',
     arguments: { path: `src/f${i}.ts` },
   }))
   msgs.push({
@@ -42,7 +42,7 @@ function buildWire(reads: number): Message[] {
     msgs.push({
       role: 'tool',
       results: [
-        { type: 'tool_result', toolCallId: `r${i}`, toolName: 'read', content: big(`f${i}`) },
+        { type: 'tool_result', toolCallId: `r${i}`, toolName: 'Read', content: big(`f${i}`) },
       ],
       timestamp: 0,
     })
@@ -60,7 +60,7 @@ function fatTailWire(reads: number): Message[] {
       role: 'assistant',
       content: [
         { type: 'text', text: 'reading' },
-        { type: 'tool_call', id: `r${i}`, name: 'read', arguments: { path: `src/f${i}.ts` } },
+        { type: 'tool_call', id: `r${i}`, name: 'Read', arguments: { path: `src/f${i}.ts` } },
       ],
       model: 'm',
       timestamp: 0,
@@ -68,7 +68,7 @@ function fatTailWire(reads: number): Message[] {
     msgs.push({
       role: 'tool',
       results: [
-        { type: 'tool_result', toolCallId: `r${i}`, toolName: 'read', content: big(`f${i}`) },
+        { type: 'tool_result', toolCallId: `r${i}`, toolName: 'Read', content: big(`f${i}`) },
       ],
       timestamp: 0,
     })
@@ -338,7 +338,7 @@ describe('pruneWireMessages content-shape parity', () => {
     const parts = pruneWireMessages(asParts(buildWire(30)), opts)
     // Same pointer text, result for result — the decision cannot depend on the shape.
     expect(resultTexts(parts)).toEqual(resultTexts(strings))
-    expect(resultTexts(parts).some((t) => t.includes('tool_output'))).toBe(true)
+    expect(resultTexts(parts).some((t) => t.includes('ToolOutput'))).toBe(true)
   })
 
   it('reclaims from array-shaped content when over budget', () => {
@@ -374,7 +374,7 @@ describe('pruneWireMessages content-shape parity', () => {
       if (m.role !== 'tool') continue
       for (const r of m.results) {
         expect(Array.isArray(r.content)).toBe(true)
-        // An image part carries bytes no `tool_output` pointer can recover, so it
+        // An image part carries bytes no `ToolOutput` pointer can recover, so it
         // must survive even when the text beside it is replaced by one.
         expect((r.content as Array<{ type: string }>).some((p) => p.type === 'image')).toBe(true)
       }
@@ -386,7 +386,7 @@ describe('pruneWireMessages content-shape parity', () => {
       { role: 'user', content: 'go', timestamp: 0 },
       {
         role: 'assistant',
-        content: [{ type: 'tool_call', id: 'i1', name: 'read', arguments: {} }],
+        content: [{ type: 'tool_call', id: 'i1', name: 'Read', arguments: {} }],
         model: 'm',
         timestamp: 0,
       },
@@ -396,7 +396,7 @@ describe('pruneWireMessages content-shape parity', () => {
           {
             type: 'tool_result',
             toolCallId: 'i1',
-            toolName: 'read',
+            toolName: 'Read',
             content: [{ type: 'image', data: 'A'.repeat(9000), mediaType: 'image/png' }],
           },
         ],

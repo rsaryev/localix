@@ -12,7 +12,7 @@ import {
 } from '@localixai/store'
 
 /**
- * The `store` tool's call contract: its input, the port a host gives it (A4: agent-core declares
+ * The `Store` tool's call contract: its input, the port a host gives it (A4: agent-core declares
  * it, `chat/runtime/run/store-options.ts` implements it over the Store service), what each call
  * means to the permission path, and how a listing reads to the model. The tool is `store.ts`.
  *
@@ -31,6 +31,9 @@ const STORE_ACTIONS = [
   'create',
 ] as const
 
+/** Searches one call may carry. */
+export const STORE_BATCH_MAX = 8
+
 const MUTATING = new Set<string>(['install', 'update', 'remove', 'enable', 'disable', 'create'])
 export const isStoreMutation = (action: unknown): boolean =>
   typeof action === 'string' && MUTATING.has(action)
@@ -39,6 +42,12 @@ export const isStoreMutation = (action: unknown): boolean =>
 export const storeToolInputSchema = z.strictObject({
   action: z.enum(STORE_ACTIONS),
   query: z.string().optional().describe('search: words; omit to browse.'),
+  queries: z
+    .array(z.string().min(1))
+    .min(1)
+    .max(STORE_BATCH_MAX)
+    .optional()
+    .describe('search: several at once, one group each; use instead of repeated calls.'),
   kind: packageKindSchema.optional().describe('search: one kind. create: agent or skill.'),
   installed: z.boolean().optional().describe('search: only what is (true) or is not installed.'),
   ref: z

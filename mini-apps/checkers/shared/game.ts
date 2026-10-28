@@ -21,7 +21,7 @@ export const PLAYERS = ['you', 'agent'] as const
 
 /**
  * Who plays the person's opposite colour at this table (`@localixai/mini-app-sdk/opponent`): the
- * agent in the chat, or the host's decision model. The seat is the same either way — a move from
+ * agent in the chat, or the host's decision model. The side is the same either way — a move from
  * it is the `agent` player's — only who fills it differs.
  */
 export { OPPONENTS, type Opponent }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { EmptyHint, LoadingHint } from '@localixai/kit/empty-hint'
 import { DbConnectionTab } from './DbConnectionTab'
@@ -76,26 +76,22 @@ function openOnce(path: string): Promise<OpenResult> {
  * those, because a database must be a real file the server can hold open.
  */
 function useDatabaseFileConnection(path: string) {
-  const [state, setState] = useState<OpenResult | null>(null)
-  // The path a render's state belongs to. Without it, switching a tab to another file
-  // would show the previous database's browser until the new open resolved.
-  const openedPath = useRef<string | null>(null)
+  // The path a result belongs to is stored with it. Without that, switching a tab to another
+  // file would show the previous database's browser until the new open resolved.
+  const [opened, setOpened] = useState<{ path: string; result: OpenResult } | null>(null)
 
   useEffect(() => {
     if (!path) return
     let alive = true
-    setState(null)
-    openedPath.current = path
     void openOnce(path).then((result) => {
-      if (!alive || openedPath.current !== path) return
-      setState(result)
+      if (alive) setOpened({ path, result })
     })
     return () => {
       alive = false
     }
   }, [path])
 
-  return state
+  return opened?.path === path ? opened.result : null
 }
 
 export function DbFileTab({ path, sessionId }: { path: string; sessionId: string }) {

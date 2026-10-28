@@ -15,6 +15,8 @@ export interface ScriptedResponse {
   error?: string
   /** Wait before answering (honours cancellation). */
   delayMs?: number
+  /** Never answer on its own: wait until the request is cancelled. */
+  hold?: boolean
 }
 
 export type ScriptStep =
@@ -42,7 +44,12 @@ export function scriptedSession(steps: readonly ScriptStep[]) {
       const deltas: AgentMessageDelta[] = []
       const message = (async (): Promise<AssistantMessage> => {
         const response = typeof step === 'function' ? await step(request) : step
-        if (response.delayMs) {
+        if (response.hold) {
+          await new Promise<void>((resolve) => {
+            if (request.signal.aborted) return resolve()
+            request.signal.addEventListener('abort', () => resolve(), { once: true })
+          })
+        } else if (response.delayMs) {
           await new Promise<void>((resolve) => {
             const timer = setTimeout(resolve, response.delayMs)
             request.signal.addEventListener('abort', () => (clearTimeout(timer), resolve()), {

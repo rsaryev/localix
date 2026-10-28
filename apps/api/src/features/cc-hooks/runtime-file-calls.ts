@@ -1,6 +1,6 @@
 /**
- * A Localix `edit`, `write` or `read` may name several files in one call; Claude Code's `Edit`,
- * `Write` and `Read` name one, and a hook reads `tool_input.file_path` (hooks.md, "PreToolUse
+ * A Localix `Edit`, `Write` or `Read` may name several files in one call; Claude Code's own
+ * name one, and a hook reads `tool_input.file_path` (hooks.md, "PreToolUse
  * input"). So the tool hooks run once per file, each part a one-file call of its own: a deny of
  * any file refuses the call, an allow approves it only when every file is allowed, and each part's
  * rewrite lands on its own entry.
@@ -15,7 +15,7 @@ type ToolRunners = Pick<
 >
 
 /** The list each file tool names its files in. */
-const LIST_KEY: Record<string, string> = { edit: 'edits', write: 'files', read: 'reads' }
+const LIST_KEY: Record<string, string> = { Edit: 'edits', Write: 'files', Read: 'reads' }
 
 const isRecord = (value: unknown): value is Fields =>
   Boolean(value) && typeof value === 'object' && !Array.isArray(value)

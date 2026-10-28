@@ -13,13 +13,13 @@ features/embeddings      engine → vectors port → reader; engine → ingest/i
         ↑                         ↑
 features/search          hybrid fusion; SearchQuery.semantic per query           (the strategy)
         ↑                         ↑
-providers (chat, mini apps) UI search · agent `global_search` · mini app `host.semantic`
+providers (chat, mini apps) UI search · agent `GlobalSearch` · mini app `host.semantic`
 ```
 
 Vectors on demand go through one port, `semanticService.vectors` (`semantic-vectors.ts`): the
-reader's query vectors, group routing's `rank` and a mini app's `host.semantic.embed`/`rank`. Only
-the index's write path (`ingest.ts`) calls the engine itself. The model is named once, in
-`embeddings/models.ts`; decision models live beside it in `features/decisions` (`models.ts`).
+reader's query vectors, a mini app's `host.semantic.embed`/`rank`. Only the index's write path
+(`ingest.ts`) calls the engine itself. The model is named once, in `embeddings/models.ts`; decision
+models live beside it in `features/decisions` (`models.ts`).
 
 Each layer names only the one below it. The engine's model access sees local chat models through the
 `LocalProviderHost` port and knows nothing of the router.
@@ -123,7 +123,7 @@ share the downloader, catalog, router and status; a new kind adds only its flags
 ## Source of truth
 
 - [Local models service](../../../apps/api/src/features/local-models/service.ts) ·
-  [service.test.ts](../../../apps/api/src/features/local-models/service.test.ts)
+  [service.integration.test.ts](../../../apps/api/src/features/local-models/service.integration.test.ts)
 - [Semantic service](../../../apps/api/src/features/embeddings/service.ts) ·
   [semantic-pipeline.test.ts](../../../apps/api/src/features/chat/semantic-pipeline.test.ts)
 - [Chat sources](../../../apps/api/src/features/chat/repository-semantic-sources.ts) ·

@@ -123,7 +123,7 @@ export function inlineCodeLine(text: string): number | undefined {
 
 /**
  * Resolve every supported local-file Markdown spelling into one canonical target:
- * Localix's own URI, legacy provider `sandbox:`, standard hostless `file:`, or a
+ * Localix's own URI, model-written `sandbox:`, standard hostless `file:`, or a
  * workspace-relative/absolute path. Web and unknown schemes never become paths.
  */
 export function fileHrefToReference(href?: string): FileHrefReference | null {

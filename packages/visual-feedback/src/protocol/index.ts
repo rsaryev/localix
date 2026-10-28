@@ -72,7 +72,7 @@ export interface VfCapture {
 }
 
 /* ------------------------------------------------------------------ *
- * Agent-driven control (the `browser` tool drives these).
+ * Agent-driven control (the `Browser` tool drives these).
  *
  * The agent never talks to the page directly: a server→host→probe relay
  * delivers a `command`; the probe executes it (read the page as a snapshot,

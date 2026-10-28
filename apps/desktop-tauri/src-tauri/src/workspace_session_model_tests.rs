@@ -141,53 +141,14 @@ fn invalid_native_frames_are_rejected() {
 }
 
 #[test]
-fn legacy_groups_remain_visible_and_new_hidden_groups_keep_content_and_geometry() {
-    let mut closed = group(&["main", "workspace-0123456789abcdef"], 1);
-    closed.hidden = true;
-    let encoded = serde_json::to_value(&closed).unwrap();
-    let restored: SavedGroup = serde_json::from_value(encoded.clone()).unwrap();
-    assert!(restored.hidden);
-    assert_eq!(restored.selected, 1);
-    assert_eq!(restored.tabs.len(), 2);
-    assert_eq!(restored.frame, closed.frame);
-    let mut legacy = encoded;
-    legacy.as_object_mut().unwrap().remove("hidden");
-    let restored: SavedGroup = serde_json::from_value(legacy).unwrap();
-    assert!(!restored.hidden);
-}
-
-fn legacy_session(groups: Vec<SavedGroup>, active: Option<String>) -> serde_json::Value {
-    let mut value = serde_json::to_value(SavedSession { groups, active }).unwrap();
-    for group in value["groups"].as_array_mut().unwrap() {
-        group.as_object_mut().unwrap().remove("hidden");
-    }
-    value
-}
-
-#[test]
-fn legacy_nine_window_session_restores_one_visible_group_and_keeps_every_resource() {
-    let labels: Vec<_> = (0..9)
-        .map(|index| format!("workspace-{index:016x}"))
-        .collect();
-    let mut groups: Vec<_> = labels
-        .iter()
-        .map(|label| group(&[label.as_str()], 0))
-        .collect();
-    groups[4].tabs[0].route = Some("/project/preserved".into());
-    let value = legacy_session(groups, Some(labels[4].clone()));
-    let restored = decode_session(&serde_json::to_vec(&value).unwrap()).unwrap();
-    assert_eq!(restored.groups.len(), 9);
-    assert_eq!(
-        restored.groups.iter().filter(|group| !group.hidden).count(),
-        1
-    );
-    assert!(!restored.groups[4].hidden);
-    assert_eq!(restored.active.as_deref(), Some(labels[4].as_str()));
-    assert_eq!(restored.route(&labels[4]), Some("/project/preserved"));
-    assert!(restored
-        .groups
-        .iter()
-        .all(|group| group.frame == Some([0.0, 0.0, 1280.0, 832.0])));
+fn a_group_without_visibility_is_not_a_session() {
+    let mut value = serde_json::to_value(SavedSession {
+        groups: vec![group(&["main"], 0)],
+        active: None,
+    })
+    .unwrap();
+    value["groups"][0].as_object_mut().unwrap().remove("hidden");
+    assert!(decode_session(&serde_json::to_vec(&value).unwrap()).is_none());
 }
 
 #[test]
@@ -211,26 +172,6 @@ fn explicit_visibility_preserves_multiple_open_windows_and_closed_groups() {
             .collect::<Vec<_>>(),
         [false, false, true]
     );
-}
-
-#[test]
-fn unknown_legacy_active_falls_back_to_first_valid_group_selected_tab() {
-    let groups = vec![
-        group(&["main", "workspace-0000000000000001"], 1),
-        group(&["workspace-0000000000000002"], 0),
-    ];
-    let value = legacy_session(groups, Some("workspace-missing".into()));
-    let restored = decode_session(&serde_json::to_vec(&value).unwrap()).unwrap();
-    assert_eq!(
-        restored.active.as_deref(),
-        Some("workspace-0000000000000001")
-    );
-    assert_eq!(restored.groups[0].selected, 1);
-    assert!(!restored.groups[0].hidden);
-    assert!(restored.groups[1].hidden);
-    let mut corrupt = value;
-    corrupt["groups"][0]["tabs"][0]["route"] = serde_json::json!("https://example.com");
-    assert!(decode_session(&serde_json::to_vec(&corrupt).unwrap()).is_none());
 }
 
 fn hidden(labels: &[&str]) -> SavedGroup {

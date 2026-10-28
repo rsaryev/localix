@@ -53,17 +53,10 @@ function cardsOf(result: AgentToolResult): BoardCard[] {
   )
 }
 
-/** The member who wrote the card (CC `teammate_name`); a leader or a lone agent is none. */
-function teammateOf(context: ExecuteArgs[4]): string | undefined {
-  const speaker = context?.session?.speaker
-  return speaker?.role === 'member' ? speaker.handle : undefined
-}
-
-const asTask = (card: BoardCard, teammate: string | undefined): CcTask => ({
+const asTask = (card: BoardCard): CcTask => ({
   id: card.id,
   subject: card.title,
   ...(card.description ? { description: card.description } : {}),
-  ...(teammate ? { teammateName: teammate } : {}),
 })
 
 /**
@@ -89,7 +82,7 @@ export async function blockTaskCompletion(
   } catch {
     // An unreadable card still reaches the hooks by the id the call named.
   }
-  const verdict = await runtime.runTaskCompleted(asTask(card, teammateOf(context)))
+  const verdict = await runtime.runTaskCompleted(asTask(card))
   return verdict.blocked ? verdict.reason || 'Task completion blocked by hook' : undefined
 }
 
@@ -106,7 +99,7 @@ export async function reviewTaskCreation(
   const cards = cardsOf(result)
   const refused: string[] = []
   for (const card of cards) {
-    const verdict = await runtime.runTaskCreated(asTask(card, teammateOf(context)))
+    const verdict = await runtime.runTaskCreated(asTask(card))
     if (!verdict.blocked) continue
     const reason = verdict.reason || 'Task creation blocked by hook'
     await tool

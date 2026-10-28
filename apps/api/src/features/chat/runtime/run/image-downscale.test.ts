@@ -1,4 +1,4 @@
-import { USER_PARTICIPANT } from '../../../../db'
+import { USER_AUTHOR } from '../../../../db'
 import { describe, expect, test } from 'bun:test'
 
 import type { StoredMessagePayload } from '../../../../db/payload'
@@ -13,7 +13,7 @@ function payload(index: number, imageCount: number): StoredMessagePayload {
   return {
     id: `message-${index}`,
     role: 'user',
-    from: USER_PARTICIPANT,
+    from: USER_AUTHOR,
     content: `payload ${index}`,
     bindings: Array.from({ length: imageCount }, (_, image) => ({
       kind: 'image' as const,
@@ -33,7 +33,7 @@ describe('downscaleRunImages backpressure', () => {
     const outputs = await downscaleRunImages(inputs, async (data, mediaType: ImageMediaType) => {
       active += 1
       peak = Math.max(peak, active)
-      await Bun.sleep(2)
+      await new Promise((resolve) => setTimeout(resolve, 0))
       active -= 1
       return {
         data: `scaled:${data}`,

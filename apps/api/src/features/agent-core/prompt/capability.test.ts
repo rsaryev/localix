@@ -19,28 +19,14 @@
  */
 import { describe, expect, test } from 'bun:test'
 import { renderLintMatrix } from './testing/prompt-harness'
-import { TOOL } from '../tool-names'
+import { toolSetsOfPrompt } from './testing/prompt-render'
+import { ACTIVATE_TOOLS_TOOL_NAME, TOOL } from '../tool-names'
 
-const TOOL_NAMES = Object.values(TOOL) as string[]
-const HEADER = '# Available tools\n'
+// The names the model is offered, and so the ones the roster lists and the prose may use.
+const TOOL_NAMES = [...Object.values(TOOL), ACTIVATE_TOOLS_TOOL_NAME] as string[]
 
-/**
- * Split a rendered prompt into the tool roster and everything else. The roster is the
- * `- <name>` block under `# Available tools`, terminated by a blank line.
- */
-function splitRoster(prompt: string): { roster: Set<string>; prose: string } {
-  const start = prompt.indexOf(HEADER)
-  if (start < 0) return { roster: new Set(), prose: prompt }
-  const bodyStart = start + HEADER.length
-  const end = prompt.indexOf('\n\n', bodyStart)
-  const stop = end < 0 ? prompt.length : end
-  const roster = new Set<string>()
-  for (const line of prompt.slice(bodyStart, stop).split('\n')) {
-    const m = /^- ([a-z0-9_]+)$/.exec(line)
-    if (m) roster.add(m[1]!)
-  }
-  return { roster, prose: withoutAbsenceCatalog(prompt.slice(0, start) + prompt.slice(stop)) }
-}
+/** The prompt's prose without the catalog of absences, which names tools the run does NOT hold. */
+const proseOf = (prompt: string) => withoutAbsenceCatalog(prompt)
 
 /**
  * A tool is "named" when the prose backticks it, calls one of its actions (`skill.get`), or —
@@ -52,7 +38,7 @@ function splitRoster(prompt: string): { roster: Set<string>; prose: string } {
 export const names = (prose: string, tool: string) =>
   new RegExp('`' + tool + '`').test(prose) ||
   new RegExp(`\\b${tool}\\.[a-z]`).test(prose) ||
-  (tool.includes('_') && new RegExp(`\\b${tool}\\b`).test(prose))
+  ((tool.includes('_') || /[a-z][A-Z]/.test(tool)) && new RegExp(`\\b${tool}\\b`).test(prose))
 
 /**
  * "# Unavailable tools" is the one section whose job is to name tools the run does NOT hold,
@@ -86,10 +72,10 @@ const denies = (prose: string, tool: string) =>
 /**
  * Every tool the prose tells the model to CALL with an action. `names` only knows the catalog's
  * names, so a call to a tool that exists nowhere passed it: the sub-agent roster told every chat
- * to use `fork` action:"list", a tool renamed to `delegate` long before.
+ * to use `fork` action:"list", a tool renamed to `Agent` long before.
  */
 export const calledTools = (prose: string) =>
-  [...prose.matchAll(/`([a-z][a-z0-9_]*)` action:/g)].map((match) => match[1]!)
+  [...prose.matchAll(/`([A-Za-z][A-Za-z0-9_]*)` action:/g)].map((match) => match[1]!)
 
 // The committed goldens PLUS every (profile × tool-surface) cell the product can render.
 // The goldens alone were structurally blind to surfaces nobody committed a file for, and
@@ -104,43 +90,45 @@ describe('system-prompt capability lint', () => {
     expect(names('retrieve it (skill.get)', 'skill')).toBe(true)
     // A common word is only a tool when it is marked as one.
     expect(names('read the file and search it', 'read')).toBe(false)
-    const { prose } = splitRoster(
-      '# Available tools\n- read\n\n# Unavailable tools\n- vault — off\n\n# Other\nUse vault_x.',
-    )
+    const prose = proseOf('# Unavailable tools\n- vault — off\n\n# Other\nUse vault_x.')
     expect(prose).not.toContain('vault — off')
     expect(calledTools('Use `fork` action:"list" for your forks.')).toEqual(['fork'])
     expect(calledTools('Use `fork` to split work.')).toEqual([])
   })
 
-  test('the golden matrix is non-empty and every variant has a roster', () => {
+  test('the golden matrix is non-empty and every variant knows the tools it was built for', () => {
     expect(MATRIX.length).toBeGreaterThan(0)
     for (const [variant, prompt] of MATRIX) {
-      const { roster } = splitRoster(prompt)
-      expect(`${variant}: ${roster.size} tools`).not.toBe(`${variant}: 0 tools`)
+      expect(`${variant}: ${toolSetsOfPrompt(prompt).length > 0}`).toBe(`${variant}: true`)
     }
   })
 
   for (const [variant, prompt] of MATRIX) {
-    const { roster, prose } = splitRoster(prompt)
+    const prose = proseOf(prompt)
+    const rosters = toolSetsOfPrompt(prompt)
 
     test(`${variant}: names no tool it does not have`, () => {
       const phantom = TOOL_NAMES.filter(
-        (t) => !roster.has(t) && names(prose, t) && !denies(prose, t),
+        (t) => rosters.some((roster) => !roster.has(t)) && names(prose, t) && !denies(prose, t),
       )
       expect(`${variant} names absent tools: ${phantom.join(', ')}`).toBe(
         `${variant} names absent tools: `,
       )
     })
 
-    test(`${variant}: calls only tools in its roster`, () => {
-      const phantom = calledTools(prose).filter((tool) => !roster.has(tool))
+    test(`${variant}: calls only tools it holds`, () => {
+      const phantom = calledTools(prose).filter((tool) =>
+        rosters.some((roster) => !roster.has(tool)),
+      )
       expect(`${variant} calls absent tools: ${phantom.join(', ')}`).toBe(
         `${variant} calls absent tools: `,
       )
     })
 
-    test(`${variant}: never denies a tool that is in its roster`, () => {
-      const lies = [...roster].filter((t) => denies(prose, t))
+    test(`${variant}: never denies a tool that it holds`, () => {
+      const lies = TOOL_NAMES.filter(
+        (t) => rosters.every((roster) => roster.has(t)) && denies(prose, t),
+      )
       expect(`${variant} denies present tools: ${lies.join(', ')}`).toBe(
         `${variant} denies present tools: `,
       )

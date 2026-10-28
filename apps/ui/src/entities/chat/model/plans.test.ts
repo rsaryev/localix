@@ -27,7 +27,6 @@ const plan = (id: string, version: number, status: SessionPlan['status']): Sessi
   status,
   title: `Plan ${version}`,
   body: `Body ${version}`,
-  authorAgentId: 'lead',
   approvedMode: null,
   createdAt: '2026-10-03T00:00:00.000Z',
   decidedAt: null,
@@ -79,7 +78,7 @@ describe('opening the plan tab by itself — only on the `plan.presented` cue', 
     // reload stole the tab. Now a list landing (detail, frame, fetch) never opens anything.
     host('root-c', 'root-c', true)
     useChatStore.setState({
-      allSessions: [{ id: 'root-c', agents: [], rootSessionId: null } as unknown as UiSession],
+      allSessions: [{ id: 'root-c', agent: null, rootSessionId: null } as unknown as UiSession],
     })
     applyPlanList('root-c', [plan('fresh', 1, 'presented')])
     expect(opened).toEqual([])
@@ -129,7 +128,7 @@ describe('the draft file, kept beside the versions', () => {
   })
   const withSession = (id: string, plans?: SessionPlan[]) =>
     useChatStore.setState({
-      allSessions: [{ id, agents: [], rootSessionId: null, plans } as unknown as UiSession],
+      allSessions: [{ id, agent: null, rootSessionId: null, plans } as unknown as UiSession],
     })
 
   test('the first load stores the draft along with the versions', async () => {

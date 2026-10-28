@@ -81,7 +81,7 @@ function fakeHost() {
  * and the hook says whether it is live, which is what lets the poll fall back to the slow backstop.
  */
 test('a nudge for this scope re-reads at once; one for another scope does not', async () => {
-  const { act } = await import('react')
+  const { act, useEffect } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { useStoreSnapshot } = await import('./useStoreSnapshot')
   const host = fakeHost()
@@ -95,7 +95,9 @@ test('a nudge for this scope re-reads at once; one for another scope does not', 
       intervalMs: 60_000,
       failureMessage: 'Cannot read.',
     })
-    live = state.live
+    useEffect(() => {
+      live = state.live
+    })
     return <p>{state.snapshot?.n ?? 'none'}</p>
   }
   const element = document.createElement('div')

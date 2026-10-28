@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useState } from 'react'
 
 import type { PlayerView, Shot } from '../../shared/game'
 
@@ -14,14 +14,17 @@ export interface Arrival {
 }
 
 export function useShotArrivals(view: PlayerView): Arrival[] {
-  const memo = useRef<{ id: string; count: number; arrivals: Arrival[] } | null>(null)
-  const seen = memo.current
   const count = view.shots.length
-  if (!seen || seen.id !== view.id || seen.count !== count) {
-    // First sight of a game: nothing arrives. The same game grew: the new shots arrive.
-    const since = !seen || seen.id !== view.id ? count : seen.count
-    const arrivals = view.shots.slice(since).map((shot, order) => ({ shot, order }))
-    memo.current = { id: view.id, count, arrivals }
-  }
-  return memo.current!.arrivals
+  // State, adjusted while rendering: the first sight of a game has no arrivals.
+  const [seen, setSeen] = useState<{ id: string; count: number; arrivals: Arrival[] }>({
+    id: view.id,
+    count,
+    arrivals: [],
+  })
+  if (seen.id === view.id && seen.count === count) return seen.arrivals
+  // First sight of a game: nothing arrives. The same game grew: the new shots arrive.
+  const since = seen.id === view.id ? seen.count : count
+  const arrivals = view.shots.slice(since).map((shot, order) => ({ shot, order }))
+  setSeen({ id: view.id, count, arrivals })
+  return arrivals
 }

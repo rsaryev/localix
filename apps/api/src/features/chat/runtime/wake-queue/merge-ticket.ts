@@ -1,7 +1,7 @@
 /**
- * Two pending turns for the SAME participant become one — the rule, and its one side effect.
+ * Two pending turns for the SAME agent become one — the rule, and its one side effect.
  *
- * A participant answers once per burst: a second address while the first is still waiting is
+ * A agent answers once per burst: a second address while the first is still waiting is
  * folded into it rather than queued behind it. The fold used to lose three things:
  *
  *   - it looked at every queued ticket, including one a drain had already LEASED; the store
@@ -38,7 +38,6 @@ export function mergeAgentTicket(
     ...new Set([...waiting.ticket.triggerMessageIds, ...incoming.ticket.triggerMessageIds]),
   ]
   const ticket: AgentTurnTicket = {
-    speakerAgentId: waiting.ticket.speakerAgentId,
     assistantMessageId: incoming.ticket.assistantMessageId,
     triggerMessageIds,
     source: stronger.source,

@@ -18,7 +18,7 @@ import type {
 } from '@localixai/agent/runtime'
 
 import { createCallSlots, createRunBudget } from './budget'
-import { renderDeclarations, toIdentifier } from './declarations'
+import { toIdentifier } from './identifier'
 import { isWorkerMessage, type HostMessage, type WorkerData, type WorkerMessage } from './protocol'
 import {
   DEFAULT_MEMORY_LIMIT,
@@ -57,7 +57,6 @@ export function createScriptSandbox(options: ScriptSandboxOptions = {}): ScriptS
   const memoryLimitBytes = options.memoryLimitBytes ?? DEFAULT_MEMORY_LIMIT
 
   return {
-    declare: renderDeclarations,
     run(request: ScriptRunRequest): Promise<ScriptRunResult> {
       const output: ScriptOutputItem[] = []
       const calls = new Map<number, AbortController>()
@@ -173,7 +172,7 @@ export function createScriptSandbox(options: ScriptSandboxOptions = {}): ScriptS
       if (!finished) {
         let paths: { wasm: string; worker: string | URL }
         try {
-          // Resolved on the first run, not before: a host missing the files fails codemode, not its boot.
+          // Resolved on the first run, not before: a host missing the files fails the script, not its boot.
           paths = resolveFiles(options)
         } catch (error) {
           fail(`The script sandbox could not find QuickJS: ${messageOf(error)}`)

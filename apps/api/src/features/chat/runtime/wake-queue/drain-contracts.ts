@@ -17,15 +17,7 @@ export interface DrainOptions {
 
 export interface DrainDependencies extends Pick<
   WakeQueueContext,
-  | 'repo'
-  | 'streamRegistry'
-  | 'now'
-  | 'state'
-  | 'run'
-  | 'onError'
-  | 'leadership'
-  | 'floorAdvisor'
-  | 'inviteAddressed'
+  'repo' | 'streamRegistry' | 'now' | 'state' | 'run' | 'onError'
 > {
   enqueueRun: (turn: AgentTurnAdmission, source: AgentTurnSource) => Promise<void>
   store?: WakeQueueStore<PendingTurn>
@@ -33,7 +25,6 @@ export interface DrainDependencies extends Pick<
   leases: LeaseOperations
   continuations: ContinuationOperations
   publishQueue: (userId: string, sessionId: string) => void
-  ageWaitingAgentTurns: (userId: string, sessionId: string) => Promise<void>
   cancelAgentTurns: (userId: string, sessionId: string, filter: AgentTurnFilter) => Promise<void>
   /** What may not open a turn yet (`holds.ts`). */
   holdsOf: (sessionId: string) => HeldEntries

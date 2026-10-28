@@ -55,7 +55,7 @@ export default function UpdateDialog({
           </DialogBody>
         ) : null}
         <DialogFooter actionsLabel="Update actions">
-          <Button variant="outline" className="text-text-soft" onClick={onLater}>
+          <Button variant="ghost" className="text-text-soft" onClick={onLater}>
             Later
           </Button>
           <Button variant="mono" onClick={onInstall}>

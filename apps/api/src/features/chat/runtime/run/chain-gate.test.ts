@@ -27,15 +27,15 @@ async function until(ready: () => boolean) {
   while (!ready()) await new Promise((resolve) => setImmediate(resolve))
 }
 
-/** What the model reads of a call, as the loop finishes it: the gate's note leads, unless nested. */
-function modelReads(result: AgentToolResult, note: string | undefined, nested: boolean) {
+/** What the model reads of a call, as the loop finishes it: the gate's note leads. */
+function modelReads(result: AgentToolResult, note: string | undefined) {
   const parts = result.contentParts
   const body = !parts
     ? [{ type: 'text', text: result.content }]
     : !result.content || parts.some((part) => part.type === 'text')
       ? parts
       : [{ type: 'text', text: result.content }, ...parts]
-  const lead = note && !result.isError && !nested ? [{ type: 'text', text: `${note}\n\n` }] : []
+  const lead = note && !result.isError ? [{ type: 'text', text: `${note}\n\n` }] : []
   const text = [...lead, ...body].map((part) =>
     part.type === 'text' ? (part as { text: string }).text : `[${part.type}]`,
   )
@@ -44,7 +44,7 @@ function modelReads(result: AgentToolResult, note: string | undefined, nested: b
 
 function bashTool(log: string[], output: AgentToolResult): AgentTool {
   return {
-    name: 'bash',
+    name: 'Bash',
     description: 'run a command',
     activeVerb: 'Running',
     inputSchema: z.object({ command: z.string() }).passthrough(),
@@ -65,9 +65,8 @@ interface RunOptions {
 }
 
 /** A run's chain and gate, and its calls as the loop makes them: the loop's gate, then the tool. */
-async function run({ register, answer = () => true, cc = {}, output }: RunOptions) {
+async function run({ register, answer = () => ({ approved: true }), cc = {}, output }: RunOptions) {
   const log: string[] = []
-  const parents: Array<string | undefined> = []
   const { scope } = await hostWithMod(register)
   const ccHooks = {
     ...EMPTY_RUNTIME,
@@ -92,10 +91,10 @@ async function run({ register, answer = () => true, cc = {}, output }: RunOption
     mods: scope,
     gate: chainGate,
   })
-  const rules: PermissionRule[] = [{ permission: 'bash', pattern: '*', action: 'ask' }]
+  const rules: PermissionRule[] = [{ permission: 'Bash', pattern: '*', action: 'ask' }]
   const permissionGate = createPermissionGate({
     rules,
-    toolsByName: new Map([['bash', tool]]),
+    toolsByName: new Map([['Bash', tool]]),
     root: ROOT,
     reviewVerdict: scope.toolCheck()?.review,
     requestConfirm: async (args) => {
@@ -103,23 +102,16 @@ async function run({ register, answer = () => true, cc = {}, output }: RunOption
       return answer(args.command)
     },
   })
-  const loopGate = chainGate.bind((ctx, signal) => {
-    parents.push((ctx as { parentToolCallId?: string }).parentToolCallId)
-    return permissionGate(ctx, signal)
-  })
-  const call = async (id: string, command: string, parent?: string): Promise<AgentToolResult> => {
+  const loopGate = chainGate.bind(permissionGate)
+  const call = async (id: string, command: string): Promise<AgentToolResult> => {
     const input = { command }
-    const gateCall = { toolCallId: id, toolName: 'bash', input }
-    const context: typeof gateCall & { parentToolCallId?: string } = parent
-      ? { ...gateCall, parentToolCallId: parent }
-      : gateCall
-    const verdict = await loopGate(context)
+    const verdict = await loopGate({ toolCallId: id, toolName: 'Bash', input })
     if (verdict?.block) return { content: verdict.blockedMessage ?? 'blocked', isError: true }
     // The loop reads the verdict's note once the tool is done, as `executeCall` does.
     const result = await wrapped!.execute(id, input)
-    return modelReads(result, verdict?.note, parent !== undefined)
+    return modelReads(result, verdict?.note)
   }
-  return { log, call, chainGate, parents }
+  return { log, call, chainGate }
 }
 
 describe('the permission gate inside tool.call', () => {
@@ -180,7 +172,7 @@ describe('the permission gate inside tool.call', () => {
       },
     })
     const result = await call('t1', 'rm -rf build')
-    expect(seen).toEqual([{ deny: expect.stringContaining('User declined bash.') }])
+    expect(seen).toEqual([{ deny: expect.stringContaining('User declined Bash.') }])
     expect(result.error).toMatchObject({ kind: 'blocked', refusal: 'human' })
     expect(result.content).toContain('The user replied: not today')
     expect(log).toEqual(['PreToolUse rm -rf build', 'card rm -rf build'])
@@ -207,22 +199,22 @@ describe('the permission gate inside tool.call', () => {
   })
 
   test('cards come one at a time, in the order calls reach the gate', async () => {
-    const answers: Array<(outcome: boolean) => void> = []
+    const answers: Array<(outcome: ConfirmOutcome) => void> = []
     const { log, call } = await run({
       register(on) {
         on('tool.call', { tool: 'Bash' }, ($, e, next) => next(e))
       },
-      answer: () => new Promise<boolean>((resolve) => answers.push(resolve)),
+      answer: () => new Promise<ConfirmOutcome>((resolve) => answers.push(resolve)),
     })
     const first = call('t1', 'one')
     const second = call('t2', 'two')
     await until(() => answers.length >= 1)
     expect(log.filter((line) => line.startsWith('card'))).toEqual(['card one'])
-    answers[0]!(true)
+    answers[0]!({ approved: true })
     await first
     await until(() => answers.length >= 2)
     expect(log.filter((line) => line.startsWith('card'))).toEqual(['card one', 'card two'])
-    answers[1]!(true)
+    answers[1]!({ approved: true })
     await second
   })
 
@@ -241,19 +233,6 @@ describe('the permission gate inside tool.call', () => {
     expect(result.content).toContain('explicitly APPROVED')
     expect(result.content).toEndWith('\n\nREDACTED[image]')
     expect(result.content).not.toContain('SECRET-TOKEN')
-  })
-
-  test('a call a tool makes gets its output without the note, and the gate is told the parent', async () => {
-    const { call, parents } = await run({
-      register(on) {
-        on('tool.call', { tool: 'Bash' }, ($, e, next) => next(e))
-      },
-      output: { content: '{"ok":true}' },
-    })
-    const result = await call('t1/1', 'status --json', 't1')
-    expect(result.content).toBe('{"ok":true}')
-    expect(result.gateProvenance).toEqual({ decision: 'user-approved' })
-    expect(parents).toEqual(['t1'])
   })
 
   test('with no mod hearing tool.call or tool.check the gate stays at the loop', async () => {

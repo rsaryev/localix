@@ -42,6 +42,7 @@ function boot(component: (props: unknown, surface: Surface) => unknown, props: u
     props,
     frame: (fn: () => void) => frames.push(fn),
   }
+  // oxlint-disable-next-line typescript/no-implied-eval -- the frame script is source text for an iframe; running it is what the test exercises
   const run = new Function(
     'window',
     'document',
@@ -137,6 +138,7 @@ test('a module with no component fails to load', () => {
   document.body.innerHTML = '<div id="root"></div>'
   const sent: unknown[] = []
   ;(window as unknown as { __lxClient: unknown }).__lxClient = { code: '', props: null }
+  // oxlint-disable-next-line typescript/no-implied-eval -- the frame script is source text for an iframe; running it is what the test exercises
   new Function(
     'window',
     'document',
@@ -154,6 +156,7 @@ test('a module with no component fails to load', () => {
 
 test('the frame builds elements as `@localixai/claude-plugin/mods` does: frozen plain data', () => {
   const scope: Record<string, unknown> = {}
+  // oxlint-disable-next-line typescript/no-implied-eval -- the frame script is source text for an iframe; running it is what the test exercises
   new Function('scope', `${CLIENT_FRAME_DRAW}\nscope.h = h; scope.elements = elements;`)(scope)
   type Make = (tag: unknown, props: unknown, ...children: unknown[]) => unknown
   const h = scope.h as Make

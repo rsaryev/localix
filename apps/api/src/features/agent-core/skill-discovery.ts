@@ -186,7 +186,7 @@ async function requireSafeSkillWriteDir(safetyRoot: string, skillDir: string): P
  * dir for project skills, or the home dir for global skills. Returns the skill dir.
  *
  * This is the ONE write choke point — the Settings UI (`createSkill`) and the agent's
- * `skill` tool both funnel through it — so both get the same two guarantees:
+ * `Skill` tool both funnel through it — so both get the same two guarantees:
  *
  *  - It EDITS IN PLACE inside `.claude/skills`, the tree shared with Claude Code.
  *  - It PRESERVES frontmatter. Callers hand over `name`/`description`/`content` — that

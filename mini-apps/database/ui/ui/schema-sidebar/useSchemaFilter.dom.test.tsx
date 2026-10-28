@@ -58,7 +58,10 @@ describe('useSchemaFilter — a name search reads no columns', () => {
     const schema = fakeSchema(wide(5_000), ensured)
     let state: ReturnType<typeof UseSchemaFilter> | undefined
     function Reader() {
-      state = useSchemaFilter(schema)
+      const latest = useSchemaFilter(schema)
+      React.useEffect(() => {
+        state = latest
+      })
       return null
     }
     // Fake timers: the debounces are waited out by advancing the clock, not by sleeping on it.

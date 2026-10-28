@@ -12,7 +12,7 @@ import {
   type Direction,
   type Game,
 } from '../shared/game'
-import type { Seat } from './ask-agent'
+import type { ChatRef } from './ask-agent'
 
 /**
  * HOW THE BOARD ASKS THE DECISION MODEL FOR ITS NEXT MOVE — when the decision model plays it.
@@ -93,11 +93,11 @@ export function moveAsk(game: Game): DecisionAsk {
 /** The decision model's next move, or the wait that says why there is none. */
 export async function askDecision(
   decisions: DecisionHost | undefined,
-  seat: Seat,
+  chat: ChatRef,
   game: Game,
   now: string,
 ): Promise<{ direction: Direction } | { waiting: AgentWait }> {
   const turn = { ask: moveAsk(game), question: 'move', purpose: DECISION_PURPOSE }
-  const answered = await askDecisionForTurn(decisions, seat, turn, now)
+  const answered = await askDecisionForTurn(decisions, chat, turn, now)
   return 'answer' in answered ? { direction: answered.answer.choice as Direction } : answered
 }

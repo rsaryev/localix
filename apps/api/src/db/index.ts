@@ -1,6 +1,6 @@
 export * from './connection'
 export * from './migrator'
-export * from './participant'
+export * from './author'
 export * from './payload'
 export * from './seq'
 export * from './agent-run-repository'

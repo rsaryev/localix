@@ -4,12 +4,12 @@ import { describe, expect, it } from 'bun:test'
 import { DEFAULT_REASONING_EFFORT, type ReasoningEffort } from '@localixai/agent'
 import { createSession, type SessionLifecycleCtx } from './session-lifecycle'
 import type { SessionRecord } from '../repository'
-import { routedParticipants, sessionFixture } from '../../../testing/session-fixture'
+import { routedAgent, sessionFixture } from '../../../testing/session-fixture'
 import { sessionRoute } from '../../../contracts/session-route'
 
 /**
  * A child session is created fresh, not cloned from its parent, so every setting the
- * parent chose has to be threaded deliberately. `reasoningEffort` is one: a `delegate` child
+ * parent chose has to be threaded deliberately. `reasoningEffort` is one: an `Agent` child
  * of a `max`-effort run used to fall to the flat `"low"` default and hand back a weak
  * conclusion the parent then redid.
  */
@@ -19,7 +19,7 @@ function parentSession(over: Partial<SessionRecord> = {}): SessionRecord {
     userId: 'u1',
     seq: 1,
     title: 'Chat',
-    agents: routedParticipants({ modelId: 'm', reasoningEffort: 'max' }),
+    agent: routedAgent({ modelId: 'm', reasoningEffort: 'max' }),
     createdAt: '2026-01-01 00:00:00',
     updatedAt: '2026-01-01 00:00:00',
     lastMessageAt: '2026-01-01 00:00:00',
@@ -31,7 +31,7 @@ function parentSession(over: Partial<SessionRecord> = {}): SessionRecord {
 function makeCtx(
   parent: SessionRecord | null,
   sessions: SessionRecord[] = parent ? [parent] : [],
-  /** What the model chain answers for a new seat's effort, if anything. */
+  /** What the model chain answers for a new route's effort, if anything. */
   chainEffort: ReasoningEffort | null = null,
 ) {
   let inserted: SessionRecord | null = null
@@ -42,9 +42,9 @@ function makeCtx(
     // The registry a host resolves non-shipped agents from: here, any native ID by its handle.
     resolveSessionAgent: async (_userId: string, selection: { agentId?: string }) =>
       selection.agentId?.startsWith('native:')
-        ? { id: selection.agentId, handle: selection.agentId.split(':').pop()! }
+        ? { id: selection.agentId, name: selection.agentId.split(':').pop()! }
         : selection.agentId === 'builtin:localix'
-          ? { id: 'builtin:localix', handle: 'localix' }
+          ? { id: 'builtin:localix', name: 'localix' }
           : null,
     resolveDefaultProjectId: async () => 'PRJ-default',
     repo: {
@@ -72,7 +72,12 @@ function makeCtx(
       forgetSession: () => {},
     },
     now: () => '2026-02-02 12:00:00',
-    seatRoute: async (_userId: string, _projectId: string | null, _agentId: string, given = {}) => {
+    startingRoute: async (
+      _userId: string,
+      _projectId: string | null,
+      _agentId: string,
+      given = {},
+    ) => {
       effortLookups += 1
       return birthRoute({ ...given, agent: chainEffort ? { reasoningEffort: chainEffort } : null })
     },
@@ -141,7 +146,7 @@ describe('createSession — what a child inherits', () => {
     expect(getInserted().provenance).toEqual({ kind: 'root' })
   })
 
-  it('a root chat is born on the level its seat decision gives it', async () => {
+  it('a root chat is born on the level its route decision gives it', async () => {
     // Settled once at birth (`agent-route-resolution.ts`) and stored explicitly.
     const { ctx, getInserted } = makeCtx(null, [], 'high')
     await createSession(ctx, 'u1', { projectId: 'PRJ-1' })
@@ -160,7 +165,7 @@ describe('createSession — what a child inherits', () => {
   })
 
   it('stores no model when the caller chose none', async () => {
-    // With no source naming a model the seat stays undecided; it is filled once on first read.
+    // With no source naming a model the route stays undecided; it is filled once on first read.
     const { ctx, getInserted } = makeCtx(null)
     await createSession(ctx, 'u1', { projectId: 'PRJ-1' })
     expect(sessionRoute(getInserted()).modelId).toBe('')
@@ -191,30 +196,22 @@ describe('createSession — what a child inherits', () => {
     expect(sessionRoute(getInserted()).modelOrigin).toBe('primary')
   })
 
-  it("inherits the assigned participant's resolved route before the room's main route", async () => {
+  it("gives a child of another agent the parent's main route", async () => {
     const parent = parentSession({
       projectId: 'PRJ-1',
-      agents: [
-        ...routedParticipants({ modelId: 'main/model' }),
-        ...routedParticipants({
-          agentId: 'native:global:architect',
-          handle: 'architect',
-          modelId: 'architect/model',
-          providerConnectionId: 'architect-connection',
-        }),
-      ],
+      agent: routedAgent({ modelId: 'main/model', providerConnectionId: 'main-connection' }),
     })
     const { ctx, getInserted } = makeCtx(parent)
     await createSession(ctx, 'u1', {
-      agents: [{ agentId: 'native:global:architect' }],
+      agent: { agentId: 'native:global:architect' },
       parentSessionId: 'parent',
       projectId: 'PRJ-1',
       sessionKind: 'job',
     })
     expect(sessionRoute(getInserted())).toMatchObject({
       agentId: 'native:global:architect',
-      providerConnectionId: 'architect-connection',
-      modelId: 'architect/model',
+      providerConnectionId: 'main-connection',
+      modelId: 'main/model',
       modelOrigin: 'primary',
     })
   })

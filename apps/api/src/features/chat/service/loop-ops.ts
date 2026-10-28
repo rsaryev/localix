@@ -13,7 +13,7 @@
  *     session that is gone.
  *
  * Cancelling a loop withdraws the wake it has in flight — and only that one — inside the
- * loop service. It used to stop the whole session here, which took every participant's
+ * loop service. It used to stop the whole session here, which took every agent's
  * queued turns and killed sub-agents the loop had nothing to do with.
  */
 import { getLoopEngine } from '../../loops/runtime-binding'

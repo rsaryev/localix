@@ -5,8 +5,8 @@
  *
  * Canonical string ids: `sma:20`, `ema:200`, `rsi:14`, `bb:20:2`, `macd:12:26:9`, `vwap`,
  * `supertrend:10:3`, `stoch:14:3:3`, `atr:14`, `obv`, `adx:14`, `volume`.
- * Parsing is deliberately tolerant (an agent writes `EMA 200`, `ema200`, `bollinger:20`, or the
- * legacy preset id `bb20`), but FORMATTING is canonical — every accepted spelling round-trips to
+ * Parsing is deliberately tolerant (an agent writes `EMA 200`, `ema200`, `bollinger:20`, or
+ * `bb20`), but FORMATTING is canonical — every accepted spelling round-trips to
  * exactly one id, so a set of active indicators can never hold the same line twice under two names.
  */
 
@@ -141,7 +141,7 @@ const DEFAULTS = {
   ichimoku: { tenkan: 9, kijun: 26, senkou: 52 },
 } as const
 
-/** Kind spellings → canonical kind. `bb` is both the canonical token and a legacy alias. */
+/** Kind spellings → canonical kind. `bb` is the canonical token for `bollinger`. */
 const KIND_ALIASES: Record<string, IndicatorKind> = {
   sma: 'sma',
   ema: 'ema',
@@ -267,8 +267,7 @@ export function validIndicatorParams(p: IndicatorParams): IndicatorParams | null
 /**
  * Parse ANY accepted spelling into validated params, or null. Accepted forms per kind:
  * canonical (`ema:200`), spaced/joined (`ema 200`, `ema200`, `ema-200`), bare kind with defaults
- * (`macd`, `bollinger`), and the historical preset ids (`sma20`, `sma50`, `ema20`, `bb20`,
- * `rsi14`, `macd` — all covered by the generic rules above, listed here so nobody re-adds a map).
+ * (`macd`, `bollinger`), and the joined forms (`sma20`, `ema20`, `bb20`, `rsi14`).
  */
 export function parseIndicatorId(raw: string): IndicatorParams | null {
   const text = raw.trim().toLowerCase()
@@ -664,4 +663,4 @@ export const INDICATOR_FORMS =
   'stoch:<k>:<kSmooth>:<d>, atr:<period>, obv, adx:<period>, ao, vwapband, pivots, ad, volume ' +
   '(e.g. "ema:200", "bb:20:2", "supertrend:10:3", "ichimoku:9:26:52"; bare kinds take defaults; ' +
   'aliases: st=supertrend, dmi=adx, stochastic=stoch, hull=hma, kc=keltner, dc=donchian, ' +
-  'cloud=ichimoku; legacy ids like "sma20" still work)'
+  'cloud=ichimoku; joined forms like "sma20" work too)'

@@ -8,7 +8,7 @@ import { INERT_CC_HOOKS, type CcHooksRuntime } from '../../cc-hooks'
 import { createCcHookSessions } from '../runtime/cc-hook-sessions'
 import { updateSession, type SessionLifecycleCtx } from './session-lifecycle'
 import type { SessionRecord } from '../repository'
-import { routedParticipants, sessionFixture } from '../../../testing/session-fixture'
+import { routedAgent, sessionFixture } from '../../../testing/session-fixture'
 
 function harness(hooks: Partial<CcHooksRuntime>) {
   let record: SessionRecord = sessionFixture({
@@ -16,7 +16,7 @@ function harness(hooks: Partial<CcHooksRuntime>) {
     userId: 'u1',
     seq: 1,
     title: 'Chat',
-    agents: routedParticipants({ modelId: 'claude-sonnet-5' }),
+    agent: routedAgent({ modelId: 'claude-sonnet-5' }),
     createdAt: '2026-01-01 00:00:00',
     updatedAt: '2026-01-01 00:00:00',
     lastMessageAt: '2026-01-01 00:00:00',
@@ -45,8 +45,8 @@ function harness(hooks: Partial<CcHooksRuntime>) {
       updateSession: async (_u: string, _id: string, patch: Partial<SessionRecord>) => {
         record = { ...record, ...patch }
       },
-      updateSessionAgentRoutes: async (_u: string, _id: string, routes: unknown[]) => {
-        routesWritten.push(...routes)
+      updateSessionAgentRoute: async (_u: string, _id: string, route: unknown) => {
+        routesWritten.push(route)
       },
       insertMessage: async () => {},
     },

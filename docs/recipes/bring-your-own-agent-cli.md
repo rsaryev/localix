@@ -49,7 +49,7 @@ start afresh in that linked chat; see
 Drag the external session into your Localix composer, use **Link to chat** in a preview opened from
 that chat, or browse **External Agents** with `@resource:`. Ask the agent what it should investigate
 and send the reference. It receives a bounded digest and the original key, then can use
-`external_agent_sessions` to read more transcript windows, recorded tool calls and their results.
+`ExternalAgentSessions` to read more transcript windows, recorded tool calls and their results.
 
 A link is a read-only reference, not an instruction to start a CLI. Starting and operating a
 terminal still uses the normal tool permissions. Inspect the resulting files, source-control changes

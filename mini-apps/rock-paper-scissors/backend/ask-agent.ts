@@ -1,4 +1,4 @@
-import type { Seat, Wake } from '@localixai/mini-app-sdk/backend'
+import type { ChatRef, Wake } from '@localixai/mini-app-sdk/backend'
 
 import { describeForAgent } from '../shared/describe'
 import { viewFor, type Game } from '../shared/game'
@@ -12,7 +12,7 @@ import { viewFor, type Game } from '../shared/game'
  * "thinking", or why the chat could not be reached.
  */
 
-export type { Seat, Wake }
+export type { ChatRef, Wake }
 
 /** The one tool a woken turn answers with — the host puts it on the wire before it starts. */
 export const ANSWER_TOOLS = ['rock_paper_scissors']

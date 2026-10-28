@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { WorkItemSessionProvider } from '@localixai/mini-app-sdk/ui/work-item-session'
 
@@ -7,6 +7,42 @@ beforeAll(() => {
   teardown = registerDom()
   ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 })
+
+// The streaming throttle commits on a timer of `interval - elapsed`, and the reveal is paced by
+// animation frames. A clock that jumps a second per read makes every commit due at once, and a
+// frame queue the test pumps replaces the display refresh, so no real time has to pass.
+type Frame = (time: number) => void
+let nowSpy: ReturnType<typeof spyOn> | undefined
+let clock = 0
+let frameClock = 0
+let frameId = 0
+const frames = new Map<number, Frame>()
+const realFrame = globalThis.requestAnimationFrame
+const realCancel = globalThis.cancelAnimationFrame
+beforeEach(() => {
+  nowSpy = spyOn(Date, 'now').mockImplementation(() => (clock += 1000))
+  frames.clear()
+  globalThis.requestAnimationFrame = ((frame: Frame) => {
+    frames.set(++frameId, frame)
+    return frameId
+  }) as typeof requestAnimationFrame
+  globalThis.cancelAnimationFrame = ((id: number) =>
+    void frames.delete(id)) as typeof cancelAnimationFrame
+})
+afterEach(() => {
+  nowSpy?.mockRestore()
+  globalThis.requestAnimationFrame = realFrame
+  globalThis.cancelAnimationFrame = realCancel
+})
+const turns = async () => {
+  for (let i = 0; i < 6; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    const due = [...frames]
+    frames.clear()
+    frameClock += 100
+    for (const [, frame] of due) frame(performance.now() + frameClock)
+  }
+}
 
 describe('live Markdown renderer', () => {
   test('with raw HTML off, a document from outside keeps its Markdown and drops its tags', async () => {
@@ -40,7 +76,7 @@ describe('live Markdown renderer', () => {
         root.render(<MarkdownRendererImpl isStreaming>{'| literal'}</MarkdownRendererImpl>),
       )
       await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 60))
+        await turns()
       })
       expect(host.querySelector('p')?.textContent).toContain('| literal')
     } finally {
@@ -62,7 +98,7 @@ describe('live Markdown renderer', () => {
         root.render(<MarkdownRendererImpl isStreaming>{table}</MarkdownRendererImpl>),
       )
       await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 60))
+        await turns()
       })
       expect(host.querySelector('table')?.textContent).toContain('Fixed')
 
@@ -70,7 +106,11 @@ describe('live Markdown renderer', () => {
         root.render(<MarkdownRendererImpl isStreaming>{`${table}More text`}</MarkdownRendererImpl>),
       )
       await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 60))
+        await turns()
+      })
+      // A frame's state update renders when its act ends; one more pass commits what it revealed.
+      await act(async () => {
+        await turns()
       })
       expect(host.querySelector('table')?.textContent).toContain('Fixed')
       // The paced reveal need only have started; the stream remains live.

@@ -66,8 +66,8 @@ export function environmentsFor(cwd: string | undefined, sessionId?: string): En
     createFileEnvironmentStore(root),
     // A session-owned collection keeps its active pointer beside its JSON files. The hidden
     // state folder is skipped by the request walker and makes two sessions independent even
-    // when they share the same project cwd. Legacy/global collections retain the old mini app
-    // state directory so existing unscoped callers do not change behaviour.
+    // when they share the same project cwd. Unscoped collections use the mini app's state
+    // directory.
     createActiveEnvironmentStore(sessionId ? path.join(root, '.state') : (stateDir ?? root)),
     root,
     // Resolve the process-wide host seams at the moment of use. Mini app inspection can create this

@@ -13,7 +13,7 @@ export interface SkillUsageRecord {
   lastUsedAt: string | null
   pinned: boolean
   archivedAt: string | null
-  /** Created in Localix (Store, `skill` tool, or migrated from `.localix/skills`). */
+  /** Created in Localix (Store, `Skill` tool, or migrated from `.localix/skills`). */
   localixAuthored: boolean
   createdAt: string
   updatedAt: string

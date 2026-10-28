@@ -1,5 +1,5 @@
 /**
- * Host wiring for the `browser` tool: OPEN the preview and drive the one
+ * Host wiring for the `Browser` tool: OPEN the preview and drive the one
  * the user already has open, through the injected in-page probe. Every capability
  * is bound to THIS user + session so a relayed command can only reach this
  * session's probe, and `open` reuses the shared openPreviewCore (no second open
@@ -35,10 +35,10 @@ export function buildBrowserOptions(input: {
   session: SessionRecord
   defaultCwd: string
   agentProfile: RunProfile
-}): OptionalToolPorts['browser'] {
+}): OptionalToolPorts[typeof TOOL.Browser] {
   const { deps, userId, session, defaultCwd, agentProfile } = input
   const previewControl = deps.previewControl
-  if (!isToolDirect(agentProfile, TOOL.browser) || !previewControl) return undefined
+  if (!isToolDirect(agentProfile, TOOL.Browser) || !previewControl) return undefined
 
   return {
     send: (command, opts) =>

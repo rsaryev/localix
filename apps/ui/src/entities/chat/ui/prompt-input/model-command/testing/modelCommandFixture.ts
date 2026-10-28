@@ -1,5 +1,5 @@
 import type { CatalogModel } from '@localixai/agent/catalog'
-import type { ParticipantRow } from '../../model-select/ModelTaskColumn'
+import type { ConversationAgentRow } from '../../model-select/ModelTaskColumn'
 import type { ModelCommandContext } from '../modelCommandTarget'
 
 const model = (id: string, extra: Partial<CatalogModel> = {}): CatalogModel =>
@@ -35,18 +35,18 @@ export const CONNECTIONS = [
   { id: 'conn-openai', providerId: 'openai', label: 'OpenAI' },
 ]
 
-export const member = (
-  handle: string,
+export const agentRow = (
+  name: string,
   modelId: string,
-  reasoningEffort: ParticipantRow['route'] extends infer R
+  reasoningEffort: ConversationAgentRow['route'] extends infer R
     ? R extends { reasoningEffort?: infer E }
       ? E
       : never
     : never = 'medium',
-  extra: Partial<ParticipantRow> = {},
-): ParticipantRow => ({
-  agentId: `id-${handle}`,
-  handle,
+  extra: Partial<ConversationAgentRow> = {},
+): ConversationAgentRow => ({
+  agentId: `id-${name}`,
+  name,
   route: {
     providerConnectionId: modelId.startsWith('openai') ? 'conn-openai' : 'conn-anthropic',
     modelId,
@@ -56,11 +56,11 @@ export const member = (
 })
 
 export function context(
-  participants: ParticipantRow[],
+  agent: ConversationAgentRow | undefined,
   extra: Partial<ModelCommandContext> = {},
 ): ModelCommandContext {
   return {
-    participants,
+    agent,
     connections: CONNECTIONS,
     models: MODELS,
     sessionConnectionId: null,

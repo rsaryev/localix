@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useState } from 'react'
 
 import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { useLatestRef } from '@/shared/lib/useLatestRef'
@@ -55,13 +55,18 @@ export function useMiniAppPanelBridge({
   // Reset synchronously when the panel document changes (adjust-during-render,
   // same pattern MiniAppPanelTab uses for its error state) so a stale `bridged`
   // can never freeze the NEW document's theme.
-  const prevResetKey = useRef(resetKey)
-  if (prevResetKey.current !== resetKey) {
-    prevResetKey.current = resetKey
+  const [prevResetKey, setPrevResetKey] = useState(resetKey)
+  if (prevResetKey !== resetKey) {
+    setPrevResetKey(resetKey)
     if (bridged) setBridged(false)
   }
 
+  // Which mini app and panel this bridge speaks for is fixed for a panel document: `resetKey`
+  // names that document, so a bridge is built per `resetKey` and reads the identity as it is then.
+  const readPanel = useEffectEvent(() => ({ miniAppName, projectId, panelName }))
+
   useEffect(() => {
+    const { miniAppName: appName, projectId: project, panelName: panel } = readPanel()
     const core = createPanelBridgeHost({
       getWindow: () => iframeRef.current?.contentWindow,
       getNonce: () => nonceRef.current,
@@ -80,9 +85,9 @@ export function useMiniAppPanelBridge({
           publishMessageContext,
           invokeMiniAppBackend: (input) => backendClient.invokeMiniAppUiAction(input),
         },
-        miniAppName,
+        appName,
       ),
-      context: { miniAppName, projectId, panelName },
+      context: { miniAppName: appName, projectId: project, panelName: panel },
       onBridged: () => {
         setBridged(true)
         // Sync immediately: the srcDoc embedded a theme snapshot at build time;
@@ -109,9 +114,7 @@ export function useMiniAppPanelBridge({
       unsubscribe()
       unsubscribeSession()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- iframeRef is a stable ref object;
-    // resetKey already covers mini app/panel identity.
-  }, [resetKey, publishMessageContext])
+  }, [resetKey, publishMessageContext, iframeRef, nonceRef, sessionRef])
 
   return { bridged }
 }

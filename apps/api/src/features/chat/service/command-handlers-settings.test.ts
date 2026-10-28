@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 
 import type { StoredSystemNotice } from '../../../db/payload'
-import { routedParticipants, sessionFixture } from '../../../testing/session-fixture'
+import { routedAgent, sessionFixture } from '../../../testing/session-fixture'
 import { handleModelCommand, uniqueCatalogModelProvider } from './command-handlers-settings'
 
 const providers = [{ id: 'provider-a' }, { id: 'provider-b' }]
@@ -32,7 +32,7 @@ describe('/model', () => {
     const notices: StoredSystemNotice[] = []
     const writes: unknown[] = []
     const session = sessionFixture({
-      agents: routedParticipants({ modelId: 'openai/strong', reasoningEffort }),
+      agent: routedAgent({ modelId: 'openai/strong', reasoningEffort }),
     })
     const ctx = {
       deps: {
@@ -46,13 +46,12 @@ describe('/model', () => {
         },
       },
       repo: {
-        updateSessionAgentRoutes: async (...args: unknown[]) => {
-          const [{ agentId: _agentId, ...route }] = args[2] as [{ agentId: string }]
+        updateSessionAgentRoute: async (_u: string, _id: string, route: unknown) => {
           writes.push(route)
         },
         updateSession: async () => {},
       },
-      runner: { leadership: () => async () => [] },
+      runner: {},
       publishSession: () => {},
       insertSystemNotice: async (_u: string, sessionId: string, notice: StoredSystemNotice) => {
         notices.push(notice)
@@ -64,7 +63,6 @@ describe('/model', () => {
       session.userId,
       session.id,
       session,
-      [],
       '/model haiku',
       '2026-01-01T00:00:00.000Z',
       () => Promise.reject(new Error('no reply expected')),

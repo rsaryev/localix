@@ -66,11 +66,11 @@ export function useChartMainSeries(
     const series = addMainSeries(chart, chartType, rt.volumeColors.current)
     series.applyOptions({ priceFormat: { type: 'price', ...rt.props.current.priceFormat } })
     series.setData(mainSeriesData(chartType, rt.candles.current) as never[])
-    rt.mainSeries.current = series
+    rt.write('mainSeries', series)
     // Drawings and the trade-marker mini app lived ON the removed series — re-attach them.
     rt.drawingLayer.attach(series)
     syncDrawingLayer(rt, rt.drawings.current)
-    rt.markersPlugin.current = createSeriesMarkers(series, seriesMarkersOf(rt.drawings.current))
+    rt.write('markersPlugin', createSeriesMarkers(series, seriesMarkersOf(rt.drawings.current)))
     rt.publish({ chartType })
   }, [rt, chartType])
 
@@ -121,7 +121,7 @@ export function useChartAppearance(
       mainSeriesOptions(rt.chartType.current, { up: colors.up, down: colors.down }),
     )
     // Volume colors ride on each point, so a flip re-sets them wholesale.
-    rt.volumeColors.current = { up: colors.up, down: colors.down }
+    rt.write('volumeColors', { up: colors.up, down: colors.down })
     rt.volumeSeries.current?.setData(toVolumeData(rt.candles.current, rt.volumeColors.current))
   }, [rt, theme])
 }

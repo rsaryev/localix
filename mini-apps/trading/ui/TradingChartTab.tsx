@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useEffectEvent, useMemo, useState } from 'react'
 import { PanelRightClose, PanelRightOpen } from 'lucide-react'
 import type { ExchangeInfo, Market, PrecisionMode } from '../backend/contracts'
 import { useTheme } from '@localixai/kit/theme'
@@ -138,12 +138,12 @@ export function TradingChartTab({
     if (!publishMessageContext) return
     publishMessageContext(chartMessageContext(connectionId, symbol, timeframe))
   }, [connectionId, publishMessageContext, symbol, timeframe])
-  const offeredRef = useRef<readonly string[]>([])
-  offeredRef.current = describe?.timeframes ?? []
+  // Read at command time, not captured: the subscription below must survive `describe` landing.
+  const offeredTimeframes = useEffectEvent((): readonly string[] => describe?.timeframes ?? [])
   useEffect(() => {
     return chartControlBus.subscribe(sessionId, controlKey, (command) => {
       if (command.type !== 'set_timeframe') return
-      const offered = offeredRef.current
+      const offered = offeredTimeframes()
       // Only a timeframe the venue actually offers — a chart cannot be drawn on a bar size the
       // exchange does not produce. Before `describe` lands the list is empty: trust the command
       // (the schema already shape-checked it) and let the venue's own error surface if wrong.
@@ -242,11 +242,13 @@ export function TradingChartTab({
     failure: describeError ?? (candles.length === 0 ? error : null),
   })
 
-  const [historySettled, setHistorySettled] = useState(false)
-  useEffect(() => setHistorySettled(false), [connectionId, symbol])
-  useEffect(() => {
-    if (candles.length > 0 || error !== null || unreachable) setHistorySettled(true)
-  }, [candles.length, error, unreachable])
+  // Latched per market, while rendering: the market it settled for, so another market starts open
+  // again and a timeframe switch (which empties the candles on its way) never closes it.
+  const marketKey = `${connectionId}/${symbol}`
+  const [settledMarket, setSettledMarket] = useState<string | null>(null)
+  if (settledMarket !== marketKey && (candles.length > 0 || error !== null || unreachable))
+    setSettledMarket(marketKey)
+  const historySettled = settledMarket === marketKey
   const { funding, openInterest } = useContractStats(connectionId, symbol, {
     enabled: historySettled && dataActive,
     // The venue's own claims: a read it reports as unsupported is never round-tripped to its

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { rebindResolvedProvider, resolveRunModel } from './model-selection'
-import { routedParticipants, sessionFixture } from '../../../../testing/session-fixture'
+import { routedAgent, sessionFixture } from '../../../../testing/session-fixture'
 
 // These cases exercise the provider-agnostic main-run route: a stored connection
 // is a try-first hint, while provider+model remains the durable identity.
@@ -35,12 +35,12 @@ function makeArgs(opts: {
     },
     userId: 'u1',
     session: {
-      agents: routedParticipants({
+      agent: routedAgent({
         providerConnectionId: connection.id,
         modelId: `${opts.providerId}/model-x`,
       }),
     },
-    agentId: routedParticipants()[0].agentId,
+    agentId: routedAgent().agentId,
     catalog: {
       providers: opts.catalogProviderIds.map((id) => ({ id, name: id })),
       models: opts.modelVanished
@@ -53,29 +53,24 @@ function makeArgs(opts: {
 }
 
 describe('rebindResolvedProvider', () => {
-  test('a removed participant cannot borrow or rewrite the first participant route', () => {
-    const session = sessionFixture({
-      agents: routedParticipants({ providerConnectionId: 'original' }),
-    })
-    expect(() => rebindResolvedProvider(session, 'replacement', 'removed-agent')).toThrow(
-      /no longer in the session/,
+  test('a session without an agent has no route to rewrite', () => {
+    expect(() => rebindResolvedProvider(sessionFixture({ agent: null }), 'replacement')).toThrow(
+      /no agent/,
     )
-    expect(session.agents[0]!.providerConnectionId).toBe('original')
   })
   test('keeps identity for the exact route and replaces only a stale connection id', () => {
     const session = sessionFixture({
       id: 's1',
-      agents: routedParticipants({
+      agent: routedAgent({
         providerConnectionId: 'connection-deleted',
         modelId: 'openai/gpt-5.6',
       }),
       runtimeStatus: 'running',
     })
-    const agentId = session.agents[0]!.agentId
-    expect(rebindResolvedProvider(session, 'connection-deleted', agentId)).toBe(session)
-    expect(rebindResolvedProvider(session, 'connection-live', agentId)).toEqual({
+    expect(rebindResolvedProvider(session, 'connection-deleted')).toBe(session)
+    expect(rebindResolvedProvider(session, 'connection-live')).toEqual({
       ...session,
-      agents: routedParticipants({
+      agent: routedAgent({
         providerConnectionId: 'connection-live',
         modelId: 'openai/gpt-5.6',
       }),
@@ -125,7 +120,7 @@ describe('resolveRunModel — guard branches', () => {
     })
     // A namespaced id with a live connection still resolves (live models are allowed), so the
     // vanished case that reaches here is the bare id the resolver cannot place.
-    ;(args.session.agents[0] as { modelId: string }).modelId = 'model-x'
+    ;(args.session.agent as { modelId: string }).modelId = 'model-x'
     expect(await failure(args)).toMatchObject({
       reason: 'model_not_in_catalog',
       message: 'Model "model-x" is no longer available. Choose another model.',
@@ -201,12 +196,12 @@ describe('resolveRunModel — guard branches', () => {
       },
       userId: 'u1',
       session: {
-        agents: routedParticipants({
+        agent: routedAgent({
           providerConnectionId: 'connection-new',
           modelId: 'openai/gpt-5.4',
         }),
       },
-      agentId: routedParticipants()[0].agentId,
+      agentId: routedAgent().agentId,
       catalog: {
         providers: [{ id: 'openai' }],
         models: [{ id: 'openai/gpt-5.4', providerId: 'openai' }],
@@ -254,12 +249,12 @@ describe('resolveRunModel — guard branches', () => {
       } as never,
       userId: 'u1',
       session: {
-        agents: routedParticipants({
+        agent: routedAgent({
           providerConnectionId: 'connection-deleted',
           modelId: 'openai/gpt-5.6',
         }),
       } as never,
-      agentId: routedParticipants()[0].agentId,
+      agentId: routedAgent().agentId,
       catalog: {
         providers: [{ id: 'openai' }],
         models: [{ id: 'openai/gpt-5.6', providerId: 'openai' }],

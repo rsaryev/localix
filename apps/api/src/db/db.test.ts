@@ -1,4 +1,5 @@
-import { DEFAULT_AGENT_PARTICIPANT, USER_PARTICIPANT } from './participant'
+import { tmpdir } from 'node:os'
+import { DEFAULT_AGENT_AUTHOR, USER_AUTHOR } from './author'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -16,7 +17,7 @@ import {
   type StoredMessagePayload,
 } from './payload'
 
-const tempDir = join(process.cwd(), 'tmp', 'db-tests')
+const tempDir = join(tmpdir(), `localix-db-tests-${process.pid}`)
 
 describe('apps/api db layer', () => {
   beforeAll(async () => {
@@ -48,11 +49,10 @@ describe('apps/api db layer', () => {
         'agent_runs',
         'agent_queue_items',
         'agent_delivery_receipts',
-        'participant_lane_snapshots',
+        'session_prompt_snapshots',
         'agent_external_session_keys',
         'ref_sequence_counters',
         'user_profiles',
-        'agent_memory',
         'usage_events',
         'provider_connection_keys',
         'vault_items',
@@ -116,10 +116,10 @@ describe('apps/api db layer', () => {
     // the whole guarantee (a name resolving to two agents would let a caller brief a stranger), so
     // the index is asserted here rather than trusted to the migration that creates it.
     expect(sessionColumnNames).toContain('task_name')
-    const agentColumns = await sql<{
-      name: string
-    }>`PRAGMA table_xinfo(conversation_participants)`.execute(db)
-    expect(agentColumns.rows.map((row) => row.name)).toContain('model_selected_at')
+    // The conversation's one agent and its route are columns of the session.
+    for (const column of ['agent_id', 'agent_name', 'model_id', 'model_selected_at']) {
+      expect(sessionColumnNames).toContain(column)
+    }
     expect(
       await sql<{ sql: string }>`
         SELECT sql FROM sqlite_master
@@ -275,7 +275,7 @@ describe('apps/api db layer', () => {
     const payload: StoredMessagePayload = {
       id: 'msg_1',
       role: 'assistant',
-      from: DEFAULT_AGENT_PARTICIPANT,
+      from: DEFAULT_AGENT_AUTHOR,
       content: 'hello',
       reasoning: 'thinking',
       items: [
@@ -296,7 +296,7 @@ describe('apps/api db layer', () => {
           type: 'tool_call',
           status: 'completed',
           toolCallId: 'tool_1',
-          name: 'search',
+          name: 'Search',
           activeVerb: 'Searching',
           input: { q: 'hi' },
           output: { ok: true },
@@ -383,7 +383,7 @@ describe('apps/api db layer', () => {
         id: 'sess_1',
         user_id: 'user_1',
         title: 'Test session',
-        // The route lives in `conversation_participants`; this row does not need one to exist.
+        // The route columns are optional: this row does not need an agent to exist.
       })
       .execute()
 
@@ -398,7 +398,7 @@ describe('apps/api db layer', () => {
         payload_json: serializeMessagePayload({
           id: 'msg_1',
           role: 'user',
-          from: USER_PARTICIPANT,
+          from: USER_AUTHOR,
           content: 'Persist me',
         }),
       })
@@ -415,7 +415,7 @@ describe('apps/api db layer', () => {
     expect(deserializeMessagePayload(row.payload_json)).toEqual({
       id: 'msg_1',
       role: 'user',
-      from: USER_PARTICIPANT,
+      from: USER_AUTHOR,
       content: 'Persist me',
       v: MESSAGE_PAYLOAD_VERSION,
     })
@@ -432,7 +432,7 @@ describe('apps/api db layer', () => {
           payload_json: serializeMessagePayload({
             id: 'msg_2',
             role: 'assistant',
-            from: DEFAULT_AGENT_PARTICIPANT,
+            from: DEFAULT_AGENT_AUTHOR,
             content: 'should fail',
           }),
         })

@@ -67,7 +67,7 @@ export function LocalModelRow({
       </div>
       <div className="flex shrink-0 items-center gap-2 text-xs text-text-soft">
         {state.kind === 'available' ? (
-          <Button size="sm" variant="outline" onClick={() => run(localModelsApi.install(id))}>
+          <Button size="sm" variant="ghost" onClick={() => run(localModelsApi.install(id))}>
             Download{entry.spec.bytes > 0 ? ` ${formatBytes(entry.spec.bytes)}` : ''}
           </Button>
         ) : (

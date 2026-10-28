@@ -61,7 +61,7 @@ describe('estimateFixedOverheadTokens', () => {
    * they ever computed it differently, one of them would be lying about what a request costs.
    */
   test('is the sum of its two halves', () => {
-    const tools = [{ name: 'read', description: 'r'.repeat(600) }]
+    const tools = [{ name: 'Read', description: 'r'.repeat(600) }]
     expect(estimateFixedOverheadTokens('s'.repeat(1000), tools)).toBe(
       250 + estimateToolSchemaTokens(tools),
     )

@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach } from 'bun:test'
+import { describe, expect, it, beforeEach, afterEach, spyOn, mock } from 'bun:test'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -298,12 +298,19 @@ describe('roster — a still screen is evidence a state cannot give', () => {
    * Symphony measures the same thing — elapsed time since the last agent event, not since the run
    * started (SPEC.md:825) — and retries the worker on it.
    */
+  let now = 0
+  beforeEach(() => {
+    now = 1_000_000
+    spyOn(Date, 'now').mockImplementation(() => now)
+  })
+  afterEach(() => mock.restore())
+
   it('a redraw of the SAME screen is not a change', async () => {
     live.open({ terminalId: 't1', localixSessionId: 'lx-1', provider: 'claude-code' })
     live.observeScreen('t1', 'working on it')
     const first = buildRoster({ summaries: [], live, query: {} }).items[0]?.lastChangeAt
 
-    await Bun.sleep(5)
+    now += 5
     live.observeScreen('t1', 'working on it')
     const again = buildRoster({ summaries: [], live, query: {} }).items[0]
 
@@ -318,7 +325,7 @@ describe('roster — a still screen is evidence a state cannot give', () => {
     live.observeScreen('t2', 'step 1')
     const first = buildRoster({ summaries: [], live, query: {} }).items[0]?.lastChangeAt
 
-    await Bun.sleep(5)
+    now += 5
     live.observeScreen('t2', 'step 2')
     const moved = buildRoster({ summaries: [], live, query: {} }).items[0]?.lastChangeAt
 

@@ -70,7 +70,7 @@ describe('the attention registry', () => {
     expect(held).toMatchObject({
       kind: 'plan',
       title: 'Plan v2: T2',
-      subject: { planId: 'p2', version: 2, agentHandle: 'lead' },
+      subject: { planId: 'p2', version: 2, agentName: 'lead' },
     })
     // The excerpt is the opening lines, not the document.
     expect(held!.summary).toBe('l1\nl2\nl3\nl4\nl5\nl6')
@@ -111,7 +111,7 @@ describe('the attention registry', () => {
     })
     expect(snapshots).toEqual([['plan:R:p']])
     expect(journal).toEqual([])
-    expect(registry.list('u')[0]?.subject.agentHandle).toBe('lead')
+    expect(registry.list('u')[0]?.subject.agentName).toBe('lead')
   })
 
   test('forgetting a session drops its items from the snapshot only', () => {

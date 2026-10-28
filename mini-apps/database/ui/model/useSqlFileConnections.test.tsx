@@ -169,7 +169,10 @@ describe('useSqlFileConnections list ownership', () => {
 
     let state: SqlFileConnectionsState | undefined
     function Harness() {
-      state = useSqlFileConnections()
+      const latest = useSqlFileConnections()
+      React.useEffect(() => {
+        state = latest
+      })
       return null
     }
 

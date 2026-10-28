@@ -82,6 +82,7 @@ export function TranscriptView({
   phaseLabel,
 }: TranscriptViewProps) {
   const hasMessages = messages.length > 0
+  const { scrollRef } = scroll
 
   return (
     <WorkItemSessionProvider sessionId={sessionId}>
@@ -100,7 +101,7 @@ export function TranscriptView({
           )}
 
           <div
-            ref={scroll.scrollRef}
+            ref={scrollRef}
             data-ui-scroll-container
             // `overscroll-contain`: reaching either end of the transcript must not
             // chain the wheel into the surface behind it.
@@ -118,7 +119,7 @@ export function TranscriptView({
                     messages={messages}
                     isGenerating={isGenerating}
                     streamingMessageId={streamingMessageId}
-                    scrollRef={scroll.scrollRef}
+                    scrollRef={scrollRef}
                     onContentSizeChange={scroll.scrollToBottom}
                     sessionId={sessionId}
                     navActive={isFocused}

@@ -1,6 +1,10 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing'
 
+const turns = async (n = 10) => {
+  for (let i = 0; i < n; i++) await new Promise((r) => setImmediate(r))
+}
+
 let teardown: () => Promise<void>
 
 beforeAll(() => {
@@ -34,6 +38,16 @@ describe('reader text selection adapter', () => {
       disconnect() {}
     }
     globalThis.ResizeObserver = TestResizeObserver as unknown as typeof ResizeObserver
+    // The toolbar is measured by the hook through its own ref, so its size is given to the element
+    // by its test id rather than by writing to that ref here.
+    const originalRect = Object.getOwnPropertyDescriptor(
+      Element.prototype,
+      'getBoundingClientRect',
+    )!
+    Element.prototype.getBoundingClientRect = function (this: Element) {
+      if (this.getAttribute('data-testid') !== 'toolbar') return originalRect.value.call(this)
+      return { left: 0, top: 0, right: 200, bottom: 40, width: 200, height: 40 } as DOMRect
+    }
     Range.prototype.getClientRects = () =>
       [
         {
@@ -78,6 +92,7 @@ describe('reader text selection adapter', () => {
             }}
           >
             {active && (
+              // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- stands in for the reading article, which takes the same delegated selection events
               <article
                 ref={articleRef}
                 onPointerDown={selection.onSelectionPointerDown}
@@ -91,21 +106,9 @@ describe('reader text selection adapter', () => {
           </div>
           {selection.selectionTarget && (
             <div
-              ref={(node) => {
-                selection.selectionToolbarRef.current = node
-                if (node) {
-                  node.getBoundingClientRect = () =>
-                    ({
-                      left: 0,
-                      top: 0,
-                      right: 200,
-                      bottom: 40,
-                      width: 200,
-                      height: 40,
-                    }) as DOMRect
-                }
-              }}
+              ref={selection.selectionToolbarRef}
               data-testid="toolbar"
+              // oxlint-disable-next-line react/refs -- the hook's result holds the toolbar's ref (only attached above), so the rule takes every field of it for a ref read; this one is plain data
               data-visible={selection.selectionToolbarVisible || undefined}
               style={selection.selectionToolbarStyle}
             >
@@ -132,7 +135,7 @@ describe('reader text selection adapter', () => {
         nativeSelection.removeAllRanges()
         nativeSelection.addRange(range)
         document.dispatchEvent(new Event('selectionchange'))
-        await new Promise((resolve) => setTimeout(resolve, 40))
+        await turns()
       })
 
       const toolbar = host.querySelector<HTMLElement>('[data-testid="toolbar"]')!
@@ -143,7 +146,7 @@ describe('reader text selection adapter', () => {
 
       await act(async () => {
         root.render(<Surface active revision={1} />)
-        await new Promise((resolve) => setTimeout(resolve, 40))
+        await turns()
       })
       const article = host.querySelector('article')!
       expect(toolbar.dataset.visible).toBe('true')
@@ -157,7 +160,7 @@ describe('reader text selection adapter', () => {
         nativeSelection.removeAllRanges()
         toolbar.querySelector('button')!.focus()
         document.dispatchEvent(new Event('selectionchange'))
-        await new Promise((resolve) => setTimeout(resolve, 40))
+        await turns()
       })
       expect(host.querySelector('[data-testid="toolbar"]')).not.toBeNull()
       expect(nativeSelection.toString()).toBe('Selectable')
@@ -168,7 +171,7 @@ describe('reader text selection adapter', () => {
         scroller.scrollTop = 120
         article.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }))
         article.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, button: 0 }))
-        await new Promise((resolve) => setTimeout(resolve, 40))
+        await turns()
       })
       expect(host.querySelector('[data-testid="toolbar"]')).toBeNull()
       expect(nativeSelection.toString()).toBe('')
@@ -178,6 +181,7 @@ describe('reader text selection adapter', () => {
       await act(async () => root.unmount())
       host.remove()
       globalThis.ResizeObserver = OriginalResizeObserver
+      Object.defineProperty(Element.prototype, 'getBoundingClientRect', originalRect)
       if (originalGetClientRects) {
         Object.defineProperty(Range.prototype, 'getClientRects', originalGetClientRects)
       } else {

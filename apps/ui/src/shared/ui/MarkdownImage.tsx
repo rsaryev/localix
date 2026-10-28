@@ -35,25 +35,22 @@ function MarkdownImage({
       {failedSrc === safeSrc ? (
         <span className="text-text-faint">{label || 'Image unavailable'}</span>
       ) : (
-        <img
-          src={safeSrc}
-          alt={label}
-          width={width}
-          height={height}
-          loading="lazy"
-          role="button"
-          tabIndex={0}
+        <button
+          type="button"
           aria-label={`Open image${label ? `: ${label}` : ''} full size`}
-          className="cursor-zoom-in rounded-sm align-middle outline-none transition-[filter] hover:brightness-95 focus-ring"
-          onError={() => setFailedSrc(safeSrc)}
+          className="block max-w-full cursor-zoom-in rounded-sm outline-none transition-[filter] hover:brightness-95 focus-ring"
           onClick={open}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault()
-              open()
-            }
-          }}
-        />
+        >
+          <img
+            src={safeSrc}
+            alt={label}
+            width={width}
+            height={height}
+            loading="lazy"
+            className="rounded-sm align-middle"
+            onError={() => setFailedSrc(safeSrc)}
+          />
+        </button>
       )}
       <span
         className={`${FLOATING_SURFACE} lx-media-actions pointer-events-none absolute right-1 top-1 flex p-0.5 opacity-0 empty:hidden group-hover/image:pointer-events-auto group-hover/image:opacity-100 group-focus-within/image:pointer-events-auto group-focus-within/image:opacity-100`}

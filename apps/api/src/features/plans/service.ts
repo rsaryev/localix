@@ -20,16 +20,13 @@
  *   - the plan was only the `present` argument, so a version set aside could not come back and
  *     was re-typed as a new one. It is a file now, and presenting and restoring it is
  *     `service-present.ts`;
- *   - an approval could only wake the author, so the person could not hand the plan to the
- *     colleague who should build it. An approval now names who starts — the author, another
- *     participant, or everyone — and is routed as the conversation routes that address —
+ *   - an approval wakes the conversation's agent, which builds the plan —
  *     `service-approve.ts`.
  *
  * Each operation reads in one order: validate the version and its state → decide (one guarded
  * write) → publish → say it (notice, attention) → reach the agent.
  */
 import { ConflictError, InvalidRequestError } from '../../lib/domain-errors'
-import { agentParticipant } from '../../db/participant'
 import type { StoredSystemNotice } from '../../db/payload'
 import type { PermissionMode } from '../../contracts/permission-modes'
 import type { WakeRequest } from '../chat/contracts'
@@ -55,10 +52,10 @@ export type PlanSettleReason = 'answered' | 'dismissed' | 'superseded'
 export interface PlanLifecyclePort {
   /** One conversation line, on the ROOT session (`recordSessionNotice`). */
   notice(owner: PlanOwner, notice: StoredSystemNotice): Promise<void>
-  /** The presenting participant's handle in the root conversation, for the presented line. */
-  authorHandle(owner: PlanOwner, agentId: string): Promise<string | null>
+  /** The presenting agent's handle in the root conversation, for the presented line. */
+  authorName(owner: PlanOwner): Promise<string | null>
   /** A version now waits on the person; any older waiting version is superseded by it. */
-  awaiting(owner: PlanOwner, plan: SessionPlan, authorHandle: string | null): void
+  awaiting(owner: PlanOwner, plan: SessionPlan, authorName: string | null): void
   /** A version stopped waiting on the person; `null` is every version of the conversation. */
   settled(owner: PlanOwner, planId: string | null, reason: PlanSettleReason): void
   /** The approved plan is done — an informational journal row; nothing waits on anyone. */
@@ -81,8 +78,6 @@ export interface PlanServiceDeps {
   setMode: (owner: PlanOwner, mode: PermissionMode) => Promise<void>
   /** The one wake delivery (`features/triggers/delivery.ts` `deliver`). */
   wake: (request: WakeRequest) => Promise<WakeOutcome>
-  /** The ROOT conversation's participant handles — whom an approval may name. */
-  participants: (owner: PlanOwner) => Promise<readonly string[]>
   /** Absent in a narrow host (tests): the decisions still hold, nothing is announced. */
   lifecycle?: PlanLifecyclePort
   now?: () => string
@@ -122,7 +117,6 @@ export function createPlanService(deps: PlanServiceDeps) {
       sessionId: plan.sessionId,
       content,
       source: 'plan-review',
-      to: { participant: agentParticipant(plan.authorAgentId) },
       deliveryKey,
       receipt: true,
     })
@@ -143,7 +137,7 @@ export function createPlanService(deps: PlanServiceDeps) {
   }
 
   return {
-    /** The agent presents the draft (the `plan` tool, action `present`): `service-present.ts`. */
+    /** The agent presents the draft (the `Plan` tool, action `present`): `service-present.ts`. */
     present: presenting.present,
 
     /** Every version, newest first, and the draft's state — the plan view and the agent's `read`. */

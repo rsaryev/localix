@@ -1,6 +1,5 @@
 import type { NotificationTopic } from '@localixai/notifications'
 
-import type { DesktopNotifyKind } from '@/shared/lib/desktopNotify'
 import { activeEventOrigin } from './context'
 import { acknowledgeReportedTrace } from './incidentFallback'
 import { useNotificationsStore } from './store'
@@ -52,7 +51,7 @@ export interface ClientFact {
   sourceVisible?: boolean
   occurredAt?: number
   /** The OS banner this fact is worth, if any. Omitted: it stays inside the app. */
-  nativeKind?: DesktopNotifyKind
+  native?: boolean
   /**
    * The requests that caused it, when the producer knows them. Their steps ARE the trace; without
    * them the trace is guessed from the newest failure nearby.
@@ -137,7 +136,7 @@ export function recordClientFact(fact: ClientFact): string {
       read: fact.sourceVisible ?? false,
       ts: occurredAt,
     },
-    { coalesce: !key, hint: { nativeKind: fact.nativeKind ?? null } },
+    { coalesce: !key, hint: { native: fact.native ?? false } },
   )
   // The row now reports this trace's failure, so the transport's generic fallback stays silent.
   acknowledgeReportedTrace(trace)

@@ -42,14 +42,14 @@ export function authorizeSkillCommands(
   return (command) => {
     const options = policy?.current
     if (!options) return 'the permission rules of this run are not available'
-    if (!options.toolsByName.has(TOOL.bash)) return 'this agent has no shell tool'
+    if (!options.toolsByName.has(TOOL.Bash)) return 'this agent has no shell tool'
     const verdict = verdictOf({
       ...options,
       preapprovedRules: [
         ...(options.preapprovedRules ?? []),
         ...skillPermissionRules(allowedTools, options.root),
       ],
-    })(TOOL.bash, { command })
+    })(TOOL.Bash, { command })
     if (verdict.decision === 'allow') return undefined
     const why = verdict.reason ?? (verdict.rule ? `rule ${verdict.rule}` : '')
     return verdict.decision === 'deny'
@@ -72,7 +72,9 @@ function commandHookTexts(raw: unknown): string[] {
         if (!isRecord(handler)) continue
         if ((typeof handler.type === 'string' ? handler.type : 'command') !== 'command') continue
         const args = Array.isArray(handler.args) ? handler.args.map(String) : []
-        texts.push([String(handler.command ?? ''), ...args].join(' ').trim())
+        texts.push(
+          [typeof handler.command === 'string' ? handler.command : '', ...args].join(' ').trim(),
+        )
       }
     }
   }
@@ -90,7 +92,7 @@ function skillPlugin(skill: DiscoveredSkill) {
 }
 
 /**
- * The host half of the `skill` tool's `get` (`agent-core/tools/skill.ts`): a skill the model loads
+ * The host half of the `Skill` tool's `get` (`agent-core/tools/skill.ts`): a skill the model loads
  * runs as one the person types as `/name` does. Its content renders the same way (commands,
  * arguments, `${CLAUDE_*}`), a plugin monitor waiting for it starts, and its frontmatter `hooks`
  * register for the rest of the session (Claude Code: "registers them when you or Claude invoke the

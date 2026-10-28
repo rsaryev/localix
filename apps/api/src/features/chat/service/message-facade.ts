@@ -1,6 +1,5 @@
 import { NotFoundError } from '../../../lib/domain-errors'
 import type { ToolSurface } from '@localixai/agent/agents'
-import { USER_PARTICIPANT } from '../../../db'
 import type { MessageBinding, MessageMutationResponse, WakeSource } from '../contracts'
 import { setMessageReaction } from '../runtime/run/message-reactions'
 import { setMessagePinned } from './message-pins'
@@ -8,7 +7,7 @@ import { setMessageTask } from './message-tasks'
 import * as branchingOps from './branching-ops'
 import { forkSession as forkSessionOp } from './session-fork'
 import type { OperationContexts } from './operation-contexts'
-import { reactionRecipient, reactionWakePrompt } from './reaction-wake'
+import { reactionWakePrompt } from './reaction-wake'
 import type { ChatServiceGraph } from './service-graph'
 import type { SessionCore } from './session-core'
 import * as turnEntry from './turn-entry'
@@ -121,12 +120,10 @@ export function createChatMessageFacade({
       await requireSession(userId, sessionId)
       const message = await repo.getMessage(userId, sessionId, messageId)
       if (!message) throw new NotFoundError('message_not_found', 'Message not found')
-      const mine = (message.payload.reactions ?? []).some(
-        (r) => r.from === USER_PARTICIPANT && r.emoji === emoji,
-      )
+      const mine = (message.payload.reactions ?? []).some((r) => r.emoji === emoji)
       const changed = await setMessageReaction(
         { repo, streamRegistry, now },
-        { userId, sessionId, messageId, from: USER_PARTICIPANT, emoji, remove: mine },
+        { userId, sessionId, messageId, emoji, remove: mine },
       )
       // A mark ASKS FOR A TURN, the way a typed line does — otherwise it is decoration the
       // agent learns about only if it happens to speak again. Taking one back does not: that
@@ -136,14 +133,12 @@ export function createChatMessageFacade({
       // The reaction itself is already saved, so a wake that does not land must not fail
       // the request — but it must not vanish either, or the mark silently never asks.
       if (changed && !mine) {
-        const to = reactionRecipient(message.payload)
         wakes.send(
           {
             userId,
             sessionId,
             content: reactionWakePrompt(emoji, message.payload),
             source: 'reaction',
-            ...(to ? { to } : {}),
           },
           `reaction on message ${messageId}`,
         )

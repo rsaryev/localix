@@ -57,7 +57,7 @@ const INCLUDE = ['apps/api/src/features/**/*.ts', 'mini-apps/**/backend/**/*.ts'
 /** The rule's own file, and tests, may name the call in prose or in a probe. */
 const skipTests = (f: string): boolean => f.includes('.test.')
 
-/** `c.req.json()` / `ctx.req.json()` — the un-enforced parse; `mini_app_build` reads the same rule. */
+/** `c.req.json()` / `ctx.req.json()` — the un-enforced parse; the mini app kit's tools carry the same rule. */
 const RAW_BODY_PARSE_RE = RAW_BODY_PARSE
 
 /** Every `<file>::<call>` raw body parse under `root`. */

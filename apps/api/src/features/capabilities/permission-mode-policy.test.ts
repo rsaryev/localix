@@ -34,17 +34,17 @@ const verdict = (
   evaluate(permissions, { name, ...callClass }, extractCallFacts(name, input, ROOT), grants).action
 
 const PRESET = builtinAgentPreset('localix')
-const ASKING: Rule[] = [...PRESET, { action: 'tool:bash', resource: 'git push*', effect: 'ask' }]
+const ASKING: Rule[] = [...PRESET, { action: 'tool:Bash', resource: 'git push*', effect: 'ask' }]
 
 describe('session permission modes rewrite the rules and nothing else', () => {
   test.each([...PERMISSION_MODES])('%s never weakens a denial the agent wrote', (mode) => {
     const rules: Rule[] = [
       ...PRESET,
-      { action: 'tool:bash', resource: 'npm publish*', effect: 'deny' },
+      { action: 'tool:Bash', resource: 'npm publish*', effect: 'deny' },
     ]
     const { permissions } = runRules(mode, rules)
     expect(
-      verdict(permissions, 'bash', { effect: 'external' }, { command: 'npm publish --tag x' }),
+      verdict(permissions, 'Bash', { effect: 'external' }, { command: 'npm publish --tag x' }),
     ).toBe('deny')
   })
 
@@ -64,9 +64,9 @@ describe('session permission modes rewrite the rules and nothing else', () => {
     const once = runRules(mode, ASKING).permissions
     const twice = runRules(mode, applyPermissionMode(mode, ASKING).rules).permissions
     for (const [name, callClass, input] of [
-      ['bash', { effect: 'external' }, { command: 'git push origin' }],
-      ['write', { effect: 'files' }, { path: `${ROOT}/a.ts` }],
-      ['read', { effect: 'read' }, { path: '/etc/hosts' }],
+      ['Bash', { effect: 'external' }, { command: 'git push origin' }],
+      ['Write', { effect: 'files' }, { path: `${ROOT}/a.ts` }],
+      ['Read', { effect: 'read' }, { path: '/etc/hosts' }],
       ['ask', { effect: 'read', needsHuman: true }, {}],
     ] as const) {
       expect(verdict(twice, name, callClass, input)).toBe(verdict(once, name, callClass, input))
@@ -75,7 +75,7 @@ describe('session permission modes rewrite the rules and nothing else', () => {
 
   test('default changes no answer the agent rules give', () => {
     const { permissions, denied } = runRules('default', ASKING)
-    expect(verdict(permissions, 'bash', { effect: 'external' }, { command: 'git push' })).toBe(
+    expect(verdict(permissions, 'Bash', { effect: 'external' }, { command: 'git push' })).toBe(
       'ask',
     )
     expect(denied).toEqual([])
@@ -86,32 +86,32 @@ describe('plan', () => {
   const { permissions, denied } = runRules('plan', PRESET)
 
   test('refuses every call that reaches past the conversation', () => {
-    expect(verdict(permissions, 'write', { effect: 'files' }, { path: `${ROOT}/a.ts` })).toBe(
+    expect(verdict(permissions, 'Write', { effect: 'files' }, { path: `${ROOT}/a.ts` })).toBe(
       'deny',
     )
-    expect(verdict(permissions, 'bash', { effect: 'external' }, { command: 'make' })).toBe('deny')
+    expect(verdict(permissions, 'Bash', { effect: 'external' }, { command: 'make' })).toBe('deny')
     expect(verdict(permissions, 'board', { effect: 'host' })).toBe('deny')
   })
 
   test('lets reads, views and the conversation own state through', () => {
-    expect(verdict(permissions, 'bash', { effect: 'read' }, { command: 'ls' })).toBe('allow')
+    expect(verdict(permissions, 'Bash', { effect: 'read' }, { command: 'ls' })).toBe('allow')
     expect(verdict(permissions, 'board', { effect: 'session' })).toBe('allow')
-    expect(verdict(permissions, 'read', { effect: 'view' })).toBe('allow')
+    expect(verdict(permissions, 'Read', { effect: 'view' })).toBe('allow')
   })
 
   test('does not silence the baseline question about paths outside the workspace', () => {
-    expect(verdict(permissions, 'read', { effect: 'read' }, { path: '/etc/hosts' })).toBe('ask')
+    expect(verdict(permissions, 'Read', { effect: 'read' }, { path: '/etc/hosts' })).toBe('ask')
   })
 
   test('no mode removes the plan tool: after an approval the implementing run completes it', () => {
-    expect(denied).not.toContain('plan')
-    for (const mode of PERMISSION_MODES) expect(runRules(mode, PRESET).denied).not.toContain('plan')
+    expect(denied).not.toContain('Plan')
+    for (const mode of PERMISSION_MODES) expect(runRules(mode, PRESET).denied).not.toContain('Plan')
   })
 
   test('a skill allow-list cannot lift a plan denial', () => {
     const { permissions, grants } = runRules('plan', PRESET, ['Bash(make *)'])
     expect(
-      verdict(permissions, 'bash', { effect: 'external' }, { command: 'make build' }, grants),
+      verdict(permissions, 'Bash', { effect: 'external' }, { command: 'make build' }, grants),
     ).toBe('deny')
   })
 })
@@ -121,16 +121,16 @@ describe('bypass and autonomous', () => {
     '%s turns every tool question into allow',
     (mode) => {
       const { permissions } = runRules(mode, ASKING)
-      expect(verdict(permissions, 'bash', { effect: 'external' }, { command: 'git push' })).toBe(
+      expect(verdict(permissions, 'Bash', { effect: 'external' }, { command: 'git push' })).toBe(
         'allow',
       )
-      expect(verdict(permissions, 'read', { effect: 'read' }, { path: '/etc/hosts' })).toBe('allow')
+      expect(verdict(permissions, 'Read', { effect: 'read' }, { path: '/etc/hosts' })).toBe('allow')
     },
   )
 
   test.each(['bypass', 'autonomous'] as const)('%s still refuses catastrophic commands', (mode) => {
     const { permissions } = runRules(mode, ASKING)
-    expect(verdict(permissions, 'bash', { effect: 'external' }, { command: 'rm -rf ~' })).toBe(
+    expect(verdict(permissions, 'Bash', { effect: 'external' }, { command: 'rm -rf ~' })).toBe(
       'deny',
     )
   })

@@ -16,7 +16,8 @@ export function StorePage({ target }: { target?: StoreTarget }) {
   const extras = useStoreInstallExtras()
   // A screen a mini app puts in the rail is usually one per chat: Open names the chat that is
   // open, as a rail button does, or the grid has no chat to put its tab in and refuses it.
-  const navigation = useUiNavigation({ sessionId: useChatStore((s) => s.activeSessionId) })
+  const sessionId = useChatStore((s) => s.activeSessionId)
+  const navigation = useUiNavigation({ sessionId })
   const projectId = useChatStore((s) => s.activeProjectId ?? null)
   const projects = useChatStore((s) => s.projects)
   const project = useMemo(() => {
@@ -30,6 +31,7 @@ export function StorePage({ target }: { target?: StoreTarget }) {
         target={target}
         extras={extras}
         project={project}
+        sessionId={sessionId}
         onNavigate={(uri) => void navigateUi(uri, navigation)}
       />
     </div>

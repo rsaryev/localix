@@ -7,7 +7,7 @@ import { toast } from '@/shared/lib/notify'
 import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 
 /** Normalize a working-dir path for comparison (slashes + trailing slash). */
-function normalizeDir(dir: string): string {
+export function normalizeDir(dir: string): string {
   return dir.replace(/\\/g, '/').replace(/\/+$/, '')
 }
 

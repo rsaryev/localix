@@ -127,7 +127,7 @@ export function pruneWireMessages(
     // Errored output is precious (the whole point is the failure detail), so it
     // is never structurally crushed — only the >4500-char giants get a head+tail
     // bound. Non-error output crushes from the lower CRUSH_MIN_CHARS threshold,
-    // safely, since the original stays retrievable (GP-2 `tool_output`).
+    // safely, since the original stays retrievable (GP-2 `ToolOutput`).
     const isErr = r.isError === true
     const threshold = isErr ? MIDDLE_TRUNCATE_THRESHOLD : CRUSH_MIN_CHARS
     if (text.length > threshold) {

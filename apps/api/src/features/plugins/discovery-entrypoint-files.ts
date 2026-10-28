@@ -1,3 +1,4 @@
+import { readJsonFile } from '../../lib/json'
 import { promises as fs } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { DEFAULT_LOCATIONS, type MergedSource } from '@localixai/claude-plugin'
@@ -12,14 +13,6 @@ import { toAbsList } from './discovery-paths'
  */
 
 /** Read + JSON-parse a file, returning `undefined` on any read/parse error (contributes nothing). */
-export async function readJson(file: string): Promise<unknown> {
-  try {
-    return JSON.parse(await fs.readFile(file, 'utf8')) as unknown
-  } catch {
-    return undefined
-  }
-}
-
 /** Read an `.mcp.json`-style file: accepts `{ mcpServers: {…} }` or a bare `{ name: {…} }`. */
 export async function readMcpJson(file: string): Promise<Record<string, Record<string, unknown>>> {
   try {
@@ -68,7 +61,7 @@ export async function findHookModule(
 ): Promise<string | undefined> {
   const files = [join(dir, DEFAULT_LOCATIONS.hooks), ...toAbsList(dir, [...listed])]
   for (const file of files) {
-    const config = await readJson(file)
+    const config = await readJsonFile(file)
     const modules = (config as { modules?: unknown } | undefined)?.modules
     if (!Array.isArray(modules) || typeof modules[0] !== 'string') continue
     const module = resolveWithin(dir, resolve(dirname(file), modules[0]))

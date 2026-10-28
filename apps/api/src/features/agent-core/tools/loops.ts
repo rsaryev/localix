@@ -1,4 +1,3 @@
-import { loopClockTime, loopLastStatusLabel } from '../../loops/format'
 import { z } from 'zod'
 import { defineAgentTool } from '@localixai/agent/agents'
 import { TOOL } from '../tool-names'
@@ -11,12 +10,12 @@ import {
   DYNAMIC_MIN_DELAY_SECONDS,
   type SessionLoop,
 } from '../../loops/contracts'
-import { plural } from './tool-output'
+import { formatJob, formatJobDetail, shortTime } from './loops-format'
 
 export interface LoopsToolOptions {
   userId: string
   sessionId: string
-  /** The participant calling it: a loop it arms is its own, and its fires are addressed to it. */
+  /** The agent calling it: a loop it arms is its own, and its fires are addressed to it. */
   agentId: string
 }
 
@@ -30,7 +29,12 @@ const inputSchema = z.object({
         '"run" — fire a job immediately (extra occurrence; the schedule is untouched). ' +
         '"reschedule" — set a DYNAMIC job\'s next delay (call at the end of each dynamic iteration).',
     ),
-  id: z.string().optional().describe('Job id — required for get/update/remove/run/reschedule.'),
+  id: z
+    .string()
+    .optional()
+    .describe(
+      'Job id — required for get/remove/run/reschedule; update may omit it when the conversation has one loop.',
+    ),
   cron: z
     .string()
     .optional()
@@ -57,45 +61,8 @@ const inputSchema = z.object({
     ),
 })
 
-function cadence(l: SessionLoop): string {
-  if (l.kind === 'dynamic')
-    return l.delaySeconds ? `dynamic · ~${Math.round(l.delaySeconds / 60)}m` : 'dynamic'
-  return `\`${l.cron}\``
-}
-
-const shortTime = (iso: string): string => loopClockTime(iso)
-
-function statsLine(l: SessionLoop): string {
-  if (l.runCount === 0) return 'not fired yet'
-  const last = l.lastRunAt ? shortTime(l.lastRunAt) : '?'
-  // "delivered" vs "completed" is not cosmetic: for a session loop the recorded status only says
-  // the wake was ENQUEUED, so printing a bare "ok" told the agent the run had gone fine.
-  const status =
-    l.lastStatus === 'error'
-      ? `error${l.lastError ? ` (${l.lastError.slice(0, 120)})` : ''}`
-      : loopLastStatusLabel(l)
-  return `${plural(l.runCount, 'run')} · last ${last} → ${status}`
-}
-
-function formatJob(l: SessionLoop): string {
-  const next = shortTime(l.nextRunAt)
-  const target = l.target === 'subsession' ? ' · subsession' : ''
-  return `- **${l.id}** · ${cadence(l)}${target} · next: ${next} · ${statsLine(l)}\n  > ${l.prompt.slice(0, 100)}`
-}
-
-function formatJobDetail(l: SessionLoop): string {
-  const next = shortTime(l.nextRunAt)
-  return [
-    `**${l.id}**`,
-    `- kind: ${l.kind} · cadence: ${cadence(l)} · target: ${l.target}`,
-    `- next: ${next} · created: ${shortTime(l.createdAt)}`,
-    `- stats: ${statsLine(l)}`,
-    `- prompt:\n  > ${l.prompt}`,
-  ].join('\n')
-}
-
 /**
- * The single `loops` tool — one action enum instead of separate create/list/delete
+ * The single `Loops` tool — one action enum instead of separate create/list/delete
  * tools. Manages this session's loops: fixed 5-field-cron jobs, self-pacing dynamic
  * loops, and per-job fire target (this session vs a fresh subsession per fire). Backed
  * by the durable loop engine (resolved via runtime-binding so agent-core stays
@@ -104,7 +71,7 @@ function formatJobDetail(l: SessionLoop): string {
  */
 export function createLoopsTool(opts: LoopsToolOptions) {
   return defineAgentTool({
-    name: TOOL.loops,
+    name: TOOL.Loops,
     description:
       'Schedule and manage recurring jobs for THIS session. The action and parameter fields describe fixed and dynamic job mechanics. ' +
       'Reschedule/update the existing job by id — never add a second job for the same task.',
@@ -216,13 +183,23 @@ export function createLoopsTool(opts: LoopsToolOptions) {
           })
           if ('error' in result) return { content: result.error, isError: true }
           return {
-            content: `Dynamic loop added — id: \`${result.id}\`. Do the work, then call \`loops\` with action="reschedule", id="${result.id}", and a \`delay_seconds\` to schedule the next run. Until you do, it fires again at ${shortTime(result.nextRunAt)}; remove it when it is no longer useful.`,
+            content: `Dynamic loop added — id: \`${result.id}\`. Do the work, then call \`Loops\` with action="reschedule", id="${result.id}", and a \`delay_seconds\` to schedule the next run. Until you do, it fires again at ${shortTime(result.nextRunAt)}; remove it when it is no longer useful.`,
           }
         }
 
         case 'update': {
-          if (!input.id) return { content: 'Provide `id` to update.', isError: true }
-          const r = resolve(input.id)
+          // Without an id, the conversation's only loop is the one meant.
+          const owned = input.id ? [] : ownedInSession()
+          if (!input.id && owned.length !== 1) {
+            const ids = owned.map((l) => `\`${l.id}\``).join(', ')
+            return {
+              content: owned.length
+                ? `Provide \`id\` to update — this conversation has ${owned.length} loops: ${ids}.`
+                : 'This conversation has no loop to update.',
+              isError: true,
+            }
+          }
+          const r = input.id ? resolve(input.id) : { loop: owned[0]! }
           if ('error' in r) return { content: r.error, isError: true }
           if (
             input.prompt === undefined &&

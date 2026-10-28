@@ -13,7 +13,7 @@ import { Button } from '@localixai/kit/button'
 import { formatRelativeTime } from '@localixai/mini-app-sdk/ui/utilities'
 import type { RosterRow } from '@localixai/api/external-agent-contracts'
 import { externalHistoryRows, type HistoryGroup } from '../model/historyRows'
-import type { SessionGroupingMode } from '@/entities/chat/model/sessionGrouping'
+import type { ExternalGroupingMode } from '../model/historyRows'
 import type { SortMode } from '@/entities/chat/model/useSidebarSessions'
 import { dragExternalResource, externalSessionUri } from '../model/sessionResource'
 
@@ -33,7 +33,7 @@ export function ExternalHistoryList({
   loadMore,
 }: {
   groups: HistoryGroup[]
-  groupingMode: SessionGroupingMode
+  groupingMode: ExternalGroupingMode
   sortMode: SortMode
   agents: Agent[]
   collapsed: ReadonlySet<string>
@@ -46,6 +46,7 @@ export function ExternalHistoryList({
 }) {
   const viewport = useRef<HTMLDivElement>(null)
   const rows = externalHistoryRows(groups, collapsed, hasMore, groupingMode, sortMode)
+  // oxlint-disable-next-line react/incompatible-library -- TanStack Virtual returns non-memoizable functions by design.
   const virtual = useVirtualizer({
     count: rows.length,
     getScrollElement: () => viewport.current,

@@ -2,8 +2,8 @@ import { routeReadiness, type CatalogModel } from '@localixai/agent/catalog'
 import { sessionRoute, type UiSession } from '@/shared/api/contracts'
 
 interface SessionConnectionState {
-  sessions: readonly Pick<UiSession, 'id' | 'agents'>[]
-  allSessions: readonly Pick<UiSession, 'id' | 'agents'>[]
+  sessions: readonly Pick<UiSession, 'id' | 'agent'>[]
+  allSessions: readonly Pick<UiSession, 'id' | 'agent'>[]
 }
 
 function findSession(state: SessionConnectionState, sessionId: string | null) {
@@ -13,7 +13,7 @@ function findSession(state: SessionConnectionState, sessionId: string | null) {
   )
 }
 
-/** The model the session's own participant runs on, or '' for none. */
+/** The model the session's agent runs on, or '' for none. */
 export function selectSessionModelId(
   state: SessionConnectionState,
   sessionId: string | null,
@@ -33,8 +33,7 @@ export function selectSessionConnectionId(
   // the active picker kept rendering "Choose model" until another navigation
   // rebuilt the working list.
   const found = findSession(state, sessionId)
-  // The composer's connection chip speaks for the session's own participant. In a group each
-  // member has its own, and the per-member picker asks for theirs by handle.
+  // The composer's connection chip speaks for the session's agent.
   return found ? sessionRoute(found).providerConnectionId : null
 }
 

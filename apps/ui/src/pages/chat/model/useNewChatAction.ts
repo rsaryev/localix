@@ -120,5 +120,5 @@ export function useNewChatAction(options: NewChatActionOptions) {
   )
 
   const paletteCommands = useChatPagePalette({ ...options, startNewChat })
-  return { creatingChat, paletteCommands, startNewChat, startNewChatWith: runNewChat }
+  return { creatingChat, paletteCommands, startNewChat }
 }

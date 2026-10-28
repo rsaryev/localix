@@ -17,7 +17,7 @@ export interface HumanAssignment {
   sessionId: string
   /** The subject (the card) the person is pointed at. */
   messageId: string
-  /** The handle of whoever assigned it; '' when no agent did. */
+  /** The name of whoever assigned it; '' when no agent did. */
   from: string
   text: string
 }

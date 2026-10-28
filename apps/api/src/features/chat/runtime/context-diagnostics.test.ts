@@ -1,4 +1,4 @@
-import { DEFAULT_AGENT_PARTICIPANT } from '../../../db'
+import { DEFAULT_AGENT_AUTHOR } from '../../../db'
 import { describe, expect, test } from 'bun:test'
 
 import { emptyAssistantPayload } from './message-envelope'
@@ -35,7 +35,7 @@ describe('terminal context diagnostics', () => {
 
   test('replaces stale context parts without touching unrelated data', () => {
     const payload = {
-      ...emptyAssistantPayload('a1', DEFAULT_AGENT_PARTICIPANT),
+      ...emptyAssistantPayload('a1', DEFAULT_AGENT_AUTHOR),
       dataParts: [
         {
           type: 'data-status' as const,
@@ -73,7 +73,7 @@ describe('window limits at the start of a run', () => {
     // Only the terminal write carried them, so a session's whole first run had a ring with no
     // denominator but the model's physical window.
     const payload = {
-      ...emptyAssistantPayload('a1', DEFAULT_AGENT_PARTICIPANT),
+      ...emptyAssistantPayload('a1', DEFAULT_AGENT_AUTHOR),
       dataParts: [
         { type: 'data-status' as const, data: { scope: 'provider', phase: 'running' } },
         { type: 'data-context-window' as const, data: { stale: true } },

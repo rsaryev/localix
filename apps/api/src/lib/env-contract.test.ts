@@ -88,10 +88,6 @@ const OS_VARS = new Set([
  * back here and say why.
  */
 const EXEMPTIONS: Exemptions = {
-  [exemptionKey('src/features/mini-apps/authoring/ui-build.ts', 'NODE_ENV')]: {
-    reason:
-      'Not a read: `process.env.NODE_ENV` is the KEY of the plugin UI bundler\'s `define`, which replaces that expression in the browser artifact with "production".',
-  },
   [exemptionKey('src/lib/login-shell-env.ts', '<dynamic>')]: {
     reason:
       'IS the process.env boundary: repairs a GUI launch by folding the login-shell env INTO process.env. It writes ambient env by design.',

@@ -1,5 +1,5 @@
 import { sessionFixture } from '../../../../testing/session-fixture'
-import { USER_PARTICIPANT } from '../../../../db'
+import { USER_AUTHOR } from '../../../../db'
 /**
  * The steer SPLIT: ending the run's assistant row at the injection point and starting
  * a fresh one is what makes a steered transcript read chronologically —
@@ -20,13 +20,13 @@ import { emptySessionTiming } from '../../session-timing'
 import type { TurnEventContext } from './event-handlers'
 import type { PersistedMessage } from '../../contracts'
 import type { SessionRecord } from '../../repository'
-import { DEFAULT_AGENT_PARTICIPANT } from '../../../../db'
+import { DEFAULT_AGENT_AUTHOR } from '../../../../db'
 
 function makeCtx() {
   const inserted: PersistedMessage[] = []
   const published: Array<{ type: string }> = []
   const state = createRunTurnState({
-    payload: emptyAssistantPayload('row-1', DEFAULT_AGENT_PARTICIPANT),
+    payload: emptyAssistantPayload('row-1', DEFAULT_AGENT_AUTHOR),
     assistantCreatedAt: '2026-07-10 00:00:00',
     baseSessionTiming: emptySessionTiming(),
   })
@@ -62,7 +62,7 @@ describe('splitAssistantRowForSteer', () => {
     payload: {
       id: 'steer-user',
       role: 'user',
-      from: USER_PARTICIPANT,
+      from: USER_AUTHOR,
       content: 'change direction',
     },
     createdAt: '2026-09-08T00:00:00Z',

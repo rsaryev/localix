@@ -34,7 +34,7 @@ export function renderBackgroundStartResult(input: {
   const tail = truncation
     ? `${truncationMarker(truncation, {
         kept: 'last',
-        advice: `Use \`jobs\` action="read" with job_id="${input.jobId}" for more, or wait — its further output returns automatically next turn.`,
+        advice: `Use \`Jobs\` action="read" with job_id="${input.jobId}" for more, or wait — its further output returns automatically next turn.`,
       })}\n${truncation.content}`
     : input.output
 
@@ -45,7 +45,7 @@ export function renderBackgroundStartResult(input: {
       : `Background job started (job_id: ${input.jobId}): ${input.command}`
   const hint = input.earlyExited
     ? '' // already done — nothing to poll
-    : `\n[still running — \`jobs\` action="read"/"stop"/"send_input" with job_id="${input.jobId}"; its further output also returns automatically next turn]`
+    : `\n[still running — \`Jobs\` action="read"/"send_input" or \`TaskStop\` with job_id="${input.jobId}"; its further output also returns automatically next turn]`
 
   return tail.trim()
     ? `${header}\n--- output so far ---\n${tail}${hint}`

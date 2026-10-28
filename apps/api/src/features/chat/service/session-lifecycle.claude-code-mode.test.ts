@@ -3,7 +3,7 @@ import { describe, expect, it } from 'bun:test'
 import type { PermissionMode } from '../../../contracts/permission-modes'
 import { birthRoute } from '../agent-route-resolution'
 import type { SessionRecord } from '../repository'
-import { routedParticipants, sessionFixture } from '../../../testing/session-fixture'
+import { routedAgent, sessionFixture } from '../../../testing/session-fixture'
 import { createSession, updateSession, type SessionLifecycleCtx } from './session-lifecycle'
 
 /**
@@ -20,7 +20,7 @@ function harness(
     userId: 'u1',
     seq: 1,
     title: 'Chat',
-    agents: routedParticipants({ modelId: 'm' }),
+    agent: routedAgent({ modelId: 'm' }),
     createdAt: '2026-01-01 00:00:00',
     updatedAt: '2026-01-01 00:00:00',
     lastMessageAt: '2026-01-01 00:00:00',
@@ -31,8 +31,8 @@ function harness(
   const ctx = {
     now: () => '2026-01-02 00:00:00',
     resolveDefaultProjectId: async () => 'PRJ-default',
-    resolveSessionAgent: async () => ({ id: 'builtin:localix', handle: 'localix' }),
-    seatRoute: async (_u: string, _p: string | null, _a: string, given = {}) =>
+    resolveSessionAgent: async () => ({ id: 'builtin:localix', name: 'localix' }),
+    startingRoute: async (_u: string, _p: string | null, _a: string, given = {}) =>
       birthRoute({ ...given, agent: null }),
     requireSession: async () => record,
     getSessionDetail: async () => ({}) as never,

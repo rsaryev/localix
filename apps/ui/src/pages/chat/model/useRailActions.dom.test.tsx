@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
+import { tap } from '@/testing/hookProbe'
 import { registerDom } from '@localixai/kit/testing/dom'
 
 let teardown: () => Promise<void>
@@ -18,7 +19,7 @@ test('the status bar omits CLI launchers even when agents are installed', async 
   const { SWRConfig } = await import('swr')
   const { buildRailEntries } = await import('@/widgets/workspace-shell/model/buildRailEntries')
   const { resolveRailAreas } = await import('@/widgets/workspace-shell/model/railLayout')
-  let order: string[] = []
+  const order = tap<string[]>()
   function Probe({ available }: { available: boolean }) {
     const actions = useRailActions({
       openSessionId: 'own-chat',
@@ -40,7 +41,7 @@ test('the status bar omits CLI launchers even when agents are installed', async 
       activeSection: null,
       onSectionClick: () => {},
     })
-    order = resolveRailAreas(defs, null).status
+    order.put(resolveRailAreas(defs, null).status)
     return null
   }
   const host = document.createElement('div')
@@ -66,7 +67,7 @@ test('the status bar omits CLI launchers even when agents are installed', async 
         </SWRConfig>,
       ),
     )
-    expect(order).toEqual(['reset-layout'])
+    expect(order.value).toEqual(['reset-layout'])
     await React.act(async () =>
       root.render(
         <SWRConfig value={config}>
@@ -74,7 +75,7 @@ test('the status bar omits CLI launchers even when agents are installed', async 
         </SWRConfig>,
       ),
     )
-    expect(order).toEqual(['reset-layout', 'keep-awake'])
+    expect(order.value).toEqual(['reset-layout', 'keep-awake'])
   } finally {
     await React.act(async () => root.unmount())
     host.remove()

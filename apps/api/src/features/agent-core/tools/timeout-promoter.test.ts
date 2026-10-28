@@ -41,9 +41,27 @@ function fakeRegistry(runningJobs = 0) {
   return { registry, emitted, registered, disposed, kill: () => registered }
 }
 
+/** A budget the test elapses by hand: `armed` settles once the call is waiting on it. */
+function manualBudget() {
+  const fires: Array<() => void> = []
+  let arm!: () => void
+  const armed = new Promise<void>((resolve) => (arm = resolve))
+  return {
+    armed,
+    armBudget: (fire: () => void) => {
+      fires.push(fire)
+      arm()
+      return () => {}
+    },
+    elapse: () => fires.forEach((fire) => fire()),
+  }
+}
+
+const turn = () => new Promise<void>((resolve) => setTimeout(resolve, 0))
+
 const slowTool = (settle: Promise<AgentToolResult>, promoteAfterMs = 20) =>
   defineAgentTool({
-    name: 'research',
+    name: 'Research',
     label: 'Research',
     description: 't',
     activeVerb: 'Researching',
@@ -93,7 +111,7 @@ describe('a call that outruns its budget', () => {
 
     await run(tool!, registry)
     land({ content: 'the real answer' })
-    await Bun.sleep(5)
+    await turn()
 
     expect(emitted).toEqual([
       {
@@ -112,17 +130,17 @@ describe('a call that outruns its budget', () => {
 
   test('a body that throws is reported as a failed job, not a lost one', async () => {
     const { registry, emitted } = fakeRegistry()
-    const [tool] = wrapToolsWithTimeoutPromoter([
-      slowTool(
-        (async () => {
-          await Bun.sleep(40)
-          throw new Error('upstream refused')
-        })(),
-      ),
-    ])
+    let refuse: (error: Error) => void = () => {}
+    const body = new Promise<AgentToolResult>((_resolve, reject) => (refuse = reject))
+    const clock = manualBudget()
+    const [tool] = wrapToolsWithTimeoutPromoter([slowTool(body)], clock)
 
-    await run(tool!, registry)
-    await Bun.sleep(60)
+    const call = run(tool!, registry)
+    await clock.armed
+    clock.elapse()
+    await call
+    refuse(new Error('upstream refused'))
+    await turn()
 
     expect(emitted[0]).toMatchObject({ jobStatus: 'failed', output: 'upstream refused' })
   })
@@ -130,7 +148,7 @@ describe('a call that outruns its budget', () => {
   test('stopping the job aborts the call, so a tool that honours cancellation stops', async () => {
     let observed: AbortSignal | undefined
     const tool = defineAgentTool({
-      name: 'research',
+      name: 'Research',
       description: 't',
       activeVerb: 'Researching',
       promoteAfterMs: 20,
@@ -162,7 +180,7 @@ describe('a call that outruns its budget', () => {
   test("the run's own cancellation still reaches the call", async () => {
     let observed: AbortSignal | undefined
     const tool = defineAgentTool({
-      name: 'research',
+      name: 'Research',
       description: 't',
       activeVerb: 'Researching',
       promoteAfterMs: 10_000,
@@ -201,29 +219,27 @@ describe('when promotion is not the right answer', () => {
     // Trading a bounded wait for an unbounded pile of jobs is not an improvement, and
     // silently passing the cap would make the cap a lie.
     const { registry, registered } = fakeRegistry(10)
-    const [tool] = wrapToolsWithTimeoutPromoter([
-      slowTool(
-        (async () => {
-          await Bun.sleep(40)
-          return { content: 'waited it out' }
-        })(),
-      ),
-    ])
+    let land: (result: AgentToolResult) => void = () => {}
+    const body = new Promise<AgentToolResult>((resolve) => (land = resolve))
+    const clock = manualBudget()
+    const [tool] = wrapToolsWithTimeoutPromoter([slowTool(body)], clock)
 
-    expect((await run(tool!, registry)).content).toBe('waited it out')
+    const call = run(tool!, registry)
+    await clock.armed
+    clock.elapse()
+    land({ content: 'waited it out' })
+    expect((await call).content).toBe('waited it out')
     expect(registered).toEqual([])
   })
 
   test('with no registry there is nothing to hand the work to, so it waits', async () => {
-    const [tool] = wrapToolsWithTimeoutPromoter([
-      slowTool(
-        (async () => {
-          await Bun.sleep(40)
-          return { content: 'no host' }
-        })(),
-      ),
-    ])
-    expect((await run(tool!, undefined)).content).toBe('no host')
+    let land: (result: AgentToolResult) => void = () => {}
+    const body = new Promise<AgentToolResult>((resolve) => (land = resolve))
+    const [tool] = wrapToolsWithTimeoutPromoter([slowTool(body)])
+    const call = run(tool!, undefined)
+    await turn()
+    land({ content: 'no host' })
+    expect((await call).content).toBe('no host')
   })
 })
 
@@ -254,9 +270,10 @@ describe('a gate inside the chain', () => {
   test('starts the budget once it has decided, so time on a card is not a background job', async () => {
     const { registry, registered } = fakeRegistry()
     // The card: answered only after the whole budget has passed.
-    const card = new Promise<void>((resolve) => setTimeout(resolve, 60))
+    let answerCard: () => void = () => {}
+    const card = new Promise<void>((resolve) => (answerCard = resolve))
     const gated = defineAgentTool({
-      name: 'research',
+      name: 'Research',
       label: 'Research',
       description: 't',
       activeVerb: 'Researching',
@@ -268,9 +285,14 @@ describe('a gate inside the chain', () => {
         return { content: 'answered' }
       },
     })
-    const [tool] = wrapToolsWithTimeoutPromoter([gated], { clockStartsAtGate: true })
+    const clock = manualBudget()
+    const [tool] = wrapToolsWithTimeoutPromoter([gated], { clockStartsAtGate: true, ...clock })
 
-    expect((await run(tool!, registry)).content).toBe('answered')
+    const call = run(tool!, registry)
+    await turn()
+    answerCard()
+    await clock.armed // the budget starts only now, after the card was answered
+    expect((await call).content).toBe('answered')
     expect(registered).toEqual([])
   })
 })

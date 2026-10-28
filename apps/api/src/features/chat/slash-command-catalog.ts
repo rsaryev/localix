@@ -14,6 +14,8 @@
 import { LOOP_ARGS, MINI_APP_ARGS, PLUGIN_ARGS, THEME_ARGS } from './slash-catalog-arguments'
 import type { SlashArgSpec } from './slash-args'
 import { AGENTS_ARGS } from './slash-catalog-agents'
+import { MCP_ARGS } from './slash-catalog-mcp'
+import { CLAUDE_CODE_COMMANDS } from './slash-catalog-claude-code-commands'
 import { MODEL_ARGS } from './slash-catalog-model'
 import {
   COPY_ARGS,
@@ -79,7 +81,7 @@ export const SLASH_COMMANDS: readonly SlashCommandSpec[] = [
   {
     name: 'agents',
     title: 'Agents',
-    description: 'Find, create and manage specialists and this chat’s participants',
+    description: 'List agents; they are managed in the Store',
     scope: 'server',
     category: 'config',
     args: AGENTS_ARGS,
@@ -238,7 +240,7 @@ export const SLASH_COMMANDS: readonly SlashCommandSpec[] = [
   {
     name: 'memory',
     title: 'Memory',
-    description: 'List saved memories, or save one — /memory <fact>',
+    description: 'Show this project’s memory, or save a fact to it — /memory <fact>',
     scope: 'server',
     category: 'memory',
     args: MEMORY_ARGS,
@@ -256,10 +258,10 @@ export const SLASH_COMMANDS: readonly SlashCommandSpec[] = [
   {
     name: 'mcp',
     title: 'MCP',
-    description: 'List configured MCP servers and their tools',
+    description: 'List MCP servers by source; reconnect, enable or disable one',
     scope: 'server',
     category: 'extensions',
-    argless: true,
+    args: MCP_ARGS,
   },
   {
     name: 'plugin',
@@ -272,7 +274,7 @@ export const SLASH_COMMANDS: readonly SlashCommandSpec[] = [
   {
     name: 'mini-app',
     title: 'Mini app',
-    description: 'Create, switch on and off, and reload mini apps',
+    description: 'List, switch on and off, remove and reload mini apps',
     scope: 'server',
     category: 'extensions',
     args: MINI_APP_ARGS,
@@ -288,6 +290,7 @@ export const SLASH_COMMANDS: readonly SlashCommandSpec[] = [
     argless: true,
     hidden: true,
   },
+  ...CLAUDE_CODE_COMMANDS,
 ] as const
 
 /** Names reserved by built-in commands (canonical + aliases): user skills cannot shadow them. */

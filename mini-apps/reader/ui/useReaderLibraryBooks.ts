@@ -24,16 +24,16 @@ export function useReaderLibraryBooks(
   const [books, setBooks] = useState<ReaderBookSummary[]>([])
   const requestRef = useRef(0)
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(() => {
     const request = ++requestRef.current
-    try {
-      const library = await loadLibrary()
-      if (request !== requestRef.current) return false
-      setBooks(library.books)
-      return true
-    } catch {
-      return false
-    }
+    return new Promise<ReaderLibraryResponse>((resolve) => resolve(loadLibrary())).then(
+      (library) => {
+        if (request !== requestRef.current) return false
+        setBooks(library.books)
+        return true
+      },
+      () => false,
+    )
   }, [loadLibrary])
 
   useEffect(() => {

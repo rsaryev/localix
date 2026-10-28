@@ -25,19 +25,9 @@ export const createSessionRequestSchema = z
     modelId: modelIdSchema.optional(),
     reasoningEffort: reasoningEffortSchema.optional(),
     projectId: z.string().nullable().optional(),
-    /**
-     * WHO THE CHAT IS WITH — registry AgentIds, in join order, which is also the order they
-     * speak in. Absent means the default agent, which is what an ordinary "new chat" means and
-     * why this is not required.
-     *
-     * One entry is a private chat and several are a group: the difference is the length of this
-     * list and nothing else, because a room is the same session with more participants. The cap
-     * is the conversation's, not the storage's — a transcript every member re-reads before its
-     * turn costs a member's context window per member, so a room that grows without bound
-     * stops being readable long before it stops being writable.
-     */
     externalAgentProvider: z.string().min(1).max(64).optional(),
-    agentIds: z.array(z.string().trim().min(1).max(200)).optional(),
+    /** The registry AgentId the chat is with, fixed for its life. Absent means the default agent. */
+    agentId: z.string().trim().min(1).max(200).optional(),
     /**
      * A landing (the neutral home, a launch, a window leaving a dead project) rather than the
      * New chat gesture: answer with the project's newest untouched chat when one exists, so
@@ -132,58 +122,28 @@ export interface SessionBranchTree {
   nodes: SessionBranchNode[]
 }
 
-/**
- * Re-route ONE participant of a conversation.
- *
- * A model belongs to an agent inside a conversation, not to the conversation: a group runs
- * several at once. So the choice names whom it is for. An omitted `agentId` means the session's
- * own participant, which is unambiguous in a private chat and is the first member in a group —
- * that default is what lets an existing single-agent client keep sending what it always sent.
- */
+/** Re-route the conversation's agent: the model it runs on, never who it is. */
 export const sessionRouteRequestSchema = z.object({
-  agentId: z.string().min(1).max(200).optional(),
   providerConnectionId: providerConnectionIdSchema.nullable().optional(),
   modelId: modelIdSchema.optional(),
   reasoningEffort: reasoningEffortSchema.optional(),
 })
 
-export const updateSessionRequestSchema = z.object({
-  ...sharedTopicFields,
-  externalAgentSessionKey: z.string().min(3).max(400).optional(),
-  externalAgentProvider: z.string().min(1).max(64).optional(),
-  title: z.string().trim().min(1).max(SESSION_TITLE_MAX_CHARS).optional(),
-  route: sessionRouteRequestSchema.optional(),
-  /**
-   * Choose models for SEVERAL agents in one write. Each entry names its agent, seated or not yet
-   * invited (the choice waits for it); every named agent must be able to take part or nothing is
-   * written. Not combined with `route`: one patch states one re-route.
-   */
-  routes: z
-    .array(sessionRouteRequestSchema.extend({ agentId: z.string().min(1).max(200) }))
-    .min(1)
-    .max(64)
-    .optional(),
-  /**
-   * Replace the participants — add or remove, in the order they will speak.
-   *
-   * Whole-list, not a diff: the service reseats the list as one write that preserves the
-   * surviving participants' own routes (`reseatParticipants`), so a client that sends the
-   * membership it wants cannot half-apply a change the way an add/remove pair can.
-   */
-  agentIds: z.array(z.string().trim().min(1).max(200)).optional(),
-  /**
-   * The session's `updatedAt` the list above was built from. A session changed since — an agent
-   * invited someone, another window edited it — refuses the list with 409 `session_changed`
-   * instead of erasing that change.
-   */
-  expectedUpdatedAt: z.string().min(1).max(64).optional(),
-  /** The conversation's permission mode; accepted on a root conversation only (children inherit). */
-  permissionMode: z.enum(PERMISSION_MODES).optional(),
-  isPinned: z.boolean().optional(),
-  isArchived: z.boolean().optional(),
-  projectId: z.string().nullable().optional(),
-  runtimeStatus: runtimeStatusSchema.optional(),
-})
+export const updateSessionRequestSchema = z
+  .object({
+    ...sharedTopicFields,
+    externalAgentSessionKey: z.string().min(3).max(400).optional(),
+    externalAgentProvider: z.string().min(1).max(64).optional(),
+    title: z.string().trim().min(1).max(SESSION_TITLE_MAX_CHARS).optional(),
+    route: sessionRouteRequestSchema.optional(),
+    /** The conversation's permission mode; accepted on a root conversation only (children inherit). */
+    permissionMode: z.enum(PERMISSION_MODES).optional(),
+    isPinned: z.boolean().optional(),
+    isArchived: z.boolean().optional(),
+    projectId: z.string().nullable().optional(),
+    runtimeStatus: runtimeStatusSchema.optional(),
+  })
+  .strict()
 
 /** Runtime/client capabilities used for descriptor-level tool availability. */
 export const clientToolSurfaceSchema = z.object({

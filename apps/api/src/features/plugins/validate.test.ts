@@ -6,7 +6,6 @@ import { tmpdir } from 'node:os'
 import { loadManifest } from './discovery'
 import { validateCompatibility } from './validate-compat'
 import { validatePlugin } from './validate'
-import { CC_HOOK_EVENTS } from '../cc-hooks/contracts'
 
 let dir: string
 
@@ -57,6 +56,17 @@ describe('validatePlugin', () => {
     const plugin = await writePlugin('matching', 'matching', {})
     const { warnings } = validatePlugin(plugin)
     expect(warnings.some((w) => w.includes("doesn't match its directory"))).toBe(false)
+  })
+
+  it("does not warn about the directory of a plugin in Claude Code's versioned cache", async () => {
+    const plugin = await writePlugin('tokendoctor', 'cache/mkt/tokendoctor/0.4.0', {})
+    const { warnings } = validatePlugin(plugin)
+    expect(warnings.some((w) => w.includes("doesn't match its directory"))).toBe(false)
+    // Only that layout: the same version folder elsewhere is still a mismatch.
+    const elsewhere = await writePlugin('tokendoctor', 'other/tokendoctor/0.4.0', {})
+    expect(
+      validatePlugin(elsewhere).warnings.some((w) => w.includes("doesn't match its directory")),
+    ).toBe(true)
   })
 
   it('warns when a prompt references a placeholder no argument names', async () => {
@@ -317,29 +327,16 @@ describe('validateCompatibility', () => {
       hooks: './hooks/hooks.json',
     })
     const { warnings } = validateCompatibility(plugin)
-    // hooks still gets an advisory (which events this host dispatches), but not "ignored".
     expect(warnings.some((w) => w.includes('"lspServers"') && w.includes('ignores'))).toBe(false)
     expect(warnings.some((w) => w.includes('"hooks"') && w.includes('ignored'))).toBe(false)
   })
 
-  it('the hooks advisory states all 5 handler types run and lists exactly the dispatched events', async () => {
-    const plugin = await writePlugin('cc-hooks-adv', 'cc-hooks-adv', {
+  it('a clean plugin with a `hooks` key has no warning, so --strict passes it', async () => {
+    const plugin = await writePlugin('cc-hooks-clean', 'cc-hooks-clean', {
+      description: 'Formats files.',
       hooks: './hooks/hooks.json',
     })
-    const { warnings } = validateCompatibility(plugin)
-    const advisory = warnings.find((w) => w.includes('"hooks"'))
-    expect(advisory).toBeDefined()
-    // All five handler types execute — the old command-only claim must be gone.
-    for (const t of ['command', 'http', 'mcp_tool', 'prompt', 'agent']) {
-      expect(advisory).toContain(t)
-    }
-    expect(advisory).not.toContain('only type:"command"')
-    // The event list is derived from the cc-hooks engine — assert parity with it.
-    for (const event of CC_HOOK_EVENTS) {
-      expect(advisory).toContain(event)
-    }
-    // Genuinely undispatched CC events are what the warning is scoped to.
-    expect(advisory).toContain('never fire')
+    expect(validateCompatibility(plugin).warnings).toEqual([])
   })
 
   it('does not warn on the Claude Code file-path layout for commands/agents (both load now)', async () => {

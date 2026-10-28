@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import { loadPdfEngine, pdfPageScale, type PDFDocumentProxy } from './pdf-engine'
 import './pdf-pages.css'
 
@@ -11,11 +11,12 @@ export interface PdfPagesProps {
 /** Fit actual PDF pages to the available pane, with selectable text and lazy canvas rendering. */
 export function PdfPages({ blob, 'aria-label': label = 'PDF document', onError }: PdfPagesProps) {
   const root = useRef<HTMLDivElement>(null)
-  const failure = useRef(onError)
-  failure.current = onError
+  const reportFailure = useEffectEvent((problem: Error) => onError?.(problem))
   const [width, setWidth] = useState(0)
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  // The message belongs to the blob that failed: a new blob starts clean, with no reset effect.
+  const [failed, setFailed] = useState<{ blob: Blob; message: string } | null>(null)
+  const error = failed?.blob === blob ? failed.message : null
   useEffect(() => {
     const pane = root.current
     if (!pane) return
@@ -29,7 +30,6 @@ export function PdfPages({ blob, 'aria-label': label = 'PDF document', onError }
     let cancelled = false
     let task: ReturnType<Awaited<ReturnType<typeof loadPdfEngine>>['getDocument']> | undefined
     let loaded: PDFDocumentProxy | undefined
-    setError(null)
     Promise.all([loadPdfEngine(), blob.arrayBuffer()])
       .then(async ([engine, bytes]) => {
         if (cancelled) return
@@ -41,8 +41,8 @@ export function PdfPages({ blob, 'aria-label': label = 'PDF document', onError }
       .catch((cause: unknown) => {
         if (cancelled) return
         const problem = cause instanceof Error ? cause : new Error('Cannot display PDF.')
-        setError(problem.message)
-        failure.current?.(problem)
+        setFailed({ blob, message: problem.message })
+        reportFailure(problem)
       })
     return () => {
       cancelled = true
@@ -60,6 +60,7 @@ export function PdfPages({ blob, 'aria-label': label = 'PDF document', onError }
       ref={root}
       role="region"
       aria-label={label}
+      // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a scrollable region must be focusable for the keyboard to scroll it
       tabIndex={0}
       className="min-h-0 min-w-0 flex-1 overflow-auto p-3"
     >

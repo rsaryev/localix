@@ -16,7 +16,7 @@ The findings behind each item, with counts and paths, are in [the audit](audit.m
 | ----------------------- | ---------------------- | -------------------------------------------------------------- | -------------------------------------------------------------- |
 | [x] Provider connection | `provider.connection`  | Route repair; provider condition cleanup                       | `apps/api/src/features/provider-connections/`                  |
 | [x] Project             | `project`              | Mini app backend host refresh                                  | `apps/api/src/features/projects/`                              |
-| [x] Agent               | `agent` by key         | Seat and handle repair                                         | `apps/api/src/features/agents/`                                |
+| [x] Agent               | `agent` by key         | Session agent and handle repair                                | `apps/api/src/features/agents/`                                |
 | [x] MCP server, plugin  | `mcp`, `plugin` by key | Capability cleanup: rules, OAuth tokens, vault bindings        | `apps/api/src/features/mcp/`, `apps/api/src/features/plugins/` |
 | [x] Capability rule     | `capability.rule`      | Relay; semantic index                                          | `apps/api/src/features/capabilities/`                          |
 | [x] Message edit        | `chat.message`         | Semantic index                                                 | `apps/api/src/features/chat/`                                  |
@@ -52,7 +52,7 @@ scheduling, terminal lifecycle and the session event stream.
 - [x] Cross-feature cycles in the API shrink to zero (A6).
 - [x] UI slices stop importing each other (A8, enforced at a baseline of 0).
 - [ ] Every UI slice gains a public entry that outsiders import instead of its internals.
-- [x] Desktop calls go through `platformCapabilities` (the inspector and companion are guarded).
+- [x] Desktop calls go through `platformCapabilities` (the inspector is guarded).
 
 ## Client synchronization
 

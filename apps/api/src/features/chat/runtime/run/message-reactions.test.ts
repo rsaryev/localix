@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 
 import { createDatabase, destroyDatabase } from '../../../../db/connection'
 import { migrateToLatest } from '../../../../db/migrator'
-import { agentParticipant, USER_PARTICIPANT, type ParticipantRef } from '../../../../db/participant'
+import { USER_AUTHOR } from '../../../../db/author'
 import { sessionFixture } from '../../../../testing/session-fixture'
 import type { AgentStreamEvent } from '../../contracts'
 import { createChatRepository } from '../../repository'
@@ -30,7 +30,7 @@ describe('persisted message reactions', () => {
       id: messageId,
       userId,
       sessionId,
-      payload: { id: messageId, role: 'user', from: USER_PARTICIPANT, content: 'Keep this text' },
+      payload: { id: messageId, role: 'user', from: USER_AUTHOR, content: 'Keep this text' },
       createdAt,
       updatedAt: createdAt,
     })
@@ -45,12 +45,11 @@ describe('persisted message reactions', () => {
     await destroyDatabase(db)
   })
 
-  const react = (from: ParticipantRef = USER_PARTICIPANT, emoji = '👍', remove = false) =>
+  const react = (emoji = '👍', remove = false) =>
     setMessageReaction(io, {
       userId,
       sessionId,
       messageId,
-      from,
       emoji,
       remove,
     })
@@ -61,7 +60,7 @@ describe('persisted message reactions', () => {
     assert(stored, 'the reacted message must remain persisted')
     expect(stored?.payload).toMatchObject({
       content: 'Keep this text',
-      reactions: [{ emoji: '👍', from: USER_PARTICIPANT, at }],
+      reactions: [{ emoji: '👍', from: USER_AUTHOR, at }],
     })
     expect(events).toEqual([{ type: 'message.updated', sessionId, message: stored }])
 
@@ -71,22 +70,17 @@ describe('persisted message reactions', () => {
     expect(events).toHaveLength(1)
   })
 
-  test('removal preserves other authors and other emoji, publishing the stored result', async () => {
-    const agent = agentParticipant('builtin:localix')
+  test('removal preserves other emoji, publishing the stored result', async () => {
     await react()
-    await react(agent)
-    await react(USER_PARTICIPANT, '🎉')
+    await react('🎉')
     events.length = 0
 
-    expect(await react(USER_PARTICIPANT, '👍', true)).toBe(true)
+    expect(await react('👍', true)).toBe(true)
     const stored = await io.repo.getMessage(userId, sessionId, messageId)
     assert(stored, 'removing a reaction must preserve the message')
-    expect(stored?.payload.reactions).toEqual([
-      { emoji: '👍', from: agent, at },
-      { emoji: '🎉', from: USER_PARTICIPANT, at },
-    ])
+    expect(stored?.payload.reactions).toEqual([{ emoji: '🎉', from: USER_AUTHOR, at }])
     expect(events).toEqual([{ type: 'message.updated', sessionId, message: stored }])
-    expect(await react(USER_PARTICIPANT, '👍', true)).toBe(false)
+    expect(await react('👍', true)).toBe(false)
     expect(events).toHaveLength(1)
   })
 
@@ -97,7 +91,6 @@ describe('persisted message reactions', () => {
           userId,
           sessionId,
           messageId,
-          from: USER_PARTICIPANT,
           emoji: '👍',
           ...overrides,
         }),

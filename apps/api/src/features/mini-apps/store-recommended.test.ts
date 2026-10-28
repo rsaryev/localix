@@ -28,7 +28,7 @@ async function hosted() {
     },
   }
   return (async (input: string | URL | Request) =>
-    String(input) === CATALOG
+    String(input instanceof Request ? input.url : input) === CATALOG
       ? Response.json({ schema: 1, apps: [app] })
       : new Response('missing', { status: 404 })) as unknown as typeof fetch
 }

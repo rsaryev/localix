@@ -33,7 +33,7 @@ const SKILL_DESC_MAX = 1536
 const SKILL_LISTING_BUDGET = 8000
 
 function omittedSkillsNotice(count: number): string {
-  return `[${count} additional skill${count === 1 ? '' : 's'} omitted: use the \`skill\` tool with action="list" to inspect the full roster.]`
+  return `[${count} additional skill${count === 1 ? '' : 's'} omitted: use \`Skill\` with action="list" to inspect the full roster.]`
 }
 
 interface RenderableSkillLine {

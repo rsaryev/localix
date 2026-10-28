@@ -12,7 +12,43 @@ import { runAgentLoop } from './index'
 import type { LoopInput } from './loop'
 
 const log: string[] = []
-function tool(name: string, extra: Partial<AgentTool> = {}, ms = 30): AgentTool {
+/**
+ * A point the test holds a call at: `arrived` settles when the code under test reaches it, and the
+ * call goes on only after `release()`. The test stops the run between the two.
+ */
+interface Gate {
+  arrived: Promise<void>
+  arrive: () => void
+  released: Promise<void>
+  release: () => void
+}
+const gates = new Map<string, Gate>()
+function gate(id: string): Gate {
+  let found = gates.get(id)
+  if (!found) {
+    let arrive!: () => void
+    let release!: () => void
+    found = {
+      arrived: new Promise<void>((resolve) => (arrive = resolve)),
+      arrive,
+      released: new Promise<void>((resolve) => (release = resolve)),
+      release,
+    }
+    gates.set(id, found)
+  }
+  return found
+}
+
+/** Stop the run once `id` is in flight, then let it go on: it ends after the stop. */
+function stopWhenReached(id: string, run: { abort: (reason: string) => void }) {
+  void gate(id).arrived.then(() => {
+    run.abort('stop')
+    gate(id).release()
+  })
+}
+
+/** A tool that holds at its gate when `held`, and otherwise yields once so parallel calls overlap. */
+function tool(name: string, extra: Partial<AgentTool> = {}, held = false): AgentTool {
   return defineAgentTool({
     name,
     description: name,
@@ -21,7 +57,12 @@ function tool(name: string, extra: Partial<AgentTool> = {}, ms = 30): AgentTool 
     async execute(_id, input) {
       const { id } = input as { id: string }
       log.push(`start:${id}`)
-      await Bun.sleep(ms)
+      if (held) {
+        gate(id).arrive()
+        await gate(id).released
+      } else {
+        await new Promise((resolve) => setTimeout(resolve, 0))
+      }
       log.push(`end:${id}`)
       return { content: id }
     },
@@ -35,6 +76,7 @@ function start(
   input: Partial<LoopInput> & { tools: AgentTool[] },
 ) {
   log.length = 0
+  gates.clear()
   const { session, requests } = scriptedSession([{ calls }, say('done')])
   const run = runAgentLoop({
     sessionId: 's',
@@ -74,12 +116,12 @@ describe('a writer that never said it may overlap runs alone', () => {
 
 describe('a stopped batch answers every call', () => {
   test('calls never reached end as cancelled, announced and paired with a result', async () => {
-    const serial = tool('serial', { executionMode: 'sequential' }, 80)
+    const serial = tool('serial', { executionMode: 'sequential' }, true)
     const { run } = start(
       ['a', 'b', 'c'].map((id) => ({ name: 'serial', arguments: { id } })),
       { tools: [serial] },
     )
-    setTimeout(() => run.abort('stop'), 20)
+    stopWhenReached('a', run)
     const { events, result } = await collect(run)
     expect(result).toMatchObject({ terminal: 'aborted' })
     expect(starts(events)).toBe(3)
@@ -93,11 +135,15 @@ describe('a stopped batch answers every call', () => {
   })
 
   test('a call stopped while it waits on a conflicting one, or in the gate, reads as cancelled', async () => {
-    const edit = tool('edit', {
-      executionMode: 'parallel',
-      mutates: true,
-      parallelScopePaths: pathOf,
-    })
+    const edit = tool(
+      'edit',
+      {
+        executionMode: 'parallel',
+        mutates: true,
+        parallelScopePaths: pathOf,
+      },
+      true,
+    )
     const waiting = start(
       [
         { name: 'edit', arguments: { id: 'e1', path: '/a' } },
@@ -105,7 +151,7 @@ describe('a stopped batch answers every call', () => {
       ],
       { tools: [edit] },
     )
-    setTimeout(() => waiting.run.abort('stop'), 10)
+    stopWhenReached('e1', waiting.run)
     const waited = await collect(waiting.run)
     expect(ends(waited.events).map((event) => event.result.error?.kind)).toEqual([
       'aborted',
@@ -115,16 +161,19 @@ describe('a stopped batch answers every call', () => {
     const gated = start([{ name: 'edit', arguments: { id: 'g', path: '/b' } }], {
       tools: [edit],
       beforeToolCall: (_context, signal) =>
-        new Promise((resolve) => signal.addEventListener('abort', () => resolve(undefined))),
+        new Promise((resolve) => {
+          signal.addEventListener('abort', () => resolve(undefined))
+          gate('in-gate').arrive()
+        }),
     })
-    setTimeout(() => gated.run.abort('stop'), 10)
+    void gate('in-gate').arrived.then(() => gated.run.abort('stop'))
     const { events } = await collect(gated.run)
     expect(ends(events)[0]!.result.error?.kind).toBe('aborted')
     expect(log).not.toContain('start:g')
   })
 
   test('a stop while the batch drains admits nothing more: no gate, no guard', async () => {
-    const read = tool('read', { executionMode: 'parallel' }, 60)
+    const read = tool('read', { executionMode: 'parallel' }, true)
     const barrier = tool('barrier', { executionMode: 'sequential' })
     const gated: string[] = []
     const { run } = start(
@@ -137,22 +186,23 @@ describe('a stopped batch answers every call', () => {
         beforeToolCall: async (context) => (gated.push(context.toolName), undefined),
       },
     )
-    setTimeout(() => run.abort('stop'), 20)
+    stopWhenReached('r', run)
     const { events } = await collect(run)
     expect(gated).toEqual(['read'])
     expect(ends(events).map((event) => event.toolCallId)).toHaveLength(2)
   })
 
   test('a call that finished before the stop is not cancelled by a slow after-hook', async () => {
-    const quick = tool('quick', {}, 1)
+    const quick = tool('quick')
     const { run } = start([{ name: 'quick', arguments: { id: 'q' } }], {
       tools: [quick],
       afterToolCall: async () => {
-        await Bun.sleep(40)
+        gate('after').arrive()
+        await gate('after').released
         return undefined
       },
     })
-    setTimeout(() => run.abort('stop'), 15)
+    stopWhenReached('after', run)
     const { events } = await collect(run)
     expect(ends(events)[0]!.result).toMatchObject({ content: 'q' })
     expect(ends(events)[0]!.result.error).toBeUndefined()

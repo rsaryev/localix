@@ -1,4 +1,5 @@
 import { afterAll, afterEach, beforeAll, expect, spyOn, test } from 'bun:test'
+import { tap } from '@/testing/hookProbe'
 import type { CommentActionContribution, CommentBatch } from '@localixai/mini-app-sdk/ui'
 import { useComments, useScopeComments } from '@localixai/mini-app-sdk/ui/comments'
 import { registerDom } from '@localixai/kit/testing/dom'
@@ -25,7 +26,7 @@ async function mountBatch() {
   const React = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { useCommentBatch } = await import('./useCommentBatch')
-  let run: ((action: CommentActionContribution) => Promise<void>) | null = null
+  const run = tap<(action: CommentActionContribution) => Promise<void>>()
   function Harness() {
     const comments = useScopeComments(SCOPE)
     const batch = useCommentBatch({
@@ -39,14 +40,14 @@ async function mountBatch() {
       }),
       title: (files) => `Review ${files.length} file`,
     })
-    run = batch.runAction
+    run.put(batch.runAction)
     return null
   }
   const host = document.createElement('div')
   const root = createRoot(host)
   await React.act(async () => root.render(<Harness />))
   return {
-    run: (action: CommentActionContribution) => React.act(async () => run!(action)),
+    run: (action: CommentActionContribution) => React.act(async () => run.value!(action)),
     unmount: () => React.act(async () => root.unmount()),
   }
 }

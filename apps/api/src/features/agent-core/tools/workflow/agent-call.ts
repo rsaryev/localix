@@ -43,27 +43,15 @@ const labelOf = (prompt: string) => {
   return line.length > 60 ? `${line.slice(0, 57)}…` : line
 }
 
-const optionString = (options: Record<string, unknown>, name: string): string | undefined => {
-  const value = options[name]
-  if (value === undefined) return undefined
-  if (typeof value !== 'string' || !value.trim())
-    throw new Error(`agent() option "${name}" takes a string`)
-  return value.trim()
-}
-
 /** The request the host runs, from the script's prompt and options. */
 function agentRequest(prompt: string, options: Record<string, unknown>) {
   const isolation = options.isolation
   if (isolation !== undefined && isolation !== 'worktree')
     throw new Error(`agent() option "isolation" takes 'worktree'; got ${JSON.stringify(isolation)}`)
-  const model = optionString(options, 'model')
-  const effort = optionString(options, 'effort')
   return {
     label: typeof options.label === 'string' ? options.label : labelOf(prompt),
     ...(typeof options.phase === 'string' ? { phase: options.phase } : {}),
     ...(typeof options.agentType === 'string' ? { agentType: options.agentType } : {}),
-    ...(model ? { model } : {}),
-    ...(effort ? { effort } : {}),
     ...(isolation ? { isolation: 'worktree' as const } : {}),
   }
 }
@@ -91,8 +79,9 @@ export async function runAgentCall(
     return { value: claim.cached.value ?? null, spent: state.spent }
   }
   const journal = (entry: Omit<JournalEntry, 'index' | 'key'>) => {
-    // A stop of the whole run counts no agent as failed: it starts over on a resume.
-    if (ctx.runSignal.aborted) return
+    // A stop of the whole run counts no agent as failed: it starts over on a resume. So does a
+    // call the script abandoned by settling first (a promise it never awaited): it did not fail.
+    if (ctx.runSignal.aborted || callSignal.aborted) return
     state.record?.({ index: claim.index, key: claim.key, ...entry })
   }
   let retry = ''

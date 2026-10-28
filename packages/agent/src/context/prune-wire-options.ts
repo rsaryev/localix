@@ -9,7 +9,7 @@ import type { Message } from '../types'
 
 export interface PruneWireOptions {
   /**
-   * Whether `tool_output` is present in the effective model tool roster.
+   * Whether `ToolOutput` is present in the effective model tool roster.
    * Defaults to true for backward compatibility. When false, compression still
    * bounds the wire but emits reread/rerun guidance instead of a dead tool call.
    */

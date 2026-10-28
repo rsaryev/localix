@@ -18,7 +18,7 @@ export interface K8sSelection {
 
 const SELECTION_KEY = 'localix.k8s.selection'
 
-/** Read the persisted selection, tolerating a missing/partial/legacy blob. */
+/** Read the persisted selection, dropping anything malformed. */
 export function loadK8sSelection(): K8sSelection {
   const stored = loadJSON<Partial<K8sSelection>>(SELECTION_KEY)
   const namespaceByContext =

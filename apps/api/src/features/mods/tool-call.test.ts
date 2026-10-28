@@ -1,13 +1,14 @@
 import { describe, expect, test } from 'bun:test'
 import { z } from 'zod'
 import { defineAgentTool, type AgentTool } from '@localixai/agent/agents'
+import { createModRunScope } from './run-scope'
 import { hostWithMod } from './testing/testing-host'
 
 /** `tool.call` as a mod meets it around Localix's tools. */
 
 function bash(run: () => { content: string; isError?: boolean } = () => ({ content: 'hi\n' })) {
   return defineAgentTool({
-    name: 'bash',
+    name: 'Bash',
     description: 'bash',
     activeVerb: 'Running',
     inputSchema: z.object({ command: z.string() }),
@@ -42,7 +43,7 @@ describe('tool.call', () => {
     })
     let got: unknown
     const store = defineAgentTool({
-      name: 'store',
+      name: 'Store',
       description: 'store',
       activeVerb: 'Searching',
       inputSchema: z.object({ action: z.string() }).strict(),
@@ -54,5 +55,29 @@ describe('tool.call', () => {
     const [tool] = scope.wrapTools([store])
     await tool!.execute('t1', { action: 'search' }, new AbortController().signal)
     expect(Object.keys(got as object)).toEqual(['action'])
+  })
+
+  test('a subagent’s call reaches its tool without the agent id the mod was shown', async () => {
+    const { host, scene } = await hostWithMod((on) => {
+      on('tool.call', async (_$, _e, next) => next())
+    })
+    const scope = await createModRunScope(host, scene, new Set(['m']), {
+      model: 'model-a',
+      agentId: 'LOCALIX-9',
+    })
+    let got: unknown
+    const store = defineAgentTool({
+      name: 'Store',
+      description: 'store',
+      activeVerb: 'Searching',
+      inputSchema: z.object({ action: z.string() }).strict(),
+      execute: async (_id, input) => {
+        got = input
+        return { content: 'ok' }
+      },
+    }) as AgentTool
+    const [tool] = scope.wrapTools([store])
+    await tool!.execute('t1', { action: 'search' }, new AbortController().signal)
+    expect(got).toEqual({ action: 'search' })
   })
 })

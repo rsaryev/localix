@@ -15,7 +15,7 @@ import { createToolOutputTool } from './context-search'
 
 const tempDir = makeTempDir('localix-context-search')
 
-describe('tool_output tool', () => {
+describe('ToolOutput tool', () => {
   beforeAll(async () => {
     await mkdir(tempDir, { recursive: true })
   })
@@ -39,7 +39,7 @@ describe('tool_output tool', () => {
       userId: 'u1',
       sessionId: 's1',
       toolCallId: 'call_1',
-      toolName: 'bash',
+      toolName: 'Bash',
       text: `error: connection refused at db.ts:12\n\n${'noise\n'.repeat(300)}`,
     })
     const tool = createToolOutputTool(store, repo, 'u1', 's1')
@@ -60,7 +60,7 @@ describe('tool_output tool', () => {
       userId: 'u1',
       sessionId: 's1',
       toolCallId: 'call_big',
-      toolName: 'bash',
+      toolName: 'Bash',
       text: `first section mentions kangaroo\n\n${'filler line\n'.repeat(600)}\nlater section mentions platypus`,
     })
 
@@ -100,7 +100,7 @@ describe('tool_output tool', () => {
       userId: 'u1',
       sessionId: 's1',
       toolCallId: 'call_recent',
-      toolName: 'bash',
+      toolName: 'Bash',
       text: 'recent output mentions armadillo',
     })
 
@@ -141,7 +141,7 @@ describe('tool_output tool', () => {
       userId: 'u1',
       sessionId: 's1',
       toolCallId: 'call_small',
-      toolName: 'bash',
+      toolName: 'Bash',
       text: 'small output mentions armadillo',
     })
     const tool = createToolOutputTool(store, repo, 'u1', 's1')
@@ -160,7 +160,7 @@ describe('tool_output tool', () => {
       userId: 'u1',
       sessionId: 's1',
       toolCallId: 'call_whole',
-      toolName: 'bash',
+      toolName: 'Bash',
       text: `error: connection refused\n\n${'noise\n'.repeat(300)}`,
     })
     expect(await store.hasHeadChunk('u1', 's1', 'call_whole')).toBe(true)
@@ -205,7 +205,7 @@ describe('tool_output tool', () => {
             {
               id: 'call_full',
               toolCallId: 'call_full',
-              name: 'bash',
+              name: 'Bash',
               type: 'command' as const,
               status: 'completed' as const,
               resultText: 'FULL ORIGINAL OUTPUT',
@@ -249,7 +249,7 @@ describe('tool_output tool', () => {
             items: [
               {
                 type: 'tool_call',
-                name: 'bash',
+                name: 'Bash',
                 toolCallId: 'call_lazy',
                 status: 'completed',
                 resultText: 'the elusive marmot appeared in the logs',
@@ -273,7 +273,7 @@ describe('tool_output tool', () => {
   // "Not indexed" is the skip policy's OUTCOME for a search/recovery result, not a gap the
   // self-heal should close. Closing it would file a search result in the index and let its
   // hits echo — and a stale compaction handle is enough to trigger exactly that.
-  test('refuses to lazy-index a search result, and points at tool_output instead', async () => {
+  test('refuses to lazy-index a search result, and points at ToolOutput instead', async () => {
     const { store } = await setup()
     const repo: Pick<ChatRepository, 'findActiveBranchToolCallMessage'> = {
       findActiveBranchToolCallMessage: async () =>
@@ -282,7 +282,7 @@ describe('tool_output tool', () => {
             items: [
               {
                 type: 'tool_call',
-                name: 'tool_output',
+                name: 'ToolOutput',
                 toolCallId: 'call_echo',
                 status: 'completed',
                 resultText: 'the elusive marmot appeared in the logs',
@@ -299,7 +299,7 @@ describe('tool_output tool', () => {
       () => {},
     )
     expect(result.isError).toBe(true)
-    expect(result.content).toContain('tool_output(action="get", tool_call_id="call_echo")')
+    expect(result.content).toContain('ToolOutput(action="get", tool_call_id="call_echo")')
     expect(await store.hasChunks('u1', 's1', 'call_echo')).toBe(false)
   })
 

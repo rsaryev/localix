@@ -19,7 +19,6 @@ export interface SessionPlansTable {
   title: string
   /** Markdown, capped at ingress. */
   body: string
-  author_agent_id: string
   /** The permission mode the approval switched the conversation to. */
   approved_mode: Nullable<string>
   /** Review rounds sent so far — the `<n>` of the round's once-ever delivery key. */

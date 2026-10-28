@@ -10,36 +10,23 @@ import type { AgentToolResult } from './tool-result'
  * extension-owned renderers live OUTSIDE core without the host hardcoding their concepts —
  * the host wires it once; mini apps consume it. Optional; tools tolerate its absence.
  */
-/** A speaker's place in its conversation, bound by the host. */
-export type SpeakerRole = 'leader' | 'member' | 'solo'
-
 export interface ToolSessionContext {
   /** The current session id. */
   id: string
   /** A session-scoped scratch directory a tool may write/read (host-writable). */
   scratchDir: string
   /**
-   * The agent this run speaks as, bound by the host.
+   * The agent this run belongs to, bound by the host.
    *
    * A tool that records WHO did something — a board card taken, a claim made — must not take the
-   * actor from its input, where a model could name any agent. The host knows which participant's
-   * turn it is; it stamps that here. Absent when the run has no addressable speaker.
+   * actor from its input, where a model could name any agent. The host knows which agent's
+   * turn it is; it stamps that here. Absent when the run has no addressable agent.
    */
-  speaker?: {
+  agent?: {
     /** The stable registry identity. */
     agentId: string
-    /** The name the conversation addresses it by, without `@`. */
-    handle: string
-    /**
-     * Its place in the conversation: `solo` when it is the only participant, `leader` when it
-     * leads a group, `member` otherwise. Absent from older hosts; a tool treats that as leader.
-     */
-    role?: SpeakerRole
-    /**
-     * For a `member`: the elected leader's handle, without `@`, so a tool can say whom to ask.
-     * Absent for a leader, a solo speaker, or an older host.
-     */
-    leader?: string
+    /** The name the conversation addresses it by, (its Claude Code `name`). */
+    name: string
   }
   /**
    * Publish ONE mini app→UI command as a typed, REPLAYABLE session-stream frame. The host
@@ -54,7 +41,7 @@ export interface ToolSessionContext {
   /**
    * The round-trip variant of {@link emitCommand}: publish the command AND await
    * the client sink's reply, correlated server-side by the frame's `commandId`
-   * (mirroring the `browser` tool's probe relay). The promise always settles —
+   * (mirroring the `Browser` tool's probe relay). The promise always settles —
    * never rejects: no client answering within the timeout resolves
    * `{ ok: false, noReply: true }`, so a tool can report "the UI didn't answer"
    * honestly instead of crashing. Optional and narrower than it looks: only hosts
@@ -78,25 +65,7 @@ export type ToolCommandReplyOutcome =
   | { ok: true; result: unknown }
   | { ok: false; error: string; noReply?: boolean }
 
-/** How a tool call made on another tool's behalf ({@link AgentToolExecutionContext.callTool}) ended. */
-export interface NestedToolCallOutcome {
-  result: AgentToolResult
-  isError: boolean
-}
-
 export interface AgentToolExecutionContext {
-  /**
-   * Run another of this run's tools on this tool's behalf, through the pipeline a call the model
-   * makes goes through: input validation, the permission gate and the host's before hooks. The
-   * result comes back raw: the host's after hooks (gate notes, externalized output, reminders)
-   * belong to the model-facing call, never to a script's input.
-   * A tool that calls tools (`codemode`) must use this rather than call an implementation directly,
-   * or its calls would skip every rule the person set.
-   *
-   * Never rejects for the nested tool's failure: an unknown tool, invalid input, a blocked call or
-   * a thrown error come back with `isError: true`. Absent where the runtime cannot run nested calls.
-   */
-  callTool?(name: string, input: unknown, signal?: AbortSignal): Promise<NestedToolCallOutcome>
   humanInLoop?: HumanInLoopController
   /** Available when agent-runner supports kill / background-process tracking. */
   asyncRegistry?: AsyncToolRegistry

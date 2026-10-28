@@ -33,7 +33,7 @@ const KIT_LENT_DIR = resolve(repoRoot, 'apps/ui/src/app/kit')
  * Vite's `import.meta.glob` calls are entries too — the feature contributions and the UI
  * surface manifest — and a `node:` import behind one of those is in the bundle exactly as
  * much as one behind `main.tsx`. Every bundled mini app's `ui/register` is the entry of its
- * own browser artifact (`apps/api/src/features/mini-apps/authoring/ui-build.ts`), so it is walked
+ * own browser artifact (`plugins/mini-app-authoring/src/build/ui-build.ts`), so it is walked
  * the same way.
  */
 const WEB_ENTRY_GLOBS = [

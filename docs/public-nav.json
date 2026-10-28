@@ -37,8 +37,6 @@
             "features/configure.md",
             "features/project-instructions.md",
             "features/sessions-and-projects.md",
-            "features/conversations.md",
-            "features/group-routing.md",
             "features/decision-models.md",
             "features/conversation-history.md",
             "features/attachments.md",
@@ -47,8 +45,7 @@
             "features/background-work.md",
             "features/interactive-terminals.md",
             "features/monitors.md",
-            "features/loops.md",
-            "features/agent-companion.md"
+            "features/loops.md"
           ]
         },
         {
@@ -110,7 +107,9 @@
           "pages": [
             "features/mcp.md",
             "features/hooks-and-commands.md",
+            "features/claude-code-commands.md",
             "features/hook-tool-calls.md",
+            "features/hook-handlers.md",
             "features/execution-environments.md",
             "features/secrets.md",
             "features/webhook.md"

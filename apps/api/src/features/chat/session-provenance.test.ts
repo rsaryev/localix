@@ -21,7 +21,6 @@ const cases: Array<[SessionProvenance, 'interactive' | 'isolated-worker' | 'pass
       kind: 'task-delegation',
       parentSessionId: 'p',
       toolCallId: 'tool',
-      parentParticipant: 'lead',
     },
     'isolated-worker',
   ],
@@ -46,7 +45,7 @@ const cases: Array<[SessionProvenance, 'interactive' | 'isolated-worker' | 'pass
     },
     'isolated-worker',
   ],
-  // A fork of its parent's line (`delegate` with `context: "fork"`): a delegated child like any,
+  // A fork of its parent's line (`Agent` with `context: "fork"`): a delegated child like any,
   // plus the rows it inherits and its own copy of the row the call was made in.
   [
     {
@@ -97,7 +96,7 @@ describe('session provenance', () => {
       '{"kind":"old"}',
       '{"kind":"legacy-unknown"}', // the pre-migration spelling is itself unknown now
       '{"kind":"unknown-origin","extra":"forged"}',
-      // A role label was a second identity next to the participant's AgentId, and no writer
+      // A role label was a second identity next to the agent's AgentId, and no writer
       // produces it: accepting it would let a stale label ride along unseen.
       '{"kind":"task-delegation","parentSessionId":"p","toolCallId":"t","roleId":"r"}',
       '{"kind":"skill-fork","parentSessionId":"p","roleId":"r"}',

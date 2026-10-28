@@ -34,7 +34,6 @@ const plan = (n: number, overrides: Partial<SessionPlan> = {}): SessionPlan => (
   status: 'presented',
   title: `Cache v${n}`,
   body: '## Goal\nFast',
-  authorAgentId: 'lead',
   approvedMode: null,
   createdAt: '2026-10-03T00:00:00.000Z',
   decidedAt: null,
@@ -77,7 +76,7 @@ describe('a plan waiting for review, in the journal', () => {
       topic: 'hitl.required',
       category: 'human-input',
       severity: 'warning',
-      title: '@lead presented a plan',
+      title: 'lead presented a plan',
       body: 'Plan v1: Cache v1',
       state: 'open',
       origin: { kind: 'resource', resourceKind: 'plan', resourceId: 'p1', label: 'Plan' },
@@ -138,7 +137,7 @@ describe('the other sources keep their rows', () => {
     const { producers } = await setup()
     const hitl = createHitlRegistry({ lifecycle: producers.hitl })
     const request = { id: 'r1', kind: 'ask', title: 'Pick a region', payload: { q: 1 } } as never
-    hitl.trackRequest('R', 'm1', 'call-1', 'ask', request, U)
+    hitl.trackRequest('R', 'm1', 'call-1', 'AskUserQuestion', request, U)
     expect(producers.attention.list(U)[0]).toMatchObject({
       key: 'hitl:r1',
       kind: 'interaction',
@@ -147,7 +146,7 @@ describe('the other sources keep their rows', () => {
       interaction: {
         messageId: 'm1',
         toolCallId: 'call-1',
-        toolName: 'ask',
+        toolName: 'AskUserQuestion',
         request: { requestId: 'r1', kind: 'ask', title: 'Pick a region', payload: { q: 1 } },
       },
     })
@@ -172,7 +171,7 @@ describe('the other sources keep their rows', () => {
     expect(producers.attention.list(U)[0]).toMatchObject({
       kind: 'mention',
       summary: 'Ship it?',
-      subject: { messageId: 'm1', agentHandle: 'qa' },
+      subject: { messageId: 'm1', agentName: 'qa' },
     })
     producers.mentions.answered(U, 'R')
     expect((await inbox()).get('mention:R:m1')).toMatchObject({ settleReason: 'answered' })

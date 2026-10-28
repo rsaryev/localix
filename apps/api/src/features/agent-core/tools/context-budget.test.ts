@@ -12,7 +12,7 @@ const frame = {
   checkpointAtTokens: 195_840,
 }
 
-describe('context_budget', () => {
+describe('ContextBudget', () => {
   test('reports the measured figure, its provenance and the remaining room', () => {
     const text = describeContextBudget({ ...frame, measuredTokens: 24_393 })
     expect(text).toContain('24,393 of 230,400 tokens (11%)')
@@ -58,12 +58,12 @@ describe('context_budget', () => {
         toolTokens: 9_000,
         toolCount: 15,
         heaviestTools: [
-          { name: 'activate_tools', tokens: 4_100 },
-          { name: 'browser', tokens: 842 },
+          { name: 'ToolSearch', tokens: 4_100 },
+          { name: 'Browser', tokens: 842 },
         ],
       },
     })
     expect(text).toContain('prompt 2,000, 15 tool schemas 9,000')
-    expect(text).toContain('heaviest: activate_tools 4,100, browser 842')
+    expect(text).toContain('heaviest: ToolSearch 4,100, Browser 842')
   })
 })

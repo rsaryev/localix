@@ -184,7 +184,7 @@ export function createAppServicesPhase({
     describeCommands: (commands) => describeCommands(serviceRefs.modsHost, commands),
   })
 
-  // The `configure` tool's host. Every write path it delegates to already exists above or in
+  // The `Configure` tool's host. Every write path it delegates to already exists above or in
   // the domain phase; this only binds them as ports. Forward-held because the chat runtime
   // (which builds the tool) was composed before the apply service (which lands a change).
   serviceRefs.configProposals = createConfigProposalService({
@@ -279,7 +279,7 @@ export function createAppServicesPhase({
     owner: env.LOCALIX_DEFAULT_USER_ID,
     ...(storeSearchProvider ? { storeSearchProvider } : {}),
   })
-  serviceRefs.globalSearch = searchService // the agent's `global_search`; chat is built first
+  serviceRefs.globalSearch = searchService // the agent's `GlobalSearch`; chat is built first
 
   return {
     systemService,

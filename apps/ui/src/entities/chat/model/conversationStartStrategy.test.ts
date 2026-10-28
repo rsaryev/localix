@@ -19,7 +19,7 @@ const state = (over: Partial<ChatStore> = {}) =>
         id: 'session-a',
         projectId: 'project-a',
         sessionKind: 'chat',
-        agents: [{ agentId: 'builtin:reviewer', handle: 'reviewer' }],
+        agent: { agentId: 'builtin:reviewer', handle: 'reviewer' },
       },
     ],
     ...over,
@@ -55,7 +55,7 @@ describe('conversation start strategies', () => {
     ])
   })
 
-  test('the ordinary action inherits the current participant only inside the same scope', () => {
+  test('the ordinary action inherits the current agent only inside the same scope', () => {
     expect(resolveConversationStart(state(), scopedNewConversation('project-a'))).toMatchObject({
       projectId: 'project-a',
       agentId: 'builtin:reviewer',

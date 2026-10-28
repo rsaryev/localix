@@ -70,7 +70,10 @@ describe('database sidebar config request scope', () => {
     let state: ReturnType<typeof UseDatabaseSidebar> | null = null
 
     function Harness() {
-      state = useDatabaseSidebar('chat-a', model)
+      const latest = useDatabaseSidebar('chat-a', model)
+      React.useEffect(() => {
+        state = latest
+      })
       return null
     }
 

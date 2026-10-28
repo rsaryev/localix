@@ -2,7 +2,7 @@ import { cachedIn, fieldOf, fireIn, hearsIn, type ModEventScope } from './event-
 
 /**
  * The runtime context a turn carries through the mods. Localix sends what Claude Code puts in a
- * conversation's first user message — the date, the environment, the participants, the jobs —
+ * conversation's first user message — the date, the environment, the agents, the jobs —
  * as keyed sections inside the conversation (`agent-core/prompt/runtime-sections.ts`): a standing
  * (`state`) section is a `prompt.context` block, named by its key; a section about this turn
  * alone (`turn`: a reminder, a hook's context, the turn's trigger) is an attachment the engine

@@ -8,10 +8,10 @@ no cached tool inventory are named but not counted.
 
 ## What you can do
 
-| Action                        | Mechanism                                                   | Boundary                                                                  |
-| ----------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------- |
-| Check the current surface     | Inspect Settings → Permissions, or ask for `context_budget` | Settings shows configured tools; `context_budget` estimates schema tokens |
-| Remove a tool from later runs | A `tool:<name>` rule with effect `deny` for the agent       | The change applies to the next run; it does not interrupt a running turn  |
+| Action                        | Mechanism                                                  | Boundary                                                                 |
+| ----------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Check the current surface     | Inspect Settings → Permissions, or ask for `ContextBudget` | Settings shows configured tools; `ContextBudget` estimates schema tokens |
+| Remove a tool from later runs | A `tool:<name>` rule with effect `deny` for the agent      | The change applies to the next run; it does not interrupt a running turn |
 
 ## How it works
 
@@ -23,7 +23,7 @@ inventories. The report is available through `GET /rpc/tools/gc?projectId=<id>`;
 for the no-project scope. The UI does not display a separate tool-budget pill or unused-tool
 suggestions. The route accepts `sessionId`, but the current snapshot service does not use it to
 resolve an agent. The report is a project-level estimate; use the agent's Tools settings or a run's
-`context_budget` reading to inspect that agent's surface.
+`ContextBudget` reading to inspect that agent's surface.
 
 With no MCP server in scope, the estimator removes the MCP resource tools that cannot be assembled.
 It then counts the remaining built-in and mini app entries, plus the cached MCP tool entries.
@@ -57,8 +57,8 @@ surfaced tool must also have its own roster row; missing telemetry is not treate
 Each tool receives at most one verdict. Suggestions are ordered by verdict, call count, last-use
 time, and name.
 
-The report never suggests disabling `ask`, `bash`, `read`, `search`, `write`, `edit`, `tool_output`,
-or `set_topic`.
+The report never suggests disabling `AskUserQuestion`, `Bash`, `Read`, `Search`, `Write`, `Edit`, or
+`ToolOutput`.
 
 ## Configuration
 
@@ -76,7 +76,7 @@ agent's runs are judged by.
 - The count is explicitly an estimate. Cached MCP state can be incomplete, and the capability
   snapshot cannot predict every host-dependent tool assembled for a run.
 - When MCP servers exist but none advertises resources, the estimate can retain the MCP
-  resource-tool name `mcp_resources`. It proves that name absent only when no MCP server is present.
+  resource-tool name `McpResources`. It proves that name absent only when no MCP server is present.
 - Usage recording is fire-and-forget and swallows storage errors. Missing writes can delay or
   suppress a suggestion.
 - The unused-tool report is served by `GET /rpc/tools/gc` and no surface renders it. A switch and a

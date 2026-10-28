@@ -69,7 +69,7 @@ export function resolveLiveReadBudgetBytes(
 
 /**
  * How an elided read should be recovered:
- * - `live` — nothing touched it; `tool_output` replays its exact bytes.
+ * - `live` — nothing touched it; `ToolOutput` replays its exact bytes.
  * - `stale` — the file CHANGED after this read; a replay would hand the model content
  *   that no longer exists on disk. Only a fresh read is correct.
  * - `refreshed` — the model re-read the same file later, so the current bytes are
@@ -160,7 +160,7 @@ export function classifyReads(
       if (chars > minChars) for (const k of target.keys) supersededAfter.set(k, order)
       // Only `read` observes a whole file. `search`/`lsp` results describe many files
       // and are cheaply reproducible, so they stay ordinary compressible output.
-      if (item.name !== 'read' || item.status !== 'completed') continue
+      if (item.name !== 'Read' || item.status !== 'completed') continue
       const id = item.toolCallId
       if (!id) continue
       // Fate is classified for EVERY read (a huge one still needs the right pointer);

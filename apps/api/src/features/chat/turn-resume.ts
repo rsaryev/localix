@@ -97,7 +97,6 @@ function continuedNotice(ending: StoredSystemNotice): StoredSystemNotice {
     kind: 'run_continued',
     tone: 'neutral',
     text: `Continued ${after}`,
-    ...(ending.participant ? { participant: ending.participant } : {}),
   }
 }
 

@@ -4,7 +4,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 import { useChatStore } from '@/entities/chat/model/store'
-import { useActiveSessionSummary, useSessionRoster } from '@/entities/chat/model/useSessionRoster'
+import { useActiveSessionSummary, useAllSessions } from '@/entities/chat/model/useAllSessions'
 import { buildBreadcrumb, type BreadcrumbSegment } from '@/entities/chat/model/breadcrumb'
 import { useBreadcrumbNav } from '@/entities/chat/model/useBreadcrumbNav'
 import { useScopeCrumbItems } from './useScopeCrumbItems'
@@ -58,7 +58,7 @@ export function UnifiedBreadcrumb({
     })),
   )
   // List entries, not conversations: neither re-renders the bar on a streamed token.
-  const allSessions = useSessionRoster()
+  const allSessions = useAllSessions()
   const activeSession = useActiveSessionSummary()
   const nav = useRoutedNavigation()
 

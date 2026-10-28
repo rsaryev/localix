@@ -96,11 +96,13 @@ interface LeaseDependencies {
   scheduleDrain: (sessionId: string) => void
   /** How long a durable lease lasts before renewal (`keepAlive`); tests shorten it. */
   leaseMs?: number
+  /** Arms the wait before a failed drain is retried; tests fire it at once. */
+  armDrainRetry?: (fire: () => void, ms: number) => ReturnType<typeof setTimeout>
 }
 
 export const createLeaseOperations = (
   shared: WakeQueueSharedState,
-  { now, store, scheduleDrain, leaseMs = 60_000 }: LeaseDependencies,
+  { now, store, scheduleDrain, leaseMs = 60_000, armDrainRetry = setTimeout }: LeaseDependencies,
 ) => {
   const leaseOwner = randomUUID()
   const LEASE_MS = leaseMs
@@ -266,7 +268,7 @@ export const createLeaseOperations = (
     const attempt = shared.drainRetryAttempts.get(sessionId) ?? 0
     if (attempt >= 3) return
     shared.drainRetryAttempts.set(sessionId, attempt + 1)
-    const timer = setTimeout(
+    const timer = armDrainRetry(
       () => {
         shared.drainRetryTimers.delete(sessionId)
         scheduleDrain(sessionId)

@@ -22,7 +22,6 @@
  * delegated child runs under it.
  */
 import { z } from 'zod'
-import { ALL_MENTION_HANDLE } from '@localixai/agent/agents'
 
 import type { PermissionMode } from '../../contracts/permission-modes'
 import { planSnapshotPath } from '../agent-core/plan-paths'
@@ -55,10 +54,9 @@ export interface SessionPlan {
   /** Markdown. */
   body: string
   /**
-   * The participant that presented it — the one a review wakes. An approval names whoever the
-   * person chose instead (this author by default, another participant, or everyone).
+   * The agent that presented it — the one a review wakes. An approval names whoever the
+   * person chose instead (this author by default, another agent, or everyone).
    */
-  authorAgentId: string
   /** The mode the approval switched the conversation to. */
   approvedMode: PermissionMode | null
   createdAt: string
@@ -125,16 +123,8 @@ export type PlanDraft = z.infer<typeof planDraftSchema>
 
 export const planSessionParamsSchema = z.object({ id: z.string().min(1) })
 export const planParamsSchema = z.object({ id: z.string().min(1), planId: z.string().min(1) })
-/** Everyone in the conversation — the reserved address an approval may name instead of one. */
-export const APPROVAL_TO_ALL = ALL_MENTION_HANDLE
 export const approvePlanSchema = z.object({
   mode: z.enum(IMPLEMENTATION_MODES),
-  /**
-   * Who starts the work: a participant's handle, or `all`. Chosen from the conversation's own
-   * roster rather than written as free text, so it cannot name someone who is not in it (the
-   * service answers 400 for a handle that is not). Absent → the conversation's default answerer.
-   */
-  to: z.string().trim().min(1).max(200).optional(),
 })
 export const requestPlanChangesSchema = z.object({
   note: z.string().trim().max(10_000).optional(),

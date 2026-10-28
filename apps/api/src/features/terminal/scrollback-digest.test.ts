@@ -72,7 +72,7 @@ describe('buildTerminalDigest', () => {
     expect(digest).toContain('[exit 0] bun test')
     expect(digest).toContain('12 pass')
     expect(digest).toContain(`terminal_id "${base.id}"`)
-    expect(digest).toContain('`bash`')
+    expect(digest).toContain('`Bash`')
     expect(digest).toContain('keys:["Enter"]')
     expect(digest).not.toContain('`terminal` tool')
   })

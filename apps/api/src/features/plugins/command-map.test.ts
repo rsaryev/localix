@@ -43,7 +43,7 @@ describe('the commands object map', () => {
       description: 'Show the current deployment status',
       argumentHint: '[env]',
       model: 'haiku',
-      allowedTools: ['bash(kubectl get:*)'],
+      allowedTools: ['Bash(kubectl get:*)'],
       prompt: 'Report the status of $ARGUMENTS.',
     })
   })

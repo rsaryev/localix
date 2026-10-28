@@ -16,15 +16,15 @@ message in its view.
 
 ## What you can do
 
-| Action                    | Result                                                                                  | Boundary                                                                    |
-| ------------------------- | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| Set the context limit     | Model details → **Context limit**: **Auto**, a token step the model holds, or **Full**. | Shown only for a model whose window exceeds 272k plus its reserve.          |
-| Watch the usage ring      | See request size against the ceiling and the **Next checkpoint at** figure.             | Limits arrive with a run's first snapshot, at the session's depth.          |
-| See where the view begins | An **Earlier turns checkpointed** divider marks the last evicted message.               | Only the newest checkpoint is drawn; a topic change removes the line.       |
-| Keep a message whole      | Right-click a message → **Pin to agent context**; a pinned mark appears under it.       | The next checkpoint preserves it; a late pin uses a bounded context insert. |
-| Start a clean context     | Ask the agent to start a new topic, or open a new chat.                                 | Earlier messages stay visible in the stored transcript.                     |
-| Recover older output      | The agent follows `tool_output` handles or `global_search` pointers.                    | The tool must be in the agent's roster for its pointer to appear.           |
-| Replay a stored session   | Run `replay-context-policy <sessionId>` against `localix.db`.                           | Read-only; prints every number a checkpoint decision turned on.             |
+| Action                    | Result                                                                                  | Boundary                                                                     |
+| ------------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Set the context limit     | Model details → **Context limit**: **Auto**, a token step the model holds, or **Full**. | Shown only for a model whose window exceeds 272k plus its reserve.           |
+| Watch the usage ring      | See request size against the ceiling and the **Next checkpoint at** figure.             | Limits arrive with a run's first snapshot, at the session's depth.           |
+| See where the view begins | An **Earlier turns checkpointed** divider marks the last evicted message.               | Only the newest checkpoint is drawn; an old topic boundary removes the line. |
+| Keep a message whole      | Right-click a message → **Pin to agent context**; a pinned mark appears under it.       | The next checkpoint preserves it; a late pin uses a bounded context insert.  |
+| Start a clean context     | Open a new chat.                                                                        | Earlier messages stay visible in the stored transcript.                      |
+| Recover older output      | The agent follows `ToolOutput` handles or `GlobalSearch` pointers.                      | The tool must be in the agent's roster for its pointer to appear.            |
+| Replay a stored session   | Run `replay-context-policy <sessionId>` against `localix.db`.                           | Read-only; prints every number a checkpoint decision turned on.              |
 
 ### Context limit
 
@@ -42,8 +42,11 @@ cost more on every request and recall worse, so Auto stops at 272k even on a 1M 
 larger step when a task needs it, or a smaller one to save cost. A step remembered from a larger
 model reads as this model's Full.
 
-There is no command that summarizes the conversation with a model. The runtime checkpoints on its
-own, and a typed `/compact` is reported as an unknown command.
+No command summarizes the conversation with a model. The runtime checkpoints on its own, and
+`/compact` asks for one by hand: every agent of the chat takes a checkpoint on its next turn,
+whatever was measured, and a conversation already below the target is left whole. Text after the
+command, as in `/compact keep the plan`, goes to Claude Code's `PreCompact` hooks as
+`custom_instructions`; the cards are written without a model, so it does not steer them.
 
 When a card's request list must shrink, it retains the newest requests. Trusted amendments from a
 delegator remain labeled **assignment update**; ordinary runtime wakes are not quoted as requests.
@@ -71,26 +74,24 @@ wire from the same frame without re-firing a hook.
 Materialize runs these stages in order. The list is pinned by a repository test against the stage
 sources, so a stage cannot be added or renamed without this page changing:
 
-| Stage              | Kind         | Effect                                                                                                                                                             |
-| ------------------ | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `clear-cut`        | Load-bearing | Drops the latest `/clear` or topic boundary and everything before it.                                                                                              |
-| `participant-view` | Load-bearing | Reads the transcript as the speaking agent: colleagues' replies become attributed incoming messages; their tool activity stays excluded.                           |
-| `turn-context`     | Load-bearing | Puts every past turn's stored runtime context back before the reply it preceded, and appends this turn's — only the sections that changed — last.                  |
-| `media`            | Seam         | Rows become model payloads: steer notes, invocation text, media rehydration, spill, image downscale.                                                               |
-| `checkpoint`       | Load-bearing | Applies the frozen checkpoint in force; when one is due, plans a new one without a model call (mask and fold first, then evict the oldest turns into epoch cards). |
-| `preflight`        | Load-bearing | Refuses an active turn, or first task + active turn, that no checkpoint could fit.                                                                                 |
-| `admission`        | Load-bearing | Final measured-or-estimated size against the ceiling; a view that does not fit and took no checkpoint takes one.                                                   |
+| Stage           | Kind         | Effect                                                                                                                                                             |
+| --------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `clear-cut`     | Load-bearing | Drops the latest stored `/clear` or topic boundary and everything before it.                                                                                       |
+| `agent-history` | Load-bearing | Keeps the agent's own rows with their structured work, drops empty silent rows, and passes every other row through.                                                |
+| `turn-context`  | Load-bearing | Puts every past turn's stored runtime context back before the reply it preceded, and appends this turn's — only the sections that changed — last.                  |
+| `media`         | Seam         | Rows become model payloads: steer notes, invocation text, media rehydration, spill, image downscale.                                                               |
+| `checkpoint`    | Load-bearing | Applies the frozen checkpoint in force; when one is due, plans a new one without a model call (mask and fold first, then evict the oldest turns into epoch cards). |
+| `preflight`     | Load-bearing | Refuses an active turn, or first task + active turn, that no checkpoint could fit.                                                                                 |
+| `admission`     | Load-bearing | Final measured-or-estimated size against the ceiling; a view that does not fit and took no checkpoint takes one.                                                   |
 
 A load-bearing stage that fails ends the run with a typed local budget error. No stage rewrites a
 stored message.
 
 ### Topic boundaries and late pins
 
-Changing the topic with `set_topic` starts a fresh model context for every participant from the
-message that opened the new topic. Earlier messages, tool activity, runtime context, checkpoints,
-and pins remain in the stored transcript but leave subsequent requests. The saved summary carries
-forward what still matters; it does not delete the transcript. Sessions cleared with the removed
-`/clear` command keep their old boundary.
+No agent tool places a topic boundary. A session that already holds one keeps it. Everything before
+the boundary stays in the stored transcript but leaves subsequent requests, and the saved summary
+carries forward what still matters.
 
 A message pinned after a checkpoint may already be folded or evicted. Until the next checkpoint
 preserves it in the view, the runtime inserts its text into a `# Pinned messages` section, capped at
@@ -141,16 +142,18 @@ lose their stored reasoning, which a rewritten prefix would invalidate anyway.
 | `# Context checkpoint ahead` | Once, past the 72% mark: what a checkpoint keeps of older turns. |
 | `# Pinned messages`          | A pin the checkpoint in force shows only in part or not at all.  |
 
-Cards and folded answers point at `global_search(around_message_id="…")`, which scrolls around a
-message without needing its session id. The pointers appear only when `global_search` is in the
+Cards and folded answers point at `GlobalSearch(around_message_id="…")`, which scrolls around a
+message without needing its session id. The pointers appear only when `GlobalSearch` is in the
 agent's roster.
 
 ### Hooks
 
-A checkpoint is this runtime's compaction for Claude Code hooks. `PreCompact` fires with trigger
-`auto` after the view is decided; a block is logged and never stops the turn. The next run fires
-`SessionStart` with source `compact`, so a hook can re-inject context the new view no longer
-carries.
+A checkpoint is this runtime's compaction for Claude Code hooks. `PreCompact` fires before the
+checkpoint is committed, with trigger `auto`, or `manual` and the typed text as
+`custom_instructions` after `/compact`; `PostCompact` follows with the same trigger. A block skips
+the checkpoint, as [Hooks and commands](hooks-and-commands.md#declarative-hooks) describes. The next
+run fires `SessionStart` with source `compact`, so a hook can re-inject context the new view no
+longer carries.
 
 ### Request budget
 
@@ -179,13 +182,13 @@ for the next measured request; only a view that exceeds the ceiling checkpoints 
 ### Recovery handles
 
 Completed tool calls cross a durable artifact barrier before the next model request, so masking can
-cite the original `tool_call_id`. Run preparation requires `tool_output` with its `get` operation.
+cite the original `tool_call_id`. Run preparation requires `ToolOutput` with its `get` operation.
 
-| Recovery path   | What it restores                              | Boundary                                                         |
-| --------------- | --------------------------------------------- | ---------------------------------------------------------------- |
-| `tool_output`   | Stored text or successful mutation input.     | Active branch only; one replay is clipped at 100,000 characters. |
-| `global_search` | Messages around an evicted or folded message. | This user's history only.                                        |
-| Read or rerun   | Current files or reproducible command output. | Required for stale reads or unstored detail.                     |
+| Recovery path  | What it restores                              | Boundary                                                         |
+| -------------- | --------------------------------------------- | ---------------------------------------------------------------- |
+| `ToolOutput`   | Stored text or successful mutation input.     | Active branch only; one replay is clipped at 100,000 characters. |
+| `GlobalSearch` | Messages around an evicted or folded message. | This user's history only.                                        |
+| Read or rerun  | Current files or reproducible command output. | Required for stale reads or unstored detail.                     |
 
 ## Configuration
 
@@ -200,17 +203,16 @@ cite the original `tool_call_id`. Run preparation requires `tool_output` with it
 - Epoch cards list facts, not reasoning. What must survive with its reasons belongs in memory or a
   pin.
 - Masking cannot restore bytes a tool removed earlier by paging, truncation or an output cap.
-- `tool_output` restores text, not image-only media.
+- `ToolOutput` restores text, not image-only media.
 - A checkpoint cannot shrink an oversized active user turn or reclaim the system prompt and tool
   roster. Large pins can also prevent sufficient history reduction. Localix reports those as
   separate local budget failures.
-- The divider shows the newest checkpoint across participants; each agent keeps its own view.
 
 ## Related guides
 
 - [Cost tracking](cost-tracking.md)
 - [Sessions and projects](sessions-and-projects.md)
-- [Conversation topics](conversations.md#session-objective-and-previous-topic-summary)
+- [Conversation topics](sessions-and-projects.md#session-objective-and-previous-topic-summary)
 - [Hooks and commands](hooks-and-commands.md)
 
 ## Source of truth

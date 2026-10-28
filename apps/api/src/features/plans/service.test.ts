@@ -15,8 +15,6 @@ import { createMemoryPlanFiles, withStoredVersions } from '../../testing/plan-fi
 
 let db: Kysely<AppDatabase>
 let wakes: WakeRequest[]
-/** The root conversation's participant handles, as the host's `participants` port answers. */
-let roster: string[]
 let modes: Array<{ sessionId: string; mode: ImplementationMode }>
 let pushes: SessionPlan[][]
 let outcome: WakeOutcome
@@ -36,7 +34,6 @@ beforeEach(async () => {
       .values({ project_id: 'PRJ-test', id, user_id: user, title: id })
       .execute()
   wakes = []
-  roster = ['lead']
   modes = []
   pushes = []
   outcome = { status: 'delivered' }
@@ -58,15 +55,14 @@ const service = () =>
         wakes.push(request)
         return outcome
       },
-      participants: async () => roster,
     }),
   )
 
 describe('presenting', () => {
   test('each presentation is the next version and supersedes the one still waiting', async () => {
     const plans = service()
-    const v1 = await plans.present(owner, 'lead', draft(1))
-    const v2 = await plans.present(owner, 'lead', draft(2))
+    const v1 = await plans.present(owner, draft(1))
+    const v2 = await plans.present(owner, draft(2))
     expect([v1.version, v2.version]).toEqual([1, 2])
     const list = await plans.list(owner)
     expect(list.map((plan) => [plan.version, plan.status])).toEqual([
@@ -79,7 +75,7 @@ describe('presenting', () => {
 
   test("another user's session lists nothing and decides nothing", async () => {
     const plans = service()
-    const v1 = await plans.present(owner, 'lead', draft(1))
+    const v1 = await plans.present(owner, draft(1))
     expect(await plans.list({ userId: 'u2', sessionId: 'root' })).toEqual([])
     await expect(plans.dismiss({ userId: 'u2', sessionId: 'root' }, v1.id)).rejects.toMatchObject({
       status: 404,
@@ -90,7 +86,7 @@ describe('presenting', () => {
 describe('approving', () => {
   test('sets the mode, then wakes the author once with the body, keyed once-ever', async () => {
     const plans = service()
-    const v1 = await plans.present(owner, 'lead', draft(1))
+    const v1 = await plans.present(owner, draft(1))
     const decision = await plans.approve(owner, v1.id, 'bypass')
     expect(decision.plan).toMatchObject({ status: 'approved', approvedMode: 'bypass' })
     expect(decision.wake).toBe('delivered')
@@ -112,55 +108,13 @@ describe('approving', () => {
 
   test('approving an older version supersedes the newer one waiting and the earlier approval', async () => {
     const plans = service()
-    const v1 = await plans.present(owner, 'lead', draft(1))
+    const v1 = await plans.present(owner, draft(1))
     await plans.approve(owner, v1.id, 'default')
-    const v2 = await plans.present(owner, 'lead', draft(2))
-    const v3 = await plans.present(owner, 'lead', draft(3))
+    const v2 = await plans.present(owner, draft(2))
+    const v3 = await plans.present(owner, draft(3))
     await plans.approve(owner, v2.id, 'autonomous')
     const status = Object.fromEntries((await plans.list(owner)).map((p) => [p.id, p.status]))
     expect(status).toEqual({ [v1.id]: 'superseded', [v2.id]: 'approved', [v3.id]: 'superseded' })
-  })
-})
-
-describe('the approval is addressed to whom the person chose', () => {
-  test('no addressee: the conversation strategy picks its default answerer', async () => {
-    const plans = service()
-    const v1 = await plans.present(owner, 'lead', draft(1))
-    await plans.approve(owner, v1.id, 'default')
-    expect(wakes[0]!.to).toBeUndefined()
-    expect(wakes[0]!.addressedAs).toBe('')
-  })
-
-  test('a chosen participant travels as the `@handle` the conversation routes by', async () => {
-    roster = ['lead', 'backend']
-    const plans = service()
-    const v1 = await plans.present(owner, 'lead', draft(1))
-    await plans.approve(owner, v1.id, 'bypass', 'Backend')
-    // Canonical spelling, and still no `to`: routing stays the conversation strategy's.
-    expect(wakes[0]).toMatchObject({ addressedAs: '@backend' })
-    expect(wakes[0]!.to).toBeUndefined()
-    // Nothing on the plan names an implementer: the version is the conversation's.
-    expect(Object.keys(pushes.at(-1)![0]!).some((key) => /executor/i.test(key))).toBe(false)
-  })
-
-  test('`all` travels as `@all`', async () => {
-    roster = ['lead', 'backend']
-    const plans = service()
-    const v1 = await plans.present(owner, 'lead', draft(1))
-    await plans.approve(owner, v1.id, 'default', 'all')
-    expect(wakes[0]).toMatchObject({ addressedAs: '@all' })
-  })
-
-  test('a handle not in the conversation is a 400, and nothing is decided', async () => {
-    const plans = service()
-    const v1 = await plans.present(owner, 'lead', draft(1))
-    await expect(plans.approve(owner, v1.id, 'bypass', 'ghost')).rejects.toMatchObject({
-      status: 400,
-      code: 'unknown_participant',
-    })
-    expect(wakes).toEqual([])
-    expect(modes).toEqual([])
-    expect((await plans.list(owner))[0]!.status).toBe('presented')
   })
 })
 
@@ -170,7 +124,7 @@ describe('what a boot rebuilds attention from', () => {
 
   test('a version restored after a review round waits on the person again', async () => {
     const plans = service()
-    const v1 = await plans.present(owner, 'lead', draft(1))
+    const v1 = await plans.present(owner, draft(1))
     expect(await awaiting()).toEqual([1])
     await plans.requestChanges(owner, v1.id, 'smaller')
     expect(await awaiting()).toEqual([])
@@ -186,7 +140,7 @@ describe('what a boot rebuilds attention from', () => {
 
   test('an undelivered review leaves the version waiting', async () => {
     const plans = service()
-    const v1 = await plans.present(owner, 'lead', draft(1))
+    const v1 = await plans.present(owner, draft(1))
     outcome = { status: 'failed', detail: 'store down' }
     await plans.requestChanges(owner, v1.id, 'smaller')
     expect(await awaiting()).toEqual([1])
@@ -196,7 +150,7 @@ describe('what a boot rebuilds attention from', () => {
 describe('requesting changes', () => {
   test('sends the open comments, marks them sent, and keys each round once', async () => {
     const plans = service()
-    const v1 = await plans.present(owner, 'lead', draft(1))
+    const v1 = await plans.present(owner, draft(1))
     const scope = planCommentScope(v1.id)
     await comments().create({ userId: 'u1', scope, anchor: { quote: 'Step 1' }, body: 'Why?' })
     const result = await plans.requestChanges(owner, v1.id, 'Keep it small')
@@ -220,7 +174,7 @@ describe('requesting changes', () => {
 
   test('an undelivered review puts its comments back on the plan', async () => {
     const plans = service()
-    const v1 = await plans.present(owner, 'lead', draft(1))
+    const v1 = await plans.present(owner, draft(1))
     const scope = planCommentScope(v1.id)
     await comments().create({ userId: 'u1', scope, anchor: {}, body: 'Split step 2' })
     outcome = { status: 'failed', detail: 'store down' }
@@ -230,8 +184,8 @@ describe('requesting changes', () => {
 
   test('only the version under review takes changes', async () => {
     const plans = service()
-    const v1 = await plans.present(owner, 'lead', draft(1))
-    await plans.present(owner, 'lead', draft(2))
+    const v1 = await plans.present(owner, draft(1))
+    await plans.present(owner, draft(2))
     await expect(plans.requestChanges(owner, v1.id, 'late')).rejects.toMatchObject({ status: 409 })
   })
 })
@@ -239,9 +193,9 @@ describe('requesting changes', () => {
 describe('dismissing and deleting', () => {
   test('dismiss wakes nobody, and an approved plan can be put aside as done', async () => {
     const plans = service()
-    const v1 = await plans.present(owner, 'lead', draft(1))
+    const v1 = await plans.present(owner, draft(1))
     expect((await plans.dismiss(owner, v1.id)).plan.status).toBe('dismissed')
-    const v2 = await plans.present(owner, 'lead', draft(2))
+    const v2 = await plans.present(owner, draft(2))
     await plans.approve(owner, v2.id, 'default')
     await plans.dismiss(owner, v2.id)
     expect(await plans.approved(owner)).toBeNull()
@@ -250,7 +204,7 @@ describe('dismissing and deleting', () => {
 
   test('a deleted session takes its plans, and a deleted plan its comments', async () => {
     const plans = service()
-    const v1 = await plans.present(owner, 'lead', draft(1))
+    const v1 = await plans.present(owner, draft(1))
     await comments().create({ userId: 'u1', scope: planCommentScope(v1.id), anchor: {}, body: 'x' })
     await comments().create({ userId: 'u1', scope: 'file:/a.ts', anchor: {}, body: 'kept' })
     await db.deleteFrom('agent_sessions').where('id', '=', 'root').execute()

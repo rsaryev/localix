@@ -62,23 +62,23 @@ function mkPlugin(
 
 describe('normalizeCcToolName (single source of truth for CC→engine mapping)', () => {
   it('lowercases engine names that pass through unchanged', () => {
-    expect(normalizeCcToolName('bash')).toBe('bash')
-    expect(normalizeCcToolName('Bash')).toBe('bash')
-    expect(normalizeCcToolName('Read')).toBe('read')
+    expect(normalizeCcToolName('bash')).toBe('Bash')
+    expect(normalizeCcToolName('Bash')).toBe('Bash')
+    expect(normalizeCcToolName('Read')).toBe('Read')
   })
 
   it('maps CC alias names to engine names', () => {
-    expect(normalizeCcToolName('Grep')).toBe('search')
-    expect(normalizeCcToolName('Glob')).toBe('search')
-    expect(normalizeCcToolName('Agent')).toBe('delegate')
-    expect(normalizeCcToolName('WebFetch')).toBe('research')
-    expect(normalizeCcToolName('WebSearch')).toBe('research')
-    expect(normalizeCcToolName('AskUserQuestion')).toBe('ask')
+    expect(normalizeCcToolName('Grep')).toBe('Search')
+    expect(normalizeCcToolName('Glob')).toBe('Search')
+    expect(normalizeCcToolName('Agent')).toBe('Agent')
+    expect(normalizeCcToolName('WebFetch')).toBe('Research')
+    expect(normalizeCcToolName('WebSearch')).toBe('Research')
+    expect(normalizeCcToolName('AskUserQuestion')).toBe('AskUserQuestion')
   })
 
   it('strips CC pattern syntax before mapping: Bash(git *) → bash', () => {
-    expect(normalizeCcToolName('Bash(git *)')).toBe('bash')
-    expect(normalizeCcToolName('Grep(*.ts)')).toBe('search')
+    expect(normalizeCcToolName('Bash(git *)')).toBe('Bash')
+    expect(normalizeCcToolName('Grep(*.ts)')).toBe('Search')
   })
 
   it('returns lowercase input when name is not in the map', () => {

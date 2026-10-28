@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useSyncExternalStore } from 'react'
 import { useReactFlow, useStore, useStoreApi } from '@xyflow/react'
 import {
   CAMERA_MOTION,
@@ -149,28 +149,39 @@ export function useCanvasZoom(): number {
  */
 export function useZoomBelow(threshold: number): boolean {
   const store = useStoreApi()
-  const [below, setBelow] = useState(() => store.getState().transform[2] < threshold)
-  useEffect(() => {
-    let shown = store.getState().transform[2] < threshold
-    setBelow(shown)
-    let zoom = store.getState().transform[2]
-    let timer: ReturnType<typeof setTimeout> | null = null
-    const unsubscribe = store.subscribe((state) => {
-      if (state.transform[2] === zoom) return
-      zoom = state.transform[2]
-      if (timer !== null) clearTimeout(timer)
-      timer = null
-      if (zoom < threshold === shown) return
-      timer = setTimeout(() => {
+  const resting = useMemo(() => createRestingZoom(store, threshold), [store, threshold])
+  return useSyncExternalStore(resting.subscribe, resting.getSnapshot, resting.getSnapshot)
+}
+
+/**
+ * The answer "is the camera zoomed out past `threshold`" for ONE reader, updated only when the
+ * camera has rested. It starts from the store's zoom, and re-reads it when subscribed, so a
+ * camera that moved between the render and the subscription is not missed.
+ */
+function createRestingZoom(store: ReturnType<typeof useStoreApi>, threshold: number) {
+  let shown = store.getState().transform[2] < threshold
+  return {
+    getSnapshot: () => shown,
+    subscribe: (notify: () => void) => {
+      shown = store.getState().transform[2] < threshold
+      let zoom = store.getState().transform[2]
+      let timer: ReturnType<typeof setTimeout> | null = null
+      const unsubscribe = store.subscribe((state) => {
+        if (state.transform[2] === zoom) return
+        zoom = state.transform[2]
+        if (timer !== null) clearTimeout(timer)
         timer = null
-        shown = store.getState().transform[2] < threshold
-        setBelow(shown)
-      }, CAMERA_REST_MS)
-    })
-    return () => {
-      unsubscribe()
-      if (timer !== null) clearTimeout(timer)
-    }
-  }, [store, threshold])
-  return below
+        if (zoom < threshold === shown) return
+        timer = setTimeout(() => {
+          timer = null
+          shown = store.getState().transform[2] < threshold
+          notify()
+        }, CAMERA_REST_MS)
+      })
+      return () => {
+        unsubscribe()
+        if (timer !== null) clearTimeout(timer)
+      }
+    },
+  }
 }

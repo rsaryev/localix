@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 
 /**
  * HOW LONG EACH OF THE MODEL'S STEPS SHOULD GLIDE — so its snake moves steadily, not in bursts.
@@ -22,21 +22,59 @@ export function nextPace(average: number | null, gapMs: number): number {
   return average === null ? clamped : average + (clamped - average) * WEIGHT
 }
 
+interface Seen {
+  tick: number
+  at: number
+  pace: number | null
+}
+
+/**
+ * The pace the steps arrive at, kept outside React: a view of it subscribes (`useStepPace`) and the
+ * clock is read where a step is OBSERVED — in an effect — never while rendering.
+ */
+export function createPaceTracker() {
+  let seen: Seen | null = null
+  let value = MIN_STEP_GLIDE_MS
+  const listeners = new Set<() => void>()
+  const publish = (next: number) => {
+    if (next === value) return
+    value = next
+    for (const listener of listeners) listener()
+  }
+  return {
+    subscribe: (listener: () => void) => {
+      listeners.add(listener)
+      return () => {
+        listeners.delete(listener)
+      }
+    },
+    getSnapshot: () => value,
+    /** The run stopped: the next step is a first step again. */
+    reset: () => {
+      seen = null
+      publish(MIN_STEP_GLIDE_MS)
+    },
+    /** The view showed tick `tick` at `now`. */
+    observe: (tick: number, now: number) => {
+      if (!seen) seen = { tick, at: now, pace: null }
+      else if (seen.tick !== tick) {
+        const gap = now - seen.at
+        // A long pause (Stop, a slow answer) is not the pace; it would make the next steps crawl.
+        const pace = gap > MAX_STEP_GLIDE_MS * 2 ? seen.pace : nextPace(seen.pace, gap)
+        seen = { tick, at: now, pace }
+      }
+      publish(Math.round(seen.pace ?? MIN_STEP_GLIDE_MS))
+    },
+  }
+}
+
 /** The glide for the model's current step, given the tick it is on. */
 export function useStepPace(tick: number, active: boolean): number {
-  const state = useRef<{ tick: number; at: number; pace: number | null } | null>(null)
-  if (!active) {
-    state.current = null
-    return MIN_STEP_GLIDE_MS
-  }
-  const now = performance.now()
-  if (!state.current) state.current = { tick, at: now, pace: null }
-  else if (state.current.tick !== tick) {
-    const gap = now - state.current.at
-    // A long pause (Stop, a slow answer) is not the pace; it would make the next steps crawl.
-    const pace =
-      gap > MAX_STEP_GLIDE_MS * 2 ? state.current.pace : nextPace(state.current.pace, gap)
-    state.current = { tick, at: now, pace }
-  }
-  return Math.round(state.current.pace ?? MIN_STEP_GLIDE_MS)
+  const [tracker] = useState(createPaceTracker)
+  const pace = useSyncExternalStore(tracker.subscribe, tracker.getSnapshot)
+  useEffect(() => {
+    if (active) tracker.observe(tick, performance.now())
+    else tracker.reset()
+  }, [tracker, tick, active])
+  return active ? pace : MIN_STEP_GLIDE_MS
 }

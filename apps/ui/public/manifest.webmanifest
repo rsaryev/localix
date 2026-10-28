@@ -1,7 +1,7 @@
 {
   "name": "Localix",
   "short_name": "Localix",
-  "description": "Open source Agentic Development Environment: a team of AI agents with your editor, terminals and browser. Use any model, or run one locally.",
+  "description": "Open source Agentic Development Environment: an AI agent, its subagents, your editor, terminals and browser. Use any model, or run one locally.",
   "id": "/",
   "start_url": "/",
   "scope": "/",

@@ -13,6 +13,6 @@ import { startVm } from './worker-vm'
 
 if (parentPort) {
   const data = workerData as WorkerData | VmWorkerData
-  if (data.mode === 'vm') startVm(data)
+  if (data.mode === 'vm') void startVm(data)
   else startRun(data).catch(reportCrash)
 }

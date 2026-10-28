@@ -1,3 +1,4 @@
+import { readJsonFile } from '../../lib/json'
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 
@@ -56,25 +57,14 @@ export function defaultMarketplaceOf(
 }
 
 const STATE_FILE = '.defaults.json'
-const LEGACY_STATE_FILE = '.official.json'
-
-async function readJson(file: string): Promise<unknown> {
-  try {
-    return JSON.parse(await fs.readFile(file, 'utf8')) as unknown
-  } catch {
-    return null
-  }
-}
 
 async function removedByPerson(root: string): Promise<Set<string>> {
-  const state = await readJson(join(root, STATE_FILE))
+  const state = await readJsonFile(join(root, STATE_FILE))
   const removed = new Set(
     isRecord(state) && Array.isArray(state.removed)
       ? state.removed.filter((id): id is string => typeof id === 'string')
       : [],
   )
-  const legacy = await readJson(join(root, LEGACY_STATE_FILE))
-  if (isRecord(legacy) && legacy.removed === true) removed.add('localix')
   return removed
 }
 
@@ -97,7 +87,6 @@ export async function rememberDefaultMarketplaceRemoval(root: string, id: string
 export async function forgetDefaultMarketplaceRemoval(root: string, id: string): Promise<void> {
   const removed = await removedByPerson(root)
   removed.delete(id)
-  if (id === 'localix') await fs.rm(join(root, LEGACY_STATE_FILE), { force: true })
   await writeRemoved(root, removed)
 }
 

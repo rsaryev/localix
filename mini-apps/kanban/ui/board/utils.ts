@@ -142,9 +142,11 @@ export function boardSummary(tasks: KanbanTask[]): BoardSummary {
       case 'blocked':
         blocked += 1
         break
-      // Counted in `total` only (or, for `cancelled`, not at all).
+      // Counted in `total` only (or, for `cancelled`, not at all). `review` is no longer
+      // in progress but not done either: a person is looking at it.
       case 'backlog':
       case 'ready':
+      case 'review':
       case 'cancelled':
         break
     }

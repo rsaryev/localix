@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { Hono } from 'hono'
 import { ZodObject } from 'zod'
 
-import { MINI_APP_BACKEND_HOST_MODULES } from './authoring/kit-layout'
+import { MINI_APP_BACKEND_HOST_MODULES } from './kit-layout'
 import { hostModule, installBackendHostModules } from './backend-host-modules'
 
 const dirs: string[] = []

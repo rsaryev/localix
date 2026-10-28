@@ -6,7 +6,8 @@ import { ToolLine } from '../ToolLine'
 import { ErrorRow, IORow, ToolBody, FileLink } from '../ToolIO'
 import { ToolImages } from '../ToolImages'
 import { isItemStreaming, hasItemError, isItemDeclined, itemErrorMessage } from '../itemHelpers'
-import { asRecord, baseName, formatBytes, numField, strField } from './format'
+import { formatBytes } from '@/shared/lib/formatBytes'
+import { asRecord, baseName, numField, strField } from './format'
 import { readInputPaths } from './batchInput'
 
 /** One file of a batched read, as `details.items` carries it (see the API's `ReadItemDetails`). */
@@ -109,7 +110,7 @@ export function ReadBatchCard({ item }: { item: ToolCallItem }) {
     >
       <ToolBody>
         {rows.map((row, index) => (
-          <IORow key={`${row.path}:${row.range ?? ''}:${index}`} label={String(index + 1)}>
+          <IORow key={`${row.path}:${row.range ?? ''}:${index}`} label={index + 1}>
             <div className="flex min-w-0 flex-col gap-1">
               <FileLink path={row.path} line={rangeStart(row.range)} />
               {!streaming && (

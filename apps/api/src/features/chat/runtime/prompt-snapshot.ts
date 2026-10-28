@@ -1,22 +1,20 @@
-import { agentLaneKey, type ExecutionAddress } from '../../agent-core/execution-address'
-import type { ParticipantLaneSnapshotRepository } from '../participant-lane-snapshot-repository'
+import type { SessionPromptSnapshotRepository } from '../session-prompt-snapshot-repository'
 import type { FrozenSessionContext } from './frozen-session-context'
 import type { SessionSnapshotCache } from './session-snapshot'
 
 /** Persist before use: a process restart must not replace a prefix already sent to the model. */
 export async function resolvePromptSnapshot(input: {
   cache: SessionSnapshotCache<FrozenSessionContext>
-  store: ParticipantLaneSnapshotRepository
+  store: SessionPromptSnapshotRepository
   userId: string
-  address: ExecutionAddress
+  sessionId: string
   boundary: string
   fresh: FrozenSessionContext
   initialize: () => Promise<void>
 }): Promise<FrozenSessionContext> {
-  const { cache, store, userId, address, boundary, fresh } = input
-  const key = agentLaneKey(address)
+  const { cache, store, userId, sessionId, boundary, fresh } = input
   const cached = cache.enabled
-    ? (cache.get(key, boundary) ?? (await store.get(userId, address, boundary)))
+    ? (cache.get(sessionId, boundary) ?? (await store.get(userId, sessionId, boundary)))
     : undefined
   let snapshot = fresh
   if (cached) {
@@ -25,7 +23,9 @@ export async function resolvePromptSnapshot(input: {
     const skillsChanged =
       cached.skillOverridesRevision !== fresh.skillOverridesRevision ||
       cached.skillsContext !== fresh.skillsContext
-    const memoryChanged = cached.memoryScopesRevision !== fresh.memoryScopesRevision
+    // A new folder (the run moved to another repository) reloads memory; edits to it wait for the
+    // next boundary, as Claude Code loads MEMORY.md once per session.
+    const memoryChanged = cached.memoryDir !== fresh.memoryDir
     if (memoryChanged) await input.initialize()
     snapshot =
       skillsChanged || memoryChanged
@@ -39,9 +39,9 @@ export async function resolvePromptSnapshot(input: {
               : {}),
             ...(memoryChanged
               ? {
+                  memoryDir: fresh.memoryDir,
                   memoryContext: fresh.memoryContext,
-                  memoryUsage: fresh.memoryUsage,
-                  memoryScopesRevision: fresh.memoryScopesRevision,
+                  memoryClipped: fresh.memoryClipped,
                 }
               : {}),
           }
@@ -50,8 +50,8 @@ export async function resolvePromptSnapshot(input: {
     await input.initialize()
   }
   if (cache.enabled) {
-    if (snapshot !== cached) await store.set(userId, address, boundary, snapshot)
-    cache.set(key, boundary, snapshot)
+    if (snapshot !== cached) await store.set(userId, sessionId, boundary, snapshot)
+    cache.set(sessionId, boundary, snapshot)
   }
   return snapshot
 }

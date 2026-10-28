@@ -13,6 +13,11 @@ import { resetNotificationsForTests, useNotificationsStore } from './store'
 import { addEventTraceStep, resetEventTrace } from './trace'
 import { transientFeedback } from './transientFeedback'
 
+// Zero-delay timer turns: the code under test schedules with `setTimeout(..., 0)`.
+const flush = async () => {
+  for (let i = 0; i < 6; i++) await new Promise((resolve) => setTimeout(resolve, 0))
+}
+
 /**
  * Where each kind of feedback lands, pinned: an answer to the person's own action is transient and
  * never a journal row; a failure already shown inline is never repeated by the transport's generic
@@ -33,7 +38,6 @@ beforeEach(() => {
 })
 afterEach(() => transientFeedback.clear())
 
-const flush = () => new Promise((resolve) => setTimeout(resolve, 5))
 const rows = () => useNotificationsStore.getState().entries
 
 describe('an answer to the person’s own action', () => {

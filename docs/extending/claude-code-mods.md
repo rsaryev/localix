@@ -2,8 +2,10 @@
 
 A mod is a Claude Code plugin with a hooks module: functions Localix calls as a conversation runs,
 which can open panes, draw above the message box and react to what the agent does. Localix runs mods
-written for Claude Code unchanged. Use this page to see how a mod runs in Localix and what it can
-and cannot do here; [Claude Code compatibility](claude-code-compatibility.md) lists every area.
+written for Claude Code's hooks API, and answers a call it cannot serve with the reason Claude Code
+gives instead of failing. A few calls and events differ; the end of this page lists them. Use this
+page to see how a mod runs in Localix and what it can and cannot do here;
+[Claude Code compatibility](claude-code-compatibility.md) lists every area.
 
 A plugin whose `hooks/hooks.json` lists `modules` is a mod. Localix bundles the module with Bun
 (TypeScript and JSX included, `h` and `Fragment` as globals) and calls its `register(on, options)`
@@ -17,7 +19,7 @@ reconfigured; at most eight projects run a mod at once, and the least recently u
 (`session.end`).
 
 Each instance runs in a QuickJS VM of its own, in a worker thread: the same sandbox that runs
-`codemode` scripts. As Claude Code describes a hooks module, `$` is its only way out: the VM has no
+`Workflow` scripts. As Claude Code describes a hooks module, `$` is its only way out: the VM has no
 `process`, `Bun`, `fetch`, `require`, environment, files or timer globals, and no code can be made
 in it with `eval` or `Function`. A module that reaches for `import.meta.require` does not load, and
 `import(…)` rejects.
@@ -47,21 +49,21 @@ too, without waiting. An `engine.create` step adds nouns of its own (`$.telemetr
 `$`. Hooks run in the plugins' order in every project, and `next` carries `signal`, `origin`,
 `budget`, `event`, `is(pattern, e)` and `trace`.
 
-| Part of `$`                                                                                      | In Localix                                                                                                     |
-| ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| `$.tool.call`, `list`, `check`, `register`; `$.mcp.call`                                         | The running turn's tools under Claude Code's names (`Bash`, `Edit`, `mcp__<server>__<tool>` …)                 |
-| `$.command.register`, `run`, `list`                                                              | `/<name>` or `/<plugin>:<name>`, answered by the project's instance; `list` adds Localix's commands and skills |
-| `$.agent.spawn`, `list`, `register`                                                              | A delegated child task of the chat; `register` defines `<plugin>:<name>`                                       |
-| `$.model.complete`, `fork`, `classify`                                                           | One completion on the chat's model; a question after the conversation, with its system prompt                  |
-| `$.session.*`, `$.turn.abort`                                                                    | The chat's transcript, model, usage, repository and checkpoint; stop the turn                                  |
-| `$.prompt.submit`, `fill`, `suggest`, `compose`, `read`                                          | A new turn; the message box's draft and its ghost suggestion (Tab); the system prompt's sections               |
-| `$.ui.open`, `close`, `panes`, `status`, `ask`, `toast`, `log`, `copy`                           | Panes as workspace tabs; the status line under the message box; a question card; notices                       |
-| `$.store`, `$.fs`, `$.http`, `$.process`, `$.env`, `$.clock`, `$.settings`                       | Supported; files resolve from the project's folder; settings from Claude Code's settings files                 |
-| `$.audio.speak`, `play`                                                                          | The system's voice and player                                                                                  |
-| `$.config`                                                                                       | No rows: Localix keeps its settings elsewhere                                                                  |
-| `$.ui.scroll`, `focus`, `view`, `blit`                                                           | Answer `{ deny }`: Localix scrolls, focuses and switches views as the person does; no raster                   |
-| `$.ui.notify`, `selection`; `$.session.identity`, `send`; `$.mcp.connect`; `$.process.spawn`     | Claude Code's refusal: no notification channel or selection on the desktop, no Claude account                  |
-| Elements `Box`, `Text`, `Button`, `Link`, `Code`, `Markdown`, `Input`, `Select`, `Svg`, `Client` | Drawn with Localix controls; a `Client` runs its surface module in an isolated frame                           |
+| Part of `$`                                                                                      | In Localix                                                                                                                                           |
+| ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `$.tool.call`, `list`, `check`, `register`; `$.mcp.call`                                         | The running turn's tools under Claude Code's names (`Bash`, `Edit`, `mcp__<server>__<tool>` …), other core tools as the model calls them (`Browser`) |
+| `$.command.register`, `run`, `list`                                                              | `/<name>` or `/<plugin>:<name>`, answered by the project's instance; `list` adds Localix's commands and skills                                       |
+| `$.agent.spawn`, `list`, `register`                                                              | A delegated child task of the chat; `register` defines `<plugin>:<name>` as an agent definition                                                      |
+| `$.model.complete`, `fork`, `classify`                                                           | One completion on the chat's model; a question after the conversation, with its system prompt                                                        |
+| `$.session.*`, `$.turn.abort`                                                                    | The chat's transcript, model, usage, repository and checkpoint; stop the turn                                                                        |
+| `$.prompt.submit`, `fill`, `suggest`, `compose`, `read`                                          | A new turn; the message box's draft and its ghost suggestion (Tab); the system prompt's sections                                                     |
+| `$.ui.open`, `close`, `panes`, `status`, `ask`, `toast`, `log`, `copy`                           | Panes as workspace tabs; the status line under the message box; a question card; notices                                                             |
+| `$.store`, `$.fs`, `$.http`, `$.process`, `$.env`, `$.clock`, `$.settings`                       | Supported; files resolve from the project's folder; settings from Claude Code's settings files                                                       |
+| `$.audio.speak`, `play`                                                                          | The system's voice and player                                                                                                                        |
+| `$.config`                                                                                       | No rows: Localix keeps its settings elsewhere                                                                                                        |
+| `$.ui.scroll`, `focus`, `view`, `blit`                                                           | Answer `{ deny }`: Localix scrolls, focuses and switches views as the person does; no raster                                                         |
+| `$.ui.notify`, `selection`; `$.session.identity`, `send`; `$.mcp.connect`; `$.process.spawn`     | Claude Code's refusal: no notification channel or selection on the desktop, no Claude account                                                        |
+| Elements `Box`, `Text`, `Button`, `Link`, `Code`, `Markdown`, `Input`, `Select`, `Svg`, `Client` | Drawn with Localix controls; a `Client` runs its surface module in an isolated frame                                                                 |
 
 ## The band above the message box
 
@@ -216,7 +218,28 @@ the `code-modernization` plugin load and run their hooks, commands and panes in 
 - The message box's events (`prompt.edit`, `prompt.autocomplete`, `prompt.mention`) are not raised,
   and `$.prompt.read` answers an empty draft, as Claude Code does where no box is mounted.
 - `ui.focus` and `ui.scroll` are not raised; `$.config` lists no rows; a band press names the first
-  mod of the chat's project as its `plugin`; `$.ui.toast` ignores `timeoutMs`.
+  mod of the chat's project as its `plugin`.
+- `$.ui.toast` is a line in the conversation, so `timeoutMs` has nothing to time. `$.ui.open` opens
+  a workspace tab, so `rows`, `columns` and `holdToasts` are accepted (`rows` and `columns` as
+  positive whole numbers) and not applied.
+- `$.agent.register` applies `tools`, `disallowedTools`, `maxTurns`, `skills`, `memory`,
+  `background`, `omitClaudeMd`, `isolation: 'worktree'`, `autoCompactWindow` and `initialPrompt`
+  when a child runs as the agent. It keeps `permissionMode`, `mcpServers` and `hooks` and does not
+  apply them, as Claude Code does for any plugin's agent; the API log says so. `isolation: 'remote'`
+  is refused. `$.agent.spawn` honours `name` as the task's name, which the chat's `SendMessage`
+  addresses, and has no `cwd`: a child runs where the conversation is.
+- `tool.check` carries `agentId` inside a child's loop, `isReadOnly` when the tool says the input
+  reads, and `approver: 'person'` when someone can be asked. It never carries `ceiling`, which comes
+  from connector settings Localix does not have, and the permission verdict names no `rule`.
+- `plugin.register` always names `tier: 'user'` and lists no `calls` in `uses`: Localix does not
+  tell a managed plugin from the person's own, and does not scan a module for the `$` calls it
+  makes.
+- `$.settings.read({ key })` returns that key; `$.session.messages` takes `agentId` and `as: 'api'`
+  and returns the newest 4096 entries, with `{ deny }` for an agent that is not a child of the
+  conversation. `$.session.id()` rejects outside a conversation. `$.session.repo()` is never
+  `internal` and has no `name`. `$.process.run` rejects a command still running at its timeout.
+  `$.command.register` refuses a built-in name and keeps `immediate`, which Localix does not use: a
+  command runs when it is typed.
 - `session.end` names no session: a mod's instance serves every chat of its project.
 - `$.session.append` keeps text rows only, and a command a mod answers with `{}` still shows a line.
 - The `claude-code/testing` kit and `claude plugin test` are not part of Localix.

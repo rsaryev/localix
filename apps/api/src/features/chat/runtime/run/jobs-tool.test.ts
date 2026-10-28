@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { testWork } from '../../../../testing/work-fixture'
-import { buildJobsTool } from './jobs-tool'
+import { buildJobsTool, buildStopJob } from './jobs-tool'
 
 describe('background jobs terminal lifecycle', () => {
   test('publishes safe agent input activity with the exact PTY id', async () => {
@@ -8,7 +8,6 @@ describe('background jobs terminal lifecycle', () => {
     const work = testWork()
     work.start({
       owner: { userId: 'u1', sessionId: 's1' },
-      agentId: null,
       kind: 'job',
       label: 'python3 -q',
       toolCallId: 'call-1',
@@ -51,13 +50,12 @@ describe('background jobs terminal lifecycle', () => {
 
 describe('a pane recorded by its PTY is managed through the terminal', () => {
   // `recordTerminalWork` keys such a pane by `terminal:<id>` and registers no action, so the
-  // action registry finds nothing: `jobs stop` refused work the prompt had just listed.
+  // action registry finds nothing: a stop refused work the prompt had just listed.
   function setup(terminalInput?: boolean) {
     const work = testWork()
     const owner = { userId: 'u1', sessionId: 's1' }
     work.start({
       owner,
-      agentId: 'coder',
       kind: 'job',
       label: 'python3',
       toolCallId: 'terminal:pty-1',
@@ -65,7 +63,7 @@ describe('a pane recorded by its PTY is managed through the terminal', () => {
     })
     work.setTerminal('terminal:pty-1', 'pty-1')
     const calls: unknown[] = []
-    const tool = buildJobsTool({
+    const host = {
       deps: {
         streamRegistry: { publish: () => {} },
         terminalControl: {
@@ -78,10 +76,11 @@ describe('a pane recorded by its PTY is managed through the terminal', () => {
       sessionId: 's1',
       terminalInput,
       runAction: () => false,
-    })
+    }
+    const tool = buildJobsTool(host)
     const run = (input: Record<string, string>) =>
       tool.execute('jobs-call', input as never, undefined, undefined, undefined)
-    return { calls, run }
+    return { calls, run, stop: buildStopJob(host) }
   }
 
   test('list names its terminal, so the agent can drive it with bash', async () => {
@@ -90,9 +89,9 @@ describe('a pane recorded by its PTY is managed through the terminal', () => {
     expect((await run({ action: 'list' })).content).toContain('terminal pty-1')
   })
 
-  test('stop closes the pane, and only within the session', async () => {
-    const { calls, run } = setup()
-    const result = await run({ action: 'stop', job_id: 'bg-1' })
+  test('TaskStop closes the pane, and only within the session', async () => {
+    const { calls, stop } = setup()
+    const result = (await stop('bg-1'))!
 
     expect(result.isError).toBeFalsy()
     expect(calls).toEqual([['close', { userId: 'u1', sessionId: 's1', terminalId: 'pty-1' }]])

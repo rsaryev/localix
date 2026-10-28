@@ -3,11 +3,9 @@ import type { MiniAppContext } from '@localixai/mini-app-sdk/backend'
 import type { KanbanTask } from '../shared/contracts'
 import { BoardRefusal } from '../shared/errors'
 import { boardUri } from '../shared/resource'
-import { leaderOf, leadsBoard, type BoardSpeaker } from '../shared/rules'
 import { slimTask, type KanbanToolDetails } from '../shared/tool'
-import { resolveDependencies } from './describe'
-import { resolveFor } from './member-view'
-import type { BoardSeat, BoardService } from './service'
+import { resolveDependencies, resolveTaskReference } from './describe'
+import type { BoardChat, BoardService } from './service'
 import { reviseChecklist, type ChecklistEntry } from './tool-input'
 
 /** One card the `create` action puts on the board. */
@@ -30,17 +28,14 @@ export type CreateInput = Omit<CreateEntry, 'title'> & {
 type CreateResult = { content: string; details?: KanbanToolDetails }
 
 /**
- * `create`: one card, or an ordered batch. A member's cards are the leader's to triage — they
- * land unassigned in backlog whatever owner the member named.
+ * `create`: one card, or an ordered batch, each landing in backlog.
  */
 export async function createCards(
   ctx: MiniAppContext,
   boards: BoardService,
-  seat: BoardSeat,
+  chat: BoardChat,
   input: CreateInput,
-  speaker?: BoardSpeaker,
 ): Promise<CreateResult> {
-  const leads = leadsBoard(speaker)
   // A batch is the whole request: a card described beside `creates` was silently dropped (an
   // epic written next to its tasks never existed, and the tasks came out without a parent).
   const beside = (
@@ -65,30 +60,19 @@ export async function createCards(
           'epic_items',
           'An epic holds no checklist: its tasks are its checklist. Put the items on its tasks.',
         )
-      const tasks = (await boards.read(seat)).tasks
-      const parent = entry.parent ? resolveFor(tasks, speaker, entry.parent) : null
+      const tasks = (await boards.read(chat)).tasks
+      const parent = entry.parent ? resolveTaskReference(tasks, entry.parent) : null
       created.push(
         await boards.create(
-          seat,
+          chat,
           {
             title: entry.title,
             description: entry.description ?? '',
             kind: entry.kind ?? 'task',
             parentTaskId: parent?.id ?? null,
-            // A member's new card is the leader's to triage: unassigned, in backlog.
-            ...(entry.agent && leads ? { agent: entry.agent } : {}),
+            ...(entry.agent ? { agent: entry.agent } : {}),
             ...(entry.depends_on
-              ? {
-                  dependsOn: leads
-                    ? resolveDependencies(tasks, entry.depends_on)
-                    : [
-                        ...new Set(
-                          entry.depends_on.map(
-                            (raw) => resolveFor([...tasks, ...created], speaker, raw, created).id,
-                          ),
-                        ),
-                      ],
-                }
+              ? { dependsOn: resolveDependencies(tasks, entry.depends_on) }
               : {}),
             ...(entry.priority !== undefined ? { priority: entry.priority } : {}),
             ...(entry.items ? { subtasks: reviseChecklist([], entry.items) } : {}),
@@ -108,21 +92,16 @@ export async function createCards(
   return {
     content: [
       ...created.map((task) => `Created ${task.id} "${task.title}" in backlog.`),
-      ...(!leads && created.length
-        ? [`${sentenceStart(leaderOf(speaker))} will triage it: owner, place and status.`]
-        : []),
       ...(refused ? [refused] : []),
     ].join('\n'),
     details: {
-      sessionId: seat.sessionId,
+      sessionId: chat.sessionId,
       ...(created.length === 1 ? { task: created[0]! } : { tasks: created.map(slimTask) }),
       reveal: ctx.ui.offer({
-        uri: boardUri(seat.sessionId),
+        uri: boardUri(chat.sessionId),
         label: 'Open board',
         description: 'This chat’s board',
       }),
     },
   }
 }
-
-const sentenceStart = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1)

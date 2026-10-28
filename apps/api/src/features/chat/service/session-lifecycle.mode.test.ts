@@ -5,7 +5,7 @@ import { permissionModeChangeNotice } from '../runtime/session-notice'
 import { updateSession, type SessionLifecycleCtx } from './session-lifecycle'
 import type { PersistedMessage } from '../contracts'
 import type { SessionRecord } from '../repository'
-import { routedParticipants, sessionFixture } from '../../../testing/session-fixture'
+import { routedAgent, sessionFixture } from '../../../testing/session-fixture'
 
 /**
  * A mode change is ONE line in the conversation — what the agent reads to learn its writes are
@@ -18,7 +18,7 @@ function harness(mode: PermissionMode) {
     userId: 'u1',
     seq: 1,
     title: 'Chat',
-    agents: routedParticipants({ modelId: 'm' }),
+    agent: routedAgent({ modelId: 'm' }),
     createdAt: '2026-01-01 00:00:00',
     updatedAt: '2026-01-01 00:00:00',
     lastMessageAt: '2026-01-01 00:00:00',

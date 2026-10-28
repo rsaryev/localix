@@ -11,6 +11,7 @@ import {
 import { Button } from '@localixai/kit/button'
 import { Input } from '@localixai/kit/input'
 import { Textarea } from '@localixai/kit/textarea'
+import { focusOnMount } from './focusOnMount'
 
 /**
  * The commit graph's two prompts. Each keys its draft on the target commit, so reopening for
@@ -60,7 +61,7 @@ function BranchAtForm({
           declares a header/footer but drops it is what `modal-surface` flags. */}
       <DialogBody className="grid gap-3">
         <Input
-          autoFocus
+          ref={focusOnMount}
           aria-label="Branch name"
           value={name}
           placeholder="branch name…"
@@ -79,7 +80,7 @@ function BranchAtForm({
         </p>
       </DialogBody>
       <DialogFooter>
-        <Button variant="outline" size="xl" className="rounded-lg text-text-soft" onClick={onClose}>
+        <Button variant="ghost" size="xl" className="rounded-lg text-text-soft" onClick={onClose}>
           Cancel
         </Button>
         <Button
@@ -137,7 +138,7 @@ function RewordForm({
     <>
       <DialogBody className="grid gap-3">
         <Textarea
-          autoFocus
+          ref={focusOnMount}
           value={message}
           spellCheck={false}
           rows={3}
@@ -154,7 +155,7 @@ function RewordForm({
         </p>
       </DialogBody>
       <DialogFooter>
-        <Button variant="outline" size="xl" className="rounded-lg text-text-soft" onClick={onClose}>
+        <Button variant="ghost" size="xl" className="rounded-lg text-text-soft" onClick={onClose}>
           Cancel
         </Button>
         <Button

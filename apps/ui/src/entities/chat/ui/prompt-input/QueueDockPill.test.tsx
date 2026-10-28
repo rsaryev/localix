@@ -2,12 +2,12 @@ import { expect, test } from 'bun:test'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { QueueDockPill } from './QueueDockPill'
 
-test('one pill: faces for participants, one glyph per other kind, and the total', () => {
+test('one pill: faces for agents, one glyph per other kind, and the total', () => {
   const html = renderToStaticMarkup(
     <QueueDockPill
       queue={[
-        { id: 't1', text: 'x', queueKind: 'wake', agent: { handle: 'riddler', name: 'Riddler' } },
-        { id: 't2', text: 'x', queueKind: 'wake', agent: { handle: 'sleuth', name: 'Sleuth' } },
+        { id: 't1', text: 'x', queueKind: 'wake', agent: { name: 'riddler' } },
+        { id: 't2', text: 'x', queueKind: 'wake', agent: { name: 'sleuth' } },
         { id: 'u1', text: 'Use the smaller fixture', queueKind: 'user' },
         { id: 'u2', text: 'And rerun it', queueKind: 'user' },
         { id: 'w1', text: 'Nightly check', queueKind: 'wake', wakeSource: 'loop' },

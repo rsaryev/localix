@@ -68,7 +68,7 @@ const cmd = (id: string, over: Partial<CommandItem> = {}): CommandItem => ({
   type: 'command',
   status: 'running',
   toolCallId: id,
-  name: 'bash',
+  name: 'Bash',
   command: 'ls',
   ...over,
 })

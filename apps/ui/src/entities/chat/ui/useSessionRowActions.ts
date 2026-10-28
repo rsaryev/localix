@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { toast } from '@/shared/lib/notify'
 import type { UiSession } from '@/shared/api/contracts'
 import { backendClient } from '@/shared/api/client'
@@ -53,9 +53,12 @@ export function useSessionRowActions(session: UiSession, title: string) {
     [session.id, origin],
   )
 
-  useEffect(() => {
+  // A new title (a rename landing from elsewhere) replaces the draft, while rendering.
+  const [draftTitle, setDraftTitle] = useState(title)
+  if (draftTitle !== title) {
+    setDraftTitle(title)
     setRenameValue(title)
-  }, [title])
+  }
 
   const handleSaveRename = () => {
     if (renameValue.trim() && renameValue.trim() !== title) {

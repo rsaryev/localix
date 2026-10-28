@@ -74,13 +74,15 @@ describe('readFile conditional (knownHash)', () => {
     const big = 'x'.repeat(200_000)
     writeFileSync(path.join(dir, 'big.txt'), big)
     const diskRead = spyOn(localEnvironment, 'readFile')
+    // Read a minute after the write: a file changed within the clock's tick is always re-read.
+    const settled = { ...ctx(), now: () => Date.now() + 60_000 }
 
     try {
-      const first = await readFile(ctx(), 'u', 's1', 'big.txt', { full: true })
+      const first = await readFile(settled, 'u', 's1', 'big.txt', { full: true })
       expect(first.content).toBe(big)
       expect(first.hash).toBeString()
 
-      const second = await readFile(ctx(), 'u', 's1', 'big.txt', {
+      const second = await readFile(settled, 'u', 's1', 'big.txt', {
         full: true,
         knownHash: first.hash,
       })

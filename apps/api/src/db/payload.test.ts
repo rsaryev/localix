@@ -8,7 +8,7 @@ import {
   type StoredMessagePatch,
 } from './payload'
 import type { MessageTiming, MessageProviderMeta } from '../features/chat/contracts'
-import { USER_PARTICIPANT } from './participant'
+import { USER_AUTHOR } from './author'
 
 // The persistence boundary for chat history. These guard that the round-trip is
 // FAITHFUL — if anyone makes it lossy (field-stripping, compression) the special
@@ -44,7 +44,7 @@ describe('message payload serialization', () => {
     const payload: StoredMessagePayload = {
       id: 'u1',
       role: 'user',
-      from: USER_PARTICIPANT,
+      from: USER_AUTHOR,
       content: '@resource:localix://resource/fixture-db/c/users',
       bindings: [
         {

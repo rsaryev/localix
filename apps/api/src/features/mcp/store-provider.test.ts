@@ -1,3 +1,4 @@
+import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -12,7 +13,7 @@ import { createMcpRepository, type McpServerRecord } from './repository'
 import { createMcpService, type McpService } from './service'
 import { createMcpStoreProvider } from './store-provider'
 
-const tempDir = join(process.cwd(), 'tmp', 'mcp-store-tests')
+const tempDir = join(tmpdir(), `localix-mcp-store-tests-${process.pid}`)
 const actor: StoreActor = { userId: 'u1' }
 const inProject: StoreActor & { projectId: string } = { userId: 'u1', projectId: 'p1' }
 

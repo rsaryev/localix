@@ -15,7 +15,7 @@ import {
  */
 
 export type ControlAction = {
-  kind: 'press' | 'input' | 'submit' | 'select'
+  kind: 'press' | 'change' | 'submit' | 'select'
   element: string
   value?: string
 }

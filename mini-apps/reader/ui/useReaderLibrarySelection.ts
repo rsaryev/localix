@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useState, type RefObject } from 'react'
+import { useCallback, useId, useState, type RefObject } from 'react'
 import { useFocusEntry } from '@localixai/mini-app-sdk/ui/focus'
 
 import { toggleKey, toggleShelfSelection } from './libraryPaneModel'
@@ -20,10 +20,11 @@ export function useReaderLibrarySelection({
     setSelectedBookKeys(new Set())
   }, [])
 
-  useEffect(() => {
-    if (view === 'books') return
-    exitSelection()
-  }, [exitSelection, view])
+  // Selecting is for the books view: leaving it ends the selection, in the render that left.
+  if (view !== 'books' && (selectionMode || selectedBookKeys.size > 0)) {
+    setSelectionMode(false)
+    setSelectedBookKeys(new Set())
+  }
 
   useFocusEntry({
     id: `reader-library:${keyboardId}`,

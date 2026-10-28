@@ -1,15 +1,10 @@
 import { ConflictError, InvalidRequestError } from '../../../lib/domain-errors'
-import { conversationPolicy } from '../policy/session-policy'
 import { announceSessionChanges } from '../runtime/session-notice'
-import { changeParticipants } from '../runtime/conversation-participants'
 import { sessionFieldsPatch } from './session-patch'
-import { reseatParticipants } from './participant-routes'
-import { resolveSessionParticipants } from './session-agent-selection'
 import { toSessionSummary } from '../repository'
 import type { SessionDetail, SessionSummary } from '../contracts'
 import { assertRoutePatch, clampRoutePatch, writeRoutePatch } from './session-route-patch'
 import type { SessionLifecycleCtx, UpdateSessionPatch } from './session-lifecycle-contracts'
-import { sessionRoute } from '../../../contracts/session-route'
 import {
   announceCwdChange,
   announceModelSwitches,
@@ -64,13 +59,9 @@ export async function updateSession(
     )
       throw new ConflictError('agent_already_linked', 'This chat already has a linked agent.')
   }
-  await assertRoutePatch(ctx, userId, session, patch)
+  await assertRoutePatch(ctx, userId, patch)
   // CC PreModelSwitch may refuse the picker's switch before anything is written.
-  const switches = modelSwitches(
-    session.agents,
-    patch.routes ?? (patch.route ? [patch.route] : []),
-    sessionRoute(session).agentId,
-  )
+  const switches = modelSwitches(session.agent, patch.route)
   await guardModelSwitches(ctx.ccHookSessions, id, switches, 'picker')
   const moved = patch.projectId !== undefined && patch.projectId !== session.projectId
   const cwdBefore = moved ? await ctx.resolveSessionWorkingDir?.(userId, session) : undefined
@@ -95,57 +86,18 @@ export async function updateSession(
         "Claude Code's settings for this folder disable bypass mode (disableBypassPermissionsMode)",
       )
   }
-  // Only a chat's membership can change: a delegated child or a job IS its one agent's task.
-  if (patch.agents !== undefined && !conversationPolicy(session).membershipEditable) {
-    throw new ConflictError('membership_fixed', 'Only a chat conversation can change who is in it')
-  }
-  // WHO is in the conversation: the one participants writer, which guards the active speaker,
-  // refuses a stale list, cancels the leavers' queued turns and announces the change.
-  let afterMembership = session
-  if (patch.agents !== undefined) {
-    const requested = patch.agents
-    const change = await changeParticipants(ctx, {
-      userId,
-      sessionId: id,
-      ...(patch.expectedUpdatedAt !== undefined
-        ? { expectedUpdatedAt: patch.expectedUpdatedAt }
-        : {}),
-      decide: async (current) =>
-        reseatParticipants(
-          { ...current, userId, projectId: patch.projectId ?? current.projectId },
-          await resolveSessionParticipants({
-            userId,
-            projectId: patch.projectId ?? current.projectId,
-            requested,
-            existing: current.agents,
-            resolve: ctx.resolveSessionAgent,
-            ...(current.sessionKind === 'chat' ? { host: 'chat' } : {}),
-          }),
-          ctx.seatRoute,
-        ),
-    })
-    afterMembership = change.after
-  }
   // The session's own fields — only the ones this patch names.
   const fields = sessionFieldsPatch(session, patch, ctx.now)
   if (fields) await ctx.repo.updateSession(userId, id, fields)
-  // A re-route is its own statement: nothing above writes what a participant runs on — the
+  // A re-route is its own statement: nothing above writes what the agent runs on, because the
   // records it reads carry routes the chain RESOLVED, not routes anyone chose.
-  await writeRoutePatch(
-    ctx,
-    userId,
-    id,
-    session,
-    await clampRoutePatch(ctx, userId, session, patch),
-  )
-  // Read back what was stored, resolved: a newcomer's route is blank on purpose, and publishing
-  // the in-memory record would show it with no model until the next read.
+  await writeRoutePatch(ctx, userId, id, await clampRoutePatch(ctx, userId, session, patch))
+  // Read back what was stored, resolved.
   const persisted = await ctx.requireSession(userId, id)
-  // What the people who stayed now run on, said in the conversation. The membership lines were
-  // already written by the participants writer, so this diff starts from its result. AFTER the
-  // write is durable, so a failed edit never announces a change that did not happen.
-  await announceSessionChanges(ctx, userId, id, afterMembership, persisted)
-  const modeBefore = afterMembership.permissionMode
+  // What the agent now runs on, said in the conversation. AFTER the write is durable, so a failed
+  // edit never announces a change that did not happen.
+  await announceSessionChanges(ctx, userId, id, session, persisted)
+  const modeBefore = session.permissionMode
   if (persisted.permissionMode !== undefined && persisted.permissionMode !== modeBefore)
     await ctx.onPermissionModeChanged?.(userId, id, modeBefore, persisted.permissionMode)
   announceModelSwitches(ctx.ccHookSessions, id, switches, 'picker')

@@ -6,7 +6,7 @@
  * mounts the routes (`/rpc/documents`, `/rpc/table`) and registers the typed
  * capability core consumes through the SDK registry:
  *
- *   - `document.extract` — the narrow port behind the `read` tool's office/PDF fallback
+ *   - `document.extract` — the narrow port behind the `Read` tool's office/PDF fallback
  *     and attachment-spill text previews. There is no `documents.generate` capability:
  *     generation is reachable through `POST /rpc/documents/generate`, not a model tool.
  *
@@ -84,7 +84,7 @@ export function register(ctx: DocumentsRegisterContext): MiniAppRegistration {
     // NO agent tools. This mini app is a WORKBENCH and a set of capability ports, not a
     // model surface: the Table tab, the document viewers, the `doc` resource provider and
     // the search/context providers are all user-facing, and `extract` is consumed by the
-    // core `read` tool (office/PDF files come back as text instead of a binary refusal).
+    // core `Read` tool (office/PDF files come back as text instead of a binary refusal).
     //
     // This workbench contributes no model-facing tool schema. Core `read` consumes the
     // extraction port; generation and spreadsheet browsing stay application surfaces.

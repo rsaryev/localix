@@ -15,6 +15,8 @@ import type { SessionRecord } from '../repository'
 export interface FileOpsContext {
   requireSession: (userId: string, id: string) => Promise<SessionRecord>
   resolveSessionWorkingDir: (userId: string, session: SessionRecord) => Promise<string>
+  /** The wall clock a snapshot is judged against; tests move it forward. */
+  now?: () => number
 }
 
 /** The execution environment a file op runs in — local, or the session's ssh/docker backend. */

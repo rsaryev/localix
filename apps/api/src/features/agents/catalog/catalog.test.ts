@@ -68,25 +68,20 @@ describe('the agent catalog', () => {
 
     const root = await scan(repo)
     expect(root.resolve('reviewer')).toMatchObject({
-      agent: { description: 'root reviewer', tools: ['read', 'search'], preferredModel: 'haiku' },
+      agent: { description: 'root reviewer', tools: ['Read', 'Search'] },
     })
   })
 
-  test('reads the localix key and ignores a bad value of it', async () => {
+  test('reads no model, effort or localix key from a file', async () => {
     const repo = join(base(), 'repo')
     await write(
       join(repo, '.claude', 'agents', 'a.md'),
-      agent('a', 'A', 'localix:\n  priority: 1\n  memoryScope: project\n  model: openai/gpt-5\n'),
+      agent('a', 'A', 'model: haiku\neffort: high\nlocalix:\n  model: openai/gpt-5\n'),
     )
-    await write(
-      join(repo, '.claude', 'agents', 'b.md'),
-      agent('b', 'B', 'localix:\n  priority: 9\n  memoryScope: forever\n'),
-    )
-    const catalog = await scan(repo)
-    expect(catalog.resolve('a')).toMatchObject({
-      agent: { localix: { priority: 1, memoryScope: 'project', model: 'openai/gpt-5' } },
-    })
-    expect(catalog.resolve('b')).toMatchObject({ agent: { localix: { priority: 0 } } })
+    const found = (await scan(repo)).resolve('a')
+    expect(found).toMatchObject({ agent: { description: 'A' } })
+    for (const key of ['preferredModel', 'preferredEffort', 'localix'])
+      expect(found).not.toHaveProperty(`agent.${key}`)
   })
 
   test('built-in types are entries a file of the same name replaces', async () => {
@@ -95,7 +90,6 @@ describe('the agent catalog', () => {
     const catalog = await scan(repo)
     expect(catalog.resolve('Explore')).toMatchObject({ agent: { source: 'project' } })
     expect(catalog.resolve('Plan')).toMatchObject({ agent: { source: 'builtin' } })
-    expect(catalog.resolve('claude')).toMatchObject({ agent: { name: 'general-purpose' } })
   })
 
   test('resolve takes the one name a person types and refuses a guess between several', async () => {
@@ -111,7 +105,8 @@ describe('the agent catalog', () => {
       return found && 'agent' in found ? found.agent.fullName : found
     }
     expect(named('reviewer')).toBe('reviewer')
-    expect(named('@Reviewer')).toBe('reviewer')
+    expect(named('Reviewer')).toBe('reviewer')
+    expect(named('@reviewer')).toBeNull()
     expect(named('@agent-reviewer')).toBe('reviewer')
     expect(named('acme:architect')).toBe('acme:architect')
     expect(named('architect')).toBe('acme:architect')

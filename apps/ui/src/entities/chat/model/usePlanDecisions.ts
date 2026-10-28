@@ -77,15 +77,14 @@ export function usePlanDecisions(ownerId: string | null) {
     busy,
     // Approve and dismiss need only the version's id: the cross-session attention dialog decides
     // on a plan whose versions this window never loaded.
-    // `to` is who starts (a handle or `all`); without it the conversation's default answerer does.
-    approve: (plan: Pick<SessionPlan, 'id'>, mode: ImplementationMode, to?: string) =>
+    approve: (plan: Pick<SessionPlan, 'id'>, mode: ImplementationMode) =>
       run(
         'approve',
         async (owner) => {
           const result = settle(
             owner,
             plan.id,
-            await backendClient.approvePlan(owner, plan.id, mode, to),
+            await backendClient.approvePlan(owner, plan.id, mode),
           )
           if (result)
             reportWake(result.wake, `Plan approved in ${PERMISSION_MODE_COPY[mode].label} mode`)

@@ -3,7 +3,7 @@ import { describe, expect, test } from 'bun:test'
 import type { StoredMessagePayload } from '../../db/payload'
 import type { MessageTiming } from './contracts'
 import { addMessageTiming, deriveSessionTiming, emptySessionTiming } from './session-timing'
-import { DEFAULT_AGENT_PARTICIPANT } from '../../db'
+import { DEFAULT_AGENT_AUTHOR } from '../../db'
 
 function timing(partial: Partial<MessageTiming>): MessageTiming {
   return {
@@ -25,7 +25,7 @@ function msg(t?: MessageTiming): StoredMessagePayload {
   return {
     id: 'm',
     role: 'assistant',
-    from: DEFAULT_AGENT_PARTICIPANT,
+    from: DEFAULT_AGENT_AUTHOR,
     content: '',
     ...(t ? { timing: t } : {}),
   }

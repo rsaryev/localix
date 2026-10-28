@@ -16,7 +16,7 @@ import { TOOL } from '../../tool-names'
  * "# Collaboration", and the runtime caps stay a backstop (see `delegation-budget.ts`).
  */
 
-const WORKSPACE_TOOLS = [TOOL.read, TOOL.search, TOOL.bash, TOOL.write, TOOL.edit]
+const WORKSPACE_TOOLS = [TOOL.Read, TOOL.Search, TOOL.Bash, TOOL.Write, TOOL.Edit]
 
 function capabilityLine(shape: RunProfile['shape'], toolNames: readonly string[]): string | null {
   const held = WORKSPACE_TOOLS.filter((name) => toolNames.includes(name)).length

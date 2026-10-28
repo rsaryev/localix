@@ -4,7 +4,7 @@ import { MonogramAvatar } from '@localixai/kit/avatar'
 import { useFeaturedCommand } from '@/shared/contrib/useFeaturedCommand'
 import './goal-scene.css'
 
-/** The cards the leader puts on the board: one per specialist. */
+/** The cards the agent puts on the board: one per subagent. */
 const TASKS = [
   { id: 'design', owner: 'Design', title: 'Pricing tiers and layout' },
   { id: 'frontend', owner: 'Frontend', title: 'Build the pricing page' },
@@ -13,7 +13,7 @@ const TASKS = [
 
 /**
  * The featured goal command, as it runs: the composer takes the command and a goal, the
- * leader's cards land on the board with an owner per task, and the leader hands the first ready
+ * agent's cards land on the board with an owner per task, and the agent hands the first ready
  * card to its owner. Whether a plan waits for approval is the chat's permission mode, not this.
  */
 export function GoalScene() {
@@ -50,7 +50,7 @@ export function GoalScene() {
       <div className="wt-pane wt-gl-composer">
         <span className="wt-gl-input">
           <span className="wt-gl-ph">Describe the outcome you want…</span>
-          {[...message].map((letter, i) => (
+          {Array.from(message).map((letter, i) => (
             <span key={i} className="wt-gl-letter" style={{ '--i': i } as CSSProperties}>
               {letter}
             </span>

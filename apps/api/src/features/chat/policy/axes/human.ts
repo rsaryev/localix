@@ -36,8 +36,8 @@ export interface HumanDecision {
 }
 
 const NEEDS_A_PERSON: Readonly<Record<string, string>> = {
-  [TOOL.ask]: 'human.answer',
-  [TOOL.configure]: 'human.answer',
+  [TOOL.AskUserQuestion]: 'human.answer',
+  [TOOL.Configure]: 'human.answer',
 }
 
 function decide(facts: HumanFacts): HumanDecision {

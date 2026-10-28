@@ -86,7 +86,7 @@ async function run(f: ReturnType<typeof fixture>) {
     expect(f.shared.drainingSessions.size).toBe(0)
     expect(f.shared.inFlightDrains.size).toBe(0)
   } finally {
-    f.drain.close()
+    await f.drain.close()
   }
 }
 

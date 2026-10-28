@@ -209,9 +209,8 @@ impl Controller {
             }
             Some("session") => {
                 let id = message.get("id").and_then(|value| value.as_str());
-                *self.ivars().session.borrow_mut() = id
-                    .filter(|id| crate::companion_destination::valid_session_id(id))
-                    .map(str::to_string);
+                *self.ivars().session.borrow_mut() =
+                    id.filter(|id| valid_session_id(id)).map(str::to_string);
             }
             _ => {}
         }
@@ -246,4 +245,34 @@ pub(crate) fn configuration(
             );
     }
     configuration
+}
+
+/// A session handoff names exactly one session id, never a path, query or fragment.
+fn valid_session_id(id: &str) -> bool {
+    !id.is_empty()
+        && id.len() <= 200
+        && id
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || b"-_".contains(&byte))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::valid_session_id;
+
+    #[test]
+    fn session_handoff_accepts_only_one_session_identifier() {
+        assert!(valid_session_id("session-123_a"));
+        for id in [
+            "",
+            "../settings",
+            "a?prompt=run",
+            "a#fragment",
+            "a/b",
+            "a\n",
+        ] {
+            assert!(!valid_session_id(id));
+        }
+        assert!(!valid_session_id(&"a".repeat(201)));
+    }
 }

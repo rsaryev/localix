@@ -14,11 +14,11 @@ import { createConfirmRequester } from './confirm-requester'
 const chat = {
   id: 's',
   sessionKind: 'chat',
-  agents: [{ agentId: 'qa' }],
+  agent: { agentId: 'qa' },
 } as unknown as SessionRecord
 const bashCall = (command: string) => ({
   toolCallId: 'tc1',
-  toolName: 'bash',
+  toolName: 'Bash',
   command,
   subject: 'command' as const,
   grants: [programGrant('bash', command)].filter((g): g is GrantOption => !!g),

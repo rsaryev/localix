@@ -8,6 +8,10 @@ import { registerDom } from '@localixai/kit/testing'
 
 import { applyMove, newGame, viewFor, type Game, type Move, type Player } from '../shared/game'
 
+const turns = async (n = 10) => {
+  for (let i = 0; i < n; i++) await new Promise((r) => setImmediate(r))
+}
+
 let teardown: () => Promise<void>
 const actEnvironment = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 const priorActEnvironment = actEnvironment.IS_REACT_ACT_ENVIRONMENT
@@ -102,7 +106,7 @@ async function mount(sessionId: string | null, first: Player = 'you', unreachabl
       await render(true)
     },
     /** Let the browser's digest check settle. */
-    settle: () => act(async () => new Promise((resolve) => setTimeout(resolve, 20))),
+    settle: () => act(async () => turns()),
     unmount: async () => {
       await act(async () => root.unmount())
       host.remove()

@@ -15,7 +15,12 @@ import type { InfraPhase } from './infra'
 import { createCapabilityRuleRepository } from '../features/capabilities/rule-repository'
 import { createCapabilitySourceRepository } from '../features/capabilities/source-repository'
 import { seedAgentPresets } from '../features/capabilities/seed-agent-presets'
-import { listDelegatedRuns, readSessionSpend } from '../features/chat/service/delegated-runs'
+import {
+  listDelegatedRuns,
+  readSessionSpend,
+  readSessionToolStats,
+} from '../features/chat/service/delegated-runs'
+import { recordChildStopped } from '../features/chat/service/delegation-stop'
 import { createUsageRepository } from '../features/usage/repository'
 
 export interface AgentFacadePhaseInput {
@@ -48,12 +53,12 @@ export async function createAgentFacadePhase({
   const usageRepo = createUsageRepository(db)
 
   // Each role's shipped defaults, applied to its own scope once. Here because this is the
-  // module that already knows how a handle maps to a capability scope, and because the seed
+  // module that already knows how a name maps to a capability scope, and because the seed
   // has to happen before a run resolves one.
   //
   // Awaited but never fatal: a boot that cannot write a default must still boot, and the
   // agent simply inherits as it did before. Global scope only for now — a project-scoped
-  // record's rules are keyed by handle like everyone else's, but nothing lists those here.
+  // record's rules are keyed by name like everyone else's, but nothing lists those here.
   const presetPorts = {
     // Spread, not `(userId) =>`: a composition root may not spell a parameter list it is
     // only forwarding, or growing the owner a parameter drops it silently here.
@@ -70,7 +75,7 @@ export async function createAgentFacadePhase({
   }
   // One admission for every delegation lookup: the `delegation` invocation host's verdict, and
   // the run defaults a child inherits — never its instructions or model preferences, which the
-  // child session resolves from its own seat.
+  // child session resolves from its own route.
   const admitDelegate = async (agentId: string, projectId: string | undefined) => {
     const record = await agentsService.resolveInvocableAgent(
       env.LOCALIX_DEFAULT_USER_ID,
@@ -81,7 +86,7 @@ export async function createAgentFacadePhase({
     if (!record) return null
     return {
       record,
-      defaults: { maxTurns: record.limits?.maxTurns, pinnedSkills: record.context?.preloadSkills },
+      defaults: { maxTurns: record.maxTurns, pinnedSkills: record.skills },
     }
   }
   setAgentService({
@@ -93,6 +98,7 @@ export async function createAgentFacadePhase({
     stopSession: async (...args) => {
       await chatService.stop(...args)
     },
+    recordChildStopped: (...args) => recordChildStopped(db, ...args),
     messageSubagent: (...args) => chatService.messageSubagent(...args),
     // Background (non-blocking) delegation: a finished child pushes its result back
     // into the parent chat session as a wake (queued if the parent is mid-run). Its callers
@@ -111,16 +117,17 @@ export async function createAgentFacadePhase({
     flushChildMessages: (...args) => chatService.flushChildMessages(...args),
     listDelegatedRuns: (...args) => listDelegatedRuns(db, usageRepo, ...args),
     sessionSpend: (...args) => readSessionSpend(db, usageRepo, ...args),
+    sessionToolStats: (_userId, sessionId) => readSessionToolStats(db, sessionId),
     resolveRunAgent: (...args) => agentsService.resolveRunAgent(...args),
     // The agent that is delegating, by id, admitted through its `delegation` host with the defaults
     // its child run takes.
     resolveDelegateAgent: async (agentId, { projectId }) => {
       const admitted = await admitDelegate(agentId, projectId)
       return admitted
-        ? { ...admitted.defaults, agentId: admitted.record.id, handle: admitted.record.handle }
+        ? { ...admitted.defaults, agentId: admitted.record.id, name: admitted.record.name }
         : null
     },
-    // The agent a task goes to for a name written in `delegate` (or a workflow, or a skill's
+    // The agent a task goes to for a name written in `Agent` (or a workflow, or a skill's
     // fork): the catalog's own resolution, then Access.
     resolveDelegation: async (reference, { projectId }) => {
       const target = await agentsService.resolveDelegation(
@@ -135,9 +142,9 @@ export async function createAgentFacadePhase({
         kind: 'agent',
         agent: {
           agentId: agent.id,
-          handle: agent.handle,
-          maxTurns: agent.limits?.maxTurns,
-          pinnedSkills: agent.context?.preloadSkills,
+          name: agent.name,
+          maxTurns: agent.maxTurns,
+          pinnedSkills: agent.skills,
         },
         type: definition,
       }

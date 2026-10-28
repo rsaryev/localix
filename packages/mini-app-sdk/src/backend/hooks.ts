@@ -205,7 +205,7 @@ export interface MemoryLoadContextEvent {
   projectId: string | null
   /** The user prompt that starts this run (model-facing, after onUserMessage rewrites). */
   prompt: string
-  /** The built-in memory notes already loaded for this run ('' when none). */
+  /** The run's MEMORY.md as loaded, Claude Code's auto memory index ('' when none). */
   builtinContext: string
 }
 
@@ -221,13 +221,14 @@ export interface MemoryRunEndEvent {
  * An external long-term memory backend, returned from a native module's
  * `register(ctx)` as `memory: {...}`. At most ONE provider is active at a time
  * (first enabled mini app wins; later declarations are ignored with a warning) —
- * it AUGMENTS the built-in memory tool/notes rather than replacing the feature:
+ * it AUGMENTS the built-in auto memory (a MEMORY.md index the model keeps with the file tools)
+ * rather than replacing the feature:
  *
  * - `loadContext(event)` — once per run while the system prompt is built. The
- *   returned `context` becomes the "# Memory context" section: `mode: 'replace'`
- *   (default) swaps the built-in notes out, `'append'` adds below them. Void /
+ *   returned `context` becomes the MEMORY.md part of the "# Memory" section:
+ *   `mode: 'replace'` (default) swaps the index out, `'append'` adds below it. Void /
  *   empty → built-in behavior. Capped at {@link MEMORY_CONTEXT_CAP_CHARS};
- *   isolated with a {@link MEMORY_TIMEOUT_MS} timeout (timeout ⇒ built-in notes).
+ *   isolated with a {@link MEMORY_TIMEOUT_MS} timeout (timeout ⇒ the built-in index).
  * - `onRunEnd(event)` — fire-and-forget after each completed run, with the
  *   turn's user prompt + final assistant text — the extraction/consolidation
  *   point (store observations, update the user model, …).

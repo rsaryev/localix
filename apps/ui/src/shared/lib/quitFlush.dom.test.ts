@@ -7,6 +7,7 @@ import {
   installQuitFlush,
   registerQuitFlush,
 } from './quitFlush'
+import { turns } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -71,8 +72,12 @@ describe('the before-quit handshake', () => {
       },
     }
     ;(window as unknown as { __TAURI__?: unknown }).__TAURI__ = bridge
+    let release!: () => void
+    const gate = new Promise<void>((resolve) => {
+      release = resolve
+    })
     const off = registerQuitFlush('test:settings', async () => {
-      await new Promise((resolve) => setTimeout(resolve, 5))
+      await gate
       order.push('patch sent')
     })
     const uninstall = installQuitFlush()
@@ -80,7 +85,10 @@ describe('the before-quit handshake', () => {
       await Promise.resolve()
       expect(deliver).toBeDefined()
       deliver!()
-      await new Promise((resolve) => setTimeout(resolve, 30))
+      await turns(3)
+      expect(order).toEqual([])
+      release()
+      await turns(3)
       expect(order).toEqual(['patch sent', 'quit_ready'])
     } finally {
       uninstall()
@@ -124,7 +132,7 @@ test('the flush acknowledgement preserves the native request identity', async ()
   try {
     await Promise.resolve()
     deliver!({ payload: { requestId: 42 } })
-    await new Promise((resolve) => setTimeout(resolve, 10))
+    await turns(3)
     expect(answers).toEqual([{ command: 'quit_ready', args: { requestId: 42 } }])
   } finally {
     uninstall()
@@ -153,7 +161,7 @@ test('closing a workspace releases its private storage after flushing and keeps 
   try {
     await Promise.resolve()
     deliver!({ payload: { requestId: 8, discardWorkspace: true } })
-    await new Promise((resolve) => setTimeout(resolve, 10))
+    await turns(3)
     expect(localStorage.getItem('workspace_grid_v2:window:workspace-0123456789abcdef')).toBeNull()
     expect(localStorage.getItem('workspace_grid_v2:window:workspace-fedcba9876543210')).toBe(
       'other layout',

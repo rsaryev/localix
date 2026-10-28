@@ -13,7 +13,7 @@
     "postbuild": "bun run scripts/build-static-docs.mjs",
     "test": "bun test scripts src",
     "pretype-check": "bun run generate",
-    "type-check": "tsc -b",
+    "type-check": "node ../../scripts/tsc.mjs -b",
     "docs:gen": "bun run scripts/build-docs.mjs",
     "shots:gen": "bun run scripts/build-shots.mjs",
     "generate": "bun run docs:gen && bun run shots:gen",
@@ -21,6 +21,8 @@
     "clean": "shx rm -rf dist .turbo src/generated"
   },
   "dependencies": {
+    "@fontsource-variable/dm-sans": "^5.3.0",
+    "@fontsource-variable/inter": "^5.3.0",
     "@localixai/kit": "workspace:*",
     "@localixai/markdown": "workspace:*",
     "@localixai/mini-app-sdk": "workspace:*",

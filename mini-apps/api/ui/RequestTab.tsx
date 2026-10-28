@@ -198,6 +198,8 @@ function Loaded({
   return (
     <div
       className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden"
+      // No semantics of its own: it only catches the shortcuts bubbling up from its controls.
+      role="presentation"
       // Cmd/Ctrl+S saves; Cmd/Ctrl+Enter sends from anywhere in the request. Plain Enter stays the
       // URL field's own (see its handler); in a textarea it is a newline.
       onKeyDown={(e) => {

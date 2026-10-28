@@ -223,7 +223,9 @@ export interface SessionSurfaceProps {
 export interface SessionSurfaceContribution extends MiniAppOwnedContribution {
   /**
    * The shell surface, `<area>.<name>` by convention (`chat.background`, `composer.context`,
-   * `composer.header` — a strip above the composer, passed `{ isFocused }` — and
+   * `composer.header` — a strip above the composer, passed `{ isFocused }` —
+   * `composer.footer` — status rows under the composer, passed `{ isFocused, hasInteraction }`
+   * (`hasInteraction`: a question is open, so rows hide while the surface stays mounted) — and
    * `breadcrumb.trailing`).
    */
   surface: string

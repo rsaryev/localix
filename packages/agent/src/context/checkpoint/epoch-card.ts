@@ -6,7 +6,7 @@
  * the evicted messages themselves — what was asked, which files the tool calls touched, which
  * commands ran and how they ended, what the assistant last concluded — so a card can OMIT, but it
  * cannot invent or misremember, which is the failure a summarizer brings. The messages stay
- * durable in the transcript and the card names their ids, so `global_search` brings any of them
+ * durable in the transcript and the card names their ids, so `GlobalSearch` brings any of them
  * back verbatim.
  *
  * A card only loses detail, and only at a later checkpoint: full → brief → one line → merged with
@@ -203,7 +203,7 @@ export function renderCardsRegion(
   recallToolAvailable: boolean,
 ): string {
   const recall = recallToolAvailable
-    ? ' Every message is still in the transcript: global_search(around_message_id="…") shows any of them in full.'
+    ? ' Every message is still in the transcript: GlobalSearch(around_message_id="…") shows any of them in full.'
     : ''
   return [
     '<context-checkpoint>',

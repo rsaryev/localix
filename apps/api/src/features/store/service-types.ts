@@ -1,4 +1,4 @@
-import type { Scope, ShelfId, StoreCategory, Trust } from '@localixai/store'
+import type { Scope, ShelfId, StoreCategory, Trust, WorkingReference } from '@localixai/store'
 
 /** What narrows a page: a shelf, a search, a scope, installed or not, and the facets' filters. */
 export interface ListingQuery {
@@ -30,3 +30,13 @@ export type StoreSearchPort = (
   nextCursor?: string
   strategy: { mode: 'lexical' | 'hybrid'; reason?: string }
 }>
+
+/**
+ * What the working set says, as Context Fabric admitted it for `recommendation` (wired in
+ * `bootstrap/`, A4): each piece's text and priority. Whatever provider declares the destination
+ * adds to it; the Store knows none of them.
+ */
+export type StoreContextPort = (
+  userId: string,
+  request: { projectId?: string; sessionId?: string; references: readonly WorkingReference[] },
+) => Promise<ReadonlyArray<{ content: string; priority: number }>>

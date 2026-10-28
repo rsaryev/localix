@@ -5,23 +5,21 @@ import {
   FilePen,
   FilePlus,
   Terminal,
-  Brain,
   History,
   BookOpen,
   MessageCircleQuestion,
-  Plug,
-  Forward,
+  Bot,
+  MessageSquareShare,
+  CircleStop,
   RefreshCw,
   MousePointerClick,
   Globe,
   TextSearch,
   ListTree,
-  MessageSquareDashed,
   SlidersHorizontal,
   KeyRound,
   ClipboardList,
   Store,
-  SquareCode,
 } from 'lucide-react'
 import type { ToolName } from '@localixai/api/tool-names'
 import type { ToolMeta } from './meta'
@@ -30,24 +28,26 @@ import type { ToolMeta } from './meta'
  * The CORE vocabulary — every tool the SERVER owns (`TOOL`, agent-core/tool-names.ts).
  *
  * Every server-owned `ToolName` needs presentation metadata; a missing entry fails type checks.
+ * Each row is one sentence a chain summary builds: `label` (or `verb` while live), a count, then
+ * `noun` — "Started 2 agents", "Reading 3 files…". `label` and `verb` are one word for that reason.
  */
 export const CORE_META: Record<ToolName, ToolMeta> = {
-  store: {
-    label: 'Store',
-    noun: 'packages',
-    verb: 'Using the Store',
+  Store: {
+    label: 'Used',
+    noun: 'Store actions',
+    verb: 'Using',
     icon: Store,
     stackable: false,
   },
-  external_agent_sessions: {
-    label: 'Agent history',
-    noun: 'sessions',
+  ExternalAgentSessions: {
+    label: 'Read',
+    noun: 'agent sessions',
     verb: 'Reading',
     icon: History,
     stackable: true,
     readOnly: true,
   },
-  read: {
+  Read: {
     label: 'Read',
     noun: 'files',
     verb: 'Reading',
@@ -55,189 +55,164 @@ export const CORE_META: Record<ToolName, ToolMeta> = {
     stackable: true,
     readOnly: true,
   },
-  context_budget: {
-    label: 'Checked budget',
-    noun: 'checks',
-    verb: 'Checking context budget',
+  ContextBudget: {
+    label: 'Checked',
+    noun: 'context budgets',
+    verb: 'Checking',
     icon: Gauge,
     stackable: true,
     readOnly: true,
   },
-  search: {
+  Search: {
     label: 'Searched',
-    noun: 'searches',
+    noun: 'patterns',
     verb: 'Searching',
     icon: Search,
     stackable: true,
     readOnly: true,
   },
-  write: {
+  Write: {
     label: 'Wrote',
     noun: 'files',
     verb: 'Writing',
     icon: FilePlus,
     stackable: true,
   },
-  edit: {
+  Edit: {
     label: 'Edited',
-    noun: 'edits',
+    noun: 'files',
     verb: 'Editing',
     icon: FilePen,
     stackable: true,
   },
-  bash: {
+  Bash: {
     label: 'Ran',
     noun: 'commands',
     verb: 'Running',
     icon: Terminal,
     stackable: false,
   },
-  memory: {
-    label: 'Memory',
-    noun: 'notes',
-    verb: 'Remembering',
-    icon: Brain,
-    stackable: true,
-  },
-  global_search: {
-    label: 'Search',
-    noun: 'searches',
-    verb: 'Searching',
+  GlobalSearch: {
+    label: 'Ran',
+    noun: 'global searches',
+    verb: 'Running',
     icon: Search,
     stackable: true,
   },
-  tool_output: {
-    label: 'Tool output',
-    noun: 'output lookups',
-    verb: 'Inspecting output',
+  ToolOutput: {
+    label: 'Inspected',
+    noun: 'tool outputs',
+    verb: 'Inspecting',
     icon: TextSearch,
     stackable: true,
   },
-  mcp_resources: {
-    label: 'MCP resources',
-    noun: 'lookups',
-    verb: 'Reading MCP resources',
+  McpResources: {
+    label: 'Read',
+    noun: 'MCP resources',
+    verb: 'Reading',
     icon: ListTree,
     stackable: true,
   },
-  vault: {
-    label: 'Vault',
-    noun: 'vault actions',
-    verb: 'Managing vault',
+  Vault: {
+    label: 'Managed',
+    noun: 'secrets',
+    verb: 'Managing',
     icon: KeyRound,
     stackable: false,
   },
-  skill: {
-    label: 'Skill',
+  Skill: {
+    label: 'Loaded',
     noun: 'skills',
-    verb: 'Running skill',
+    verb: 'Loading',
     icon: BookOpen,
     stackable: true,
   },
-  mini_app_guide: {
-    label: 'Mini app guide',
+  MiniAppGuide: {
+    label: 'Read',
     noun: 'mini app guides',
-    verb: 'Reading the mini app guide',
+    verb: 'Reading',
     icon: BookOpen,
     stackable: true,
     readOnly: true,
   },
-  ask: {
+  AskUserQuestion: {
     label: 'Asked',
     noun: 'questions',
     verb: 'Asking',
     icon: MessageCircleQuestion,
     stackable: false,
   },
-  browser: {
-    label: 'Browser',
-    noun: 'actions',
-    verb: 'Controlling browser',
+  Browser: {
+    label: 'Ran',
+    noun: 'browser actions',
+    verb: 'Running',
     icon: MousePointerClick,
     stackable: false,
   },
-  jobs: {
-    label: 'Jobs',
+  Jobs: {
+    label: 'Checked',
     noun: 'jobs',
-    verb: 'Checking jobs',
+    verb: 'Checking',
     icon: Terminal,
     stackable: true,
   },
-  // A task handed to a child session — one card per delegation, like a spawn. Its
-  // list/message/stop/close calls share the card: each still names the child it touched.
-  delegate: {
-    label: 'Delegated',
-    noun: 'delegated tasks',
-    verb: 'Delegating',
-    icon: Forward,
+  // A subagent in a child session — one card per start, never folded away.
+  Agent: {
+    label: 'Started',
+    noun: 'agents',
+    verb: 'Starting',
+    icon: Bot,
+    stackable: false,
+  },
+  SendMessage: {
+    label: 'Sent',
+    noun: 'messages',
+    verb: 'Sending',
+    icon: MessageSquareShare,
+    stackable: false,
+  },
+  TaskStop: {
+    label: 'Stopped',
+    noun: 'tasks',
+    verb: 'Stopping',
+    icon: CircleStop,
     stackable: false,
   },
   // A workflow's agents are child sessions of the chat; the card is the run, never folded away.
-  workflow: {
-    label: 'Ran a workflow',
+  Workflow: {
+    label: 'Ran',
     noun: 'workflows',
-    verb: 'Running a workflow',
+    verb: 'Running',
     icon: ListTree,
     stackable: false,
   },
-  loops: {
-    label: 'Loops',
+  Loops: {
+    label: 'Scheduled',
     noun: 'loops',
-    verb: 'Scheduling loop',
+    verb: 'Scheduling',
     icon: RefreshCw,
     stackable: false,
   },
-  mini_app_build: {
-    label: 'Built mini app',
-    noun: 'mini apps',
-    verb: 'Building mini app',
-    icon: Plug,
-    stackable: false,
-  },
-  research: {
+  Research: {
     label: 'Researched',
-    noun: 'researches',
+    noun: 'topics',
     verb: 'Researching',
     icon: Globe,
     stackable: false,
     readOnly: true,
   },
-  skip_answer: {
-    label: 'Skipped',
-    noun: 'skips',
-    verb: 'Skipping',
-    icon: MessageSquareDashed,
-    stackable: false,
-    readOnly: true,
-  },
-  set_topic: {
-    label: 'Topic changed',
-    noun: 'topic changes',
-    verb: 'Saving the topic',
-    icon: MessageSquareDashed,
-    stackable: false,
-    readOnly: true,
-  },
-  configure: {
-    label: 'Configure',
-    noun: 'configuration proposals',
-    verb: 'Proposing a change',
+  Configure: {
+    label: 'Proposed',
+    noun: 'changes',
+    verb: 'Proposing',
     icon: SlidersHorizontal,
     stackable: false,
   },
-  plan: {
-    label: 'Presented plan',
+  Plan: {
+    label: 'Presented',
     noun: 'plans',
-    verb: 'Presenting plan',
+    verb: 'Presenting',
     icon: ClipboardList,
-    stackable: false,
-  },
-  // A script is its own unit of work: its card shows the calls it made, so it never folds away.
-  codemode: {
-    label: 'Ran a script',
-    noun: 'scripts',
-    verb: 'Running a script',
-    icon: SquareCode,
     stackable: false,
   },
 }

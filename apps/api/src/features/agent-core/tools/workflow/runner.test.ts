@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { createScriptSandbox } from '@localixai/engine-scripts'
 
+import type { JournalEntry } from './journal'
 import { runWorkflow, type WorkflowAgentRequest, type WorkflowHost } from './runner'
 import type { WorkflowEvent } from './script'
 
@@ -63,6 +64,34 @@ describe('runWorkflow', () => {
     ])
   })
 
+  test('an agent the script abandoned is stopped and left out of the journal', async () => {
+    // Calls the script never awaits: it settles first and the sandbox aborts what is in flight.
+    const seen: Array<{ aborted: boolean }> = []
+    const entries: JournalEntry[] = []
+    const { host } = fakeHost(() => 'x')
+    host.runAgent = (_request, signal) =>
+      new Promise((resolve) => {
+        const call = { aborted: false }
+        seen.push(call)
+        signal.addEventListener('abort', () => {
+          call.aborted = true
+          resolve(null)
+        })
+      })
+    const result = await runWorkflow({
+      scripts,
+      name: 'demo',
+      body: `agent('a'); agent('b'); return 'done'`,
+      args: undefined,
+      host,
+      journal: { record: (entry) => entries.push(entry) },
+    })
+    expect(result).toMatchObject({ ok: true, value: 'done' })
+    await Promise.resolve()
+    expect(seen.map((call) => call.aborted)).toEqual([true, true])
+    expect(entries).toEqual([])
+  })
+
   test('a stopped agent is null; a throwing thunk or stage drops to null', async () => {
     const { host } = fakeHost((request) => (request.prompt === 'skip' ? null : 'ok'))
     const result = await run(
@@ -72,6 +101,37 @@ describe('runWorkflow', () => {
       host,
     )
     expect(result).toMatchObject({ ok: true, value: { a: [null, null, 'ok'], b: [null, 20] } })
+  })
+
+  test('a started agent passed to parallel() or a pipeline stage is null, hinted and awaited', async () => {
+    const { host, events } = fakeHost(() => 'ok')
+    let finished = 0
+    const slow = host.runAgent
+    host.runAgent = async (request, signal) => {
+      await Promise.resolve()
+      const reply = await slow(request, signal)
+      finished += 1
+      return reply
+    }
+    const result = await run(
+      `const a = await parallel([agent('x'), () => agent('y'), agent('z')])
+       const b = await pipeline([1], agent('w'))
+       return { a, b }`,
+      host,
+    )
+    expect(result).toMatchObject({ ok: true, value: { a: [null, 'ok', null], b: [null] } })
+    expect(finished).toBe(4)
+    expect(events).toEqual([
+      {
+        type: 'log',
+        message: 'parallel(): item 0 is not a function — pass () => agent(...), not agent(...)',
+      },
+      {
+        type: 'log',
+        message:
+          'pipeline(): stage 0 is not a function — pass (item) => agent(...), not agent(...)',
+      },
+    ])
   })
 
   test('Date.now(), Math.random() and new Date() throw; a dated Date still works', async () => {

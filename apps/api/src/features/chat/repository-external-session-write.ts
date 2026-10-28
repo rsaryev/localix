@@ -3,7 +3,6 @@ import type { AppDatabase } from '../../db'
 import { nextRefSeqInTransaction, retrySqliteBusy } from '../../db'
 import { sessionRef } from './contracts'
 import { mapSession } from './repository-mappers'
-import { participantsJsonColumn } from './repository-conversation-participants'
 import type { SessionRecord } from './repository-types'
 
 /** The supplied writer must use this transaction for the session and its identity claims. */
@@ -40,7 +39,6 @@ export function createExternalSessionWriter(
           const existing = await trx
             .selectFrom('agent_sessions')
             .selectAll()
-            .select(participantsJsonColumn.as('agents_json'))
             .where('user_id', '=', userId)
             .where('id', '=', identity.session_id)
             .executeTakeFirstOrThrow()

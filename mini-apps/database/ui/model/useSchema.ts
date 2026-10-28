@@ -42,6 +42,42 @@ export interface SchemaState {
   model: SqlSchemaModel
 }
 
+/** The flat vocabulary for SQL autocomplete: table names, loaded columns, foreign keys. */
+function buildSchemaModel(
+  schemas: DbSchemas | null,
+  tables: Record<string, DbTableSchema>,
+  columnSources: Record<string, ColumnSource>,
+): SqlSchemaModel {
+  const tableNames: string[] = []
+  if (schemas)
+    for (const items of Object.values(schemas)) for (const it of items) tableNames.push(it.name)
+  const columnsByTable: Record<string, string[]> = {}
+  const columnMeta: Record<string, Record<string, { type?: string; pk?: boolean }>> = {}
+  const foreignKeys: SqlForeignKey[] = []
+  for (const source of Object.values(columnSources)) {
+    const names = source.schema ? [`${source.schema}.${source.name}`, source.name] : [source.name]
+    const columns = source.columns.map((c) => c.name)
+    const meta = Object.fromEntries(
+      source.columns.map((c) => [c.name, { type: c.dataType, pk: c.pk }]),
+    )
+    for (const name of names) {
+      if (!ownRecordValue(columnsByTable, name)) defineRecordValue(columnsByTable, name, columns)
+      if (!ownRecordValue(columnMeta, name)) defineRecordValue(columnMeta, name, meta)
+    }
+  }
+  for (const t of Object.values(tables)) {
+    for (const fk of t.foreignKeys) {
+      foreignKeys.push({
+        table: t.schema ? `${t.schema}.${t.name}` : t.name,
+        columns: fk.columns,
+        refTable: fk.refSchema ? `${fk.refSchema}.${fk.refTable}` : fk.refTable,
+        refColumns: fk.refColumns,
+      })
+    }
+  }
+  return { tables: tableNames, columnsByTable, columnMeta, foreignKeys }
+}
+
 /**
  * Live schema for one connection: the tables/views tree (eager) plus a lazy
  * per-table column cache. Backed by the shared {@link schemaStore} so every
@@ -100,37 +136,10 @@ export function useSchema(connectionId: string): SchemaState {
     [connectionId, workItemVisible],
   )
 
-  const model = useMemo<SqlSchemaModel>(() => {
-    const tableNames: string[] = []
-    if (snap.schemas)
-      for (const items of Object.values(snap.schemas))
-        for (const it of items) tableNames.push(it.name)
-    const columnsByTable: Record<string, string[]> = {}
-    const columnMeta: Record<string, Record<string, { type?: string; pk?: boolean }>> = {}
-    const foreignKeys: SqlForeignKey[] = []
-    for (const source of Object.values(columnSources)) {
-      const names = source.schema ? [`${source.schema}.${source.name}`, source.name] : [source.name]
-      const columns = source.columns.map((c) => c.name)
-      const meta = Object.fromEntries(
-        source.columns.map((c) => [c.name, { type: c.dataType, pk: c.pk }]),
-      )
-      for (const name of names) {
-        if (!ownRecordValue(columnsByTable, name)) defineRecordValue(columnsByTable, name, columns)
-        if (!ownRecordValue(columnMeta, name)) defineRecordValue(columnMeta, name, meta)
-      }
-    }
-    for (const t of Object.values(snap.tables)) {
-      for (const fk of t.foreignKeys) {
-        foreignKeys.push({
-          table: t.schema ? `${t.schema}.${t.name}` : t.name,
-          columns: fk.columns,
-          refTable: fk.refSchema ? `${fk.refSchema}.${fk.refTable}` : fk.refTable,
-          refColumns: fk.refColumns,
-        })
-      }
-    }
-    return { tables: tableNames, columnsByTable, columnMeta, foreignKeys }
-  }, [snap.schemas, snap.tables, columnSources])
+  const model = useMemo(
+    () => buildSchemaModel(snap.schemas, snap.tables, columnSources),
+    [snap.schemas, snap.tables, columnSources],
+  )
 
   return {
     schemas: snap.schemas,

@@ -12,7 +12,6 @@
  * paragraph, which is the problem reactions were added to solve.
  */
 import type { StoredMessagePayload } from '../../../db'
-import { isAgentParticipant } from '../../../db/participant'
 
 /** How much of the marked message is quoted back, so the agent knows which one it was. */
 const QUOTE_CHARS = 120
@@ -41,21 +40,4 @@ export function reactionWakePrompt(emoji: string, payload: StoredMessagePayload)
     // "write nothing" is an instruction the model can carry out without a tool call.
     'Otherwise end your turn without writing anything: nothing is posted.',
   ].join('\n')
-}
-
-/**
- * The participant a marked message belongs to, so a room narrows the turn to them.
- *
- * Absent for the person's own messages and for the application's: those have no member to
- * address, and the turn reaches the room as an ordinary one.
- */
-export function reactionRecipient(
-  payload: StoredMessagePayload,
-): { participant: `agent:${string}`; handle?: string } | undefined {
-  const from = payload.from
-  if (typeof from !== 'string' || !isAgentParticipant(from)) return undefined
-  return {
-    participant: from,
-    ...(payload.authorSnapshot?.handle ? { handle: payload.authorSnapshot.handle } : {}),
-  }
 }

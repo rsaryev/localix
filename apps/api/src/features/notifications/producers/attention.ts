@@ -67,8 +67,8 @@ const ROW: Record<AttentionKind, RowShape> = {
     label: 'Plan',
     resourceId: (item) => item.subject.planId ?? item.key,
     title: (item) =>
-      item.subject.agentHandle
-        ? `@${item.subject.agentHandle} presented a plan`
+      item.subject.agentName
+        ? `${item.subject.agentName} presented a plan`
         : 'A plan is waiting for your review',
     body: (item) => item.title,
     focus: () => ({ id: 'review', label: 'Review plan' }),

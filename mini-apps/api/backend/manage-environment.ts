@@ -53,7 +53,7 @@ export function createManageEnvironmentTool(deps: ManageEnvironmentDeps): AgentT
     // pointer that every `{{variable}}` in a request resolves through.
     mutates: true,
     /**
-     * This body also serves unscoped/legacy use, where the active pointer lives in `ctx.stateDir`.
+     * This body also serves unscoped use, where the active pointer lives in `ctx.stateDir`.
      * The unified `api_client` replaces these exact paths with the common session-collection root
      * during planning, then constructs a session-scoped body for execution.
      */

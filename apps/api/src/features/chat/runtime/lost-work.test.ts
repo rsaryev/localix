@@ -7,7 +7,6 @@ const lostJob = (over: Partial<WorkRecord> = {}): WorkRecord => ({
   id: 'w1',
   userId: 'u1',
   sessionId: 's1',
-  agentId: 'lead',
   displayId: 'bg-1',
   kind: 'job',
   label: 'bun dev',

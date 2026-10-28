@@ -10,7 +10,7 @@
  * spend it somewhere else.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { acknowledgeInline } from '@localixai/mini-app-sdk/ui'
 import type { RequestEdit, RequestInfo } from '../../backend/contracts'
 import type { Pair, RequestSpec } from '../../backend/request-spec'
@@ -59,33 +59,30 @@ export function useRequestEdit(
 ) {
   const [draft, setDraft] = useState<RequestEdit | null>(null)
   const [baseline, setBaseline] = useState<{ name: string; draft: RequestEdit } | null>(null)
-  const baselineRef = useRef(baseline)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const [loaded, setLoaded] = useState<RequestInfo | null>(null)
+
   // An auth save or an agent update reloads the SAME request. Preserve a locally dirty draft in
-  // that case; switching to another request still starts from its server state.
-  useEffect(() => {
+  // that case; switching to another request still starts from its server state. Decided while
+  // rendering, when the request itself changed, so no frame shows the old draft over the new one.
+  if (request !== loaded) {
+    setLoaded(request)
     if (!request) {
-      baselineRef.current = null
       setBaseline(null)
       setDraft(null)
-      setError(null)
-      return
-    }
-    const incoming = { name: request.name, draft: draftFrom(request.spec) }
-    const previous = baselineRef.current
-    setDraft((current) => {
+    } else {
+      const incoming = { name: request.name, draft: draftFrom(request.spec) }
       const locallyDirty =
-        previous?.name === request.name &&
-        current !== null &&
-        JSON.stringify(current) !== JSON.stringify(previous.draft)
-      return locallyDirty ? current : incoming.draft
-    })
-    baselineRef.current = incoming
-    setBaseline(incoming)
+        baseline?.name === request.name &&
+        draft !== null &&
+        JSON.stringify(draft) !== JSON.stringify(baseline.draft)
+      if (!locallyDirty) setDraft(incoming.draft)
+      setBaseline(incoming)
+    }
     setError(null)
-  }, [request])
+  }
 
   const dirty = useMemo(() => {
     if (!request || !draft || baseline?.name !== request.name) return false
@@ -108,7 +105,6 @@ export function useRequestEdit(
       if (committed !== draft) setDraft(committed)
       const response = await restApi.update(sessionId, request.name, committed)
       const incoming = { name: response.request.name, draft: draftFrom(response.request.spec) }
-      baselineRef.current = incoming
       setBaseline(incoming)
       setDraft(incoming.draft)
       // Re-read rather than trust the draft: the server is what decides what got stored (it

@@ -42,3 +42,8 @@ export function workspaceCompletionWorkingSet(
       origin: 'ambient' as const,
     }))
 }
+
+/** Hear every move of the grid: a tab opened, focused or closed may change the working set. */
+export function subscribeWorkspaceWorkingSet(listener: () => void): () => void {
+  return useGridStore.subscribe(() => listener())
+}

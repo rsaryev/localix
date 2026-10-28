@@ -16,7 +16,7 @@ const read = (path: string): PersistedMessage =>
     payload: {
       id: 'm',
       role: 'assistant',
-      items: [{ type: 'tool_call', toolCallId: 't', name: 'read', input: { path } }],
+      items: [{ type: 'tool_call', toolCallId: 't', name: 'Read', input: { path } }],
     },
   }) as never
 

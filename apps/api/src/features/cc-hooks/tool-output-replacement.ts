@@ -49,14 +49,14 @@ const textAt = (value: Record<string, unknown>, ...path: string[]): string | und
  * string `results`. Edit and Write answer with what changed, which the model does not read.
  */
 function shapedText(toolName: string, value: Record<string, unknown>): string | undefined {
-  if (toolName === 'bash') return bashText(value)
-  if (toolName === 'read') return textAt(value, 'file', 'content')
-  if (toolName === 'search')
+  if (toolName === 'Bash') return bashText(value)
+  if (toolName === 'Read') return textAt(value, 'file', 'content')
+  if (toolName === 'Search')
     return (
       textAt(value, 'content') ??
       (Array.isArray(value.filenames) ? value.filenames.join('\n') : undefined)
     )
-  if (toolName === 'research') {
+  if (toolName === 'Research') {
     const results = Array.isArray(value.results) ? value.results : undefined
     return (
       textAt(value, 'result') ??

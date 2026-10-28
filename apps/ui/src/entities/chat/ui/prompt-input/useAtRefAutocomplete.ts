@@ -44,8 +44,6 @@ import {
   rowsOwnedBy,
   type AtRefSuggestion,
 } from './atRefSuggestions'
-import { buildAgentRows } from './atRefAgentRows'
-import { useConversationAgentCandidates } from './useConversationAgentCandidates'
 
 export type { AtRefSuggestion } from './atRefSuggestions'
 
@@ -59,6 +57,13 @@ export interface AtRefNotice {
   detail?: string
 }
 
+/** A directory listing and the directory (null = none yet) it belongs to. */
+interface OwnedEntries {
+  dir: string | null
+  rows: DirEntry[]
+}
+const NO_ENTRIES: OwnedEntries = { dir: null, rows: [] }
+
 export function useAtRefAutocomplete(
   prompt: string,
   setPrompt: (v: string) => void,
@@ -69,8 +74,8 @@ export function useAtRefAutocomplete(
   caret: number | null = null,
   /** Mint a COMPLETED link as a structured pinned ref (chip) instead of leaving
    *  the raw token in the text. Returns true when claimed — accept then REMOVES
-   *  the typed partial. Absent/false → the token text is inserted (legacy). */
-  linkRef?: (token: string) => boolean,
+   *  the typed partial. False → the token text is inserted. */
+  linkRef: (token: string) => boolean,
   /** Keep a warm-hidden composer's picker state dormant until it owns focus. */
   active = true,
 ) {
@@ -82,16 +87,15 @@ export function useAtRefAutocomplete(
   const sessions = useChatStore((state) => selectAtRefSessions(state, sessionMode))
   // Project-link search runs against the already-loaded project list (no round-trip).
   const projects = useChatStore((state) => selectAtRefProjects(state, projectMode))
-  // The conversation's own party, as @-completion candidates (a room's only).
-  const agentCandidates = useConversationAgentCandidates(sessionId)
   const [activeIndex, setActiveIndex] = useState(0)
   const [dismissedAt, setDismissedAt] = useState<string | null>(null)
   const [filter, setFilter] = useState<AtRefFilter>('all')
 
   // --- ref-path mode: directory listing for @file:/@folder: completion ---
-  const [entries, setEntries] = useState<DirEntry[]>([])
+  // The listing and the directory it belongs to travel together, so rows are gated by their owner
+  // without reading a ref during render.
+  const [entries, setEntries] = useState<OwnedEntries>(NO_ENTRIES)
   const cacheRef = useRef(new Map<string, DirEntry[]>())
-  const entriesDirRef = useRef<string | null>(null)
 
   // --- mention mode: project-wide file search results ---
   const [searchHits, setSearchHits] = useState<FileSearchEntry[]>([])
@@ -99,7 +103,7 @@ export function useAtRefAutocomplete(
 
   // --- terminal mode: the session's live PTYs (fetched on menu entry) ---
   const terminalMode = token?.mode === 'terminal'
-  const { terminals, terminalsSessionRef } = useAtRefTerminals(terminalMode, sessionId)
+  const { terminals: currentTerminals } = useAtRefTerminals(terminalMode, sessionId)
 
   // --- resource mode: unified provider drill-down. A localix://resource/chat node
   //     links back to its NATIVE token. The
@@ -130,10 +134,8 @@ export function useAtRefAutocomplete(
   const [prevSessionId, setPrevSessionId] = useState(sessionId)
   if (prevSessionId !== sessionId) {
     setPrevSessionId(sessionId)
-    setEntries([])
+    setEntries(NO_ENTRIES)
     setSearchHits([])
-    entriesDirRef.current = null
-    terminalsSessionRef.current = null
   }
   useEffect(() => {
     cacheRef.current.clear()
@@ -160,23 +162,21 @@ export function useAtRefAutocomplete(
     if (!refPathListing || !sessionId) return
     const cached = cacheRef.current.get(dirPart)
     if (cached) {
-      entriesDirRef.current = dirPart
-      setEntries(cached)
+      setEntries({ dir: dirPart, rows: cached })
       return
     }
     // The old directory's names must never be rebuilt under the new prefix.
-    if (entriesDirRef.current !== dirPart) setEntries([])
+    setEntries((prev) => (prev.dir === dirPart ? prev : NO_ENTRIES))
     let cancelled = false
     void backendClient
       .listDirectory(sessionId, dirPart || undefined)
       .then((listing) => {
         if (cancelled) return
         cacheRef.current.set(dirPart, listing.entries)
-        entriesDirRef.current = dirPart
-        setEntries(listing.entries)
+        setEntries({ dir: dirPart, rows: listing.entries })
       })
       .catch(() => {
-        if (!cancelled) setEntries([])
+        if (!cancelled) setEntries(NO_ENTRIES)
       })
     return () => {
       cancelled = true
@@ -185,8 +185,7 @@ export function useAtRefAutocomplete(
 
   // Effects run after render. Gate rows by their owner as well, so even the first
   // render after a directory/session switch cannot expose stale selectable items.
-  const currentEntries = rowsOwnedBy(entries, entriesDirRef.current, dirPart)
-  const currentTerminals = rowsOwnedBy(terminals, terminalsSessionRef.current, sessionId)
+  const currentEntries = rowsOwnedBy(entries.rows, entries.dir, dirPart)
 
   // Project-wide search, debounced 300ms — drives BOTH mention mode and the
   // no-slash ref-path search above.
@@ -249,10 +248,7 @@ export function useAtRefAutocomplete(
       case 'project':
         return buildProjectRows(projects, token.partial)
       case 'type':
-        // A one-letter `@q` is too short for the file search but not for a colleague's handle:
-        // the room's members are offered here too, above the ref kinds, so addressing someone
-        // never has to wait for a second character.
-        return [...buildAgentRows(agentCandidates, token.partial), ...buildTypeRows(token.partial)]
+        return buildTypeRows(token.partial)
       case 'ref-path':
         // No-slash partial → project-wide ref search results (reusing searchHits);
         // accepting still expands the file's CONTENTS (ref-path kind).
@@ -265,15 +261,10 @@ export function useAtRefAutocomplete(
               wantDirsOnly: token.kind === 'folder',
             })
       case 'mention':
-        // Colleagues first: in a room "@qa" is far more often a person than a folder.
-        return [
-          ...buildAgentRows(agentCandidates, token.partial),
-          ...buildSearchHitRows(searchHits, 'mention'),
-        ]
+        return buildSearchHitRows(searchHits, 'mention')
     }
   }, [
     token,
-    agentCandidates,
     currentEntries,
     segment,
     dirPart,

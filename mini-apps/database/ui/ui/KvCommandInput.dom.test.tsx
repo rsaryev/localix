@@ -31,7 +31,9 @@ describe('Redis command autocomplete', () => {
 
     function Harness() {
       const [value, setValue] = useState('')
-      setValueFromOutside = setValue
+      React.useEffect(() => {
+        setValueFromOutside = setValue
+      }, [setValue])
       return (
         <KvCommandInput value={value} onValueChange={setValue} onRun={() => runs.push(value)} />
       )

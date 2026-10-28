@@ -1,6 +1,6 @@
 import { sql, type Kysely } from 'kysely'
 
-import { backoffMs } from '../lib/backoff'
+import { backoffMs } from '@localixai/agent/backoff'
 import type { AppDatabase } from './types'
 
 /** 5ms, then 10ms: lock contention between local writers clears in milliseconds. */

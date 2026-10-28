@@ -1,6 +1,6 @@
 import type { ModelStepHook } from '@localixai/agent'
 import type { AgentTool } from '@localixai/agent/agents'
-import { offerAgents, wrapDelegate, type DirectoryAgent } from './agent-events'
+import { offerAgents, wrapAgent, type DirectoryAgent } from './agent-events'
 import type { RunSurface } from './api/run-api'
 import type { ModelUsage, ModScene } from './contracts'
 import { skillPromptIn, wrapSkillTool } from './conversation-events'
@@ -65,7 +65,7 @@ export interface ModRunScope {
   /** `agent.offer`: the directory's agents, or the plugins' agent types, the model is offered. */
   offerAgents<T extends DirectoryAgent>(agents: readonly T[]): Promise<T[]>
   /** `tool.check` for the permission gate: a review of its verdicts, and its verdict lent. */
-  toolCheck(): ModToolCheck | undefined
+  toolCheck(facts?: { approver?: 'host' | 'person' }): ModToolCheck | undefined
   /** `turn.step` around each model request of the turn; undefined when no mod hears it. */
   modelStep(turnId: string): ModelStepHook | undefined
   /** `session.compact`: whether the checkpoint due now is kept, skipped, or one a mod asked for. */
@@ -131,7 +131,10 @@ export async function createModRunScope(
     async submit(text, turnId) {
       // Rows a mod appended since the last prompt reach the model with this one.
       const appended = scene.sessionId ? host.composer.takeNotes(scene.sessionId) : []
-      if (!active || !host.hears('prompt.submit', plugins))
+      // A prompt a mod submitted met its hooks as that call, with the plugin as its origin. Taken
+      // on every submit, whoever listens, so the entry cannot outlive its turn.
+      const heard = scene.sessionId ? host.composer.takeSubmitted(scene.sessionId, text) : false
+      if (!active || heard || !host.hears('prompt.submit', plugins))
         return { dropped: false, text, context: appended }
       // The turn's id is `turn.start`'s to carry, as in Claude Code.
       void turnId
@@ -181,7 +184,7 @@ export async function createModRunScope(
       if (scene.sessionId) host.band.runs.attach(scene.sessionId, surface)
       // `agent.spawn` inside `tool.call`, as the Agent tool runs inside its call; a result is
       // stored (`session.append`) once the call is done.
-      const spawning = wrapDelegate(tools, scope, {
+      const spawning = wrapAgent(tools, scope, {
         parentModel: run.model,
         directory: () => directory,
       })
@@ -201,12 +204,13 @@ export async function createModRunScope(
       directory = [...directory.filter((agent) => !names.has(agent.name)), ...agents]
       return active ? offerAgents(scope, agents) : [...agents]
     },
-    toolCheck: () =>
+    toolCheck: (facts) =>
       active
         ? toolCheckPort(
             scope,
             () => surface.tools,
             (verdict) => void (surface.verdict = verdict),
+            facts?.approver,
           )
         : undefined,
     modelStep: (turnId) => (active ? modelStepHook(scope, turnId) : undefined),

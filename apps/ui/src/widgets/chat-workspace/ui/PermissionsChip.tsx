@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { ShieldCheck, X, Trash2 } from 'lucide-react'
 import { toast } from '@/shared/lib/notify'
 import {
@@ -48,16 +48,12 @@ export function PermissionsChip({
   const [busy, setBusy] = useState<{ tool: string | null } | null>(null)
 
   /**
-   * "Revoke all" lives inside this popup, so unmounting on empty tore the open popup out with
-   * the chip — no exit animation, and focus dropped to `document.body`, because Radix cannot
-   * return it to a trigger that no longer exists. The chip outlives its popup by one step:
-   * mounted while open, closed by the effect once there is nothing left, removed on the render
-   * after that.
+   * "Revoke all" lives inside this popup, so the chip cannot simply vanish while it is open: the
+   * open state is closed first, while rendering (React re-renders at once, so no frame shows an
+   * empty open list), and the chip is removed on that same pass.
    */
   const empty = !sessionId || tools.length === 0
-  useEffect(() => {
-    if (empty && open) setOpen(false)
-  }, [empty, open])
+  if (empty && open) setOpen(false)
   if (empty && !open) return null
   if (!sessionId) return null
 

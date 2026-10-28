@@ -12,6 +12,10 @@ afterAll(async () => {
   await teardown()
 })
 
+/** The painted width as the real shell sets it: through the CSS variable the sidebar reads. */
+const widthStyle = (px: number) =>
+  ({ [SIDEBAR_WIDTH_VAR]: `${px}px`, width: `var(${SIDEBAR_WIDTH_VAR})` }) as React.CSSProperties
+
 /**
  * Mount the hook against the two elements the real shell gives it: the sidebar panel
  * (whose `--sidebar-width` the browser paints) and the sash (whose ARIA value a
@@ -28,28 +32,24 @@ async function mount() {
 
   function Shell() {
     const sidebar = useSidebarResize()
-    renders += 1
-    seen.push(sidebar)
+    const { panelRef, sashRef, sidebarWidth, min, max } = sidebar
+    // Count commits, not render passes: one entry per screen the user could have seen.
+    React.useEffect(() => {
+      renders += 1
+      seen.push(sidebar)
+    })
     return (
-      <div
-        ref={sidebar.panelRef}
-        data-testid="panel"
-        style={
-          {
-            [SIDEBAR_WIDTH_VAR]: `${sidebar.sidebarWidth}px`,
-            width: `var(${SIDEBAR_WIDTH_VAR})`,
-          } as React.CSSProperties
-        }
-      >
+      <div ref={panelRef} data-testid="panel" style={widthStyle(sidebarWidth)}>
         <div
-          ref={sidebar.sashRef}
+          ref={sashRef}
           role="separator"
           tabIndex={0}
+          aria-label="Resize sidebar"
           aria-orientation="vertical"
-          aria-valuemin={sidebar.min}
-          aria-valuemax={sidebar.max}
-          aria-valuenow={sidebar.sidebarWidth}
-          aria-valuetext={`${Math.round(sidebar.sidebarWidth)} pixels`}
+          aria-valuemin={min}
+          aria-valuemax={max}
+          aria-valuenow={sidebarWidth}
+          aria-valuetext={`${Math.round(sidebarWidth)} pixels`}
           onMouseDown={sidebar.onResizeStart}
           onKeyDown={sidebar.onResizeKeyDown}
           onDoubleClick={sidebar.resetWidth}
@@ -145,19 +145,21 @@ describe('useSidebarResize — the drag repaints without re-rendering the shell'
 
     let sidebar!: SidebarResize
     function Shell({ tick }: { tick: number }) {
-      sidebar = useSidebarResize()
+      const current = useSidebarResize()
+      const { panelRef, sashRef, sidebarWidth, onResizeStart } = current
+      React.useEffect(() => {
+        sidebar = current
+      })
       return (
-        <div
-          ref={sidebar.panelRef}
-          data-tick={tick}
-          style={
-            {
-              [SIDEBAR_WIDTH_VAR]: `${sidebar.sidebarWidth}px`,
-              width: `var(${SIDEBAR_WIDTH_VAR})`,
-            } as React.CSSProperties
-          }
-        >
-          <div ref={sidebar.sashRef} role="separator" onMouseDown={sidebar.onResizeStart} />
+        <div ref={panelRef} data-tick={tick} style={widthStyle(sidebarWidth)}>
+          <div
+            ref={sashRef}
+            role="separator"
+            tabIndex={0}
+            aria-label="Resize sidebar"
+            aria-valuenow={sidebarWidth}
+            onMouseDown={onResizeStart}
+          />
         </div>
       )
     }

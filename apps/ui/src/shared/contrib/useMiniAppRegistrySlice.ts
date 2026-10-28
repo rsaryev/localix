@@ -18,17 +18,15 @@ import { registryChangeVersion, subscribeRegistryChanges } from './registryChang
  */
 export function useMiniAppRegistrySlice<T>(key: string, select: () => T): T {
   const cache = useRef<{ key: string; stamp: string; value: T } | null>(null)
-  const selectRef = useRef(select)
-  selectRef.current = select
   const getSnapshot = useCallback((): T => {
     const stamp = `${registryChangeVersion()}:${miniAppActivationVersion()}`
     const held = cache.current
     if (held?.key === key && held.stamp === stamp) return held.value
-    const next = selectRef.current()
+    const next = select()
     const value = held?.key === key && sameSlice(held.value, next) ? held.value : next
     cache.current = { key, stamp, value }
     return value
-  }, [key])
+  }, [key, select])
   return useSyncExternalStore(subscribeMiniAppRegistry, getSnapshot, getSnapshot)
 }
 

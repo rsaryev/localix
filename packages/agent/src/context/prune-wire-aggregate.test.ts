@@ -28,7 +28,7 @@ function transcript(resultBytes: number, count: number): Message[] {
     out.push({
       role: 'assistant',
       content: [
-        { type: 'tool_call', id: `tc-${i}`, name: 'bash', arguments: { command: `run ${i}` } },
+        { type: 'tool_call', id: `tc-${i}`, name: 'Bash', arguments: { command: `run ${i}` } },
       ],
       model: 'm',
       timestamp: i,
@@ -39,7 +39,7 @@ function transcript(resultBytes: number, count: number): Message[] {
         {
           type: 'tool_result',
           toolCallId: `tc-${i}`,
-          toolName: 'bash',
+          toolName: 'Bash',
           content: body(resultBytes),
         },
       ],
@@ -74,7 +74,7 @@ describe('pruned wire — aggregate size', () => {
    * `budgetTokens` holds as a hard ceiling even for a run of large recent results.
    *
    * It did not. `boundToolResults` bounds EACH result to a ~51 KiB tail excerpt plus a
-   * `tool_output` pointer — right for one result — and `prunedText` opened with
+   * `ToolOutput` pointer — right for one result — and `prunedText` opened with
    * `if (isCompressedContent(text)) return text`, which made elision monotone and the prompt
    * prefix stable at the cost of making the aggregate unshrinkable. So the retained total was
    * N x 51 KiB, linear in the number of recent results and indifferent to the budget. The
@@ -89,7 +89,7 @@ describe('pruned wire — aggregate size', () => {
    *   10 x 500 KB, budget  40k   141_030   →   35_430   (the budget had NO effect before)
    *
    * `pointerOnlyBody` drops the excerpt when — and only when — the request is over the ceiling.
-   * The bracketed clause already names `tool_output(action="get", tool_call_id=…)`, so nothing
+   * The bracketed clause already names `ToolOutput(action="get", tool_call_id=…)`, so nothing
    * unrecoverable is lost, and giving up the excerpt to fit is the same trade the boundary
    * quantum already collapses for over budget.
    */
@@ -105,7 +105,7 @@ describe('pruned wire — aggregate size', () => {
     })
     expect(est(ten) + overhead).toBeLessThan(budget)
     // The excerpt goes; the route back to the bytes does not.
-    expect(JSON.stringify(ten)).toContain('tool_output(action=\\"get\\", tool_call_id=')
+    expect(JSON.stringify(ten)).toContain('ToolOutput(action=\\"get\\", tool_call_id=')
 
     // No longer linear in the count: twice the results cost roughly the same.
     const twenty = pruneWireMessages(transcript(500_000, 20), {
@@ -191,6 +191,6 @@ describe('pruned wire — aggregate size', () => {
       fixedOverheadTokens: 8_000,
     })
     // Under the ceiling nothing is compressed at all, so there is no pointer to find.
-    expect(JSON.stringify(pruned)).not.toContain('tool_output(action=\\"get\\", tool_call_id=')
+    expect(JSON.stringify(pruned)).not.toContain('ToolOutput(action=\\"get\\", tool_call_id=')
   })
 })

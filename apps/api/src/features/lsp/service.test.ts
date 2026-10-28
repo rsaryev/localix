@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createLspDocumentService, type LspServiceDeps } from './service'
 import type { LspCodeAction } from './lsp-client'
+import type { LspServerState } from './lsp-manager-types'
 
 // Minimal fake LspManager — records the calls the service makes.
 function makeDeps() {
@@ -402,5 +403,43 @@ describe('LspDocumentService — two holders of the same buffer', () => {
     await svc.close('alice', 'sess-1', 'a.ts', 'tab-A')
 
     expect(calls.filter((c) => c.op === 'close')).toHaveLength(1)
+  })
+})
+
+describe('LspDocumentService server status', () => {
+  test('a server installing for an open file reaches that session without an agent run', async () => {
+    const { deps } = makeDeps()
+    let notify!: (root: string, states: LspServerState[]) => void
+    deps.lspManager.onUpdate = (handler) => {
+      notify = handler
+      return () => {}
+    }
+    const statuses: [string, string, string[]][] = []
+    const svc = createLspDocumentService({
+      ...deps,
+      publishStatus: (userId, sessionId, servers) =>
+        statuses.push([userId, sessionId, servers.map((s) => s.status)]),
+    })
+    await svc.open('alice', 'sess-1', 'main.go', 'package main')
+    const installing = [
+      {
+        serverId: 'go',
+        serverName: 'Go',
+        rootDir: '/root/alice',
+        status: 'installing',
+        errorCount: 0,
+        warningCount: 0,
+      },
+    ] satisfies LspServerState[]
+    notify('/root/alice', installing)
+    // The same states again are not news; another project's are not this session's.
+    notify('/root/alice', installing)
+    notify('/root/bob', [{ ...installing[0], status: 'ready' }])
+    notify('/root/alice', [{ ...installing[0], status: 'ready' }])
+
+    expect(statuses).toEqual([
+      ['alice', 'sess-1', ['installing']],
+      ['alice', 'sess-1', ['ready']],
+    ])
   })
 })

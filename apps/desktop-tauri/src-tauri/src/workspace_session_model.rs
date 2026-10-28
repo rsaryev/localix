@@ -37,7 +37,6 @@ pub(crate) struct SavedGroup {
     pub(crate) frame: Option<[f64; 4]>,
     #[serde(default)]
     pub(crate) fullscreen: bool,
-    #[serde(default)]
     pub(crate) hidden: bool,
 }
 #[derive(Default, Serialize, Deserialize)]
@@ -46,49 +45,11 @@ pub(crate) struct SavedSession {
     pub(crate) active: Option<String>,
 }
 
-/// Legacy sessions never recorded which windows were closed. Retain their content, but
-/// foreground only the last active group; explicit visibility in newer sessions is authoritative.
+/// A saved session; one that does not parse, or fails validation, is dropped.
 pub(crate) fn decode_session(bytes: &[u8]) -> Option<SavedSession> {
-    let value: serde_json::Value = serde_json::from_slice(bytes).ok()?;
-    let legacy: Vec<_> = value
-        .get("groups")?
-        .as_array()?
-        .iter()
-        .map(|group| {
-            group
-                .as_object()
-                .is_some_and(|group| !group.contains_key("hidden"))
-        })
-        .collect();
-    let mut session: SavedSession = serde_json::from_value(value).ok()?;
-    if legacy.iter().any(|legacy| *legacy) {
-        let original_active = session.active.take();
-        // Validate identities, routes, selections and geometry before applying the fallback.
-        session = session.validated()?;
-        let active_group = original_active
-            .as_deref()
-            .and_then(|active| {
-                session
-                    .groups
-                    .iter()
-                    .position(|group| group.tabs.iter().any(|tab| tab.label == active))
-            })
-            .or_else(|| (!session.groups.is_empty()).then_some(0));
-        session.active = active_group.map(|index| {
-            let group = &session.groups[index];
-            original_active
-                .as_ref()
-                .filter(|active| group.tabs.iter().any(|tab| &tab.label == *active))
-                .cloned()
-                .unwrap_or_else(|| group.tabs[group.selected].label.clone())
-        });
-        for (index, (group, legacy)) in session.groups.iter_mut().zip(legacy).enumerate() {
-            if legacy {
-                group.hidden = Some(index) != active_group;
-            }
-        }
-    }
-    session.validated()
+    serde_json::from_slice::<SavedSession>(bytes)
+        .ok()?
+        .validated()
 }
 
 impl SavedSession {

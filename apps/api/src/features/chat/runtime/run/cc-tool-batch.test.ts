@@ -5,7 +5,7 @@ import { ccAfterToolBatch, ccHookStopRule, POST_TOOL_BATCH_STOP } from './cc-too
 
 const batch = {
   calls: [
-    { toolCallId: 't1', toolName: 'read', input: { path: 'a' }, result: { content: '1\ta' } },
+    { toolCallId: 't1', toolName: 'Read', input: { path: 'a' }, result: { content: '1\ta' } },
   ],
 }
 const signal = new AbortController().signal

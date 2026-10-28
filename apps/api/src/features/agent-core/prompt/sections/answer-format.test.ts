@@ -37,11 +37,9 @@ describe('# Answer formatting', () => {
     expect(rendersAnswerMarkdown('subagent', undefined)).toBe(false)
     expect(rendersAnswerMarkdown('automation', undefined)).toBe(false)
 
-    // The principle that points at the section rides with it: leading a prompt with "use the
-    // forms" where nothing renders them would make every relayed reply print raw markers.
-    expect(buildAgentSystemPrompt({}).indexOf(ANSWER_FORMS_PRINCIPLE)).toBeLessThan(
-      buildAgentSystemPrompt({}).indexOf(ANSWER_FORMAT_HEADER),
-    )
+    // The principle that points at the forms rides inside the section: "use the forms" where
+    // nothing renders them would make every relayed reply print raw markers.
+    expect(buildAnswerFormatSection()).toContain(ANSWER_FORMS_PRINCIPLE)
     const channel = buildAgentSystemPrompt({ deliveryContext: { channel: 'telegram' } })
     expect(channel).not.toContain(ANSWER_FORMAT_HEADER)
     expect(channel).not.toContain(ANSWER_FORMS_PRINCIPLE)

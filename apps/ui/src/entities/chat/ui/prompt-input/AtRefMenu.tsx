@@ -15,7 +15,6 @@ import {
 } from '@localixai/mini-app-sdk/ui/segmented-control'
 import { fileIcon, folderIcon } from '@/shared/ui/file-icon/fileIcon'
 import { refKindIcon } from '../refKindPresentation'
-import { MonogramAvatar } from '@localixai/kit/avatar'
 import type { AtRefSuggestion, AtRefFilter, AtRefNotice } from './useAtRefAutocomplete'
 import { ResourceGlyph } from './ResourceGlyph'
 
@@ -59,9 +58,6 @@ function SuggestionIcon({ s }: { s: AtRefSuggestion }) {
   // `--accent-foreground`, not `--accent`: `--accent` is a FILL token — a 6% foreground veil under
   // glass — so the action row's glyph, the one meant to stand OUT, was the faintest in the list.
   if (s.isAction) return <Link2 className="size-3.5 text-accent-foreground" />
-  // A participant: its monogram, the same tile the author line and the roster draw for it.
-  if (s.kind === 'agent' && s.handle)
-    return <MonogramAvatar identity={s.handle} label={s.description} size={14} />
   if (s.kind === 'session' || s.kind === 'project') return kindGlyph(s.kind)
   if (s.kind === 'resource') return <ResourceGlyph icon={s.resourceIcon} />
   if (s.kind === 'type') {

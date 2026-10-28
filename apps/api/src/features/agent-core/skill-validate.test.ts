@@ -23,6 +23,16 @@ afterAll(async () => {
 })
 
 describe('validateSkillFile', () => {
+  it('does not warn that argument-hint has no arguments: Claude Code does not require them', async () => {
+    const path = await writeSkill(
+      'hinted',
+      '---\nname: hinted\ndescription: Hinted skill\nargument-hint: "[file]"\n---\n\nDo $ARGUMENTS.',
+    )
+    const { errors, warnings } = await validateSkillFile(path)
+    expect(errors).toEqual([])
+    expect(warnings).toEqual([])
+  })
+
   it('passes a well-formed skill with no findings', async () => {
     const path = await writeSkill(
       'deploy',

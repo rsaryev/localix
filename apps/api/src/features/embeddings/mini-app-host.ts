@@ -6,6 +6,7 @@
  * or another mini app's, and two mini apps may both call a collection `cards`.
  */
 import type { SemanticIndexHost, SemanticSource } from '@localixai/mini-app-sdk/backend'
+import { createOwnedRegistrations, type OwnedRegistrations } from '../../lib/owned-registrations'
 import type { SemanticService } from './service'
 
 const COLLECTION_NAME = /^[a-z0-9][a-z0-9._-]{0,63}$/
@@ -22,6 +23,8 @@ export function miniAppCollection(miniAppName: string, collection: string): stri
 export function createMiniAppSemanticHost(
   service: SemanticService,
   miniAppName: string,
+  /** What each mini app holds: a reloaded backend replaces its own source instead of colliding. */
+  registrations: OwnedRegistrations = createOwnedRegistrations(),
 ): SemanticIndexHost {
   const own = (collection: string) => miniAppCollection(miniAppName, collection)
   // Vectors on demand carry no collection: the same port every core consumer uses.
@@ -30,23 +33,30 @@ export function createMiniAppSemanticHost(
     status() {
       const note = service.strategy()
       const model = service.model()
-      // Always on: `enabled` stays in the mini app contract, true; `ready` says when it embeds.
       return {
-        enabled: true,
         ready: note.mode === 'hybrid',
         model: { id: model.id, label: model.label, dimensions: model.indexDimensions },
       }
     },
     registerSource(source: SemanticSource) {
-      return service.registerSource({
-        collection: own(source.collection),
-        // A mini app's category is named by its source, else by its own collection name.
-        label: source.label ?? source.collection,
-        version: source.version,
-        scan: (cursor, limit) => source.scan(cursor, limit),
-        read: (keys) => source.read(keys),
-        ...(source.count ? { count: () => source.count!() } : {}),
-      })
+      const collection = own(source.collection)
+      // The same mini app registering the collection again is its backend being loaded again: the
+      // index keeps ONE registration and this load's closures answer through it. Which load answers
+      // is the backend host's verdict (`settle`), so a duplicate it discards never displaces the
+      // wired backend. Another mini app's collection is a different name and never collides.
+      return registrations.bind(miniAppName, `semantic:${collection}`, source, (current) =>
+        service.registerSource({
+          collection,
+          // A mini app's category is named by its source, else by its own collection name.
+          label: source.label ?? source.collection,
+          get version() {
+            return current().version
+          },
+          scan: (cursor, limit) => current().scan(cursor, limit),
+          read: (keys) => current().read(keys),
+          ...(source.count ? { count: () => current().count?.() ?? Promise.resolve(0) } : {}),
+        }),
+      ).dispose
     },
     changed(collection, keys) {
       void service.changed(own(collection), keys)

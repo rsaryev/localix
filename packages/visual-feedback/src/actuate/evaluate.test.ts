@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
+import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
 
 import { runCommand, installConsoleCapture, type ActuateDeps } from './index'
@@ -11,6 +11,12 @@ function makeDeps(): ActuateDeps {
 describe('evaluate action', () => {
   beforeAll(() => GlobalRegistrator.register())
   afterAll(() => GlobalRegistrator.unregister())
+  // Unregistering removes the DOM's globals, not the page globals these tests install.
+  afterEach(() => {
+    for (const key of ['__board', 'toggleTheme', '__boom']) {
+      Reflect.deleteProperty(globalThis, key)
+    }
+  })
 
   test('evaluates a plain expression', async () => {
     const r = await runCommand({ action: 'evaluate', expression: '1 + 2' }, makeDeps())

@@ -77,12 +77,6 @@ export function acceptAtRefSuggestion({
     insert(suggestion.id)
     return
   }
-  // An agent mention stays TEXT: it is how participants are addressed, and the same
-  // `@handle` is what the conversation strategy reads to let the addressee answer first.
-  if (suggestion.kind === 'agent' && suggestion.handle) {
-    insert(`@${suggestion.handle} `)
-    return
-  }
   if (suggestion.kind === 'ref-path') {
     const path = suggestion.path ?? suggestion.id
     if (action === 'link') {

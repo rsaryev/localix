@@ -6,7 +6,6 @@
  * same way everywhere a CC scalar becomes a boolean.
  */
 
-import { frontmatterBool } from '../agent-core/frontmatter-values'
 import { scalarField } from '../agent-core/skill-discovery'
 
 /**
@@ -16,14 +15,4 @@ import { scalarField } from '../agent-core/skill-discovery'
  */
 export function trimmedFrontmatterField(value: string | string[] | undefined): string | undefined {
   return scalarField(value)?.trim() || undefined
-}
-
-/**
- * Coerce an already-scalarized YAML frontmatter value to a TRI-STATE boolean:
- * `true`/`yes`/`on`/`1` → true, `false`/`no`/`off`/`0` → false, anything else (incl.
- * `undefined`) → undefined. Case- and whitespace-insensitive. Use when the
- * "unset" case must stay distinguishable from an explicit `false`.
- */
-export function coerceFrontmatterBool(raw: string | undefined): boolean | undefined {
-  return frontmatterBool(raw)
 }

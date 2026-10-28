@@ -116,18 +116,13 @@ export const MINI_APP_ARGS: SlashArgSpec[] = [
     placeholder: 'Pick an action…',
     options: [
       { value: 'list', label: 'list', description: 'Show installed mini apps' },
-      {
-        value: 'create',
-        label: 'create',
-        description: 'Describe a mini app; the agent names, builds and enables it',
-      },
       { value: 'enable', label: 'enable', description: 'Turn a mini app on by name' },
       { value: 'disable', label: 'disable', description: 'Turn a mini app off by name' },
       { value: 'remove', label: 'remove', description: 'Remove one of your own mini apps' },
       {
         value: 'reload',
         label: 'reload',
-        description: 'Rebuild your own mini apps and reload every mini app in place',
+        description: 'Reload every mini app, its tools, screens and commands, in place',
       },
       {
         value: 'catalog',
@@ -166,12 +161,6 @@ export const MINI_APP_ARGS: SlashArgSpec[] = [
     dynamic: true,
     when: { arg: 'action', equals: ['enable', 'disable', 'remove'] },
     placeholder: 'Pick an installed mini app…',
-  },
-  {
-    name: 'description',
-    type: 'text',
-    when: { arg: 'action', equals: 'create' },
-    placeholder: 'What should the mini app do?',
   },
 ]
 

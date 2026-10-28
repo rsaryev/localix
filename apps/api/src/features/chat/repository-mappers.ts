@@ -6,50 +6,47 @@ import { deserializeMessagePayload } from '../../db'
 import type { PersistedMessage, SessionSummary } from './contracts'
 import type { SessionRecord } from './repository'
 import { parseSessionProvenance } from './session-provenance'
-import { parseParticipants } from './repository-conversation-participants'
-import { emptyModelChoices, parseModelChoices, unstampedChoices } from './session-model-choices'
+import { agentFromRow, type SessionAgentColumns } from './repository-session-agent'
 
 // Row→record mappers for the chat repository. Type-only `SessionRecord` import
 // from ./repository is erased at compile time, so there is no runtime import
 // cycle (repository.ts imports these mappers as values; this file imports only
 // the type back).
 
-export const mapSession = (row: {
-  message_count?: number
-  id: string
-  user_id: string
-  seq?: number
-  title: string
-  goal?: string | null
-  previous_topic_summary?: string | null
-  is_pinned: number
-  created_at: string
-  updated_at: string
-  last_message_at: string
-  execution_backend: string
-  execution_target: string | null
-  project_id: string
-  parent_session_id: string | null
-  root_session_id: string | null
-  session_kind: AgentSessionKind
-  runtime_status: 'idle' | 'running' | 'completed' | 'failed' | 'stopped'
-  source_tool_call_id: string | null
-  external_agent_provider?: string | null
-  external_agent_session_key?: string | null
-  invocation_json: string
-  pinned_skills?: string | null
-  activated_tools?: string | null
-  /** The participants, aggregated to JSON by `participantsJsonColumn`. */
-  agents_json?: string | null
-  closed_at?: string | null
-  permission_mode?: string | null
-  output_style?: string | null
-  model_choices?: string | null
-  description?: string | null
-  avatar?: string | null
-  archived_at?: string | null
-  task_name?: string | null
-}): SessionRecord => ({
+export const mapSession = (
+  row: {
+    message_count?: number
+    id: string
+    user_id: string
+    seq?: number
+    title: string
+    goal?: string | null
+    previous_topic_summary?: string | null
+    is_pinned: number
+    created_at: string
+    updated_at: string
+    last_message_at: string
+    execution_backend: string
+    execution_target: string | null
+    project_id: string
+    parent_session_id: string | null
+    root_session_id: string | null
+    session_kind: AgentSessionKind
+    runtime_status: 'idle' | 'running' | 'completed' | 'failed' | 'stopped'
+    source_tool_call_id: string | null
+    external_agent_provider?: string | null
+    external_agent_session_key?: string | null
+    invocation_json: string
+    pinned_skills?: string | null
+    activated_tools?: string | null
+    closed_at?: string | null
+    permission_mode?: string | null
+    output_style?: string | null
+    description?: string | null
+    archived_at?: string | null
+    task_name?: string | null
+  } & SessionAgentColumns,
+): SessionRecord => ({
   messageCount: row.message_count ?? 0,
   id: row.id,
   userId: row.user_id,
@@ -74,13 +71,11 @@ export const mapSession = (row: {
     : {}),
   sourceToolCallId: row.source_tool_call_id ?? null,
   provenance: parseSessionProvenance(row.invocation_json),
-  agents: parseParticipants(row.agents_json),
-  modelChoices: unstampedChoices(parseModelChoices(row.model_choices)),
+  agent: agentFromRow(row),
   closedAt: row.closed_at ?? null,
   permissionMode: parsePermissionMode(row.permission_mode),
   outputStyle: row.output_style ?? null,
   description: row.description ?? null,
-  avatar: row.avatar ?? null,
   pinnedSkills: parsePinnedSkills(row.pinned_skills),
   activatedTools: asStringArray(safeJsonParse(row.activated_tools)),
   // The COLUMN is named after the one isolation mechanism that existed when it was added; the
@@ -130,12 +125,10 @@ export const toSessionSummary = (record: SessionRecord): SessionSummary => ({
   parentSessionId: record.parentSessionId,
   rootSessionId: record.rootSessionId,
   sessionKind: record.sessionKind,
-  agents: record.agents,
-  modelChoices: record.modelChoices ?? emptyModelChoices(),
+  agent: record.agent,
   closedAt: record.closedAt ?? null,
   permissionMode: record.permissionMode ?? DEFAULT_PERMISSION_MODE,
   description: record.description,
-  avatar: record.avatar,
   runtimeStatus: record.runtimeStatus,
   ...(record.externalAgentProvider ? { externalAgentProvider: record.externalAgentProvider } : {}),
   ...(record.externalAgentSessionKey

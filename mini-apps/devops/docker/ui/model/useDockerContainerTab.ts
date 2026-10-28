@@ -12,6 +12,14 @@ import {
 import { useDockerContainerData } from './useDockerContainerData'
 import { dockerContainerUri } from './openTab'
 
+interface ActionState {
+  containerId: string
+  busy: boolean
+  error: DevOpsIssue | null
+}
+
+const idleAction = (containerId: string): ActionState => ({ containerId, busy: false, error: null })
+
 export type DockerContainerAction = 'start' | 'stop' | 'restart'
 
 export function useDockerContainerTab({
@@ -26,8 +34,16 @@ export function useDockerContainerTab({
   publishMessageContext?: PublishMessageContext
 }) {
   const [panel, setPanelState] = useState<DockerContainerPanel>(loadDockerContainerPanel)
-  const [actionError, setActionError] = useState<DevOpsIssue | null>(null)
-  const [busy, setBusy] = useState(false)
+  // An action's progress belongs to the container it was started on: a different container
+  // starts idle, with nothing to reset.
+  const [actionState, setActionState] = useState<ActionState>(() => idleAction(containerId))
+  const { busy, error: actionError } =
+    actionState.containerId === containerId ? actionState : idleAction(containerId)
+  const dismissActionError = () =>
+    setActionState((state) => ({
+      ...(state.containerId === containerId ? state : idleAction(containerId)),
+      error: null,
+    }))
   const actionSeq = useRef(0)
   const data = useDockerContainerData({ active, containerId, panel })
   const running = data.container?.state === 'running' || data.container?.state === 'restarting'
@@ -51,25 +67,23 @@ export function useDockerContainerTab({
     })
   }, [containerId, data.container?.name, name, panel, publishMessageContext])
 
+  // An action still running on the previous container must not report on this one.
   useEffect(() => {
     actionSeq.current += 1
-    setActionError(null)
-    setBusy(false)
   }, [containerId])
 
   const runAction = async (action: DockerContainerAction) => {
     const seq = ++actionSeq.current
-    setBusy(true)
-    setActionError(null)
+    setActionState({ containerId, busy: true, error: null })
     try {
       await dockerApi.action(containerId, action)
       if (seq !== actionSeq.current) return
       await data.refresh(panel, panel === 'logs' && data.logsLive)
     } catch (error) {
       if (seq !== actionSeq.current) return
-      setActionError(dockerActionIssue(error))
+      setActionState({ containerId, busy: true, error: dockerActionIssue(error) })
     } finally {
-      if (seq === actionSeq.current) setBusy(false)
+      if (seq === actionSeq.current) setActionState((state) => ({ ...state, busy: false }))
     }
   }
 
@@ -80,7 +94,7 @@ export function useDockerContainerTab({
     running,
     busy,
     actionError,
-    dismissActionError: () => setActionError(null),
+    dismissActionError,
     runAction,
   }
 }

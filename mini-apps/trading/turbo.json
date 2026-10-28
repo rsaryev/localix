@@ -1,0 +1,10 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "type-check": {
+      "dependsOn": ["^type-check", "@localixai/kit#type-check"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/apps/ui/src/**"]
+    }
+  }
+}

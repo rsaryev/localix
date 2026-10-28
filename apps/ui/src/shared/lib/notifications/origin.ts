@@ -12,11 +12,8 @@ function decoded(value: string | undefined): string | undefined {
 /** Parse the React Router pathname into typed event provenance. */
 export function routeEventOrigin(pathname: string): NotificationOrigin {
   const parts = pathname.split('/').filter(Boolean)
-  // `/project/:projectId/:sessionId`, or a legacy `/chat/:sessionId` link that has not
-  // been redirected to its scope yet.
-  const sessionId = decoded(
-    parts[0] === 'project' ? parts[2] : parts[0] === 'chat' ? parts[1] : undefined,
-  )
+  // `/project/:projectId/:sessionId`.
+  const sessionId = decoded(parts[0] === 'project' ? parts[2] : undefined)
   if (!sessionId) return { kind: 'application' }
   return {
     kind: 'session',

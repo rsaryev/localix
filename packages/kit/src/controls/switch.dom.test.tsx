@@ -27,9 +27,10 @@ describe('Switch DOM runtime', () => {
     function Harness() {
       const [checked, setChecked] = useState(false)
       return (
-        <label>
+        <label htmlFor="background-sync">
           Background sync
           <Switch
+            id="background-sync"
             checked={checked}
             onChange={(event) => {
               onCheckedChange(event.currentTarget.checked)

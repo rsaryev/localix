@@ -34,7 +34,7 @@ import type { Env, Schema } from 'hono'
 import { createDebouncer } from '../../lib/debounce'
 import type { BackendSubsystem } from '../ext/subsystem-contrib'
 import type { SearchProviderRegistry } from '../agent-core/search/provider'
-import type { MiniAppRouteScope } from '@localixai/mini-app-sdk/backend'
+import { createMountDispatcher } from './backend-host-dispatch'
 import { createMiniAppUiActionTable } from './backend-host-ui-actions'
 
 import type { MiniAppBackendHostDeps, MiniAppBackendHost } from './backend-host-contracts'
@@ -42,7 +42,7 @@ import { planMiniAppBackends } from './backend-host-plan'
 
 export type { MiniAppBackendHostDeps, MiniAppBackendHost } from './backend-host-contracts'
 
-const REFRESH_DEBOUNCE_MS = 300
+const DEFAULT_REFRESH_DEBOUNCE_MS = 300
 
 interface WiredBackend {
   backend: BackendSubsystem
@@ -69,7 +69,7 @@ export function createMiniAppBackendHost(deps: MiniAppBackendHostDeps): MiniAppB
    *  by `unwireBackend`, or a re-enable would be skipped as already-wired. */
   const capabilitiesWired = new Set<string>()
   let searchRegistry: SearchProviderRegistry | undefined
-  const refreshDebouncer = createDebouncer(REFRESH_DEBOUNCE_MS)
+  const refreshDebouncer = createDebouncer(deps.refreshDebounceMs ?? DEFAULT_REFRESH_DEBOUNCE_MS)
   // Serializes reconciles so overlapping toggles converge to last-state-wins.
   let lifecycle: Promise<void> = Promise.resolve()
   let stopped = false
@@ -191,20 +191,41 @@ export function createMiniAppBackendHost(deps: MiniAppBackendHostDeps): MiniAppB
 
     // Deleting the CURRENT key mid-iteration is well-defined for a Map, and the awaits
     // below cannot interleave another writer (reconciles are serialized on `lifecycle`).
+    const releaseServices = (app: string) =>
+      Promise.resolve(deps.releaseHostServices?.(app)).catch((err) =>
+        deps.logger?.warn(`mini app "${app}" host services release threw`, {
+          error: String(err),
+        }),
+      )
+    const released = new Set<string>()
     for (const [app, entries] of wired) {
       const stillDesired = desiredByName.has(app)
       if (stillDesired && wiredRevisions.get(app) === revisionOf(app)) continue
       wired.delete(app)
       wiredRevisions.delete(app)
       for (const entry of entries) await unwireBackend(app, entry)
+      if (!stillDesired) {
+        released.add(app)
+        await releaseServices(app)
+      }
     }
     for (const [app, backends] of desiredByName) {
-      if (wired.has(app)) continue
+      if (wired.has(app)) {
+        // Kept: the fresh load was discarded, and the services answer for the wired one again.
+        deps.settleHostServices?.(app, 'kept')
+        continue
+      }
       wired.set(
         app,
         backends.map((backend) => wireBackend(app, backend)),
       )
       wiredRevisions.set(app, revisionOf(app))
+      deps.settleHostServices?.(app, 'replaced')
+    }
+    // A backend the plan refused registered in host services while it loaded and is never wired,
+    // so nothing else would ever release what it holds.
+    for (const [app, problems] of refused) {
+      if (problems.length > 0 && !wired.has(app) && !released.has(app)) await releaseServices(app)
     }
     // Publish only after the full desired pass succeeds. A failed refresh keeps
     // the last known-good action table just like it keeps the wired providers.
@@ -231,32 +252,7 @@ export function createMiniAppBackendHost(deps: MiniAppBackendHostDeps): MiniAppB
   }
 
   return {
-    middleware() {
-      return async (c, next) => {
-        const path = c.req.path
-        for (const [prefix, wrapper] of mounts) {
-          if (path === prefix || path.startsWith(`${prefix}/`)) {
-            // The raw request loses the parent context, which is why a mini app route cannot read
-            // `c.get('userId')`. Hono's second `fetch` argument IS the mounted app's `c.env`, so
-            // the resolved scope travels there instead of being re-derived by every mini app from
-            // the host's own env module (which is how that boundary got crossed in the first
-            // place). Resolution failures degrade to no environment rather than a 500: a mini app
-            // route that does not need scope must keep working.
-            const userId = c.get('userId') as string | undefined
-            let scope: MiniAppRouteScope | undefined
-            if (deps.resolveScope && userId) {
-              try {
-                scope = await deps.resolveScope({ userId, request: c.req.raw })
-              } catch (err) {
-                deps.logger?.warn('mini app route scope resolution failed', { error: String(err) })
-              }
-            }
-            return wrapper.fetch(c.req.raw, scope)
-          }
-        }
-        return next()
-      }
-    },
+    middleware: () => createMountDispatcher(mounts, deps),
     refresh() {
       refreshDebouncer.schedule(() => {
         void enqueue(async () => {

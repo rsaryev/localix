@@ -40,20 +40,20 @@ export const POINTER_PLACEHOLDER = `[Old tool output ${ELISION_MARKER}]`
  * NON-RECOVERABLE items — `elideItem` claims every read result and mutation arg
  * first. A bash or search result cannot be re-read from disk: without a handle the
  * model's only recovery is to RE-RUN the command, which is what the corpus shows it
- * doing. `tool_output` replays the stored original for one turn instead, and the
+ * doing. `ToolOutput` replays the stored original for one turn instead, and the
  * bytes are non-recoverable precisely because nothing else can change them — so
  * unlike a read pointer, the replay can never be stale.
  */
 function recoveryHint(item: ToolBackedItem, recoveryToolAvailable: boolean): string {
   return item.toolCallId && recoveryToolAvailable
-    ? ` — recover via tool_output(action="get", tool_call_id="${item.toolCallId}")`
+    ? ` — recover via ToolOutput(action="get", tool_call_id="${item.toolCallId}")`
     : ''
 }
 
 /**
  * The `pointer` op drops a NON-RECOVERABLE output whole — no head, no tail, nothing of the
  * text survives on the wire. That is exactly where vocabulary hints earn their tokens: the
- * model cannot re-read this content from disk, so `tool_output` (or a re-run) is the
+ * model cannot re-read this content from disk, so `ToolOutput` (or a re-run) is the
  * only route back, and the hints are the only evidence left about whether it is worth taking.
  */
 function pointerPlaceholder(item: ToolBackedItem, recoveryToolAvailable: boolean): string {
@@ -63,7 +63,7 @@ function pointerPlaceholder(item: ToolBackedItem, recoveryToolAvailable: boolean
   if (!recoveryToolAvailable) {
     return `[Old tool output ${ELISION_MARKER}; full original is unavailable in this run — re-run the originating read-only call only if needed${hints}]`
   }
-  return `[Old tool output ${ELISION_MARKER} — recover via tool_output(action="get", tool_call_id="${id}")${hints}]`
+  return `[Old tool output ${ELISION_MARKER} — recover via ToolOutput(action="get", tool_call_id="${id}")${hints}]`
 }
 
 /** Replace an item's model-facing result text, keeping identity/structure verbatim.
@@ -86,10 +86,10 @@ function elideItem(
   recoveryToolAvailable: boolean,
 ): ToolBackedItem {
   // A crushed recoverable payload advertises a WORKING recovery handle — a
-  // `tool_output(action="get", tool_call_id=…)` replay of exactly this result for one turn —
+  // `ToolOutput(action="get", tool_call_id=…)` replay of exactly this result for one turn —
   // NOT a bare "re-read", which re-lands the whole file and re-bills it every turn
   // (the endless-review re-read loop). The full original is durable
-  // in the message store; tool_output reconstructs it by id.
+  // in the message store; ToolOutput reconstructs it by id.
   //
   // The WORDS are the wire prune's words, from the shared owner (`./pointers`), because
   // both layers know exactly the same thing here: `heavyMutateInputs` already refused a
@@ -115,7 +115,7 @@ function elideItem(
   }
   const read = recoverableReadResult(item)
   if (read) {
-    // `tool_output` replays the ORIGINAL bytes. That is the right recovery only
+    // `ToolOutput` replays the ORIGINAL bytes. That is the right recovery only
     // while they still describe the file: once a later write changed it, a replay hands
     // the model content that no longer exists on disk, and once the model re-read the
     // file the current bytes are already further down the conversation.

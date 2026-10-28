@@ -1,5 +1,5 @@
 /**
- * The two PER-AGENT-LANE stores that outlive a single run.
+ * The two PER-SESSION stores that outlive a single run.
  *
  * A run rebuilds its tool registry from scratch every time; these do not. That is
  * the point of them:
@@ -9,9 +9,9 @@
  *  - `context`    — what the lane's wire holds (the elided id sets, the usage-anchor
  *    proof, a checkpoint the in-run policy asked for). The VIEW itself is durable.
  *
- * Both are scoped to (session, agent): a colleague's read cannot unlock this agent's
- * blind-overwrite guard, and a colleague's wire cannot touch its elision ratchet.
- * They are keyed IDENTICALLY, which lets `evictSessionStateOverCap` drop a lane from
+ * Both are scoped to the session: another session's read cannot unlock this one's
+ * blind-overwrite guard, and another session's wire cannot touch its elision ratchet.
+ * They are keyed IDENTICALLY, which lets `evictSessionStateOverCap` drop a session from
  * both as one unit. One call creates whatever is missing, then evicts once.
  */
 import {
@@ -23,7 +23,6 @@ import {
   type ContextLaneState,
   type RuntimeState,
 } from '../agent-runner-state'
-import { agentLaneKey, type ExecutionAddress } from '../../../agent-core/execution-address'
 
 export interface SessionStores {
   fileMtimes: FileMtimeStore
@@ -36,26 +35,37 @@ export interface SessionStores {
  */
 export function ensureSessionStores(
   state: Pick<RuntimeState, 'contextLanes' | 'sessionFileMtimes'>,
-  address: ExecutionAddress,
+  sessionId: string,
 ): SessionStores {
   const { contextLanes, sessionFileMtimes } = state
-  const key = agentLaneKey(address)
-
-  let fileMtimes = sessionFileMtimes.get(key)
+  let fileMtimes = sessionFileMtimes.get(sessionId)
   if (!fileMtimes) {
     fileMtimes = createFileMtimeStore()
-    sessionFileMtimes.set(key, fileMtimes)
+    sessionFileMtimes.set(sessionId, fileMtimes)
   }
 
-  let context = contextLanes.get(key)
+  let context = contextLanes.get(sessionId)
   if (!context) {
     context = {
       elidedToolCallIds: new Set(),
       elidedArgToolCallIds: new Set(),
     }
-    contextLanes.set(key, context)
+    contextLanes.set(sessionId, context)
   }
 
   evictSessionStateOverCap(state)
   return { fileMtimes, context }
+}
+
+/**
+ * `/compact`: the session's NEXT turn takes a context checkpoint, whatever was
+ * measured, and tells Claude Code's PreCompact hooks it was asked for with `instructions`. The
+ * request lives on the lane until that turn's view stage consumes it (`stages/view.ts`).
+ */
+export function requestCheckpoint(
+  state: Pick<RuntimeState, 'contextLanes' | 'sessionFileMtimes'>,
+  sessionId: string,
+  instructions: string,
+): void {
+  ensureSessionStores(state, sessionId).context.manualCompact = { instructions }
 }

@@ -32,7 +32,7 @@ export interface TriggerConditions {
   /** The loop ended (cancelled, exhausted): nothing is left to fix. */
   loopEnded(userId: string, triggerId: string): void
   /**
-   * The loop's chat has a seat whose provider account is gone and no live account can take it:
+   * The loop's chat has a route whose provider account is gone and no live account can take it:
    * every fire would fail until the person connects the provider again or picks another model.
    * Settled with the loop's other rows by the next fire that succeeds.
    */

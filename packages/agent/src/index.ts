@@ -8,7 +8,6 @@ export { stableStringify, browserHash, textEncoderByteLength } from './utils/has
 export * from './chat-stream-types'
 export * from './chat-stream-parts'
 export * from './usage-summary'
-export * from './participant-usage'
 export * from './agent-model-settings'
 export * from './context-limit'
 export * from './reasoning-levels'

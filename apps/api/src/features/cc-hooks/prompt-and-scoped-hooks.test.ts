@@ -71,13 +71,13 @@ describe('parseHooksBlock — prompt handlers', () => {
   it('drops a prompt handler on an UNSUPPORTED event (recorded as skipped)', () => {
     const skipped: SkippedHandler[] = []
     const reg = parseHooksBlock(
-      { PostToolUse: [{ hooks: [{ type: 'prompt', prompt: 'review' }] }] },
+      { Notification: [{ hooks: [{ type: 'prompt', prompt: 'review' }] }] },
       'project',
       { projectDir: '/p' },
       skipped,
     )
-    expect(reg.PostToolUse).toBeUndefined()
-    expect(skipped).toContainEqual({ source: 'project', event: 'PostToolUse', type: 'prompt' })
+    expect(reg.Notification).toBeUndefined()
+    expect(skipped).toContainEqual({ source: 'project', event: 'Notification', type: 'prompt' })
   })
 
   it('now PARSES http / mcp_tool / agent on Stop (all supported there)', () => {
@@ -120,8 +120,11 @@ describe('parsePromptHookResult', () => {
   })
 
   it('fails open (ok:true) on an unparseable reply', () => {
-    expect(parsePromptHookResult('the model rambled with no json')).toEqual({ ok: true })
-    expect(parsePromptHookResult('{ not valid json')).toEqual({ ok: true })
+    for (const reply of ['the model rambled with no json', '{ not valid json']) {
+      expect(parsePromptHookResult(reply)).toMatchObject({ ok: true })
+      // ... and it says so, so a broken gate is not mistaken for a passed one.
+      expect(parsePromptHookResult(reply).failed).toBeString()
+    }
   })
 
   it('does not close early on a brace inside a string', () => {
@@ -152,11 +155,16 @@ describe('mapPromptOutcome (per-event ok:false mapping)', () => {
     }
   })
 
-  it('PreToolUse ok:false → deny with reason', () => {
+  it('PreToolUse ok:false → deny with reason, and the turn ends unless continueOnBlock', () => {
+    const deny = { permissionDecision: 'deny' as const, permissionDecisionReason: 'unsafe' }
     expect(mapPromptOutcome('PreToolUse', { ok: false, reason: 'unsafe' })).toEqual({
-      permissionDecision: 'deny',
-      permissionDecisionReason: 'unsafe',
+      ...deny,
+      continue: false,
+      stopReason: 'unsafe',
     })
+    expect(
+      mapPromptOutcome('PreToolUse', { ok: false, reason: 'unsafe' }, { continueOnBlock: true }),
+    ).toEqual(deny)
   })
 
   it('UserPromptSubmit ok:false → blocked', () => {
@@ -201,7 +209,7 @@ describe('prompt hooks fire through the runtime', () => {
   it('PreToolUse ok:false denies the tool call', async () => {
     const stub: PromptHookEvaluator = async () => ({ ok: false, reason: 'blocked by policy' })
     const rt = runtimeWith(promptBlock('PreToolUse'), stub)
-    const res = await rt.runPreToolUse('bash', { command: 'rm -rf /' })
+    const res = await rt.runPreToolUse('Bash', { command: 'rm -rf /' })
     expect(res.decision).toBe('deny')
     expect(res.reason).toBe('blocked by policy')
   })
@@ -209,7 +217,7 @@ describe('prompt hooks fire through the runtime', () => {
   it('PreToolUse ok:true proceeds', async () => {
     const stub: PromptHookEvaluator = async () => ({ ok: true })
     const rt = runtimeWith(promptBlock('PreToolUse'), stub)
-    const res = await rt.runPreToolUse('bash', { command: 'ls' })
+    const res = await rt.runPreToolUse('Bash', { command: 'ls' })
     expect(res.decision).toBe('proceed')
   })
 
@@ -236,14 +244,14 @@ describe('prompt hooks fire through the runtime', () => {
       return { ok: true }
     }
     const rt = runtimeWith(promptBlock('PreToolUse'), stub)
-    await rt.runPreToolUse('bash', { command: 'echo hi' })
+    await rt.runPreToolUse('Bash', { command: 'echo hi' })
     expect(seen!.prompt).toBe('gate')
     expect(JSON.parse(seen!.inputJson).tool_name).toBe('Bash')
   })
 
   it('fails open when NO evaluator is injected', async () => {
     const rt = runtimeWith(promptBlock('PreToolUse')) // no evaluator
-    const res = await rt.runPreToolUse('bash', { command: 'x' })
+    const res = await rt.runPreToolUse('Bash', { command: 'x' })
     expect(res.decision).toBe('proceed')
   })
 
@@ -252,7 +260,7 @@ describe('prompt hooks fire through the runtime', () => {
       throw new Error('provider down')
     }
     const rt = runtimeWith(promptBlock('PreToolUse'), stub)
-    const res = await rt.runPreToolUse('bash', { command: 'x' })
+    const res = await rt.runPreToolUse('Bash', { command: 'x' })
     expect(res.decision).toBe('proceed')
   })
 })

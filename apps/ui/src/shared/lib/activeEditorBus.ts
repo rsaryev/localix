@@ -10,7 +10,7 @@
  * {@link explorerBus}. This is purely additive over the editor's autosave.
  */
 
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
 
 type SaveFn = () => void
 
@@ -37,7 +37,9 @@ export function saveActiveEditor(): void {
 /** Buffer changes replace `save`; native Save must retain focus and call the latest version. */
 export function useActiveEditorSave(save: SaveFn): () => void {
   const latest = useRef(save)
-  latest.current = save
+  useLayoutEffect(() => {
+    latest.current = save
+  })
   const focusedSave = useCallback(() => latest.current(), [])
   useEffect(() => () => clearActiveEditorSave(focusedSave), [focusedSave])
   return useCallback(() => setActiveEditorSave(focusedSave), [focusedSave])

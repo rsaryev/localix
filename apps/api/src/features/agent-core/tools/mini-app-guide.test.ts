@@ -14,7 +14,7 @@ const run = async (tool: ReturnType<typeof createMiniAppGuideTool>, input: unkno
   }
 }
 
-describe('mini_app_guide', () => {
+describe('MiniAppGuide', () => {
   test('hands the agent the guide of an enabled mini app', async () => {
     writeTree(dir(), { 'tiles/guide.md': 'Play with the `tiles` tool.\n' })
     const tool = createMiniAppGuideTool([{ app: 'tiles', file: join(dir(), 'tiles/guide.md') }])

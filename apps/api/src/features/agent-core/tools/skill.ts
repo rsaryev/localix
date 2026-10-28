@@ -13,6 +13,7 @@ import { filterDisabledSkills, isSkillDisabled, type SkillOverrides } from '../s
 import {
   classifySkillCall,
   skillPermissionResources,
+  prepareSkillArguments,
   skillToolInputSchema,
   type SkillToolPorts,
 } from './skill-call'
@@ -99,15 +100,16 @@ export function createSkillTool(
     return `Skill not found: "${name}". Available skills: ${shown.join(', ')}${more}`
   }
   return defineAgentTool({
-    name: TOOL.skill,
+    name: TOOL.Skill,
     label: 'Skill',
     activeVerb: 'Managing skill',
     // The skills that exist are listed in the prompt's "# Available skills"; searching and
-    // removing them is the `store` tool's.
+    // removing them is the `Store` tool's.
     // The name case agrees with the `name` example below; the two used to disagree.
     description:
-      'Save and get reusable skills (SKILL.md files; scripts/assets beside them via write/bash). After a non-trivial reusable workflow (a tricky fix, a multi-step procedure) save it under a kebab-case verb name; never save one-off answers, and fix a skill the moment it turns out wrong.',
+      'Save and get reusable skills (SKILL.md files; scripts/assets beside them via `Write`/`Bash`). After a non-trivial reusable workflow (a tricky fix, a multi-step procedure) save it under a kebab-case verb name; never save one-off answers, and fix a skill the moment it turns out wrong.',
     inputSchema: skillToolInputSchema,
+    prepareArguments: prepareSkillArguments,
     permissionResources: skillPermissionResources,
     // `save` writes <base>/.claude/skills/<name>/SKILL.md. With `scope:"global"` the base is
     // homedir(), i.e. outside the workspace — which is exactly what the confirmation prompt
@@ -194,14 +196,14 @@ export function createSkillTool(
           // BOUNDED, like every other text-returning tool. The only ceiling on a skill body is
           // `MAX_SKILL_MARKDOWN_BYTES` (1 MiB) at load time, so one `get` could inject ~250k tokens of
           // context in a single call — with no notice that anything was large and no way to page it —
-          // while `read`, `search`, and `tool_output` all cap at 64 KB with a numbered
+          // while `read`, `search`, and `ToolOutput` all cap at 64 KB with a numbered
           // marker. The head is what matters in a skill (its instructions lead), so this truncates the
           // TAIL and points at the file, which the model can `read` with an offset.
           const capped = truncateHead(body, { maxBytes: MAX_OUTPUT_BYTES })
           const bodyOut = capped.truncated
             ? `${capped.content}\n${truncationMarker(capped, {
                 kept: 'first',
-                advice: `Long skill — read the rest from ${skill.path} with \`read\` (offset/start_line).`,
+                advice: `Long skill — read the rest from ${skill.path} with \`Read\` (offset/start_line).`,
               })}`
             : body
           return {

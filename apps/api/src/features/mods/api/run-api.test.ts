@@ -21,20 +21,20 @@ test('a running turn lends its tools under Claude Code’s names; none running, 
   const api = createRunApi(() => surface)
   await expect(api.tool.call({ tool: 'Bash', command: 'ls' })).rejects.toThrow('No turn is running')
 
-  surface = { tools: [tool('bash'), tool('edit'), tool('mcp_docs_search', ['mcp__docs__search'])] }
+  surface = { tools: [tool('Bash'), tool('Edit'), tool('mcp_docs_search', ['mcp__docs__search'])] }
   expect(api.tool.list().map((entry) => [entry.name, entry.mcp])).toEqual([
     ['Bash', false],
     ['Edit', false],
     ['mcp__docs__search', true],
   ])
   expect(await api.tool.call({ tool: 'Bash', command: 'ls', timeout: 2000 })).toMatchObject({
-    result: { stdout: 'bash got {"command":"ls","timeout":2}', stderr: '' },
-    text: 'bash got {"command":"ls","timeout":2}',
+    result: { stdout: 'Bash got {"command":"ls","timeout":2}', stderr: '' },
+    text: 'Bash got {"command":"ls","timeout":2}',
   })
   expect(
     await api.tool.call({ tool: 'Edit', file_path: 'a', old_string: 'x', new_string: 'y' }),
   ).toMatchObject({
-    text: 'edit got {"edits":[{"path":"a","old_string":"x","new_string":"y"}]}',
+    text: 'Edit got {"edits":[{"path":"a","old_string":"x","new_string":"y"}]}',
   })
   expect(await api.mcp.call('docs', 'search', { q: 'hooks' })).toEqual({
     content: [{ type: 'text', text: 'mcp_docs_search got {"q":"hooks"}' }],
@@ -46,7 +46,7 @@ test('a running turn lends its tools under Claude Code’s names; none running, 
 test('ui.ask puts the question to the person through the turn’s question card', async () => {
   const asked: unknown[] = []
   const ask = {
-    name: 'ask',
+    name: 'AskUserQuestion',
     description: 'ask',
     execute: async (_id: string, input: unknown) => {
       asked.push(input)
@@ -70,8 +70,8 @@ test('ui.ask puts the question to the person through the turn’s question card'
 })
 
 test('$.tool.call reaches a tool by any name Claude Code calls it', async () => {
-  const api = createRunApi(() => ({ tools: [tool('search')] }))
+  const api = createRunApi(() => ({ tools: [tool('Search')] }))
   expect(await api.tool.call({ tool: 'Glob', pattern: '*.ts' })).toMatchObject({
-    text: expect.stringContaining('search got'),
+    text: expect.stringContaining('Search got'),
   })
 })

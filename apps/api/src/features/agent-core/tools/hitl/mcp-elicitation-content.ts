@@ -96,9 +96,9 @@ export function elicitationFieldError(field: McpElicitationField, value: unknown
       return typeof value === 'boolean' ? null : 'Expected yes or no'
     case 'array':
       return arrayError(field, value)
-    default:
-      return 'Unsupported field'
   }
+  // A server's field of a type this host does not know.
+  return 'Unsupported field'
 }
 
 export type ElicitationContentCheck =

@@ -3,7 +3,8 @@
  * `cc-tool-inputs-agentic.ts`, `cc-tool-responses.ts`), and the shape contract itself.
  */
 import { homedir } from 'node:os'
-import { isAbsolute, join, resolve } from 'node:path'
+import { isAbsolute, resolve } from 'node:path'
+import { expandHome } from '../../lib/home-path'
 
 export type Fields = Record<string, unknown>
 
@@ -60,6 +61,6 @@ export function baseOf(input: Fields, cwd: string | undefined): string | undefin
  */
 export function absolutePath(path: unknown, base: string | undefined): unknown {
   if (typeof path !== 'string' || !path || !base) return path
-  if (path === '~' || path.startsWith('~/')) return join(homedir(), path.slice(1))
-  return isAbsolute(path) ? path : resolve(base, path)
+  const expanded = expandHome(path, homedir())
+  return isAbsolute(expanded) ? expanded : resolve(base, expanded)
 }

@@ -1,4 +1,4 @@
-import type { LspManager } from './lsp-manager-types'
+import type { LspManager, LspServerState } from './lsp-manager-types'
 import type {
   LspCodeAction,
   LspPosition,
@@ -184,6 +184,8 @@ export interface LspServiceDeps {
   resolveProjectRoot: (userId: string, sessionId: string) => Promise<string>
   /** Emit a diagnostics push onto the given session's event stream. */
   publish: (userId: string, sessionId: string, push: LspDiagnosticsPush) => void
+  /** Emit the project's server states (installing, ready, …) onto a session with open files. */
+  publishStatus?: (userId: string, sessionId: string, servers: LspServerState[]) => void
   /**
    * Persist full file content through the editor's locked, optimistic-concurrency
    * write path (injected so this stays decoupled from `features/chat`). Used to

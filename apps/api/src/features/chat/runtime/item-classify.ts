@@ -1,3 +1,4 @@
+import { TOOL } from '../../agent-core/tool-names'
 import type { CommandJobStatus, ToolBackedItem } from '@localixai/agent/agents'
 
 /**
@@ -22,10 +23,10 @@ export function jobFields(details: Record<string, unknown> | undefined): {
 /** Map a tool name to its specialized item type, or `tool_call` for the rest. */
 export function classifyTool(name: string): ToolBackedItem['type'] {
   switch (name) {
-    case 'bash':
+    case TOOL.Bash:
       return 'command'
-    case 'write':
-    case 'edit':
+    case TOOL.Write:
+    case TOOL.Edit:
       return 'file_change'
     default:
       return name.startsWith('mcp__') || name.startsWith('mcp_') ? 'mcp_call' : 'tool_call'

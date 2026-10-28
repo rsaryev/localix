@@ -40,8 +40,8 @@ activated or brought onto the request by linked game context or a mini app wake.
 
 It never wakes the chat: a tool call is already the agent's turn, and a tool that woke the agent
 would wake it again on every move. When a game ends, the result asks the agent to save observations
-about play through its configured memory tool. Persistence depends on its permission rules and
-memory scope.
+about play in its memory, where the agent has one. Whether it can write there depends on its
+permission rules.
 
 ## Layout
 

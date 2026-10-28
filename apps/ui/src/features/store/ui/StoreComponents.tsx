@@ -14,7 +14,8 @@ import { listColumns, useStoreFrame } from '../model/layout'
 import { COMPONENT_LABELS, KIND_LABELS } from '../model/presentation'
 import { useStoreScope } from '../model/storeContext'
 import { keyOf } from '../model/useExtrasAfterInstall'
-import { useDebounced } from '../model/useDebounced'
+import { useDebounced } from '@localixai/mini-app-sdk/ui/runtime-hooks'
+import { SEARCH_DEBOUNCE_MS } from '../model/searchDebounce'
 import { usePagedListings } from '../model/useStoreData'
 import { GetAction } from './GetAction'
 import { ListSkeleton, PagedList } from './PagedList'
@@ -85,7 +86,7 @@ export function StoreComponents({ kind }: { kind: BrowsableComponentKind }) {
   const [filter, setFilter] = useState('')
   const [installedOnly, setInstalledOnly] = useState(false)
   const many = COMPONENT_LABELS[kind].many
-  const asked = useDebounced(filter.trim())
+  const asked = useDebounced(filter.trim(), SEARCH_DEBOUNCE_MS)
   const page = usePagedListings(store.client, {
     shelf: `capability:${kind}`,
     ...(asked ? { q: asked } : {}),

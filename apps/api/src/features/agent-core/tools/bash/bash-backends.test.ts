@@ -47,7 +47,7 @@ describe('createBashTool — foreground exit classification', () => {
 describe('createBashTool — local (default)', () => {
   it('accepts no env arg and uses local backend', () => {
     const tool = createBashTool()
-    expect(tool.name).toBe('bash')
+    expect(tool.name).toBe('Bash')
   })
 })
 
@@ -87,7 +87,7 @@ describe('createBashTool — error cases', () => {
     // We can't easily await the background promise without a real process,
     // but we can verify the tool doesn't pre-reject.
     // Just check that the tool object is valid.
-    expect(tool.name).toBe('bash')
+    expect(tool.name).toBe('Bash')
   })
 
   it('background job accepts send_input and streams final output', async () => {

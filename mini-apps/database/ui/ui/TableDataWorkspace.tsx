@@ -115,10 +115,14 @@ export function TableDataWorkspace({
     actions: [{ id: 'dismiss', label: 'Dismiss', run: () => setEditError(null), durable: false }],
   })
 
-  useEffect(() => {
-    if (!requestNonce) return
-    setView(requestedMode === 'edit-structure' ? 'structure' : 'data')
-  }, [requestNonce, requestedMode])
+  // A new request (also the first one) picks the view while rendering, not in an effect.
+  const [appliedRequest, setAppliedRequest] = useState<{ nonce?: string; mode?: DbTableOpenMode }>(
+    {},
+  )
+  if (appliedRequest.nonce !== requestNonce || appliedRequest.mode !== requestedMode) {
+    setAppliedRequest({ nonce: requestNonce, mode: requestedMode })
+    if (requestNonce) setView(requestedMode === 'edit-structure' ? 'structure' : 'data')
+  }
 
   useEffect(() => {
     setEditError(null)

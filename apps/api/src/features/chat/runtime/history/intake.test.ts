@@ -12,7 +12,7 @@ import { estimateMessageTokens } from '../context-token-estimate'
 import { createChatHistoryRun } from './chat-strategy'
 import { intakeTurn, rewriteModelPrompt } from './intake'
 import { freshLane, freshView, TEST_IDENTITY } from './testing/test-fixtures'
-import { USER_PARTICIPANT } from '../../../../db'
+import { USER_AUTHOR } from '../../../../db'
 import { systemNoticeBinding } from '../../system-notice-bindings'
 import { INERT_CC_HOOKS, type CcHooksRuntime, type CcPromptExpansion } from '../../../cc-hooks'
 
@@ -24,7 +24,7 @@ function message(id: string, content: string, uiOnly = false): PersistedMessage 
     payload: {
       id,
       role: 'user',
-      from: USER_PARTICIPANT,
+      from: USER_AUTHOR,
       content,
       ...(uiOnly ? { uiOnly: true } : {}),
     },
@@ -84,7 +84,7 @@ describe('intake → strategy', () => {
           type: 'tool_call',
           id: `item-${index}`,
           toolCallId: `read-${index}`,
-          name: 'read',
+          name: 'Read',
           activeVerb: 'Reading',
           status: 'completed',
           input: { path: `/repo/file-${index}.ts` },

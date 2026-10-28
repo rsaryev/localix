@@ -168,8 +168,7 @@ export function buildSearchService(
       listAgents: async (userId, projectId) =>
         (await agentsService.listAgents(userId, { projectId })).map((agent) => ({
           id: agent.record.id,
-          name: agent.record.handle,
-          label: agent.record.label,
+          name: agent.record.name,
           description: agent.record.description,
         })),
     }),

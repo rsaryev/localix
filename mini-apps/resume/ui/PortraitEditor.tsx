@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { Field } from '@localixai/kit/field'
 import { Input } from '@localixai/kit/input'
 import { Button } from '@localixai/kit/button'
@@ -42,7 +42,26 @@ export function PortraitEditor({
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const latest = useRef({ document, onChange })
-  latest.current = { document, onChange }
+  // The picked image resolves later than the render that started it; it applies to the latest props.
+  useLayoutEffect(() => {
+    latest.current = { document, onChange }
+  })
+  const load = async (file: File) => {
+    setLoading(true)
+    try {
+      const photo = await portrait(file)
+      const current = latest.current
+      current.onChange({
+        ...current.document,
+        header: { ...current.document.header, photo },
+      })
+      setError(null)
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : 'Could not read this image.')
+    } finally {
+      setLoading(false)
+    }
+  }
   const p = document.presentation
   const set = (value: Partial<typeof p>) =>
     onChange({ ...document, presentation: { ...p, ...value } })
@@ -57,24 +76,10 @@ export function PortraitEditor({
           type="file"
           accept="image/png,image/jpeg"
           disabled={loading}
-          onChange={async (event) => {
+          onChange={(event) => {
             const file = event.target.files?.[0]
             event.target.value = ''
-            if (!file) return
-            setLoading(true)
-            try {
-              const photo = await portrait(file)
-              const current = latest.current
-              current.onChange({
-                ...current.document,
-                header: { ...current.document.header, photo },
-              })
-              setError(null)
-            } catch (failure) {
-              setError(failure instanceof Error ? failure.message : 'Could not read this image.')
-            } finally {
-              setLoading(false)
-            }
+            if (file) void load(file)
           }}
         />
       </Field>

@@ -16,6 +16,7 @@ import { posix } from 'node:path'
 import { isAtOrUnder } from '../../lib/path-containment'
 
 import { globToRegExpSource } from './path-glob'
+import { isHomePath } from '../../lib/home-path'
 
 interface Anchors {
   cwd: string
@@ -27,8 +28,7 @@ interface Anchors {
 
 function anchored(spec: string, anchors: Anchors): { base: string; rel: string } {
   if (spec.startsWith('//')) return { base: '/', rel: spec.slice(2) }
-  if (spec === '~' || spec.startsWith('~/'))
-    return { base: anchors.homeDir ?? homedir(), rel: spec.slice(2) }
+  if (isHomePath(spec)) return { base: anchors.homeDir ?? homedir(), rel: spec.slice(2) }
   if (spec.startsWith('/')) return { base: anchors.projectDir ?? anchors.cwd, rel: spec.slice(1) }
   return { base: anchors.cwd, rel: spec.replace(/^\.\//, '') }
 }

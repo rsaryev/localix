@@ -35,7 +35,6 @@ export function createDrainOperations(
     leases,
     continuations,
     publishQueue,
-    ageWaitingAgentTurns,
     holdsOf,
     holdUntil,
     deadLetter,
@@ -152,7 +151,6 @@ export function createDrainOperations(
           }
           const ticket = ticketOf(next)
           if (ticket) {
-            await ageWaitingAgentTurns(next.userId, sessionId)
             const completion = continuations.bandCompletion(bandIds, sessionId)
             let outcome: RunExecutionOutcome
             try {

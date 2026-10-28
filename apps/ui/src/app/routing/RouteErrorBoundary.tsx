@@ -88,7 +88,7 @@ export function RouteErrorBoundary() {
         </Button>
         <Button
           type="button"
-          variant="outline"
+          variant="ghost"
           size="lg"
           onClick={() => {
             void navigate('/', { replace: true })

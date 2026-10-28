@@ -43,10 +43,10 @@ describe('self-wake budget', () => {
     expect(deliver(budget, 'bg-monitor')).toBe(true)
   })
 
-  test('agent-to-agent requests neither count nor reset', () => {
+  test('the ticket of a runtime delivery neither counts nor resets', () => {
     const budget = createSelfWakeBudget()
     for (let i = 0; i < MAX_CONSECUTIVE_SELF_WAKES; i++) deliver(budget, 'bg-job')
-    budget.admit('s', ticket('agent-request'))
+    budget.admit('s', ticket('runtime'))
     expect(deliver(budget, 'bg-job')).toBe(false)
   })
 

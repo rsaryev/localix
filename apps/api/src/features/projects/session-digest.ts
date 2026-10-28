@@ -2,7 +2,7 @@
  * Pure builder for the `@session:<id>` context-ref expansion — a COMPACT,
  * token-economical digest of another chat session (title, status, and a bounded
  * tail of recent turns). It deliberately does
- * NOT inline a full transcript: the header points the agent at `global_search`
+ * NOT inline a full transcript: the header points the agent at `GlobalSearch`
  * to read the linked session in depth only when it actually needs to.
  *
  * Kept free of DB / IO so the formatting + trimming rules stay unit-testable.
@@ -52,7 +52,7 @@ function roleLabel(role: string): string {
 /**
  * Renders the digest markdown block. Size stays in the low thousands of chars:
  * a header and up to `DIGEST_MAX_TURNS` trimmed turns, closed by a pointer to
- * `global_search` for deeper reads.
+ * `GlobalSearch` for deeper reads.
  */
 export function buildSessionDigest(input: SessionDigestInput): string {
   const lines: string[] = []
@@ -82,7 +82,7 @@ export function buildSessionDigest(input: SessionDigestInput): string {
 
   lines.push('')
   lines.push(
-    `(Compact digest of the linked session. To read it in full, use the global_search tool with session_id "${input.id}".)`,
+    `(Compact digest of the linked session. To read it in full, use the GlobalSearch tool with session_id "${input.id}".)`,
   )
 
   return lines.join('\n')

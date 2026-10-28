@@ -57,6 +57,11 @@ export interface ContextLaneState {
    */
   checkpointDue?: CheckpointReason
   /**
+   * `/compact` asked this lane's next turn for a checkpoint, with the person's instructions.
+   * Consumed by that turn (`run/stages/view.ts`).
+   */
+  manualCompact?: { instructions: string }
+  /**
    * `tool_call_id`s whose results are no longer intact on the wire (elided / crushed /
    * truncated). Collected from the wire we actually send; the wire prune reads it back
    * as its elision RATCHET. Grows monotonically.
@@ -74,7 +79,7 @@ export interface ContextLaneState {
 export interface RuntimeState {
   /** sessionId → the live run's abort; announces each release (see active-runs.ts). */
   activeRuns: ActiveRuns
-  activeRunSessions: Map<string, { userId: string; session: SessionRecord; agentId?: string }>
+  activeRunSessions: Map<string, { userId: string; session: SessionRecord }>
   /**
    * sessionId → the run identity (role profile, tool grants, scoped hooks) a
    * dispatcher resolved for a job/subagent session, so a wake landing on that session
@@ -167,13 +172,13 @@ export interface RuntimeState {
    */
   tokenCalibration: Map<string, TokenCalibration>
   /**
-   * Per-AgentLane wire bookkeeping, keyed by `agentLaneKey`. See `ContextLaneState` — created per
-   * lane by `run/session-stores.ts`, bounded by `evictSessionStateOverCap`, reaped on session delete.
+   * Per-session wire bookkeeping, keyed by session id. See `ContextLaneState` — created per
+   * session by `run/session-stores.ts`, bounded by `evictSessionStateOverCap`, reaped on session delete.
    */
   contextLanes: Map<string, ContextLaneState>
   /**
-   * Per-AgentLane read/write bookkeeping, keyed by `agentLaneKey`. A colleague's read must
-   * not unlock blind overwrite or update the version this agent actually saw.
+   * Per-session read/write bookkeeping, keyed by session id. Another session's read must
+   * not unlock blind overwrite or update the version this session actually saw.
    * Same 500-entry bound as the paired VBC store.
    */
   sessionFileMtimes: Map<string, FileMtimeStore>

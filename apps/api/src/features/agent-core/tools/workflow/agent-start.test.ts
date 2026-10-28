@@ -5,7 +5,7 @@ import type { TaskDelegationOptions } from '../task-delegation'
 import { startWorkflowAgent, type WorkflowAgentDeps } from './agent-start'
 
 /**
- * A workflow's agent is a child of the chat, started as `delegate` starts one, and the call
+ * A workflow's agent is a child of the chat, started as `Agent` starts one, and the call
  * waits for its report: completed is the text, anything else is null (the script's `null`).
  */
 function options(
@@ -22,18 +22,18 @@ function options(
     position: () => ({ depth: 0, chain: [], self: 'builtin:localix' }),
     resolveAgent: (reference) =>
       reference === 'builtin:localix' || reference === 'reviewer'
-        ? { agentId: reference === 'reviewer' ? 'agent:reviewer' : reference, handle: reference }
+        ? { agentId: reference === 'reviewer' ? 'agent:reviewer' : reference, name: reference }
         : null,
     resolveTarget: (reference) =>
       ({
         reviewer: {
           kind: 'agent' as const,
-          agent: { agentId: 'agent:reviewer', handle: 'reviewer' },
+          agent: { agentId: 'agent:reviewer', name: 'reviewer' },
           type: { fullName: 'reviewer', name: 'reviewer', description: '' },
         },
         'sec-kit:reviewer': {
           kind: 'agent' as const,
-          agent: { agentId: 'cc:sec-reviewer', handle: 'sec-kit:reviewer' },
+          agent: { agentId: 'cc:sec-reviewer', name: 'sec-kit:reviewer' },
           type: {
             fullName: 'sec-kit:reviewer',
             name: 'reviewer',
@@ -97,7 +97,7 @@ describe('startWorkflowAgent', () => {
     ).rejects.toThrow('No enabled agent "ghost"')
   })
 
-  test('an agentType naming a catalog agent seats it and runs the child on its definition', async () => {
+  test('an agentType naming a catalog agent starts it and runs the child on its definition', async () => {
     const { opts, created, inputs, starts } = options({ status: 'completed', text: 'x' })
     await startWorkflowAgent(
       'c',
@@ -106,7 +106,7 @@ describe('startWorkflowAgent', () => {
       deps(opts),
       new AbortController().signal,
     )
-    // The agent itself is seated, so every run of the child takes its prompt, tools and model.
+    // The agent itself runs, so every run of the child takes its prompt, tools and model.
     expect(created[0]?.agentId).toBe('cc:sec-reviewer')
     expect(inputs[0]?.provenance).toMatchObject({ agentType: 'sec-kit:reviewer' })
     expect(inputs[0]).toMatchObject({ pinnedSkills: ['threat-model'] })
@@ -135,26 +135,45 @@ describe('startWorkflowAgent', () => {
     expect(stopped).toEqual(['child-1'])
   })
 
-  test('model and effort give the child a route of its own; it runs in its run’s lane', async () => {
-    const { opts, inputs, starts } = options({ status: 'completed', text: 'x' })
+  test('a run that settles while the child is being made never starts it', async () => {
+    // The abort lands before `startSubagentTask`, which is where the report is expected: a stop
+    // sent then would find nothing to drop, and the child would run and report to the chat.
+    const controller = new AbortController()
+    const made = options({ status: 'completed', text: 'late' })
+    const createSession = made.opts.createSession
+    made.opts.createSession = async (user, input) => {
+      const child = await createSession(user, input)
+      controller.abort()
+      return child
+    }
+    const stopped: string[] = []
+    const outcome = await startWorkflowAgent(
+      'c',
+      'w',
+      request,
+      deps(made.opts, async (id) => void stopped.push(id)),
+      controller.signal,
+    )
+    expect(outcome?.text).toBeNull()
+    expect(made.tasks).toEqual([])
+    expect(stopped).toEqual(['child-1'])
+  })
+
+  test('the child runs in its run’s lane and reports its spend', async () => {
+    const { opts, starts } = options({ status: 'completed', text: 'x' })
     const lane = { key: 'workflow:wf-000000000001', cap: 16 }
     const outcome = await startWorkflowAgent(
       'c',
       'w',
-      { ...request, model: 'haiku', effort: 'low' },
+      request,
       deps(opts, undefined, {
         run: { id: 'wf-000000000001', lane },
-        route: async (asked) => ({
-          route: { providerConnectionId: 'conn', modelId: `claude-${asked.model}-4-5` },
-          notes: ['effort low applied'],
-        }),
         spend: async () => ({ outputTokens: 321, costUsd: 0.5 }),
       }),
       new AbortController().signal,
     )
-    expect(inputs[0]).toMatchObject({ providerConnectionId: 'conn', modelId: 'claude-haiku-4-5' })
     expect(starts[0]?.lane).toEqual(lane)
-    expect(outcome).toEqual({ text: 'x', tokens: 321, costUsd: 0.5, notes: ['effort low applied'] })
+    expect(outcome).toEqual({ text: 'x', tokens: 321, costUsd: 0.5, notes: [] })
   })
 
   test('isolation gives the child a worktree, which is finished when it ends', async () => {

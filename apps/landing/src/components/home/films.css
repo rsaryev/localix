@@ -4,7 +4,7 @@
 .demo-film {
   position: relative;
   overflow: hidden;
-  aspect-ratio: 1680 / 946;
+  aspect-ratio: 1680 / 982;
   border-radius: var(--landing-radius);
   background-color: #0f0f0f;
   box-shadow:

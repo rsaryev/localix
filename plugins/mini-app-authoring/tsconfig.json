@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "customConditions": ["@localixai/source"],
+    "lib": ["ES2023", "DOM"],
+    "strict": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "types": ["bun"]
+  },
+  "include": ["src/**/*"]
+}

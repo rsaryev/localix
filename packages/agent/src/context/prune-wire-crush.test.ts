@@ -16,13 +16,13 @@ function wireWith(bashContent: string): Message[] {
   const msgs: Message[] = [{ role: 'user', content: 'do it', timestamp: 0 }]
   msgs.push({
     role: 'assistant',
-    content: [{ type: 'tool_call', id: 'b1', name: 'bash', arguments: { command: 'run' } }],
+    content: [{ type: 'tool_call', id: 'b1', name: 'Bash', arguments: { command: 'run' } }],
     model: 'm',
     timestamp: 0,
   })
   msgs.push({
     role: 'tool',
-    results: [{ type: 'tool_result', toolCallId: 'b1', toolName: 'bash', content: bashContent }],
+    results: [{ type: 'tool_result', toolCallId: 'b1', toolName: 'Bash', content: bashContent }],
     timestamp: 0,
   })
   for (let i = 0; i < 6; i++) {
@@ -93,6 +93,6 @@ describe('prune-wire structural crush of old bash output', () => {
     expect(bounded).not.toContain(CRUSH_MARKER)
     // The truncate path advertises recovery too — so the model retrieves the full
     // original instead of re-running the command for a dropped middle line.
-    expect(bounded).toContain('tool_output(action="get", tool_call_id="b1")')
+    expect(bounded).toContain('ToolOutput(action="get", tool_call_id="b1")')
   })
 })

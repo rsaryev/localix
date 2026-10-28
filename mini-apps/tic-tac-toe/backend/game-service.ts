@@ -9,7 +9,7 @@ import {
   type Game,
   type Mark,
 } from '../shared/game'
-import { ANSWER_TOOLS, askForMove, positionKey, type Seat } from './ask-agent'
+import { ANSWER_TOOLS, askForMove, positionKey, type ChatRef } from './ask-agent'
 import { askDecision } from './ask-decision'
 import { createTurnTable, type TurnTableHosts } from '@localixai/mini-app-sdk/backend'
 
@@ -65,11 +65,11 @@ export function createGameService(
 
     // ── What a person does in the view ─────────────────────────────────────────────────────
     /** Play X at `cell` (0–8). */
-    personMove: (seat: Seat, cell: number) =>
-      table.personTurn(seat, (game, at) => applyMove(game, cell, 'you', at)),
+    personMove: (chat: ChatRef, cell: number) =>
+      table.personTurn(chat, (game, at) => applyMove(game, cell, 'you', at)),
     /** The next game at this table, opened by `first` — else by whoever did not open the last. */
-    newGame: (seat: Seat, first?: Mark) =>
-      table.personTurn(seat, (game, at) => nextGame(game, at, first)),
+    newGame: (chat: ChatRef, first?: Mark) =>
+      table.personTurn(chat, (game, at) => nextGame(game, at, first)),
     /** Ask the agent again for the move it owes. */
     remind: table.remind,
     /** Who plays O from now on; a move O owes is asked of the new opponent at once. */
@@ -80,14 +80,14 @@ export function createGameService(
      * Play O at `cell` (0–8). `answered` says whether the move answered the board's own question —
      * a wake was waiting on it — rather than a request typed in the chat.
      */
-    agentMove: (seat: Seat, cell: number) =>
-      table.agentTurn(seat, (game, at) => applyMove(game, cell, 'agent', at)),
+    agentMove: (chat: ChatRef, cell: number) =>
+      table.agentTurn(chat, (game, at) => applyMove(game, cell, 'agent', at)),
     /**
      * The next game at this table, with `first` moving first. Against the decision model the user
      * opens: only a person's action asks that model, and a tool call is never one.
      */
-    agentNewGame: (seat: Seat, first: Mark) =>
-      table.update(seat, (game, at) =>
+    agentNewGame: (chat: ChatRef, first: Mark) =>
+      table.update(chat, (game, at) =>
         nextGame(game, at, game.opponent === 'decision' ? 'X' : first),
       ),
   }

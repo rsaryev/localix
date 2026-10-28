@@ -3,8 +3,7 @@ import { describe, expect, it } from 'bun:test'
 import { updateSession, type SessionLifecycleCtx } from './session-lifecycle'
 import type { SessionRecord } from '../repository'
 import { SESSION_TITLE_MAX_CHARS } from '../session-limits'
-import { routedParticipants, sessionFixture } from '../../../testing/session-fixture'
-import { DEFAULT_AGENT_HANDLE } from '../../../db/participant'
+import { routedAgent, sessionFixture } from '../../../testing/session-fixture'
 
 /**
  * updateSession maps the wire flag `isArchived` onto the durable `archived_at`
@@ -18,7 +17,7 @@ function baseSession(over: Partial<SessionRecord> = {}): SessionRecord {
     userId: 'u1',
     seq: 1,
     title: 'Chat',
-    agents: routedParticipants({ modelId: 'm', reasoningEffort: 'low' }),
+    agent: routedAgent({ modelId: 'm', reasoningEffort: 'low' }),
     createdAt: '2026-01-01 00:00:00',
     updatedAt: '2026-01-01 00:00:00',
     lastMessageAt: '2026-01-01 00:00:00',
@@ -29,7 +28,7 @@ function baseSession(over: Partial<SessionRecord> = {}): SessionRecord {
 
 function makeCtx(session: SessionRecord) {
   let saved: Partial<SessionRecord> | null = null
-  const routeWrites: { agentId: string; route: Record<string, unknown> }[] = []
+  const routeWrites: Record<string, unknown>[] = []
   const ctx: SessionLifecycleCtx = {
     // A session always belongs to a project; this fixture never creates one, but the port is
     // required so a host cannot forget it.
@@ -44,18 +43,13 @@ function makeCtx(session: SessionRecord) {
       updateSession: async (_u, _id, next) => {
         saved = next
       },
-      updateMembership: async () => true,
-      updateSessionAgentRoute: async (_u, _id, agentId, route) => {
-        routeWrites.push({ agentId, route: route as Record<string, unknown> })
-      },
-      updateSessionAgentRoutes: async (_u, _id, routes) => {
-        for (const { agentId, ...route } of routes) routeWrites.push({ agentId, route })
+      updateSessionAgentRoute: async (_u, _id, route) => {
+        routeWrites.push(route as Record<string, unknown>)
       },
       deleteSession: async () => {},
       listChildSessionIds: async () => [],
-      // A party edit writes a membership line into the conversation. Archiving writes none, so
-      // this stub records nothing — it is here because the port is required, and a host that
-      // could change the party without a place to say so is the shape the type forbids.
+      // A model change writes a line into the conversation. Archiving writes none, so this stub
+      // records nothing — it is here because the port is required.
       insertMessage: async () => {},
     },
     streamRegistry: { publish: () => {} },
@@ -133,10 +127,10 @@ describe('updateSession — permission mode', () => {
 })
 
 describe('updateSession — model selection', () => {
-  it('writes the chosen route as a point update, naming the participant', async () => {
-    const { ctx, getRouteWrites } = makeCtx(
+  it('writes the chosen route as a point update', async () => {
+    const { ctx, getRouteWrites, getSaved } = makeCtx(
       baseSession({
-        agents: routedParticipants({
+        agent: routedAgent({
           providerConnectionId: 'connection-old',
           modelId: 'old/model',
         }),
@@ -147,45 +141,11 @@ describe('updateSession — model selection', () => {
       route: { providerConnectionId: 'connection-new', modelId: 'openai/gpt-5.4' },
     })
 
+    // Only what the picker named is written: the record it holds carries routes the chain
+    // RESOLVED, and writing those back would freeze an inheritance into a choice.
     expect(getRouteWrites()).toEqual([
-      {
-        agentId: `builtin:${DEFAULT_AGENT_HANDLE}`,
-        route: { providerConnectionId: 'connection-new', modelId: 'openai/gpt-5.4' },
-      },
+      { providerConnectionId: 'connection-new', modelId: 'openai/gpt-5.4' },
     ])
-  })
-
-  it('leaves the other members of a room alone', async () => {
-    // The picker changes one agent's model, so exactly one seat is written. It used to hand the
-    // whole party to `updateSession`, which wrote everyone's route back — and since the record
-    // it held carried routes the chain had RESOLVED, that also froze the others onto whatever
-    // they happened to be inheriting.
-    const { ctx, getRouteWrites, getSaved } = makeCtx(
-      baseSession({
-        agents: [
-          {
-            agentId: 'builtin:localix',
-            handle: 'localix',
-            providerConnectionId: 'c1',
-            modelId: 'm1',
-            reasoningEffort: 'low',
-          },
-          {
-            agentId: 'fixture:reviewer',
-            handle: 'reviewer',
-            providerConnectionId: 'c2',
-            modelId: 'm2',
-            reasoningEffort: 'high',
-          },
-        ],
-      }),
-    )
-
-    await updateSession(ctx, 'u1', 's1', {
-      route: { agentId: 'fixture:reviewer', modelId: 'm3' },
-    })
-
-    expect(getRouteWrites()).toEqual([{ agentId: 'fixture:reviewer', route: { modelId: 'm3' } }])
     // A route change names no session field, so the session row is not written at all.
     expect(getSaved()).toBeNull()
   })

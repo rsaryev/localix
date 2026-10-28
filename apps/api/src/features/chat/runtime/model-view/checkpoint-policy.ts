@@ -16,8 +16,8 @@ import type { ContextBudgetFrame } from '../context-budget'
 export const CHECKPOINT_HIGH_WATER = 0.85
 
 /**
- * Past this share the agent is told a checkpoint is near, so it can write down — with the
- * memory tool, in its ordinary turn — whatever from the older turns must stay in force. That is
+ * Past this share the agent is told a checkpoint is near, so it can write down — into its
+ * auto memory files, in its ordinary turn — whatever from the older turns must stay in force. That is
  * the one thing an LLM summary did that epoch cards cannot: carry a decision's reasons.
  */
 export const CHECKPOINT_WARNING = 0.72
@@ -37,7 +37,7 @@ export const CHECKPOINT_CARD_SHARE = 0.12
 
 /**
  * The request size that takes a checkpoint — what the in-run safety net prunes at, what the
- * usage ring and `context_budget` report, and what the next turn measures against.
+ * usage ring and `ContextBudget` report, and what the next turn measures against.
  */
 export function checkpointAtTokens(frame: Pick<ContextBudgetFrame, 'trigger'>): number {
   return Math.floor(frame.trigger * CHECKPOINT_HIGH_WATER)

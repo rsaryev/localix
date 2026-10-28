@@ -61,7 +61,7 @@ function fixture(): string {
     name: '@fixture/plugin-scaffold',
     dependencies: { 'private-only': '1.0.0' },
   })
-  write(join(root, 'plugins/scaffold/plugin.json'), JSON.stringify({ private: true }))
+  write(join(root, 'plugins/scaffold/mini-app.json'), JSON.stringify({ private: true }))
 
   externalPackage(
     root,

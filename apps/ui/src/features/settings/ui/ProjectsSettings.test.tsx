@@ -4,6 +4,7 @@ import type { Project } from '@/shared/api/contracts'
 import { backendClient } from '@/shared/api/client'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { ProjectSettingsForm } from './ProjectsSettings'
+import { turns as settle } from '@/testing/settle'
 
 const project: Project = {
   id: 'project-1',
@@ -25,8 +26,6 @@ afterAll(async () => {
   await new Promise((resolve) => setTimeout(resolve, 0))
   await teardown()
 })
-
-const settle = () => new Promise((resolve) => setTimeout(resolve, 20))
 
 describe('project settings presentation', () => {
   test('shows the danger zone and labelled fields with no in-flight labels at rest', () => {

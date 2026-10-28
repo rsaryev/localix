@@ -3,7 +3,7 @@ import { describe, expect, test } from 'bun:test'
 import { createMemoryWorkRepository } from '../../../work/testing/memory-repository'
 import { createWorkRegistry } from '../../../work/registry'
 import type { ActionRegistryEntry } from '../agent-runner-state'
-import { routedParticipants, sessionFixture } from '../../../../testing/session-fixture'
+import { routedAgent, sessionFixture } from '../../../../testing/session-fixture'
 import { endSubagentWork, subagentWorkKey, trackChildRun, trackSubagent } from './subagent-work'
 
 const owner = { userId: 'u', sessionId: 'parent' }
@@ -18,7 +18,6 @@ function fixture() {
       { work, actionRegistry },
       {
         owner,
-        agentId: 'builtin:lead',
         childSessionId,
         label: `qa · LX-${childSessionId}`,
         stop: () => void stopped.push(childSessionId),
@@ -27,7 +26,7 @@ function fixture() {
   return { repo, work, actionRegistry, stopped, track }
 }
 
-const settle = () => new Promise((resolve) => setTimeout(resolve, 5))
+const settle = () => new Promise((resolve) => setTimeout(resolve, 0))
 
 describe('a detached sub-agent is background work', () => {
   test('it is listed as sub-N with its child session, beside jobs, and is not a job slot', async () => {
@@ -35,7 +34,6 @@ describe('a detached sub-agent is background work', () => {
     track('c1')
     work.start({
       owner,
-      agentId: null,
       kind: 'job',
       label: 'bun dev',
       toolCallId: 'call-1',
@@ -107,23 +105,21 @@ describe('each run of a delegated child is tracked', () => {
     title: 'Audit',
     sessionKind: 'subagent',
     parentSessionId: 'parent',
-    agents: routedParticipants({ agentId: 'builtin:qa', handle: 'qa' }),
+    agent: routedAgent({ agentId: 'builtin:qa', name: 'qa' }),
     provenance: {
       kind: 'task-delegation',
       parentSessionId: 'parent',
       toolCallId: 'tc',
-      parentParticipant: 'agent:builtin:lead',
     },
   })
 
-  test('a run opens a sub-N row owned by the delegating session, under the delegating agent', () => {
+  test('a run opens a sub-N row owned by the delegating session', () => {
     const { work, actionRegistry } = fixture()
     trackChildRun({ work, actionRegistry }, 'u', child)
     const [row] = work.list(owner)
     expect(row).toMatchObject({
       kind: 'subagent',
       childSessionId: 'child',
-      agentId: 'builtin:lead',
       label: 'qa',
     })
     expect(actionRegistry.get(subagentWorkKey('child'))?.actions.kill).toBeDefined()

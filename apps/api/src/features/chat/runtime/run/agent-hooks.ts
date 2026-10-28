@@ -1,7 +1,7 @@
 import type { SessionRecord } from '../../repository'
 import type { ScopedCcHooks } from '../run-contract'
 
-/** What a run needs of the agent it is seated as to find its frontmatter hooks. */
+/** What a run needs of the agent it runs as to find its frontmatter hooks. */
 export interface HookedAgent {
   source?: string
   hooks?: unknown

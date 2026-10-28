@@ -7,7 +7,7 @@ import { TOOL } from '../../tool-names'
  * own routing and batching lines, the chat variant then wrote routing TWICE ("Prefer dedicated
  * file tools…" and, one line later, "Edit with the dedicated file tools…"), and the preview
  * rule was a six-line block pasted into both. A rule restated is a rule that drifts: the
- * sub-agent's copy still taught `old_string` hygiene the `edit` schema already carries.
+ * sub-agent's copy still taught `old_string` hygiene the `Edit` schema already carries.
  *
  * Every builder is gated on the tools the run holds and returns `null` when there is nothing
  * true to say, so a caller never renders advice about a tool that is not there.
@@ -19,27 +19,27 @@ const any = (has: Has, ...names: string[]) => names.some(has)
 /** Which dedicated tool does which file job, and what the shell is left for. */
 export function fileRoutingLine(has: Has): string | null {
   const routes = [
-    has(TOOL.read) && '`read` over `cat`',
-    has(TOOL.search) && '`search` over `grep`/`find`',
-    has(TOOL.edit) && '`edit` for changes to existing files',
-    has(TOOL.write) && '`write` for new files',
+    has(TOOL.Read) && '`Read` over `cat`',
+    has(TOOL.Search) && '`Search` over `grep`/`find`',
+    has(TOOL.Edit) && '`Edit` for changes to existing files',
+    has(TOOL.Write) && '`Write` for new files',
   ].filter((route): route is string => Boolean(route))
   if (routes.length === 0) {
-    return has(TOOL.bash)
-      ? '- Use `bash` for workspace inspection, file changes, and process work; prefer non-interactive commands.'
+    return has(TOOL.Bash)
+      ? '- Use `Bash` for workspace inspection, file changes, and process work; prefer non-interactive commands.'
       : null
   }
   const readFirst =
-    has(TOOL.edit) && any(has, TOOL.read, TOOL.search, TOOL.bash)
+    has(TOOL.Edit) && any(has, TOOL.Read, TOOL.Search, TOOL.Bash)
       ? ' Read before editing so the change targets the current text.'
       : ''
   // In one session every agent wrote its HTML/CSS/JS on one line, so its later edits could not
   // target a unique span: the only line was the entire stylesheet.
-  const layout = any(has, TOOL.edit, TOOL.write)
+  const layout = any(has, TOOL.Edit, TOOL.Write)
     ? ' Write source one rule or statement per line, never minified, so later edits can target it.'
     : ''
-  const shell = has(TOOL.bash)
-    ? ' Reserve `bash` for process work (installs, builds, tests, git) and the project’s own CLIs, never hand-written API calls they cover.'
+  const shell = has(TOOL.Bash)
+    ? ' Reserve `Bash` for process work (installs, builds, tests, git) and the project’s own CLIs, never hand-written API calls they cover.'
     : ''
   return `- Prefer the dedicated file tools: ${routes.join(', ')}.${readFirst}${layout}${shell}`
 }
@@ -50,7 +50,7 @@ export function fileRoutingLine(has: Has): string | null {
  * branch with main, found the commit that moved the chart on, and proposed a rebase.
  */
 export function failureDiagnosisLine(has: Has): string | null {
-  if (!has(TOOL.bash)) return null
+  if (!has(TOOL.Bash)) return null
   return '- Diagnose a failure (CI, deploy, test) down to what changed: compare with the last passing run and the default branch, and name the differing commit or config. A symptom (`not found`, a timeout) is not a root cause; fix at the cause.'
 }
 
@@ -61,43 +61,25 @@ export function failureDiagnosisLine(has: Has): string | null {
  * (`search.queries`), so a survey of five files is one call, not five.
  */
 export function batchLine(has: Has): string | null {
-  if (!any(has, TOOL.read, TOOL.search, TOOL.write, TOOL.edit, TOOL.bash)) return null
+  if (!any(has, TOOL.Read, TOOL.Search, TOOL.Write, TOOL.Edit, TOOL.Bash)) return null
   // The file tools batch inside ONE call (`files`, `edits`), which is cheaper still than one
   // turn of parallel calls: a single result, a single approval, the paths locked together.
   // Reading batches the same way (`reads`, `queries`).
-  const fileTools = [TOOL.write, TOOL.edit].filter(has).map((name) => `\`${name}\``)
+  const fileTools = [TOOL.Write, TOOL.Edit].filter(has).map((name) => `\`${name}\``)
   const files = fileTools.length
     ? `, and the files you change into ONE ${fileTools.join('/')} call`
     : ''
   const readers = [
-    has(TOOL.read) ? 'read several files in ONE `read` (`reads`)' : '',
-    has(TOOL.search) ? 'several patterns in ONE `search` (`queries`)' : '',
+    has(TOOL.Read) ? 'read several files in ONE `Read` (`reads`)' : '',
+    has(TOOL.Search) ? 'several patterns in ONE `Search` (`queries`)' : '',
   ].filter(Boolean)
   const batched = readers.length ? `; ${readers.join(', ')}` : ''
   return `- Batch independent tool calls into ONE turn${files}${batched}; never one file or one command per turn.`
 }
 
-/**
- * When a script beats a turn per call. Batching covers INDEPENDENT calls; a chain whose next call
- * needs the last result, or a result far larger than the answer, still cost a model round trip
- * per step and put every raw result in context — and with only the batching rule stated, models
- * read `codemode` as a second way to batch and almost never chose it. Measured on stored runs:
- * a quarter of its calls failed, mostly a whole file carried through a JavaScript string into
- * `write`/`edit`, or a lone call wrapped in a script; the line names both as what it is not for.
- */
-export function codemodeLine(has: Has): string | null {
-  if (!has(TOOL.codemode) || !any(has, TOOL.read, TOOL.bash)) return null
-  const uses = has(TOOL.bash)
-    ? 'grep with `bash`, read the hits, keep what matters; run checks, return only the failures'
-    : 'read many files, keep what matters; count, compare or extract'
-  const writers = [TOOL.write, TOOL.edit].filter(has).map((name) => `\`${name}\``)
-  const carry = writers.length ? `, or file content for ${writers.join('/')}` : ''
-  return `- Prefer one \`codemode\` script to a turn per call when each call needs the last result or a result is far larger than the answer: ${uses}. Only its output enters context. Not for one call, independent calls${carry}.`
-}
-
 export function lspDiagnosticsLine(has: Has): string | null {
-  if (!any(has, TOOL.write, TOOL.edit)) return null
-  const tools = [TOOL.edit, TOOL.write]
+  if (!any(has, TOOL.Write, TOOL.Edit)) return null
+  const tools = [TOOL.Edit, TOOL.Write]
     .filter(has)
     .map((name) => `\`${name}\``)
     .join('/')
@@ -111,18 +93,18 @@ export function lspDiagnosticsLine(has: Has): string | null {
  * person to untangle a reconcile banner they did not cause.
  */
 export function editorBufferLine(has: Has): string | null {
-  if (!any(has, TOOL.read, TOOL.edit, TOOL.write)) return null
+  if (!any(has, TOOL.Read, TOOL.Edit, TOOL.Write)) return null
   return '- An `<editor_buffer>` note means the person has that file open with UNSAVED edits: treat them as part of the file, keep your change compatible with them, and say so when your write will make them reconcile.'
 }
 
 /**
  * What counts as EVIDENCE from the preview. How the tool behaves (ids, viewport, refs) is the
- * `browser` schema's; this is the part no schema can say. An unattended run opens in
+ * `Browser` schema's; this is the part no schema can say. An unattended run opens in
  * the background because nobody is watching the panel it would take over.
  */
 export function previewVerificationLine(has: Has, unattended: boolean): string | null {
-  if (!has(TOOL.browser)) return null
-  return `- Verify web work in the native preview with \`browser\`${unattended ? ', opened with background:true' : ''}: an opened URL proves neither probe readiness nor a working interaction, and resizing is not real-device touch. For a requested visual reference, inspect it and compare the rendered result at the same viewport for composition, typography, spacing and content; passing code checks alone does not establish visual acceptance. Recover from the reported error instead of retrying blindly; report an unavailable host as blocked.`
+  if (!has(TOOL.Browser)) return null
+  return `- Verify web work in the native preview with \`Browser\`${unattended ? ', opened with background:true' : ''}: an opened URL proves neither probe readiness nor a working interaction, and resizing is not real-device touch. For a requested visual reference, inspect it and compare the rendered result at the same viewport for composition, typography, spacing and content; passing code checks alone does not establish visual acceptance. Recover from the reported error instead of retrying blindly; report an unavailable host as blocked.`
 }
 
 /**
@@ -131,7 +113,7 @@ export function previewVerificationLine(has: Has, unattended: boolean): string |
  * slightly different set of fields.
  */
 export function childReportLine(has: Has): string {
-  return any(has, TOOL.read, TOOL.search, TOOL.write, TOOL.edit, TOOL.bash)
+  return any(has, TOOL.Read, TOOL.Search, TOOL.Write, TOOL.Edit, TOOL.Bash)
     ? '- Your final reply is the report the parent reads: the outcome, the files or artifacts you changed, the checks you ran and what they showed, and anything failed, unverified or still open with the next action.'
     : '- Your final reply is the report the parent reads: the outcome grounded in the context you were given, and anything unverified or still open.'
 }

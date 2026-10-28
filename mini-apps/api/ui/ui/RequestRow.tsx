@@ -141,6 +141,7 @@ export function RequestRow({
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
+        {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- an HTML5 drag source has no keyboard form; the open button and the actions menu inside are the keyboard path */}
         <div
           role="listitem"
           aria-current={active ? 'true' : undefined}

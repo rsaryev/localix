@@ -18,11 +18,14 @@ afterEach(() => chartStateStore._clear())
 
 function itemFor(sessionId: string | null): StatusItemState | null {
   let seen: StatusItemState | null = null
-  function Harness() {
-    seen = useTradingStatusItem(sessionId)
+  const capture = (item: StatusItemState | null) => {
+    seen = item
+  }
+  function Harness({ onItem }: { onItem: (item: StatusItemState | null) => void }) {
+    onItem(useTradingStatusItem(sessionId))
     return null
   }
-  renderToStaticMarkup(<Harness />)
+  renderToStaticMarkup(<Harness onItem={capture} />)
   return seen
 }
 

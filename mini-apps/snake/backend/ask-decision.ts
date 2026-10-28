@@ -2,7 +2,7 @@ import {
   askDecisionForTurn,
   type DecisionAsk,
   type DecisionHost,
-  type Seat,
+  type ChatRef,
 } from '@localixai/mini-app-sdk/backend'
 
 import { drawBoard } from '../shared/describe'
@@ -79,11 +79,11 @@ export function moveAsk(game: Game): DecisionAsk {
 /** The decision model's next heading, or the wait that says why there is none. */
 export async function askDecision(
   decisions: DecisionHost | undefined,
-  seat: Seat,
+  chat: ChatRef,
   game: Game,
   now: string,
 ): Promise<{ direction: Direction } | { waiting: AgentWait }> {
   const turn = { ask: moveAsk(game), question: 'move', purpose: DECISION_PURPOSE }
-  const answered = await askDecisionForTurn(decisions, seat, turn, now)
+  const answered = await askDecisionForTurn(decisions, chat, turn, now)
   return 'answer' in answered ? { direction: answered.answer.choice as Direction } : answered
 }

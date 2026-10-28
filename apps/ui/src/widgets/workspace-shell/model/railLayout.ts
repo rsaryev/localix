@@ -75,12 +75,7 @@ export function resolveRailAreas(
     const saved = known.get(entry.id)
     if (placed.has(entry.id) || !saved) continue
     placed.add(entry.id)
-    const restore =
-      state?.legacyMiniAppPins &&
-      ((saved.miniApp && entry.area === 'overflow') ||
-        (saved.tool && !saved.miniApp && entry.area === 'bottom'))
-    const area = restore ? 'bar' : entry.area
-    target[saved.placeable === false ? 'overflow' : area].push(entry.id)
+    target[saved.placeable === false ? 'overflow' : entry.area].push(entry.id)
   }
   for (const def of defs) {
     if (placed.has(def.id)) continue

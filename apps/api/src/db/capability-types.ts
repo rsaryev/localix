@@ -4,7 +4,7 @@
 /**
  * One statement about what an agent may run.
  *
- * A switch and a permission rule are the same shape: `tool:bash` over resource `*` with
+ * A switch and a permission rule are the same shape: `tool:Bash` over resource `*` with
  * effect `deny` turns the tool off, while the same action over `git push*` with effect `ask`
  * leaves it on and prompts. `position` orders the list from general to specific — the LAST
  * match wins, so an exception is stated after the rule it excepts.
@@ -21,7 +21,7 @@ export interface CapabilityRuleTable {
   user_id: string
   agent_id: string
   position: number
-  /** The capability: `tool:bash`, `plugin:office`, `mcp:github/create_pr`, `tool:*`. */
+  /** The capability: `tool:Bash`, `plugin:office`, `mcp:github/create_pr`, `tool:*`. */
   action: string
   /** What it is used ON. `*` means the capability itself, so the row is a switch. */
   resource: string

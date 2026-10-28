@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { ArrowUpLeft } from 'lucide-react'
 
@@ -7,6 +7,7 @@ import { CollapsibleStrip } from '@localixai/kit/collapsible-strip'
 import { ActionTooltip } from '@localixai/kit/tooltip'
 import { backendClient } from '@/shared/api/client'
 import { sessionRef, type UiSession } from '@/shared/api/contracts'
+import { restoreStoppedQueue } from '@/entities/chat/model/restoreStoppedQueue'
 import { useChatStore } from '@/entities/chat/model/store'
 import { useSubagentRows } from '@/entities/chat/model/useSubagentRows'
 import { useSessionActivity } from '@localixai/mini-app-sdk/ui/session-activity'
@@ -90,7 +91,9 @@ function RuntimeSessionsPanelComponent({
   // Read inside the stable `stopRuntime` callback so "a stop is already in flight" does not have
   // to be a dependency (which would re-identify the callback and re-render every memoized row).
   const stoppingIdRef = useRef(stoppingId)
-  stoppingIdRef.current = stoppingId
+  useEffect(() => {
+    stoppingIdRef.current = stoppingId
+  })
 
   // Invalidate the local "stopped" override once a session is reported running
   // again — a stopped session can be restarted (e.g. a backend wake/continuation)
@@ -147,8 +150,9 @@ function RuntimeSessionsPanelComponent({
       setStoppingId(session.id)
       void backendClient
         .stop(session.id)
-        .then((stopped) => {
-          if (stopped) setStoppedIds((current) => new Set(current).add(session.id))
+        .then((result) => {
+          restoreStoppedQueue(useChatStore.getState, session.id, result.returned)
+          if (result.stopped) setStoppedIds((current) => new Set(current).add(session.id))
         })
         .finally(() => setStoppingId(null))
     },

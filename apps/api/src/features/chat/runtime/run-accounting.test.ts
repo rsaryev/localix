@@ -4,7 +4,6 @@ import { classifyCostSource, calcUsageWithCost } from './run-accounting'
 describe('classifyCostSource', () => {
   test('an estimated cost on an OAuth subscription key becomes "subscription"', () => {
     expect(classifyCostSource('oauth-pkce', 'estimated')).toBe('subscription')
-    expect(classifyCostSource('oauth', 'estimated')).toBe('subscription') // legacy spelling
   })
 
   test('estimated on an api key stays estimated', () => {

@@ -46,10 +46,10 @@ export function textManifest(
         lineCount > SPILL_PREVIEW_LINES
           ? `its first ${SPILL_PREVIEW_LINES} lines`
           : `its first ${formatSize(Buffer.byteLength(preview, 'utf8'))}`
-      } — use the \`read\` tool on \`${relPath}\` with start_line/end_line (or offset) to see any other part:`
+      } — use \`Read\` on \`${relPath}\` with start_line/end_line (or offset) to see any other part:`
     : lineCount <= SPILL_PREVIEW_LINES
       ? 'Its full text is shown below (it lives on disk only to keep the context small):'
-      : `It was written to disk instead of inlined to keep the context small. Showing the first ${SPILL_PREVIEW_LINES} of ${lineCount} lines — use the \`read\` tool on \`${relPath}\` with start_line/end_line (or offset) to see the rest:`
+      : `It was written to disk instead of inlined to keep the context small. Showing the first ${SPILL_PREVIEW_LINES} of ${lineCount} lines — use \`Read\` on \`${relPath}\` with start_line/end_line (or offset) to see the rest:`
   return [
     truncated
       ? `Attached file saved to the workspace: ${relPath} (${ext}, ${formatSize(byteLen)}).`
@@ -140,7 +140,7 @@ export async function readTextFile(absPath: string): Promise<TextPrefix | null> 
 }
 
 export function binaryManifest(relPath: string, mediaType: string, size: number): string {
-  return `Attached file saved to the workspace: ${relPath} (${mediaType}, ${formatSize(size)}). Binary file written to disk, not shown inline — use the \`read\` tool on \`${relPath}\` if you need to inspect it.`
+  return `Attached file saved to the workspace: ${relPath} (${mediaType}, ${formatSize(size)}). Binary file written to disk, not shown inline — use \`Read\` on \`${relPath}\` if you need to inspect it.`
 }
 
 export function permissionRequiredManifest(
@@ -148,7 +148,7 @@ export function permissionRequiredManifest(
   mediaType: string,
   size: number,
 ): string {
-  return `Attached file remains at its original path: ${absPath} (${mediaType}, ${formatSize(size)}). Its contents were not read because the path is outside the workspace — use the \`read\` tool on \`${absPath}\` if you need to inspect it; the user will be asked for permission.`
+  return `Attached file remains at its original path: ${absPath} (${mediaType}, ${formatSize(size)}). Its contents were not read because the path is outside the workspace — use \`Read\` on \`${absPath}\` if you need to inspect it; the user will be asked for permission.`
 }
 
 export function unavailablePathManifest(absPath: string, error: unknown): string {

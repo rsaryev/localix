@@ -247,7 +247,7 @@ source tree just to answer a normal usage question. Use
 
 ## Recipe reference
 
-Read [Canonical recipes](guide/recipes.md) (mini_app_guide page "recipes") for the relevant
+Read [Canonical recipes](guide/recipes.md) (MiniAppGuide page "recipes") for the relevant
 implementation only: realtime updates, scales, panes, markers, timezone labels, watermarks,
 synchronization, coordinates, Next.js, HTML loading, custom plugins, and non-financial axes. Check
 its example against the installed version before copying; examples assume the surrounding chart,

@@ -17,6 +17,7 @@
  */
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
+import { workingTreeFiles } from './lib/working-tree-files.mjs'
 
 /** Backticked tokens that look like a source path. */
 const PATH_REF = /`([A-Za-z0-9_@./-]+\.(?:ts|tsx|mjs|json))`/g
@@ -39,11 +40,7 @@ const KNOWN_DRIFT = {}
 // Include newly-created source files in the working tree. Architecture docs often
 // land in the same change as their new contract; requiring the file to be staged
 // before this check can resolve it makes local validation depend on Git index state.
-const tracked = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard'], {
-  encoding: 'utf8',
-})
-  .split('\n')
-  .filter((path) => path && existsSync(path))
+const tracked = workingTreeFiles(process.cwd())
 const exact = new Set(tracked)
 const byBasename = new Map()
 for (const path of tracked) {

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { z } from 'zod'
 import type { AgentTool } from '@localixai/agent/agents'
-import { DEFAULT_AGENT_HANDLE } from '../../../../db/participant'
+import { DEFAULT_AGENT_NAME } from '../../../../db/author'
 import { builtinAgentPreset } from '../../../capabilities/builtin-agent-presets'
 import { composeCapabilities, NO_ROSTERS, projectCapabilities } from '../../../capabilities/resolve'
 import { applyPermissionMode } from '../../../capabilities/permission-mode-policy'
@@ -28,7 +28,7 @@ const surface = (rules: Parameters<typeof composeCapabilities>[0], tools = [exte
   })
 
 describe('dynamic tools and agent presets', () => {
-  test.each([DEFAULT_AGENT_HANDLE])('%s applies its roster in every mode', (handle) => {
+  test.each([DEFAULT_AGENT_NAME])('%s applies its roster in every mode', (handle) => {
     for (const mode of ['default', 'plan', 'bypass', 'autonomous'] as const) {
       const result = surface(applyPermissionMode(mode, builtinAgentPreset(handle)).rules)
       expect(result.tools.map((tool) => tool.name)).toEqual(

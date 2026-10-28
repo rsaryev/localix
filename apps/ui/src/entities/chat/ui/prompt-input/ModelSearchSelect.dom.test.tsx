@@ -40,65 +40,6 @@ const connection = (id: string, label: string): ProviderConnection => ({
 })
 
 describe('ModelSearchSelect DOM runtime', () => {
-  test('shows the selected participant model, defaulting to the first, without a provider mark', async () => {
-    const React = await import('react')
-    const { createRoot } = await import('react-dom/client')
-    const { ModelSearchSelect } = await import('./ModelSearchSelect')
-    const host = document.createElement('div')
-    document.body.append(host)
-    const root = createRoot(host)
-    const first = connection('one', 'OpenAI')
-    const second = { ...connection('two', 'Anthropic'), providerId: 'anthropic' }
-    const render = (selectedAgentId?: string) =>
-      root.render(
-        <ModelSearchSelect
-          models={[
-            ...models,
-            { ...models[0]!, id: 'claude', name: 'Claude', providerId: 'anthropic' },
-          ]}
-          value="gpt-5.6"
-          connectionsState={
-            { connections: [first, second], activeConnection: first, activeId: first.id } as never
-          }
-          participants={[
-            {
-              agentId: 'a',
-              handle: 'first-agent',
-              providerConnectionId: 'one',
-              modelId: 'gpt-5.6',
-              reasoningEffort: 'high',
-            },
-            {
-              agentId: 'b',
-              handle: 'second-agent',
-              providerConnectionId: 'two',
-              modelId: 'claude',
-              reasoningEffort: 'low',
-            },
-          ]}
-          onSelectionChange={() => {}}
-          onReasoningEffortChange={() => {}}
-          reasoningEffort="high"
-          sessionId="group"
-          focused
-          selectedAgentId={selectedAgentId}
-        />,
-      )
-    try {
-      await React.act(async () => render())
-      const trigger = host.querySelector('button')!
-      expect(trigger.textContent).toContain('GPT-5.6 Sol')
-      expect(trigger.querySelectorAll('svg')).toHaveLength(1)
-      await React.act(async () => render('b'))
-      expect(trigger.textContent).toBe('Claude')
-      await React.act(async () => render('gone'))
-      expect(trigger.textContent).toContain('GPT-5.6 Sol')
-    } finally {
-      await React.act(async () => root.unmount())
-      host.remove()
-    }
-  })
-
   test('refreshes its compact trigger from reconnect state at a narrow width', async () => {
     const React = await import('react')
     const { act } = React

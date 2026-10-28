@@ -75,7 +75,7 @@ export function createVaultTool(options: {
   remove: (key: string, expectedVersion: number) => Promise<VaultDeleteResult>
 }): AgentTool<VaultWireInput> {
   return {
-    name: TOOL.vault,
+    name: TOOL.Vault,
     label: 'Vault',
     activeVerb: 'Managing Vault',
     description: [

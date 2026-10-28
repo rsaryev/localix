@@ -1,7 +1,7 @@
 /// <reference types="bun" />
 
 import { describe, expect, test } from 'bun:test'
-import { createJobsTool, type JobsToolDeps, type RunningJob } from './jobs'
+import { createJobsTool, stopJob, type JobsToolDeps, type RunningJob } from './jobs'
 
 function makeDeps(jobs: RunningJob[], runOk = true) {
   const actions: Array<{ id: string; action: string; payload?: unknown }> = []
@@ -40,23 +40,29 @@ describe('jobs tool', () => {
     expect(res.content).toContain('5s')
   })
 
-  test('stop/send_input require a job_id', async () => {
+  test('send_input requires a job_id', async () => {
     const { deps } = makeDeps([job('j1')])
-    expect((await run(deps, { action: 'stop' })).isError).toBe(true)
     expect((await run(deps, { action: 'send_input', input: 'x' })).isError).toBe(true)
+  })
+
+  test('stopping a job is TaskStop’s, not an action of jobs', () => {
+    // One tool stops background work, a job or a subagent, as in Claude Code.
+    const tool = createJobsTool(makeDeps([job('j1')]).deps)
+    expect(tool.inputSchema.safeParse({ action: 'stop', job_id: 'j1' }).success).toBe(false)
   })
 
   test('rejects an unknown job id', async () => {
     const { deps, actions } = makeDeps([job('j1')])
-    const res = await run(deps, { action: 'stop', job_id: 'ghost' })
+    const res = await run(deps, { action: 'read', job_id: 'ghost' })
     expect(res.isError).toBe(true)
     expect(res.content).toContain('No running job with id ghost')
+    expect(stopJob(deps, 'ghost')).toBeUndefined() // TaskStop then tries its subagents
     expect(actions).toHaveLength(0) // never dispatched
   })
 
-  test('stop accepts a short job id and dispatches against the tool call id', async () => {
+  test('TaskStop accepts a short job id and dispatches against the tool call id', () => {
     const { deps, actions } = makeDeps([job('long-tool-call-id', 0, 'bg-1')])
-    const res = await run(deps, { action: 'stop', job_id: 'bg-1' })
+    const res = stopJob(deps, 'bg-1')!
     expect(actions[0]).toMatchObject({ id: 'long-tool-call-id', action: 'kill' })
     // A stop is REQUESTED, never confirmed from here: the action is a void closure, and for
     // a process it means SIGTERM with SIGKILL held back. Saying "stopped" made the model
@@ -66,9 +72,9 @@ describe('jobs tool', () => {
     expect(res.isError).toBe(false)
   })
 
-  test('a failed action is reported as an error', async () => {
+  test('a failed stop is reported as an error', () => {
     const { deps } = makeDeps([job('j1')], false)
-    const res = await run(deps, { action: 'stop', job_id: 'j1' })
+    const res = stopJob(deps, 'j1')!
     expect(res.isError).toBe(true)
     expect(res.content).toContain('Could not request a stop for job j1')
   })
@@ -130,17 +136,12 @@ describe('a job id this session does not own', () => {
     expect(reads).toEqual([])
   })
 
-  test('stop and send_input stay refused too', async () => {
-    for (const action of ['stop', 'send_input'] as const) {
-      const { deps, actions } = deniedDeps()
-      const res = await run(deps, {
-        action,
-        job_id: foreign,
-        ...(action === 'send_input' ? { input: 'y\n' } : {}),
-      })
-      expect({ action, isError: res.isError }).toEqual({ action, isError: true })
-      expect(actions).toEqual([])
-    }
+  test('send_input and TaskStop stay refused too', async () => {
+    const { deps, actions } = deniedDeps()
+    const res = await run(deps, { action: 'send_input', job_id: foreign, input: 'y\n' })
+    expect(res.isError).toBe(true)
+    expect(stopJob(deps, foreign)).toBeUndefined()
+    expect(actions).toEqual([])
   })
 
   test('a job this session DOES own is still readable', async () => {
@@ -160,7 +161,7 @@ describe('a job id this session does not own', () => {
 /**
  * `action:"read"` exists to show a running job's output, so its cap has to say what it dropped. It used
  * to prepend a bare `…` — no line count, no total, no next step — on the one call whose whole purpose is
- * inspecting that output. `tool_output` already gets this right ("clipped at N chars").
+ * inspecting that output. `ToolOutput` already gets this right ("clipped at N chars").
  */
 describe('read states what it clipped', () => {
   const bigOutput = Array.from({ length: 5000 }, (_, i) => `line ${i}`).join('\n')
@@ -197,7 +198,6 @@ describe('jobs classify', () => {
     ['list', { effect: 'read' }],
     ['read', { effect: 'read' }],
     ['send_input', { effect: 'external' }],
-    ['stop', { effect: 'session', irreversible: true }],
     ['unknown', { effect: 'external' }],
   ] as const)('%s', (action, expected) => {
     expect(tool.classify?.({ action })).toEqual(expected)

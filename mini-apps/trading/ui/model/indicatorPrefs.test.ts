@@ -25,9 +25,8 @@ class MemoryStorage {
 }
 
 describe('migrateIndicatorPrefsV2 — total, version-free', () => {
-  test('a v1 string array lands as clean records, canonicalized, volume/unknown dropped', () => {
-    const prefs = migrateIndicatorPrefsV2(['sma20', 'EMA 200', 'volume', 'nope', 42])
-    expect(prefs).toEqual({ v: 2, items: [{ id: 'sma:20' }, { id: 'ema:200' }] })
+  test('a bare string array is not prefs', () => {
+    expect(migrateIndicatorPrefsV2(['sma20', 'EMA 200'])).toEqual({ v: 2, items: [] })
   })
 
   test('a v2 object round-trips, invalid override fields are shed field-by-field', () => {
@@ -157,18 +156,8 @@ describe('loadIndicatorPrefsV2 / saveIndicatorPrefsV2 — per-tab persistence', 
     })
   })
 
-  test('a tab with no per-tab entry SEEDS from the old global key (one-time migration)', () => {
-    store.setItem(GLOBAL, JSON.stringify(['sma20', 'ema200']))
-    expect(loadIndicatorPrefsV2(TAB_A, store).items).toEqual([{ id: 'sma:20' }, { id: 'ema:200' }])
-    // Once the tab saves, it owns a per-tab entry that no longer tracks the global seed.
-    saveIndicatorPrefsV2({ v: 2, items: [{ id: 'rsi:14' }] }, TAB_A, store)
-    store.setItem(GLOBAL, JSON.stringify(['bb20']))
-    expect(loadIndicatorPrefsV2(TAB_A, store).items).toEqual([{ id: 'rsi:14' }])
-  })
-
-  test('a tab where everything was turned OFF stays off — an empty entry is not re-seeded', () => {
-    store.setItem(GLOBAL, JSON.stringify(['sma20']))
-    saveIndicatorPrefsV2({ v: 2, items: [] }, TAB_A, store)
+  test('a tab with no per-tab entry starts empty, whatever the bare key holds', () => {
+    store.setItem(GLOBAL, JSON.stringify({ v: 2, items: [{ id: 'sma:20' }] }))
     expect(loadIndicatorPrefsV2(TAB_A, store).items).toEqual([])
   })
 

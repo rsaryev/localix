@@ -28,9 +28,11 @@ export type { LoadedMiniApps, LoadedMiniAppHook } from './loader-contract'
 
 /** The `${KEY}` tokens of a prompt section, filled from the app's settings. */
 const fillSettings = (text: string, config: Record<string, unknown>) =>
-  text.replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g, (_, key: string) =>
-    config[key] === undefined ? '' : String(config[key]),
-  )
+  text.replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g, (_, key: string) => {
+    const value = config[key]
+    if (value === undefined) return ''
+    return typeof value === 'string' ? value : JSON.stringify(value)
+  })
 
 export interface LoadMiniAppsOptions {
   /** What the scope's rules say; a trust gate decides whatever they do not. */

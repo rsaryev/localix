@@ -42,7 +42,7 @@ const twoEdits = {
 
 describe('a call that names several files', () => {
   it('PreToolUse sees one Edit per file, each with its file_path and old_string', async () => {
-    await make('PreToolUse', logging()).runPreToolUse('edit', twoEdits)
+    await make('PreToolUse', logging()).runPreToolUse('Edit', twoEdits)
     expect(
       calls().map((c) => [c.tool_name, c.tool_input.file_path, c.tool_input.old_string]),
     ).toEqual([
@@ -55,7 +55,7 @@ describe('a call that names several files', () => {
     const deny = cmd(
       `grep -q '"file_path":"/p/.env"' && echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"no .env"}}' || true`,
     )
-    const result = await make('PreToolUse', deny).runPreToolUse('edit', twoEdits)
+    const result = await make('PreToolUse', deny).runPreToolUse('Edit', twoEdits)
     expect(result).toMatchObject({ decision: 'deny', reason: 'no .env' })
   })
 
@@ -63,7 +63,7 @@ describe('a call that names several files', () => {
     const rewrite = cmd(
       `grep -q '"file_path":"/p/a.ts"' && echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","updatedInput":{"file_path":"/p/a.ts","old_string":"a","new_string":"B"}}}' || true`,
     )
-    const result = await make('PreToolUse', rewrite).runPreToolUse('edit', twoEdits)
+    const result = await make('PreToolUse', rewrite).runPreToolUse('Edit', twoEdits)
     expect(result.didRewrite).toBe(true)
     expect(result.updatedInput).toEqual({
       edits: [
@@ -77,7 +77,7 @@ describe('a call that names several files', () => {
     const allowOne = cmd(
       `grep -q '"file_path":"/p/a.ts"' && echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}' || true`,
     )
-    const result = await make('PreToolUse', allowOne).runPreToolUse('edit', twoEdits)
+    const result = await make('PreToolUse', allowOne).runPreToolUse('Edit', twoEdits)
     expect(result.decision).toBe('proceed')
   })
 
@@ -88,7 +88,7 @@ describe('a call that names several files', () => {
         { path: '/p/b.md', content: 'B' },
       ],
     }
-    await make('PostToolUse', logging()).runPostToolUse('write', input, { content: 'saved' })
+    await make('PostToolUse', logging()).runPostToolUse('Write', input, { content: 'saved' })
     expect(calls().map((c) => [c.tool_name, c.tool_input.file_path])).toEqual([
       ['Write', '/p/a.md'],
       ['Write', '/p/b.md'],
@@ -97,7 +97,7 @@ describe('a call that names several files', () => {
 
   it('a batched read is one Read per file', async () => {
     const input = { reads: [{ path: '/p/a.md' }, { path: '/p/b.md' }] }
-    await make('PreToolUse', logging()).runPreToolUse('read', input)
+    await make('PreToolUse', logging()).runPreToolUse('Read', input)
     expect(calls().map((c) => c.tool_input.file_path)).toEqual(['/p/a.md', '/p/b.md'])
   })
 })

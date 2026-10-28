@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, jest, test } from 'bun:test'
 import { bindMiniAppUiRuntime, type MiniAppUiRuntime } from '@localixai/mini-app-sdk/ui/runtime'
 
 import {
@@ -93,7 +93,8 @@ describe('followDockerEvents', () => {
 })
 
 describe('createEventRefreshBatcher', () => {
-  test('a burst re-reads once, with the strongest scope it asked for', async () => {
+  test('a burst re-reads once, with the strongest scope it asked for', () => {
+    jest.useFakeTimers()
     const runs: string[] = []
     const batcher = createEventRefreshBatcher<'containers' | 'all'>(
       (scope) => runs.push(scope),
@@ -103,7 +104,8 @@ describe('createEventRefreshBatcher', () => {
     batcher.push('containers')
     batcher.push('all')
     batcher.push('containers')
-    await new Promise((resolve) => setTimeout(resolve, 20))
+    jest.advanceTimersByTime(5)
+    jest.useRealTimers()
     expect(runs).toEqual(['all'])
   })
 })

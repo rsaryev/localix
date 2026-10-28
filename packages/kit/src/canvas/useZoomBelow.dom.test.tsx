@@ -25,7 +25,10 @@ test('the level of detail follows the zoom only once the camera rests', async ()
   const seen: boolean[] = []
   let store: ReturnType<typeof useStoreApi> | null = null
   function Probe() {
-    store = useStoreApi()
+    const api = useStoreApi()
+    React.useEffect(() => {
+      store = api
+    }, [api])
     seen.push(useZoomBelow(0.5))
     return null
   }

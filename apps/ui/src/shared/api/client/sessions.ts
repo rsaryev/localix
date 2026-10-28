@@ -1,6 +1,6 @@
 import type { ReasoningEffort } from '@localixai/agent'
 import type { PermissionMode } from '@localixai/api/permission-modes'
-import type { HistorySearchHit, JoinRoutesView, Message, UiSession } from '../contracts'
+import type { HistorySearchHit, Message, UiSession } from '../contracts'
 import { toUiSession, toUiSessionSummary } from '../converters'
 import { client, unwrap, assertOk } from '../internal'
 
@@ -46,13 +46,6 @@ export const sessionsApi = {
     return json.hits
   },
 
-  /** What each agent not invited yet would join this session on (`JoinRoutesView`). */
-  async getJoinRoutes(id: string, signal?: AbortSignal): Promise<JoinRoutesView> {
-    return unwrap(
-      await client.rpc.sessions[':id']['join-routes'].$get({ param: { id } }, { init: { signal } }),
-    )
-  },
-
   /** What a plugin's `subagentStatusLine` last drew in this conversation's subagent rows. */
   async getSubagentRows(id: string, signal?: AbortSignal) {
     return unwrap(
@@ -83,11 +76,8 @@ export const sessionsApi = {
     modelId?: string
     reasoningEffort?: ReasoningEffort
     projectId?: string | null
-    /**
-     * Who the chat is with, in join order — which is also the order they speak in. Absent = the
-     * default agent, which is what "new chat" means; two or more makes it a group.
-     */
-    agentIds?: string[]
+    /** The registry agent the chat is with, fixed for its life. Absent = the default agent. */
+    agentId?: string
     /** A landing: the server answers with the project's newest untouched chat when it has one. */
     reuseEmptyDraft?: boolean
   }): Promise<UiSession> {
@@ -113,31 +103,12 @@ export const sessionsApi = {
     id: string,
     patch: {
       title?: string
-      /**
-       * Re-route ONE participant. `handle` names whom the choice is for; omitted means the
-       * session's own participant, which is unambiguous in a private chat and is the first
-       * member in a group.
-       */
+      /** Re-route the conversation's agent: the model it runs on, never who it is. */
       route?: {
-        agentId?: string
         providerConnectionId?: string | null
         modelId?: string
         reasoningEffort?: ReasoningEffort
       }
-      /**
-       * Choose models for several agents in one write — seated, or not invited yet (the choice
-       * waits for them). Each must be able to take part, or none moves.
-       */
-      routes?: Array<{
-        agentId: string
-        providerConnectionId?: string | null
-        modelId?: string
-        reasoningEffort?: ReasoningEffort
-      }>
-      /** Replace the participants — add or remove. Whole list, never a diff. */
-      agentIds?: string[]
-      /** The session revision `agentIds` was built from; a newer one refuses the list (409). */
-      expectedUpdatedAt?: string
       /** The conversation's permission mode; a delegated child refuses it (409). */
       permissionMode?: PermissionMode
       isPinned?: boolean

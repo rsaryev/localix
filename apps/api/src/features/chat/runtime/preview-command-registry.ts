@@ -1,6 +1,6 @@
 /**
  * Preview command registry — the server→host→probe relay that powers the
- * `browser` tool. A machine-resolved twin of the HITL registry
+ * `Browser` tool. A machine-resolved twin of the HITL registry
  * (`hitl-registry.ts`): `send()` publishes a `preview.command` over the session
  * firehose and parks a Promise keyed by `commandId`; the open inspector's probe
  * executes it and the UI replies via the `{t:'preview-result'}` WS RPC, which

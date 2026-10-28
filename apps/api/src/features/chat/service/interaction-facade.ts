@@ -88,7 +88,7 @@ export function createChatInteractionFacade({
 
     /**
      * The isolated ANSWER leg of the `request_secret` HITL request kind, which the
-     * `vault` tool raises from its create/rotate actions. The typed VALUE
+     * `Vault` tool raises from its create/rotate actions. The typed VALUE
      * arrives here over the dedicated `submit-secret` WS command — deliberately NOT
      * `interact`, so the shared respond path (controller records, mini app hooks, any
      * future interact logging) can never capture it. The value is written straight
@@ -169,7 +169,7 @@ export function createChatInteractionFacade({
     },
 
     /**
-     * Settle a pending `browser` tool command from the host UI's reply (the
+     * Settle a pending `Browser` tool command from the host UI's reply (the
      * `{t:'preview-result'}` WS RPC). Ownership-gated by the command's owner.
      */
     resolvePreviewCommand(

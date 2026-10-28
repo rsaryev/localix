@@ -22,7 +22,7 @@ export type Player = (typeof PLAYERS)[number]
 
 /**
  * Who plays the person's opposite colour at this table (`@localixai/mini-app-sdk/opponent`): the
- * agent in the chat, or the host's decision model. The seat is the same either way — a move by
+ * agent in the chat, or the host's decision model. The side is the same either way — a move by
  * that colour is the `agent` player's — only who fills it differs.
  */
 export { OPPONENTS, type Opponent }

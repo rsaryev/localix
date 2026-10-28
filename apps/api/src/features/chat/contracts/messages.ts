@@ -33,9 +33,16 @@ export const sendMessageRequestSchema = z
      */
     isInternal: z.boolean().optional(),
   })
-  .refine((v) => v.prompt.length > 0 || (v.bindings?.length ?? 0) > 0, {
-    message: 'Message must include text or a binding',
-  })
+  // The active tab's context rides every composer send on its own; it is never a message the
+  // person wrote, so text-less it must not start (or queue) a turn.
+  .refine(
+    (v) =>
+      v.prompt.length > 0 ||
+      (v.bindings ?? []).some(
+        (binding) => !('source' in binding && binding.source === 'active-tab'),
+      ),
+    { message: 'Message must include text or a binding' },
+  )
 
 /**
  * Unified tool interaction endpoint.

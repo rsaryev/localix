@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react'
+import { useId, useState } from 'react'
 import { BookMarked, CircleAlert, Ellipsis, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import type { SourceView } from '@localixai/store'
 import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
@@ -48,9 +48,7 @@ function SourceRow({ source, onRemove }: { source: SourceView; onRemove: () => v
   // The press shows at once; the list takes over once it agrees, and the press is undone if the
   // write is refused.
   const [pressed, setPressed] = useState<boolean | null>(null)
-  useEffect(() => {
-    if (pressed !== null && source.autoUpdate === pressed) setPressed(null)
-  }, [pressed, source.autoUpdate])
+  if (pressed !== null && source.autoUpdate === pressed) setPressed(null)
   const switchTo = (on: boolean) => {
     const write = store.client.setSourceAutoUpdate(source.kind, source.id, on)
     setPressed(on)

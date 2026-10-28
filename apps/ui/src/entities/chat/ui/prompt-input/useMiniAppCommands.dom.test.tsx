@@ -88,10 +88,13 @@ async function mountCommands(enabled = true) {
   })
   let commands: SlashCommand[] = []
   function Composer() {
-    commands = useMiniAppCommands('s1', enabled)
+    const current = useMiniAppCommands('s1', enabled)
+    React.useEffect(() => {
+      commands = current
+    })
     return (
       <ul>
-        {commands.map((command) => (
+        {current.map((command) => (
           <li key={command.id}>
             /{command.trigger} — {command.description}
           </li>

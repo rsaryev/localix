@@ -25,6 +25,8 @@ export type {
   SessionWork,
   SessionQueueItem,
   QueueClearResult,
+  QueueReturnedMessage,
+  StopResult,
   QueuePromoteResult,
   QueueRemovalResult,
   WakeSource,

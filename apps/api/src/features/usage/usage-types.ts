@@ -13,7 +13,7 @@ export interface UsageEventInput {
   /** Catalog provider id, e.g. 'openrouter' — denormalized for fast grouping. */
   providerId?: string | null
   modelId: string
-  /** The party member that produced the request — the "who" a room's model id no longer gives. */
+  /** The agent that produced the request. */
   agentId?: string | null
   inputTokens?: number
   outputTokens?: number
@@ -65,7 +65,6 @@ export const USAGE_AUXILIARY_KINDS = [
   'improve',
   'classify',
   'hook',
-  'routing',
   'decision',
   'recap',
 ] as const
@@ -81,7 +80,6 @@ export const USAGE_KIND_LABELS: Readonly<Record<UsageKindKey, string>> = {
   improve: 'Prompt improvement (retired)',
   classify: 'Auto-mode classifier',
   hook: 'Hook policy checks',
-  routing: 'Group routing',
   decision: 'Decisions',
   recap: 'Session recaps',
 }
@@ -127,7 +125,7 @@ export interface UsageLogRow {
   sessionTitle: string | null
   modelId: string
   providerId: string | null
-  /** Which participant spent it; null for rows with no speaker (auxiliary calls, legacy). */
+  /** Which agent spent it; null for rows with no speaker (auxiliary calls, legacy). */
   agentId: string | null
   inputTokens: number
   outputTokens: number
@@ -158,13 +156,13 @@ export interface UsageKeys {
   models: string[]
   providers: string[]
   sessions: { id: string; title: string | null }[]
-  /** Agents that have spent anything, with the handle the party recorded for them. */
-  agents: { id: string; handle: string | null }[]
+  /** Agents that have spent anything, with the name their session recorded. */
+  agents: { id: string; name: string | null }[]
 }
 
 /**
  * The dimensions the dashboard's breakdown groups spend by. `agent` is the only one that
- * answers "who spent it" in a room, where one session runs several participants.
+ * answers "who spent it" across sessions, where each session runs one agent.
  */
 export type UsageGroupBy = 'model' | 'provider' | 'kind' | 'agent'
 
@@ -177,7 +175,7 @@ export interface UsageFilters {
   provider?: string
   /** Exactly this session's own rows. What the dashboard means by "this session". */
   session?: string
-  /** One party member's rows, across every session it took part in. */
+  /** One agent's rows, across every session it ran in. */
   agent?: string
   /**
    * This session AND everything under it — every delegated sub-agent, delegated task run and

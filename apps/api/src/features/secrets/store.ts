@@ -20,8 +20,6 @@ import {
   VaultPayloadError,
 } from './store-internals'
 
-export { defaultLegacySecretsDir, migrateLegacySecrets } from './legacy-migration'
-
 export type { VaultMutationResult, VaultDeleteResult, SecretsStore } from './store-contracts'
 
 /** Key material remains outside the application database for backend portability. */

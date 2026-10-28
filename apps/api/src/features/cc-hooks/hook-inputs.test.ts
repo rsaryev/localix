@@ -53,7 +53,7 @@ describe('hook inputs', () => {
       },
       { permissionMode: 'bypassPermissions' },
     )
-    await rt.runPreToolUse('bash', { command: 'ls' }, 'call-1')
+    await rt.runPreToolUse('Bash', { command: 'ls' }, 'call-1')
     await rt.runSessionStart()
     expect(seen('pre').permission_mode).toBe('bypassPermissions')
     expect('permission_mode' in seen('start')).toBe(false)
@@ -64,7 +64,7 @@ describe('hook inputs', () => {
       { PreToolUse: [{ handlers: [spy('pre')] }] },
       { agent: { id: 'child-1', type: 'plug:helper' } },
     )
-    await rt.runPreToolUse('bash', { command: 'ls' }, 'call-1')
+    await rt.runPreToolUse('Bash', { command: 'ls' }, 'call-1')
     expect(seen('pre')).toMatchObject({ agent_id: 'child-1', agent_type: 'plug:helper' })
   })
 
@@ -90,7 +90,7 @@ describe('hook inputs', () => {
   it('gives PostToolUse the call id and Bash output as stdout', async () => {
     const rt = runtime({ PostToolUse: [{ handlers: [spy('post')] }] })
     const details = { command: 'printf hi', cwd: dir(), output: 'hi', isStreaming: false }
-    await rt.runPostToolUse('bash', { command: 'printf hi' }, { content: 'hi\n', details }, 'c-9')
+    await rt.runPostToolUse('Bash', { command: 'printf hi' }, { content: 'hi\n', details }, 'c-9')
     expect(seen('post')).toMatchObject({
       tool_use_id: 'c-9',
       tool_response: { stdout: 'hi', stderr: '', interrupted: false, isImage: false },
@@ -99,13 +99,13 @@ describe('hook inputs', () => {
 
   it('makes a file tool path absolute against the hook cwd', async () => {
     const rt = runtime({ PreToolUse: [{ handlers: [spy('pre')] }] })
-    await rt.runPreToolUse('write', { files: [{ path: 'notes/a.md', content: 'x' }] }, 'w-1')
+    await rt.runPreToolUse('Write', { files: [{ path: 'notes/a.md', content: 'x' }] }, 'w-1')
     expect(seen('pre').tool_input.file_path).toBe(join(dir(), 'notes/a.md'))
   })
 
   it('fires a capitalised regex matcher on the engine tool', async () => {
     const rt = runtime({ PreToolUse: [{ matcher: '^Bash$', handlers: [spy('pre')] }] })
-    await rt.runPreToolUse('bash', { command: 'ls' }, 'call-1')
+    await rt.runPreToolUse('Bash', { command: 'ls' }, 'call-1')
     expect(seen('pre').tool_name).toBe('Bash')
   })
 })
@@ -151,7 +151,7 @@ describe('exit codes', () => {
       hookSpecificOutput: { permissionDecision: 'deny', permissionDecisionReason: 'no' },
     })
     const rt = runtime({ PreToolUse: [{ handlers: [spy('pre', `echo '${deny}'; exit 1`)] }] })
-    const result = await rt.runPreToolUse('bash', { command: 'ls' }, 'call-1')
+    const result = await rt.runPreToolUse('Bash', { command: 'ls' }, 'call-1')
     expect(result).toMatchObject({ decision: 'deny', reason: 'no' })
   })
 })

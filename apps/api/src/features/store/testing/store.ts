@@ -5,7 +5,7 @@ import { createSearchProviderRegistry } from '../../agent-core/search/provider'
 import { createSearchService } from '../../search/service'
 import { createStoreIndexRepository } from '../index-repository'
 import { openStoreIndexDatabase } from '../index-repository-open'
-import { createStoreService } from '../service'
+import { createStoreService, type StoreContextPort } from '../service'
 import { TEST_NOW } from './index'
 
 /**
@@ -20,6 +20,9 @@ export function makeStore(
     projectWords?: string[]
     resyncMeaning?: () => void
     meaningChanged?: (keys: string[]) => void
+    /** What the working set says, as Context Fabric would admit it. */
+    context?: StoreContextPort
+    schedule?: (work: () => void) => () => void
   } = {},
 ) {
   const { db, close } = openStoreIndexDatabase(':memory:')
@@ -56,6 +59,8 @@ export function makeStore(
     ...(opts.projectWords ? { projectWords: async () => new Set(opts.projectWords) } : {}),
     ...(opts.resyncMeaning ? { resyncMeaning: opts.resyncMeaning } : {}),
     ...(opts.meaningChanged ? { meaningChanged: opts.meaningChanged } : {}),
+    ...(opts.context ? { workingContext: opts.context } : {}),
+    ...(opts.schedule ? { scheduleRecommendation: opts.schedule } : {}),
   })
   registry.register(store.searchProvider)
   return { store, search, index, close }

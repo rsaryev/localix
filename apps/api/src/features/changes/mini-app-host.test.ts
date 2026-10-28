@@ -14,7 +14,17 @@ async function setup() {
   return { db, hosts, logged }
 }
 
-const tick = () => new Promise((resolve) => setTimeout(resolve, 120))
+/**
+ * Yields to the event loop until `done` holds: delivery runs through the database, so a test
+ * waits for what it expects rather than for a fixed time. Fails at the deadline.
+ */
+async function until(done: () => boolean | Promise<boolean>, what: string) {
+  const deadline = Date.now() + 5000
+  while (!(await done())) {
+    if (Date.now() > deadline) throw new Error(`gave up waiting for ${what}`)
+    await new Promise((resolve) => setImmediate(resolve))
+  }
+}
 
 describe('host.changes', () => {
   test("a mini app's notices reach its own consumer, never another mini app's", async () => {
@@ -29,12 +39,14 @@ describe('host.changes', () => {
       { entity: 'card', op: 'upserted', ref: { id: 'c1' } },
       { entity: 'card', op: 'resync' },
     ])
-    await tick()
+    notes.record([{ entity: 'note', op: 'resync' }])
+    // Each hears its own; neither has the other's by the time both have theirs.
+    await until(() => seenByBoard.length >= 2 && seenByNotes.length >= 1, 'both consumers')
     expect(seenByBoard).toEqual([
       { entity: 'card', op: 'upserted', ref: { id: 'c1' } },
       { entity: 'card', op: 'resync' },
     ])
-    expect(seenByNotes).toEqual([])
+    expect(seenByNotes).toEqual([{ entity: 'note', op: 'resync' }])
     await stopBoard()
     await stopNotes()
     await hosts.close()
@@ -46,8 +58,9 @@ describe('host.changes', () => {
       { entity: 'Bad Name', op: 'resync' },
       { entity: 'card', op: 'resync' },
     ])
-    await tick()
-    const rows = await db.selectFrom('change_events').select(['stream', 'entity']).execute()
+    const stored = () => db.selectFrom('change_events').select(['stream', 'entity']).execute()
+    await until(async () => (await stored()).length >= 1, 'the valid notice to be recorded')
+    const rows = await stored()
     expect(rows).toEqual([{ stream: 'mini-app:board', entity: 'card' }])
     expect(logged).toContain('changes.mini_app_invalid_entity')
     await hosts.close()
@@ -73,7 +86,7 @@ describe('host.changes', () => {
       },
       { entity: 'skill', op: 'deleted', ref: { name: 'x', scope: 'global' } },
     ])
-    await tick()
+    await until(() => seen.length >= 4, 'the deletions')
     expect(seen).toEqual([
       { entity: 'agent', ref: { id: 'gone', scope: 'global', agentId: 'a2' } },
       { entity: 'chat', ref: { id: 's1', userId: 'u1' } },
@@ -92,10 +105,26 @@ describe('host.changes', () => {
     await board.followCoreDeletions('cleanup', (deletion) => void first.push(deletion))
     const stop = await board.followCoreDeletions('cleanup', (d) => void second.push(d))
     await recordCoreChanges(db, { entity: 'project', op: 'deleted', ref: { id: 'p', userId: 'u' } })
-    await tick()
+    await until(() => second.length >= 1, 'the later follower')
     expect(first).toEqual([])
     expect(second).toHaveLength(1)
     await stop()
+    await hosts.close()
+  })
+})
+
+describe('host.changes across a mini app reload', () => {
+  test('the reloaded backend subscribes under the same consumer name', async () => {
+    const { hosts } = await setup()
+    const first = hosts.forMiniApp('board')
+    const second = hosts.forMiniApp('board')
+    const seen: string[] = []
+    await first.subscribe('index', () => void seen.push('old'))
+    await second.subscribe('index', () => void seen.push('new'))
+    first.record([{ entity: 'card', op: 'resync' }])
+    await until(() => seen.length >= 1, 'the reloaded handler')
+    expect(seen).toEqual(['new'])
+    await hosts.releaseMiniApp('board')
     await hosts.close()
   })
 })

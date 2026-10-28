@@ -32,17 +32,6 @@ export const SETTINGS_STRING_TABS = [
   'diagnostics',
 ] as const
 
-/**
- * Settings pages that moved, by their old tab id. A link, a restored tab or a palette hit that
- * names an old id opens the new page: the permission rules left Capabilities for Permissions.
- */
-const MOVED_SETTINGS_TABS: Readonly<Record<string, string>> = { rules: 'permissions' }
-
-/** The tab id a link means today: an old id mapped to the page its content moved to. */
-export function currentSettingsTab(tab: string): string {
-  return MOVED_SETTINGS_TABS[tab] ?? tab
-}
-
 /** A settings string tab, or a project-scoped settings view. */
 export type SettingsTabId = (typeof SETTINGS_STRING_TABS)[number] | { kind: 'project'; id: string }
 
@@ -51,9 +40,6 @@ export const ROUTE_PATTERNS = {
   // Hierarchical scope→session addressing: the project scope is part of the
   // path, so a link identifies WHERE a chat lives, not just its id.
   projectChat: 'project/:projectId/:sessionId?/:section?',
-  // Back-compat: old bare `/chat/:id` links redirect to the scoped URL once the
-  // session's project is resolved (see ChatPage legacy-redirect effect).
-  legacyChat: 'chat/:sessionId?/:section?',
   catchAll: '*',
 } as const
 
@@ -109,9 +95,6 @@ export function parseSettingsTab(
   projectId: string | undefined,
 ): SettingsTabId {
   if (projectId) return { kind: 'project', id: projectId }
-  const current = tab ? currentSettingsTab(tab) : undefined
-  if (current && (SETTINGS_STRING_TABS as readonly string[]).includes(current)) {
-    return current as SettingsTabId
-  }
+  if (tab && (SETTINGS_STRING_TABS as readonly string[]).includes(tab)) return tab as SettingsTabId
   return 'preferences'
 }

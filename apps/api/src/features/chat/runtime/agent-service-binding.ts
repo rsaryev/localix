@@ -1,5 +1,6 @@
+import type { SessionToolStats } from '../service/delegated-runs'
 import type { AgentsService } from '../../agents/service-contract'
-import type { DelegatedRunSummary } from '../../agent-core/tools/delegate-control'
+import type { ChildRunSummary } from '../../agent-core/tools/agent/agent-control'
 import type { TaskDelegationOptions } from '../../agent-core/tools/task-delegation-contracts'
 import type { RunProfile } from '../../agent-core/run-shape'
 /**
@@ -10,7 +11,7 @@ import type { RunProfile } from '../../agent-core/run-shape'
  *
  * Named for the whole surface rather than for one tool: the `fork` tool, skill forks and
  * delegation recovery all read the same late-bound host. It was `delegate-service-binding.ts`
- * back when `delegate` was the only tool here and the only name for the act.
+ * back when `Agent` was the only tool here and the only name for the act.
  */
 
 import type { AgentRuntimeStatus, ReasoningEffort } from '../../../db/types'
@@ -24,7 +25,7 @@ import type { DelegationPriority } from '../../agent-core/delegation-lanes'
 export interface AgentServiceBinding {
   /** The delegating agent, by id, admitted for child work. */
   resolveDelegateAgent?: TaskDelegationOptions['resolveAgent']
-  /** The agent a task goes to for the name `delegate`, a workflow or a skill's fork wrote. */
+  /** The agent a task goes to for the name `Agent`, a workflow or a skill's fork wrote. */
   resolveDelegation?: TaskDelegationOptions['resolveTarget']
   /**
    * Create a child session. Returns its id plus `taskName` — the child's addressable canonical
@@ -51,7 +52,7 @@ export interface AgentServiceBinding {
        * Permission mode for the child. A child session is created fresh and would
        * otherwise default to `auto`, so an `ask`-mode parent silently spawned a child
        * that mutates without confirmation. The host fills this in from the parent's mode
-       * (`runtime/subagent-mode.ts`); the delegate tool never names a mode itself.
+       * (`runtime/subagent-mode.ts`); the `Agent` tool never names a mode itself.
        */
     },
   ) => Promise<{ id: string; taskName: string | null }>
@@ -76,7 +77,12 @@ export interface AgentServiceBinding {
   finalAssistantText?: (userId: string, sessionId: string) => Promise<string | null>
   /** Stop an owned child session. callerUserId is enforced by chatService. */
   stopSession?: (sessionId: string, callerUserId?: string) => void | Promise<void>
-  /** A parent's message to its child: joins a running run, or opens a new one (`delegate`). */
+  /**
+   * The agent stopped this child: record that no report of it is owed, so the recovery sweep does
+   * not send one for a child that never got to run (`service/delegation-stop.ts`).
+   */
+  recordChildStopped?: (userId: string, sessionId: string) => Promise<void>
+  /** A parent's message to its child: joins a running run, or opens a new one (`Agent`). */
   messageSubagent?: (
     userId: string,
     sessionId: string,
@@ -98,7 +104,7 @@ export interface AgentServiceBinding {
    * (`delegation-lanes.ts`).
    */
   countDelegationsSinceHuman?: (userId: string, rootSessionId: string) => Promise<number>
-  /** Close a child for good (`delegate` close) — see `service/subagent-close.ts`. */
+  /** Close a child for good (`Agent` close) — see `service/subagent-close.ts`. */
   closeSubagent?: (userId: string, sessionId: string) => Promise<SubagentCloseResult>
   /** After a child's run ends: start the next one for delegator messages no run took. */
   flushChildMessages?: (userId: string, sessionId: string) => Promise<void>
@@ -110,12 +116,14 @@ export interface AgentServiceBinding {
     userId: string,
     sessionId: string,
   ) => Promise<{ tokens: number; outputTokens: number; costUsd: number | null }>
+  /** What one session's tool calls amount to (`toolStats` of an Agent result). */
+  sessionToolStats?: (userId: string, sessionId: string) => Promise<SessionToolStats>
   /** The children ONE session delegated (`service/delegated-runs.ts`). */
   listDelegatedRuns?: (
     userId: string,
     parentSessionId: string,
     opts?: { usage?: boolean },
-  ) => Promise<DelegatedRunSummary[]>
+  ) => Promise<ChildRunSummary[]>
 }
 
 let current: AgentServiceBinding | null = null

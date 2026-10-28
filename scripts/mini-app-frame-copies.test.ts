@@ -22,7 +22,7 @@ import {
   loadTemplateScaffold,
   shipsToCopies,
   templateFrame,
-} from '../apps/api/src/features/mini-apps/authoring/template-layout'
+} from '../plugins/mini-app-authoring/src/scaffold/template-layout'
 import { findTemplateMiniApp } from './stage-mini-app-kit.mjs'
 
 const repoRoot = resolve(import.meta.dir, '..')

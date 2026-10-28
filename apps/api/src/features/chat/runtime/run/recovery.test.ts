@@ -19,7 +19,7 @@ import { LocalContextBudgetExceededError, resolveContextBudgetFrame } from '../c
 import type { PersistedMessage } from '../../contracts'
 import type { SessionRecord } from '../../repository'
 import type { RunEnv, RunParams } from './types'
-import { DEFAULT_AGENT_PARTICIPANT, USER_PARTICIPANT } from '../../../../db'
+import { DEFAULT_AGENT_AUTHOR, USER_AUTHOR } from '../../../../db'
 
 const base = {
   turns: 0,
@@ -96,7 +96,7 @@ function checkpointHarness(chain: Partial<RunParams['chain']> = {}) {
     payload: {
       id,
       role,
-      from: role === 'user' ? USER_PARTICIPANT : DEFAULT_AGENT_PARTICIPANT,
+      from: role === 'user' ? USER_AUTHOR : DEFAULT_AGENT_AUTHOR,
       content: role === 'user' ? 'go' : '',
     },
     createdAt: timestamp,
@@ -123,7 +123,7 @@ function checkpointHarness(chain: Partial<RunParams['chain']> = {}) {
   }
   const dispatched = dispatchParams(
     { userId: 'u', session, assistantMessageId: 'a', historyMessages: rows },
-    { speakerAgentId: 'lead' } as RunParams['scope'],
+    {} as RunParams['scope'],
   )
   const params = { ...dispatched, chain: { ...dispatched.chain, ...chain } }
   const runtimeState = createRuntimeState(testWork())
@@ -136,7 +136,7 @@ function checkpointHarness(chain: Partial<RunParams['chain']> = {}) {
     params,
     abort,
   }
-  const lane = () => ensureSessionStores(runtimeState, { sessionId: session.id, agentId: 'lead' })
+  const lane = () => ensureSessionStores(runtimeState, session.id)
   return { args, launched, lane, abort }
 }
 
@@ -286,7 +286,7 @@ describe('attemptTransientRetry — a failed relaunch must not be fatal', () => 
       expect(retried).toBe(true)
       expect(launched).toBe(true)
       // Let the rejection settle — an unattached handler surfaces here.
-      await new Promise((resolve) => setTimeout(resolve, 5))
+      await new Promise((resolve) => setTimeout(resolve, 0))
     } finally {
       console.warn = originalWarn
     }
@@ -302,7 +302,7 @@ describe('prepareRetryContinuation', () => {
     payload: {
       id,
       role,
-      from: role === 'user' ? USER_PARTICIPANT : DEFAULT_AGENT_PARTICIPANT,
+      from: role === 'user' ? USER_AUTHOR : DEFAULT_AGENT_AUTHOR,
       content: role === 'user' ? 'go' : 'completed tool work',
     },
     createdAt: '2026-07-22T00:00:00.000Z',
@@ -314,7 +314,7 @@ describe('prepareRetryContinuation', () => {
     const inserted: PersistedMessage[] = []
     const published: Array<{ type: string; sessionId: string; message: PersistedMessage }> = []
     const result = await prepareRetryContinuation({
-      agent: DEFAULT_AGENT_PARTICIPANT,
+      agent: DEFAULT_AGENT_AUTHOR,
       env: {
         now: () => '2026-07-22T00:01:00.000Z',
         repo: {
@@ -354,7 +354,7 @@ describe('prepareRetryContinuation', () => {
     const rows = [message('u1', 'user'), message('empty-assistant', 'assistant')]
     let inserted = false
     const result = await prepareRetryContinuation({
-      agent: DEFAULT_AGENT_PARTICIPANT,
+      agent: DEFAULT_AGENT_AUTHOR,
       env: {
         now: () => 'never',
         repo: {
@@ -392,7 +392,7 @@ function messageForRestore(id: string, content: string): PersistedMessage {
     id,
     sessionId: 's1',
     userId: 'u1',
-    payload: { id, role: 'assistant', from: DEFAULT_AGENT_PARTICIPANT, content },
+    payload: { id, role: 'assistant', from: DEFAULT_AGENT_AUTHOR, content },
     createdAt: '2026-07-22T00:00:00.000Z',
     updatedAt: '2026-07-22T00:00:00.000Z',
   }

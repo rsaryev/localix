@@ -64,7 +64,7 @@ function setup(files: Record<string, string>, extra: Record<string, string> = {}
     dataDir: (plugin) => join(dir, 'data', plugin),
     workspaceDir: dir,
     submitPrompt: async () => {},
-    complete: INERT_MOD_PORTS.complete,
+    complete: (...args) => INERT_MOD_PORTS.complete(...args),
     log: (_scene, line) => heard.push(JSON.parse(line.text)),
     notify: () => {},
     changed: () => changes.push(1),

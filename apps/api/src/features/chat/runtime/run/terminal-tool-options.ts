@@ -1,5 +1,5 @@
 /**
- * The `bash` tool's interactive-terminal port: open a PTY pane, read its screen, type into
+ * The `Bash` tool's interactive-terminal port: open a PTY pane, read its screen, type into
  * it, close it — the actions that let the model drive a full-screen TUI instead of only
  * running one-shot commands.
  *
@@ -36,7 +36,7 @@ export function buildTerminalToolOptions({
   terminalWaits,
 }: TerminalToolOptionsDeps): CoreToolDeps['terminalControl'] {
   const terminalControl = deps.terminalControl
-  if (!isToolDirect(agentProfile, TOOL.bash) || !terminalControl) return undefined
+  if (!isToolDirect(agentProfile, TOOL.Bash) || !terminalControl) return undefined
   return {
     // Same `terminal.opened` push as spawnTerminalJob above: an interactive
     // open must reveal its pane without waiting on the registry poll.

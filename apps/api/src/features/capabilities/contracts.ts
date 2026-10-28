@@ -43,7 +43,7 @@ export type { ComposerTipAction, ComposerTip } from './tip-contracts'
  * own trust gate — which is what keeps a dropped-in plugin inert until somebody says yes.
  */
 export const capabilityRuleChangeSchema = z.object({
-  /** `tool:bash`, `skill:deploy`, `mcp:github`, `mcp:github/create_pr`, `plugin:office`… */
+  /** `tool:Bash`, `skill:deploy`, `mcp:github`, `mcp:github/create_pr`, `plugin:office`… */
   action: z.string().min(1).max(200),
   /** `*` is the capability itself; anything else narrows it to particular arguments. */
   resource: z.string().min(1).max(400).default('*'),

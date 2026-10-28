@@ -12,14 +12,14 @@ import { other } from './position'
  * The game as TEXT for the agent — tool results, the wake that asks for its move, and the context
  * the view publishes. One module, so every one of them describes the same position.
  *
- * Written from the agent's seat: it plays the user's opposite colour. The board is drawn from
+ * Written from the agent's side: it plays the user's opposite colour. The board is drawn from
  * White's side with files and ranks, the way the notation reads, and the FEN is given too — the
  * notation models are best at reading a chess position in. When the table's opponent is the
  * decision model, it plays that colour and the agent only watches.
  */
 
-/** Who plays the user's opposite colour, from the agent's seat: itself, or the decision model. */
-const themSeat = (game: Pick<Game, 'opponent'>) =>
+/** Who plays the user's opposite colour, from the agent's side: itself, or the decision model. */
+const themSide = (game: Pick<Game, 'opponent'>) =>
   game.opponent === 'decision'
     ? { who: 'The decision model', whose: 'The decision model’s' }
     : { who: 'You', whose: 'Your' }
@@ -55,11 +55,11 @@ export function statusLine(game: Game): string {
   const how = game.ending ? ENDING[game.ending] : ''
   if (game.ending === 'resign') return 'The user won — you resigned.'
   if (game.status === 'won') return `The user won by ${how}.`
-  if (game.status === 'lost') return `${themSeat(game).who} won by ${how}.`
+  if (game.status === 'lost') return `${themSide(game).who} won by ${how}.`
   if (game.status === 'draw') return `Draw by ${how}.`
   const check = positionOfGame(game).inCheck ? ' — in check' : ''
   if (turnOf(game) === game.you) return `The user’s turn (${game.you})${check}.`
-  return `${themSeat(game).whose} turn (${other(game.you)})${check}.`
+  return `${themSide(game).whose} turn (${other(game.you)})${check}.`
 }
 
 /**
@@ -73,7 +73,7 @@ export function recordLine(record: GameRecord): string | null {
 
 /** "The user played Nf3." */
 export const moveLine = (move: Move, game: Pick<Game, 'opponent'>) =>
-  `${move.by === 'you' ? 'The user' : themSeat(game).who} played ${move.san}.`
+  `${move.by === 'you' ? 'The user' : themSide(game).who} played ${move.san}.`
 
 export const lastMoveLine = (game: Game): string | null => {
   const move = game.moves.at(-1)

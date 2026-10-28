@@ -52,7 +52,7 @@ interface Pool {
  * Which pool a child asks in. A parent's delegated children share one pool, keyed by the parent,
  * at `DELEGATION_SLOT_CAP`. A workflow run's agents are the same parent's children in a pool of
  * their own (`key`), at the workflow's limit: Claude Code runs up to 16 of them at once, and
- * sharing the chat's three lanes would both slow the run and leave the chat's own `delegate`
+ * sharing the chat's three lanes would both slow the run and leave the chat's own `Agent`
  * calls queued behind a fan-out of hundreds.
  */
 export interface LaneSpec {

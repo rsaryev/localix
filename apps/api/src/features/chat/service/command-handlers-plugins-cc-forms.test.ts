@@ -86,6 +86,33 @@ describe('Claude Code plugin commands, pasted', () => {
     ])
   })
 
+  test('--scope user|project|local parses on uninstall, enable, disable and update too', async () => {
+    const h = harness()
+    for (const verb of ['uninstall', 'enable', 'disable', 'update']) {
+      await h.say(`/plugin ${verb} formatter@your-org --scope user`)
+      await h.say(`/plugin ${verb} --scope local formatter@your-org`)
+      await h.say(`/plugin ${verb} formatter -s project`)
+    }
+    expect(h.calls.map(([, input]) => input as { name: string; projectId: string | null })).toEqual(
+      Array.from({ length: 4 }).flatMap(() => [
+        expect.objectContaining({ name: 'formatter', projectId: null }),
+        expect.objectContaining({ name: 'formatter', projectId: 'p1' }),
+        expect.objectContaining({ name: 'formatter', projectId: 'p1' }),
+      ]),
+    )
+  })
+
+  test('a scope other than user, project or local changes nothing and says what is accepted', async () => {
+    const h = harness()
+    for (const verb of ['uninstall', 'enable', 'disable', 'update', 'install']) {
+      for (const flag of ['--scope usr', '-s global', '--scope']) {
+        const reply = await h.say(`/plugin ${verb} formatter@your-org ${flag}`)
+        expect(reply).toContain('--scope user|project|local')
+      }
+    }
+    expect(h.calls).toEqual([])
+  })
+
   test('/plugin market is /plugin marketplace, and a pinned #ref reaches the Store whole', async () => {
     const h = harness()
     await h.say('/plugin market add your-org/plugins#v1.2.0')

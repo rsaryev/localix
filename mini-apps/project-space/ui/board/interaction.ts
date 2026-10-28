@@ -50,8 +50,7 @@ export function protectControlDrag(target: EventTarget | null) {
  * Coalesce repeated clicks and cancel on unmount so a closed card cannot refocus the board.
  */
 export function useControlFocus(focus: () => void) {
-  const latest = useRef(focus)
-  latest.current = focus
+  const latest = useLatest(focus)
   const pending = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(
     () => () => {
@@ -68,3 +67,4 @@ export function useControlFocus(focus: () => void) {
   }
 }
 import { useEffect, useRef } from 'react'
+import { useLatest } from '@localixai/mini-app-sdk/ui/runtime-hooks'

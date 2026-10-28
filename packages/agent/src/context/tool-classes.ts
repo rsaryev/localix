@@ -11,10 +11,10 @@
  * — app-specific tool names must never be hardcoded here.
  */
 
-const pagedReadResultTools = new Set(['read', 'lsp', 'search', 'grep', 'ls', 'list'])
+const pagedReadResultTools = new Set(['Read', 'lsp', 'Search', 'grep', 'ls', 'list'])
 const readResultTools = new Set(pagedReadResultTools)
 
-const mutateTools = new Set(['write', 'edit'])
+const mutateTools = new Set(['Write', 'Edit'])
 
 // Generic patch-applier names. Localix no longer ships a patch tool, but saved sessions still
 // hold historical `apply_patch` items, so they keep their class.
@@ -22,7 +22,7 @@ const patchTools = new Set(['apply_patch', 'patch'])
 
 const allMutateTools = new Set([...mutateTools, ...patchTools])
 
-const nonidempotentTools = new Set(['bash', 'terminal', 'shell'])
+const nonidempotentTools = new Set(['Bash', 'terminal', 'shell'])
 
 /**
  * Tools whose RESULT is a recoverable observation — re-readable from disk/source,

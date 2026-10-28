@@ -7,6 +7,7 @@ import {
 } from '@localixai/api/slash-catalog'
 import type { SlashCommand } from './SlashCommandMenu'
 import { useChipLabels } from './useChipLabels'
+import type { LoadDynamicOptions, SkipArgFor } from './slashArgSources'
 
 // The arg-spec types + the pure parser live in ONE shared leaf
 // (`@localixai/api/slash-catalog`) consumed by every composer surface, so argument
@@ -17,6 +18,7 @@ export {
   type SlashArgOption,
   type ParsedCommandArgs,
 } from '@localixai/api/slash-catalog'
+export type { LoadDynamicOptions, SkipArgFor } from './slashArgSources'
 
 interface DetectedCommand {
   command: SlashCommand
@@ -27,38 +29,13 @@ interface DetectedCommand {
  * Drives the chip/menu UX for a command's declarative arguments. Returns the parsed
  * state plus handlers that rebuild the raw prompt string the composer submits.
  */
-/**
- * Fetch a dynamic arg's options on demand (a plugin `optionsScript` arg, or a
- * built-in whose values are live state). Given the active command, the arg name, the
- * partial text, and the arguments ALREADY committed as chips; returns the option
- * list. The composer wires this up; omit for surfaces with no dynamic args.
- *
- * `committed` is what makes one arg spec serve several sub-commands: `/plugin enable`
- * and `/plugin disable` share the "pick an installed plugin" argument, and only the
- * committed action says which half of the installed set is worth offering.
- */
-export type LoadDynamicOptions = (
-  command: SlashCommand,
-  argName: string,
-  query: string,
-  committed: Readonly<Record<string, string>>,
-) => Promise<SlashArgOption[]>
-
-/**
- * Steps the surface knows do not apply (see `SkipCommandArg`), per command. `/model` passes over
- * its agent step in a one-agent chat; every other command has nothing to skip.
- */
-export type SkipArgFor = (
-  command: SlashCommand,
-  name: string,
-  committed: ReadonlyMap<string, string>,
-) => boolean
-
 export function useSlashArgs(
   detected: DetectedCommand | null,
   setPrompt: (v: string) => void,
   loadDynamicOptions?: LoadDynamicOptions,
   skipArg?: SkipArgFor,
+  /** Wait before a dynamic argument's options load; a test passes 0. */
+  debounceMs = 200,
 ) {
   const [activeIndex, setActiveIndex] = useState(0)
   const [dynamicOptions, setDynamicOptions] = useState<{
@@ -104,7 +81,9 @@ export function useSlashArgs(
   // Keep the values in the dependency list rather than copying them into refs
   // during render: React can then cancel a stale request before it starts.
   const reqSeq = useRef(0)
-  const navigatedMenu = useRef(false)
+  // The menu context (argument + typed text) the user last arrow-navigated in; a different
+  // context means they have not navigated yet, so no reset is needed when it changes.
+  const navigatedMenu = useRef<string | null>(null)
   const activeSpecName = activeSpec?.name
   const command = detected?.command
   const commandId = command?.id
@@ -133,7 +112,7 @@ export function useSlashArgs(
         .catch(() => {
           if (reqSeq.current === seq) setDynamicOptions({ key: dynamicOptionsKey, options: [] })
         })
-    }, 200)
+    }, debounceMs)
     return () => clearTimeout(t)
   }, [
     isDynamic,
@@ -144,6 +123,7 @@ export function useSlashArgs(
     committed,
     dynamicOptionsKey,
     loadDynamicOptions,
+    debounceMs,
     remember,
   ])
 
@@ -169,10 +149,13 @@ export function useSlashArgs(
   const isMenuOpen = Boolean(choiceSpec && options.length > 0)
   const clampedIndex = Math.min(activeIndex, Math.max(0, options.length - 1))
 
-  useEffect(() => {
+  // A new argument or typed text restarts navigation: reset the highlight while rendering.
+  const menuKey = `${activeSpecName ?? ''}\u0000${activeText}`
+  const [indexKey, setIndexKey] = useState(menuKey)
+  if (indexKey !== menuKey) {
+    setIndexKey(menuKey)
     setActiveIndex(0)
-    navigatedMenu.current = false
-  }, [activeSpecName, activeText])
+  }
 
   /** Update the free text / partial token for the active argument. */
   const setActiveText = useCallback(
@@ -233,17 +216,17 @@ export function useSlashArgs(
         choiceSpec?.type === 'choice' &&
         choiceSpec.optional &&
         !activeText &&
-        !navigatedMenu.current
+        navigatedMenu.current !== menuKey
       )
         return false
       if (e.key === 'ArrowDown') {
-        navigatedMenu.current = true
+        navigatedMenu.current = menuKey
         e.preventDefault()
         setActiveIndex((idx) => (idx + 1) % options.length)
         return true
       }
       if (e.key === 'ArrowUp') {
-        navigatedMenu.current = true
+        navigatedMenu.current = menuKey
         e.preventDefault()
         setActiveIndex((idx) => (idx - 1 + options.length) % options.length)
         return true
@@ -269,6 +252,7 @@ export function useSlashArgs(
       choiceSpec,
       activeText,
       awaitingValue,
+      menuKey,
     ],
   )
 

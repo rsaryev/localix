@@ -1,4 +1,4 @@
-import type { Listing, StoreActor, StoreProvider } from '@localixai/store'
+import type { Listing, StoreActor, StoreProblem, StoreProvider } from '@localixai/store'
 
 import { errorMessage } from '../../lib/errors'
 import type { StoreIndexRepository } from './index-repository'
@@ -17,7 +17,8 @@ export interface SyncOutcome {
   cardsChanged: boolean
   /** Something a person sees moved: cards or their own state. */
   changed: boolean
-  problems: string[]
+  /** Sources it could not read, each with the kind of what they would have listed. */
+  problems: StoreProblem[]
 }
 
 const hash = (value: unknown) => Bun.hash(JSON.stringify(value)).toString(36)
@@ -66,14 +67,18 @@ export function createProviderSync(deps: { index: StoreIndexRepository; now: () 
     try {
       answer = await provider.listings(actor)
     } catch (error) {
-      return { cardsChanged: false, changed: false, problems: [errorMessage(error)] }
+      return {
+        cardsChanged: false,
+        changed: false,
+        problems: [{ kind: provider.kind, message: errorMessage(error) }],
+      }
     }
     const cardsChanged = await writeSources(provider.kind, answer.listings)
     const stateChanged = await writeState(actor, provider.kind, answer.listings)
     return {
       cardsChanged,
       changed: cardsChanged || stateChanged,
-      problems: answer.problems,
+      problems: answer.problems.map((message) => ({ kind: provider.kind, message })),
     }
   }
 }

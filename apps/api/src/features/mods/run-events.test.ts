@@ -18,7 +18,7 @@ const SECTIONS = [
   { id: 'identity', text: 'You are Localix.' },
   { id: 'memory', text: 'Remembered things.' },
 ]
-const facts = { sections: SECTIONS, model: 'model-a', tools: [tool('bash')], outputStyle: null }
+const facts = { sections: SECTIONS, model: 'model-a', tools: [tool('Bash')], outputStyle: null }
 
 describe('the system prompt through the mods', () => {
   test('nothing changes and nothing is asked when no mod hears the prompt events', async () => {
@@ -93,12 +93,12 @@ describe('tools through the mods', () => {
         isDeferred: true,
       }))
     })
-    const { tools, placed } = await scope.describeTools([tool('bash'), tool('read')], {
+    const { tools, placed } = await scope.describeTools([tool('Bash'), tool('Read')], {
       sources: new Map(),
       deferred: () => false,
     })
-    expect(tools.map((entry) => entry.description)).toEqual(['bash tool (careful)', 'read tool'])
-    expect([...placed]).toEqual([['bash', true]])
+    expect(tools.map((entry) => entry.description)).toEqual(['Bash tool (careful)', 'Read tool'])
+    expect([...placed]).toEqual([['Bash', true]])
   })
 
   test('an MCP tool’s description reaches tool.describe as its server wrote it', async () => {
@@ -130,10 +130,10 @@ describe('tools through the mods', () => {
         result: JSON.stringify(await $.tool.check({ tool: 'Bash', input: { command: 'ls' } })),
       }))
     })
-    const tools = scope.wrapTools([tool('bash'), tool('read'), tool('search')])
+    const tools = scope.wrapTools([tool('Bash'), tool('Read'), tool('Search')])
     const port = scope.toolCheck()!
     port.lend(() => ({ decision: 'ask', reason: 'rule' }))
-    const call = { toolCallId: 't1', toolName: 'bash', input: { command: 'rm -rf x', timeout: 2 } }
+    const call = { toolCallId: 't1', toolName: 'Bash', input: { command: 'rm -rf x', timeout: 2 } }
     expect(await port.review!(call, { decision: 'allow' })).toEqual({
       decision: 'deny',
       reason: 'no shell',
@@ -144,7 +144,7 @@ describe('tools through the mods', () => {
       tool_use_id: 't1',
     })
     expect(
-      await port.review!({ ...call, toolName: 'read', input: {} }, { decision: 'ask' }),
+      await port.review!({ ...call, toolName: 'Read', input: {} }, { decision: 'ask' }),
     ).toEqual({ decision: 'ask' })
     // The mod's own query passes its own hooks by, as in Claude Code: core is the gate's verdict.
     expect((await tools[2]!.execute('t2', {})).content).toBe(
@@ -164,18 +164,18 @@ describe('tools through the mods', () => {
         }),
       )
     })
-    const [read] = scope.wrapTools([tool('read', 'API_KEY=1')])
+    const [read] = scope.wrapTools([tool('Read', 'API_KEY=1')])
     expect((await read!.execute('t1', {})).content).toBe('[redacted]')
   })
 
   test('agent.offer hides an agent and refuses its dispatch; agent.spawn picks the model', async () => {
-    const delegated: unknown[] = []
-    const delegate = defineAgentTool({
-      name: 'delegate',
-      description: 'delegate',
+    const started: unknown[] = []
+    const agent = defineAgentTool({
+      name: 'Agent',
+      description: 'Agent',
       activeVerb: 'Delegating',
       inputSchema: z.object({}).passthrough(),
-      execute: async (_id, input) => (delegated.push(input), { content: 'started' }),
+      execute: async (_id, input) => (started.push(input), { content: 'started' }),
     }) as AgentTool
     const { scope } = await hostWithMod((on) => {
       on('agent.offer', { agent: 'secret' }, () => ({ isOffered: false }))
@@ -188,17 +188,23 @@ describe('tools through the mods', () => {
       { agentId: 'a2', name: 'secret', description: 'Hidden' },
     ])
     expect(listed.map((agent) => agent.name)).toEqual(['checker'])
-    const [wrapped] = scope.wrapTools([delegate])
-    expect(await wrapped!.execute('t1', { task: 'x', title: 't', agent: 'secret' })).toMatchObject({
+    const [wrapped] = scope.wrapTools([agent])
+    expect(
+      await wrapped!.execute('t1', { prompt: 'x', description: 't', subagent_type: 'secret' }),
+    ).toMatchObject({
       isError: true,
     })
-    await wrapped!.execute('t2', { task: 'Check it.', title: 'Check', agent: 'checker' })
-    expect(delegated).toEqual([
+    await wrapped!.execute('t2', {
+      prompt: 'Check it.',
+      description: 'Check',
+      subagent_type: 'checker',
+    })
+    expect(started).toEqual([
       {
-        task: 'Check it. Be quick.',
-        title: 'Check',
-        agent: 'checker',
-        wait: false,
+        prompt: 'Check it. Be quick.',
+        description: 'Check',
+        subagent_type: 'checker',
+        run_in_background: true,
         model: 'small-model',
       },
     ])
@@ -256,7 +262,7 @@ describe('the turn and the conversation through the mods', () => {
     expect(message.content[0]).toEqual({ type: 'text', text: 'Offline.' })
     expect(message.content[1]).toMatchObject({
       type: 'tool_call',
-      name: 'bash',
+      name: 'Bash',
       arguments: { command: 'ls' },
     })
   })

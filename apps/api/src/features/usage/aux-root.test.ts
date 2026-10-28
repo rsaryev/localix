@@ -1,3 +1,4 @@
+import { tmpdir } from 'node:os'
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm } from 'node:fs/promises'
@@ -18,7 +19,7 @@ import { createUsageRepository } from './repository'
 describe('auxiliary usage is filed under the session’s real root', () => {
   let db: ReturnType<typeof createDatabase>
   let repo: ReturnType<typeof createUsageRepository>
-  const dir = join(process.cwd(), 'tmp', 'usage-aux-root-tests')
+  const dir = join(tmpdir(), `localix-usage-aux-root-tests-${process.pid}`)
   const userId = 'u-aux-root'
 
   beforeAll(async () => {
@@ -57,9 +58,11 @@ describe('auxiliary usage is filed under the session’s real root', () => {
   test("a child's title and aux spend count toward its root's tree", async () => {
     const usage = { inputTokens: 10, outputTokens: 5 }
     const base = { usageRepo: repo, userId, sessionId: 'child', modelId: 'test/model', usage }
-    recordTitleGenUsage(base)
-    recordAuxCallUsage({ ...base, kind: 'autocomplete' })
-    await new Promise((resolve) => setTimeout(resolve, 10))
+    const titled = Promise.withResolvers<void>()
+    const completed = Promise.withResolvers<void>()
+    recordTitleGenUsage({ ...base, onRecorded: () => titled.resolve() })
+    recordAuxCallUsage({ ...base, kind: 'autocomplete', onRecorded: () => completed.resolve() })
+    await Promise.all([titled.promise, completed.promise])
 
     expect(await rootOf('aux-title:')).toEqual(['root'])
     expect(await rootOf('aux-autocomplete:')).toEqual(['root'])

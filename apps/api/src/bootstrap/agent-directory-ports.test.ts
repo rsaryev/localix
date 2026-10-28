@@ -12,9 +12,7 @@ const row = (name: string, over: Partial<AgentDirectoryRow> = {}): AgentDirector
   agentId: `cc:${name}`,
   name,
   description: '',
-  leadershipPriority: 0,
   enabled: true,
-  canJoinConversation: true,
   delegable: true,
   ...over,
 })

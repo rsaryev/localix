@@ -9,7 +9,7 @@ export function runTurnLimit(
   userDefaultMaxTurns?: number,
 ): number {
   const hostLimit = hostMaxTurns ?? userDefaultMaxTurns ?? DEFAULT_MAX_TURNS
-  return Math.min(hostLimit, agent.limits?.maxTurns ?? hostLimit)
+  return Math.min(hostLimit, agent.maxTurns ?? hostLimit)
 }
 
 /**

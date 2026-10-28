@@ -2,8 +2,9 @@ import { afterAll, afterEach, beforeAll, expect, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { registerInspectorHandler } from '@/shared/lib/inspectorBus'
 import type { InspectorRequest } from '@/shared/lib/inspectorBusContracts'
-import { isSetupOpen, openSetup } from '@/shared/lib/setupDialog'
+import { closeSetup, isSetupOpen, openSetup } from '@/shared/lib/setupDialog'
 import { answer, listing } from '@/testing/store'
+import { turns as settle } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -12,9 +13,11 @@ beforeAll(() => {
 })
 afterAll(async () => teardown())
 const restores: Array<() => void> = []
-afterEach(() => restores.splice(0).forEach((restore) => restore()))
-
-const settle = () => new Promise((resolve) => setTimeout(resolve, 20))
+afterEach(() => {
+  restores.splice(0).forEach((restore) => restore())
+  // The scene opens Set up Localix; left open it holds back every later dialog in this process.
+  closeSetup()
+})
 
 /** The store as a new installation sees it: the recommended apps arriving on their own. */
 const LISTINGS = [
@@ -48,7 +51,7 @@ async function mountPick() {
   const { storeApi } = await import('@/shared/api/store-client')
   const installs: string[] = []
   const spies = [
-    spyOn(storeApi, 'page').mockImplementation(async (query = {}) => answer(LISTINGS, query)),
+    spyOn(storeApi, 'page').mockImplementation(async (query) => answer(LISTINGS, query ?? {})),
     spyOn(storeApi, 'install').mockImplementation(async (ref) => {
       installs.push(ref.id)
     }),
@@ -119,7 +122,7 @@ test('the slide names the apps that install on their own, and its pick never lea
     expect(view.items().at(-1)?.textContent).toContain('Open the Store')
     await view.choose(view.item('Open the Store'))
     expect(opened).toEqual([
-      expect.objectContaining({ workKind: 'store', payload: { shelf: 'package:mini-app' } }),
+      expect.objectContaining({ workKind: 'store', payload: { shelf: 'discover' } }),
     ])
     expect(isSetupOpen()).toBe(true)
   } finally {

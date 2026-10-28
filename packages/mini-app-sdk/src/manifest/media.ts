@@ -1,8 +1,8 @@
 /**
  * ── STORE MEDIA ───────────────────────────────────────────────────────────────
  * What a mini app shows in the store: its icon and its screenshots, named in `mini-app.json` and
- * shipped beside it. One statement of the rules, read by the authoring check (`mini_app_build`,
- * `/mini-app reload`), the pack step that refuses to publish an app without a valid icon, and the
+ * shipped beside it. One statement of the rules, read by the authoring check (the mini app kit's
+ * tools, which the mini-app-authoring plugin runs), the pack step that refuses to publish an app without a valid icon, and the
  * host that serves the files. Pure: the caller hands in a reader, so the same check runs on a
  * folder, an archive or a test's map.
  *

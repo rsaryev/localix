@@ -25,7 +25,7 @@ export async function requestInvocationApproval(args: {
   signal: AbortSignal
 }): Promise<ApprovalAnswer> {
   if (args.signal.aborted) return 'declined'
-  const label = args.agent.label ?? args.agent.handle
+  const label = args.agent.name
   const request = surfaceConfirmRequest({
     hitlRegistry: args.hitlRegistry,
     streamRegistry: args.streamRegistry,

@@ -56,7 +56,6 @@ fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
                 return;
             }
             match id {
-                "tray_companion" => crate::companion::request_show(app),
                 "tray_show" => show_main_window(app),
                 "tray_settings" => {
                     show_main_window(app);

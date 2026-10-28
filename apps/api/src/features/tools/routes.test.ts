@@ -25,16 +25,11 @@ describe('tool manifest', () => {
           label,
           description,
           category,
-          ...('protocol' in entry && entry.protocol ? { required: true } : {}),
         }
       }),
     )
     for (const tool of builtinToolManifest()) {
-      expect(Object.keys(tool).sort()).toEqual(
-        tool.required
-          ? ['category', 'description', 'label', 'name', 'required']
-          : ['category', 'description', 'label', 'name'],
-      )
+      expect(Object.keys(tool).sort()).toEqual(['category', 'description', 'label', 'name'])
     }
   })
 
@@ -44,14 +39,9 @@ describe('tool manifest', () => {
     }
   })
 
-  test('the handoff protocol is explicitly required and ordinary tools remain optional', () => {
-    expect(meta('set_topic')?.required).toBe(true)
-    expect(meta('read')?.required).toBeUndefined()
-  })
-
   test('publishes a built-in with its catalog metadata', () => {
-    expect(meta('context_budget')).toEqual({
-      name: 'context_budget',
+    expect(meta('ContextBudget')).toEqual({
+      name: 'ContextBudget',
       label: 'Context budget',
       description:
         'Report how much of the context window is used and what remains before the next context checkpoint.',
@@ -60,8 +50,8 @@ describe('tool manifest', () => {
   })
 
   test('publishes the dependency-injected vault tool in the same toggle catalog', () => {
-    expect(meta('vault')).toEqual({
-      name: 'vault',
+    expect(meta('Vault')).toEqual({
+      name: 'Vault',
       label: 'Secret vault',
       description: 'Manage encrypted credential metadata without exposing secret values.',
       category: 'knowledge',
@@ -69,7 +59,7 @@ describe('tool manifest', () => {
   })
 
   test('publishes the conditional consolidated MCP resource tool', () => {
-    expect(meta('mcp_resources')?.name).toBe('mcp_resources')
+    expect(meta('McpResources')?.name).toBe('McpResources')
   })
 
   test('projects live mini app descriptors into the same toggle manifest without duplicate ownership', () => {
@@ -81,7 +71,7 @@ describe('tool manifest', () => {
         tools: [
           { name: 'app_query', label: 'Query records', description: 'Run a sample query.' },
           {
-            name: 'context_budget',
+            name: 'ContextBudget',
             label: 'Shadow attempt',
             description: 'Must not replace the core owner.',
           },
@@ -101,7 +91,7 @@ describe('tool manifest', () => {
       category: 'automation',
       provider: { kind: 'mini-app', id: 'fixture-app', label: 'Sample App' },
     })
-    expect(toolManifest(miniApps).filter((tool) => tool.name === 'context_budget')).toHaveLength(1)
+    expect(toolManifest(miniApps).filter((tool) => tool.name === 'ContextBudget')).toHaveLength(1)
     expect(toolManifest(miniApps).some((tool) => tool.name === 'hidden')).toBe(false)
   })
 

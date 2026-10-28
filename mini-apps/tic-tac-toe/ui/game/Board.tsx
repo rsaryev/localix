@@ -1,4 +1,4 @@
-import { useRef, type CSSProperties, type KeyboardEvent } from 'react'
+import { useRef, useState, type CSSProperties, type KeyboardEvent } from 'react'
 import { Button } from '@localixai/kit/button'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
@@ -33,15 +33,18 @@ const WIN_TILE: Record<MarkValue, string> = {
  * is kept until the next move, so a re-render mid-animation (the clock, a poll) does not cut it off.
  */
 function useArrivals(game: Game): Map<number, number> {
-  const memo = useRef<{ id: string; count: number; arrivals: Map<number, number> } | null>(null)
-  const seen = memo.current
   const count = game.moves.length
-  if (!seen || seen.id !== game.id || seen.count !== count) {
-    const since = !seen ? count : seen.id === game.id ? seen.count : 0
-    const arrivals = new Map(game.moves.slice(since).map((move, order) => [move.cell, order]))
-    memo.current = { id: game.id, count, arrivals }
-  }
-  return memo.current!.arrivals
+  // State, adjusted while rendering: the first sight of a game has no arrivals.
+  const [seen, setSeen] = useState<{ id: string; count: number; arrivals: Map<number, number> }>({
+    id: game.id,
+    count,
+    arrivals: new Map(),
+  })
+  if (seen.id === game.id && seen.count === count) return seen.arrivals
+  const since = seen.id === game.id ? seen.count : 0
+  const arrivals = new Map(game.moves.slice(since).map((move, order) => [move.cell, order]))
+  setSeen({ id: game.id, count, arrivals })
+  return arrivals
 }
 
 /**

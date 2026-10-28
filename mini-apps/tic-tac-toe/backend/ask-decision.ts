@@ -5,7 +5,7 @@ import {
 } from '@localixai/mini-app-sdk/backend'
 
 import { LINES, freeCells, placeName, type AgentWait, type Game, type Mark } from '../shared/game'
-import type { Seat } from './ask-agent'
+import type { ChatRef } from './ask-agent'
 
 /**
  * HOW THE BOARD ASKS THE DECISION MODEL FOR ITS MOVE — when the table's opponent is `decision`.
@@ -34,7 +34,7 @@ function winningCells(board: Game['board'], mark: Mark): number[] {
     .map((cell) => cell + 1)
 }
 
-/** The position from O's seat, and the one question: which free cell. */
+/** The position from O's side, and the one question: which free cell. */
 export function moveAsk(game: Game): DecisionAsk {
   const rows = [0, 3, 6].map((start) =>
     [start, start + 1, start + 2].map((cell) => game.board[cell] ?? String(cell + 1)).join(' '),
@@ -66,11 +66,11 @@ export function moveAsk(game: Game): DecisionAsk {
 /** The decision model's move: the cell (0–8) to play, or the wait that says why there is none. */
 export async function askDecision(
   decisions: DecisionHost | undefined,
-  seat: Seat,
+  chat: ChatRef,
   game: Game,
   now: string,
 ): Promise<{ cell: number } | { waiting: AgentWait }> {
   const turn = { ask: moveAsk(game), question: 'move', purpose: DECISION_PURPOSE }
-  const answered = await askDecisionForTurn(decisions, seat, turn, now)
+  const answered = await askDecisionForTurn(decisions, chat, turn, now)
   return 'answer' in answered ? { cell: Number(answered.answer.choice) - 1 } : answered
 }

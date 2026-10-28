@@ -5,6 +5,10 @@ import type { KanbanMove, KanbanTask } from '../../shared/contracts'
 import { card, fakeBoardBackend } from '../testing/fakeBoardBackend'
 import { capColumn, KANBAN_COLUMN_CAP } from './columnCap'
 
+const turns = async (n = 10) => {
+  for (let i = 0; i < n; i++) await new Promise((r) => setImmediate(r))
+}
+
 let teardown: () => Promise<void>
 const actEnvironment = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 const priorActEnvironment = actEnvironment.IS_REACT_ACT_ENVIRONMENT
@@ -77,7 +81,10 @@ async function harness() {
   const tasks = board()
   let api: ReturnType<typeof useKanbanDrag> | undefined
   function Probe() {
-    api = useKanbanDrag('s1', tasks, tasks, async (moves) => void sent.push(moves))
+    const drag = useKanbanDrag('s1', tasks, tasks, async (moves) => void sent.push(moves))
+    React.useEffect(() => {
+      api = drag
+    })
     return null
   }
   const root = createRoot(document.createElement('div'))
@@ -149,12 +156,15 @@ describe('a quick move is one request the rules allow', () => {
     const { useBoardWrites } = await import('./useBoardWrites')
     let writes: ReturnType<typeof useBoardWrites> | undefined
     function Probe() {
-      writes = useBoardWrites('s1', useBoardTasks('s1'))
+      const value = useBoardWrites('s1', useBoardTasks('s1'))
+      React.useEffect(() => {
+        writes = value
+      })
       return null
     }
     const root = createRoot(document.createElement('div'))
     await React.act(async () => root.render(<Probe />))
-    await React.act(async () => new Promise((resolve) => setTimeout(resolve, 5)))
+    await React.act(async () => turns())
 
     await React.act(() => writes!.quickMove('LX-1', 'ready'))
     await React.act(() => writes!.quickMove('LX-3', 'ready'))

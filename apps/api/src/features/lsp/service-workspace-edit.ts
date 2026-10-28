@@ -4,12 +4,12 @@ import type { RenameResult } from './service-result-types'
 import { routeWorkspaceEdit } from './edit-routing'
 
 interface WorkspaceEditPorts {
-  getOpenDoc(sessionId: string, file: string): OpenDoc | undefined
-  commitWorkspaceEdit(
+  getOpenDoc: (sessionId: string, file: string) => OpenDoc | undefined
+  commitWorkspaceEdit: (
     userId: string,
     sessionId: string,
     fileEdits: LspWorkspaceEditFile[],
-  ): Promise<RenameResult>
+  ) => Promise<RenameResult>
 }
 
 /** Route edits against owned, synchronized buffers before committing the disk half. */

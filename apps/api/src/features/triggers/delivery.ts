@@ -20,7 +20,6 @@
  * between is redelivered at boot (`redeliver`) under the same key instead of being lost. A
  * once-ever `receipt` delivery (a child's report) keeps its own recovery and is not outboxed.
  */
-import { agentParticipant, type ParticipantRef } from '../../db/participant'
 import { errorMessage } from '../../lib/errors'
 import type { TriggerRecord } from './contracts'
 import type { WakeOutbox } from './wake-outbox-repository'
@@ -34,7 +33,7 @@ export interface WakeShape<S extends string = string> {
   sessionId: string
   content: string
   source: S
-  to?: { participant: ParticipantRef; handle?: string }
+  to?: { agentId: string }
   deliveryKey?: string
   /** Delivered together with the other queued wakes of this key (a monitor's fires). */
   coalesce?: string
@@ -149,7 +148,7 @@ export function createWakeDelivery<R extends WakeShape>(deps: WakeDeliveryDeps<R
 export type WakeDelivery<R extends WakeShape = WakeShape> = ReturnType<typeof createWakeDelivery<R>>
 
 /**
- * The wake one fire asks for. Addressed to the participant that armed the trigger — if it has
+ * The wake one fire asks for. Addressed to the agent that armed the trigger — if it has
  * since left, the host drops the address and the conversation chooses — and keyed by the fire, so
  * a retried fire is the same delivery.
  */
@@ -164,9 +163,6 @@ export function triggerWake<S extends string>(
     source: wake.source,
     deliveryKey: wake.deliveryKey,
     ...(wake.coalesce ? { coalesce: wake.coalesce } : {}),
-    ...(trigger.owner.kind === 'agent' && trigger.owner.agentId
-      ? { to: { participant: agentParticipant(trigger.owner.agentId) } }
-      : {}),
   }
 }
 

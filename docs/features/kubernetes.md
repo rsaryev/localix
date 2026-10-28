@@ -46,7 +46,7 @@ including installed custom resources.
 
 ### Agent access
 
-The workbench contributes no Kubernetes agent tools. An agent can use `kubectl` through `bash` when
+The workbench contributes no Kubernetes agent tools. An agent can use `kubectl` through `Bash` when
 it is installed and its permission rules allow the command. The workbench itself does not require
 that CLI.
 

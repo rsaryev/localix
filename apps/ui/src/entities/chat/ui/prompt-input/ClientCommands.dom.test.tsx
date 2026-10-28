@@ -71,7 +71,7 @@ async function mount(
   initial: string,
   options: { onRollback?: boolean; context?: ContextUsageInput } = {},
 ) {
-  const { act, useState } = await import('react')
+  const { act, useEffect, useState } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { useComposerCommands } = await import('./useComposerCommands')
   const { useSlashArgOptions } = await import('./useSlashArgOptions')
@@ -100,16 +100,20 @@ async function mount(
       openChat: (id) => spies.opened.push(id),
       context: options.context ?? { contextWindow: 200_000 },
     })
-    state.composer = useComposerCommands(prompt, setPrompt, [], load)
-    const run = (key: string) => {
-      state.handled = state.composer.handleKeyDown({ key, preventDefault() {} } as never)
-      if (!state.handled && key === 'Enter')
-        state.handled = client.submit(state.composer.slash.detected)
-    }
-    ;(state as { run?: typeof run }).run = run
+    const composer = useComposerCommands(prompt, setPrompt, [], load)
+    // What the test drives, published once the render has committed.
+    useEffect(() => {
+      state.composer = composer
+      const run = (key: string) => {
+        state.handled = composer.handleKeyDown({ key, preventDefault() {} } as never)
+        if (!state.handled && key === 'Enter')
+          state.handled = client.submit(composer.slash.detected)
+      }
+      ;(state as { run?: typeof run }).run = run
+    })
     return (
       <div>
-        <CommandChipPrefix slash={state.composer.slash} slashArgs={state.composer.slashArgs} />
+        <CommandChipPrefix slash={composer.slash} slashArgs={composer.slashArgs} />
         <span data-testid="prompt">{prompt}</span>
         {client.confirmation}
       </div>

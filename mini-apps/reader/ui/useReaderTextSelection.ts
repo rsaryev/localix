@@ -110,15 +110,29 @@ export function useReaderTextSelection({
     })
   }, [articleRef, scrollRef, surfaceRef])
 
-  const resetSelection = useCallback(() => {
+  /** What is held outside React about the selection: the stored range and the pending frames. */
+  const forgetStoredSelection = useCallback(() => {
     cancelAnimationFrame(captureFrameRef.current)
     cancelAnimationFrame(positionFrameRef.current)
     storedRangeRef.current = null
     selectionTargetRef.current = null
     preserveSelectionRef.current = false
+  }, [])
+
+  const resetSelection = useCallback(() => {
+    forgetStoredSelection()
     setSelectionTarget(null)
     setPosition(null)
-  }, [])
+  }, [forgetStoredSelection])
+
+  // Other content is no longer what was selected: dropped in the render that shows it, so the
+  // old toolbar is never drawn over the new text.
+  const [shownContentKey, setShownContentKey] = useState(contentKey)
+  if (shownContentKey !== contentKey) {
+    setShownContentKey(contentKey)
+    setSelectionTarget(null)
+    setPosition(null)
+  }
 
   const clearSelection = useCallback(() => {
     const ownerDocument = articleRef.current?.ownerDocument ?? globalThis.document
@@ -214,8 +228,8 @@ export function useReaderTextSelection({
   })
 
   useEffect(() => {
-    resetSelection()
-  }, [contentKey, resetSelection])
+    forgetStoredSelection()
+  }, [contentKey, forgetStoredSelection])
 
   useEffect(() => {
     const article = articleRef.current

@@ -1,4 +1,4 @@
-import { lazy, memo, Suspense, useCallback, useEffect } from 'react'
+import { createElement, lazy, memo, Suspense, useCallback, useEffect } from 'react'
 import type { WorkItem } from '@/shared/lib/workItem'
 import type { PublishMessageContext } from '@localixai/mini-app-sdk/ui'
 import { isCoreWorkItemKind, sessionOfScope } from '@/entities/workspace-grid/model'
@@ -138,14 +138,15 @@ function WorkItemBodyInner({
     )
   switch (item.kind) {
     case 'chat': {
-      const ChatSurface = chatSurface()
-      return ChatSurface ? (
-        <ChatSurface
-          sessionId={p<string>(item, 'sessionId') ?? null}
-          isFocused={focused}
-          resolvedTheme={resolvedTheme}
-        />
-      ) : null
+      // The surface is a registered, stable component (see `chatSurface`), not one made here.
+      const surface = chatSurface()
+      return surface
+        ? createElement(surface, {
+            sessionId: p<string>(item, 'sessionId') ?? null,
+            isFocused: focused,
+            resolvedTheme,
+          })
+        : null
     }
     case 'file': {
       const filePath = p<string>(item, 'path') ?? ''

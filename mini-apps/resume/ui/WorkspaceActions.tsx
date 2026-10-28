@@ -138,7 +138,7 @@ export function WorkspaceActions({
             tooltip={state.pending ? 'Saving resume' : 'Save resume'}
             size="sm"
             disabled={!state.dirty || state.pending}
-            onClick={state.save}
+            onClick={() => void state.save()}
           >
             <Save />
           </IconButton>

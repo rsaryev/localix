@@ -1,3 +1,4 @@
+import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -13,7 +14,7 @@ import { createDatabase, destroyDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import { createProviderConnectionsService } from './service'
 
-const tempDir = join(process.cwd(), 'tmp', 'provider-connections-service-tests')
+const tempDir = join(tmpdir(), `localix-provider-connections-service-tests-${process.pid}`)
 const permanentOAuthCredential: RuntimeCredential = {
   type: 'oauth',
   accessToken: 'sk-or-v1-test',
@@ -262,7 +263,7 @@ describe('every decrypted provider secret is registered for redaction', () => {
    * was unregistered until some later read. `writeCredential` closes that direction.
    */
   let db: ReturnType<typeof createDatabase>
-  const dir = join(process.cwd(), 'tmp', 'provider-credential-shield-tests')
+  const dir = join(tmpdir(), `localix-provider-credential-shield-tests-${process.pid}`)
 
   beforeAll(async () => {
     await mkdir(dir, { recursive: true })

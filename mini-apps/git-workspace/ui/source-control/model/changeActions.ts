@@ -61,17 +61,26 @@ export function useChangeActions(
 ): (repoRoot?: string) => ChangeActions | undefined {
   const openFile = useStableHandler(deps.openFile)
   const requestDiscard = useStableHandler(deps.requestDiscard)
-  return useMemo(() => {
-    const cache = new Map<string, ChangeActions>()
-    return (repoRoot?: string) => {
-      if (!sessionId) return undefined
-      const key = repoRoot ?? ''
-      let actions = cache.get(key)
-      if (!actions) {
-        actions = makeChangeActions(sessionId, repoRoot, { openFile, requestDiscard })
-        cache.set(key, actions)
-      }
-      return actions
+  return useMemo(
+    () => cachedChangeActions(sessionId, { openFile, requestDiscard }),
+    [sessionId, openFile, requestDiscard],
+  )
+}
+
+/** The per-repo cache behind `useChangeActions`, built once per session and handler set. */
+function cachedChangeActions(
+  sessionId: string | null,
+  deps: ChangeActionDeps,
+): (repoRoot?: string) => ChangeActions | undefined {
+  const cache = new Map<string, ChangeActions>()
+  return (repoRoot) => {
+    if (!sessionId) return undefined
+    const key = repoRoot ?? ''
+    let actions = cache.get(key)
+    if (!actions) {
+      actions = makeChangeActions(sessionId, repoRoot, deps)
+      cache.set(key, actions)
     }
-  }, [sessionId, openFile, requestDiscard])
+    return actions
+  }
 }

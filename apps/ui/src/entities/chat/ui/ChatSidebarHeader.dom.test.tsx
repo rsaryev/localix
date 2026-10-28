@@ -29,8 +29,6 @@ test('history keeps workspace, search and view actions without a duplicate new-c
           searchVisible={false}
           onToggleSearch={search}
           viewMenu={{
-            groupingMode: 'activity',
-            onGroupingModeChange: () => {},
             sortMode: 'recent',
             onSortModeChange: () => {},
             showArchived: false,

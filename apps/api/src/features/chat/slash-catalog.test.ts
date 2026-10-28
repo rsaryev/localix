@@ -103,7 +103,6 @@ describe('/help <command> detail helpers', () => {
   test('resolveCommandSpec folds slashes, case, and aliases', () => {
     expect(resolveCommandSpec('/Usage')?.name).toBe('usage')
     expect(resolveCommandSpec('clear')?.scope).toBe('client')
-    expect(resolveCommandSpec('compact')).toBeUndefined()
     // `cost` is an alias of `usage`.
     expect(resolveCommandSpec('cost')?.name).toBe('usage')
     expect(resolveCommandSpec('models')?.name).toBe('model')
@@ -179,5 +178,29 @@ describe('/plugin argument routing', () => {
       expect(arg.placeholder ?? '').not.toContain('<owner/repo>· <name>')
       expect(arg.placeholder ?? '').not.toBe('<src> · <name> · <owner/repo>')
     }
+  })
+})
+
+/**
+ * Making a mini app moved to the mini-app-authoring plugin (`/mini-app-authoring:create`), and
+ * `/mini-app create` was removed — but the menu still offered `create`, so picking it sent a
+ * command that no longer exists. `/mini-app` offers only what Localix does to installed apps.
+ */
+describe('/mini-app actions', () => {
+  const miniApp = SLASH_COMMANDS.find((c) => c.name === 'mini-app')!
+  const actions = miniApp.args!.find((arg) => arg.name === 'action')!
+
+  test('the menu offers no create, and nothing waits for a create description', () => {
+    expect(actions.type === 'choice' && actions.options?.map((o) => o.value)).toEqual([
+      'list',
+      'enable',
+      'disable',
+      'remove',
+      'reload',
+      'catalog',
+    ])
+    // `create` is not an action: the composer keeps offering the menu, not a description field.
+    expect(parseCommandArgs('create ', miniApp.args!).activeSpec?.name).toBe('action')
+    expect(miniApp.description).not.toMatch(/create/iu)
   })
 })

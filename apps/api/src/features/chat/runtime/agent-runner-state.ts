@@ -1,5 +1,3 @@
-import { agentLaneSessionPrefix } from '../../agent-core/execution-address'
-
 import { createSessionSnapshotCache } from './session-snapshot'
 import { createRunScopeCache, type ScopeDiscovery } from './run-scope'
 import { envFlag } from '../../../lib/env'
@@ -21,8 +19,8 @@ export type {
 } from './agent-runner-state-contracts'
 
 /**
- * Bound the two PROCESS-LIFETIME per-lane stores (VBC state, file mtimes) as ONE unit:
- * when the cap forces an eviction, the evicted lane leaves both maps, so what the write
+ * Bound the two PROCESS-LIFETIME per-session stores (VBC state, file mtimes) as ONE unit:
+ * when the cap forces an eviction, the evicted session leaves both maps, so what the write
  * guard remembers and what the wire knows never desync. Oldest-inserted first, across
  * the union of keys.
  */
@@ -56,6 +54,36 @@ export function endCcHookSession(
     .runtimeFor(sessionId)
     .runSessionEnd(reason)
     .catch(() => {})
+}
+
+/** Claude Code's budget for all `SessionEnd` hooks when it exits (hooks.md). */
+export const SESSION_END_BUDGET_MS = 1_500
+
+/**
+ * Claude Code runs `SessionEnd` with reason `prompt_input_exit` when you quit. The API shuts down
+ * when the app quits, so every session that started in this process and was not ended since gets
+ * its hooks run now, together, and awaited for at most {@link SESSION_END_BUDGET_MS}: a hook that
+ * outlasts the budget is left behind rather than holding the shutdown. Each session ends once.
+ */
+export async function endCcHookSessionsOnExit(
+  state: Pick<RuntimeState, 'ccHookSessions' | 'ccHooksStartedSessions'>,
+  budgetMs = SESSION_END_BUDGET_MS,
+): Promise<void> {
+  const ids = [...state.ccHooksStartedSessions]
+  state.ccHooksStartedSessions.clear()
+  if (ids.length === 0) return
+  const ends = ids.map((id) =>
+    state.ccHookSessions
+      .runtimeFor(id)
+      .runSessionEnd('prompt_input_exit')
+      .catch(() => {}),
+  )
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const budget = new Promise<void>((resolve) => {
+    timer = setTimeout(resolve, budgetMs)
+  })
+  await Promise.race([Promise.all(ends), budget])
+  clearTimeout(timer)
 }
 
 /**
@@ -120,14 +148,9 @@ export function forgetSessionRuntimeState(
   state.contextSnapshots.invalidate(sessionId)
   state.childRuntimeSessions.delete(sessionId)
   state.drainingSessions.delete(sessionId)
-  const lanePrefix = agentLaneSessionPrefix(sessionId)
-  const laneKeys = new Set([...state.contextLanes.keys(), ...state.sessionFileMtimes.keys()])
-  for (const key of laneKeys) {
-    if (!key.startsWith(lanePrefix)) continue
-    state.sessionFileMtimes.get(key)?.dispose()
-    state.contextLanes.delete(key)
-    state.sessionFileMtimes.delete(key)
-  }
+  state.sessionFileMtimes.get(sessionId)?.dispose()
+  state.contextLanes.delete(sessionId)
+  state.sessionFileMtimes.delete(sessionId)
   // Drop reminders queued but never drained (the session died mid-turn).
   forgetMidRunReminders(state, sessionId)
   for (const [terminalId, wait] of state.terminalWaits) {

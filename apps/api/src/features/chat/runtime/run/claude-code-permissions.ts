@@ -71,7 +71,7 @@ function claudeCodeRules(
   return ({ toolName, input, tool, facts, writes }) => {
     // A shell line's own files: what `cat`, `sed`, `tee` and redirections name.
     const shell =
-      toolName === 'bash' && facts.commands
+      toolName === 'Bash' && facts.commands
         ? facts.commands.map((line) =>
             bashFiles(line, facts.paths[0] ?? permissions.cwd, options.homeDir),
           )
@@ -83,13 +83,13 @@ function claudeCodeRules(
       input,
       // A shell call's first path is its working directory, which the line does not read.
       paths:
-        toolName === 'bash'
+        toolName === 'Bash'
           ? [
               ...facts.paths.slice(1),
               ...shell.flatMap((files) => [...files.reads, ...files.writes]),
             ]
           : facts.paths,
-      writes: toolName === 'bash' ? shellWrites : writes,
+      writes: toolName === 'Bash' ? shellWrites : writes,
       ...(facts.commands ? { commands: facts.commands } : {}),
       cwd: permissions.cwd,
       homeDir: options.homeDir,

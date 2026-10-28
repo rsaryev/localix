@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@localixai/kit/dialog'
+import { focusOnMount } from './focusOnMount'
 
 /** Name a folder under `folderParent` (`''` is the collection root; `null` keeps it closed). */
 export function NewFolderDialog({
@@ -45,7 +46,7 @@ export function NewFolderDialog({
         </DialogHeader>
         <DialogBody>
           <Input
-            autoFocus
+            ref={focusOnMount}
             value={folderName}
             onChange={(event) => setFolderName(event.target.value)}
             onKeyDown={(event) => {
@@ -56,7 +57,7 @@ export function NewFolderDialog({
           />
         </DialogBody>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setFolderParent(null)}>
+          <Button variant="ghost" onClick={() => setFolderParent(null)}>
             Cancel
           </Button>
           <Button disabled={creating || !folderName.trim()} onClick={createFolder}>

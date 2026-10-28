@@ -144,16 +144,6 @@ describe('the directory IS the index', () => {
     expect(await absent.list()).toEqual([])
   })
 
-  test('a valid legacy .json request is discovered and atomically migrated', async () => {
-    await writeFile(
-      path.join(root, 'legacy.json'),
-      JSON.stringify({ localixRestRequest: 1, name: 'legacy', spec: spec('https://api.dev/old') }),
-    )
-    expect((await store.list()).map((request) => request.name)).toEqual(['legacy'])
-    expect(await Bun.file(path.join(root, 'legacy.request.json')).exists()).toBe(true)
-    expect(await Bun.file(path.join(root, 'legacy.json')).exists()).toBe(false)
-  })
-
   test('a generic JSON document is ignored and not renamed', async () => {
     await writeFile(path.join(root, 'notes.json'), JSON.stringify({ note: 'not a request' }))
     expect(await store.list()).toEqual([])

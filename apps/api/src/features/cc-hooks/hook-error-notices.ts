@@ -41,6 +41,7 @@ export function hookErrorNotice(
   if (!outcome.failed) return undefined
   if (outcome.failed === 'timeout') return `${prefix}timed out after ${h.timeoutMs / 1000}s`
   const detail = firstLine(outcome.failureDetail)
+  if (h.kind === 'prompt' || h.kind === 'agent') return `${prefix}${detail ?? 'no verdict'}`
   if (detail?.startsWith('hook output is not valid JSON')) return `${prefix}${detail}`
   return `${prefix}Failed with non-blocking status code${detail ? `: ${detail}` : ''}`
 }

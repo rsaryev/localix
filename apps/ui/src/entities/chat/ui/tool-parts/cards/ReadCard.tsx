@@ -14,12 +14,13 @@ import {
   itemErrorHeadline,
   itemErrorMessage,
 } from '../itemHelpers'
-import { asRecord, baseName, formatBytes, numField, strField } from './format'
+import { formatBytes } from '@/shared/lib/formatBytes'
+import { asRecord, baseName, numField, strField } from './format'
 import { ReadBatchCard, readBatchRows } from './ReadBatchCard'
 import { readInputPaths } from './batchInput'
 
 /**
- * Rich card for the `read` tool — file name, size, syntax-highlighted preview, and the picture
+ * Rich card for the `Read` tool — file name, size, syntax-highlighted preview, and the picture
  * when the file was an image.
  */
 export function ReadCard({ item }: { item: ToolCallItem }) {
@@ -99,12 +100,12 @@ function SingleReadCard({ item }: { item: ToolCallItem }) {
     >
       <ToolBody>
         {filePath && (
-          <IORow label="IN">
+          <IORow label="In">
             <FileLink path={filePath} line={startLine} />
           </IORow>
         )}
         {output && (
-          <IORow label="OUT">
+          <IORow label="Out">
             <CodePreview code={output} language={languageFromPath(filePath)} />
           </IORow>
         )}

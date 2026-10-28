@@ -1,7 +1,10 @@
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import { discoverFilesystemSkills } from '../../agent-core/skill-discovery'
 import { buildPluginCatalog, type PluginCatalog } from '../../plugins/catalog'
+import { loadEnabledPlugins } from '../../plugins/loader'
+import type { McpServerRecord } from '../../mcp/repository'
 import type { PluginCommand } from '../../plugins/contracts'
+import { folderWorkflowCommands } from '../../plugins/workflow-commands'
 import { catalogPluginCommands, readCatalogPluginSkills } from '../../plugins/plugin-skills'
 import type { createProjectsRepository } from '../../projects/repository'
 import type { SessionRecord } from '../repository'
@@ -27,11 +30,11 @@ export interface SessionWorkspaceDeps {
 /**
  * The agent whose rules answer for this session.
  *
- * A session's first participant is the one whose turn a plugin's contribution would land in.
- * A record with no participant yet — a session being assembled, a fixture — answers with the
+ * The session's agent is the one whose turn a plugin's contribution would land in.
+ * A record with no agent yet — a session being assembled, a fixture — answers with the
  * agent that always exists, so discovery never has to represent "nobody to ask".
  */
-const agentOf = (session: SessionRecord): string => session.agents?.[0]?.agentId || DEFAULT_AGENT_ID
+const agentOf = (session: SessionRecord): string => session.agent?.agentId || DEFAULT_AGENT_ID
 
 /**
  * Resolves a session's filesystem working directory and the capabilities
@@ -91,7 +94,11 @@ export function createSessionWorkspace(deps: SessionWorkspaceDeps) {
       homeDir: userHome(),
     })
     // Each command's text takes the plugin's saved `${user_config.KEY}` values, as a skill's does.
-    return catalogPluginCommands(catalog, { projectDir: cwd, homeDir: userHome() })
+    return [
+      ...catalogPluginCommands(catalog, { projectDir: cwd, homeDir: userHome() }),
+      // Saved workflows (`.claude/workflows`, `~/.claude/workflows`) run as `/<name>`.
+      ...(await folderWorkflowCommands({ cwd, homeDir: userHome() })),
+    ]
   }
 
   const buildSessionPluginCatalog = async (
@@ -111,6 +118,30 @@ export function createSessionWorkspace(deps: SessionWorkspaceDeps) {
       cwd,
       homeDir: userHome(),
     })
+  }
+
+  /**
+   * The MCP servers the enabled plugins bundle for this session, as a run connects them: what
+   * `/mcp` lists and reconnects.
+   */
+  const loadSessionPluginMcpServers = async (
+    userId: string,
+    session: SessionRecord,
+  ): Promise<McpServerRecord[]> => {
+    const [cwd, availability] = await Promise.all([
+      resolveSessionWorkingDir(userId, session),
+      availabilityFor(userId, agentOf(session)),
+    ])
+    const loaded = await loadEnabledPlugins({
+      repo: pluginRepo,
+      availability,
+      userId,
+      projectId: session.projectId ?? '',
+      cwd,
+      homeDir: userHome(),
+      logger,
+    })
+    return loaded.mcpServers
   }
 
   /**
@@ -143,5 +174,6 @@ export function createSessionWorkspace(deps: SessionWorkspaceDeps) {
     gatherEnabledPluginCommands,
     gatherEnabledPluginSkills,
     buildSessionPluginCatalog,
+    loadSessionPluginMcpServers,
   }
 }

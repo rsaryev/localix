@@ -9,10 +9,12 @@ export function TlsSection({ f, fid }: { f: ConnectFormState; fid: string }) {
   return (
     <div>
       <label
+        htmlFor={`${fid}-tls`}
         className="flex cursor-pointer items-center gap-1.5 text-2xs text-text-soft"
         title="Connect over TLS/SSL."
       >
         <Checkbox
+          id={`${fid}-tls`}
           checked={f.tls}
           onChange={(e) => {
             f.setTls(e.target.checked)
@@ -36,10 +38,12 @@ export function TlsSection({ f, fid }: { f: ConnectFormState; fid: string }) {
           {f.showTlsAdv && (
             <div className="mt-1.5 space-y-2 border-l border-border pl-3">
               <label
+                htmlFor={`${fid}-tls-verify`}
                 className="flex cursor-pointer items-center gap-1.5 text-2xs text-text-soft"
                 title="Uncheck to accept a self-signed / untrusted certificate."
               >
                 <Checkbox
+                  id={`${fid}-tls-verify`}
                   checked={!f.tlsAdv.rejectUnauthorized}
                   onChange={(e) => {
                     f.setTlsAdv((a) => ({ ...a, rejectUnauthorized: !e.target.checked }))
@@ -97,10 +101,12 @@ export function TlsSection({ f, fid }: { f: ConnectFormState; fid: string }) {
                 />
                 {f.canStoreTlsKey && (
                   <label
+                    htmlFor={`${fid}-tls-store-key`}
                     className="mt-1 flex cursor-pointer items-center gap-1.5 text-2xs text-text-soft"
                     title="The saved config keeps only a ${secret:…} token, never the raw private key."
                   >
                     <Checkbox
+                      id={`${fid}-tls-store-key`}
                       checked={f.storeTlsKey}
                       onChange={(e) => f.setStoreTlsKey(e.target.checked)}
                     />

@@ -1,7 +1,7 @@
 import { agentMcpServers, type AgentMcpServers } from '../../../mcp/agent-servers'
 import type { SessionRecord } from '../../repository'
 
-/** What a run reads of the agent it is seated as to find its `mcpServers`. */
+/** What a run reads of the agent it runs as to find its `mcpServers`. */
 export interface McpAgent {
   source?: string
   fullName?: string

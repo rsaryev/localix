@@ -65,7 +65,7 @@ describe('emitBackground — bounded snapshot fan-out', () => {
       id: 'tc-1',
       toolCallId: 'tc-1',
       type: 'command',
-      name: 'bash',
+      name: 'Bash',
       status: 'running',
       input: { command: 'build' },
       output: '',
@@ -86,7 +86,7 @@ describe('emitBackground — bounded snapshot fan-out', () => {
         queueMidRunReminder: (...args: unknown[]) => reminders.push(args),
       },
       state: {
-        pendingTools: new Map([['tc-1', { name: 'bash', input }]]),
+        pendingTools: new Map([['tc-1', { name: 'Bash', input }]]),
         currentPayload: { role: 'assistant', from: 'agent:owner', items: [tool] },
         assistantCreatedAt: '2026-01-01T00:00:00.000Z',
       },
@@ -178,7 +178,18 @@ describe('emitBackground — bounded snapshot fan-out', () => {
     expect(String((reminders[0] as unknown[])[1])).toContain('stopped after its 60 s timeout')
   })
 
-  test("the agent's own `jobs stop` does not come back to it as a reminder", () => {
+  // LOCALIX-379: a background workflow that finished showed its call as failed in the transcript.
+  test('a job without an exit code that reports itself completed settles its call as completed', () => {
+    const { registry, snapshots } = setup()
+    registry.emitBackground('tc-1', 'Workflow audit finished (2 agents).', {
+      done: true,
+      jobStatus: 'completed',
+    })
+    const payload = (snapshots.at(-1) as unknown[])[3] as { items: { status: string }[] }
+    expect(payload.items[0]!.status).toBe('completed')
+  })
+
+  test("the agent's own `TaskStop` does not come back to it as a reminder", () => {
     const { registry, reminders } = setup()
     registry.registerActions('tc-1', bashActions)
     registry.emitBackground('tc-1', 'Serving HTTP', {
@@ -195,9 +206,7 @@ describe('emitBackground — bounded snapshot fan-out', () => {
     const { registry, reminders } = setup(undefined, notices, { command: 'build', notify: true })
     registry.registerActions('tc-1', bashActions)
     // Armed as the job starts; a restart that kills the job ends it silently.
-    expect(notices.arms).toEqual([
-      { userId: 'u1', sessionId: 's1', agentId: 'owner', source: 'bg-job' },
-    ])
+    expect(notices.arms).toEqual([{ userId: 'u1', sessionId: 's1', source: 'bg-job' }])
     registry.emitBackground('tc-1', 'done', { done: true, notify: true, exitCode: 0 })
     await flushNotices()
     expect(notices.fired).toHaveLength(1)
@@ -253,7 +262,7 @@ describe('emitBackground — bounded snapshot fan-out', () => {
       registry.emitBackground('tc-1', 'output')
       expect(snapshots).toHaveLength(1)
       // Let the rejection settle; an unattached handler would surface here.
-      await new Promise((resolve) => setTimeout(resolve, 5))
+      await new Promise((resolve) => setTimeout(resolve, 0))
     } finally {
       console.warn = originalWarn
     }
@@ -310,7 +319,7 @@ describe('registerActions — every registrant is owner-tagged', () => {
     const work = testWork()
     const registry = createRunAsyncRegistry({
       env: { state: { actionRegistry, work } },
-      state: { pendingTools: new Map([['tc-1', { name: 'bash', input: { command: 'sleep 9' } }]]) },
+      state: { pendingTools: new Map([['tc-1', { name: 'Bash', input: { command: 'sleep 9' } }]]) },
       abort: new AbortController(),
       userId: 'u1',
       session: { id: 'sA' },
@@ -347,7 +356,7 @@ describe('registerActions — every registrant is owner-tagged', () => {
   test('a monitor KEEPS the id it was minted and published under', () => {
     // A monitor names itself in the WAKE that reaches the agent (`mon-1`) before `jobs` is
     // ever consulted. If the host re-labelled it `bg-1`, the wake would print an id that
-    // `jobs action="stop"` cannot resolve. The id comes from the same allocator, so it is free.
+    // `TaskStop` cannot resolve. The id comes from the same allocator, so it is free.
     const { registry, work } = setup()
     const minted = work.mint({ userId: 'u1', sessionId: 'sA' }, 'monitor')
     registry.registerActions('tc-1', kill as never, {
@@ -472,7 +481,7 @@ describe('a background job is shielded on every sink it writes to', () => {
       id: 'tc-1',
       toolCallId: 'tc-1',
       type: 'command',
-      name: 'bash',
+      name: 'Bash',
       status: 'running',
       input: { command: 'build' },
       output: '',
@@ -491,7 +500,7 @@ describe('a background job is shielded on every sink it writes to', () => {
         queueMidRunReminder: () => {},
       },
       state: {
-        pendingTools: new Map([['tc-1', { name: 'bash', input: { command: 'build' } }]]),
+        pendingTools: new Map([['tc-1', { name: 'Bash', input: { command: 'build' } }]]),
         currentPayload: { role: 'assistant', items: [tool] },
         assistantCreatedAt: '2026-01-01T00:00:00.000Z',
       },

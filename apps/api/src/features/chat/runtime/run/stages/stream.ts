@@ -4,18 +4,16 @@
  * Everything the adapter needs mid-run is wired here and nowhere later, because once the
  * stream is open the only way back into the run is through these callbacks: steering (user
  * messages and mid-run reminders), the permission gate, the refusal-storm stop and output
- * externalization. A group turn needs no closing call: the host routes the finished reply
- * (`conversation-routing.ts`), so a turn costs one model request when it needs no tools.
+ * externalization. A turn needs no closing call, so it costs one model request when it needs no tools.
  */
 import { DEFAULT_TOKEN_CALIBRATION, observeTokenCalibration } from '@localixai/agent'
-import { agentParticipant } from '../../../../../db/participant'
 
 import { TOOL } from '../../../../agent-core/tool-names'
 import { buildExternalizeAfterToolCall } from '../../../../context-store/externalize'
 import { agentRoute } from '../../../../../contracts/session-route'
 import { createForkLiveRun, createRecordedCalls } from '../../fork/fork-live'
 import { runCacheKey } from '../../fork/fork-run'
-import { speakerPlace } from '../../../policy/axes/seat'
+import { sharedPromptCacheKey } from '../../prompt-cache-key'
 import { createItemAccumulator } from '../../items'
 import { withMidRunReminders } from '../../mid-run-reminders'
 import { consoleWarnLogger } from '../../plugin-hook-logger'
@@ -28,7 +26,7 @@ import { wireRunSteering } from '../steering-wiring'
 import { indexToolPresentation } from '../tool-assembly'
 import { settleRunStream } from './stream-settle'
 import type { RunInputs } from './context'
-import { promptCacheRetentionFor } from '../speaker-agent'
+import { promptCacheRetentionFor } from '../catalog-agent'
 import { currentAssistantMessageId, type RunFrame } from './frame'
 import type { RunHistory } from './history'
 import type { RunIntake } from './intake'
@@ -54,7 +52,7 @@ export async function streamRun(
   intake: RunIntake,
   history: RunHistory,
 ) {
-  const { env, userId, session, speakerAgentId, assistantMessageId, abort } = frame
+  const { env, userId, session, agentId, assistantMessageId, abort } = frame
   const { deps, state: runtimeState } = env
   const { state } = turn
   const { connection, credential, credentialStore, providerId, rawModelId } = turn.model
@@ -68,7 +66,7 @@ export async function streamRun(
     abort,
     userId,
     session,
-    agentId: speakerAgentId,
+    agentId,
     assistantMessageId,
     backgroundToolNames: toolset.backgroundToolNames,
     recoveryToolAvailable: toolset.recoveryToolAvailable,
@@ -77,17 +75,16 @@ export async function streamRun(
     },
   })
   const { takeSteering, deferral } = wireRunSteering(frame, turn)
-  const speakerRoute = agentRoute(session, speakerAgentId)
+  const route = agentRoute(session)
   const toolExecutionContext = buildRuntimeToolContext({
     deps,
     userId,
     sessionId: session.id,
-    ...(speakerRoute
+    ...(route
       ? {
-          speaker: {
-            agentId: speakerRoute.agentId,
-            handle: speakerRoute.handle,
-            ...speakerPlace(turn.policy.seat),
+          agent: {
+            agentId: route.agentId,
+            name: route.name,
           },
         }
       : {}),
@@ -123,10 +120,18 @@ export async function streamRun(
       ),
     )
   }
-  // A fork of this run is made from the request it is sending now. A fork is itself sent under its
-  // parent's session id, so its provider cache key is the parent's: the prefix is already there.
+  // A fork of this run is made from the request it is sending now. A fork is itself sent with its
+  // parent's cache key, so the prefix is already there. A run of its own is keyed by what its
+  // session shares with others of the same agent, model and working folder (the engine only
+  // carries the key; what it means is this host's).
   const cache = runCacheKey(frame.fork, {
-    sessionId: session.id,
+    promptCacheKey: sharedPromptCacheKey({
+      userId,
+      providerConnectionId: connection.id,
+      modelId: turn.model.effectiveModelId,
+      agentId,
+      workspaceRoot: frame.teardown.defaultCwd,
+    }),
     idleMs: turn.turnIdleMs,
     retention: promptCacheRetentionFor(inputs.pluginSubagent),
   })
@@ -137,9 +142,7 @@ export async function streamRun(
     route: {
       providerConnectionId: connection.id,
       modelId: turn.model.effectiveModelId,
-      ...(frame.speakerRoute.reasoningEffort
-        ? { reasoningEffort: frame.speakerRoute.reasoningEffort }
-        : {}),
+      ...(frame.route.reasoningEffort ? { reasoningEffort: frame.route.reasoningEffort } : {}),
     },
     currentRowId: () => currentAssistantMessageId(frame),
     currentPayload: () => state.currentPayload,
@@ -147,19 +150,20 @@ export async function streamRun(
     tools,
     toolNames: toolset.runtimeTools.toolNames,
     profile: toolset.agentProfile,
-    cacheSessionId: cache.sessionId,
+    cacheSessionId: cache.promptCacheKey,
     ...(cache.retention ? { retention: cache.retention } : {}),
   })
   // A synchronous adapter-startup throw needs no wrapper: it lands in the orchestrator's catch,
   // which closes the run row (`fail` is idempotent).
   const stream = deps.agentRuntime.run({
-    sessionId: cache.sessionId,
+    sessionId: session.id,
+    promptCacheKey: cache.promptCacheKey,
     messages: history.wire,
     systemPrompt: prompt.systemPrompt,
     model: { providerId, modelId: rawModelId },
     credential,
     credentialStore,
-    reasoningEffort: frame.speakerRoute.reasoningEffort,
+    reasoningEffort: frame.route.reasoningEffort,
     maxOutputTokens: Math.min(
       turn.catalogModel?.outputLimit ?? ABSOLUTE_MAX_OUTPUT_TOKENS,
       ABSOLUTE_MAX_OUTPUT_TOKENS,
@@ -171,7 +175,7 @@ export async function streamRun(
     ...(cache.retention ? { promptCacheRetention: cache.retention } : {}),
     maxTurns: intake.maxTurns,
     tools,
-    // `activate_tools` promotes selected full schemas from this superset into the next turn.
+    // `ToolSearch` promotes selected full schemas from this superset into the next turn.
     dispatchTools,
     signal: abort.signal,
     contextPolicy,
@@ -187,13 +191,12 @@ export async function streamRun(
       buildExternalizeAfterToolCall(deps.ports.contextStore, {
         userId,
         sessionId: session.id,
-        participant: agentParticipant(speakerAgentId),
-        toolOutputAvailable: tools.some((tool) => tool.name === TOOL.tool_output),
+        toolOutputAvailable: tools.some((tool) => tool.name === TOOL.ToolOutput),
         sanitizeInput: deps.sanitizeToolInput
           ? (value) => deps.sanitizeToolInput!(userId, value)
           : () => null,
       }),
-      () => env.drainMidRunReminders({ sessionId: session.id, agentId: speakerAgentId }),
+      () => env.drainMidRunReminders(session.id),
     ),
     takeSteering,
     // CC PostToolBatch: context before the next request, or the run ends here.
@@ -212,7 +215,7 @@ export async function streamRun(
   })
 
   // Presentation is indexed from the FULL dispatch registry: indexing only the initially
-  // visible tools made a deferred interactive tool revealed later through `activate_tools`
+  // visible tools made a deferred interactive tool revealed later through `ToolSearch`
   // lose `standalone` and collapse into an ordinary tool line.
   const presentationByName = indexToolPresentation(dispatchTools)
   // The vault shield is wired at construction rather than at each writer: `message_end` reaches
@@ -235,7 +238,7 @@ export async function streamRun(
     env,
     userId,
     session,
-    agentId: speakerAgentId,
+    agentId,
     hitlTargetSessionId: frame.hitl.targetSessionId,
     assistantMessageId,
     state,

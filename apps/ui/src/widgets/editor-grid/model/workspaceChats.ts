@@ -9,7 +9,7 @@
  *   - the tab shown → the active session (`useFollowShownChat`): picking a sibling's chat tab, or
  *     closing the shown one so its group falls back to another, navigates there like the sidebar.
  */
-import { useEffect, useRef } from 'react'
+import { useEffect, useEffectEvent } from 'react'
 import {
   groupViewModel,
   leaves,
@@ -69,15 +69,14 @@ export function useFollowShownChat(
   activeSessionId: string | null,
   goToSession: (id: string) => void,
 ): void {
-  const active = useRef(activeSessionId)
-  active.current = activeSessionId
-  const go = useRef(goToSession)
-  go.current = goToSession
+  // Read at call time, so the subscription itself is made once.
+  const activeNow = useEffectEvent(() => activeSessionId)
+  const goNow = useEffectEvent((id: string) => goToSession(id))
   useEffect(
     () =>
       followShownChat(
-        () => active.current,
-        (id) => go.current(id),
+        () => activeNow(),
+        (id) => goNow(id),
       ),
     [],
   )

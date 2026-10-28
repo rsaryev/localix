@@ -57,7 +57,7 @@ describe('human-in-the-loop requests', () => {
   it('raises a Respond row that lands on the interaction, and settles it when answered', async () => {
     const { producers, inbox } = await setup()
     const hitl = createHitlRegistry({ lifecycle: producers.hitl })
-    hitl.trackRequest('S1', 'm1', 'call-1', 'ask', request('r1'), U)
+    hitl.trackRequest('S1', 'm1', 'call-1', 'AskUserQuestion', request('r1'), U)
     const [raised] = await inbox()
     expect(raised).toMatchObject({
       key: 'hitl:r1',
@@ -72,7 +72,7 @@ describe('human-in-the-loop requests', () => {
     })
     // Answered immediately after the raise: the ordered lane keeps the settle behind it.
     const answered = hitl.controller.request(request('r2'))
-    hitl.trackRequest('S1', 'm1', 'call-2', 'ask', request('r2'), U)
+    hitl.trackRequest('S1', 'm1', 'call-2', 'AskUserQuestion', request('r2'), U)
     hitl.respond('r2', ['eu'], U)
     await answered.catch(() => undefined)
     const rows = await inbox()
@@ -85,7 +85,7 @@ describe('human-in-the-loop requests', () => {
   it('a request that ends without an answer settles as cancelled', async () => {
     const { producers, inbox } = await setup()
     const hitl = createHitlRegistry({ lifecycle: producers.hitl })
-    hitl.trackRequest('S1', 'm1', 'call-1', 'ask', request('r1'), U)
+    hitl.trackRequest('S1', 'm1', 'call-1', 'AskUserQuestion', request('r1'), U)
     hitl.clearRequest('r1')
     expect((await inbox())[0]).toMatchObject({ state: 'settled', settleReason: 'cancelled' })
   })
@@ -103,7 +103,6 @@ describe('background work', () => {
   const start = (work: ReturnType<typeof createWorkRegistry>, toolCallId: string) =>
     work.start({
       owner: { userId: U, sessionId: 'S1' },
-      agentId: null,
       kind: 'job',
       label: 'bun test',
       toolCallId,
@@ -190,7 +189,6 @@ describe('background work', () => {
     // The previous process started it and died without ending it.
     createWorkRegistry({ repo }).start({
       owner: { userId: U, sessionId: 'S1' },
-      agentId: null,
       kind: 'job',
       label: 'dev server',
       toolCallId: 'c1',

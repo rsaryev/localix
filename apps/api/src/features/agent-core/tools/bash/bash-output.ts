@@ -47,6 +47,10 @@ function spillDir(): string {
   return join(localixHome(), 'tmp', 'bash-output')
 }
 
+/** The latest reap, so a test can await it instead of guessing how long it takes. */
+let reaping: Promise<void> = Promise.resolve()
+export const spillReaped = (): Promise<void> => reaping
+
 /**
  * Persist the full captured command output (bounded upstream by the 2MB capture
  * cap in environments/spawn.ts) so truncation never destroys it. Returns the
@@ -60,7 +64,7 @@ export async function spillFullOutput(
 ): Promise<string | null> {
   try {
     await mkdir(dir, { recursive: true })
-    void reapOldSpills(dir)
+    reaping = reapOldSpills(dir)
     const file = join(dir, `${safeFileKey(key)}-${Date.now()}.log`)
     await writeFile(file, output, 'utf8')
     return file

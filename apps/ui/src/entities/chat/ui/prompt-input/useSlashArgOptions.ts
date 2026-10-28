@@ -8,7 +8,6 @@ import {
   loadMiniAppCommandArgOptions,
   loadPluginCommandArgOptions,
 } from './pluginCommandArgOptions'
-import { loadAgentCommandArgOptions } from './agentCommandArgOptions'
 import { findSessionInState } from '../../model/findSession'
 import { useChatStore } from '../../model/store'
 import { copyOptions, helpOptions, resumeOptions, rewindOptions } from './clientCommandRows'
@@ -88,9 +87,6 @@ export function useSlashArgOptions(
             choice.label.toLowerCase().includes(wanted) ||
             choice.value.toLowerCase().includes(wanted),
         )
-      }
-      if (command.id === 'agents' && argName === 'agent') {
-        return loadAgentCommandArgOptions(committed.action, query, activeSessionId, activeProjectId)
       }
       const src = command.argSource
       if (!src) return []

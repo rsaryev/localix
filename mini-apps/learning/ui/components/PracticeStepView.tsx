@@ -1,10 +1,13 @@
-import { useId, useState } from 'react'
+import { useCallback, useId, useState, useSyncExternalStore } from 'react'
 import { Check, Lightbulb, Send } from 'lucide-react'
 import { Button } from '@localixai/kit/button'
 import { MarkdownRenderer } from '@localixai/kit/markdown'
 import { SectionLabel } from '@localixai/kit/section-label'
 import { Textarea } from '@localixai/kit/textarea'
 import type { PracticeStep, StepAssessment } from '../../shared/contracts'
+
+/** How long a submitted answer counts as under review before it can be sent again. */
+const REVIEW_WINDOW_MS = 5 * 60_000
 
 export function PracticeStepView({
   step,
@@ -19,8 +22,21 @@ export function PracticeStepView({
   const [response, setResponse] = useState(assessment?.response ?? '')
   const [saving, setSaving] = useState(false)
   const responseId = useId()
-  const waiting =
-    assessment?.status === 'submitted' && Date.now() - Date.parse(assessment.updatedAt) < 5 * 60_000
+  const submittedAt = assessment?.status === 'submitted' ? Date.parse(assessment.updatedAt) : null
+  // The clock is an external source: the answer stops waiting when its window ends, even with no
+  // render in between, and no impure call is made while rendering.
+  const subscribeToWindowEnd = useCallback(
+    (notify: () => void) => {
+      if (submittedAt === null || !Number.isFinite(submittedAt)) return () => {}
+      const timer = setTimeout(notify, Math.max(0, submittedAt + REVIEW_WINDOW_MS - Date.now()))
+      return () => clearTimeout(timer)
+    },
+    [submittedAt],
+  )
+  const waiting = useSyncExternalStore(
+    subscribeToWindowEnd,
+    () => submittedAt !== null && Date.now() - submittedAt < REVIEW_WINDOW_MS,
+  )
   const send = async () => {
     if (!onSubmit || saving || waiting || !response.trim()) return
     setSaving(true)

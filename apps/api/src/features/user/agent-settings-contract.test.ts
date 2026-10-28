@@ -1,9 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import {
-  agentSettingsSchema,
-  migrateLegacyResearchSettings,
-  normalizeAgentSettings,
-} from './contracts'
+import { agentSettingsSchema, normalizeAgentSettings } from './contracts'
 
 describe('agentSettingsSchema — only executable settings are advertised', () => {
   test('validates model parameters for distinct agents and rejects duplicate triples or invalid caps', () => {
@@ -27,22 +23,6 @@ describe('agentSettingsSchema — only executable settings are advertised', () =
         agentSettingsSchema.safeParse({ agentModelSettings: [{ ...entry, maxTurns }] }).success,
       ).toBe(false)
     }
-  })
-
-  test('migrates the legacy private-network policy without retaining old web tool settings', () => {
-    const legacy = {
-      schemaVersion: 1,
-      webFetch: { allowPrivate: true },
-      webSearch: { provider: 'brave' },
-    }
-    expect(agentSettingsSchema.parse(migrateLegacyResearchSettings(legacy))).toEqual({
-      schemaVersion: 1,
-      research: { allowPrivate: true },
-    })
-    expect(normalizeAgentSettings(legacy)).toEqual({
-      schemaVersion: 1,
-      research: { allowPrivate: true },
-    })
   })
 
   test('stores availability, assignment, and reasoning in one workload route', () => {

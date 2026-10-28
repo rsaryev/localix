@@ -35,7 +35,9 @@ test('a PreToolUse hook’s answers answer the questions, with no card', async (
     interactive: false,
   } as never)
   expect(result.isError).toBeUndefined()
-  expect(result.content).toBe('User answers:\nlib: dayjs\nwhy: It is small')
+  expect(result.content).toBe(
+    'User answers:\nlib: dayjs\nwhy: It is small\nContinue the task with these answers.',
+  )
   expect((result.details as { answers?: unknown }).answers).toEqual([
     { id: 'lib', question: 'Which library?', selectedOptions: ['dayjs'] },
     { id: 'why', question: 'Why?', selectedOptions: [], customInput: 'It is small' },

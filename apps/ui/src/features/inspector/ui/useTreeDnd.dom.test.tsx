@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
-import { act } from 'react'
+import { act, useEffect } from 'react'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { useTreeDnd } from './useTreeDnd'
 
@@ -14,10 +14,13 @@ test('tree drops omit illegal parents, refuse recursive moves, and clear cues on
   const calls: unknown[][] = []
   let dnd: ReturnType<typeof useTreeDnd>
   function Harness() {
-    dnd = useTreeDnd(new Set(['/src', '/src/a.ts', '/other.ts']), (...args) => {
+    const value = useTreeDnd(new Set(['/src', '/src/a.ts', '/other.ts']), (...args) => {
       calls.push(args)
     })
-    return <div data-over={dnd.dragOverKey ?? ''} />
+    useEffect(() => {
+      dnd = value
+    })
+    return <div data-over={value.dragOverKey ?? ''} />
   }
   const host = document.createElement('div')
   document.body.append(host)

@@ -38,6 +38,9 @@ export function createUiApi(deps: {
     for (const flag of ['focus', 'closeOnEscape', 'holdToasts'])
       if (flag in pane && pane[flag] !== true)
         throw new Error(`ui.open: ${flag} is true or left out`)
+    for (const size of ['rows', 'columns'])
+      if (size in pane && !(Number.isInteger(pane[size]) && (pane[size] as number) > 0))
+        throw new Error(`ui.open: ${size} is a positive whole number or left out`)
     const sessionId = scene().sessionId
     registry.openPane(instance, {
       id: pane.id as string,

@@ -1,7 +1,7 @@
 import type { ContextLimit } from './context-limit'
 import type { ReasoningEffort } from './types'
 
-/** Model parameters belong to an exact agent/provider/model triple, never to a whole party. */
+/** Model parameters belong to an exact agent/provider/model triple, never to a whole conversation. */
 export interface AgentModelSettings {
   agentId: string
   providerId: string

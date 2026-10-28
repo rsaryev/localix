@@ -67,7 +67,7 @@ async function fixture(): Promise<AdapterEnv> {
   db.run("insert into part values ('p3', 'm2', 'ses_1', 1110, 1110, ?)", [
     JSON.stringify({
       type: 'tool',
-      tool: 'edit',
+      tool: 'Edit',
       callID: 'call_a',
       state: {
         status: 'completed',
@@ -97,7 +97,7 @@ describe('opencode session as a conversation', () => {
     )
 
     const call = result.events.find((event) => event.toolName)
-    expect(call?.toolName).toBe('edit')
+    expect(call?.toolName).toBe('Edit')
     expect(call?.toolCallId).toBe('call_a')
     expect(call?.toolInput).toEqual({ filePath: '/work/app/x.ts' })
 

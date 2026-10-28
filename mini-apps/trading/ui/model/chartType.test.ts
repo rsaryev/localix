@@ -128,13 +128,9 @@ describe('loadChartType / saveChartType — per-tab persistence', () => {
     expect(store.getItem(GLOBAL)).toBeNull()
   })
 
-  test('a tab with no per-tab entry SEEDS from the old global key (one-time migration)', () => {
+  test('a tab with no per-tab entry shows the default, whatever the bare key holds', () => {
     store.setItem(GLOBAL, JSON.stringify('area'))
-    expect(loadChartType(TAB_A, store)).toBe('area')
-    // Once the tab saves, it owns a per-tab entry that no longer tracks the global seed.
-    saveChartType('line', TAB_A, store)
-    store.setItem(GLOBAL, JSON.stringify('bars'))
-    expect(loadChartType(TAB_A, store)).toBe('line')
+    expect(loadChartType(TAB_A, store)).toBe(DEFAULT_CHART_TYPE)
   })
 
   test('an unknown/absent value falls back to the default, never blanks the chart', () => {
@@ -143,7 +139,7 @@ describe('loadChartType / saveChartType — per-tab persistence', () => {
     expect(loadChartType(TAB_A, store)).toBe(DEFAULT_CHART_TYPE)
   })
 
-  test('no tab id reads/writes the legacy global key directly', () => {
+  test('no tab id reads/writes the bare key directly', () => {
     saveChartType('area', undefined, store)
     expect(store.getItem(GLOBAL)).toBe('"area"')
     expect(loadChartType(undefined, store)).toBe('area')

@@ -26,6 +26,7 @@ import type { LoadedMiniApps } from '../../../mini-apps/loader-contract'
 import { resolveRunOutputStyle } from './output-style'
 import type { RunPolicy } from '../../policy/run-policy'
 import { activeDescendantSubagents } from './descendant-roster'
+import { runKeepsMemory } from '../../../agent-core/prompt/sections/memory'
 import { getAgentService } from '../agent-service-binding'
 import { buildReactionContext } from './reaction-context'
 import { sessionAgent } from '../message-envelope'
@@ -44,14 +45,14 @@ import type { RunSessionSnapshotRow } from './session-snapshot'
 export interface BuildRunSystemPromptOptions {
   userId: string
   session: SessionRecord
-  speakerAgentId: string
-  /** The run's policy: the speaker's seat, the room, where the reply goes. */
+  agentId: string
+  /** The run's policy: the agent's route, where the reply goes. */
   policy: RunPolicy
   providerId: string
   agentProfile: RunProfile
   runtimeTools: ReturnType<typeof buildRunToolRegistry>
   /** The tools deferral left on the wire — what the roster and "# Mini apps" describe. */
-  wireToolNames?: readonly string[]
+  wireTools?: readonly { name: string; modelName?: string }[]
   loadedPlugins: LoadedPlugins
   loadedMiniApps: LoadedMiniApps
   frozenContext: FrozenSessionContext
@@ -68,7 +69,7 @@ export interface BuildRunSystemPromptOptions {
   mcpInstructions?: Array<{ server: string; text: string }>
   /** Direct MCP tools already loaded, plus optional servers still connecting. */
   mcpInventory?: McpInventoryEntry[]
-  /** This turn's transcript, for the marks placed on it since this member last spoke. */
+  /** This turn's transcript, for the marks placed on it since this agent last spoke. */
   historyMessages?: readonly PersistedMessage[]
   /** Fresh snapshot of this session's live background jobs (re-read each turn). */
   backgroundJobs?: BackgroundJobSnapshot[]
@@ -103,7 +104,7 @@ export async function buildRunSystemPrompt(
   const {
     userId,
     session,
-    speakerAgentId,
+    agentId,
     providerId,
     agentProfile,
     loadedPlugins,
@@ -120,10 +121,10 @@ export async function buildRunSystemPrompt(
     mcpInventory,
     now,
   } = options
-  const runtimeTools = onTheWire(options.runtimeTools, options.wireToolNames)
-  const speakerRoute = agentRoute(session, speakerAgentId)
-  if (!speakerRoute) throw new Error(`Agent is unavailable: ${speakerAgentId}`)
-  const speaker = sessionAgent(session, speakerRoute.agentId)
+  const runtimeTools = onTheWire(options.runtimeTools, options.wireTools)
+  const route = agentRoute(session)
+  if (!route) throw new Error(`Agent is unavailable: ${agentId}`)
+  const agent = sessionAgent(session)
 
   const onWire = new Set(runtimeTools.toolNames)
   const pluginsContext = buildPluginsPromptContext(loadedPlugins, runtimeTools.toolNames)
@@ -135,12 +136,7 @@ export async function buildRunSystemPrompt(
   // Children of THIS session still running when this run starts (e.g. the
   // parent was woken by one sub-agent while others are still working).
   let activeSubAgents = options.descendantSessions
-    ? activeDescendantSubagents(
-        options.descendantSessions,
-        session.id,
-        // Attributed only where a colleague could own a child (`descendant-roster.ts`).
-        options.policy.conversation.withColleagues ? speaker : undefined,
-      )
+    ? activeDescendantSubagents(options.descendantSessions, session.id)
     : [...childRuntimeSessions.values()].flatMap((c) =>
         c.parentSessionId === session.id &&
         c.session.sessionKind === 'subagent' &&
@@ -148,7 +144,7 @@ export async function buildRunSystemPrompt(
           ? [{ title: c.session.title }]
           : [],
       )
-  if (activeSubAgents.length && runtimeTools.toolNames.includes(TOOL.delegate)) {
+  if (activeSubAgents.length && runtimeTools.toolNames.includes(TOOL.Agent)) {
     const runs = await getAgentService()
       // The roster prints progress, not spend: skip the per-child usage reads on every turn.
       ?.listDelegatedRuns?.(userId, session.id, { usage: false })
@@ -169,13 +165,13 @@ export async function buildRunSystemPrompt(
           : child
       })
   }
-  // Marks placed since this agent last spoke. Not a multi-participant-only fact: a person marks a
-  // message in a one-to-one chat too, and there the mark is the whole of what they said. It rides
+  // Marks placed since this agent last spoke. A person marks a message and the mark can be the
+  // whole of what they said. It rides
   // the tail rather than rewriting the rows that were marked — see `reaction-context`.
-  const conversation = conversationPromptContext(session, speakerRoute.agentId, options.policy)
-  // A session with no participant has nobody to tell — and `sessionAgent` refuses to guess one.
-  const reactions = session.agents?.length
-    ? buildReactionContext(options.historyMessages ?? [], speaker)
+  const conversation = conversationPromptContext(options.policy)
+  // A session with no agent has nobody to tell — and `sessionAgent` refuses to guess one.
+  const reactions = session.agent
+    ? buildReactionContext(options.historyMessages ?? [], agent)
     : undefined
 
   // True only when the tool survived BOTH the profile and disabledTools — the
@@ -204,9 +200,8 @@ export async function buildRunSystemPrompt(
 
   const { stablePrompt, stableSections, runtimeSections } = buildAgentSystemPromptParts({
     sessionId: session.id,
-    modelId: speakerRoute.modelId,
+    modelId: route.modelId,
     sessionTopic: session,
-    canChangeTopic: options.policy.seat.ownsTopic,
     providerId,
     webhookUrl: WEBHOOK_URL,
     deliveryContext: channelOrigin ? { channel: channelOrigin } : undefined,
@@ -231,9 +226,16 @@ export async function buildRunSystemPrompt(
     // gated on the FINAL runtime tool set (toolNames already reflects disabledTools), so a
     // tool turned off also drops its prompt context. The profile is context about the
     // PERSON, not a tool: it rides regardless of the roster.
-    memoryContext: hasRuntimeTool(TOOL.memory) ? frozenContext.memoryContext : undefined,
-    memoryUsage: hasRuntimeTool(TOOL.memory) ? frozenContext.memoryUsage : undefined,
-    skillsContext: hasRuntimeTool(TOOL.skill) ? frozenContext.skillsContext : undefined,
+    // Auto memory, as in Claude Code (`memory-roots.ts` says which runs keep it).
+    memory:
+      frozenContext.memoryDir && runKeepsMemory(agentProfile, hasRuntimeTool)
+        ? {
+            dir: frozenContext.memoryDir,
+            index: frozenContext.memoryContext ?? '',
+            clipped: frozenContext.memoryClipped ?? false,
+          }
+        : undefined,
+    skillsContext: hasRuntimeTool(TOOL.Skill) ? frozenContext.skillsContext : undefined,
     // Pinned skills are already full inline instructions, not an index that
     // requires `skill.get`. Keep them for workers/subagents whose profile does
     // not expose the skill-management tool.
@@ -251,9 +253,9 @@ export async function buildRunSystemPrompt(
     projectStructure,
     projectInstructions: frozenContext.projectInstructions,
     conversation,
-    // Who an @mention would bring in, and who `delegate` can hand a task to.
-    agentDirectory: agentDirectoryRows(session, options.policy, options.agentDirectory, {
-      canDelegate: hasRuntimeTool(TOOL.delegate),
+    // The agents `Agent` can hand a task to.
+    agentDirectory: agentDirectoryRows(options.agentDirectory, {
+      canDelegate: hasRuntimeTool(TOOL.Agent),
     }),
     ...(reactions ? { reactionContext: reactions } : {}),
     scratchDir,

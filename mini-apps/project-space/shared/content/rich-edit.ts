@@ -42,7 +42,7 @@ export function toggleMark(value: string, start: number, end: number, token: str
     .split('\n')
     .map((line) => {
       const words = /^(\s*)(.*?)(\s*)$/su.exec(line)
-      return words && words[2] ? `${words[1]}${token}${words[2]}${token}${words[3]}` : line
+      return words?.[2] ? `${words[1]}${token}${words[2]}${token}${words[3]}` : line
     })
     .join('\n')
   return {

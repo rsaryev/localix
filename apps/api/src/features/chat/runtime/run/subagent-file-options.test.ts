@@ -40,6 +40,6 @@ describe('an agent file’s run options', () => {
     expect(options.instructions).toContain(memoryDir)
     expect(options.instructions).toContain('line 200')
     expect(options.instructions).not.toContain('line 201')
-    expect(options.enableTools).toEqual(['read', 'write', 'edit'])
+    expect(options.enableTools).toEqual(['Read', 'Write', 'Edit'])
   })
 })

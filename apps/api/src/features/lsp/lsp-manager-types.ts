@@ -22,7 +22,18 @@ import type { DiagnosticsReport } from './diagnostics-report'
 import type { LspServerDef } from './lsp-servers'
 import type { LspWatchedFileChange } from './lsp-watched-files'
 
-export type LspServerStatus = 'starting' | 'ready' | 'error'
+/**
+ * `installing`: nothing local serves the file and its pinned server is being fetched
+ * (`lsp-installer.ts`). `unavailable`: that install could not finish; it is tried again after a
+ * cooldown, on the next request for the file.
+ */
+export type LspServerStatus = 'installing' | 'starting' | 'ready' | 'error' | 'unavailable'
+
+export interface LspServerUnavailable {
+  reason: 'offline' | 'needs-toolchain' | 'failed'
+  /** The toolchain's name for `needs-toolchain`; otherwise what went wrong. */
+  detail: string
+}
 
 export interface LspServerState {
   serverId: string
@@ -31,6 +42,9 @@ export interface LspServerState {
   status: LspServerStatus
   errorCount: number
   warningCount: number
+  /** 0–1 while `installing`, when the download can tell. */
+  progress?: number
+  unavailable?: LspServerUnavailable
 }
 
 export interface LspManager {

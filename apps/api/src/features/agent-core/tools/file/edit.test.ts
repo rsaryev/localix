@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, utimes, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { createEditTool, editToolInputSchema } from './edit'
@@ -130,8 +130,9 @@ describe('createEditTool', () => {
     const read = createReadTool(undefined, tempDir, undefined, undefined, mtimes)
     await read.execute('r1', { path: 'a.ts' }, signal())
     // A later write by someone else, with a distinct mtime.
-    await new Promise((resolve) => setTimeout(resolve, 20))
     await writeFile(file, 'v2\n')
+    const later = new Date(Date.now() + 60_000)
+    await utimes(file, later, later)
     const tool = createEditTool(undefined, tempDir, undefined, undefined, mtimes)
     const result = await tool.execute(
       'e7',
@@ -150,7 +151,7 @@ describe('createEditTool', () => {
       signal(),
     )
     expect(result.isError).toBe(true)
-    expect(result.content).toContain('Use `write`')
+    expect(result.content).toContain('Use `Write`')
   })
 })
 

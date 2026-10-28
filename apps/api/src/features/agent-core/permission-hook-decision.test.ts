@@ -13,9 +13,9 @@ import type { PreToolUseVerdict } from './permission-hook-decision'
  * rules are still evaluated regardless of what the hook returns", and "`ask` prompts the user".
  */
 const ROOT = path.join(os.homedir(), 'proj')
-const bash = { name: 'bash' } as unknown as AgentTool
+const bash = { name: 'Bash' } as unknown as AgentTool
 const DANGEROUS: PermissionRule = {
-  permission: 'bash',
+  permission: 'Bash',
   pattern: 'dangerous',
   action: 'ask',
   message: 'This command looks destructive. Allow it?',
@@ -29,12 +29,12 @@ async function decide(rules: PermissionRule[], command: string, hook?: PreToolUs
     root: ROOT,
     requestConfirm: async (args) => {
       cards.push(args)
-      return true
+      return { approved: true }
     },
   })
   const verdict = await gate({
     toolCallId: 'c1',
-    toolName: 'bash',
+    toolName: 'Bash',
     input: { command },
     ...(hook ? { hookVerdict: hook } : {}),
   })
@@ -59,13 +59,13 @@ describe('PreToolUse allow', () => {
   })
 
   test('still asks where a named ask rule says so', async () => {
-    const named: PermissionRule = { permission: 'bash', pattern: 'git push*', action: 'ask' }
+    const named: PermissionRule = { permission: 'Bash', pattern: 'git push*', action: 'ask' }
     const { cards } = await decide([named], 'git push origin main', { decision: 'allow' })
     expect(cards).toHaveLength(1)
   })
 
   test('never lifts a deny the question was sitting over', async () => {
-    const deny: PermissionRule = { permission: 'bash', pattern: '*', action: 'deny' }
+    const deny: PermissionRule = { permission: 'Bash', pattern: '*', action: 'deny' }
     const { verdict, cards } = await decide([deny, DANGEROUS], 'rm -rf ./build', {
       decision: 'allow',
     })
@@ -81,7 +81,7 @@ describe('PreToolUse ask', () => {
   })
 
   test('does not turn a deny into a question', async () => {
-    const deny: PermissionRule = { permission: 'bash', pattern: '*', action: 'deny' }
+    const deny: PermissionRule = { permission: 'Bash', pattern: '*', action: 'deny' }
     const { verdict, cards } = await decide([deny], 'ls', { decision: 'ask' })
     expect(cards).toEqual([])
     expect(verdict?.block).toBe(true)

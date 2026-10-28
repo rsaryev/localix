@@ -17,7 +17,7 @@ describe('what became of a started fork', () => {
     const line = describeStartedTask({ queued: 2 }, child)
     expect(line.failed).toBe(false)
     expect(line.line).toContain('position 2')
-    expect(line.details?.status).toBe('idle')
+    expect(line.details).toMatchObject({ status: 'queued', queuePosition: 2 })
   })
 
   test('a fork that dies during startup is reported as failed', () => {

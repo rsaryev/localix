@@ -2,14 +2,11 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 // Hooks must work before packages have been built; reuse the owner's source implementation.
 import { isPathBelow } from '../packages/path-containment/src/index.ts'
-import { MINI_APPS_PREFIX } from './lib/bundled-roots.mjs'
 
 const source = /\.[cm]?[jt]sx?$/
 const testFile = /\.(?:dom\.)?test\.[cm]?[jt]sx?$/
-const globalTypes = /^(?:package\.json|bun\.lock|turbo\.json|tsconfig[^/]*\.json)$/
 
 export const isInWorkspace = (workspace, path) => isPathBelow(workspace.path, path)
-export const isGlobalTypeInput = (path) => globalTypes.test(path)
 
 export function readWorkspaces(root) {
   const manifest = join(root, 'package.json')
@@ -28,49 +25,8 @@ export function readWorkspaces(root) {
   )
 }
 
-export function planChecks(paths, workspaces, exists = existsSync) {
-  const selected = new Set()
-  const allTypes = paths.some(isGlobalTypeInput)
-  for (const workspace of workspaces) {
-    if (
-      allTypes ||
-      paths.some(
-        (path) => isInWorkspace(workspace, path) && /\.(?:[cm]?[jt]sx?|jsonc?)$/.test(path),
-      )
-    ) {
-      selected.add(workspace.name)
-    }
-  }
-  // The API includes bundled mini app backends in its compile project.
-  const bundledBackend = /^[^/]+\/.*\/backend\/.*\.[cm]?[jt]sx?$/
-  if (paths.some((path) => path.startsWith(MINI_APPS_PREFIX) && bundledBackend.test(path))) {
-    for (const workspace of workspaces) {
-      if (workspace.path === 'apps/api') selected.add(workspace.name)
-    }
-  }
-  // A shared contract can break a consumer even when the consumer has no staged edits.
-  let previousSize
-  do {
-    previousSize = selected.size
-    for (const workspace of workspaces) {
-      if (workspace.dependencies.some((name) => selected.has(name))) selected.add(workspace.name)
-    }
-  } while (selected.size !== previousSize)
-
-  const typed = workspaces
-    .filter((workspace) => selected.has(workspace.name))
-    .filter((workspace) => workspace.scripts['type-check'] || workspace.scripts['type-check:tests'])
-  // Turbo also reads upstream build inputs; an unstaged dependency repair must not mask a failure.
-  const checked = new Set(selected)
-  do {
-    previousSize = checked.size
-    for (const workspace of workspaces) {
-      if (checked.has(workspace.name)) {
-        for (const name of workspace.dependencies) checked.add(name)
-      }
-    }
-  } while (checked.size !== previousSize)
-  const affected = workspaces.filter((workspace) => checked.has(workspace.name))
+/** What a commit of `paths` checks: the tests beside them, and Rust when the shell changed. */
+export function planChecks(paths, exists = existsSync) {
   const tests = new Set()
   for (const path of paths.filter((path) => source.test(path))) {
     if (testFile.test(path)) {
@@ -83,9 +39,6 @@ export function planChecks(paths, workspaces, exists = existsSync) {
     }
   }
   return {
-    typed,
-    affected,
-    allTypes,
     tests: [...tests],
     rust: paths.some(
       (path) =>

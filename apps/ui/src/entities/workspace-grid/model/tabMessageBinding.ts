@@ -101,7 +101,7 @@ function miniAppGuidanceBinding(
     // "click Pods in DevOps" are asked of the tab on screen, and the address is what the agent
     // would otherwise have to guess.
     owner
-      ? `See or use this view yourself: the browser tool with url "${miniAppViewTarget(owner)}" — snapshot, take_screenshot, steps (click, type).`
+      ? `See or use this view yourself: the Browser tool with url "${miniAppViewTarget(owner)}" — snapshot, take_screenshot, steps (click, type).`
       : null,
     steps.length
       ? `Best next steps:\n${steps.map((step, index) => `${index + 1}. ${step}`).join('\n')}`

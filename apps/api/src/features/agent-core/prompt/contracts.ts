@@ -2,8 +2,7 @@ import type { RuntimeToolRegistry } from '../tool-registry'
 import type { RunProfile } from '../run-shape'
 import type { RuntimeSection } from './runtime-sections'
 import type { ContextFile } from '../context-files'
-import type { MemoryUsage } from '../../memory/file-store'
-import type { ConversationParticipant } from './sections/conversation'
+import type { MemoryPromptContext } from './sections/memory'
 import type { BackgroundJobSnapshot } from './sections/background-jobs'
 import type { ApprovedPlanPrompt } from './sections/plan'
 
@@ -11,8 +10,7 @@ export interface BuildAgentSystemPromptParams {
   modelId?: string
   providerId?: string
   sessionId?: string
-  /** Shared objective and prior-topic context, independent of participants and tools. */
-  canChangeTopic?: boolean
+  /** Shared objective and prior-topic context, independent of agents and tools. */
   sessionTopic?: { title: string; goal?: string | null; previousTopicSummary?: string | null }
   /**
    * Absolute inbound-webhook URL for THIS instance (host+port resolved at
@@ -25,9 +23,8 @@ export interface BuildAgentSystemPromptParams {
   now?: () => string
   toolRegistry?: RuntimeToolRegistry
   agentProfile?: RunProfile
-  memoryContext?: string
-  /** Aggregate char-budget usage across the loaded memory scopes (header line). */
-  memoryUsage?: MemoryUsage
+  /** The run's memory folder and MEMORY.md index; absent when the run keeps no memory. */
+  memory?: MemoryPromptContext
   skillsContext?: string
   pinnedSkills?: { name: string; content: string }[]
   /**
@@ -67,34 +64,18 @@ export interface BuildAgentSystemPromptParams {
    */
   projectInstructions?: string
   /**
-   * The current roster and elected leader, including a solo chat that may assemble a team.
+   * The run answers a person in a conversation, so it renders `# Conversation turn control`. Every
+   * production run does; the shape goldens leave it out.
    */
-  conversation?: {
-    self: string
-    participants: readonly ConversationParticipant[]
-    /** This participant is the elected leader and receives orchestration guidance. */
-    isLeader?: boolean
-    /** The elected leader's handle, recomputed each run; the volatile roster names it. */
-    leader?: string
-    /** Nobody can be tagged in: it is not a chat. */
-    membershipClosed?: boolean
-    /**
-     * No conversation surrounds the run: a delegated child or a job works for whoever started
-     * it, so there is no room to list — no roster to list.
-     */
-    isolated?: boolean
-  }
-  /** Scope-aware agent directory, rendered in the volatile tail so registry edits are immediate. */
+  conversation?: boolean
+  /**
+   * The agents `Agent` can start as a subagent, rendered in the volatile tail so registry edits
+   * are immediate. The host lists only agents `Agent` can hand a task to.
+   */
   agentDirectory?: readonly {
     id: string
-    handle: string
+    name: string
     description?: string
-    leadershipPriority: number
-    inConversation: boolean
-    /** A tag in a reply can bring it into the conversation. */
-    available: boolean
-    /** `delegate` can hand it a task. */
-    delegable?: boolean
     /** Its exact tool list, when its file has one. */
     tools?: readonly string[]
     /** It runs as you (`general-purpose`). */

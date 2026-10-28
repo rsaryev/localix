@@ -183,13 +183,11 @@ describe('the added events in a hooks file', () => {
   it('accepts each handler type only where Claude Code does', () => {
     const { registry, skipped } = parse({
       TaskCreated: groups('prompt'),
-      TeammateIdle: groups('agent'),
       PermissionRequest: [...groups('prompt'), ...groups('agent')],
       PreModelSwitch: groups('prompt'),
       InstructionsLoaded: groups('http'),
     })
     expect(registry.TaskCreated?.[0]?.handlers[0]?.kind).toBe('prompt')
-    expect(registry.TeammateIdle?.[0]?.handlers[0]?.kind).toBe('agent')
     expect(registry.PermissionRequest?.flatMap((g) => g.handlers.map((h) => h.kind))).toEqual([
       'prompt',
     ])

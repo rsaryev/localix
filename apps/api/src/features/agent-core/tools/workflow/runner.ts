@@ -24,10 +24,6 @@ export interface WorkflowAgentRequest {
   phase?: string
   /** A custom agent to run as (`agentType`); the workflow's own agent when absent. */
   agentType?: string
-  /** A model for this agent (`sonnet`, `haiku`, a model id); the chat's when absent. */
-  model?: string
-  /** A reasoning effort for this agent (`low` … `max`); its parent's when absent. */
-  effort?: string
   /** `worktree`: the agent works in a fresh git worktree of the chat's repository. */
   isolation?: 'worktree'
   /** 1-based, in the order the run started them. */

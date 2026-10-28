@@ -18,10 +18,10 @@ test('real React prop updates keep controls working without retaining performanc
   const { act, useState } = React
   const { createRoot } = await import('react-dom/client')
   const { Button } = await import('@localixai/kit/button')
-  const original = performance.measure
+  const original = performance.measure.bind(performance)
   const measured: string[] = []
   performance.measure = function (name, startOrOptions, endMark) {
-    const entry = original.call(performance, name, startOrOptions, endMark)
+    const entry = original(name, startOrOptions, endMark)
     if (entry.detail?.devtools?.track === 'Components ⚛') measured.push(name)
     return entry
   }

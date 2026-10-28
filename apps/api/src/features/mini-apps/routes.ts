@@ -17,10 +17,13 @@ import {
 } from './contracts'
 import type { MiniAppService } from './service'
 import {
+  installLocalMiniAppRequestSchema,
+  installLocalMiniAppResponseSchema,
   installMiniAppRequestSchema,
   miniAppCatalogRequestSchema,
   miniAppCatalogPreviewSchema,
   miniAppCatalogsResponseSchema,
+  miniAppKitResponseSchema,
   miniAppStoreMediaParamsSchema,
   miniAppStorePageSchema,
   miniAppStoreResponseSchema,
@@ -56,6 +59,8 @@ export type MiniAppRoutesService = Pick<
   | 'invokeUiAction'
   | 'store'
   | 'catalogs'
+  | 'kitDir'
+  | 'installLocal'
 >
 
 /**
@@ -107,6 +112,17 @@ export function createMiniAppRoutes(service: MiniAppRoutesService) {
       await service.store.install(name, { userId: c.get('userId'), acceptUnverified })
       return c.body(null, 202)
     })
+    // The mini-app-authoring plugin: Localix builds no mini app, it publishes the kit one is built
+    // against and installs the package the plugin built (`local-install.ts`).
+    .get('/kit', (c) => c.json(miniAppKitResponseSchema.parse({ dir: service.kitDir() }), 200))
+    .post('/install-local', zValidator('json', installLocalMiniAppRequestSchema), async (c) =>
+      c.json(
+        installLocalMiniAppResponseSchema.parse(
+          await service.installLocal(c.get('userId'), c.req.valid('json')),
+        ),
+        200,
+      ),
+    )
     // The catalogs the store reads. Adding one reads it first; both writes announce
     // `mini-app.catalog`, so the store and this list re-read.
     .get('/catalogs', async (c) =>

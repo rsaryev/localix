@@ -61,8 +61,8 @@ describe('depScore', () => {
 describe('supersededScore — mutate supersedes earlier read', () => {
   test('a READ of F followed by a successful edit of F supersedes the read', () => {
     const messages: ChatMessage[] = [
-      msg({ items: [namedTool('read', { path: 'src/f.ts' })] }),
-      msg({ items: [namedTool('edit', { path: 'src/f.ts' }, { state: 'output-available' })] }),
+      msg({ items: [namedTool('Read', { path: 'src/f.ts' })] }),
+      msg({ items: [namedTool('Edit', { path: 'src/f.ts' }, { state: 'output-available' })] }),
     ]
     const g = buildDepGraph(messages)
     expect(g.supersededScore(0)).toBeGreaterThan(0)
@@ -70,8 +70,8 @@ describe('supersededScore — mutate supersedes earlier read', () => {
 
   test('a later READ of F supersedes an earlier READ of F', () => {
     const messages: ChatMessage[] = [
-      msg({ items: [namedTool('read', { path: 'src/g.ts' })] }),
-      msg({ items: [namedTool('read', { path: 'src/g.ts' })] }),
+      msg({ items: [namedTool('Read', { path: 'src/g.ts' })] }),
+      msg({ items: [namedTool('Read', { path: 'src/g.ts' })] }),
     ]
     const g = buildDepGraph(messages)
     expect(g.supersededScore(0)).toBeGreaterThan(0)
@@ -81,8 +81,8 @@ describe('supersededScore — mutate supersedes earlier read', () => {
 describe('supersededScore — non-superseding cases', () => {
   test('a FAILED mutate does NOT supersede an earlier read', () => {
     const messages: ChatMessage[] = [
-      msg({ items: [namedTool('read', { path: 'src/h.ts' })] }),
-      msg({ items: [namedTool('edit', { path: 'src/h.ts' }, { state: 'output-error' })] }),
+      msg({ items: [namedTool('Read', { path: 'src/h.ts' })] }),
+      msg({ items: [namedTool('Edit', { path: 'src/h.ts' }, { state: 'output-error' })] }),
     ]
     const g = buildDepGraph(messages)
     expect(g.supersededScore(0)).toBe(0)
@@ -90,8 +90,8 @@ describe('supersededScore — non-superseding cases', () => {
 
   test('a bash re-run does NOT supersede an earlier read', () => {
     const messages: ChatMessage[] = [
-      msg({ items: [namedTool('read', { path: 'src/i.ts' })] }),
-      msg({ items: [namedTool('bash', { command: 'cat src/i.ts' })] }),
+      msg({ items: [namedTool('Read', { path: 'src/i.ts' })] }),
+      msg({ items: [namedTool('Bash', { command: 'cat src/i.ts' })] }),
     ]
     const g = buildDepGraph(messages)
     expect(g.supersededScore(0)).toBe(0)
@@ -99,8 +99,8 @@ describe('supersededScore — non-superseding cases', () => {
 
   test('a mutate IS superseded by a later mutate of the same file (overwritten)', () => {
     const messages: ChatMessage[] = [
-      msg({ items: [namedTool('edit', { path: 'src/j.ts' }, { state: 'output-available' })] }),
-      msg({ items: [namedTool('edit', { path: 'src/j.ts' }, { state: 'output-available' })] }),
+      msg({ items: [namedTool('Edit', { path: 'src/j.ts' }, { state: 'output-available' })] }),
+      msg({ items: [namedTool('Edit', { path: 'src/j.ts' }, { state: 'output-available' })] }),
     ]
     const g = buildDepGraph(messages)
     expect(g.supersededScore(0)).toBeGreaterThan(0)
@@ -108,8 +108,8 @@ describe('supersededScore — non-superseding cases', () => {
 
   test('a mutate is NOT superseded by a later read (the edit is the action of record)', () => {
     const messages: ChatMessage[] = [
-      msg({ items: [namedTool('edit', { path: 'src/j.ts' }, { state: 'output-available' })] }),
-      msg({ items: [namedTool('read', { path: 'src/j.ts' })] }),
+      msg({ items: [namedTool('Edit', { path: 'src/j.ts' }, { state: 'output-available' })] }),
+      msg({ items: [namedTool('Read', { path: 'src/j.ts' })] }),
     ]
     const g = buildDepGraph(messages)
     expect(g.supersededScore(0)).toBe(0)
@@ -117,8 +117,8 @@ describe('supersededScore — non-superseding cases', () => {
 
   test('a read of a DIFFERENT file is not superseded', () => {
     const messages: ChatMessage[] = [
-      msg({ items: [namedTool('read', { path: 'src/k.ts' })] }),
-      msg({ items: [namedTool('edit', { path: 'src/other.ts' }, { state: 'output-available' })] }),
+      msg({ items: [namedTool('Read', { path: 'src/k.ts' })] }),
+      msg({ items: [namedTool('Edit', { path: 'src/other.ts' }, { state: 'output-available' })] }),
     ]
     const g = buildDepGraph(messages)
     expect(g.supersededScore(0)).toBe(0)
@@ -126,8 +126,8 @@ describe('supersededScore — non-superseding cases', () => {
 
   test('a later read does not retroactively supersede a future read (only earlier ones)', () => {
     const messages: ChatMessage[] = [
-      msg({ items: [namedTool('read', { path: 'src/l.ts' })] }),
-      msg({ items: [namedTool('read', { path: 'src/l.ts' })] }),
+      msg({ items: [namedTool('Read', { path: 'src/l.ts' })] }),
+      msg({ items: [namedTool('Read', { path: 'src/l.ts' })] }),
     ]
     const g = buildDepGraph(messages)
     // The last read has nothing after it → not superseded.

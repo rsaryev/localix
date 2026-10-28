@@ -40,7 +40,7 @@ export async function seedPlatform(fixture) {
     const session = await api('/sessions', {
       title: 'Explore the workspace tools',
       projectId: project.id,
-      agentIds: ['builtin:localix'],
+      agentId: 'builtin:localix',
     })
     fixture.platformSessionId = session.id
   }

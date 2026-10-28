@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
-import { act } from 'react'
+import { act, useEffect } from 'react'
 import { CanvasProvider } from '@localixai/kit/canvas'
 import { registerDom } from '@localixai/kit/testing'
 import { emptySpace } from '../../shared/format/document'
@@ -24,11 +24,15 @@ test('a chosen shape is placed; keyboard tools clear placement presets', async (
   let tools!: ReturnType<typeof useTools>
   const writes: (readonly SpaceOp[])[] = []
   function Probe() {
-    tools = useTools({
+    const value = useTools({
       space: emptySpace(),
       commit: (ops) => writes.push(ops),
       select: () => undefined,
       setEditing: () => undefined,
+    })
+    // Read by the test once the commit is done, not written while rendering.
+    useEffect(() => {
+      tools = value
     })
     return null
   }

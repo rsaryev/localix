@@ -25,7 +25,7 @@ export interface RunHookContext {
   env: RunEnv
   userId: string
   session: SessionRecord
-  /** Stable participant address for this run; independent of roster order. */
+  /** Stable agent address for this run; independent of roster order. */
   agentId: string
   /** Authoritative parent-walk result. Null means corrupt/missing ancestry: HITL fails closed. */
   hitlTargetSessionId: string | null

@@ -2,6 +2,10 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing'
 import type { DbConnectionInfo } from '../dbClient'
 
+const turns = async (n = 10) => {
+  for (let i = 0; i < n; i++) await new Promise((r) => setImmediate(r))
+}
+
 let teardown: () => Promise<void>
 
 beforeAll(() => {
@@ -21,7 +25,7 @@ const connection = (id: string, dialect: DbConnectionInfo['dialect']): DbConnect
   readonly: false,
   createdAt: 1,
 })
-const settle = () => new Promise((resolve) => setTimeout(resolve, 20))
+const settle = () => turns()
 
 describe('create-table draft scope', () => {
   test('keeps an edited column mounted when an earlier row is removed', async () => {

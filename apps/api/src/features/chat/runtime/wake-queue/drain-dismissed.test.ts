@@ -1,3 +1,4 @@
+import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { createChatFeaturePorts } from '../../../../bootstrap/chat-feature-ports'
 import { mkdir, rm } from 'node:fs/promises'
@@ -7,7 +8,6 @@ import { testWork } from '../../../../testing/work-fixture'
 
 import { createDatabase } from '../../../../db/connection'
 import { migrateToLatest } from '../../../../db/migrator'
-import { agentParticipant } from '../../../../db/participant'
 import { sessionFixture } from '../../../../testing/session-fixture'
 import { createProviderConnectionsService } from '../../../provider-connections/service'
 import { createChatRepository } from '../../repository'
@@ -19,17 +19,18 @@ import { createAgentRunner } from '../agent-runner'
 import { createHitlRegistry } from '../hitl-registry'
 import { createSessionStreamRegistry } from '../session-stream-registry'
 
-const tempDir = join(process.cwd(), 'tmp', 'drain-dismissed-tests')
+const tempDir = join(tmpdir(), `localix-drain-dismissed-tests-${process.pid}`)
 
 async function waitUntil(done: () => Promise<boolean>): Promise<void> {
-  for (let i = 0; i < 200; i++) {
+  // Event-loop turns, not a clock: the drain is a few database round trips away.
+  for (let i = 0; i < 5000; i++) {
     if (await done()) return
-    await new Promise((resolve) => setTimeout(resolve, 5))
+    await new Promise((resolve) => setImmediate(resolve))
   }
   throw new Error('condition not reached')
 }
 
-describe('drain — a delivery no participant answers', () => {
+describe('drain — a delivery to a session without an agent', () => {
   beforeAll(async () => {
     await mkdir(tempDir, { recursive: true })
   })
@@ -41,7 +42,7 @@ describe('drain — a delivery no participant answers', () => {
     const db = createDatabase({ filename: join(tempDir, `${randomUUID()}.sqlite`) })
     await migrateToLatest(db)
     const repo = createChatRepository(db)
-    const session = sessionFixture({ id: `s_${randomUUID()}` })
+    const session = sessionFixture({ id: `s_${randomUUID()}`, agent: null })
     const { userId, id: sessionId } = session
     await repo.insertSession(session)
     const runner = createAgentRunner({
@@ -56,13 +57,12 @@ describe('drain — a delivery no participant answers', () => {
       ...createTestRuntimeDeps(),
     })
 
-    // Addressed to a participant that is not (or no longer) in the conversation.
+    // The session has no agent to answer it.
     await runner.wake({
       userId,
       session,
       content: 'job finished',
       source: 'bg-job',
-      to: { participant: agentParticipant('agent:departed') },
     })
     await waitUntil(async () => !(await runner.hasQueuedTurn(sessionId)))
 

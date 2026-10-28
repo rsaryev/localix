@@ -95,7 +95,7 @@ export function ReaderLibraryHeader({
             </DropdownMenuContent>
           </DropdownMenu>
         )}
-        <Button variant="outline" size="sm" onClick={onChooseBook}>
+        <Button variant="ghost" size="sm" onClick={onChooseBook}>
           <BookOpen data-icon="inline-start" /> Open book
         </Button>
         <RefreshAction

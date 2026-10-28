@@ -44,9 +44,10 @@ describe('stageBuiltinPlugins', () => {
     ) as { name: string; plugins: Array<{ name: string; source: string }> }
     expect(catalog.name).toBe('localix')
     const names = builtinPluginNames(REPO_ROOT)
-    expect(names).toContain('localix-mini-apps')
-    expect(catalog.plugins.map((entry) => [entry.name, entry.source]).sort()).toEqual(
-      names.map((name) => [name, `./plugins/${name}`]).sort(),
+    expect(names).toContain('mini-app-authoring')
+    const byName = (a: string[], b: string[]) => (a[0] ?? '').localeCompare(b[0] ?? '')
+    expect(catalog.plugins.map((entry) => [entry.name, entry.source]).sort(byName)).toEqual(
+      names.map((name) => [name, `./plugins/${name}`]).sort(byName),
     )
   })
 })

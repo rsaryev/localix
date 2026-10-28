@@ -1,24 +1,18 @@
-import {
-  agentParticipant,
-  conversationAgent,
-  type ParticipantRef,
-  type StoredMessagePayload,
-} from '../../../db'
+import { agentAuthor, type AuthorRef, type StoredMessagePayload } from '../../../db'
 import type { PersistedMessage } from '../contracts'
 import type { SessionRecord } from '../repository'
 
 /**
  * Who the assistant side of this session speaks as.
  *
- * Every row an agent writes states its author, and in a private chat that author is the
- * session's counterpart. Taking the persisted assignment at each call site is
- * what makes it impossible to persist a turn attributed to nobody.
+ * Every row an agent writes states its author: the session's agent. Taking the persisted
+ * assignment at each call site is what makes it impossible to persist a turn attributed to nobody.
  */
-export function sessionAgent(
-  session: Pick<SessionRecord, 'agents'>,
-  agentId?: string,
-): `agent:${string}` {
-  return agentId ? agentParticipant(agentId) : conversationAgent(session.agents)
+export function sessionAgent(session: Pick<SessionRecord, 'agent'>): `agent:${string}` {
+  const id = session.agent?.agentId
+  // A missing agent cannot silently attribute a message to the default one.
+  if (!id) throw new Error('Session has no agent assignment')
+  return agentAuthor(id)
 }
 
 /**
@@ -27,7 +21,7 @@ export function sessionAgent(
  * assistant message id). Centralizes the `{ role: "assistant", content: "" }`
  * shape repeated across the run-dispatch + branching paths.
  */
-export function emptyAssistantPayload(id: string, from: ParticipantRef): StoredMessagePayload {
+export function emptyAssistantPayload(id: string, from: AuthorRef): StoredMessagePayload {
   return { id, role: 'assistant', content: '', from }
 }
 

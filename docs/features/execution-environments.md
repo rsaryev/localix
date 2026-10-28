@@ -12,8 +12,8 @@ can select or configure them for a session.
 | Operation             | Local mechanism                                                   | Boundary                                                                        |
 | --------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | Read files            | Node file I/O returns UTF-8 content and accepts run cancellation. | The read operates on the API host, within the tool's permission policy.         |
-| Write full files      | A temporary sibling is renamed over the destination.              | `write` and `edit` use this adapter; permission rules still apply.              |
-| Run shell commands    | The foreground `bash` path starts the resolved local shell.       | Commands are local processes, not operating-system-sandboxed workloads.         |
+| Write full files      | A temporary sibling is renamed over the destination.              | `Write` and `Edit` use this adapter; permission rules still apply.              |
+| Run shell commands    | The foreground `Bash` path starts the resolved local shell.       | Commands are local processes, not operating-system-sandboxed workloads.         |
 | Search file contents  | The adapter starts local `rg` with the shared search arguments.   | `rg` must be installed and visible to the API process.                          |
 | Resolve working paths | Relative paths use the session workspace.                         | An absolute tool path remains absolute and can trigger outside-workspace rules. |
 

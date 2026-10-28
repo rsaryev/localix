@@ -8,18 +8,18 @@ import { runWorkflow, type WorkflowAgentOutcome, type WorkflowAgentRequest } fro
 import type { WorkflowEvent } from './script'
 
 /**
- * ONE RUN of the `workflow` tool: the script on its journal, its progress, its result — in the
+ * ONE RUN of the `Workflow` tool: the script on its journal, its progress, its result — in the
  * background when the host can carry a job, as Claude Code runs a workflow while the session
  * stays free, and in the call otherwise.
  *
  * In the background the call returns at once with the run's id; the run is the chat's background
- * job (`jobs` lists and stops it), its progress lines update the call's card, and its end wakes the
+ * job (`jobs` lists it, `TaskStop` stops it), its progress lines update the call's card, and its end wakes the
  * chat with the result in a later turn, as a delegated task's report does.
  */
 
 /** One workflow an enabled plugin ships. */
 export interface WorkflowEntry {
-  /** `<plugin>:<name>`, the command it runs as. */
+  /** `<plugin>:<name>`, or a bare name for a workflow kept in a `workflows` folder. */
   fullName: string
   description: string
   file: string
@@ -119,8 +119,16 @@ export async function executeRun(
           return port.runAgent(run.toolCallId, entry.fullName, request, agentSignal, runId)
         },
         resolve: async (ref) => {
-          if (typeof ref !== 'string')
-            return { error: 'workflow() takes a workflow name here; a scriptPath is not run' }
+          if (typeof ref !== 'string') {
+            const path = (ref as { scriptPath?: unknown } | null)?.scriptPath
+            if (typeof path !== 'string')
+              return { error: 'workflow() takes a name or { scriptPath }' }
+            const text = await port.read(path)
+            const meta = text === null ? null : parseWorkflowMeta(text)
+            return meta?.meta
+              ? { name: meta.meta.name, body: meta.body }
+              : { error: `Workflow script ${path} cannot be read` }
+          }
           const nested = findWorkflow(run.entries, ref)
           if (typeof nested === 'string') return { error: nested }
           const text = await port.read(nested.file)
@@ -141,7 +149,7 @@ export async function executeRun(
       ...(result.costUsd ? [`$${result.costUsd.toFixed(4)}`] : []),
     ].join(', ')
     const where = port.runs
-      ? `\nRun ${runId} (journal: ${port.runs.dirOf(runId)}). To resume it after a stop, run the workflow again with resumeFromRunId "${runId}".`
+      ? `\nRun ${runId} (journal: ${port.runs.dirOf(runId)}; scriptPath: ${scriptPathOf(port, runId)}). To resume it after a stop, run the workflow again with resumeFromRunId "${runId}".`
       : ''
     const progress = details.lines.length ? `\n\nProgress:\n${details.lines.join('\n')}` : ''
     if (!result.ok)
@@ -205,12 +213,18 @@ export function startInBackground(
   })()
   return {
     content:
-      `Workflow ${entry.fullName} is running in the background (run ${runId}, job_id: ${jobId}). ` +
+      `Workflow ${entry.fullName} is running in the background (run ${runId}, job_id: ${jobId}${
+        port.runs ? `, scriptPath: ${scriptPathOf(port, runId)}` : ''
+      }). ` +
       'Its agents run as child sessions of this chat; its result arrives in a later turn on its own, ' +
-      `so do not wait or poll for it. \`jobs\` action="stop" job_id="${jobId}" stops it.`,
+      `so do not wait or poll for it. TaskStop task_id="${jobId}" stops it.`,
     details: { workflow: entry.fullName, runId, agents: 0, lines: [], background: true },
   }
 }
+
+/** Where a run keeps its script: relaunch it with `scriptPath` to run an edited copy. */
+export const scriptPathOf = (port: WorkflowRunPort, runId: string): string =>
+  `${port.runs!.dirOf(runId)}/script.js`
 
 /** A workflow by its full name, or by its bare name when only one plugin has it. */
 export function findWorkflow(

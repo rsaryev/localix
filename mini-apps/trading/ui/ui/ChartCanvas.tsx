@@ -7,7 +7,7 @@
  * effects must run — chart created, main series mounted, drawings attached, indicators built,
  * appearance applied, data pushed, pointer handlers subscribed — and that order is load-bearing.
  */
-import { memo, useMemo, useState } from 'react'
+import { memo, useLayoutEffect, useMemo, useState } from 'react'
 import type { Candle } from '../../backend/contracts'
 import type { ChartDrawing } from '../../backend/chart-drawing'
 import { loadJSON } from '@localixai/mini-app-sdk/ui/storage'
@@ -95,10 +95,12 @@ export const ChartCanvas = memo(function ChartCanvas({
     onLoadOlder,
     overlay: overlayDrawings ?? EMPTY_OVERLAY,
   })
-  // Chart type, drawings and the indicator set are per-tab (keyed by controlKey), each seeding
-  // from a legacy global pref on a tab's first load.
+  const { setContainer } = rt
+  // Chart type, drawings and the indicator set are per-tab (keyed by controlKey).
   const [chartType, setChartType] = useState<ChartType>(() => loadChartType(controlKey))
-  rt.chartType.current = chartType
+  useLayoutEffect(() => {
+    rt.write('chartType', chartType)
+  }, [rt, chartType])
   const [sessionHighlight, setSessionHighlight] = useState(
     () => loadJSON<boolean>(SESSION_HIGHLIGHT_KEY) === true,
   )
@@ -122,8 +124,7 @@ export const ChartCanvas = memo(function ChartCanvas({
   useChartAgentCommands({
     controlKey,
     controlSessionId,
-    chartRef: rt.chart,
-    candlesRef: rt.candles,
+    runtime: rt,
     setIndicatorItems,
     setScaleMode,
     setChartType,
@@ -157,7 +158,7 @@ export const ChartCanvas = memo(function ChartCanvas({
   const countdownCloseAt = !ix.away && !ix.hovering ? barCloseAt : null
   return (
     <div className="absolute inset-0" aria-busy={loading}>
-      <div ref={rt.container} className="absolute inset-0" />
+      <div ref={setContainer} className="absolute inset-0" />
       {loading && <ChartLoadingOverlay />}
       <IndicatorLegend
         entries={legendEntries}

@@ -1,9 +1,10 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import type { CanvasEdgeType } from '@localixai/kit/canvas'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import type { SpaceDocument } from '../../shared/format/document'
 import { linksOf } from '../../shared/graph/links'
 import { neighbourhood, reach, type Reading, type ReachDirection } from '../../shared/graph/reach'
+import { useLatest } from '@localixai/mini-app-sdk/ui/runtime-hooks'
 import type { ElementNode } from './toFlow'
 
 /**
@@ -44,8 +45,7 @@ export function useReading(
   const [asked, setTrace] = useState<Trace | null>(null)
   const trace = asked && space.elements[asked.origin] ? asked : null
   const links = useMemo(() => linksOf(space), [space])
-  const now = useRef({ space, links, trace, onTrace })
-  now.current = { space, links, trace, onTrace }
+  const now = useLatest({ space, links, trace, onTrace })
   const single = selected.size === 1 ? [...selected][0] : undefined
   const near = single && space.elements[single] ? single : undefined
   const lit = useMemo(() => {
@@ -54,12 +54,15 @@ export function useReading(
     if (near) return { kind: 'near' as const, ...neighbourhood(space, near, links) }
     return null
   }, [links, near, space, trace])
-  const toggleTrace = useCallback((origin: string, direction: ReachDirection) => {
-    const { space: board, links: joined, trace: current, onTrace: show } = now.current
-    if (current?.origin === origin && current.direction === direction) return setTrace(null)
-    setTrace({ origin, direction })
-    show([...reach(board, origin, direction, joined).elements.keys()])
-  }, [])
+  const toggleTrace = useCallback(
+    (origin: string, direction: ReachDirection) => {
+      const { space: board, links: joined, trace: current, onTrace: show } = now.current
+      if (current?.origin === origin && current.direction === direction) return setTrace(null)
+      setTrace({ origin, direction })
+      show([...reach(board, origin, direction, joined).elements.keys()])
+    },
+    [now],
+  )
   const clearTrace = () => {
     if (!trace) return false
     setTrace(null)
@@ -81,6 +84,28 @@ export function readingMarks(lit: BoardReading['lit']) {
   }
 }
 
+// What a node or connector looks like in a given reading is a function of that object alone, so
+// the answer is remembered by the object itself, outside any one board.
+const dimmedNodes = new WeakMap<ElementNode, ElementNode>()
+const markedEdges = new WeakMap<CanvasEdgeType, { mark: EdgeMark; edge: CanvasEdgeType }>()
+type EdgeMark = 'focus' | 'dimmed'
+
+function dimmed(node: ElementNode): ElementNode {
+  const cached = dimmedNodes.get(node)
+  if (cached) return cached
+  const next = { ...node, className: cn(node.className, 'space-dimmed') }
+  dimmedNodes.set(node, next)
+  return next
+}
+
+function marked(edge: CanvasEdgeType, mark: EdgeMark): CanvasEdgeType {
+  const cached = markedEdges.get(edge)
+  if (cached?.mark === mark) return cached.edge
+  const next: CanvasEdgeType = { ...edge, data: { ...edge.data, emphasis: mark } }
+  markedEdges.set(edge, { mark, edge: next })
+  return next
+}
+
 /**
  * The drawn nodes and connectors with the reading applied (`readingMarks`). Each is handed back
  * as the SAME object while its state is what it was, so a trace redraws what it changes and a
@@ -92,32 +117,16 @@ export function useReadingFlow(
   edges: readonly CanvasEdgeType[],
   lit: BoardReading['lit'],
 ) {
-  const nodeCache = useRef(new WeakMap<ElementNode, { dim: boolean; node: ElementNode }>())
-  const edgeCache = useRef(new WeakMap<CanvasEdgeType, { mark: string; edge: CanvasEdgeType }>())
   const marks = useMemo(() => readingMarks(lit), [lit])
   const shownNodes = useMemo(
-    () =>
-      nodes.map((node) => {
-        const dim = marks.dims(node.id)
-        if (!dim) return node
-        const cached = nodeCache.current.get(node)
-        if (cached?.dim === dim) return cached.node
-        const next = { ...node, className: cn(node.className, 'space-dimmed') }
-        nodeCache.current.set(node, { dim, node: next })
-        return next
-      }),
+    () => nodes.map((node) => (marks.dims(node.id) ? dimmed(node) : node)),
     [marks, nodes],
   )
   const shownEdges = useMemo(
     () =>
       edges.map((edge) => {
         const mark = marks.edge(edge.id)
-        if (!mark) return edge
-        const cached = edgeCache.current.get(edge)
-        if (cached?.mark === mark) return cached.edge
-        const next: CanvasEdgeType = { ...edge, data: { ...edge.data, emphasis: mark } }
-        edgeCache.current.set(edge, { mark, edge: next })
-        return next
+        return mark ? marked(edge, mark) : edge
       }),
     [edges, marks],
   )

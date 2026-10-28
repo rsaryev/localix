@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import { ArrowLeft, Check, Plug, X } from 'lucide-react'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { Button } from '@localixai/kit/button'
@@ -56,9 +56,8 @@ export function ConnectForm({
     }))
   }, [f.isNetwork, f.manifest.capabilities.sshTunnel, f.manifest.capabilities.tls, tabIds])
 
-  useEffect(() => {
-    if (!sections.some((item) => item.id === section)) setSection('general')
-  }, [section, sections])
+  // A section that is no longer offered (the engine changed) falls back to General.
+  if (!sections.some((item) => item.id === section)) setSection('general')
 
   if (variant === 'compact') {
     return (
@@ -158,7 +157,7 @@ export function ConnectForm({
             {!edit && (
               <Button
                 size="xs"
-                variant="outline"
+                variant="ghost"
                 onClick={() => {
                   setSection('general')
                   setStep('catalogue')

@@ -29,7 +29,6 @@ import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'nod
 import { execFileSync, spawn, spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import {
-  backendField,
   hasExtensionManifest,
   isClaudeCodePluginOnly,
   localixManifestFile,
@@ -373,10 +372,10 @@ export function stageDropins({
  * left as copied.
  */
 function bundleStagedMiniAppBackend(name, { repoRoot, outMiniApps, log, onMiniAppError }) {
-  // The backend entry lives in the Localix layer: a mini app's `backend`, or a legacy `tools`.
+  // The backend entry lives in the Localix layer: a mini app's `backend`.
   const manifestPath = localixManifestFile(join(outMiniApps, name))
   if (!manifestPath) return null
-  const field = backendField(manifestPath)
+  const field = 'backend'
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
   if (typeof manifest[field] !== 'string' || !BUNDLEABLE_TOOLS_ENTRY_RE.test(manifest[field]))
     return null

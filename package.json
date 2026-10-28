@@ -1,7 +1,7 @@
 {
   "name": "localix",
   "private": true,
-  "description": "Open source Agentic Development Environment: a team of AI agents with your editor, terminals and browser. Use any model, or run one locally.",
+  "description": "Open source Agentic Development Environment: an AI agent, its subagents, your editor, terminals and browser. Use any model, or run one locally.",
   "license": "MIT",
   "workspaces": [
     "apps/*",
@@ -27,10 +27,10 @@
     "coverage": "bun scripts/coverage.mjs",
     "logs": "bun scripts/logs.mjs",
     "lint": "oxlint --type-aware",
-    "type-check": "bunx turbo type-check --concurrency=${TURBO_CONCURRENCY:-50%} ${TURBO_FILTER:-}",
+    "type-check": "bunx turbo type-check --concurrency=${TURBO_CONCURRENCY:-2} ${TURBO_FILTER:-}",
     "check:compression": "bun apps/api/scripts/check-compression.ts",
     "check:ui-startup": "bun run --cwd apps/ui check:startup",
-    "check:tests": "bunx turbo type-check:tests --concurrency=${TURBO_CONCURRENCY:-50%} ${TURBO_FILTER:-}",
+    "check:tests": "bunx turbo type-check:tests --concurrency=${TURBO_CONCURRENCY:-2} ${TURBO_FILTER:-}",
     "check:rust": "bunx turbo tauri:check",
     "check:bundle": "bun apps/desktop-tauri/scripts/prepare-sidecar.mjs && bun apps/desktop-tauri/scripts/smoke-bundle.mjs",
     "clean": "bunx turbo clean && shx rm -rf node_modules",
@@ -57,7 +57,6 @@
     "screenshots:coverage": "bun scripts/screenshots/workbench-coverage.mjs"
   },
   "devDependencies": {
-    "@localixai/mini-app-kit-compiler": "workspace:*",
     "@playwright/test": "1.64.1",
     "@types/node": "26.6.5",
     "hono": "^4.13.13",

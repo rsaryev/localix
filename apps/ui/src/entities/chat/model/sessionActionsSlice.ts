@@ -8,7 +8,6 @@ import type { ReasoningEffort } from './reasoning'
 import { patchSessionById, sessionBelongsToScope, sortSessions } from './sessionListHelpers'
 import { activateSessionBody, logCurrentChatMessages } from './sessionBodyActivation'
 import { createModelSelectionActions } from './sessionModelSelectionActions'
-import type { PartyRouteChoice } from './sessionPartyRoute'
 import { findSessionInState } from './findSession'
 import { WarmSessionBodyCache } from './sessionBodyCache'
 import { forgetSessionLocation } from './persistence'
@@ -49,26 +48,14 @@ export interface SessionActions {
   /** Reassign a chat to a project (`null` resolves to the default project on the server). */
   moveSessionToProject: (id: string, projectId: string | null) => Promise<void>
   toggleUnreadSession: (id: string) => void
-  /** See `ChatStore.setModelSelection` — `handle` names the participant the choice is for. */
+  /** See `ChatStore.setModelSelection`. */
   setModelSelection: (
     sessionId: string,
     connectionId: string,
     modelId: string,
     reasoningEffort?: ReasoningEffort,
-    agentId?: string,
   ) => Promise<void>
-  /** `agentId` names whose effort; omitted, it is the conversation's own participant. */
-  setReasoningEffort: (
-    sessionId: string,
-    reasoningEffort: ReasoningEffort,
-    agentId?: string,
-  ) => Promise<void>
-  /** "All": the same route for every listed agent, as one server write (`sessionPartyRoute.ts`). */
-  applyPartyRoute: (
-    sessionId: string,
-    choice: PartyRouteChoice,
-    agentIds?: readonly string[],
-  ) => Promise<void>
+  setReasoningEffort: (sessionId: string, reasoningEffort: ReasoningEffort) => Promise<void>
 }
 
 export function createSessionActions({
@@ -126,8 +113,7 @@ export function createSessionActions({
       // Scope (activeProjectId) is URL-driven and set ONLY by the URL→store sync
       // (selectProject). selectSession never writes it: the single-scope invariant
       // is upheld by always navigating to a session's OWN scope (goToSession is
-      // called with `{ project: session.projectId }`, and the legacy `/chat/:id`
-      // redirect resolves the project before navigating). We still remember this
+      // called with `{ project: session.projectId }`). We still remember this
       // session as the scope's last-active chat.
       // A warm hit already performed the switch. Reconcile it only while it is
       // still selected; if navigation moved on during the RPC, retain the fresh
@@ -208,12 +194,10 @@ export function createSessionActions({
         // chat) must not cost the user their New chat. An INHERITED one is a guess, so it
         // retries without it; a caller that NAMED one meant it, and that failure is theirs.
         const session = agentId
-          ? await backendClient
-              .createSession({ ...request, agentIds: [agentId] })
-              .catch((error: unknown) => {
-                if (!plan.fallbackWhenAgentUnavailable || !isAgentUnavailable(error)) throw error
-                return backendClient.createSession(request)
-              })
+          ? await backendClient.createSession({ ...request, agentId }).catch((error: unknown) => {
+              if (!plan.fallbackWhenAgentUnavailable || !isAgentUnavailable(error)) throw error
+              return backendClient.createSession(request)
+            })
           : await backendClient.createSession(request)
         drafts.remember(session, targetProjectId)
         customSet((current) => ({

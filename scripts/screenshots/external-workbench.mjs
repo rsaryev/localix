@@ -41,7 +41,7 @@ export async function seedExternal(fixture) {
     const session = await api('/sessions', {
       title: 'Drive Claude Code through the terminal',
       projectId: project.id,
-      agentIds: ['builtin:localix'],
+      agentId: 'builtin:localix',
     })
     fixture.externalSessionId = session.id
   }
@@ -117,7 +117,7 @@ export async function composeExternal(page, scenario) {
       await api(`/terminal/${terminal.id}`, undefined, 'DELETE')
   }
   await page.goto(`${uiOrigin}/#/project/${fixture.externalProjectId}/${fixture.externalSessionId}`)
-  await button(page, 'Add participant').waitFor()
+  await page.getByRole('combobox', { name: 'Message', exact: true }).last().waitFor()
   await button(page, 'Terminal').click()
   const input = page.getByRole('textbox', { name: 'Terminal input' })
   await input.fill(

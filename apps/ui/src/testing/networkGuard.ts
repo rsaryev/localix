@@ -2,12 +2,17 @@ import { beforeEach } from 'bun:test'
 
 const GUARDED = Symbol.for('localix.test.networkGuard')
 
+let installed = false
+
+/** Whether this process loaded the UI preload. A run from the repository root does not. */
+export const networkGuardInstalled = (): boolean => installed
+
 type Fetch = typeof globalThis.fetch
 
 function requestUrl(input: Parameters<Fetch>[0]): string {
   if (typeof input === 'string') return input
   if (input instanceof URL) return input.href
-  return (input as { url?: string }).url ?? String(input)
+  return input.url
 }
 
 /** Only in-memory schemes may pass; anything that would open a socket fails fast. */
@@ -15,7 +20,9 @@ function isOffline(url: string): boolean {
   return /^(data|blob):/i.test(url)
 }
 
-function guard(fetchImpl: Fetch): Fetch {
+/** Wrap `fetchImpl` so only in-memory schemes pass; a fetch that is already guarded is returned
+ *  unchanged. */
+export function guard(fetchImpl: Fetch): Fetch {
   if ((fetchImpl as unknown as Record<symbol, boolean>)[GUARDED]) return fetchImpl
   const guarded = ((input: Parameters<Fetch>[0], init?: RequestInit) => {
     const url = requestUrl(input)
@@ -46,6 +53,7 @@ function guardDomFetch(): void {
  * `ECONNREFUSED` (or, worse, a silent pass against a dev API that happens to be running).
  */
 export function installNetworkGuard(): void {
+  installed = true
   globalThis.fetch = guard(globalThis.fetch)
   beforeEach(guardDomFetch)
 }

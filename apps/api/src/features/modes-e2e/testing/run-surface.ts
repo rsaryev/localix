@@ -15,7 +15,6 @@ import { createPermissionGate } from '../../agent-core/permission-engine'
 import { resolveRunProfile, type AgentSessionKind } from '../../agent-core/run-shape'
 import {
   productionCoreDeps,
-  productionExtraTools,
   productionOptionalPorts,
 } from '../../agent-core/testing/production-ports'
 import { BUILTIN_TOOL_NAMES } from '../../agent-core/tool-names'
@@ -47,7 +46,6 @@ export function planPortFor(mode: PermissionMode, presented: string[] = []): Pla
         status: 'presented' as const,
         title: input.title ?? 'Plan',
         body: input.body ?? '',
-        authorAgentId: 'agent-1',
         approvedMode: null,
         createdAt: '2026-10-03T00:00:00.000Z',
         decidedAt: null,
@@ -79,13 +77,13 @@ export function runRegistry(
   return createRuntimeToolRegistry({
     policy: {
       agentProfile: resolveRunProfile({ sessionKind }),
-      extraTools: [...productionExtraTools(), ...pluginTools],
+      extraTools: pluginTools,
       disabledTools,
     },
     core: productionCoreDeps(),
     optional: {
-      ...productionOptionalPorts({ save: async () => {} }),
-      plan,
+      ...productionOptionalPorts(),
+      Plan: plan,
     },
   })
 }
@@ -125,7 +123,7 @@ export function modeSurface(
         ownPlanDir: PLAN_DIR,
         requestConfirm: async () => {
           asked = true
-          return false
+          return { approved: false }
         },
       })
       const result = await gate({ toolCallId: 'call-1', toolName: tool.name, input })
@@ -160,7 +158,7 @@ export function expectedDecision(
   if (!onRoster) return 'removed'
   const facts = call.facts ?? {}
   const preset: Decision =
-    facts.outside || (call.tool === 'bash' && facts.dangerous) ? 'ask' : 'allow'
+    facts.outside || (call.tool === 'Bash' && facts.dangerous) ? 'ask' : 'allow'
   switch (mode) {
     case 'default':
       return preset

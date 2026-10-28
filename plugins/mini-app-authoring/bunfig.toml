@@ -1,0 +1,5 @@
+[test]
+# While the plugin lives in the Localix repository its tests run on the repository's clean machine:
+# no GIT_* variables, no network, a HOME of their own. Outside it, drop this line; `bun test` in
+# this folder is the only thing that reads it, never the `mini-app` command.
+preload = ["../../packages/testing/src/preload/index.ts"]

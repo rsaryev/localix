@@ -54,7 +54,8 @@ describe('tool I/O actions', () => {
     const { registerInspectorHandler } = await import('@/shared/lib/inspectorBus')
     const { WorkItemSessionProvider } = await import('@localixai/mini-app-sdk/ui/work-item-session')
     const { useChatStore } = await import('../../model/store')
-    const { FileLink, LinkedText } = await import('./ToolIO')
+    const { FileLink } = await import('./ToolIO')
+    const { LinkedText } = await import('./LinkedText')
     const calls: Array<{ kind: string; sessionId?: string; path?: string; line?: number }> = []
     const unregister = registerInspectorHandler((request) => calls.push(request))
     const host = document.createElement('div')
@@ -143,7 +144,7 @@ describe('tool I/O actions', () => {
     try {
       await act(async () =>
         root.render(
-          <div onClick={() => rowCalls++}>
+          <div role="presentation" onClick={() => rowCalls++}>
             <ToolHeaderAction icon={GitCompare} label="Open diff" onClick={() => actionCalls++} />
           </div>,
         ),

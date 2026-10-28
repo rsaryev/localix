@@ -96,8 +96,16 @@ export function startModVm(options: ModVmOptions): ModVm {
   const { clock } = options
   let dead = false
   let pending = 0
-  const reports = createRateLimit({ max: REPORTS.max, windowMs: REPORTS.windowMs, now: clock.now })
-  const lines = createRateLimit({ max: LINES.max, windowMs: LINES.windowMs, now: clock.now })
+  const reports = createRateLimit({
+    max: REPORTS.max,
+    windowMs: REPORTS.windowMs,
+    now: () => clock.now(),
+  })
+  const lines = createRateLimit({
+    max: LINES.max,
+    windowMs: LINES.windowMs,
+    now: () => clock.now(),
+  })
   const print = options.print ?? printToConsole
 
   const report = (message: string) => {

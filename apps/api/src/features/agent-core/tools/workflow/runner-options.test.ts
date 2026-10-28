@@ -33,7 +33,7 @@ function host(
 }
 
 describe('agent() options', () => {
-  test('model, effort and isolation reach the host; the host’s notes join the progress', async () => {
+  test('isolation reaches the host and a model or effort does not; the host’s notes join the progress', async () => {
     const fake = host(() => ({ text: 'ok', notes: ['kept the worktree'] }))
     const result = await runWorkflow({
       scripts,
@@ -43,7 +43,9 @@ describe('agent() options', () => {
       host: fake.host,
     })
     expect(result).toMatchObject({ ok: true, value: 'ok' })
-    expect(fake.requests[0]).toMatchObject({ model: 'haiku', effort: 'low', isolation: 'worktree' })
+    expect(fake.requests[0]).toMatchObject({ isolation: 'worktree' })
+    expect(fake.requests[0]).not.toHaveProperty('model')
+    expect(fake.requests[0]).not.toHaveProperty('effort')
     expect(fake.events).toContainEqual({ type: 'log', message: 'kept the worktree' })
   })
 

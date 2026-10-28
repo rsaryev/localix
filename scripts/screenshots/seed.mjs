@@ -2,7 +2,14 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { Database } from 'bun:sqlite'
 import { serializeMessagePayload } from '../../apps/api/src/db/payload-codec.ts'
-import { api, prepare, verifyDemoRuntime, databaseFile, fixtureFile } from './runtime.mjs'
+import {
+  api,
+  prepare,
+  verifyDemoRuntime,
+  databaseFile,
+  fixtureFile,
+  installEveryMiniApp,
+} from './runtime.mjs'
 import { createTemplateDocument } from '../../mini-apps/resume/shared/templates.ts'
 import { seedContent } from './content-workbenches.mjs'
 import { seedGames } from './game-workbenches.mjs'
@@ -12,13 +19,15 @@ import { seedPlatformViews } from './platform-views.mjs'
 import { seedPlatform } from './platform-fixture.mjs'
 import { seedAnswerBoard } from './board-fixture.mjs'
 import { ensureDemoAgents } from './demo-agents.mjs'
-import { seedPartyRoutes } from './party-route.mjs'
-import { seedCodemodeCard } from './codemode-card.mjs'
+import { seedFixtureChat } from './fixture-chat.mjs'
 import { seedUnfinishedReply } from './unfinished-reply.mjs'
+import { seedToolSections } from './tool-sections.mjs'
+import { seedAgentChildren } from './agent-children.mjs'
 import { emptyEntry } from '../../mini-apps/resume/shared/schema.ts'
 
 await verifyDemoRuntime()
 const root = await prepare()
+await installEveryMiniApp()
 const projects = await api('/projects')
 const projectList = Array.isArray(projects) ? projects : projects.projects
 const project =
@@ -35,13 +44,11 @@ if (!fixture || fixture.projectId !== project.id) {
   const session = await api('/sessions', {
     title: 'Prepare the workspace update',
     projectId: project.id,
-    agentIds: [demoAgents.localix, demoAgents.frontend, demoAgents.qa],
+    agentId: demoAgents.localix,
   })
   fixture = { root, projectId: project.id, sessionId: session.id }
 }
 const sessionRoute = (route) => `${route}?sessionId=${fixture.sessionId}`
-// Re-applied on every seed so the room's mixed models stay deterministic.
-await seedPartyRoutes(fixture.sessionId, demoAgents)
 const db = new Database(databaseFile, { strict: true })
 const messages = [
   {
@@ -53,17 +60,17 @@ const messages = [
     role: 'assistant',
     handle: 'localix',
     content:
-      'I’ll keep the plan here. @frontend reviews the interface; @qa checks the behavior.\n\n### Release checklist\n- Review the workspace layout\n- Check the mobile preview\n- Finish the release notes',
+      'I’ll keep the plan here.\n\n### Release checklist\n- Review the workspace layout\n- Check the mobile preview\n- Finish the release notes',
   },
   {
     role: 'assistant',
-    handle: 'frontend',
+    handle: 'localix',
     content:
       'The desktop and mobile layouts are ready. Source and preview share the same workspace.',
   },
   {
     role: 'assistant',
-    handle: 'qa',
+    handle: 'localix',
     content:
       'Both release states pass the checks. **Next:** finish the release notes and review the update.',
   },
@@ -205,8 +212,10 @@ await seedDeveloper(fixture)
 await seedPlatformViews(fixture)
 await seedGames(fixture)
 await seedExternal(fixture)
-await seedCodemodeCard(fixture)
+await seedFixtureChat(fixture)
 await seedUnfinishedReply(fixture)
+await seedToolSections(fixture)
+await seedAgentChildren(fixture)
 fixture.resumeId = resume.id
 fixture.connectionId = connection.id
 await fs.writeFile(fixtureFile, `${JSON.stringify(fixture, null, 2)}\n`)

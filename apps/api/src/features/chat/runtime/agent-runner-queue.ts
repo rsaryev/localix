@@ -1,3 +1,4 @@
+import type { StopResult } from '../contracts'
 import type { RuntimeState } from './agent-runner-state'
 import { runtimeRunAdmission } from './run-admission'
 import type { RunCompletion, RunExecutionOutcome } from './run-outcome'
@@ -27,7 +28,6 @@ export function createRunnerQueue({ state, wakeQueue, stopCtx }: RunnerQueueDeps
   return {
     enqueueRun: wakeQueue.enqueueRun,
     cancelAgentTurns: wakeQueue.cancelAgentTurns,
-    cancelAgentTurn: wakeQueue.cancelAgentTurn,
 
     /**
      * Reserve an idle session across an awaited cwd mutation. Reusing the drain
@@ -54,10 +54,8 @@ export function createRunnerQueue({ state, wakeQueue, stopCtx }: RunnerQueueDeps
     /**
      * Is someone waiting to be heard in this session?
      *
-     * A group turn asks this between speakers: a room with three members answers for as long as
-     * all three take, and a person who typed "stop" in the middle of that should not have to
-     * sit through the rest of it. The queue is the authority on "there is a newer turn" — the
-     * same pending-work fact every continuation yields to.
+     * The queue is the authority on "there is a newer turn" — the same pending-work fact every
+     * continuation yields to.
      */
     hasQueuedTurn(sessionId: string) {
       return Promise.resolve(wakeQueue.hasPending(sessionId))
@@ -160,6 +158,22 @@ export function createRunnerQueue({ state, wakeQueue, stopCtx }: RunnerQueueDeps
       const active = state.activeRunSessions.get(sessionId)
       if (active) await wakeQueue.cancelAgentTurns(active.userId, sessionId)
       return stopSession(stopCtx, sessionId)
+    },
+
+    /**
+     * The person's Stop: their queued messages leave the queue FIRST, so the drain the stopped
+     * run's teardown starts has nothing of theirs to deliver, and come back to be edited or sent
+     * again. Taken before the abort and returned even when the stop itself fails: they are never
+     * lost and never delivered by the stop.
+     */
+    async stopAndReturnQueued(userId: string, sessionId: string): Promise<StopResult> {
+      const returned = await wakeQueue.takeForReturn(userId, sessionId)
+      const stopped = await this.stop(sessionId).catch((error: unknown) => {
+        if (returned.length === 0) throw error
+        console.error('Stop failed; the queued messages were handed back', error)
+        return false
+      })
+      return { stopped, returned }
     },
 
     withSessionsQuiesced<T>(ids: readonly string[], operation: () => Promise<T>): Promise<T> {

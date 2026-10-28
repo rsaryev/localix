@@ -47,6 +47,12 @@ const stripAnsi = (text: string): string => text.replace(/\x1b\[[0-9;]*m/g, '')
 
 const IMAGE_MIMES = ['image/png', 'image/jpeg'] as const
 
+/** A notebook field as text: a string as is, nothing as `fallback`, anything else as JSON. */
+function scalarText(value: unknown, fallback: string): string {
+  if (typeof value === 'string') return value
+  return value === undefined || value === null ? fallback : JSON.stringify(value)
+}
+
 function renderOutput(output: Json, images: ImageContent[], attachImages: boolean): string {
   const type = output.output_type
   if (type === 'stream') {
@@ -56,7 +62,7 @@ function renderOutput(output: Json, images: ImageContent[], attachImages: boolea
     const trace = Array.isArray(output.traceback)
       ? stripAnsi(joinText(output.traceback.map((l) => `${l}\n`)))
       : ''
-    return `[error] ${String(output.ename ?? 'Error')}: ${String(output.evalue ?? '')}${trace ? `\n${clip(trace)}` : ''}`
+    return `[error] ${scalarText(output.ename, 'Error')}: ${scalarText(output.evalue, '')}${trace ? `\n${clip(trace)}` : ''}`
   }
   const data = asRecord(output.data)
   if (!data) return ''

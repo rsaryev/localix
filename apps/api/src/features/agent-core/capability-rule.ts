@@ -2,13 +2,13 @@
  * WHAT MAY RUN — one rule shape for every question, and one way to answer it.
  *
  * A capability switch and a permission rule turned out to be the same thing said twice. "The
- * `bash` tool is off here" is `tool:bash` over resource `*` with effect `deny`; "ask before
- * `git push`" is `tool:bash` over resource `git push*` with effect `ask`. Modelling them
+ * `Bash` tool is off here" is `tool:Bash` over resource `*` with effect `deny`; "ask before
+ * `git push`" is `tool:Bash` over resource `git push*` with effect `ask`. Modelling them
  * separately meant two tables, two resolvers, and two chances to disagree.
  *
  * ONE LIST, AND THE LAST MATCH WINS. There is no chain and no composition: the rules of the
  * agent whose turn it is are the whole policy. A list is ordered from general to specific —
- * `tool:bash * allow` then `tool:bash rm * deny` means "bash is fine, except rm" — so a later
+ * `tool:Bash * allow` then `tool:Bash rm * deny` means "bash is fine, except rm" — so a later
  * row is the more specific statement and it decides.
  *
  * What used to be here was a three-scope chain (global → project → agent) composed by taking
@@ -26,7 +26,7 @@ export type Effect = (typeof EFFECTS)[number]
 /**
  * One rule.
  *
- * `action` names the capability (`tool:bash`, `plugin:office`, `mcp:github/create_pr`);
+ * `action` names the capability (`tool:Bash`, `plugin:office`, `mcp:github/create_pr`);
  * `resource` narrows it to particular arguments, and `*` means the capability itself. Both
  * accept `*` wildcards, so one row can switch off a whole family: `tool:*`, `mcp:github/*`.
  */

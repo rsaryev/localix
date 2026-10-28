@@ -40,6 +40,13 @@ async function mountPage(target?: { shelf?: string }) {
   const { storeApi } = await import('@/shared/api/store-client')
   spyOn(storeApi, 'page').mockImplementation(async (query) => answer([chess, notes], query ?? {}))
   spyOn(storeApi, 'sources').mockResolvedValue({ sources: SOURCES, addable: ['mini-app'] })
+  spyOn(storeApi, 'reportWorkingSet').mockResolvedValue(undefined)
+  spyOn(storeApi, 'recommendations').mockResolvedValue({
+    listings: [],
+    matched: 0,
+    strategy: { mode: 'hybrid' },
+    pending: false,
+  })
   const { StorePage } = await import('./StorePage')
   restoreLayout = stubStoreLayout(1400)
   const host = document.createElement('div')

@@ -3,13 +3,12 @@ import { promises as fs } from 'node:fs'
 import { parseYamlFrontmatterBlock } from '../../agent-core/frontmatter-yaml'
 import { parseMarkdownFrontmatter, scalarField } from '../../agent-core/skill-discovery'
 import { collectMarkdownFiles, parseAgentFile } from '../../plugins/discovery-cc-files'
-import type { LocalixKey } from '../../plugins/contracts'
 import { buildLoadedAgent, type LoadedPluginAgent } from '../../plugins/loader-contract'
 
 /**
  * A Claude Code agent file as the catalog knows it (sub-agents.md). The format is Claude Code's:
- * a Markdown body under YAML frontmatter. What Claude Code has no place for lives under one
- * namespaced `localix:` key, which Claude Code ignores without an error.
+ * a Markdown body under YAML frontmatter. Its `model` and `effort` are not read: the person
+ * chooses those in Localix's settings.
  */
 export type AgentSource = 'managed' | 'project' | 'user' | 'plugin' | 'builtin'
 
@@ -28,11 +27,8 @@ export interface CatalogAgent extends LoadedPluginAgent {
   hooks?: unknown
   /** Frontmatter `mcpServers`, raw: names of configured servers and inline definitions. */
   mcpServers?: readonly unknown[]
-  localix: LocalixKey
   /** What the type does when delegated to: runs as the delegator (`general-purpose`). */
   self?: boolean
-  /** Another name the type answers to (`claude` for `general-purpose`). */
-  aliases?: readonly string[]
 }
 
 export const bodyHashOf = (text: string): string =>
@@ -56,18 +52,15 @@ export async function readAgentFile(
   const parsed = await parseAgentFile(file, file.replace(/^.*[\\/]/, '').replace(/\.md$/i, ''))
   if (!parsed) return null
   const yaml = parseYamlFrontmatterBlock(raw)
-  // The file's own name stays an alias of the handle it was given (`Code Reviewer` → `code-reviewer`).
   const loaded = buildLoadedAgent(source, parsed, (text) => text)
   const permissionMode = typeof yaml?.permissionMode === 'string' ? yaml.permissionMode : undefined
   return {
     ...loaded,
     fullName: parsed.name,
-    ...(parsed.name === name ? {} : { aliases: [name] }),
     source,
     projectId,
     path: file,
     bodyHash: bodyHashOf(parsed.prompt),
-    localix: loaded.localix ?? { priority: 0 },
     ...(permissionMode ? { permissionMode } : {}),
     ...(parsed.hooks !== undefined ? { hooks: parsed.hooks } : {}),
     ...(Array.isArray(parsed.mcpServers) && parsed.mcpServers.length

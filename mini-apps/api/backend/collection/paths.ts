@@ -30,8 +30,6 @@ export const COLLECTION_DIR = path.join('.localix', 'api')
 
 /** One request per file; the tree IS the folder structure. */
 export const REQUEST_EXT = '.request.json'
-/** Read-only compatibility for files written before the compound suffix was introduced. */
-export const LEGACY_REQUEST_EXT = '.json'
 
 /**
  * Segments a name may not use, whatever the filesystem would tolerate.
@@ -67,11 +65,7 @@ export function collectionFolderPath(root: string, name: string): string | null 
  */
 export function normalizeRequestName(raw: string): string | null {
   const trimmed = raw.trim().replace(/\\/g, '/')
-  const withoutExt = trimmed.endsWith(REQUEST_EXT)
-    ? trimmed.slice(0, -REQUEST_EXT.length)
-    : trimmed.endsWith(LEGACY_REQUEST_EXT)
-      ? trimmed.slice(0, -LEGACY_REQUEST_EXT.length)
-      : trimmed
+  const withoutExt = trimmed.endsWith(REQUEST_EXT) ? trimmed.slice(0, -REQUEST_EXT.length) : trimmed
   const segments = withoutExt.split('/').filter((s) => s !== '')
   if (segments.length === 0 || !segments.every(segmentIsLegal)) return null
   return segments.join('/')
@@ -97,22 +91,10 @@ export function requestFilePath(root: string, name: string): string | null {
   return resolveWithin(root, `${normalized}${REQUEST_EXT}`)
 }
 
-/** The pre-migration path for one request. Never used for new writes. */
-export function legacyRequestFilePath(root: string, name: string): string | null {
-  const normalized = normalizeRequestName(name)
-  if (normalized === null) return null
-  return resolveWithin(root, `${normalized}${LEGACY_REQUEST_EXT}`)
-}
-
 /** The name a file path under `root` stands for, or `null` when it is not one of ours. */
 export function requestNameFor(root: string, absolutePath: string): string | null {
   if (!isPathBelow(root, absolutePath)) return null
   const relative = path.relative(root, absolutePath)
-  const suffix = relative.endsWith(REQUEST_EXT)
-    ? REQUEST_EXT
-    : relative.endsWith(LEGACY_REQUEST_EXT)
-      ? LEGACY_REQUEST_EXT
-      : null
-  if (!suffix) return null
-  return normalizeRequestName(relative.slice(0, -suffix.length))
+  if (!relative.endsWith(REQUEST_EXT)) return null
+  return normalizeRequestName(relative.slice(0, -REQUEST_EXT.length))
 }

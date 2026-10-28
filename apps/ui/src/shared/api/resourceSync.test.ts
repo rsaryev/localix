@@ -1,7 +1,10 @@
 import { describe, expect, test, spyOn } from 'bun:test'
 import { createResourceSync } from './resourceSync'
 
-const tick = () => new Promise((resolve) => setTimeout(resolve, 5))
+// The sync schedules its reads with zero-delay timers, so let a few timer turns pass.
+const tick = async () => {
+  for (let i = 0; i < 6; i++) await new Promise((resolve) => setTimeout(resolve, 0))
+}
 function deferred<T>() {
   let resolve!: (value: T) => void
   const promise = new Promise<T>((done) => {

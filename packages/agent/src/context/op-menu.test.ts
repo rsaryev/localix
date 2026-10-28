@@ -6,7 +6,7 @@ const BIG = 'A'.repeat(8000)
 
 describe('heavyMutateInputs', () => {
   it('extracts the write/edit content field', () => {
-    expect(heavyMutateInputs(namedTool('write', { path: 'f.ts', content: 'hello' }))).toEqual([
+    expect(heavyMutateInputs(namedTool('Write', { path: 'f.ts', content: 'hello' }))).toEqual([
       { field: 'content', text: 'hello' },
     ])
   })
@@ -19,11 +19,11 @@ describe('heavyMutateInputs', () => {
 
   it('extracts the edits array (JSON) and the single-edit shorthand', () => {
     const edits = [{ old_string: 'a', new_string: 'b' }]
-    expect(heavyMutateInputs(namedTool('edit', { path: 'f.ts', edits }))).toEqual([
+    expect(heavyMutateInputs(namedTool('Edit', { path: 'f.ts', edits }))).toEqual([
       { field: 'edits', text: JSON.stringify(edits) },
     ])
     expect(
-      heavyMutateInputs(namedTool('edit', { path: 'f.ts', old_string: 'aaa', new_string: 'bbb' })),
+      heavyMutateInputs(namedTool('Edit', { path: 'f.ts', old_string: 'aaa', new_string: 'bbb' })),
     ).toEqual([
       { field: 'old_string', text: 'aaa' },
       { field: 'new_string', text: 'bbb' },
@@ -32,25 +32,25 @@ describe('heavyMutateInputs', () => {
 
   it("extracts a batched write's files array (JSON)", () => {
     const files = [{ path: 'a.ts', content: 'x' }]
-    expect(heavyMutateInputs(namedTool('write', { files }))).toEqual([
+    expect(heavyMutateInputs(namedTool('Write', { files }))).toEqual([
       { field: 'files', text: JSON.stringify(files) },
     ])
   })
 
   it('returns nothing for a non-mutating tool', () => {
-    expect(heavyMutateInputs(namedTool('read', { path: 'f.ts' }, { resultText: 'x' }))).toEqual([])
-    expect(heavyMutateInputs(namedTool('bash', { command: 'ls' }, { resultText: 'x' }))).toEqual([])
+    expect(heavyMutateInputs(namedTool('Read', { path: 'f.ts' }, { resultText: 'x' }))).toEqual([])
+    expect(heavyMutateInputs(namedTool('Bash', { command: 'ls' }, { resultText: 'x' }))).toEqual([])
   })
 
   it('skips already-elided content (idempotent across turns)', () => {
     expect(
-      heavyMutateInputs(namedTool('write', { path: 'f.ts', content: `[${ELISION_MARKER}]` })),
+      heavyMutateInputs(namedTool('Write', { path: 'f.ts', content: `[${ELISION_MARKER}]` })),
     ).toEqual([])
   })
 
   it('returns nothing for an item that has not completed', () => {
     expect(
-      heavyMutateInputs(namedTool('write', { path: 'f.ts', content: 'x' }, { status: 'pending' })),
+      heavyMutateInputs(namedTool('Write', { path: 'f.ts', content: 'x' }, { status: 'pending' })),
     ).toEqual([])
   })
 
@@ -84,16 +84,16 @@ describe('heavyMutateInputs', () => {
 describe('recoverableReadResult', () => {
   it('returns the model-facing result for a read-class tool', () => {
     expect(
-      recoverableReadResult(namedTool('read', { path: 'f.ts' }, { resultText: 'file body' })),
+      recoverableReadResult(namedTool('Read', { path: 'f.ts' }, { resultText: 'file body' })),
     ).toBe('file body')
-    expect(recoverableReadResult(namedTool('search', { query: 'x' }, { resultText: 'hits' }))).toBe(
+    expect(recoverableReadResult(namedTool('Search', { query: 'x' }, { resultText: 'hits' }))).toBe(
       'hits',
     )
   })
 
   it('returns undefined for a non-read tool (bash output is not re-readable)', () => {
     expect(
-      recoverableReadResult(namedTool('bash', { command: 'ls' }, { resultText: 'out' })),
+      recoverableReadResult(namedTool('Bash', { command: 'ls' }, { resultText: 'out' })),
     ).toBeUndefined()
   })
 
@@ -101,11 +101,11 @@ describe('recoverableReadResult', () => {
     // The elided case carries the marker the way `apply.ts` writes it — inside the
     // bracketed placeholder. A bare `x <marker>` is what DATA looks like, not a pointer.
     expect(
-      recoverableReadResult(namedTool('read', { path: 'f.ts' }, { resultText: '' })),
+      recoverableReadResult(namedTool('Read', { path: 'f.ts' }, { resultText: '' })),
     ).toBeUndefined()
     expect(
       recoverableReadResult(
-        namedTool('read', { path: 'f.ts' }, { resultText: `[Old tool output ${ELISION_MARKER}]` }),
+        namedTool('Read', { path: 'f.ts' }, { resultText: `[Old tool output ${ELISION_MARKER}]` }),
       ),
     ).toBeUndefined()
   })
@@ -121,7 +121,7 @@ describe('operationMenu', () => {
   })
 
   it('always starts at verbatim and is COST-STRICTLY-DECREASING (the allocator invariant)', () => {
-    const m = msg({ items: [namedTool('bash', { command: 'x' }, { resultText: BIG })] })
+    const m = msg({ items: [namedTool('Bash', { command: 'x' }, { resultText: BIG })] })
     const menu = operationMenu(m, false)
     expect(menu.length).toBeGreaterThan(1) // a lossy chain exists
     expect(menu[0].kind).toBe('verbatim')
@@ -132,7 +132,7 @@ describe('operationMenu', () => {
   })
 
   it('keeps every retention in (0, 1]', () => {
-    const m = msg({ items: [namedTool('bash', { command: 'x' }, { resultText: BIG })] })
+    const m = msg({ items: [namedTool('Bash', { command: 'x' }, { resultText: BIG })] })
     for (const op of operationMenu(m, false)) {
       expect(op.retention).toBeGreaterThan(0)
       expect(op.retention).toBeLessThanOrEqual(1)
@@ -140,7 +140,7 @@ describe('operationMenu', () => {
   })
 
   it('offers a near-lossless elide op for recoverable (write) content, cheaper than verbatim', () => {
-    const m = msg({ items: [namedTool('write', { path: 'a.ts', content: BIG }, {})] })
+    const m = msg({ items: [namedTool('Write', { path: 'a.ts', content: BIG }, {})] })
     const menu = operationMenu(m, false)
     const elide = menu.find((o) => o.kind === 'elide')
     expect(elide).toBeDefined()
@@ -151,8 +151,8 @@ describe('operationMenu', () => {
   it('stacks both stages (lossless elide + lossy chain) for a mixed message, still cost-monotonic', () => {
     const m = msg({
       items: [
-        namedTool('write', { path: 'a.ts', content: BIG }, {}),
-        namedTool('bash', { command: 'x' }, { resultText: BIG }),
+        namedTool('Write', { path: 'a.ts', content: BIG }, {}),
+        namedTool('Bash', { command: 'x' }, { resultText: BIG }),
       ],
     })
     const menu = operationMenu(m, false)

@@ -166,8 +166,9 @@ describe('the hook chain', () => {
 
   test('an event name that is no string refuses the module, and other mods still dispatch', async () => {
     const engine = await load((on) => void on('turn.start', () => 'answered'))
-    const register = ((on: (event: unknown, hook: Hook) => void) =>
-      void on(123, () => 'never')) as unknown as RegisterFunction
+    const register = ((on: (event: unknown, hook: Hook) => void) => {
+      on(123, () => 'never')
+    }) as unknown as RegisterFunction
     await expect(engine.load('bad', register, {}, {})).rejects.toThrow('takes an event name')
     expect(engine.plugins()).toEqual(['mod'])
     expect(await engine.dispatch('turn.start', {}, () => 'core')).toBe('answered')

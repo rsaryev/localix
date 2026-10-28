@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import type { ContextLimit } from '@localixai/agent'
 import { registerDom } from '@localixai/kit/testing/dom'
+import { turns } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -45,7 +46,7 @@ async function render(contextWindow: number, value: ContextLimit | undefined) {
       await React.act(async () => {
         button.focus()
         button.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
-        await new Promise((resolve) => setTimeout(resolve, 30))
+        await turns()
       })
     },
     pick: async (label: string) => {
@@ -55,7 +56,7 @@ async function render(contextWindow: number, value: ContextLimit | undefined) {
     cleanup: async () => {
       await React.act(async () => {
         root.unmount()
-        await new Promise((resolve) => setTimeout(resolve, 30))
+        await turns()
       })
       host.remove()
     },

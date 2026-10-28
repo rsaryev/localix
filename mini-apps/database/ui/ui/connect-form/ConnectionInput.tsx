@@ -10,6 +10,7 @@ import {
   SegmentedControlItem,
 } from '@localixai/mini-app-sdk/ui/segmented-control'
 import type { ConnectFormState } from './useConnectForm'
+import { focusOnMount } from '../focusOnMount'
 
 function ConnectionField({
   id,
@@ -18,7 +19,7 @@ function ConnectionField({
   onChange,
   placeholder,
   type = 'text',
-  autoFocus,
+  initialFocus,
   className,
 }: {
   id: string
@@ -27,7 +28,8 @@ function ConnectionField({
   onChange: (value: string) => void
   placeholder?: string
   type?: 'text' | 'password'
-  autoFocus?: boolean
+  /** Focus this field once, when it mounts. */
+  initialFocus?: boolean
   className?: string
 }) {
   return (
@@ -41,7 +43,7 @@ function ConnectionField({
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         type={type}
-        autoFocus={autoFocus}
+        ref={initialFocus ? focusOnMount : undefined}
         autoComplete="off"
         autoCorrect="off"
         autoCapitalize="off"
@@ -76,7 +78,6 @@ export function ConnectionInput({
         value={f.name}
         onChange={f.setName}
         placeholder={`My ${f.manifest.label}`}
-        autoFocus={false}
       />
 
       {f.isFile ? (
@@ -133,12 +134,12 @@ export function ConnectionInput({
                     else if (event.key === 'Escape' && onCancel) onCancel()
                   }}
                   placeholder={f.manifest.databaseFieldPlaceholder}
-                  autoFocus
+                  ref={focusOnMount}
                   autoComplete="off"
                   spellCheck={false}
                 />
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   onClick={() => void pickFile()}
                   className="shrink-0 text-text-soft"
                 >
@@ -199,7 +200,7 @@ export function ConnectionInput({
                 className={cn(f.urlImported && 'border-status-success/60')}
               />
               <Button
-                variant="outline"
+                variant="ghost"
                 onClick={() => f.importConnectionUrl()}
                 disabled={!f.importUrl.trim()}
                 aria-live="polite"
@@ -244,7 +245,7 @@ export function ConnectionInput({
                 changed()
               }}
               placeholder="localhost"
-              autoFocus
+              initialFocus
             />
             <ConnectionField
               id={`${fid}-port`}

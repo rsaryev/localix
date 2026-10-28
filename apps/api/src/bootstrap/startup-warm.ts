@@ -1,5 +1,4 @@
-import { resolveDefaultUserId, userHome } from '../lib/env'
-import { retireLegacyPluginCopies } from '../features/mini-apps/legacy-plugin-copies'
+import { resolveDefaultUserId } from '../lib/env'
 import type { InfraPhase } from './infra'
 import type { DomainServicesPhase } from './domain-services'
 
@@ -25,15 +24,8 @@ export function createStartupWarm({
   Pick<DomainServicesPhase, 'pluginService' | 'miniAppService'>): () => void {
   return (): void => {
     const userId = resolveDefaultUserId()
-    // The managed mini app copies earlier builds kept among the plugins go first, then plain-text
-    // secrets an older build stored move to the vault (`plugins/service-config.ts`).
-    void retireLegacyPluginCopies(userHome())
-      .then((removed) => {
-        if (removed.length) logger.info({ event: 'mini_apps.legacy_copies_removed', removed })
-      })
-      .catch(() => {})
-      .then(() => pluginService.reconcileStoredConfig(userId))
-      .then(() => pluginService.listPlugins(userId, { projectId: null }))
+    void pluginService
+      .listPlugins(userId, { projectId: null })
       .then((result) => logger.debug({ event: 'startup.warm', plugins: result.plugins.length }))
       .catch(() => {})
     void miniAppService

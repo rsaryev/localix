@@ -17,6 +17,8 @@ export interface StoreProject {
 export interface StoreScope {
   client: StoreClient
   project: StoreProject | null
+  /** The chat open beside the Store, whose workspace the open tabs are read in. */
+  sessionId: string | null
   /** Open a listing's page, marked at one of its components. */
   open: (listing: Listing | ListingRef, focus?: Pick<StoreComponent, 'kind' | 'name'>) => void
   /** Open an installed listing's page on its Settings tab. */

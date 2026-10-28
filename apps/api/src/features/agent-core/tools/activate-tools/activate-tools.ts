@@ -17,13 +17,65 @@ export function buildDeferredEntry(tool: AgentTool, source: string): DeferredToo
 const MAX_TOOLS_PER_ACTIVATION = 8
 const MAX_DESCRIPTION_LENGTH = 100
 
+const DEFAULT_MATCHES = 5
+
+/** Claude Code's ToolSearch: `select:<names>` loads those tools, other words the best matches. */
 const inputSchema = z.object({
-  names: z
-    .array(z.string().trim().min(1))
+  query: z
+    .string()
+    .trim()
+    .min(1)
+    .describe(
+      '"select:A,B" loads those tools by exact name (an MCP tool also as mcp__server__tool); other words load the catalog entries that best match them.',
+    ),
+  max_results: z
+    .number()
+    .int()
     .min(1)
     .max(MAX_TOOLS_PER_ACTIVATION)
-    .describe('Exact tool names from the catalog, or an MCP tool as mcp__server__tool.'),
+    .optional()
+    .describe(`How many matches keywords load (default ${DEFAULT_MATCHES}).`),
 })
+
+type ActivateInput = z.infer<typeof inputSchema>
+
+/** The names a `select:` query asks for, or `undefined` for a keyword query. */
+const selected = (query: string): string[] | undefined =>
+  query.startsWith('select:')
+    ? query
+        .slice('select:'.length)
+        .split(',')
+        .map((name) => name.trim())
+        .filter(Boolean)
+        .slice(0, MAX_TOOLS_PER_ACTIVATION)
+    : undefined
+
+/**
+ * The entries keywords match best: a word in the name counts more than one in the description, and
+ * a `+word` must be in the name, as in Claude Code's ToolSearch.
+ */
+function matching(
+  entries: readonly DeferredToolEntry[],
+  query: string,
+  limit: number,
+): DeferredToolEntry[] {
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean)
+  const required = words.filter((word) => word.startsWith('+')).map((word) => word.slice(1))
+  const scored = entries.map((entry) => {
+    const name = `${shownName(entry.tool)} ${entry.tool.name}`.toLowerCase()
+    const text = `${entry.tool.description ?? ''} ${entry.source}`.toLowerCase()
+    if (!required.every((word) => name.includes(word))) return { entry, score: 0 }
+    const score = words
+      .map((word) => word.replace(/^\+/, ''))
+      .reduce((sum, word) => sum + (name.includes(word) ? 2 : text.includes(word) ? 1 : 0), 0)
+    return { entry, score }
+  })
+  return scored
+    .filter(({ score }) => score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map(({ entry }) => entry)
+}
 
 export interface ActivateToolsDetails {
   activated: string[]
@@ -106,17 +158,21 @@ export function createActivateToolsTool(options: ActivateToolsToolOptions) {
   // Seeded from the session, so a name activated on an earlier turn is reported as already active
   // rather than re-announced — and the model is told the truth either way.
   const active = new Set<string>(options.sessionActive ?? [])
-  // Advertising tools already on the wire invites redundant activation calls, especially for an
-  // open plugin's tools. Keep the full registry for validation, but offer only deferred names.
+  // What is still deferred, for an answer that lists it (an unknown name) and for `details`.
   const deferredEntries = () => entries.filter((entry) => !active.has(entry.tool.name))
-  const catalog = renderToolCatalog(deferredEntries())
+  // The description lists EVERY external tool, active or not. This tool sits in the tool list the
+  // provider's prompt cache is keyed on, and the run that activates a tool keeps the list it began
+  // with: a catalog that shrank as tools were activated would make the next run's list differ from
+  // that run's last request, and rewrite the whole cached prefix once more for nothing. The text
+  // below says a tool already in the list is active, and `Already active` answers a repeat.
+  const catalog = renderToolCatalog(entries)
 
-  return defineAgentTool<z.infer<typeof inputSchema>, ActivateToolsDetails>({
+  return defineAgentTool<ActivateInput, ActivateToolsDetails>({
     name: ACTIVATE_TOOLS_TOOL_NAME,
     label: 'Activate tools',
     activeVerb: 'Activating tools',
     description: [
-      'Activate plugin or MCP tools by exact name (an MCP tool also by its mcp__server__tool address): their full schemas arrive on the next model turn and stay for the session. A tool already in your tool list is active — call it directly.',
+      'Load the tools listed below, built-in, plugin or MCP: "select:A,B" by exact name (an MCP tool also by its mcp__server__tool address), or keywords for the best matches. Their full schemas arrive on the next model turn and stay for the session. A tool already in your tool list is active — call it directly, whatever this catalog shows.',
       catalog
         ? `Select at most ${MAX_TOOLS_PER_ACTIVATION} names from this catalog:\n${catalog}`
         : 'No tools remain to activate. Call the tools in your tool list directly.',
@@ -131,6 +187,11 @@ export function createActivateToolsTool(options: ActivateToolsToolOptions) {
     // Runtime adapters use this declarative marker to reveal the activated model schemas.
     activatesTools: true,
     async execute(_toolCallId, input) {
+      const names =
+        selected(input.query) ??
+        matching(entries, input.query, input.max_results ?? DEFAULT_MATCHES).map(
+          (entry) => entry.tool.name,
+        )
       const activated: string[] = []
       const alreadyActive: string[] = []
       const unknown: string[] = []
@@ -138,8 +199,8 @@ export function createActivateToolsTool(options: ActivateToolsToolOptions) {
       const renamed: string[] = []
       const requested = [
         ...new Set(
-          input.names.map((raw) => {
-            const name = raw.trim()
+          names.map((requested) => {
+            const name = requested.trim()
             const modelNamed = nameByModelName.get(name)
             if (modelNamed) return modelNamed
             // `mcp__server__tool` names the tool whose own name is `mcp_server_tool`.
@@ -194,6 +255,10 @@ export function createActivateToolsTool(options: ActivateToolsToolOptions) {
       if (unknown.length > 0) {
         lines.push(`Unknown tool names: ${unknown.join(', ')}.`)
         lines.push('Current available tools (copy names exactly):')
+        lines.push(renderToolCatalog(deferredEntries()))
+      }
+      if (names.length === 0) {
+        lines.push(`No tool matches "${input.query}". Load one by name with "select:<name>":`)
         lines.push(renderToolCatalog(deferredEntries()))
       }
 

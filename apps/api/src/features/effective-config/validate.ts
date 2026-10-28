@@ -1,4 +1,4 @@
-import { BUILTIN_TOOL_NAMES, isProtocolTool } from '../agent-core/tool-names'
+import { BUILTIN_TOOL_NAMES } from '../agent-core/tool-names'
 import type { AgentSettings } from '../user/contracts'
 import type { ProjectSettings } from '../projects/contracts'
 import type {
@@ -86,7 +86,6 @@ export function computeToolSurface(input: {
   // into `disabledTools` by the capability resolver. A per-session "economy mode" used to add a
   // second, invisible one — a tool could be ON in Capabilities and absent from the turn.
   for (const name of input.disabledTools) {
-    if (isProtocolTool(name)) continue
     if (denialByName.has(name)) continue
     denialByName.set(name, {
       name,

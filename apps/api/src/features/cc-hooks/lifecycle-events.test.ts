@@ -31,12 +31,11 @@ describe('external lifecycle event translation', () => {
 
   test('each added gate event rejects with the effect of its native control point', () => {
     const no = { ok: false, reason: 'r' }
-    // A task-board write is refused like a tool call; a member is sent back to work.
+    // A task-board write is refused like a tool call.
     expect(mapPromptOutcome('TaskCreated', no)).toEqual({
       permissionDecision: 'deny',
       permissionDecisionReason: 'r',
     })
-    expect(mapPromptOutcome('TeammateIdle', no)).toEqual({ decision: 'block', reason: 'r' })
     // An expansion and a tool batch are rejected as input: the turn does not go on.
     expect(mapPromptOutcome('UserPromptExpansion', no)).toEqual({ blocked: true, blockReason: 'r' })
     expect(mapPromptOutcome('PostToolBatch', no)).toEqual({ blocked: true, blockReason: 'r' })

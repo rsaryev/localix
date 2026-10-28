@@ -96,7 +96,7 @@ describe('takeSteering reaches the model inside the same run', () => {
     })
     // A slow consumer: each event takes time to handle, as persistence does in the host.
     for await (const event of run) {
-      await new Promise((resolve) => setTimeout(resolve, 5))
+      for (let turn = 0; turn < 3; turn++) await new Promise((resolve) => setTimeout(resolve, 0))
       if (event.type === 'turn_end') handledTurnEnds += 1
     }
     // Asked before the first request and once after each turn's end — never twice at one
@@ -120,7 +120,7 @@ describe('takeSteering reaches the model inside the same run', () => {
       }
     })()
     for (const expected of [[0], [0, 1]]) {
-      await Bun.sleep(60)
+      for (let turn = 0; turn < 20; turn++) await new Promise((resolve) => setTimeout(resolve, 0))
       expect(observed).toEqual(expected)
       release()
     }
@@ -129,9 +129,11 @@ describe('takeSteering reaches the model inside the same run', () => {
 
     const asked: number[] = []
     const stopped = start([call('work'), say('done')], { takeSteering: () => (asked.push(1), []) })
-    setTimeout(() => stopped.run.abort('stop'), 5)
     for await (const event of stopped.run) {
-      if (event.type === 'turn_end') await new Promise((resolve) => setTimeout(resolve, 50))
+      if (event.type !== 'turn_end') continue
+      // The stop lands while the host is still handling this turn's end.
+      stopped.run.abort('stop')
+      for (let turn = 0; turn < 10; turn++) await new Promise((resolve) => setTimeout(resolve, 0))
     }
     expect((await stopped.run.result).terminal).toBe('aborted')
     expect(asked.length).toBeLessThanOrEqual(1)

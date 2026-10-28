@@ -21,14 +21,14 @@ describe("a plugin command's allowed-tools", () => {
   test('a Bash(...) pattern pre-approves only the commands it names, not the whole shell', async () => {
     const grants = await grantsOf('allowed-tools: Bash(git add:*), Bash(git commit:*)')
 
-    expect(grants.some((rule) => rule.permission === 'bash' && rule.pattern === '*')).toBe(false)
-    expect(grants.filter((rule) => rule.permission === 'bash').length).toBeGreaterThan(0)
+    expect(grants.some((rule) => rule.permission === 'Bash' && rule.pattern === '*')).toBe(false)
+    expect(grants.filter((rule) => rule.permission === 'Bash').length).toBeGreaterThan(0)
   })
 
   test('a bare tool name still pre-approves the tool', async () => {
     const grants = await grantsOf('allowed-tools: Read, Grep')
 
-    expect(grants).toContainEqual({ action: 'allow', permission: 'read', pattern: '*' })
-    expect(grants).toContainEqual({ action: 'allow', permission: 'search', pattern: '*' })
+    expect(grants).toContainEqual({ action: 'allow', permission: 'Read', pattern: '*' })
+    expect(grants).toContainEqual({ action: 'allow', permission: 'Search', pattern: '*' })
   })
 })

@@ -1,5 +1,5 @@
 /**
- * Admission limits for child work (`tools/delegate.ts`).
+ * Admission limits for child work (`tools/agent/agent-tool.ts`).
  *
  * WHY THIS EXISTS: one session issued delegations without any bound and reached 782
  * sub-sessions. The observable failure was not "too many agents" in the abstract — it
@@ -32,11 +32,13 @@
 /**
  * How many child sessions of one parent may RUN concurrently; the rest wait in its lanes.
  *
- * A cap in the 2–5 band is where concurrent agent work stops paying: above it the wall-clock
- * gain is eaten by the provider rate limits and local resource contention the concurrency itself
- * causes — which is precisely what the incident measured.
+ * Ten, because a fan-out is the point of subagents and the work the cap guards against is a
+ * runaway, not a handful: what broke was 154 runs inside one minute, an order of magnitude above
+ * this. Codex bounds its agent threads at six by default; ten keeps a wide review or audit in one wave and still holds the provider's
+ * rate limits and the machine's sockets well inside what the incident exhausted. A lower cap made
+ * the fourth child of an ordinary fan-out wait behind the first for a whole run.
  */
-export const DELEGATION_SLOT_CAP = 3
+export const DELEGATION_SLOT_CAP = 10
 
 /**
  * How many NEW child sessions an agent may create since the person last wrote in the conversation.
@@ -81,8 +83,8 @@ export function admitDelegation(
     return {
       ok: false,
       reason:
-        `You have started ${created} new delegated tasks since the user last wrote, which is the limit of ${budget.maxPerHumanTurn} per user message. ` +
-        'Give follow-up work to the children you already have with `delegate` action:"message" — that creates none — or do the rest yourself. ' +
+        `You have started ${created} new subagents since the user last wrote, which is the limit of ${budget.maxPerHumanTurn} per user message. ` +
+        'Give follow-up work to the subagents you already have with `SendMessage` — that starts none — or do the rest yourself. ' +
         'The limit resets when the user writes again.',
     }
   }

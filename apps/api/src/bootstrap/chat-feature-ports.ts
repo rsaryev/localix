@@ -1,13 +1,13 @@
 import { capabilityStores } from './capability-stores'
 import type { Kysely } from 'kysely'
 import type { AppDatabase } from '../db/types'
+import { createAvailabilityWriter } from '../features/capabilities/availability'
 import { createCapabilitySourceRepository } from '../features/capabilities/source-repository'
 import { capabilitiesChanged } from '../features/capabilities/revision'
 import type { ChatFeaturePorts } from '../features/chat/feature-ports'
 import { createContextStoreRepository } from '../features/context-store/repository'
 import { createFileWatchService } from '../features/fs-watch/service'
 import { createMcpRepository } from '../features/mcp/repository'
-import { createMemoryRepository } from '../features/memory/repository'
 import { createPluginService, type PluginService } from '../features/plugins/service'
 import { createMiniAppService, type MiniAppService } from '../features/mini-apps/service'
 import { createProjectsRepository } from '../features/projects/repository'
@@ -58,10 +58,10 @@ export function createChatFeaturePorts(
     })
   return {
     usageRepo: createUsageRepository(db),
-    memoryRepo: createMemoryRepository(db),
     userProfileRepo: createUserProfileRepository(db),
     projectsRepo,
     mcpRepo: createMcpRepository(db),
+    availabilityWriter: createAvailabilityWriter(db),
     pluginRepo: createCapabilitySourceRepository(db, 'plugin'),
     miniAppRepo: createCapabilitySourceRepository(db, 'mini-app'),
     contextStore: createContextStoreRepository(db),

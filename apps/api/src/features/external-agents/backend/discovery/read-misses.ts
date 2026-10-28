@@ -24,7 +24,7 @@ export async function readMisses(
 ): Promise<ReadMisses> {
   const folds = new Map<string, SummaryFold>()
   if (misses.length === 0) return { summaries: [], folds }
-  const fold = adapter.foldSummary
+  const fold = adapter.foldSummary?.bind(adapter)
   if (!fold) return { summaries: await adapter.readSummaries(misses, env), folds }
   const read = await mapConcurrent(misses, FOLD_CONCURRENCY, (ref) => {
     const summary = previous.get(ref.nativeSessionId)

@@ -19,7 +19,7 @@ afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true })
 })
 
-const SEAT = { userId: 'u1', sessionId: 's1' }
+const CHAT = { userId: 'u1', sessionId: 's1' }
 const AT = '2026-10-20T10:00:00.000Z'
 
 /** A decision host that answers each ask with `pick`, or with `outcome` when it misses. */
@@ -70,12 +70,12 @@ describe('against the decision model', () => {
     const model = decisions(() => 'paper')
     const { games, woke } = setup(model.host)
     // The request does not wait for the model: the person's pick is back with the model thinking.
-    const moved = await games.personMove(SEAT, 'rock')
+    const moved = await games.personMove(CHAT, 'rock')
     expect(moved.round.you?.value).toBe('rock')
     expect(moved.round.agent).toBeNull()
     expect(moved.waiting).toMatchObject({ status: 'thinking' })
     await games.settled()
-    const game = await games.read(SEAT)
+    const game = await games.read(CHAT)
     expect(game.opponent).toBe('decision')
     expect(game.round.outcome).toBe('lost')
     expect(game.round.agent?.value).toBe('paper')
@@ -89,10 +89,10 @@ describe('against the decision model', () => {
   test('the model never sees the person’s move of the round in play', async () => {
     const model = decisions(() => 'paper')
     const { games } = setup(model.host)
-    await games.personMove(SEAT, 'scissors')
+    await games.personMove(CHAT, 'scissors')
     await games.settled()
-    await games.nextRound(SEAT, 'you')
-    await games.personMove(SEAT, 'rock')
+    await games.nextRound(CHAT, 'you')
+    await games.personMove(CHAT, 'rock')
     await games.settled()
     const [first, second] = model.asked.map(({ ask }) => ask.state)
     // What the state may hold: the rules, the finished rounds, the score and the round's number.
@@ -114,11 +114,11 @@ describe('against the decision model', () => {
 
   test('when the model opens, its move is sealed and the person sees only the digest', async () => {
     const { games } = setup(decisions(() => 'rock').host)
-    await games.personMove(SEAT, 'paper')
+    await games.personMove(CHAT, 'paper')
     await games.settled()
-    await games.nextRound(SEAT, 'agent')
+    await games.nextRound(CHAT, 'agent')
     await games.settled()
-    const view = viewFor(await games.read(SEAT), 'you')
+    const view = viewFor(await games.read(CHAT), 'you')
     expect(view.round.mine).toBeNull()
     expect(view.round.theirs).toMatchObject({ revealed: false })
     expect(JSON.stringify(view.round)).not.toContain('rock')
@@ -127,53 +127,53 @@ describe('against the decision model', () => {
   test('a miss leaves the move owed, with the reason the table shows, and Ask again retries', async () => {
     let answer: string | DecisionOutcome = { status: 'deadline', ms: 3000 }
     const { games } = setup(decisions(() => answer).host)
-    await games.personMove(SEAT, 'rock')
+    await games.personMove(CHAT, 'rock')
     await games.settled()
-    const missed = await games.read(SEAT)
+    const missed = await games.read(CHAT)
     expect(missed.round.agent).toBeNull()
     expect(missed.waiting).toMatchObject({
       status: 'unreachable',
       reason: 'The decision model did not answer in time.',
     })
     answer = 'scissors'
-    await games.remind(SEAT)
+    await games.remind(CHAT)
     await games.settled()
-    expect((await games.read(SEAT)).round.outcome).toBe('won')
+    expect((await games.read(CHAT)).round.outcome).toBe('won')
   })
 
-  test('switching while the other seat owes a move asks the new opponent at once', async () => {
+  test('switching while the other side owes a move asks the new opponent at once', async () => {
     const { games, woke } = setup(decisions(() => 'rock').host)
-    await games.setOpponent(SEAT, 'agent')
-    await games.personMove(SEAT, 'paper')
+    await games.setOpponent(CHAT, 'agent')
+    await games.personMove(CHAT, 'paper')
     expect(woke).toHaveLength(1)
-    await games.setOpponent(SEAT, 'decision')
+    await games.setOpponent(CHAT, 'decision')
     await games.settled()
-    const game = await games.read(SEAT)
+    const game = await games.read(CHAT)
     expect(game.round.outcome).toBe('won')
   })
 
   test('a new table plays the decision model when one can answer, else the agent', async () => {
-    expect((await setup(decisions(() => 'rock').host).games.read(SEAT)).opponent).toBe('decision')
+    expect((await setup(decisions(() => 'rock').host).games.read(CHAT)).opponent).toBe('decision')
     const none: DecisionHost = {
       available: async () => null,
       decide: async () => ({ status: 'unavailable', ms: 0 }),
     }
-    expect((await setup(none).games.read(SEAT)).opponent).toBe('agent')
-    expect((await setup().games.read(SEAT)).opponent).toBeNull()
+    expect((await setup(none).games.read(CHAT)).opponent).toBe('agent')
+    expect((await setup().games.read(CHAT)).opponent).toBeNull()
   })
 
   test('a chosen opponent stays chosen from round to round', async () => {
     const { games } = setup(decisions(() => 'rock').host)
-    await games.setOpponent(SEAT, 'agent')
-    expect((await games.nextRound(SEAT)).opponent).toBe('agent')
+    await games.setOpponent(CHAT, 'agent')
+    expect((await games.nextRound(CHAT)).opponent).toBe('agent')
   })
 
   test('the agent cannot move for the model, and a round it opens lets the user open', async () => {
     const { games } = setup(decisions(() => 'rock').host)
-    await games.read(SEAT)
-    await expect(games.agentMove(SEAT, 'rock')).rejects.toThrow(
+    await games.read(CHAT)
+    await expect(games.agentMove(CHAT, 'rock')).rejects.toThrow(
       'The decision model plays your side',
     )
-    expect((await games.agentNextRound(SEAT, 'agent')).round.first).toBe('you')
+    expect((await games.agentNextRound(CHAT, 'agent')).round.first).toBe('you')
   })
 })

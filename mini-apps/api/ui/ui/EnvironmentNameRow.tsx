@@ -2,6 +2,7 @@ import { Check, Copy, Layers, Pencil, X } from 'lucide-react'
 import { IconButton } from '@localixai/kit/icon-button'
 import { Input } from '@localixai/kit/input'
 import type { Panel } from '../model/useEnvironmentDraft'
+import { focusOnMount } from './focusOnMount'
 
 /** The open environment's name: typed for a new one; shown, renamed or copied for a saved one. */
 export function EnvironmentNameRow({
@@ -26,7 +27,7 @@ export function EnvironmentNameRow({
       {panel.kind === 'new' ? (
         <Input
           size="lg"
-          autoFocus
+          ref={focusOnMount}
           value={panel.name}
           placeholder="Environment name, e.g. production"
           aria-label="Environment name"
@@ -37,7 +38,7 @@ export function EnvironmentNameRow({
           {renameDraft !== null ? (
             <>
               <Input
-                autoFocus
+                ref={focusOnMount}
                 size="md"
                 aria-label={`Rename ${panel.name}`}
                 className="h-7 min-w-0 flex-1"

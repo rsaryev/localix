@@ -26,35 +26,6 @@ const DEFS: RailItemDef[] = [
   { id: 'utility:reset', defaultArea: 'status' },
 ]
 
-it('restores old forced mini app overflow once and retains new explicit unpins', () => {
-  const defs: RailItemDef[] = [
-    { id: 'reader', defaultArea: 'bar', miniApp: true },
-    { id: 'game-one', defaultArea: 'bar', miniApp: true },
-    { id: 'files', defaultArea: 'top' },
-    { id: 'usage', defaultArea: 'bar', tool: true },
-    { id: 'vault', defaultArea: 'bar', tool: true },
-  ]
-  const legacy = parseRailLayout(
-    JSON.stringify({
-      v: 5,
-      entries: [
-        { id: 'reader', area: 'overflow' },
-        { id: 'files', area: 'bottom' },
-        { id: 'usage', area: 'bottom' },
-        { id: 'vault', area: 'overflow' },
-      ],
-    }),
-    true,
-  )
-  expect(resolveRailAreas(defs, legacy).bar).toEqual(['reader', 'usage', 'game-one'])
-  expect(resolveRailAreas(defs, legacy).bottom).toEqual(['files'])
-  const unpinned = moveRailItem(defs, legacy, 'reader', 'overflow', 0)
-  const restored = parseRailLayout(serializeRailLayout(unpinned), true)
-  expect(resolveRailAreas(defs, restored).bar).toEqual(['usage', 'game-one'])
-  expect(resolveRailAreas(defs, restored).overflow).toEqual(['reader', 'vault'])
-  expect(resolveRailAreas(defs, restored).bottom).toEqual(['files'])
-})
-
 describe('resolveRailAreas · non-placeable entries', () => {
   // Entries explicitly marked non-placeable must ignore saved visible placements.
   const DEFS_WITH_MINI_APP: RailItemDef[] = [
@@ -292,7 +263,7 @@ describe('computeDropIndex', () => {
   })
 })
 
-describe('parseRailLayout (migration)', () => {
+describe('parseRailLayout', () => {
   it('returns null for empty / malformed input', () => {
     expect(parseRailLayout(null)).toBeNull()
     expect(parseRailLayout('')).toBeNull()
@@ -320,49 +291,12 @@ describe('parseRailLayout (migration)', () => {
     })
   })
 
-  it('moves legacy reset and keep-awake utilities to the status bar', () => {
-    const v4 = JSON.stringify({
-      v: 4,
-      entries: [
-        { id: 'reset-layout', area: 'bottom' },
-        { id: 'keep-awake', area: 'bottom' },
-      ],
-    })
-    expect(parseRailLayout(v4)).toEqual({
-      entries: [
-        { id: 'reset-layout', area: 'status' },
-        { id: 'keep-awake', area: 'status' },
-      ],
-    })
-  })
-
-  it('migrates a legacy order-only array to all-pinned', () => {
-    expect(parseRailLayout('["viewlet:notes","section:files"]')).toEqual({
-      entries: [
-        { id: 'viewlet:notes', area: 'bar' },
-        { id: 'section:files', area: 'bar' },
-      ],
-    })
-  })
-
-  it('migrates a legacy {order,hidden} shape', () => {
-    const raw = JSON.stringify({ order: ['section:files'], hidden: ['viewlet:stats'] })
-    expect(parseRailLayout(raw)).toEqual({
-      entries: [
-        { id: 'section:files', area: 'bar' },
-        { id: 'viewlet:stats', area: 'overflow' },
-      ],
-    })
-  })
-
-  it('migrates a legacy {bar,overflow} shape and drops bad ids', () => {
-    const raw = JSON.stringify({ bar: ['section:files', 42, ''], overflow: ['viewlet:stats'] })
-    expect(parseRailLayout(raw)).toEqual({
-      entries: [
-        { id: 'section:files', area: 'bar' },
-        { id: 'viewlet:stats', area: 'overflow' },
-      ],
-    })
+  it('drops a layout saved under another version or shape', () => {
+    expect(
+      parseRailLayout(JSON.stringify({ v: 4, entries: [{ id: 'a', area: 'bar' }] })),
+    ).toBeNull()
+    expect(parseRailLayout('["viewlet:notes","section:files"]')).toBeNull()
+    expect(parseRailLayout(JSON.stringify({ order: ['section:files'] }))).toBeNull()
   })
 
   it('round-trips through serialize', () => {

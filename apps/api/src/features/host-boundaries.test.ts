@@ -2,9 +2,9 @@
  * THE boundaries: features a host ASKS must not import the host that asks them — `features/chat`
  * — not even a type.
  *
- *   - `agents` answers who may be seated, which model a card names, who leads. The two used to
+ *   - `agents` answers who may be used, which model a card names, who leads. The two used to
  *     import each other: the registry took chat's effort schema and route type, chat took the
- *     registry's builtin records, and the agents service wrote chat's participant table directly
+ *     registry's builtin records, and the agents service wrote chat's agent table directly
  *     to keep a copied priority fresh. The copy went stale on every path that forgot to sync it.
  *   - `triggers` answers when something wakes a session and whether it landed; `work` answers
  *     what a session has running and how it ended. Both are what chat is built ON — chat wakes,
@@ -71,7 +71,7 @@ describe('features the host asks must not import features/chat', () => {
     await assertPositiveControl({
       subject: 'a type-only import of features/chat',
       // The shape that closed the agents cycle, nested so a walk that stopped recursing is caught.
-      file: 'seat/session-seat.ts',
+      file: 'resolver/session-agent-resolver.ts',
       offender:
         "import type { SessionAgentSelection } from '../../chat/service/session-agent-selection'\n",
       detect: chatImports,

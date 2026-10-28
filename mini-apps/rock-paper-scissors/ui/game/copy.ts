@@ -14,7 +14,7 @@ export { elapsed, opponentName }
 
 /**
  * The table in the PERSON's words — the view's headline and what a screen reader announces.
- * `shared/describe.ts` speaks from the agent's seat; this speaks to whoever is looking. Pure, so
+ * `shared/describe.ts` speaks from the agent's side; this speaks to whoever is looking. Pure, so
  * every state the table can be in has a sentence a test can read.
  */
 
@@ -39,7 +39,7 @@ export function verdictLine(round: RoundView): string | null {
   return `${HOW[round.outcome === 'won' ? round.mine : theirs]}.`
 }
 
-/** The other seat's short name, over its hand and on the scoreboard. */
+/** The other side's short name, over its hand and on the scoreboard. */
 export const opponentTitle = (view: Pick<PlayerView, 'opponent'>) =>
   view.opponent === 'decision' ? 'Model' : 'Agent'
 

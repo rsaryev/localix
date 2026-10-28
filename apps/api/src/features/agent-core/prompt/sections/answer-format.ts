@@ -50,6 +50,7 @@ export function buildAnswerFormatSection(): string {
   const { comparison, verdict, steps, stats } = ANSWER_FORM_EXAMPLES
   return [
     ANSWER_FORMAT_HEADER,
+    ANSWER_FORMS_PRINCIPLE,
     "Replies render as GitHub Markdown with $…$ math plus the forms below; the user's style preferences override them.",
     // A DECISION list, read top-down: the old rules were a catalogue, and "compare options … in a
     // table" was the only one a "compare X and Y" request matched, so every comparison became a

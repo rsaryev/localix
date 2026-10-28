@@ -9,7 +9,7 @@ export type { ProposalCard }
  * A REMEDY: one kind of configuration change the agent may propose, owned by the feature
  * whose data it writes.
  *
- * The `configure` tool knows none of these. It embeds the union of their `schema`s in its
+ * The `Configure` tool knows none of these. It embeds the union of their `schema`s in its
  * input, shows the card `describe` renders, and after the user's click calls `apply`. Adding
  * a kind of change is a new file in `remedies/` and one line in the registry — the tool, the
  * HITL contract and the UI card do not change. That is the whole point of the split: the

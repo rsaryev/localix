@@ -19,7 +19,7 @@ const liveReadByteLengthCache = new WeakMap<ToolResult, number>()
  * is the same idea at the wire granularity: a `path`/`file_path` argument, the per-entry
  * paths of a batched `edit`/`write`, or the file headers of an `apply_patch` body.
  */
-function wireTargets(name: string, args: unknown): string[] {
+function wireTargets(args: unknown): string[] {
   if (!args || typeof args !== 'object') return []
   const a = args as Record<string, unknown>
   // `path`/`file_path`, every entry of a batched `edit` (`edits`) / `write` (`files`), and every
@@ -86,7 +86,7 @@ export function liveReadCallIds(
       const tc = part as ToolCall
       if (tc.type !== 'tool_call') continue
       order += 1
-      const keys = wireTargets(tc.name, tc.arguments)
+      const keys = wireTargets(tc.arguments)
       if (keys.length === 0) continue
       if (ALL_MUTATE_TOOLS.has(tc.name)) {
         // A mutation whose result ERRORED never reached disk — the earlier read is still

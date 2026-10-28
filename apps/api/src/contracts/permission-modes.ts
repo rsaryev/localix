@@ -48,7 +48,7 @@ export const PERMISSION_MODE_COPY: Record<PermissionMode, PermissionModeCopy> = 
 
 /**
  * The line a mode change writes into the conversation (`permission_mode_change`), read by the
- * person and, as a context binding, by every participant. One sentence that names the mode AND
+ * person and, as a context binding, by every agent. One sentence that names the mode AND
  * what it now means for the agent: "mode changed to bypass" alone left the model to guess
  * whether its next write would be refused.
  */

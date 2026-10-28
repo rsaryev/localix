@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import { databaseTargetFromUri, type DatabaseArea } from './model/databaseView'
 import { useDbConnections } from './model/useDbConnections'
@@ -29,10 +29,12 @@ export function DatabaseWorkspace({
   const requestedId = requestedConnectionId ?? resourceTarget?.connectionId
   const [focusedConnectionId, setFocusedConnectionId] = useState(requestedId)
 
-  useEffect(() => {
-    if (!requestedId) return
-    setFocusedConnectionId(requestedId)
-  }, [requestedId])
+  // A new request moves the focus while rendering, not in an effect.
+  const [seenRequestedId, setSeenRequestedId] = useState(requestedId)
+  if (requestedId !== seenRequestedId) {
+    setSeenRequestedId(requestedId)
+    if (requestedId) setFocusedConnectionId(requestedId)
+  }
 
   // No ground coat: the hosting pane already paints one, and under the host's macOS glass theme
   // the ground tokens carry alpha — a second pane-sized coat compounds into an opaque slab (85%

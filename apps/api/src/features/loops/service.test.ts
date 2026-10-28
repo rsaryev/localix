@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 
 import { flush, triggerHarness } from '../triggers/test-harness'
-import { addressedCooldownUntil } from '../chat/runtime/addressed-route-cooldown'
+import { sessionCooldownUntil } from '../chat/runtime/session-route-cooldown'
 import { createRouteCooldowns, type RouteCooldowns } from '../chat/runtime/route-cooldowns'
 import { createLoopAction, type LoopActionDeps } from './action'
 import type { LoopFireOutcome, SessionLoop } from './contracts'
@@ -11,21 +11,19 @@ type Harness = Awaited<ReturnType<typeof triggerHarness>>
 let h: Harness
 
 /**
- * A conversation of two participants on DIFFERENT provider routes, gated through the runner's
- * own composition (`addressedCooldownUntil` over `createRouteCooldowns`) rather than a stub —
- * so a gate that asked about the wrong participant's route would go red here.
+ * A conversation gated through the runner's own composition (`sessionCooldownUntil` over
+ * `createRouteCooldowns`) rather than a stub — so a gate that asked about the wrong route would
+ * go red here.
  */
 const ROUTE_LEAD = { providerConnectionId: 'conn-anthropic', modelId: 'anthropic/claude' }
-const ROUTE_QA = { providerConnectionId: 'conn-openai', modelId: 'openai/gpt-5' }
-const seat = (agentId: string, route: typeof ROUTE_LEAD) => ({
-  agentId,
-  handle: agentId,
-  reasoningEffort: 'medium' as const,
-  ...route,
+const ROUTE_OTHER = { providerConnectionId: 'conn-openai', modelId: 'openai/gpt-5' }
+const sessionOn = (route: typeof ROUTE_LEAD) => ({
+  agent: { agentId: 'lead', name: 'lead', reasoningEffort: 'medium' as const, ...route },
 })
-const party = { agents: [seat('lead', ROUTE_LEAD), seat('qa', ROUTE_QA)] }
-const routeGate = (cooldowns: RouteCooldowns) => async (_u: string, _s: string, agent?: string) =>
-  addressedCooldownUntil(party, agent, (route) => cooldowns.until(route, h.clock.ms))
+const routeGate =
+  (cooldowns: RouteCooldowns, route = ROUTE_LEAD) =>
+  async () =>
+    sessionCooldownUntil(sessionOn(route), (r) => cooldowns.until(r, h.clock.ms))
 
 /** A loop service on the real trigger engine; deliveries are recorded and settled by hand. */
 function loopHarness(
@@ -70,7 +68,7 @@ afterEach(() => h.close())
 
 describe('loops on triggers', () => {
   test('cancelling a firing loop withdraws ITS wake — and a quiet loop withdraws nothing', async () => {
-    // It used to stop the whole session: every participant's queued turns, and sub-agents the
+    // It used to stop the whole session: every agent's queued turns, and sub-agents the
     // loop had nothing to do with.
     const { engine, loops, withdrawn } = loopHarness()
     const quiet = created(
@@ -87,7 +85,7 @@ describe('loops on triggers', () => {
     expect(loops.list('u1', 's1')).toEqual([])
   })
 
-  test("a fire is addressed to the participant that armed it, with the fire's delivery key", async () => {
+  test("a fire is addressed to the agent that armed it, with the fire's delivery key", async () => {
     const { engine, loops, woken } = loopHarness()
     const loop = created(
       await loops.create({
@@ -163,37 +161,33 @@ describe('loops on triggers', () => {
   })
 })
 
-describe('a rate-limit hold follows the addressed participant’s route', () => {
+describe('a rate-limit hold follows the agent’s route', () => {
   const HELD_UNTIL = '2026-09-23T10:30:00.000Z'
   const exhaustLead = () => {
     const cooldowns = createRouteCooldowns()
     cooldowns.hold(ROUTE_LEAD, 'route', Date.parse(HELD_UNTIL))
     return cooldowns
   }
-  const pacedLoop = async (loops: ReturnType<typeof loopHarness>['loops'], owner?: string) => {
+  const pacedLoop = async (loops: ReturnType<typeof loopHarness>['loops']) => {
     const loop = created(
-      await loops.createDynamic({
-        userId: 'u1',
-        sessionId: 's1',
-        prompt: 'poll',
-        ...(owner ? { ownerAgentId: owner } : {}),
-      }),
+      await loops.createDynamic({ userId: 'u1', sessionId: 's1', prompt: 'poll' }),
     )
     await loops.reschedule(loop.id, 'u1', 60)
     return loop
   }
 
-  test("a 429 on one participant's route does not hold a fire addressed to another", async () => {
-    // Keyed per session, lead's exhausted provider held qa's loop too, though qa runs elsewhere.
-    const { engine, loops, woken } = loopHarness({ rateLimitedUntilMs: routeGate(exhaustLead()) })
-    const qa = await pacedLoop(loops, 'qa')
+  test('a 429 on another route does not hold the fire', async () => {
+    const { engine, loops, woken } = loopHarness({
+      rateLimitedUntilMs: routeGate(exhaustLead(), ROUTE_OTHER),
+    })
+    const loop = await pacedLoop(loops)
     await h.advanceTo('2026-09-23T10:01:00.000Z', engine)
-    expect(woken.map((wake) => wake.loop.id)).toEqual([qa.id])
+    expect(woken.map((wake) => wake.loop.id)).toEqual([loop.id])
   })
 
-  test('a fire addressed to the exhausted participant is held until its route recovers', async () => {
+  test('a fire on the exhausted route is held until it recovers', async () => {
     const { engine, loops, woken } = loopHarness({ rateLimitedUntilMs: routeGate(exhaustLead()) })
-    const lead = await pacedLoop(loops, 'lead')
+    const lead = await pacedLoop(loops)
     await h.advanceTo('2026-09-23T10:01:00.000Z', engine)
     expect(woken).toEqual([])
     expect(engine.get(lead.id)).toMatchObject({
@@ -205,17 +199,9 @@ describe('a rate-limit hold follows the addressed participant’s route', () => 
     expect(loops.get(lead.id, 'u1')?.heldUntil).toBe(HELD_UNTIL)
   })
 
-  test('an unaddressed fire is held only while EVERY participant is exhausted', async () => {
-    // Nobody addressed: the conversation picks the speaker, and qa's route is still admitted.
-    const { engine, loops, woken } = loopHarness({ rateLimitedUntilMs: routeGate(exhaustLead()) })
-    const open = await pacedLoop(loops)
-    await h.advanceTo('2026-09-23T10:01:00.000Z', engine)
-    expect(woken.map((wake) => wake.loop.id)).toEqual([open.id])
-  })
-
   test('the hold survives a restart that forgot every cooldown, and lapses on time', async () => {
     const first = loopHarness({ rateLimitedUntilMs: routeGate(exhaustLead()) })
-    const lead = await pacedLoop(first.loops, 'lead')
+    const lead = await pacedLoop(first.loops)
     await h.advanceTo('2026-09-23T10:01:00.000Z', first.engine)
 
     // A new process: the in-memory cooldowns are gone, the persisted hold is not.

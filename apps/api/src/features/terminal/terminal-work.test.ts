@@ -23,10 +23,10 @@ describe('a pane outside the bash job path is the session’s work', () => {
     // registry: not the prompt's job section, not `jobs`, not the composer's strip.
     const work = testWork()
     const { terminal } = pane('pty-1')
-    recordTerminalWork(work, { owner, agentId: 'coder', label: 'python3', terminal })
+    recordTerminalWork(work, { owner, label: 'python3', terminal })
 
     expect(work.list(owner)).toMatchObject([
-      { displayId: 'bg-1', label: 'python3', terminalId: 'pty-1', agentId: 'coder' },
+      { displayId: 'bg-1', label: 'python3', terminalId: 'pty-1' },
     ])
   })
 
@@ -36,7 +36,7 @@ describe('a pane outside the bash job path is the session’s work', () => {
     work.onEnded((record) => ended.push({ status: record.status, exitCode: record.exitCode }))
     const panes = ['pty-ok', 'pty-closed', 'pty-crashed'].map((id) => {
       const p = pane(id)
-      recordTerminalWork(work, { owner, agentId: null, label: id, terminal: p.terminal })
+      recordTerminalWork(work, { owner, label: id, terminal: p.terminal })
       return p
     })
 

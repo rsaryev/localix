@@ -20,7 +20,7 @@ describe('native tool permission resources', () => {
       toolsByName: new Map([[tool.name, tool]]),
       requestConfirm: async ({ command }) => {
         requests.push(command ?? '')
-        return false
+        return { approved: false }
       },
     })
     expect(await gate({ toolCallId: 'call', toolName: tool.name, input: {} })).toMatchObject({
@@ -61,19 +61,19 @@ describe('native tool permission resources', () => {
   })
 
   test('native resources do not replace filesystem or command facts', () => {
-    const file = extractCallFacts('read', { path: '/tmp/project/a' }, '/tmp/project', tool)
+    const file = extractCallFacts('Read', { path: '/tmp/project/a' }, '/tmp/project', tool)
     expect(file.paths).toEqual(['/tmp/project/a'])
     expect(file.resources).toEqual(['record:one', 'record:two'])
-    const shell = extractCallFacts('bash', { command: 'git status' }, '/tmp/project', tool)
+    const shell = extractCallFacts('Bash', { command: 'git status' }, '/tmp/project', tool)
     expect(shell.commands).toEqual(['git status'])
     expect(shell.resources).toEqual(['record:one', 'record:two'])
     expect(
       evaluate(
         [
-          { permission: 'bash', pattern: '*', action: 'deny' },
-          { permission: 'bash', pattern: 'git *', action: 'allow' },
+          { permission: 'Bash', pattern: '*', action: 'deny' },
+          { permission: 'Bash', pattern: 'git *', action: 'allow' },
         ],
-        { name: 'bash', effect: 'external' },
+        { name: 'Bash', effect: 'external' },
         shell,
       ).action,
     ).toBe('deny')

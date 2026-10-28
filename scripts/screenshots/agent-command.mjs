@@ -35,15 +35,13 @@ export async function composeAgentCommand(page) {
   await expect(input).toBeEnabled()
   const clearCommand = page.getByRole('button', { name: 'Clear command', exact: true })
   if (await clearCommand.count()) await clearCommand.last().click()
-  await input.fill('/agents edit @qa --pri')
+  await input.fill('/agents edit @qa --desc')
   await expect(page.getByRole('listbox', { name: 'Command arguments' })).toHaveCount(1)
-  await expect(page.getByRole('option', { name: /--priority/ })).toBeVisible()
+  await expect(page.getByRole('option', { name: /--description/ })).toBeVisible()
   await input.press('Tab')
   await expect(input).toBeFocused()
-  await input.fill('0.5 ')
-  await expect(page.getByTitle('priority: 0.5', { exact: true })).toBeVisible()
-  // The value remains exact; removing its crumb restores its value suggestions.
-  await input.press('Backspace')
+  await input.fill('Checks the release ')
+  await expect(page.getByTitle('description: Checks the release', { exact: true })).toBeVisible()
   await verifyAgentCommand(page)
 }
 
@@ -53,10 +51,7 @@ export async function verifyAgentCommand(page) {
   await expect(input).toHaveValue('')
   await expect(page.getByRole('button', { name: 'Clear action', exact: true })).toBeVisible()
   await expect(page.getByTitle('agent: @qa', { exact: true })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Clear flag:priority', exact: true })).toBeVisible()
-  const menu = page.getByRole('listbox', { name: 'Command arguments' })
-  await expect(menu).toHaveCount(1)
-  await expect(menu.getByRole('option')).toHaveCount(5)
-  for (const priority of ['-2', '-1', '0', '1', '2'])
-    await expect(menu.getByText(priority, { exact: true })).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: 'Clear flag:description', exact: true }),
+  ).toBeVisible()
 }

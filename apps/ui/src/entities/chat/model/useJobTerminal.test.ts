@@ -28,7 +28,7 @@ const sessions = [
             type: 'command',
             status: 'completed',
             toolCallId: 'tc-bg',
-            name: 'bash',
+            name: 'Bash',
             command: 'npm run dev',
             terminalId: 'term-1',
           },

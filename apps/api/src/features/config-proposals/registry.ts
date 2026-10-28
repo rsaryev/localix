@@ -4,7 +4,7 @@ import { toolEnableRemedy } from './remedies/toggles'
 
 /**
  * Every remedy the agent may propose, in the order the model's schema lists them. The
- * `configure` tool's `change` input is the discriminated union of their schemas — the tool
+ * `Configure` tool's `change` input is the discriminated union of their schemas — the tool
  * never spells a kind, so a new remedy is a new entry here and nothing else.
  *
  * ONE, and it answers one question: "this run does not hold this tool, may it". Others used to
@@ -12,7 +12,7 @@ import { toolEnableRemedy } from './remedies/toggles'
  * deleting roles, choosing a model for a workload, switching a plugin, a mini app or an MCP
  * server. They were a second way to author configuration, reachable only by asking the model to
  * do it, and the screen that owns each of those does the job better (the Store, through the
- * `store` tool, for packages). Authoring is the user's; asking for access is the agent's.
+ * `Store` tool, for packages). Authoring is the user's; asking for access is the agent's.
  */
 export const REMEDIES: readonly Remedy[] = [toolEnableRemedy] as readonly Remedy[]
 

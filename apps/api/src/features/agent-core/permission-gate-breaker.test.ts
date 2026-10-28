@@ -4,7 +4,7 @@ import { createGateRefusalTracker } from '@localixai/agent/agents'
 
 import { withRefusalBreaker } from './permission-gate-breaker'
 
-const ctx = { toolCallId: 'c1', toolName: 'bash', input: {} }
+const ctx = { toolCallId: 'c1', toolName: 'Bash', input: {} }
 
 describe('counting what the gate refuses', () => {
   test('an untagged refusal counts as automatic', async () => {

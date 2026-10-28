@@ -4,10 +4,10 @@
  * `mediaId`) and rehydrates them back to base64 when it needs the bytes (model
  * wire, reference resolution). The SDK never does this — it's host policy here.
  *
- * Back-compat: an attachment that already carries inline `data` (old messages,
- * small uploads) is left untouched on read; on store, inline `data` is moved to a
- * file and replaced by `mediaId`. With no store configured both calls are no-ops,
- * so the pipeline degrades to the legacy inline-base64 behavior.
+ * An attachment carries its bytes inline (`data`) on the model wire and by reference
+ * (`mediaId`) once stored: on store, inline `data` is moved to a file and replaced by
+ * `mediaId`; on read, a file-backed attachment is inlined again. A host with no store
+ * keeps the bytes inline, so both calls are then no-ops.
  */
 import type { MessageAttachment } from '@localixai/agent'
 import type { MediaStore } from './store'

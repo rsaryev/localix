@@ -5,7 +5,6 @@
  * A folder an earlier Localix kept under the bare name moves there once, its files kept.
  */
 import { describe, expect, test } from 'bun:test'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
 
@@ -47,15 +46,6 @@ describe("a plugin's data directory", () => {
     expect((result.ccHooks[0] as { dataDir: string }).dataDir).toBe(
       join(home(), '.localix', 'plugin-data', 'tool-official'),
     )
-  })
-
-  test('takes over the folder an earlier Localix kept under the bare name', () => {
-    const legacy = join(home(), '.localix', 'plugin-data', 'tool')
-    mkdirSync(legacy, { recursive: true })
-    writeFileSync(join(legacy, 'state.json'), '{"n":1}')
-    const dir = pluginDataDirOf('tool@shop', home())
-    expect(readFileSync(join(dir, 'state.json'), 'utf8')).toBe('{"n":1}')
-    expect(existsSync(legacy)).toBe(false)
   })
 
   test('a plugin from no marketplace keeps its bare name', () => {

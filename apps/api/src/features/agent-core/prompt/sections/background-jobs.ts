@@ -57,7 +57,7 @@ export function buildBackgroundJobsSection(
   if (jobs.length > BACKGROUND_JOB_PROMPT_MAX_ITEMS) {
     jobBlocks.push(
       capabilities.canManage
-        ? `- … ${jobs.length - BACKGROUND_JOB_PROMPT_MAX_ITEMS} additional jobs omitted; use the \`jobs\` tool with action="list".`
+        ? `- … ${jobs.length - BACKGROUND_JOB_PROMPT_MAX_ITEMS} additional jobs omitted; use \`Jobs\` with action="list".`
         : `- … ${jobs.length - BACKGROUND_JOB_PROMPT_MAX_ITEMS} additional jobs omitted.`,
     )
   }
@@ -65,7 +65,7 @@ export function buildBackgroundJobsSection(
     jobBlocks.join('\n'),
     BACKGROUND_JOBS_TOTAL_MAX_CHARS,
     capabilities.canManage
-      ? '[Additional background-job details omitted: aggregate prompt budget reached. Use the `jobs` tool with action="list"/"read" for current state.]'
+      ? '[Additional background-job details omitted: aggregate prompt budget reached. Use `Jobs` with action="list"/"read" for current state.]'
       : '[Additional background-job details omitted: aggregate prompt budget reached.]',
   )
   return [
@@ -77,7 +77,7 @@ export function buildBackgroundJobsSection(
     // itself once no longer useful — two answers, and a finished job it was told to offer to
     // stop. What decides is who the job serves.
     capabilities.canManage
-      ? 'A job you started for your own work (a wait, a watch, a server you verify against) is yours to stop with `jobs` action `stop` once it has served. A job the user asked for or is using is theirs: if it looks stuck or is failing, say so and offer to stop it, never stop it unasked. Do not start a duplicate of a running job, and do not poll in a loop — to wait for something, run the check with `bash` `until`.'
+      ? 'A job you started for your own work (a wait, a watch, a server you verify against) is yours to stop with `TaskStop` once it has served. A job the user asked for or is using is theirs: if it looks stuck or is failing, say so and offer to stop it, never stop it unasked. Do not start a duplicate of a running job, and do not poll in a loop — to wait for something, run the check with `Bash` `until`.'
       : 'Job-management controls are not available in this run. Report only what the snapshot shows; do not claim that you listed, read, stopped, or otherwise changed a job.',
   ].join('\n')
 }

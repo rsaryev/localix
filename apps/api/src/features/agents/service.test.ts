@@ -53,9 +53,9 @@ async function fixture() {
   )
   return { service, rules, globalDir, projectDir, invocations }
 }
-const input = (handle = 'reviewer', extra: Record<string, unknown> = {}) =>
+const input = (name = 'reviewer', extra: Record<string, unknown> = {}) =>
   agentRecordInputSchema.parse({
-    handle,
+    name,
     description: 'Reviews',
     instructions: 'Review.',
     ...extra,
@@ -69,20 +69,20 @@ describe('agents as Claude Code files', () => {
     expect(initial.status).toBe('allowed')
     if (initial.status !== 'allowed') throw new Error('Expected an admitted agent')
     expect(initial.agent.definition.instructions).toBe('Review.')
-    expect(initial.agent.capabilities.allows('tool', 'read')).toBe(true)
+    expect(initial.agent.capabilities.allows('tool', 'Read')).toBe(true)
     await service.updateAgent('u', record.id, input('reviewer', { instructions: 'Changed.' }))
     const outer = await rules.read('u', record.id)
     await rules.replace('u', record.id, [
       ...outer,
-      { action: 'tool:read', resource: '*', effect: 'deny' },
+      { action: 'tool:Read', resource: '*', effect: 'deny' },
     ])
     const next = await service.resolveRunAgent('u', record.id, 'delegation')
     expect(next.status).toBe('allowed')
     if (next.status !== 'allowed') throw new Error('Expected an admitted agent')
     expect(next.agent.definition.instructions).toBe('Changed.')
-    expect(next.agent.capabilities.allows('tool', 'read')).toBe(false)
+    expect(next.agent.capabilities.allows('tool', 'Read')).toBe(false)
     expect(initial.agent.definition.instructions).toBe('Review.')
-    expect(initial.agent.capabilities.allows('tool', 'read')).toBe(true)
+    expect(initial.agent.capabilities.allows('tool', 'Read')).toBe(true)
     for (const effect of ['deny', 'ask'] as const) {
       await rules.replace('u', record.id, [
         ...outer,
@@ -122,7 +122,7 @@ describe('agents as Claude Code files', () => {
         effect === 'ask' ? 'approval_required' : 'policy_denied',
       )
     }
-    expect((await service.explainAgentAvailability('u', record.handle, 'chat')).status).toBe(
+    expect((await service.explainAgentAvailability('u', record.name, 'chat')).status).toBe(
       'agent_not_found',
     )
     // An installation agent is listed in every project, under the same policy.
@@ -197,7 +197,7 @@ describe('agents as Claude Code files', () => {
     const { service, globalDir } = await fixture()
     const agent = await service.createAgent('u', input())
     expect(agent.record.id).toBeTruthy()
-    expect(agent.record.id).not.toBe(agent.record.handle)
+    expect(agent.record.id).not.toBe(agent.record.name)
     expect(agent.enabled).toBe(true)
     expect(agent.invocations.chat).toBe('allow')
     expect(agent).toMatchObject({ source: 'user', editable: true })
@@ -275,7 +275,7 @@ Body of ${name}.
     expect(await service.selectEnabledAgent('u', original.record.id)).toBeNull()
     expect(await service.selectEnabledAgent('u', 'reviewer')).toEqual(replacement.record)
     expect(await service.resolveEnabledAgent('u', 'localix')).toBeNull()
-    expect((await service.resolveEnabledAgent('u', 'builtin:localix'))?.handle).toBe('localix')
+    expect((await service.resolveEnabledAgent('u', 'builtin:localix'))?.name).toBe('localix')
   })
   test('a built-in agent is read-only: copy it to change it, and the main loop stays on', async () => {
     const { service } = await fixture()
@@ -290,13 +290,13 @@ Body of ${name}.
     expect(copy).toMatchObject({ source: 'user', editable: true })
     expect(copy.record.id).not.toBe(main.record.id)
   })
-  test('same handles in different places do not share capability rules', async () => {
+  test('same names in different places do not share capability rules', async () => {
     const { service, rules } = await fixture()
     const global = await service.createAgent('u', input())
     const project = await service.createAgent('u', input('reviewer', { projectId: 'p' }))
     expect(global.record.id).not.toBe(project.record.id)
     await rules.replace('u', global.record.id, [
-      { action: 'tool:write', resource: '*', effect: 'deny' },
+      { action: 'tool:Write', resource: '*', effect: 'deny' },
     ])
     const globalPolicy = await resolveCapabilities(rules, {
       userId: 'u',
@@ -306,8 +306,8 @@ Body of ${name}.
       userId: 'u',
       agentId: project.record.id,
     })
-    expect(globalPolicy.allows('tool', 'write')).toBe(false)
-    expect(projectPolicy.allows('tool', 'write')).toBe(true)
+    expect(globalPolicy.allows('tool', 'Write')).toBe(false)
+    expect(projectPolicy.allows('tool', 'Write')).toBe(true)
     expect(await service.getAgent('u', global.record.id, 'p')).toBeNull()
   })
   test('a project file named like a built-in shadows it only inside that project', async () => {
@@ -343,7 +343,7 @@ Body of ${name}.
     const guards = own.filter((rule) => rule.effect === 'ask')
     expect(guards.map((rule) => `${rule.action} ${rule.resource}`).sort()).toEqual([
       'tool:* outside-workspace',
-      'tool:bash dangerous',
+      'tool:Bash dangerous',
     ])
     // Identity rows are re-pointed: inheriting them verbatim would grant hosts to `localix`.
     for (const rule of own.filter((entry) => entry.action.startsWith('invocation:'))) {

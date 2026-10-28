@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import type { z } from 'zod'
 
 import { useStoreSnapshot } from './store-snapshot'
@@ -43,7 +43,10 @@ export function useTableGame<T>(options: {
     active: options.active && sessionId !== null,
     failureMessage: options.failureMessage,
   })
-  useEffect(() => setQuick(quickWhen(polled.snapshot)), [quickWhen, polled.snapshot])
+  // The polling pace follows the snapshot it produced, so it is adjusted while rendering: React
+  // re-renders at once with the new pace, and nothing waits for an effect.
+  const owed = quickWhen(polled.snapshot)
+  if (owed !== quick) setQuick(owed)
 
   const { send } = polled
   /** POST `body` to `<route>/game/<action>`; the route answers with the new game. */

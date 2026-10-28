@@ -82,7 +82,7 @@ function paramMatches(specifier: string, view: Record<string, unknown>): boolean
   if (!m || !(m[1]! in view)) return undefined
   const value = view[m[1]!]
   if (value === undefined || (typeof value === 'object' && value !== null)) return false
-  return specifierMatchesValue(m[2]!.trim(), String(value))
+  return specifierMatchesValue(m[2]!.trim(), String(value as string | number | boolean))
 }
 
 /** The files a call touches, absolute: a batch's every entry, else the Claude Code `file_path`. */

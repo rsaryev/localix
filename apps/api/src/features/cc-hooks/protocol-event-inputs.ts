@@ -56,12 +56,6 @@ export interface CcTaskEventInput extends CcHookInputBase {
   teammate_name?: string
   team_name?: string
 }
-export interface CcTeammateIdleInput extends CcHookInputBase {
-  hook_event_name: 'TeammateIdle'
-  teammate_name: string
-  team_name: string
-  agent_id?: string
-}
 export interface CcPostCompactInput extends CcHookInputBase {
   hook_event_name: 'PostCompact'
   trigger: string
@@ -141,7 +135,6 @@ export type CcAddedHookInput =
   | CcPostToolBatchInput
   | CcStopFailureInput
   | CcTaskEventInput
-  | CcTeammateIdleInput
   | CcPostCompactInput
   | CcInstructionsLoadedInput
   | CcConfigChangeInput

@@ -9,7 +9,7 @@ import {
   itemActionVerb as coreItemActionVerb,
 } from '@localixai/api/item-format'
 import { isUiNavigationOutput } from '@localixai/mini-app-sdk/ui'
-import { toolDisplayLabel, toolMeta } from './cards/meta'
+import { toolDisplayLabel, toolMeta, toolSummaryNoun } from './cards/meta'
 import { baseName, truncate, strField } from './cards/format'
 import { countPatchChanges } from './cards/liveCode'
 import { batchUnitCount, readInputPaths, searchInputQueries } from './cards/batchInput'
@@ -129,11 +129,11 @@ export function itemStackLabel(item: ToolBackedItem): string {
       const input = item.input
       // A batched read or search names its first file/pattern and how many more ride along.
       const more = (n: number) => (n > 1 ? ` +${n - 1}` : '')
-      const paths = item.name === 'read' ? readInputPaths(input) : []
+      const paths = item.name === 'Read' ? readInputPaths(input) : []
       if (paths.length) return `${baseName(paths[0]!)}${more(paths.length)}`
       const path = strField(input, 'path')
       if (path) return baseName(path)
-      const queries = item.name === 'search' ? searchInputQueries(input) : []
+      const queries = item.name === 'Search' ? searchInputQueries(input) : []
       if (queries.length) return `${truncate(queries[0]!, 40)}${more(queries.length)}`
       const query = strField(input, 'query')
       if (query) return truncate(query, 40)
@@ -178,13 +178,14 @@ export function chainSummary(items: AgentItem[], live: boolean): string | null {
   for (const item of items) {
     if (!isToolBackedItem(item)) continue
     const meta = toolMeta(item.name)
-    const key = `${meta.verb}|${meta.noun}`
+    const noun = toolSummaryNoun(item.name)
+    const key = `${meta.verb}|${noun}`
     let group = groups.get(key)
     if (!group) {
       group = {
         verb: meta.verb,
-        label: toolDisplayLabel(item.name),
-        noun: meta.noun,
+        label: meta.label,
+        noun,
         count: 0,
         paths: item.type === 'file_change' ? new Set() : null,
       }

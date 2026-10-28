@@ -21,6 +21,9 @@ import {
   listingsQuerySchema,
   listingsResponseSchema,
   parseShelf,
+  recommendQuerySchema,
+  recommendReadSchema,
+  recommendRequestSchema,
   sourceAutoUpdateSchema,
   sourceInputSchema,
   sourcePreviewSchema,
@@ -63,6 +66,16 @@ export function createStoreRoutes(store: StoreService) {
       const { projectId } = c.req.valid('query')
       const answer = await store.discover(actor(c), projectId ? { projectId } : {})
       return c.json(discoverResponseSchema.parse(answer), 200)
+    })
+    .post('/recommendations/working-set', zValidator('json', recommendRequestSchema), (c) => {
+      const request = c.req.valid('json')
+      store.reportWorkingSet(actor(c, request.projectId), request)
+      return c.body(null, 202)
+    })
+    .get('/recommendations', zValidator('query', recommendQuerySchema), async (c) => {
+      const where = c.req.valid('query')
+      const answer = await store.readRecommendations(actor(c, where.projectId), where)
+      return c.json(recommendReadSchema.parse(answer), 200)
     })
     .get('/activity', async (c) =>
       c.json(storeActivitySchema.parse(await store.activity(actor(c))), 200),

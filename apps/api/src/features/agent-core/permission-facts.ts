@@ -1,3 +1,4 @@
+import { TOOL } from './tool-names'
 import type { AgentTool } from '@localixai/agent/agents'
 
 import { asStringArray } from '../../lib/coerce'
@@ -114,7 +115,7 @@ export function extractCallFacts(
 
   switch (toolName) {
     // A batched read names every file it will open, so each `reads` entry is judged like `path`.
-    case 'read': {
+    case TOOL.Read: {
       for (const target of readScopePaths(input)) {
         paths.push(resolveFileTarget(target.path, cwd, root).path)
       }
@@ -124,12 +125,12 @@ export function extractCallFacts(
     // and the outside-workspace, secrets and host-root checks judge each — one file outside the
     // workspace makes the whole call outside it. Reading only a top-level `path` produced NO
     // paths for a batch, and every path-pattern rule saw nothing.
-    case 'write':
-    case 'edit': {
+    case TOOL.Write:
+    case TOOL.Edit: {
       paths.push(...mutationTargets(i, root))
       break
     }
-    case 'skill': {
+    case TOOL.Skill: {
       // `save` writes a real file; `get` touches nothing. With no case here at all this fell
       // through to `paths: []`, so path-pattern rules could not inspect skill writes. Global
       // skills live in `~/.claude/skills`, an agent-owned root (`AGENT_ALLOWED_ROOTS`) that needs
@@ -144,7 +145,7 @@ export function extractCallFacts(
       paths.push(resolveFileTarget(defaultSkillFilePath(base, i.name), cwd, root).path)
       break
     }
-    case 'bash': {
+    case TOOL.Bash: {
       // Mirror bash.execute's dispatch order exactly: interactive action first; otherwise a
       // non-empty `commands[]` batch wins over the single `command`. Treating ignored fields as
       // executable makes the gate disagree with the tool (and can surface irrelevant secrets).
@@ -180,7 +181,7 @@ export function extractCallFacts(
         command,
       }
     }
-    case 'search': {
+    case TOOL.Search: {
       if (cwd) paths.push(resolveFileTarget('.', cwd, root).cwd)
       // `path` scopes the search to a file or directory; the tool resolves it against the root,
       // not against `cwd`, so the gate does the same.
@@ -246,6 +247,6 @@ export function resourceOnlyCall(resources: readonly string[]): CallFacts {
 /** Resolved file targets a write/edit call would mutate (excludes cwd). */
 export function writeTargets(toolName: string, input: unknown, root?: string): string[] {
   const i = (input ?? {}) as Record<string, unknown>
-  if (toolName === 'write' || toolName === 'edit') return mutationTargets(i, root)
+  if (toolName === 'Write' || toolName === 'Edit') return mutationTargets(i, root)
   return []
 }

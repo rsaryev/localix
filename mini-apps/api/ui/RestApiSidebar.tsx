@@ -208,7 +208,7 @@ export function RestApiSidebar({
           <StateNotice
             title="No saved requests"
             actions={
-              <Button variant="outline" size="sm" disabled={creating} onClick={() => createNew()}>
+              <Button variant="ghost" size="sm" disabled={creating} onClick={() => createNew()}>
                 <Plus className="size-3.5" />
                 New request
               </Button>

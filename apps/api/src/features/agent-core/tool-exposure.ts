@@ -8,15 +8,20 @@ import type { ToolExposure } from '@localixai/agent/agents'
 export type BuiltinToolCategory = 'core' | 'filesystem' | 'knowledge' | 'automation' | 'ui'
 
 export interface BuiltinToolDefinition {
+  /** The tool's one name, Claude Code's spelling (`Read`, `Bash`): the model, a rule and the UI use it. */
   name: string
+  /**
+   * Offered through `ToolSearch` instead of on the wire, as Claude Code defers the tools it seldom
+   * needs: the model loads the schema the turn it needs one, and a call by name reaches it anyway.
+   * Only an open toolset defers; a list that names the tool keeps it on the wire.
+   */
+  deferred?: true
   label: string
   description: string
   category: BuiltinToolCategory
   /** Which run shapes may carry the tool — the ledger's first gate and the source of each
    *  shape's default surface (`run-shape.ts`). There is no other list of "what a child gets". */
   exposure: ToolExposure
-  /** Conversation protocol primitives remain available wherever their host offers them. */
-  protocol?: boolean
 }
 
 // The exposure vocabulary, spelled once. `never` is the structural bound: a child is never
@@ -37,8 +42,3 @@ export const CHAT_DEFAULT: ToolExposure = {
   automation: 'opt-in',
 }
 export const CHAT_ONLY: ToolExposure = { chat: 'default', subagent: 'never', automation: 'never' }
-export const CONVERSATION_TREE: ToolExposure = {
-  chat: 'default',
-  subagent: 'never',
-  automation: 'never',
-}

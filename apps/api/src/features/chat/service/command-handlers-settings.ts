@@ -1,5 +1,4 @@
-import { withRoute } from '../../../contracts/session-route'
-import { commandTarget } from './command-participant'
+import { sessionRoute, withRoute } from '../../../contracts/session-route'
 import { findCatalogModel } from '@localixai/agent/catalog'
 import { readAgentSettings } from './agent-settings'
 import { effortForModelSwitch } from './model-switch-effort'
@@ -8,7 +7,6 @@ import { commandRemainder } from './slash-commands'
 import type { ModelRoute, SessionRecord } from '../repository'
 import type { MessageMutationResponse } from '../contracts'
 import type { CommandHandlerContext, DirectReply } from './command-handlers'
-import type { ExistingMessages } from './run-agent'
 import { announceModelSwitches, modelSwitchRefusal } from './cc-session-events'
 
 /** The slice of {@link CommandHandlerContext} the session-setting commands need. */
@@ -38,31 +36,25 @@ export function uniqueCatalogModelProvider(
 }
 
 /**
- * Persist a route a slash command chose, through the picker's own choice writer
- * (`repository-model-choices.ts`): the seat and the session's choice for this agent together.
- *
- * `/model` re-routes ONE participant, so it says exactly that. Handing the
- * whole record to `updateSession` instead would state the whole party, and the record these
- * handlers hold was read with its routes already resolved — the other members' inherited models
- * would be written back as choices made here (see `writeMembership`).
+ * Persist a route a slash command chose. Only the named route fields are written: the record
+ * these handlers hold was read with its route already resolved, so handing it whole to
+ * `updateSession` would write inherited values back as choices made here.
  */
 async function persistRoute(
   ctx: SettingCommandContext,
   userId: string,
   sessionId: string,
   updated: SessionRecord,
-  agentId: string,
   route: Partial<ModelRoute>,
 ): Promise<void> {
-  await ctx.repo.updateSessionAgentRoutes(userId, sessionId, [{ agentId, ...route }])
+  await ctx.repo.updateSessionAgentRoute(userId, sessionId, route)
   await ctx.repo.updateSession(userId, sessionId, { updatedAt: updated.updatedAt })
   ctx.publishSession(updated)
 }
 
 /**
- * Handles `/model [@handle] <query>`: fuzzy-matches a model available to the participant (scoped
- * to its provider connection if any) and switches THAT participant — the one named, or the one
- * the person's unaddressed words go to. Bare `/model` lists nothing: the composer offers the
+ * Handles `/model <query>`: fuzzy-matches a model available to the session's agent (scoped to
+ * its provider connection if any) and switches it. Bare `/model` lists nothing: the composer offers the
  * picker's steps, which it completes through the picker's own writes (`useModelCommand`).
  */
 export async function handleModelCommand(
@@ -70,34 +62,27 @@ export async function handleModelCommand(
   userId: string,
   sessionId: string,
   session: SessionRecord,
-  allMessages: ExistingMessages,
   prompt: string,
   ts: string,
   directReply: DirectReply,
 ): Promise<MessageMutationResponse> {
   const { deps, insertSystemNotice } = ctx
-  const target = await commandTarget(
-    session,
-    allMessages,
-    commandRemainder(prompt),
-    ctx.runner.leadership(userId, session.projectId),
-  )
-  if (!target) return directReply('Choose an agent before changing its model.')
-  const { participant } = target
-  const arg = target.rest
+  if (!session.agent) return directReply('Choose an agent before changing its model.')
+  const route = sessionRoute(session)
+  const arg = commandRemainder(prompt).trim()
   const catalog = await deps.catalogService.getCatalog()
   let available = catalog.models
-  if (participant.providerConnectionId) {
+  if (route.providerConnectionId) {
     const conn = await deps.providerConnectionsService
-      .requireConnection(userId, participant.providerConnectionId ?? '')
+      .requireConnection(userId, route.providerConnectionId ?? '')
       .catch(() => null)
     // A deleted/re-added connection must not widen `/model` to every provider.
     // Recover the provider from the durable model selection when the stored id
     // has gone stale; the next run resolves the replacement live connection.
     const providerId =
       conn?.providerId ??
-      (participant.modelId
-        ? uniqueCatalogModelProvider(catalog.providers, catalog.models, participant.modelId)
+      (route.modelId
+        ? uniqueCatalogModelProvider(catalog.providers, catalog.models, route.modelId)
         : null)
     // A stored connection means `/model` is provider-scoped. If its provider
     // cannot be recovered uniquely, showing every provider would let a command
@@ -131,48 +116,42 @@ export async function handleModelCommand(
   // carries over, and the stored level is one this model offers.
   const settings = await readAgentSettings(deps.ports.userProfileRepo, userId)
   const reasoningEffort = effortForModelSwitch({
-    previous: participant,
+    previous: route,
     next: matched,
-    remembered: rememberedEffort(
-      settings?.agentModelSettings ?? [],
-      participant.agentId,
-      matched.id,
-    ),
+    remembered: rememberedEffort(settings?.agentModelSettings ?? [], route.agentId, matched.id),
   })
   // CC PreModelSwitch may keep the current model; PostModelSwitch follows the write.
   const switches =
-    matched.id === participant.modelId
+    matched.id === route.modelId
       ? []
-      : [{ fromModel: participant.modelId, toModel: matched.id, requestedModel: arg }]
+      : [{ fromModel: route.modelId, toModel: matched.id, requestedModel: arg }]
   const refusal = await modelSwitchRefusal(
     ctx.runner.ccHookSessions,
     sessionId,
     switches,
     'command',
   )
-  if (refusal)
-    return directReply(`The model stays ${shortModelName(participant.modelId)}: ${refusal}`)
-  // `/model` re-routes ONE participant, never the whole conversation.
+  if (refusal) return directReply(`The model stays ${shortModelName(route.modelId)}: ${refusal}`)
+  // `/model` re-routes the session's agent.
   const updated: SessionRecord = {
-    ...withRoute(session, { modelId: matched.id, reasoningEffort }, participant.agentId),
+    ...withRoute(session, { modelId: matched.id, reasoningEffort }),
     updatedAt: ts,
   }
-  await persistRoute(ctx, userId, sessionId, updated, participant.agentId, {
+  await persistRoute(ctx, userId, sessionId, updated, {
     modelId: matched.id,
     reasoningEffort,
   })
   announceModelSwitches(ctx.runner.ccHookSessions, sessionId, switches, 'command')
   // The level moved with the model, so the agents hear it too: their context reduces each
-  // participant's notices to the latest, and a stale level line would outlive the switch.
-  const levelChanged = reasoningEffort !== participant.reasoningEffort
+  // agent's notices to the latest, and a stale level line would outlive the switch.
+  const levelChanged = reasoningEffort !== route.reasoningEffort
   const modelNotice = await insertSystemNotice(
     userId,
     sessionId,
     {
       kind: 'model_change',
       tone: 'neutral',
-      participant: participant.handle,
-      text: `${participant.handle} is now on ${shortModelName(matched.id)}.`,
+      text: `${route.name} is now on ${shortModelName(matched.id)}.`,
       detail: matched.name,
     },
     ts,
@@ -185,8 +164,7 @@ export async function handleModelCommand(
     {
       kind: 'reasoning_change',
       tone: 'neutral',
-      participant: participant.handle,
-      text: `${participant.handle} reasoning effort set to ${reasoningEffort}.`,
+      text: `${route.name} reasoning effort set to ${reasoningEffort}.`,
     },
     ts,
     true,

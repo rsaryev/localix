@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
+import { useEffect } from 'react'
 import { z } from 'zod'
 import { registerDom } from '@localixai/kit/testing/dom'
 
@@ -37,13 +38,16 @@ async function mount(sessionId: string | null) {
   } as unknown as MiniAppUiRuntime)
   let latest!: ReturnType<typeof useTableGame<Game>>
   function Probe() {
-    latest = useTableGame({
+    const game = useTableGame({
       miniApp: 'toy',
       route: '/rpc/toy',
       schema,
       active: true,
       quick: (snapshot) => snapshot?.owes ?? false,
       failureMessage: 'The board could not be read.',
+    })
+    useEffect(() => {
+      latest = game
     })
     return null
   }

@@ -32,7 +32,7 @@ const FATES = ['live', 'stale', 'refreshed'] as const
 const toolMessage = (content: string): Message =>
   ({
     role: 'tool',
-    results: [{ toolCallId: 'tc1', toolName: 'read', content }],
+    results: [{ toolCallId: 'tc1', toolName: 'Read', content }],
   }) as unknown as Message
 
 describe('every pointer carries the marker that makes it recognizable', () => {
@@ -93,34 +93,32 @@ describe('every compression layer leaves a mark the next one can see', () => {
 
 describe('the recovery a pointer advertises must be one that works', () => {
   test('a LIVE read offers the cheap one-turn replay', () => {
-    expect(readPointer('live', 10, 'tc1')).toContain(
-      'tool_output(action="get", tool_call_id="tc1")',
-    )
+    expect(readPointer('live', 10, 'tc1')).toContain('ToolOutput(action="get", tool_call_id="tc1")')
   })
 
   test('a STALE read never offers a replay — the bytes no longer exist on disk', () => {
     const text = readPointer('stale', 10, 'tc1')
-    expect(text).not.toContain('tool_output')
+    expect(text).not.toContain('ToolOutput')
     expect(text).toContain('read the file again')
   })
 
   test('a REFRESHED read points at the newer read, not at a replay or a re-read', () => {
     const text = readPointer('refreshed', 10, 'tc1')
-    expect(text).not.toContain('tool_output')
+    expect(text).not.toContain('ToolOutput')
     expect(text).toContain('a NEWER read of the same file appears later')
   })
 
   test('with no tool_call_id there is no handle to offer, so it falls back to a re-read', () => {
     const text = elidedPointer('output', 10)
-    expect(text).not.toContain('tool_output')
+    expect(text).not.toContain('ToolOutput')
     expect(text).toContain('re-read the file/source if needed')
   })
 
   test('a disabled recovery tool is never advertised even when a tool_call_id exists', () => {
     const read = readPointer('live', 10, 'tc1', 'source text', false)
     const mutation = elidedPointer('patch', 10, 'tc2', 'patch text', false)
-    expect(read).not.toContain('tool_output')
-    expect(mutation).not.toContain('tool_output')
+    expect(read).not.toContain('ToolOutput')
+    expect(mutation).not.toContain('ToolOutput')
     expect(read).toContain('re-read the file/source if needed')
     expect(mutation).toContain('re-read the file/source if needed')
   })
@@ -135,7 +133,7 @@ describe('the recovery a pointer advertises must be one that works', () => {
 describe('the exact words, pinned', () => {
   test('live', () => {
     expect(readPointer('live', 42, 'tc1')).toBe(
-      '[output elided to save context — 42 chars; recover the exact bytes via tool_output(action="get", tool_call_id="tc1") — a cheap one-turn replay — or re-read the file only if it may have changed since]',
+      '[output elided to save context — 42 chars; recover the exact bytes via ToolOutput(action="get", tool_call_id="tc1") — a cheap one-turn replay — or re-read the file only if it may have changed since]',
     )
   })
 
@@ -153,7 +151,7 @@ describe('the exact words, pinned', () => {
 
   test('a heavy mutate arg, by field name', () => {
     expect(elidedPointer('content', 42, 'tc1')).toBe(
-      '[content elided to save context — 42 chars; recover the exact bytes via tool_output(action="get", tool_call_id="tc1") — a cheap one-turn replay — or re-read the file only if it may have changed since]',
+      '[content elided to save context — 42 chars; recover the exact bytes via ToolOutput(action="get", tool_call_id="tc1") — a cheap one-turn replay — or re-read the file only if it may have changed since]',
     )
     expect(elidedPointer('edits', 42)).toBe(
       '[edits elided to save context — 42 chars; re-read the file/source if needed]',
@@ -182,7 +180,7 @@ describe('both layers emit the SAME mutate-arg pointer', () => {
   /** VBC (turn-start, item model): elide a completed `write`'s args. */
   const viaApplyPlan = (toolCallId: string): unknown => {
     const item = namedTool(
-      'write',
+      'Write',
       { path: '/a.ts', content: CONTENT },
       { resultText: 'Wrote 900 bytes' },
     )
@@ -202,13 +200,13 @@ describe('both layers emit the SAME mutate-arg pointer', () => {
     const call: ToolCall = {
       type: 'tool_call',
       id: toolCallId,
-      name: 'write',
+      name: 'Write',
       arguments: { path: '/a.ts', content: CONTENT },
     } as ToolCall
     const wire = [
       { role: 'user', content: 'go' },
       { role: 'assistant', content: [call] },
-      { role: 'tool', results: [{ toolCallId, toolName: 'write', content: 'Wrote 900 bytes' }] },
+      { role: 'tool', results: [{ toolCallId, toolName: 'Write', content: 'Wrote 900 bytes' }] },
       ...Array.from({ length: 8 }, () => ({ role: 'user', content: 'next' })),
     ] as unknown as Message[]
     const out = pruneWireMessages(wire, {
@@ -233,12 +231,12 @@ describe('both layers emit the SAME mutate-arg pointer', () => {
    * The handle a pointer advertises must RESOLVE. `apply.ts` guards `if (!id)` when it
    * writes a bare pointer placeholder — so an empty id is a state this very file already
    * believes in — but its mutate-arg branch interpolated the id unconditionally, emitting
-   * `tool_output(action="get", tool_call_id="")`: a call the tool cannot find, costing the model a
+   * `ToolOutput(action="get", tool_call_id="")`: a call the tool cannot find, costing the model a
    * turn on a not_found before it falls back to the re-read it should have been told to do.
    */
   test('with no tool_call_id, VBC offers no handle rather than an unresolvable one', () => {
     const text = viaApplyPlan('')
-    expect(text).not.toContain('tool_output')
+    expect(text).not.toContain('ToolOutput')
     expect(text).not.toContain('tool_call_id=""')
     expect(text).toBe(elidedPointer('content', CONTENT.length))
   })

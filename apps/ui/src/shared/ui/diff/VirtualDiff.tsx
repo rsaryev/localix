@@ -110,7 +110,7 @@ export function VirtualDiff({
       const nearBottom = previous - scrollEl.scrollTop - scrollEl.clientHeight < TAIL_SLACK_PX
       if (nearBottom) scrollEl.scrollTop = total
     }
-  }, [layout, scrollEl, followTail])
+  }, [layout, scrollEl, followTail, revealFile])
   const cache = useMemo(
     () =>
       createLineCache(
@@ -138,6 +138,7 @@ export function VirtualDiff({
     [doc, cache, gutterCh, width, linkPath, fileActions, collapsed, toggleFile, runActions],
   )
 
+  // oxlint-disable-next-line react/incompatible-library -- TanStack Virtual returns non-memoizable functions by design.
   const virtualizer = useVirtualizer<HTMLDivElement, HTMLDivElement>({
     count: layout.rows.length,
     getScrollElement: () => scrollEl,
@@ -247,10 +248,14 @@ export function VirtualDiff({
       {layout.rows.length === 0 ? (
         <p className="px-3 py-4 text-xs text-text-faint">No changes to display.</p>
       ) : (
+        // The scrollable-region pattern (WAI-ARIA): a named region that scrolls must be focusable,
+        // and j/k/F7 hunk navigation lives on that focus. The two rules below disagree with it.
+        // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- hunk keys act on the focused scroll region
         <div
           ref={setScrollEl}
           role="region"
           aria-label={ariaLabel}
+          // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a scrolling region must be keyboard focusable
           tabIndex={0}
           onKeyDown={handleKeyDown}
           className={`relative min-h-0 flex-1 outline-none scrollbar-thin focus-ring ${split ? 'overflow-y-auto overflow-x-hidden' : 'overflow-auto'} ${DIFF_CODE_TEXT} ${SUGAR_HIGH_THEME}`}

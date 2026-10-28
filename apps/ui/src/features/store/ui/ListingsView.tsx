@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { ChevronDown } from 'lucide-react'
 import type { ListingRef, StoreCategory } from '@localixai/store'
 import { Button } from '@localixai/kit/button'
@@ -168,15 +168,18 @@ export function ListingsView({
   subtitle,
   query,
   refs,
+  actions,
 }: {
   title: string
   subtitle?: string
   query?: StorePageQuery
   refs?: readonly ListingRef[]
+  /** What can be done to the shelf (Add, Archive unused), on the heading's row. */
+  actions?: ReactNode
 }) {
   return (
     <div className="flex min-w-0 flex-col gap-6">
-      <SectionHeading title={title} description={subtitle} />
+      <SectionHeading title={title} description={subtitle} actions={actions} />
       {refs ? (
         <ChosenListings refs={refs} />
       ) : (

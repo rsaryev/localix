@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { SpaceDocument } from '../../shared/format/document'
 import { elementName } from '../../shared/graph/names'
 import { spaceTypes } from '../../shared/types'
+import { useLatest } from '@localixai/mini-app-sdk/ui/runtime-hooks'
 import type { RemoteChange } from '../useSpace'
 
 /**
@@ -41,13 +42,12 @@ export function useBoardAnnouncements(
   trace: string | null,
   announce: (text: string) => void,
 ) {
-  const board = useRef(space)
-  board.current = space
+  const board = useLatest(space)
   useEffect(() => {
     if (!remote) return
     const names = namesOf(board.current, remote.ids)
     if (names) announce(`Changed on the board: ${names}.`)
-  }, [announce, remote])
+  }, [announce, remote, board])
   useEffect(() => {
     if (trace) announce(`${trace}.`)
   }, [announce, trace])

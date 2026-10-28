@@ -6,7 +6,7 @@
  * closed by a route change, a preview overlay torn down by its owner — all release correctly
  * without anybody remembering to.
  */
-import { useEffect, useRef } from 'react'
+import { useEffect, useEffectEvent } from 'react'
 
 import { useFocusStack } from './store'
 import { DEFAULT_KEY_POLICY, type FocusKind, type GlobalKeyPolicy } from './types'
@@ -22,8 +22,8 @@ export interface FocusEntryOptions {
   /** Live DOM root of a pane. Mounted panes must not receive another pane's keys. */
   scope?: () => Element | null
   /**
-   * Keys this surface owns while it is focused. Kept in a ref, so a handler that closes over fresh
-   * props does not re-push the stack on every render.
+   * Keys this surface owns while it is focused. Read through an effect event, so a handler that
+   * closes over fresh props does not re-push the stack on every render.
    */
   onKeyDown?: (event: KeyboardEvent) => boolean | void
 }
@@ -39,10 +39,8 @@ export function useFocusEntry({
   const plainKeys = keyboard?.plainKeys ?? DEFAULT_KEY_POLICY[kind].plainKeys
   const modifierKeys = keyboard?.modifierKeys ?? DEFAULT_KEY_POLICY[kind].modifierKeys
 
-  const handlerRef = useRef(onKeyDown)
-  handlerRef.current = onKeyDown
-  const scopeRef = useRef(scope)
-  scopeRef.current = scope
+  const handleKey = useEffectEvent((event: KeyboardEvent) => onKeyDown?.(event))
+  const currentScope = useEffectEvent(() => scope?.() ?? null)
   const scoped = Boolean(scope)
 
   useEffect(() => {
@@ -52,8 +50,8 @@ export function useFocusEntry({
       id,
       kind,
       keyboard: { plainKeys, modifierKeys },
-      ...(scoped ? { scope: () => scopeRef.current?.() ?? null } : {}),
-      onKeyDown: (event) => handlerRef.current?.(event),
+      ...(scoped ? { scope: () => currentScope() } : {}),
+      onKeyDown: (event) => handleKey(event),
     })
     return () => release(id)
   }, [id, kind, active, plainKeys, modifierKeys, scoped])

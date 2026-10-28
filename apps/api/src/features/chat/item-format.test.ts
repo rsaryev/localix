@@ -76,15 +76,15 @@ describe('itemActionVerb', () => {
   })
 
   test('file_change uses the resolver, else falls back to Editing', () => {
-    expect(itemActionVerb(item({ type: 'file_change', name: 'write' }))).toBe('Editing')
-    expect(itemActionVerb(item({ type: 'file_change', name: 'write' }), () => 'Writing')).toBe(
+    expect(itemActionVerb(item({ type: 'file_change', name: 'Write' }))).toBe('Editing')
+    expect(itemActionVerb(item({ type: 'file_change', name: 'Write' }), () => 'Writing')).toBe(
       'Writing',
     )
   })
 
   test('tool_call: resolver verb wins, then activeVerb, then Running', () => {
     // A resolver verb other than the generic "Running" is preferred.
-    expect(itemActionVerb(item({ type: 'tool_call', name: 'search' }), () => 'Searching')).toBe(
+    expect(itemActionVerb(item({ type: 'tool_call', name: 'Search' }), () => 'Searching')).toBe(
       'Searching',
     )
     // A generic "Running" from the resolver yields to the item's own activeVerb.

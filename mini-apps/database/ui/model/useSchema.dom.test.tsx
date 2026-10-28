@@ -44,7 +44,10 @@ describe('useSchema work-item visibility', () => {
 
     let state: SchemaState | undefined
     function Reader() {
-      state = useSchema('visibility-hook-connection')
+      const latest = useSchema('visibility-hook-connection')
+      React.useEffect(() => {
+        state = latest
+      })
       return null
     }
     function Harness({ visible }: { visible: boolean }) {

@@ -50,7 +50,7 @@ import { listThemesFromCatalog } from './themes'
 import type { PluginRecord } from './contracts'
 import { toConfigFields, type PluginService, type PluginServiceDeps } from './service-types'
 import { hydrateSecretOption } from './config-vault'
-import { reconcileStoredConfig, savePluginConfig } from './service-config'
+import { savePluginConfig } from './service-config'
 import {
   assertEnableChanges,
   reinstallFromSource,
@@ -139,7 +139,10 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       scope: plugin.scope,
       dir: plugin.dir,
       ...(plugin.inPlaceInstall ? { loadsInPlace: true } : {}),
-      source: plugin.builtin ? BUILTIN_ORIGIN : (state?.source ?? 'local'),
+      // A Claude Code install goes by Claude Code's `name@marketplace`, the id the Store finds it by.
+      source: plugin.builtin
+        ? BUILTIN_ORIGIN
+        : (state?.source ?? plugin.claudeCodeInstall ?? 'local'),
       ...(plugin.builtin ? { builtin: true } : {}),
       enabled,
       ...(awaitingConsent ? { awaitingConsent } : {}),
@@ -392,18 +395,6 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       deps.onChanged?.()
       return toRecord(plugin, state, await verdictFor(userId, plugin))
     },
-
-    reconcileStoredConfig: (userId) =>
-      reconcileStoredConfig({
-        repo,
-        userId,
-        discover: async (projectId) =>
-          discover({ cwd: projectId ? await cwdFor(userId, projectId) : null, projectId }),
-        onRewritten: () => {
-          deps.onChanged?.()
-        },
-        warn: (message) => deps.logger?.warn(message),
-      }),
 
     async install(userId, input, opts) {
       const scope: 'global' | 'project' = input.projectId ? 'project' : 'global'

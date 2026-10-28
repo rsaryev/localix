@@ -187,8 +187,13 @@ export function useReaderNavigation({
     [applyReaderNavigation, currentReaderLocation, navigationTrail],
   )
 
-  useEffect(() => {
+  // Another book starts a new trail, in the render that shows it.
+  const [trailSource, setTrailSource] = useState(sourceKey)
+  if (trailSource !== sourceKey) {
+    setTrailSource(sourceKey)
     setNavigationTrail(emptyReaderNavigationTrail())
+  }
+  useEffect(() => {
     exactNavigationRef.current = null
   }, [exactNavigationRef, sourceKey])
 

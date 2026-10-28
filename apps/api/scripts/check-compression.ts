@@ -40,9 +40,8 @@ import {
   checkpointTargetTokens,
 } from '../src/features/chat/runtime/model-view/checkpoint-policy'
 
-// `apply_patch`/`patch` stay so historical sessions recorded with the removed tool still count.
-const MUTATE = new Set(['write', 'edit', 'apply_patch', 'patch'])
-const COMMAND = new Set(['bash', 'shell', 'terminal'])
+const MUTATE = new Set(['Write', 'Edit'])
+const COMMAND = new Set(['Bash', 'shell', 'terminal'])
 
 /** Build a tool-backed item from a wire tool call (mirrors the live item producer). */
 function buildItem(name: string, id: string, input: unknown, resultText: string): ToolBackedItem {
@@ -196,11 +195,11 @@ messages.forEach((m, i) => {
     const name = itemName(it)
     const input = (it.input ?? {}) as Record<string, unknown>
     const target = (input.path ?? input.file ?? input.file_path) as string | undefined
-    if (name === 'write' || name === 'edit' || name === 'apply_patch') {
+    if (name === 'Write' || name === 'Edit') {
       // A batched write/edit names its files per entry.
       for (const path of mutationInputPaths(input))
         writeTargets.set(path, [...(writeTargets.get(path) ?? []), i])
-    } else if (target && name === 'read') {
+    } else if (target && name === 'Read') {
       readTargets.set(target, [...(readTargets.get(target) ?? []), i])
     }
   }

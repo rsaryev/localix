@@ -1,4 +1,5 @@
-import { MemoryBudgetError } from '../../memory/repository'
+import { autoMemoryDir, readMemoryIndex, rememberFact } from '../../memory/auto-memory'
+import { claudeCodeHome } from '../../cc-settings/config-dir'
 import type { SessionRecord } from '../repository'
 import type { MessageMutationResponse } from '../contracts'
 import type { CommandHandlerContext, DirectReply } from './command-handlers'
@@ -83,50 +84,44 @@ function renderHelpDetail(query: string): string {
 }
 
 /**
- * Handles `/memory [fact]`: bare lists stored memories; with a fact, saves it
- * deterministically (no agent run) scoped to the session's project. Extracted
- * verbatim from handleControlCommand.
+ * Handles `/memory [fact]`: bare shows the session's auto memory folder and its MEMORY.md (the
+ * folder Claude Code keeps for the same repository); with a fact, saves it there as its own file
+ * with a pointer in MEMORY.md, deterministically (no agent run).
  */
 export async function handleMemoryControlCommand(
-  ctx: Pick<CommandHandlerContext, 'memoryRepo'>,
+  ctx: Pick<CommandHandlerContext, 'resolveSessionWorkingDir'>,
   userId: string,
   session: SessionRecord,
   prompt: string,
-  ts: string,
   directReply: DirectReply,
 ): Promise<MessageMutationResponse> {
-  const { memoryRepo } = ctx
   const arg = commandRemainder(prompt)
-  const memScopes = session.projectId ? [session.projectId, ''] : ['']
-  if (!arg) {
-    const rows = await memoryRepo.list(userId, memScopes, 'recent')
-    const reply =
-      rows.length === 0
-        ? 'No memories stored yet. Save one with `/memory <fact>`.'
-        : [
-            '**Stored memories:**',
-            '',
-            ...rows.map((r) => `- **${r.key}**${r.projectId ? '' : ' _(global)_'}: ${r.value}`),
-          ].join('\n')
-    return directReply(reply)
+  // As a run does (`prompt-context.ts`): the folder is on this machine, out of reach of another.
+  if ((session.executionBackend ?? 'local') !== 'local')
+    return directReply(
+      'This conversation runs on another machine or in a container, which has no auto memory folder, so `/memory` has nothing to show or save.',
+    )
+  const cwd = await ctx.resolveSessionWorkingDir(userId, session)
+  const dir = autoMemoryDir({ cwd, homeDir: claudeCodeHome() })
+  if (!dir) {
+    return directReply(
+      'Auto memory is off (`autoMemoryEnabled` in Claude Code settings, or `CLAUDE_CODE_DISABLE_AUTO_MEMORY`).',
+    )
   }
-  // Save a memory directly (deterministic — no agent run needed), scoped to the project.
-  const key =
-    arg
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
-      .slice(0, 48) || `note-${Date.now()}`
-  const memScope = session.projectId ?? ''
-  try {
-    await memoryRepo.set(userId, memScope, key, arg, ts)
-  } catch (error) {
-    if (error instanceof MemoryBudgetError) {
-      return directReply(`Memory save failed: ${error.message}`)
-    }
-    throw error
+  if (arg) {
+    const file = await rememberFact(dir, arg)
+    return directReply(`Saved to \`${dir}/${file}\` and listed in MEMORY.md.`)
   }
-  return directReply(`Saved to ${memScope ? 'project' : 'global'} memory as \`${key}\`.`)
+  const { index, clipped } = await readMemoryIndex(dir)
+  if (!index) return directReply(`No memories yet in \`${dir}\`. Save one with \`/memory <fact>\`.`)
+  return directReply(
+    [
+      `**Memory** — \`${dir}\``,
+      '',
+      index,
+      ...(clipped ? ['', '_Only the first 200 lines or 25KB of MEMORY.md load into a chat._'] : []),
+    ].join('\n'),
+  )
 }
 
 /**

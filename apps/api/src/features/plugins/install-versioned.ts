@@ -4,7 +4,6 @@ import { join, resolve } from 'node:path'
 import { ConflictError } from '../../lib/domain-errors'
 import { isRecord } from '../../lib/record'
 import { pathExists } from '../ext/fs-discovery'
-import { removeIfUnderRoot } from '../ext/install-tree'
 import type { InPlaceInstall } from './install-in-place'
 import type { ResolvedMarketplaceInstall } from './marketplace-registry'
 import {
@@ -12,7 +11,6 @@ import {
   cachedVersionDir,
   clearOrphaned,
   markOrphaned,
-  pluginsRoot,
   readInstallRecords,
   setInstallRecord,
   type CachedInstallRecord,
@@ -37,14 +35,6 @@ export interface VersionedInstall {
   /** `cache/<marketplace>/<plugin>/<version>`. */
   dir: string
   commitSha?: string
-}
-
-/**
- * Where an earlier Localix kept a user-scope copy of the plugin, or null for the one name that is
- * the cache folder itself.
- */
-function legacyCopyDir(home: string, plugin: string): string | null {
-  return plugin === 'cache' ? null : join(pluginsRoot(home), plugin)
 }
 
 async function manifestField(dir: string, field: 'name' | 'version'): Promise<string | undefined> {
@@ -104,8 +94,7 @@ export async function existingVersion(
 ): Promise<CachedInstallRecord | null> {
   const record = (await readInstallRecords(home))[versioned.id]
   if (!replace) {
-    const legacy = legacyCopyDir(home, versioned.plugin)
-    if (record || (legacy && (await pathExists(legacy))))
+    if (record)
       throw new ConflictError(
         'plugin_already_installed',
         `Plugin "${versioned.plugin}" is already installed (scope: user)`,
@@ -119,7 +108,7 @@ export async function existingVersion(
 /**
  * Inside the install's commit: record the new version. `undo` restores the record before it when
  * the database commit fails; `settle` then marks the version before orphaned (removed 14 days later)
- * and retires the copy an earlier Localix kept at `<plugins root>/<plugin>`, which would shadow it.
+ 
  */
 export async function claimCachedRecord(
   home: string,
@@ -143,8 +132,6 @@ export async function claimCachedRecord(
       await clearOrphaned(versioned.dir)
       if (previous && resolve(previous.installPath) !== resolve(versioned.dir))
         await markOrphaned(home, previous.installPath)
-      const legacy = legacyCopyDir(home, versioned.plugin)
-      if (legacy) await removeIfUnderRoot(legacy, pluginsRoot(home))
     },
   }
 }

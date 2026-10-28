@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import { currentTickAt } from './minimapModel'
 
 export interface TickOffsets {
@@ -36,24 +36,24 @@ export function useTranscriptTicks(
   const [layout, setLayout] = useState<TickLayout>(EMPTY_LAYOUT)
   const cachedOffsetsRef = useRef<number[]>([])
 
-  // Ref-read inside the effect so a new getOffsets identity (ticks changed —
+  // Read inside the effect so a new getOffsets identity (ticks changed —
   // already a dependency via tickCount + the render that produced it) doesn't
   // force listener re-subscription on every streamed delta.
-  const getOffsetsRef = useRef(getOffsets)
-  getOffsetsRef.current = getOffsets
+  const readOffsets = useEffectEvent(getOffsets)
+
+  // No ticks, nothing to measure: the layout is empty at once, not after the effect.
+  const measurable = scrollEl !== null && tickCount > 0
+  if (!measurable && layout !== EMPTY_LAYOUT) setLayout(EMPTY_LAYOUT)
 
   useEffect(() => {
-    if (!scrollEl || tickCount === 0) {
-      setLayout(EMPTY_LAYOUT)
-      return
-    }
+    if (!scrollEl || tickCount === 0) return
     let frame = 0
     let disposed = false
 
     const recompute = (remeasure: boolean) => {
       if (disposed) return
       if (remeasure) {
-        const { offsets, totalSize } = getOffsetsRef.current()
+        const { offsets, totalSize } = readOffsets()
         cachedOffsetsRef.current = offsets
         const viewportHeight = scrollEl.clientHeight
         const safeTotal = Math.max(totalSize, 1)

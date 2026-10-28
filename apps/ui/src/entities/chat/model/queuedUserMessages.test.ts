@@ -18,3 +18,10 @@ test('it enters when the queue lets it go, and wakes never hide a row', () => {
   const wake = [{ kind: 'wake' as const, clientMessageId: 'optimistic-a' }]
   expect(withoutQueuedUserMessages(messages, wake)).toBe(messages)
 })
+
+// A message sent mid-run showed in the transcript for the round trip it
+// took the server to report the queue item, then vanished. It is held back from the first frame.
+test('a message sent while a run was active stays out of the transcript before the queue reports it', () => {
+  const rows = [{ id: 'm1' }, { id: 'optimistic-a', awaitsQueue: true }]
+  expect(withoutQueuedUserMessages(rows, []).map((m) => m.id)).toEqual(['m1'])
+})

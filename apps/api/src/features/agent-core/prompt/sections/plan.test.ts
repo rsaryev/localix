@@ -32,36 +32,41 @@ describe('# Plan mode', () => {
     // A delegated run in plan mode holds no `plan`: it is told to read and report, and the
     // section names no tool it lacks (it used to render nothing, leaving the first refused write
     // to explain the mode — pointing at `plan`).
-    const delegated = buildPlanModeSection(roster(TOOL.ask), inPlan)
+    const delegated = buildPlanModeSection(roster(TOOL.AskUserQuestion), inPlan)
     expect(delegated).toContain(PLAN_MODE_HEADER)
     expect(delegated).toContain('report what you find')
-    expect(delegated).not.toContain('`plan`')
+    expect(delegated).not.toContain('`Plan`')
     expect(delegated).not.toContain(DRAFT)
     // The tool lives in every mode now, so the roster alone must not render the section.
-    expect(buildPlanModeSection(roster(TOOL.plan, TOOL.ask), undefined)).toBeUndefined()
-    expect(buildPlanModeSection(roster(TOOL.plan, TOOL.ask), inPlan)).toContain(PLAN_MODE_HEADER)
-    expect(buildPlanModeSection(roster(TOOL.plan), inPlan)).toContain('action `present`')
+    expect(buildPlanModeSection(roster(TOOL.Plan, TOOL.AskUserQuestion), undefined)).toBeUndefined()
+    expect(buildPlanModeSection(roster(TOOL.Plan, TOOL.AskUserQuestion), inPlan)).toContain(
+      PLAN_MODE_HEADER,
+    )
+    expect(buildPlanModeSection(roster(TOOL.Plan), inPlan)).toContain('action `present`')
   })
 
   test('names `ask` only when the run holds it', () => {
-    expect(buildPlanModeSection(roster(TOOL.plan, TOOL.ask), inPlan)).toContain('`ask`')
-    expect(buildPlanModeSection(roster(TOOL.plan), inPlan)).not.toContain('`ask`')
+    expect(buildPlanModeSection(roster(TOOL.Plan, TOOL.AskUserQuestion), inPlan)).toContain(
+      '`AskUserQuestion`',
+    )
+    expect(buildPlanModeSection(roster(TOOL.Plan), inPlan)).not.toContain('`AskUserQuestion`')
   })
 
   test('names the draft file, revising it with the edit tools held, and re-presenting', () => {
-    const section = buildPlanModeSection(roster(TOOL.plan, TOOL.edit), inPlan)!
+    const section = buildPlanModeSection(roster(TOOL.Plan, TOOL.Edit), inPlan)!
     expect(section).toContain(`Write the plan to ${DRAFT}`)
-    expect(section).toContain('`edit`')
-    expect(buildPlanModeSection(roster(TOOL.plan), inPlan)).not.toContain('`edit`')
+    expect(section).toContain('`Edit`')
+    expect(buildPlanModeSection(roster(TOOL.Plan), inPlan)).not.toContain('`Edit`')
     expect(section).toContain('re-shows the same version')
-    expect(buildPlanModeSection(roster(TOOL.plan), {})).not.toContain('Write the plan to')
+    expect(buildPlanModeSection(roster(TOOL.Plan), {})).not.toContain('Write the plan to')
   })
 
-  test('a plan-mode run renders it in the cached prefix; a default-mode run does not', () => {
-    const registry = () => createRuntimeToolRegistry({ optional: { plan: planPort } })
+  test('a plan-mode run renders it in the runtime context; a default-mode run does not', () => {
+    const registry = () => createRuntimeToolRegistry({ optional: { Plan: planPort } })
     const withPlan = buildAgentSystemPrompt({ toolRegistry: registry(), planMode: inPlan })
     expect(withPlan.indexOf(PLAN_MODE_HEADER)).toBeGreaterThan(-1)
-    expect(withPlan.indexOf(PLAN_MODE_HEADER)).toBeLessThan(
+    // It rides the runtime context, after the marker, not the shared system prompt.
+    expect(withPlan.indexOf(PLAN_MODE_HEADER)).toBeGreaterThan(
       withPlan.indexOf(RUNTIME_CONTEXT_MARKER),
     )
     expect(buildAgentSystemPrompt({ toolRegistry: registry() })).not.toContain(PLAN_MODE_HEADER)
@@ -83,8 +88,8 @@ describe('# Approved plan', () => {
   })
 
   test('tells a run holding `plan` to complete it when done — and only when done', () => {
-    const section = buildApprovedPlanSection(plan, roster(TOOL.plan))!
-    expect(section).toContain('action `complete`')
+    const section = buildApprovedPlanSection(plan, roster(TOOL.Plan))!
+    expect(section).toContain('action "complete"')
     expect(section).toContain('if only part is done')
     expect(buildApprovedPlanSection(plan, none)).not.toContain('`complete`')
   })
@@ -105,10 +110,10 @@ describe('# Approved plan', () => {
     expect(buildApprovedPlanSection({ ...plan, body: '  ' }, none)).toBeUndefined()
   })
 
-  test('lands above the runtime-context boundary, whatever the roster', () => {
+  test('rides the runtime context, whatever the roster', () => {
     const prompt = buildAgentSystemPrompt({ approvedPlan: plan })
     expect(prompt.indexOf(APPROVED_PLAN_HEADER)).toBeGreaterThan(-1)
-    expect(prompt.indexOf(APPROVED_PLAN_HEADER)).toBeLessThan(
+    expect(prompt.indexOf(APPROVED_PLAN_HEADER)).toBeGreaterThan(
       prompt.indexOf(RUNTIME_CONTEXT_MARKER),
     )
   })

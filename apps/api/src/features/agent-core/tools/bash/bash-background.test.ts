@@ -29,9 +29,10 @@ describe('bash background settle window', () => {
   }, 10_000)
 
   test('does not mistake an early launcher banner for successful startup', async () => {
-    // The production window scaled down 5×: the minimum grace still outlasts the delayed failure.
+    // A minimum grace far longer than the delayed failure, so a loaded machine cannot outlast it;
+    // the exit ends the wait at once, so the test still takes only as long as the command.
     const tool = createBashTool(undefined, undefined, {
-      backgroundSettle: { minMs: 400, maxMs: 600, quietMs: 70 },
+      backgroundSettle: { minMs: 5_000, maxMs: 6_000, quietMs: 70 },
     })
     // Nested launchers (Tauri, Turbo, package scripts) commonly print their own
     // command first, then fail asynchronously. The old 350 ms quiet-gap return

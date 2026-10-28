@@ -12,7 +12,6 @@ import { composeCapabilities, type ResolvedCapabilities } from '../capabilities/
 import { capabilitiesChanged, trackCapabilityChange } from '../capabilities/revision'
 import type { Rule } from '../agent-core/capability-rule'
 import { createAgentBindings, type AgentSnapshot, type BoundAgent } from './bindings/bindings'
-import { createAgentAuthoring } from './authoring'
 import type { CatalogAgent } from './catalog/agent-file'
 import type { AgentSummary } from './contracts'
 import { createAgentFile, type CreatePorts } from './create'
@@ -143,28 +142,17 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
         'This agent comes from elsewhere. Copy it to Yours to change it.',
       )
   }
-  const collides = (list: readonly AgentSummary[], handle: string, projectId: string, id: string) =>
+  const collides = (list: readonly AgentSummary[], name: string, projectId: string, id: string) =>
     list.some(
       (agent) =>
         agent.editable &&
         agent.projectId === projectId &&
-        agent.record.handle === handle &&
+        agent.record.name === name &&
         agent.record.id !== id,
     )
 
   return {
     bindings,
-    ...createAgentAuthoring(
-      {
-        ...createPorts,
-        // Only called inside `exclusive`, so it reads without taking the lock again.
-        find: async (userId, name, scope) =>
-          (await find(userId, name, scope, await bindings.reconcileNow(userId, scope)))?.summary,
-        sources: stores.sources(deps.db, 'agent', deps.now),
-        rules,
-      },
-      bindings.exclusive,
-    ),
     ...createAgentDelegation({
       snapshot: (userId, scope) => bindings.snapshot(userId, scope),
       summaries: async (userId, snapshot) => (await catalogOf(userId, snapshot)).all,
@@ -200,29 +188,29 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
     createAgent: (userId, input) =>
       changed(() => bindings.exclusive(userId, () => createAgentFile(createPorts, userId, input))),
 
-    updateAgent: (userId, name, input, projectId) =>
+    updateAgent: (userId, current, input, projectId) =>
       changed(() =>
         bindings.exclusive(userId, async () => {
           const scope = projectId ?? ''
           const snapshot = await bindings.reconcileNow(userId, scope)
-          const found = await find(userId, name, scope, snapshot)
+          const found = await find(userId, current, scope, snapshot)
           if (!found) throw new NotFoundError('agent_not_found', 'Agent not found')
           const { summary } = found
           requireEditable(summary)
           const { id } = summary.record
-          const handle = input.handle
-          if (handle.includes(':'))
+          const name = input.name
+          if (name.includes(':'))
             throw new InvalidRequestError('agent_name_invalid', 'An agent file name has no ":"')
-          const renamed = handle !== summary.record.handle
+          const renamed = name !== summary.record.name
           if (
             renamed &&
-            collides((await catalogOf(userId, snapshot)).all, handle, summary.projectId, id)
+            collides((await catalogOf(userId, snapshot)).all, name, summary.projectId, id)
           )
-            throw new ConflictError('agent_exists', `An agent named "${handle}" already exists.`)
-          const path = renamed ? agentFilePath(dirname(summary.path), handle) : summary.path
+            throw new ConflictError('agent_exists', `An agent named "${name}" already exists.`)
+          const path = renamed ? agentFilePath(dirname(summary.path), name) : summary.path
           let text: string
           try {
-            text = agentFileText(await readAgentFileText(summary.path), { ...input, handle })
+            text = agentFileText(await readAgentFileText(summary.path), { ...input, name })
           } catch (error) {
             throw new InvalidRequestError(
               'agent_file_unreadable',
@@ -264,7 +252,7 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
           createAgentFile(
             createPorts,
             userId,
-            { ...copied, handle: newName, projectId: scope || null, enabled: summary.enabled },
+            { ...copied, name: newName, projectId: scope || null, enabled: summary.enabled },
             policy,
           ),
         )
@@ -298,8 +286,8 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
       return all.find((agent) => agent.record.id === agentId && agent.enabled)?.record ?? null
     },
 
-    async selectEnabledAgent(userId, handle, projectId) {
-      const found = await find(userId, handle, projectId ?? '')
+    async selectEnabledAgent(userId, name, projectId) {
+      const found = await find(userId, name, projectId ?? '')
       return found?.summary.enabled ? found.summary.record : null
     },
   }

@@ -51,8 +51,8 @@ const wire = (...body: Message[]): Message[] => [user('the task'), ...body, user
 
 /** A read of `path` whose result is the model's only live copy of it. */
 const read = (id: string, path: string, size: number): Message[] => [
-  calls(tc(id, 'read', { path })),
-  result(id, 'read', 'L'.repeat(size)),
+  calls(tc(id, 'Read', { path })),
+  result(id, 'Read', 'L'.repeat(size)),
 ]
 
 const contentOf = (ms: Message[], id: string): string => {

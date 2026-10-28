@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from 'react'
+import { memo, useState } from 'react'
 import { BookOpen, MessageSquareText, PenLine, Search, Trash2, X } from 'lucide-react'
 import { SegmentedRadioGroup } from '@localixai/mini-app-sdk/ui'
 
@@ -22,6 +22,7 @@ import {
   type ReaderSavedQuote,
   type ReaderTextTarget,
 } from './model'
+import { focusOnMount } from './focusOnMount'
 import { READER_HIGHLIGHT_COLOR_LABELS, ReaderHighlightSwatch } from './ReaderSelectionToolbar'
 import { sourceForBook } from './readerSources'
 import './reader.css'
@@ -41,16 +42,16 @@ export function BookCover({
   book: ReaderBookSummary
   compact?: boolean
 }) {
-  const [failed, setFailed] = useState(false)
-  useEffect(() => setFailed(false), [book.cover])
-  if (book.cover && !failed) {
+  // The cover that failed to load, so a different cover starts out as not failed.
+  const [failedCover, setFailedCover] = useState<string | null>(null)
+  if (book.cover && failedCover !== book.cover) {
     return (
       <img
         src={book.cover}
         alt=""
         className="h-full w-full object-cover"
         draggable={false}
-        onError={() => setFailed(true)}
+        onError={() => setFailedCover(book.cover ?? null)}
       />
     )
   }
@@ -107,7 +108,12 @@ export function AnnotationCard({
   onAddContext: () => void
 }) {
   const [draft, setDraft] = useState(item.note ?? '')
-  useEffect(() => setDraft(item.note ?? ''), [item.id, item.note])
+  // The draft follows the saved note: another annotation, or the note changed elsewhere.
+  const [draftOf, setDraftOf] = useState({ id: item.id, note: item.note })
+  if (draftOf.id !== item.id || draftOf.note !== item.note) {
+    setDraftOf({ id: item.id, note: item.note })
+    setDraft(item.note ?? '')
+  }
   const color = item.color ?? 'yellow'
 
   return (
@@ -159,7 +165,7 @@ export function AnnotationCard({
             onChange={(event) => setDraft(event.target.value)}
             placeholder="Add a note…"
             aria-label="Annotation note"
-            autoFocus
+            ref={focusOnMount}
           />
           <div className="mt-2 flex items-center gap-1">
             <IconButton

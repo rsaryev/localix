@@ -32,7 +32,7 @@ export function readMessage(i: number): PersistedMessage {
       {
         type: 'tool_call',
         toolCallId: `t-${i}`,
-        name: 'read',
+        name: 'Read',
         status: 'completed',
         input: { path: `/repo/src/file-${i}.ts` },
         resultText: `line ${i}\n`.repeat(400),
@@ -50,7 +50,7 @@ export function bashMessage(i: number): PersistedMessage {
       {
         type: 'tool_call',
         toolCallId: `bt-${i}`,
-        name: 'bash',
+        name: 'Bash',
         status: 'completed',
         input: { command: `test ${i}` },
         resultText: `out ${i} xxxxxxxxxxxxxxxx\n`.repeat(300),

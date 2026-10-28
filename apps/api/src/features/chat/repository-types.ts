@@ -1,7 +1,6 @@
 import type { AgentSessionKind, ReasoningEffort } from '../../db'
 import type { PermissionMode } from '../../contracts/permission-modes'
 import type { SessionProvenance } from './session-provenance'
-import type { SessionModelChoices } from './session-model-choices'
 
 /**
  * Row/record shapes for the chat repository, split out of repository.ts so the
@@ -17,13 +16,13 @@ export interface HistorySearchHit {
   createdAt: string
 }
 
-/** An FTS5 hit that also carries the matched message id + sequence (global_search v2 discovery). */
+/** An FTS5 hit that also carries the matched message id + sequence (GlobalSearch v2 discovery). */
 export interface HistorySearchHitDetailed extends HistorySearchHit {
   messageId: string
   sequence: number
 }
 
-/** A raw history message row used by global_search window / bookend / browse helpers. */
+/** A raw history message row used by GlobalSearch window / bookend / browse helpers. */
 export interface HistoryMessageRow {
   id: string
   sessionId: string
@@ -33,7 +32,7 @@ export interface HistoryMessageRow {
   createdAt: string
 }
 
-/** A session row for global_search browse mode (recent sessions). */
+/** A session row for GlobalSearch browse mode (recent sessions). */
 export interface RecentSessionRow {
   id: string
   title: string
@@ -43,7 +42,7 @@ export interface RecentSessionRow {
   firstUserPayloadJson: string | null
 }
 
-/** Title + timestamps for a known session id (global_search discovery grouping). */
+/** Title + timestamps for a known session id (GlobalSearch discovery grouping). */
 export interface SessionMetaRow {
   id: string
   title: string
@@ -54,8 +53,7 @@ export interface SessionMetaRow {
 /**
  * What one run costs to address: a connection, a model, and how hard to think.
  *
- * Not owned by a session. A session has a party, and each participant carries one of these —
- * see {@link SessionAgentRoute}. This bare triple is what the latency-sensitive auxiliary
+ * A session's agent carries one of these — see {@link SessionAgentRoute}. This bare triple is what the latency-sensitive auxiliary
  * paths read when they need only the three values and not who they belong to.
  */
 export interface ModelRoute {
@@ -68,7 +66,7 @@ export interface ModelRoute {
  * What the user last CHOSE, which is the "recent" level of the model chain
  * (`agent-route-resolution.ts`) — per agent.
  *
- * Read out of the picks themselves rather than kept in a store of its own: a seat holds a stamped
+ * Read out of the picks themselves rather than kept in a store of its own: a route holds a stamped
  * model only when someone picked one there, and a session's choice map stamps every pick —
  * including one for an agent not invited yet — so together they already are this record.
  */
@@ -76,7 +74,7 @@ export interface RecentRoutes {
   byAgent: Map<string, RecentRoute>
 }
 
-/** One agent's last pick. The level is known only for a pick from the choice map. */
+/** One agent's last pick. The level is known only when it was picked too. */
 export interface RecentRoute {
   providerConnectionId: string | null
   modelId: string
@@ -84,14 +82,14 @@ export interface RecentRoute {
 }
 
 /**
- * One participant of a session, and the route its turns run on.
+ * A session's agent, and the route its turns run on.
  *
  * Defined once, in the WIRE contract, and re-exported here: the browser asks the same question
  * of the same shape, and a second declaration on this side would be a copy free to drift. The
  * route is per (session, agent) and not per session, because a session with several agents
  * needs one per agent and a session with one is simply that case with a single row. An agent's
  * registry record carries a GLOBAL preferred model; this is the choice made for it HERE,
- * seeded from that global one when the participant joins and overriding it after.
+ * seeded from that global one when the agent joins and overriding it after.
  */
 import type { SessionAgentRoute } from './contracts/read-model'
 export type { SessionAgentRoute }
@@ -106,7 +104,7 @@ export interface SessionRecord {
   seq?: number
   title: string
   isPinned: boolean
-  /** Current objective, shared by every participant independently of their private lane. */
+  /** Current objective, shared by every agent independently of their private lane. */
   goal?: string | null
   /** Important context carried forward when the topic changes. */
   previousTopicSummary?: string | null
@@ -127,23 +125,17 @@ export interface SessionRecord {
   /** Durable creator/topology metadata used to reconstruct execution policy after restart. */
   provenance: SessionProvenance
   /**
-   * WHO this conversation is with and what each of them runs on, in join order — never empty.
-   * One participant is a 1-1 chat; several make it a group. The human is not listed: they are
-   * in every session by construction, and they do not run on a model.
+   * The conversation's one agent and what it runs on, fixed when the session was created. The
+   * human is not listed: they are in every session by construction and do not run on a model.
+   * Null only for a session that runs no model (a passive log).
    *
    * A handle that no longer resolves (a disabled or deleted agent) degrades to the product's
-   * default identity rather than failing the run, so a roster change can never strand a
-   * conversation. The ROUTE survives regardless — it is stored here, not looked up.
+   * default identity rather than failing the run. The ROUTE survives regardless: it is stored
+   * on the session, not looked up.
    */
-  agents: SessionAgentRoute[]
+  agent: SessionAgentRoute | null
   /**
-   * The person's model choices in this session, per agent, seated or not —
-   * what an agent that joins starts on (`session-model-choices.ts`). Absent on a record built in
-   * memory before it is stored, which is "nothing chosen".
-   */
-  modelChoices?: SessionModelChoices
-  /**
-   * When a delegated child was CLOSED (`delegate` action close), or null while it is open. A closed
+   * When a delegated child was CLOSED (`Agent` action close), or null while it is open. A closed
    * child is terminal history: no wake, no message, no send reaches a run in it again.
    */
   closedAt?: string | null
@@ -162,8 +154,6 @@ export interface SessionRecord {
   outputStyle?: string | null
   /** Optional conversation description. */
   description: string | null
-  /** A group's avatar ref (media id or emoji); null = generated from the title. */
-  avatar: string | null
   /** Skill names pinned to this session (warmed into the system prompt). */
   pinnedSkills: string[]
   /**
@@ -190,13 +180,12 @@ export interface SessionRecord {
 /**
  * The last thing said in a session, as a dialog list shows it.
  *
- * `from` is the stored `ParticipantRef` — the AUTHOR, not the transport role — because a
+ * `from` is the stored `AuthorRef` — the AUTHOR, not the transport role — because a
  * list of sessions with several agents has to say who spoke, and role cannot: an agent's
  * own line is `assistant` to itself and input to everyone else.
  */
 export interface LastMessagePreview {
   from: string
-  authorSnapshot?: { handle: string }
   /** One line, already collapsed and clamped by the server. */
   text: string
   at: number

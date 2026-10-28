@@ -15,6 +15,8 @@ interface DockerResourceState {
   detail: DockerResourceDetail | null
   loading: boolean
   error: DevOpsIssue | null
+  /** The target whose load has begun (or that arrived seeded); '' while none has. */
+  loadedTarget: string
 }
 
 export function useDockerResourceDetail({
@@ -37,9 +39,9 @@ export function useDockerResourceDetail({
     detail: seededDetail,
     loading: active && !seededDetail,
     error: null,
+    loadedTarget: seededDetail ? targetKey : '',
   }))
   const refreshSeq = useRef(0)
-  const loadedTarget = useRef(seededDetail ? targetKey : '')
   const targetState =
     state.targetKey === targetKey
       ? state
@@ -48,10 +50,11 @@ export function useDockerResourceDetail({
           detail: seededDetail,
           loading: active && !seededDetail,
           error: null,
+          loadedTarget: seededDetail ? targetKey : '',
         }
   const current = dockerResourceNeedsInitialLoad(
     active,
-    loadedTarget.current,
+    targetState.loadedTarget,
     targetKey,
     targetState.detail,
   )
@@ -62,8 +65,8 @@ export function useDockerResourceDetail({
     const seq = ++refreshSeq.current
     setState((value) =>
       value.targetKey === targetKey
-        ? { ...value, loading: true, error: null }
-        : { targetKey, detail: seededDetail, loading: true, error: null },
+        ? { ...value, loading: true, error: null, loadedTarget: targetKey }
+        : { targetKey, detail: seededDetail, loading: true, error: null, loadedTarget: targetKey },
     )
     try {
       let detail: DockerResourceDetail
@@ -81,7 +84,7 @@ export function useDockerResourceDetail({
         detail = { kind, resource }
       }
       if (seq !== refreshSeq.current) return
-      setState({ targetKey, detail, loading: false, error: null })
+      setState({ targetKey, detail, loading: false, error: null, loadedTarget: targetKey })
     } catch (cause) {
       if (seq !== refreshSeq.current) return
       const error =
@@ -93,25 +96,29 @@ export function useDockerResourceDetail({
         detail: value.targetKey === targetKey ? value.detail : seededDetail,
         loading: false,
         error,
+        loadedTarget: targetKey,
       }))
     }
   }, [identity, kind, seededDetail, targetKey])
 
+  // A read still in flight for the previous target must not land on this one.
   useEffect(() => {
-    if (state.targetKey !== targetKey) {
-      refreshSeq.current += 1
-      loadedTarget.current = seededDetail ? targetKey : ''
-      setState({
-        targetKey,
-        detail: seededDetail,
-        loading: active && !seededDetail,
-        error: null,
-      })
+    refreshSeq.current += 1
+  }, [targetKey])
+
+  // The first load of a shown target, started from a microtask so its loading flag and result are
+  // set from the read's own callbacks, not while this effect runs.
+  const loadedTarget = targetState.loadedTarget
+  useEffect(() => {
+    if (!active || loadedTarget === targetKey) return
+    let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled) void refresh()
+    })
+    return () => {
+      cancelled = true
     }
-    if (!active || loadedTarget.current === targetKey) return
-    loadedTarget.current = targetKey
-    void refresh()
-  }, [active, refresh, seededDetail, state.targetKey, targetKey])
+  }, [active, refresh, loadedTarget, targetKey])
 
   useEffect(
     () => () => {

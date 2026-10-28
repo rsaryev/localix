@@ -7,7 +7,7 @@
  * next: replay the bytes for one turn (cheap), re-read the file (expensive, and it
  * re-bills every turn afterwards — the endless-review loop), or neither.
  * Which of the three is CORRECT depends on the read's {@link ReadFate}, and getting it
- * wrong is not cosmetic: offering `tool_output` on a STALE read hands the model bytes
+ * wrong is not cosmetic: offering `ToolOutput` on a STALE read hands the model bytes
  * that no longer exist on disk, and it has no way to know.
  *
  * The two layers elide the same reads for the same reasons — turn-start VBC (`apply.ts`)
@@ -65,13 +65,13 @@ export function readPointer(
 
 /**
  * The route back to a whole MESSAGE that left the model's view — its text folded, or the message
- * evicted into an epoch card. The message is durable in the transcript and `global_search`
+ * evicted into an epoch card. The message is durable in the transcript and `GlobalSearch`
  * scrolls to it by id, so naming the id IS the recovery. Without the recall tool in this run's
  * roster the pointer must not advertise a call the model cannot make.
  */
 export function messageRecallClause(messageId: string, recallToolAvailable = true): string {
   return recallToolAvailable
-    ? `; global_search(around_message_id="${messageId}") shows it in full`
+    ? `; GlobalSearch(around_message_id="${messageId}") shows it in full`
     : ''
 }
 
@@ -93,7 +93,7 @@ export function foldedTextMarker(
  * The pointer for any elided RECOVERABLE payload, named by `label` — a read result
  * (`output`) or a heavy mutate ARG (`content` / `patch` / `edits` / `old_string` / …).
  *
- * Prefers the `tool_output` handle — a cheap one-turn replay of exactly this result —
+ * Prefers the `ToolOutput` handle — a cheap one-turn replay of exactly this result —
  * over "re-read the file", which re-lands the whole file in full and re-bills it every
  * turn until it ages out again. The bare re-read hint is the fallback for when no
  * `tool_call_id` is known.
@@ -114,7 +114,7 @@ export function elidedPointer(
   const hints = source ? hintClause(source) : ''
   return locator && recoveryToolAvailable
     ? `[${label} ${ELISION_MARKER} — ${chars} chars; recover the exact bytes via ` +
-        `tool_output(action="get", tool_call_id="${locator}") — a cheap one-turn replay — or re-read the ` +
+        `ToolOutput(action="get", tool_call_id="${locator}") — a cheap one-turn replay — or re-read the ` +
         `file only if it may have changed since${hints}]`
     : `[${label} ${ELISION_MARKER} — ${chars} chars; re-read the file/source if needed${hints}]`
 }

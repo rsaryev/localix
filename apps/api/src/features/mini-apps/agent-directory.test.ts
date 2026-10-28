@@ -3,9 +3,9 @@ import { describe, expect, test } from 'bun:test'
 import { createMiniAppAgentDirectory } from './agent-directory'
 
 const AGENTS = [
-  { id: 'builtin:frontend', handle: 'frontend', description: 'Builds UI', enabled: true },
-  { id: 'builtin:qa', handle: 'qa', description: null, enabled: true },
-  { id: 'agent-off', handle: 'retired', description: 'Switched off', enabled: false },
+  { id: 'builtin:frontend', name: 'frontend', description: 'Builds UI', enabled: true },
+  { id: 'builtin:qa', name: 'qa', description: null, enabled: true },
+  { id: 'agent-off', name: 'retired', description: 'Switched off', enabled: false },
 ]
 
 /** One user owns one session in one project; every other (user, session) is unknown. */
@@ -28,8 +28,8 @@ describe('mini app agent directory', () => {
   test('lists only enabled agents of the session’s own scope', async () => {
     const { agents, asked } = directory()
     expect(await agents.list('owner', 'chat-1')).toEqual([
-      { id: 'builtin:frontend', handle: 'frontend', description: 'Builds UI' },
-      { id: 'builtin:qa', handle: 'qa' },
+      { id: 'builtin:frontend', name: 'frontend', description: 'Builds UI' },
+      { id: 'builtin:qa', name: 'qa' },
     ])
     expect(asked).toEqual([['owner', 'PRJ-1']])
   })
@@ -37,7 +37,7 @@ describe('mini app agent directory', () => {
   test('the person is not an agent: the directory never lists them', async () => {
     const { agents } = directory()
     const listed = await agents.list('owner', 'chat-1')
-    expect(listed.some((agent) => agent.id === 'user' || agent.handle === 'human')).toBe(false)
+    expect(listed.some((agent) => agent.id === 'user' || agent.name === 'human')).toBe(false)
   })
 
   // The session is resolved through an owner-scoped lookup BEFORE the registry is read: a

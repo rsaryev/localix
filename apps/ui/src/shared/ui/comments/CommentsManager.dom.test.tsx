@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, mock, test } from 'bun:test'
 import type { CommentActionContribution } from '@localixai/mini-app-sdk/ui'
 import { registerDom } from '@localixai/kit/testing/dom'
+import { turns as settle } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 
@@ -14,7 +15,6 @@ afterAll(async () => {
   await teardown()
 })
 
-const settle = () => new Promise((resolve) => setTimeout(resolve, 20))
 const ACTION_OWNER = 'comment-action-fixture'
 
 describe('CommentsManager actions', () => {

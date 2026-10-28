@@ -36,7 +36,7 @@ const post = (matcher: string) => runtime({ PostToolUse: [{ matcher, handlers: [
 
 describe('PreToolUse tool_input in Claude Code’s shape', () => {
   it('a batch of shell commands reaches a Bash hook as one command line', async () => {
-    await pre('Bash').runPreToolUse('bash', { commands: ['rm -rf build', 'ls'], background: true })
+    await pre('Bash').runPreToolUse('Bash', { commands: ['rm -rf build', 'ls'], background: true })
     expect(seen('pre')).toMatchObject({
       tool_name: 'Bash',
       tool_input: { command: 'rm -rf build && ls', run_in_background: true },
@@ -44,9 +44,9 @@ describe('PreToolUse tool_input in Claude Code’s shape', () => {
   })
 
   it('a file listing is Glob and a content search is Grep, with Claude Code’s fields', async () => {
-    await pre('Glob').runPreToolUse('search', { glob: '**/*.ts' })
+    await pre('Glob').runPreToolUse('Search', { glob: '**/*.ts' })
     expect(seen('pre')).toMatchObject({ tool_name: 'Glob', tool_input: { pattern: '**/*.ts' } })
-    await pre('Grep').runPreToolUse('search', { query: 'TODO', path: 'src', context: 2 })
+    await pre('Grep').runPreToolUse('Search', { query: 'TODO', path: 'src', context: 2 })
     expect(seen('pre')).toMatchObject({
       tool_name: 'Grep',
       tool_input: { pattern: 'TODO', path: join(dir(), 'src'), output_mode: 'content', '-C': 2 },
@@ -54,34 +54,37 @@ describe('PreToolUse tool_input in Claude Code’s shape', () => {
   })
 
   it('a line range reads as Read’s offset and limit, not the byte offset', async () => {
-    await pre('Read').runPreToolUse('read', { path: 'a.ts', start_line: 10, end_line: 19 })
+    await pre('Read').runPreToolUse('Read', { path: 'a.ts', start_line: 10, end_line: 19 })
     expect(seen('pre').tool_input).toMatchObject({
       file_path: join(dir(), 'a.ts'),
       offset: 10,
       limit: 10,
     })
-    await pre('Read').runPreToolUse('read', { path: 'a.ts', offset: 4096 })
+    await pre('Read').runPreToolUse('Read', { path: 'a.ts', offset: 4096 })
     expect(seen('pre').tool_input.offset).toBeUndefined()
   })
 
   it('a file path resolves against the call’s own cwd', async () => {
     const edit = { edits: [{ path: 'b.ts', old_string: 'x', new_string: 'y' }], cwd: 'pkg' }
-    await pre('Edit').runPreToolUse('edit', edit)
+    await pre('Edit').runPreToolUse('Edit', edit)
     expect(seen('pre').tool_input.file_path).toBe(join(dir(), 'pkg', 'b.ts'))
   })
 
-  it('delegate is Agent, skill is Skill, research of a URL is WebFetch', async () => {
-    await pre('Agent').runPreToolUse('delegate', { task: 'Find endpoints', agent: 'Explore' })
+  it('Agent is Agent, skill is Skill, research of a URL is WebFetch', async () => {
+    await pre('Agent').runPreToolUse('Agent', {
+      prompt: 'Find endpoints',
+      subagent_type: 'Explore',
+    })
     expect(seen('pre')).toMatchObject({
       tool_name: 'Agent',
       tool_input: { prompt: 'Find endpoints', subagent_type: 'Explore' },
     })
-    await pre('Skill').runPreToolUse('skill', { action: 'get', name: 'deploy', arguments: 'prod' })
+    await pre('Skill').runPreToolUse('Skill', { action: 'get', name: 'deploy', arguments: 'prod' })
     expect(seen('pre')).toMatchObject({
       tool_name: 'Skill',
       tool_input: { skill: 'deploy', args: 'prod' },
     })
-    await pre('WebFetch').runPreToolUse('research', {
+    await pre('WebFetch').runPreToolUse('Research', {
       question: 'What changed?',
       urls: ['https://example.com/notes'],
     })
@@ -93,7 +96,7 @@ describe('PreToolUse tool_input in Claude Code’s shape', () => {
 
   it('a question card reads as AskUserQuestion’s header and multiSelect', async () => {
     const question = { id: 'lib', question: 'Which?', options: [{ label: 'A' }], multi: true }
-    await pre('AskUserQuestion').runPreToolUse('ask', { questions: [question] })
+    await pre('AskUserQuestion').runPreToolUse('AskUserQuestion', { questions: [question] })
     expect(seen('pre').tool_input.questions[0]).toMatchObject({
       question: 'Which?',
       header: 'lib',
@@ -109,7 +112,7 @@ describe('PostToolUse tool_response in Claude Code’s shape', () => {
   it('an edit answers with filePath, oldString, newString and structuredPatch', async () => {
     const input = { edits: [{ path: 'a.ts', old_string: 'x', new_string: 'y' }] }
     const details = { cwd: dir(), files: [{ path: 'a.ts', diff, replacements: 1 }] }
-    await post('Edit').runPostToolUse('edit', input, { content: 'Edited a.ts', details }, 'e1')
+    await post('Edit').runPostToolUse('Edit', input, { content: 'Edited a.ts', details }, 'e1')
     expect(seen('post').tool_response).toEqual({
       filePath: join(dir(), 'a.ts'),
       oldString: 'x',
@@ -126,7 +129,7 @@ describe('PostToolUse tool_response in Claude Code’s shape', () => {
   it('a write answers with type create and the content written', async () => {
     const input = { files: [{ path: 'n.md', content: 'hi' }] }
     const details = { cwd: dir(), files: [{ path: 'n.md', created: true }] }
-    await post('Write').runPostToolUse('write', input, { content: 'Wrote n.md', details }, 'w1')
+    await post('Write').runPostToolUse('Write', input, { content: 'Wrote n.md', details }, 'w1')
     expect(seen('post').tool_response).toMatchObject({
       type: 'create',
       filePath: join(dir(), 'n.md'),
@@ -136,7 +139,7 @@ describe('PostToolUse tool_response in Claude Code’s shape', () => {
 
   it('a read answers with the text file record', async () => {
     const details = { path: 'a.ts', bytes: 4, truncated: false, output: 'a\nb\n' }
-    await post('Read').runPostToolUse('read', { path: 'a.ts' }, { content: 'a\nb\n', details })
+    await post('Read').runPostToolUse('Read', { path: 'a.ts' }, { content: 'a\nb\n', details })
     expect(seen('post').tool_response).toEqual({
       type: 'text',
       file: {
@@ -152,7 +155,7 @@ describe('PostToolUse tool_response in Claude Code’s shape', () => {
   it('a file listing answers as Glob’s filenames', async () => {
     const details = { query: '', cwd: dir(), glob: '*.ts', bytes: 8, truncated: false }
     const result = { content: 'a.ts\nb.ts', details: { ...details, output: 'a.ts\nb.ts\n' } }
-    await post('Glob').runPostToolUse('search', { glob: '*.ts' }, result)
+    await post('Glob').runPostToolUse('Search', { glob: '*.ts' }, result)
     expect(seen('post').tool_response).toMatchObject({
       filenames: ['a.ts', 'b.ts'],
       numFiles: 2,
@@ -165,7 +168,7 @@ describe('the call’s id and duration', () => {
   it('PostToolUseFailure carries tool_use_id and duration_ms, PostToolUse duration_ms', async () => {
     const failure = { PostToolUseFailure: [{ handlers: [spy('fail')] }] }
     await runtime(failure).runPostToolUseFailure(
-      'bash',
+      'Bash',
       { command: 'false' },
       { error: 'Exit code 1', isInterrupt: false, durationMs: 12 },
       'f-1',
@@ -173,7 +176,7 @@ describe('the call’s id and duration', () => {
     expect(seen('fail')).toMatchObject({ tool_use_id: 'f-1', duration_ms: 12 })
     const details = { command: 'true', cwd: dir(), output: '', isStreaming: false }
     await post('Bash').runPostToolUse(
-      'bash',
+      'Bash',
       { command: 'true' },
       { content: '', details },
       'p-1',
@@ -204,17 +207,17 @@ describe('updatedToolOutput in the tool’s own shape', () => {
   it('a Read record replaces the text the model reads, as a Grep or WebFetch one does', async () => {
     const read = { type: 'text', file: { filePath: '/a', content: 'redacted' } }
     const result = { content: 'secret', details: { path: 'a', output: 'secret' } }
-    expect(await replace(read).runPostToolUse('read', { path: 'a' }, result)).toMatchObject({
+    expect(await replace(read).runPostToolUse('Read', { path: 'a' }, result)).toMatchObject({
       updatedToolOutput: 'redacted',
     })
     const grep = { mode: 'content', content: 'a.ts:1:x', numFiles: 1, filenames: ['a.ts'] }
     expect(
-      await replace(grep).runPostToolUse('search', { query: 'x' }, { content: 'secret' }),
+      await replace(grep).runPostToolUse('Search', { query: 'x' }, { content: 'secret' }),
     ).toMatchObject({ updatedToolOutput: 'a.ts:1:x' })
     const fetched = { url: 'https://a.dev', result: 'summary', code: 200 }
     expect(
       await replace(fetched).runPostToolUse(
-        'research',
+        'Research',
         { question: 'q', urls: ['https://a.dev'] },
         {
           content: 'page',

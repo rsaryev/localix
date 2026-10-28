@@ -8,7 +8,7 @@
  * context summary does. Labels still come from the same ref presentation registry
  * used by sent-message metadata.
  */
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { ChevronDown, Cpu, Link2, Plus, TriangleAlert, X } from 'lucide-react'
 import { useRefLabelSources } from '../refKindPresentation'
 import type { ContextRefChip, UseContextRefsResult } from '../../model/useContextRefs'
@@ -147,18 +147,12 @@ export function ContextRefChips({
   const availableTotal = attachedTotal + systemBindings.length
   /**
    * The emptying actions live INSIDE this popup — "Clear all" in its header, and the remove
-   * button on its last row. Unmounting on empty therefore tore the open popup out with the
-   * row: no exit animation, and keyboard focus dropped to `document.body`, because Radix
-   * cannot return it to a trigger that no longer exists.
-   *
-   * So the row outlives its own popup by one step: it stays mounted while open, the effect
-   * closes the popup once there is nothing left to show, and only the render after that
-   * removes the row. The popup closes BEFORE the last row disappears, in that order.
+   * button on its last row — so the open state must not outlive the list. It is closed while
+   * rendering (React re-renders at once, so no frame shows an open popup over nothing), and the
+   * row is removed on that same pass.
    */
   const empty = availableTotal === 0 && droppedCount === 0 && !budgetMessage
-  useEffect(() => {
-    if (empty && open) setOpen(false)
-  }, [empty, open])
+  if (empty && open) setOpen(false)
   if (empty && !open) return null
 
   return (

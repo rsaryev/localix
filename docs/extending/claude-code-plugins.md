@@ -83,19 +83,19 @@ decisions. Where Localix's moment differs, the table says where it fires. See
 | `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, `PostToolBatch`               | Around every tool call and after each batch of parallel calls                                         |
 | `UserPromptExpansion`                                                            | A typed skill or plugin command, after `UserPromptSubmit`                                             |
 | `PermissionRequest`, `PermissionDenied`                                          | The approval card, which the hook races; refusals by a mode's rules or on an unattended run           |
-| `SubagentStart`, `SubagentStop`, `TeammateIdle`                                  | Delegated tasks; a conversation member that is not the leader                                         |
+| `SubagentStart`, `SubagentStop`                                                  | Delegated tasks                                                                                       |
 | `TaskCreated`, `TaskCompleted`                                                   | Cards on the task board (`kanban`)                                                                    |
 | `PreCompact`, `PostCompact`, `InstructionsLoaded`                                | A context checkpoint (`trigger: auto`); context files loaded with `SessionStart`                      |
-| `PreModelSwitch`, `PostModelSwitch`, `ConfigChange`, `CwdChanged`, `FileChanged` | The model picker and `/model`; an approved `configure` write; a project move; watched files           |
+| `PreModelSwitch`, `PostModelSwitch`, `ConfigChange`, `CwdChanged`, `FileChanged` | The model picker and `/model`; an approved `Configure` write; a project move; watched files           |
 | `StopFailure`, `MessageDisplay`                                                  | A turn that ends on an API error; each text block of a settled reply, its `displayContent` shown only |
 | `Elicitation`, `ElicitationResult`                                               | An MCP server asking for input: a card in the chat that made the call                                 |
 | `WorktreeCreate`                                                                 | A workflow agent with `isolation: 'worktree'`; the hook replaces `git worktree add`                   |
 
-Four events have no Localix moment and never fire; validation says why. `Setup` runs only for Claude
-Code's `--init` and `--maintenance` flags. `DirectoryAdded` needs `/add-dir`, and a Localix session
-has one folder. `WorktreeRemove` fires for worktree sessions, which Localix does not run; like
-Claude Code, it keeps a workflow agent's hook-made worktree. Between-turn events (a model switch, a
-project move, a file change) fire the hooks the conversation's latest turn assembled.
+Three events have no Localix moment and never fire; validation says why. `Setup` runs only for
+Claude Code's `--init` and `--maintenance` flags. `DirectoryAdded` needs `/add-dir`, and a Localix
+session has one folder. `WorktreeRemove` fires for worktree sessions, which Localix does not run;
+like Claude Code, it keeps a workflow agent's hook-made worktree. Between-turn events (a model
+switch, a project move, a file change) fire the hooks the conversation's latest turn assembled.
 
 A tool call reaches a hook under Claude Code's name and in Claude Code's shape; see
 [Hook tool calls](../features/hook-tool-calls.md).
@@ -217,49 +217,48 @@ those of the open project's plugins. Choosing one applies its light or dark base
 Localix falls back to the base when the plugin is disabled.
 
 A plugin's `agents/*.md` are subagent types. Agents that can delegate see them under `# Agent types`
-and hand a task to one with `delegate` and `agent: "<plugin>:<name>"`, or the bare name when only
-one plugin defines it; a workflow's `agent()` takes the same `agentType`. The child runs with the
-agent's prompt, `tools` and `disallowedTools`, `model` (`inherit` keeps the chat's), `effort`,
-preloaded `skills`, `maxTurns`, `autoCompactWindow`, `omitClaudeMd` and `memory`. `background: true`
-never waits for the report, and `isolation: worktree` works in a fresh git worktree, which is kept.
-As in Claude Code, a plugin agent's `hooks`, `mcpServers` and `permissionMode` are ignored; see
+and hand a task to one with `Agent` and `subagent_type: "<plugin>:<name>"`, or the bare name when
+only one plugin defines it; a workflow's `agent()` takes the same `agentType`. The child runs with
+the agent's prompt, `tools` and `disallowedTools`, preloaded `skills`, `maxTurns`,
+`autoCompactWindow`, `omitClaudeMd` and `memory`. `background: true` never waits for the report, and
+`isolation: worktree` works in a fresh git worktree, which is kept. As in Claude Code, a plugin
+agent's `hooks`, `mcpServers` and `permissionMode` are ignored; see
 [Claude Code agent types](../features/delegation.md#claude-code-agent-types).
 
-Without `tools`, the child inherits the chat's tools, its MCP tools included behind
-`activate_tools`. A `tools` list is exact: the child holds those tools and `tool_output`, which
-recovers compressed results. It names an MCP tool as `mcp__<server>__<tool>`, a plugin's server as
+Without `tools`, the child inherits the chat's tools, its MCP tools included behind `ToolSearch`. A
+`tools` list is exact: the child holds those tools and `ToolOutput`, which recovers compressed
+results. It names an MCP tool as `mcp__<server>__<tool>`, a plugin's server as
 `plugin_<plugin>_<server>`, or every tool of a server as `mcp__<server>__*`; `disallowedTools` takes
 the same names.
 
 The lists use Claude Code's tool names, the same ones a hook sees a call under
 ([hook tool calls](../features/hook-tool-calls.md#tool-names-and-shapes)), and Localix's own tool
-names too (`plan`, `jobs`, `browser`, `memory` …). One name can cover more than Claude Code's tool
+names too (`Plan`, `Jobs`, `Browser`, `Skill` …). One name can cover more than Claude Code's tool
 does, and some Claude Code tools have no counterpart:
 
-| Claude Code name                                                                                                                                          | In a `tools` list                                                                |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| `Grep`, `Glob`                                                                                                                                            | Both are `search`, so one grant lists files and searches them                    |
-| `WebFetch`, `WebSearch`                                                                                                                                   | Both are `research`                                                              |
-| `SendMessage`                                                                                                                                             | `delegate`, whose other actions start and stop child agents                      |
-| `TaskStop`                                                                                                                                                | `jobs` (list, read and stop background jobs); stopping a child run is `delegate` |
-| `Monitor`                                                                                                                                                 | `bash`, whose `until` waits on a command, so it grants the shell                 |
-| `ExitPlanMode`, `ToolSearch`, `Workflow`                                                                                                                  | `plan`, `activate_tools`, `workflow`                                             |
-| `CronCreate`, `CronDelete`, `CronList`, `ScheduleWakeup`                                                                                                  | `loops`                                                                          |
-| `ListMcpResourcesTool`, `ReadMcpResourceTool`                                                                                                             | `mcp_resources`                                                                  |
-| `TodoWrite`, `TaskCreate`, `TaskUpdate`, `TaskList`, `TaskGet`, `TaskOutput`, `EnterPlanMode`, `LSP`, `EnterWorktree`, `ExitWorktree`, `PushNotification` | No Localix tool; the name is dropped                                             |
+| Claude Code name                                                                                                                                          | In a `tools` list                                                |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `Grep`, `Glob`                                                                                                                                            | Both are `Search`, so one grant lists files and searches them    |
+| `WebFetch`, `WebSearch`                                                                                                                                   | Both are `Research`                                              |
+| `KillShell`                                                                                                                                               | `TaskStop`, which stops a background job or a subagent's run     |
+| `Monitor`                                                                                                                                                 | `Bash`, whose `until` waits on a command, so it grants the shell |
+| `ExitPlanMode`, `ToolSearch`, `Workflow`                                                                                                                  | `Plan`, `ToolSearch`, `Workflow`                                 |
+| `CronCreate`, `CronDelete`, `CronList`, `ScheduleWakeup`                                                                                                  | `Loops`                                                          |
+| `ListMcpResourcesTool`, `ReadMcpResourceTool`                                                                                                             | `McpResources`                                                   |
+| `TodoWrite`, `TaskCreate`, `TaskUpdate`, `TaskList`, `TaskGet`, `TaskOutput`, `EnterPlanMode`, `LSP`, `EnterWorktree`, `ExitWorktree`, `PushNotification` | No Localix tool; the name is dropped                             |
 
-A main agent's `tools` list switches off every Localix tool it leaves out, `browser`, `memory`,
-`plan` and `loops` included, as Claude Code's exact list does. Only the run's own plumbing stays on:
-`activate_tools`, `tool_output`, `context_budget`, `set_topic` and `skip_answer`.
+A main agent's `tools` list switches off every Localix tool it leaves out, `Browser`, `Skill`,
+`Plan` and `Loops` included, as Claude Code's exact list does. Only the run's own plumbing stays on:
+`ToolSearch`, `ToolOutput` and `ContextBudget`.
 
 An entry with a specifier in `disallowedTools` or `disallowed-tools`, such as `Bash(rm *)` or
 `Read(.env)`, denies only what the pattern matches, written as in a `permissions.deny` rule. A
-`Read(...)` entry also covers `edit` and `write` on that path. An agent's `disallowedTools` reads
+`Read(...)` entry also covers `Edit` and `Write` on that path. An agent's `disallowedTools` reads
 the same way, and a skill the model loads applies its list from then on.
 
-A plugin's `settings.json` `agent` runs chats on the default agent as that plugin agent, on its
-`model`, unless you picked the chat's model yourself. `subagentStatusLine` rewrites the rows of
-running subagents in the agent sessions panel under the message box.
+A plugin's `settings.json` `agent` runs chats on the default agent as that plugin agent, on the
+chat's model. `subagentStatusLine` rewrites the rows of running subagents in the agent sessions
+panel under the message box.
 
 ### Channels
 
@@ -272,23 +271,32 @@ into, so after a restart its messages arrive before your next message. A channel
 
 ### Workflows
 
-`/<plugin>:<name> [input]` runs a plugin's `workflows/*.js` script in the background: the chat stays
-free, the run is a background job you can stop with `jobs`, and its result arrives in a later turn.
-Each `agent()` call is a child task of the chat, on the `model` and `effort` it asks for (an alias
-such as `haiku` resolves to the newest model of that family on the chat's provider) and, with
-`isolation: 'worktree'`, in a fresh git worktree under `~/.localix/worktrees` that is removed when
-the agent changed nothing. Up to 16 agents of a run go at once, fewer on machines with fewer cores.
-A token target such as "+500k" in the input becomes `budget.total`.
+A workflow is a JavaScript script that runs many agents. The `Workflow` tool takes an inline
+`script`, the `name` of a saved or plugin workflow, or a `scriptPath`; `args` reaches the script as
+the global `args`, and `resumeFromRunId` resumes a run. Saved workflows live in
+`<project>/.claude/workflows/` (every folder up to the repository root, the closest one wins) and in
+`~/.claude/workflows/`; the project's wins over yours. A saved workflow is the command `/<name>`, a
+plugin's is `/<plugin>:<name> [input]`.
 
-Each run has an id (`wf-…`) and keeps its script and journal in `~/.localix/workflow-runs/`. Run the
-workflow again with `resumeFromRunId` to resume a stopped run: completed agents return their saved
-results, and the first changed or failed agent and everything after it run again.
+A run goes on in the background: the chat stays free, the run is a background job you can stop with
+`Jobs`, and its result arrives in a later turn. Each `agent()` call is a child task of the chat, on
+its agent's model and effort (yours, else the chat's) and, with `isolation: 'worktree'`, in a fresh
+git worktree under `~/.localix/worktrees` that is removed when the agent changed nothing. Up to 16
+agents of a run go at once, fewer on machines with fewer cores
+(`CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS` sets 1 to 256), at most 4,096 items go to one
+`parallel()` or `pipeline()` call, and a run starts at most 1,000 agents.
+
+Each run has an id (`wf-…`) and keeps its script (its `scriptPath`) and journal in
+`~/.localix/workflow-runs/`. Run the workflow again with `resumeFromRunId` to resume a stopped run:
+completed agents return their saved results, and the first changed or failed agent and everything
+after it run again.
 
 ## Compatibility
 
-Checked against the Claude Code plugins reference. A part Localix does not run is reported in the
-plugin's validation, never dropped silently. In October 2026 all 328 plugins of Anthropic's
-`claude-code` and `claude-plugins-official` marketplaces installed through them without an error.
+Checked against the Claude Code plugins reference. Most parts Localix does not run are reported in
+the plugin's validation; the few it takes in without a note are listed under [Limits](#limits). In
+October 2026 all 328 plugins of Anthropic's `claude-code` and `claude-plugins-official` marketplaces
+installed through them without an error.
 
 | Claude Code feature                                                     | Status in Localix                                                                                                                                                                                                                                                                                        |
 | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -312,6 +320,13 @@ plugin's validation, never dropped silently. In October 2026 all 328 plugins of 
 | Claude Code marketplaces (`.claude-plugin/marketplace.json`)            | Supported; see [Marketplaces](#marketplaces)                                                                                                                                                                                                                                                             |
 | Claude Code's own installs (`installed_plugins.json`, `enabledPlugins`) | Read in place; each waits for your approval, and a Localix install of the same name wins                                                                                                                                                                                                                 |
 
+A plugin that is installed but still waits for your approval has loaded none of its commands, so
+typing one would show nothing. Typing its name in the composer shows one row instead, **<name> is
+waiting for your OK**; choosing it opens the plugin's page in the Store (the Plugins shelf when
+Localix cannot place it), where you give the OK.
+
+![The slash menu row of a plugin that waits for your OK](../assets/screenshots/composer/plugin-waiting--2026-10-27.png)
+
 ## Mods
 
 A plugin whose `hooks/hooks.json` lists `modules` is a mod. Localix runs mods written for Claude
@@ -320,6 +335,11 @@ Code unchanged: panes, the band above the message box, buttons and their hotkeys
 
 ## Limits
 
+- Some manifest fields are read and have no effect, with no validation note: `metadata`, `types`
+  (the `.d.ts` of a mod's state) and `experimental.evals`, since Localix has no
+  `claude plugin eval`. A component folder that a manifest path names but that does not exist, such
+  as a `skills` folder, simply yields no components. A command file that a path names and that
+  cannot be read is an error.
 - A plugin whose components live only in its marketplace entry, such as the `*-lsp` plugins, has
   them when installed through the marketplace, not from its folder alone.
 - Plugins are keyed by name: two plugins of one name from different marketplaces cannot both be

@@ -17,7 +17,7 @@ import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 export interface MessageReaction {
   emoji: string
-  /** `user`, or `agent:<id>` — the participant ref exactly as the message stores it. */
+  /** `user`, or `agent:<id>` — the author ref exactly as the message stores it. */
   from: string
   at: string
 }

@@ -1,6 +1,7 @@
-// The mini app kit end to end, against the REAL repository: staging writes a kit, and the app's own
-// authoring (scaffold → build → test → load) works from that kit alone — which is what an
-// installed app with no source tree has. Each case names the failure it pins.
+// The mini app kit end to end, against the REAL repository: staging writes a kit, and the
+// mini-app-authoring plugin builds from that kit alone (scaffold → check → package), and Localix
+// installs and loads the package — which is the whole contract between the two: the plugin
+// imports nothing of Localix, Localix builds nothing. Each case names the failure it pins.
 import { afterAll, beforeAll, describe, expect, setDefaultTimeout, test } from 'bun:test'
 import { execFileSync } from 'node:child_process'
 import {
@@ -19,24 +20,17 @@ import { dirname, join, resolve } from 'node:path'
 
 import ts from '@localixai/mini-app-kit-compiler'
 
-import { checkUserMiniApp } from '../apps/api/src/features/mini-apps/authoring/check'
-import { loadMiniAppKit, type MiniAppKit } from '../apps/api/src/features/mini-apps/authoring/kit'
-import {
-  isUserMiniAppBackendBuild,
-  MINI_APP_KIT_DIGEST,
-} from '../apps/api/src/features/mini-apps/authoring/kit-layout'
-import {
-  buildMiniAppBackend,
-  discardMiniAppBackendCandidate,
-} from '../apps/api/src/features/mini-apps/authoring/backend-build'
-import { importFreshModule } from '../apps/api/src/lib/module-url'
 import { installBackendHostModules } from '../apps/api/src/features/mini-apps/backend-host-modules'
-import { typecheckMiniApp } from '../apps/api/src/features/mini-apps/authoring/typecheck'
-import { scaffoldUserMiniApp } from '../apps/api/src/features/mini-apps/authoring/scaffold'
-import {
-  createMiniAppAuthoring,
-  isAuthoredUserMiniApp,
-} from '../apps/api/src/features/mini-apps/authoring/service'
+import { MINI_APP_KIT_DIGEST } from '../apps/api/src/features/mini-apps/kit-layout'
+import { installLocalPackage } from '../apps/api/src/features/mini-apps/local-install'
+import { importFreshModule } from '../apps/api/src/lib/module-url'
+import { buildMiniAppBackend } from '../plugins/mini-app-authoring/src/build/backend-build'
+import { checkMiniApp } from '../plugins/mini-app-authoring/src/check/check'
+import { typecheckMiniApp } from '../plugins/mini-app-authoring/src/check/typecheck'
+import { type Kit, loadKit } from '../plugins/mini-app-authoring/src/kit/kit'
+import { assemblePackage } from '../plugins/mini-app-authoring/src/package/assemble'
+import { validatePackage } from '../plugins/mini-app-authoring/src/package/validate'
+import { scaffoldMiniApp } from '../plugins/mini-app-authoring/src/scaffold/scaffold'
 import {
   copyDomain,
   fillPlaceholders,
@@ -44,9 +38,9 @@ import {
   frameDomainImports,
   listFiles,
   loadTemplateScaffold,
-} from '../apps/api/src/features/mini-apps/authoring/template-layout'
-import { findTemplateMiniApp } from './stage-mini-app-kit.mjs'
+} from '../plugins/mini-app-authoring/src/scaffold/template-layout'
 import { kitCacheRoot } from './mini-app-kit-cache.mjs'
+import { findTemplateMiniApp } from './stage-mini-app-kit.mjs'
 
 /** A mini app's one manifest: name, display name and the built backend it runs. */
 const APP_MANIFEST = 'mini-app.json'
@@ -56,7 +50,7 @@ const KIT_STAGER = join(import.meta.dir, 'stage-mini-app-kit.mjs')
 const template = findTemplateMiniApp(repoRoot)
 const scaffold = loadTemplateScaffold(template)
 const root = mkdtempSync(join(tmpdir(), 'mini-app-kit-'))
-let kit: MiniAppKit
+let kit: Kit
 
 beforeAll(async () => {
   // A child, as staging runs it: a second in-process build of the SDK's own modules within one
@@ -70,14 +64,72 @@ beforeAll(async () => {
     timeout: 60_000,
     killSignal: 'SIGKILL',
   })
-  kit = await loadMiniAppKit(join(root, 'kit'))
+  kit = await loadKit(join(root, 'kit'))
 }, 30_000)
 afterAll(() => rmSync(root, { recursive: true, force: true }))
 
 let copies = 0
 async function freshCopy(name = 'gpu-monitor') {
-  const miniAppsRoot = join(root, `mini-apps-${copies++}`)
-  return scaffoldUserMiniApp({ kit, miniAppsRoot, name, takenNames: new Set(['reader']) })
+  return scaffoldMiniApp({ kit, dir: join(root, `apps-${copies++}`, name), name })
+}
+
+/** A small mini app of the person's own: no template domain left, one tool and its test. */
+function ownMiniApp(): string {
+  const dir = join(root, `own-${copies++}`, 'tally')
+  const files: Record<string, string> = {
+    [APP_MANIFEST]: JSON.stringify({
+      name: 'tally',
+      version: '0.1.0',
+      description: 'Counts things the person asks to count.',
+      apiVersion: 1,
+      category: 'utilities',
+      backend: './backend/index.ts',
+      icon: './icon.svg',
+    }),
+    'guide.md': '# Tally\n\n`tally_add` adds to a named count.\n',
+    'icon.svg': readFileSync(join(kit.templateDir, 'icon.svg'), 'utf8'),
+    'backend/index.ts': [
+      "import type { MiniAppContext } from '@localixai/mini-app-sdk/backend'",
+      'const counts = new Map<string, number>()',
+      'export function register({ z, defineTool }: MiniAppContext) {',
+      '  return {',
+      '    tools: [',
+      '      defineTool({',
+      "        name: 'tally_add',",
+      "        label: 'Add to a tally',",
+      "        activeVerb: 'Counting',",
+      "        description: 'Add a number to a named tally and answer with its total.',",
+      '        inputSchema: z.object({ name: z.string(), by: z.number() }),',
+      '        mutates: true,',
+      "        executionMode: 'sequential',",
+      "        classify: () => ({ effect: 'host' }),",
+      '        permissionPaths: () => [],',
+      '        async execute(_toolCallId, input) {',
+      '          const total = (counts.get(input.name) ?? 0) + input.by',
+      '          counts.set(input.name, total)',
+      '          return { content: `${input.name}: ${total}` }',
+      '        },',
+      '      }),',
+      '    ],',
+      '  }',
+      '}',
+    ].join('\n'),
+    'backend/index.test.ts': [
+      "import { expect, test } from 'bun:test'",
+      "import { z } from 'zod'",
+      "import { register } from './index'",
+      "test('adds', async () => {",
+      '  const { tools } = register({ z, defineTool: (tool: unknown) => tool } as never)',
+      '  const add = tools[0] as never as { execute(id: string, input: object): Promise<unknown> }',
+      "  expect(await add.execute('1', { name: 'cups', by: 2 })).toEqual({ content: 'cups: 2' })",
+      '})',
+    ].join('\n'),
+  }
+  for (const [path, text] of Object.entries(files)) {
+    mkdirSync(dirname(join(dir, path)), { recursive: true })
+    writeFileSync(join(dir, path), text)
+  }
+  return dir
 }
 
 describe('the staged kit', () => {
@@ -93,13 +145,32 @@ describe('the staged kit', () => {
     expect(kit.manifest.kitModules).not.toContain('testing')
     expect(kit.manifest.uiSharedExports['@localixai/kit/button']).toContain('Button')
     expect(kit.manifest.uiSharedExports.react).toContain('useState')
+    const authoring = kit.manifest.authoring
     for (const file of [
       kit.manifest.hostStylesheet,
       ...Object.values(kit.manifest.backendModules),
       ...Object.values(kit.manifest.uiVendorModules),
+      authoring.tools,
+      authoring.typecheck,
+      authoring.testPreload,
+      authoring.tailwindUtilities,
+      authoring.typeRoots,
     ]) {
       expect({ file, exists: existsSync(join(kit.dir, file)) }).toEqual({ file, exists: true })
     }
+  })
+
+  // The plugin judges a mini app with Localix's own rules: what the kit's tools say about a folder
+  // is what discovery and the store say when Localix reads it.
+  test('its tools judge a folder the way Localix does', async () => {
+    expect(await kit.tools.manifest.validate(kit.templateDir)).toMatchObject({ errors: [] })
+    const dir = ownMiniApp()
+    writeFileSync(
+      join(dir, APP_MANIFEST),
+      JSON.stringify({ name: 'tally', version: '0.1.0', description: 'x', skills: './skills' }),
+    )
+    const verdict = await kit.tools.manifest.validate(dir)
+    expect(verdict.errors.join('\n')).toContain('Invalid mini-app.json')
   })
 
   // `skipLibCheck` hides an error INSIDE a declaration file: a generated kit type that named
@@ -148,7 +219,7 @@ describe('the staged kit', () => {
     expect(text).toMatch(/^export type CanvasEdgeType = /mu)
   })
 
-  // The kit must not point back into the source tree, or an installed app would break.
+  // The kit must not point back into the source tree, or an installed app's kit would break.
   test('names no path of the repository it was staged from', () => {
     const texts = [
       readFileSync(join(kit.dir, 'kit.json'), 'utf8'),
@@ -161,7 +232,7 @@ describe('the staged kit', () => {
 
   // A relative path that climbs out of the template resolves in the repository and nowhere else:
   // the template's `bunfig.toml` preloaded `../../scripts/test-deadline.ts`, so every copy's
-  // `bun test` failed on an installed app and `/mini-app create` refused every request.
+  // `bun test` failed outside the repository.
   test('the template names no relative path outside itself', () => {
     const escapes: string[] = []
     for (const file of listFiles(kit.templateDir)) {
@@ -173,6 +244,14 @@ describe('the staged kit', () => {
       }
     }
     expect(escapes).toEqual([])
+  })
+
+  test('the digest the instruction carries describes every core control', () => {
+    expect(kit.manifest.kitDigest).toHaveLength(MINI_APP_KIT_DIGEST.length)
+    for (const [index, entry] of MINI_APP_KIT_DIGEST.entries()) {
+      const [id, name] = entry.split(':')
+      expect(kit.manifest.kitDigest?.[index]).toStartWith(`@localixai/kit/${id} ${name}({`)
+    }
   })
 })
 
@@ -226,27 +305,26 @@ describe('template layout', () => {
   })
 })
 
-// Each case below type-checks, builds and loads a whole scaffolded mini app. With a warm kit cache
-// that takes well under bun's 5 s default, which is why a laptop never sees it; a cold CI runner
-// spends longer than that on the first check and fails every case after it on the same deadline.
+// Each case below type-checks and builds a whole mini app. With a warm kit cache that takes well
+// under bun's 5 s default; a cold CI runner spends longer on the first check.
 setDefaultTimeout(120_000)
 
-describe('a scaffolded user mini app', () => {
+describe('a scaffolded mini app', () => {
   // A built backend leaves hono, zod and the SDK external: the host serves them at runtime, and
-  // this test loads the build the way the app does — with the host's modules installed.
+  // these cases load the build the way Localix does — with the host's modules installed.
   beforeAll(() => installBackendHostModules())
 
-  test('is built and tested from the kit, and loads in the host; only the residue check fails', async () => {
+  test('is built and tested from the kit; only the residue check fails', async () => {
     const created = await freshCopy()
-    const report = await checkUserMiniApp({
+    const { report } = await checkMiniApp({
       kit,
       miniAppDir: created.dir,
-      name: created.name,
       allowTemplateResidue: true,
     })
-    expect(report.published).toBe(true)
+    expect(report.buildable).toBe(true)
     expect(report.steps.map(({ title, ok }) => [title, ok])).toEqual([
       ['template residue', false],
+      ['manifest', true],
       ['style', true],
       // The reference's own routes pass the rule every copy is held to.
       ['routes', true],
@@ -258,37 +336,53 @@ describe('a scaffolded user mini app', () => {
       ['types', true],
       ['tests', true],
     ])
+    // The check builds into a candidate it removes; the source folder gains no build.
+    expect(readdirSync(join(created.dir, 'dist')).filter((f) => !f.startsWith('.'))).toEqual([])
     const app = JSON.parse(readFileSync(join(created.dir, APP_MANIFEST), 'utf8'))
     expect(app.name).toBe('gpu-monitor')
-    expect(isUserMiniAppBackendBuild(app.backend)).toBe(true)
-    expect(app.defaultEnabled).toBeUndefined()
-    const backend = await import(join(created.dir, app.backend))
-    expect(typeof backend.register).toBe('function')
-    expect(existsSync(join(created.dir, 'dist', 'ui', 'manifest.json'))).toBe(true)
+    expect(app.backend).toBe('./backend/index.ts')
   })
 
-  // A rebuild replaced the file the API had imported and `bun --watch` restarted the
-  // whole API mid-turn. A build is a new file; the imported one is never touched.
-  test('a rebuild never replaces or deletes a build the process imported', async () => {
+  // The contract end to end: the plugin's package is what Localix installs, switches on and runs.
+  test('its package installs into Localix and its backend loads in the host', async () => {
+    const dir = ownMiniApp()
+    const { report, outputs } = await checkMiniApp({ kit, miniAppDir: dir, keepOutputs: true })
+    expect(report.steps.filter(({ ok }) => !ok)).toEqual([])
+    const packageDir = await assemblePackage(dir, outputs!)
+    rmSync(outputs!.dir, { recursive: true, force: true })
+    expect(await validatePackage(kit, packageDir)).toMatchObject({ ok: true, problems: [] })
+
+    const installRoot = join(root, `localix-${copies++}`, 'mini-apps')
+    const enabled: string[] = []
+    const installed = await installLocalPackage(
+      { dir: packageDir, source: dir },
+      {
+        installRoot,
+        enable: async (name) => void enabled.push(name),
+        changed: async () => {},
+      },
+    )
+    expect(installed).toMatchObject({ name: 'tally', version: '0.1.0' })
+    expect(enabled).toEqual(['tally'])
+    const manifest = JSON.parse(readFileSync(join(installRoot, 'tally', APP_MANIFEST), 'utf8'))
+    expect(manifest.backend).toMatch(/^\.\/dist\/backend\/index-[0-9a-f]{16}\.mjs$/u)
+    expect(existsSync(join(installRoot, 'tally', 'backend'))).toBe(false)
+    const backend = await importFreshModule(join(installRoot, 'tally', manifest.backend))
+    expect(typeof (backend as { register?: unknown }).register).toBe('function')
+  })
+
+  // A rebuild replaced the file the API had imported and `bun --watch` restarted the whole API
+  // mid-turn. A build is named by its content: the same source is the same file, an edit a new one.
+  test('a backend build is named by its content', async () => {
     const { dir } = await freshCopy()
-    const tools = async () => JSON.parse(readFileSync(join(dir, APP_MANIFEST), 'utf8')).backend
-    const first = await buildMiniAppBackend({ kit, miniAppDir: dir })
-    expect(await buildMiniAppBackend({ kit, miniAppDir: dir })).toBe(first)
-    await importFreshModule(join(dir, first!))
-    const edit = (n: number) =>
-      writeFileSync(
-        join(dir, 'backend', 'index.ts'),
-        `${readFileSync(join(dir, 'backend', 'index.ts'), 'utf8')}\nexport const edit${n} = ${n}\n`,
-      )
-    edit(1)
-    const second = await buildMiniAppBackend({ kit, miniAppDir: dir })
+    const outRoot = join(dir, 'dist', 'out')
+    const entry = join(dir, 'backend', 'index.ts')
+    const first = await buildMiniAppBackend({ kit, miniAppDir: dir, entry, outRoot })
+    expect(await buildMiniAppBackend({ kit, miniAppDir: dir, entry, outRoot })).toBe(first)
+    writeFileSync(entry, `${readFileSync(entry, 'utf8')}\nexport const edit = 1\n`)
+    const second = await buildMiniAppBackend({ kit, miniAppDir: dir, entry, outRoot })
     expect(second).not.toBe(first)
-    expect(await tools()).toBe(second)
-    edit(2)
-    const third = await buildMiniAppBackend({ kit, miniAppDir: dir })
-    expect(existsSync(join(dir, first!))).toBe(true)
-    expect(existsSync(join(dir, second!))).toBe(false)
-    expect(existsSync(join(dir, third!))).toBe(true)
+    expect(existsSync(join(outRoot, first))).toBe(true)
   })
 
   test('backend build refuses static, dynamic and absolute imports outside the mini app', async () => {
@@ -302,78 +396,52 @@ describe('a scaffolded user mini app', () => {
       const outside = join(dirname(dir), 'outside.ts')
       writeFileSync(outside, 'export const secret = "outside"\n')
       writeFileSync(join(dir, 'backend', 'index.ts'), source(outside))
-      const before = readFileSync(join(dir, APP_MANIFEST), 'utf8')
-      await expect(buildMiniAppBackend({ kit, miniAppDir: dir, publish: false })).rejects.toThrow(
-        'outside the mini app',
-      )
-      expect(readFileSync(join(dir, APP_MANIFEST), 'utf8')).toBe(before)
+      await expect(
+        buildMiniAppBackend({
+          kit,
+          miniAppDir: dir,
+          entry: join(dir, 'backend', 'index.ts'),
+          outRoot: join(dir, 'dist', 'out'),
+        }),
+      ).rejects.toThrow('outside the mini app')
     }
   })
 
-  test('failed candidate cleanup tolerates a malformed manifest but keeps a referenced build', async () => {
-    const { dir } = await freshCopy()
-    const tools = './dist/backend/index-1234567890abcdef.mjs'
-    const output = join(dir, tools)
-    mkdirSync(dirname(output), { recursive: true })
-    writeFileSync(output, 'export {}\n')
-    writeFileSync(join(dir, APP_MANIFEST), '{ malformed')
-    await discardMiniAppBackendCandidate(dir, tools)
-    expect(existsSync(output)).toBe(false)
-
-    writeFileSync(output, 'export {}\n')
-    writeFileSync(join(dir, APP_MANIFEST), JSON.stringify({ backend: tools }))
-    await discardMiniAppBackendCandidate(dir, tools)
-    expect(existsSync(output)).toBe(true)
-  })
-
-  test('a failed type check keeps the previous backend and UI active', async () => {
-    const { dir, name } = await freshCopy()
-    const first = await checkUserMiniApp({
-      kit,
-      miniAppDir: dir,
-      name,
-      allowTemplateResidue: true,
-    })
-    expect(first.published).toBe(true)
-    const manifestBefore = readFileSync(join(dir, APP_MANIFEST), 'utf8')
-    const uiBefore = readFileSync(join(dir, 'dist', 'ui', 'manifest.json'), 'utf8')
-    const backendBefore = readdirSync(join(dir, 'dist', 'backend'))
-    writeFileSync(
-      join(dir, 'backend', 'index.ts'),
-      `${readFileSync(join(dir, 'backend', 'index.ts'), 'utf8')}\nexport const changed = true\n`,
+  // A failed check never replaces the last good package: the agent fixing a type error must not
+  // take the installed version's files away.
+  test('a failed check keeps the previous package', async () => {
+    const dir = ownMiniApp()
+    const first = await checkMiniApp({ kit, miniAppDir: dir, keepOutputs: true })
+    const packageDir = await assemblePackage(dir, first.outputs!)
+    rmSync(first.outputs!.dir, { recursive: true, force: true })
+    const before = readFileSync(join(packageDir, APP_MANIFEST), 'utf8')
+    writeFileSync(join(dir, 'backend', 'wrong.ts'), 'export const wrong: number = "text"\n')
+    const failed = await checkMiniApp({ kit, miniAppDir: dir, keepOutputs: true })
+    expect(failed.outputs).toBeNull()
+    expect(failed.report.steps.find((entry) => entry.title === 'types')?.ok).toBe(false)
+    expect(readFileSync(join(packageDir, APP_MANIFEST), 'utf8')).toBe(before)
+    expect(readdirSync(join(dir, 'dist')).some((file) => file.startsWith('.candidate-'))).toBe(
+      false,
     )
-    writeFileSync(join(dir, 'ui', 'Wrong.tsx'), 'export const wrong: number = "text"\n')
-
-    const failed = await checkUserMiniApp({ kit, miniAppDir: dir, name })
-    expect(failed.published).toBe(false)
-    expect(failed.steps.find((entry) => entry.title === 'types')?.ok).toBe(false)
-    expect(readFileSync(join(dir, APP_MANIFEST), 'utf8')).toBe(manifestBefore)
-    expect(readFileSync(join(dir, 'dist', 'ui', 'manifest.json'), 'utf8')).toBe(uiBefore)
-    expect(readdirSync(join(dir, 'dist', 'backend'))).toEqual(backendBefore)
   })
 
-  test('an unreadable reference manifest is not excused as template residue', async () => {
-    const { dir, name } = await freshCopy()
+  test('an unreadable manifest is not excused as template residue', async () => {
+    const { dir } = await freshCopy()
     writeFileSync(join(dir, APP_MANIFEST), '{ broken json\n')
-    const report = await checkUserMiniApp({
-      kit,
-      miniAppDir: dir,
-      name,
-      allowTemplateResidue: true,
-    })
-    expect(report.steps[0]?.errored).toBe(true)
-    expect(report.published).toBe(false)
+    await expect(
+      checkMiniApp({ kit, miniAppDir: dir, allowTemplateResidue: true }),
+    ).rejects.toThrow('not valid JSON')
     expect(readFileSync(join(dir, APP_MANIFEST), 'utf8')).toBe('{ broken json\n')
   })
 
   test('generated output and tsconfig cannot follow symlinks outside the mini app', async () => {
     if (process.platform === 'win32') return // Symlink creation can require elevated privileges.
-    const { dir, name } = await freshCopy()
+    const { dir } = await freshCopy()
     const outside = join(dirname(dir), `outside-${copies++}`)
     mkdirSync(outside)
     writeFileSync(join(outside, 'marker'), 'keep me')
     symlinkSync(outside, join(dir, 'dist'))
-    await expect(checkUserMiniApp({ kit, miniAppDir: dir, name })).rejects.toThrow(
+    await expect(checkMiniApp({ kit, miniAppDir: dir })).rejects.toThrow(
       'output path is not a regular directory',
     )
     expect(readFileSync(join(outside, 'marker'), 'utf8')).toBe('keep me')
@@ -382,126 +450,22 @@ describe('a scaffolded user mini app', () => {
     const externalConfig = join(dirname(second.dir), `tsconfig-${copies++}.json`)
     writeFileSync(externalConfig, 'keep me')
     symlinkSync(externalConfig, join(second.dir, 'tsconfig.json'))
-    await expect(
-      checkUserMiniApp({ kit, miniAppDir: second.dir, name: second.name }),
-    ).rejects.toThrow('tsconfig.json must be a regular file')
+    await expect(checkMiniApp({ kit, miniAppDir: second.dir })).rejects.toThrow(
+      'tsconfig.json must be a regular file',
+    )
     expect(readFileSync(externalConfig, 'utf8')).toBe('keep me')
   })
 
-  test('a content-named backend artifact cannot be replaced by a symlink', async () => {
-    if (process.platform === 'win32') return
-    const { dir } = await freshCopy()
-    const tools = await buildMiniAppBackend({ kit, miniAppDir: dir, publish: false })
-    expect(tools).toBeTruthy()
-    const artifact = join(dir, tools!)
-    const outside = join(dirname(dir), `backend-${copies++}.mjs`)
-    writeFileSync(outside, 'export const wrong = true\n')
-    rmSync(artifact)
-    symlinkSync(outside, artifact)
-    await expect(buildMiniAppBackend({ kit, miniAppDir: dir, publish: false })).rejects.toThrow(
-      'exists with different content or file type',
-    )
-    expect(readFileSync(outside, 'utf8')).toBe('export const wrong = true\n')
-  })
-
-  test('initial check failure rolls the scaffold back before enablement', async () => {
-    const miniAppsRoot = join(root, `failed-create-${copies++}`)
-    const calls: string[] = []
-    let testRuns = 0
-    const authoring = createMiniAppAuthoring({
-      discover: async () => [],
-      miniAppsRoot,
-      kitDir: () => kit.dir,
-      enable: async () => calls.push('enable'),
-      changed: () => calls.push('changed'),
-      runTests: async () => ({
-        ok: ++testRuns > 1,
-        output: 'test failed on purpose',
-      }),
-    })
-    await expect(authoring.create('user', { name: 'broken-template' })).rejects.toThrow(
-      'test failed on purpose',
-    )
-    expect(calls).toEqual([])
-    expect(existsSync(join(miniAppsRoot, 'broken-template'))).toBe(false)
-    expect((await authoring.create('user', { name: 'broken-template' })).report.published).toBe(
-      true,
-    )
-    expect(calls).toEqual(['enable'])
-  })
-
-  test('a failed activation is disabled before the new folder is rolled back', async () => {
-    const miniAppsRoot = join(root, `activation-${copies++}`)
-    const calls: string[] = []
-    const authoring = createMiniAppAuthoring({
-      discover: async () => [],
-      miniAppsRoot,
-      kitDir: () => kit.dir,
-      enable: async () => {
-        calls.push('enable')
-        throw new Error('notification failed after consent was stored')
-      },
-      disable: async () => {
-        calls.push('disable')
-      },
-      changed: () => {},
-    })
-    await expect(authoring.create('user', { name: 'activation-failure' })).rejects.toThrow(
-      'notification failed after consent was stored',
-    )
-    expect(calls).toEqual(['enable', 'disable'])
-    expect(existsSync(join(miniAppsRoot, 'activation-failure'))).toBe(false)
-  })
-
-  // Creation never edits what is there: a folder, a discovered mini app, an install from another
-  // source and the template's own name each push the new mini app to the next free name.
-  test('a new mini app takes the first name nothing else holds', async () => {
-    const miniAppsRoot = join(root, `free-${copies++}`)
-    let installedSource: string | null = null
-    const authoring = createMiniAppAuthoring({
-      discover: async () => [{ name: 'reader' } as never],
-      miniAppsRoot,
-      kitDir: () => kit.dir,
-      installedSource: async (_userId, name) => (name === 'notes' ? installedSource : null),
-      enable: async () => {},
-      changed: () => {},
-    })
-    expect(await authoring.freeName('user', 'gpu-monitor')).toBe('gpu-monitor')
-    expect(await authoring.freeName('user', 'reader')).toBe('reader-2')
-    expect(await authoring.freeName('user', 'template')).toBe('template-2')
-
-    installedSource = 'https://example.com/marketplace.git'
-    expect(await authoring.freeName('user', 'notes')).toBe('notes-2')
-    await expect(authoring.create('user', { name: 'notes' })).rejects.toThrow(
-      'installed from another source',
-    )
-    expect(existsSync(join(miniAppsRoot, 'notes'))).toBe(false)
-
-    await scaffoldUserMiniApp({
+  // A display name is written into source; a quote or backtick in it would break the copy.
+  test('a display name cannot break the copy it is written into', async () => {
+    const created = await scaffoldMiniApp({
       kit,
-      miniAppsRoot,
+      dir: join(root, `quoted-${copies++}`, 'gpu-monitor'),
       name: 'gpu-monitor',
       displayName: 'GPU "Monitor" `x`',
-      takenNames: new Set(),
     })
-    expect(await authoring.freeName('user', 'gpu-monitor')).toBe('gpu-monitor-2')
-    // A display name is written into source; a quote or backtick in it would break the copy.
-    const manifest = JSON.parse(
-      readFileSync(join(miniAppsRoot, 'gpu-monitor', APP_MANIFEST), 'utf8'),
-    )
+    const manifest = JSON.parse(readFileSync(join(created.dir, APP_MANIFEST), 'utf8'))
     expect(manifest.displayName).toBe('GPU Monitor x')
-    await expect(authoring.freeName('user', 'Bad Name')).rejects.toThrow('lower-kebab-case')
-
-    rmSync(join(miniAppsRoot, 'gpu-monitor', 'backend', 'index.ts'))
-    rmSync(join(miniAppsRoot, 'gpu-monitor', 'ui', 'register.tsx'))
-    expect(
-      await isAuthoredUserMiniApp({
-        dir: join(miniAppsRoot, 'gpu-monitor'),
-        bundled: false,
-        name: 'gpu-monitor',
-        manifest: { name: 'gpu-monitor' },
-      } as never),
-    ).toBe(true)
   })
 
   // A mini app published `{ strategy, text }` where the SDK takes `{ strategy, bindings }`;
@@ -601,7 +565,7 @@ describe('a scaffolded user mini app', () => {
         ')',
       ].join('\n'),
     )
-    const report = await checkUserMiniApp({ kit, miniAppDir: dir, name: 'gpu-monitor' })
+    const { report } = await checkMiniApp({ kit, miniAppDir: dir })
     const style = report.steps.find((entry) => entry.title === 'style')
     expect(style?.ok).toBe(false)
     expect(style?.problems).toEqual([
@@ -624,7 +588,7 @@ describe('a scaffolded user mini app', () => {
         ')',
       ].join('\n'),
     )
-    const report = await checkUserMiniApp({ kit, miniAppDir: dir, name: 'gpu-monitor' })
+    const { report } = await checkMiniApp({ kit, miniAppDir: dir })
     const style = report.steps.find((entry) => entry.title === 'style')
     expect(style?.problems).toEqual([
       expect.stringMatching(/^ui\/Absent\.tsx:3 bg-surface-subtle — absent token --color-/u),
@@ -633,24 +597,16 @@ describe('a scaffolded user mini app', () => {
     ])
   })
 
-  test('the digest the instruction carries describes every core control', () => {
-    expect(kit.manifest.kitDigest).toHaveLength(MINI_APP_KIT_DIGEST.length)
-    for (const [index, entry] of MINI_APP_KIT_DIGEST.entries()) {
-      const [id, name] = entry.split(':')
-      expect(kit.manifest.kitDigest?.[index]).toStartWith(`@localixai/kit/${id} ${name}({`)
-    }
-  })
-
   // The agent chooses primitives by job from KIT.md in its own folder: the staged kit renders it
-  // from the catalog (every kit module, by specifier), scaffolding writes it, and a build restores
+  // from the catalog (every kit module, by specifier), scaffolding writes it, and a check restores
   // it — a copy whose catalog was deleted or edited gets the kit's back.
-  test('the kit catalog reaches the copy as KIT.md, and a build keeps it current', async () => {
-    const staged = readFileSync(join(kit.dir, kit.manifest.kitCatalog ?? 'missing'), 'utf8')
+  test('the kit catalog reaches the copy as KIT.md, and a check keeps it current', async () => {
+    const staged = readFileSync(join(kit.dir, kit.manifest.authoring.catalog ?? 'missing'), 'utf8')
     for (const id of kit.manifest.kitModules) expect(staged).toContain(`\`@localixai/kit/${id}\``)
     const { dir } = await freshCopy()
     expect(readFileSync(join(dir, 'KIT.md'), 'utf8')).toBe(staged)
     writeFileSync(join(dir, 'KIT.md'), '# stale\n')
-    await checkUserMiniApp({ kit, miniAppDir: dir, name: 'gpu-monitor' })
+    await checkMiniApp({ kit, miniAppDir: dir })
     expect(readFileSync(join(dir, 'KIT.md'), 'utf8')).toBe(staged)
   })
 
@@ -685,7 +641,7 @@ describe('a scaffolded user mini app', () => {
     expect(residue.some((line) => line.startsWith('no test'))).toBe(true)
   })
 
-  // The defect behind this whole module: the agent was told where the source checkout was.
+  // The agent was once told where the source checkout was, and edited the application itself.
   test('nothing the copy tells its author names the repository or its scripts', async () => {
     const { dir } = await freshCopy()
     for (const file of ['README.md', 'AGENTS.md']) {
@@ -695,21 +651,19 @@ describe('a scaffolded user mini app', () => {
     }
   })
 
-  test('refuses a bad name, a taken name and an existing folder, leaving nothing behind', async () => {
-    const miniAppsRoot = join(root, 'refusals')
-    const input = { kit, miniAppsRoot, takenNames: new Set(['reader']) }
-    await expect(scaffoldUserMiniApp({ ...input, name: '../escape' })).rejects.toThrow(
-      'lower-kebab-case',
-    )
-    await expect(scaffoldUserMiniApp({ ...input, name: 'reader' })).rejects.toThrow(
-      'already exists',
-    )
-    await scaffoldUserMiniApp({ ...input, name: 'twice' })
-    await expect(scaffoldUserMiniApp({ ...input, name: 'twice' })).rejects.toThrow('already exists')
-    symlinkSync(join(miniAppsRoot, 'missing-target'), join(miniAppsRoot, 'dangling'))
-    await expect(scaffoldUserMiniApp({ ...input, name: 'dangling' })).rejects.toThrow(
-      'already exists',
-    )
-    expect(listFiles(miniAppsRoot).some((file) => file.startsWith('.scaffold-'))).toBe(false)
+  test('refuses a bad name and an existing folder, leaving nothing behind', async () => {
+    const parent = join(root, 'refusals')
+    await expect(
+      scaffoldMiniApp({ kit, dir: join(parent, 'escape'), name: '../escape' }),
+    ).rejects.toThrow('lower-kebab-case')
+    await scaffoldMiniApp({ kit, dir: join(parent, 'twice'), name: 'twice' })
+    await expect(
+      scaffoldMiniApp({ kit, dir: join(parent, 'twice'), name: 'twice' }),
+    ).rejects.toThrow('already exists')
+    symlinkSync(join(parent, 'missing-target'), join(parent, 'dangling'))
+    await expect(
+      scaffoldMiniApp({ kit, dir: join(parent, 'dangling'), name: 'dangling' }),
+    ).rejects.toThrow('already exists')
+    expect(listFiles(parent).some((file) => file.startsWith('.scaffold-'))).toBe(false)
   })
 })

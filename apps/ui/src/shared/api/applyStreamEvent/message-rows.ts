@@ -3,7 +3,7 @@
  * growth of a row between snapshots is `message-delta.ts`.
  */
 import { isToolBackedItem } from '@localixai/agent/agents/items'
-import { replaceParticipantUsage, replaceUsageInSummary } from '@localixai/agent'
+import { replaceUsageInSummary } from '@localixai/agent'
 
 import type { AgentStreamEvent, UiSession } from '../contracts'
 import { toUiMessage } from '../converters'
@@ -31,8 +31,7 @@ export function needsSessionResync(session: UiSession, event: AgentStreamEvent):
 /**
  * A new durable row goes where the server put it: before any optimistic row still waiting for its
  * echo. Those rows stand for messages the server has not written yet, so whatever it writes now —
- * a membership line from an edit made after Enter, a hand-off reply landing while a send is
- * queued — precedes them on the branch. Appending after them kept a notice under the agent's
+ * a notice from an edit made after Enter, a reply landing while a send is queued — precedes them on the branch. Appending after them kept a notice under the agent's
  * reply once the skeleton was claimed in place, until a reload restored the server order.
  */
 function insertBeforePending(
@@ -130,7 +129,6 @@ export const messageRowReducers: StreamReducers<
     return {
       ...session,
       messages: remapMessageAnchors(messages, anchorRemap),
-      participantUsage: replaceParticipantUsage(session.participantUsage, previousMessage, message),
       sessionUsage: replaceUsageInSummary(
         session.sessionUsage,
         previousMessage?.usage,
@@ -207,7 +205,6 @@ export const messageRowReducers: StreamReducers<
             }
           : stableMessage
       }),
-      participantUsage: replaceParticipantUsage(session.participantUsage, previousMessage, message),
       sessionUsage: replaceUsageInSummary(
         session.sessionUsage,
         previousMessage.usage,
@@ -232,11 +229,6 @@ export const messageRowReducers: StreamReducers<
       // contribution instead of re-summing the loaded window (which would drop
       // every unloaded turn), which keeps rollback/branch mutations honest without
       // waiting for a reconnect snapshot.
-      participantUsage: replaceParticipantUsage(
-        session.participantUsage,
-        previousMessage,
-        undefined,
-      ),
       sessionUsage: replaceUsageInSummary(session.sessionUsage, previousMessage.usage, undefined),
       messageCount: Math.max(0, (session.messageCount ?? session.messages.length) - 1),
       updatedAt: Date.now(),

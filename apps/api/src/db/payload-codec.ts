@@ -24,7 +24,7 @@ export const MESSAGE_PAYLOAD_VERSION = 1
  * what the row IS; `from` is who said it, which no later edit may reassign; `v` is the format
  * the codec wrote, which only the codec may state.
  */
-type MessageIdentity = 'id' | 'role' | 'from' | 'authorSnapshot' | 'continuedFromMessageId' | 'v'
+type MessageIdentity = 'id' | 'role' | 'from' | 'continuedFromMessageId' | 'v'
 
 /**
  * A PATCH to a stored message payload — the ONLY shape `repository.updateMessage` accepts.
@@ -68,7 +68,6 @@ export type StoredMessagePatch = {
   id?: never
   role?: never
   from?: never
-  authorSnapshot?: never
   continuedFromMessageId?: never
 }
 
@@ -80,11 +79,7 @@ export function mergeMessagePayload(
   stored: StoredMessagePayload,
   patch: StoredMessagePatch,
 ): StoredMessagePayload {
-  const {
-    authorSnapshot: _immutableSnapshot,
-    continuedFromMessageId: _immutableContinuation,
-    ...changes
-  } = patch
+  const { continuedFromMessageId: _immutableContinuation, ...changes } = patch
   // `v` is re-pinned from the CONSTANT, not from the stored row: a merge produces a value
   // this build is about to write, so it carries this build's format even if the row it was
   // read from carried an older one (which the reader would have refused anyway).

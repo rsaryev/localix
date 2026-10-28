@@ -18,7 +18,7 @@ export function heavyMutateInputs(item: ToolBackedItem): Array<{ field: string; 
   if (item.status !== 'completed') return []
   // A file_change that COMPLETED but has any FAILED hunk did not write those changes
   // to disk, so the patch/content args are NOT recoverable by re-reading. Keep them
-  // verbatim: `tool_output` serves a heavy input back only when this helper reports
+  // verbatim: `ToolOutput` serves a heavy input back only when this helper reports
   // it, so eliding here would make the pointer promise a recovery of text the model
   // would then have to re-derive.
   if (isFileChangeItem(item) && item.changes.some((c) => c.failed)) return []
@@ -31,7 +31,7 @@ export function heavyMutateInputs(item: ToolBackedItem): Array<{ field: string; 
     if (typeof v === 'string' && v && !carriesMarker(v, ELISION_MARKER))
       out.push({ field, text: v })
   }
-  if (name === 'write' || name === 'edit') pushString('content')
+  if (name === 'Write' || name === 'Edit') pushString('content')
   if (name === 'apply_patch' || name === 'patch') pushString('patch')
   // A batched call carries its payload as an array: `edit`'s `edits`, `write`'s `files`.
   const pushArray = (field: 'edits' | 'files') => {
@@ -40,8 +40,8 @@ export function heavyMutateInputs(item: ToolBackedItem): Array<{ field: string; 
     const text = JSON.stringify(v)
     if (!carriesMarker(text, ELISION_MARKER)) out.push({ field, text })
   }
-  if (name === 'write') pushArray('files')
-  if (name === 'edit') {
+  if (name === 'Write') pushArray('files')
+  if (name === 'Edit') {
     pushArray('edits')
     // single-edit shorthand: old_string/new_string at the top level
     pushString('old_string')

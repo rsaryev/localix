@@ -1,7 +1,6 @@
 import type { DiscoveredPlugin } from './discovery'
 import { BUILTIN_TOOL_NAMES } from '../agent-core/tool-names'
 import { CC_SEMANTIC_GAPS } from '../ext/cc-tool-names'
-import { DECLARABLE_EFFORTS_TEXT, isDeclarableEffort } from '../../db/types'
 
 export interface FieldValidation {
   errors: string[]
@@ -134,11 +133,6 @@ export function validatePluginAgents(plugin: DiscoveredPlugin): FieldValidation 
           `Agent role "${agent.name}" disallows tool ${unknownToolNote(tool, 'disallows')}`,
         )
       }
-    }
-    if (agent.preferredEffort && !isDeclarableEffort(agent.preferredEffort)) {
-      warnings.push(
-        `Agent role "${agent.name}" has an unrecognized effort value "${agent.preferredEffort}" — valid values: ${DECLARABLE_EFFORTS_TEXT}.`,
-      )
     }
     // Pinned skill names should look like valid skill names (letters/numbers/dashes/underscores).
     // Namespaced forms like "plugin:skill" are not supported — pinnedSkills takes bare names.

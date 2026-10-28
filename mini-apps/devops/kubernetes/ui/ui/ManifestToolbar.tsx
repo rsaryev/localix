@@ -25,7 +25,7 @@ export function ManifestToolbar({ model }: { model: ManifestEditorModel }) {
             <span className="@max-sm:sr-only">Reset</span>
           </Button>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             aria-label={model.applying ? 'Applying manifest' : 'Apply manifest'}
             title="Apply manifest"
@@ -50,7 +50,7 @@ export function ManifestToolbar({ model }: { model: ManifestEditorModel }) {
       ) : (
         <>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             aria-label="Edit manifest"
             title={

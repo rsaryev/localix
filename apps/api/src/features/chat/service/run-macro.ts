@@ -2,7 +2,7 @@ import type { ReasoningEffort } from '../../../db/types'
 import { InvalidRequestError } from '../../../lib/domain-errors'
 import { randomUUID } from 'node:crypto'
 
-import { USER_PARTICIPANT, type StoredMessagePayload } from '../../../db'
+import { USER_AUTHOR, type StoredMessagePayload } from '../../../db'
 import type { createChatRepository, SessionRecord } from '../repository'
 import type {
   MessageBinding,
@@ -20,14 +20,11 @@ import { logRunStartFailure } from './run-dispatch'
 import { rootExecutionContext } from '../runtime/execution-context'
 import type { ToolSurface } from '@localixai/agent/agents'
 import { resolveExistingMessages, type ExistingMessages } from './run-agent'
-import {
-  enqueueTurnTickets,
-  resolveTurnRecipients,
-  supersedeColleagueChains,
-} from '../runtime/conversation-dispatch'
+import { enqueueTurnTicket } from '../runtime/conversation-dispatch'
+import { turnRecipient } from '../runtime/conversation-strategy'
 import type { QueuedCommand } from '../runtime/wake-queue-contracts'
 import type { ToolRequirement } from '../../agent-core/required-tools'
-import { agentParticipant } from '../../../db/participant'
+import { agentAuthor } from '../../../db/author'
 import type { ScopedCcHooks } from '../runtime/run-contract'
 
 export interface RunMacroDeps {
@@ -107,19 +104,19 @@ export function createRunMacroCommand(deps: RunMacroDeps) {
       return { sessionId, messageId: '', queued: true }
     }
 
-    // A user message always has a recipient when the conversation has a participant, so this is
-    // the whole "nobody can answer" check — and it runs before anything is written, so a command
+    // A user message always has a recipient when the conversation has an agent, so this is the
+    // whole "nobody can answer" check — and it runs before anything is written, so a command
     // nobody can answer never leaves a user row behind.
-    if (!session.agents.length)
+    if (!session.agent)
       throw new InvalidRequestError(
-        'session_party_empty',
+        'session_agent_missing',
         'Choose an agent before running a command',
       )
 
     const userPayload: StoredMessagePayload = {
       id: randomUUID(),
       role: 'user',
-      from: USER_PARTICIPANT,
+      from: USER_AUTHOR,
       content: visiblePrompt,
       bindings,
       ...(opts?.commandOrigin ? { commandOrigin: opts.commandOrigin } : {}),
@@ -132,19 +129,10 @@ export function createRunMacroCommand(deps: RunMacroDeps) {
       userPayload,
       timestamp,
     )
-    // The echo goes out first; the history is read behind it, WITHOUT the command's own row —
-    // the strategy reads the last row as "who answered the user last".
+    // The echo goes out first; the history is read behind it, WITHOUT the command's own row.
     const existing = await resolveExistingMessages(existingMessages, [userPayload.id])
-    const recipients = await resolveTurnRecipients(
-      session,
-      existing,
-      { kind: 'user-message', text: visiblePrompt },
-      runner.leadership(userId, session.projectId),
-      runner.floorAdvisor({ userId, sessionId, projectId: session.projectId }),
-    )
-    const first = recipients[0]!
-    await supersedeColleagueChains(runner.cancelAgentTurns, userId, sessionId)
-    const asstPayload = emptyAssistantPayload(randomUUID(), agentParticipant(first.agentId))
+    const recipient = turnRecipient(session, { kind: 'user-message', text: visiblePrompt })!
+    const asstPayload = emptyAssistantPayload(randomUUID(), agentAuthor(recipient.agentId))
     await persistAndPublishMessage(repo, streamRegistry, userId, sessionId, asstPayload, timestamp)
     const updatedSession = await bumpSessionForTurn(
       repo,
@@ -158,12 +146,12 @@ export function createRunMacroCommand(deps: RunMacroDeps) {
 
     // A per-run model override travels in the scope: the dispatcher re-reads the session when
     // the ticket runs, so it is applied there to the run's copy and never persisted.
-    void enqueueTurnTickets(runner.enqueueRun, {
+    void enqueueTurnTicket(runner.enqueueRun, {
       userId,
       session: updatedSession,
       triggerMessageIds: [userPersisted.id],
       firstSlotId: asstPayload.id,
-      recipients,
+      recipient,
       scope: {
         conversationId: userPayload.id,
         executionContext: rootExecutionContext(opts?.toolSurface),

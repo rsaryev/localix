@@ -73,6 +73,7 @@ describe('shared primitives have no accessibility violations', () => {
     // POSITIVE CONTROL. Everything above passing is indistinguishable from axe never running, and
     // this is exactly the defect the static rules cannot see.
     const { host, cleanup } = await renderToHost(
+      // oxlint-disable-next-line jsx-a11y/control-has-associated-label -- the unnamed control is the defect this positive control plants
       <button type="button">
         <svg aria-hidden="true" />
       </button>,

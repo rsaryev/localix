@@ -57,8 +57,9 @@ describe('Checkbox DOM runtime', () => {
     try {
       await act(async () =>
         root.render(
-          <label>
+          <label htmlFor="remember-choice">
             <Checkbox
+              id="remember-choice"
               aria-label="Remember choice"
               onChange={(event) => {
                 checked = event.target.checked

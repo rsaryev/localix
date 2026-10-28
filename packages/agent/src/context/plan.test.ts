@@ -82,7 +82,7 @@ describe('planContextCompression', () => {
                 status: 'completed',
                 type: 'tool_call',
                 toolCallId: `t${k}`,
-                name: 'read',
+                name: 'Read',
                 activeVerb: 'Reading',
                 resultText: 'y'.repeat(8000),
               } as unknown as AgentItem,

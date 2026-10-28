@@ -1,5 +1,4 @@
 import { createBoundedCache } from '@localixai/kit/lib'
-import type { DesktopNotifyKind } from '@/shared/lib/desktopNotify'
 import type { NotificationAction, NotificationEntry } from './types'
 
 /**
@@ -16,8 +15,8 @@ import type { NotificationAction, NotificationEntry } from './types'
  */
 
 export interface DeliveryHint {
-  /** The native banner kind, or null when this fact never interrupts (an outage, a diagnostic). */
-  nativeKind: DesktopNotifyKind | null
+  /** False when this fact never interrupts with a native banner (an outage, a diagnostic). */
+  native: boolean
 }
 
 interface Overlay {

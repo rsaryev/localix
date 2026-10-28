@@ -4,7 +4,7 @@
  * completions, loop fires, mini app wakes) and addressed agent tickets.
  *
  * Its stages run in a fixed order because each one guards the next: validate (the session gate
- * is held through admission) → merge (a second address to a participant that is still waiting
+ * is held through admission) → merge (a second address to an agent that is still waiting
  * folds into its pending ticket instead of queueing a duplicate turn) → persist (the in-memory
  * queue and the durable row move together, or neither does) → budget (an agent-caused chain
  * may queue but not open another turn once `SELF_CAUSED_WAKES` is spent) → schedule (drain
@@ -92,13 +92,12 @@ export function createWake(ctx: WakeQueueContext, deps: WakeDeps) {
    * store no longer treats as pending, so only an unleased one is a fold target.
    */
   const pendingTicketOf = (q: PriorityQueue<PendingTurn>, params: EnqueueParams) => {
-    const speaker = params.agentTurn?.speakerAgentId
-    if (speaker === undefined) return undefined
+    if (!params.agentTurn) return undefined
     const item = q
       .list()
       .find(
         (entry) =>
-          ticketOf(entry.value)?.speakerAgentId === speaker &&
+          ticketOf(entry.value) !== undefined &&
           !entry.value.failure &&
           !leases.isLeased(params.session.id, entry.id),
       )

@@ -5,6 +5,10 @@ import type { EngineCatalogStore } from '@localixai/agent/runtime'
 import { createModelCatalog } from './catalog'
 import { DOCUMENT_SCHEMA } from './normalize'
 
+const turns = async (n = 10) => {
+  for (let i = 0; i < n; i++) await new Promise((r) => setImmediate(r))
+}
+
 const chat = (id: string) => ({
   id,
   name: id,
@@ -165,7 +169,7 @@ describe('the model catalog', () => {
     const controller = new AbortController()
     const first = catalog.refresh({ ...network, force: true, signal: controller.signal })
     const second = catalog.refresh({ ...network, force: true })
-    await Bun.sleep(5)
+    await turns()
     controller.abort()
     expect(await first).toEqual({ changed: false, aborted: true, errors: [] })
     release()

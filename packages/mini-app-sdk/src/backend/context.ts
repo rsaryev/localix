@@ -100,10 +100,10 @@ export interface MiniAppProblem {
 
 /** One agent a mini app may name — as the owner of a card, say. `id` is what to store. */
 export interface MiniAppAgentSummary {
-  /** The stable registry identity; a handle can be renamed, this cannot. */
+  /** The stable registry identity; a name can be changed, this cannot. */
   readonly id: string
-  /** The name people and the model address it by, without `@`. */
-  readonly handle: string
+  /** The name people and the model address it by (its Claude Code `name`). */
+  readonly name: string
   readonly description?: string
 }
 

@@ -1,4 +1,12 @@
-import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { useMiniAppWorkspaceChanges } from '@localixai/mini-app-sdk/ui/runtime-hooks'
 import { miniAppApiFetch } from '@localixai/mini-app-sdk/ui/transport'
 import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
@@ -39,7 +47,7 @@ export function useGraph(active: boolean) {
   const [kinds, setKinds] = useState<ReadonlySet<EdgeKind>>(() => new Set(EDGE_KINDS))
   const [highlighted, setHighlighted] = useState<ReadonlySet<string>>(() => new Set())
   /** Functions open in the call lens, in the order they were followed; empty = the map. */
-  const appliedAgentRevision = useRef(0)
+  const [appliedAgentRevision, setAppliedAgentRevision] = useState(0)
   const deferredQuery = useDeferredValue(query.trim())
   const [indexing, setIndexing] = useState(true)
 
@@ -90,9 +98,10 @@ export function useGraph(active: boolean) {
     return `?${search.toString()}`
   }, [sessionId, scope, selected, deferredQuery, external, trail, live])
 
+  // The stream's callbacks are built before the snapshot they refresh exists, so they reach the
+  // latest `refresh` and `indexing` through refs, published when each render commits.
   const refreshRef = useRef<() => void>(() => {})
   const indexingRef = useRef(indexing)
-  indexingRef.current = indexing
   const streamLive = useGraphStream(sessionId, active, {
     revision: () => refreshRef.current(),
     // A build's progress matters to a tab showing it; a background refresh of a ready map stays
@@ -114,7 +123,10 @@ export function useGraph(active: boolean) {
     root.current = projectRoot
   }, [projectRoot])
   // A finished refresh, or a socket that came back having missed some: read the snapshot now.
-  refreshRef.current = polled.refresh
+  useLayoutEffect(() => {
+    refreshRef.current = polled.refresh
+    indexingRef.current = indexing
+  })
   const request = useAgentRequests(active, sessionId)
   const snapshot = useMemo(() => {
     if (!polled.snapshot || !request || request.revision <= (polled.snapshot.agent?.revision ?? 0))
@@ -122,17 +134,16 @@ export function useGraph(active: boolean) {
     return { ...polled.snapshot, agent: request }
   }, [polled.snapshot, request])
 
-  useEffect(() => {
-    setIndexing(
-      !snapshot || snapshot.status.state === 'indexing' || snapshot.status.state === 'empty',
-    )
-  }, [snapshot])
+  // `indexing` picks how often the snapshot is polled, so it cannot be computed before the poll;
+  // it follows the snapshot it last saw, one render behind, adjusted while rendering.
+  const indexingNow =
+    !snapshot || snapshot.status.state === 'indexing' || snapshot.status.state === 'empty'
+  if (indexing !== indexingNow) setIndexing(indexingNow)
 
   // The agent pointed at something: go there once per request.
-  useEffect(() => {
-    const agent = snapshot?.agent
-    if (!agent || agent.revision <= appliedAgentRevision.current) return
-    appliedAgentRevision.current = agent.revision
+  const agent = snapshot?.agent
+  if (agent && agent.revision > appliedAgentRevision) {
+    setAppliedAgentRevision(agent.revision)
     if (agent.scope !== undefined || agent.focus !== undefined || agent.trail !== undefined) {
       navigate((current) => ({
         scope: agent.scope ?? current.scope,
@@ -141,7 +152,7 @@ export function useGraph(active: boolean) {
       }))
       setHighlighted(new Set(agent.highlight))
     }
-  }, [snapshot?.agent, navigate])
+  }
 
   const open = useCallback(
     (id: string) => {

@@ -17,7 +17,7 @@ import { openStore } from '@/shared/lib/openStore'
 interface AccessRow {
   key: string
   kind: CapabilityKind
-  /** What the rule names: `tool:bash` writes `bash`. */
+  /** What the rule names: `tool:Bash` writes `bash`. */
   name: string
   label: string
   detail?: string

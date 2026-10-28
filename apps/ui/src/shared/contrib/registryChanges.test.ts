@@ -1,11 +1,10 @@
 import { afterEach, expect, test } from 'bun:test'
 import { __setRegistryFlushScheduler, noteRegistryChange } from './registryChanges'
 
-const raf = globalThis.requestAnimationFrame
-const caf = globalThis.cancelAnimationFrame
+// No window here, so no frame functions: put back "absent", not `undefined` (the key would stay).
 afterEach(() => {
-  globalThis.requestAnimationFrame = raf
-  globalThis.cancelAnimationFrame = caf
+  Reflect.deleteProperty(globalThis, 'requestAnimationFrame')
+  Reflect.deleteProperty(globalThis, 'cancelAnimationFrame')
 })
 
 /**
@@ -17,6 +16,6 @@ test('a pending frame is let go after the window that scheduled it is gone', () 
   globalThis.requestAnimationFrame = () => 7
   globalThis.cancelAnimationFrame = () => {}
   noteRegistryChange()
-  globalThis.cancelAnimationFrame = undefined as never
+  Reflect.deleteProperty(globalThis, 'cancelAnimationFrame')
   expect(() => __setRegistryFlushScheduler(null)).not.toThrow()
 })

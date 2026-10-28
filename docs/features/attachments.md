@@ -44,7 +44,7 @@ permission rules.
 Large text and binary uploads are materialized under `.localix/attachments/<session>/<message>/`
 inside the session workspace. The stored transcript keeps its attachment; this rewrite changes only
 the model-facing copy. The description names the file and offers a bounded preview so the agent can
-request the relevant remainder through `read`. This workspace directory is internal material, not a
+request the relevant remainder through `Read`. This workspace directory is internal material, not a
 directory to commit to your repository.
 
 ## Limits

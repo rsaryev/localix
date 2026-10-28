@@ -9,7 +9,7 @@ type ChatServiceDeps = Parameters<typeof createChatService>[0]
 /**
  * The vault ports chat is built with (`chat-service-deps.ts`): a resolve-only read for runtime
  * features that name a secret, the create-only write the `request_secret` answer uses, and the
- * agent's `vault` tool. Every value that passes through is registered with the exposure shield.
+ * agent's `Vault` tool. Every value that passes through is registered with the exposure shield.
  */
 export function createChatVaultPorts(deps: {
   secretsStore: ReturnType<typeof createSecretsStore>

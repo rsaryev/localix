@@ -7,17 +7,17 @@ function countLabel(count: number, singular: string, plural = `${singular}s`): s
 
 /**
  * The enabled mini apps, as a bounded index: each app's tools (direct when on the wire, or kept
- * behind `activate_tools`), whether it has a guide to read with `mini_app_guide`, and the prompt
+ * behind `ToolSearch`), whether it has a guide to read with `MiniAppGuide`, and the prompt
  * sections apps declare. Plugins have their own index (`plugins-prompt-context.ts`).
  */
 export function buildMiniAppsPromptContext(
   loadedMiniApps: LoadedMiniApps,
   runtimeToolNames: readonly string[],
-  /** Built for this run but kept off the wire behind `activate_tools`. */
+  /** Built for this run but kept off the wire behind `ToolSearch`. */
   deferredToolNames: ReadonlySet<string> = new Set(),
 ): string | undefined {
   const available = new Set(runtimeToolNames)
-  const guides = available.has(TOOL.mini_app_guide)
+  const guides = available.has(TOOL.MiniAppGuide)
     ? new Set(loadedMiniApps.guides.map((guide) => guide.app))
     : new Set<string>()
   const summaries = loadedMiniApps.loaded.flatMap((app) => {
@@ -31,7 +31,7 @@ export function buildMiniAppsPromptContext(
   })
   const guideNote = guides.size
     ? [
-        `One marked "guide" has one: read it with ${TOOL.mini_app_guide} before you first use the app.`,
+        `One marked "guide" has one: read it with \`${TOOL.MiniAppGuide}\` before you first use the app.`,
       ]
     : []
   const sections = loadedMiniApps.promptSections.map(

@@ -1,5 +1,5 @@
 import type { UiAgentLocationCatalogSnapshot } from '@localixai/mini-app-sdk/ui'
-import { backoffMs } from '@localixai/api/backoff'
+import { backoffMs } from '@localixai/agent/backoff'
 import { ApiError } from '@/shared/api/internal'
 
 /** First retry after a failed publish; each further failure doubles it up to the cap. A flat

@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useMemo, useState } from 'react'
+import { useCallback, useLayoutEffect, useMemo, useRef } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { useHorizontalWheelScroll } from '../../lib/use-horizontal-wheel-scroll'
@@ -37,18 +37,20 @@ export function TabBar<T extends string>({
   // its own after: underline. It updates before paint with no travel animation,
   // so content and navigation state never disagree for a frame.
   // is absolutely positioned INSIDE the scroll container, so it lives in the
-  // scrollable content and moves with the strip for free.
-  const [indicator, setIndicator] = useState<{ left: number; width: number } | null>(null)
+  // scrollable content and moves with the strip for free. The measure is written straight to the
+  // element: it comes from layout, so routing it through state would only add a render.
+  const indicatorRef = useRef<HTMLSpanElement>(null)
   const measureIndicator = useCallback(() => {
+    const bar = indicatorRef.current
+    if (!bar) return
     const el = tabRefs.current.get(active)
     if (!el) {
-      setIndicator(null)
+      bar.style.opacity = '0'
       return
     }
-    setIndicator({
-      left: el.offsetLeft + INDICATOR_INSET,
-      width: Math.max(el.offsetWidth - INDICATOR_INSET * 2, 0),
-    })
+    bar.style.opacity = ''
+    bar.style.width = `${Math.max(el.offsetWidth - INDICATOR_INSET * 2, 0)}px`
+    bar.style.transform = `translateX(${el.offsetLeft + INDICATOR_INSET}px)`
   }, [active, tabRefs])
   // Re-measure when the active tab or the tab set changes (labels/badges/order
   // shift positions), before paint so the bar never flashes at a stale spot.
@@ -109,13 +111,9 @@ export function TabBar<T extends string>({
           )}
         >
           <span
+            ref={indicatorRef}
             aria-hidden
             className="pointer-events-none absolute bottom-0 left-0 h-0.5 rounded-full bg-foreground"
-            style={
-              indicator
-                ? { width: indicator.width, transform: `translateX(${indicator.left}px)` }
-                : { opacity: 0 }
-            }
           />
           {items.map(({ id, label, tabId, panelId, icon: Icon, badge, disabled }, index) => {
             const isActive = active === id

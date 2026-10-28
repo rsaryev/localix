@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react'
+import { useId, useState } from 'react'
 import { Pencil, RefreshCw, TriangleAlert } from 'lucide-react'
 
 import { VAULT_ITEM_TYPE_DEFINITIONS, VAULT_ITEM_TYPES } from '@localixai/api/vault-item-types'
@@ -93,18 +93,27 @@ export function VaultItemDialogBody({
     { scope: VAULT_PROBLEM_SCOPE, sourceVisible: true },
   )
 
-  useEffect(() => {
-    if (!open) return
-    setKey(mode === 'create' ? '' : (item?.key ?? ''))
-    setTitle(mode === 'create' ? '' : (item?.label ?? ''))
-    setDescription(mode === 'create' ? '' : (item?.description ?? ''))
-    setType(mode === 'create' ? 'secret' : (item?.type ?? 'secret'))
-    setTags(mode === 'create' ? '' : (item?.tags.join(', ') ?? ''))
-    setValue('')
-    setMissing({})
-    setError(null)
-    setBusy(false)
-  }, [item, mode, open])
+  // Every opening, and every change of mode or item while open, starts from that item's own values:
+  // reset while rendering, when what the form was filled for changes.
+  const [filledFor, setFilledFor] = useState<{
+    item: SecretMeta | undefined
+    mode: typeof mode
+    open: boolean
+  } | null>(null)
+  if (!filledFor || filledFor.item !== item || filledFor.mode !== mode || filledFor.open !== open) {
+    setFilledFor({ item, mode, open })
+    if (open) {
+      setKey(mode === 'create' ? '' : (item?.key ?? ''))
+      setTitle(mode === 'create' ? '' : (item?.label ?? ''))
+      setDescription(mode === 'create' ? '' : (item?.description ?? ''))
+      setType(mode === 'create' ? 'secret' : (item?.type ?? 'secret'))
+      setTags(mode === 'create' ? '' : (item?.tags.join(', ') ?? ''))
+      setValue('')
+      setMissing({})
+      setError(null)
+      setBusy(false)
+    }
+  }
 
   // Live problem first — malformed is more specific than "Required." — then what the last
   // submit found missing. Both from `model/vaultDraftErrors.ts`, which owns the rules.
@@ -319,7 +328,7 @@ export function VaultItemDialogBody({
       </DialogBody>
 
       <DialogFooter>
-        <Button variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>
+        <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={busy}>
           Cancel
         </Button>
         {/* Live: pressing it with an empty required field names the field instead of doing

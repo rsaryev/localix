@@ -2,8 +2,8 @@
  * WHICH PROVIDER ROUTE HAS SPENT ITS ALLOWANCE, AND UNTIL WHEN.
  *
  * The defect this stops: the cooldown used to be keyed by SESSION, so in a conversation where
- * one participant runs on provider A and another on provider B, a 429 from A held every
- * scheduled fire of the conversation — B's participant sat idle behind a quota it never touched.
+ * one agent runs on provider A and another on provider B, a 429 from A held every
+ * scheduled fire of the conversation — B's agent sat idle behind a quota it never touched.
  * A quota belongs to what the request was billed against, not to the conversation it came from.
  *
  * So the key is the route the failed run took: its provider connection (the account and key)
@@ -12,7 +12,7 @@
  * state per backend bucket (`RateLimitSnapshot.limit_id`), neither per session. Two consequences
  * follow from keying by route rather than session, and both are intended:
  *
- *   - two participants on the SAME connection and model share one quota, so they share one hold;
+ *   - two agents on the SAME connection and model share one quota, so they share one hold;
  *   - the hold is process-wide: a 429 in one conversation holds a loop in another on that route,
  *     which would otherwise fire straight into the same exhausted allowance.
  *

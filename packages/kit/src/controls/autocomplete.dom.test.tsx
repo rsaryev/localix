@@ -110,7 +110,12 @@ describe('Autocomplete popup foundation', () => {
         root.render(
           <Autocomplete open>
             <AutocompleteAnchor asChild>
-              <Input aria-label="Resource" role="combobox" />
+              <Input
+                aria-label="Resource"
+                role="combobox"
+                aria-expanded
+                aria-controls="resources"
+              />
             </AutocompleteAnchor>
             <AutocompletePanel side="top">
               <AutocompleteHeader>

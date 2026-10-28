@@ -68,7 +68,7 @@ export function turnStateOf(records: readonly unknown[]): TurnState | undefined 
     const envelope = asRecord(records[index])
     if (!envelope) continue
     // Codex wraps conversational records in `response_item`; Claude Code writes its record
-    // directly. Keep accepting a direct record so this reader remains format-tolerant.
+    // directly. Both are current formats.
     const record =
       envelope.type === 'response_item' || envelope.type === 'event_msg'
         ? asRecord(envelope.payload)

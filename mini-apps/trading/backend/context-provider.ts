@@ -16,7 +16,7 @@ function isPublicMarketData(uri: string): boolean {
 
 /**
  * Explicit Context Fabric adapter for the public market-data subtree only. Account
- * leaves and saved credentialed connections deliberately remain legacy until their
+ * leaves and saved credentialed connections stay excluded until their
  * ownership, consent and financial-data sensitivity policy is specified separately.
  *
  * SAFETY: `accepts` is the gate that enforces that boundary, and the factory applies it

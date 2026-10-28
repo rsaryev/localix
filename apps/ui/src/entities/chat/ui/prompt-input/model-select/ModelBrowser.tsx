@@ -13,11 +13,10 @@ import { CmdkHighlightWatcher } from './CmdkHighlightWatcher'
 import { useModelShortlists } from './useModelShortlists'
 import { useModelListPaging } from './useModelListPaging'
 import { initialModelSelection } from './initialModelSelection'
-import type { ParticipantRow } from './ModelTaskColumn'
 import { initialPickerTarget, targetAgentId, workloadKey, type PickerTarget } from './pickerTarget'
 import { MODEL_ROUTING_TASKS } from '@localixai/api/model-task-catalog'
 import { useModelTaskRouting } from './useModelTaskRouting'
-import { participantSlot } from './participantSlot'
+import { agentSlot } from './agentSlot'
 import { selectedTaskModelId } from './taskReasoning'
 import { ResetRouteRow, WorkloadOffOverlay } from './ModelBrowserParts'
 import { workloadLabelFor } from './modelBrowserLabels'
@@ -26,11 +25,6 @@ import { ModelBrowserSearchToolbar } from './ModelBrowserSearchToolbar'
 import { useAgentModelTurns } from './useAgentModelTurns'
 import { ModelDetailSettings } from './ModelDetailSettings'
 import { pickerColumns } from './pickerColumns'
-import { usePartyRoute } from './usePartyRoute'
-import { PARTY_TARGET } from './partyRoute'
-
-/** Stable identity: a fresh literal each render would defeat the memoized subtree. */
-const NO_PARTICIPANTS: readonly ParticipantRow[] = []
 
 /**
  * Shared by chat and onboarding: target, provider, model list, and details.
@@ -50,10 +44,7 @@ export function ModelBrowser({
   initialConnectionId,
   initialWorkload,
   taskColumn = true,
-  participants = NO_PARTICIPANTS,
-  initialAgentId,
-  onAgentTargetChange,
-  onApplyPartyRoute,
+  agent,
   onDismiss,
 }: ModelBrowserProps) {
   const { connections, activeId, addApiKeyConnection, addOAuthConnection } = connectionsState
@@ -71,11 +62,11 @@ export function ModelBrowser({
   const [taskKey, setTaskKey] = useState<PickerTarget>(
     () =>
       MODEL_ROUTING_TASKS.find((task) => task.key === initialWorkload)?.key ??
-      initialPickerTarget(participants, initialAgentId),
+      initialPickerTarget(agent),
   )
-  const participantRoute = useCallback(
-    (agentId: string) => participantSlot(participants, agentId, sessionConnectionId),
-    [participants, sessionConnectionId],
+  const agentRoute = useCallback(
+    () => agentSlot(agent, sessionConnectionId),
+    [agent, sessionConnectionId],
   )
 
   const { providers: allProviders, oauthProviderIds, oauthProviders } = useModelsCatalog()
@@ -93,15 +84,6 @@ export function ModelBrowser({
     () => sortProvidersByPopularity(connections, (connection) => connection.providerId),
     [connections],
   )
-  // "All agents": one model and level for every listed agent and for agents invited later.
-  const party = usePartyRoute({
-    participants,
-    sessionConnectionId,
-    models,
-    connections: orderedConnections,
-    onApplyPartyRoute,
-  })
-
   const {
     recent,
     setRouteSlot,
@@ -116,9 +98,8 @@ export function ModelBrowser({
     reasoningFor,
     changeModelReasoning,
     pickModel,
-  } = // Each participant answers for itself. The party arrives already resolved by the server
-    // (conversation, then project, then the agent's card), so the column shows what each member
-    // will actually run on rather than repeating whoever the picker has selected.
+  } = // The agent arrives already resolved by the server (conversation, then project, then the
+    // agent's card), so the column shows what it will actually run on.
     useModelTaskRouting({
       models,
       connections,
@@ -126,13 +107,10 @@ export function ModelBrowser({
       taskKey,
       sessionModelId,
       sessionConnectionId,
-      participantRoute: participants.length > 0 ? participantRoute : undefined,
+      agentRoute: agent ? agentRoute : undefined,
       reasoningEffort,
       onReasoningEffortChange,
       onPickSessionModel,
-      partyRoute: party.partyRoute,
-      onPickPartyModel: party.onPickPartyModel,
-      onPartyReasoningChange: party.onPartyReasoningChange,
     })
 
   // Initialize the sidebar selection ONCE per mount (render-time adjust — the
@@ -231,18 +209,14 @@ export function ModelBrowser({
   const selectTask = useCallback(
     (key: PickerTarget) => {
       setTaskKey(key)
-      const agentId = targetAgentId(key)
-      if (agentId !== null) onAgentTargetChange?.(agentId)
       const slot = slotForTask(key)
       const live = liveSlotFor(slot)
       if (live) setSelectedItem({ type: 'connection', id: live.connection.id })
     },
-    [liveSlotFor, onAgentTargetChange, slotForTask],
+    [liveSlotFor, slotForTask],
   )
 
-  // The checkmark belongs to the ACTIVE target. In a room `sessionModelId` is the first
-  // participant's model, so using it for every `agent:<id>` row painted that first model as
-  // selected while configuring somebody else.
+  // The checkmark belongs to the ACTIVE target, not the conversation's model.
   const selectedValueForList = selectedTaskModelId(currentLiveSlot, selectedConn?.id)
 
   const onSelectModel = useCallback(
@@ -258,7 +232,7 @@ export function ModelBrowser({
 
   const activeTaskMeta = MODEL_ROUTING_TASKS.find((task) => task.key === taskKey)
   const activeTaskEnabled = enabledForTask(taskKey)
-  // A participant has nothing to reset TO: its fallback is the agent's own model, and clearing
+  // The agent has nothing to reset TO: its fallback is the agent's own model, and clearing
   // the conversation's choice is what the row's fallback label already offers.
   const resettableWorkload = workloadKey(taskKey)
   const resetRow = resettableWorkload ? (
@@ -272,40 +246,36 @@ export function ModelBrowser({
     setSearch(value)
     resetPaging()
   }
-  const activeParticipant = participants.find((member) => member.agentId === targetAgentId(taskKey))
+  const activeAgent = agent && agent.agentId === targetAgentId(taskKey) ? agent : undefined
   const modelTurns = useAgentModelTurns(
     targetAgentId(taskKey),
     detailModel?.providerId,
     detailModel?.id,
-    activeParticipant?.maxTurnsLimit,
+    activeAgent?.maxTurnsLimit,
   )
   const modelSettings =
-    detailModel && (detailModel.supportsReasoning || activeParticipant) ? (
+    detailModel && (detailModel.supportsReasoning || activeAgent) ? (
       <ModelDetailSettings
         model={detailModel}
         current={isCurrentModel(detailModel)}
         minimumReasoning={taskKey === 'inlineCompletion'}
         reasoningFor={reasoningFor}
         changeModelReasoning={changeModelReasoning}
-        turns={activeParticipant ? modelTurns : undefined}
+        turns={activeAgent ? modelTurns : undefined}
       />
     ) : undefined
 
   const { taskColumnFor, providerColumnFor, nav } = pickerColumns({
     taskColumn,
     allProviders,
-    workloadLabel:
-      taskKey === PARTY_TARGET
-        ? 'All agents'
-        : workloadLabelFor(activeParticipant, activeTaskMeta?.label),
+    workloadLabel: workloadLabelFor(activeAgent, activeTaskMeta?.label),
     task: {
       activeTask: taskKey,
       onSelectTask: selectTask,
       modelLabelFor,
       enabledFor: enabledForTask,
       onEnabledChange: setTaskEnabled,
-      participants,
-      party: party.column,
+      agent,
     },
     provider: {
       connections: orderedConnections,

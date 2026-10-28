@@ -28,7 +28,7 @@ const row = (id: string, messageCount: number) => ({
   messages: [],
   bodyLoaded: false,
   messageCount,
-  agents: [{ agentId: AGENT, handle: 'localix' }],
+  agent: { agentId: AGENT, handle: 'localix' },
   isPinned: false,
   updatedAt: 0,
 })

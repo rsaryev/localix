@@ -68,6 +68,7 @@ export function PagedList<T>({
   const scroller = useContext(StoreScrollContext)
   const list = useRef<HTMLDivElement>(null)
   const [margin, setMargin] = useState(0)
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- measures the list's offset after every commit (content above it can change); the equality guard stops the update chain
   useLayoutEffect(() => {
     const el = list.current
     const pane = scroller?.current
@@ -76,6 +77,7 @@ export function PagedList<T>({
     setMargin((prev) => (Math.abs(prev - next) < 1 ? prev : next))
   })
   const rows = Math.ceil(items.length / columns)
+  // oxlint-disable-next-line react/incompatible-library -- TanStack Virtual returns non-memoizable functions by design.
   const virtual = useVirtualizer({
     count: rows,
     getScrollElement: () => scroller?.current ?? null,

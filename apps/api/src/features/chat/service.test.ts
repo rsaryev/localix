@@ -1,5 +1,6 @@
 /// <reference types="bun" />
 
+import { tmpdir } from 'node:os'
 import { createChatFeaturePorts } from '../../bootstrap/chat-feature-ports'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm } from 'node:fs/promises'
@@ -17,12 +18,11 @@ import {
   createTestChatService as createChatService,
 } from './test-harness'
 import type { AgentRunner } from './runtime/agent-runner'
-import { noLeadership } from './runtime/conversation-strategy'
 import type { PersistedMessage } from './contracts'
-import { DEFAULT_AGENT_PARTICIPANT, USER_PARTICIPANT } from '../../db'
+import { DEFAULT_AGENT_AUTHOR, USER_AUTHOR } from '../../db'
 import { testWork } from '../../testing/work-fixture'
 
-const tempDir = join(process.cwd(), 'tmp', 'chat-service-tests')
+const tempDir = join(tmpdir(), `localix-chat-service-tests-${process.pid}`)
 
 /**
  * Wait for a fire-and-forget turn to reach the runner double. An enqueue carries no history, so
@@ -33,7 +33,7 @@ async function eventually(condition: () => boolean, timeoutMs = 2_000): Promise<
   const deadline = Date.now() + timeoutMs
   while (!condition()) {
     if (Date.now() > deadline) throw new Error('condition not reached before the deadline')
-    await new Promise((resolve) => setTimeout(resolve, 1))
+    await new Promise((resolve) => setImmediate(resolve))
   }
 }
 
@@ -115,7 +115,7 @@ describe('chat service', () => {
     const payload: StoredMessagePayload = {
       id: 'msg_parent_1',
       role: 'assistant',
-      from: DEFAULT_AGENT_PARTICIPANT,
+      from: DEFAULT_AGENT_AUTHOR,
       content: '',
       items: [
         {
@@ -123,7 +123,7 @@ describe('chat service', () => {
           type: 'command',
           status: 'running',
           toolCallId,
-          name: 'bash',
+          name: 'Bash',
           command: 'npm run dev',
           input: {
             command: 'npm run dev',
@@ -154,7 +154,7 @@ describe('chat service', () => {
 
     expect(job.sourceRuntime).toEqual({
       toolCallId,
-      toolName: 'bash',
+      toolName: 'Bash',
       title: 'Start app server',
       command: 'npm run dev',
       cwd: '/workspace/app',
@@ -172,10 +172,6 @@ describe('chat service', () => {
     const runSurfaces: unknown[] = []
     const runner = {
       isRunning: () => false,
-      activeAgentId: () => undefined,
-      leadership: () => noLeadership,
-      floorAdvisor: () => async () => null,
-      inviteAddressed: async (_userId: string, session: unknown) => session,
       listWork: () => [],
       isBusy: () => false,
       stop: () => false,
@@ -289,7 +285,7 @@ describe('chat service', () => {
     const payload: StoredMessagePayload = {
       id: 'msg_parent_2',
       role: 'assistant',
-      from: DEFAULT_AGENT_PARTICIPANT,
+      from: DEFAULT_AGENT_AUTHOR,
       content: '',
       items: [
         {
@@ -344,10 +340,6 @@ describe('chat service', () => {
     let queuedClientMessageId: string | undefined
     const runner = {
       isRunning: () => active,
-      activeAgentId: () => undefined,
-      leadership: () => noLeadership,
-      floorAdvisor: () => async () => null,
-      inviteAddressed: async (_userId: string, session: unknown) => session,
       listWork: () => [],
       isBusy: () => active,
       stop: () => {
@@ -416,10 +408,6 @@ describe('chat service', () => {
     const calls: Array<[string, string, string]> = []
     const runner = {
       isRunning: () => true,
-      activeAgentId: () => undefined,
-      leadership: () => noLeadership,
-      floorAdvisor: () => async () => null,
-      inviteAddressed: async (_userId: string, session: unknown) => session,
       listWork: () => [],
       isBusy: () => true,
       stop: () => true,
@@ -456,7 +444,7 @@ describe('chat service', () => {
     await destroyDatabase(db)
   })
 
-  // The busy path: an unknown command (here the removed `/compact`) typed while a run is active
+  // The busy path: an unknown command (here `/frobnicate`) typed while a run is active
   // must fail closed — never queue, never run, and never reach the model as a prompt.
   test('an unknown slash command on a busy session fails closed and queues nothing', async () => {
     const db = createDatabase({ filename: join(tempDir, `${randomUUID()}.sqlite`) })
@@ -465,10 +453,6 @@ describe('chat service', () => {
     let runCalls = 0
     const runner = {
       isRunning: () => true,
-      activeAgentId: () => undefined,
-      leadership: () => noLeadership,
-      floorAdvisor: () => async () => null,
-      inviteAddressed: async (_userId: string, session: unknown) => session,
       listWork: () => [],
       isBusy: () => true,
       stop: () => true,
@@ -489,16 +473,16 @@ describe('chat service', () => {
       providerConnectionsService: createProviderConnectionsService({ db }),
       runner,
     })
-    const userId = 'user_removed_compact'
-    const session = await chatService.createSession(userId, { title: 'Removed compact' })
+    const userId = 'user_unknown_busy'
+    const session = await chatService.createSession(userId, { title: 'Unknown while busy' })
 
-    const result = await chatService.sendMessage(userId, session.id, '/compact keep the plan')
+    const result = await chatService.sendMessage(userId, session.id, '/frobnicate keep the plan')
 
     expect(runCalls).toBe(0)
     expect((result as { queued?: boolean }).queued).not.toBe(true)
     const messages = await createChatRepository(db).listMessages(userId, session.id)
     expect(messages.map((message) => message.payload.role)).toEqual(['assistant'])
-    expect(messages[0]?.payload.content).toContain('Unknown slash command `/compact`')
+    expect(messages[0]?.payload.content).toContain('Unknown slash command `/frobnicate`')
 
     await destroyDatabase(db)
   })
@@ -509,10 +493,6 @@ describe('chat service', () => {
     let runCalls = 0
     const runner = {
       isRunning: () => false,
-      activeAgentId: () => undefined,
-      leadership: () => noLeadership,
-      floorAdvisor: () => async () => null,
-      inviteAddressed: async (_userId: string, session: unknown) => session,
       listWork: () => [],
       isBusy: () => false,
       stop: () => false,
@@ -557,10 +537,6 @@ describe('chat service', () => {
     const prompts: string[] = []
     const runner = {
       isRunning: () => false,
-      activeAgentId: () => undefined,
-      leadership: () => noLeadership,
-      floorAdvisor: () => async () => null,
-      inviteAddressed: async (_userId: string, session: unknown) => session,
       listWork: () => [],
       isBusy: () => false,
       stop: () => false,
@@ -609,10 +585,6 @@ describe('chat service', () => {
     let runCalls = 0
     const runner = {
       isRunning: () => false,
-      activeAgentId: () => undefined,
-      leadership: () => noLeadership,
-      floorAdvisor: () => async () => null,
-      inviteAddressed: async (_userId: string, session: unknown) => session,
       listWork: () => [],
       isBusy: () => false,
       stop: () => false,
@@ -723,8 +695,8 @@ describe('chat service', () => {
         userId,
         payload:
           role === 'user'
-            ? { id, role, from: USER_PARTICIPANT, content }
-            : { id, role, from: DEFAULT_AGENT_PARTICIPANT, content },
+            ? { id, role, from: USER_AUTHOR, content }
+            : { id, role, from: DEFAULT_AGENT_AUTHOR, content },
         createdAt: at,
         updatedAt: at,
       })
@@ -783,7 +755,7 @@ describe('chat service', () => {
       id: 'readonly_user',
       sessionId: child.id,
       userId,
-      payload: { id: 'readonly_user', role: 'user', from: USER_PARTICIPANT, content: 'task' },
+      payload: { id: 'readonly_user', role: 'user', from: USER_AUTHOR, content: 'task' },
       createdAt: timestamp,
       updatedAt: timestamp,
     })
@@ -794,7 +766,7 @@ describe('chat service', () => {
       payload: {
         id: 'readonly_assistant',
         role: 'assistant',
-        from: DEFAULT_AGENT_PARTICIPANT,
+        from: DEFAULT_AGENT_AUTHOR,
         content: 'result',
       },
       createdAt: timestamp,
@@ -839,7 +811,7 @@ describe('chat service', () => {
         payload: {
           id,
           role,
-          from: role === 'user' ? USER_PARTICIPANT : DEFAULT_AGENT_PARTICIPANT,
+          from: role === 'user' ? USER_AUTHOR : DEFAULT_AGENT_AUTHOR,
           content,
         },
         createdAt: ts,
@@ -899,7 +871,7 @@ describe('chat service', () => {
         payload: {
           id,
           role,
-          from: role === 'user' ? USER_PARTICIPANT : DEFAULT_AGENT_PARTICIPANT,
+          from: role === 'user' ? USER_AUTHOR : DEFAULT_AGENT_AUTHOR,
           content,
         },
         createdAt: ts,
@@ -951,7 +923,7 @@ describe('chat service', () => {
       payload: {
         id: 'anchor_assistant',
         role: 'assistant',
-        from: DEFAULT_AGENT_PARTICIPANT,
+        from: DEFAULT_AGENT_AUTHOR,
         content: 'Anchor answer',
       },
       createdAt: ts,
@@ -997,7 +969,7 @@ describe('chat service', () => {
       id: 'user_anchor',
       sessionId: session.id,
       userId,
-      payload: { id: 'user_anchor', role: 'user', from: USER_PARTICIPANT, content: 'Question' },
+      payload: { id: 'user_anchor', role: 'user', from: USER_AUTHOR, content: 'Question' },
       createdAt: ts,
       updatedAt: ts,
     })
@@ -1048,7 +1020,7 @@ describe('chat service', () => {
         payload: {
           id,
           role,
-          from: role === 'user' ? USER_PARTICIPANT : DEFAULT_AGENT_PARTICIPANT,
+          from: role === 'user' ? USER_AUTHOR : DEFAULT_AGENT_AUTHOR,
           content,
         },
         createdAt: ts,
@@ -1100,10 +1072,6 @@ describe('chat service', () => {
     const runSurfaces: unknown[] = []
     const runner = {
       isRunning: () => false,
-      activeAgentId: () => undefined,
-      leadership: () => noLeadership,
-      floorAdvisor: () => async () => null,
-      inviteAddressed: async (_userId: string, session: unknown) => session,
       listWork: () => [],
       isBusy: () => false,
       stop: () => true,
@@ -1145,7 +1113,7 @@ describe('chat service', () => {
         payload: {
           id,
           role,
-          from: role === 'user' ? USER_PARTICIPANT : DEFAULT_AGENT_PARTICIPANT,
+          from: role === 'user' ? USER_AUTHOR : DEFAULT_AGENT_AUTHOR,
           content,
           ...(bindings?.length ? { bindings } : {}),
         },
@@ -1245,10 +1213,6 @@ describe('chat service', () => {
     const runHistories: StoredMessagePayload[][] = []
     const runner = {
       isRunning: () => false,
-      activeAgentId: () => undefined,
-      leadership: () => noLeadership,
-      floorAdvisor: () => async () => null,
-      inviteAddressed: async (_userId: string, session: unknown) => session,
       listWork: () => [],
       isBusy: () => false,
       stop: () => true,
@@ -1281,7 +1245,7 @@ describe('chat service', () => {
         payload: {
           id,
           role,
-          from: role === 'user' ? USER_PARTICIPANT : DEFAULT_AGENT_PARTICIPANT,
+          from: role === 'user' ? USER_AUTHOR : DEFAULT_AGENT_AUTHOR,
           content,
         },
         createdAt: ts,
@@ -1345,7 +1309,7 @@ describe('chat service', () => {
         payload: {
           id: `msg_${i}`,
           role: 'user',
-          from: USER_PARTICIPANT,
+          from: USER_AUTHOR,
           content: `m${i}`,
           items: [],
         } as StoredMessagePayload,

@@ -9,7 +9,7 @@ export const externalAgentInputSchema = z.object({
   action: z
     .enum(AGENT_SESSIONS_ACTIONS)
     .describe(
-      'To open or continue an external session for the user: resume, then run its returned command with bash action:"open". Transcript only reads history into your context; it does not open anything for the user.',
+      'To open or continue an external session for the user: resume, then run its returned command with `Bash` action:"open". Transcript only reads history into your context; it does not open anything for the user.',
     ),
   key: z
     .string()

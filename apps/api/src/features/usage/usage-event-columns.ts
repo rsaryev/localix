@@ -24,9 +24,9 @@ export const mutableColumns = (event: UsageEventInput) => ({
   key_id: event.keyId ?? null,
   key_label: event.keyLabel ?? null,
   key_masked: event.keyMasked ?? null,
-  // Mutable, not identity: a room rotates the party so the speaker is first, and a re-persist
-  // of the same message re-derives the speaker the same way. Keeping it with the other
-  // re-derived columns means a row written before the rotation landed is repaired, not frozen.
+  // Mutable, not identity: a re-persist of the same message re-derives the agent the same way.
+  // Keeping it with the other re-derived columns means a row written before it was derived is
+  // repaired, not frozen.
   agent_id: event.agentId ?? null,
 })
 

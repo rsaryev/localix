@@ -1,7 +1,6 @@
 import type { z } from 'zod'
 
 import type {
-  JoinRoutesView,
   DirListing,
   FileSearchResult,
   FileContentResponse,
@@ -19,6 +18,7 @@ import type {
   FileContentSearchResult,
   AgentStreamEvent,
   QueueClearResult,
+  StopResult,
   QueuePromoteResult,
   QueueRemovalResult,
 } from './contracts'
@@ -65,7 +65,6 @@ export interface ChatRoutesService extends ChatRecapFacade {
     id: string,
     opts?: { messageLimit?: number; deferToolDetails?: boolean },
   ): Promise<SessionDetail>
-  getJoinRoutes(userId: string, id: string): Promise<JoinRoutesView>
   getSubagentRows(userId: string, id: string): Promise<SubagentRowsView>
   getMessageToolDetails(
     userId: string,
@@ -207,6 +206,7 @@ export interface ChatRoutesService extends ChatRecapFacade {
   forkSession(userId: string, sessionId: string, fromMessageId?: string): Promise<SessionDetail>
   openMessageThread(userId: string, sessionId: string, messageId: string): Promise<SessionDetail>
   stop(sessionId: string, callerUserId?: string): Promise<boolean>
+  stopAndReturnQueued(sessionId: string, userId: string): Promise<StopResult>
   /** Stop one of the session's monitors. False when it is not the caller's or already ended. */
   stopSessionMonitor(userId: string, sessionId: string, monitorId: string): boolean
   /** Unified tool interaction: kill, hitl respond/dismiss, or any custom action. */
@@ -232,7 +232,7 @@ export interface ChatRoutesService extends ChatRecapFacade {
     sessionId: string,
     toolName?: string,
   ): Promise<string[] | null>
-  /** Settle a pending `browser` tool command from the host UI's reply. */
+  /** Settle a pending `Browser` tool command from the host UI's reply. */
   resolvePreviewCommand(
     commandId: string,
     payload: PreviewResultPayload,

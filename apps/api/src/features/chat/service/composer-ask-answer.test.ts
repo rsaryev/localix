@@ -30,7 +30,7 @@ function harness() {
       undefined,
       (details) => {
         const request = (details as { request: never }).request
-        hitlRegistry.trackRequest('s1', 'm1', 'call-1', 'ask', request, 'u1')
+        hitlRegistry.trackRequest('s1', 'm1', 'call-1', 'AskUserQuestion', request, 'u1')
       },
       { humanInLoop: hitlRegistry.controller },
     )
@@ -45,7 +45,8 @@ describe('a line typed while an ask card is open', () => {
     const result = h.ask()
     expect(h.answer('u1', 's1', '  SQLite, it is a desktop app  ')).toBe(true)
     expect(await result).toMatchObject({
-      content: 'User answers:\ndb: SQLite, it is a desktop app',
+      content:
+        'User answers:\ndb: SQLite, it is a desktop app\nContinue the task with these answers.',
     })
     expect(h.hitlRegistry.listPendingInteractions('s1')).toHaveLength(0)
     expect(h.published).toEqual([

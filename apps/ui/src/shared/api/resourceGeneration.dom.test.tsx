@@ -1,6 +1,11 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 
+// Zero-delay timer turns: the code under test schedules with `setTimeout(..., 0)`.
+const settle = async () => {
+  for (let i = 0; i < 6; i++) await new Promise((resolve) => setTimeout(resolve, 0))
+}
+
 /**
  * Caches the realtime scheduler does not own still learn of changes from its topics: an SWR key
  * re-reads once per change however many components hold it.
@@ -14,8 +19,6 @@ afterAll(async () => {
   Reflect.deleteProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT')
   await teardown()
 })
-
-const settle = () => new Promise((done) => setTimeout(done, 10))
 
 describe('topic-driven caches', () => {
   test('an SWR key re-reads once per change for every reader', async () => {

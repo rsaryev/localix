@@ -4,28 +4,28 @@ import type { GrantOption } from '../../../agent-core/permission-grant-scope'
 import { confirmTitle, MAX_REPLY_CHARS, readConfirmAnswer, wireGrants } from './confirm-answer'
 
 const offered: GrantOption[] = [
-  { scope: 'read(/w/a.ts)', kind: 'path', label: 'a.ts', covers: '/w/a.ts' },
+  { scope: 'Read(/w/a.ts)', kind: 'path', label: 'a.ts', covers: '/w/a.ts' },
   {
-    scope: 'read(/w/*)',
+    scope: 'Read(/w/*)',
     kind: 'folder',
     label: 'w',
     covers: 'anything inside /w',
-    rule: { action: 'tool:read', resource: '/w/*' },
+    rule: { action: 'tool:Read', resource: '/w/*' },
   },
 ]
 
 describe('what an answer may mean', () => {
   test('a widening answer names one of the offered breadths', () => {
     const answer = readConfirmAnswer(
-      { confirmed: true, scope: 'always', grant: 'read(/w/*)' },
+      { confirmed: true, scope: 'always', grant: 'Read(/w/*)' },
       offered,
     )
-    expect(answer.grant?.scope).toBe('read(/w/*)')
+    expect(answer.grant?.scope).toBe('Read(/w/*)')
   })
 
   test('an id the card never offered widens nothing — the client cannot name its own folder', () => {
     const answer = readConfirmAnswer(
-      { confirmed: true, scope: 'session', grant: 'read(/*)' },
+      { confirmed: true, scope: 'session', grant: 'Read(/*)' },
       offered,
     )
     expect(answer).toEqual({ confirmed: true, scope: 'session' })
@@ -33,13 +33,13 @@ describe('what an answer may mean', () => {
 
   test('a client that names no grant gets the narrowest one', () => {
     expect(readConfirmAnswer({ confirmed: true, scope: 'session' }, offered).grant?.scope).toBe(
-      'read(/w/a.ts)',
+      'Read(/w/a.ts)',
     )
   })
 
   test('once widens nothing, whatever it names', () => {
     expect(
-      readConfirmAnswer({ confirmed: true, grant: 'read(/w/*)' }, offered).grant,
+      readConfirmAnswer({ confirmed: true, grant: 'Read(/w/*)' }, offered).grant,
     ).toBeUndefined()
   })
 
@@ -61,25 +61,25 @@ describe('what an answer may mean', () => {
 
 test('the wire carries the rule in Settings spelling and the scope as an opaque id', () => {
   expect(wireGrants(offered)).toEqual([
-    { id: 'read(/w/a.ts)', kind: 'path', label: 'a.ts', covers: '/w/a.ts' },
+    { id: 'Read(/w/a.ts)', kind: 'path', label: 'a.ts', covers: '/w/a.ts' },
     {
-      id: 'read(/w/*)',
+      id: 'Read(/w/*)',
       kind: 'folder',
       label: 'w',
       covers: 'anything inside /w',
-      rule: 'read(/w/*)',
+      rule: 'Read(/w/*)',
     },
   ])
 })
 
 describe('the title names the act and its object', () => {
   test.each([
-    [{ toolName: 'bash', subject: 'command' as const }, 'Run a command'],
+    [{ toolName: 'Bash', subject: 'command' as const }, 'Run a command'],
     [
-      { toolName: 'read', subject: 'path' as const, targets: ['/w/src/useTheme.ts'] },
+      { toolName: 'Read', subject: 'path' as const, targets: ['/w/src/useTheme.ts'] },
       'Read useTheme.ts',
     ],
-    [{ toolName: 'edit', subject: 'path' as const, targets: ['/a', '/b'] }, 'Edit 2 paths'],
+    [{ toolName: 'Edit', subject: 'path' as const, targets: ['/a', '/b'] }, 'Edit 2 paths'],
     [
       { toolName: 'office', subject: 'path' as const, targets: ['/w/x.docx'] },
       'Use office on x.docx',

@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 
+import { DELEGATION_SLOT_CAP } from '../../agent-core/delegation-budget'
+
 import { sessionFixture } from '../../../testing/session-fixture'
 import {
   __resetDelegationLanes,
@@ -70,7 +72,7 @@ describe('closing a delegated child', () => {
   })
 
   test('a child waiting for a lane leaves the queue and never starts', async () => {
-    for (const sibling of ['s1', 's2', 's3']) requestLane('root', sibling, () => {})
+    for (let i = 1; i <= DELEGATION_SLOT_CAP; i++) requestLane('root', `s${i}`, () => {})
     let started = false
     requestLane('root', 'child', () => {
       started = true
@@ -83,7 +85,7 @@ describe('closing a delegated child', () => {
   })
 
   test('messages it was waiting to read are dropped with it', async () => {
-    for (const sibling of ['s1', 's2', 's3']) requestLane('root', sibling, () => {})
+    for (let i = 1; i <= DELEGATION_SLOT_CAP; i++) requestLane('root', `s${i}`, () => {})
     const h = host()
     await messageSubagent(h.ctx, 'u', 'child', 'never read')
     await closeSubagent(h.ctx, 'u', 'child')

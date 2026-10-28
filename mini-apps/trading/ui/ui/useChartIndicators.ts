@@ -2,7 +2,7 @@
  * The indicator set: persisted pref records (presence = active, each with its overrides) plus the
  * main scale's mode, and the series each active indicator owns on the chart.
  */
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { resolveIndicators } from '../model/indicatorSpecs'
 import {
   activeIds,
@@ -27,7 +27,9 @@ export function useChartIndicatorState(rt: ChartRuntime, controlKey: string | un
   // RESOLVED drawable specs (parameterized — `ema:200` works as well as a preset), in
   // deterministic overlay-then-pane order.
   const activeSpecs = useMemo(() => resolveIndicators(active), [active])
-  rt.activeSpecs.current = activeSpecs
+  useLayoutEffect(() => {
+    rt.write('activeSpecs', activeSpecs)
+  }, [rt, activeSpecs])
   return { items, setItems, scaleMode, setScaleMode, activeSpecs, overrides }
 }
 
@@ -39,7 +41,7 @@ export function useChartIndicatorSeries(
   activeIndicatorId: string | null,
   schedulePaneMeasure: () => void,
 ): void {
-  // One write, one per-tab key (the write promotes the global seed to a per-tab entry).
+  // One write, one per-tab key.
   useEffect(() => {
     saveIndicatorPrefsV2(
       { v: 2, items, ...(scaleMode !== 'linear' ? { scaleMode } : {}) },

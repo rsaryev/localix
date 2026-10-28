@@ -1,6 +1,8 @@
+import { TOOL } from './tool-names'
 import { isPathWithin } from '@localixai/path-containment'
 import { realpathSync } from 'node:fs'
 import path from 'node:path'
+import { readableHostRoots } from '../../lib/host-roots'
 import { AGENT_ALLOWED_ROOTS, isInsideWorkspace } from './tools/workspace'
 
 /**
@@ -12,42 +14,26 @@ import { AGENT_ALLOWED_ROOTS, isInsideWorkspace } from './tools/workspace'
  * extractor read as one function with an exception; here the exception is the subject.
  */
 
-const WORKSPACE_CONFINED_READERS = new Set(['read', 'search'])
+const WORKSPACE_CONFINED_READERS = new Set<string>([TOOL.Read, TOOL.Search])
 
 /**
- * Resolve symlinks for a containment DECISION only.
+ * Resolve symlinks for a containment DECISION only, through the deepest EXISTING ancestor.
  *
  * `@localixai/path-containment` is lexical by contract — it states outright that it does no
  * realpath and no symlink following, and that "callers that need symlink safety must resolve
  * first". This is such a caller: a reader auto-approves anything the workspace contains, so a
- * symlink sitting INSIDE the workspace and pointing out of it read as contained. Measured: a
- * link at `<root>/key` targeting a file outside produced `outsideWorkspace: false`, so the
- * read was silently approved and the target's contents entered model context with no prompt.
- * A repo that legitimately contains such a link is enough — no attacker required.
+ * symlink sitting INSIDE the workspace and pointing out of it read as contained, and a write to
+ * `<root>/link/new.txt`, `link` pointing outside, was judged inside and landed outside.
  *
- * BOTH sides are resolved, because resolving only the candidate would break the common case:
- * on macOS `/tmp` is itself a symlink to `/private/tmp`, so a canonical candidate compared
- * against an unresolved root would look outside and prompt for ordinary workspace files.
+ * A target often does not exist yet, so its own realpath fails — but the folders above it do,
+ * and the OS follows a linked folder among them. So the deepest existing ancestor is resolved
+ * and the rest re-attached. Both sides of a comparison go through this: on macOS `/tmp` and
+ * `/var` are themselves links (to `/private/...`), and a missing file compared lexically against
+ * a resolved root looked outside its own workspace.
  *
- * A path that does not exist yet (or that cannot be resolved) falls back to the lexical form —
- * for readers that failure is about to surface as ENOENT anyway, and guessing is worse.
  * Deliberately NOT applied to `facts.paths`: those feed the user's own pattern rules and the
  * prompt text, and silently substituting a link's target would change what an existing rule
  * matches.
- */
-function canonical(value: string): string {
-  try {
-    return realpathSync.native(value)
-  } catch {
-    return value
-  }
-}
-
-/**
- * A mutation's target usually does not exist yet, so its own realpath fails — but the folders
- * it will be created in do, and the OS follows a linked folder among them. Measured: a write to
- * `<root>/link/new.txt`, `link` pointing outside, was judged inside and landed outside. So the
- * deepest EXISTING ancestor is resolved and the rest of the path re-attached to it.
  */
 function canonicalAncestor(value: string): string {
   const rest: string[] = []
@@ -93,7 +79,11 @@ export function isOutsideWorkspace(
   }
   // Readers are judged on canonical paths (a link inside may point out), against the workspace
   // and the agent-authored roots — the same roots a write may touch, so a plugin an agent was
-  // asked to build is as readable as it is writable.
-  const target = canonical(candidate)
-  return ![root, ...AGENT_ALLOWED_ROOTS].some((allowed) => isPathWithin(canonical(allowed), target))
+  // asked to build is as readable as it is writable. The mini app kit's SDK declarations join
+  // them for reading only: they are what a mini app is written against, and the host-root guard
+  // already lets these two tools open them.
+  const target = canonicalAncestor(candidate)
+  return ![root, ...AGENT_ALLOWED_ROOTS, ...readableHostRoots()].some((allowed) =>
+    isPathWithin(canonicalAncestor(allowed), target),
+  )
 }

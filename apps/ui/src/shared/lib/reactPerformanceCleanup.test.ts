@@ -54,7 +54,9 @@ describe('React development performance retention', () => {
 
   test('preserves mark-based overloads and native validation failures', () => {
     const timeline = nodePerformance as unknown as Performance
-    const original = timeline.measure
+    // Read as a plain property: the test pins that the very same function comes back.
+    const slot = timeline as unknown as { measure: unknown }
+    const original = slot.measure
     const dispose = installReactPerformanceCleanup(timeline)
     try {
       timeline.mark('localix.test.start')
@@ -65,7 +67,7 @@ describe('React development performance retention', () => {
       expect(() => timeline.measure('localix.test.invalid', 'localix.test.missing')).toThrow()
     } finally {
       dispose()
-      expect(timeline.measure).toBe(original)
+      expect(slot.measure).toBe(original)
       timeline.clearMarks('localix.test.start')
       timeline.clearMarks('localix.test.end')
       timeline.clearMeasures('localix.test.marks')

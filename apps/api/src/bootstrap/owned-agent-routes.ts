@@ -19,7 +19,6 @@ export function ownedAgentRoutes(
         const terminal = await deps.terminalService.spawnCommand(userId, { sessionId, command })
         recordTerminalWork(deps.work, {
           owner: { userId, sessionId },
-          agentId: null,
           label: command,
           terminal,
         })

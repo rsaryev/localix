@@ -35,18 +35,18 @@ test('a failed guard leaves a once hook available, while a selected denial spend
       return { ok: false, reason: 'blocked once' }
     },
   })
-  expect(await runtime.runPreToolUse('bash', { command: 'echo other' })).toEqual({
+  expect(await runtime.runPreToolUse('Bash', { command: 'echo other' })).toEqual({
     decision: 'proceed',
     didRewrite: false,
   })
   expect(onceKeys.size).toBe(0)
   expect(calls).toEqual([])
-  expect(await runtime.runPreToolUse('bash', { command: 'echo allowed' })).toMatchObject({
+  expect(await runtime.runPreToolUse('Bash', { command: 'echo allowed' })).toMatchObject({
     decision: 'deny',
     reason: 'blocked once',
   })
   expect(onceKeys.size).toBe(1)
-  expect(await runtime.runPreToolUse('bash', { command: 'echo allowed' })).toEqual({
+  expect(await runtime.runPreToolUse('Bash', { command: 'echo allowed' })).toEqual({
     decision: 'proceed',
     didRewrite: false,
   })

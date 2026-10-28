@@ -7,6 +7,7 @@ import { applyOps } from '../shared/ops/apply'
 import type { OpResult, SpaceOp } from '../shared/ops/contract'
 import { spaceTypes } from '../shared/types'
 import { spaceApi } from './api'
+import { SpaceEpoch } from './spaceEpoch'
 import { LOCAL_REVISION, settle } from './settle'
 import { savedSpaceView, subscribeSpaceUpdates, watchSpaceUpdates } from './spaceUpdates'
 
@@ -49,9 +50,11 @@ export function useSpace(sessionId: string | null): SpaceState {
   const [error, setError] = useState<string | null>(null)
   const inFlight = useRef(0)
   const current = useRef<SpaceView | null>(null)
-  const owner = useRef(sessionId)
-  const generation = useRef(0)
-  const readSequence = useRef(0)
+  const [epoch] = useState(() => {
+    const first = new SpaceEpoch()
+    first.begin(sessionId)
+    return first
+  })
   const accept = useCallback((answer: SpaceView) => {
     const next = settle(current.current, answer)
     current.current = next
@@ -59,9 +62,7 @@ export function useSpace(sessionId: string | null): SpaceState {
   }, [])
 
   useEffect(() => {
-    owner.current = sessionId
-    generation.current++
-    readSequence.current++
+    epoch.begin(sessionId)
     inFlight.current = 0
     current.current = sessionId ? savedSpaceView(sessionId) : null
     setView(current.current)
@@ -82,27 +83,26 @@ export function useSpace(sessionId: string | null): SpaceState {
     })
     return () => {
       unsubscribe()
-      owner.current = null
-      generation.current++
-      readSequence.current++
+      epoch.end()
     }
-  }, [sessionId, accept])
+  }, [sessionId, accept, epoch])
 
-  const reload = useCallback(async () => {
-    if (!sessionId) return
-    const sequence = ++readSequence.current
-    try {
-      // The mirror publishes an accepted read once to every surface. Applying it again here
-      // would bypass its stale-read guard and turn one read into two competing state owners.
-      await spaceApi.space(sessionId)
-      if (owner.current !== sessionId || sequence !== readSequence.current) return
-      setError(null)
-    } catch (failure) {
-      if (owner.current !== sessionId || sequence !== readSequence.current) return
-      acknowledgeInline(failure)
-      setError(miniAppErrorDetail(failure) ?? 'The board could not be read.')
-    }
-  }, [sessionId])
+  const reload = useCallback(() => {
+    if (!sessionId) return Promise.resolve()
+    const sequence = epoch.nextRead()
+    // The mirror publishes an accepted read once to every surface. Applying it again here
+    // would bypass its stale-read guard and turn one read into two competing state owners.
+    return spaceApi.space(sessionId).then(
+      () => {
+        if (epoch.latest(sessionId, sequence)) setError(null)
+      },
+      (failure: unknown) => {
+        if (!epoch.latest(sessionId, sequence)) return
+        acknowledgeInline(failure)
+        setError(miniAppErrorDetail(failure) ?? 'The board could not be read.')
+      },
+    )
+  }, [sessionId, epoch])
 
   useEffect(() => {
     if (!sessionId || !visible) return
@@ -115,7 +115,7 @@ export function useSpace(sessionId: string | null): SpaceState {
     async (ops: readonly SpaceOp[]) => {
       const before = current.current
       if (!sessionId || !before) return []
-      const startedIn = generation.current
+      const startedIn = epoch.mark()
       const local = applyOps(before.space, ops, { registry: spaceTypes })
       // A local guess, not a file the server wrote: it carries no revision (`settle`).
       current.current = { ...before, space: local.space, revision: LOCAL_REVISION }
@@ -123,7 +123,7 @@ export function useSpace(sessionId: string | null): SpaceState {
       inFlight.current++
       try {
         const answer = await spaceApi.apply(sessionId, ops)
-        if (owner.current !== sessionId || generation.current !== startedIn) return answer.results
+        if (!epoch.holds(sessionId, startedIn)) return answer.results
         inFlight.current--
         if (inFlight.current === 0) accept(savedSpaceView(sessionId) ?? answer)
         const refused = answer.results.filter((result) => !result.ok)
@@ -131,34 +131,34 @@ export function useSpace(sessionId: string | null): SpaceState {
           toast.error(refused.map((result) => ('error' in result ? result.error : '')).join('\n'))
         return answer.results
       } catch (failure) {
-        if (owner.current !== sessionId || generation.current !== startedIn) return []
+        if (!epoch.holds(sessionId, startedIn)) return []
         inFlight.current--
         toast.error(miniAppErrorDetail(failure) ?? 'The change was not saved.')
         await reload()
         return []
       }
     },
-    [sessionId, reload, accept],
+    [sessionId, reload, accept, epoch],
   )
 
   const step = useCallback(
     async (side: 'undo' | 'redo') => {
       if (!sessionId) return
-      const startedIn = generation.current
+      const startedIn = epoch.mark()
       try {
         const answer = await spaceApi[side](sessionId)
-        if (owner.current !== sessionId || generation.current !== startedIn) return
+        if (!epoch.holds(sessionId, startedIn)) return
         if (inFlight.current === 0) accept(answer)
         if (answer.conflicts.length)
           toast(
             `${answer.conflicts.length} element${answer.conflicts.length === 1 ? ' was' : 's were'} changed since, and kept as they are now`,
           )
       } catch (failure) {
-        if (owner.current !== sessionId || generation.current !== startedIn) return
+        if (!epoch.holds(sessionId, startedIn)) return
         toast.error(miniAppErrorDetail(failure) ?? `Could not ${side}.`)
       }
     },
-    [sessionId, accept],
+    [sessionId, accept, epoch],
   )
 
   return {

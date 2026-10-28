@@ -24,19 +24,11 @@ import { downloadTable } from './download'
 import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
+import { useDebounced } from '@localixai/mini-app-sdk/ui/runtime-hooks'
 
 /** Pull more rows for charts up to this cap — charts plot a representative
  * sample without eagerly loading a 100k-row table. The grid stays fully lazy. */
 const CHART_SAMPLE_CAP = 4000
-
-function useDebounced<T>(value: T, ms: number): T {
-  const [debounced, setDebounced] = useState(value)
-  useEffect(() => {
-    const t = setTimeout(() => setDebounced(value), ms)
-    return () => clearTimeout(t)
-  }, [value, ms])
-  return debounced
-}
 
 /**
  * Inspector Table tab: a native, file-backed data view. Rows stream lazily from

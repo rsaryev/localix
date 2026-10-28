@@ -6,8 +6,8 @@
  *
  * The tool owns nothing about waiting. Interval, deadline, the not-runnable check and the wake
  * all belong to `features/monitors` behind the injected host; this file only translates a bash
- * call into a spec and puts the wait where background jobs live, so `jobs list/read/stop`, the
- * composer's work row and the card's Stop button work without a second surface.
+ * call into a spec and puts the wait where background jobs live, so `jobs` list/read, `TaskStop`,
+ * the composer's work row and the card's Stop button work without a second surface.
  */
 import type { AgentToolExecutionContext, AgentToolResult } from '@localixai/agent/agents'
 
@@ -77,7 +77,7 @@ export async function runUntilWait(
   const everySeconds = Math.min(input.until!, maxInterval)
   const spec: MonitorSpec = {
     // The description heads every wake; a multi-line script there buries the news under it.
-    description: input.description?.trim() || commandLabel(command),
+    description: commandLabel(command),
     cwd,
     until: { check: command, everySeconds, when: { kind: 'exit_zero' }, emit: 'once' },
     timeoutMs,
@@ -152,7 +152,7 @@ export async function runUntilWait(
     content: [
       `Wait ${started.id} started · ${spec.description}`,
       `Running the command every ${everySeconds}s${clamped} until it exits 0; gives up after ${deadlineSecs}s and tells you.`,
-      `END YOUR TURN now — you will be woken with the result. Stop it with jobs action="stop" job_id="${started.id}" when it is no longer useful.`,
+      `END YOUR TURN now — you will be woken with the result. Stop it with TaskStop task_id="${started.id}" when it is no longer useful.`,
     ].join('\n'),
     details,
   }

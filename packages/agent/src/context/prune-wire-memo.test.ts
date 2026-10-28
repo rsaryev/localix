@@ -30,7 +30,7 @@ const readHistory = (result: ToolResult): Message[] => [
       {
         type: 'tool_call',
         id: result.toolCallId,
-        name: 'read',
+        name: 'Read',
         arguments: { path: 'a.ts' },
       },
     ],
@@ -46,7 +46,7 @@ describe('pruneWireMessages identity memoization', () => {
     const result: ToolResult = {
       type: 'tool_result',
       toolCallId: 'bash-1',
-      toolName: 'bash',
+      toolName: 'Bash',
       content: 'A'.repeat(60_000),
     }
     const first = contentOf(pruneWireMessages([toolMessage(result)]), 'bash-1')
@@ -68,7 +68,7 @@ describe('pruneWireMessages identity memoization', () => {
     const result: ToolResult = {
       type: 'tool_result',
       toolCallId: 'read-1',
-      toolName: 'read',
+      toolName: 'Read',
       content: initialContent,
     }
     const history = readHistory(result)
@@ -91,7 +91,7 @@ describe('pruneWireMessages identity memoization', () => {
     const result: ToolResult = {
       type: 'tool_result',
       toolCallId: 'read-2',
-      toolName: 'read',
+      toolName: 'Read',
       content: initialContent,
     }
     const opts = { ...OPEN, liveReadBudgetBytes: 800 }

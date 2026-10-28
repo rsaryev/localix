@@ -37,7 +37,7 @@ async function startContinuationRun(args: {
   if (args.abort.signal.aborted) return false
 
   const { assistantMessage } = await insertInternalTurn({
-    agent: sessionAgent(session, params.scope.speakerAgentId),
+    agent: sessionAgent(session),
     repo: env.repo,
     streamRegistry: env.deps.streamRegistry,
     now: env.now,

@@ -216,7 +216,7 @@ export function createManageChartTool(options: ManageChartToolOptions) {
         )
         if (!outcome.ok) {
           // Honest, non-crashing: a silent UI (tab closed / client offline) is
-          // "couldn't look at it", not a defect — mirrors the `browser` tool's notEngaged.
+          // "couldn't look at it", not a defect — mirrors the `Browser` tool's notEngaged.
           return {
             content: outcome.noReply
               ? `No reply from the UI — the ${payload.symbol} chart state could not be read ` +

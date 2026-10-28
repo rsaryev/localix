@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react'
+import { useRef, useState, type CSSProperties, type KeyboardEvent } from 'react'
 
 import { movesNow, type Game, type Move } from '../../shared/game'
 import { squareName } from '../../shared/notation'
@@ -30,14 +30,18 @@ const displayOrder = (flip: boolean) =>
  * The result is kept until the next move, so a re-render mid-animation does not cut it off.
  */
 function useArrivals(game: Game): Move[] {
-  const memo = useRef<{ id: string; count: number; arrivals: Move[] } | null>(null)
-  const seen = memo.current
   const count = game.moves.length
-  if (!seen || seen.id !== game.id || seen.count !== count) {
-    const since = !seen ? count : seen.id === game.id ? seen.count : count
-    memo.current = { id: game.id, count, arrivals: game.moves.slice(since) }
-  }
-  return memo.current!.arrivals
+  // State, adjusted while rendering: the first sight of a game has no arrivals.
+  const [seen, setSeen] = useState<{ id: string; count: number; arrivals: Move[] }>({
+    id: game.id,
+    count,
+    arrivals: [],
+  })
+  if (seen.id === game.id && seen.count === count) return seen.arrivals
+  const since = seen.id === game.id ? seen.count : count
+  const next = { id: game.id, count, arrivals: game.moves.slice(since) }
+  setSeen(next)
+  return next.arrivals
 }
 
 /**
@@ -72,7 +76,12 @@ export function Board({
   const buttons = useRef<(HTMLButtonElement | null)[]>([])
 
   // A new position ends whatever move was being built on the old one.
-  useEffect(() => setPicked([]), [game.id, game.moves.length, playable])
+  const positionKey = `${game.id}:${game.moves.length}:${playable}`
+  const [builtOn, setBuiltOn] = useState(positionKey)
+  if (builtOn !== positionKey) {
+    setBuiltOn(positionKey)
+    setPicked([])
+  }
 
   const targets = nextSquares(legal, picked)
   const movable = movablePieces(legal)

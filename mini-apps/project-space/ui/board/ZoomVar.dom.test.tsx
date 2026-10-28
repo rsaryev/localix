@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, expect, test } from 'bun:test'
+import { afterAll, beforeAll, expect, jest, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing'
 
 let teardown: () => Promise<void>
@@ -13,6 +13,7 @@ test('a renewed gesture or closing the board cancels pending idle zoom writes', 
   const { createRoot } = await import('react-dom/client')
   const { Canvas, CanvasProvider, useCanvasCamera } = await import('@localixai/kit/canvas')
   const { ZoomVar } = await import('./ZoomVar')
+  const { CAMERA_REST_MS } = await import('@localixai/kit/canvas')
   const idle = new Map<number, IdleRequestCallback>()
   let sequence = 0
   const originalIdle = window.requestIdleCallback
@@ -28,7 +29,10 @@ test('a renewed gesture or closing the board cancels pending idle zoom writes', 
   let camera: ReturnType<typeof useCanvasCamera> | undefined
   function Probe() {
     const target = React.useRef<HTMLDivElement>(null)
-    camera = useCanvasCamera()
+    const current = useCanvasCamera()
+    React.useEffect(() => {
+      camera = current
+    })
     return (
       <div ref={target}>
         <Canvas label="Zoom lifecycle" nodes={[]} edges={[]} controls={false} />
@@ -47,16 +51,18 @@ test('a renewed gesture or closing the board cancels pending idle zoom writes', 
         </CanvasProvider>,
       ),
     )
+    jest.useFakeTimers()
     await React.act(async () => camera!.set({ x: 0, y: 0, zoom: 0.7 }))
-    await React.act(async () => new Promise((resolve) => setTimeout(resolve, 220)))
+    await React.act(async () => jest.advanceTimersByTime(CAMERA_REST_MS))
     expect(idle.size).toBe(1)
     await React.act(async () => camera!.set({ x: 0, y: 0, zoom: 0.8 }))
     expect(idle.size).toBe(0)
-    await React.act(async () => new Promise((resolve) => setTimeout(resolve, 220)))
+    await React.act(async () => jest.advanceTimersByTime(CAMERA_REST_MS))
     expect(idle.size).toBe(1)
     await React.act(async () => root.unmount())
     expect(idle.size).toBe(0)
   } finally {
+    jest.useRealTimers()
     await React.act(async () => root.unmount())
     if (originalIdle === undefined) Reflect.deleteProperty(window, 'requestIdleCallback')
     else window.requestIdleCallback = originalIdle

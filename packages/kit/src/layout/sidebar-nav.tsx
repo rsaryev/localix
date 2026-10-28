@@ -65,6 +65,7 @@ export function SidebarNav({
   search,
   className,
   onToggle,
+  selectSize = 'md',
 }: {
   /** Names the navigation landmark (and the select, in `select` mode). */
   label: string
@@ -77,6 +78,11 @@ export function SidebarNav({
   className?: string
   /** Adds the fold row at the top: pressed, the host switches between `full` and `compact`. */
   onToggle?: () => void
+  /**
+   * The picker's rung of the control ladder in `select` mode. Give it the rung of the `search`
+   * beside it, so the two read as one strip rather than a short button next to a tall field.
+   */
+  selectSize?: 'md' | 'lg' | 'xl'
 }) {
   const shown = groups.filter((group) => group.items.length > 0)
   const items = useMemo(() => shown.flatMap((group) => group.items), [shown])
@@ -99,7 +105,7 @@ export function SidebarNav({
           placeholder="Choose a section"
           onValueChange={onSelect}
           options={options}
-          size="md"
+          size={selectSize}
           className="max-w-56 min-w-0 shrink"
         />
         {search && <div className="min-w-0 flex-1">{search}</div>}
@@ -178,6 +184,7 @@ export function SidebarNav({
       className={cn('flex min-h-0 flex-col gap-4', className)}
     >
       {mode === 'full' && search}
+      {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- delegates Arrow/Home/End from the buttons inside; the landmark itself is never the target */}
       <nav
         aria-label={label}
         onKeyDown={onKeyDown}

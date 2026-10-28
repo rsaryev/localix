@@ -16,7 +16,7 @@ const tool = (id: string, status: ToolCallItem['status']): ToolCallItem => ({
   type: 'tool_call',
   status,
   toolCallId: `call-${id}`,
-  name: 'read',
+  name: 'Read',
   activeVerb: 'Reading',
   input: { path: `${id}.ts` },
 })

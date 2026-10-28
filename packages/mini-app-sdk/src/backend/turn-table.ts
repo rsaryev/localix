@@ -1,8 +1,8 @@
 import type { z } from 'zod'
 
 import type { AgentWait } from '../agent-wait'
-import { DECISION_HOLDS_SEAT, defaultOpponent, type Opponent } from '../opponent'
-import { askAgentForTurn, decisionTurns, type Seat, type Wake } from './agent-turn'
+import { DECISION_HOLDS_TURN, defaultOpponent, type Opponent } from '../opponent'
+import { askAgentForTurn, decisionTurns, type ChatRef, type Wake } from './agent-turn'
 import type { DecisionHost } from './decision'
 import { openJsonStore } from './json-store'
 
@@ -46,15 +46,15 @@ export interface TurnTableOptions<G extends TurnGameState, A> extends TurnTableH
   /** Ask the decision model for its turn; a `waiting` when it gave none. */
   askDecision: (
     decisions: DecisionHost | undefined,
-    seat: Seat,
+    chat: ChatRef,
     game: G,
     now: string,
   ) => Promise<A | { waiting: AgentWait }>
   /** Play the decision model's answer on the game. */
   playDecision: (game: G, answer: A, at: string) => G
-  /** How many turns the decision model may play in a row while it keeps the seat (a hit). */
+  /** How many turns the decision model may play in a row while it keeps the turn (a hit). */
   maxDecisionTurns?: number
-  /** The game's own refusal, for the agent acting while the decision model holds its seat. */
+  /** The game's own refusal, for the agent acting while the decision model holds its side. */
   refuse: (message: string) => Error
 }
 
@@ -62,7 +62,7 @@ export interface TurnTableOptions<G extends TurnGameState, A> extends TurnTableH
  * THE GAME AT EACH CHAT'S TABLE, and the turn-taking every agent-opponent game shares.
  *
  * One game per chat session, kept in that session's own folder (`resolveDir`, the host's session
- * storage). Every operation names its seat and resolves the folder AGAIN, through the host's
+ * storage). Every operation names its chat and resolves the folder AGAIN, through the host's
  * ownership check: a session that was deleted rejects before anything is read or written.
  *
  * A PERSON acts in the view (`personTurn`), and after that the other side may owe a turn, so it is
@@ -75,30 +75,30 @@ export interface TurnTableOptions<G extends TurnGameState, A> extends TurnTableH
 export function createTurnTable<G extends TurnGameState, A>(options: TurnTableOptions<G, A>) {
   const { now, key, live, owes } = options
 
-  const storeFor = async (seat: Seat) => {
+  const storeFor = async (chat: ChatRef) => {
     if (!options.resolveDir)
       throw new Error(`This app keeps no per-chat data, so it cannot hold a ${options.noun}.`)
     return openJsonStore({
-      dir: await options.resolveDir(seat.userId, seat.sessionId),
+      dir: await options.resolveDir(chat.userId, chat.sessionId),
       file: 'game.json',
       schema: options.schema,
       initial: options.initial(),
     })
   }
 
-  const read = async (seat: Seat) => (await storeFor(seat)).read()
+  const read = async (chat: ChatRef) => (await storeFor(chat)).read()
 
-  const update = async (seat: Seat, change: (game: G, at: string) => G) =>
-    (await storeFor(seat)).update((current) => change(current, now()))
+  const update = async (chat: ChatRef, change: (game: G, at: string) => G) =>
+    (await storeFor(chat)).update((current) => change(current, now()))
 
   /**
    * A table whose opponent is not settled takes the default now: the decision model when it can
    * answer, else the agent. Only the backend load can ask (`decisions`); a tool call leaves it.
    */
-  const settle = async (seat: Seat, game: G): Promise<G> => {
+  const settle = async (chat: ChatRef, game: G): Promise<G> => {
     if (game.opponent !== null || !options.decisions) return game
-    const opponent = await defaultOpponent(options.decisions, seat.userId)
-    return update(seat, (current) =>
+    const opponent = await defaultOpponent(options.decisions, chat.userId)
+    return update(chat, (current) =>
       current.opponent === null ? { ...current, opponent } : current,
     )
   }
@@ -110,13 +110,13 @@ export function createTurnTable<G extends TurnGameState, A>(options: TurnTableOp
    * the table still shows the position it was asked about. Read fresh: a turn queued behind
    * another finds the table as it is now.
    */
-  const decisionTurn = async (seat: Seat): Promise<void> => {
-    let current = await read(seat)
+  const decisionTurn = async (chat: ChatRef): Promise<void> => {
+    let current = await read(chat)
     const most = options.maxDecisionTurns ?? 1
     for (let turn = 0; turn < most && current.opponent === 'decision' && owes(current); turn++) {
       const asked = key(current)
-      const answer = await options.askDecision(options.decisions, seat, current, now())
-      const next = await update(seat, (latest, at) =>
+      const answer = await options.askDecision(options.decisions, chat, current, now())
+      const next = await update(chat, (latest, at) =>
         key(latest) !== asked || !live(latest) || latest.opponent !== 'decision'
           ? latest
           : isWaiting(answer)
@@ -133,49 +133,49 @@ export function createTurnTable<G extends TurnGameState, A>(options: TurnTableOp
    * already (`again` is the reminder that asks anyway). The answer is recorded only while the
    * table still shows that position — the agent may have moved before it arrived.
    */
-  const summon = async (seat: Seat, settled: G, again = false): Promise<G> => {
-    const game = await settle(seat, settled)
+  const summon = async (chat: ChatRef, settled: G, again = false): Promise<G> => {
+    const game = await settle(chat, settled)
     if (!owes(game) || (game.waiting?.status === 'thinking' && !again)) return game
     const asked = key(game)
     const unchanged = (latest: G) => key(latest) === asked && live(latest)
     if (game.opponent === 'decision') {
       // Answer the person now, with the model thinking; its turn lands through the store feed.
-      const thinking = await update(seat, (latest, at) =>
+      const thinking = await update(chat, (latest, at) =>
         unchanged(latest) && latest.opponent === 'decision'
           ? { ...latest, waiting: { since: at, status: 'thinking' } }
           : latest,
       )
-      turns.start(seat, () => decisionTurn(seat))
+      turns.start(chat, () => decisionTurn(chat))
       return thinking
     }
     const turn = { ...options.agentTurn(game), key: asked }
-    const waiting = await askAgentForTurn(options.wake, seat, turn, now())
-    return update(seat, (latest) => (unchanged(latest) ? { ...latest, waiting } : latest))
+    const waiting = await askAgentForTurn(options.wake, chat, turn, now())
+    return update(chat, (latest) => (unchanged(latest) ? { ...latest, waiting } : latest))
   }
 
-  /** A change the agent makes through its tools: refused while the decision model holds its seat. */
-  const agentUpdate = (seat: Seat, change: (game: G, at: string) => G) =>
-    update(seat, (game, at) => {
-      if (game.opponent === 'decision') throw options.refuse(DECISION_HOLDS_SEAT)
+  /** A change the agent makes through its tools: refused while the decision model holds its side. */
+  const agentUpdate = (chat: ChatRef, change: (game: G, at: string) => G) =>
+    update(chat, (game, at) => {
+      if (game.opponent === 'decision') throw options.refuse(DECISION_HOLDS_TURN)
       return change(game, at)
     })
 
   return {
     /** Resolves once the decision model's turns started so far have landed — for tests. */
     settled: turns.idle,
-    read: async (seat: Seat): Promise<G> => settle(seat, await read(seat)),
+    read: async (chat: ChatRef): Promise<G> => settle(chat, await read(chat)),
     /** A change nobody is asked about: a tool's new game, a fleet placed anew. */
     update,
     /** What a person does in the view; then the other side is asked for the turn it owes. */
-    personTurn: async (seat: Seat, change: (game: G, at: string) => G) =>
-      summon(seat, await update(seat, change)),
+    personTurn: async (chat: ChatRef, change: (game: G, at: string) => G) =>
+      summon(chat, await update(chat, change)),
     /** Ask again for the turn owed. */
-    remind: async (seat: Seat) => summon(seat, await read(seat), true),
+    remind: async (chat: ChatRef) => summon(chat, await read(chat), true),
     /** Who plays the other side from now on; a turn it owes is asked of the new opponent at once. */
-    setOpponent: async (seat: Seat, opponent: Opponent) =>
+    setOpponent: async (chat: ChatRef, opponent: Opponent) =>
       summon(
-        seat,
-        await update(seat, (game) =>
+        chat,
+        await update(chat, (game) =>
           game.opponent === opponent ? game : { ...game, opponent, waiting: null },
         ),
         true,
@@ -186,11 +186,11 @@ export function createTurnTable<G extends TurnGameState, A>(options: TurnTableOp
      * waiting on it — rather than a request typed in the chat.
      */
     agentTurn: async (
-      seat: Seat,
+      chat: ChatRef,
       play: (game: G, at: string) => G,
     ): Promise<{ game: G; answered: boolean }> => {
       let answered = false
-      const game = await agentUpdate(seat, (current, at) => {
+      const game = await agentUpdate(chat, (current, at) => {
         answered = current.waiting?.status === 'thinking'
         return play(current, at)
       })

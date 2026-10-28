@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { backendClient } from '@/shared/api/client'
+import { useLatestRef } from '@/shared/lib/useLatestRef'
 import { useFileConnectionRecovery } from './useFileConnectionRecovery'
 import { readyStateFor, type FileLoadState } from './fileLoadState'
 export type { FileLoadState } from './fileLoadState'
@@ -51,8 +52,7 @@ export function useFileEditor(
   formatOnSaveRef?: { current: FormatOnSaveRunner | null },
 ) {
   const workItemVisible = useWorkItemVisible()
-  const workItemVisibleRef = useRef(workItemVisible)
-  workItemVisibleRef.current = workItemVisible
+  const workItemVisibleRef = useLatestRef(workItemVisible)
   const [initialCached] = useState(() =>
     sessionId ? (fileContentCache.get(sessionId, path) ?? null) : null,
   )

@@ -29,19 +29,14 @@ function sessionsWith(runtime: Partial<CcHooksRuntime>) {
 const settle = () => new Promise((r) => setTimeout(r, 0))
 
 describe('model switch hooks', () => {
-  const seats = [
-    { agentId: 'a1', modelId: 'claude-sonnet-5' },
-    { agentId: 'a2', modelId: 'claude-opus-5' },
-  ]
+  const current = { modelId: 'claude-sonnet-5' }
 
-  test('only routes that move to another model are switches', () => {
-    expect(
-      modelSwitches(
-        seats,
-        [{ modelId: 'claude-opus-5' }, { agentId: 'a2', modelId: 'claude-opus-5' }],
-        'a1',
-      ),
-    ).toEqual([{ fromModel: 'claude-sonnet-5', toModel: 'claude-opus-5' }])
+  test('only a route that moves to another model is a switch', () => {
+    expect(modelSwitches(current, { modelId: 'claude-opus-5' })).toEqual([
+      { fromModel: 'claude-sonnet-5', toModel: 'claude-opus-5' },
+    ])
+    expect(modelSwitches(current, { modelId: 'claude-sonnet-5' })).toEqual([])
+    expect(modelSwitches(current, {})).toEqual([])
   })
 
   test('a PreModelSwitch deny or ask refuses the request before it is written', async () => {

@@ -1,17 +1,4 @@
-/** How many provider/tool-loop turns one agent run may consume, and how long a chain of
- * participants handing the floor to each other may run before the person hears back. */
-
-/**
- * The longest chain of handoffs one message of the person's may start.
- *
- * Handoffs had no bound at all: two participants that each think the other should go next
- * ping-pong until someone intervenes, and every hop is a paid run. The person can always
- * interrupt (their message outranks the chain in the queue), but they should not have to. Twelve
- * hops is a long, real collaboration — a plan, two implementers, a reviewer, a fix round — and
- * short enough that a loop is caught within minutes. The count resets whenever the person
- * speaks, because a new message is a new request.
- */
-export const MAX_HANDOFF_CHAIN = 12
+/** How many provider/tool-loop turns one agent run may consume. */
 
 /**
  * The cap when the person has not set one.

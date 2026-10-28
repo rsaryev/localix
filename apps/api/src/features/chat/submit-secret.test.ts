@@ -1,5 +1,6 @@
 /// <reference types="bun" />
 
+import { tmpdir } from 'node:os'
 import { createChatFeaturePorts } from '../../bootstrap/chat-feature-ports'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm } from 'node:fs/promises'
@@ -22,7 +23,7 @@ import {
   createTestChatService as createChatService,
 } from './test-harness'
 
-const tempDir = join(process.cwd(), 'tmp', 'chat-submit-secret-tests')
+const tempDir = join(tmpdir(), `localix-chat-submit-secret-tests-${process.pid}`)
 
 // A value that must NEVER surface anywhere the agent (or a log/stream reader)
 // can see. Every assertion below greps serialized surfaces for it.
@@ -318,7 +319,14 @@ describe('chatService.submitSecret (request_secret answer leg)', () => {
       createdAt: Date.now(),
     }
     void hitlRegistry.controller.request(askRequest).catch(() => {})
-    hitlRegistry.trackRequest('sess_1', 'msg_1', 'call_ask_1', 'ask', askRequest, userId)
+    hitlRegistry.trackRequest(
+      'sess_1',
+      'msg_1',
+      'call_ask_1',
+      'AskUserQuestion',
+      askRequest,
+      userId,
+    )
 
     const outcome = await chatService.submitSecret('call_ask_1', PLANTED_VALUE, userId)
     expect(outcome).toEqual({ ok: false, error: 'secret_request_not_active' })

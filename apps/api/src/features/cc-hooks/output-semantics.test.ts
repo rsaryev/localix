@@ -71,7 +71,7 @@ describe('exit 2', () => {
 })
 
 describe('an http hook’s 2xx body', () => {
-  let server: ReturnType<typeof Bun.serve> | null = null
+  let server: { stop: (force?: boolean) => unknown; port?: number } | null = null
   afterEach(async () => {
     await server?.stop(true)
     server = null

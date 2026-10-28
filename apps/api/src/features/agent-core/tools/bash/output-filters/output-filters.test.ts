@@ -469,7 +469,7 @@ describe('applyOutputFilters', () => {
     const out = applyOutputFilters('cd apps/api && bun test', BUN_PASS, 'tc_1')
     expect(out).toContain('3756 pass')
     expect(out).toContain('[bun-test output filtered:')
-    expect(out).toContain('tool_output action="get" tool_call_id="tc_1"')
+    expect(out).toContain('ToolOutput action="get" tool_call_id="tc_1"')
     expect(out.length).toBeLessThan(BUN_PASS.length)
   })
   test('trailing [exit N] marker survives filtering', () => {

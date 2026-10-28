@@ -1,5 +1,5 @@
 import type { AgentChatMessage } from '@localixai/agent/agents/chat'
-import type { ParticipantRef } from './participant'
+import type { AuthorRef, USER_AUTHOR } from './author'
 import type { MessageProviderMeta, MessageTiming } from '../contracts/message-timing'
 import type { Recovery } from '@localixai/agent/agents'
 import type { PermissionMode } from '../contracts/permission-modes'
@@ -42,21 +42,6 @@ export interface StoredSystemNotice {
      */
     | 'run_continued'
     /**
-     * SOMEONE JOINED OR LEFT the conversation.
-     *
-     * The visible row is UI-only, like every notice. Its resolved system context binding is
-     * reduced into the current room snapshot on the volatile tail, so agents see membership
-     * without rewriting the cached transcript prefix.
-     */
-    | 'participants_change'
-    /**
-     * A CHAIN OF HANDOFFS hit its bound and the floor went back to the person.
-     *
-     * Without it the conversation simply went quiet mid-collaboration and the person could not
-     * tell a finished discussion from a stopped one.
-     */
-    | 'handoff_limit'
-    /**
      * THE CONVERSATION'S PERMISSION MODE CHANGED (`capabilities/permission-modes.ts`).
      *
      * Without it a model moved out of plan mode mid-conversation saw only that its writes stopped
@@ -66,7 +51,7 @@ export interface StoredSystemNotice {
     /**
      * A STEP OF THE CONVERSATION'S PLAN (`features/plans`): presented, changes requested,
      * approved, set aside, completed. One line per transition, written by the plans service, so
-     * the person and every participant read the same history of the plan — a participant that
+     * the person and every agent read the same history of the plan — an agent that
      * did not present it otherwise learned of an approval only from the implementing turn.
      */
     | 'plan_presented'
@@ -92,11 +77,6 @@ export interface StoredSystemNotice {
    * generic look.
    */
   mode?: PermissionMode
-  /**
-   * The participant handle a per-participant notice (a model or reasoning change) is about. It
-   * keys the notice's model-facing slot, so a later change replaces the earlier one.
-   */
-  participant?: string
   /**
    * What the reader can DO about this, when there is anything — first is primary.
    *
@@ -223,44 +203,26 @@ export interface StoredMessagePayload extends AgentChatMessage {
    * below was built to make unwritable. Every construction site therefore states it, and `tsc`
    * lists them all when a new one appears.
    */
-  from: ParticipantRef
-  /** Presentation captured at insert; never re-resolved by handle or changed by streaming. */
-  authorSnapshot?: { handle: string }
+  from: AuthorRef
   /**
-   * WHAT PEOPLE AND AGENTS PUT ON THIS MESSAGE, rather than said about it.
+   * WHAT THE PERSON PUT ON THIS MESSAGE, rather than said about it.
    *
-   * A STATE of the message, not events in the conversation: one entry per (author, emoji), so
+   * A STATE of the message, not events in the conversation: one entry per emoji, so
    * reacting twice with the same mark is reacting once and a retried turn cannot inflate a
    * count. Kept on the message it is about — a reaction with no message is meaningless, and a
    * separate table would have to be joined by every reader of a transcript.
    *
-   * It exists because agreeing is a real contribution with no cheap way to make it: measured in
-   * a live four-member conversation, about twenty of a four-member room's forty-nine replies were restatements of a
-   * colleague, half its cost and most of its noise.
+   * It exists because agreeing is a real contribution with no cheap way to make it.
    */
-  reactions?: { emoji: string; from: ParticipantRef; at: string }[]
-  /**
-   * WHO IT IS FOR, when the message is addressed rather than said to the room. Absent is the
-   * ordinary case — a 1-1 chat has one counterpart and a broadcast in a group has no single
-   * recipient — so this carries the exception: a message aimed at one participant, which a
-   * group scheduler reads to decide who answers.
-   */
-  to?: ParticipantRef
-  /**
-   * The recipient's handle, frozen at insert — the sibling of `authorSnapshot`, for the same
-   * reason: the room's projection names the recipient in the line it shows everyone else, and
-   * re-resolving a handle would both mis-attribute a renamed agent and change the bytes of an
-   * already-cached prefix.
-   */
-  toSnapshot?: { handle: string }
+  reactions?: { emoji: string; from: typeof USER_AUTHOR; at: string }[]
   /**
    * THIS TURN ENDED IN AN ERROR, and its `content` is that error rather than anything the agent
    * said.
    *
    * Stated structurally because the alternative is reading the prose, and a reader that has to
    * recognise error text will eventually mistake a reply ABOUT an error for one. It matters most
-   * in a group, where the other members are shown what their colleagues said: an agent whose
-   * provider was misconfigured must not appear to have contributed "Agent is unavailable".
+   * when a reader replays the transcript: an agent whose provider was misconfigured must not
+   * appear to have said "Agent is unavailable".
    *
    * Absent on every successful turn, which is why it is a flag and not a status.
    */

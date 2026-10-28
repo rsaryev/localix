@@ -12,7 +12,7 @@ const tool = (id: string, over: Partial<ToolBackedItem> = {}): ToolBackedItem =>
     type: 'tool_call',
     status: 'completed',
     toolCallId: `call-${id}`,
-    name: 'read',
+    name: 'Read',
     activeVerb: 'Reading',
     input: { path: `${id}.ts`, body: 'input detail' },
     resultText: 'result detail',
@@ -52,7 +52,7 @@ describe('deferCollapsedToolDetails', () => {
       type: 'tool_call',
       status: 'completed',
       toolCallId: 'call-one',
-      name: 'read',
+      name: 'Read',
       activeVerb: 'Reading',
       sources: [{ uri: 'https://example.com/one' }],
     })
@@ -93,7 +93,7 @@ describe('deferCollapsedToolDetails', () => {
       type: 'file_change',
       status: 'completed',
       toolCallId: 'call-change',
-      name: 'edit',
+      name: 'Edit',
       changes: [{ path: 'a.ts', kind: 'modify', diff: '@@\n-old\n+new' }],
     }
 

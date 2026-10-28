@@ -6,7 +6,7 @@ import { resolveWithin } from '@localixai/path-containment'
 import { TOOL } from '../tool-names'
 
 /**
- * `mini_app_guide` — what the agent reads before it first uses a mini app.
+ * `MiniAppGuide` — what the agent reads before it first uses a mini app.
  *
  * A mini app's `guide.md` says which of its tools does what and what to tell the person. Twenty
  * guides held in the system prompt cost every turn about twenty thousand tokens, so the prompt
@@ -37,7 +37,7 @@ const READ: CallClass = { effect: 'read' }
 
 export function createMiniAppGuideTool(guides: readonly MiniAppGuide[]) {
   return defineAgentTool({
-    name: TOOL.mini_app_guide,
+    name: TOOL.MiniAppGuide,
     description:
       "Read an enabled mini app's guide: which of its tools does what, and what to tell the person. Read it before you first use the app.",
     activeVerb: 'Reading the mini app guide',

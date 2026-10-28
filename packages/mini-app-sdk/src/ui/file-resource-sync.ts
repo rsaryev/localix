@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useEffectEvent, useMemo, useState } from 'react'
 import { createResourceSync, type ResourceSyncReader } from './resource-sync'
 import { useMiniAppWorkspaceChanges } from './runtime-hooks'
 import { runAsBackgroundWork, useVisiblePolling, useWorkItemVisible } from './visibility'
@@ -49,8 +49,13 @@ export function useFileResourceSync<T>(options: FileResourceSyncOptions<T>) {
     windowMs = 250,
     fallbackMs = 15_000,
   } = options
-  const latest = useRef(options)
-  latest.current = options
+  // The engine's callbacks outlive a render: each reads the newest options through an effect event.
+  const read = useEffectEvent((signal: AbortSignal) => options.read(signal))
+  const apply = useEffectEvent((value: T) => options.apply(value))
+  const reportError = useEffectEvent((error: unknown) => options.onError?.(error))
+  const isCurrent = useEffectEvent(
+    (id: string | null, key: unknown) => options.sessionId === id && options.resetKey === key,
+  )
   const itemVisible = useWorkItemVisible()
   const [pageVisible, setPageVisible] = useState(
     () => typeof document === 'undefined' || !document.hidden,
@@ -62,15 +67,14 @@ export function useFileResourceSync<T>(options: FileResourceSyncOptions<T>) {
   )
   const refresh = useCallback(() => engine.refresh(['snapshot']), [engine])
   useEffect(() => {
-    const current = () =>
-      latest.current.sessionId === sessionId && latest.current.resetKey === resetKey
+    const current = () => isCurrent(sessionId, resetKey)
     return engine.register('snapshot', {
-      read: (signal) => runAsBackgroundWork(() => latest.current.read(signal)),
+      read: (signal) => runAsBackgroundWork(() => read(signal)),
       apply: (value) => {
-        if (current()) latest.current.apply(value)
+        if (current()) apply(value)
       },
       onError: (error) => {
-        if (current()) latest.current.onError?.(error)
+        if (current()) reportError(error)
       },
     })
   }, [engine, sessionId, resetKey])

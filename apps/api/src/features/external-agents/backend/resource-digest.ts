@@ -57,7 +57,7 @@ export function digest(slice: TranscriptSlice): string {
       .join('    '),
     ...(resumeSession(summary)
       ? [
-          `To open this session for the user: external_agent_sessions { action: "resume", key: "${key}" }, then execute the returned command with bash action:"open". Reading its transcript does not open a terminal.`,
+          `To open this session for the user: ExternalAgentSessions { action: "resume", key: "${key}" }, then execute the returned command with \`Bash\` action:"open". Reading its transcript does not open a terminal.`,
         ]
       : []),
     `range: ${startedAt === undefined ? '(start unknown)' : isoStamp(startedAt)} → ${isoStamp(summary.updatedAt)}    events: ${total}`,
@@ -71,8 +71,8 @@ export function digest(slice: TranscriptSlice): string {
    */
   const oneRead = total <= MAX_TRANSCRIPT_EVENTS
   const reach = oneRead
-    ? `Full transcript: external_agent_sessions { action: "transcript", key: "${key}" }`
-    : `This session is ${total} events — more than one read returns. Walk it with external_agent_sessions { action: "transcript", key: "${key}", from: 0 }, raising "from" by the events returned; "tail: true" reads the end`
+    ? `Full transcript: ExternalAgentSessions { action: "transcript", key: "${key}" }`
+    : `This session is ${total} events — more than one read returns. Walk it with ExternalAgentSessions { action: "transcript", key: "${key}", from: 0 }, raising "from" by the events returned; "tail: true" reads the end`
   const footer = `(Compact digest of an external ${summary.provider} session. ${reach}. Several sessions at once: { action: "context", keys: [...] }. Live state: { action: "explain", key: "${key}" }.)`
 
   if (events.length === 0) {

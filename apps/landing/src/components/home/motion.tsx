@@ -1,4 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
+
+const noSubscription = () => () => {}
+const hasObserver = () => typeof IntersectionObserver !== 'undefined'
 
 /**
  * Whether the element is on screen. Without an observer (old browsers, tests) it reports
@@ -9,19 +12,18 @@ export function useOnScreen(
   { margin = '0px', fallback = true }: { margin?: string; fallback?: boolean } = {},
 ) {
   const [onScreen, setOnScreen] = useState(false)
+  // The server (and hydration) assume an observer exists, so the first render is `false` on both
+  // sides; a browser without one then answers with `fallback`.
+  const observable = useSyncExternalStore(noSubscription, hasObserver, () => true)
   useEffect(() => {
     const element = ref.current
-    if (!element) return
-    if (typeof IntersectionObserver === 'undefined') {
-      setOnScreen(fallback)
-      return
-    }
+    if (!element || !observable) return
     const observer = new IntersectionObserver(
       ([entry]) => setOnScreen(entry?.isIntersecting ?? false),
       { rootMargin: margin },
     )
     observer.observe(element)
     return () => observer.disconnect()
-  }, [ref, margin, fallback])
-  return onScreen
+  }, [ref, margin, observable])
+  return observable ? onScreen : fallback
 }

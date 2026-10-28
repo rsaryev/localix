@@ -3,11 +3,13 @@ import { createContext, useContext } from 'react'
 /**
  * HOW THE STORE ADAPTS (`docs/internals/store.md`, "Adaptive layout"): by the Store pane's own
  * width, never the window's — the same window gives the Store a different width beside a chat.
+ * The sections are tabs under the search at every width.
  *
- * | Pane         | Sidebar      | Rows            | Lists     | Package page          |
- * | ≥ 1100px     | full         | 3–4 tiles       | 2–3 cols  | facts beside          |
- * | 760–1100px   | icons only   | 2½ tiles        | 2 cols    | facts under the header |
- * | < 760px      | section menu | scroll with snap | 1 col    | one column, Get pinned |
+ * | Pane         | Rows (whole tiles) | Lists  | Package page           |
+ * | ≥ 1200px     | 4 columns          | 2–3    | facts beside           |
+ * | 1100–1200px  | 3 columns          | 2      | facts beside           |
+ * | 760–1100px   | 2–3 columns        | 2      | facts under the header |
+ * | < 760px      | 1–2 columns        | 1      | one column, Get pinned |
  */
 export type StoreLayout = 'wide' | 'medium' | 'narrow'
 
@@ -20,11 +22,15 @@ export function layoutFor(width: number | null): StoreLayout {
   return width >= MEDIUM_PX ? 'medium' : 'narrow'
 }
 
-/** How many tiles a row shows at once; a fraction lets the next one peek in. */
-export function tilesPerView(layout: StoreLayout, width: number | null): number {
-  if (layout === 'narrow') return (width ?? 0) < 480 ? 1.25 : 1.5
-  if (layout === 'medium') return 2.5
-  return (width ?? WIDE_PX) >= 1360 ? 4 : 3
+/**
+ * How many whole tiles a row puts side by side. A tile holds its icon, a name, one meta line and
+ * its Get pill: about 17rem, so a column is added every ~300px of pane.
+ */
+export function tileColumns(width: number | null): number {
+  const w = width ?? WIDE_PX
+  if (w < 560) return 1
+  if (w < 860) return 2
+  return w < 1200 ? 3 : 4
 }
 
 /** How many columns a list of rows takes. */

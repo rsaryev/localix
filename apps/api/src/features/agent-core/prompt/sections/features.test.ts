@@ -54,7 +54,7 @@ describe('aggregate extension prompt budgets', () => {
     expect(out).toContain('# Background jobs')
     expect(out).toContain('Job-management controls are not available in this run')
     expect(out).toContain('additional jobs omitted')
-    expect(out).not.toContain('`jobs`')
+    expect(out).not.toContain('`Jobs`')
     expect(out).not.toContain('action="list"')
     expect(out).not.toContain('action `stop`')
   })
@@ -65,11 +65,11 @@ describe('aggregate extension prompt budgets', () => {
         title: `worker-${index}-${'x'.repeat(100)}`,
         task: `session-${index}`,
       })),
-      { canInspectHistory: true, canListRuns: true },
+      { canInspectHistory: true, canMessage: true },
     )
 
     expect(out).toContain('aggregate prompt budget reached')
-    expect(out).toContain('`delegate` action:"list"')
+    expect(out).toContain('Wait for their replies')
     expect(out.length).toBeLessThan(ACTIVE_SUBAGENTS_TOTAL_MAX_CHARS + 1_000)
   })
 
@@ -77,40 +77,42 @@ describe('aggregate extension prompt budgets', () => {
     const agents = [{ title: 'worker', task: 'session-1' }]
     const inspectOnly = buildActiveSubAgentsSection(agents, {
       canInspectHistory: true,
-      canListRuns: false,
+      canMessage: false,
     })
-    expect(inspectOnly).toContain('`global_search`')
-    expect(inspectOnly).not.toContain('`delegate`')
+    expect(inspectOnly).toContain('`GlobalSearch`')
+    expect(inspectOnly).not.toContain('`SendMessage`')
 
     const listOnly = buildActiveSubAgentsSection(agents, {
       canInspectHistory: false,
-      canListRuns: true,
+      canMessage: true,
     })
-    expect(listOnly).toContain('`delegate` action:"list"')
+    expect(listOnly).toContain('`SendMessage`')
+    expect(listOnly).toContain('`TaskStop`')
     expect(listOnly).not.toContain('`agents`')
-    expect(listOnly).not.toContain('`global_search`')
+    expect(listOnly).not.toContain('`GlobalSearch`')
 
     const observeOnly = buildActiveSubAgentsSection(agents, {
       canInspectHistory: false,
-      canListRuns: false,
+      canMessage: false,
     })
-    expect(observeOnly).not.toContain('`delegate`')
-    expect(observeOnly).not.toContain('`global_search`')
+    expect(observeOnly).not.toContain('`SendMessage`')
+    expect(observeOnly).not.toContain('`TaskStop`')
+    expect(observeOnly).not.toContain('`GlobalSearch`')
     expect(observeOnly).toContain('Wait for its completion message')
   })
 
-  test('does not advertise global_search in a truncated roster when it is unavailable', () => {
+  test('does not advertise GlobalSearch in a truncated roster when it is unavailable', () => {
     const out = buildActiveSubAgentsSection(
       Array.from({ length: 200 }, (_, index) => ({
         title: `worker-${index}-${'x'.repeat(100)}`,
         task: `session-${index}`,
       })),
-      { canInspectHistory: false, canListRuns: true },
+      { canInspectHistory: false, canMessage: true },
     )
 
     expect(out).toContain('aggregate prompt budget reached')
-    expect(out).not.toContain('`global_search`')
-    expect(out).toContain('`delegate`')
+    expect(out).not.toContain('`GlobalSearch`')
+    expect(out).toContain('`SendMessage`')
   })
 
   test('caps pinned skill bodies without promising an unavailable retrieval tool', () => {
@@ -146,7 +148,7 @@ describe('aggregate extension prompt budgets', () => {
     expect(out).toContain('aggregate prompt budget reached')
     expect(out).toContain('action="list"')
     expect(out).toContain('never build your own recurrence')
-    expect(out).toContain('`loops` action="reschedule"')
+    expect(out).toContain('`Loops` action="reschedule"')
     expect(out.length).toBeLessThan(LOOPS_CONTEXT_TOTAL_MAX_CHARS + 2_000)
   })
 
@@ -165,7 +167,7 @@ describe('aggregate extension prompt budgets', () => {
     expect(out).toContain('perform ONCE')
     expect(out).toContain('Loop-management controls are not available in this run')
     expect(out).toContain('aggregate prompt budget reached')
-    expect(out).not.toContain('`loops`')
+    expect(out).not.toContain('`Loops`')
     expect(out).not.toContain('action="list"')
     expect(out).not.toContain('action="reschedule"')
   })
@@ -201,7 +203,7 @@ describe('aggregate extension prompt budgets', () => {
     expect(out).toContain('# MCP servers')
     expect(out).toContain('grep: 1 tools loaded')
     expect(out).not.toContain('mcp_grep_searchGitHub')
-    expect(out).toContain('use `activate_tools`')
+    expect(out).toContain('with `ToolSearch`')
     expect(out).toContain('cold-stdio: connecting in the background')
     expect(out).toContain('next turn')
     expect(out).not.toContain('Deferred tools')
@@ -222,17 +224,17 @@ describe('aggregate extension prompt budgets', () => {
 
   test('"# Mini apps" tells the truth about deferred tools', () => {
     // It used to call every app tool direct and named under "# Available tools", while
-    // deferral kept them behind `activate_tools` with no schema on the wire.
+    // deferral kept them behind `ToolSearch` with no schema on the wire.
     const deferred = buildMiniAppsSection('- db — 2 tools to activate', true)!
-    expect(deferred).toContain('`activate_tools`')
+    expect(deferred).toContain('`ToolSearch`')
     expect(deferred).not.toMatch(/every .* tool is direct/i)
-    expect(buildMiniAppsSection('- db — 1 direct tool', false)).not.toContain('activate_tools')
+    expect(buildMiniAppsSection('- db — 1 direct tool', false)).not.toContain('ToolSearch')
   })
 
   test('"# Plugins" speaks of skills and language servers, never of tools or screens', () => {
     const section = buildPluginsSection('- review — 1 skill')!
     expect(section).toStartWith('# Plugins')
-    expect(section).not.toMatch(/mini app|activate_tools|screen/iu)
+    expect(section).not.toMatch(/mini app|ToolSearch|screen/iu)
   })
 
   test('does not add a truncation notice below either aggregate cap', () => {

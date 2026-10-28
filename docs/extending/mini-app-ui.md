@@ -6,22 +6,22 @@ of your own, reach the host through its UI kit, and understand how an edit reach
 
 ## Terminology
 
-| Term           | Meaning                                                                            | Boundary                                                      |
-| -------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| UI artifact    | `dist/ui/` in a mini app's folder: an entry, hashed chunks, styles, a manifest.    | Built by the app from the mini app's `ui/` sources.           |
-| Revision       | A hash of every artifact file, carried in the mini app record.                     | Moves when the UI changed, not when the backend or docs did.  |
-| UI kit         | `@localixai/kit/<id>`: the host's explicit public component surface.               | Public components; SDK services are separate host ports.      |
-| Shared module  | React, `@localixai/mini-app-sdk` and the kit, taken from the host at runtime.      | Every other dependency is bundled into the artifact.          |
-| Mini app kit   | What the app ships to build mini apps: template, shared-module exports, theme CSS. | `resources/mini-app-kit`; no source tree or toolchain needed. |
-| Frame / domain | The template's fixed shell versus the part a copy replaces.                        | The frame imports no domain module.                           |
+| Term           | Meaning                                                                                                   | Boundary                                                          |
+| -------------- | --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| UI artifact    | `dist/ui/` in a mini app's folder: an entry, hashed chunks, styles, a manifest.                           | Built by the app from the mini app's `ui/` sources.               |
+| Revision       | A hash of every artifact file, carried in the mini app record.                                            | Moves when the UI changed, not when the backend or docs did.      |
+| UI kit         | `@localixai/kit/<id>`: the host's explicit public component surface.                                      | Public components; SDK services are separate host ports.          |
+| Shared module  | React, `@localixai/mini-app-sdk` and the kit, taken from the host at runtime.                             | Every other dependency is bundled into the artifact.              |
+| Mini app kit   | What each release ships to build mini apps: template, shared-module exports, theme CSS, validation tools. | `resources/mini-app-kit` and the release's `mini-app-kit.tar.gz`. |
+| Frame / domain | The template's fixed shell versus the part a copy replaces.                                               | The frame imports no domain module.                               |
 
 ## What you can do
 
 | Task                           | Mechanism                                                       | Boundary                                                             |
 | ------------------------------ | --------------------------------------------------------------- | -------------------------------------------------------------------- |
-| Create a mini app              | `/mini-app create <what it should do>`                          | The agent names it; enabled in `~/.localix/mini-apps`.               |
-| Build, test and reload it      | The agent's `mini_app_build` tool, or `/mini-app reload`        | Leftovers, style, builds, types, the mini app's tests.               |
-| Look at it and use it          | The agent's `browser` tool with `url: "mini-app:<name>"`        | snapshot, take_screenshot, steps, console; no evaluate.              |
+| Create a mini app              | `/mini-app-authoring:create <what it should do>`                | The mini-app-authoring plugin; in Localix or Claude Code.            |
+| Check, build and install it    | `mini-app check`, then `mini-app install`                       | Leftovers, style, builds, types, the mini app's tests.               |
+| Look at it and use it          | The agent's `Browser` tool with `url: "mini-app:<name>"`        | snapshot, take_screenshot, steps, console; no evaluate.              |
 | Use a host control             | Import it from `@localixai/kit/<id>`                            | Typed by its real props; an `@/…` import fails the build.            |
 | Draw a graph or a board        | `Canvas` from `@localixai/kit/canvas`                           | The host's camera and edge; never bundle `@xyflow/react`.            |
 | Take any app link              | `readMessageBindingDrag`, `linksInText` (`kit/context-links`)   | A drop or a pasted `@session:…`/`localix://…` is the same link.      |
@@ -36,7 +36,7 @@ of your own, reach the host through its UI kit, and understand how an edit reach
 | Know the tab's own chat        | `useWorkItemSessionId()` from `ui/work-item-session`            | The only session a tab acts for; the SDK has no active session.      |
 | React to file changes          | `useMiniAppWorkspaceChanges` (`ui/runtime-hooks`)               | One chat, coalesced; poll only when source coverage is unavailable.  |
 | Use icons                      | Import from `lucide-react`                                      | Bundled per icon from the mini app kit.                              |
-| See an edit in the running app | Rebuild; the mini app is swapped in place                       | An open tab re-renders; the app is never reloaded.                   |
+| See an edit in the running app | Install again; the mini app is swapped in place                 | An open tab re-renders; the app is never reloaded.                   |
 
 Open HTTP and HTTPS links with `miniAppExternal.open(url)` from
 `@localixai/mini-app-sdk/ui/runtime`: the active conversation's Browser by default, the system
@@ -45,45 +45,41 @@ system handler; web links fall back to it when no conversation workspace is read
 retain the host's confirmation policy.
 
 ```text
-/mini-app create Show GPU temperature and fan speeds, and warn me above 85 °C
+/mini-app-authoring:create Show GPU temperature and fan speeds, and warn me above 85 °C
 ```
 
-The whole text after `create` is the request, lines and lists included. The agent's first
-`mini_app_build` call names the mini app (lower-kebab-case, such as `gpu-monitor`) and gives it a
-title; a taken name gets the next free one (`gpu-monitor-2`), so a new mini app never edits one you
-have. The copy comes from the
+The whole text after the command is the request. The agent names the mini app (lower-kebab-case,
+such as `gpu-monitor`) and runs `mini-app create`, which copies the
 [System Overview reference template](https://github.com/rsaryev/localix/tree/main/mini-apps/template)
-in the mini app kit and lives under `~/.localix/mini-apps/<name>`. The agent is told that folder and
-nothing else; the Localix application's own files are off limits to it. To change a mini app, ask in
-chat; the agent rebuilds it with `mini_app_build`. A build runs the app's code, so only switched-on
-mini apps are built.
+from the mini app kit into a new folder — the current project unless another folder is named — and
+refuses a folder that already exists. To change a mini app, ask in chat; the agent checks and
+installs it again.
 
 The reference copy builds and passes its tests before its domain is changed. Its frame reaches the
 domain only through the entries — `ui/Workspace.tsx`, and `createRoutes` and `register` in
-`backend/index.ts` — so deleting the domain never breaks the frame. The host enables a new copy only
-after its build and checks pass, apart from the expected template residue. A failed initial check
-removes the copy so a retry starts clean.
+`backend/index.ts` — so deleting the domain never breaks the frame.
 
-For a new copy, the instruction the agent receives is a numbered order of work — read the entries
-and the patterns it needs, replace the domain, test, build, look, report — followed by the contracts
-copies have broken before: the tool signature (`execute(_toolCallId, input)`,
+For a new copy, `mini-app create` prints a numbered order of work — read the entries and the
+patterns it needs, replace the domain, test, check, install, look, report — followed by the
+contracts copies have broken before: the tool signature (`execute(_toolCallId, input)`,
 `executionMode: 'sequential'` for a change), state kept with `openJsonStore`, actions through
 `send()`, notifications through `toast`, and the published message context. `scaffold.json` names
 the files in the reference that show each pattern (an acting tool, a state-changing route, a form
 driven by `send`, a value derived with `useNow`), and the kit's digest lists the core controls with
 their props.
 
-`mini_app_build` reports template residue first. It names every System Overview file, identifier,
-and a missing test still in a copy. A fresh copy fails this step by design but is enabled when every
-other step passes; its first report is the to-do list.
+`mini-app check` reports template residue first. It names every System Overview file, identifier,
+and a missing test still in a copy. A fresh copy fails this step by design; its first report is the
+to-do list. `mini-app install` refuses a copy until every step passes.
 
 The other checks cover the host's design tokens (the same rules the repository guard applies to the
 app), palette colours, and native controls such as `<button>` where the kit has a control. They also
-cover routes, backend and UI builds, types, and the mini app's tests. The report lists each failed
-step and its problems; build and type diagnostics include file locations when available. When a
-build passes and the run has the browser tool, the report says where to look.
+cover the manifest (with Localix's own validation, carried in the kit), routes, store media, backend
+and UI builds, types, and the mini app's tests. The report lists each failed step and its problems;
+build and type diagnostics include file locations when available. Between checks, the plugin's edit
+hook reports the style, route and message-context problems in each file the agent edits.
 
-The type check uses a `tsconfig.json` the build writes into the mini app, mapping each importable
+The type check uses a `tsconfig.json` the check writes into the mini app, mapping each importable
 module to the declarations the mini app kit ships: the SDK and the workspace packages its
 declarations import, React, `zod`, `hono`, `lucide-react`, Bun and Node, and the UI kit. The
 editor's language server reads the same file, so the diagnostics an agent sees after an edit match
@@ -96,7 +92,7 @@ skipped, and a module that does not compile falls back to its export names.
 
 ## See and drive a mini app
 
-A mini app's view renders inside the workbench, not in a page with a URL. The `browser` tool
+A mini app's view renders inside the workbench, not in a page with a URL. The `Browser` tool
 addresses it as `mini-app:<name>`: `open` records the target, and every command for it is claimed by
 the workbench, which opens the mini app's tab (its rail viewlet, or its only work-item kind) and
 runs the command against that panel with the same actuator a page probe uses, scoped to the panel.
@@ -261,9 +257,11 @@ app:
 | `host.sessionSurfaces.register({ surface: 'composer.header', ... })` | A strip above the chat's composer, passed `{ isFocused }` as its `context`                               | Every warm composer renders it; hold a live subscription only while focused.           |
 
 Build a card from `@localixai/kit/tool-card` (`ToolLine`, `ToolBody`, `IORow`, `OutputBlock`, …) so
-it reads like every built-in card. The file editor's review comments offer contributed actions. The
-Kanban mini app contributes its board card in the transcript, **Task** on a comment batch, and the
-chat's open cards above the composer.
+it reads like every built-in card. Label its sections the way they do: `In` for what the call was
+given, `Out` for what came back and `Error` for a failure. Pass `prose` to `OutputBlock` for natural
+language, which wraps at words; code and JSON stay monospace. The file editor's review comments
+offer contributed actions. The Kanban mini app contributes its board card in the transcript,
+**Task** on a comment batch, and the chat's open cards above the composer.
 
 The host never imports the destination mini app. `ActionTarget` distinguishes code, visualizations,
 Markdown blocks, tables, images, links and files; `surface` identifies the host-owned place, such as
@@ -349,8 +347,8 @@ Use `MarkdownRenderer` from `@localixai/kit/markdown` with source as `children`;
 - A kit type from a package the kit does not ship (Radix, cmdk, Monaco, the flow library behind
   `@localixai/kit/canvas`) is declared `any`, and a kit module whose generated declarations do not
   compile is typed by export name only. `noImplicitAny` stays off for mini apps.
-- The browser tool cannot reach inside a sandboxed third-party mini app view (an HTML view declared
-  in a manifest); it drives native mini app UI.
+- The `Browser` tool cannot reach inside a sandboxed third-party mini app view (an HTML view
+  declared in a manifest); it drives native mini app UI.
 - A mini app edit remounts that mini app's panels; React Fast Refresh does not preserve state inside
   a mini app.
 - A dependency that `require`s a shared module synchronously is supported only for React.
@@ -369,13 +367,13 @@ Use `MarkdownRenderer` from `@localixai/kit/markdown` with source as `children`;
 ## Source of truth
 
 - [Shared-module and artifact contract](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/ui-artifact.ts)
-- [Mini app kit layout](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/authoring/kit-layout.ts)
+- [Mini app kit layout](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/kit-layout.ts)
   and [its staging](https://github.com/rsaryev/localix/blob/main/scripts/stage-mini-app-kit.mjs)
-- [User mini app authoring](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/authoring/service.ts)
-- [UI artifact builder](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/authoring/ui-build.ts)
+- [The mini-app-authoring plugin](https://github.com/rsaryev/localix/tree/main/plugins/mini-app-authoring)
+- [UI artifact builder](https://github.com/rsaryev/localix/blob/main/plugins/mini-app-authoring/src/build/ui-build.ts)
   and [its tests](https://github.com/rsaryev/localix/blob/main/scripts/mini-app-ui-artifact.test.ts)
-- [Template layout and residue check](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/authoring/template-layout.ts)
-- [Style check](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/authoring/style-check.ts)
+- [Template layout and residue check](https://github.com/rsaryev/localix/blob/main/plugins/mini-app-authoring/src/scaffold/template-layout.ts)
+- [Style check](https://github.com/rsaryev/localix/blob/main/plugins/mini-app-authoring/src/check/style.ts)
   and
   [the token rules](https://github.com/rsaryev/localix/blob/main/apps/api/src/contracts/ui-token-rules.ts)
 - [Kit declarations](https://github.com/rsaryev/localix/blob/main/scripts/stage-mini-app-kit-declarations.mjs)

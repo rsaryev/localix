@@ -27,6 +27,7 @@ export function storeTarget(payload: Record<string, unknown> | undefined): Store
     ...(typeof payload?.shelf === 'string' ? { shelf: payload.shelf } : {}),
     ...(ref ? { ref } : {}),
     ...(addSource ? { addSource } : {}),
+    ...(payload?.recommended === true ? { recommended: true } : {}),
   }
 }
 

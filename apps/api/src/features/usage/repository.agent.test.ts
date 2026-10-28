@@ -1,3 +1,4 @@
+import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -7,15 +8,14 @@ import { createDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import { createUsageRepository } from './repository'
 
-const tempDir = join(process.cwd(), 'tmp', 'usage-agent-tests')
+const tempDir = join(tmpdir(), `localix-usage-agent-tests-${process.pid}`)
 
 /**
- * Per-participant accounting. A group chat runs several agents over ONE session, so
- * `session_id` stops answering "who spent this" and `model_id` answers it only while two
- * members happen to run different models — these cases use one model for the whole party so
- * a regression to model-based attribution cannot pass.
+ * Per-agent accounting. Subagents run in child sessions of their own, but an event still names
+ * the agent that spent it — these cases use one model for every agent so a regression to
+ * model-based attribution cannot pass.
  */
-describe('usage repository — spend by party member', () => {
+describe('usage repository — spend by agent', () => {
   let db: any
   let repo: ReturnType<typeof createUsageRepository>
   const userId = 'user_agents'
@@ -28,45 +28,58 @@ describe('usage repository — spend by party member', () => {
 
     await db
       .insertInto('agent_sessions')
-      .values({
-        id: 'room',
-        user_id: userId,
-        project_id: 'PRJ-test',
-        title: 'Room',
-        root_session_id: 'room',
-      })
-      .execute()
-    await db
-      .insertInto('conversation_participants')
-      .values([
-        {
-          session_id: 'room',
-          agent_id: 'builtin:lead',
-          handle: 'lead',
-          position: 0,
+      .values(
+        [
+          ['lead-session', 'builtin:lead', 'lead'],
+          ['qa-session', 'builtin:qa', 'qa'],
+        ].map(([id, agentId, name]) => ({
+          id: id!,
+          user_id: userId,
+          project_id: 'PRJ-test',
+          title: id!,
+          root_session_id: id!,
+          agent_id: agentId!,
+          agent_name: name!,
           model_id: 'test/one-model',
-        },
-        {
-          session_id: 'room',
-          agent_id: 'builtin:qa',
-          handle: 'qa',
-          position: 1,
-          model_id: 'test/one-model',
-        },
-      ])
+        })),
+      )
       .execute()
 
     const spend = [
-      { messageId: 'm1', agentId: 'builtin:lead', costUsd: 3, totalTokens: 300 },
-      { messageId: 'm2', agentId: 'builtin:qa', costUsd: 1, totalTokens: 100 },
-      { messageId: 'm3', agentId: 'builtin:qa', costUsd: 1, totalTokens: 100 },
+      {
+        messageId: 'm1',
+        sessionId: 'lead-session',
+        agentId: 'builtin:lead',
+        costUsd: 3,
+        totalTokens: 300,
+      },
+      {
+        messageId: 'm2',
+        sessionId: 'qa-session',
+        agentId: 'builtin:qa',
+        costUsd: 1,
+        totalTokens: 100,
+      },
+      {
+        messageId: 'm3',
+        sessionId: 'qa-session',
+        agentId: 'builtin:qa',
+        costUsd: 1,
+        totalTokens: 100,
+      },
       // An auxiliary call has no speaker of its own; it must not be attributed to anyone.
-      { messageId: 'title-room', agentId: null, costUsd: 0.5, totalTokens: 50 },
+      {
+        messageId: 'title-room',
+        sessionId: 'lead-session',
+        agentId: null,
+        costUsd: 0.5,
+        totalTokens: 50,
+      },
     ]
     for (const row of spend) {
       await repo.recordEvent({
         messageId: row.messageId,
-        sessionId: 'room',
+        sessionId: row.sessionId,
         userId,
         modelId: 'test/one-model',
         agentId: row.agentId,
@@ -76,7 +89,7 @@ describe('usage repository — spend by party member', () => {
     }
   })
 
-  test('groups one session’s spend by the member that produced it', async () => {
+  test('groups spend by the agent that produced it', async () => {
     const stats = await repo.queryStats({ userId, groupBy: 'agent' })
     expect(stats.map((row) => [row.key, row.costUsd, row.messages])).toEqual([
       ['builtin:lead', 3, 1],
@@ -87,7 +100,7 @@ describe('usage repository — spend by party member', () => {
     ])
   })
 
-  test('filters every aggregate down to one member', async () => {
+  test('filters every aggregate down to one agent', async () => {
     const summary = await repo.querySummary({ userId, agent: 'builtin:qa' })
     expect(summary).toMatchObject({ messages: 2, costUsd: 2, totalTokens: 200 })
     const logs = await repo.queryLogs({ userId, agent: 'builtin:qa' })
@@ -95,11 +108,11 @@ describe('usage repository — spend by party member', () => {
     expect(logs.rows.every((r) => r.agentId === 'builtin:qa')).toBe(true)
   })
 
-  test('names each spending member by the handle its seat recorded', async () => {
+  test('names each spending agent by the name its session recorded', async () => {
     const keys = await repo.queryKeys(userId)
     expect(keys.agents).toEqual([
-      { id: 'builtin:lead', handle: 'lead' },
-      { id: 'builtin:qa', handle: 'qa' },
+      { id: 'builtin:lead', name: 'lead' },
+      { id: 'builtin:qa', name: 'qa' },
     ])
   })
 
@@ -108,7 +121,7 @@ describe('usage repository — spend by party member', () => {
     // every write, so the last one wins rather than leaving the first attribution frozen.
     await repo.recordEvent({
       messageId: 'm1',
-      sessionId: 'room',
+      sessionId: 'qa-session',
       userId,
       modelId: 'test/one-model',
       agentId: 'builtin:qa',

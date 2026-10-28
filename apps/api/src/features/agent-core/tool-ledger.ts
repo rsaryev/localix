@@ -1,7 +1,7 @@
 import type { AgentTool, RunShape } from '@localixai/agent/agents'
 import { declaresTool, exposureLevel, type RunProfile } from './run-shape'
 import { namesTool } from './tool-name-match'
-import { builtinToolExposure, isProtocolTool } from './tool-names'
+import { builtinToolExposure } from './tool-names'
 
 /**
  * The LEDGER: for every tool a run could have, one verdict with one reason.
@@ -21,7 +21,7 @@ import { builtinToolExposure, isProtocolTool } from './tool-names'
  *   authority  — does the HOST have the power/service the tool needs? Runtime facts.
  *   model      — can this run's MODEL read what the tool produces (`requiresModelInput`)?
  *   policy     — did the USER switch it off? Capability rules, global → project → agent.
- *   economy    — is it on the wire or behind `activate_tools`? A wire decision, not a denial;
+ *   economy    — is it on the wire or behind `ToolSearch`? A wire decision, not a denial;
  *                applied later by run assembly through {@link markDeferred}.
  *
  * Only a `policy` reason carries a remedy: shape, authority and model cannot be lifted by a click,
@@ -47,7 +47,7 @@ export type WithholdReason =
   | { layer: 'policy'; kind: 'rule'; denial: PolicyDenial | null }
   | { layer: 'policy'; kind: 'disabled-plugin'; plugin: string }
 
-/** How a `policy` reason can be lifted — the input the `configure` tool turns into a proposal. */
+/** How a `policy` reason can be lifted — the input the `Configure` tool turns into a proposal. */
 export interface RemedyRef {
   remedyId: 'tool.enable'
   target: string
@@ -167,10 +167,6 @@ function modelVerdict(facts: RunFacts, candidate: ToolCandidate): ToolVerdict | 
 }
 
 function policyVerdict(facts: RunFacts, candidate: ToolCandidate): ToolVerdict | null {
-  // A chat turn must always be able to finish and route its successor. Treating this protocol
-  // primitive like an optional capability caused an agent to enable it for "the next turn",
-  // after the current turn had already become impossible to finish correctly.
-  if (isProtocolTool(candidate.name)) return null
   if (!isDisabled(facts, candidate)) return null
   const denial = facts.toolDenials?.get(candidate.name) ?? null
   return {
@@ -207,7 +203,7 @@ export function resolveToolSurface(
 
 /**
  * The economy layer, applied by run assembly once it knows which live tools ride behind
- * `activate_tools`. Only a `live` verdict can become `deferred`: deferral is a wire decision
+ * `ToolSearch`. Only a `live` verdict can become `deferred`: deferral is a wire decision
  * about a tool the run HAS, never a way to hide one it does not.
  */
 export function markDeferred(ledger: ToolLedger, sourceByTool: ReadonlyMap<string, string>) {
@@ -245,7 +241,7 @@ const SHAPE_WORD: Record<string, string> = {
  * one (the withheld stub, `# Unavailable tools`, `configure` inspect).
  *
  * It used to name internal identifiers: `the host capability "config.proposals"` and `rule
- * tool:vault *`. Neither is anything a model can act on or repeat to a person, and the rule
+ * tool:Vault *`. Neither is anything a model can act on or repeat to a person, and the rule
  * syntax invited it to propose rules instead of the one remedy the sentence sits beside. The
  * identifiers stay on the ledger row for the settings screen and the composition dump.
  */

@@ -1,5 +1,6 @@
 import * as loopOps from './loop-ops'
 import * as monitorOps from './monitor-ops'
+import type { StopResult } from '../contracts'
 import type { ChatServiceGraph } from './service-graph'
 import { createSessionCoordination } from './session-coordination'
 import type { SessionCore } from './session-core'
@@ -53,16 +54,12 @@ export function createChatRuntimeFacade({
     /**
      * Epoch-ms a fire addressed to `agentId` (absent: the conversation chooses) would wait for an
      * exhausted provider route, or null. The loop action gates on it so a fire is held instead of
-     * spent on a spent quota. Read through the resolved party, the same read a run admits on, so
+     * spent on a spent quota. Read through the resolved route, the same read a run admits on, so
      * the gate asks about the route the run would take; a session that is gone holds nothing.
      */
-    async rateLimitedUntilMs(
-      userId: string,
-      sessionId: string,
-      agentId?: string,
-    ): Promise<number | null> {
+    async rateLimitedUntilMs(userId: string, sessionId: string): Promise<number | null> {
       const session = await repo.getSession(userId, sessionId).catch(() => null)
-      return session ? runner.rateLimitedUntilMs(session, agentId) : null
+      return session ? runner.rateLimitedUntilMs(session) : null
     },
 
     /** Ids of every session with an active run right now (process-wide). The desktop
@@ -127,6 +124,15 @@ export function createChatRuntimeFacade({
         if (!owned) return false
       }
       return runner.stop(sessionId)
+    },
+
+    /** The person's Stop: the run ends and their queued messages come back instead of running. */
+    async stopAndReturnQueued(sessionId: string, userId: string): Promise<StopResult> {
+      const owned = await requireSession(userId, sessionId)
+        .then(() => true)
+        .catch(() => false)
+      if (!owned) return { stopped: false, returned: [] }
+      return runner.stopAndReturnQueued(userId, sessionId)
     },
 
     /** Process-wide teardown — abort in-flight runs and kill tracked child

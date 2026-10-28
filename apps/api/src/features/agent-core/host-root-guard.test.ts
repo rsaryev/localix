@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 
 import { localixHome } from '../../lib/env'
-import { hostRoots } from '../../lib/host-roots'
+import { hostRoots, setReadableHostRoots } from '../../lib/host-roots'
 import { isPathWithin } from '../../lib/path-containment'
 import { HOST_ROOT_DENIAL } from './host-root-guard'
 import { createPermissionGate } from './permission-gate'
@@ -50,46 +50,67 @@ describe('host-root guard', () => {
 
   test('denies file tools, bash cwd and bash tokens inside the application', async () => {
     const file = path.join(CHECKOUT, 'apps/api/package.json')
-    const read = await verdict('read', { path: file })
+    const read = await verdict('Read', { path: file })
     expect(blocked(read)).toBe(true)
     expect((read as { blockedMessage: string }).blockedMessage).toContain(HOST_ROOT_DENIAL)
-    expect(blocked(await verdict('write', { path: file, content: 'x' }))).toBe(true)
+    expect(blocked(await verdict('Write', { path: file, content: 'x' }))).toBe(true)
     // `edit` once produced no path facts, so this rewrote the application unseen.
     expect(
-      blocked(await verdict('edit', { path: file, old_string: '"name"', new_string: '"x"' })),
+      blocked(await verdict('Edit', { path: file, old_string: '"name"', new_string: '"x"' })),
     ).toBe(true)
-    expect(blocked(await verdict('bash', { command: 'ls', cwd: CHECKOUT }))).toBe(true)
-    expect(blocked(await verdict('bash', { command: `cat ${file}` }))).toBe(true)
+    expect(blocked(await verdict('Bash', { command: 'ls', cwd: CHECKOUT }))).toBe(true)
+    expect(blocked(await verdict('Bash', { command: `cat ${file}` }))).toBe(true)
     expect(
-      blocked(await verdict('bash', { commands: ['echo ok', `rm -rf ${CHECKOUT}/apps`] })),
+      blocked(await verdict('Bash', { commands: ['echo ok', `rm -rf ${CHECKOUT}/apps`] })),
     ).toBe(true)
   })
 
   test('a symlink in the project that points into the application is judged by its target', async () => {
-    expect(blocked(await verdict('read', { path: 'linked-app/package.json' }))).toBe(true)
+    expect(blocked(await verdict('Read', { path: 'linked-app/package.json' }))).toBe(true)
   })
 
   test('paths outside the home dir are still seen (packaged installs live there)', async () => {
     const app = '/Applications/Localix.app'
-    expect(blocked(await verdict('bash', { command: `ls ${app}/Contents` }, PROJECT, [app]))).toBe(
+    expect(blocked(await verdict('Bash', { command: `ls ${app}/Contents` }, PROJECT, [app]))).toBe(
       true,
     )
   })
 
   test('~/.localix and the project stay open', async () => {
     const state = path.join(localixHome(), 'workspace', 'notes.md')
-    expect(blocked(await verdict('read', { path: state }))).toBe(false)
-    expect(blocked(await verdict('write', { path: state, content: 'x' }))).toBe(false)
-    expect(blocked(await verdict('read', { path: path.join(PROJECT, 'a.ts') }))).toBe(false)
-    expect(blocked(await verdict('bash', { command: 'ls ./src' }))).toBe(false)
+    expect(blocked(await verdict('Read', { path: state }))).toBe(false)
+    expect(blocked(await verdict('Write', { path: state, content: 'x' }))).toBe(false)
+    expect(blocked(await verdict('Read', { path: path.join(PROJECT, 'a.ts') }))).toBe(false)
+    expect(blocked(await verdict('Bash', { command: 'ls ./src' }))).toBe(false)
   })
 
   test('a session whose project IS the checkout keeps working on it', async () => {
     const file = path.join(CHECKOUT, 'apps/api/package.json')
-    expect(blocked(await verdict('read', { path: file }, CHECKOUT))).toBe(false)
-    expect(blocked(await verdict('bash', { command: 'ls' }, path.join(CHECKOUT, 'apps/ui')))).toBe(
+    expect(blocked(await verdict('Read', { path: file }, CHECKOUT))).toBe(false)
+    expect(blocked(await verdict('Bash', { command: 'ls' }, path.join(CHECKOUT, 'apps/ui')))).toBe(
       false,
     )
+  })
+
+  test('the mini app kit inside the application is readable, never writable', async () => {
+    const kit = path.join(CHECKOUT, 'apps/api')
+    const file = path.join(kit, 'package.json')
+    setReadableHostRoots(() => [kit])
+    try {
+      expect(blocked(await verdict('Read', { path: file }))).toBe(false)
+      expect(blocked(await verdict('Search', { path: kit, pattern: 'name' }))).toBe(false)
+      expect(blocked(await verdict('Write', { path: file, content: 'x' }))).toBe(true)
+      expect(
+        blocked(await verdict('Edit', { path: file, old_string: '"name"', new_string: '"x"' })),
+      ).toBe(true)
+      expect(blocked(await verdict('Bash', { command: `cat ${file}` }))).toBe(true)
+      // the rest of the application stays closed
+      expect(blocked(await verdict('Read', { path: path.join(CHECKOUT, 'package.json') }))).toBe(
+        true,
+      )
+    } finally {
+      setReadableHostRoots(() => [])
+    }
   })
 
   test('the agent-owned allowed roots never whitelist a host root', () => {

@@ -20,13 +20,24 @@ export function ShellCommandRow() {
 
   useEffect(() => {
     if (!workItemVisible) return
-    setLoading(true)
-    setError(null)
+    let current = true
     shellCommandApi
       .status()
-      .then(setStatus)
-      .catch((caught) => setError(inlineFailure(caught, 'Could not check the command status.')))
-      .finally(() => setLoading(false))
+      .then((next) => {
+        if (current) setStatus(next)
+      })
+      .catch((caught) => {
+        if (current) setError(inlineFailure(caught, 'Could not check the command status.'))
+      })
+      .finally(() => {
+        if (current) setLoading(false)
+      })
+    // The next read (or the panel coming back) starts from "checking", with no old failure.
+    return () => {
+      current = false
+      setLoading(true)
+      setError(null)
+    }
   }, [workItemVisible])
 
   const run = async (action: 'install' | 'uninstall') => {
@@ -90,7 +101,7 @@ export function ShellCommandRow() {
       <div className="flex shrink-0 items-center gap-2">
         {installed && (
           <Button
-            variant="outline"
+            variant="ghost"
             size="xl"
             aria-busy={busyAction === 'uninstall' || undefined}
             disabled={busyAction !== null}
@@ -106,7 +117,7 @@ export function ShellCommandRow() {
           </Button>
         )}
         <Button
-          variant="outline"
+          variant="ghost"
           size="xl"
           aria-busy={busyAction === 'install' || undefined}
           disabled={busyAction !== null || unavailable || !status}

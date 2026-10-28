@@ -37,13 +37,12 @@ the word and the user or other agents guess, uses the same three parts.
 4. When the game's rule says so, the mini app calls `revealSealed`. From then on the view carries
    the value and salt, and `verifySealed` lets the user's own browser confirm the digest.
 
-### Group chats
+### Subagents
 
-In a conversation with several agents, each agent's history already drops the other agents' tool
-calls and results: a colleague's turn reaches it as that colleague's published text only. A secret
-in a sealed key therefore reaches neither the user nor the other agents. The mini app can tell
-agents apart through the tool context's `session.speaker.agentId` and pass it to `seal` as the
-owner.
+A subagent's tool calls and results stay in its own session: its parent reads only its final report.
+A secret in a sealed key therefore reaches neither the user nor the parent through the subagent's
+history. The mini app can tell agents apart through the tool context's `session.agent.agentId` and
+pass it to `seal` as the owner.
 
 ### What it does not hide
 
@@ -59,4 +58,4 @@ owner.
 - [Sealing in the item funnel](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/sealed-items.ts)
 - [Tool presentation contract](https://github.com/rsaryev/localix/blob/main/packages/agent/src/agents/tool-definition.ts)
 - [Commitments and views](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/sealed.ts)
-- [Rock Paper Scissors rules and per-seat view](https://github.com/rsaryev/localix/blob/main/mini-apps/rock-paper-scissors/shared/game.ts)
+- [Rock Paper Scissors rules and per-side view](https://github.com/rsaryev/localix/blob/main/mini-apps/rock-paper-scissors/shared/game.ts)

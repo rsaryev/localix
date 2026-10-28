@@ -1,7 +1,7 @@
 # Lightweight Charts recipes
 
-Return to the [skill workflow](../SKILL.md) for version checks and API selection. These snippets
-illustrate one feature at a time; supply their surrounding chart, data, and container.
+Return to the [guide](../guide.md) for version checks and API selection. These snippets illustrate
+one feature at a time; supply their surrounding chart, data, and container.
 
 ### Realtime updates
 

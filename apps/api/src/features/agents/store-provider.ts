@@ -10,6 +10,7 @@ import type {
 } from '@localixai/store'
 
 import { ConflictError, InvalidRequestError, NotFoundError } from '../../lib/domain-errors'
+import type { AgentModelChoicesPort } from './model-choices-port'
 import type { AgentSummary } from './contracts'
 import type { AgentsService } from './service-contract'
 import {
@@ -18,6 +19,7 @@ import {
   agentConfig,
   agentDetail,
   agentListing,
+  choiceFromValues,
   inputFromValues,
   scopeOf,
 } from './store-listing'
@@ -33,10 +35,12 @@ export type AgentStoreDeps = {
     | 'moveAgent'
     | 'setAgentEnabled'
   >
-  /** How many chats an agent is seated in. */
+  /** How many chats an agent is used by. */
   chatsOf?(agentId: string): Promise<number>
   /** The version of an agent file as it is now: a save made over an older one is refused. */
   revisionOf?(path: string): Promise<string>
+  /** The person's model choices for agents, kept in their settings (`agentSettings`). */
+  choices?: AgentModelChoicesPort
   /** Hear a change to the agents (a file, a switch, a plugin); returns the unsubscribe. */
   onChange(listener: () => void): () => void
 }
@@ -44,8 +48,8 @@ export type AgentStoreDeps = {
 const PLACEHOLDER_BODY = 'Describe what this agent does and how it works.'
 
 /** A copy's name: a plugin's `plugin:name` becomes `plugin-name`, then a free `-copy` suffix. */
-const copyName = (handle: string, taken: ReadonlySet<string>) => {
-  const base = handle.replace(/[^A-Za-z0-9_-]/g, '-')
+const copyName = (name: string, taken: ReadonlySet<string>) => {
+  const base = name.replace(/[^A-Za-z0-9_-]/g, '-')
   for (let n = 0; ; n++) {
     const name = `${base}-copy${n ? `-${n + 1}` : ''}`
     if (!taken.has(name)) return name
@@ -114,6 +118,13 @@ export function createAgentStoreProvider(deps: AgentStoreDeps): StoreProvider {
     async remove(id, _scope, actor) {
       const found = await editable(id, actor)
       await agents.deleteAgent(actor.userId, found.record.id, found.projectId || null)
+      // A deleted agent's choice would only fill the settings up.
+      const all = await deps.choices?.read(actor.userId)
+      if (all?.some((c) => c.agentId === found.record.id))
+        await deps.choices!.write(
+          actor.userId,
+          all.filter((c) => c.agentId !== found.record.id),
+        )
     },
 
     async setEnabled(id, _scope, enabled, actor) {
@@ -125,7 +136,12 @@ export function createAgentStoreProvider(deps: AgentStoreDeps): StoreProvider {
       const found = await find(id, actor)
       if (scopeOf(found) !== scope) return null
       const revision = found.editable ? await deps.revisionOf?.(found.path) : undefined
-      return agentConfig(found, revision)
+      const choices = await deps.choices?.read(actor.userId)
+      return agentConfig(
+        found,
+        revision,
+        choices?.find((c) => c.agentId === found.record.id),
+      )
     },
 
     async setConfig(id, _scope, { _revision, ...values }, actor) {
@@ -141,6 +157,19 @@ export function createAgentStoreProvider(deps: AgentStoreDeps): StoreProvider {
         inputFromValues(found, values),
         found.projectId || null,
       )
+      if (deps.choices && ('model' in values || 'effort' in values)) {
+        const all = await deps.choices.read(actor.userId)
+        const id = found.record.id
+        const next = choiceFromValues(
+          id,
+          values,
+          all.find((c) => c.agentId === id),
+        )
+        await deps.choices.write(actor.userId, [
+          ...all.filter((c) => c.agentId !== id),
+          ...(next ? [next] : []),
+        ])
+      }
     },
 
     async createFields(actor): Promise<CreateForm> {
@@ -154,14 +183,13 @@ export function createAgentStoreProvider(deps: AgentStoreDeps): StoreProvider {
     async create(scope: Scope, values: Record<string, ConfigValue>, actor): Promise<ListingRef> {
       if (scope === 'project' && !actor.projectId)
         throw new InvalidRequestError('agent_store_no_project', 'Open a project to add an agent')
-      const handle = typeof values.name === 'string' ? values.name.trim() : ''
+      const name = typeof values.name === 'string' ? values.name.trim() : ''
       const description = typeof values.description === 'string' ? values.description.trim() : ''
-      if (!handle) throw new InvalidRequestError('agent_store_name', 'Name the agent')
+      if (!name) throw new InvalidRequestError('agent_store_name', 'Name the agent')
       const created = await agents.createAgent(actor.userId, {
-        handle,
+        name,
         description,
         instructions: PLACEHOLDER_BODY,
-        leadershipPriority: 0,
         projectId: scope === 'project' ? actor.projectId! : null,
       })
       return { kind: 'agent', id: created.record.id }
@@ -181,18 +209,18 @@ export function createAgentStoreProvider(deps: AgentStoreDeps): StoreProvider {
           toProject,
           found.projectId || null,
         )
-        return { ok: true, message: `Moved ${moved.record.handle}` }
+        return { ok: true, message: `Moved ${moved.record.name}` }
       }
       const taken = new Set(
-        (await scopeList(actor.userId, found.projectId)).map((agent) => agent.record.handle),
+        (await scopeList(actor.userId, found.projectId)).map((agent) => agent.record.name),
       )
       const copy = await agents.duplicateAgent(
         actor.userId,
         found.record.id,
-        copyName(found.record.handle, taken),
+        copyName(found.record.name, taken),
         found.projectId || null,
       )
-      return { ok: true, message: `Created ${copy.record.handle}` }
+      return { ok: true, message: `Created ${copy.record.name}` }
     },
 
     subscribe: (listener) => deps.onChange(listener),

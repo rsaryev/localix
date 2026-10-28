@@ -86,7 +86,7 @@ describe('action="wait" is driven by terminal events, not a render timer', () =>
 
   test('output wakes the wait, and one render answers it', async () => {
     const { deps, state, emit } = scriptedTerminal('Compiling…')
-    setTimeout(() => emit('Compiled successfully'), 10)
+    setTimeout(() => emit('Compiled successfully'), 0)
     const res = await waitForScreen(deps, {
       terminalId: 't1',
       wait_for: 'Compiled',
@@ -99,7 +99,7 @@ describe('action="wait" is driven by terminal events, not a render timer', () =>
   test('an exit wakes the wait and the archived final screen is checked', async () => {
     const { deps, emit } = scriptedTerminal('PROMPT>')
     deps.finalScreen = async () => snap('PROMPT>DONE')
-    setTimeout(() => emit(null, 'exit'), 10)
+    setTimeout(() => emit(null, 'exit'), 0)
     const res = await waitForScreen(deps, {
       terminalId: 't1',
       wait_for: 'DONE',

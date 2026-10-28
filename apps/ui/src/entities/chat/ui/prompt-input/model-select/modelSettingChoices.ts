@@ -18,7 +18,7 @@ export function maxTurnsLabel(value: number): string {
   return turns >= MAX_MAX_TURNS ? 'No limit' : String(turns)
 }
 
-/** The default a participant inherits: the person's setting, capped by the agent's ceiling. */
+/** The default an agent inherits: the person's setting, capped by the agent's ceiling. */
 export function inheritedMaxTurns(settingsMaxTurns?: number, agentLimit?: number): number {
   return Math.min(settingsMaxTurns ?? DEFAULT_MAX_TURNS, agentLimit ?? DEFAULT_MAX_TURNS)
 }

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { navGroups, parseSection } from './navigation'
+import { parseSection, storeNav } from './navigation'
 
 describe('the Store’s sections', () => {
   test('a link to the old shelf of skills, agents or MCP servers lands on their one shelf', () => {
@@ -10,8 +10,9 @@ describe('the Store’s sections', () => {
   })
 
   test('a kind that can make a new item keeps its shelf, empty, so Add is there', () => {
-    const groups = navGroups({ shelves: {} } as never, ['skill', 'mini-app'])
-    const ids = groups.flatMap((group) => group.items.map((item) => item.id))
+    const ids = storeNav({ shelves: {} } as never, ['skill', 'mini-app']).catalog.map(
+      (tab) => tab.id,
+    )
     expect(ids).toContain('capability:skill')
     expect(ids).toContain('package:mini-app')
     expect(ids).not.toContain('package:skill')

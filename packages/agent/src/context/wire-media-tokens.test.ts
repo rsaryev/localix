@@ -38,7 +38,7 @@ describe('wire media accounting', () => {
       role: 'assistant',
       model: 'm',
       timestamp: 0,
-      content: [{ type: 'tool_call', id: 'write', name: 'write', arguments: image(800_000) }],
+      content: [{ type: 'tool_call', id: 'write', name: 'Write', arguments: image(800_000) }],
     }
     expect(estimateWireMessageTokens(message)).toBeGreaterThan(200_000)
     expect(

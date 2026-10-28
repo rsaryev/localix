@@ -80,7 +80,21 @@ export function exportMapProblems(map: ExportMap): string[] {
       )
       continue
     }
-    const conditions = Object.keys(entry as Record<string, unknown>)
+    // `@localixai/source` leads the map: the type-check reads `src`, everything else reads `dist`.
+    const sourceEntry = (entry as Record<string, unknown>)['@localixai/source']
+    if (sourceEntry !== undefined) {
+      if (
+        typeof sourceEntry !== 'string' ||
+        !sourceEntry.startsWith('./src/') ||
+        !existsSync(join(sdkRoot, sourceEntry))
+      ) {
+        problems.push(`${at}: "@localixai/source" must name an existing module under ./src/.`)
+        continue
+      }
+    }
+    const conditions = Object.keys(entry as Record<string, unknown>).filter(
+      (condition) => condition !== '@localixai/source',
+    )
     if (conditions.join(',') !== 'types,import') {
       problems.push(
         `${at}: conditions are [${conditions.join(', ')}] — must be exactly ["types", "import"], in ` +

@@ -4,6 +4,12 @@ import type { MessageMutationResponse } from '../contracts'
 import type { CommandHandlerContext, DirectReply } from './command-handlers'
 import { handleMarketplaceSubcommand } from './command-handlers-plugins-marketplace'
 import {
+  SCOPE_USAGE,
+  scopedProjectId,
+  takeAcceptCommand,
+  takeScope,
+} from './command-handlers-plugins-args'
+import {
   errorCode,
   installReply,
   updateReply,
@@ -35,11 +41,11 @@ const CLAUDE_CODE_SPELLINGS: Record<string, string> = { uninstall: 'remove', mar
 const PLUGIN_SUBCOMMAND_USAGE = [
   '/plugin list',
   '/plugin install <name>@<marketplace> | <name> --marketplace <source> | <git-url> | <owner/repo> | </absolute/path> [--project | --scope user|project|local] [--yes] [--accept-command <sha256>]',
-  '/plugin enable <name>',
-  '/plugin disable <name>',
-  '/plugin remove <name>',
+  '/plugin enable <name> [--scope user|project|local]',
+  '/plugin disable <name> [--scope user|project|local]',
+  '/plugin remove <name> [--scope user|project|local]',
   '/plugin validate [<name> | </absolute/path>] [--strict]',
-  '/plugin update <name> [--accept-command <sha256>]',
+  '/plugin update <name> [--scope user|project|local] [--accept-command <sha256>]',
   '/plugin details <name>',
   '/plugin reload',
   '/plugin marketplace list [<name>] | add <source> | update [<name>] | remove <name>',
@@ -110,6 +116,7 @@ export async function handlePluginsControlCommand(
     // `--yes` accepts the plan a Store install showed, as the Store screen's button does.
     const yes = flagged.includes('--yes')
     const scoped = takeScope(flagged.filter((arg) => arg !== '--yes'))
+    if (scoped.invalid) return directReply(SCOPE_USAGE)
     const args = scoped.args
     const toProject = args.includes('--project') || scoped.project
     // `--marketplace <source>` adds (or refreshes) that marketplace first, as in Claude Code.
@@ -120,7 +127,7 @@ export async function handlePluginsControlCommand(
       .join(' ')
       .trim()
     if (!source || (at >= 0 && !marketplace)) {
-      return directReply(`Usage: \`${PLUGIN_SUBCOMMAND_USAGE[2]}\``)
+      return directReply(`Usage: \`${PLUGIN_SUBCOMMAND_USAGE[1]}\``)
     }
     // A listing of a marketplace goes through the Store, as the Store screen's Install does; an
     // address (git URL, owner/repo, folder) names no listing, and a `headersHelper` acceptance has
@@ -149,12 +156,14 @@ export async function handlePluginsControlCommand(
   }
 
   if (sub === 'enable' || sub === 'disable') {
-    const name = nameArg(tokens.slice(2))
-    if (!name) return directReply(`Usage: \`/plugin ${sub} <name>\``)
+    const scoped = takeScope(tokens.slice(2))
+    if (scoped.invalid) return directReply(SCOPE_USAGE)
+    const name = nameArg(scoped.args)
+    if (!name) return directReply(`Usage: \`/plugin ${sub} <name> [--scope user|project|local]\``)
     try {
       const rec = await pluginService.setEnabled(
         userId,
-        { name, projectId: session.projectId ?? null, enabled: sub === 'enable' },
+        { name, projectId: scopedProjectId(session, scoped.scope), enabled: sub === 'enable' },
         { refuseNoop: true },
       )
       return directReply(
@@ -169,13 +178,15 @@ export async function handlePluginsControlCommand(
 
   if (sub === 'update') {
     const { args: updateArgs, accepted } = takeAcceptCommand(tokens.slice(2))
-    const name = nameArg(updateArgs)
+    const scoped = takeScope(updateArgs)
+    if (scoped.invalid) return directReply(SCOPE_USAGE)
+    const name = nameArg(scoped.args)
     if (!name)
       return directReply('Usage: `/plugin update <name>` — re-installs from the original source.')
     try {
       const rec = await pluginService.update(userId, {
         name,
-        projectId: session.projectId ?? null,
+        projectId: scopedProjectId(session, scoped.scope),
         ...(accepted ? { acceptCommand: accepted } : {}),
       })
       return directReply(updateReply(rec))
@@ -185,12 +196,14 @@ export async function handlePluginsControlCommand(
   }
 
   if (sub === 'remove') {
-    const name = nameArg(tokens.slice(2))
-    if (!name) return directReply('Usage: `/plugin remove <name>`')
+    const scoped = takeScope(tokens.slice(2))
+    if (scoped.invalid) return directReply(SCOPE_USAGE)
+    const name = nameArg(scoped.args)
+    if (!name) return directReply('Usage: `/plugin remove <name> [--scope user|project|local]`')
     try {
       const removed = await pluginService.remove(userId, {
         name,
-        projectId: session.projectId ?? null,
+        projectId: scopedProjectId(session, scoped.scope),
       })
       if (removed?.claudeCodeInstall)
         return directReply(
@@ -247,32 +260,4 @@ export async function handlePluginsControlCommand(
   // Pure listing — disabled plugins' code is not imported here.
   const catalog = await ctx.buildSessionPluginCatalog(userId, session)
   return directReply(pluginListReply(catalog))
-}
-
-/**
- * `--accept-command <sha256>`: the person accepts the `headersHelper` command an install or update
- * showed them (plugins/cli-reference, `plugin install`); the flag leaves the other arguments.
- */
-function takeAcceptCommand(args: string[]): { args: string[]; accepted?: string } {
-  const at = args.indexOf('--accept-command')
-  if (at < 0) return { args }
-  const accepted = args[at + 1]
-  return {
-    args: args.filter((_arg, i) => i !== at && i !== at + 1),
-    ...(accepted ? { accepted } : {}),
-  }
-}
-
-/**
- * Claude Code's `--scope user|project|local`. Localix installs for everyone (user) or for this
- * project; `local` (only me, in this repo) is nearest to this project.
- */
-function takeScope(args: readonly string[]): { args: string[]; project: boolean } {
-  const at = args.indexOf('--scope')
-  if (at < 0) return { args: [...args], project: false }
-  const value = args[at + 1]?.toLowerCase()
-  return {
-    args: args.filter((_, i) => i !== at && i !== at + 1),
-    project: value === 'project' || value === 'local',
-  }
 }

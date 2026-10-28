@@ -25,16 +25,16 @@ import type { ToolMeta } from './meta'
  * that for a tool we cannot classify would fold a run of writes on the strength of a guess.
  */
 export const FALLBACK_META: ToolMeta = {
-  label: 'Tool',
+  label: 'Ran',
   noun: 'calls',
   verb: 'Running',
   icon: Wrench,
   stackable: true,
 }
 export const MCP_META: ToolMeta = {
-  label: 'MCP',
+  label: 'Ran',
   noun: 'calls',
-  verb: 'Calling',
+  verb: 'Running',
   icon: Plug,
   stackable: true,
 }

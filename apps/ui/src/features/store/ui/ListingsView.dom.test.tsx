@@ -67,15 +67,40 @@ describe('the Store’s shelves', () => {
   test('the sections come from what the listings are and contain; an empty one is hidden', async () => {
     const view = await renderStore({ listings: LISTINGS, target: APPS })
     try {
-      const nav = view.host.querySelector('nav[aria-label="Store sections"]')!
-      expect(nav.textContent).toContain('Discover')
-      expect(view.shelf('Mini apps')?.textContent).toContain('6')
-      expect(view.shelf('Commands')).toBeDefined()
+      const tabs = view.host.querySelector('[role="tablist"][aria-label="Store sections"]')!
+      expect(tabs.textContent).toContain('Discover')
+      // The catalog's tabs carry no counts; only Updates says how many wait.
+      expect(view.shelf('Mini apps')?.textContent).toBe('Mini apps')
       expect(view.shelf('Updates')?.textContent).toContain('1')
-      expect(view.shelf('Sources')).toBeDefined()
+      expect(view.shelf('Installed')?.closest('[aria-label="Your library"]')).not.toBeNull()
+      expect(view.shelf('Sources')?.closest('[aria-label="Your library"]')).not.toBeNull()
       expect(view.shelf('Plugins')).toBeUndefined()
       expect(view.shelf('Skills')).toBeUndefined()
-      expect(nav.querySelector('[aria-current="page"]')?.textContent).toContain('Mini apps')
+      expect(view.activeSection()).toContain('Mini apps')
+    } finally {
+      await view.done()
+    }
+  })
+
+  test('opened again with no place named, the Store is on Discover', async () => {
+    const view = await renderStore({ listings: LISTINGS, target: APPS })
+    try {
+      expect(view.activeSection()).toContain('Mini apps')
+      await view.retarget({})
+      expect(view.activeSection()).toContain('Discover')
+    } finally {
+      await view.done()
+    }
+  })
+
+  test('the rarer kinds wait under More, and the one chosen there names the More tab', async () => {
+    const view = await renderStore({ listings: LISTINGS, target: APPS })
+    try {
+      const tabs = view.host.querySelector('[role="tablist"][aria-label="Store sections"]')!
+      expect(tabs.textContent).not.toContain('Commands')
+      await view.openMenu(view.button('More sections'))
+      await view.click(view.menuItem('Commands'))
+      expect(view.activeSection()).toBe('Commands')
     } finally {
       await view.done()
     }
@@ -85,9 +110,10 @@ describe('the Store’s shelves', () => {
     const mine = listing({ id: 'review', displayName: 'Review', authored: 'user' })
     const view = await renderStore({ listings: [...LISTINGS, mine], target: APPS })
     try {
-      expect(view.shelf('Yours')?.textContent).toContain('1')
+      expect(view.shelf('Yours')).toBeDefined()
       expect(view.shelf('Project')).toBeUndefined()
       await view.click(view.shelf('Yours'))
+      expect(view.activeSection()).toBe('Yours')
       expect(view.card('review')).not.toBeNull()
       expect(view.card('chess')).toBeNull()
     } finally {
@@ -243,14 +269,24 @@ describe('the Store’s shelves', () => {
     }
   })
 
-  test('a source that could not be read is said once, above the listings', async () => {
+  test('a source that could not be read is one short line above the listings, which leads to Sources', async () => {
+    const message =
+      'The mini app catalog "acme" could not be read (No catalog.json found in /Users/someone/acme)'
     const view = await renderStore({
       listings: LISTINGS,
       target: APPS,
-      problems: ['The mini app catalog at example.test answered 503'],
+      problems: [{ kind: 'mini-app', message }],
     })
     try {
-      expect(view.host.textContent).toContain('answered 503')
+      const line = view.host.querySelector<HTMLElement>(
+        '[role="status"][aria-label="Sources not read"]',
+      )!
+      expect(line.textContent).toContain('1 source could not be read')
+      // The path and the reason are Sources' to say, not every list's.
+      expect(line.textContent).not.toContain('/Users/someone')
+      expect(line.getAttribute('title')).toBe(message)
+      await view.click(view.button('See Sources', line))
+      expect(view.activeSection()).toContain('Sources')
     } finally {
       await view.done()
     }
@@ -260,43 +296,27 @@ describe('the Store’s shelves', () => {
     const view = await renderStore({ listings: LISTINGS })
     try {
       await view.retarget({ shelf: 'installed' })
-      expect(view.host.querySelector('[aria-current="page"]')?.textContent).toContain('Installed')
+      expect(view.activeSection()).toContain('Installed')
     } finally {
       await view.done()
     }
   })
 
-  test('in a narrow pane the sections are one picker beside the search, which moves the Store', async () => {
-    const view = await renderStore({ listings: LISTINGS, target: APPS, width: 600 })
-    try {
-      expect(view.host.querySelector('nav[aria-label="Store sections"]')).toBeNull()
-      const picker = view.host.querySelector<HTMLElement>('[aria-label="Store sections"]')!
-      expect(picker.textContent).toContain('Mini apps · 6')
-      expect(view.host.querySelector('input[aria-label="Search the Store"]')).not.toBeNull()
-      await view.openMenu(picker)
-      const installed = [...document.body.querySelectorAll<HTMLElement>('[role="option"]')].find(
-        (option) => option.textContent?.includes('Installed'),
-      )
-      await view.click(installed)
-      expect(view.host.querySelector('h2')?.textContent).toBe('Installed')
-    } finally {
-      await view.done()
-    }
-  })
-
-  test('at a medium width the sidebar is open; its first row folds it to icons named by their labels, and unfolds it', async () => {
-    const view = await renderStore({ listings: LISTINGS, target: APPS, width: 900 })
-    try {
-      const nav = () => view.host.querySelector('nav[aria-label="Store sections"]')!
-      expect(nav().textContent).toContain('Mini apps')
-      await view.click(view.button('Collapse Store sections'))
-      expect(nav().textContent).toBe('')
-      expect(nav().querySelector('[aria-label="Mini apps, 6"][aria-current="page"]')).not.toBeNull()
-      await view.click(view.button('Expand Store sections'))
-      expect(nav().textContent).toContain('Mini apps')
-    } finally {
-      await view.done()
-      localStorage.clear()
+  test('at every width the sections are tabs under the search, with no column beside the page', async () => {
+    for (const width of [600, 900, 1400]) {
+      const view = await renderStore({ listings: LISTINGS, target: APPS, width })
+      try {
+        expect(view.host.querySelector('nav[aria-label="Store sections"]')).toBeNull()
+        const search = view.host.querySelector('input[aria-label="Search the Store"]')!
+        const tabs = view.host.querySelector('[role="tablist"][aria-label="Store sections"]')!
+        expect(search.compareDocumentPosition(tabs) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+        expect(view.activeSection()).toContain('Mini apps')
+        await view.click(view.shelf('Installed'))
+        expect(view.host.querySelector('h2')?.textContent).toBe('Installed')
+        expect(view.activeSection()).toContain('Installed')
+      } finally {
+        await view.done()
+      }
     }
   })
 })

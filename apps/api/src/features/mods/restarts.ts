@@ -1,4 +1,5 @@
 import type { BudgetClock } from '@localixai/claude-plugin/mods'
+import { backoffMs } from '@localixai/agent/backoff'
 
 /**
  * Which plugins' mods may start, and why one may not. A mod that did not load is failed until the
@@ -50,7 +51,13 @@ export function createModHealth(
       const recent = (deaths.get(plugin) ?? []).filter((one) => at - one < rules.windowMs)
       recent.push(at)
       deaths.set(plugin, recent)
-      const wait = recent.length > 1 ? rules.backoffMs * 2 ** (recent.length - 2) : 0
+      const wait =
+        recent.length > 1
+          ? backoffMs(recent.length - 2, {
+              baseMs: rules.backoffMs,
+              maxMs: Number.MAX_SAFE_INTEGER,
+            })
+          : 0
       const stays = recent.length >= rules.deaths
       const message = `the hooks module ${reason}; ${
         stays

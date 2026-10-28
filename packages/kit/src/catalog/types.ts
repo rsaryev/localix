@@ -7,7 +7,7 @@
  * checkbox, a tree row and a progress bar that the kit already had; a person reading `entries/`
  * sees 84 file names. The catalog is the answer to "I need X — which module?", read by the kit's
  * docs, the mini app kit staging (`scripts/stage-mini-app-kit.mjs` writes it into `kit.json`) and
- * the `/mini-app create` instruction. Its tests pin it to the doors in both directions, so a new
+ * the `KIT.md` the mini-app-authoring plugin writes into each mini app. Its tests pin it to the doors in both directions, so a new
  * door without an entry, or an entry without a door, fails.
  */
 

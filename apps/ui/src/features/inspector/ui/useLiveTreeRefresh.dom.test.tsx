@@ -4,6 +4,7 @@ import type { DirListing } from '@/shared/api/contracts'
 import { eventSocket } from '@/shared/api/eventSocket'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { useFileTree } from './useFileTree'
+import { turns } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -21,7 +22,10 @@ async function mountTree(sessionId: string) {
   const root = createRoot(document.createElement('div'))
   let current: ReturnType<typeof useFileTree> | null = null
   function Tree() {
-    current = useFileTree(sessionId)
+    const value = useFileTree(sessionId, { refreshDelayMs: 0 })
+    React.useEffect(() => {
+      current = value
+    })
     return null
   }
   await React.act(async () => {
@@ -65,7 +69,8 @@ describe('the live tree', () => {
       const before = list.mock.calls.length
       await tree.act(async () => {
         reconnect?.()
-        await new Promise((resolve) => setTimeout(resolve, 200))
+        await new Promise((resolve) => setTimeout(resolve, 0))
+        await turns()
       })
       const reread = list.mock.calls.slice(before).map(([, path]) => path)
       expect(reread.sort((a, b) => (a ?? '').localeCompare(b ?? ''))).toEqual(['/ws', '/ws/src'])

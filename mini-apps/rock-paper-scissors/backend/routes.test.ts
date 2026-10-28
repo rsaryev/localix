@@ -33,7 +33,7 @@ function storage() {
   }
 }
 
-const SEAT = { userId: 'u1', sessionId: 's1' }
+const CHAT = { userId: 'u1', sessionId: 's1' }
 
 /** The routes and the agent's tool over the SAME storage, as the host wires them. */
 function table(sessionId: string | null = 's1') {
@@ -97,7 +97,7 @@ describe('the view’s routes', () => {
     const { act, read, post, games } = table()
     await act({ action: 'next_round', first: 'agent' })
     await act({ action: 'play', move: 'scissors' })
-    const stored = await games.read(SEAT)
+    const stored = await games.read(CHAT)
 
     const before = await read()
     expect(before).not.toContain('scissors')
@@ -110,7 +110,7 @@ describe('the view’s routes', () => {
     expect(await verifySealed(after.round.theirs!)).toBe(true)
   })
 
-  test('the opponent route switches who plays the other seat, and refuses one it does not know', async () => {
+  test('the opponent route switches who plays the other side, and refuses one it does not know', async () => {
     const { post, woke } = table()
     const response = await post('/game/opponent', { opponent: 'decision' })
     expect(response.status).toBe(200)

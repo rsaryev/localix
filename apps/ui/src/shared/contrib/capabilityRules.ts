@@ -18,7 +18,7 @@ import type { CapabilityRuleChange } from '@/shared/api/contracts'
 /** The kinds a rule can name. Mirrors the server's `ACTION_PREFIX`, which owns the list. */
 export type CapabilityKind = 'tool' | 'skill' | 'plugin' | 'mini-app' | 'mcp' | 'agent'
 
-/** `tool:bash`, `skill:deploy`, `plugin:office`, `agent:builtin:qa`. */
+/** `tool:Bash`, `skill:deploy`, `plugin:office`, `agent:builtin:qa`. */
 export const capabilityAction = (kind: CapabilityKind, name: string): string => `${kind}:${name}`
 
 /** One MCP server's tool, addressed as `mcp:<server>/<tool>`. */

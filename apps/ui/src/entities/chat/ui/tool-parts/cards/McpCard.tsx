@@ -20,12 +20,12 @@ export function McpCard({ item }: { item: McpCallItem }) {
     >
       <ToolBody>
         {item.input !== undefined && (
-          <IORow label="IN">
+          <IORow label="In">
             <OutputBlock linkify>{pretty(item.input)}</OutputBlock>
           </IORow>
         )}
         {(item.resultText || item.result !== undefined) && (
-          <IORow label="OUT">
+          <IORow label="Out">
             <OutputBlock linkify>{item.resultText ?? pretty(item.result)}</OutputBlock>
           </IORow>
         )}

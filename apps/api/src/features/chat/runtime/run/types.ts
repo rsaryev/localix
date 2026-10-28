@@ -13,19 +13,16 @@ import type { ReasoningEffort } from '@localixai/agent'
 import type { ChatRepository, SessionRecord } from '../../repository'
 import type { StoredMessagePayload } from '../../../../db'
 import type { createUsageRepository } from '../../../usage/repository'
-import type { createMemoryRepository } from '../../../memory/repository'
 import type { createUserProfileRepository } from '../../../user/repository'
 import type { createProjectsRepository } from '../../../projects/repository'
 import type { createMcpRepository } from '../../../mcp/repository'
 import type { resolveAuxiliaryModel } from '../model-resolution'
-import type { FloorAdvisor, FloorScope } from '../floor-advice'
 import type { AgentRunRepository } from '../../../../db/agent-run-repository'
 import type { RunExecutionOutcome } from '../run-outcome'
 import type { RunParams } from '../run-contract'
 import type { CapabilitySourceRepository } from '../../../capabilities/source-repository'
 import type { EnqueueRun } from '../agent-turn-ticket'
 import type { AgentTurnFilter } from '../wake-queue/agent-turns'
-import type { ExecutionAddress } from '../../../agent-core/execution-address'
 import type { JoinFilter, SteeringReservation } from '../wake-queue/steering'
 
 export type { RunChain, RunParams, RunScope, RunTurn } from '../run-contract'
@@ -42,7 +39,6 @@ export interface RunEnv {
   deps: RunnerDeps
   repo: ChatRepository
   usageRepo: ReturnType<typeof createUsageRepository>
-  memoryRepo: ReturnType<typeof createMemoryRepository>
   userProfileRepo: ReturnType<typeof createUserProfileRepository>
   projectsRepo: ReturnType<typeof createProjectsRepository>
   mcpRepo: ReturnType<typeof createMcpRepository>
@@ -65,8 +61,6 @@ export interface RunEnv {
       | undefined,
     catalog: RunCatalog,
   ) => ReturnType<typeof resolveAuxiliaryModel>
-  /** Group routing's advice on who speaks next (`floor-advisor.ts`). */
-  floorAdvisor: (scope: FloorScope) => FloorAdvisor
   publishChildSummary: (parentSessionId: string, child: SessionRecord) => void
   markRuntimeSessionStatus: (
     userId: string,
@@ -93,21 +87,15 @@ export interface RunEnv {
   run: (params: RunParams) => Promise<RunExecutionOutcome>
   enqueueRun: EnqueueRun
   cancelAgentTurns(userId: string, sessionId: string, filter?: AgentTurnFilter): Promise<void>
-  boostReferencedAgentTurns(
-    userId: string,
-    session: Pick<SessionRecord, 'id' | 'agents'>,
-    speakerAgentId: string,
-    text: string,
-  ): Promise<void>
   /**
    * Queue a fact that became true WHILE the agent is working, to surface at the
    * loop's next tool-result seam (see mid-run-reminders.ts). Unlike `wake` this
    * does not start a run — it reaches the turn already in flight, which is the
    * only channel that can.
    */
-  queueMidRunReminder: (address: ExecutionAddress, body: string) => void
-  /** Drain one participant's queued mid-run reminders into one tagged body, or null. */
-  drainMidRunReminders: (address: ExecutionAddress) => string | null
+  queueMidRunReminder: (sessionId: string, body: string) => void
+  /** Drain one agent's queued mid-run reminders into one tagged body, or null. */
+  drainMidRunReminders: (sessionId: string) => string | null
   drainPendingAndRun: (sessionId: string) => Promise<void>
   /** True if the session has queued turns waiting (drives the run's finally drain). */
   hasPendingQueue: (sessionId: string) => Promise<boolean>

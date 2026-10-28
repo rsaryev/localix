@@ -5,7 +5,7 @@ import type { HistorySearchRepo } from './history-search'
 import { createGlobalSearchTool } from '../global-search/global-search'
 import { createChatRepository } from '../../../chat/repository'
 
-/** The history modes now live in `global_search`; these tests drive them through it. */
+/** The history modes now live in `GlobalSearch`; these tests drive them through it. */
 const createHistorySearchTool = (repo: HistorySearchRepo, userId: string) =>
   createGlobalSearchTool({ history: repo, userId, sessionId: 'session-test', projectId: null })
 
@@ -50,12 +50,12 @@ async function insertSession(
       id: opts.id,
       user_id: opts.userId,
       title: 'Test session',
-      // The route lives in `conversation_participants`; this row does not need one to exist.
+      // The route columns are optional: this row does not need an agent to exist.
     })
     .execute()
 }
 
-describe('global_search history tool', () => {
+describe('GlobalSearch history tool', () => {
   test('query that matches returns snippets', async () => {
     const db = await createTestDb()
     await insertSession(db, { id: 'session_1', userId: 'user_1' })
@@ -162,7 +162,7 @@ describe('global_search history tool', () => {
   })
 })
 
-describe('global_search history scroll mode', () => {
+describe('GlobalSearch history scroll mode', () => {
   async function seedSession(db: Awaited<ReturnType<typeof createTestDb>>, count: number) {
     await insertSession(db, { id: 'session_1', userId: 'user_1' })
     for (let i = 1; i <= count; i++) {
@@ -290,7 +290,7 @@ describe('global_search history scroll mode', () => {
   })
 })
 
-describe('global_search history browse mode', () => {
+describe('GlobalSearch history browse mode', () => {
   test('no args lists recent sessions with previews', async () => {
     const db = await createTestDb()
     for (const n of [1, 2, 3]) {

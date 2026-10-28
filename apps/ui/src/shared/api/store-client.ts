@@ -1,4 +1,6 @@
 import type {
+  RecommendRead,
+  RecommendRequest,
   ActionResult,
   ConfigValue,
   CreateForm,
@@ -247,6 +249,26 @@ export const storeApi = {
   async setSourceAutoUpdate(kind: PackageKind, id: string, autoUpdate: boolean): Promise<void> {
     await assertOk(
       await client.rpc.store.sources['auto-update'].$post({ json: { kind, id, autoUpdate } }),
+    )
+  },
+
+  /** The working set moved: the open tabs and chips, the project and the chat. Answered later. */
+  async reportWorkingSet(request: RecommendRequest): Promise<void> {
+    await assertOk(await client.rpc.store.recommendations['working-set'].$post({ json: request }))
+  },
+
+  /** What the background worked out for a project and chat (`store-recommendations` pokes it). */
+  async recommendations(where: {
+    projectId?: string | null
+    sessionId?: string | null
+  }): Promise<RecommendRead> {
+    return unwrap(
+      await client.rpc.store.recommendations.$get({
+        query: cleanQuery({
+          ...project(where.projectId),
+          ...(where.sessionId ? { sessionId: where.sessionId } : {}),
+        }),
+      }),
     )
   },
 

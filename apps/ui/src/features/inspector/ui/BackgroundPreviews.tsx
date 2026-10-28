@@ -26,7 +26,7 @@ interface BackgroundPreviewHost {
   key: string
 }
 
-/** Every live preview needs a host: dropping later entries makes the `browser` tool unreachable. */
+/** Every live preview needs a host: dropping later entries makes the `Browser` tool unreachable. */
 export function selectBackgroundPreviewHosts(
   tabs: PreviewsBySession,
   live: Record<string, boolean>,

@@ -3,11 +3,7 @@ import type { StoreApi } from 'zustand'
 import { backendClient } from '@/shared/api/client'
 import type { Project, UiSession } from '@/shared/api/contracts'
 import { recordProjectUse } from '@/shared/lib/projectMru'
-import {
-  forgetActiveProjectId,
-  forgetLastWorkspace,
-  loadRememberedActiveSession,
-} from './persistence'
+import { forgetLastWorkspace, loadRememberedActiveSession } from './persistence'
 import { sessionBelongsToScope } from './sessionListHelpers'
 import type { ChatStore, CustomSet } from './store'
 import { scopedNewConversation } from './conversationStartStrategy'
@@ -144,7 +140,6 @@ export function createProjectActions({ set, customSet, get }: ProjectActionsDeps
       const state = get()
       const projects = state.projects.filter((p) => p.id !== id)
       if (state.activeProjectId === id) {
-        forgetActiveProjectId()
         // The launch-restore pair pointed at this project. Leaving it would cost the next
         // launch a full projects-roster wait only to discover the project is gone.
         forgetLastWorkspace()

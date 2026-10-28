@@ -35,7 +35,7 @@ import {
  *   1. RULE — someone re-spells the exact charset `[^A-Za-z0-9_-]`.
  *   2. CONJUNCTION — someone hand-rolls a *near* copy (same idea, tweaked charset) and joins
  *      it into a path. This is how the 5th copy realistically appears, and it is the claim
- *      that caught `memory/file-store.ts` below.
+ *      that caught the Memory tool's `memory/file-store.ts` (deleted with the tool).
  *
  * MECHANICS come from `lib/source-lint.ts` — the comment stripper, the recursing walk, the
  * anti-void assertion, the two-halved exemption list, and the on-disk positive control.
@@ -59,8 +59,8 @@ const OWNER = 'packages/mini-app-sdk/src/backend/safe-file-key.ts'
  * Every entry here is a BLESSING, not a deferral: a CORE file that matches a claim but is genuinely a
  * different KIND. There is no `debt` escape hatch in use any more — there was one, holding the two
  * sanitizers this guard found in trees its owner could not edit, and both are now discharged
- * (`memory/file-store.ts` adopted the owner; `table/service.ts` was ruled a non-member and its
- * safety pinned). It was a temporary seam with a cleanup obligation, and the obligation came due.
+ * (the Memory tool's `memory/file-store.ts` adopted the owner and was later deleted with the tool;
+ * `table/service.ts` was ruled a non-member and its safety pinned). It was a temporary seam with a cleanup obligation, and the obligation came due.
  * Plugin-owned exceptions are declared beside their implementation with
  * `@safe-file-key-exemption <claim> -- <reason>`; the generic loader below discovers them.
  * This file must not become a catalog of concrete plugins.
@@ -108,31 +108,38 @@ const EXEMPTIONS: Exemptions = {
     reason:
       "Spells an MCP tool as Claude Code names it, `mcp__<server>__<tool>`, with Claude Code's own replacement rule for the server and tool (`[A-Za-z0-9_-]`, every other character `_`). The name is a hook matcher alias and a wire tool name; nothing joins it into a path.",
   },
+  [exemptionKey('apps/api/src/features/mcp/mcp-prompts.ts', 'rule')]: {
+    reason:
+      "Spells a connected server's prompt as the slash command Claude Code types, `mcp__<server>__<prompt>`, with Claude Code's own replacement rule (`[A-Za-z0-9_-]`, every other character `_`). The name is a composer command and a menu key; nothing joins it into a path.",
+  },
   [exemptionKey('packages/visual-feedback/src/core/identify.ts', 'rule')]: {
     reason:
       'ESCAPES the same charset for a CSS SELECTOR (`\\${ch}`) rather than replacing it. The opposite operation: it PRESERVES every character so the selector still matches, where a file key must DESTROY them. Also in a package upstream of apps/api.',
   },
 
   // ── Builds a filename from a sanitized key, but the rule genuinely differs ──
-  [exemptionKey('apps/api/src/features/mini-apps/authoring/scaffold.ts', 'fileKey')]: {
+  [exemptionKey('apps/api/src/features/chat/service/command-export.ts', 'fileKey')]: {
     reason:
-      '`toMiniAppName` slugs a model-proposed name into the PLUGIN NAME format (lower-kebab, `PLUGIN_NAME_RE`), and that name is the copy\'s folder. The owner\'s "_" would produce a name the format rejects, so the separator is the format\'s, not a choice. Traversal-safe: `[^a-z0-9]+` → "-" admits no `.` and no `/`, and the result is then VALIDATED against `PLUGIN_NAME_RE` with a fixed fallback (`my-plugin`) — reject-don\'t-coerce on top of the slug. Pinned in scaffold-name.test.ts.',
+      'CLAIM 2 only. `slug` turns a chat TITLE into the readable default name of an `/export` file (`my-chat-20260101-1200.md`): lower-kebab like the title a person reads, where the owner\'s key keeps case and uses "_". Traversal-safe: `[^a-z0-9]+` becomes "-", so no `.` and no `/` survives, and the slug is clamped to 40 characters with a fixed fallback (`chat`). It only names a file inside the exports folder under the Localix home; a name the person types is theirs and is resolved as typed, as in Claude Code\'s `/export`.',
   },
   [exemptionKey('apps/api/src/features/plugins/claude-code-marketplace.ts', 'fileKey')]: {
     reason:
       "CLAIM 2 only. Its char-class replace (`canonical`) folds a marketplace name to compare it with Anthropic's reserved names, so `claude_plugins-official` reads as `claude-plugins-official`; the folded form is never a filename. The name that does become a folder is VALIDATED by `marketplaceNameProblem` (`MARKETPLACE_NAME_RE`, no `..`, no non-ASCII) and refused, not coerced. Its `join` calls read the catalog files of an already-resolved marketplace folder.",
+  },
+  [exemptionKey('apps/api/src/features/memory/auto-memory.ts', 'fileKey')]: {
+    reason:
+      'CLAIM 2 only. `claudeProjectKey` is CLAUDE CODE\'S folder name for a project, spelled as Claude Code spells it (`[^a-zA-Z0-9]` becomes "-", a long name is clamped with a hash) so both apps open the same `~/.claude/projects/<key>/memory`; the owner\'s key would name a folder Claude Code never reads. Its input is a resolved absolute path, never a raw id. `rememberFact`\'s slug names a memory file from the person\'s own `/memory` text: every run of characters that is not a letter or digit of some script (`[^\\p{L}\\p{N}]+`) becomes "-", so no `.` or `/` survives, clamped to 48 characters with a fixed fallback.',
   },
   [exemptionKey('apps/api/src/features/media/store.ts', 'fileKey')]: {
     reason:
       "Does not sanitize the key at all: `pathFor(id)` is guarded by `isMediaId(id)`, which VALIDATES the id's shape and REJECTS a bad one. Reject-don't-coerce is a stronger strategy than this owner's, not a weaker copy of it. Its char-class replace builds a file EXTENSION from a mime subtype, which is a different question. Blessed for CLAIM 2 ONLY — it does not spell the owner's charset, and if it ever does, that arrives as a NEW, unblessed key.",
   },
 
-  // ── ADOPTED. `features/memory/file-store.ts` was the fifth copy and the weakest: its charset
-  //    admitted ".", so ".." survived and steered `path.join(base,'users',slug(userId))` one
-  //    level OUT of users/, onto the DEFAULT user's memory root (and "." collapsed every dot-ish
-  //    id onto a shared `users/MEMORY.md`). It now imports the owner; the traversal is pinned in
-  //    `memory/file-store.test.ts`. Nothing was orphaned — every id it keys on (`PRJ-<n>`,
-  //    `LOCALIX-<n>`, and the UUIDs still on disk) is a FIXED POINT of the rule. ──
+  // ── ADOPTED, THEN DELETED. The Memory tool's `features/memory/file-store.ts` was the fifth copy
+  //    and the weakest: its charset admitted ".", so ".." survived and steered
+  //    `path.join(base,'users',slug(userId))` one level OUT of users/. It adopted the owner, and
+  //    went with the tool when memory became Claude Code's auto-memory folder
+  //    (`memory/auto-memory.ts`, blessed above: it keys on a resolved path, not a user id). ──
 }
 
 const PLUGIN_EXEMPTION_MARKER = '@safe-file-key-exemption'
@@ -184,8 +191,8 @@ const RULE_RE = /\[\^(?:a-zA-Z|A-Za-z)0-9_-\]/
 /**
  * CLAIM 2 — the CONJUNCTION. An allow-list char class over an alphanumeric charset, in a file
  * that also builds a path. Quantifier-tolerant on purpose: the first draft of this regex
- * required `]/` and so missed `[^A-Za-z0-9._-]+/g` — the very file (`memory/file-store.ts`)
- * that turned out to carry a real traversal. A lint that quietly matches less than it thinks
+ * required `]/` and so missed `[^A-Za-z0-9._-]+/g` — the very file (the Memory tool's
+ * `memory/file-store.ts`, since deleted) that turned out to carry a real traversal. A lint that quietly matches less than it thinks
  * is worse than no lint.
  */
 const CLASS_RE = /\.replace\(\s*\/\[\^[^\]]*(?:a-z|A-Z|0-9)[^\]]*\][+*]?\/[gimsuy]*\s*,/
@@ -196,8 +203,8 @@ const CLASS_RE = /\.replace\(\s*\/\[\^[^\]]*(?:a-z|A-Z|0-9)[^\]]*\][+*]?\/[gimsu
  * import (`import { join } from 'node:path'` → bare `join(...)`) and to `path.posix.join(...)`.
  * That is the majority spelling in apps/api, so CLAIM 2 was matching far less than its own
  * comment claimed — the same "quietly matches less than it thinks" failure that comment warns
- * about, one level up. Widening it surfaced `agent-core/agent-memory.ts`, which was carrying a
- * REAL dot-segment escape of exactly the `memory/file-store.ts` shape (now fixed + pinned).
+ * about, one level up. Widening it surfaced a store (`agent-core/agent-memory.ts`, since deleted)
+ * carrying a REAL dot-segment escape of exactly the `memory/file-store.ts` shape.
  *
  * A bare `join(` alone would match `Array.prototype.join`, so the bare form is only honoured in
  * a file that actually imports it from `node:path`. `path.join`/`path.posix.join` are
@@ -341,7 +348,6 @@ describe('safe-file-key contract', () => {
         '  - apps/api/src/features/secrets/store.ts            (CREDENTIALS)',
         '  - apps/api/src/features/mcp/oauth/store.ts          (CREDENTIALS)',
         '  - packages/mini-app-sdk/src/backend/user-entity-store.ts (the shared per-user store primitive)',
-        '  - apps/api/src/features/memory/file-store.ts',
         '  - plugin-owned stores built on the shared per-user store primitive',
         '',
         'Note if ids become UUID/opaque `sub`s, safeFileKey is ALREADY the identity function on them',
@@ -393,7 +399,7 @@ describe('safe-file-key contract', () => {
   })
 
   test('POSITIVE CONTROL — CLAIM 2 fires on a NEAR copy joined into a path (the way copy #5 really arrived)', async () => {
-    // `memory/file-store.ts` shipped exactly this: a tweaked charset (`.` admitted) whose
+    // The Memory tool's `memory/file-store.ts` shipped exactly this: a tweaked charset (`.` admitted) whose
     // output was joined into a path — so `..` survived and walked one level OUT of users/.
     await assertPositiveControl({
       subject: 'a hand-rolled key sanitizer joined into a path',
@@ -412,7 +418,7 @@ describe('safe-file-key contract', () => {
    * branches, and the control above only ever plants `import path` + `path.join(` — the form
    * that always worked. The named import (`import { join }` → bare `join(`) is the majority
    * spelling here and is exactly what the detector could not read when it hid the traversal in
-   * `agent-memory.ts`; `path.posix.join(` was blind for the same reason.
+   * the deleted `agent-memory.ts`; `path.posix.join(` was blind for the same reason.
    *
    * Narrowing `buildsAPath` back to `PATH_JOIN_RE.test(code)` does go red today — but only via
    * the live-tree anchor, which fires because `user-config-substitute.ts` HAPPENS to use the named

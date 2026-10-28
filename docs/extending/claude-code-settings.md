@@ -68,14 +68,14 @@ Two keys limit what loads or runs, and are meant for managed settings.
 
 | Kind     | Closed                                                                                                                                                                          | Still loads                                                                           |
 | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| `skills` | skills and commands of `~/.claude/skills`, `.claude/skills`, `~/.claude/commands`, `.claude/commands`, and Localix's own `.localix/skills` and `.agents/skills`                 | plugin skills and commands, built-in plugins                                          |
+| `skills` | skills and commands of `~/.claude/skills`, `.claude/skills`, `~/.claude/commands`, `.claude/commands`, and the portable `.agents/skills`                                        | plugin skills and commands, built-in plugins                                          |
 | `agents` | `~/.claude/agents/` and a project's `.claude/agents/`                                                                                                                           | built-in types, the managed folder's agents, plugin agents                            |
 | `hooks`  | `hooks` of user, project and local settings; the `hooks` of a skill still read from your folders (that skill also loses its `allowed-tools` pre-approval unless it runs forked) | the organization's settings hooks and every plugin's hooks                            |
 | `mcp`    | servers of `~/.claude.json` and `.mcp.json`                                                                                                                                     | `managed-mcp.json`, `managedMcpServers`, plugin servers, servers you added in Localix |
 
 Localix has no skills-directory plugins, `--add-dir` folders, claude.ai-synced skills or managed
 skills folder, so nothing of those kinds loads to lock. A skill you save from a conversation lands
-in `.localix/skills`, which a `skills` lock closes. The `hooks` lock reads managed settings files; a
+in `.claude/skills`, which a `skills` lock closes. The `hooks` lock reads managed settings files; a
 macOS profile applies to skills and agents, but the hooks of a run read the files only.
 
 ### Environment variables
@@ -89,12 +89,39 @@ exporters. MCP limits (`MCP_TIMEOUT`, `MCP_TOOL_TIMEOUT`, `CLAUDE_CODE_MCP_TOOL_
 ### Status line
 
 The `statusLine` command runs in the conversation's folder with the session on stdin as Claude
-Code's JSON — `session_id`, `session_name`, `cwd`, `workspace`, `model`, `cost`, `context_window`,
-`effort` — and what it prints is drawn under the message box, with any mod's status line. Colors and
-links are stripped and several rows are joined with `·`. It runs when the conversation opens or
-changes, 300 ms after the last change, and every `refreshInterval` seconds while you look at it. A
-command that fails or prints nothing clears the line. A `subagentStatusLine` in your own settings
-rewrites the subagent rows, over a plugin's.
+Code's JSON, and what it prints is drawn as a quiet area right under the message box, one row for
+each line it printed, followed by the rows of any mod's status line. Colors (the 16 terminal colors,
+256-color and truecolor) are drawn in Localix's own palette, so a script's red reads as the app's
+error color; bold, italic, underline and OSC 8 links work, and a link opens in your browser. A row
+that is too wide ends in an ellipsis and shows in full when you point at it. The area hides while
+Localix asks you a question.
+
+What the command receives:
+
+| Field                                                                                                                     | Value                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `session_id`, `session_name`, `prompt_id`, `transcript_path`, `version`                                                   | The conversation, its title, the prompt being answered, its transcript file, the Claude Code release                                                                                                                                                                                                                                                                                  |
+| `cwd`, `workspace.current_dir`, `project_dir`, `added_dirs`                                                               | The conversation's folder and the folders your settings add                                                                                                                                                                                                                                                                                                                           |
+| `workspace.repo`, `workspace.git_worktree`                                                                                | Read from git: the `origin` remote, and the linked worktree's name; absent outside a repository                                                                                                                                                                                                                                                                                       |
+| `model.id`, `model.display_name`                                                                                          | The route's model and its catalog name (the id when the catalog does not know it)                                                                                                                                                                                                                                                                                                     |
+| `cost.total_cost_usd`, `cost.total_duration_ms`                                                                           | Spend of the active branch, and the time since the conversation was created                                                                                                                                                                                                                                                                                                           |
+| `context_window.*`, `exceeds_200k_tokens`                                                                                 | From the last model request; `current_usage` and the percentages are `null` before the first request and after a compaction                                                                                                                                                                                                                                                           |
+| `prompt_cache.warm`, `ttl`, `expires_at`, `recache_tokens_if_cold`, `caching_observed`, `hit_ratio`, `cache_write_tokens` | `warm` is true while the last response read or wrote cache and is inside its lifetime (`ttl` `5m`, or `1h` after a long write); `expires_at` is when it goes cold (epoch seconds, `null` when that response used no cache), `recache_tokens_if_cold` the size of the last request. The rest is session-wide, from the counts the responses reported. Absent before the first response |
+| `effort.level`, `thinking.enabled`, `fast_mode`, `output_style.name`, `agent.name`                                        | The route's reasoning level, whether it reasons, `false` (no fast mode), your output style, a non-default agent                                                                                                                                                                                                                                                                       |
+
+Fields Localix cannot know are left out rather than filled with a placeholder: `pr`, `rate_limits`,
+`vim`, `worktree`, `cost.total_lines_added`, `cost.total_lines_removed` and
+`cost.total_api_duration_ms`. Read them with a fallback, as Claude Code's own examples do.
+
+It runs when the conversation opens, after a new message, a mode change or a compaction (300 ms
+after the last change, so a burst is one run), at once when you change `command` in your settings,
+and every `refreshInterval` seconds (at least 1) while you look at the conversation. A newer run
+cancels one still going. `padding` indents every row. A command that fails or prints nothing clears
+the line. `COLUMNS` is 120 and `LINES` is 1; the area is not a terminal of its own, so a script
+cannot measure it. A `subagentStatusLine` in your own settings rewrites the subagent rows, over a
+plugin's; those rows are drawn as plain text, without colors or links.
+
+![A statusLine command's two colored rows and a link, under the message box](../assets/screenshots/composer/status-line--2026-10-27.png)
 
 ## Limits
 
@@ -133,3 +160,4 @@ These keys and sources do not change Localix:
 - [Settings hooks](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/cc-settings/settings-hooks.ts)
 - [Claude Code MCP servers](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mcp/claude-code-servers.ts)
 - [Status line](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/status-line.ts)
+- [Status line input](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/status-line-input.ts)

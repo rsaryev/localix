@@ -1,3 +1,4 @@
+import { TOOL } from '../agent-core/tool-names'
 import { join, resolve } from 'node:path'
 
 import { isRecord } from '../../lib/record'
@@ -91,8 +92,8 @@ export function settingsPermissionRules(
   return out
 }
 
-const READ_TOOLS = new Set(['read', 'search'])
-const EDIT_TOOLS = new Set(['edit', 'write'])
+const READ_TOOLS = new Set<string>([TOOL.Read, TOOL.Search])
+const EDIT_TOOLS = new Set<string>([TOOL.Edit, TOOL.Write])
 /** A Bash parameter a rule can name (`Bash(run_in_background:true)`); `ls:*` is a prefix. */
 const BASH_PARAMS = /^(run_in_background|timeout|description|dangerouslyDisableSandbox)\s*:\s*(.*)$/
 const PARAM = /^([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.*)$/
@@ -126,11 +127,10 @@ function namesTool(rule: CcPermissionRule, call: CcCallFacts): boolean {
   if (rule.tool === 'Read')
     return (
       READ_TOOLS.has(call.toolName) ||
-      (guards && (EDIT_TOOLS.has(call.toolName) || call.toolName === 'bash'))
+      (guards && (EDIT_TOOLS.has(call.toolName) || call.toolName === 'Bash'))
     )
   if (rule.tool === 'Edit' || rule.tool === 'MultiEdit')
-    return EDIT_TOOLS.has(call.toolName) || (guards && call.toolName === 'bash')
-  if (rule.tool === 'Agent' || rule.tool === 'Task') return call.toolName === 'delegate'
+    return EDIT_TOOLS.has(call.toolName) || (guards && call.toolName === 'Bash')
   return local === call.toolName
 }
 
@@ -147,15 +147,15 @@ function coversCall(rule: CcPermissionRule, call: CcCallFacts): boolean {
   const spec = rule.specifier
   // Localix reads pages and searches with one tool: `WebFetch` is about the pages it reads,
   // `WebSearch` about its searches.
-  if (rule.tool === 'WebFetch' && call.toolName === 'research')
+  if (rule.tool === 'WebFetch' && call.toolName === 'Research')
     if (spec === undefined) return fetchedUrls(call.input).length > 0
-  if (rule.tool === 'WebSearch' && call.toolName === 'research')
+  if (rule.tool === 'WebSearch' && call.toolName === 'Research')
     return isRecord(call.input) && fetchedUrls(call.input).length === 0
   if (spec === undefined) return true
   const input = isRecord(call.input) ? call.input : {}
   const at = { cwd: call.cwd, homeDir: call.homeDir, sourceDir: rule.sourceDir }
   if (rule.tool === 'Bash' || rule.tool === 'PowerShell') {
-    if (call.toolName !== 'bash') return false
+    if (call.toolName !== 'Bash') return false
     const param = BASH_PARAMS.exec(spec)
     if (param) return rule.effect !== 'allow' && paramMatches(param, input)
     const commands = call.commands?.length
@@ -177,10 +177,9 @@ function coversCall(rule: CcPermissionRule, call: CcCallFacts): boolean {
   const param = PARAM.exec(spec)
   if (param && rule.effect !== 'allow' && paramMatches(param, input)) return true
   if (rule.tool === 'Agent' || rule.tool === 'Task') {
-    // Only a start names a type. A call with no `agent` runs `general-purpose`, which also
-    // answers to `claude`.
-    if (input.action !== undefined && input.action !== 'start') return false
-    const named = typeof input.agent === 'string' && input.agent.trim() ? input.agent.trim() : null
+    // A call with no `subagent_type` runs `general-purpose`, which also answers to `claude`.
+    const type = input.subagent_type
+    const named = typeof type === 'string' && type.trim() ? type.trim() : null
     const types =
       named === null || named.toLowerCase() === 'claude'
         ? [named ?? 'general-purpose', 'general-purpose']

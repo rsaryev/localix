@@ -1,3 +1,4 @@
+import { TOOL } from '../../agent-core/tool-names'
 import { isAbsolute, resolve } from 'node:path'
 import type { PersistedMessage } from '../contracts'
 
@@ -7,7 +8,7 @@ import type { PersistedMessage } from '../contracts'
  * path-scoped rule and a `paths:` skill when Claude works with a matching file; Localix reads the
  * same fact from the session's history, so nothing extra is stored and a rebuilt run agrees.
  */
-const FILE_TOOLS = new Set(['read', 'write', 'edit'])
+const FILE_TOOLS = new Set<string>([TOOL.Read, TOOL.Write, TOOL.Edit])
 
 const isRecord = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v)

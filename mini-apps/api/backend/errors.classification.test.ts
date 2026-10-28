@@ -50,9 +50,8 @@ function stub() {
     new Promise<Response>((resolve, reject) => {
       const url = String(input)
       if (url.includes('/slow')) {
-        const t = setTimeout(() => resolve(new Response('late')), 5_000)
+        // Never answers: only the abort ends it.
         init?.signal?.addEventListener('abort', () => {
-          clearTimeout(t)
           reject(new DOMException('aborted', 'AbortError'))
         })
       } else if (url.includes('/loop')) {

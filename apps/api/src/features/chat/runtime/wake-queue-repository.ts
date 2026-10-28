@@ -72,30 +72,6 @@ export function createDatabaseWakeQueueStore<TPayload = unknown>(
       })
     },
 
-    async setPriorities(userId, sessionId, updates) {
-      if (updates.length === 0) return true
-      return db
-        .transaction()
-        .execute(async (trx) => {
-          for (const update of updates) {
-            const result = await trx
-              .updateTable('agent_queue_items')
-              .set({ priority: update.priority })
-              .where('user_id', '=', userId)
-              .where('session_id', '=', sessionId)
-              .where('id', '=', update.id)
-              .where('state', '=', 'pending')
-              .executeTakeFirst()
-            if (Number(result.numUpdatedRows) !== 1) throw leaseConflict
-          }
-          return true
-        })
-        .catch((error) => {
-          if (error === leaseConflict) return false
-          throw error
-        })
-    },
-
     async updatePending(userId, sessionId, id, priority, payload) {
       if (!Number.isFinite(priority)) throw new Error('Invalid priority')
       const result = await db
@@ -218,7 +194,6 @@ export function createDatabaseWakeQueueStore<TPayload = unknown>(
                 assistant_message_id: starting.assistantMessageId,
                 user_id: userId,
                 session_id: sessionId,
-                agent_id: starting.agentId,
                 created_at: starting.at,
               })
               .onConflict((oc) => oc.column('assistant_message_id').doNothing())

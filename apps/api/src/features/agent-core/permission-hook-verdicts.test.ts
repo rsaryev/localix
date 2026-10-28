@@ -3,11 +3,11 @@ import type { AgentTool } from '@localixai/agent/agents'
 
 import { createPermissionGate, type PermissionRule, type ToolFacts } from './permission-engine'
 
-const tool = { name: 'bash', mutates: true, effect: 'external' } as AgentTool & ToolFacts
+const tool = { name: 'Bash', mutates: true, effect: 'external' } as AgentTool & ToolFacts
 const bash = (action: PermissionRule['action'], extra: Partial<PermissionRule> = {}) => [
-  { permission: 'bash', pattern: '*', action, ...extra },
+  { permission: 'Bash', pattern: '*', action, ...extra },
 ]
-const call = { toolCallId: 'tc1', toolName: 'bash', input: { command: 'rm -rf build' } }
+const call = { toolCallId: 'tc1', toolName: 'Bash', input: { command: 'rm -rf build' } }
 
 describe('a refusal made without asking anyone goes past the PermissionDenied review', () => {
   const reviewed: string[] = []
@@ -23,7 +23,7 @@ describe('a refusal made without asking anyone goes past the PermissionDenied re
         message: 'Plan mode is read-only.',
         personMessage: 'Plan mode is read-only',
       }),
-      toolsByName: new Map([['bash', tool]]),
+      toolsByName: new Map([['Bash', tool]]),
       reviewAutomaticDenial: review,
     })
     expect((await gate(call))?.blockedMessage).toBe('Plan mode is read-only.\n[you may retry]')
@@ -34,7 +34,7 @@ describe('a refusal made without asking anyone goes past the PermissionDenied re
     reviewed.length = 0
     const gate = createPermissionGate({
       rules: bash('ask'),
-      toolsByName: new Map([['bash', tool]]),
+      toolsByName: new Map([['Bash', tool]]),
       reviewAutomaticDenial: review,
     })
     expect((await gate(call))?.blockedMessage).toContain('[you may retry]')
@@ -45,7 +45,7 @@ describe('a refusal made without asking anyone goes past the PermissionDenied re
     reviewed.length = 0
     const gate = createPermissionGate({
       rules: bash('deny', { message: 'No.' }),
-      toolsByName: new Map([['bash', tool]]),
+      toolsByName: new Map([['Bash', tool]]),
       reviewAutomaticDenial: review,
     })
     expect((await gate(call))?.blockedMessage).toBe('No.')
@@ -57,7 +57,7 @@ describe('a card a PermissionRequest hook answered', () => {
   const gateAnswering = (outcome: { approved: boolean; message?: string }) =>
     createPermissionGate({
       rules: bash('ask'),
-      toolsByName: new Map([['bash', tool]]),
+      toolsByName: new Map([['Bash', tool]]),
       requestConfirm: async (_card, raw) => {
         // The hook judges the call itself: the raw input travels beside the card, not on it.
         expect(raw?.input).toEqual(call.input)

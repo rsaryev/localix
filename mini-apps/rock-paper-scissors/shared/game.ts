@@ -33,8 +33,8 @@ export type Player = (typeof PLAYERS)[number]
 export { agentWaitSchema, type AgentWait }
 
 /**
- * Who fills the `agent` seat at this table (`@localixai/mini-app-sdk/opponent`): the agent in the
- * chat, or the host's decision model. The seat — its sealed move, its side of the score — is the
+ * Who fills the `agent` side at this table (`@localixai/mini-app-sdk/opponent`): the agent in the
+ * chat, or the host's decision model. The side — its sealed move, its side of the score — is the
  * same either way; only who chooses differs.
  */
 export { OPPONENTS, type Opponent }
@@ -75,7 +75,7 @@ export const gameSchema = z.object({
   history: z.array(roundSchema).max(HISTORY_LIMIT),
   waiting: agentWaitSchema.nullable(),
   record: recordSchema,
-  /** Who plays the other seat; carried from round to round; null until the table settles it. */
+  /** Who plays the other side; carried from round to round; null until the table settles it. */
   opponent: opponentSchema,
   startedAt: z.string(),
 })

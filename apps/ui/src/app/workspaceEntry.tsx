@@ -21,7 +21,10 @@ import { finishTerminalTabs } from '@/features/terminal/model/deadTerminalTabs'
 import { ChatSurface } from '@/widgets/chat-workspace/ui/ChatSurface'
 import { inspectorSessionPreviews } from '@/features/inspector/model/sessionPreviewRouters'
 import { registerCompletionWorkingSet } from '@/shared/api/completionWorkingSet'
-import { workspaceCompletionWorkingSet } from '@/entities/workspace-grid/model/completionWorkingSet'
+import {
+  subscribeWorkspaceWorkingSet,
+  workspaceCompletionWorkingSet,
+} from '@/entities/workspace-grid/model/completionWorkingSet'
 import { restoreShellFrame } from '@/entities/chat/model/restoreShellFrame'
 import { waitForRuntimeCapabilities } from '@/shared/contrib/runtimeCapabilityReadiness'
 import { tauriFrontendLog } from '@/shared/lib/tauri'
@@ -79,8 +82,9 @@ registerChatSurface(ChatSurface)
 provideMiniAppDesktopApps(standaloneDesktopApps)
 terminalBus.setFinisher(finishTerminalTabs)
 // Every completion surface (composer, commit subject, mini app fields, the code editor) carries
-// what is open on screen; the grid is the one thing that knows it.
-registerCompletionWorkingSet(workspaceCompletionWorkingSet)
+// what is open on screen; the grid is the one thing that knows it, and says when it moved (the
+// Store's recommendations report it again).
+registerCompletionWorkingSet(workspaceCompletionWorkingSet, subscribeWorkspaceWorkingSet)
 // Before the first render, not after the first response: the workbench shell is restored
 // from the previous launch so React's first commit already has the session roster and the
 // capability set. Without this the sidebar and the activity rail render EMPTY and fill in

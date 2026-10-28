@@ -11,7 +11,7 @@ import { maxTurnsChoices, maxTurnsLabel } from './model-select/modelSettingChoic
 
 export { maxTurnsLabel }
 
-/** A model setting for the selected participant, with an explicit inherited default. */
+/** A model setting for the selected agent, with an explicit inherited default. */
 export function MaxTurnsControl({
   value,
   inherited = DEFAULT_MAX_TURNS,

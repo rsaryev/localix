@@ -122,6 +122,7 @@ export function Board({
   return (
     <div
       ref={boardRef}
+      // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a keyboard-played board: the arrow keys act on it, so it must be the focus target; role="application" is the ARIA role for exactly that
       tabIndex={0}
       role="application"
       aria-label={boardLabel(game.board)}

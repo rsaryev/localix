@@ -14,7 +14,7 @@ import {
   extractCallFacts,
   type PermissionRule,
 } from '../../../agent-core/permission-engine'
-import { delegatePermissionResources } from '../../../agent-core/tools/delegate'
+import { agentPermissionResources } from '../../../agent-core/tools/agent/agent-tool'
 import { skillPermissionResources } from '../../../agent-core/tools/skill'
 import { researchPermissionResources } from '../../../agent-core/tools/web/research-resources'
 import { skillPermissionRules } from './permission-gate-build'
@@ -23,9 +23,9 @@ const root = '/work/app'
 /** The authored list asks about everything; only a grant can answer a call. */
 const ASK: PermissionRule[] = [{ permission: '*', pattern: '*', action: 'ask' }]
 const TOOLS = {
-  research: { permissionResources: researchPermissionResources },
-  delegate: { permissionResources: delegatePermissionResources },
-  skill: { permissionResources: skillPermissionResources },
+  Research: { permissionResources: researchPermissionResources },
+  Agent: { permissionResources: agentPermissionResources },
+  Skill: { permissionResources: skillPermissionResources },
 }
 
 function granted(spec: string, toolName: string, input: Record<string, unknown>): boolean {
@@ -36,35 +36,35 @@ function granted(spec: string, toolName: string, input: Record<string, unknown>)
 
 describe('path rules', () => {
   test('a relative pattern anchors at the working directory', () => {
-    expect(granted('Read(src/**)', 'read', { path: 'src/a/b.ts' })).toBe(true)
-    expect(granted('Read(src/**)', 'read', { path: 'lib/src/b.ts' })).toBe(false)
-    expect(granted('Read(./docs/*.md)', 'read', { path: 'docs/a.md' })).toBe(true)
+    expect(granted('Read(src/**)', 'Read', { path: 'src/a/b.ts' })).toBe(true)
+    expect(granted('Read(src/**)', 'Read', { path: 'lib/src/b.ts' })).toBe(false)
+    expect(granted('Read(./docs/*.md)', 'Read', { path: 'docs/a.md' })).toBe(true)
   })
 
   test('a bare file name matches at any depth, as gitignore does', () => {
-    expect(granted('Read(.env.example)', 'read', { path: 'pkg/.env.example' })).toBe(true)
-    expect(granted('Read(*.md)', 'read', { path: 'deep/er/a.md' })).toBe(true)
-    expect(granted('Read(*.md)', 'read', { path: 'a.ts' })).toBe(false)
+    expect(granted('Read(.env.example)', 'Read', { path: 'pkg/.env.example' })).toBe(true)
+    expect(granted('Read(*.md)', 'Read', { path: 'deep/er/a.md' })).toBe(true)
+    expect(granted('Read(*.md)', 'Read', { path: 'a.ts' })).toBe(false)
   })
 
   test('`//` is the filesystem root, `~/` home, `/` the project', () => {
-    expect(granted('Read(//tmp/scratch/**)', 'read', { path: '/tmp/scratch/a' })).toBe(true)
-    expect(granted('Read(~/notes/**)', 'read', { path: `${homedir()}/notes/a.md` })).toBe(true)
+    expect(granted('Read(//tmp/scratch/**)', 'Read', { path: '/tmp/scratch/a' })).toBe(true)
+    expect(granted('Read(~/notes/**)', 'Read', { path: `${homedir()}/notes/a.md` })).toBe(true)
     expect(
-      granted('Edit(/src/**)', 'edit', { path: 'src/x.ts', old_string: 'a', new_string: 'b' }),
+      granted('Edit(/src/**)', 'Edit', { path: 'src/x.ts', old_string: 'a', new_string: 'b' }),
     ).toBe(true)
-    expect(granted('Read(/src/**)', 'read', { path: '/src/x.ts' })).toBe(false)
+    expect(granted('Read(/src/**)', 'Read', { path: '/src/x.ts' })).toBe(false)
   })
 
   test('Edit covers write, Read covers search; Write and Glob path rules match nothing', () => {
-    expect(granted('Edit(docs/**)', 'write', { path: 'docs/n.md', content: 'x' })).toBe(true)
-    expect(granted('Read(src/**)', 'search', { query: 'x', path: 'src' })).toBe(true)
-    expect(granted('Write(docs/**)', 'write', { path: 'docs/n.md', content: 'x' })).toBe(false)
-    expect(granted('Edit', 'write', { path: 'anywhere.md', content: 'x' })).toBe(true)
+    expect(granted('Edit(docs/**)', 'Write', { path: 'docs/n.md', content: 'x' })).toBe(true)
+    expect(granted('Read(src/**)', 'Search', { query: 'x', path: 'src' })).toBe(true)
+    expect(granted('Write(docs/**)', 'Write', { path: 'docs/n.md', content: 'x' })).toBe(false)
+    expect(granted('Edit', 'Write', { path: 'anywhere.md', content: 'x' })).toBe(true)
   })
 
   test('braces expand', () => {
-    expect(granted('Read(src/*.{ts,tsx})', 'read', { path: 'src/a.tsx' })).toBe(true)
+    expect(granted('Read(src/*.{ts,tsx})', 'Read', { path: 'src/a.tsx' })).toBe(true)
   })
 })
 
@@ -72,27 +72,27 @@ describe('named resources', () => {
   test('WebFetch(domain:…) matches the host, case-insensitive, `*.` only subdomains', () => {
     const fetch = (url: string) => ({ question: 'q', urls: [url] })
     expect(
-      granted('WebFetch(domain:Example.com)', 'research', fetch('https://example.com/a')),
+      granted('WebFetch(domain:Example.com)', 'Research', fetch('https://example.com/a')),
     ).toBe(true)
     expect(
-      granted('WebFetch(domain:*.example.com)', 'research', fetch('https://a.b.example.com')),
+      granted('WebFetch(domain:*.example.com)', 'Research', fetch('https://a.b.example.com')),
     ).toBe(true)
     expect(
-      granted('WebFetch(domain:*.example.com)', 'research', fetch('https://example.com')),
+      granted('WebFetch(domain:*.example.com)', 'Research', fetch('https://example.com')),
     ).toBe(false)
     expect(
-      granted('WebFetch(domain:example.*)', 'research', fetch('https://example.evil.com')),
+      granted('WebFetch(domain:example.*)', 'Research', fetch('https://example.evil.com')),
     ).toBe(false)
-    expect(granted('WebFetch(domain:example.com)', 'research', { question: 'web search' })).toBe(
+    expect(granted('WebFetch(domain:example.com)', 'Research', { question: 'web search' })).toBe(
       false,
     )
   })
 
   test('Agent(<type>) names the agent; Skill(<name>) the skill', () => {
-    expect(granted('Agent(Explore)', 'delegate', { task: 't', agent: 'Explore' })).toBe(true)
-    expect(granted('Agent(Explore)', 'delegate', { task: 't', agent: 'Plan' })).toBe(false)
-    expect(granted('Skill(deploy)', 'skill', { action: 'get', name: 'deploy' })).toBe(true)
-    expect(granted('Skill(deploy)', 'skill', { action: 'get', name: 'other' })).toBe(false)
+    expect(granted('Agent(Explore)', 'Agent', { prompt: 't', subagent_type: 'Explore' })).toBe(true)
+    expect(granted('Agent(Explore)', 'Agent', { prompt: 't', subagent_type: 'Plan' })).toBe(false)
+    expect(granted('Skill(deploy)', 'Skill', { action: 'get', name: 'deploy' })).toBe(true)
+    expect(granted('Skill(deploy)', 'Skill', { action: 'get', name: 'other' })).toBe(false)
   })
 
   test('a bare mcp__<server> names every tool of that server', () => {

@@ -1,6 +1,6 @@
 /**
  * A stand-in for `llama-server` in process tests: same flags it is started with, same
- * `/health` and `/v1/embeddings` contract, deterministic vectors. Test-only.
+ * `/health`, `/models` and `/v1/embeddings` contract, deterministic vectors. Test-only.
  */
 const args = process.argv.slice(2)
 const flag = (name: string) => args[args.indexOf(name) + 1]
@@ -16,6 +16,8 @@ Bun.serve({
     if (url.pathname === '/health') return Response.json({ status: 'ok' })
     if (req.headers.get('authorization') !== `Bearer ${key}`)
       return new Response('unauthorized', { status: 401 })
+    // Router mode's model list, which a reload request also goes through.
+    if (url.pathname === '/models') return Response.json({ data: [] })
     const body = (await req.json()) as { input: string[] }
     if (body.input.includes('CRASH')) process.exit(9)
     return Response.json({

@@ -8,6 +8,10 @@ import { parseSquares } from '../shared/notation'
 import { ANSWER_TOOLS } from './ask-agent'
 import { createGameService } from './game-service'
 
+const turns = async (n = 10) => {
+  for (let i = 0; i < n; i++) await new Promise((r) => setImmediate(r))
+}
+
 const roots: string[] = []
 afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true })
@@ -112,7 +116,7 @@ describe('a person’s move wakes the chat the board belongs to', () => {
       wake: () => new Promise((resolve) => (release = resolve)),
     })
     const pending = games.personMove(S1, OPEN)
-    await Bun.sleep(10)
+    await turns()
     await games.agentMove(S1, REPLY)
     release({ status: 'missed', reason: 'gone' })
     expect((await pending).waiting).toBeNull()

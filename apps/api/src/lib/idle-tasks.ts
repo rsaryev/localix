@@ -58,7 +58,7 @@ const nextMacrotask = (): Promise<void> => new Promise((resolve) => setImmediate
  * due, or once `maxWaitMs` has passed. Timer drift is the measure because the thing idle work
  * competes with is main-thread time, which is exactly what delays a timer.
  */
-export async function waitForQuietLoop(options: {
+async function waitForQuietLoop(options: {
   quietMs: number
   quietLagMs: number
   maxWaitMs: number

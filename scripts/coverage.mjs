@@ -22,6 +22,7 @@ import { changedLines, evaluate, ratchet } from './coverage-gate/gates.mjs'
 import { hasRuntimeCode, mergeCoverage, ownCoverage, parseLcov } from './coverage-gate/lcov.mjs'
 import { coverageRuns } from './coverage-gate/runs.mjs'
 import { repoRoot as findRepoRoot } from './lib/paths.mjs'
+import { workingTreeFiles } from './lib/working-tree-files.mjs'
 
 const repoRoot = findRepoRoot()
 
@@ -40,10 +41,7 @@ function git(args) {
  * The working tree's files: tracked ones and new ones not yet added, minus the ignored and the ones
  * deleted but not yet committed.
  */
-const trackedFiles = () =>
-  git(['ls-files', '--cached', '--others', '--exclude-standard'])
-    .split('\n')
-    .filter((file) => file && existsSync(join(repoRoot, file)))
+const trackedFiles = () => workingTreeFiles(repoRoot)
 
 /** Every workspace package with a `test` script, keyed by its directory. */
 export function testedPackages(files = trackedFiles()) {
@@ -230,7 +228,7 @@ async function main(argv) {
         ? [
             ...config.unloaded.filter((file) => !only.some((dir) => file.startsWith(`${dir}/`))),
             ...next.unloaded,
-          ].sort()
+          ].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
         : next.unloaded
       writeFileSync(
         CONFIG_PATH,

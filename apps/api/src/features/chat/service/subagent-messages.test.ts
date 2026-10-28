@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test } from 'bun:test'
 
 import { ApiError } from '../../../lib/errors'
 import { sessionFixture } from '../../../testing/session-fixture'
+import { DELEGATION_SLOT_CAP } from '../../agent-core/delegation-budget'
 import { __resetDelegationLanes, releaseLane, requestLane } from '../../agent-core/delegation-lanes'
 import { __resetExpectedReports, takeExpectedReport } from '../../agent-core/delegation-awaits'
 import {
@@ -56,9 +57,9 @@ function host(
   return { ctx: ctx as never, woken, stopped, patches }
 }
 
-/** Three other children of the same parent hold every lane. */
+/** Other children of the same parent hold every lane. */
 const fillLanes = () => {
-  for (const sibling of ['s1', 's2', 's3']) requestLane('root', sibling, () => {})
+  for (let i = 1; i <= DELEGATION_SLOT_CAP; i++) requestLane('root', `s${i}`, () => {})
 }
 
 describe('a delegator message to its child', () => {

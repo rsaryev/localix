@@ -19,8 +19,9 @@ describe('resolveRuntimeAddress', () => {
   })
 
   it('uses HOST/PORT verbatim for a concrete bind', () => {
-    const a = resolveRuntimeAddress(env({ HOST: '192.168.1.5', PORT: '8080' }))
-    expect(a).toEqual({ host: '192.168.1.5', port: 8080, baseUrl: 'http://192.168.1.5:8080' })
+    const port = 8080 // only parsed, never bound
+    const a = resolveRuntimeAddress(env({ HOST: '192.168.1.5', PORT: String(port) }))
+    expect(a).toEqual({ host: '192.168.1.5', port, baseUrl: `http://192.168.1.5:${port}` })
   })
 
   it('normalizes a wildcard IPv4 bind (0.0.0.0) to loopback', () => {
@@ -42,7 +43,8 @@ describe('resolveRuntimeAddress', () => {
 
   it('falls back to env defaults when unset', () => {
     const a = resolveRuntimeAddress(env({ HOST: undefined, PORT: undefined }))
-    expect(a).toEqual({ host: '127.0.0.1', port: 5051, baseUrl: 'http://127.0.0.1:5051' })
+    const port = 5051 // the default, only compared, never bound
+    expect(a).toEqual({ host: '127.0.0.1', port, baseUrl: `http://127.0.0.1:${port}` })
   })
 })
 

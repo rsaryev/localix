@@ -27,7 +27,6 @@ import { judgeTurnBoundary } from './stop'
 import { streamTurn } from './turn'
 import { toRunTool, type CallEnvironment, type RunTool } from './tools/call'
 import { createToolNaming } from './tools/naming'
-import { createNestedCalls } from './tools/nested'
 import { createToolRoster } from './tools/roster'
 import { refuseTruncatedCalls, runToolBatch, type SettledCall } from './tools/schedule'
 
@@ -57,7 +56,6 @@ export async function runLoop(input: LoopInput, run: RunContext): Promise<AgentR
     context: input.toolExecutionContext,
     beforeToolCall: input.beforeToolCall,
     afterToolCall: input.afterToolCall,
-    callToolFor: createNestedCalls(() => env, signal, emit, input.shouldDeferToolCalls),
     stopGraceMs: input.stopGraceMs,
   }
   const conversation: AgentMessage[] = [...input.messages]

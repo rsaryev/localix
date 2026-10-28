@@ -82,6 +82,7 @@ export const ReaderSelectionToolbar = forwardRef<HTMLDivElement, ReaderSelection
     }
 
     return (
+      // oxlint-disable-next-line jsx-a11y/interactive-supports-focus -- the toolbar pattern: the buttons inside are the focus stops and hand their arrow keys up; the container itself is never focused
       <div
         ref={ref}
         role="toolbar"

@@ -63,7 +63,7 @@ describe('task-aware reasoning settings', () => {
     expect(liveRouteModel(models, [a, b], null, 'a-live')).toBeNull()
   })
 
-  test('marks the active participant model rather than the first session model', () => {
+  test('marks the active agent model rather than the first session model', () => {
     const reviewer = {
       connection: { id: 'shared-connection' },
       model: { id: 'reviewer-model' },

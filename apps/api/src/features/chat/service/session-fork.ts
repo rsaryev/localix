@@ -62,13 +62,12 @@ export async function forkSession(
     executionBackend: source.executionBackend,
     executionTarget: source.executionTarget,
     pinnedSkills: source.pinnedSkills,
-    // A fork is the same conversation with the same people, each still on the model they were
-    // on — but only what the SOURCE chose is copied as a choice (`chosenRoute`). A model the
-    // source was merely inheriting resolves the same way for the fork, and stays inherited
-    // instead of being frozen into the branch at the moment it was taken.
-    agents: source.agents.map(chosenRoute),
+    // A fork is the same conversation with the same agent, still on the model it was on — but
+    // only what the SOURCE chose is copied as a choice (`chosenRoute`). A model the source was
+    // merely inheriting resolves the same way for the fork, and stays inherited instead of being
+    // frozen into the branch at the moment it was taken.
+    agent: source.agent ? chosenRoute(source.agent) : null,
     description: source.description,
-    avatar: source.avatar,
     // A branch inherits the tools its source had already put on the wire; re-activating them would
     // be the first thing the model had to do otherwise.
     activatedTools: source.activatedTools,

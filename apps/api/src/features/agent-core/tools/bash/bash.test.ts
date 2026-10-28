@@ -265,8 +265,29 @@ describe('bashInputSchemaFor', () => {
   })
 })
 
+/**
+ * A shell for the batch tests below, answered at once: `echo <text>`, `fill <char> <bytes>` and
+ * `exit <code>`, joined by `;`. What they pin is how a batch summarises, bounds and judges its
+ * commands; spawning real shells only made them slow enough to time out on a busy machine.
+ */
+const scriptedShell = {
+  exec: async (command: string) => {
+    let stdout = ''
+    for (const step of command.split(';').map((part) => part.trim())) {
+      const [verb, ...args] = step.split(' ')
+      if (verb === 'echo') stdout += `${args.join(' ')}\n`
+      else if (verb === 'fill') stdout += args[0]!.repeat(Number(args[1]))
+      else if (verb === 'exit') return { stdout, stderr: '', exitCode: Number(args[0]) }
+    }
+    return { stdout, stderr: '', exitCode: 0 }
+  },
+  readFile: async () => '',
+  writeFile: async () => {},
+  searchFiles: async () => '',
+}
+
 describe('bash batch summarizes keep_going failures', () => {
-  const tool = createBashTool(undefined, process.cwd())
+  const tool = createBashTool(scriptedShell as never, process.cwd())
 
   test('a failure among successes is named at the end, not left in the noise', async () => {
     const r = await tool.execute('b1', {
@@ -291,7 +312,7 @@ describe('bash batch summarizes keep_going failures', () => {
 })
 
 describe('bash batch isError semantics under keep_going', () => {
-  const tool = createBashTool(undefined, process.cwd())
+  const tool = createBashTool(scriptedShell as never, process.cwd())
 
   /**
    * bash's details are a discriminated union — a command result, or a terminal
@@ -429,9 +450,9 @@ describe('bash batch has a wall-clock budget', () => {
  * turn until compaction.
  */
 describe('bash batch bounds its TOTAL model-facing output', () => {
-  const tool = createBashTool(undefined, process.cwd())
+  const tool = createBashTool(scriptedShell as never, process.cwd())
   // ~150KB each: comfortably past the per-command cap, so every block is full-size.
-  const noisy = (tag: string) => `echo ${tag}; head -c 150000 /dev/zero | tr '\\0' 'x'`
+  const noisy = (tag: string) => `echo ${tag}; fill x 150000`
 
   test("a small batch is untouched — every command's output is still there", async () => {
     const r = await tool.execute('bud-small', {
@@ -452,7 +473,7 @@ describe('bash batch bounds its TOTAL model-facing output', () => {
     expect(r.content.length).toBeLessThan(BATCH_OUTPUT_BUDGET_BYTES + 20_000)
     expect(r.content).toContain('output budget')
     expect(r.content).toContain('command(s) omitted')
-  }, 60_000)
+  })
 
   test('every exit status survives the elision — that is what a batch is for', async () => {
     const r = await tool.execute('bud-status', {
@@ -461,18 +482,12 @@ describe('bash batch bounds its TOTAL model-facing output', () => {
     })
     // One `$ <command>` header and one status per command, elided or not.
     expect(r.content.split('[ok,').length - 1).toBe(5)
-  }, 60_000)
+  })
 
   test('a FAILED command keeps its output while successes are elided', async () => {
     // The failure sits LAST, after four noisy successes would already have spent the budget.
     const r = await tool.execute('bud-fail', {
-      commands: [
-        noisy('ok1'),
-        noisy('ok2'),
-        noisy('ok3'),
-        noisy('ok4'),
-        `head -c 150000 /dev/zero | tr '\\0' 'y'; exit 7`,
-      ],
+      commands: [noisy('ok1'), noisy('ok2'), noisy('ok3'), noisy('ok4'), `fill y 150000; exit 7`],
       keep_going: true,
     })
     // Locate the failing command's OWN block. Asserting on a marker string would not work: the
@@ -487,18 +502,18 @@ describe('bash batch bounds its TOTAL model-facing output', () => {
     expect(failingBlock).toContain('yyy')
     // …and the successes it displaced really were elided.
     expect(r.content).toContain('output omitted (batch output budget spent)')
-  }, 60_000)
+  })
 
   test('a one-command batch is never elided, however loud the command', async () => {
     // The per-command cap already holds ONE block near 51KB, so a lone command cannot reach the
     // batch budget — this pins that a single-entry batch behaves exactly like the single-command
     // path, which is the shape the budget must not disturb.
     const r = await tool.execute('bud-one', {
-      commands: [`head -c 400000 /dev/zero | tr '\\0' 'z'`],
+      commands: [`fill z 400000`],
     })
     expect(r.content).toContain('zzz')
     expect(r.content).not.toContain('output omitted')
-  }, 60_000)
+  })
 
   test('the UI card is NOT elided — only what is re-sent to the model', async () => {
     // `modelFacingOutput`'s documented split: details.output keeps the wider raw cap.
@@ -509,5 +524,5 @@ describe('bash batch bounds its TOTAL model-facing output', () => {
     const details = r.details as BashToolDetails
     expect(details.output.length).toBeGreaterThan(r.content.length)
     expect(details.output).not.toContain('output omitted (batch output budget spent)')
-  }, 60_000)
+  })
 })

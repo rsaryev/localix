@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useChatStore } from '@/entities/chat/model/store'
 import {
   loadScopeLocation,
@@ -11,7 +11,6 @@ import {
   loadLastWorkspace,
 } from '@/entities/chat/model/persistence'
 import { LAUNCH_RESTORE_WAIT_MS, resolveLaunchRestore } from '@/entities/chat/model/launchRestore'
-import { findSessionInState } from '@/entities/chat/model/findSession'
 import { scopePath } from '@/shared/routing/routes'
 import { composerBus } from '@/shared/lib/composerBus'
 import { startStartupRetry } from '@/shared/lib/startupRetry'
@@ -29,7 +28,6 @@ interface UrlStoreSyncOptions {
   routeSessionId: string | null
   sectionId: string | null
   routeProjectId: string | null
-  isLegacyRoute: boolean
   isHomeRoute: boolean
   /** The URL is the bare index (`/`) — a true cold launch, NOT `/global`. Only this
    *  triggers the launch-time "reopen the last project workspace" restore. */
@@ -48,7 +46,7 @@ interface UrlStoreSyncOptions {
 /**
  * URL↔store synchronization for the chat workspace. The URL is the single source
  * of truth for navigation; navigators write to it and these effects sync the
- * Zustand data store FROM the URL (one-way), plus normalization/legacy/home
+ * Zustand data store FROM the URL (one-way), plus normalization/home
  * redirects and per-scope section+sidebar memory.
  *
  * Extracted verbatim from ChatPage (byte-identical effect order, deps, and ref
@@ -62,7 +60,6 @@ export function useUrlStoreSync(opts: UrlStoreSyncOptions): void {
     routeSessionId,
     sectionId,
     routeProjectId,
-    isLegacyRoute,
     isHomeRoute,
     isColdIndex,
     activeSessionId,
@@ -76,10 +73,10 @@ export function useUrlStoreSync(opts: UrlStoreSyncOptions): void {
     createSession,
   } = opts
   const goReplace = nav.goReplace
-  useDeadProjectRoute(routeProjectId, hasHydrated && !isHomeRoute && !isLegacyRoute, goReplace)
+  useDeadProjectRoute(routeProjectId, hasHydrated && !isHomeRoute, goReplace)
 
   // One-time normalization after hydration: when the URL is underspecified
-  // (root `/` or `/chat` without a session), stamp the store's remembered
+  // (root `/` without a session), stamp the store's remembered
   // session + project into the URL so the URL — not localStorage — becomes the
   // source of truth. We then skip the matching sync pass so the absent project
   // isn't misread as an explicit "clear".
@@ -90,31 +87,13 @@ export function useUrlStoreSync(opts: UrlStoreSyncOptions): void {
     normalized.current = true
     // Home is a neutral landing — handled by the dedicated home-clear effect
     // below, never the remembered-session redirect.
-    if (isHomeRoute || isLegacyRoute) return
+    if (isHomeRoute) return
     const { activeSessionId: sid, activeProjectId: pid } = useChatStore.getState()
     if (!routeSessionId && sid && pid) {
       skipNextSync.current = true
       nav.goReplace(scopePath(pid, sid))
     }
-  }, [hasHydrated, routeSessionId, nav, isHomeRoute, isLegacyRoute])
-
-  // Legacy back-compat: an old bare `/chat/:id` link carries no scope. Resolve
-  // the session's project and redirect to the hierarchical scoped URL. A bare
-  // `/chat` with no session falls back to the neutral landing.
-  const legacyRedirecting = useRef(false)
-  useEffect(() => {
-    if (!hasHydrated || !isLegacyRoute || legacyRedirecting.current) return
-    legacyRedirecting.current = true
-    if (!routeSessionId) nav.goReplace('/')
-    else {
-      // Hydration is gated on listSessions, so the summary already carries the
-      // routing metadata. Fetching detail here downloaded the entire transcript
-      // only to read projectId, then URL→store fetched that body again.
-      const session = findSessionInState(useChatStore.getState(), routeSessionId)
-      nav.goReplace(session ? scopePath(session.projectId ?? null, routeSessionId, sectionId) : '/')
-    }
-    legacyRedirecting.current = false
-  }, [hasHydrated, isLegacyRoute, routeSessionId, sectionId, nav])
+  }, [hasHydrated, routeSessionId, nav, isHomeRoute])
 
   // Launch-time workspace restore ("reopen last workspace"): on a true COLD
   // start — a post-hydration pass landing on the bare index `/` — reopen the scope+chat the
@@ -223,7 +202,9 @@ export function useUrlStoreSync(opts: UrlStoreSyncOptions): void {
   // Read when the draft resolves: a slow creation must not pull back a person who has
   // already opened another chat (the sidebar is painted from the shell frame meanwhile).
   const onHomeRoute = useRef(isHomeRoute)
-  onHomeRoute.current = isHomeRoute
+  useLayoutEffect(() => {
+    onHomeRoute.current = isHomeRoute
+  }, [isHomeRoute])
   useEffect(() => {
     // A launch-time project restore just redirected off `/` — don't also mint a
     // second default-project draft this pass (isHomeRoute is still true until the URL updates).
@@ -253,8 +234,7 @@ export function useUrlStoreSync(opts: UrlStoreSyncOptions): void {
       return
     }
     // Home owns the selection (cleared above) — don't auto-select a project/session.
-    // Legacy `/chat/:id` is handled by its own redirect effect.
-    if (isHomeRoute || isLegacyRoute) return
+    if (isHomeRoute) return
     let cancelled = false
     const sessionLoad = new AbortController()
     let stopSessionRetry: (() => void) | null = null
@@ -323,16 +303,15 @@ export function useUrlStoreSync(opts: UrlStoreSyncOptions): void {
     selectSession,
     createSession,
     isHomeRoute,
-    isLegacyRoute,
     goReplace,
   ])
 
   // Normalization redirect: on a scope route with no session in the URL but a
   // resolved session in the store (e.g. after a scope switch), reflect it in the
-  // path. Keeps the scope + section. Skipped on home/legacy so it doesn't bounce
-  // the neutral landing or race the legacy redirect.
+  // path. Keeps the scope + section. Skipped on home so it doesn't bounce
+  // the neutral landing.
   useEffect(() => {
-    if (!hasHydrated || !normalized.current || isHomeRoute || isLegacyRoute) return
+    if (!hasHydrated || !normalized.current || isHomeRoute) return
     if (!routeSessionId && activeSessionId) {
       // A scope route with no session (e.g. a fresh `switchProject`) — restore the
       // FULL remembered location: the resolved session PLUS this scope's last open
@@ -343,25 +322,16 @@ export function useUrlStoreSync(opts: UrlStoreSyncOptions): void {
         nav.goReplace(scopePath(routeProjectId, activeSessionId, restoredSection))
       }
     }
-  }, [
-    hasHydrated,
-    routeSessionId,
-    activeSessionId,
-    routeProjectId,
-    sectionId,
-    nav,
-    isHomeRoute,
-    isLegacyRoute,
-  ])
+  }, [hasHydrated, routeSessionId, activeSessionId, routeProjectId, sectionId, nav, isHomeRoute])
 
   // Remember the live location per scope so a round-trip through another project
   // restores it. Recorded ONLY while a session is in the URL (the settled state) —
   // during the transient bare-scope moment of a switch, `sectionId` is null and
   // recording it would clobber the value the restore above is about to read.
   useEffect(() => {
-    if (!hasHydrated || isHomeRoute || isLegacyRoute || !routeSessionId) return
+    if (!hasHydrated || isHomeRoute || !routeSessionId) return
     rememberScopeSection(routeProjectId ?? null, sectionId)
-  }, [hasHydrated, routeProjectId, routeSessionId, sectionId, isHomeRoute, isLegacyRoute])
+  }, [hasHydrated, routeProjectId, routeSessionId, sectionId, isHomeRoute])
 
   // Per-scope left-sidebar open/closed: restore this scope's remembered state when
   // the scope changes (falling back to the global default for a never-seen scope),
@@ -377,7 +347,7 @@ export function useUrlStoreSync(opts: UrlStoreSyncOptions): void {
     if (remembered !== null) setSidebarOpen(remembered)
   }, [hasHydrated, isMobile, routeProjectId, setSidebarOpen])
   useEffect(() => {
-    if (!hasHydrated || isMobile || isHomeRoute || isLegacyRoute) return
+    if (!hasHydrated || isMobile || isHomeRoute) return
     rememberScopeSidebarOpen(routeProjectId ?? null, sidebarOpen)
-  }, [hasHydrated, isMobile, routeProjectId, sidebarOpen, isHomeRoute, isLegacyRoute])
+  }, [hasHydrated, isMobile, routeProjectId, sidebarOpen, isHomeRoute])
 }

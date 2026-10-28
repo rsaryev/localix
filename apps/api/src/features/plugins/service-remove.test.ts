@@ -154,4 +154,32 @@ describe('plugin remove', () => {
     )
     expect(listed?.enabled).toBe(false)
   })
+
+  /**
+   * The Store finds an install by `name@marketplace`. A plugin installed in Claude Code was listed
+   * as `local`, so its Store page said "not installed" and had no switch, while the plugin waited
+   * for exactly that switch before its commands could load.
+   */
+  test('a plugin installed in Claude Code is listed under its Claude Code id', async () => {
+    const installPath = join(
+      process.env.CLAUDE_CONFIG_DIR!,
+      'plugins',
+      'cache',
+      'mkt',
+      'cc-id',
+      '1.0.0',
+    )
+    await writePlugin(installPath, 'cc-id')
+    await writeFile(
+      join(process.env.CLAUDE_CONFIG_DIR!, 'plugins', 'installed_plugins.json'),
+      JSON.stringify({
+        version: 2,
+        plugins: { 'cc-id@mkt': [{ scope: 'user', installPath, version: '1.0.0' }] },
+      }),
+    )
+    const listed = (await service.listPlugins('u1', { projectId: null })).plugins.find(
+      (plugin) => plugin.name === 'cc-id',
+    )
+    expect(listed?.source).toBe('cc-id@mkt')
+  })
 })

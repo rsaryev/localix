@@ -7,8 +7,9 @@ import { useEffect, useRef, useState } from 'react'
  * the view keeps the cells it drew last and eases every segment from there to its new cell over
  * `durationMs`: progress = (now − the moment the step arrived) / durationMs, clamped, read on each
  * animation frame. A segment that is new this step (the snake grew) starts where the old tail
- * was, so the tail stays put while the body lengthens. Nothing counts in state: progress is
- * derived from a timestamp, so a dropped frame lands where it should rather than late.
+ * was, so the tail stays put while the body lengthens. Nothing counts frames: each animation frame
+ * stores its timestamp and progress is derived from it, so a dropped frame lands where it should
+ * rather than late.
  *
  * The person's snake glides over one whole tick, so its motion is continuous. The model's steps
  * arrive irregularly from the backend, so each one glides over a short fixed duration instead of
@@ -46,37 +47,58 @@ export function glidePoints(
   })
 }
 
+/** One step's glide: where it began, and the last animation frame it was drawn at. */
+interface Glide {
+  key: string
+  snake: readonly number[]
+  from: Point[]
+  /** The clock when the glide began; null until its first frame (the step is still at `from`). */
+  startedAt: number | null
+  /** The clock at the last frame. */
+  now: number
+}
+
+const progressOf = (glide: Glide, durationMs: number, instant: boolean) =>
+  instant
+    ? 1
+    : glide.startedAt === null
+      ? 0
+      : Math.min(1, Math.max(0, (glide.now - glide.startedAt) / durationMs))
+
 export function useGlide(snake: readonly number[], size: number, durationMs: number): Point[] {
   const key = snake.join(',')
-  const glide = useRef<{ key: string; from: Point[]; drawn: Point[]; startedAt: number } | null>(
-    null,
-  )
-  const [, redraw] = useState(0)
   const instant = durationMs <= 0 || reducedMotion()
+  const [glide, setGlide] = useState<Glide>(() => ({
+    key,
+    snake,
+    from: snake.map((cell) => centre(cell, size)),
+    startedAt: null,
+    now: 0,
+  }))
+  // The clock, read in the effect that starts a step — never while rendering.
+  const began = useRef<{ key: string; at: number } | null>(null)
 
-  // A new step: glide from where every segment is drawn NOW, starting now. Decided while
-  // rendering, so the first frame of the step is already its starting position, never a jump.
-  if (!glide.current || glide.current.key !== key) {
-    const drawn = glide.current?.drawn ?? snake.map((cell) => centre(cell, size))
-    glide.current = { key, from: drawn, drawn, startedAt: performance.now() }
+  // A new step: glide from where every segment is drawn NOW. Decided while rendering, so the first
+  // frame of the step is already its starting position, never a jump.
+  let current = glide
+  if (glide.key !== key) {
+    const from = glidePoints(glide.from, glide.snake, progressOf(glide, durationMs, instant), size)
+    current = { key, snake, from, startedAt: null, now: 0 }
+    setGlide(current)
   }
-  const current = glide.current
-  const progress = instant
-    ? 1
-    : Math.min(1, Math.max(0, (performance.now() - current.startedAt) / durationMs))
 
   useEffect(() => {
     if (instant) return
+    if (began.current?.key !== key) began.current = { key, at: performance.now() }
+    const startedAt = began.current.at
     let frame = 0
-    const tick = () => {
-      redraw((n) => n + 1)
-      if (performance.now() - current.startedAt < durationMs) frame = requestAnimationFrame(tick)
+    const tick = (now: number) => {
+      setGlide((previous) => (previous.key === key ? { ...previous, startedAt, now } : previous))
+      if (now - startedAt < durationMs) frame = requestAnimationFrame(tick)
     }
     frame = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(frame)
-  }, [current, durationMs, instant])
+  }, [key, durationMs, instant])
 
-  const points = glidePoints(current.from, snake, progress, size)
-  current.drawn = points
-  return points
+  return glidePoints(current.from, snake, progressOf(current, durationMs, instant), size)
 }

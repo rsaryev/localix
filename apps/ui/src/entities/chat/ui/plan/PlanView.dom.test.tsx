@@ -4,6 +4,7 @@ import type { CommentView, SessionPlan } from '@localixai/api/client'
 import type { UiSession } from '@/shared/api/contracts'
 import type { PlanDraftInfo } from '@/shared/api/plans-client'
 import type { WorkItem } from '@/shared/lib/workItem'
+import { turns as settle } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 const cleanups: Array<() => unknown> = []
@@ -22,8 +23,6 @@ afterAll(async () => {
   await teardown()
 })
 
-const settle = () => new Promise((resolve) => setTimeout(resolve, 20))
-
 const plan = (over: Partial<SessionPlan> = {}): SessionPlan => ({
   id: 'plan-2',
   sessionId: 's1',
@@ -31,7 +30,6 @@ const plan = (over: Partial<SessionPlan> = {}): SessionPlan => ({
   status: 'completed',
   title: 'Cache layer',
   body: 'Add a cache in front of the reads.',
-  authorAgentId: 'lead',
   approvedMode: 'default',
   completionSummary: 'Cache shipped behind a flag.',
   createdAt: '2026-10-03T00:00:00.000Z',

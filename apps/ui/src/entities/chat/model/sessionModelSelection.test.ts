@@ -25,26 +25,24 @@ function mapStorage(): Storage {
   } as Storage
 }
 
-/** A session's model lives on its participant, so a fixture states a party of one. */
-const withParty = (
+/** A session's model lives on its one agent. */
+const withAgent = (
   providerConnectionId: string,
   modelId: string,
   reasoningEffort: ReasoningEffort = 'low',
 ) =>
   ({
     id: 's1',
-    agents: [
-      {
-        agentId: 'builtin:localix',
-        handle: 'localix',
-        providerConnectionId,
-        modelId,
-        reasoningEffort,
-      },
-    ],
+    agent: {
+      agentId: 'builtin:localix',
+      name: 'localix',
+      providerConnectionId,
+      modelId,
+      reasoningEffort,
+    },
   }) as UiSession
 
-const baseSession = withParty('connection-old', 'old/model')
+const baseSession = withAgent('connection-old', 'old/model')
 
 let updateSpy: { mockRestore: () => void } | undefined
 // A selection persists the choice through the settings store, which debounces the write. Leaving
@@ -111,11 +109,10 @@ describe('session model selection', () => {
     const pending = actions.setModelSelection('s1', 'connection-new', 'openai/gpt-5.4')
 
     expect(update).toHaveBeenCalledTimes(1)
-    // The choice names whom it is for — in a private chat, the session's one participant.
+    // The route is the conversation's own; it names no agent.
     expect(patches).toEqual([
       {
         route: {
-          agentId: 'builtin:localix',
           providerConnectionId: 'connection-new',
           modelId: 'openai/gpt-5.4',
         },
@@ -127,7 +124,7 @@ describe('session model selection', () => {
       modelId: 'openai/gpt-5.4',
     })
 
-    resolveUpdate?.(withParty('connection-new', 'openai/gpt-5.4'))
+    resolveUpdate?.(withAgent('connection-new', 'openai/gpt-5.4'))
     await pending
   })
 
@@ -138,7 +135,7 @@ describe('session model selection', () => {
       patch: object,
     ) => {
       patches.push(patch)
-      return withParty('connection-new', 'openai/gpt-5.6', 'high')
+      return withAgent('connection-new', 'openai/gpt-5.6', 'high')
     }) as never)
     updateSpy = update
 
@@ -172,7 +169,6 @@ describe('session model selection', () => {
     expect(patches).toEqual([
       {
         route: {
-          agentId: 'builtin:localix',
           providerConnectionId: 'connection-new',
           modelId: 'openai/gpt-5.6',
           reasoningEffort: 'high',
@@ -282,7 +278,7 @@ describe('session model selection', () => {
       })
       expect(update).toHaveBeenCalledTimes(1)
 
-      resolvers[0]?.(withParty('connection-a', 'model-a'))
+      resolvers[0]?.(withAgent('connection-a', 'model-a'))
       await first
       expect(update).toHaveBeenCalledTimes(2)
       expect(sessionRoute(state.sessions[0])).toMatchObject({
@@ -292,7 +288,7 @@ describe('session model selection', () => {
       })
 
       resolvers[1]?.(
-        withParty(expectedConnection, expectedModel, change === 'reasoning' ? 'high' : 'low'),
+        withAgent(expectedConnection, expectedModel, change === 'reasoning' ? 'high' : 'low'),
       )
       await second
       expect(sessionRoute(state.sessions[0])).toMatchObject({
@@ -303,7 +299,7 @@ describe('session model selection', () => {
     },
   )
 
-  test('a failed selection does not restore a participant removed during the request', async () => {
+  test('a failed selection does not restore a participant the chat no longer has', async () => {
     let rejectUpdate!: (error: Error) => void
     updateSpy = spyOn(backendClient, 'updateSession').mockImplementation(
       () =>
@@ -328,14 +324,14 @@ describe('session model selection', () => {
     const pending = actions.setModelSelection('s1', 'connection-new', 'new/model')
     const remaining = {
       ...baseSession,
-      agents: [{ ...baseSession.agents[0]!, agentId: 'builtin:qa', handle: 'qa' }],
+      agent: { ...baseSession.agent!, agentId: 'builtin:qa', name: 'qa' },
     }
     state.sessions = [remaining]
     state.allSessions = [remaining]
     rejectUpdate(new Error('selection failed'))
     await expect(pending).rejects.toThrow('selection failed')
-    expect(state.sessions[0]!.agents).toEqual(remaining.agents)
-    expect(state.allSessions[0]!.agents).toEqual(remaining.agents)
+    expect(state.sessions[0]!.agent).toEqual(remaining.agent)
+    expect(state.allSessions[0]!.agent).toEqual(remaining.agent)
   })
 
   test('a new chat states no model and no connection, whatever the browser remembers', async () => {
@@ -419,27 +415,21 @@ describe('session model selection', () => {
       expect(created).toHaveLength(1)
       expect(created[0]).toMatchObject({
         projectId: 'PRJ-DEFAULT',
-        agentIds: ['builtin:localix'],
+        agentId: 'builtin:localix',
       })
     } finally {
       create.mockRestore()
     }
   })
 
-  test('never reuses another participant’s empty draft', async () => {
+  test('never reuses another agent’s empty draft', async () => {
     const wrongDraft = {
       ...baseSession,
       id: 'reviewer-draft',
       projectId: 'PRJ-1',
       title: 'New Chat',
       messages: [],
-      agents: [
-        {
-          ...baseSession.agents[0]!,
-          agentId: 'builtin:reviewer',
-          handle: 'reviewer',
-        },
-      ],
+      agent: { ...baseSession.agent!, agentId: 'builtin:reviewer', name: 'reviewer' },
     } as UiSession
     const create = spyOn(backendClient, 'createSession').mockResolvedValue({
       ...baseSession,
@@ -477,7 +467,7 @@ describe('session model selection', () => {
       expect(create).toHaveBeenCalledTimes(1)
       expect(create.mock.calls[0]?.[0]).toMatchObject({
         projectId: 'PRJ-1',
-        agentIds: ['builtin:localix'],
+        agentId: 'builtin:localix',
       })
     } finally {
       create.mockRestore()

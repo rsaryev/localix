@@ -13,7 +13,7 @@ import { ConflictError } from '../../../lib/domain-errors'
 import type { CcModelSwitch } from '../../cc-hooks'
 import type { CcHookSessions } from '../runtime/cc-hook-sessions'
 
-/** One participant whose model a request changes. */
+/** One agent whose model a request changes. */
 export interface ModelSwitchChange {
   fromModel: string
   toModel: string
@@ -21,19 +21,15 @@ export interface ModelSwitchChange {
   requestedModel?: string
 }
 
-/** The routes a request moves to another model, against the seats as they are now. */
+/** The model change a route request makes, against the session's route as it is now. */
 export function modelSwitches(
-  seats: readonly { agentId: string; modelId: string }[],
-  routes: readonly { agentId?: string; modelId?: string }[],
-  defaultAgentId: string | undefined,
+  current: { modelId: string } | null,
+  route: { modelId?: string } | undefined,
 ): ModelSwitchChange[] {
-  return routes.flatMap((route) => {
-    const agentId = route.agentId ?? defaultAgentId
-    const before = seats.find((seat) => seat.agentId === agentId)?.modelId ?? ''
-    return route.modelId && route.modelId !== before
-      ? [{ fromModel: before, toModel: route.modelId }]
-      : []
-  })
+  const before = current?.modelId ?? ''
+  return route?.modelId && route.modelId !== before
+    ? [{ fromModel: before, toModel: route.modelId }]
+    : []
 }
 
 const asSwitch = (change: ModelSwitchChange, source: CcModelSwitch['source']): CcModelSwitch => ({

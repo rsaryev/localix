@@ -70,8 +70,9 @@ describe('a dependency several plugins constrain', () => {
       'm',
       deps,
     ).catch((err: Error) => err)
-    expect(String(error)).toContain('"vault" has conflicting version requirements')
-    expect(String(error)).toContain('~2.1 (app-a)')
+    const message = error instanceof Error ? error.message : ''
+    expect(message).toContain('"vault" has conflicting version requirements')
+    expect(message).toContain('~2.1 (app-a)')
     expect(deps.asked).toEqual([])
   })
 })

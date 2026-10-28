@@ -96,7 +96,7 @@ const prompt = (hostRequestId: string, sessionId = 'chat-a'): PermissionPrompt =
   userId: 'user-1',
   sessionId,
   hostRequestId,
-  toolName: 'bash',
+  toolName: 'Bash',
   description: 'Run shell command',
   input: { command: 'git   push\n--force', cwd: '/repo' },
 })
@@ -115,7 +115,7 @@ describe('channel permission relay', () => {
         method: PERMISSION_REQUEST,
         params: {
           request_id: 'aaaaa',
-          tool_name: 'bash',
+          tool_name: 'Bash',
           description: 'Run shell command',
           input_preview: '{"command":"git push --force","cwd":"/repo"}',
         },

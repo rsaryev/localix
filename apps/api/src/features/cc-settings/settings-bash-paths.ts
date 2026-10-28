@@ -1,7 +1,8 @@
-import { isAbsolute, join, resolve } from 'node:path'
+import { isAbsolute, resolve } from 'node:path'
 
 import { splitCompoundCommand } from '../agent-core/tools/bash/bash-command-shape'
 import { bashRuleSubject } from './settings-bash-match'
+import { expandHome } from '../../lib/home-path'
 
 /**
  * The files a shell line names, as Claude Code's `Read` and `Edit` rules see them (permissions.md,
@@ -79,12 +80,10 @@ export interface BashFiles {
 
 export function bashFiles(commandLine: string, cwd: string, homeDir: string): BashFiles {
   const out: BashFiles = { reads: [], writes: [] }
-  const abs = (path: string) =>
-    path === '~' || path.startsWith('~/')
-      ? join(homeDir, path.slice(1))
-      : isAbsolute(path)
-        ? path
-        : resolve(cwd, path)
+  const abs = (path: string) => {
+    const expanded = expandHome(path, homeDir)
+    return isAbsolute(expanded) ? expanded : resolve(cwd, expanded)
+  }
   const subcommands = splitCompoundCommand(commandLine) ?? commandLine.split(/&&|\|\||[;|&\n]/)
   for (const sub of subcommands) {
     const words = tokens(bashRuleSubject(sub))

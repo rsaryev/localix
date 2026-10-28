@@ -6,8 +6,8 @@ import { composeCapabilities } from '../../../capabilities/resolve'
 import { availabilityOf } from '../../../capabilities/availability'
 const specialistRules = [
   { action: 'tool:*', resource: '*', effect: 'deny' as const },
-  { action: 'tool:read', resource: '*', effect: 'allow' as const },
-  { action: 'tool:mcp_resources', resource: '*', effect: 'allow' as const },
+  { action: 'tool:Read', resource: '*', effect: 'allow' as const },
+  { action: 'tool:McpResources', resource: '*', effect: 'allow' as const },
 ]
 import { createMcpHookCaller } from './mcp-hook-caller'
 

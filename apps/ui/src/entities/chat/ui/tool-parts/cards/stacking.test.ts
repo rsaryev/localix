@@ -35,46 +35,46 @@ describe('groupConsecutiveItems', () => {
   })
 
   test('a run of the same stackable tool merges into one group', () => {
-    expect(shape([tool('read', 'a'), tool('read', 'b'), tool('read', 'c')])).toEqual([
-      { name: 'read', n: 3, stackable: true },
+    expect(shape([tool('Read', 'a'), tool('Read', 'b'), tool('Read', 'c')])).toEqual([
+      { name: 'Read', n: 3, stackable: true },
     ])
   })
 
   test('a non-stackable tool never merges, even in a run', () => {
-    expect(shape([tool('bash', 'a'), tool('bash', 'b')])).toEqual([
-      { name: 'bash', n: 1, stackable: false },
-      { name: 'bash', n: 1, stackable: false },
+    expect(shape([tool('Bash', 'a'), tool('Bash', 'b')])).toEqual([
+      { name: 'Bash', n: 1, stackable: false },
+      { name: 'Bash', n: 1, stackable: false },
     ])
   })
 
   test('different tool names form separate groups', () => {
-    expect(shape([tool('read', 'a'), tool('write', 'b')])).toEqual([
-      { name: 'read', n: 1, stackable: true },
-      { name: 'write', n: 1, stackable: true },
+    expect(shape([tool('Read', 'a'), tool('Write', 'b')])).toEqual([
+      { name: 'Read', n: 1, stackable: true },
+      { name: 'Write', n: 1, stackable: true },
     ])
   })
 
   test('a break in the run starts a new group (no cross-gap merge)', () => {
     expect(
-      shape([tool('read', 'a'), tool('read', 'b'), tool('write', 'c'), tool('read', 'd')]),
+      shape([tool('Read', 'a'), tool('Read', 'b'), tool('Write', 'c'), tool('Read', 'd')]),
     ).toEqual([
-      { name: 'read', n: 2, stackable: true },
-      { name: 'write', n: 1, stackable: true },
-      { name: 'read', n: 1, stackable: true },
+      { name: 'Read', n: 2, stackable: true },
+      { name: 'Write', n: 1, stackable: true },
+      { name: 'Read', n: 1, stackable: true },
     ])
   })
 
   test('narrative items between tools are dropped, not treated as a break', () => {
     // text is filtered out entirely, so the two reads remain consecutive → one group.
-    expect(shape([tool('read', 'a'), text('t'), tool('read', 'b')])).toEqual([
-      { name: 'read', n: 2, stackable: true },
+    expect(shape([tool('Read', 'a'), text('t'), tool('Read', 'b')])).toEqual([
+      { name: 'Read', n: 2, stackable: true },
     ])
   })
 })
 
 describe('read-only folding', () => {
   test('2+ consecutive completed read-only calls of MIXED tools merge into one collapsed group', () => {
-    expect(fold([tool('read', 'a'), tool('search', 'b'), tool('read', 'c')])).toEqual([
+    expect(fold([tool('Read', 'a'), tool('Search', 'b'), tool('Read', 'c')])).toEqual([
       { n: 3, readOnly: true, collapsed: true },
     ])
   })
@@ -84,13 +84,13 @@ describe('read-only folding', () => {
   test('read-only and same-name runs both fold at 2', () => {
     expect(READ_ONLY_MIN_COUNT).toBe(2)
     expect(STACK_MIN_COUNT).toBe(2)
-    expect(fold([tool('read', 'a'), tool('search', 'b')])).toEqual([
+    expect(fold([tool('Read', 'a'), tool('Search', 'b')])).toEqual([
       { n: 2, readOnly: true, collapsed: true },
     ])
   })
 
   test('a single read-only item is never collapsed', () => {
-    expect(fold([tool('read', 'a')])).toEqual([{ n: 1, readOnly: true, collapsed: false }])
+    expect(fold([tool('Read', 'a')])).toEqual([{ n: 1, readOnly: true, collapsed: false }])
   })
 
   // A running call used to stand alone and be absorbed on completion — a row in, a row out,
@@ -98,26 +98,26 @@ describe('read-only folding', () => {
   test('a running item joins its group instead of standing apart until it completes', () => {
     expect(
       fold([
-        tool('read', 'a'),
-        tool('search', 'b'),
-        tool('read', 'c', 'running'),
-        tool('read', 'd'),
+        tool('Read', 'a'),
+        tool('Search', 'b'),
+        tool('Read', 'c', 'running'),
+        tool('Read', 'd'),
       ]),
     ).toEqual([{ n: 4, readOnly: true, collapsed: true }])
-    expect(fold([tool('write', 'a'), tool('write', 'b', 'running')])).toEqual([
+    expect(fold([tool('Write', 'a'), tool('Write', 'b', 'running')])).toEqual([
       { n: 2, readOnly: false, collapsed: true },
     ])
   })
 
   test('the group a running call joins has the same shape once it completes', () => {
-    const running = [tool('read', 'a'), tool('read', 'b', 'running')]
-    const finished = [tool('read', 'a'), tool('read', 'b')]
+    const running = [tool('Read', 'a'), tool('Read', 'b', 'running')]
+    const finished = [tool('Read', 'a'), tool('Read', 'b')]
     expect(fold(running)).toEqual(fold(finished))
   })
 
   test('a failed item breaks the group and stays visible as its own card', () => {
     expect(
-      fold([tool('read', 'a'), tool('read', 'b', 'failed'), tool('read', 'c'), tool('read', 'd')]),
+      fold([tool('Read', 'a'), tool('Read', 'b', 'failed'), tool('Read', 'c'), tool('Read', 'd')]),
     ).toEqual([
       { n: 1, readOnly: true, collapsed: false },
       { n: 1, readOnly: false, collapsed: false },
@@ -126,7 +126,7 @@ describe('read-only folding', () => {
   })
 
   test('non-completed read-only calls never merge with each other either', () => {
-    expect(fold([tool('read', 'a', 'failed'), tool('read', 'b', 'failed')])).toEqual([
+    expect(fold([tool('Read', 'a', 'failed'), tool('Read', 'b', 'failed')])).toEqual([
       { n: 1, readOnly: false, collapsed: false },
       { n: 1, readOnly: false, collapsed: false },
     ])
@@ -134,7 +134,7 @@ describe('read-only folding', () => {
 
   test('a mutating tool breaks a read-only run', () => {
     expect(
-      fold([tool('read', 'a'), tool('search', 'b'), tool('write', 'c'), tool('read', 'd')]),
+      fold([tool('Read', 'a'), tool('Search', 'b'), tool('Write', 'c'), tool('Read', 'd')]),
     ).toEqual([
       { n: 2, readOnly: true, collapsed: true },
       { n: 1, readOnly: false, collapsed: false },
@@ -143,8 +143,8 @@ describe('read-only folding', () => {
   })
 
   test('same-name stackable tools (write) collapse at STACK_MIN_COUNT', () => {
-    expect(fold([tool('write', 'a')])).toEqual([{ n: 1, readOnly: false, collapsed: false }])
-    expect(fold([tool('write', 'a'), tool('write', 'b')])).toEqual([
+    expect(fold([tool('Write', 'a')])).toEqual([{ n: 1, readOnly: false, collapsed: false }])
+    expect(fold([tool('Write', 'a'), tool('Write', 'b')])).toEqual([
       { n: 2, readOnly: false, collapsed: true },
     ])
   })

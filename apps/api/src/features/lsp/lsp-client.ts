@@ -65,7 +65,7 @@ export async function createLspClient(input: {
   initializeTimeoutMs?: number
   requestTimeoutMs?: number
   shutdownTimeoutMs?: number
-  languageIdFor?(filePath: string): string | undefined
+  languageIdFor?: (filePath: string) => string | undefined
   onDiagnosticsUpdate?: (byFile: Record<string, LspDiagnostic[]>) => void
   onReady?: () => void
   onError?: (err: unknown) => void

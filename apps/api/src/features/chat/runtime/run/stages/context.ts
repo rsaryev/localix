@@ -14,7 +14,7 @@ import type { HookRunOptions } from '../event-handlers'
 import { buildRunCcHooks } from '../cc-hooks-build'
 import { createModRunScope, NO_MODS } from '../../../../mods/run-scope'
 import { fireSessionStartHooks } from '../session-start-hooks'
-import { createParticipantLaneSnapshotRepository } from '../../../participant-lane-snapshot-repository'
+import { createSessionPromptSnapshotRepository } from '../../../session-prompt-snapshot-repository'
 import { consoleWarnLogger } from '../../plugin-hook-logger'
 import { prepareRunContext } from '../../prompt-context'
 import { capabilitiesInMode } from '../../../../capabilities/permission-mode-policy'
@@ -25,12 +25,11 @@ import { runHumanAssignedHooks } from '../../../../mini-apps/hooks'
 import type { LoadedMiniAppHook } from '../../../../mini-apps/loader-contract'
 import { publishHumanAssignment } from '../human-assignment'
 import { applyMainAgent, runToolsAgent } from '../plugin-main-agent'
-import { applySpeakerAgent, contextFilesFor } from '../speaker-agent'
+import { applyCatalogAgent, contextFilesFor } from '../catalog-agent'
 import { agentScopedHooks } from '../agent-hooks'
 import { claudeCodeHome } from '../../../../cc-settings/config-dir'
 import { claudeCodeTrusts } from '../../../../cc-settings/settings-trust'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
-import { adoptPluginAgentModel } from '../plugin-main-agent-model'
 import { reloadedSkillsNote } from '../cc-reload-skills'
 import type { ModelView } from '../../model-view/view'
 import type { RunFrame } from './frame'
@@ -39,7 +38,7 @@ import type { ResolvedTurn } from './turn'
 export type RunInputs = Awaited<ReturnType<typeof prepareRunInputs>>
 
 export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view: ModelView) {
-  const { env, params, userId, speakerAgentId, session } = frame
+  const { env, params, userId, agentId, session } = frame
   const { deps, state: runtimeState, now } = env
 
   if (!frame.isContinuation) frame.publishPhase('preparing-context')
@@ -52,12 +51,11 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
   const hookRunOptions: HookRunOptions = { sessionId: session.id, logger: consoleWarnLogger }
   const context = await prepareRunContext(
     {
-      memoryRepo: env.memoryRepo,
       projectsRepo: env.projectsRepo,
       pluginRepo: env.pluginRepo,
       miniAppRepo: env.miniAppRepo,
       contextSnapshots: runtimeState.contextSnapshots,
-      laneSnapshots: createParticipantLaneSnapshotRepository(deps.db),
+      promptSnapshots: createSessionPromptSnapshotRepository(deps.db),
       runScopes: runtimeState.runScopes,
       now,
       logger: env.deps.logger,
@@ -90,7 +88,7 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
         listAgents: async (user, projectId) =>
           ((await deps.listRegistryAgents?.(user, projectId)) ?? []).map((agent) => ({
             id: agent.agentId,
-            handle: agent.name,
+            name: agent.name,
             description: agent.description,
             enabled: agent.enabled,
           })),
@@ -112,7 +110,7 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
       userId,
       agent: { ...turn.admittedAgent, capabilities: mode.capabilities },
       session,
-      speakerAgentId,
+      agentId,
       historyMessages: params.historyMessages,
       // The prompt snapshot is frozen per view epoch (see stages/view.ts).
       viewEpoch: view.epochId,
@@ -120,11 +118,11 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
     },
   )
   const { defaultCwd, loadedPlugins, loadedMiniApps } = context
-  // The agent the seat is: a file, plugin or shipped agent runs as its definition — its prompt,
-  // tool ceiling, instruction files, compaction window and memory — whoever seated it. The default
+  // The agent the route is: a file, plugin or shipped agent runs as its definition — its prompt,
+  // tool ceiling, instruction files, compaction window and memory — whoever started it. The default
   // agent has no file; a plugin's `agent` setting is applied below.
   const typed =
-    speakerAgentId === DEFAULT_AGENT_ID ? null : applySpeakerAgent(context, turn.admittedAgent.spec)
+    agentId === DEFAULT_AGENT_ID ? null : applyCatalogAgent(context, turn.admittedAgent.spec)
   // The agent file's own run options: no instruction files, its compaction window, its memory.
   const typeOptions = typed
     ? await subagentRunOptions(typed.subagent, { projectDir: defaultCwd, homeDir: userHome() })
@@ -138,14 +136,13 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
   // `omitClaudeMd` (and the built-in Explore and Plan): no workspace instruction files.
   const contextFiles = contextFilesFor(context.contextFiles, asType?.subagent ?? null)
   // The `agent` setting, in Claude Code's order: the person's files, then the plugin's own.
-  const run = { speakerAgentId, host: turn.policy.host.kind }
+  const run = { agentId, host: turn.policy.host.kind }
   const chosen =
-    asType || speakerAgentId !== DEFAULT_AGENT_ID || run.host !== 'chat'
+    asType || agentId !== DEFAULT_AGENT_ID || run.host !== 'chat'
       ? null
       : ((await deps.resolveMainAgent?.(userId, session.projectId ?? null, defaultCwd ?? null)) ??
         loadedPlugins.mainAgent)
   const main = applyMainAgent(asType ?? context, chosen, run)
-  await adoptPluginAgentModel(frame, turn, main.mainAgent)
   frame.teardown.miniAppHooks = loadedMiniApps.hooks
   frame.teardown.defaultCwd = defaultCwd
   miniAppHooks = loadedMiniApps.hooks
@@ -164,7 +161,7 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
     env,
     userId,
     session,
-    speakerAgentId,
+    agentId,
     availability: context.availability,
     capabilities: context.capabilities,
     params,
@@ -176,7 +173,7 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
     isContinuation: frame.isContinuation,
     contextFiles,
     permissionMode: turn.policy.permission.mode,
-    ...(frame.speakerRoute.reasoningEffort ? { effort: frame.speakerRoute.reasoningEffort } : {}),
+    ...(frame.route.reasoningEffort ? { effort: frame.route.reasoningEffort } : {}),
     interactive: turn.policy.human.canAnswer,
     // A delegated child runs its agent file's own hooks, for this run only.
     agentHooks: agentScopedHooks(session, turn.admittedAgent.spec, {
@@ -237,6 +234,8 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
     // The plugin agent type a delegated child runs as: its `tools` shape the run's surface, and
     // its `omitClaudeMd` the instruction files it reads.
     pluginSubagent: asType?.subagent ?? null,
+    // The agent file's own `memory` folder, kept without a card (`memory-roots.ts`).
+    agentMemoryDir: typeOptions?.memoryDir ?? null,
     // The plugin agent the chat itself runs as (a plugin's `settings.json` `agent`), if any.
     mainAgent: main.mainAgent,
     // The tools list the run's surface is exact to: the agent type's, or the main agent's.

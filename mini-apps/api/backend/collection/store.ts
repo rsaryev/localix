@@ -22,7 +22,7 @@
  * semantics the user's own editor has, in a directory they own.
  */
 
-import { mkdir, readFile, rename, rm, rmdir, stat } from 'node:fs/promises'
+import { mkdir, readFile, rm, rmdir, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { isAtOrUnder } from '@localixai/path-containment/ancestry'
 import { atomicWriteFile } from '@localixai/mini-app-sdk/backend'
@@ -33,8 +33,6 @@ import { walkCollectionFiles, walkCollectionFolders } from './tree'
 import {
   collectionFolderPath,
   normalizeFolderName,
-  REQUEST_EXT,
-  legacyRequestFilePath,
   normalizeRequestName,
   requestFilePath,
   requestNameFor,
@@ -91,59 +89,12 @@ export function createCollectionStore(root: string): CollectionStore {
     }
   }
 
-  /**
-   * Move a valid legacy `<name>.json` to the typed `<name>.request.json` path. A canonical file
-   * always wins a collision; the legacy file is left untouched rather than risking data loss.
-   */
-  const migrateLegacy = async (
-    legacyFile: string,
-    parsed?: CollectionRequest | null,
-  ): Promise<CollectionRequest | null> => {
-    const legacy = parsed ?? (await read(legacyFile))
-    if (!legacy || legacyFile.endsWith(REQUEST_EXT)) return legacy
-    const canonical = requestFilePath(root, legacy.name)
-    if (!canonical) return legacy
-    try {
-      await stat(canonical)
-      return (await read(canonical)) ?? legacy
-    } catch {
-      // Missing is the expected migration case. `rename` is atomic on this collection filesystem.
-    }
-    try {
-      await mkdir(path.dirname(canonical), { recursive: true })
-      await rename(legacyFile, canonical)
-      return read(canonical)
-    } catch {
-      // Another process may have completed the same migration between stat and rename.
-      return (await read(canonical)) ?? legacy
-    }
-  }
-
   return {
     root: () => root,
 
     async list() {
       const files = await walkCollectionFiles(root)
-      const canonicalByName = new Map<string, string>()
-      const legacyByName = new Map<string, string>()
-      for (const file of files) {
-        const name = requestNameFor(root, file)
-        if (!name) continue
-        if (file.endsWith(REQUEST_EXT)) canonicalByName.set(name, file)
-        else legacyByName.set(name, file)
-      }
-      const names = new Set([...canonicalByName.keys(), ...legacyByName.keys()])
-      const found = await Promise.all(
-        [...names].map(async (name) => {
-          const canonical = canonicalByName.get(name)
-          const legacy = legacyByName.get(name)
-          if (canonical) {
-            const preferred = await read(canonical)
-            return preferred ?? (legacy ? read(legacy) : null)
-          }
-          return legacy ? migrateLegacy(legacy) : null
-        }),
-      )
+      const found = await Promise.all(files.map((file) => read(file)))
       return found
         .filter((request): request is CollectionRequest => request !== null)
         .sort((a, b) => a.name.localeCompare(b.name))
@@ -203,10 +154,7 @@ export function createCollectionStore(root: string): CollectionStore {
     async get(name) {
       const file = requestFilePath(root, name)
       if (file === null) return null
-      const canonical = await read(file)
-      if (canonical) return canonical
-      const legacy = legacyRequestFilePath(root, name)
-      return legacy ? migrateLegacy(legacy) : null
+      return read(file)
     },
 
     async save(name, spec) {
@@ -243,8 +191,6 @@ export function createCollectionStore(root: string): CollectionStore {
         file,
         `${JSON.stringify(buildRequestFile(normalized, spec), null, 2)}\n`,
       )
-      const legacy = legacyRequestFilePath(root, normalized)
-      if (legacy && legacy !== file) await rm(legacy, { force: true }).catch(() => undefined)
       const saved = await read(file)
       return saved
         ? { ok: true, request: saved }
@@ -254,17 +200,11 @@ export function createCollectionStore(root: string): CollectionStore {
     async remove(name) {
       const file = requestFilePath(root, name)
       if (file === null) return false
-      const legacy = legacyRequestFilePath(root, name)
-      let removed = false
-      for (const candidate of [file, legacy].filter((value): value is string => Boolean(value))) {
-        try {
-          await rm(candidate)
-          removed = true
-        } catch {
-          // Absent is not an error; the other suffix may still exist.
-        }
+      try {
+        await rm(file)
+      } catch {
+        return false // absent
       }
-      if (!removed) return false
       // Keep the directory visible as an empty collection folder. It can be removed explicitly;
       // silently pruning it made a user-created folder disappear with its last request.
       return true

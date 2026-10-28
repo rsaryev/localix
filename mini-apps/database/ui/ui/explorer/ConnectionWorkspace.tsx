@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Database, SquareTerminal } from 'lucide-react'
 import { Button } from '@localixai/kit/button'
 import { LoadingHint } from '@localixai/kit/empty-hint'
@@ -34,9 +34,12 @@ export function ConnectionWorkspace({ s }: { s: ExplorerState }) {
     },
   )
 
-  useEffect(() => {
+  // Another connection starts without the create-table dialog open: reset while rendering.
+  const [dialogConnectionId, setDialogConnectionId] = useState(connection?.id)
+  if (dialogConnectionId !== connection?.id) {
+    setDialogConnectionId(connection?.id)
     setCreatingTable(false)
-  }, [connection?.id])
+  }
 
   if (s.loading && !connection) {
     return <LoadingHint className="h-full">Loading connection…</LoadingHint>

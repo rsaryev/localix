@@ -1,10 +1,11 @@
 /**
  * Claude Code hook config loading + merging.
  *
- * Reads enabled plugins' `hooks/hooks.json` blocks and fuses them into one
- * normalized {@link CcHookRegistry}. Local Claude settings are deliberately not
- * consulted: installing and enabling a plugin is the consent boundary for running
- * its hooks.
+ * Parses `hooks` blocks (an enabled plugin's `hooks/hooks.json`, a Claude Code settings
+ * file's `hooks`, a skill's or agent's frontmatter) and fuses them into one normalized
+ * {@link CcHookRegistry}. Which blocks reach it, and whether a source is trusted enough to
+ * run (enabling a plugin, trusting a project folder), is the callers' decision, not this
+ * module's.
  *
  * Handler types are accepted on their supported events; unsupported combinations
  * are dropped (the caller may log them). Placeholders in an http url are substituted
@@ -189,11 +190,29 @@ export async function buildCcHookRegistry(opts: {
   const skipped: SkippedHandler[] = []
   const registry: CcHookRegistry = {}
 
-  for (const block of opts.settingsHooks ?? [])
-    mergeCcHookRegistries(
-      registry,
-      parseHooksBlock(block.raw, block.source, { projectDir: opts.projectDir }, skipped),
+  // The same handler in several settings files runs once (hooks.md); a plugin's copy stays apart.
+  const seen = new Set<string>()
+  for (const block of opts.settingsHooks ?? []) {
+    const parsed = parseHooksBlock(
+      block.raw,
+      block.source,
+      { projectDir: opts.projectDir },
+      skipped,
     )
+    for (const [event, groups] of Object.entries(parsed) as [string, CcHookGroup[]][]) {
+      for (const group of groups) {
+        group.handlers = group.handlers.filter((h) => {
+          const { source: _source, ...rest } = h
+          const key = JSON.stringify([event, group.matcher ?? '', rest])
+          if (seen.has(key)) return false
+          seen.add(key)
+          return true
+        })
+      }
+      parsed[event as keyof CcHookRegistry] = groups.filter((g) => g.handlers.length > 0)
+    }
+    mergeCcHookRegistries(registry, parsed)
+  }
 
   for (const plugin of opts.pluginHooks ?? []) {
     const sensitive = new Set(plugin.sensitiveKeys ?? [])

@@ -10,7 +10,7 @@
       ]
     },
     "type-check": {
-      "dependsOn": ["^build", "docs:gen"],
+      "dependsOn": ["^type-check"],
       "inputs": [
         "$TURBO_DEFAULT$",
         "$TURBO_ROOT$/mini-apps/**/ui/**",
@@ -34,7 +34,7 @@
       "outputs": []
     },
     "type-check:tests": {
-      "dependsOn": ["^build", "docs:gen"],
+      "dependsOn": ["^type-check"],
       "inputs": [
         "$TURBO_DEFAULT$",
         "$TURBO_ROOT$/mini-apps/**/ui/**",

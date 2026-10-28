@@ -1,11 +1,12 @@
-import { routedParticipants } from '../../../../testing/session-fixture'
+import { routedAgent } from '../../../../testing/session-fixture'
 import { UNDECIDED } from '../../../capabilities/availability'
 import { composeCapabilities } from '../../../capabilities/resolve'
 /// <reference types="bun" />
 
-import { describe, expect, test } from 'bun:test'
+import { afterEach, describe, expect, test } from 'bun:test'
 import { z } from 'zod'
 import { defineAgentTool, validateToolRegistry, type AgentTool } from '@localixai/agent/agents'
+import { createEngine } from '@localixai/engine'
 
 import { assembleRunTools } from './tool-assembly'
 import { assertRunToolRequirements } from './tool-requirements'
@@ -44,7 +45,7 @@ const externalTool = (name: string) =>
 const coreTool = (name: string) => externalTool(name)
 
 const MINI_APP_TOOLS = [externalTool('board_edit'), externalTool('chart_render')]
-const CORE_TOOLS = [coreTool('read'), coreTool('bash')]
+const CORE_TOOLS = [coreTool('Read'), coreTool('Bash')]
 
 function session(activatedTools: string[]): SessionRecord {
   return {
@@ -63,9 +64,8 @@ function session(activatedTools: string[]): SessionRecord {
     parentSessionId: null,
     rootSessionId: 's1',
     sessionKind: 'chat',
-    agents: routedParticipants(),
+    agent: routedAgent(),
     description: null,
-    avatar: null,
     runtimeStatus: 'idle',
     sourceToolCallId: null,
     provenance: { kind: 'root' },
@@ -137,21 +137,22 @@ async function assembleTurn(env: RunEnv, record: SessionRecord, surfaceTools?: s
 }
 
 const names = (tools: readonly AgentTool[]) => tools.map((tool) => tool.name)
+const activatorOf = (tools: readonly AgentTool[]) =>
+  tools.find((tool) => tool.name === 'ToolSearch')!
 
 describe('tools an open mini app view brings', () => {
   test('ride the wire for the turn that carries the view, write nothing, and go with it', async () => {
     const { env, writes, read } = store()
 
     const open = await assembleTurn(env, session(read()), ['chart_render'])
-    expect(names(open.tools)).toEqual(['read', 'bash', 'chart_render', 'activate_tools'])
+    expect(names(open.tools)).toEqual(['Read', 'Bash', 'ToolSearch', 'chart_render'])
     expect(open.deferredToolNames).toEqual(['board_edit'])
 
     const closed = await assembleTurn(env, session(read()))
-    expect(names(closed.tools)).toEqual(['read', 'bash', 'activate_tools'])
+    expect(names(closed.tools)).toEqual(['Read', 'Bash', 'ToolSearch'])
     expect(writes).toEqual([])
-    expect(open.tools.at(-1)!.description).not.toContain('- chart_render ')
-    expect(open.tools.at(-1)!.description).toContain('- board_edit ')
-    expect(closed.tools.at(-1)!.description).toContain('- chart_render ')
+    // The activator reads the same with the view open or closed: only the tail of the list moves.
+    expect(activatorOf(open.tools).description).toBe(activatorOf(closed.tools).description)
   })
 
   test('follow what the model activated, so a view opening never reorders the list', async () => {
@@ -159,24 +160,20 @@ describe('tools an open mini app view brings', () => {
     const turn = await assembleTurn(env, session(['board_edit']), [
       'chart_render',
       'board_edit',
-      'read',
+      'Read',
     ])
     // Sticky first in activation order, the view's after it once; a core name adds nothing.
-    expect(names(turn.tools)).toEqual([
-      'read',
-      'bash',
-      'board_edit',
-      'chart_render',
-      'activate_tools',
-    ])
+    expect(names(turn.tools)).toEqual(['Read', 'Bash', 'ToolSearch', 'board_edit', 'chart_render'])
   })
 
   test('are already active to the activator, which keeps them off the session', async () => {
     const { env, writes } = store()
     const turn = await assembleTurn(env, session([]), ['chart_render'])
-    const result = await turn.tools
-      .at(-1)!
-      .execute('call-1', { names: ['chart_render'] }, {} as never)
+    const result = await activatorOf(turn.tools).execute(
+      'call-1',
+      { query: 'select:chart_render' },
+      {} as never,
+    )
     await Promise.resolve()
     expect(result.content).toContain('Already active in this session')
     expect(writes).toEqual([])
@@ -189,14 +186,14 @@ describe('the activation lifecycle across two turns of one session', () => {
 
     // ---- Turn 1 -----------------------------------------------------------
     const first = await assembleTurn(env, session(read()))
-    expect(names(first.tools)).toEqual(['read', 'bash', 'activate_tools'])
+    expect(names(first.tools)).toEqual(['Read', 'Bash', 'ToolSearch'])
     // Deferred does not mean unavailable: both mini app tools remain dispatchable.
     expect(names(first.dispatchTools)).toContain('board_edit')
     expect(names(first.preflightTools)).toContain('board_edit')
     expect(() => validateToolRegistry(first.tools, first.dispatchTools)).not.toThrow()
 
-    const activator = first.tools.at(-1)!
-    const result = await activator.execute('call-1', { names: ['board_edit'] }, {} as never)
+    const activator = activatorOf(first.tools)
+    const result = await activator.execute('call-1', { query: 'select:board_edit' }, {} as never)
     expect(result.isError).toBeFalsy()
     // The write is fire-and-forget inside the tool; let it settle.
     await Promise.resolve()
@@ -204,10 +201,8 @@ describe('the activation lifecycle across two turns of one session', () => {
 
     // ---- Turn 2: a fresh run reading the session back ---------------------
     const second = await assembleTurn(env, session(read()))
-    expect(names(second.tools)).toEqual(['read', 'bash', 'board_edit', 'activate_tools'])
+    expect(names(second.tools)).toEqual(['Read', 'Bash', 'ToolSearch', 'board_edit'])
     expect(second.deferredToolNames).toEqual(['chart_render'])
-    expect(second.tools.at(-1)!.description).not.toContain('- board_edit ')
-    expect(second.tools.at(-1)!.description).toContain('- chart_render ')
     expect(() => validateToolRegistry(second.tools, second.dispatchTools)).not.toThrow()
   })
 
@@ -215,8 +210,8 @@ describe('the activation lifecycle across two turns of one session', () => {
     const { env, writes } = store()
     const second = await assembleTurn(env, session(['board_edit']))
 
-    const activator = second.tools.at(-1)!
-    const result = await activator.execute('call-1', { names: ['board_edit'] }, {} as never)
+    const activator = activatorOf(second.tools)
+    const result = await activator.execute('call-1', { query: 'select:board_edit' }, {} as never)
     await Promise.resolve()
 
     expect(result.content).toContain('Already active in this session')
@@ -228,33 +223,32 @@ describe('the activation lifecycle across two turns of one session', () => {
     const { env, read } = store(['board_edit'])
     const first = await assembleTurn(env, session(read()))
 
-    await first.tools.at(-1)!.execute('call-1', { names: ['chart_render'] }, {} as never)
+    await activatorOf(first.tools).execute('call-1', { query: 'select:chart_render' }, {} as never)
     await Promise.resolve()
     expect(read()).toEqual(['board_edit', 'chart_render'])
 
     const third = await assembleTurn(env, session(read()))
     expect(names(third.tools)).toEqual([
-      'read',
-      'bash',
-      'board_edit',
-      'chart_render',
+      'Read',
+      'Bash',
       // The loader STAYS even with nothing left to activate: dropping it would change the tool list for
       // no gain and cost the prompt cache, and a model with it in its history would call a tool that no
       // longer exists.
-      'activate_tools',
+      'ToolSearch',
+      'board_edit',
+      'chart_render',
     ])
     expect(third.deferredToolNames).toEqual([])
-    expect(third.tools.at(-1)!.description).toContain('No tools remain to activate.')
   })
 
   test('two activations inside ONE run accumulate, they do not clobber each other', async () => {
     const { env, writes } = store()
     const record = session([])
     const run = await assembleTurn(env, record)
-    const activator = run.tools.at(-1)!
+    const activator = activatorOf(run.tools)
 
-    await activator.execute('call-1', { names: ['board_edit'] }, {} as never)
-    await activator.execute('call-2', { names: ['chart_render'] }, {} as never)
+    await activator.execute('call-1', { query: 'select:board_edit' }, {} as never)
+    await activator.execute('call-2', { query: 'select:chart_render' }, {} as never)
     await Promise.resolve()
 
     // The second merge has to see the first one's result, which is why the in-memory record is updated
@@ -271,7 +265,7 @@ describe('the activation lifecycle across two turns of one session', () => {
     const run = await assembleTurn(env, record)
     writeBehind(['chart_render'])
 
-    await run.tools.at(-1)!.execute('call-1', { names: ['board_edit'] }, {} as never)
+    await activatorOf(run.tools).execute('call-1', { query: 'select:board_edit' }, {} as never)
     await Promise.resolve()
 
     expect(read()).toEqual(['chart_render', 'board_edit'])
@@ -283,7 +277,7 @@ describe('the activation lifecycle across two turns of one session', () => {
     // An uninstalled plugin or a disconnected server: the session record outlives both.
     const run = await assembleTurn(env, session(['plugin_gone', 'board_edit']))
 
-    expect(names(run.tools)).toEqual(['read', 'bash', 'board_edit', 'activate_tools'])
+    expect(names(run.tools)).toEqual(['Read', 'Bash', 'ToolSearch', 'board_edit'])
     expect(() => validateToolRegistry(run.tools, run.dispatchTools)).not.toThrow()
   })
 
@@ -297,7 +291,11 @@ describe('the activation lifecycle across two turns of one session', () => {
     } as unknown as RunEnv
     const run = await assembleTurn(env, session([]))
 
-    const result = await run.tools.at(-1)!.execute('call-1', { names: ['board_edit'] }, {} as never)
+    const result = await activatorOf(run.tools).execute(
+      'call-1',
+      { query: 'select:board_edit' },
+      {} as never,
+    )
     await Promise.resolve()
 
     expect(result.isError).toBeFalsy()
@@ -305,7 +303,87 @@ describe('the activation lifecycle across two turns of one session', () => {
   })
 })
 
-test('a withheld mini_app_build stub cannot satisfy a macro requirement', async () => {
+describe('what the model is sent across the run that activates a tool and the next one', () => {
+  const real = globalThis.fetch
+  afterEach(() => {
+    globalThis.fetch = real
+  })
+
+  /** OpenAI answers each request with the next of `replies`: a tool call, or a final text. */
+  function stubOpenAI(replies: Array<{ call: string } | { text: string }>) {
+    const tools: string[] = []
+    globalThis.fetch = (async (_url: unknown, init: RequestInit) => {
+      const body = JSON.parse(init.body as string) as { tools?: unknown }
+      tools.push(JSON.stringify(body.tools))
+      const reply = replies[Math.min(tools.length, replies.length) - 1]!
+      const item =
+        'call' in reply
+          ? {
+              type: 'function_call',
+              id: `fc_${tools.length}`,
+              call_id: `call_${tools.length}`,
+              name: 'ToolSearch',
+              arguments: JSON.stringify({ query: `select:${reply.call}` }),
+              status: 'completed',
+            }
+          : {
+              type: 'message',
+              id: `msg_${tools.length}`,
+              role: 'assistant',
+              status: 'completed',
+              content: [{ type: 'output_text', text: reply.text, annotations: [] }],
+            }
+      const events = [
+        { type: 'response.created', response: { id: 'r', created_at: 1, model: 'm' } },
+        { type: 'response.output_item.added', output_index: 0, item },
+        { type: 'response.output_item.done', output_index: 0, item },
+        {
+          type: 'response.completed',
+          response: {
+            id: 'r',
+            incomplete_details: null,
+            usage: { input_tokens: 10, output_tokens: 5 },
+          },
+        },
+      ]
+      return new Response(events.map((event) => `data: ${JSON.stringify(event)}\n\n`).join(''), {
+        headers: { 'content-type': 'text/event-stream' },
+      })
+    }) as unknown as typeof fetch
+    return tools
+  }
+
+  async function run(assembled: Awaited<ReturnType<typeof assembleTurn>>) {
+    const started = createEngine().runtime.run({
+      sessionId: 's1',
+      model: { providerId: 'openai', modelId: 'gpt-6.1-sol' },
+      credential: { type: 'api-key', key: 'k' },
+      systemPrompt: 'SYS',
+      messages: [{ role: 'user', content: 'hi', timestamp: 0 }],
+      tools: assembled.tools,
+      dispatchTools: assembled.dispatchTools,
+    })
+    for await (const _event of started) void _event
+    await started.result
+  }
+
+  test('the next run starts with the tool list the activating run ended with', async () => {
+    const { env, read } = store()
+    const sent = stubOpenAI([{ call: 'board_edit' }, { text: 'activated' }, { text: 'again' }])
+
+    await run(await assembleTurn(env, session(read())))
+    expect(read()).toEqual(['board_edit'])
+    // Request 1 had the core tools; request 2, after the reveal, has board_edit appended.
+    expect(sent[1]).not.toBe(sent[0])
+
+    await run(await assembleTurn(env, session(read())))
+    // Request 3 opens the next run. Were its list reordered, or the activator's catalog rewritten,
+    // everything the first run cached after the tools would be read as new.
+    expect(sent[2]).toBe(sent[1])
+  })
+})
+
+test('a withheld browser stub cannot satisfy a macro requirement', async () => {
   const recovery = createToolOutputTool({} as never, {} as never, 'user-a', 's1')
   const assembled = await assembleRunTools({
     env: store().env,
@@ -320,7 +398,7 @@ test('a withheld mini_app_build stub cannot satisfy a macro requirement', async 
       ledger: new Map([
         [recovery.name, { state: 'live' }],
         [
-          'mini_app_build',
+          'Browser',
           {
             state: 'withheld',
             reason: { layer: 'policy', kind: 'rule', denial: null },
@@ -332,14 +410,14 @@ test('a withheld mini_app_build stub cannot satisfy a macro requirement', async 
     loadedMiniApps: { tools: [], hooks: [] } as unknown as LoadedMiniApps,
     ccHooks: { active: false } as CcHooksRuntime,
     defaultCwd: '/tmp',
-    disabledTools: ['mini_app_build'],
+    disabledTools: ['Browser'],
     backgroundToolNames: new Set<string>(),
   })
 
-  expect(names(assembled.dispatchTools)).toContain('mini_app_build')
-  expect(names(assembled.tools)).not.toContain('mini_app_build')
-  expect(names(assembled.preflightTools)).not.toContain('mini_app_build')
+  expect(names(assembled.dispatchTools)).toContain('Browser')
+  expect(names(assembled.tools)).not.toContain('Browser')
+  expect(names(assembled.preflightTools)).not.toContain('Browser')
   expect(() =>
-    assertRunToolRequirements(assembled.preflightTools, [], [{ name: 'mini_app_build' }]),
-  ).toThrow('Required run tools are unavailable: mini_app_build')
+    assertRunToolRequirements(assembled.preflightTools, [], [{ name: 'Browser' }]),
+  ).toThrow('Required run tools are unavailable: Browser')
 })

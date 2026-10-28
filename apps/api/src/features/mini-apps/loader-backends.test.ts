@@ -131,6 +131,9 @@ export async function register() {
 })
 
 afterAll(async () => {
+  // The fixture backend counts its stop and shutdown on the shared global.
+  delete globalThis.__TEST_SUB_STOP__
+  delete globalThis.__TEST_SUB_SHUTDOWN__
   if (prevEnv === undefined) delete process.env.LOCALIX_BUNDLED_MINI_APPS_DIR
   else process.env.LOCALIX_BUNDLED_MINI_APPS_DIR = prevEnv
   await fs.rm(fixtureBase, { recursive: true, force: true })

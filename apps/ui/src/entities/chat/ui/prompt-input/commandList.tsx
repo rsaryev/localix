@@ -16,11 +16,17 @@
 import { SLASH_COMMANDS, type SlashCommandSpec } from '@localixai/api/slash-catalog'
 import type { SlashCommand } from './SlashCommandMenu'
 import {
+  Activity,
   Bot,
   Brain,
   ClipboardList,
   Copy,
+  Download,
+  FilePlus2,
+  FolderPlus,
+  GitCompare,
   Gauge,
+  Minimize2,
   History,
   MessageSquarePlus,
   Palette,
@@ -30,6 +36,7 @@ import {
   ShieldCheck,
   Type,
   Undo2,
+  Webhook,
 } from 'lucide-react'
 import {
   LoopIcon,
@@ -58,7 +65,7 @@ interface CommandPresentation {
 const PRESENTATION: Record<string, CommandPresentation> = {
   agents: {
     icon: <Bot size={14} />,
-    placeholder: 'list · create · edit · permissions · add · remove…',
+    placeholder: 'list · create · edit · permissions…',
   },
   loop: { icon: <LoopIcon />, placeholder: 'Task — e.g. check the deployment every 5 minutes' },
   model: { icon: <ModelIcon />, placeholder: 'Pick an agent, a provider and a model…' },
@@ -88,6 +95,25 @@ const PRESENTATION: Record<string, CommandPresentation> = {
   context: {
     icon: <Gauge size={14} />,
     placeholder: 'Press Enter to show how full the context is',
+  },
+  compact: {
+    icon: <Minimize2 size={14} />,
+    placeholder: 'What to keep in focus, or Enter to compact now',
+  },
+  init: {
+    icon: <FilePlus2 size={14} />,
+    placeholder: 'Press Enter to have the agent write CLAUDE.md',
+  },
+  status: { icon: <Activity size={14} />, placeholder: 'Press Enter to show this chat’s status' },
+  hooks: { icon: <Webhook size={14} />, placeholder: 'Press Enter to list the configured hooks' },
+  diff: { icon: <GitCompare size={14} />, placeholder: 'Press Enter to show uncommitted changes' },
+  'add-dir': {
+    icon: <FolderPlus size={14} />,
+    placeholder: 'A folder: absolute, relative to the project, or ~/…',
+  },
+  export: {
+    icon: <Download size={14} />,
+    placeholder: 'A file name, or Enter for a Markdown file in the exports folder',
   },
   fork: { icon: <ForkIcon />, placeholder: 'Press Enter to fork this conversation' },
   open: { icon: <OpenIcon />, placeholder: 'Browse resources and UI anchors…' },

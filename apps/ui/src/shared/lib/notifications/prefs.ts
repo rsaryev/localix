@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import {
-  migrateNotificationPreferences,
+  parseNotificationPreferences,
   type NotificationCondition,
   type NotificationPreferences,
   type TerminalNotificationMethod,
@@ -21,7 +21,7 @@ interface PersistedNotificationPrefs extends NotificationPrefs {
 
 function load(): NotificationPrefs {
   const stored = loadJSON<unknown>(LS_KEY)
-  const preferences = migrateNotificationPreferences(stored)
+  const preferences = parseNotificationPreferences(stored)
   const appIconBadge =
     stored &&
     typeof stored === 'object' &&

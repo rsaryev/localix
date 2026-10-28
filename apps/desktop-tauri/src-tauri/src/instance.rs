@@ -11,8 +11,7 @@
 //! THE GUARD. The first shell takes an exclusive advisory lock on `~/.localix/desktop-shell.lock`
 //! for its whole life (the kernel drops it when the process ends, however it ends). A shell that
 //! cannot take it hands off to the owner (`instance_handoff`) and leaves before it starts a runtime
-//! or touches the database. A shell from before this guard holds no lock, so its live desktop
-//! runtime (named in the endpoint descriptor) identifies it too.
+//! or touches the database.
 
 #[path = "instance_handoff.rs"]
 pub(crate) mod handoff;
@@ -24,7 +23,6 @@ use std::sync::OnceLock;
 use std::time::{Duration, Instant};
 
 use crate::log::logln;
-use crate::runtime_contract::DESKTOP_RUNTIME_ARG;
 
 /// What this launch of the shell is.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -54,27 +52,12 @@ pub(crate) enum Decision {
     HandOff(Option<u32>),
 }
 
-pub(crate) fn decide(lock: LockState, parent_pid: u32, legacy_owner: Option<u32>) -> Decision {
+pub(crate) fn decide(lock: LockState, parent_pid: u32) -> Decision {
     match lock {
         LockState::HeldBy(Some(holder)) if holder == parent_pid => Decision::WaitForParent,
         LockState::HeldBy(holder) => Decision::HandOff(holder),
-        LockState::Acquired | LockState::Unavailable => match legacy_owner {
-            Some(shell) => Decision::HandOff(Some(shell)),
-            None => Decision::Primary,
-        },
+        LockState::Acquired | LockState::Unavailable => Decision::Primary,
     }
-}
-
-/// From `ps -o ppid=,command=` for a runtime pid: the shell that owns it when it is a desktop
-/// runtime whose parent is another live shell — not launchd (an orphan), us, or our parent.
-pub(crate) fn shell_owning_runtime(ps_line: &str, self_pid: u32, parent_pid: u32) -> Option<u32> {
-    let line = ps_line.trim();
-    let (ppid, command) = line.split_once(char::is_whitespace)?;
-    let ppid: u32 = ppid.parse().ok()?;
-    let is_desktop_runtime = command
-        .split_whitespace()
-        .any(|arg| arg == DESKTOP_RUNTIME_ARG);
-    (is_desktop_runtime && ppid > 1 && ppid != self_pid && ppid != parent_pid).then_some(ppid)
 }
 
 /// `~/.localix`, the folder the runtime and its database live in (the parent of `log_dir`).
@@ -118,41 +101,15 @@ fn try_lock(dir: &Path) -> LockState {
     }
 }
 
-/// A shell from before this lock, found through the runtime it is running.
-fn legacy_owner(dir: &Path, self_pid: u32, parent_pid: u32) -> Option<u32> {
-    ["localix.db.api-runtime.json", "api-runtime.json"]
-        .iter()
-        .filter_map(|name| std::fs::read_to_string(dir.join(name)).ok())
-        .filter_map(|text| serde_json::from_str::<serde_json::Value>(&text).ok())
-        .filter_map(|value| value.get("pid")?.as_u64())
-        .find_map(|pid| {
-            let output = std::process::Command::new("ps")
-                .args(["-o", "ppid=,command=", "-p", &pid.to_string()])
-                .stderr(std::process::Stdio::null())
-                .output()
-                .ok()?;
-            shell_owning_runtime(
-                &String::from_utf8_lossy(&output.stdout),
-                self_pid,
-                parent_pid,
-            )
-        })
-}
-
 /// How long a restarted shell waits for the one that spawned it to let go.
 const PARENT_EXIT_WAIT: Duration = Duration::from_secs(15);
 
 /// Decide this launch's role. Runs before tauri builds anything.
 pub(crate) fn claim() -> Role {
     let dir = data_dir();
-    let self_pid = std::process::id();
     let parent_pid = std::os::unix::process::parent_id();
     let mut lock = try_lock(&dir);
-    let legacy = || legacy_owner(&dir, self_pid, parent_pid);
-    let decision = match lock {
-        LockState::Acquired | LockState::Unavailable => decide(lock, parent_pid, legacy()),
-        held => decide(held, parent_pid, None),
-    };
+    let decision = decide(lock, parent_pid);
     let decision = if decision == Decision::WaitForParent {
         let until = Instant::now() + PARENT_EXIT_WAIT;
         while Instant::now() < until {
@@ -163,7 +120,7 @@ pub(crate) fn claim() -> Role {
             }
         }
         match lock {
-            LockState::Acquired => decide(lock, parent_pid, legacy()),
+            LockState::Acquired => decide(lock, parent_pid),
             _ => Decision::HandOff(Some(parent_pid)),
         }
     } else {
@@ -182,52 +139,26 @@ mod tests {
 
     #[test]
     fn a_free_lock_makes_this_shell_the_owner() {
-        assert_eq!(decide(LockState::Acquired, 10, None), Decision::Primary);
+        assert_eq!(decide(LockState::Acquired, 10), Decision::Primary);
         // No lock at all is the old behaviour, not a reason to refuse to start.
-        assert_eq!(decide(LockState::Unavailable, 10, None), Decision::Primary);
+        assert_eq!(decide(LockState::Unavailable, 10), Decision::Primary);
     }
 
     #[test]
     fn a_held_lock_hands_off_to_its_holder() {
         assert_eq!(
-            decide(LockState::HeldBy(Some(42)), 10, None),
+            decide(LockState::HeldBy(Some(42)), 10),
             Decision::HandOff(Some(42))
         );
-        assert_eq!(
-            decide(LockState::HeldBy(None), 10, None),
-            Decision::HandOff(None)
-        );
+        assert_eq!(decide(LockState::HeldBy(None), 10), Decision::HandOff(None));
     }
 
     #[test]
     fn a_restart_waits_for_the_shell_that_spawned_it() {
         assert_eq!(
-            decide(LockState::HeldBy(Some(10)), 10, None),
+            decide(LockState::HeldBy(Some(10)), 10),
             Decision::WaitForParent
         );
-    }
-
-    #[test]
-    fn a_shell_from_before_the_lock_is_found_through_its_runtime() {
-        assert_eq!(
-            decide(LockState::Acquired, 10, Some(77)),
-            Decision::HandOff(Some(77))
-        );
-    }
-
-    #[test]
-    fn only_a_live_other_shells_desktop_runtime_names_an_owner() {
-        let runtime =
-            "  777 /Applications/Localix.app/Contents/MacOS/bun server.js --desktop-runtime";
-        assert_eq!(shell_owning_runtime(runtime, 1, 2), Some(777));
-        // Orphaned (its shell is gone), ours, or our parent's: not another copy.
-        let orphan = "1 bun server.js --desktop-runtime";
-        assert_eq!(shell_owning_runtime(orphan, 5, 6), None);
-        assert_eq!(shell_owning_runtime(runtime, 777, 2), None);
-        assert_eq!(shell_owning_runtime(runtime, 1, 777), None);
-        // A dev server or daemon, or a pid that no longer exists.
-        assert_eq!(shell_owning_runtime("777 bun src/index.ts", 1, 2), None);
-        assert_eq!(shell_owning_runtime("", 1, 2), None);
     }
 
     #[test]

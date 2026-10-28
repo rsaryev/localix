@@ -1,10 +1,10 @@
 # Let an agent interact with a terminal
 
-Localix agents can drive a live terminal through the `bash` tool: type text, press named keys, read
+Localix agents can drive a live terminal through the `Bash` tool: type text, press named keys, read
 the rendered screen, and wait for screen content. The terminal pane remains available for you to
-watch or take over. These actions are exposed when the run has a terminal host and `bash` access.
+watch or take over. These actions are exposed when the run has a terminal host and `Bash` access.
 Permission rules still govern each call. Live and archived panes are confined to the calling user
-and chat session; participants in the same chat share that terminal scope.
+and chat session; the agent and its subagents in the same chat share that terminal scope.
 
 Localix does not open a terminal tab on its own, including when a full-screen program takes the
 terminal over. Open the pane from its command card or the background-work strip; the agent can also
@@ -17,7 +17,7 @@ separate input bursts so a TUI does not treat Enter as part of a paste. Navigati
 `keys: ["Down", "Down", "Enter"]` run in order and return a fresh screen in the same call. Arrow
 keys follow the application's cursor-key mode.
 
-Calls contain only execution parameters; `bash` does not require a generated description label. For
+Calls contain only execution parameters; `Bash` does not require a generated description label. For
 example:
 
 ```json
@@ -87,8 +87,8 @@ calling `screen`. Waits wake on terminal output or exit, with a deadline, rather
 silent terminal on a timer. A retained final screen can be returned after exit and is labelled as
 exited, so a fast response is not mistaken for missing output or a live process.
 
-`jobs` manages background work and reads accumulated logs. Its PTY entries include the terminal id
-for the `bash` interactive actions. The `until` parameter is a different mechanism: it polls a shell
+`Jobs` manages background work and reads accumulated logs. Its PTY entries include the terminal id
+for the `Bash` interactive actions. The `until` parameter is a different mechanism: it polls a shell
 condition and wakes the agent on success. Omit `action` for that mechanism; `action: "until"` is not
 supported. See [Wait for something](monitors.md).
 
@@ -108,8 +108,8 @@ recorded command or a new shell; it does not resume the old one. A finished term
 output until you close it; typing `exit` in a shell closes its tab.
 
 Closing a user-created terminal tab closes its PTY. Closing a tab adopted from an agent job or dev
-server leaves that process with its launcher. Use `jobs stop` for running registered work, or
-`bash action: "close"` for a terminal in this chat, when you intend to stop it.
+server leaves that process with its launcher. Use `Jobs stop` for running registered work, or
+`Bash action: "close"` for a terminal in this chat, when you intend to stop it.
 
 ## Related implementations
 

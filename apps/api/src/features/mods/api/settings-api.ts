@@ -37,18 +37,24 @@ export function createSettingsApi(input: {
       ...(input.managed !== undefined ? { managed: input.managed } : {}),
     })
   return {
-    async read(args?: unknown): Promise<Readonly<Settings>> {
-      const source = isRecord(args) ? args.source : undefined
-      if (typeof source === 'string') {
-        if (!SOURCES.includes(source as SettingsSource))
-          throw new Error(`settings.read: no source named ${source}`)
-        // A source as loaded: the local files (repository root and working directory) as one.
-        const own = (await layers()).filter((layer) => layer.source === source)
-        return Object.freeze(
-          own.reduce<Settings>((out, l) => mergeSettingsLayer(out, l.settings), {}),
-        )
-      }
-      return Object.freeze(mergeSettingsSources(await layers()))
+    async read(args?: unknown): Promise<unknown> {
+      const settings = await load(args)
+      const key = isRecord(args) ? args.key : undefined
+      // A key resolves to that key's value, anything else to the settings object.
+      return typeof key === 'string' ? settings[key] : settings
     },
+  }
+  async function load(args?: unknown): Promise<Readonly<Settings>> {
+    const source = isRecord(args) ? args.source : undefined
+    if (typeof source === 'string') {
+      if (!SOURCES.includes(source as SettingsSource))
+        throw new Error(`settings.read: no source named ${source}`)
+      // A source as loaded: the local files (repository root and working directory) as one.
+      const own = (await layers()).filter((layer) => layer.source === source)
+      return Object.freeze(
+        own.reduce<Settings>((out, l) => mergeSettingsLayer(out, l.settings), {}),
+      )
+    }
+    return Object.freeze(mergeSettingsSources(await layers()))
   }
 }

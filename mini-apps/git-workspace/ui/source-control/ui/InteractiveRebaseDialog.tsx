@@ -17,6 +17,7 @@ import {
 import { Select } from '@localixai/kit/select'
 import { Button } from '@localixai/kit/button'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
+import { focusOnMount } from './focusOnMount'
 
 interface Row {
   commit: RepoCommit
@@ -195,7 +196,7 @@ export function InteractiveRebaseDialog({
                   </div>
                   {row.action === 'reword' && (
                     <Input
-                      autoFocus
+                      ref={focusOnMount}
                       value={row.message}
                       spellCheck={false}
                       placeholder="New commit message…"
@@ -212,12 +213,7 @@ export function InteractiveRebaseDialog({
         </DialogBody>
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            size="xl"
-            className="rounded-lg text-text-soft"
-            onClick={onClose}
-          >
+          <Button variant="ghost" size="xl" className="rounded-lg text-text-soft" onClick={onClose}>
             Cancel
           </Button>
           <Button

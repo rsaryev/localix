@@ -36,12 +36,12 @@
     "elidedToolCallIds": []
   },
   "long recoverable tool history under a small window @ 32000": {
-    "wireSha256": "411aeee855fd3f6132fd39b80b612810b287eebed687c373393bdc2a9ae423f1",
+    "wireSha256": "294d749e822cb25621c0519b89eeda6d43e95f4bedd5afc24f79f14379903f7c",
     "estimate": {
-      "tokens": 7632,
+      "tokens": 7622,
       "source": "heuristic"
     },
-    "prunedSha256": "411aeee855fd3f6132fd39b80b612810b287eebed687c373393bdc2a9ae423f1",
+    "prunedSha256": "294d749e822cb25621c0519b89eeda6d43e95f4bedd5afc24f79f14379903f7c",
     "elidedToolCallIds": [
       "t-0",
       "t-1",
@@ -102,30 +102,30 @@
     ]
   },
   "long recoverable tool history under a small window @ 200000": {
-    "wireSha256": "f7dabf29ba4b55f9aecc4504739756b14b5b5ac143c750a180e15abc26228c04",
+    "wireSha256": "1e5276a85a40292ccf0bbed91955e82c1d415fe0ad5a9b8e21042f6cb9f1cbb4",
     "estimate": {
       "tokens": 48520,
       "source": "heuristic"
     },
-    "prunedSha256": "f7dabf29ba4b55f9aecc4504739756b14b5b5ac143c750a180e15abc26228c04",
+    "prunedSha256": "1e5276a85a40292ccf0bbed91955e82c1d415fe0ad5a9b8e21042f6cb9f1cbb4",
     "elidedToolCallIds": []
   },
   "mixed recoverable and non-recoverable output @ 32000": {
-    "wireSha256": "861b24788537633e0138a26300e144c5ea9b5c312b86cf8c5a0a4c9ba3768407",
+    "wireSha256": "375b4d07bfaa4e2d2775f4b8ce3bf4970678477177f45887176b115d1aed21c1",
     "estimate": {
       "tokens": 23266,
       "source": "heuristic"
     },
-    "prunedSha256": "8431d86186eaeb79ff625e29b3f1242cd63e451c7bb757a405219e71f82bc790",
+    "prunedSha256": "73a5860e46983349688769193c2dce3a580103ef715efc21f7d6d56489798995",
     "elidedToolCallIds": ["bt-0", "bt-3", "bt-6", "t-1", "t-2", "t-4", "t-5"]
   },
   "mixed recoverable and non-recoverable output @ 200000": {
-    "wireSha256": "861b24788537633e0138a26300e144c5ea9b5c312b86cf8c5a0a4c9ba3768407",
+    "wireSha256": "375b4d07bfaa4e2d2775f4b8ce3bf4970678477177f45887176b115d1aed21c1",
     "estimate": {
       "tokens": 23266,
       "source": "heuristic"
     },
-    "prunedSha256": "861b24788537633e0138a26300e144c5ea9b5c312b86cf8c5a0a4c9ba3768407",
+    "prunedSha256": "375b4d07bfaa4e2d2775f4b8ce3bf4970678477177f45887176b115d1aed21c1",
     "elidedToolCallIds": []
   },
   "a /clear boundary cuts what came before @ 32000": {

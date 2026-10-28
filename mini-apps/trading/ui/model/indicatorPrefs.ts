@@ -1,16 +1,12 @@
-import { loadJSON, loadString, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
+import { loadJSON, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
 import type { StorageReader, StorageWriter } from '@localixai/mini-app-sdk/ui/storage'
 import { normalizeIndicatorId } from '../../backend/indicator-spec'
 import { isHexColor } from '../../backend/chart-drawing'
 
 /**
- * Indicator preferences V2 — the persisted shape behind the chart's indicator state.
- *
- * V1 was a bare `string[]` of active ids. V2 keeps the SAME storage key and wraps each
- * id in a record carrying its per-indicator overrides (hidden / color / fixed range /
- * pane height) plus one chart-wide `scaleMode`. Migration is total and version-free:
- * a v1 array, a v2 object, or garbage all land in a valid v2 value — ids migrate by
- * normalization exactly like before (`sma20` → `sma:20`), unknown ids are dropped.
+ * Indicator preferences — the persisted shape behind the chart's indicator state: each active id
+ * wrapped in a record carrying its per-indicator overrides (hidden / color / fixed range /
+ * pane height) plus one chart-wide `scaleMode`. Anything stored that does not fit is dropped.
  *
  * Presence in `items` IS activation; overrides live on the record so they survive a
  * `set`/`remove`+`add` round-trip only when the id survives it (an indicator the user
@@ -50,10 +46,7 @@ export interface IndicatorPrefsV2 {
  * Persisted PER TAB (`localix.trading.indicators:<tabId>`, keyed by
  * `tradingChartTabId(connectionId, symbol)` like drawings and chart type): the indicators a
  * trader reads on one market are their choice for THAT market, not forced onto every chart.
- * The old GLOBAL key (no tab suffix) survives as the ONE-TIME SEED for a tab's first load, so
- * no one loses the set they had before this became per-tab. The WRITE, not the read, promotes
- * the seed to a per-tab entry, so a tab where every indicator was turned OFF (stored `[]`)
- * stays off rather than re-seeding from the global set on the next load.
+ * A chart with no tab id speaks the bare key.
  */
 const PREFS_KEY = 'localix.trading.indicators'
 const tabPrefsKey = (tabId: string) => `${PREFS_KEY}:${tabId}`
@@ -62,10 +55,6 @@ const isFiniteNumber = (n: unknown): n is number => typeof n === 'number' && Num
 
 /** Validate one stored record field-by-field; null when the id itself is unusable. */
 function migrateRecord(raw: unknown): IndicatorPrefRecord | null {
-  if (typeof raw === 'string') {
-    const id = normalizeIndicatorId(raw)
-    return id && id !== 'volume' ? { id } : null
-  }
   if (typeof raw !== 'object' || raw === null) return null
   const r = raw as Record<string, unknown>
   const id = typeof r.id === 'string' ? normalizeIndicatorId(r.id) : null
@@ -91,7 +80,7 @@ function migrateRecord(raw: unknown): IndicatorPrefRecord | null {
 }
 
 /**
- * ANY stored value → a valid v2 prefs object. Total — never throws, never returns a
+ * ANY stored value → a valid prefs object. Total — never throws, never returns a
  * malformed record; duplicate ids keep the FIRST record (canonicalization can fold two
  * old spellings into one id).
  */
@@ -106,9 +95,7 @@ export function migrateIndicatorPrefsV2(raw: unknown): IndicatorPrefsV2 {
     }
   }
   let scaleMode: ChartScaleMode | undefined
-  if (Array.isArray(raw)) {
-    for (const entry of raw) push(entry) // v1: string[]
-  } else if (typeof raw === 'object' && raw !== null) {
+  if (typeof raw === 'object' && raw !== null && !Array.isArray(raw)) {
     const o = raw as Record<string, unknown>
     if (Array.isArray(o.items)) for (const entry of o.items) push(entry)
     if (o.scaleMode === 'linear' || o.scaleMode === 'log' || o.scaleMode === 'percentage')
@@ -118,9 +105,7 @@ export function migrateIndicatorPrefsV2(raw: unknown): IndicatorPrefsV2 {
 }
 
 export function loadIndicatorPrefsV2(tabId?: string, storage?: StorageReader): IndicatorPrefsV2 {
-  const key =
-    tabId && loadString(tabPrefsKey(tabId), storage) !== null ? tabPrefsKey(tabId) : PREFS_KEY
-  return migrateIndicatorPrefsV2(loadJSON<unknown>(key, storage))
+  return migrateIndicatorPrefsV2(loadJSON<unknown>(tabId ? tabPrefsKey(tabId) : PREFS_KEY, storage))
 }
 
 export function saveIndicatorPrefsV2(

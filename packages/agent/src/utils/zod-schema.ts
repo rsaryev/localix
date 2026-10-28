@@ -57,7 +57,7 @@ export function zodToJsonSchema(schema: { _def?: unknown }): Record<string, unkn
  * A function's parameters MUST be an object schema at the root. Zod renders a top-level
  * `discriminatedUnion`/`union` as a bare `oneOf`/`anyOf` with no `type`, and OpenAI-family
  * providers reject exactly that ("schema must be a JSON Schema of 'type: object', got
- * 'type: None'" — the `vault` tool, live via OpenRouter). Every variant of such a union is an
+ * 'type: None'" — the `Vault` tool, live via OpenRouter). Every variant of such a union is an
  * object, so stating the type at the root is a truth, not a coercion, and the variants keep
  * validating the discriminator. Anthropic and Gemini accept the same shape.
  */

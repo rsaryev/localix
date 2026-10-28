@@ -86,8 +86,8 @@ const REPLAY_TIER: Record<AgentStreamEvent['type'], EventTier> = {
   // filtered away blocks forever with nothing on screen to unblock it.
   'hitl.requested': ['replayable', 'roster'],
   'hitl.resolved': ['replayable', 'roster'],
-  // `roster`, for the same reason as the HITL pair above: a member asking the person a question
-  // is surfaced wherever they are, and the room it was asked in is by definition one they were
+  // `roster`, for the same reason as the HITL pair above: an agent asking the person a question
+  // is surfaced wherever they are, and the chat it was asked in is by definition one they were
   // not watching. Filtering it to the open session would leave the conversation waiting on
   // someone who was never told.
   'user.mentioned': ['replayable', 'roster'],

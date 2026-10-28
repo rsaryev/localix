@@ -91,7 +91,7 @@ export function BrowserCard({ item }: { item: ToolCallItem }) {
 
   return (
     <ToolLine
-      icon={toolMeta('browser').icon}
+      icon={toolMeta('Browser').icon}
       title={title}
       subtitle={subtitle}
       isLoading={streaming}
@@ -99,7 +99,7 @@ export function BrowserCard({ item }: { item: ToolCallItem }) {
     >
       <ToolBody>
         {item.resultText && !hasError && (
-          <IORow label="OUT">
+          <IORow label="Out">
             <OutputBlock>{item.resultText}</OutputBlock>
           </IORow>
         )}

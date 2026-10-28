@@ -24,7 +24,7 @@ export interface LoadedMiniApps {
   channels: Array<{ app: string; channel: MiniAppChannel; ctx: MiniAppContext }>
   /** Declarative system-prompt sections (size-capped by schema). */
   promptSections: Array<{ app: string; title: string; content: string }>
-  /** Each enabled mini app's guide, read on demand with `mini_app_guide`. */
+  /** Each enabled mini app's guide, read on demand with `MiniAppGuide`. */
   guides: Array<{ app: string; file: string; pages?: string }>
   /** The active external memory provider, or null. At most one: the first enabled app wins. */
   memory: { app: string; provider: MemoryProvider; ctx: MiniAppContext } | null

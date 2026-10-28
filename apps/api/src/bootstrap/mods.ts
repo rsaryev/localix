@@ -14,7 +14,7 @@ import { listDelegatedRuns } from '../features/chat/service/delegated-runs'
 import { createUsageRepository } from '../features/usage/repository'
 import { createUserProfileRepository } from '../features/user/repository'
 import { pluginDataDir } from '../features/ext/user-config-substitute'
-import type { ModsPorts } from '../features/mods/contracts'
+import { submittedContent, type ModsPorts } from '../features/mods/contracts'
 import { receiveDelivery } from '../features/mods/conversation-events'
 import { createModsHost, type ModsHost } from '../features/mods/host'
 import { loadEnabledPluginMods } from '../features/plugins/loader-declarative'
@@ -116,8 +116,7 @@ export function createModsPhase(input: {
     async submitPrompt(scene, input) {
       const wakes = deps.wakes()
       if (!scene.sessionId || !wakes) throw new Error('$.prompt.submit needs a conversation')
-      // Claude names the sender of a prompt a mod submits, unless it is the person's own words.
-      const content = input.asUser ? input.text : `[${input.plugin}] ${input.text}`
+      const content = submittedContent(input)
       wakes.send(
         {
           userId: scene.userId || defaultUserId,
@@ -236,6 +235,7 @@ export function createModsPhase(input: {
   hostRefs.mods = {
     refresh: refreshMods,
     commands: () => modsHost.registry.commands(),
+    agentGroups: () => modsHost.registry.agentGroups(),
     receive: (delivery) => receiveDelivery(modsHost, delivery),
   }
   return { modsHost, refreshMods }

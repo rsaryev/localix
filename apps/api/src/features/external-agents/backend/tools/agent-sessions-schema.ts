@@ -1,5 +1,5 @@
 /**
- * The model-facing contract for the `external_agent_sessions` tool.
+ * The model-facing contract for the `ExternalAgentSessions` tool.
  *
  * Follows the repo's schema-module convention (exemplar: `trading/backend/manage-chart-schema.ts`):
  * one flat `z.object` with an `action` enum and per-action optional params, `.describe()` on every
@@ -38,7 +38,7 @@ export function buildAgentSessionsSchema(z: typeof Zod) {
     action: z
       .enum(AGENT_SESSIONS_ACTIONS)
       .describe(
-        'What to do. "roster" lists external agent sessions (live and historical) — start here, every other action takes a key from it, and each row carries its event count so you can tell what reading it will cost. "wait" blocks until listed agents reach a state. "context" pulls transcripts from several sessions at once. "transcript" reads one without opening a terminal. "resume" returns the exact native continuation command; run it with bash action:"open" to open the session for the user. "stats" summarises them by agent, project and model, with the tokens each consumed — ask it when a count answers the question better than a list of hundreds.',
+        'What to do. "roster" lists external agent sessions (live and historical) — start here, every other action takes a key from it, and each row carries its event count so you can tell what reading it will cost. "wait" blocks until listed agents reach a state. "context" pulls transcripts from several sessions at once. "transcript" reads one without opening a terminal. "resume" returns the exact native continuation command; run it with `Bash` action:"open" to open the session for the user. "stats" summarises them by agent, project and model, with the tokens each consumed — ask it when a count answers the question better than a list of hundreds.',
       ),
     key: z
       .string()

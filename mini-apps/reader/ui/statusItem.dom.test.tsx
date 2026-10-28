@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
-import { act } from 'react'
+import { act, useEffect } from 'react'
 import { registerDom } from '@localixai/kit/testing'
 import type { StatusItemState } from '@localixai/mini-app-sdk/ui'
 import {
@@ -41,7 +41,11 @@ async function renderItem(sessionId: string | null) {
   } as unknown as MiniAppUiRuntime)
   let latest: StatusItemState | null = null
   function Probe() {
-    latest = useReaderStatusItem(sessionId)
+    const value = useReaderStatusItem(sessionId)
+    // Read by the test once the commit is done, not written while rendering.
+    useEffect(() => {
+      latest = value
+    })
     return null
   }
   const { createRoot } = await import('react-dom/client')

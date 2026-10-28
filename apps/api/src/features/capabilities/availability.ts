@@ -90,7 +90,7 @@ export async function readAvailability(
  * more specific. So an `allow` records a decision without ever widening one.
  *
  * Only rules that are exactly the SWITCH for a name are touched — action equal, resource
- * `*`. A rule the user wrote about particular arguments (`tool:bash` over `rm *`) is left
+ * `*`. A rule the user wrote about particular arguments (`tool:Bash` over `rm *`) is left
  * alone: "bash is available" and "ask before rm" are different statements, and a toggle
  * must not silently delete the second one.
  */
@@ -203,8 +203,8 @@ export function createAvailabilityWriter(db: Kysely<AppDatabase>): AvailabilityW
  *
  * WHERE it lands is the security half. The last match wins, so the row has to come after the
  * rule that raised the card (`outside-workspace ask`) or it silences nothing — but it used to be
- * APPENDED, which also put it after the danger guards. `tool:bash git * allow` below
- * `tool:bash dangerous ask` is the last match for `git push --force`, so "Always for git"
+ * APPENDED, which also put it after the danger guards. `tool:Bash git * allow` below
+ * `tool:Bash dangerous ask` is the last match for `git push --force`, so "Always for git"
  * quietly disarmed the one confirmation the user still wanted. It now goes in just before the
  * trailing guards that could decide the same calls: past everything else, never past a guard.
  */

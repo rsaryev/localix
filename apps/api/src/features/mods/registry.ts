@@ -1,3 +1,4 @@
+import type { LoadedPluginAgent } from '../plugins/loader-contract'
 import { pluginOfInstance } from './instance-id'
 
 /**
@@ -18,6 +19,8 @@ export interface ModCommand extends Owned {
   name: string
   description: string
   argumentHint?: string
+  /** `/name` typed while a turn is in flight runs at once (`CommandSpec.immediate`). */
+  immediate?: true
 }
 
 export interface ModTool extends Owned {
@@ -31,6 +34,8 @@ export interface ModAgent extends Owned {
   name: string
   description: string
   prompt: string
+  /** The definition a child runs as (`agent-definition.ts`). */
+  definition: LoadedPluginAgent
 }
 
 export interface ModPane extends Owned {
@@ -77,6 +82,16 @@ export function createModRegistry(onChange: () => void) {
       const agent = { ...owner(instance), ...spec, name }
       agents.set(key(instance, name), agent)
       return `${agent.plugin}:${name}`
+    },
+    /** The agent types mods registered, by plugin: what the agent catalog lists beside the files'. */
+    agentGroups(): { plugin: string; agents: LoadedPluginAgent[] }[] {
+      const groups = new Map<string, Map<string, LoadedPluginAgent>>()
+      for (const agent of agents.values()) {
+        const group = groups.get(agent.plugin) ?? new Map<string, LoadedPluginAgent>()
+        group.set(agent.definition.fullName, agent.definition)
+        groups.set(agent.plugin, group)
+      }
+      return [...groups].map(([plugin, group]) => ({ plugin, agents: [...group.values()] }))
     },
     /** `<plugin>:<name>` as an instance of that plugin registered it. */
     agent: (fullName: string, instances?: ReadonlySet<string>) =>

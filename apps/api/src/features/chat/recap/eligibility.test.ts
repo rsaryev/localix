@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { SYSTEM_PARTICIPANT, USER_PARTICIPANT } from '../../../db'
+import { SYSTEM_AUTHOR, USER_AUTHOR } from '../../../db'
 import type { PersistedMessage } from '../contracts'
 import { RECAP_AFTER_MS, recapEligibility } from './eligibility'
 
@@ -17,14 +17,14 @@ function row(
     userId: 'u',
     createdAt: iso,
     updatedAt: iso,
-    payload: { id, from: USER_PARTICIPANT, content: id, ...payload } as never,
+    payload: { id, from: USER_AUTHOR, content: id, ...payload } as never,
   }
 }
 
 const recapRow = (id: string, at: number) =>
   row(id, at, {
     role: 'user',
-    from: SYSTEM_PARTICIPANT,
+    from: SYSTEM_AUTHOR,
     uiOnly: true,
     systemNotice: { kind: 'session_recap', tone: 'neutral', text: 'Earlier recap.' },
   })

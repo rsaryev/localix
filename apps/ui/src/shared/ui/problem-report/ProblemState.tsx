@@ -53,7 +53,7 @@ export function ProblemState({ report, entryId, actions, icon, className }: Prob
       actions={
         <span className="flex flex-col items-center gap-2">
           {primary && (
-            <Button size="sm" variant="outline" recommended onClick={() => void primary.run()}>
+            <Button size="sm" variant="ghost" recommended onClick={() => void primary.run()}>
               {primary.label}
             </Button>
           )}

@@ -270,7 +270,7 @@ const EXEMPTIONS: Exemptions = {
     reason: "Adapter: a project's working folder, null for no project or one that is gone.",
   },
   [exemptionKey('bootstrap/store.ts', 'chatsOf(agentId)')]: {
-    reason: 'Adapter: counts the distinct chats among the seats an agent holds.',
+    reason: 'Adapter: counts the distinct chats among the routes an agent holds.',
   },
 }
 

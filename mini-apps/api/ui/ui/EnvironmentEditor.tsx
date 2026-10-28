@@ -117,7 +117,7 @@ export function EnvironmentEditor({
             title="No environments"
             body="Create one to reuse variables across requests."
             actions={
-              <Button type="button" variant="outline" size="sm" onClick={startNew}>
+              <Button type="button" variant="ghost" size="sm" onClick={startNew}>
                 <Plus className="size-3.5" />
                 New environment
               </Button>
@@ -199,7 +199,7 @@ export function EnvironmentEditor({
             <div className="flex w-44 shrink-0 items-center border-r border-border-soft px-2">
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
                 size="sm"
                 className="w-full justify-center gap-1.5"
                 onClick={startNew}
@@ -229,7 +229,7 @@ export function EnvironmentEditor({
                   !environments.find((environment) => environment.name === panel.name)?.active && (
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
                       disabled={saving}
                       onClick={() => void onUse(panel.name)}

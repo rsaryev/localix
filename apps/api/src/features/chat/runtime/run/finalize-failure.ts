@@ -65,7 +65,7 @@ export async function finalizeFailedRun(args: {
   }
   // A rate-limit / quota cap means the ROUTE has spent its allowance, not a bug. The cooldown
   // is recorded against the route this run took — not the session — so a conversation's other
-  // participants on other routes keep firing (route-cooldowns.ts). A transient 429 holds this
+  // agents on other routes keep firing (route-cooldowns.ts). A transient 429 holds this
   // model; a spent plan (non-retryable) holds the whole connection.
   if (info.rateLimited) {
     env.state.routeCooldowns.hold(

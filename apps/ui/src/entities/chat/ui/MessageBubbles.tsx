@@ -43,13 +43,10 @@ export function TextBubble({
   content,
   isUser,
   isStreaming,
-  mentionHandles,
 }: {
   content: string
   isUser: boolean
   isStreaming?: boolean
-  /** The conversation's members, for clickable `@handle` mentions. */
-  mentionHandles?: readonly string[]
 }) {
   const command = isUser ? detectCommand(content) : null
   return (
@@ -74,13 +71,7 @@ export function TextBubble({
           {command.arg && <span className="break-words leading-relaxed">{command.arg}</span>}
         </span>
       ) : (
-        <MessageText
-          text={content}
-          isStreaming={isStreaming}
-          linkifyMentions={isUser}
-          mentionHandles={mentionHandles}
-          linkifyAgentNames={!isUser}
-        />
+        <MessageText text={content} isStreaming={isStreaming} linkifyMentions={isUser} />
       )}
     </div>
   )

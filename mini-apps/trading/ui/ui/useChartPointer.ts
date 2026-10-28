@@ -2,7 +2,7 @@
  * Pointer interaction: the crosshair OHLCV/indicator readout, hover + selection of indicators and
  * drawings, the measure tool, and the viewport handler (live-edge pill, backfill, snapshot range).
  */
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type {
   CandlestickData,
   HistogramData,
@@ -41,11 +41,14 @@ export function useChartInteraction() {
   const hoveringRef = useRef(false)
   const hoveredIndicatorIdRef = useRef<string | null>(null)
   const selectedDrawingIdRef = useRef(selectedDrawingId)
-  selectedDrawingIdRef.current = selectedDrawingId
   const measuringRef = useRef(measuring)
-  measuringRef.current = measuring
   const measureRef = useRef(measure)
-  measureRef.current = measure
+  // Mirrors for handlers subscribed once to the chart; written at commit, never while rendering.
+  useLayoutEffect(() => {
+    selectedDrawingIdRef.current = selectedDrawingId
+    measuringRef.current = measuring
+    measureRef.current = measure
+  }, [selectedDrawingId, measuring, measure])
   return {
     legend,
     setLegend,

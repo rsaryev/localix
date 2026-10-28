@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type DragEvent } from 'react'
+import { useEffect, useEffectEvent, useRef, useState, type DragEvent } from 'react'
 import {
   setCompactDragImage,
   setElementDragImage,
@@ -65,8 +65,6 @@ export function useTabReorder<T extends string>({
   const cancelled = useRef(false)
   const dropped = useRef(false)
   const stopObservingKeys = useRef<(() => void) | null>(null)
-  const callbacks = useRef({ onDragStateChange, onItemDragEnd })
-  callbacks.current = { onDragStateChange, onItemDragEnd }
   const [draggingId, setDraggingId] = useState<T | null>(null)
   const [dragOverId, setDragOverId] = useState<T | null>(null)
   const [dragOverEnd, setDragOverEnd] = useState(false)
@@ -83,14 +81,22 @@ export function useTabReorder<T extends string>({
     setDragOverId(null)
     setDragOverEnd(false)
     setDraggingId(null)
-    callbacks.current.onDragStateChange?.(false)
-    if (id) callbacks.current.onItemDragEnd?.(id, event, wasCancelled)
+    onDragStateChange?.(false)
+    if (id) onItemDragEnd?.(id, event, wasCancelled)
   }
 
-  const finish = useRef(endDrag)
-  finish.current = endDrag
+  // The window-level listeners below outlive any one render, so they reach the newest
+  // `endDrag` (and the host callbacks it closes over) through effect events.
+  const endFromWindow = useEffectEvent((event: globalThis.DragEvent) => endDrag(event))
+  const abandonDrag = useEffectEvent(() => {
+    if (!inFlight.current) return
+    inFlight.current = false
+    onDragStateChange?.(false)
+    const id = dragId.current
+    if (id) onItemDragEnd?.(id, null, true)
+  })
   useEffect(() => {
-    const end = (event: globalThis.DragEvent) => finish.current(event)
+    const end = (event: globalThis.DragEvent) => endFromWindow(event)
     // Finder can focus before WebKit sends dragend. Blur clears hover feedback,
     // but the source and cancellation state must survive until that final event.
     const blur = () => {
@@ -108,12 +114,7 @@ export function useTabReorder<T extends string>({
       window.removeEventListener('blur', blur)
       window.removeEventListener('drop', accept, true)
       stopObservingKeys.current?.()
-      if (inFlight.current) {
-        inFlight.current = false
-        callbacks.current.onDragStateChange?.(false)
-        const id = dragId.current
-        if (id) callbacks.current.onItemDragEnd?.(id, null, true)
-      }
+      abandonDrag()
     }
   }, [])
 

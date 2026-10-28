@@ -111,7 +111,7 @@ and interruption lifetime. Current trigger coverage is explicit:
 
 Three producer facts are deliberately not rows. A slash-command reply is wrapped in a
 `run.completed` marked `synthetic`; a login shell the person opened exits with `interactive`; and a
-`bash notify` job's exit carries `wakesAgent`, because the turn it wakes reports it. A failure in a
+`Bash notify` job's exit carries `wakesAgent`, because the turn it wakes reports it. A failure in a
 sub-agent or job is reported once, by its `child.*` row, even while that session is on screen.
 
 ### Retry a failed run

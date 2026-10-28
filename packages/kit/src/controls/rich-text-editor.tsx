@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState, type AriaAttributes } from 'react'
+import { useEffect, useId, useLayoutEffect, useMemo, useState, type AriaAttributes } from 'react'
 import { Extension } from '@tiptap/core'
 import { EditorState, Plugin } from '@tiptap/pm/state'
 import { EditorContent, useEditor } from '@tiptap/react'
@@ -38,6 +38,47 @@ export interface RichTextEditorProps extends Pick<
   className?: string
 }
 
+type Props = { onChange: (value: RichTextDocument) => void; maxLength: number }
+/** The newest props, readable from the editor's own callbacks without a ref. */
+type LatestProps = { get: () => Props; set: (next: Props) => void }
+
+function createLatestProps(initial: Props): LatestProps {
+  let value = initial
+  return {
+    get: () => value,
+    set: (next) => {
+      value = next
+    },
+  }
+}
+
+/** The plugin that refuses an edit past the length or formatting limits, and says why. */
+function boundedRichText(limits: LatestProps, report: (message: string) => void) {
+  return Extension.create({
+    name: 'boundedRichText',
+    addProseMirrorPlugins() {
+      return [
+        new Plugin({
+          filterTransaction(transaction) {
+            if (!transaction.docChanged) return true
+            const parsed = richTextSchema.safeParse(transaction.doc.toJSON())
+            const { maxLength } = limits.get()
+            const accepted = parsed.success && richTextToText(parsed.data).length <= maxLength
+            report(
+              accepted
+                ? ''
+                : parsed.success
+                  ? `Text exceeds ${maxLength.toLocaleString()} characters. Shorten the text before inserting it.`
+                  : 'Text exceeds the supported formatting or nesting limits.',
+            )
+            return accepted
+          },
+        }),
+      ]
+    },
+  })
+}
+
 /** Controlled prose: paragraphs, bold, italic, lists and safe links, stored as JSON. */
 export function RichTextEditor({
   value,
@@ -55,35 +96,12 @@ export function RichTextEditor({
     control['aria-readonly'] === true ||
     control['aria-readonly'] === 'true',
   )
-  const current = useRef({ onChange, maxLength })
-  current.current = { onChange, maxLength }
-  const bounds = useMemo(
-    () =>
-      Extension.create({
-        name: 'boundedRichText',
-        addProseMirrorPlugins() {
-          return [
-            new Plugin({
-              filterTransaction(transaction) {
-                if (!transaction.docChanged) return true
-                const parsed = richTextSchema.safeParse(transaction.doc.toJSON())
-                const accepted =
-                  parsed.success && richTextToText(parsed.data).length <= current.current.maxLength
-                setFeedback(
-                  accepted
-                    ? ''
-                    : parsed.success
-                      ? `Text exceeds ${current.current.maxLength.toLocaleString()} characters. Shorten the text before inserting it.`
-                      : 'Text exceeds the supported formatting or nesting limits.',
-                )
-                return accepted
-              },
-            }),
-          ]
-        },
-      }),
-    [],
-  )
+  const [current] = useState(() => createLatestProps({ onChange, maxLength }))
+  // The editor's plugin and update hook outlive a render, so they read the newest props here.
+  useLayoutEffect(() => {
+    current.set({ onChange, maxLength })
+  })
+  const bounds = useMemo(() => boundedRichText(current, setFeedback), [current])
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -108,7 +126,7 @@ export function RichTextEditor({
     content: richTextDocument(value),
     editable: !disabled,
     onUpdate: ({ editor: updated }) =>
-      current.current.onChange(richTextSchema.parse(updated.getJSON())),
+      current.get().onChange(richTextSchema.parse(updated.getJSON())),
   })
   const attributesJson = JSON.stringify({
     role: 'textbox',

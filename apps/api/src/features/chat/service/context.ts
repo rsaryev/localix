@@ -1,7 +1,6 @@
 import type { PermissionMode } from '../../../contracts/permission-modes'
 import type { PermissionRule } from '../../agent-core/permission-engine'
 import type { SkillShellPolicy } from './skill-render'
-import type { SemanticVectors } from '@localixai/mini-app-sdk/backend'
 import type { DecisionService } from '../../decisions/service'
 import type { GlobalSearchPort } from '../../agent-core/tools/global-search/global-search'
 import type { Kysely } from 'kysely'
@@ -54,7 +53,7 @@ export interface ChatServiceDeps {
   ) => Promise<{ defaultMode?: PermissionMode; bypassDisabled: boolean }>
   resolveSessionAgent?: ResolveSessionAgent
   /**
-   * The model each agent's own card names, by agent ID — the third link of the model chain
+   * The model the person chose for each agent, by agent ID — the third link of the model chain
    * (see `agent-route-resolution.ts`). A dependency rather than a registry read, because the
    * agent catalog is the agents feature's and chat may not import it; a host that wires
    * nothing simply has one fewer level, which the chain already handles.
@@ -99,7 +98,7 @@ export interface ChatServiceDeps {
   runner?: AgentRunner
   agentRuntime: AgentRuntime
   languageModelFactory: LanguageModelFactory
-  /** The engine's script sandbox, for the `codemode` tool; absent where the engine has none. */
+  /** The engine's script sandbox, for `Workflow` scripts; absent where the engine has none. */
   scripts?: ScriptSandbox
   /**
    * Other features' stores and the host's plugin service, built by the composition root
@@ -185,46 +184,28 @@ export interface ChatServiceDeps {
   /** The mods host: Claude Code hooks modules — commands, tools and turn events of mods. */
   mods?: ModsHost
   /**
-   * The `configure` tool's host (features/config-proposals). Same forward-holder shape as
+   * The `Configure` tool's host (features/config-proposals). Same forward-holder shape as
    * `monitors`: it is composed after chat because it writes through the toggle service.
    */
   configProposals?: ConfigProposalService
-  /** The `plan` tool's host (features/plans). Forward-held like `configProposals`. */
+  /** The `Plan` tool's host (features/plans). Forward-held like `configProposals`. */
   plans?: PlanService
   /** "Continue" — the conversation's unfinished work (features/resume). Forward-held. */
   resume?: ResumeRegistry
-  /** Global search, the one the search palette uses — the agent's `global_search` tool. */
+  /** Global search, the one the search palette uses — the agent's `GlobalSearch` tool. */
   globalSearch?: GlobalSearchPort
   /**
-   * The Store (features/store): the agent's `store` tool and the `/plugin` commands go through it.
+   * The Store (features/store): the agent's `Store` tool and the `/plugin` commands go through it.
    * Forward-held like `globalSearch`, since the Store is composed after chat.
    */
   store?: StoreAgentPort
-  /**
-   * The embedding model on demand (`embeddings/semantic-vectors.ts`), null while it cannot run.
-   * Group routing's fallback when no decision model is reachable (`floor-advisor.ts`).
-   */
-  vectors?: SemanticVectors
-  /** The decision model (`features/decisions`): group routing's first strategy. */
+  /** The decision model (`features/decisions`): games, the browser's goal check and mini apps. */
   decisions?: DecisionService
   /**
    * The editor's open-buffer text for a file (possibly unsaved), from the LSP document service.
    * Same forward-holder shape as `monitors`: the service is composed after chat.
    */
   editorBufferText?: (userId: string, file: string) => string | undefined
-  /** Agent roster scoped to the requesting invocation host. */
-  listInvocableRegistryAgents?: (
-    userId: string,
-    host: string,
-    projectId: string | null,
-  ) => Promise<
-    {
-      agentId: string
-      name: string
-      description: string
-      leadershipPriority?: number
-    }[]
-  >
   /**
    * The agent the `agent` setting names for a folder (Claude Code's settings files, then the
    * agents' catalog): the main thread runs as it. Null: none named, or it is not available.
@@ -243,9 +224,7 @@ export interface ChatServiceDeps {
       agentId: string
       name: string
       description: string
-      leadershipPriority?: number
       enabled: boolean
-      canJoinConversation: boolean
     }[]
   >
   /**

@@ -30,18 +30,18 @@ import type { RunStanding } from './policy'
 export type ResolvedTurn = Awaited<ReturnType<typeof resolveRunTurn>>
 
 export async function resolveRunTurn(frame: RunFrame, standing: RunStanding) {
-  const { env, params, userId, speakerAgentId, assistantMessageId } = frame
+  const { env, params, userId, agentId, assistantMessageId } = frame
   const { deps, repo, now } = env
   const initialSession = frame.session
-  if (!initialSession.agents.length || initialSession.agents.some((agent) => !agent.agentId)) {
+  if (!initialSession.agent?.agentId) {
     throw new AgentRunError('AGENT_UNAVAILABLE', 'Session has no valid agent assignment')
   }
-  const speaker = sessionAgent(initialSession, speakerAgentId)
+  const answering = sessionAgent(initialSession)
   const invocation = standing.policy.invocation.admissionHost
   const admittedAgent = await requireRunAgent(
     (await awaitAgentService())?.resolveRunAgent,
     userId,
-    speakerAgentId,
+    agentId,
     invocation,
     initialSession.projectId,
     invocationApprovalRequester({
@@ -61,13 +61,13 @@ export async function resolveRunTurn(frame: RunFrame, standing: RunStanding) {
     repo,
     userId,
     sessionId: initialSession.id,
-    agent: speaker,
+    agent: answering,
     assistantMessageId,
     historyMessages: params.historyMessages,
     now,
   })
 
-  if (!frame.speakerRoute.modelId) {
+  if (!frame.route.modelId) {
     throw new AgentRunError('NO_MODEL', 'No model selected for this session')
   }
 
@@ -82,32 +82,21 @@ export async function resolveRunTurn(frame: RunFrame, standing: RunStanding) {
     env,
     userId,
     session: initialSession,
-    agentId: speakerAgentId,
+    agentId,
     state,
     catalog,
   })
 
-  const reboundSession = rebindResolvedProvider(initialSession, model.connection.id, speakerAgentId)
+  const reboundSession = rebindResolvedProvider(initialSession, model.connection.id)
   if (reboundSession !== initialSession) {
     frame.session = reboundSession
-    frame.speakerRoute = agentRoute(reboundSession, speakerAgentId)!
-    frame.runtimeSession = rebindResolvedProvider(
-      frame.runtimeSession,
-      model.connection.id,
-      speakerAgentId,
-    )
+    frame.route = agentRoute(reboundSession)!
+    frame.runtimeSession = rebindResolvedProvider(frame.runtimeSession, model.connection.id)
     env.state.activeRunSessions.set(reboundSession.id, {
       userId,
       session: frame.runtimeSession,
-      agentId: speakerAgentId,
     })
-    await persistReboundConnection(
-      repo,
-      userId,
-      reboundSession,
-      model.connection.id,
-      speakerAgentId,
-    )
+    await persistReboundConnection(repo, userId, reboundSession, model.connection.id)
     deps.streamRegistry.publish(userId, reboundSession.id, {
       type: 'session.updated',
       // The runtime row, not the rebound one: rebinding must not bounce a child/job session's
@@ -132,7 +121,7 @@ export async function resolveRunTurn(frame: RunFrame, standing: RunStanding) {
     // budget against the same value so the checkpoint fires at the ceiling the request fits.
     contextLimit: agentModelSettingsFor(
       globalAgentSettings?.agentModelSettings,
-      speakerAgentId,
+      agentId,
       model.providerId,
       catalogModel?.id ?? model.effectiveModelId,
     )?.contextLimit,

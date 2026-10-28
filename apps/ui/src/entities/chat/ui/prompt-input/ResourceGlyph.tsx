@@ -1,3 +1,4 @@
+import { createElement } from 'react'
 import {
   Box,
   FileDiff,
@@ -28,5 +29,6 @@ const RESOURCE_ICONS: Record<string, LucideIcon> = {
 export function ResourceGlyph({ icon }: { icon?: string }) {
   const key = icon ?? ''
   const Icon = RESOURCE_ICONS[key] ?? resourceRefIcon(key) ?? Box
-  return <Icon className="size-3.5 text-text-soft" />
+  // The icon is a lookup in stable registries, not a component made here; `createElement` says so.
+  return createElement(Icon, { className: 'size-3.5 text-text-soft' })
 }

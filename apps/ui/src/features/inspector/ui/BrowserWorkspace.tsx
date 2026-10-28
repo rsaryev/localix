@@ -77,7 +77,7 @@ export function BrowserWorkspace({
             history: {
               total: visits.length,
               recent: visits.slice(0, 5).map(({ url, title }) => ({ url, title })),
-              tool: `${TOOL.browser} action=history`,
+              tool: `${TOOL.Browser} action=history`,
             },
           }),
         }),

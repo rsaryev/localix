@@ -34,16 +34,16 @@ export interface QueuePanelItem {
   wakeSource?: WakeSource
   /** Backend delivery boundary; next-tool is live steering, held a report awaiting siblings. */
   delivery?: SessionQueueItem['delivery']
-  /** A participant's queued turn: shown as who answers, not as the runtime's ticket text. */
-  agent?: { handle: string; name: string }
+  /** An agent's queued turn: shown as who answers, not as the runtime's ticket text. */
+  agent?: { name: string }
   /** Why a `failed` item's delivery failed every retry; it waits for retry or removal. */
   failure?: string
 }
 
-/** What the row IS, in one 16px column: a face for a participant, a glyph for the rest. */
+/** What the row IS, in one 16px column: a face for an agent, a glyph for the rest. */
 export function QueueItemGlyph({ item }: { item: QueuePanelItem }) {
   if (item.agent)
-    return <MonogramAvatar identity={item.agent.handle} label={item.agent.name} size={16} />
+    return <MonogramAvatar identity={item.agent.name} label={item.agent.name} size={16} />
   const source = item.wakeSource ? WAKE_SOURCE_META[item.wakeSource] : undefined
   // A wake with no recorded source is still the runtime's, never a message of the person's.
   const Icon = source?.Icon ?? (item.queueKind === 'wake' ? Clock3 : MessageSquareText)
@@ -69,7 +69,7 @@ export function QueueItemRow({
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const deletesInternalWake = item.queueKind === 'wake'
-  // A participant's turn is cancelled in one click: it holds no text of anyone's to lose, and
+  // An agent's turn is cancelled in one click: it holds no text of anyone's to lose, and
   // the chip strip above shows who is still in line. Other wakes (loops, mini apps) confirm.
   const confirmsDelete = deletesInternalWake && !item.agent
   const capabilities = item.queueKind ? queueItemCapabilities(item.queueKind) : null

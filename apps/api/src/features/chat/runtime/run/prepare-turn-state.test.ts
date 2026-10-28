@@ -3,7 +3,7 @@ import { describe, expect, mock, test } from 'bun:test'
 import type { PersistedMessage } from '../../contracts'
 import type { ChatRepository } from '../../repository'
 import { prepareTurnState } from './prepare-turn-state'
-import { DEFAULT_AGENT_PARTICIPANT, USER_PARTICIPANT } from '../../../../db'
+import { DEFAULT_AGENT_AUTHOR, USER_AUTHOR } from '../../../../db'
 
 const message = (
   id: string,
@@ -16,7 +16,7 @@ const message = (
   payload: {
     id,
     role: id.startsWith('assistant') ? 'assistant' : 'user',
-    from: id.startsWith('assistant') ? DEFAULT_AGENT_PARTICIPANT : USER_PARTICIPANT,
+    from: id.startsWith('assistant') ? DEFAULT_AGENT_AUTHOR : USER_AUTHOR,
     content: id,
     ...(timing ? { timing } : {}),
   },
@@ -54,7 +54,7 @@ describe('prepareTurnState', () => {
       repo,
       userId: 'user-a',
       sessionId: 'session-a',
-      agent: DEFAULT_AGENT_PARTICIPANT,
+      agent: DEFAULT_AGENT_AUTHOR,
       assistantMessageId: assistant.id,
       historyMessages,
       now: () => 'fallback',

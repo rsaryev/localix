@@ -120,7 +120,7 @@ export function createWriteTool(
   }
 
   return defineAgentTool<WriteToolInput, WriteToolDetails>({
-    name: TOOL.write,
+    name: TOOL.Write,
     label: 'Write',
     activeVerb: 'Writing',
     description: [

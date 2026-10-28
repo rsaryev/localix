@@ -45,11 +45,18 @@ export function TradingWorkspace({
     saveTradingArea(next)
   }
 
+  // A requested area (a link, a chip) is applied while rendering; only remembering it, a side
+  // effect, waits for the commit.
+  const [appliedArea, setAppliedArea] = useState<TradingArea | undefined>(undefined)
+  if (requestedArea !== appliedArea) {
+    setAppliedArea(requestedArea)
+    if (requestedArea) {
+      setVisited((current) => new Set(current).add(requestedArea))
+      setAreaState(requestedArea)
+    }
+  }
   useEffect(() => {
-    if (!requestedArea) return
-    setVisited((current) => new Set(current).add(requestedArea))
-    setAreaState(requestedArea)
-    saveTradingArea(requestedArea)
+    if (requestedArea) saveTradingArea(requestedArea)
   }, [requestedArea])
 
   // No ground coat: the hosting pane already paints one, and under the host's macOS glass theme

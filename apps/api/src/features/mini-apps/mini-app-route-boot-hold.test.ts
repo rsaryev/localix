@@ -46,7 +46,7 @@ describe('mini app routes before the first reconcile', () => {
     const { host, wire } = fakeHost()
     const app = appWith(host)
     const pending = app.request('/rpc/example-mini-app/status')
-    setTimeout(() => wire('/rpc/example-mini-app'), 20)
+    setTimeout(() => wire('/rpc/example-mini-app'), 0)
     const response = await pending
     expect(response.status).toBe(200)
     expect(await response.json()).toEqual({ miniApp: true })

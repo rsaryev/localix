@@ -6,6 +6,7 @@ import { EmptyHint, LoadingHint } from '@localixai/kit/empty-hint'
 
 import type { ReaderSource, ReaderStatsResponse } from '../shared/contracts'
 import { readerApi } from './api'
+import { useLatest } from '@localixai/mini-app-sdk/ui/runtime-hooks'
 import { readerActivityWindow } from './model'
 import { useReaderPaneProblem } from './readerSources'
 import './reader.css'
@@ -40,28 +41,45 @@ export function useReaderStatsTracker({
   observe: boolean
 }) {
   const [stats, setStats] = useState<ReaderStatsResponse | null>(null)
-  const [loading, setLoading] = useState(false)
+  // Observing a book's stats begins a read of them, so the panel is loading from the render that
+  // observes, not a render later.
+  const observed = observe ? source : null
+  const [loading, setLoading] = useState(observed !== null)
+  const [observedBefore, setObservedBefore] = useState(observed)
+  if (observedBefore !== observed) {
+    setObservedBefore(observed)
+    if (observed) setLoading(true)
+  }
   const [error, setError] = useState<string | null>(null)
   const sessionIdRef = useRef(crypto.randomUUID())
   const segmentStartRef = useRef<number | null>(null)
   const lastActivityRef = useRef(0)
-  const observeRef = useRef(observe)
-  const metricsRef = useRef({ chapter, position, totalPositions, progress })
-  observeRef.current = observe
-  metricsRef.current.progress = progress
+  const observeRef = useLatest(observe)
+  const progressRef = useLatest(progress)
+  const metricsRef = useRef({ chapter, position, totalPositions })
 
-  const load = useCallback(async () => {
+  // One read of the stats: what it settles is set when the answer arrives.
+  const read = useCallback(
+    () =>
+      new Promise<ReaderStatsResponse>((resolve) => resolve(readerApi.stats(source)))
+        .then(
+          (next) => {
+            setStats(next)
+            setError(null)
+          },
+          (cause: unknown) => {
+            acknowledgeInline(cause)
+            setError(cause instanceof Error ? cause.message : String(cause))
+          },
+        )
+        .finally(() => setLoading(false)),
+    [source],
+  )
+  /** A read asked for from outside (a retry, a new session recorded) shows as loading. */
+  const load = useCallback(() => {
     setLoading(true)
-    try {
-      setStats(await readerApi.stats(source))
-      setError(null)
-    } catch (cause) {
-      acknowledgeInline(cause)
-      setError(cause instanceof Error ? cause.message : String(cause))
-    } finally {
-      setLoading(false)
-    }
-  }, [source])
+    return read()
+  }, [read])
 
   const flush = useCallback(
     (stop: boolean) => {
@@ -82,7 +100,7 @@ export function useReaderStatsTracker({
           chapter: metrics.chapter,
           position: metrics.position,
           totalPositions: metrics.totalPositions,
-          progress: metrics.progress,
+          progress: progressRef.current,
           timezoneOffset: new Date(ended).getTimezoneOffset(),
         })
         .then(() => {
@@ -90,7 +108,7 @@ export function useReaderStatsTracker({
         })
         .catch(() => undefined)
     },
-    [load, source],
+    [load, source, observeRef, progressRef],
   )
 
   const markActivity = useCallback(() => {
@@ -102,12 +120,7 @@ export function useReaderStatsTracker({
 
   useEffect(() => {
     flush(false)
-    metricsRef.current = {
-      chapter,
-      position,
-      totalPositions,
-      progress: metricsRef.current.progress,
-    }
+    metricsRef.current = { chapter, position, totalPositions }
     markActivity()
   }, [chapter, flush, markActivity, position, totalPositions])
 
@@ -134,8 +147,8 @@ export function useReaderStatsTracker({
   }, [enabled, flush, markActivity])
 
   useEffect(() => {
-    if (observe) void load()
-  }, [load, observe])
+    if (observe) void read()
+  }, [read, observe])
 
   return { stats, loading, error, load, markActivity }
 }
@@ -172,6 +185,7 @@ export function ReaderStatsPanel({
   error: string | null
   onRetry: () => void
 }) {
+  const [today] = useState(() => localDateKey(new Date()))
   const problem = useReaderPaneProblem('reading activity', result ? null : error, [
     { id: 'retry', label: 'Try again', run: onRetry },
   ])
@@ -185,7 +199,7 @@ export function ReaderStatsPanel({
       </EmptyHint>
     )
   }
-  const activity = readerActivityWindow(stats.daily, localDateKey(new Date()))
+  const activity = readerActivityWindow(stats.daily, today)
   const peak = Math.max(...activity.map((day) => day.readMs), 1)
   return (
     <div className="space-y-5 p-3">

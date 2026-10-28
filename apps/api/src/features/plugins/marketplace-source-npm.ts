@@ -48,20 +48,15 @@ const NPM_NAME_RE = /^(@[a-z0-9~][\w.~-]*\/)?[a-z0-9~][\w.~-]*$/
 /**
  * Recognize an entry-source object as an npm source. Returns null for non-npm objects;
  * throws when it IS npm-shaped but unusable (no/invalid package name). Accepts the
- * spec form (`source:"npm"` + `package`) plus the legacy `npm:"pkg"` shorthand.
+ * spec form `source:"npm"` + `package`, as Claude Code's marketplace schema writes it.
  */
 export function parseNpmEntrySource(
   entryName: string,
   obj: Record<string, unknown>,
 ): NpmEntrySource | null {
-  // Spec form (`source:"npm"`), the legacy `npm:"pkg"` shorthand, or a bare `package`
-  // key with no git coordinates (what the pre-support detector also treated as npm).
-  const isNpm =
-    obj.source === 'npm' ||
-    typeof obj.npm === 'string' ||
-    (typeof obj.package === 'string' && typeof obj.url !== 'string' && typeof obj.repo !== 'string')
+  const isNpm = obj.source === 'npm'
   if (!isNpm) return null
-  const raw = typeof obj.package === 'string' ? obj.package : (obj.npm as string | undefined)
+  const raw = typeof obj.package === 'string' ? obj.package : undefined
   if (raw && /^https?:\/\//i.test(raw)) return tarballSource(entryName, raw)
   // `@org/formatter@2.0.0`: a version appended to the name (the scope's `@` is not one).
   const at = raw ? raw.lastIndexOf('@') : -1

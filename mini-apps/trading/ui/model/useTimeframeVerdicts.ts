@@ -57,16 +57,29 @@ export function useTimeframeVerdicts(
   )
 
   // A market change always clears — even while parked (enabled=false), so a re-open can never
-  // paint one frame of the PREVIOUS market's dots before the fetch effect resets them.
-  useEffect(() => {
+  // paint one frame of the PREVIOUS market's dots before the fetch effect fills them in. Like the
+  // seeding below, it happens while rendering: a reset effect would paint that frame first.
+  const market = `${connectionId}/${symbol}`
+  const [seenMarket, setSeenMarket] = useState(market)
+  if (seenMarket !== market) {
+    setSeenMarket(market)
     setVerdicts({})
-  }, [connectionId, symbol])
+  }
+  // Entering a run (first enable, or a changed market/timeframe set) paints what the cache still
+  // holds; parking forgets the run, so a re-enable seeds again.
+  const run = `${market}/${key}`
+  const [seededRun, setSeededRun] = useState<string | null>(enabled ? run : null)
+  if (enabled && seededRun !== run) {
+    setSeededRun(run)
+    setVerdicts(seedFromCache(connectionId, symbol, key))
+  } else if (!enabled && seededRun !== null) {
+    setSeededRun(null)
+  }
 
   useEffect(() => {
     if (!enabled) return
     let alive = true
     const seeded = seedFromCache(connectionId, symbol, key)
-    setVerdicts(seeded)
     for (const tf of key.split(',')) {
       if (seeded[tf] !== undefined) continue // fresh in cache — skip the fetch entirely
       tradingApi

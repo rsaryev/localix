@@ -28,7 +28,7 @@ const draft = (n: number) => ({ title: `Cache v${n}`, body: `## Goal\nStep ${n}`
 
 describe('repeating a decision', () => {
   test('approving twice in the same mode answers the list and wakes nobody again', async () => {
-    const v1 = await life.plans.present(life.owner, 'agent-lead', draft(1))
+    const v1 = await life.plans.present(life.owner, draft(1))
     await life.plans.approve(life.owner, v1.id, 'autonomous')
     life.drain()
 
@@ -42,7 +42,7 @@ describe('repeating a decision', () => {
   })
 
   test('a conflicting decision is a 409 carrying every version as it is now', async () => {
-    const v1 = await life.plans.present(life.owner, 'agent-lead', draft(1))
+    const v1 = await life.plans.present(life.owner, draft(1))
     await life.plans.approve(life.owner, v1.id, 'autonomous')
     life.drain()
 
@@ -59,14 +59,14 @@ describe('repeating a decision', () => {
   })
 
   test('dismissing a dismissed version answers it; dismissing a completed one conflicts', async () => {
-    const v1 = await life.plans.present(life.owner, 'agent-lead', draft(1))
+    const v1 = await life.plans.present(life.owner, draft(1))
     await life.plans.dismiss(life.owner, v1.id)
     life.drain()
     const again = await life.plans.dismiss(life.owner, v1.id)
     expect(again.plan.status).toBe('dismissed')
     expect(life.drain()).toEqual([])
 
-    const v2 = await life.plans.present(life.owner, 'agent-lead', draft(2))
+    const v2 = await life.plans.present(life.owner, draft(2))
     await life.plans.approve(life.owner, v2.id, 'default')
     await life.plans.complete(life.owner, 'done')
     const refusal = await life.plans.dismiss(life.owner, v2.id).catch((e) => e)
@@ -80,11 +80,11 @@ describe('repeating a decision', () => {
 
 describe('awaiting_person', () => {
   test('is set only on the presented version, through every transition', async () => {
-    const v1 = await life.plans.present(life.owner, 'agent-lead', draft(1))
+    const v1 = await life.plans.present(life.owner, draft(1))
     expect(await life.awaitingFlags()).toEqual(['v1 presented awaiting=1'])
 
     // Superseded by v2.
-    const v2 = await life.plans.present(life.owner, 'agent-lead', draft(2))
+    const v2 = await life.plans.present(life.owner, draft(2))
     expect(await life.awaitingFlags()).toEqual([
       'v2 presented awaiting=1',
       'v1 superseded awaiting=0',
@@ -106,7 +106,7 @@ describe('awaiting_person', () => {
 
     // Presented, dismissed by leaving Plan mode, restored by returning to it.
     await life.setMode('plan')
-    const v3 = await life.plans.present(life.owner, 'agent-lead', draft(3))
+    const v3 = await life.plans.present(life.owner, draft(3))
     await life.setMode('default')
     expect((await life.awaitingFlags())[0]).toBe('v3 dismissed awaiting=0')
     await life.setMode('plan')
@@ -125,13 +125,11 @@ describe('awaiting_person', () => {
 
 describe('the plan tab cue', () => {
   test('fires once per presentation or restore, and never for a decision', async () => {
-    const v1 = await life.plans.present(life.owner, 'agent-lead', draft(1))
+    const v1 = await life.plans.present(life.owner, draft(1))
     expect(life.presentedCues.splice(0)).toEqual(['v1'])
 
     // The same draft again is `unchanged`: nothing was presented, nothing to open.
-    expect((await life.service.present(life.owner, 'agent-lead', draft(1))).outcome).toBe(
-      'unchanged',
-    )
+    expect((await life.service.present(life.owner, draft(1))).outcome).toBe('unchanged')
     expect(life.presentedCues.splice(0)).toEqual([])
 
     // Set aside by the mode, restored by the return to Plan mode: one cue for the restore.

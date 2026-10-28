@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { ConsoleOutput } from './ConsoleOutput'
-import { DiffStat, LinkedText, OutputBlock } from './ToolIO'
+import { LinkedText } from './LinkedText'
+import { DiffStat, OutputBlock } from './ToolIO'
 
 describe('OutputBlock projection', () => {
   test('colors detected JSON safely and keeps source paths and URLs actionable', () => {

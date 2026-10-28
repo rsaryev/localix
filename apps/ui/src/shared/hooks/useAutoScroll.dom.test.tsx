@@ -1,6 +1,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test'
 
 import { registerDom } from '@localixai/kit/testing/dom'
+import { adopt, tap } from '@/testing/hookProbe'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -99,14 +100,14 @@ describe('the scroll-to-bottom button', () => {
 
     // It now fits on one screen (branch switch, cleared history, a collapsed tool card).
     const node = viewport({ scrollHeight: 300, clientHeight: 300, scrollTop: 0 })
-    let shown: boolean | undefined
+    const shown = tap<boolean>()
     function Probe() {
       const { scrollRef, showScrollToBottom } = useAutoScroll<HTMLDivElement>('s1')
-      shown = showScrollToBottom
+      shown.put(showScrollToBottom)
       // Assigned during RENDER, not in an effect: the hook's own effects (restore, listeners) run
       // before a child effect would, and with a null ref they no-op — which made the first version
       // of this test pass without exercising the restore path at all.
-      scrollRef.current = node
+      adopt(scrollRef, node)
       return null
     }
     const root = createRoot(document.createElement('div'))
@@ -115,7 +116,7 @@ describe('the scroll-to-bottom button', () => {
       await act(async () => {
         await Promise.resolve()
       })
-      expect(shown, 'nothing to scroll to — the button must not appear').toBe(false)
+      expect(shown.value, 'nothing to scroll to — the button must not appear').toBe(false)
     } finally {
       await act(async () => root.unmount())
     }
@@ -144,7 +145,7 @@ describe('the warm-tab case the open policy must NOT break', () => {
     const node = viewport({ scrollHeight: 600, clientHeight: 500, scrollTop: 0 })
     function Probe() {
       const { scrollRef } = useAutoScroll<HTMLDivElement>('late-measurement')
-      scrollRef.current = node
+      adopt(scrollRef, node)
       return null
     }
     const root = createRoot(document.createElement('div'))
@@ -178,7 +179,7 @@ describe('the warm-tab case the open policy must NOT break', () => {
     const node = viewport({ scrollHeight: 2_000, clientHeight: 500, scrollTop: 0 })
     function Probe() {
       const { scrollRef } = useAutoScroll<HTMLDivElement>('s3')
-      scrollRef.current = node
+      adopt(scrollRef, node)
       return null
     }
     const root = createRoot(document.createElement('div'))
@@ -227,11 +228,11 @@ describe('the restored-unpinned hold', () => {
     globalThis.ResizeObserver = CapturingResizeObserver as unknown as typeof ResizeObserver
 
     const node = viewport({ scrollHeight: 2_000, clientHeight: 500, scrollTop: 700 })
-    let shown: boolean | undefined
+    const shown = tap<boolean>()
     function Probe() {
       const { scrollRef, showScrollToBottom } = useAutoScroll<HTMLDivElement>('s5')
-      shown = showScrollToBottom
-      scrollRef.current = node
+      shown.put(showScrollToBottom)
+      adopt(scrollRef, node)
       return null
     }
     const root = createRoot(document.createElement('div'))
@@ -248,7 +249,7 @@ describe('the restored-unpinned hold', () => {
         node.dispatchEvent(new Event('wheel'))
         node.dispatchEvent(new Event('scroll'))
       })
-      expect(shown, 'scrolled up in a long session — the button belongs here').toBe(true)
+      expect(shown.value, 'scrolled up in a long session — the button belongs here').toBe(true)
 
       const fire = async () => {
         await act(async () => {
@@ -263,7 +264,7 @@ describe('the restored-unpinned hold', () => {
       Object.defineProperty(node, 'clientHeight', { value: 300, writable: true })
       await fire()
 
-      expect(shown, 'the regained viewport cannot scroll — no button').toBe(false)
+      expect(shown.value, 'the regained viewport cannot scroll — no button').toBe(false)
     } finally {
       globalThis.ResizeObserver = OriginalResizeObserver
       await act(async () => root.unmount())
@@ -282,11 +283,11 @@ describe('the restored-unpinned hold', () => {
 
     clearChatScrollSnapshotsForTests()
     const node = viewport({ scrollHeight: 2_000, clientHeight: 500, scrollTop: 0 })
-    let shown: boolean | undefined
+    const shown = tap<boolean>()
     function Probe() {
       const { scrollRef, showScrollToBottom } = useAutoScroll<HTMLDivElement>('s4')
-      shown = showScrollToBottom
-      scrollRef.current = node
+      shown.put(showScrollToBottom)
+      adopt(scrollRef, node)
       return null
     }
     const root = createRoot(document.createElement('div'))
@@ -301,14 +302,14 @@ describe('the restored-unpinned hold', () => {
         node.dispatchEvent(new Event('wheel'))
         node.dispatchEvent(new Event('scroll'))
       })
-      expect(shown, 'scrolled up in a long session — the button belongs here').toBe(true)
+      expect(shown.value, 'scrolled up in a long session — the button belongs here').toBe(true)
 
       await act(async () => {
         Object.defineProperty(node, 'scrollHeight', { value: 300, writable: true })
         Object.defineProperty(node, 'clientHeight', { value: 300, writable: true })
         node.dispatchEvent(new Event('scroll'))
       })
-      expect(shown, 'nothing left to scroll — the button must go away').toBe(false)
+      expect(shown.value, 'nothing left to scroll — the button must go away').toBe(false)
     } finally {
       await act(async () => root.unmount())
     }
@@ -334,14 +335,17 @@ describe('scrollToBottom vs forceScrollToBottom', () => {
 
     clearChatScrollSnapshotsForTests()
     const node = viewport({ scrollHeight: 2_000, clientHeight: 500, scrollTop: 0 })
-    let api: {
+    const api = tap<{
       scrollToBottom: (behavior?: ScrollBehavior) => void
       forceScrollToBottom: (behavior?: ScrollBehavior) => void
-    } | null = null
+    }>()
     function Probe() {
       const hook = useAutoScroll<HTMLDivElement>('s6')
-      hook.scrollRef.current = node
-      api = { scrollToBottom: hook.scrollToBottom, forceScrollToBottom: hook.forceScrollToBottom }
+      adopt(hook.scrollRef, node)
+      api.put({
+        scrollToBottom: hook.scrollToBottom,
+        forceScrollToBottom: hook.forceScrollToBottom,
+      })
       return null
     }
     const root = createRoot(document.createElement('div'))
@@ -360,13 +364,13 @@ describe('scrollToBottom vs forceScrollToBottom', () => {
 
       // A HITL question arrives. The overlay is already visible; the transcript must not move.
       await act(async () => {
-        api!.scrollToBottom('smooth')
+        api.value!.scrollToBottom('smooth')
       })
       expect(node.scrollTop, 'an unpinned reader must not be yanked to the tail').toBe(300)
 
       // The explicit paths still work: the button, and the user sending a message.
       await act(async () => {
-        api!.forceScrollToBottom('auto')
+        api.value!.forceScrollToBottom('auto')
       })
       expect(node.scrollTop, 'force must always land on the tail').toBe(1_500)
     } finally {
@@ -383,13 +387,13 @@ describe('scrollToBottom vs forceScrollToBottom', () => {
 
     clearChatScrollSnapshotsForTests()
     const node = viewport({ scrollHeight: 2_000, clientHeight: 500, scrollTop: 0 })
-    let api: ReturnType<typeof useAutoScroll<HTMLDivElement>> | null = null
-    let shown = false
+    const api = tap<ReturnType<typeof useAutoScroll<HTMLDivElement>>>()
+    const shown = tap<boolean>()
     function Probe() {
       const hook = useAutoScroll<HTMLDivElement>('smooth-force')
-      hook.scrollRef.current = node
-      api = hook
-      shown = hook.showScrollToBottom
+      adopt(hook.scrollRef, node)
+      api.put(hook)
+      shown.put(hook.showScrollToBottom)
       return null
     }
     const root = createRoot(document.createElement('div'))
@@ -400,7 +404,7 @@ describe('scrollToBottom vs forceScrollToBottom', () => {
         node.dispatchEvent(new WheelEvent('wheel', { bubbles: true, deltaY: -100 }))
         node.dispatchEvent(new Event('scroll'))
       })
-      expect(shown).toBe(true)
+      expect(shown.value).toBe(true)
 
       // Model the important part of native smooth scrolling: at least one
       // intermediate scroll event fires before the final bottom landing.
@@ -412,12 +416,12 @@ describe('scrollToBottom vs forceScrollToBottom', () => {
         node.dispatchEvent(new Event('scroll'))
       }) as HTMLElement['scrollTo']
 
-      await act(async () => api!.forceScrollToBottom('smooth'))
+      await act(async () => api.value!.forceScrollToBottom('smooth'))
       expect(node.scrollTop).toBe(1_500)
-      expect(shown, 'the explicit jump must re-enable follow immediately').toBe(false)
+      expect(shown.value, 'the explicit jump must re-enable follow immediately').toBe(false)
 
       Object.defineProperty(node, 'scrollHeight', { value: 2_200, writable: true })
-      await act(async () => api!.scrollToBottom())
+      await act(async () => api.value!.scrollToBottom())
       expect(node.scrollTop, 'the next streamed growth must follow the new tail').toBe(1_700)
     } finally {
       await act(async () => root.unmount())
@@ -440,7 +444,7 @@ describe('opening a session', () => {
     const node = viewport({ scrollHeight: 2_000, clientHeight: 500, scrollTop: 0 })
     function Probe({ id }: { id: string }) {
       const { scrollRef } = useAutoScroll<HTMLDivElement>(id)
-      scrollRef.current = node
+      adopt(scrollRef, node)
       return null
     }
     const root = createRoot(document.createElement('div'))
@@ -505,7 +509,7 @@ describe('stream-follow intent boundaries', () => {
     const node = viewport({ scrollHeight: 2_000, clientHeight: 500, scrollTop: 0 })
     function Probe() {
       const { scrollRef } = useAutoScroll<HTMLDivElement>('viewport-resize')
-      scrollRef.current = node
+      adopt(scrollRef, node)
       return null
     }
     const root = createRoot(document.createElement('div'))
@@ -547,11 +551,11 @@ describe('stream-follow intent boundaries', () => {
     const nested = document.createElement('div')
     nested.dataset.scrollable = ''
     node.firstElementChild!.append(nested)
-    let scrollToBottom: (() => void) | undefined
+    const scrollToBottom = tap<() => void>()
     function Probe() {
       const hook = useAutoScroll<HTMLDivElement>('nested-scroll')
-      hook.scrollRef.current = node
-      scrollToBottom = hook.scrollToBottom
+      adopt(hook.scrollRef, node)
+      scrollToBottom.put(hook.scrollToBottom)
       return null
     }
     const root = createRoot(document.createElement('div'))
@@ -561,7 +565,7 @@ describe('stream-follow intent boundaries', () => {
 
       nested.dispatchEvent(new WheelEvent('wheel', { bubbles: true, deltaY: -100 }))
       ;(node as unknown as { scrollHeight: number }).scrollHeight = 2_100
-      await act(async () => scrollToBottom?.())
+      await act(async () => scrollToBottom.value?.())
       expect(node.scrollTop).toBe(1_600)
     } finally {
       await act(async () => root.unmount())
@@ -577,11 +581,11 @@ describe('stream-follow intent boundaries', () => {
 
     clearChatScrollSnapshotsForTests()
     const node = viewport({ scrollHeight: 2_000, clientHeight: 500, scrollTop: 0 })
-    let scrollToBottom: (() => void) | undefined
+    const scrollToBottom = tap<() => void>()
     function Probe() {
       const hook = useAutoScroll<HTMLDivElement>('keyboard-scroll')
-      hook.scrollRef.current = node
-      scrollToBottom = hook.scrollToBottom
+      adopt(hook.scrollRef, node)
+      scrollToBottom.put(hook.scrollToBottom)
       return null
     }
     const root = createRoot(document.createElement('div'))
@@ -592,7 +596,7 @@ describe('stream-follow intent boundaries', () => {
         node.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'ArrowUp' }))
       })
       ;(node as unknown as { scrollHeight: number }).scrollHeight = 2_100
-      await act(async () => scrollToBottom?.())
+      await act(async () => scrollToBottom.value?.())
       expect(node.scrollTop, 'stream growth must not pull a keyboard reader back').toBe(1_460)
     } finally {
       await act(async () => root.unmount())
@@ -610,7 +614,7 @@ describe('stream-follow intent boundaries', () => {
     const node = viewport({ scrollHeight: 2_000, clientHeight: 500, scrollTop: 0 })
     function Probe({ open }: { open: boolean }) {
       const { scrollRef } = useAutoScroll<HTMLDivElement>('warm-open', open)
-      scrollRef.current = node
+      adopt(scrollRef, node)
       return null
     }
     const root = createRoot(document.createElement('div'))
@@ -685,7 +689,7 @@ describe('stream-follow intent boundaries', () => {
     const node = viewport({ scrollHeight: 2_000, clientHeight: 500, scrollTop: 0 })
     function Probe() {
       const { scrollRef } = useAutoScroll<HTMLDivElement>('blocked-growth')
-      scrollRef.current = node
+      adopt(scrollRef, node)
       return null
     }
     const root = createRoot(document.createElement('div'))

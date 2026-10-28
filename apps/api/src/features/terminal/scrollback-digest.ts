@@ -184,7 +184,7 @@ export function buildTerminalDigest(input: TerminalDigestInput): string {
 
   lines.push('')
   lines.push(
-    `Use \`bash\` with terminal_id "${input.id}" and action="screen" to inspect, action="type" with text and keys:["Enter"] to submit, or action="keys" for navigation. Input actions return a fresh screen; add wait_for to await expected text in the same call.`,
+    `Use \`Bash\` with terminal_id "${input.id}" and action="screen" to inspect, action="type" with text and keys:["Enter"] to submit, or action="keys" for navigation. Input actions return a fresh screen; add wait_for to await expected text in the same call.`,
   )
   return lines.join('\n')
 }

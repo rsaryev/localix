@@ -41,6 +41,13 @@ export function NotificationCenterContent({
   activity?: { items: readonly ActivityItem[]; updates: readonly UpdateOffer[] }
 }) {
   const [filters, setFilters] = useState<JournalFilters>(DEFAULT_JOURNAL_FILTERS)
+  // The "last hour / day" windows are measured from here: read when the journal opens and again
+  // whenever a filter changes, never during render.
+  const [filterClock, setFilterClock] = useState(Date.now)
+  const changeFilters = (update: (current: JournalFilters) => JournalFilters) => {
+    setFilterClock(Date.now())
+    setFilters(update)
+  }
   const entries = useNotificationsStore((state) => state.entries)
   const commandRevision = useSyncExternalStore(
     subscribeNotificationCommands,
@@ -79,8 +86,8 @@ export function NotificationCenterContent({
     [entries, commandRevision],
   )
   const filtered = useMemo(
-    () => filterEvents(entries, { ...filters, currentSessionId }, Date.now(), commandRevision),
-    [entries, filters, currentSessionId, commandRevision],
+    () => filterEvents(entries, { ...filters, currentSessionId }, filterClock, commandRevision),
+    [entries, filters, filterClock, currentSessionId, commandRevision],
   )
 
   return (
@@ -149,7 +156,7 @@ export function NotificationCenterContent({
       <div className="shrink-0 border-b border-border-soft px-3 pb-2.5">
         <EventFilterBar
           filters={filters}
-          onChange={(next) => setFilters((current) => ({ ...current, ...next }))}
+          onChange={(next) => changeFilters((current) => ({ ...current, ...next }))}
           actionCount={actionCount}
           unread={unread}
           currentSessionId={currentSessionId}
@@ -168,7 +175,7 @@ export function NotificationCenterContent({
             <Button
               variant="link"
               size="xs"
-              onClick={() => setFilters(DEFAULT_JOURNAL_FILTERS)}
+              onClick={() => changeFilters(() => DEFAULT_JOURNAL_FILTERS)}
               className="h-auto px-0 text-text-faint hover:text-foreground"
             >
               Reset filters

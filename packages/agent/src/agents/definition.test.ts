@@ -1,77 +1,53 @@
 import { describe, expect, test } from 'bun:test'
-import { agentBlueprintSchema, agentDefinitionSchema, builtinAgentId } from './definition'
+import { agentDefinitionSchema, agentFileSchema, builtinAgentId } from './definition'
 
-const blueprint = { handle: 'reviewer', instructions: 'Review the requested change.' }
+const file = { name: 'reviewer', instructions: 'Review the requested change.' }
 
-describe('native agent definition boundary', () => {
-  test('requires a registry identity independently of the handle', () => {
-    expect(agentDefinitionSchema.safeParse(blueprint).success).toBe(false)
-    expect(agentDefinitionSchema.parse({ ...blueprint, id: 'id-1' }).handle).toBe('reviewer')
+describe('an agent as a Claude Code file read into a record', () => {
+  test('requires a registry identity independently of the name', () => {
+    expect(agentDefinitionSchema.safeParse(file).success).toBe(false)
+    expect(agentDefinitionSchema.parse({ ...file, id: 'id-1' }).name).toBe('reviewer')
     expect(builtinAgentId('reviewer')).toBe('builtin:reviewer')
   })
 
-  test('the person is not an agent: only `all` is reserved', () => {
-    expect(agentBlueprintSchema.safeParse({ ...blueprint, handle: 'all' }).success).toBe(false)
-    expect(agentBlueprintSchema.safeParse({ ...blueprint, handle: 'human' }).success).toBe(true)
-    expect(agentBlueprintSchema.safeParse({ handle: 'reviewer', instructions: '' }).success).toBe(
-      false,
-    )
+  test('a name is Claude Code’s: any text up to 256 characters that does not start with "-"', () => {
+    for (const name of ['Code Reviewer', 'reviewer.v2', 'Έλεγχος', 'a'.repeat(256)])
+      expect(agentFileSchema.safeParse({ ...file, name }).success).toBe(true)
+    for (const name of ['', '-reviewer', 'a'.repeat(257)])
+      expect(agentFileSchema.safeParse({ ...file, name }).success).toBe(false)
   })
 
-  test('policy, invocation and foreign fields cannot enter a native definition', () => {
+  test('an agent needs instructions', () => {
+    expect(agentFileSchema.safeParse({ name: 'reviewer', instructions: '' }).success).toBe(false)
+    expect(agentFileSchema.safeParse({ ...file, instructions: '   ' }).success).toBe(false)
+  })
+
+  test('policy, invocation and foreign fields cannot enter a record', () => {
     for (const field of [
-      'type',
+      'handle',
+      'label',
+      'modelPreference',
+      'limits',
+      'context',
+      'localix',
       'tools',
       'disallowedTools',
-      'pinnedSkills',
-      'mcp_servers',
       'mcpServers',
       'permissionMode',
-      'background',
-      'isolation',
-      'initialPrompt',
       'hooks',
-      'entrypoints',
-      'importedFrom',
-      'metadata',
       'prompt',
-      'name',
-    ]) {
-      expect(
-        agentDefinitionSchema.safeParse({ ...blueprint, id: 'id-1', [field]: [] }).success,
-      ).toBe(false)
-    }
-    // Positive control: a valid native shape still passes the same validator.
-    expect(agentDefinitionSchema.safeParse({ ...blueprint, id: 'id-1' }).success).toBe(true)
+    ])
+      expect(agentDefinitionSchema.safeParse({ ...file, id: 'id-1', [field]: [] }).success).toBe(
+        false,
+      )
+    expect(agentDefinitionSchema.safeParse({ ...file, id: 'id-1' }).success).toBe(true)
   })
 
-  test('authored context and model preferences stay structured', () => {
-    expect(
-      agentBlueprintSchema.parse({
-        ...blueprint,
-        modelPreference: { provider: 'provider-a', model: 'model-a', effort: 'high' },
-        limits: { maxTurns: 12 },
-        context: { preloadSkills: ['review'], memory: { scope: 'project' } },
-      }).context?.preloadSkills,
-    ).toEqual(['review'])
-    expect(agentBlueprintSchema.safeParse({ ...blueprint, limits: { maxTurns: 0 } }).success).toBe(
-      false,
-    )
-    expect(agentBlueprintSchema.safeParse({ ...blueprint, instructions: '   ' }).success).toBe(
-      false,
-    )
-    expect(agentBlueprintSchema.safeParse({ ...blueprint, handle: '../escape' }).success).toBe(
-      false,
-    )
-  })
-
-  test('hierarchy priority is bounded and defaults to neutral', () => {
-    expect(agentBlueprintSchema.parse(blueprint).leadershipPriority).toBe(0)
-    expect(
-      agentBlueprintSchema.parse({ ...blueprint, leadershipPriority: 2 }).leadershipPriority,
-    ).toBe(2)
-    expect(agentBlueprintSchema.safeParse({ ...blueprint, leadershipPriority: 3 }).success).toBe(
-      false,
-    )
+  test('the turn limit and the preloaded skills are the file’s own keys', () => {
+    expect(agentFileSchema.parse({ ...file, maxTurns: 12, skills: ['review'] })).toMatchObject({
+      maxTurns: 12,
+      skills: ['review'],
+    })
+    expect(agentFileSchema.safeParse({ ...file, maxTurns: 0 }).success).toBe(false)
   })
 })

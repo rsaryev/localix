@@ -72,7 +72,6 @@ describe('listings', () => {
     let now = 0
     const { hf, calls } = countingHf(async () => {
       if (!up) throw new HfRateLimited()
-      await Bun.sleep(5)
       return [row]
     })
     const listings = createListings({ root: await temp(), hf, now: () => now })

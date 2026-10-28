@@ -41,8 +41,6 @@ export interface ExitNotices {
   arm(input: {
     userId: string
     sessionId: string
-    /** The participant whose run started the process — the one the notice is for. */
-    agentId: string
     source: ExitNoticeSource
   }): Promise<ExitNotice | null>
 }
@@ -73,12 +71,12 @@ export function createExitNotices(
     if (refused) logger.warn(refused)
   }
   return {
-    async arm({ userId, sessionId, agentId, source }) {
+    async arm({ userId, sessionId, source }) {
       const armed = await engine
         .arm({
           userId,
           sessionId,
-          owner: { kind: 'agent', agentId },
+          owner: { kind: 'system', ref: 'exit-notice' },
           action: EXIT_NOTICE_ACTION,
           kind: 'process-exit',
           spec: {},

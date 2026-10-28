@@ -20,6 +20,7 @@ describe('agent watcher', () => {
   let db: Kysely<AppDatabase>
   let clock = 0
   let counter = 0
+  let current: ReturnType<typeof createAgentWatcher> | undefined
   let timers: Array<{ at: number; fn: () => void; live: boolean }> = []
   let watched: Array<{
     dir: string
@@ -40,7 +41,7 @@ describe('agent watcher', () => {
       timer.live = false
       timer.fn()
     }
-    await new Promise((resolve) => setTimeout(resolve, 20))
+    await current?.idle()
   }
   const rows = () =>
     db.selectFrom('capability_source').selectAll().where('kind', '=', 'agent').execute()
@@ -58,7 +59,7 @@ describe('agent watcher', () => {
       now: () => clock,
       newId: () => `cc:test-${++counter}`,
     })
-    return createAgentWatcher({
+    current = createAgentWatcher({
       reconcile: (project) => bindings.snapshot('u', project),
       folders,
       projects: async () => [],
@@ -79,6 +80,7 @@ describe('agent watcher', () => {
       },
       now: () => clock,
     })
+    return current
   }
 
   beforeEach(async () => {
@@ -88,6 +90,7 @@ describe('agent watcher', () => {
     counter = 0
     timers = []
     watched = []
+    current = undefined
   })
   afterEach(() => db.destroy())
 

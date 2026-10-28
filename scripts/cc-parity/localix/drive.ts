@@ -74,7 +74,7 @@ const row = (sessionId: string, id: string, payload: Record<string, unknown>) =>
 /** Localix's Write tool as the run hands it to the mods: its name and its input's shape. */
 function writeTool(written: string[]): AgentTool {
   return defineAgentTool({
-    name: 'write',
+    name: 'Write',
     description: 'Write files',
     activeVerb: 'Writing',
     inputSchema: z.object({ files: z.array(z.object({ path: z.string(), content: z.string() })) }),
@@ -162,7 +162,7 @@ async function turnSession(dir: string, output: string, reports: string[]) {
     timestamp: 0,
   })
   const files = [{ path: 'note.txt', content: 'ok' }]
-  const call = { type: 'tool_call' as const, id: 'toolu_1', name: 'write', arguments: { files } }
+  const call = { type: 'tool_call' as const, id: 'toolu_1', name: 'Write', arguments: { files } }
   // stream.ts: each model request through `turn.step`.
   const first = { index: 0, modelId: MODEL, messageCount: 1 }
   await step?.(first, async () => answer([call]))
@@ -176,7 +176,7 @@ async function turnSession(dir: string, output: string, reports: string[]) {
       items: [
         {
           toolCallId: 'toolu_1',
-          name: 'write',
+          name: 'Write',
           input: { files },
           status: 'completed',
           resultText: 'Wrote 1 file',

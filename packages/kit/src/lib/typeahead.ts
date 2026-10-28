@@ -37,7 +37,7 @@ export function createTypeaheadBuffer(
       buffer += char.toLocaleLowerCase()
       const count = labels.length
       if (count === 0) return -1
-      const repeated = buffer.length > 1 && [...buffer].every((c) => c === buffer[0])
+      const repeated = buffer.length > 1 && Array.from(buffer).every((c) => c === buffer[0])
       const prefix = repeated ? buffer[0]! : buffer
       const single = prefix.length === 1
       const start = single ? currentIndex + 1 : Math.max(currentIndex, 0)

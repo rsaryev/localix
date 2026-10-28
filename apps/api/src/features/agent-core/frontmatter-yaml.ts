@@ -139,7 +139,7 @@ export function parseMarkdownFrontmatter(raw: string): {
 /**
  * Rewrite `raw` with `values` set in its frontmatter and `body` after it. Every other key, its
  * comments and the key order are kept; a key not yet present is added at the top, in the order
- * given. A value may be a list or a mapping (`localix: {priority: 1}`); `undefined` removes the
+ * given. A value may be a list or a mapping (`metadata: {priority: 1}`); `undefined` removes the
  * key. Throws when the existing block is not YAML even after repair — writing would have to
  * drop keys it cannot read, and a save must never silently lose part of a file.
  */

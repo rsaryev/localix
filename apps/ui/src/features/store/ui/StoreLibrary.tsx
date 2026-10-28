@@ -18,13 +18,16 @@ import {
   WorkbenchListRowMeta,
   WorkbenchListRowTrigger,
 } from '@localixai/kit/workbench-list-row'
-import { TogglePill } from '@localixai/kit/toggle-pill'
+import { TabBar } from '@localixai/kit/tabs'
 import { KIND_LABELS, plural } from '../model/presentation'
 import { useStoreScope } from '../model/storeContext'
 import { keyOf } from '../model/useExtrasAfterInstall'
 import { usePagedListings } from '../model/useStoreData'
 import { ListSkeleton, PagedList } from './PagedList'
 import { ListingIcon } from './StoreMarks'
+
+/** The tab for every kind at once. */
+const ALL = 'all'
 
 interface Row {
   listing: Listing
@@ -153,16 +156,19 @@ export function StoreLibrary({ updates = false }: { updates?: boolean }) {
             </div>
           )
         : (kinds.length > 1 || kind) && (
-            <div role="group" aria-label="Kinds" className="flex flex-wrap gap-1.5">
-              <TogglePill active={kind === null} onClick={() => setKind(null)}>
-                Everything
-              </TogglePill>
-              {PACKAGE_KINDS.filter((k) => kinds.includes(k)).map((k) => (
-                <TogglePill key={k} active={kind === k} onClick={() => setKind(k)}>
-                  {KIND_LABELS[k].many}
-                </TogglePill>
-              ))}
-            </div>
+            // The same tabs a shelf's categories are drawn with.
+            <TabBar
+              aria-label="Kinds"
+              items={[
+                { id: ALL, label: 'All' },
+                ...PACKAGE_KINDS.filter((k) => kinds.includes(k)).map((k) => ({
+                  id: k,
+                  label: KIND_LABELS[k].many,
+                })),
+              ]}
+              active={kind ?? ALL}
+              onChange={(id) => setKind(id === ALL ? null : id)}
+            />
           )}
       {page.loading ? (
         <ListSkeleton rows={4} />

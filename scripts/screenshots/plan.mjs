@@ -1,43 +1,8 @@
 // A shot is evidence for a user action, never decoration for every document.
 export const capturePlan = {
-  'agents/island-quick-chat': {
-    guide: 'features/agent-companion.md',
-    purpose:
-      'An immediately focused quick request retains its draft and attachment state through folding',
-    scenario: 'island-quick-chat',
-  },
-  'agents/island-expanded': {
-    guide: 'features/agent-companion.md',
-    purpose: 'With nothing waiting, the island opens a content-sized, focused composer',
-    scenario: 'island-expanded',
-  },
-  'agents/island-question': {
-    guide: 'features/agent-companion.md',
-    purpose: 'A live agent question blocks its run, stays pending when folded and reopens inline',
-    scenario: 'island-question',
-  },
-  'agents/island-quick-chat-light': {
-    guide: 'features/agent-companion.md',
-    purpose: 'The light island focuses a readable field and retains the draft across folding',
-    scenario: 'island-quick-chat',
-    theme: 'light',
-  },
-  'agents/island-question-light': {
-    guide: 'features/agent-companion.md',
-    purpose: 'A light question focuses the answer field and remains pending across folding',
-    scenario: 'island-question',
-    theme: 'light',
-  },
-  'agents/island-notch': {
-    guide: 'features/agent-companion.md',
-    purpose: 'On a notched display the toolbar clears the cutout and the island keeps one width',
-    scenario: 'island-notch',
-    notch: { compactWidth: 200, compactHeight: 32, notchWidth: 200, notchHeight: 32 },
-  },
   'agents/edit-command-tokens': {
     guide: 'features/agent-management.md',
-    purpose:
-      'Agent command flags and values have separate editable crumbs and priority suggestions',
+    purpose: 'Agent command flags and values have separate editable crumbs',
     scenario: 'agent-command',
   },
   'local-models/settings': {
@@ -78,24 +43,6 @@ export const capturePlan = {
     guide: 'features/workspace.md',
     purpose: 'Automatic open-file and terminal context with source labels and estimated sizes',
     scenario: 'composer-context',
-  },
-  'conversations/participants': {
-    guide: 'features/conversations.md',
-    purpose:
-      'Three seeded participants, the selected one driving the composer model, and the per-participant usage in the session total',
-    scenario: 'participants',
-  },
-  'conversations/apply-model-to-all': {
-    guide: 'features/conversations.md',
-    purpose:
-      'A group on two models and two reasoning levels offers one model and level for all agents',
-    scenario: 'party-route',
-  },
-  'conversations/model-command-steps': {
-    guide: 'features/conversations.md',
-    purpose:
-      '/model walks Agents, Provider and Model as composer steps with crumbs back to each step',
-    scenario: 'model-command',
   },
   'workspace/session-window-drag': {
     guide: 'features/workspace.md',
@@ -206,7 +153,7 @@ export const capturePlan = {
   },
   'agents/context-and-limits': {
     guide: 'features/agents.md',
-    purpose: 'An agent’s page in the Store: standing instructions, memory scope and turn budget',
+    purpose: 'An agent’s page in the Store: standing instructions and turn budget',
     scenario: 'agent',
   },
   'agents/create-from-chat': {
@@ -249,10 +196,30 @@ export const capturePlan = {
     start: 'project',
   },
   'chat/unfinished-reply': {
-    guide: 'features/conversations.md',
+    guide: 'features/sessions-and-projects.md',
     purpose:
       'A reply a restart cut off: a quiet marker in the transcript, Continue above the composer',
     scenario: 'unfinished-reply',
+    start: 'project',
+  },
+  'chat/tool-call-sections': {
+    guide: 'features/sessions-and-projects.md',
+    purpose:
+      'Three finished tool calls opened: each shows what it was given under In and what came back under Out',
+    scenario: 'tool-sections',
+    start: 'project',
+  },
+  'chat/agent-card-live': {
+    guide: 'features/delegation.md',
+    purpose:
+      'Two subagent calls: one started in the background and still running, one finished, each card naming its child status and opening its session',
+    scenario: 'agent-children',
+    start: 'project',
+  },
+  'settings/section-picker': {
+    guide: 'features/settings.md',
+    purpose: 'Settings search with the section tabs under it, the active tab in view',
+    scenario: 'settings-strip',
     start: 'project',
   },
   'store/discover': {
@@ -297,6 +264,12 @@ export const capturePlan = {
     scenario: 'store-search',
     start: 'home',
   },
+  'store/search-wide': {
+    guide: 'features/store.md',
+    purpose: 'The Store alone in the window, searching: packages and what is inside them',
+    scenario: 'store-search-wide',
+    start: 'home',
+  },
   'store/installed': {
     guide: 'features/mini-apps.md',
     purpose: 'The Library lists every install with its scope, version and enabled switch',
@@ -327,16 +300,44 @@ export const capturePlan = {
     scenario: 'store-mcp-settings',
     start: 'home',
   },
-  'tools/codemode-card': {
-    guide: 'features/tools.md',
-    purpose: 'One script run: its calls with their files, outcome and time, and its JSON report',
-    scenario: 'codemode-card',
-    start: 'project',
+  'store/for-your-work': {
+    guide: 'features/store.md',
+    purpose:
+      'Discover leads with Start here, then For your work: packages that suit the project and the installs, none already installed',
+    scenario: 'for-your-work',
+    start: 'home',
+  },
+  'store/for-your-work-all': {
+    guide: 'features/store.md',
+    purpose: 'See all on For your work opens every recommendation, best first',
+    scenario: 'for-your-work-all',
+    start: 'home',
   },
   'plugins/workbenches': {
     guide: 'extending/mini-apps.md',
     purpose: 'Available workspace tools and how to open them',
     scenario: 'catalog',
+  },
+  'composer/status-line': {
+    guide: 'extending/claude-code-settings.md',
+    purpose:
+      'A statusLine command of the project’s settings prints two colored rows with a link, drawn under the message box',
+    scenario: 'status-line',
+    start: 'home',
+  },
+  'composer/mcp-prompts': {
+    guide: 'features/mcp.md',
+    purpose:
+      'Typing /mcp__release lists the connected MCP server’s prompts in the slash menu, as Claude Code names them',
+    scenario: 'mcp-prompts',
+    start: 'home',
+  },
+  'composer/plugin-waiting': {
+    guide: 'extending/claude-code-plugins.md',
+    purpose:
+      'A plugin of the project that waits for its OK is one row in the slash menu that opens its Store page',
+    scenario: 'plugin-waiting',
+    start: 'home',
   },
   'workspace/command-palette': {
     guide: 'features/keyboard-shortcuts.md',
@@ -352,12 +353,12 @@ export const capturePlan = {
   },
   'workspace/editor-grid': {
     guide: 'features/workspace.md',
-    purpose: 'Source and terminal tabs in one main column beside the team conversation',
+    purpose: 'Source and terminal tabs in one main column beside the conversation',
     scenario: 'editor',
   },
   'workspace/hero': {
     guide: 'getting-started/what-is-localix.md',
-    purpose: 'A real passing fixture test run beside the seeded team conversation',
+    purpose: 'A real passing fixture test run beside the seeded conversation',
     scenario: 'editor',
   },
   'devops/containers': {

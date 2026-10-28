@@ -14,17 +14,17 @@ function history(text: string): Message[] {
       role: 'assistant',
       model: 'fixture',
       timestamp: 0,
-      content: [{ type: 'tool_call', id: 'call', name: 'write', arguments: { content: text } }],
+      content: [{ type: 'tool_call', id: 'call', name: 'Write', arguments: { content: text } }],
     },
     {
       role: 'tool',
       timestamp: 1,
       results: [
-        { type: 'tool_result', toolCallId: 'call', toolName: 'write', content: text },
+        { type: 'tool_result', toolCallId: 'call', toolName: 'Write', content: text },
         {
           type: 'tool_result',
           toolCallId: 'rich-call',
-          toolName: 'write',
+          toolName: 'Write',
           content: [{ type: 'text', text }],
         },
       ],

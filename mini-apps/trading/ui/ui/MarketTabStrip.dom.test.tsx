@@ -23,8 +23,11 @@ async function mount() {
   const { MarketTabStrip } = await import('./MarketTabStrip')
   let api!: MarketTabs
   function Harness(props: { markets: Market[]; query: string; resetKey: string }) {
-    api = useMarketTabs(props)
-    return <MarketTabStrip tabs={api.tabs} active={api.tab} onChange={api.setTab} />
+    const tabs = useMarketTabs(props)
+    React.useEffect(() => {
+      api = tabs
+    })
+    return <MarketTabStrip tabs={tabs.tabs} active={tabs.tab} onChange={tabs.setTab} />
   }
   const host = document.createElement('div')
   document.body.append(host)

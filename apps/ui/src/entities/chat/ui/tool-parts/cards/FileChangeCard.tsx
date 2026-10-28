@@ -30,7 +30,7 @@ export function FileChangeCard({ item }: { item: FileChangeItem }) {
   const errorMessage = itemErrorMessage(item)
 
   const input = asRecord(item.input)
-  const isWrite = item.name === 'write'
+  const isWrite = item.name === 'Write'
 
   // Partial code currently being typed into the arguments (by tool shape): a batched `write`
   // types its last `files` entry, a batched `edit` its last `edits` entry; the top-level

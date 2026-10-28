@@ -5,7 +5,7 @@
  * thing about it that is predictable (`.env`, `~/.ssh/id_rsa`, `~/.aws/credentials`), and a
  * glob over a path is exact in a way a glob over a shell line never is.
  *
- * Deliberately conservative. This is vocabulary a rule can name (`tool:read secrets ask`),
+ * Deliberately conservative. This is vocabulary a rule can name (`tool:Read secrets ask`),
  * not a scanner: a false positive costs one confirmation, and a miss costs nothing that was
  * not already true before the class existed. Nothing carries a rule about it by default.
  *

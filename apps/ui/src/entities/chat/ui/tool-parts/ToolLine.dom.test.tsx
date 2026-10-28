@@ -56,7 +56,7 @@ describe('ToolLine action layout', () => {
   })
 })
 
-const CALL = { toolCallId: 'tc_1', name: 'read' }
+const CALL = { toolCallId: 'tc_1', name: 'Read' }
 
 describe('ToolLine as a drag source', () => {
   test('a dragged call carries the conversation it lives in', async () => {

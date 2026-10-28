@@ -3,14 +3,14 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import type { SessionRecord } from '../../repository'
 import { setAgentService, type AgentServiceBinding } from '../agent-service-binding'
 import { createAgentHookRunner, createPromptHookEvaluator } from './cc-hook-evaluators'
-import { routedParticipants, sessionFixture } from '../../../../testing/session-fixture'
+import { routedAgent, sessionFixture } from '../../../../testing/session-fixture'
 import type { RunProfile } from '../../../agent-core/run-shape'
 
 const session: SessionRecord = sessionFixture({
   id: 'parent',
   userId: 'u',
   title: 'parent',
-  agents: routedParticipants({
+  agent: routedAgent({
     providerConnectionId: 'connection',
     modelId: 'model',
     reasoningEffort: 'low',
@@ -110,7 +110,7 @@ describe('agent hook verifier', () => {
 
     // The profile is the verifier's whole identity: nothing else may widen its tools.
     const profile = runs[0]?.profileOverride as RunProfile
-    expect(profile.declaredTools).toEqual(['read', 'search'])
+    expect(profile.declaredTools).toEqual(['Read', 'Search'])
     expect(profile.prompt.identity).toContain('hook policy verifier')
     expect(Object.keys(runs[0]!).sort()).toEqual([
       'invocation',
@@ -222,5 +222,114 @@ describe('prompt hook billing', () => {
     )
 
     expect(events).toEqual([])
+  })
+})
+
+describe('the model a hook names', () => {
+  const catalog = {
+    providers: [{ id: 'p' }],
+    models: [
+      { id: 'p/m', providerId: 'p', outputModalities: ['text'] },
+      { id: 'p/claude-haiku-4-5', providerId: 'p', outputModalities: ['text'] },
+    ],
+  }
+  const deps = (created: unknown[]) => ({
+    providerConnectionsService: {
+      listConnections: async () => ({ connections: [{ id: 'connection', providerId: 'p' }] }),
+      requireConnection: async () => ({ id: 'connection' }),
+      ensureFreshKeys: async () => ({
+        id: 'connection',
+        providerId: 'p',
+        keys: [{ id: 'key', enabled: true, priority: 0, apiKey: 'k', authType: 'api-key' }],
+      }),
+      credentialStoreFor: async () => ({}),
+    },
+    catalogService: { getCatalog: async () => catalog },
+    languageModelFactory: {
+      create: (input: unknown) => {
+        created.push(input)
+        return {
+          ref: { providerId: 'p', modelId: 'm' },
+          complete: async () => ({ content: '{"ok":true}' }),
+        }
+      },
+    },
+    streamRegistry: { publish: () => {} },
+  })
+  const evaluator = (created: unknown[]) =>
+    createPromptHookEvaluator({
+      env: { deps: deps(created), repo: {}, usageRepo: {} } as never,
+      userId: 'u',
+      session,
+      catalog: catalog as never,
+      effectiveModelId: 'p/m',
+    })
+
+  test('an alias (haiku) becomes the catalog model of that family', async () => {
+    const created: unknown[] = []
+    const verdict = await evaluator(created)({
+      prompt: 'allow?',
+      inputJson: '{}',
+      model: 'haiku',
+      timeoutMs: 1000,
+    })
+    expect(verdict.failed).toBeUndefined()
+    expect(JSON.stringify(created)).toContain('claude-haiku-4-5')
+  })
+
+  test('a model that cannot be resolved is reported, not silently allowed', async () => {
+    const verdict = await evaluator([])({
+      prompt: 'allow?',
+      inputJson: '{}',
+      model: 'nonexistent/model',
+      timeoutMs: 1000,
+    })
+    expect(verdict.ok).toBe(true)
+    expect(verdict.failed).toBeString()
+  })
+
+  test('a session with no provider route is reported', async () => {
+    const unrouted = { ...session, agent: null } as unknown as SessionRecord
+    const verdict = await createPromptHookEvaluator({
+      env: { deps: deps([]), repo: {}, usageRepo: {} } as never,
+      userId: 'u',
+      session: unrouted,
+      catalog: catalog as never,
+      effectiveModelId: 'p/m',
+    })({ prompt: 'allow?', inputJson: '{}', timeoutMs: 1000 })
+    expect(verdict.failed).toBeString()
+  })
+
+  test('a verifier session opens on the catalog model of an alias', async () => {
+    const creates: Array<{ modelId?: string }> = []
+    setAgentService({
+      createSession: async (_u: string, input: { modelId?: string }) => {
+        creates.push(input)
+        return { id: 'hook-child' }
+      },
+      runJobTask: async () => undefined,
+      finalAssistantText: async () => '{"ok":true}',
+    } as unknown as AgentServiceBinding)
+    await createAgentHookRunner({
+      userId: 'u',
+      session,
+      catalog: catalog as never,
+      effectiveModelId: 'p/m',
+    })({ prompt: 'verify', inputJson: '{}', model: 'haiku', timeoutMs: 1000 })
+    expect(creates[0]?.modelId).toBe('p/claude-haiku-4-5')
+  })
+
+  test('a verifier that cannot start is reported', async () => {
+    setAgentService({
+      createSession: async () => {
+        throw new Error('no capacity')
+      },
+    } as unknown as AgentServiceBinding)
+    const verdict = await createAgentHookRunner({ userId: 'u', session })({
+      prompt: 'verify',
+      inputJson: '{}',
+      timeoutMs: 1000,
+    })
+    expect(verdict.failed).toContain('no capacity')
   })
 })

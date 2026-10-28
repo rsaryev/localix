@@ -108,6 +108,7 @@ export function SqlResultsView({
   showResultFooter?: boolean
 }) {
   const chart = useChartState()
+  const { setChartEl } = chart
   // Owned above the branch: the branch vanishes when the next query works, and an owner that
   // vanishes never settles the row it published.
   const failure = useQueryErrorState({ subject, error: error ?? null, errorCode, errorDetail })
@@ -133,7 +134,7 @@ export function SqlResultsView({
         )}
         <div className="min-h-0 flex-1">
           {showChart ? (
-            <div ref={chart.chartRef} className="h-full w-full">
+            <div ref={setChartEl} className="h-full w-full">
               <ChartView columns={columns} rows={rows} spec={chartSpec} />
             </div>
           ) : (

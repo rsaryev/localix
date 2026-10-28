@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, expect, mock, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
+import { turns } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -41,7 +42,7 @@ async function stubCommands(commands: unknown[]) {
   } as never)
 }
 
-test('the tips carousel pages by buttons and arrows, ends by handing back to the chat, and remembers the last tip seen', async () => {
+test('the tips carousel pages by buttons and arrows, ends by handing back to the chat, and opens again at the start', async () => {
   const { act } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { MemoryRouter } = await import('react-router')
@@ -55,7 +56,7 @@ test('the tips carousel pages by buttons and arrows, ends by handing back to the
   const { visibleTips } = await import('./workspaceTips')
   // No plugin features a command here, so the slide that teaches one stays out.
   await stubCommands([])
-  const WORKSPACE_TIPS = visibleTips({ featuredCommand: false, island: false })
+  const WORKSPACE_TIPS = visibleTips({ featuredCommand: false })
   const { useChatStore } = await import('@/entities/chat/model/store')
   // The model slide reads live connections; the test has no server behind it.
   useChatStore.setState({ loadProjects: async () => {} })
@@ -96,10 +97,11 @@ test('the tips carousel pages by buttons and arrows, ends by handing back to the
   await act(async () => button('Previous').click())
   expect(title()).toBe(WORKSPACE_TIPS.at(-3)!.lead)
 
+  // Set up is opened again from the palette to be read from the start, not where it was left.
   await act(async () => root.unmount())
   root = createRoot(host)
   await act(async () => root.render(view))
-  expect(title()).toBe(WORKSPACE_TIPS.at(-3)!.lead)
+  expect(title()).toBe(WORKSPACE_TIPS[0]!.lead)
 
   await act(async () => root.unmount())
   host.remove()
@@ -112,7 +114,7 @@ test('the goal slide appears only when a plugin features a command, and names it
   const { WorkspaceTipsCarousel } = await import('./WorkspaceTipsCarousel')
   const { WORKSPACE_TIPS } = await import('./workspaceTips')
   const goal = WORKSPACE_TIPS.find((tip) => tip.id === 'goal')!
-  const settle = () => new Promise((resolve) => setTimeout(resolve, 20))
+  const settle = () => turns()
   const view = (
     <MemoryRouter>
       <WorkspaceTipsCarousel onFinish={() => {}} />
@@ -124,15 +126,11 @@ test('the goal slide appears only when a plugin features a command, and names it
     [...host.querySelectorAll('.wt-seg')].map((seg) => seg.getAttribute('aria-label'))
   const title = () => host.querySelector('section')?.getAttribute('aria-label')
 
-  // Remembered on the goal slide, but nothing features a command: the tour resumes next to it
-  // instead of starting over (the goal slide is last, so on the one before it).
   await stubCommands([])
-  localStorage.setItem('localix.workspaceTips.last', 'goal')
   let root = createRoot(host)
   await act(async () => root.render(view))
   await act(settle)
   expect(labels()).not.toContain(`Show tip: ${goal.lead}`)
-  expect(title()).toBe(WORKSPACE_TIPS.find((tip) => tip.id === 'team')!.lead)
   await act(async () => root.unmount())
 
   mock.restore()
@@ -151,6 +149,9 @@ test('the goal slide appears only when a plugin features a command, and names it
   await act(async () => root.render(view))
   await act(settle)
   expect(labels()).toContain(`Show tip: ${goal.lead}`)
+  await act(async () =>
+    host.querySelector<HTMLButtonElement>(`[aria-label="Show tip: ${goal.lead}"]`)!.click(),
+  )
   expect(title()).toBe(goal.lead)
   const chip = host.querySelector('section .wt-command')
   expect(chip?.textContent).toBe('/launch')
@@ -163,70 +164,6 @@ test('the goal slide appears only when a plugin features a command, and names it
 
   await act(async () => root.unmount())
   host.remove()
-})
-
-test('the island slide shows only in the macOS desktop app, and its switch drives the real setting', async () => {
-  const { act } = await import('react')
-  const { createRoot } = await import('react-dom/client')
-  const { MemoryRouter } = await import('react-router')
-  const { WorkspaceTipsCarousel } = await import('./WorkspaceTipsCarousel')
-  const { WORKSPACE_TIPS } = await import('./workspaceTips')
-  const { __resetIslandSetting } = await import('@/shared/lib/islandSetting')
-  const island = WORKSPACE_TIPS.find((tip) => tip.id === 'island')!
-  const settle = () => new Promise((resolve) => setTimeout(resolve, 20))
-  const view = (
-    <MemoryRouter>
-      <WorkspaceTipsCarousel onFinish={() => {}} />
-    </MemoryRouter>
-  )
-  const calls: [string, unknown][] = []
-  const desktop = window as unknown as { __TAURI__?: unknown }
-  desktop.__TAURI__ = {
-    core: {
-      invoke: async (command: string, args?: unknown) => {
-        calls.push([command, args])
-        return command === 'island_enabled' ? false : null
-      },
-    },
-  }
-  await stubCommands([])
-  const host = document.createElement('div')
-  document.body.append(host)
-  const labels = () =>
-    [...host.querySelectorAll('.wt-seg')].map((seg) => seg.getAttribute('aria-label'))
-
-  // Not the macOS desktop app: no slide, and the shell is never asked.
-  __resetIslandSetting(false)
-  localStorage.setItem('localix.workspaceTips.last', 'island')
-  let root = createRoot(host)
-  await act(async () => root.render(view))
-  await act(settle)
-  expect(labels()).not.toContain(`Show tip: ${island.lead}`)
-  expect(calls).toEqual([])
-  await act(async () => root.unmount())
-
-  // The macOS desktop app: the slide shows the shell's value, off by default.
-  __resetIslandSetting(true)
-  root = createRoot(host)
-  await act(async () => root.render(view))
-  await act(settle)
-  expect(labels()).toContain(`Show tip: ${island.lead}`)
-  expect(host.querySelector('section')?.getAttribute('aria-label')).toBe(island.lead)
-  const trigger = host.querySelector<HTMLButtonElement>('section .wt-pick')!
-  expect(trigger.getAttribute('aria-label')).toBe('Agent island: Off. Change')
-
-  const { setIslandEnabled } = await import('@/shared/lib/islandSetting')
-  await act(async () => setIslandEnabled(true))
-  await act(settle)
-  expect(calls).toContainEqual(['set_island_enabled', { enabled: true }])
-  expect(host.querySelector('section .wt-pick')?.getAttribute('aria-label')).toBe(
-    'Agent island: On. Change',
-  )
-
-  await act(async () => root.unmount())
-  host.remove()
-  __resetIslandSetting(false)
-  delete desktop.__TAURI__
 })
 
 test('the appearance slide ends in the theme and the glass, and the glass pick sets the level', async () => {

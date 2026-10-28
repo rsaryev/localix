@@ -29,7 +29,7 @@ describe('hook error notices', () => {
   test('an exit 1 on PreToolUse names the event, the tool and the first stderr line', async () => {
     const command = 'cat >/dev/null; echo "something broke" >&2; exit 1'
     const { rt, notices } = make('PreToolUse', command, 'Bash')
-    await rt.runPreToolUse('bash', { command: 'ls' })
+    await rt.runPreToolUse('Bash', { command: 'ls' })
     expect(notices).toEqual([
       `PreToolUse:Bash hook error: [${command}]: Failed with non-blocking status code: something broke`,
     ])

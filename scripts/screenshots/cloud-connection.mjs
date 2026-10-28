@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test'
-import { openFixtureChat } from './codemode-card.mjs'
+import { openFixtureChat } from './fixture-chat.mjs'
 
 /**
  * A cloud connection names where its requests go beside its key: picking Amazon Bedrock asks for
@@ -7,7 +7,7 @@ import { openFixtureChat } from './codemode-card.mjs'
  * typed, so nothing could reach a provider, and the form proves it holds the connection back.
  */
 export async function composeCloudConnection(page) {
-  // A one-agent chat, whose composer opens the model browser itself (a party opens its roster).
+  // A one-agent chat, whose composer opens the model browser itself.
   await openFixtureChat(page)
   await page.getByRole('button', { name: /Choose a model and connect a provider|^Model:/ }).click()
   const dialog = page.getByRole('dialog')

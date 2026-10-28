@@ -1,11 +1,10 @@
 import type { SteeringBoundary } from '@localixai/agent'
-import { agentParticipant } from '../../../../db/participant'
 
 import { midRunInterjectEnabled } from '../../../agent-core/interjection'
 import { buildRuntimeSteering } from './runtime-execution'
 import type { RunFrame } from './stages/frame'
 import type { ResolvedTurn } from './stages/turn'
-import { addressedToSpeaker, createSteeringTaker, createToolCallDeferral } from './steering'
+import { createSteeringTaker, createToolCallDeferral } from './steering'
 
 /**
  * Mid-run steering for the stream stage: the `takeSteering` callback and, when the session
@@ -15,20 +14,16 @@ import { addressedToSpeaker, createSteeringTaker, createToolCallDeferral } from 
  * caught up with the turn the boundary names.
  */
 export function wireRunSteering(frame: RunFrame, turn: Pick<ResolvedTurn, 'state' | 'policy'>) {
-  const { env, session, speakerAgentId, abort } = frame
+  const { env, abort, session } = frame
   const { state, policy } = turn
   const { repo, now } = env
   let requestedToolTurnIndex: number | undefined
   let deliveredToolTurnIndex: number | undefined
 
   const steers = midRunInterjectEnabled() && policy.host.steers
-  const accepts = (content: string) => addressedToSpeaker(content, session.agents, speakerAgentId)
   const surface = frame.params.scope.executionContext.clientSurface
   // Where a delegated child's report may join this turn: a conversation that has children.
   const childReports = policy.conversation.childReports
-  const steeringAddress = childReports
-    ? { participant: agentParticipant(speakerAgentId), ...childReports }
-    : undefined
   const takeFromQueue = steers
     ? createSteeringTaker({
         env,
@@ -37,12 +32,10 @@ export function wireRunSteering(frame: RunFrame, turn: Pick<ResolvedTurn, 'state
         now,
         signal: abort.signal,
         steerCtxRef: frame.steerCtxRef,
-        accepts,
         ...(surface ? { surface } : {}),
-        ...(steeringAddress
+        ...(childReports
           ? {
               subagent: {
-                address: steeringAddress,
                 canDeliver: () =>
                   requestedToolTurnIndex !== undefined &&
                   requestedToolTurnIndex === state.completedToolTurnIndex &&
@@ -69,7 +62,6 @@ export function wireRunSteering(frame: RunFrame, turn: Pick<ResolvedTurn, 'state
           env,
           sessionId: session.id,
           signal: abort.signal,
-          accepts,
           ...(surface ? { surface } : {}),
         }),
       }

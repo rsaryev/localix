@@ -78,7 +78,10 @@ export function DefaultSqlEditor({
   const [showAll, setShowAll] = useState(false)
   const validationError = useMemo(() => validateDefaultSqlExpression(value), [value])
   const completions = useMemo(() => defaultSqlCompletions(dialect, dataType), [dialect, dataType])
-  const cursor = inputRef.current?.selectionStart ?? value.length
+  // Where the caret is, kept as state from the input's own events instead of read off the DOM
+  // node while rendering; before the first event it sits at the end, like an untouched input.
+  const [caret, setCaret] = useState<number | null>(null)
+  const cursor = Math.min(caret ?? value.length, value.length)
   const query = completionQuery(value, cursor)
   const normalizedQuery = normalizeSearch(query)
   const matching = useMemo(
@@ -117,8 +120,9 @@ export function DefaultSqlEditor({
       const input = inputRef.current
       if (!input) return
       input.focus()
-      const caret = next === "''" ? 1 : next.length
-      input.setSelectionRange(caret, caret)
+      const caretAt = next === "''" ? 1 : next.length
+      input.setSelectionRange(caretAt, caretAt)
+      setCaret(caretAt)
     })
   }
 
@@ -170,9 +174,11 @@ export function DefaultSqlEditor({
               if (highlightRef.current)
                 highlightRef.current.scrollLeft = event.currentTarget.scrollLeft
             }}
+            onSelect={(event) => setCaret(event.currentTarget.selectionStart)}
             onChange={(event) => {
               const next = event.target.value.replaceAll(/\r?\n/g, ' ')
               onChange(next)
+              setCaret(event.target.selectionStart)
               showMatches(next, event.target.selectionStart ?? next.length)
             }}
             onClick={(event) => {

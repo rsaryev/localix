@@ -109,7 +109,7 @@ export function useJournalNavigation({
           title: `Could not run “${action.label}”`,
           body: errorMessage(error, 'The action could not be completed'),
           origin,
-          nativeKind: 'run',
+          native: true,
         })
       }
     },

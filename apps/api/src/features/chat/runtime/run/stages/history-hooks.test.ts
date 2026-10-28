@@ -43,7 +43,7 @@ describe('a checkpoint announced to Claude Code hooks', () => {
       },
       userId: 'u1',
       session: { id: 's1' },
-      speakerAgentId: 'a1',
+      agentId: 'a1',
       teardown: { ccHooks: hooks },
     } as unknown as RunFrame
     announceCheckpoint(frame, checkpoint)
@@ -88,7 +88,7 @@ describe('PreCompact before a checkpoint is committed', () => {
       },
       userId: 'u1',
       session: { id: 's1' },
-      speakerAgentId: 'a1',
+      agentId: 'a1',
       teardown: {
         ccHooks: {
           ...INERT_CC_HOOKS,

@@ -3,10 +3,11 @@
  * Each section is keyed by its id, so a turn re-sends only the `state` sections that changed and
  * carries `turn` sections for that turn alone.
  */
+import { buildSessionTopicSection } from '../session-topic'
 import { TOOL } from '../tool-names'
 import type { PromptSection } from './section'
 import { buildBackgroundJobsSection } from './sections/background-jobs'
-import { buildAgentDirectorySection, buildParticipantsSection } from './sections/conversation'
+import { buildAgentDirectorySection } from './sections/conversation'
 import {
   buildActiveSubAgentsSection,
   buildLoopsSection,
@@ -27,6 +28,16 @@ export const TAIL_SECTIONS: readonly PromptSection[] = [
     tier: 'state',
     heading: '# Runtime context',
     render: (f) => formatRuntimeContext(f.params),
+  },
+  {
+    // One session's own: its title, goal and the summary of the topic before it. Above the boundary
+    // it made every session's system prompt differ from the next one's, and a new goal rewrote the
+    // prompt and with it the whole history that follows. Here a change is one appended block, and
+    // every agent of the conversation reads it from its own context.
+    id: 'session-objective',
+    tier: 'state',
+    heading: '# Session objective',
+    render: (f) => (f.params.sessionTopic ? buildSessionTopicSection(f.params.sessionTopic) : null),
   },
   {
     // A fresh shallow tree, re-read every run: the agent itself changes it.
@@ -61,26 +72,14 @@ export const TAIL_SECTIONS: readonly PromptSection[] = [
     render: (f) => f.params.reactionContext,
   },
   {
-    // WHO is in the conversation. Agents invite and remove each other mid-conversation; above
-    // the boundary every such change rewrote the cached prefix of every participant.
-    id: 'participants',
-    tier: 'state',
-    heading: '# Conversation participants',
-    render: (f) =>
-      f.params.conversation && !f.params.conversation.isolated
-        ? buildParticipantsSection(f.params.conversation)
-        : null,
-  },
-  {
-    // The directory is who a tag can reach. A rule edit or a colleague joining changes a row,
-    // with no turn boundary.
+    // The agents `Agent` can start. A rule edit changes a row, with no turn boundary.
     id: 'agent-directory',
     tier: 'state',
     heading: '# Agent directory',
     render: (f) =>
       nonEmpty(f.params.agentDirectory)
         ? buildAgentDirectorySection(f.params.agentDirectory, {
-            canDelegate: f.hasTool(TOOL.delegate),
+            canDelegate: f.hasTool(TOOL.Agent),
           })
         : null,
   },
@@ -107,8 +106,8 @@ export const TAIL_SECTIONS: readonly PromptSection[] = [
     render: (f) =>
       nonEmpty(f.params.activeSubAgents)
         ? buildActiveSubAgentsSection([...f.params.activeSubAgents], {
-            canInspectHistory: f.hasTool(TOOL.global_search),
-            canListRuns: f.hasTool(TOOL.delegate),
+            canInspectHistory: f.hasTool(TOOL.GlobalSearch),
+            canMessage: f.hasTool(TOOL.Agent),
           })
         : null,
   },
@@ -118,7 +117,7 @@ export const TAIL_SECTIONS: readonly PromptSection[] = [
     heading: '# Loops',
     render: (f) =>
       f.params.loopContext && f.params.loopContext.loops.length > 0
-        ? buildLoopsSection(f.params.loopContext.loops, { canManage: f.hasTool(TOOL.loops) })
+        ? buildLoopsSection(f.params.loopContext.loops, { canManage: f.hasTool(TOOL.Loops) })
         : null,
   },
   {
@@ -128,7 +127,7 @@ export const TAIL_SECTIONS: readonly PromptSection[] = [
     render: (f) =>
       nonEmpty(f.params.backgroundJobs)
         ? buildBackgroundJobsSection([...f.params.backgroundJobs], {
-            canManage: f.hasTool(TOOL.jobs),
+            canManage: f.hasTool(TOOL.Jobs),
           })
         : null,
   },

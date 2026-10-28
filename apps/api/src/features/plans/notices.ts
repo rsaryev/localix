@@ -3,9 +3,9 @@
  *
  * Before these lines existed a plan's decisions reached only the agent that presented it, as the
  * wake that opened its next turn. The person had a card that changed colour and nothing in the
- * transcript; every other participant had nothing at all, so a reviewer agent went on critiquing
+ * transcript; every other agent had nothing at all, so a reviewer agent went on critiquing
  * a version the person had already approved. Each line is a `StoredSystemNotice`: the person
- * reads it in the transcript and every participant reads it as the conversation's current plan
+ * reads it in the transcript and every agent reads it as the conversation's current plan
  * step (`system-notice-bindings.ts` keys every plan kind to ONE slot, so the newest step wins).
  *
  * The texts live together so that the lifecycle reads as one sentence per stage, and so that a
@@ -17,9 +17,6 @@ import type { ImplementationMode, SessionPlan } from './contracts'
 
 type Plan = Pick<SessionPlan, 'version' | 'title'>
 
-/** Whom an approval handed the work to: one participant, or everyone. */
-export type ApprovalAddressee = { handle: string } | { all: true }
-
 /** A summary's first line, bounded — the notice is one line in the transcript. */
 const LINE_MAX = 200
 const firstLine = (text: string): string => {
@@ -28,11 +25,11 @@ const firstLine = (text: string): string => {
 }
 
 export const planNotice = {
-  presented: (plan: Plan, handle: string | null): StoredSystemNotice => ({
+  presented: (plan: Plan, name: string | null): StoredSystemNotice => ({
     kind: 'plan_presented',
     tone: 'info',
-    text: handle
-      ? `${handle} presented plan v${plan.version}: ${plan.title}.`
+    text: name
+      ? `${name} presented plan v${plan.version}: ${plan.title}.`
       : `Plan v${plan.version} presented: ${plan.title}.`,
   }),
 
@@ -53,22 +50,10 @@ export const planNotice = {
         : `Changes requested on plan v${plan.version}.`,
   }),
 
-  /**
-   * Who starts rides the line when the person chose among several. The wake reaches only that
-   * addressee, so without it every other participant — and the person scrolling back — would
-   * see an approval and not know whose turn the work now is. A one-agent chat (or no choice)
-   * passes `null`: naming the only agent says nothing.
-   */
-  approved: (
-    plan: Plan,
-    mode: ImplementationMode,
-    addressee: ApprovalAddressee | null,
-  ): StoredSystemNotice => ({
+  approved: (plan: Plan, mode: ImplementationMode): StoredSystemNotice => ({
     kind: 'plan_approved',
     tone: 'success',
-    text:
-      `Plan v${plan.version} approved — ${PERMISSION_MODE_COPY[mode].label} mode.` +
-      (!addressee ? '' : 'all' in addressee ? ' Everyone starts.' : ` ${addressee.handle} starts.`),
+    text: `Plan v${plan.version} approved — ${PERMISSION_MODE_COPY[mode].label} mode.`,
   }),
 
   dismissed: (plan: Plan): StoredSystemNotice => ({

@@ -2,7 +2,7 @@
 
 The source of Localix's first-party mini apps. A mini app is Localix's own format, not a Claude Code
 plugin: one `mini-app.json` (identity, category, backend, settings, commands), a `guide.md` the
-agent reads with `mini_app_guide` before it first uses the app, a native backend (`backend/`) and
+agent reads with `MiniAppGuide` before it first uses the app, a native backend (`backend/`) and
 screens (`ui/`). It holds no `skills/`, `.claude-plugin/` or hooks, and Localix ships no mini apps.
 The contract and the migration status:
 [plugins and mini apps](../docs/internals/plugins-and-mini-apps.md).
@@ -60,7 +60,7 @@ A mini app's backend (`register(ctx)`) gives the agent tools over Localix's APIs
 services, lifecycle hooks and channels. Its native workbench UI is built by the app into an
 artifact; it may also contribute sandboxed HTML views, prompt sections, agent definitions, file
 associations, settings, and commands with argument pickers. A guide too long for one read links
-pages under `guide/`, which `mini_app_guide` reads by name.
+pages under `guide/`, which `MiniAppGuide` reads by name.
 
 ## Trust boundary
 
@@ -80,9 +80,10 @@ source before enabling code you do not trust.
 
 ## Contributor workflow
 
-A mini app a user asks for is not one of these: `/mini-app create <what it should do>` in chat forks
-[`template/`](template/) (shipped in the app's kit) into the user's folder, and the app builds,
-tests and reloads it there. Nothing in this repository changes when a user creates one.
+A mini app a user asks for is not one of these: the
+[mini-app-authoring plugin](../plugins/mini-app-authoring/README.md) forks [`template/`](template/)
+(shipped in the app's kit) into the user's folder, builds and tests it there, and installs the
+package into Localix. Nothing in this repository changes when a user creates one.
 
 To add a first-party mini app, copy [`template/`](template/) by hand — its
 [`scaffold.json`](template/scaffold.json) lists the frame to keep and the domain to replace. A

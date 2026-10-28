@@ -4,7 +4,6 @@ import { announceSkillInvoked } from '../../agent-core/skill-invocations'
 import { resolveModelAlias } from '../../agent-core/model-alias'
 import { resolveDeclaredReasoningEffort } from '../../../db/types'
 import { parseSkillCommand } from './slash-commands'
-import { commandTarget } from './command-participant'
 import { SkillCommandFailedError } from './skill-commands'
 import { renderSkillBody } from './skill-render'
 import { stackedSkills } from './command-handlers-skill-stack'
@@ -91,15 +90,7 @@ export async function handleSkillCommand(
   }
   // No busy refusal: a skill command sent while the session works waits in the queue whole
   // (`run-macro.ts`), like every other slash command.
-  // The participant the person is talking to answers the skill — its effort, its fork.
-  const speaker = (
-    await commandTarget(
-      session,
-      () => repo.listMessages(userId, sessionId),
-      '',
-      ctx.runner.leadership(userId, session.projectId),
-    )
-  )?.participant
+  // The session's agent answers the skill: its effort, its fork.
   const workingDir = await ctx.resolveSessionWorkingDir(userId, session)
   // A plugin's skill is a plugin component: its `!cmd` lines and its frontmatter `hooks` both get
   // the plugin's `${CLAUDE_PLUGIN_ROOT}` and `${CLAUDE_PLUGIN_DATA}`, as Claude Code gives them.
@@ -111,13 +102,13 @@ export async function handleSkillCommand(
           dataDir: skill.pluginDataDir ?? pluginDataDir(skill.pluginName, userHome()),
         }
       : undefined
-  const speakerRoute = speaker ?? sessionRoute(session)
+  const route = sessionRoute(session)
   // CC rendering: `!cmd` and ```! blocks run (seeing the arguments), `@path` references inline,
   // then arguments and `${CLAUDE_*}` substitute. SECURITY: commands and @refs only for SKILL.md
   // files (source='file'): the user's own, and an ENABLED plugin's — Claude Code runs a plugin
   // skill's commands too. A failed command aborts the invocation before the model is asked.
   // The agent's rules, which every injected command meets first (`skill-command-authorize.ts`).
-  const rules = await ctx.loadSkillCommandRules?.(userId, speakerRoute.agentId)
+  const rules = await ctx.loadSkillCommandRules?.(userId, route.agentId)
   const pathVars = skillToolPathVars({
     projectDir: workingDir,
     path: skill.path,
@@ -154,7 +145,7 @@ export async function handleSkillCommand(
         : {}),
       sessionId,
       workingDir,
-      effort: speakerRoute.reasoningEffort ?? 'low',
+      effort: route.reasoningEffort ?? 'low',
       ...(plugin
         ? { env: { CLAUDE_PLUGIN_ROOT: plugin.root, CLAUDE_PLUGIN_DATA: plugin.dataDir } }
         : {}),
@@ -203,16 +194,13 @@ export async function handleSkillCommand(
     ...(workingDir ? { cwd: workingDir } : {}),
   })
 
-  // CC `context: fork` — run the skill in a child session, seated by the invoking agent and run
+  // CC `context: fork` — run the skill in a child session, started as the invoking agent and run
   // as the agent its `agent:` names (general-purpose when omitted).
   if (skill.contextFork && spawnForkSkill) {
     const forkAgent = skill.forkAgent?.trim()
     const childId = await spawnForkSkill(userId, sessionId, instruction, {
-      ...(speaker ? { invokedBy: speaker.agentId } : {}),
       ...(forkAgent ? { agent: forkAgent } : {}),
       title: `/${skill.name}${arg ? ' ' + arg : ''}`,
-      preferredModel: skill.preferredModel,
-      preferredEffort: skill.preferredEffort,
       // CC skill frontmatter `hooks` — activated for the forked sub-agent run.
       ...(skill.hooks ? { hooks: skill.hooks, ...(plugin ? { hooksPlugin: plugin } : {}) } : {}),
     })
@@ -261,7 +249,7 @@ export async function handleSkillCommand(
       // CC skill `model:` — "applies for the rest of the current turn"; the next prompt runs on
       // the session model again. An alias resolves like a command's; `inherit` keeps the model.
       ...(skill.preferredModel
-        ? { modelId: resolveModelAlias(skill.preferredModel, speakerRoute.modelId ?? undefined) }
+        ? { modelId: resolveModelAlias(skill.preferredModel, route.modelId ?? undefined) }
         : {}),
       // CC skill `effort:` — the invoking turn's effort; an unknown value keeps the session's.
       ...(resolveDeclaredReasoningEffort(skill.preferredEffort)

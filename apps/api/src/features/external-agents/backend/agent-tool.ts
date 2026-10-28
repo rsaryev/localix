@@ -10,7 +10,7 @@ export function createExternalAgentSessionsTool(
   sessionId: string,
 ): AgentTool {
   return {
-    ...BUILTIN_TOOL_CATALOG.external_agent_sessions,
+    ...BUILTIN_TOOL_CATALOG.ExternalAgentSessions,
     activeVerb: 'Inspecting agent sessions',
     inputSchema: externalAgentInputSchema,
     // Every action only observes sessions (`resume` returns a command for bash to run), so the

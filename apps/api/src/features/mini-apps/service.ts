@@ -15,10 +15,9 @@ import { buildMiniAppCatalog, type MiniAppCatalog } from './catalog'
 import type { InvokeMiniAppUiActionRequest, MiniAppViewSpec } from './contracts-contributions'
 import type { MiniAppCommandSpec, MiniAppRecord } from './contracts'
 import { createMiniAppInspections } from './inspection-snapshots'
-import { miniAppKitDir } from './authoring/kit-root'
-import { createMiniAppAuthoring } from './authoring/service'
-import { discoverMiniApps, miniAppInstallRoot } from './discovery'
-import { miniAppTrustClass } from './catalog'
+import { miniAppKitDir } from './kit-root'
+import { miniAppInstallRoot } from './discovery'
+import { installLocalPackage } from './local-install'
 import { toMiniAppRecord } from './records'
 import { resolveMiniAppUiFile } from './ui-artifact'
 import { createMiniAppWrites } from './service-writes'
@@ -156,23 +155,6 @@ export function createMiniAppService(deps: MiniAppServiceDeps) {
 
   const writes = createMiniAppWrites({ deps, repo, inspections, requireApp, catalogFor })
 
-  /** Creating, building and reloading the person's own mini apps (`authoring/`). */
-  const authoring = createMiniAppAuthoring({
-    discover: () => discoverMiniApps({ homeDir: deps.homeDir }),
-    miniAppsRoot: miniAppInstallRoot('global', null, deps.homeDir),
-    kitDir: deps.miniAppKitDir ?? miniAppKitDir,
-    allowed: async (userId, app) =>
-      (await readAvailability(deps.db, { userId, agentId: DEFAULT_AGENT_ID })).effectFor(
-        'mini-app',
-        app.name,
-        miniAppTrustClass(app),
-      ) === 'allow',
-    enable: (userId, name) => setEnabled(userId, { name, enabled: true }),
-    disable: (userId, name) => setEnabled(userId, { name, enabled: false }),
-    // A build replaced its code: every host converges on the notice, every surface re-reads.
-    changed: () => void recordCoreChanges(deps.db, { entity: 'mini-app', op: 'resync' }),
-  })
-
   const resync = async () => {
     inspections.invalidate()
     await recordCoreChanges(deps.db, { entity: 'mini-app', op: 'resync' })
@@ -181,21 +163,11 @@ export function createMiniAppService(deps: MiniAppServiceDeps) {
   const { catalogs, store, installRecommended } = createMiniAppStoreParts(deps, setEnabled)
 
   return {
-    authoring,
     catalogs,
     store,
     /** The one-time install of the apps the Localix catalog recommends (`recommended.ts`). */
     installRecommended,
-    /**
-     * `/mini-app reload`: rebuild the person's own mini apps, then say every one changed, since a
-     * folder edited on disk is a change no write announced.
-     */
-    async reload(userId: string) {
-      const rebuilt = await authoring.rebuildAll(userId)
-      await resync()
-      return rebuilt
-    },
-    /** Folders changed under the host (a re-staged bundle): re-read every one. */
+    /** Folders changed under the host (a re-staged bundle, `/mini-app reload`): re-read every one. */
     resync,
     list: async (userId: string, opts?: { projectId?: string | null }) => ({
       miniApps: await records(userId, opts?.projectId ?? ''),
@@ -214,6 +186,17 @@ export function createMiniAppService(deps: MiniAppServiceDeps) {
 
     /** A switch is a rule like any other: `mini-app:<name>`, in one agent's list. */
     setEnabled,
+
+    /** Where the mini app kit is: what the mini-app-authoring plugin builds against. */
+    kitDir: deps.miniAppKitDir ?? miniAppKitDir,
+
+    /** Install a package the person built (`mini-app install`) and switch it on. */
+    installLocal: (userId: string, input: { dir: string; source: string }) =>
+      installLocalPackage(input, {
+        installRoot: miniAppInstallRoot('global', null, deps.homeDir),
+        changed: resync,
+        enable: (name) => setEnabled(userId, { name, enabled: true }),
+      }),
 
     ...writes,
 

@@ -46,13 +46,17 @@ export function KubernetesPodTab({
   const seededPod = podSnapshotMatches(initialPod, podName, namespace) ? initialPod : null
   const [view, setView] = useState<PodTabView>('logs')
   const [container, setContainer] = useState(seededPod?.containers[0] ?? '')
+  const [reconciledPod, setReconciledPod] = useState<KubePod | null | undefined>(undefined)
   const [forwarding, setForwarding] = useState(false)
 
   const seed = usePodTabSeed({ active, podName, namespace, context, initialPod })
   const { pod } = seed
-  useEffect(() => {
+  // The selection follows the pod's containers: kept while it still exists, otherwise the first
+  // app container. Decided while rendering, when the pod changes, so no frame shows a gone one.
+  if (pod !== reconciledPod) {
+    setReconciledPod(pod)
     setContainer((current) => reconcileContainerSelection(current, pod))
-  }, [pod])
+  }
 
   const content = usePodTabContent({
     active,

@@ -28,3 +28,11 @@ GlobalRegistrator.register()
 beforeAll(async () => {
   if (GlobalRegistrator.isRegistered) await GlobalRegistrator.unregister()
 })
+
+// A run that shares one process (`bun test <several files>`) runs `beforeAll` above once, for the
+// FIRST file. Every later file's graph evaluates with no document, so whichever of them reaches
+// Radix first would freeze its no-op hook for everyone (kit's own preload explains the failure).
+// Warm Radix here, while the document is still held: the module cache is shared. Under `--isolate`
+// this line arrives after the file started; each isolated file then evaluates its own copy under
+// the document held above, so nothing depends on it.
+await import('radix-ui')

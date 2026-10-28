@@ -22,50 +22,67 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "@localixai/source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./backoff": {
+      "@localixai/source": "./src/utils/backoff.ts",
+      "types": "./dist/utils/backoff.d.ts",
+      "import": "./dist/utils/backoff.js"
+    },
     "./context": {
+      "@localixai/source": "./src/context/index.ts",
       "types": "./dist/context/index.d.ts",
       "import": "./dist/context/index.js"
     },
     "./history": {
+      "@localixai/source": "./src/history/index.ts",
       "types": "./dist/history/index.d.ts",
       "import": "./dist/history/index.js"
     },
     "./runtime": {
+      "@localixai/source": "./src/runtime/index.ts",
       "types": "./dist/runtime/index.d.ts",
       "import": "./dist/runtime/index.js"
     },
     "./catalog": {
+      "@localixai/source": "./src/catalog/index.ts",
       "types": "./dist/catalog/index.d.ts",
       "import": "./dist/catalog/index.js"
     },
     "./images/downscale": {
+      "@localixai/source": "./src/images/downscale.ts",
       "types": "./dist/images/downscale.d.ts",
       "import": "./dist/images/downscale.js"
     },
     "./types": {
+      "@localixai/source": "./src/types.ts",
       "types": "./dist/types.d.ts",
       "import": "./dist/types.js"
     },
     "./chat": {
+      "@localixai/source": "./src/chat.ts",
       "types": "./dist/chat.d.ts",
       "import": "./dist/chat.js"
     },
     "./chat-cache": {
+      "@localixai/source": "./src/chat-cache.ts",
       "types": "./dist/chat-cache.d.ts",
       "import": "./dist/chat-cache.js"
     },
     "./agents": {
+      "@localixai/source": "./src/agents/index.ts",
       "types": "./dist/agents/index.d.ts",
       "import": "./dist/agents/index.js"
     },
     "./agents/chat": {
+      "@localixai/source": "./src/agents/chat.ts",
       "types": "./dist/agents/chat.d.ts",
       "import": "./dist/agents/chat.js"
     },
     "./agents/items": {
+      "@localixai/source": "./src/agents/items.ts",
       "types": "./dist/agents/items.d.ts",
       "import": "./dist/agents/items.js"
     }
@@ -74,7 +91,7 @@
     "build": "shx rm -rf dist && tsc --project tsconfig.build.json",
     "dev": "tsc --project tsconfig.build.json --watch --preserveWatchOutput",
     "test": "bun test src",
-    "type-check": "tsc --noEmit --incremental --tsBuildInfoFile node_modules/.tmp/tsconfig.tsbuildinfo",
+    "type-check": "node ../../scripts/tsc.mjs --noEmit",
     "clean": "shx rm -rf dist .turbo"
   },
   "dependencies": {

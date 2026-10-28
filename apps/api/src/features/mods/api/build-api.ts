@@ -1,5 +1,12 @@
 import type { elementTable, ModsApi } from '@localixai/claude-plugin/mods'
-import { currentScene, stringOr, type ModScene, type ModSource, type ModsPorts } from '../contracts'
+import {
+  currentScene,
+  stringOr,
+  submittedContent,
+  type ModScene,
+  type ModSource,
+  type ModsPorts,
+} from '../contracts'
 import type { ModComposer } from '../composer'
 import { DESCRIBING_CORES, type ModEventCalls } from '../event-calls'
 import type { ModRegistry } from '../registry'
@@ -67,6 +74,8 @@ export function buildModApi(deps: ModApiDeps): { api: ModsApi; dispose: () => vo
     scene,
     ports,
     run: (argv, cwd) => system.process.run(argv, { cwd, timeoutMs: 5_000 }),
+    agentIds: async () =>
+      ((await ports.listAgentRuns?.(scene()).catch(() => [])) ?? []).map((run) => run.sessionId),
     append: (sessionId, text) => {
       deps.composer.note(sessionId, text)
       ports.log(scene(), { plugin, text })
@@ -77,8 +86,18 @@ export function buildModApi(deps: ModApiDeps): { api: ModsApi; dispose: () => vo
   const api: ModsApi = {
     plugin: { name: plugin, root: source.root },
     command: {
-      register: (spec: { name: string; description: string; argumentHint?: string }) => {
-        registry.addCommand(instance, spec)
+      register: async (spec: {
+        name: string
+        description: string
+        argumentHint?: string
+        immediate?: unknown
+      }) => {
+        if (spec.immediate !== undefined && spec.immediate !== true)
+          throw new Error('command.register: immediate is true or left out')
+        const builtins = (await ports.listCommands?.(scene()).catch(() => [])) ?? []
+        if (builtins.some((c) => c.source === 'builtin' && c.name === spec.name))
+          throw new Error(`command.register: /${spec.name} is a built-in command`)
+        registry.addCommand(instance, spec as Parameters<typeof registry.addCommand>[1])
         return { command: spec.name }
       },
       // Localix's commands and skills, then the mods' own, as the typeahead lists them.
@@ -89,6 +108,7 @@ export function buildModApi(deps: ModApiDeps): { api: ModsApi; dispose: () => vo
           description: command.description,
           source: 'plugin' as const,
           plugin: command.plugin,
+          ...(command.immediate ? { immediate: true } : {}),
         })),
       ],
       run: (input: { command: string; args?: string }) => deps.runCommand(input),
@@ -104,8 +124,8 @@ export function buildModApi(deps: ModApiDeps): { api: ModsApi; dispose: () => vo
         return { tool: modToolName(plugin, spec.name) }
       },
       list: run.tool.list,
-      call: run.tool.call,
-      check: run.tool.check,
+      call: (input: unknown) => run.tool.call(input),
+      check: (input: unknown) => run.tool.check(input),
       describe: DESCRIBING_CORES.tool.describe,
     },
     mcp: {
@@ -119,6 +139,8 @@ export function buildModApi(deps: ModApiDeps): { api: ModsApi; dispose: () => vo
     },
     agent: {
       ...createAgentApi({
+        plugin,
+        report: ports.report,
         instance,
         registry,
         scene,
@@ -169,7 +191,7 @@ export function buildModApi(deps: ModApiDeps): { api: ModsApi; dispose: () => vo
       composer: deps.composer,
       tableOf: deps.tableOf,
       invalidate: (event) => deps.calls.invalidate(event),
-      ask: run.ui.ask,
+      ask: (question, options) => run.ui.ask(question, options),
     }),
     store: createStoreApi(ports.dataDir(plugin)),
     state: createStateApi({ plugin, space: deps.instance.cwd, spaces: deps.state }),
@@ -202,7 +224,15 @@ export function buildModApi(deps: ModApiDeps): { api: ModsApi; dispose: () => vo
         origin?: unknown
       }) => {
         const text = textOf(input)
-        await ports.submitPrompt(scene(), { text, asUser: input?.asUser === true, plugin })
+        const sent = { text, asUser: input?.asUser === true, plugin }
+        // The hooks heard this prompt as the call: its turn must not raise `prompt.submit` again.
+        const sessionId = scene().sessionId
+        const content = submittedContent(sent)
+        if (sessionId) deps.composer.submitted(sessionId, content)
+        await ports.submitPrompt(scene(), sent).catch((error: unknown) => {
+          if (sessionId) deps.composer.takeSubmitted(sessionId, content)
+          throw error
+        })
         return {
           text,
           ...(Array.isArray(input?.context) ? { context: input.context } : {}),
@@ -228,7 +258,7 @@ export function buildModApi(deps: ModApiDeps): { api: ModsApi; dispose: () => vo
     },
     model: createModelApi({
       complete: (request) => ports.complete(scene(), request),
-      messages: () => session.messages(),
+      messages: async () => (await ports.readSession?.(scene()))?.messages ?? [],
       // A fork reads what the conversation's model read: its system prompt as last composed.
       systemPrompt: async () => {
         const { sections } = (await deps.calls.compose(scene(), {})) as {

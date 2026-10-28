@@ -21,7 +21,7 @@ import {
 } from '@localixai/agent'
 import type { HistoryStage } from '@localixai/agent/history'
 
-import { SYSTEM_PARTICIPANT } from '../../../../../db'
+import { SYSTEM_AUTHOR } from '../../../../../db'
 import type { StoredMessagePayload } from '../../../../../db/payload'
 import type { PersistedMessage } from '../../../contracts'
 import { MODEL_TRIM_KEEP_RECENT, resolveKeepRecentTokens } from '../../agent-runner-constants'
@@ -55,7 +55,6 @@ function entriesOf(
     const turnContext = isTurnContextRow(row)
     return {
       message: payload,
-      // A colleague's reply arrives here already projected to `user`: it starts a turn too.
       turnStart: payload.role === 'user' && !turnContext,
       internal: payload.isInternal === true || turnContext,
       ...(payload.origin === 'delegator' && !turnContext ? { assignmentUpdate: true } : {}),
@@ -70,7 +69,7 @@ const cardsRow =
   (text: string): StoredMessagePayload => ({
     id: `context-checkpoint-${hostId}`,
     role: 'user',
-    from: SYSTEM_PARTICIPANT,
+    from: SYSTEM_AUTHOR,
     content: text,
     isInternal: true,
   })

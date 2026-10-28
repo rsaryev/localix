@@ -7,14 +7,14 @@ CSV, and workbooks. It is enabled by default and can be disabled independently o
 
 | Capability                 | Mechanism                                                                                  | Boundary                                                                            |
 | -------------------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
-| Read binary documents      | The mini app implements the standard `document.extract` SDK port used by core `read`.      | When the mini app is disabled, `read` says that document extraction is unavailable. |
+| Read binary documents      | The mini app implements the standard `document.extract` SDK port used by core `Read`.      | When the mini app is disabled, `Read` says that document extraction is unavailable. |
 | View PDFs and office files | Mini app file associations select PDF, Markdown, or table viewers.                         | Viewers do not edit the source.                                                     |
 | Inspect spreadsheets       | CSV and workbook files are ingested into the mini app's paged table pipeline.              | Sort, filter, chart, and export operate on a mini-app-owned copy.                   |
 | Mention extracted content  | `localix://resource/doc/<cache-id>` expands a bounded cached extraction.                   | The resource contains extracted text/rows, not the original binary.                 |
 | Generate via HTTP          | `/rpc/documents/generate` produces DOCX, PDF, or XLSX and may store it through host media. | This is an application route, not an agent tool.                                    |
 
-The mini app contributes no model-facing tools. Agents use the generic core `read`, `write`, and
-shell capabilities; the mini app augments `read` through a typed extension port.
+The mini app contributes no model-facing tools. Agents use the generic core `Read`, `Write`, and
+shell capabilities; the mini app augments `Read` through a typed extension port.
 
 ![Release checks opened in the Documents table viewer, with typed columns and their current results](../assets/screenshots/documents/viewer--2026-10-08.png)
 
@@ -54,7 +54,7 @@ Markdown characters or 10,000 table rows, after parsing; the cache retains the f
 These response limits do not bound parser memory or cached output size. Spreadsheet ingestion uses
 that full cached table, so its viewer can page beyond the extraction response’s 10,000-row window.
 
-Core `read` delegates the supported binary formats through the capability registry; CSV and Markdown
+Core `Read` delegates the supported binary formats through the capability registry; CSV and Markdown
 continue through normal text reading unless opened in the Documents viewer. Its `pages` input
 (`"3"`, `"1-5"`, `"10-"`) narrows a PDF or PPTX extraction, and `sheet` selects a workbook sheet by
 name.

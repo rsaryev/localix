@@ -2,7 +2,7 @@
 //
 // `dev-api.mjs` stages `mini apps/` ONCE at boot. A mini app scaffolded or whose backend was
 // edited afterwards therefore did not exist for the API until `bun run dev` was restarted —
-// the one workflow (`mini_app_build`) whose whole point is a mini app appearing while you work.
+// the one workflow (building a mini app) whose whole point is a mini app appearing while you work.
 // This watcher maps each filesystem change to the mini app it belongs to, coalesces the burst a
 // scaffold or a save produces, and re-stages just that mini app; the API's bundled-mini-app sync
 // then picks the new tree up on its next discovery (its memo is ten seconds) or on
@@ -21,8 +21,8 @@ import { BUNDLED_DIRS, bundledRoots } from './lib/bundled-roots.mjs'
 import { isClaudeCodePluginOnly } from './lib/extension-manifest.mjs'
 
 /**
- * The kit inputs that decide its LAYOUT: the stagers and the layout contract the API's authoring
- * code checks the staged kit against. A change here makes the running API reject the kit it
+ * The kit inputs that decide its LAYOUT: the stagers and the layout contract the API checks the
+ * staged kit against. A change here makes the running API reject the kit it
  * reads ("unknown layout"), so it re-stages promptly. Every other input only changes the kit's
  * CONTENT (declarations, styles, the template), which nothing needs within the second.
  */
@@ -34,8 +34,7 @@ export const KIT_LAYOUT_INPUTS = MINI_APP_KIT_INPUTS.filter(
  * Re-stage the mini app kit when anything it is made from changes (`MINI_APP_KIT_INPUTS`).
  *
  * The first defect: the kit was staged once at boot while `bun --watch` reloads the API on every
- * source edit, so the API's authoring code and the kit it reads drifted apart — `/mini-app create`
- * then failed with "The mini app kit … has an unknown layout" until `bun run dev` was restarted.
+ * source edit, so the API and the kit it reads drifted apart — building a mini app then failed with "The mini app kit … has an unknown layout" until `bun run dev` was restarted.
  *
  * The second, which the first fix caused: the content inputs are all of `apps/ui/src/app`,
  * `apps/ui/src/shared/ui` and the `dist` of four packages that `turbo dev` rewrites through

@@ -9,8 +9,8 @@ import type { ConsumerHandlers } from '@localixai/change-feed'
 import type { AppDatabase } from '../db/types'
 import type { CatalogService } from '../features/catalog/service'
 import type { CoreCascades, CoreChangeFeed, CoreRefs } from '../features/changes/core-entities'
-import { createAgentSeats } from '../features/chat/agent-seats/agent-seats'
-import { createAgentSeatsRepository } from '../features/chat/agent-seats/seats-repository'
+import { createAgentNames } from '../features/chat/agent-names/agent-names'
+import { createAgentNamesRepository } from '../features/chat/agent-names/names-repository'
 import type { AgentsService } from '../features/agents/service'
 import { createCapabilityCleanup } from '../features/capabilities/cleanup'
 import { mcpOAuthStore } from '../features/mcp/oauth/runtime'
@@ -29,7 +29,7 @@ import { createUsageLedgerProjector } from '../features/usage/ledger-projector'
 import { createUsageRepository } from '../features/usage/repository'
 import { createRelay } from '../features/realtime/relay'
 import { createRouteRepair } from '../features/chat/route-repair/route-repair'
-import { createRouteSeatsRepository } from '../features/chat/route-repair/seats-repository'
+import { createRouteRepairRepository } from '../features/chat/route-repair/routes-repository'
 import type { ProviderConditions } from '../features/notifications/conditions/providers'
 import type { TriggerConditions } from '../features/notifications/conditions/triggers'
 import type { createProjectsService } from '../features/projects/service'
@@ -66,10 +66,10 @@ export interface CoreReactorDeps {
 }
 
 export function createRouteRepairReactor(deps: CoreReactorDeps) {
-  const seats = createRouteSeatsRepository(deps.db)
+  const routes = createRouteRepairRepository(deps.db)
   const triggers = createTriggerRepository(deps.db)
   return createRouteRepair({
-    seats,
+    routes,
     async connections(userId) {
       const { connections } = await deps.providerConnectionsService.listConnections(userId)
       return connections.map((c) => ({
@@ -103,7 +103,7 @@ export function createRouteRepairReactor(deps: CoreReactorDeps) {
         })
       },
     },
-    users: async () => [deps.defaultUserId, ...(await seats.owners())],
+    users: async () => [deps.defaultUserId, ...(await routes.owners())],
     async stranded(userId, sessionIds) {
       if (sessionIds.size === 0) return
       for (const trigger of await triggers.listLive())
@@ -128,13 +128,13 @@ async function agentBound(db: Kysely<AppDatabase>, userId: string, agentId: stri
   )
 }
 
-export function createAgentSeatsReactor(deps: CoreReactorDeps) {
+export function createAgentNamesReactor(deps: CoreReactorDeps) {
   const userId = deps.defaultUserId
-  return createAgentSeats({
-    seats: createAgentSeatsRepository(deps.db),
-    async handles(projectId) {
+  return createAgentNames({
+    sessions: createAgentNamesRepository(deps.db),
+    async names(projectId) {
       const agents = await deps.agentsService.listAgents(userId, { projectId: projectId || null })
-      return new Map(agents.map((agent) => [agent.record.id, agent.record.handle]))
+      return new Map(agents.map((agent) => [agent.record.id, agent.record.name]))
     },
     bound: (agentId) => agentBound(deps.db, userId, agentId),
     async forgetModelSettings(agentId) {
@@ -211,10 +211,10 @@ export async function startCoreReactors(deps: CoreReactorDeps): Promise<void> {
     kind: 'reactor',
     reconcile: () => repair.repairAll(),
   })
-  const agentSeats = createAgentSeatsReactor(deps)
-  await deps.feed.subscribe('agent-seats', agentSeats.handlers, {
+  const agentNames = createAgentNamesReactor(deps)
+  await deps.feed.subscribe('agent-names', agentNames.handlers, {
     kind: 'reactor',
-    reconcile: () => agentSeats.reconcile(),
+    reconcile: () => agentNames.reconcile(),
   })
   const agentTriggers = createAgentTriggerCleanup({
     live: () => deps.triggerEngine.list({}),

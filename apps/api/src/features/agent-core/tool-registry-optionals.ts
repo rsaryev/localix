@@ -1,12 +1,11 @@
 import { createBrowserTool } from './tools/browser/browser'
-import { createDelegateTool } from './tools/delegate'
+import { createAgentTool } from './tools/agent/agent-tool'
+import { createSendMessageTool } from './tools/agent/send-message'
+import { createTaskStopTool } from './tools/agent/task-stop'
 import { createStoreTool } from './tools/store'
 import { createLoopsTool } from './tools/loops'
-import { createMiniAppBuildTool } from './tools/mini-app-build'
-import { createSetTopicTool } from './tools/set-topic'
 import { createConfigureTool } from './tools/configure/configure'
 import { createPlanTool } from './tools/plan/plan'
-import { createCodemodeTool } from './tools/codemode/codemode'
 import { createWorkflowTool } from './tools/workflow/workflow'
 import type { RuntimeToolRegistryOptions } from './tool-registry'
 import type { RegistryContext, RegistryEntry } from './tool-registry-core'
@@ -27,111 +26,86 @@ export function buildNamedOptionals(
   const namedOptionals: RegistryEntry[] = []
   const optional = options.optional ?? {}
 
-  if (optional.store) {
-    namedOptionals.push({ tool: createStoreTool(optional.store) })
+  if (optional.Store) {
+    namedOptionals.push({ tool: createStoreTool(optional.Store) })
   }
 
-  if (optional.delegate) {
-    namedOptionals.push({ tool: createDelegateTool(optional.delegate) })
-  }
+  if (optional.Agent) namedOptionals.push({ tool: createAgentTool(optional.Agent) })
+  if (optional.SendMessage)
+    namedOptionals.push({ tool: createSendMessageTool(optional.SendMessage) })
+  if (optional.TaskStop) namedOptionals.push({ tool: createTaskStopTool(optional.TaskStop) })
 
-  if (optional.loops) {
+  if (optional.Loops) {
     namedOptionals.push({
-      tool: createLoopsTool(optional.loops),
+      tool: createLoopsTool(optional.Loops),
     })
   }
 
-  if (optional.mini_app_build) {
+  if (optional.GlobalSearch) {
     namedOptionals.push({
-      tool: createMiniAppBuildTool(optional.mini_app_build),
+      tool: optional.GlobalSearch,
     })
   }
 
-  if (optional.memory) {
+  if (optional.ContextBudget) {
     namedOptionals.push({
-      tool: optional.memory,
+      tool: optional.ContextBudget,
     })
   }
 
-  if (optional.global_search) {
+  if (optional.ToolOutput) {
     namedOptionals.push({
-      tool: optional.global_search,
+      tool: optional.ToolOutput,
     })
   }
 
-  if (optional.context_budget) {
+  if (optional.Skill) {
     namedOptionals.push({
-      tool: optional.context_budget,
+      tool: optional.Skill,
     })
   }
 
-  if (optional.tool_output) {
+  if (optional.MiniAppGuide) {
     namedOptionals.push({
-      tool: optional.tool_output,
+      tool: optional.MiniAppGuide,
     })
   }
 
-  if (optional.skill) {
+  if (optional.Jobs) {
     namedOptionals.push({
-      tool: optional.skill,
+      tool: optional.Jobs,
     })
   }
 
-  if (optional.mini_app_guide) {
-    namedOptionals.push({
-      tool: optional.mini_app_guide,
-    })
-  }
+  if (optional.Vault) namedOptionals.push({ tool: optional.Vault })
+  if (optional.ExternalAgentSessions) namedOptionals.push({ tool: optional.ExternalAgentSessions })
 
-  if (optional.jobs) {
+  if (optional.Browser) {
     namedOptionals.push({
-      tool: optional.jobs,
-    })
-  }
-
-  if (optional.browser) {
-    namedOptionals.push({
-      tool: createBrowserTool(optional.browser),
-    })
-  }
-
-  // A participant's pass, in a conversation that has colleagues to name it.
-  if (optional.skip_answer) {
-    namedOptionals.push({ tool: optional.skip_answer })
-  }
-
-  // A new session topic for the leader or sole participant of a chat.
-  if (optional.set_topic) {
-    namedOptionals.push({
-      tool: createSetTopicTool(optional.set_topic),
+      tool: createBrowserTool(optional.Browser),
     })
   }
 
   // Configuration proposals: inspect the ledger, raise a `config_change` HITL request. The
   // catalog marks it `never` for every unattended shape, so this branch only ever runs for a
   // chat — the port is simply not built elsewhere (`run/configure-options.ts`).
-  if (optional.configure) {
+  if (optional.Configure) {
     namedOptionals.push({
-      tool: createConfigureTool(optional.configure),
+      tool: createConfigureTool(optional.Configure),
     })
   }
 
   // The conversation's plan, in every mode: `complete` and `read` belong to the implementing
   // run after an approval. Each action checks the state it needs (`present` needs plan mode).
-  if (optional.plan) {
+  if (optional.Plan) {
     namedOptionals.push({
-      tool: createPlanTool(optional.plan),
+      tool: createPlanTool(optional.Plan),
     })
   }
 
-  // Scripts that call this run's tools. Rebuilt by the assembly from the live tools it declares.
-  if (optional.codemode) {
-    namedOptionals.push({ tool: createCodemodeTool(optional.codemode, []) })
-  }
-
   // Plugin workflows: present once a workflow command activated it for the session.
-  if (optional.workflow) {
-    namedOptionals.push({ tool: createWorkflowTool(optional.workflow) })
+  if (optional.Workflow) {
+    namedOptionals.push({ tool: createWorkflowTool(optional.Workflow) })
   }
 
   return namedOptionals

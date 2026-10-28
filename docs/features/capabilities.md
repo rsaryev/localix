@@ -8,16 +8,16 @@ allow.
 
 ## What you can do
 
-| Goal                                  | How                                                                            |
-| ------------------------------------- | ------------------------------------------------------------------------------ |
-| Restrict which tools an agent may use | Switch tools off on the agent's Store page, **Access** tab                     |
-| Require confirmation before a change  | Add an `ask` rule to the agent (see [Permissions](permissions.md))             |
-| Stop being asked about one command    | Choose **Always** under **Allow** on the confirmation card, then **Approve**   |
-| Stop being asked inside one folder    | Click the folder in the path on a file's confirmation card                     |
-| Switch off a mini app tool            | Switch off that tool, or the whole mini app, for the agent                     |
-| Track substantial work                | Keep the Kanban mini app on; let the agent `delegate` when parallel work helps |
-| Cut tokens per turn                   | Give the agent fewer tools — a lean agent is a lean prompt                     |
-| Undo your edits to a shipped role     | **Reset to defaults** on that agent's Permission rules                         |
+| Goal                                  | How                                                                                 |
+| ------------------------------------- | ----------------------------------------------------------------------------------- |
+| Restrict which tools an agent may use | Switch tools off on the agent's Store page, **Access** tab                          |
+| Require confirmation before a change  | Add an `ask` rule to the agent (see [Permissions](permissions.md))                  |
+| Stop being asked about one command    | Choose **Always** under **Allow** on the confirmation card, then **Approve**        |
+| Stop being asked inside one folder    | Click the folder in the path on a file's confirmation card                          |
+| Switch off a mini app tool            | Switch off that tool, or the whole mini app, for the agent                          |
+| Track substantial work                | Keep the Kanban mini app on; let the agent start subagents when parallel work helps |
+| Cut tokens per turn                   | Give the agent fewer tools — a lean agent is a lean prompt                          |
+| Undo your edits to a shipped role     | **Reset to defaults** on that agent's Permission rules                              |
 
 ## How it works
 
@@ -56,7 +56,7 @@ plan for approval. For a lasting restriction, give the agent rules that deny the
 denying file-write tools alone does not prevent writes through shell commands or other tools. Agreed
 work can be tracked on the chat's [Kanban board](task-board.md), which the bundled Kanban mini app
 provides; the board starts no model or session. When separate execution is useful, the agent
-explicitly calls `delegate`, whose child runs as itself or a directory agent under the same mode.
+explicitly calls `Agent`, whose subagent runs as itself or a directory agent under the same mode.
 
 ### Going back to what we ship
 
@@ -70,7 +70,7 @@ read it on screen, then press **Apply**, and nothing is stored until you do.
 ### Spending fewer tokens
 
 Tool schemas contribute to each model request. Core schemas are sent directly; mini app and MCP
-schemas are deferred until activated or brought by a linked workbench. Use `context_budget` to
+schemas are deferred until activated or brought by a linked workbench. Use `ContextBudget` to
 inspect the current request cost; the [tool roster guide](tools.md) explains the measured boundary.
 
 There is no session switch for this. A run that should be lean is an AGENT that is lean: switch off
@@ -87,7 +87,7 @@ session is allowed but its run shape never hands it is simply absent. The shippe
 against this, so an allow one of them holds is one it can actually reach.
 
 There is no separate per-session economy switch. Configure the agent's rules and inspect the
-assembled roster with `context_budget`; enabled tools can still be withheld by structural gates.
+assembled roster with `ContextBudget`; enabled tools can still be withheld by structural gates.
 
 ## Configuration
 

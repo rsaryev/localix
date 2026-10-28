@@ -10,7 +10,7 @@ import { getLoopEngine } from '../../../loops/runtime-binding'
 import type { WorkRecord } from '../../../work/contracts'
 import type { RunParams } from './types'
 
-type CcEffort = 'low' | 'medium' | 'high' | 'xhigh' | 'max'
+export type CcEffort = 'low' | 'medium' | 'high' | 'xhigh' | 'max'
 
 /** Localix's effort in Claude Code's levels: `minimal` reads as `low`, and `off` as none. */
 const CC_EFFORT: Record<string, CcEffort | undefined> = {
@@ -22,6 +22,10 @@ const CC_EFFORT: Record<string, CcEffort | undefined> = {
   max: 'max',
 }
 
+/** Localix's effort level as Claude Code names it, or undefined where it names none. */
+export const ccEffortLevel = (effort: string | undefined): CcEffort | undefined =>
+  effort ? CC_EFFORT[effort] : undefined
+
 /** The run's prompt, effort and model, for the hooks runtime's options. */
 export function ccRunFacts(
   params: Pick<RunParams, 'historyMessages'>,
@@ -31,7 +35,7 @@ export function ccRunFacts(
   const prompt = [...(params.historyMessages ?? [])]
     .reverse()
     .find((m) => m.payload.role === 'user')
-  const level = effort ? CC_EFFORT[effort] : undefined
+  const level = ccEffortLevel(effort)
   return {
     ...(prompt ? { promptId: prompt.id } : {}),
     ...(level ? { effort: level } : {}),

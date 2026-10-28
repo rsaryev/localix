@@ -9,6 +9,7 @@
 
     /* Bundler mode */
     "moduleResolution": "bundler",
+    "customConditions": ["@localixai/source"],
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",

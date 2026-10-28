@@ -9,7 +9,7 @@ const repoWith = (items: unknown[]): any => ({
 const item = (toolCallId: string, resultText: string) => ({
   id: toolCallId,
   toolCallId,
-  name: 'bash',
+  name: 'Bash',
   type: 'command',
   status: 'completed',
   resultText,
@@ -25,7 +25,7 @@ const retrieveHarness = (
     retrieveStoredOutput(repo, userId, sessionId, input.tool_call_id, artifactStore),
 })
 
-describe('tool_output action="get"', () => {
+describe('ToolOutput action="get"', () => {
   it('recovers a pre-message durable artifact, including a successful mutation input', async () => {
     let historyRead = false
     const tool = retrieveHarness(
@@ -40,7 +40,7 @@ describe('tool_output action="get"', () => {
       {
         getToolOutputArtifact: async () => ({
           toolCallId: 'w1',
-          toolName: 'write',
+          toolName: 'Write',
           text: 'Wrote 25 bytes to /repo/a.ts',
           input: { path: '/repo/a.ts', content: 'export const answer = 42\n' },
           isError: false,
@@ -49,7 +49,7 @@ describe('tool_output action="get"', () => {
     )
     const r = await tool.execute('x', { tool_call_id: 'w1' })
     expect(historyRead).toBe(false)
-    expect(r.content).toContain('original `content` argument of write')
+    expect(r.content).toContain('original `content` argument of Write')
     expect(r.content).toContain('export const answer = 42')
     expect(r.content).toContain('Wrote 25 bytes')
   })
@@ -67,7 +67,7 @@ describe('tool_output action="get"', () => {
     const write = {
       id: 'w1',
       toolCallId: 'w1',
-      name: 'write',
+      name: 'Write',
       type: 'tool_call',
       status: 'completed',
       input: { path: '/repo/a.ts', content: 'export const answer = 42\n' },
@@ -77,7 +77,7 @@ describe('tool_output action="get"', () => {
     const r = await tool.execute('x', { tool_call_id: 'w1' })
     expect(r.isError).toBeFalsy()
     expect(r.content).toContain('export const answer = 42')
-    expect(r.content).toContain('original `content` argument of write')
+    expect(r.content).toContain('original `content` argument of Write')
     expect(r.content).toContain('Wrote 25 bytes')
   })
 

@@ -52,7 +52,9 @@ describe('composer autogrow', () => {
     let setValue: ((next: string) => void) | undefined
     function Harness() {
       const [value, set] = React.useState('')
-      setValue = set
+      React.useEffect(() => {
+        setValue = set
+      }, [set])
       return (
         <TextArea
           value={value}

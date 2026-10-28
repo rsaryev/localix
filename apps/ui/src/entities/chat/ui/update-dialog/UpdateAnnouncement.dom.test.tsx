@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { resetDesktopInvokeEventsForTests } from '@/shared/lib/tauri'
 
@@ -8,6 +8,14 @@ beforeAll(() => {
   ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 })
 afterAll(() => teardown())
+// The setup dialog's open flag is module state shared with every file before this one: an update is
+// announced only while setup is closed, so start from closed rather than from what they left.
+beforeEach(async () => {
+  const { act } = await import('react')
+  const { closeSetup } = await import('@/shared/lib/setupDialog')
+  await act(async () => closeSetup())
+  window.localStorage.clear()
+})
 afterEach(async () => {
   const { act } = await import('react')
   const { checkDesktopUpdate, dismissUpdateNotice } =

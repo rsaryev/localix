@@ -72,20 +72,18 @@ function harness() {
         providerConnectionId: input.providerConnectionId,
         modelId: input.modelId ?? '',
       })
-      // The service returns the session with its party; the channel flattens the one
-      // participant a private chat has into the model it speaks about.
+      // The service returns the session with its agent; the channel reads the model it speaks
+      // about off it.
       const { modelId, reasoningEffort, providerConnectionId, ...rest } = created
       return {
         ...rest,
-        agents: [
-          {
-            agentId: 'builtin:localix',
-            handle: 'localix',
-            providerConnectionId: providerConnectionId ?? null,
-            modelId,
-            reasoningEffort,
-          },
-        ],
+        agent: {
+          agentId: 'builtin:localix',
+          name: 'localix',
+          providerConnectionId: providerConnectionId ?? null,
+          modelId,
+          reasoningEffort,
+        },
       }
     },
     async stop(sessionId, userId) {
@@ -162,7 +160,7 @@ describe('channel workspace session boundary', () => {
 
     await workspace.setSessionReasoning('chat', 'medium')
     expect(await workspace.stopSession('chat')).toBe(true)
-    // Under `route`, not flat: the model and effort belong to a PARTICIPANT. This port used to
+    // Under `route`, not flat: the model and effort belong to a AGENT. This port used to
     // declare them flat and the chat service silently ignored them, so the operation was a
     // no-op — a mismatch only the type system could have caught, and it did not until the
     // shapes stopped sharing an unrelated field.

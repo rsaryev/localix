@@ -18,6 +18,7 @@ import type { MiniAppChangeHosts } from '../features/changes/mini-app-host'
 import type { SemanticService } from '../features/embeddings/service'
 import { createMiniAppSemanticHost } from '../features/embeddings/mini-app-host'
 import type { DecisionService } from '../features/decisions/service'
+import { createOwnedRegistrations, type SettleOutcome } from '../lib/owned-registrations'
 import { createMiniAppDecisionHost } from '../features/decisions/mini-app-host'
 
 type HostForMiniApp = NonNullable<LoadMiniAppsOptions['hostForMiniApp']>
@@ -42,10 +43,15 @@ export function createMiniAppHostServices(deps: {
   decisionService: DecisionService
   /** Each mini app's own change feed (`host.changes`). */
   changes: MiniAppChangeHosts
-}): HostForMiniApp {
+}): {
+  hostForMiniApp: HostForMiniApp
+  releaseMiniApp: (app: string) => Promise<void>
+  settleMiniApp: (app: string, outcome: SettleOutcome) => void
+} {
+  const semanticRegistrations = createOwnedRegistrations()
   const { hostRefs, serviceRefs, secretsStore, secretExposureShield, mediaStore, miniAppWakes } =
     deps
-  return (app) => ({
+  const hostForMiniApp: HostForMiniApp = (app) => ({
     ...workspaceCapabilities(hostRefs),
     // The same ownership-checked reader the interactive `terminal` tool uses, minus every
     // write. A mini app that watches external agents could otherwise only see the screens the
@@ -90,7 +96,7 @@ export function createMiniAppHostServices(deps: {
     },
     agents: bootAgentDirectory(hostRefs),
     // Confined to the mini app's own `mini-app:<name>:*` collections.
-    semantic: createMiniAppSemanticHost(deps.semanticService, app),
+    semantic: createMiniAppSemanticHost(deps.semanticService, app, semanticRegistrations),
     // Attributed to the mini app, billed to a session the user owns (the same check as above).
     decisions: createMiniAppDecisionHost(deps.decisionService, app, (...args) =>
       hostRefs.chatService!.resolveSessionCwd(...args),
@@ -163,4 +169,17 @@ export function createMiniAppHostServices(deps: {
       }),
     },
   })
+  return {
+    hostForMiniApp,
+    // A mini app that goes away takes its semantic sources and change subscriptions with it.
+    releaseMiniApp: async (...args) => {
+      await semanticRegistrations.releaseOwner(...args)
+      await deps.changes.releaseMiniApp(...args)
+    },
+    // The load the backend host wired answers for its semantic sources and change subscriptions.
+    settleMiniApp: (...args) => {
+      semanticRegistrations.settle(...args)
+      deps.changes.settleMiniApp(...args)
+    },
+  }
 }

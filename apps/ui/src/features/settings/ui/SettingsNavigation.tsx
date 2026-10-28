@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react'
-import { SidebarNav, type SidebarNavGroup } from '@localixai/kit/sidebar-nav'
+import { TabBar } from '@localixai/kit/tabs'
 import { SETTINGS_SECTIONS } from '../model/settingsNavigation'
-import { useSettingsWide } from './SettingsWorkspace'
 
 export interface SettingsNavigationItem {
   id: string
@@ -11,8 +10,8 @@ export interface SettingsNavigationItem {
 }
 
 /**
- * The settings' sections, as the kit's sidebar nav (the Store uses the same one): a grouped
- * column beside the page in a wide pane, one picker above it — the search beside it — in a split.
+ * The settings' sections above the page at every width: the search on its own row, then a strip
+ * of tabs that scrolls sideways when they do not fit.
  */
 export function SettingsNavigation({
   active,
@@ -20,49 +19,22 @@ export function SettingsNavigation({
   search,
   sections = SETTINGS_SECTIONS,
   'aria-label': ariaLabel = 'Settings sections',
-  pickerLabel = 'Settings section',
 }: {
   active: string
   onChange: (id: string) => void
   search?: ReactNode
   sections?: readonly SettingsNavigationItem[]
   'aria-label'?: string
-  pickerLabel?: string
 }) {
-  const wide = useSettingsWide()
-  const groups: SidebarNavGroup[] = [...new Set(sections.map((section) => section.group))].map(
-    (group) => ({
-      id: group,
-      label: group,
-      items: sections
-        .filter((section) => section.group === group)
-        .map(({ id, label, description }) => ({
-          id,
-          label,
-          description: `${group} · ${description}`,
-        })),
-    }),
-  )
-  return wide ? (
-    <div className="w-48 shrink-0 overflow-y-auto border-r border-border-soft p-3 pt-4">
-      <SidebarNav
-        mode="full"
-        label={ariaLabel}
-        groups={groups}
+  return (
+    <div className="shrink-0">
+      {search && <div className="px-4 pt-4 pb-2">{search}</div>}
+      <TabBar
+        aria-label={ariaLabel}
+        items={sections.map(({ id, label }) => ({ id, label }))}
         active={active}
-        onSelect={onChange}
-        search={search}
-      />
-    </div>
-  ) : (
-    <div className="shrink-0 border-b border-border-soft p-4">
-      <SidebarNav
-        mode="select"
-        label={pickerLabel}
-        groups={groups}
-        active={active}
-        onSelect={onChange}
-        search={search}
+        onChange={onChange}
+        className="px-2"
       />
     </div>
   )

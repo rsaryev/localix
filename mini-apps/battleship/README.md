@@ -52,8 +52,8 @@ or brought onto the request by linked game context or a mini app wake.
 | `new_game` | Starts the next game at this chat's table and offers its board.       |
 
 It never wakes the chat: a tool call is already the agent's turn. When a game ends, the result asks
-the agent to save observations through its configured memory tool. Persistence depends on its
-permission rules and memory scope.
+the agent to save observations in its memory, where the agent has one. Whether it can write there
+depends on its permission rules.
 
 Use either a top-level `action` or an `actions` array of 1–16 steps. A batch stops when the turn
 passes to the user, the game ends, or a step is refused. Earlier changes remain applied; after a

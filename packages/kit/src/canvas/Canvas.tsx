@@ -227,11 +227,13 @@ export function Canvas<N extends Node = Node, E extends Edge = Edge>({
   }
 
   return (
+    // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- `role="application"` is exactly the interactive widget role the rule does not know: the board owns its keys
     <div
       ref={frame}
       // A board has its own keyboard model: `application` tells assistive technology to pass
       // those keys through instead of reading them as navigation.
       role="application"
+      // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- the board is one focus stop for its camera and node keys
       tabIndex={0}
       aria-label={`${label}. ${keyboardHelp(interaction)}`}
       data-interaction={interaction}

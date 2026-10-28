@@ -1,0 +1,17 @@
+{
+  "description": "After an edit to a mini app's source, report what breaks Localix's house style, route and message rules, so it is fixed while the file is open.",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/mini-app\" hook post-edit",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

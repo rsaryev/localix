@@ -12,6 +12,7 @@ import {
   DialogFooter,
 } from '@localixai/kit/dialog'
 import type { ResumeSummary } from '../shared/schema'
+import { focusOnMount } from './focusOnMount'
 
 export function LibraryDialog({
   action,
@@ -28,6 +29,10 @@ export function LibraryDialog({
 }) {
   const [title, setTitle] = useState(resume.title)
   const [failed, setFailed] = useState(false)
+  const confirm = async () => {
+    if (await onConfirm(title.trim())) onClose()
+    else setFailed(true)
+  }
   return (
     <Dialog
       open
@@ -48,7 +53,7 @@ export function LibraryDialog({
           {action === 'rename' && (
             <Field label="Resume name">
               <Input
-                autoFocus
+                ref={focusOnMount}
                 value={title}
                 maxLength={500}
                 disabled={pending}
@@ -69,10 +74,7 @@ export function LibraryDialog({
           <Button
             variant={action === 'delete' ? 'destructive' : 'field'}
             disabled={pending || !title.trim()}
-            onClick={async () => {
-              if (await onConfirm(title.trim())) onClose()
-              else setFailed(true)
-            }}
+            onClick={() => void confirm()}
           >
             {action === 'delete' ? 'Delete resume' : 'Rename'}
           </Button>

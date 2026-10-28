@@ -1,6 +1,4 @@
-import { afterEach, describe, expect, test } from 'bun:test'
-import { mkdtempSync, mkdirSync, renameSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { describe, expect, test } from 'bun:test'
 import { join } from 'node:path'
 
 import type { NativeSubscribeOptions, NativeWatchEvent } from '../fs-watch/subscribe'
@@ -175,40 +173,5 @@ describe('staged mini apps root watcher', () => {
     expect(lines[0]).toContain('no native file watcher')
     expect(poll.running()).toBe(true)
     handle.close()
-  })
-})
-
-describe('staged mini apps root watcher (real fs)', () => {
-  let dir: string | undefined
-  afterEach(() => {
-    if (dir) rmSync(dir, { recursive: true, force: true })
-    dir = undefined
-  })
-
-  test('an atomic marker rewrite reaches onChange through the native watcher', async () => {
-    dir = mkdtempSync(join(tmpdir(), 'staged-root-'))
-    mkdirSync(join(dir, 'gpu-monitor'))
-    writeFileSync(join(dir, STAGED_MARKER_FILE), '{"v":1}')
-    let changes = 0
-    const lines: string[] = []
-    const handle = watchStagedMiniAppsRoot({
-      root: dir,
-      onChange: () => changes++,
-      debounceMs: 30,
-      log: (line) => lines.push(line),
-      // Polling must not be what delivers this: fail loudly if the watch degraded.
-      every: () => {
-        throw new Error('polled')
-      },
-    })
-    await Bun.sleep(150)
-    writeFileSync(join(dir, 'gpu-monitor', 'mini-app.json'), '{}')
-    const tmp = join(dir, `${STAGED_MARKER_FILE}.42.tmp`)
-    writeFileSync(tmp, '{"v":2}')
-    renameSync(tmp, join(dir, STAGED_MARKER_FILE))
-    await Bun.sleep(500)
-    handle.close()
-    expect(lines).toEqual([])
-    expect(changes).toBe(1)
   })
 })

@@ -18,16 +18,12 @@ import { TOOL } from './tool-names'
  * (indexing a search result makes hits echo forever). Visual `read` calls are excluded
  * per result in externalize.ts because ordinary text reads remain valuable to index.
  *
- * `tool_output` earns its place twice over — its get result is a REPLAY of another call's
+ * `ToolOutput` earns its place twice over — its get result is a REPLAY of another call's
  * output, so indexing it would file the same text under a second tool_call_id.
  */
 export const INDEX_SKIPPED_TOOLS: ReadonlySet<string> = new Set<string>([
-  TOOL.tool_output,
-  TOOL.global_search,
-  // Historical sessions may still contain model-visible image results from the removed
-  // `attach_file` and `view_image` tools: base64 pixels, nothing to index.
-  'attach_file',
-  'view_image',
+  TOOL.ToolOutput,
+  TOOL.GlobalSearch,
 ])
 
 /** Whether this tool's output is barred from the chunk index. */

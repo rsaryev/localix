@@ -14,27 +14,27 @@ for you starts enabled. A mini app's native backend runs as trusted code in the 
 
 ## Terminology
 
-| Term             | Meaning                                                                                  | Boundary                                                           |
-| ---------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Mini app         | A folder with one `mini-app.json`: backend, screens, views, settings, commands.          | Localix only. It holds no `.claude-plugin/`, skills or hooks.      |
-| Guide            | A mini app's `guide.md`, read by the agent with `mini_app_guide` before it uses the app. | Read on demand; the prompt lists only that the app has one.        |
-| Native backend   | A JavaScript or TypeScript module whose `register(ctx)` the API process loads.           | Declared by a mini app's `backend`; not sandboxed.                 |
-| Workbench        | A mini app's screen in the workspace, built from `ui/register.tsx`.                      | Opens as a tab; a rail screen can also become a Mac app.           |
-| Bundled mini app | A first-party mini app synchronized from the packaged set.                               | Its managed copy lives in `~/.localix/mini-apps/` with yours.      |
-| Plugin           | A Claude Code plugin, `.claude-plugin/plugin.json` and its components.                   | Not a mini app; see [Claude Code plugins](claude-code-plugins.md). |
+| Term             | Meaning                                                                                | Boundary                                                           |
+| ---------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Mini app         | A folder with one `mini-app.json`: backend, screens, views, settings, commands.        | Localix only. It holds no `.claude-plugin/`, skills or hooks.      |
+| Guide            | A mini app's `guide.md`, read by the agent with `MiniAppGuide` before it uses the app. | Read on demand; the prompt lists only that the app has one.        |
+| Native backend   | A JavaScript or TypeScript module whose `register(ctx)` the API process loads.         | Declared by a mini app's `backend`; not sandboxed.                 |
+| Workbench        | A mini app's screen in the workspace, built from `ui/register.tsx`.                    | Opens as a tab; a rail screen can also become a Mac app.           |
+| Bundled mini app | A first-party mini app synchronized from the packaged set.                             | Its managed copy lives in `~/.localix/mini-apps/` with yours.      |
+| Plugin           | A Claude Code plugin, `.claude-plugin/plugin.json` and its components.                 | Not a mini app; see [Claude Code plugins](claude-code-plugins.md). |
 
 ## What you can do
 
-| Capability                  | Mechanism                                                                                                  | Boundary                                                                      |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| Have the agent build one    | Run `/mini-app create <what it should do>`; see [Build with the agent](build-with-the-agent.md).           | The new mini app is enabled at once and runs unsandboxed.                     |
-| Add tools over Localix APIs | A mini app's `backend` exports `register(ctx)` returning `tools`.                                          | Native code runs in process and is not sandboxed.                             |
-| Teach the agent your app    | Write the mini app's `guide.md`; long material goes in pages under `guide/`.                               | The agent reads it with `mini_app_guide`; nothing of it sits in every prompt. |
-| Offer a mini app command    | Declare it under `commands` in `mini-app.json`, with its `prompt` and argument pickers.                    | It runs as `/<app>:<command>`.                                                |
-| Shape runtime behavior      | Return lifecycle hooks, a channel, or one memory provider from `register`.                                 | Hook timeouts and optional host services limit these contributions.           |
-| Add a native workbench      | Ship `ui/register.tsx`; the app builds the artifact and swaps it in place.                                 | Bundled mini apps, and your own under `~/.localix/mini-apps` once enabled.    |
-| Add portable UI             | Declare sandboxed HTML `views`; each opens as a work-item tab.                                             | A sandboxed view cannot use the host kit or native React registrations.       |
-| Run as its own Mac app      | The person installs the mini app as an app; see [Mini apps as Mac apps](../features/mini-app-mac-apps.md). | macOS only; the mini app needs a rail viewlet, its main screen.               |
+| Capability                  | Mechanism                                                                                                  | Boundary                                                                    |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Have the agent build one    | Run `/mini-app-authoring:create <what it should do>`; see [Build with the agent](build-with-the-agent.md). | An installed mini app is enabled at once and runs unsandboxed.              |
+| Add tools over Localix APIs | A mini app's `backend` exports `register(ctx)` returning `tools`.                                          | Native code runs in process and is not sandboxed.                           |
+| Teach the agent your app    | Write the mini app's `guide.md`; long material goes in pages under `guide/`.                               | The agent reads it with `MiniAppGuide`; nothing of it sits in every prompt. |
+| Offer a mini app command    | Declare it under `commands` in `mini-app.json`, with its `prompt` and argument pickers.                    | It runs as `/<app>:<command>`.                                              |
+| Shape runtime behavior      | Return lifecycle hooks, a channel, or one memory provider from `register`.                                 | Hook timeouts and optional host services limit these contributions.         |
+| Add a native workbench      | Ship `ui/register.tsx`; the app builds the artifact and swaps it in place.                                 | Bundled mini apps, and your own under `~/.localix/mini-apps` once enabled.  |
+| Add portable UI             | Declare sandboxed HTML `views`; each opens as a work-item tab.                                             | A sandboxed view cannot use the host kit or native React registrations.     |
+| Run as its own Mac app      | The person installs the mini app as an app; see [Mini apps as Mac apps](../features/mini-app-mac-apps.md). | macOS only; the mini app needs a rail viewlet, its main screen.             |
 
 ## What you can build
 
@@ -74,14 +74,14 @@ A mini app is what the person uses, in Localix's format; a plugin is what the ag
 Code's. A folder is one or the other: a folder with both `mini-app.json` and
 `.claude-plugin/plugin.json` loads nothing and says why. A mini app tells the agent how to use it in
 its `guide.md`, not in skills; the prompt lists each enabled mini app in one line, marked when it
-has a guide, and the agent reads the guide with `mini_app_guide` before it first uses the app. The
+has a guide, and the agent reads the guide with `MiniAppGuide` before it first uses the app. The
 [contract](https://github.com/rsaryev/localix/blob/main/docs/internals/plugins-and-mini-apps.md)
 records the rules.
 
 Tools over Localix's APIs, settings or a screen make a mini app; skills, commands, hooks and MCP
 servers for any agent make a [plugin](claude-code-plugins.md). For a workbench,
-`/mini-app create <what it should do>` forks the System Overview template into
-`~/.localix/mini-apps/<name>`; see [workbench UI](mini-app-ui.md).
+`/mini-app-authoring:create <what it should do>` forks the System Overview template into a new
+folder and installs it when it passes its checks; see [workbench UI](mini-app-ui.md).
 
 ### A minimal mini app
 
@@ -195,11 +195,11 @@ the person that `localix://` link, and the person opens it.
 An app that records who acted, or streams someone's own data, must not read that identity from model
 or client input. The host binds it; the [Kanban board](../features/task-board.md) uses all three:
 
-| Seam                                                                                                                                                           | Answer                                                                                            | Boundary                                                        |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| [`ctx.agents.list(userId, sessionId)`](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/backend/context.ts)                              | The enabled agents of the session's scope, its project's included: `{ id, handle, description? }` | Read-only; rejects a session the user does not own. Store `id`. |
-| [`context.session.speaker`](https://github.com/rsaryev/localix/blob/main/packages/agent/src/agents/types.ts) in `execute`                                      | `{ agentId, handle }` of the agent whose turn it is                                               | Absent when the run has no addressable speaker.                 |
-| [`start(params, send, { userId })`](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/backend/ws-frame-registry.ts) on a `wsFrames` entry | The host-supplied Localix user ID of the socket                                                   | Tags `s`, `r` and `n` are core's; registration rejects them.    |
+| Seam                                                                                                                                                           | Answer                                                                                          | Boundary                                                        |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| [`ctx.agents.list(userId, sessionId)`](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/backend/context.ts)                              | The enabled agents of the session's scope, its project's included: `{ id, name, description? }` | Read-only; rejects a session the user does not own. Store `id`. |
+| [`context.session.agent`](https://github.com/rsaryev/localix/blob/main/packages/agent/src/agents/types.ts) in `execute`                                        | `{ agentId, name }` of the agent whose turn it is                                               | Absent when the run has no addressable speaker.                 |
+| [`start(params, send, { userId })`](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/backend/ws-frame-registry.ts) on a `wsFrames` entry | The host-supplied Localix user ID of the socket                                                 | Tags `s`, `r` and `n` are core's; registration rejects them.    |
 
 ### Watching files
 
@@ -244,7 +244,7 @@ refuses unknown keys, a plugin's `skills` or `hooks` among them:
 | `category`               | `development`, `data`, `content`, `utilities` or `games`  | Groups workbenches in the rail's tools menu; one per app.                                                                            |
 | `surfaces`               | string array; `['agent']`                                 | `workbench` adds a screen. Unknown values are retained.                                                                              |
 | `private`                | boolean                                                   | Keeps an authoring scaffold out of packaging.                                                                                        |
-| `backend`                | string or string array                                    | The native entrypoint(s) exporting `register(ctx)`; `mini_app_build` writes it.                                                      |
+| `backend`                | string or string array                                    | The native entrypoint(s) exporting `register(ctx)`; a package names the built `.mjs`.                                                |
 | `guide`                  | path; `./guide.md`                                        | The agent's guide; pages it links live in `guide/<page>.md`.                                                                         |
 | `config`                 | config-option map                                         | Settings delivered through `ctx.config`.                                                                                             |
 | `commands`               | map keyed by command name                                 | Each `{ prompt, description?, args?, argumentHint?, featured?, activateTools? }` (max 8 tools).                                      |
@@ -321,7 +321,7 @@ four [games](../features/games.md):
 
 - Native tools, hooks, channels and backends run as trusted local code; allowing a mini app is
   consent, not isolation. One you installed awaits your yes with its code not imported, and the
-  agent can offer the approval through `configure`. Its tools stay unknown until then.
+  agent can offer the approval through `Configure`. Its tools stay unknown until then.
 - A `secret: true` config value is masked in API responses but stored with the mini app's settings
   and supplied to trusted native code. Use the vault host service when a backend needs vault
   semantics.

@@ -14,26 +14,19 @@ const style = (keepCodingInstructions: boolean) => ({
 })
 
 describe('# Output style', () => {
-  test('renders the chosen style in the cached prefix, after the answer formatting', () => {
+  test('renders the chosen style in the runtime context, after the answer formatting', () => {
     const { stablePrompt, runtimeSections } = buildAgentSystemPromptParts({
       toolRegistry,
       outputStyle: style(true),
     })
-    expect(stablePrompt).toContain('# Output style')
-    expect(stablePrompt).toContain('"my-plugin:terse" output style')
-    expect(stablePrompt).toContain('Keep every reply short.')
-    expect(stablePrompt.indexOf('# Output style')).toBeGreaterThan(
-      stablePrompt.indexOf('# Answer formatting'),
-    )
-    expect(runtimeSections.map((section) => section.text).join('\n')).not.toContain(
-      '# Output style',
-    )
+    expect(stablePrompt).not.toContain('# Output style')
+    const tail = runtimeSections.map((section) => section.text).join('\n')
+    expect(tail).toContain('# Output style')
+    expect(tail).toContain('"my-plugin:terse" output style')
+    expect(tail).toContain('Keep every reply short.')
+    expect(tail.indexOf('# Output style')).toBeGreaterThan(tail.indexOf('# Answer formatting'))
     const whole = buildAgentSystemPrompt({ toolRegistry, outputStyle: style(true) })
-    expect(whole.indexOf('# Output style')).toBeLessThan(
-      whole.indexOf(RUNTIME_CONTEXT_MARKER) === -1
-        ? Infinity
-        : whole.indexOf(RUNTIME_CONTEXT_MARKER),
-    )
+    expect(whole.indexOf('# Output style')).toBeGreaterThan(whole.indexOf(RUNTIME_CONTEXT_MARKER))
   })
 
   test('without a style nothing renders, and the coding instructions stay', () => {

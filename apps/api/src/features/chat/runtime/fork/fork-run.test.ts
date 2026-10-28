@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 
 import { captureForkSeed } from '../../../agent-core/fork-seed'
 import { resolveRunProfile } from '../../../agent-core/run-shape'
-import { routedParticipants, sessionFixture } from '../../../../testing/session-fixture'
+import { routedAgent, sessionFixture } from '../../../../testing/session-fixture'
 import type { PersistedMessage } from '../../contracts'
 import { loadForkRun, runCacheKey } from './fork-run'
 
@@ -17,7 +17,7 @@ const seed = captureForkSeed({
 const forkSession = sessionFixture({
   id: 'fork',
   sessionKind: 'subagent',
-  agents: routedParticipants(),
+  agent: routedAgent(),
   provenance: {
     kind: 'task-delegation',
     parentSessionId: 'parent',
@@ -76,22 +76,26 @@ describe('loading the fork a run belongs to', () => {
 })
 
 describe('how a run keys the provider cache', () => {
-  const own = { sessionId: 'fork', idleMs: 90_000, retention: undefined }
+  const own = { promptCacheKey: 'lx-shared', idleMs: 90_000, retention: undefined }
 
-  test('an ordinary run is keyed by its own session', () => {
+  test('an ordinary run is keyed by the key of its agent, model and project', () => {
     expect(runCacheKey(undefined, own)).toEqual(own)
   })
 
-  test('a fork’s first run is keyed by its parent’s session, with no idle gap', async () => {
+  test('a fork’s first run is keyed by its parent’s key, with no idle gap', async () => {
     const run = await loadForkRun(repo(), 'u', forkSession, [row('copy', 'fork', 'assistant')], 'r')
-    expect(runCacheKey(run, own)).toEqual({ sessionId: 'parent', idleMs: 0, retention: undefined })
+    expect(runCacheKey(run, own)).toEqual({
+      promptCacheKey: 'parent',
+      idleMs: 0,
+      retention: undefined,
+    })
   })
 
   test('its later runs keep the key and report the idle time they had', async () => {
     const history = [row('copy', 'fork', 'assistant'), row('answer', 'fork', 'assistant')]
     const run = await loadForkRun(repo(), 'u', forkSession, history, 'r')
     expect(runCacheKey(run, own)).toEqual({
-      sessionId: 'parent',
+      promptCacheKey: 'parent',
       idleMs: 90_000,
       retention: undefined,
     })

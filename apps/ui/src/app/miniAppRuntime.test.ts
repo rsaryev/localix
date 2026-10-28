@@ -1,5 +1,11 @@
 import { describe, expect, it, spyOn } from 'bun:test'
-import { miniAppWorkspace, toast as miniAppToast } from '@localixai/mini-app-sdk/ui'
+import {
+  miniAppSessions,
+  miniAppWorkspace,
+  toast as miniAppToast,
+} from '@localixai/mini-app-sdk/ui'
+import { backendClient } from '@/shared/api/client'
+import { composerBus } from '@/shared/lib/composerBus'
 import { toast as hostToast } from '@/shared/lib/notify'
 import './miniAppRuntime'
 
@@ -25,5 +31,26 @@ describe('the workspace snapshot a mini app subscribes to', () => {
     // falls to its error boundary — "This view could not load", with no clue which surface did it.
     // The unstable version shipped because nothing subscribed through a hook until one did.
     expect(miniAppWorkspace.getSnapshot()).toBe(miniAppWorkspace.getSnapshot())
+  })
+})
+
+describe('a mini app stopping a session', () => {
+  it("hands the messages that were queued behind the run back to that chat's composer", async () => {
+    const stop = spyOn(backendClient, 'stop').mockResolvedValue({
+      stopped: true,
+      returned: [{ content: 'queued while it ran' }],
+    })
+    const seen: Array<string | undefined> = []
+    const off = composerBus.subscribe((request) => {
+      if (request.sessionId !== 'mini-app-stopped') return false
+      seen.push(request.text)
+    })
+    try {
+      await miniAppSessions.stop('mini-app-stopped')
+      expect(seen).toEqual(['queued while it ran'])
+    } finally {
+      off()
+      stop.mockRestore()
+    }
   })
 })

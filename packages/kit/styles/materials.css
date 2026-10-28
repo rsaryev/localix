@@ -51,8 +51,7 @@
 .lx-glass-trigger[data-drop-active='true'] .lx-glass::before {
   border-color: var(--control-border-focus);
 }
-/* `lx-glass-self`: the control owns both its trigger and material. The legacy
-   `lx-glass-still` marker remains compatible; all glass actions now stay still. */
+/* `lx-glass-self`: the control owns both its trigger and material. */
 
 /* No compositing of the backdrop at all (old WebKit, forced-colors, some Linux
    GPU blocklists): the fill alone is far too thin to separate the control from

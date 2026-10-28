@@ -90,6 +90,14 @@ export function createHookHandlerRunner(options: HandlerRunnerOptions) {
       if (notice) emitSafely(notice, event)
       return blockOnFailure(event, h, failed)
     }
+    // `defer` needs a headless caller to resume the call, and Localix has none: Claude Code
+    // "logs a warning and ignores the hook result" in an interactive session (hooks.md).
+    if (result.value.permissionDecision === 'defer') {
+      logger.warn(
+        `[cc-hooks] ${event} hook answered "defer", which only a headless run honors — ignored`,
+      )
+      return {}
+    }
     // Strings past 10,000 characters go to a file beside the session's transcript.
     const outcome = capHookOutput(
       blockOnFailure(event, h, result.value),
@@ -135,13 +143,22 @@ export function createHookHandlerRunner(options: HandlerRunnerOptions) {
         timeoutMs: h.timeoutMs,
         signal,
         ...(h.kind === 'agent' && h.agentMaxTurns ? { maxTurns: h.agentMaxTurns } : {}),
-      }).catch(() => ({ ok: true })) // fail-open on any evaluator error
-      return mapPromptOutcome(event, result)
+      }).catch((err: unknown) => ({ ok: true, failed: `the evaluator threw: ${String(err)}` }))
+      return mapPromptOutcome(event, result, {
+        agent: h.kind === 'agent',
+        continueOnBlock: h.continueOnBlock,
+      })
     }
     if (h.kind === 'http') {
       return executeHttpHook(h, input, logger, addContextOnZero, signal)
     }
     if (h.kind === 'mcp_tool') {
+      // No MCP server is up when a session starts or resumes (hooks.md, MCP tool hook fields).
+      const launch = 'source' in input && (input.source === 'startup' || input.source === 'resume')
+      if (event === 'SessionStart' && launch) {
+        logger.info?.(`[cc-hooks] mcp_tool hooks are not available for SessionStart at launch`)
+        return {}
+      }
       return runMcpToolHook(h, input, callMcpTool, addContextOnZero, logger, signal)
     }
     return executeHook(h, input, projectDir, logger, addContextOnZero, signal, envFor?.(event))

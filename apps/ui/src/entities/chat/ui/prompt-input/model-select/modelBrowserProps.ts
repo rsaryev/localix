@@ -1,8 +1,7 @@
 import type { CatalogModel } from '@localixai/agent/catalog'
 import type { ReasoningEffort } from '../../../model/reasoning'
 import type { useConnections } from '../useConnections'
-import type { ParticipantRow } from './ModelTaskColumn'
-import type { ApplyPartyRoute } from '../../../model/sessionPartyRoute'
+import type { ConversationAgentRow } from './ModelTaskColumn'
 
 export interface ModelBrowserProps {
   /** Catalog models (+ any caller-supplied extras). Live per-connection models are discovered here. */
@@ -12,8 +11,8 @@ export interface ModelBrowserProps {
   sessionModelId: string
   sessionConnectionId: string | null
   /**
-   * Assign the model. Chat closes the drawer and re-routes the participant `agentId` names;
-   * onboarding and the agent editor have no party, so they ignore it and remember the pair.
+   * Assign the model. Chat re-routes the conversation's agent; onboarding and the agent editor
+   * have no conversation, so they ignore `agentId` and remember the pair.
    */
   onPickSessionModel: (
     connectionId: string,
@@ -23,11 +22,7 @@ export interface ModelBrowserProps {
   ) => void | Promise<void>
   /** Current session effort; before a session exists, the browser falls back to low. */
   reasoningEffort?: ReasoningEffort
-  /**
-   * `agentId` names WHOSE effort this is. It used to be absent, so the write always landed on
-   * the conversation's first participant however many rows the column showed — in a room, on
-   * somebody other than the one being configured.
-   */
+  /** `agentId` names whose effort this is: the conversation's agent, or absent for a workload. */
   onReasoningEffortChange?: (effort: ReasoningEffort, agentId?: string) => void
   /** Height utility classes for the Command container. */
   heightClassName?: string
@@ -45,23 +40,13 @@ export interface ModelBrowserProps {
    */
   taskColumn?: boolean
   /**
-   * WHO the open conversation is with, in join order. Each becomes a row in the workload
-   * column, and picking a model there routes that ONE participant.
+   * The open conversation's agent: it gets a row in the workload column, and picking a model there
+   * routes it.
    *
-   * Empty where there is no conversation (onboarding, the agent editor). The column then shows
-   * the workload catalog alone — no branch, because a party is a list and this one has nothing
-   * in it.
+   * Absent where there is no conversation (onboarding, the agent editor): the column then shows
+   * the workload catalog alone.
    */
-  participants?: readonly ParticipantRow[]
-  /** The participant the picker opens on — the one the composer shows. Absent means the first. */
-  initialAgentId?: string | null
-  /** Picking a participant row here selects that participant in the composer too. */
-  onAgentTargetChange?: (agentId: string) => void
-  /**
-   * Put every participant on one model and level. Present only where a conversation with a
-   * party can take it; absent, the "All agents" row is never offered.
-   */
+  agent?: ConversationAgentRow
   /** Close the picker: a link that takes the person elsewhere (Settings) dismisses it first. */
   onDismiss?: () => void
-  onApplyPartyRoute?: ApplyPartyRoute
 }

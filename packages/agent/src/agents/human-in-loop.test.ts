@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test'
+import { describe, expect, jest, test } from 'bun:test'
 import {
   createHumanInLoopController,
   HumanInLoopAbortError,
@@ -63,6 +63,7 @@ describe('createHumanInLoopController', () => {
   })
 
   test('expires requests with expiresAt', async () => {
+    jest.useFakeTimers()
     let currentTime = 100
     const controller = createHumanInLoopController({ now: () => currentTime })
     const promise = controller.request({
@@ -76,7 +77,8 @@ describe('createHumanInLoopController', () => {
     // sleep below, and a rejection with no handler attached is an unhandled rejection.
     const settled = promise.catch((err: unknown) => err)
     currentTime += 2
-    await Bun.sleep(5)
+    jest.advanceTimersByTime(5)
+    jest.useRealTimers()
 
     expect(await settled).toBeInstanceOf(HumanInLoopTimeoutError)
     expect(controller.getRecord('request_1')?.status).toBe('expired')
@@ -141,7 +143,7 @@ describe('createHumanInLoopController', () => {
       })
       controller.reject('request_1', new Error('no'))
       await expect(promise).rejects.toThrow('no')
-      await new Promise((resolve) => setTimeout(resolve, 10))
+      for (let i = 0; i < 5; i++) await new Promise((r) => setTimeout(r, 0))
       expect(unhandled).toEqual([])
       expect(controller.getRecord('request_1')?.status).toBe('rejected')
     } finally {

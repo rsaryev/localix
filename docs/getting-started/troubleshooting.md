@@ -68,8 +68,8 @@ different provider or model.
 
 Confirm that the session points to the intended project. Then use **Settings → Diagnostics** to
 inspect its tool surface and permission summary. The current capability report resolves the default
-agent, and a session model report follows its main participant; it is not a complete per-participant
-trace. Check the intended agent's Store page, **Access** tab, as well.
+agent, and a session model report follows the conversation's agent. Check the intended agent's Store
+page, **Access** tab, as well.
 
 Capability rules can narrow tools or require confirmation. The agent's own tool set, project
 settings, mini apps, plugins, skills, and host dependencies can narrow the surface further. Change
@@ -198,8 +198,8 @@ Report suspected vulnerabilities through the private process in
   other private text. Review the response and screenshots before sharing; configuration text is not
   a general secret-scanning boundary.
 - Diagnostics validates declared workload assignments and capability configuration. It does not
-  prove which model, effort, or tool set a specific participant will use; consult the
-  [provider workload boundaries](../features/providers.md#which-model-a-participant-runs-on).
+  prove which model, effort, or tool set a specific agent will use; consult the
+  [provider workload boundaries](../features/providers.md#which-model-a-conversation-runs-on).
 - A successful structural model selection does not prove that provider authentication, quota, or
   network access will succeed on the next request.
 - Changing an agent's rules or mini app or plugin availability does not replay a completed denial.

@@ -1,4 +1,4 @@
-import { USER_PARTICIPANT, type StoredMessagePayload } from '../../../db'
+import { USER_AUTHOR, type StoredMessagePayload } from '../../../db'
 import type { createChatRepository } from '../repository'
 import type { PersistedMessage } from '../contracts'
 import type { SessionStreamRegistry } from '../runtime/session-stream-registry'
@@ -67,7 +67,7 @@ export async function bumpSessionForTurn(
       payload.role === 'user' &&
       !payload.isInternal &&
       !payload.uiOnly &&
-      (!payload.from || payload.from === USER_PARTICIPANT) &&
+      (!payload.from || payload.from === USER_AUTHOR) &&
       payload.content?.trim(),
   )
   if (session.goal == null || session.title === DEFAULT_TITLE) {

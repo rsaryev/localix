@@ -25,7 +25,7 @@ type Counter = z.infer<typeof counter>
  * poll that overlapped it is dropped.
  */
 test('an action shows its answer at once, and a poll that overlapped it cannot undo it', async () => {
-  const { act } = await import('react')
+  const { act, useEffect } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { usePolledSnapshot } = await import('./usePolledSnapshot')
 
@@ -56,13 +56,16 @@ test('an action shows its answer at once, and a poll that overlapped it cannot u
   })
   let hook: PolledSnapshot<Counter> | null = null
   function Probe() {
-    hook = usePolledSnapshot({
+    const value = usePolledSnapshot({
       path: '/rpc/probe/counter',
       schema: counter,
       intervalMs: 60_000,
       failureMessage: 'Cannot read the counter.',
     })
-    return <p>{hook.snapshot?.count ?? 'none'}</p>
+    useEffect(() => {
+      hook = value
+    })
+    return <p>{value.snapshot?.count ?? 'none'}</p>
   }
   const host = document.createElement('div')
   document.body.append(host)

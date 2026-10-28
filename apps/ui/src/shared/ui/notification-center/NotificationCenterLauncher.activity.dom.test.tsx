@@ -2,6 +2,11 @@ import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from 'b
 import { registerDom } from '@localixai/kit/testing/dom'
 import type { StoreActivity } from '@localixai/store'
 
+// Zero-delay timer turns: the code under test schedules with `setTimeout(..., 0)`.
+const settle = async () => {
+  for (let i = 0; i < 6; i++) await new Promise((resolve) => setTimeout(resolve, 0))
+}
+
 let teardown: () => Promise<void>
 beforeAll(() => {
   teardown = registerDom()
@@ -11,8 +16,6 @@ afterAll(() => teardown())
 
 const restores: Array<() => void> = []
 afterEach(() => restores.splice(0).forEach((restore) => restore()))
-
-const settle = () => new Promise((resolve) => setTimeout(resolve, 20))
 
 /** The bell as it sits in the titlebar, over servers that report `activity`. */
 async function mountBell(activity: StoreActivity) {

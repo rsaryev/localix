@@ -7,7 +7,7 @@
  *   - the rules of its shape (a dynamic loop cannot run in a subsession — it reschedules itself
  *     from its own session, which a child cannot do; only a dynamic loop can be rescheduled);
  *   - cancelling one also cancels the wake it has in flight — and ONLY that wake. It used to stop
- *     the whole session, which took every participant's queued turns and killed sub-agents the
+ *     the whole session, which took every agent's queued turns and killed sub-agents the
  *     loop had nothing to do with;
  *   - the hold the strip shows, which is the trigger's own `rate-limited` hold the loop action's
  *     gate placed (`SessionLoop.heldUntil`), so the strip and the gate cannot disagree.

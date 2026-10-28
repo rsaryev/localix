@@ -21,7 +21,7 @@ import { isPathWithin } from '../../lib/path-containment'
 import { parseMarkdownFrontmatter } from '../agent-core/frontmatter-yaml'
 import { readSkillMarkdownFile } from '../agent-core/skill-file'
 import { toAbsList } from './discovery-paths'
-import { readJson } from './discovery-entrypoint-files'
+import { readJsonFile } from '../../lib/json'
 import type { PluginManifest } from './contracts'
 
 /**
@@ -97,7 +97,7 @@ export async function resolveCcComponents(
     componentFiles(dir, sources.outputStyles, DEFAULT_LOCATIONS.outputStyles, '.md'),
     componentFiles(dir, sources.themes, DEFAULT_LOCATIONS.themes, '.json'),
     componentFiles(dir, sources.workflows, DEFAULT_LOCATIONS.workflows, '.js'),
-    readJson(join(dir, DEFAULT_LOCATIONS.settings)),
+    readJsonFile(join(dir, DEFAULT_LOCATIONS.settings)),
   ])
 
   const outputStyles: OutputStyle[] = []
@@ -114,7 +114,7 @@ export async function resolveCcComponents(
 
   const themes: ClaudeTheme[] = []
   for (const file of themeFiles) {
-    const theme = parseTheme(stem(file), await readJson(file))
+    const theme = parseTheme(stem(file), await readJsonFile(file))
     if (theme) themes.push(theme)
     else issues.push({ severity: 'error', path: file, message: 'The theme is not a JSON object' })
   }

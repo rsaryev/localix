@@ -22,6 +22,7 @@ import { ConnectionBadges } from '../ConnectionBadge'
 import { connectionDisplayName } from '../../model/connectionDisplayName'
 import { dbConnectionResourceUri } from '../../model/dbResourceUri'
 import type { RenameDraft } from './useDatabaseSidebar'
+import { focusOnMount } from '../focusOnMount'
 
 interface ConnectionPickerProps {
   connections: DbConnectionInfo[]
@@ -123,7 +124,7 @@ export function ConnectionPicker({
         {selectedIsRenaming ? (
           <Input
             value={editing.draft}
-            autoFocus
+            ref={focusOnMount}
             onChange={(event) => setEditing({ id: selected.id, draft: event.target.value })}
             onBlur={commitRename}
             onKeyDown={(event) => {

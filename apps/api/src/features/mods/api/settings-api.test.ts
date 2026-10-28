@@ -61,3 +61,21 @@ test('settings follow CLAUDE_CONFIG_DIR, managed drop-ins and whole-value keys',
     model: 'opus',
   })
 })
+
+test('settings read({ key }) returns that key’s value, from one source or all merged', async () => {
+  const root = scratch()
+  writeTree(root, {
+    'home/.claude/settings.json': JSON.stringify({ cleanupPeriodDays: 7, model: 'sonnet' }),
+    'project/.claude/settings.json': JSON.stringify({ model: 'opus' }),
+  })
+  const settings = createSettingsApi({
+    cwd: () => join(root, 'project'),
+    homeDir: join(root, 'home'),
+    env: {},
+    managed: { dir: join(root, 'managed') },
+  })
+  expect(await settings.read({ key: 'cleanupPeriodDays' })).toBe(7)
+  expect(await settings.read({ key: 'model' })).toBe('opus')
+  expect(await settings.read({ key: 'model', source: 'user' })).toBe('sonnet')
+  expect(await settings.read({ key: 'absent' })).toBeUndefined()
+})

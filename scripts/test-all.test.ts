@@ -12,7 +12,7 @@ const handshake = (mine: string, theirs: string, exitCode = 0) => [
   '-e',
   `import { existsSync, writeFileSync } from 'node:fs'
    writeFileSync(${JSON.stringify(mine)}, '')
-   for (let i = 0; i < 100 && !existsSync(${JSON.stringify(theirs)}); i += 1) await Bun.sleep(50)
+   for (let i = 0; i < 20000 && !existsSync(${JSON.stringify(theirs)}); i += 1) await new Promise((r) => setTimeout(r, 0))
    if (!existsSync(${JSON.stringify(theirs)})) process.exit(9)
    console.log('kept')
    process.exit(${exitCode})`,

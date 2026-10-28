@@ -78,7 +78,7 @@ describe('createWriteTool', () => {
     // The guard runs before the permission gate, so it never hands back the file's content.
     expect(result.content).not.toContain('precious content')
     // The targeted-change hint points at `edit`, never the removed patch tool.
-    expect(result.content).toContain('use edit for targeted changes')
+    expect(result.content).toContain('use `Edit` for targeted changes')
     expect(result.content).not.toContain('apply_patch')
     // File untouched.
     expect(await readFile(filePath, 'utf8')).toBe('precious content\n')

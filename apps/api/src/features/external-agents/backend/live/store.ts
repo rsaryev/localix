@@ -2,7 +2,7 @@
  * Live delegation state, maintained by OBSERVING the host rather than by owning a PTY.
  *
  * The plugin cannot open or read a terminal directly — there is no terminal surface in the plugin
- * SDK (see README, "Missing core seam"). What it CAN see is every `bash` tool call the model
+ * SDK (see README, "Missing core seam"). What it CAN see is every `Bash` tool call the model
  * makes, through the `onPostToolCall` hook, whose `result.details` for a terminal action carries
  * `{ action, terminalId, command, screen }` — the same rendered `ScreenSnapshot` the model reads.
  * That is a complete input for screen detection, at zero extra cost, because the

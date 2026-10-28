@@ -33,9 +33,6 @@ pub(crate) const PAGE_ORIGIN: &str = "localix-app://app";
 pub(crate) mod keys {
     /// The mini app the bundle hosts.
     pub(crate) const MINI_APP: &str = "LocalixMiniApp";
-    /// The same, as bundles made before mini apps were named apart from plugins wrote it. Read
-    /// only to find such a bundle; the next refresh rewrites it under [`MINI_APP`].
-    pub(crate) const LEGACY_MINI_APP: &str = "LocalixPlugin";
     /// The UI build directory, or the development server's URL.
     pub(crate) const UI: &str = "LocalixUi";
     /// The runtime's endpoint descriptor file.

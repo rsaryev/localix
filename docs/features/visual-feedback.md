@@ -28,7 +28,7 @@ attachment or a model run._
 
 ### Let the agent drive the preview
 
-The same in-page probe serves the agent's `browser` tool, so the agent works in the preview you are
+The same in-page probe serves the agent's `Browser` tool, so the agent works in the preview you are
 looking at. It starts no separate browser, and nothing is installed in your app.
 
 | Agent action          | What it returns                                                                               | Boundary                                                                           |

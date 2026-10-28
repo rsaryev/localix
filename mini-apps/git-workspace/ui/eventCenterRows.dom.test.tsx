@@ -3,6 +3,10 @@ import { registerDom } from '@localixai/kit/testing'
 import type { MiniAppToast, MiniAppToastOptions } from '@localixai/mini-app-sdk/ui'
 import type { useSourceControlStore as SourceControlStore } from './source-control/model/store'
 
+const turns = async (n = 10) => {
+  for (let i = 0; i < n; i++) await new Promise((r) => setImmediate(r))
+}
+
 /**
  * What the git ops write to the Event Center, pinned.
  *
@@ -60,7 +64,7 @@ afterAll(async () => {
   await teardown()
 })
 
-const settle = () => new Promise((resolve) => setTimeout(resolve, 10))
+const settle = () => turns()
 
 /** Mount a hook and hand back a live view of what it returned on the latest render. */
 async function mountHook<T>(useHook: () => T): Promise<{ current: () => T }> {
@@ -68,7 +72,10 @@ async function mountHook<T>(useHook: () => T): Promise<{ current: () => T }> {
   const { createRoot } = await import('react-dom/client')
   let latest: T | undefined
   function Probe() {
-    latest = useHook()
+    const value = useHook()
+    React.useEffect(() => {
+      latest = value
+    })
     return null
   }
   const root = createRoot(document.createElement('div'))

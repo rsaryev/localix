@@ -59,12 +59,33 @@ export async function composeAgentProfile(page) {
   await page.locator('[data-store-page]').waitFor()
   await page.getByRole('tab', { name: 'Settings', exact: true }).click()
   await page.getByText('Instructions', { exact: true }).first().waitFor()
+  // The page is the subject: give the Store the whole workspace, and scroll with the wheel until the
+  // turn limit is whole under the instructions, model and effort.
+  const maximize = page.getByRole('button', { name: 'Maximize panel', exact: true })
+  if (await maximize.count()) await maximize.first().click()
+  const limit = page.getByText('Turn limit', { exact: true }).first()
+  await page.mouse.move(700, 600)
+  for (let step = 0; step < 6; step++) {
+    const box = await limit.boundingBox()
+    // The label's field sits about 60px below it; keep it clear of the bottom edge.
+    if (box && box.y + 120 < 1000) break
+    await page.mouse.wheel(0, 120)
+    await page.waitForTimeout(150)
+  }
 }
 
 export async function verifyAgentProfile(page) {
   const detail = page.locator('[data-store-page]')
   await expect(detail.getByRole('heading', { level: 1 }).first()).toHaveText('qa')
   await expect(detail.getByText('Instructions', { exact: true }).first()).toBeVisible()
-  await expect(detail.getByText('Turn limit', { exact: true }).first()).toBeVisible()
-  await expect(detail.getByText('Memory', { exact: true }).first()).toBeVisible()
+  const limit = detail.getByText('Turn limit', { exact: true }).first()
+  await expect(limit).toBeVisible()
+  // The field under the label is whole inside the window, not cut by its bottom edge.
+  const field = page.getByRole('spinbutton').or(limit.locator('xpath=following::input[1]')).first()
+  const box = await field.boundingBox()
+  expect(box.y + box.height).toBeLessThanOrEqual(1000)
+  // The chat pane's /agents listing is not what this image is about.
+  await expect(page.getByText('@general-purpose').first()).toBeHidden()
+  // Memory is not a setting of the agent's own: every agent in a chat shares the project's.
+  await expect(detail.getByText('Memory', { exact: true })).toHaveCount(0)
 }

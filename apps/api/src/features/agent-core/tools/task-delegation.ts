@@ -1,10 +1,10 @@
 import type { AgentSource } from '@localixai/agent/agents'
 import { sessionSource } from './source-refs'
 import type {
-  ChildRuntimeStatus,
   EarlyDelegationOutcome,
   QueuedDelegation,
   TaskDelegationDetails,
+  TaskDelegationStatus,
 } from './task-delegation-contracts'
 
 export type { TaskDelegationDetails, TaskDelegationOptions } from './task-delegation-contracts'
@@ -26,34 +26,53 @@ export interface TaskLine {
 
 export type Started = EarlyDelegationOutcome | QueuedDelegation | undefined
 
+type ChildIdentity = { sessionId: string; title: string; taskName?: string | null }
+
+/** The entry an `Agent` result carries for one child, in the state the call leaves it in. */
+export function childDetails(
+  child: ChildIdentity,
+  status: TaskDelegationStatus,
+  queuePosition?: number,
+): { details: TaskDelegationDetails; sources: AgentSource[] } {
+  return {
+    details: {
+      sessionId: child.sessionId,
+      title: child.title,
+      status,
+      ...(queuePosition ? { queuePosition } : {}),
+      ...(child.taskName ? { taskName: child.taskName } : {}),
+    },
+    sources: [
+      sessionSource({
+        sessionId: child.sessionId,
+        title: child.taskName ?? child.title,
+        ...(status === 'failed' || status === 'stopped' ? { status: 'failed' as const } : {}),
+      }),
+    ],
+  }
+}
+
 /** What became of one started task, in the words the delegator acts on. */
 export function describeStartedTask(
   early: Started,
-  child: { label: string; title: string; sessionId: string; taskName?: string | null },
+  child: ChildIdentity & { label: string },
 ): TaskLine {
-  const details = (status: ChildRuntimeStatus): TaskDelegationDetails => ({
-    sessionId: child.sessionId,
-    title: child.title,
-    status,
-    ...(child.taskName ? { taskName: child.taskName } : {}),
-  })
-  const sources = (status: ChildRuntimeStatus): AgentSource[] => [
-    sessionSource({
-      sessionId: child.sessionId,
-      title: child.taskName ?? child.title,
-      ...(status === 'failed' || status === 'stopped' ? { status: 'failed' as const } : {}),
-    }),
-  ]
-  const line = (text: string, status: ChildRuntimeStatus, failed = false): TaskLine => ({
+  const line = (
+    text: string,
+    status: TaskDelegationStatus,
+    failed = false,
+    queuePosition?: number,
+  ): TaskLine => ({
     line: `- ${child.label}: ${text}`,
     failed,
-    details: details(status),
-    sources: sources(status),
+    ...childDetails(child, status, queuePosition),
   })
   if (early && 'queued' in early) {
     return line(
-      `queued for "${child.title}" (position ${early.queued}) — it starts on its own when a running sub-agent finishes.`,
-      'idle',
+      `queued for "${child.title}" (position ${early.queued}) — it starts on its own when a running subagent finishes, and you will be notified with its reply.`,
+      'queued',
+      false,
+      early.queued,
     )
   }
   // CC `maxTurns`: a child cut off at its turn limit returns partial output, not a failure.
@@ -69,5 +88,8 @@ export function describeStartedTask(
   }
   if (early?.status === 'completed')
     return line(`completed "${child.title}" immediately. Review its report.`, 'completed')
-  return line(`started "${child.title}"; its report will return to this session.`, 'running')
+  return line(
+    `started "${child.title}" in the background. You will be notified with its reply as a message: do not poll, sleep or guess its result; keep working or end your turn.`,
+    'running',
+  )
 }

@@ -5,7 +5,7 @@ import {
 } from '@localixai/notifications'
 
 import { isDesktop } from '@localixai/kit/environment'
-import { notifyDesktop, type DesktopNotifyKind } from '@/shared/lib/desktopNotify'
+import { notifyDesktop } from '@/shared/lib/desktopNotify'
 import { eventSignalKey } from './signal'
 import { isOriginOnScreen } from './context'
 import { onLiveRaise } from './journal'
@@ -34,16 +34,11 @@ const TTL_MS = {
 
 /**
  * What waits on the person, by the row's category rather than a list of topics: a list had to be
- * extended by hand for every new way of waiting (a mention, a presented plan) and missed
+ * extended by hand for every new way of waiting (a presented plan) and missed
  * each one until someone noticed it never interrupted. The server files every such row as
  * `human-input`; the native kind and the hour-long TTL follow from that one field.
  */
 const waitsOnPerson = (entry: NotificationEntry) => entry.category === 'human-input'
-
-/** The shell treats `hitl` as the attention-grabbing kind: only what blocks until answered. */
-function nativeKindOf(entry: NotificationEntry): DesktopNotifyKind {
-  return waitsOnPerson(entry) ? 'hitl' : 'run'
-}
 
 function envelopeOf(entry: NotificationEntry): NotificationEnvelope {
   return {
@@ -84,8 +79,8 @@ function interruptFor(entry: NotificationEntry, deps: InterruptionDeps = {}): vo
   const sourceVisible = focused === true && isOnScreen(entry)
   // The chat it came from is on screen and already shows it: kept, but not an unread badge.
   if (sourceVisible) useNotificationsStore.getState().markRead(entry.id)
-  const kind = hint ? hint.nativeKind : nativeKindOf(entry)
-  if (!kind || !(deps.desktop ?? isDesktop)) return
+  const native = hint ? hint.native : true
+  if (!native || !(deps.desktop ?? isDesktop)) return
   const preferences = notificationPreferences()
   const context: NotificationContext = {
     now: Date.now(),
@@ -97,7 +92,6 @@ function interruptFor(entry: NotificationEntry, deps: InterruptionDeps = {}): vo
   const channels = notificationChannels(envelopeOf(entry), context, new Set(['native']))
   if (channels.has('native')) {
     ;(deps.notify ?? notifyDesktop)(
-      kind,
       entry.title,
       entry.message,
       preferences.condition,

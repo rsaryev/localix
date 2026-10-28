@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 
 import { useChatStore } from '@/entities/chat/model/store'
-import { useActiveSessionSummary, useSessionRoster } from '@/entities/chat/model/useSessionRoster'
+import { useActiveSessionSummary, useAllSessions } from '@/entities/chat/model/useAllSessions'
 import { buildBreadcrumb } from '@/entities/chat/model/breadcrumb'
 
 /**
@@ -24,7 +24,7 @@ export function useBreadcrumbDepth(): number {
       projects: s.projects,
     })),
   )
-  const allSessions = useSessionRoster()
+  const allSessions = useAllSessions()
   const activeSession = useActiveSessionSummary()
 
   return useMemo(() => {

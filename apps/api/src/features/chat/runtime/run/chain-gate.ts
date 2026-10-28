@@ -21,9 +21,7 @@ import { PermissionGateBlockedError } from '../../../agent-core/tools/tool-error
  * `beforeToolCall` hands the loop an empty verdict for the call, and the chain writes the gate's
  * note and provenance into it once the gate allows the call. The loop then leads the result with
  * the note as it always did — after every wrapper, so a `PostToolUse` redaction or a `tool.call`
- * rewrite of the output is what the model reads, and never for a call a tool makes on its own
- * behalf (`callTool`), whose output goes back to that tool. The loop's verdict also carries the
- * call's parent, which the gate is told here as it was at the loop. A refusal is the gate's own
+ * rewrite of the output is what the model reads. A refusal is the gate's own
  * result, thrown as a block (`PermissionGateBlockedError`) so no post hook reads a call that
  * never ran. Decisions are taken one at a time, in the order calls reach the gate, so cards
  * arrive one after another as they do at the loop; a decision a gate review makes inside another
@@ -68,12 +66,11 @@ function refusalOf(name: string, gate: BeforeToolCallResult): AgentToolResult {
 const stopped = () =>
   Object.assign(new Error('Cancelled: the run was stopped'), { name: 'AbortError' })
 
-type GateCall = Parameters<PermissionGateFn>[0] & { parentToolCallId?: string }
+type GateCall = Parameters<PermissionGateFn>[0]
 
 /** The loop's verdict on a call the chain gates, filled in when the gate allows it. */
 interface Pending {
   verdict: BeforeToolCallResult
-  parentToolCallId?: string
 }
 
 export function createChainGate(inChain: boolean, options: ChainGateOptions = {}): ChainGate {
@@ -99,8 +96,7 @@ export function createChainGate(inChain: boolean, options: ChainGateOptions = {}
       return async (ctx: GateCall, signal) => {
         if (!gated.has(ctx.toolName)) return gate(ctx, signal)
         const verdict: BeforeToolCallResult = {}
-        const parent = ctx.parentToolCallId
-        pending.set(ctx.toolCallId, { verdict, ...(parent ? { parentToolCallId: parent } : {}) })
+        pending.set(ctx.toolCallId, { verdict })
         return verdict
       }
     },
@@ -114,14 +110,12 @@ export function createChainGate(inChain: boolean, options: ChainGateOptions = {}
             // A call that did not come through the loop has no verdict for the note to ride on.
             const loop = pending.get(toolCallId)
             pending.delete(toolCallId)
-            const parent = loop?.parentToolCallId
             // A PreToolUse hook's allow/ask, handed on by the hook wrapper outside this one.
             const hook = (context as PreToolUseVerdictCarrier | undefined)?.preToolUseVerdict
             const call: GateCall = {
               toolCallId,
               toolName: tool.name,
               input,
-              ...(parent ? { parentToolCallId: parent } : {}),
               ...(hook ? { hookVerdict: hook } : {}),
             }
             const verdict = await decide(call, signal)

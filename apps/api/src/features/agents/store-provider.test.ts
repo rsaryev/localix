@@ -10,6 +10,7 @@ import { createDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import { InvalidRequestError } from '../../lib/domain-errors'
 import { createAgentsService } from './service'
+import type { AgentModelChoice } from '../agent-core/agent-model-route'
 import { createAgentStoreProvider } from './store-provider'
 
 const cleanup: Array<() => Promise<void>> = []
@@ -43,6 +44,7 @@ async function setup() {
     }),
   })
   let heard = 0
+  const choices: AgentModelChoice[] = []
   const provider = createAgentStoreProvider({
     agents: service,
     chatsOf: async () => 2,
@@ -50,11 +52,22 @@ async function setup() {
       createHash('sha1')
         .update(await readFile(path, 'utf8'))
         .digest('hex'),
+    choices: {
+      read: async () => choices,
+      write: async (_user, next) => void choices.splice(0, choices.length, ...next),
+    },
     onChange: () => () => {
       heard++
     },
   })
-  return { provider, service, agentsDir: join(userClaude, 'agents'), managed, heard: () => heard }
+  return {
+    choices,
+    provider,
+    service,
+    agentsDir: join(userClaude, 'agents'),
+    managed,
+    heard: () => heard,
+  }
 }
 
 const created = async (provider: Awaited<ReturnType<typeof setup>>['provider']) =>
@@ -93,7 +106,7 @@ test('a Definition saved from the page lands in the file, keeping what the form 
   await provider.setConfig!(
     ref.id,
     'user',
-    { instructions: 'Be strict.', model: 'openai/gpt-6', maxTurns: 5, skills: ['audit'] },
+    { instructions: 'Be strict.', maxTurns: 5, skills: ['audit'] },
     actor,
   )
   const file = await readFile(path, 'utf8')
@@ -103,10 +116,27 @@ test('a Definition saved from the page lands in the file, keeping what the form 
   const config = await provider.config!(ref.id, 'user', actor)
   expect(config?.values).toMatchObject({
     instructions: 'Be strict.',
-    model: 'openai/gpt-6',
     maxTurns: 5,
     skills: ['audit'],
   })
+})
+
+test('the model and effort saved from the page are the person’s choice, never written to the file', async () => {
+  const { provider, agentsDir, choices } = await setup()
+  const ref = await created(provider)
+  await provider.setConfig!(ref.id, 'user', { model: 'openai/gpt-6', effort: 'high' }, actor)
+  expect(choices).toEqual([{ agentId: ref.id, modelId: 'openai/gpt-6', effort: 'high' }])
+  expect(await readFile(join(agentsDir, 'reviewer.md'), 'utf8')).not.toMatch(/^(model|effort):/m)
+  expect((await provider.config!(ref.id, 'user', actor))?.values).toMatchObject({
+    model: 'openai/gpt-6',
+    effort: 'high',
+  })
+  // Clearing both removes the choice; deleting the agent leaves none behind.
+  await provider.setConfig!(ref.id, 'user', { model: '', effort: '' }, actor)
+  expect(choices).toEqual([])
+  await provider.setConfig!(ref.id, 'user', { effort: 'low' }, actor)
+  await provider.remove(ref.id, 'user', actor)
+  expect(choices).toEqual([])
 })
 
 test('a rename keeps the page: the id is the same', async () => {
@@ -141,7 +171,7 @@ test('a save made over a file that changed meanwhile is refused, and the page sa
   const opened = await provider.config!(ref.id, 'user', actor)
   expect(opened?.revision).toBeTruthy()
   expect((await provider.detail(ref.id, actor)).facts).toContainEqual({
-    label: 'Seated in',
+    label: 'Used by',
     value: '2 chats',
   })
   const path = join(agentsDir, 'reviewer.md')

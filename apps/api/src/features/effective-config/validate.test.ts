@@ -19,25 +19,25 @@ describe('computeToolSurface', () => {
     // named its MODE, then a session-level economy trim. Both were second answers to a question
     // the capability chain owns, and both let Settings show a tool the run never saw.
     const surface = computeToolSurface({ disabledTools: [] })
-    for (const name of ['delegate', 'jobs', 'skill']) {
+    for (const name of ['Agent', 'Jobs', 'Skill']) {
       expect(surface.enabled).toContain(name)
     }
     expect(surface.disabled).toEqual([])
   })
 
   test('disabledTools removes a named tool with a settings reason', () => {
-    const surface = computeToolSurface({ disabledTools: ['bash'] })
-    expect(surface.enabled).not.toContain('bash')
-    expect(surface.disabled.find((d) => d.name === 'bash')?.reason).toContain('disabledTools')
+    const surface = computeToolSurface({ disabledTools: ['Bash'] })
+    expect(surface.enabled).not.toContain('Bash')
+    expect(surface.disabled.find((d) => d.name === 'Bash')?.reason).toContain('disabledTools')
   })
 
   test('projects live plugin names through the same policy instead of omitting them', () => {
     const surface = computeToolSurface({
       disabledTools: ['plugin_write'],
-      toolNames: ['read', 'plugin_search', 'plugin_write'],
+      toolNames: ['Read', 'plugin_search', 'plugin_write'],
     })
 
-    expect(surface.enabled).toEqual(['read', 'plugin_search'])
+    expect(surface.enabled).toEqual(['Read', 'plugin_search'])
     expect(surface.disabled).toEqual([
       {
         name: 'plugin_write',
@@ -52,7 +52,7 @@ describe('computeToolSurface', () => {
     // reader at the settings switch would send them somewhere that changes nothing.
     const surface = computeToolSurface({
       disabledTools: ['plugin_write'],
-      toolNames: ['read', 'plugin_write'],
+      toolNames: ['Read', 'plugin_write'],
       structuralDenials: [
         {
           name: 'plugin_write',
@@ -62,7 +62,7 @@ describe('computeToolSurface', () => {
       ],
     })
 
-    expect(surface.enabled).toEqual(['read'])
+    expect(surface.enabled).toEqual(['Read'])
     expect(surface.disabled).toEqual([
       {
         name: 'plugin_write',
@@ -76,10 +76,10 @@ describe('computeToolSurface', () => {
     // `source` distinguishes "flip a switch to fix this" from "the product decided". Only the
     // first kind is left: the one other producer was a session-level economy trim, which the
     // Tools screen could not change and which reported `policy` for exactly that reason.
-    const surface = computeToolSurface({ disabledTools: ['skill'], toolNames: ['skill'] })
+    const surface = computeToolSurface({ disabledTools: ['Skill'], toolNames: ['Skill'] })
 
     expect(surface.disabled).toEqual([
-      { name: 'skill', reason: 'disabled by settings (disabledTools)', source: 'settings' },
+      { name: 'Skill', reason: 'disabled by settings (disabledTools)', source: 'settings' },
     ])
   })
 })
@@ -205,7 +205,7 @@ describe('buildDiagnostics', () => {
     const input = baseInput({
       values: {},
       disabledTools: ['not_a_tool'],
-      knownToolNames: ['bash', 'read'],
+      knownToolNames: ['Bash', 'Read'],
     })
     expect(
       buildDiagnostics(input).diagnostics.find((d) => d.code === 'disabled_tool_unknown')?.severity,

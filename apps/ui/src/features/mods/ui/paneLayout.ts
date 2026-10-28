@@ -115,7 +115,7 @@ function actionsOf(node: Node | undefined): Node[] | null {
 export function paneLayout(tree: readonly Node[], title: string): PaneLayout {
   const framed = withoutFrame([...tree])
   const root = framed.root
-  const column = root && root.props.flexDirection === 'column'
+  const column = root?.props.flexDirection === 'column'
   const rows = column ? root.children : framed.nodes
   const titled = withoutTitle(rows, title)
   const last = elements(titled).at(-1)

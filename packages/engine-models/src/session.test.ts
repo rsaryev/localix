@@ -200,7 +200,7 @@ describe('a model session turn', () => {
     const turn = createModelSession(bind(model), { sessionId: 's' }).turn(
       request({ signal: controller.signal }),
     )
-    setTimeout(() => controller.abort(), 10)
+    setTimeout(() => controller.abort(), 0)
     expect((await turn.message).stopReason).toBe('aborted')
     expect(turn.failure).toBeUndefined()
   })
@@ -251,7 +251,11 @@ describe('the request a turn sends', () => {
             model: 'fake-1',
             timestamp: 0,
             content: [
-              { type: 'thinking', thinking: 'old', thinkingSignature: 'legacy-sig' },
+              {
+                type: 'thinking',
+                thinking: 'old',
+                thinkingSignature: 'aisdk:{"anthropic":{"signature":"sig-1"}}',
+              },
               { type: 'tool_call', id: 'c1', name: 'read', arguments: { path: 'a' } },
             ],
           },
@@ -294,7 +298,7 @@ describe('the request a turn sends', () => {
       {
         type: 'reasoning',
         text: 'old',
-        providerOptions: { anthropic: { signature: 'legacy-sig' } },
+        providerOptions: { anthropic: { signature: 'sig-1' } },
       },
       { type: 'tool-call', toolCallId: 'c1', toolName: 'read', input: { path: 'a' } },
     ])

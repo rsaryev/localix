@@ -10,7 +10,7 @@ import { ALL_MUTATE_TOOLS } from './tool-classes'
  * recent-tail and pressure gates can protect it. A single `write`/`edit` call can
  * otherwise exceed the next request's whole context by itself.
  *
- * Only fields that the durable tool item can replay through `tool_output` are
+ * Only fields that the durable tool item can replay through `ToolOutput` are
  * eligible. Failed and still-pending calls are deliberately untouched: their input
  * may be the only copy of a change that never reached disk. When several moderate
  * fields jointly exceed the budget, elide the largest first until the serialized

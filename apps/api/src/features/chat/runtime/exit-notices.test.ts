@@ -26,11 +26,11 @@ const boot = () => {
   return { engine, notices: createExitNotices(engine, { warn: () => {} }) }
 }
 const arm = (notices: ReturnType<typeof boot>['notices'], source: 'bg-job' | 'hook' = 'hook') =>
-  notices.arm({ userId: 'u1', sessionId: 's1', agentId: 'lead', source })
+  notices.arm({ userId: 'u1', sessionId: 's1', source })
 const rows = () => h.db.selectFrom('triggers').select(['kind', 'state', 'end_reason']).execute()
 
 describe('an exit notice', () => {
-  test('is exactly one wake, keyed by its one fire, to the participant whose run started it', async () => {
+  test('is exactly one wake, keyed by its one fire, to the agent whose run started it', async () => {
     const { notices } = boot()
     const notice = await arm(notices, 'bg-job')
     notice!.fire('[Background job finished: build] exit=0')
@@ -43,7 +43,6 @@ describe('an exit notice', () => {
     expect(wakes[0]).toMatchObject({
       source: 'bg-job',
       content: '[Background job finished: build] exit=0',
-      to: { participant: 'agent:lead' },
     })
     expect(wakes[0]!.deliveryKey).toMatch(/^trg:.+:1$/)
     expect(await rows()).toEqual([{ kind: 'process-exit', state: 'ended', end_reason: 'exited' }])

@@ -57,18 +57,23 @@ export function usePresentation(
       at >= 0 && current ? new Set([current, ...membersOf(space, current, spaceTypes)]) : null,
     [at, current, space],
   )
-  const stop = useCallback(() => {
-    setCurrent(null)
-    if (before.current) void director.glide(before.current)
-    before.current = null
-  }, [director])
-  // The frame on screen was deleted: the talk is over, and the board comes back.
+  // The frame on screen was deleted: the talk is over. Dropped in the render itself, so no slide
+  // is ever drawn for a frame that is gone.
+  if (current && at < 0) setCurrent(null)
+  const stop = useCallback(() => setCurrent(null), [])
+  // However the talk ended — stopped, or its frame deleted — the board comes back to where it was.
+  const active = at >= 0
+  const wasActive = useRef(false)
   useEffect(() => {
-    if (current && at < 0) stop()
-  }, [current, at, stop])
+    if (wasActive.current && !active && before.current) {
+      void director.glide(before.current)
+      before.current = null
+    }
+    wasActive.current = active
+  }, [active, director])
 
   return {
-    active: at >= 0,
+    active,
     slide,
     index: Math.max(0, at),
     frames,

@@ -74,7 +74,7 @@ describe('handleHitlRequest', () => {
       {
         type: 'human_in_loop_request',
         toolCallId: 'tool-1',
-        toolName: 'ask',
+        toolName: 'AskUserQuestion',
         request: {
           id: 'request-1',
           kind: 'ask',
@@ -90,7 +90,9 @@ describe('handleHitlRequest', () => {
     expect(tracked.map((row) => ({ sessionId: row.sessionId, title: row.request.title }))).toEqual([
       { sessionId: 'root', title },
     ])
-    expect(published).toEqual([{ sessionId: 'root', title, toolName: 'sub-agent · ask' }])
+    expect(published).toEqual([
+      { sessionId: 'root', title, toolName: 'sub-agent · AskUserQuestion' },
+    ])
     expect(notifications).toEqual([
       {
         title,
@@ -177,7 +179,7 @@ describe('handleHitlRequest', () => {
       {
         type: 'human_in_loop_request',
         toolCallId: 'call-1',
-        toolName: 'ask',
+        toolName: 'AskUserQuestion',
         request: {
           id: 'call-1',
           kind: 'ask',
@@ -212,7 +214,7 @@ describe('handleHitlRequest', () => {
         {
           type: 'human_in_loop_request',
           toolCallId: 'ask-1',
-          toolName: 'ask',
+          toolName: 'AskUserQuestion',
           request: { id: 'ask-1', kind: 'ask', payload: {}, createdAt: Date.now() },
         } as never,
       ),

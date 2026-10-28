@@ -45,16 +45,6 @@ async function freshPrefs() {
 }
 
 describe('notification preferences persistence', () => {
-  it('migrates the former boolean without creating a second store', async () => {
-    localStorage.setItem(KEY, JSON.stringify({ osNotifications: false, appIconBadge: false }))
-    const { useNotificationPrefs } = await freshPrefs()
-    expect(useNotificationPrefs.getState()).toMatchObject({
-      condition: 'off',
-      terminalMethod: 'auto',
-      appIconBadge: false,
-    })
-  })
-
   it('persists the centralized condition and terminal method in the existing key', async () => {
     const { useNotificationPrefs } = await freshPrefs()
     useNotificationPrefs.getState().setCondition('always')

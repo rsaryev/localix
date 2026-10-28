@@ -30,7 +30,7 @@ function applyConnections({ ticket, connections }: ConnectionsRead): void {
   useChatStore.setState({ connections })
 }
 
-/** Register the topic adapter. Each window (main, companion) registers it once. */
+/** Register the topic adapter. Each window registers it once. */
 export function registerConnectionsSync(onError?: (error: unknown) => void): () => void {
   return resourceSync.register('providers', {
     read: readConnections,

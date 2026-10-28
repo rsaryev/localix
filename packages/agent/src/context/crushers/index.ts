@@ -31,11 +31,11 @@ export function crushNonRecoverable(
   const r = crushJsonArray(text) ?? crushLog(text)
   if (!r) return null
   // When the caller knows the originating tool_call_id, advertise that the FULL
-  // original is recoverable (the `tool_output` tool reads it back from the
+  // original is recoverable (the `ToolOutput` tool reads it back from the
   // durable message store) — this is what makes the crush safe to apply.
   const recover =
     opts.locator && opts.recoveryToolAvailable !== false
-      ? `; full original retrievable via tool_output(action="get", tool_call_id="${opts.locator}")`
+      ? `; full original retrievable via ToolOutput(action="get", tool_call_id="${opts.locator}")`
       : ''
   const header = `[${CRUSH_MARKER} — ${r.beforeChars}→${r.afterChars} chars, structure preserved${recover}]`
   return { ...r, text: `${header}\n${r.text}`, afterChars: header.length + 1 + r.afterChars }

@@ -145,6 +145,7 @@ export const RepoChangesGroup = memo(function RepoChangesGroup({
               // repo's Open-full-diff target is unambiguous. Hover-revealed; stop
               // propagation so they don't focus/toggle the group.
               <span
+                role="presentation"
                 className="lx-hover-actions ml-auto flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover/repo:opacity-100 focus-within:opacity-100"
                 onClick={(e) => e.stopPropagation()}
               >
@@ -283,6 +284,7 @@ function SubLabel({
       </Chip>
       {action && (
         <span
+          role="presentation"
           className="lx-hover-actions ml-auto flex items-center opacity-0 transition-opacity group-hover/sub:opacity-100 group-focus-within/sub:opacity-100"
           onClick={(e) => e.stopPropagation()}
         >

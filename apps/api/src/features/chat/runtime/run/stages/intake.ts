@@ -17,6 +17,7 @@ import { createGateRefusalTracker } from '@localixai/agent/agents'
 
 import { intakeTurn, markPromptBlocked } from '../../history/intake'
 import { claudeCodeGateOptions } from '../claude-code-permissions'
+import { memoryRoots } from '../memory-roots'
 import { buildRunPermissionGate } from '../permission-gate-build'
 import { runTurnLimitFor } from '../turn-limit'
 import type { RunInputs } from './context'
@@ -34,12 +35,12 @@ export async function intakeRunTurn(
   toolset: RunToolset,
   prompt: RunPrompt,
 ) {
-  const { env, params, userId, session, speakerAgentId, assistantMessageId } = frame
+  const { env, params, userId, session, agentId, assistantMessageId } = frame
   const { deps, now } = env
   const { ccHooks, defaultCwd } = inputs
   const modelSettings = agentModelSettingsFor(
     turn.globalAgentSettings?.agentModelSettings,
-    speakerAgentId,
+    agentId,
     turn.model.providerId,
     turn.catalogModel?.id ?? turn.model.effectiveModelId,
   )
@@ -77,6 +78,21 @@ export async function intakeRunTurn(
   const accepted = intake.frame.promptMessage
   if (accepted) await markPromptBlocked(deps, userId, accepted, false, now())
 
+  const gateOptions = claudeCodeGateOptions(toolset.claudeCodePermissions, {
+    homeDir: claudeCodeHome(),
+    mode: turn.policy.permission.mode,
+  })
+  // Claude Code's additional directories, and the memory folders this run keeps.
+  const extraRoots = [
+    ...(gateOptions.extraRoots ?? []),
+    ...memoryRoots({
+      profile: toolset.agentProfile,
+      memoryDir: inputs.frozenContext.memoryDir,
+      hasTool: (name) => toolset.runtimeTools.toolNames.includes(name),
+      fork: !!frame.fork,
+      agentMemoryDir: inputs.agentMemoryDir,
+    }),
+  ]
   // permission-gate-breaker.ts documents what the tracker counts.
   const refusalTracker = createGateRefusalTracker()
   const gate = buildRunPermissionGate({
@@ -84,7 +100,7 @@ export async function intakeRunTurn(
     env,
     userId,
     session,
-    agentId: speakerAgentId,
+    agentId,
     hitlTargetSessionId: frame.hitl.targetSessionId,
     assistantMessageId,
     abortSignal: frame.abort.signal,
@@ -101,13 +117,13 @@ export async function intakeRunTurn(
     mayConfirm: turn.policy.human.canAnswer,
     tools: toolset.dispatchTools,
     defaultCwd,
-    ...claudeCodeGateOptions(toolset.claudeCodePermissions, {
-      homeDir: claudeCodeHome(),
-      mode: turn.policy.permission.mode,
-    }),
+    ...gateOptions,
+    ...(extraRoots.length > 0 ? { extraRoots } : {}),
     hitlWaitedMs: turn.state.hitlWaitedMs,
     // Claude Code mods' `tool.check` reviews each verdict; `$.tool.check` reads the gate's own.
-    toolCheck: inputs.mods.toolCheck(),
+    toolCheck: inputs.mods.toolCheck(
+      turn.policy.human.canAnswer ? { approver: 'person' } : undefined,
+    ),
     onVerdictOptions: (options) => {
       toolset.skillCommandPolicy.current = options
     },

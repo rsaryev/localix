@@ -385,6 +385,7 @@ every listing an item names is in `listings`.
 | Part             | From                                                                                              |
 | ---------------- | ------------------------------------------------------------------------------------------------- |
 | Start here       | What editorial sources recommend, every kind, by score.                                           |
+| For your work    | The recommendations' answer (below), read beside Discover; left out when it is empty.             |
 | For this project | Listings about at least one of the open project's words; left out without a project or a match.   |
 | Collections      | An editorial source's picks, mixing kinds, in the order it gives.                                 |
 | New & updated    | Versions published in the last 90 days, newest first; left out when no source dates its versions. |
@@ -401,6 +402,44 @@ name, so the page draws those rows in one read. When no editorial source can be 
 catalog not published yet), Start here is the `localix` and `official` listing by score, so Discover
 is never empty while official listings exist.
 
+### Recommendations
+
+A client reports its working set with `POST /rpc/store/recommendations/working-set` (`202`, answered
+later) and reads the answer with `GET /rpc/store/recommendations?projectId&sessionId`:
+`{ listings, matched, strategy, pending }`. The working set is what every completion request
+carries: the open tabs and linked chips as binding targets (`references`), with the open project and
+chat. There is no table of what to recommend for what:
+
+1. The references resolve through Context Fabric for the `recommendation` destination, inside the
+   chat's workspace and under the same scope, containment and secret rules as a sent message
+   (`bootstrap/store-context.ts`). An ambient tab ranks below a chip the person linked.
+2. Every automatic provider that declares `recommendation` adds what it knows. Declaring the
+   destination is how a mini app or a core feature shapes what the Store suggests; the Store names
+   none of them.
+3. What the person installed is read as what they use, below the working set; the open project's
+   signals (`project-signals.ts`) are the last piece. So the answer improves as the Store is used,
+   and a project with nothing open still has one.
+4. The pieces, highest priority first and each clipped, make one query of at most 2,000 characters
+   (`features/store/recommend.ts`). It searches the Store's semantic collection through global
+   search with `related: true`: only meaning finds a listing, because a word the working set shares
+   with a summary is no reason to call a package suited. Those are the first `matched` listings.
+5. The row is never empty while anything is left to install: trusted listings by score, lifted by
+   the project, then any listing, fill it to ten. None is installed.
+
+The work runs off the request path (`recommend-board.ts`). A report settles for 1.5 seconds and an
+unchanged working set is not worked out again; the answers live in memory, one per project and chat
+(the last 16), and are derived data: a restart works them out again, and a read nobody reported for
+is worked out from the project alone. An index sync (an install, a source read) and a move of the
+semantic status (the model became ready) work every remembered set out again. An answer that moved
+pokes `store-recommendations`; one that did not pokes nobody, and a failed one keeps the last.
+
+The embedding model runs on this computer (EmbeddingGemma), so the working set never leaves it.
+
+In the UI, Discover's **For your work** row and its **See all** list (`RecommendedView`) read the
+answer, and the composer's strip shows **Recommended for you** when something `matched` is new on
+this device (`shared/lib/recommendationsSeen.ts`): opening the list or hiding the notice marks it
+seen. The strip gives the app's update and the Store's update offers the place first.
+
 ### Sources and project installs
 
 - **Sources say how they are.** A `SourceView` adds `syncedAt` (the provider's own fetch time, else
@@ -411,6 +450,12 @@ is never empty while official listings exist.
   being the kinds whose provider can preview and add one. `POST /sources/refresh` reads one source
   again (a mini app catalog refresh reads every catalog) and `POST /sources/auto-update` switches
   it, through the port's optional `refreshSource` and `setSourceAutoUpdate`.
+- **An unread source is said where it matters.** A provider's `problems` are tagged with its kind
+  when it is synced (`StoreProblem`: `kind`, `message`), and a listing page carries only those of
+  the kinds its shelf lists (`shelfKinds`, `page-problems.ts`): a plugin marketplace on Plugins and
+  on the shelves of what plugins give, a mini app catalog on Mini apps and Commands, nothing on
+  Discover, a search or the library. The list says it in one line that leads to Sources, which says
+  which source and why.
 - **The open project's installs.** `GET /:kind/:id?projectId=` shows that project's install on the
   page; `GET /listings?projectId=` lays the project's installs over the page through the port's
   optional `projectInstalls(actor)` (plugins only), and the first page of Installed adds what is
@@ -428,16 +473,19 @@ provider (X1, A8) and only reads or writes through the Store client.
 
 - **Tiles** (`TileCard`): the icon, the name in up to two lines, one quiet meta line (publisher, a
   verified mark, then the kind, which is kept when the publisher is cut) and the Get pill at the
-  right of the same row. Every tile is as tall as its icon, so a row is even; a row's arrows sit in
-  rails over its edges, centred, and show on hover or focus. Categories are chips that wrap.
+  right of the same row. Every tile is as tall as its icon, so a row is even. A row (`ShelfRow` with
+  `columns`) is a grid of whole tiles, never one cut at the edge: Discover shows at most two rows of
+  it and "See all" has the rest; a package page's rows wrap to show every tile. Categories are chips
+  that wrap.
+- **The bar** (`ui/StoreNav.tsx`, `storeNav` in `model/navigation.ts`): the search and the library
+  (Installed, Updates, Yours, Project, Sources) on one row, the catalog as a kit `TabBar` under it:
+  Discover, the package kinds, Skills, Agents and MCP servers. The other kinds packages give sit in
+  a More menu in the bar's trailing slot, named for the one chosen. Only Updates carries a count.
+  There is no section column; Settings draws its sections as tabs too.
 - **Layout by the pane's own width** (`model/layout.ts`): wide at 1100px and over, medium from 760,
-  narrow below, measured with `useElementWidth` on the Store's root, not the window. Tiles per row,
-  list columns and the sidebar mode follow it. Settings uses the same kit `SidebarNav` (full,
-  compact and select modes), measuring its own width. Compact is the same column folded to an icon
-  rail, in the layout like any column (nothing floats over the content). It starts open at every
-  width that shows a sidebar; the person's fold, from the first row of the sidebar
-  (`model/sidebarFold.ts`, kept in the browser), shrinks it to icons and the page beside it resizes.
-  The kit `ShelfNav` is gone.
+  narrow below, measured with `useElementWidth` on the Store's root, not the window. Tile columns
+  (`tileColumns`: 1 below 560px, 2 below 860, 3 below 1200, then 4), list columns and where a
+  package page puts its facts follow it.
 - **Discover** renders `/rpc/store/discover` (updates, rows, collections, categories) and sends
   `projectId`. A row's "See all" shows a `list` view, a paged query or a fixed set of refs.
 - **Lists are cursor-paged and virtualized** (`PagedList`): `useSWRInfinite` over the keyset cursor,
@@ -563,14 +611,10 @@ and say to use **Add skill**.
   changed after the skill is added.
 - **Shared folder.** `.claude/skills` is Claude Code's too, and its use of a skill is invisible
   here. The `skill_usage.localix_authored` flag marks a skill created in Localix (the Store's
-  create, the `skill` tool's first save, and the move below); the curator's `stale` state, the
-  scheduled pass, **Archive unused** and the unused notice apply to those alone. Pin, manual archive
-  and Restore work for every skill. Archived skills wait in
-  `~/.localix/skills-archive/{user|<projectId>}/<name>`, outside Claude Code's tree.
-  `skills-curator/legacy-skills-migration.ts` is the only code that knows the old `.localix/skills`:
-  once at startup (`bootstrap.ts`, marker `~/.localix/skills-claude-layout.json`) it moves those
-  folders into `.claude/skills`, drops one a `.claude` skill shadows (logged), moves `.archive` to
-  the archive folder and removes the old folders.
+  create, the `Skill` tool's first save); the curator's `stale` state, the scheduled pass, **Archive
+  unused** and the unused notice apply to those alone. Pin, manual archive and Restore work for
+  every skill. Archived skills wait in `~/.localix/skills-archive/{user|<projectId>}/<name>`,
+  outside Claude Code's tree.
 - **Curator.** The weekly scheduled pass (`bootstrap/ops-timers.ts`) archives the person's own
   unused skills; archive, restore and pin go through the same service. Its manual run is the
   **Archive unused** [shelf action](#shelf-actions) (the `/rpc/skills/curator` route is gone). The

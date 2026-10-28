@@ -10,7 +10,7 @@ const THEIRS = 'https://ada.example.test/releases/latest/download/mini-app-catal
 const catalogBody = { schema: 1, apps: [] }
 const serving = (urls: Record<string, unknown>) =>
   (async (input: string | URL | Request) => {
-    const body = urls[String(input)]
+    const body = urls[String(input instanceof Request ? input.url : input)]
     return body ? Response.json(body) : new Response('missing', { status: 404 })
   }) as unknown as typeof fetch
 

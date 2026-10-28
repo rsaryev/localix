@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react'
 
 /**
  * One debounced query's lifecycle. Every callback belongs to the render that scheduled the query
@@ -27,19 +27,20 @@ export function useDebouncedQuery<T>(
   delayMs: number,
   plan: DebouncedQueryPlan<T>,
 ): () => void {
-  const planRef = useRef(plan)
-  planRef.current = plan
+  // The plan of the committed render: an effect event reads the latest one without being a dep.
+  const latestPlan = useEffectEvent(() => plan)
   const seqRef = useRef(0)
-  const depsRef = useRef<readonly unknown[] | null>(null)
-  const generationRef = useRef(0)
-  if (!sameDeps(depsRef.current, deps)) {
-    depsRef.current = deps
-    generationRef.current += 1
+  // A new generation per change of `deps`, adjusted while rendering so the effect below has one
+  // plain number to depend on.
+  const [tracked, setTracked] = useState({ deps, generation: 0 })
+  let generation = tracked.generation
+  if (!sameDeps(tracked.deps, deps)) {
+    generation += 1
+    setTracked({ deps, generation })
   }
-  const generation = generationRef.current
 
   useEffect(() => {
-    const current = planRef.current
+    const current = latestPlan()
     const seq = ++seqRef.current
     let cancelled = false
     const live = () => !cancelled && seq === seqRef.current

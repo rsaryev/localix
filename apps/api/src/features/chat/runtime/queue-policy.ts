@@ -6,15 +6,11 @@ import type { AgentTurnSource } from './conversation-strategy'
  *
  * Bands, in order:
  *
- *   answers owed to the person   (their message's addressed, default and broadcast turns)  < 0
- *   the person's next message                                                            = 0
- *   a colleague chain            (one participant handing the floor to another)          > 0
- *   machine wakes                (loops, jobs, reports, hooks)                           = 10
+ *   answers owed to the person   (their message's turn, and runtime deliveries)  < 0
+ *   the person's next message                                                    = 0
+ *   machine wakes                (loops, jobs, reports, hooks)                   = 10
  *
- * The chain used to sit BELOW the person's message and every dispatch aged it further down, so
- * a message typed during a long handoff chain waited for the whole chain: the person could not
- * interrupt their own conversation. Now a queued message outranks any chain, and aging moves a
- * chain ticket only within its own band.
+ * A queued message outranks any machine wake, so the person can always interrupt.
  */
 export type QueueSource =
   | { kind: 'user' }
@@ -29,25 +25,8 @@ export const QUEUE_PRIORITY = {
 
 /** Each source's priority when its ticket is admitted. */
 const AGENT_TURN_PRIORITY: Readonly<Record<AgentTurnSource, number>> = {
-  'user-address': -8,
   'user-default': -8,
-  // After the addressed participants, still before the person's next message.
-  'user-broadcast': -6,
   runtime: -8,
-  'agent-request': 4,
-}
-
-/**
- * The lowest priority aging may push a ticket to. A chain ticket never crosses into the band of
- * the person's message; the answers owed to the person have no floor among themselves.
- */
-export function agentTurnFloor(source: AgentTurnSource): number {
-  return source === 'agent-request' ? QUEUE_PRIORITY.user + 1 : Number.NEGATIVE_INFINITY
-}
-
-/** One aging step: every dispatch moves a waiting ticket forward, within its band. */
-export function agedPriority(source: AgentTurnSource, priority: number): number {
-  return Math.max(agentTurnFloor(source), priority - 1)
 }
 
 export interface QueuePolicy {

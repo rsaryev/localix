@@ -85,6 +85,7 @@ export function DocConsole({
             completionSource={completionSource}
             onEditorReady={(api) => (editorRef.current = api)}
             placeholder={placeholder}
+            // oxlint-disable-next-line jsx-a11y/no-autofocus -- CodeEditor's own prop: it focuses Monaco once the editor is ready, no DOM autofocus attribute is set
             autoFocus
             ariaLabel="Database command editor"
             className="h-full"

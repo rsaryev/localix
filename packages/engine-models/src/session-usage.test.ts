@@ -106,7 +106,7 @@ describe('the usage of a response cut short', () => {
       },
       { sessionId: 's' },
     ).turn({ systemPrompt: 's', messages: [], tools: [], signal: controller.signal })
-    setTimeout(() => controller.abort(), 20)
+    setTimeout(() => controller.abort(), 0)
     expect((await turn.message).usage).toBeUndefined()
   })
 })

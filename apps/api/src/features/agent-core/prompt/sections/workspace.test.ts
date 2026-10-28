@@ -11,7 +11,7 @@ import type { BuildAgentSystemPromptParams } from '../assemble'
 import { buildCollaborationSection } from './collaboration'
 import { buildCorePrinciples, buildExecutionDiscipline } from './discipline'
 import { buildRoleSection } from './role'
-import { buildMemoryContextSection, buildWorkspaceSection, formatRuntimeContext } from './workspace'
+import { buildWorkspaceSection, formatRuntimeContext } from './workspace'
 
 describe('buildCorePrinciples', () => {
   it('keeps embedded instructions in untrusted content from becoming authority', () => {
@@ -28,15 +28,15 @@ describe('buildCorePrinciples', () => {
 
   it('requires rendered reference comparison for both the parent and its implementer', () => {
     for (const profile of [undefined, SHAPE.subagent]) {
-      const out = buildExecutionDiscipline(['browser', 'read', 'write'], profile)
+      const out = buildExecutionDiscipline(['Browser', 'Read', 'Write'], profile)
       expect(out).toContain('compare the rendered result at the same viewport')
       expect(out).toContain('passing code checks alone does not establish visual acceptance')
     }
-    expect(buildExecutionDiscipline(['read', 'write'])).not.toContain('same viewport')
+    expect(buildExecutionDiscipline(['Read', 'Write'])).not.toContain('same viewport')
   })
 
   it('treats automatic diagnostics as best-effort rather than proof of a clean build', () => {
-    const out = buildExecutionDiscipline(['write', 'edit'])
+    const out = buildExecutionDiscipline(['Write', 'Edit'])
     expect(out).toContain('Diagnostics are BEST-EFFORT')
     expect(out).toContain('No block is not proof of a clean build')
     expect(out).not.toContain('No block means')
@@ -46,12 +46,12 @@ describe('buildCorePrinciples', () => {
 describe('failure diagnosis', () => {
   it('sends a parent and a child holding a shell past the symptom to what changed', () => {
     for (const out of [
-      buildExecutionDiscipline(['bash']),
-      buildExecutionDiscipline(['bash'], SHAPE.subagent),
+      buildExecutionDiscipline(['Bash']),
+      buildExecutionDiscipline(['Bash'], SHAPE.subagent),
     ]) {
       expect(out).toContain('compare with the last passing run and the default branch')
     }
-    expect(buildExecutionDiscipline(['read'])).not.toContain('Diagnose a failure')
+    expect(buildExecutionDiscipline(['Read'])).not.toContain('Diagnose a failure')
   })
 })
 
@@ -80,18 +80,18 @@ describe('buildRoleSection', () => {
     const full = buildRoleSection(SHAPE.orchestrator) ?? ''
     expect(full).toContain('Do focused work directly with the capabilities listed for this run')
     expect(full).toContain('Own the work you take on through to a verified result')
-    // Every agent in a chat runs this shape; only the leader is told it leads.
+    // Every agent in a chat runs this shape.
     expect(full).not.toMatch(/orchestrat/i)
 
-    const readOnly = buildRoleSection(SHAPE.orchestrator, ['read', 'search']) ?? ''
+    const readOnly = buildRoleSection(SHAPE.orchestrator, ['Read', 'Search']) ?? ''
     expect(readOnly).toContain('capabilities listed for this run')
-    expect(readOnly).not.toContain('`edit`')
+    expect(readOnly).not.toContain('`Edit`')
   })
 
   it('never frames the orchestrator around a task board it may not hold', () => {
     // A board is a plugin tool whose own schema carries its workflow. Core prose about one is
     // the defect: a run told to drive a board it could not reach invented KANBAN.md.
-    for (const roster of [undefined, ['read', 'search'], []]) {
+    for (const roster of [undefined, ['Read', 'Search'], []]) {
       const out = buildRoleSection(SHAPE.orchestrator, roster) ?? ''
       expect(out).not.toMatch(/\bboard\b/i)
     }
@@ -150,14 +150,14 @@ describe('buildWorkspaceSection', () => {
   it('tells a sub-agent nothing about a channel to the user', () => {
     const prompt = [
       buildRoleSection(SHAPE.subagent) ?? '',
-      buildExecutionDiscipline(['read', 'bash', 'write'], SHAPE.subagent),
+      buildExecutionDiscipline(['Read', 'Bash', 'Write'], SHAPE.subagent),
       buildWorkspaceSection(root, SHAPE.subagent),
     ].join('\n')
     expect(prompt).not.toMatch(/ask the user|asks the user|the user must/i)
   })
 
   it('describes only workspace operations supported by the final tool roster', () => {
-    const readOnly = buildWorkspaceSection(root, SHAPE.orchestrator, ['read', 'search'])
+    const readOnly = buildWorkspaceSection(root, SHAPE.orchestrator, ['Read', 'Search'])
     expect(readOnly).toContain('base for project inspection')
     expect(readOnly).not.toContain('Create and edit files')
     expect(readOnly).not.toContain('WRITING files or running commands')
@@ -167,7 +167,7 @@ describe('buildWorkspaceSection', () => {
     expect(minimal).not.toContain('Create and edit files')
     expect(minimal).not.toContain('Reading anywhere')
 
-    const bashOnly = buildWorkspaceSection(root, SHAPE.orchestrator, ['bash'])
+    const bashOnly = buildWorkspaceSection(root, SHAPE.orchestrator, ['Bash'])
     expect(bashOnly).toContain('Create and edit files')
     expect(bashOnly).toContain('running commands')
   })
@@ -208,44 +208,44 @@ describe('buildExecutionDiscipline tool-gating (drives prompt size)', () => {
     expect(out).toContain('# Execution discipline')
     expect(out).not.toContain('dedicated file tools')
     // No skill tool → no skill-specific exec line (the self-test guard).
-    expect(out).not.toContain('Never call skill')
+    expect(out).not.toContain('Never call Skill')
     // skill-SAVE guidance is NOT in exec discipline at all — it lives in the skill
     // tool's own schema description (single canonical home), so it never appears here.
     expect(out).not.toContain('save the approach as a skill')
   })
 
   it('includes the file-edit routing + skill guidance only when those tools are registered', () => {
-    const out = buildExecutionDiscipline(['edit', 'skill'])
+    const out = buildExecutionDiscipline(['Edit', 'Skill'])
     // Cross-tool ROUTING only — the exact edit contract lives in the edit schema.
     expect(out).toContain('Prefer the dedicated file tools')
-    expect(out).toContain('`edit` for changes to existing files')
+    expect(out).toContain('`Edit` for changes to existing files')
     // ONE routing line: it used to be stated twice, one line apart.
     expect(out.split('\n').filter((line) => line.includes('dedicated file tools'))).toHaveLength(1)
     expect(out).not.toContain('old_string') // edit's input contract stays in the schema
-    expect(out).toContain('Never call skill')
+    expect(out).toContain('Never call Skill')
     // Even with the skill tool present, the SAVE directive stays out of exec discipline.
     expect(out).not.toContain('save the approach as a skill')
   })
 
   it('gates the background-process line on bash AND jobs together', () => {
-    expect(buildExecutionDiscipline(['bash'])).not.toContain('Manage background processes')
-    expect(buildExecutionDiscipline(['bash', 'jobs'])).toContain('Manage background processes')
+    expect(buildExecutionDiscipline(['Bash'])).not.toContain('Manage background processes')
+    expect(buildExecutionDiscipline(['Bash', 'Jobs'])).toContain('Manage background processes')
   })
 
   it('states one loops rule, matching whether the run holds the loop tool', () => {
     // A run holding the loop tool used to be told recurring work "belongs to the user's /loop".
-    const withLoops = buildExecutionDiscipline(['bash', 'loops'])
-    expect(withLoops).toContain('armed with `loops`')
+    const withLoops = buildExecutionDiscipline(['Bash', 'Loops'])
+    expect(withLoops).toContain('armed with `Loops`')
     expect(withLoops).not.toContain('/loop')
-    expect(buildExecutionDiscipline(['bash'])).toContain('the user starts with `/loop`')
+    expect(buildExecutionDiscipline(['Bash'])).toContain('the user starts with `/loop`')
   })
 
-  it('does not restate per-tool sleep / interactive-PTY / tool_output syntax in exec discipline', () => {
+  it('does not restate per-tool sleep / interactive-PTY / ToolOutput syntax in exec discipline', () => {
     // These moved to their tools' own schema descriptions (single home). Exec
     // discipline keeps only cross-tool behavior. The automation worker still gets the
     // non-interactive guard (avoid TTY-blocking commands), which IS cross-tool.
-    const orch = buildExecutionDiscipline(['bash', 'sleep', 'tool_output'], SHAPE.orchestrator)
-    const auto = buildExecutionDiscipline(['bash'], SHAPE.automation)
+    const orch = buildExecutionDiscipline(['bash', 'sleep', 'ToolOutput'], SHAPE.orchestrator)
+    const auto = buildExecutionDiscipline(['Bash'], SHAPE.automation)
     expect(orch).not.toContain('INTERACTIVE / full-screen terminal programs')
     expect(orch).not.toContain('To WAIT for something to progress')
     expect(orch).not.toContain('[truncated …]')
@@ -255,70 +255,49 @@ describe('buildExecutionDiscipline tool-gating (drives prompt size)', () => {
   it('leaves delegation to # Collaboration and the wait rule to bash `until`', () => {
     // Both have one home each now; execution discipline carries neither.
     expect(buildExecutionDiscipline(['agents', 'conversation_control'])).not.toContain('delegate')
-    expect(buildExecutionDiscipline(['bash', 'jobs'])).not.toContain('until')
+    expect(buildExecutionDiscipline(['Bash', 'Jobs'])).not.toContain('until')
   })
 
   it('lists exactly the present meta-tools in the no-self-test guidance', () => {
-    const out = buildExecutionDiscipline(['memory', 'skill'])
-    expect(out).toContain('Never call memory/skill as a capability demonstration')
+    expect(buildExecutionDiscipline(['Skill'])).toContain(
+      'Never call Skill as a capability demonstration',
+    )
+    expect(buildExecutionDiscipline(['Read'])).not.toContain('capability demonstration')
   })
 
   it('uses the leaner subagent discipline for a subagent profile', () => {
-    const orchestrator = buildExecutionDiscipline(['read', 'edit'], SHAPE.orchestrator)
-    const subagent = buildExecutionDiscipline(['read', 'edit'], SHAPE.subagent)
+    const orchestrator = buildExecutionDiscipline(['Read', 'Edit'], SHAPE.orchestrator)
+    const subagent = buildExecutionDiscipline(['Read', 'Edit'], SHAPE.subagent)
     expect(subagent).not.toBe(orchestrator)
   })
 
   it('keeps minimal, read-only, and bash-only custom profiles executable', () => {
     const minimal = buildExecutionDiscipline(['agents'])
-    expect(minimal).not.toContain('`read`')
-    expect(minimal).not.toContain('`search`')
-    expect(minimal).not.toContain('`write`')
-    expect(minimal).not.toContain('`bash`')
+    expect(minimal).not.toContain('`Read`')
+    expect(minimal).not.toContain('`Search`')
+    expect(minimal).not.toContain('`Write`')
+    expect(minimal).not.toContain('`Bash`')
 
-    const readOnly = buildExecutionDiscipline(['read', 'search'])
-    expect(readOnly).toContain('`read`')
-    expect(readOnly).toContain('`search`')
-    expect(readOnly).not.toContain('`write`')
-    expect(readOnly).not.toContain('`edit`')
-    expect(readOnly).not.toContain('`bash`')
+    const readOnly = buildExecutionDiscipline(['Read', 'Search'])
+    expect(readOnly).toContain('`Read`')
+    expect(readOnly).toContain('`Search`')
+    expect(readOnly).not.toContain('`Write`')
+    expect(readOnly).not.toContain('`Edit`')
+    expect(readOnly).not.toContain('`Bash`')
 
-    const bashOnly = buildExecutionDiscipline(['bash'])
-    expect(bashOnly).toContain('`bash`')
-    expect(bashOnly).not.toContain('`read`')
-    expect(bashOnly).not.toContain('`search`')
-    expect(bashOnly).not.toContain('`write`')
-    expect(bashOnly).not.toContain('`edit`')
+    const bashOnly = buildExecutionDiscipline(['Bash'])
+    expect(bashOnly).toContain('`Bash`')
+    expect(bashOnly).not.toContain('`Read`')
+    expect(bashOnly).not.toContain('`Search`')
+    expect(bashOnly).not.toContain('`Write`')
+    expect(bashOnly).not.toContain('`Edit`')
 
-    const editOnly = buildExecutionDiscipline(['edit'])
-    expect(editOnly).toContain('`edit`')
-    expect(editOnly).not.toContain('`read`')
-    expect(editOnly).not.toContain('`search`')
-    expect(editOnly).not.toContain('`write`')
-    expect(editOnly).not.toContain('`bash`')
-  })
-})
-
-describe('buildMemoryContextSection', () => {
-  it('returns empty string for blank notes (no section)', () => {
-    expect(buildMemoryContextSection('   ')).toBe('')
-  })
-
-  it('wraps notes in the memory-context envelope', () => {
-    const out = buildMemoryContextSection('user prefers dark mode')
-    expect(out).toContain('# Memory context')
-    expect(out).toContain('<memory-context>')
-    expect(out).toContain('user prefers dark mode')
-    expect(out).toContain('</memory-context>')
-  })
-
-  it('adds a usage budget label in the header when usage is given', () => {
-    // The fixture used to say `percent: 50`. MemoryUsage's field is `pct`, so
-    // formatUsage read undefined and the header rendered
-    // "[undefined% — 50/100 chars]" — while the assertion, which only looked for the
-    // "[" prefix, stayed green. Assert the LABEL, which is the thing this test names.
-    const out = buildMemoryContextSection('x: y', { chars: 50, limit: 100, pct: 50 })
-    expect(out).toContain('MEMORY (persistent notes) [50% — 50/100 chars]')
+    const editOnly = buildExecutionDiscipline(['Edit'])
+    expect(editOnly).toContain('`Edit`')
+    expect(editOnly).not.toContain('`Read`')
+    expect(editOnly).not.toContain('`Search`')
+    expect(editOnly).not.toContain('`Write`')
+    expect(editOnly).not.toContain('`Bash`')
   })
 })
 
@@ -339,7 +318,7 @@ describe('buildRoleSection — automation', () => {
   // silently vanished from cron runs; the capability line is now the only derived part.
   it('derives only the capability line from the roster; the unattended rules always ship', () => {
     const full = buildRoleSection(automation) ?? ''
-    const partial = buildRoleSection(automation, ['read']) ?? ''
+    const partial = buildRoleSection(automation, ['Read']) ?? ''
     const none = buildRoleSection(automation, []) ?? ''
     expect(full).toContain('using only the capabilities listed for this run')
     expect(partial).toContain('using only the capabilities listed for this run')
@@ -369,82 +348,48 @@ describe('buildWorkspaceSection — unattended blocker channel', () => {
  */
 describe('buildExecutionDiscipline — the batching rule reaches a read-only roster', () => {
   it('tells a read-only run to batch its reads without naming tools it lacks', () => {
-    const out = buildExecutionDiscipline(['read', 'search'])
+    const out = buildExecutionDiscipline(['Read', 'Search'])
     expect(out).toContain('Batch independent tool calls into ONE turn')
     // No write/bash in this roster — the full bullet's examples must not leak in.
     expect(out).not.toContain('the files you change')
   })
 
   it('still gives the full bullet to a writing roster', () => {
-    const out = buildExecutionDiscipline(['read', 'search', 'write', 'bash'])
+    const out = buildExecutionDiscipline(['Read', 'Search', 'Write', 'Bash'])
     expect(out).toContain('Batch independent tool calls into ONE turn')
-    expect(out).toContain('the files you change into ONE `write` call')
+    expect(out).toContain('the files you change into ONE `Write` call')
   })
 
   it('names only the file tools the roster holds', () => {
-    expect(buildExecutionDiscipline(['read', 'edit'])).toContain(
-      'the files you change into ONE `edit` call',
+    expect(buildExecutionDiscipline(['Read', 'Edit'])).toContain(
+      'the files you change into ONE `Edit` call',
     )
-    expect(buildExecutionDiscipline(['write', 'edit'])).toContain('ONE `write`/`edit` call')
+    expect(buildExecutionDiscipline(['Write', 'Edit'])).toContain('ONE `Write`/`Edit` call')
   })
 
   it('says nothing about batching when the role has no file tools at all', () => {
-    expect(buildExecutionDiscipline(['ask'])).not.toContain('Batch independent')
-  })
-
-  it('sends dependent chains to a `codemode` script, beside batching', () => {
-    const out = buildExecutionDiscipline(['read', 'bash', 'edit', 'write', 'codemode'])
-    expect(out).toContain('Prefer one `codemode` script to a turn per call')
-    expect(out).toContain('return only the failures')
-    expect(out).toContain('file content for `write`/`edit`')
-    expect(out.indexOf('Batch independent')).toBeLessThan(out.indexOf('`codemode` script'))
-  })
-
-  it('gives a delegated child the same `codemode` rule', () => {
-    const child = buildExecutionDiscipline(
-      ['read', 'bash', 'codemode'],
-      resolveRunProfile({ sessionKind: 'subagent' }),
-    )
-    expect(child).toContain('Prefer one `codemode` script')
-  })
-
-  it('names only what a read-only script roster can do, and nothing without `codemode`', () => {
-    const readOnly = buildExecutionDiscipline(['read', 'codemode'])
-    expect(readOnly).toContain('read many files, keep what matters')
-    expect(readOnly).not.toContain('`bash`')
-    expect(readOnly).not.toContain('file content for')
-    expect(buildExecutionDiscipline(['read', 'bash', 'edit'])).not.toContain('codemode')
+    expect(buildExecutionDiscipline(['AskUserQuestion'])).not.toContain('Batch independent')
   })
 })
 
 describe('# Collaboration — one rule for who does the work', () => {
-  it('tells a role with `delegate` how delegating works', () => {
-    const out = buildCollaborationSection(['read', 'search', 'delegate'])!
-    expect(out).toContain('Broad investigation goes to `delegate`')
-    expect(out).toContain('context:"fork"')
+  it('tells a role with `Agent` how subagents work', () => {
+    const out = buildCollaborationSection(['read', 'search', 'Agent'])!
+    expect(out).toContain('Broad investigation goes to a subagent (`Agent`)')
+    expect(out).toContain('use "fork"')
     // `agents` authors specialists; it starts no child work.
     expect(buildCollaborationSection(['read', 'search', 'agents'])).toBeNull()
     expect(out).not.toContain('`agents`')
   })
 
-  it('names only the tools the run holds', () => {
-    const inviteOnly = buildCollaborationSection([], {
-      withColleagues: false,
-      inConversation: true,
-    })!
-    expect(inviteOnly).toContain('@mention it with a concrete assignment')
-    expect(inviteOnly).not.toContain('delegate')
-    expect(inviteOnly).not.toMatch(/\bcards?\b|\bboard\b/i)
-  })
-
   it('renders nothing when there is no one to hand work to', () => {
-    expect(buildCollaborationSection(['read', 'search', 'bash'])).toBeNull()
+    expect(buildCollaborationSection(['Read', 'Search', 'Bash'])).toBeNull()
   })
 
-  it('is the only place that says when to delegate or invite', () => {
+  it('is the only place that says when to delegate', () => {
     // It used to be scattered over nine places; the role line and execution discipline were
     // two of them.
-    const roster = ['read', 'delegate', 'set_topic']
+    const roster = ['read', 'delegate']
     expect(buildExecutionDiscipline(roster)).not.toMatch(/delegate|invite/)
     expect(buildRoleSection(SHAPE.orchestrator, roster) ?? '').not.toMatch(
       /delegate|invite|durable work/,

@@ -22,7 +22,7 @@ import { WORKSPACE, type CallCase } from './core-call-cases'
 import { expectedDecision, modeSurface, type ModeSurface } from './run-surface'
 
 export interface PresetUnderTest {
-  handle: string
+  name: string
   rules: readonly Rule[]
   /** The preset's closed list, stated from its definition — not read back from the rules. */
   onRoster(tool: string): boolean
@@ -80,7 +80,7 @@ async function cellFinding(
   call: CallCase,
   tool: AgentTool,
 ): Promise<string | null> {
-  const where = `${preset.handle}/${surface.mode} ${call.tool} (${call.label})`
+  const where = `${preset.name}/${surface.mode} ${call.tool} (${call.label})`
   const expected = !preset.onRoster(call.tool)
     ? 'removed'
     : (preset.expected?.(surface.mode, call) ?? expectedDecision(surface.mode, true, call))

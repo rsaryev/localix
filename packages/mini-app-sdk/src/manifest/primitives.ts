@@ -35,7 +35,7 @@ export const MINI_APP_API_VERSION = 1
 export const MINI_APP_SURFACE_AGENT = 'agent'
 export const MINI_APP_SURFACE_WORKBENCH = 'workbench'
 
-/** Broad launcher groups. A mini app declares one primary category; older manifests use Other. */
+/** Broad launcher groups. A mini app declares at most one primary category. */
 export const MINI_APP_CATEGORIES = ['development', 'data', 'content', 'utilities', 'games'] as const
 export type MiniAppCategory = (typeof MINI_APP_CATEGORIES)[number]
 
@@ -48,8 +48,7 @@ export type MiniAppConfigType = (typeof MINI_APP_CONFIG_TYPES)[number]
 
 /**
  * Normalize a manifest's declared surfaces: trimmed, lower-cased, de-duped;
- * absent/empty → `['agent']` (the default surface, so every legacy manifest keeps
- * behaving as an agent mini app). Pure.
+ * absent/empty → `['agent']`, the default surface. Pure.
  */
 export function normalizeMiniAppSurfaces(declared?: readonly string[] | null): string[] {
   const seen = new Set<string>()

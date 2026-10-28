@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 import type { CatalogModel } from '@localixai/agent/catalog'
 import type { ModelRoutingTaskKey } from '@localixai/api/client'
 import { reasoningOnModel } from '../../../model/modelReasoning'
@@ -22,19 +22,17 @@ type ReasoningModel = Pick<
 
 interface UseRowReasoningArgs {
   taskKey: PickerTarget
-  /** The route the picker is pointed at: a participant's seat, or a workload's slot. */
+  /** The route the picker is pointed at: the conversation's agent, or a workload's slot. */
   currentSlot: ModelRoutingSlot
-  /** The conversation's level — the target's own level only where there is no party to ask. */
+  /** The conversation's level — the target's own level only where there is no agent to ask. */
   reasoningEffort: ReasoningEffort | undefined
-  /** Present when a party answers for its members; absent in the agent editor and onboarding. */
-  hasParty: boolean
+  /** Present when a conversation's agent answers; absent in the agent editor and onboarding. */
+  hasAgent: boolean
   /** The per provider/model memory of this target, as stored in user settings. */
   storedPreferences: unknown
   memoryIo: ModelReasoningMemoryIo
   onReasoningEffortChange?: (effort: ReasoningEffort, agentId?: string) => void
-  /** The whole room's level, when the "All agents" row shares one model. */
-  onPartyReasoningChange?: (effort: ReasoningEffort) => void
-  /** Write a workload's own level; a participant's goes through `onReasoningEffortChange`. */
+  /** Write a workload's own level; the agent's goes through `onReasoningEffortChange`. */
   setRouteReasoningEffort: (
     key: Exclude<ModelRoutingTaskKey, 'session'>,
     effort: ReasoningEffort,
@@ -45,7 +43,7 @@ interface UseRowReasoningArgs {
  * EVERYTHING THE PICKER SAYS AND WRITES ABOUT REASONING, in one place.
  *
  * Two rules, no inheritance:
- *   - The model the target runs on shows the target's own level (the seat or the workload slot).
+ *   - The model the target runs on shows the target's own level (the agent or the workload slot).
  *   - Any other model shows the level it would START at if picked: the level last chosen for it
  *     by this target, else the model's default (`initialModelReasoning`).
  *
@@ -56,28 +54,21 @@ export function useRowReasoning({
   taskKey,
   currentSlot,
   reasoningEffort,
-  hasParty,
+  hasAgent,
   storedPreferences,
   memoryIo,
   onReasoningEffortChange,
-  onPartyReasoningChange,
   setRouteReasoningEffort,
 }: UseRowReasoningArgs) {
-  const isParty = taskKey === 'party'
-  // The room has no memory of its own: a level set on a model before picking it for everyone is
-  // held here until the pick, which then records it for each member.
-  const [partyDraft, setPartyDraft] = useState<
-    { providerId: string; modelId: string; effort: ReasoningEffort }[]
-  >([])
   const preferences = useMemo(
-    () => normalizeModelReasoningPreferences(isParty ? partyDraft : storedPreferences),
-    [isParty, partyDraft, storedPreferences],
+    () => normalizeModelReasoningPreferences(storedPreferences),
+    [storedPreferences],
   )
 
-  /** The level the target holds right now; the flat prop only where no party can answer. */
+  /** The level the target holds right now; the flat prop only where no agent can answer. */
   const targetEffort =
     (currentSlot?.reasoningEffort as ReasoningEffort | undefined) ??
-    ((isAgentTarget(taskKey) && hasParty) || isParty ? undefined : reasoningEffort)
+    (isAgentTarget(taskKey) && hasAgent ? undefined : reasoningEffort)
 
   const reasoningFor = useCallback(
     (model: ReasoningModel, current: boolean): ReasoningEffort => {
@@ -91,17 +82,6 @@ export function useRowReasoning({
     (model: ReasoningModel, effort: ReasoningEffort, current: boolean) => {
       const agentId = targetAgentId(taskKey)
       const entry = { providerId: model.providerId, modelId: model.id, effort }
-      if (isParty) {
-        if (current) onPartyReasoningChange?.(effort)
-        else
-          setPartyDraft((draft) => [
-            ...draft.filter(
-              (row) => row.providerId !== model.providerId || row.modelId !== model.id,
-            ),
-            entry,
-          ])
-        return
-      }
       if (agentId) rememberAgentModelSettings(memoryIo, { agentId, ...entry })
       else rememberModelReasoning(memoryIo, reasoningMemoryKey(taskKey), entry)
       if (!current) return
@@ -109,14 +89,7 @@ export function useRowReasoning({
       else if (taskKey === 'session') onReasoningEffortChange?.(effort)
       else setRouteReasoningEffort(taskKey as Exclude<ModelRoutingTaskKey, 'session'>, effort)
     },
-    [
-      isParty,
-      memoryIo,
-      onPartyReasoningChange,
-      onReasoningEffortChange,
-      setRouteReasoningEffort,
-      taskKey,
-    ],
+    [memoryIo, onReasoningEffortChange, setRouteReasoningEffort, taskKey],
   )
 
   return { reasoningFor, changeModelReasoning }

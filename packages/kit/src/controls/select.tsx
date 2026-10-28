@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useState, type ComponentPropsWithoutRef } from 'react'
+import { forwardRef, useEffect, useId, useState, type ComponentPropsWithoutRef } from 'react'
 import { ChevronDown, type LucideIcon } from 'lucide-react'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import {
@@ -68,6 +68,7 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
   const selected = options.find((option) => option.value === value)
   const SelectedIcon = selected?.icon
   const [open, setOpen] = useState(false)
+  const listboxId = useId()
   const [typeahead] = useState(() => createTypeaheadBuffer({ timeoutMs: 1_000 }))
 
   useEffect(() => {
@@ -95,9 +96,12 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
           type="button"
           role="combobox"
           aria-haspopup="listbox"
+          aria-expanded={open}
+          aria-controls={open ? listboxId : undefined}
           aria-autocomplete="none"
           {...controlProps}
           data-slot="select-trigger"
+          data-size={size}
           className={cn(choiceTriggerVariants({ size, placeholder: !selected }), className)}
           onKeyDown={(event) => {
             if (event.altKey || event.ctrlKey || event.metaKey) return
@@ -126,6 +130,7 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
+        id={listboxId}
         role="listbox"
         align={align}
         aria-orientation="vertical"

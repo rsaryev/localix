@@ -1,6 +1,11 @@
-import { describe, expect, test } from 'bun:test'
+import { afterEach, describe, expect, test } from 'bun:test'
 
 import { MAX_EVAL_CHARS, serializeEvalResult, compileEvalExpression } from './evaluate'
+
+// The snippet below writes onto the shared global.
+afterEach(() => {
+  delete (globalThis as Record<string, unknown>).__vfEvalX
+})
 
 describe('serializeEvalResult', () => {
   test('passes strings through', () => {

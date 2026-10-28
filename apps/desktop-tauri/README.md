@@ -49,8 +49,8 @@ file associations.
 - Configured bundle targets and file associations describe packaging inputs, not evidence that a
   signed public artifact exists for every target.
 - The command capability applies to trusted workspace webviews (`main` and generated `workspace-*`
-  labels) and the dedicated `companion` webview. Browser-hosted UI sessions do not receive this
-  native bridge, and the UI must tolerate missing commands.
+  labels). Browser-hosted UI sessions do not receive this native bridge, and the UI must tolerate
+  missing commands.
 - Local builds require Bun plus the native Rust toolchain and platform prerequisites. The
   `tauri:check` script deliberately exits successfully after a visible skip when Rust or Clippy is
   unavailable.
@@ -58,15 +58,12 @@ file associations.
 ## Capabilities
 
 [`src-tauri/capabilities/default.json`](./src-tauri/capabilities/default.json) is the entire plugin
-IPC surface: trusted workspace webviews use `main` or generated `workspace-*` labels; the trusted
-`companion` webview hosts the top-edge agent island outside the workspace/tab registry. Its
-lifecycle, layout and session-handoff commands validate the calling webview; the global shortcut is
-registered in Rust without granting JavaScript shortcut permissions. Browser children use distinct
-`browser-*` labels and receive no capability. `app.security.capabilities` names only this file, and
-`build.removeUnusedCommands` strips every plugin command no permission here admits. That matters
-more than usual because `withGlobalTauri` publishes `window.__TAURI__` to the document, and the
-content-security policy lets a plugin panel iframe load libraries from four public CDNs — so a
-granted permission is a permission reachable by code the app did not write.
+IPC surface: trusted workspace webviews use `main` or generated `workspace-*` labels. Browser
+children use distinct `browser-*` labels and receive no capability. `app.security.capabilities`
+names only this file, and `build.removeUnusedCommands` strips every plugin command no permission
+here admits. That matters more than usual because `withGlobalTauri` publishes `window.__TAURI__` to
+the document, and the content-security policy lets a plugin panel iframe load libraries from four
+public CDNs — so a granted permission is a permission reachable by code the app did not write.
 
 Two rules decide what belongs here, and only the second is obvious:
 

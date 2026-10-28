@@ -25,7 +25,7 @@ const user = (text: string): Message => ({ role: 'user', content: text, timestam
 const call = (id: string, path: string): ToolCall => ({
   type: 'tool_call',
   id,
-  name: 'read',
+  name: 'Read',
   arguments: { path },
 })
 const calls = (...tcs: ToolCall[]): Message => ({
@@ -36,7 +36,7 @@ const calls = (...tcs: ToolCall[]): Message => ({
 })
 const result = (toolCallId: string, content: ToolResult['content']): Message => ({
   role: 'tool',
-  results: [{ type: 'tool_result', toolCallId, toolName: 'read', content }],
+  results: [{ type: 'tool_result', toolCallId, toolName: 'Read', content }],
   timestamp: 0,
 })
 

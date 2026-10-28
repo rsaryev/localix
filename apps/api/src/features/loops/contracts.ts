@@ -54,7 +54,7 @@ export interface SessionLoop {
   id: string
   userId: string
   sessionId: string
-  /** The participant that armed it — the one its fires are addressed to. Absent for a person's. */
+  /** The agent that armed it — the one its fires are addressed to. Absent for a person's. */
   ownerAgentId?: string
   kind: LoopKind
   /** Fixed loops only: the 5-field cron cadence. `null` for dynamic loops. */
@@ -89,10 +89,10 @@ export interface SessionLoop {
   /** Total fires so far. */
   runCount: number
   /**
-   * ISO time the engine holds this occurrence until because the addressed participant's provider
+   * ISO time the engine holds this occurrence until because the addressed agent's provider
    * route is exhausted — the trigger's own persisted `rate-limited` hold, not a guess from a
    * cooldown. Read off the hold because the gate is what decides whose route a fire takes: a
-   * read of the session's cooldowns would claim a hold for a participant whose own route is
+   * read of the session's cooldowns would claim a hold for an agent whose own route is
    * fine, and for an occurrence not yet due (a hold is per occurrence — the gate runs only once
    * it is). It also survives a restart with the hold itself. Absent when nothing holds it.
    */

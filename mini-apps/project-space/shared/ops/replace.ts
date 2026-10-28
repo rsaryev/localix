@@ -30,7 +30,8 @@ export function replaceOps(
     if (!spec?.textProp || spec.fromText || spec.claims || element.locked) continue
     const read = registry.read(element.type, element.props, space.typeVersions[element.type])
     if (read.status !== 'ok') continue
-    const next = swap(String(read.props[spec.textProp] ?? ''))
+    const current = read.props[spec.textProp]
+    const next = swap(typeof current === 'string' ? current : '')
     if (next !== null) ops.push({ op: 'update', id, props: { [spec.textProp]: next } })
   }
   for (const [id, edge] of Object.entries(space.edges)) {

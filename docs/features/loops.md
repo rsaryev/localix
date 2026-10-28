@@ -1,7 +1,7 @@
 # Repeat work on a schedule
 
 A loop runs one task again and again in a session: every weekday at nine, every five minutes, or at
-a pace the agent sets after each run. The agent creates it with the `loops` tool, or you ask for one
+a pace the agent sets after each run. The agent creates it with the `Loops` tool, or you ask for one
 with `/loop`. Loops are stored in the database and survive an API restart.
 
 ## Terminology
@@ -11,17 +11,17 @@ with `/loop`. Loops are stored in the database and survive an API restart.
 | Fixed loop   | Fires on a 5-field cron, read in the time zone it was created in.                     | A slot the session cannot take is skipped, not replayed later.            |
 | Dynamic loop | Fires after a delay the agent chooses each time with `reschedule` (60–3,600 s).       | It keeps firing at its last delay until it is removed.                    |
 | Target       | `session` runs the task in this conversation; `subsession` in a fresh child.          | Only a fixed loop can use `subsession`: a child cannot reschedule itself. |
-| Owner        | The participant that created the loop. Its fires are addressed to that agent.         | If the owner has left the conversation, the conversation chooses.         |
+| Owner        | The agent that created the loop. Its fires are addressed to that agent.               | A fire runs in the session that created the loop.                         |
 | Hold         | A dynamic fire waiting because the session is busy or its owner's route is exhausted. | The hold is stored; fixed loops skip those occurrences.                   |
 
 ## What you can do
 
 | Need                  | Mechanism                                                                  | Boundary                                                               |
 | --------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| Start one             | `/loop <task>`, or ask the agent; it calls `loops` with `action="add"`.    | The same task, cadence and target is one job; a repeat add returns it. |
-| See what is scheduled | The composer strip lists cadence, next run, run count and the last result. | The agent sees the same list through `loops` with `action="list"`.     |
-| Run one now           | The strip's Run button, or `loops` with `action="run"`.                    | An extra run: it does not use up a fixed loop's next slot.             |
-| Cancel one            | The strip's Cancel button, or `loops` with `action="remove"`.              | Removes the schedule; session-target runs have scoped cancellation.    |
+| Start one             | `/loop <task>`, or ask the agent; it calls `Loops` with `action="add"`.    | The same task, cadence and target is one job; a repeat add returns it. |
+| See what is scheduled | The composer strip lists cadence, next run, run count and the last result. | The agent sees the same list through `Loops` with `action="list"`.     |
+| Run one now           | The strip's Run button, or `Loops` with `action="run"`.                    | An extra run: it does not use up a fixed loop's next slot.             |
+| Cancel one            | The strip's Cancel button, or `Loops` with `action="remove"`.              | Removes the schedule; session-target runs have scoped cancellation.    |
 
 ## How a loop behaves
 
@@ -37,11 +37,9 @@ agent. It does not use the parent-session busy or quota gate described here; the
 ordinary provider and runtime limits.
 
 A quota is tracked per provider route — the provider connection and the model on it — not per
-conversation. When a run fails because a provider reports a rate limit, fires addressed to a
-participant on that route wait until the cooldown ends, while participants on other routes keep
-firing. A temporary rate limit holds that one model; an exhausted plan or credit balance holds every
-model on that connection. A loop whose owner has left waits only while every participant's route is
-exhausted, because the conversation may choose any of them. The strip shows the time the hold ends.
+conversation. When a run fails because a provider reports a rate limit, fires on that route wait
+until the cooldown ends. A temporary rate limit holds that one model; an exhausted plan or credit
+balance holds every model on that connection. The strip shows the time the hold ends.
 
 These holds apply to dynamic session-target loops. Fixed session-target loops skip the affected
 occurrence and try their next cron slot, rather than replaying it after the cooldown.

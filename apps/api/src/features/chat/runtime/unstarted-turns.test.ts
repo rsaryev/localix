@@ -12,7 +12,6 @@ const start = (id: string): PendingTurnStart => ({
   assistantMessageId: id,
   userId: 'u',
   sessionId: 's',
-  agentId: 'a1',
   createdAt: '2026-10-21T10:00:00.000Z',
 })
 
@@ -104,7 +103,6 @@ describe('the acknowledgement records the slot', () => {
       .addColumn('assistant_message_id', 'text', (c) => c.primaryKey())
       .addColumn('user_id', 'text', (c) => c.notNull())
       .addColumn('session_id', 'text', (c) => c.notNull())
-      .addColumn('agent_id', 'text', (c) => c.notNull())
       .addColumn('created_at', 'text', (c) => c.notNull())
       .execute()
     await db.schema
@@ -128,9 +126,7 @@ describe('the acknowledgement records the slot', () => {
     })
     const at = '2026-10-21T10:00:00.000Z'
     expect(await store.claim('u', 's', ['t1'], 'o', at, '2026-10-21T10:01:00.000Z')).toBeTrue()
-    expect(
-      await store.ack('u', 's', ['t1'], 'o', { assistantMessageId: 'm1', agentId: 'a1', at }),
-    ).toBeTrue()
+    expect(await store.ack('u', 's', ['t1'], 'o', { assistantMessageId: 'm1', at })).toBeTrue()
     const slots = () => db.selectFrom('agent_turn_starts').select('assistant_message_id').execute()
     expect(await slots()).toEqual([{ assistant_message_id: 'm1' }])
     await store.turnStarted!('m1')

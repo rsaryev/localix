@@ -21,10 +21,10 @@ describe('projectMessageItems', () => {
     id: 'finish',
     toolCallId: 'finish',
     type: 'tool_call',
-    name: 'set_topic',
-    activeVerb: 'Saving the topic',
+    name: 'ToolSearch',
+    activeVerb: 'Searching',
     status: 'completed',
-    input: { title: 'T', goal: 'G', previous_topic_summary: 'None.' },
+    input: {},
     presentation: { transcript: 'hidden' },
   }
 
@@ -33,7 +33,7 @@ describe('projectMessageItems', () => {
       ...control,
       id: 'task',
       toolCallId: 'task',
-      name: 'write',
+      name: 'Write',
       presentation: undefined,
       input: { path: 'game.ts', content: 'export {}' },
     }

@@ -1,4 +1,4 @@
-import { DEFAULT_AGENT_PARTICIPANT } from '../../../../db'
+import { DEFAULT_AGENT_AUTHOR } from '../../../../db'
 import { describe, expect, test } from 'bun:test'
 import type { AssistantMessage } from '@localixai/agent'
 import { toModelMessages } from '@localixai/agent/agents/chat'
@@ -6,8 +6,11 @@ import { toModelMessages } from '@localixai/agent/agents/chat'
 import {
   applyAssistantDelta,
   captureCompletedTurnCheckpoint,
+  handleAgentEvent,
   scanAssistantContent,
+  type TurnEventContext,
 } from './event-handlers'
+import { noteChildStreaming, watchFirstSign } from '../../../agent-core/delegation-first-sign'
 import { createRunTurnState } from './turn-state'
 import { emptyAssistantPayload } from '../message-envelope'
 import { emptySessionTiming } from '../../session-timing'
@@ -24,7 +27,7 @@ describe('scanAssistantContent', () => {
       timestamp: 1,
       content: [
         { type: 'text', text: 'A', textSignature: 'text-sig' },
-        { type: 'tool_call', id: 'c1', name: 'read', arguments: {}, thoughtSignature: 'tool-sig' },
+        { type: 'tool_call', id: 'c1', name: 'Read', arguments: {}, thoughtSignature: 'tool-sig' },
         { type: 'text', text: 'B' },
       ],
     }
@@ -66,7 +69,7 @@ describe('applyAssistantDelta', () => {
 
   test('folds cumulative output from fixed-size delta frames without a message rescan contract', () => {
     const state = createRunTurnState({
-      payload: emptyAssistantPayload('a1', DEFAULT_AGENT_PARTICIPANT),
+      payload: emptyAssistantPayload('a1', DEFAULT_AGENT_AUTHOR),
       assistantCreatedAt: '2026-07-22T00:00:00.000Z',
       baseSessionTiming: emptySessionTiming(),
     })
@@ -93,7 +96,7 @@ describe('applyAssistantDelta', () => {
 
   test('preserves progressive tool calls and provider metadata one part at a time', () => {
     const state = createRunTurnState({
-      payload: emptyAssistantPayload('a1', DEFAULT_AGENT_PARTICIPANT),
+      payload: emptyAssistantPayload('a1', DEFAULT_AGENT_AUTHOR),
       assistantCreatedAt: '2026-07-22T00:00:00.000Z',
       baseSessionTiming: emptySessionTiming(),
     })
@@ -118,7 +121,7 @@ describe('applyAssistantDelta', () => {
         contentIndex: 1,
         delta: '"src/a.ts"',
         id: 'call-1',
-        name: 'read',
+        name: 'Read',
         input: { path: 'src/a.ts' },
         origin,
         thoughtSignature: 'tool-sig',
@@ -145,7 +148,7 @@ describe('applyAssistantDelta', () => {
 
   test('keeps the provider-bound reasoning level on stored items, so the next run replays it', () => {
     const state = createRunTurnState({
-      payload: emptyAssistantPayload('a1', DEFAULT_AGENT_PARTICIPANT),
+      payload: emptyAssistantPayload('a1', DEFAULT_AGENT_AUTHOR),
       assistantCreatedAt: '2026-07-22T00:00:00.000Z',
       baseSessionTiming: emptySessionTiming(),
     })
@@ -182,7 +185,7 @@ describe('applyAssistantDelta', () => {
 
   test('streams a paragraph break between two adjacent text parts that are separate messages', () => {
     const state = createRunTurnState({
-      payload: emptyAssistantPayload('a1', DEFAULT_AGENT_PARTICIPANT),
+      payload: emptyAssistantPayload('a1', DEFAULT_AGENT_AUTHOR),
       assistantCreatedAt: '2026-07-22T00:00:00.000Z',
       baseSessionTiming: emptySessionTiming(),
     })
@@ -200,7 +203,7 @@ describe('applyAssistantDelta', () => {
 
   test('streams the same paragraph break a reasoning part puts between two text parts', () => {
     const state = createRunTurnState({
-      payload: emptyAssistantPayload('a1', DEFAULT_AGENT_PARTICIPANT),
+      payload: emptyAssistantPayload('a1', DEFAULT_AGENT_AUTHOR),
       assistantCreatedAt: '2026-07-22T00:00:00.000Z',
       baseSessionTiming: emptySessionTiming(),
     })
@@ -220,7 +223,7 @@ describe('applyAssistantDelta', () => {
 
   test('keeps earlier public text when an conversation_control follow-up turn emits whitespace', () => {
     const state = createRunTurnState({
-      payload: emptyAssistantPayload('a1', DEFAULT_AGENT_PARTICIPANT),
+      payload: emptyAssistantPayload('a1', DEFAULT_AGENT_AUTHOR),
       assistantCreatedAt: '2026-07-22T00:00:00.000Z',
       baseSessionTiming: emptySessionTiming(),
     })
@@ -275,7 +278,7 @@ describe('captureCompletedTurnCheckpoint', () => {
 
   test('captures the payload only after a successful, fully-settled turn', () => {
     const state = createRunTurnState({
-      payload: emptyAssistantPayload('a1', DEFAULT_AGENT_PARTICIPANT),
+      payload: emptyAssistantPayload('a1', DEFAULT_AGENT_AUTHOR),
       assistantCreatedAt: '2026-07-22T00:00:00.000Z',
       baseSessionTiming: emptySessionTiming(),
     })
@@ -284,7 +287,7 @@ describe('captureCompletedTurnCheckpoint', () => {
       items: [
         buildToolItem({
           toolCallId: 'tool-1',
-          name: 'read',
+          name: 'Read',
           input: { path: 'src/a.ts' },
           status: 'completed',
           resultText: 'file contents',
@@ -312,7 +315,7 @@ describe('captureCompletedTurnCheckpoint', () => {
 
   test('an error turn cannot overwrite the last good checkpoint', () => {
     const state = createRunTurnState({
-      payload: emptyAssistantPayload('a1', DEFAULT_AGENT_PARTICIPANT),
+      payload: emptyAssistantPayload('a1', DEFAULT_AGENT_AUTHOR),
       assistantCreatedAt: '2026-07-22T00:00:00.000Z',
       baseSessionTiming: emptySessionTiming(),
     })
@@ -324,5 +327,49 @@ describe('captureCompletedTurnCheckpoint', () => {
 
     expect(state.completedTurnCheckpoint?.payload.content).toBe('completed prefix')
     expect(state.completedToolTurnIndex).toBeUndefined()
+  })
+})
+
+describe('a child that streams is seen by the call that launched it', () => {
+  const origin = { api: 'openai-responses', provider: 'openai', model: 'gpt-test' }
+
+  function ctxOf(sessionId: string): TurnEventContext {
+    const state = createRunTurnState({
+      payload: emptyAssistantPayload('a1', DEFAULT_AGENT_AUTHOR),
+      assistantCreatedAt: '2026-07-22T00:00:00.000Z',
+      baseSessionTiming: emptySessionTiming(),
+    })
+    return {
+      session: { id: sessionId },
+      userId: 'u',
+      assistantMessageId: 'a1',
+      state,
+      acc: createItemAccumulator(() => 'Running'),
+      env: {
+        now: () => '2026-07-22T00:00:00.000Z',
+        persistAndPublish: async () => {},
+        publishMessageSnapshot: () => {},
+        deps: { streamRegistry: { publish: () => {} } },
+      },
+    } as unknown as TurnEventContext
+  }
+
+  test('its first streamed output ends the watch; a turn that has only begun does not', async () => {
+    const watch = watchFirstSign('child-1')
+    let seen = false
+    void watch.seen.then(() => void (seen = true))
+
+    await handleAgentEvent(ctxOf('child-1'), { type: 'turn_start', turnIndex: 0 } as never)
+    await Promise.resolve()
+    expect(seen).toBe(false)
+
+    await handleAgentEvent(ctxOf('child-1'), {
+      type: 'message_update',
+      delta: { kind: 'text', delta: 'Looking', contentIndex: 0, origin },
+    } as never)
+    await watch.seen
+    expect(seen).toBe(true)
+    // Idempotent for a child nobody watches any more.
+    noteChildStreaming('child-1')
   })
 })

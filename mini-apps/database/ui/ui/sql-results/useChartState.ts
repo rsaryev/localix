@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import {
   isNumericType,
   defaultChartSpec,
@@ -16,11 +16,13 @@ export function useChartState() {
   const [chartKind, setChartKind] = useState<ChartKind>('bar')
   const [xCol, setXCol] = useState('')
   const [yCol, setYCol] = useState('')
-  const chartRef = useRef<HTMLDivElement>(null)
+  // The chart's host element, held as state through a callback ref: the hook's result is read
+  // during render, so it must not carry a ref object.
+  const [chartEl, setChartEl] = useState<HTMLDivElement | null>(null)
   // Resolves, never rejects: the caller is a button, and a canvas that refuses to encode used to
   // surface as an unhandled rejection — a click that did nothing.
   const downloadChart = async () => {
-    const svg = chartRef.current?.querySelector('svg')
+    const svg = chartEl?.querySelector('svg')
     if (!svg) return
     try {
       await downloadChartPng(svg as SVGSVGElement, 'chart')
@@ -39,7 +41,7 @@ export function useChartState() {
     setXCol,
     yCol,
     setYCol,
-    chartRef,
+    setChartEl,
     downloadChart,
   }
 }

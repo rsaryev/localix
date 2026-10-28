@@ -16,12 +16,10 @@ export function kindLabel(key: string): string {
 }
 
 /**
- * A participant's name in the ledger: the handle its seat recorded, else the bare id.
- * The handle is what a room addresses a member by, so it is what the reader recognises;
- * the id is the fallback for a member seated before handles were kept, or deleted since.
+ * An agent's name in the ledger: its name, else the bare id (an agent deleted since).
  */
-export function agentLabel(agent: { id: string; handle: string | null }): string {
-  return agent.handle ? `@${agent.handle}` : agent.id.replace(/^builtin:/, '')
+export function agentLabel(agent: { id: string; name: string | null }): string {
+  return agent.name ? agent.name : agent.id.replace(/^builtin:/, '')
 }
 
 /** Just the provider segment (e.g. "openrouter"). */

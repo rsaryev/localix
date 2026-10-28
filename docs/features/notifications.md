@@ -66,9 +66,9 @@ A logical run reports once after retries and continuations finish. Successful to
 when no later turns remain queued; nested chats do not add the same completion entry. **Continue**
 appears only when the failure's recovery supports it; it picks the reply up where it stopped, as the
 row above the composer does
-([A reply that did not finish](conversations.md#a-reply-that-did-not-finish)). Authentication and
-rate-limit failures owned by a provider connection update its standing problem instead of adding a
-duplicate run-failure entry.
+([A reply that did not finish](sessions-and-projects.md#when-a-reply-does-not-finish)).
+Authentication and rate-limit failures owned by a provider connection update its standing problem
+instead of adding a duplicate run-failure entry.
 
 Some facts are deliberately not entries: a slash command's reply, a shell you opened yourself
 exiting, and every answer to your own action that is not a failure (a rename in the file tree, a
@@ -103,8 +103,8 @@ A provider connection that rate-limits you, runs out of its plan, or refuses its
 entry for that connection, whichever chat hit it; the next run that completes on it settles the
 entry. A set of mini apps that fails to load for a workspace is one entry too, settled by the next
 load that works; its **Open mini apps** action opens the Store (Mini apps). A plugin that fails to
-load is its own entry, which opens the Store (Plugins). A question a participant asked you settles
-once you write in that conversation.
+load is its own entry, which opens the Store (Plugins). A question an agent asked you settles once
+you write in that conversation.
 
 ### Entries from mini apps
 

@@ -16,8 +16,7 @@ import type { ContextCheckpoint } from '@localixai/agent'
 import { TOOL } from '../../../../agent-core/tool-names'
 import { createModelContextRepository } from '../../../model-context-repository'
 import { noteNextSessionStartSource } from '../../agent-runner-lifecycle'
-import { participantAudienceFor } from '../../history/stages/participant-audience'
-import type { ModelView } from '../../model-view/view'
+import type { ManualCompaction, ModelView } from '../../model-view/view'
 import { prefixedWarnLogger } from '../../plugin-hook-logger'
 import { buildHistoryRun } from '../history-run-factory'
 import { startAgentRunRecord } from '../run-record'
@@ -38,7 +37,7 @@ export async function materializeRunHistory(
   view: ModelView,
   defaultCwd: string,
 ) {
-  const { env, userId, session, speakerAgentId } = frame
+  const { env, userId, session, agentId } = frame
   const { deps, state: runtimeState, now } = env
   const { providerId, rawModelId, credentialId } = turn.model
 
@@ -47,7 +46,7 @@ export async function materializeRunHistory(
     runtime: deps.agentRuntime,
     userId,
     sessionId: session.id,
-    agentId: speakerAgentId,
+    agentId,
     providerId,
     modelId: rawModelId,
     credentialId,
@@ -73,18 +72,13 @@ export async function materializeRunHistory(
         systemPromptHash: prompt.fixedContext.systemPromptHash,
         toolSchemaHash: prompt.fixedContext.toolSchemaHash,
       },
-      // History is read from THIS participant's view, gated to the roster on the wire.
-      participantAudience: participantAudienceFor(
-        session,
-        toolset.runtimeTools.toolNames,
-        speakerAgentId,
-      ),
+      // History is gated to the tools on the wire.
+      availableTools: new Set(toolset.runtimeTools.toolNames),
       view,
       ...(frame.fork
         ? { fork: { toolCallId: frame.fork.toolCallId, first: frame.fork.first } }
         : {}),
-      recallToolAvailable: toolset.runtimeTools.toolNames.includes(TOOL.global_search),
-      memoryToolAvailable: toolset.runtimeTools.toolNames.includes(TOOL.memory),
+      recallToolAvailable: toolset.runtimeTools.toolNames.includes(TOOL.GlobalSearch),
       state: frame.stores.context,
       ...(runtimeState.tokenCalibration.has(calibrationKey)
         ? { calibration: runtimeState.tokenCalibration.get(calibrationKey) }
@@ -110,7 +104,7 @@ export async function materializeRunHistory(
       now: now(),
     })
   }
-  if (checkpoint) announceCheckpoint(frame, checkpoint, view.preCompactRan === true)
+  if (checkpoint) announceCheckpoint(frame, checkpoint, view.preCompactRan === true, view.manual)
 
   // Final pre-token phase: the model is now being called (prefill/TTFT wait).
   frame.publishPhase('thinking')
@@ -144,21 +138,23 @@ export function announceCheckpoint(
   frame: RunFrame,
   checkpoint: ContextCheckpoint,
   preCompactRan = false,
+  manual?: ManualCompaction,
 ): void {
-  const { env, userId, session, speakerAgentId } = frame
+  const { env, userId, session, agentId } = frame
   if (checkpoint.evictedThroughId) {
     env.deps.streamRegistry.publish(userId, session.id, {
       type: 'session_model_view.updated',
       sessionId: session.id,
-      modelView: { agentId: speakerAgentId, evictedThroughId: checkpoint.evictedThroughId },
+      modelView: { agentId, evictedThroughId: checkpoint.evictedThroughId },
     })
   }
   const hooks = frame.teardown.ccHooks
   if (hooks?.active) {
     // PostCompact follows once PreCompact is done, with the cards as the compaction's summary.
     const summary = checkpoint.cards.map((card) => card.text).join('\n\n')
-    void (preCompactRan ? Promise.resolve() : hooks.runPreCompact('auto'))
-      .then(() => hooks.runPostCompact('auto', summary))
+    const trigger = manual ? 'manual' : 'auto'
+    void (preCompactRan ? Promise.resolve() : hooks.runPreCompact(trigger, manual?.instructions))
+      .then(() => hooks.runPostCompact(trigger, summary))
       .catch((error: unknown) => console.warn('[checkpoint] compaction hooks failed', error))
   }
   noteNextSessionStartSource(env.state, session.id, 'compact')

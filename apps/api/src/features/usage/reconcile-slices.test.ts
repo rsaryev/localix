@@ -1,9 +1,10 @@
+import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 
-import { DEFAULT_AGENT_PARTICIPANT } from '../../db'
+import { DEFAULT_AGENT_AUTHOR } from '../../db'
 import { createDatabase, destroyDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import { serializeMessagePayload } from '../../db/payload'
@@ -11,7 +12,7 @@ import type { AgentMessageRole } from '../../db/types'
 import { nextPageSize, reconcileUsageInSlices } from './reconcile-slices'
 import { createUsageRepository } from './repository'
 
-const tempDir = join(process.cwd(), 'tmp', 'usage-reconcile-slices-tests')
+const tempDir = join(tmpdir(), `localix-usage-reconcile-slices-tests-${process.pid}`)
 
 describe('nextPageSize', () => {
   test('grows while pages are cheap, shrinks when one overruns, holds near the target', () => {
@@ -55,7 +56,7 @@ describe('reconcileUsageInSlices', () => {
         payload_json: serializeMessagePayload({
           id,
           role: 'assistant',
-          from: DEFAULT_AGENT_PARTICIPANT,
+          from: DEFAULT_AGENT_AUTHOR,
           usage: { inputTokens: i, outputTokens: 1 },
         }),
       }

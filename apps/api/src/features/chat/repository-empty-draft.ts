@@ -7,7 +7,7 @@ import type { AppDatabase } from '../../db'
  * another "New Chat".
  *
  * Untouched means nothing a person could lose: no stored message, never renamed, pinned or
- * archived, not running, not linked to an external CLI, and exactly one participant — the one
+ * archived, not running, not linked to an external CLI, and exactly one agent — the one
  * the caller is about to start with. A chat that fails any of these is someone's work.
  */
 export function createEmptyDraftQueries(db: Kysely<AppDatabase>) {
@@ -40,24 +40,7 @@ export function createEmptyDraftQueries(db: Kysely<AppDatabase>) {
             ),
           ),
         )
-        .where(
-          (eb) =>
-            eb
-              .selectFrom('conversation_participants as p')
-              .select((inner) => inner.fn.countAll<number>().as('n'))
-              .whereRef('p.session_id', '=', 's.id'),
-          '=',
-          1,
-        )
-        .where((eb) =>
-          eb.exists(
-            eb
-              .selectFrom('conversation_participants as p')
-              .select('p.session_id')
-              .whereRef('p.session_id', '=', 's.id')
-              .where('p.agent_id', '=', agentId),
-          ),
-        )
+        .where('s.agent_id', '=', agentId)
         .orderBy('s.created_at', 'desc')
         .orderBy('s.seq', 'desc')
         .limit(1)

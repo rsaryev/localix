@@ -1,4 +1,8 @@
-import { classifyByAction, type MiniAppContext, type Seat } from '@localixai/mini-app-sdk/backend'
+import {
+  classifyByAction,
+  type MiniAppContext,
+  type ChatRef,
+} from '@localixai/mini-app-sdk/backend'
 
 import { describeGame } from '../shared/describe'
 import { MoveRefused } from '../shared/game'
@@ -17,7 +21,7 @@ export const classifySnakeCall = classifyByAction({
  * this chat's board and offers it. Every action acts on the board of the chat the call RUNS in.
  */
 export function createGameTools(ctx: MiniAppContext, games: GameService) {
-  const seatOf = (context: { session?: { id: string } } | undefined): Seat => {
+  const chatOf = (context: { session?: { id: string } } | undefined): ChatRef => {
     const sessionId = context?.session?.id
     if (!sessionId) throw new MoveRefused('Snake is played in a chat; this call has none.')
     return { userId: ctx.userId, sessionId }
@@ -38,9 +42,9 @@ export function createGameTools(ctx: MiniAppContext, games: GameService) {
       permissionPaths: () => [],
       async execute(_toolCallId, input, _signal, _onUpdate, context) {
         try {
-          const seat = seatOf(context)
-          if (input.action === 'state') return { content: describeGame(await games.read(seat)) }
-          const game = await games.agentNewGame(seat)
+          const chat = chatOf(context)
+          if (input.action === 'state') return { content: describeGame(await games.read(chat)) }
+          const game = await games.agentNewGame(chat)
           return {
             content: [
               'A new game is on this chat’s board. The user starts it with an arrow key, or hands it to the decision model.',
@@ -48,7 +52,7 @@ export function createGameTools(ctx: MiniAppContext, games: GameService) {
               describeGame(game),
             ].join('\n'),
             details: ctx.ui.offer({
-              uri: gameUri(seat.sessionId),
+              uri: gameUri(chat.sessionId),
               label: 'Open Snake',
               description: 'This chat’s game',
             }),

@@ -384,7 +384,7 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
         activeClones += 1
         peakClones = Math.max(peakClones, activeClones)
         try {
-          await new Promise((resolve) => setTimeout(resolve, 10))
+          await new Promise((resolve) => setTimeout(resolve, 0))
           await fs.cp(url.includes('/first') ? first : second, dest, { recursive: true })
         } finally {
           activeClones -= 1

@@ -32,7 +32,7 @@ import { useRevealEnd } from '../useRunEventFocus'
 // typo would silently drop the HITL overlay for the plain generic card,
 // with nothing to catch it. A `Partial` because this is an intentional opt-in subset.
 const INTERACTIVE: Partial<Record<PresentableToolName, (item: ToolCallItem) => ReactNode>> = {
-  ask: (item) => <AskToolPart item={item} />,
+  AskUserQuestion: (item) => <AskToolPart item={item} />,
 }
 
 function renderItemInner(item: AgentItem, isForeign: boolean) {

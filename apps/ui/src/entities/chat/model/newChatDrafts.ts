@@ -35,7 +35,6 @@ export function createNewChatDrafts(now: () => number = Date.now) {
           (plan.projectId === null && entry.requestedProjectId === null)
         return (
           sameScope &&
-          session.agents.length === 1 &&
           sessionRoute(session).agentId === plan.agentId &&
           composerDrafts.get(session.id) === ''
         )

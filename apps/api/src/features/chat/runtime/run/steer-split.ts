@@ -45,7 +45,7 @@ export async function splitAssistantRowForSteer(
   // envelope+insert+publish trio as run start.
   const payload = emptyAssistantPayload(
     turn?.assistantMessageId ?? randomUUID(),
-    sessionAgent(session, ctx.agentId),
+    sessionAgent(session),
   )
   if (turn) payload.continuedFromMessageId = ctx.assistantMessageId
   const message = toPersistedMessage(userId, session.id, payload, timestamp)
@@ -98,6 +98,7 @@ export async function splitAssistantRowForSteer(
   state.turnsWithUsage = 0
   state.turnsWithActualCost = 0
   state.lastTurnContextTokens = undefined
+  state.lastTurnUsage = undefined
   const nowMs = Date.now()
   state.timing = {
     modelMs: 0,

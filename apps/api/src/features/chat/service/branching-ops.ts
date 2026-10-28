@@ -1,7 +1,7 @@
 import { ConflictError, InvalidRequestError } from '../../../lib/domain-errors'
 import { randomUUID } from 'node:crypto'
 
-import { participantAgentId, USER_PARTICIPANT, type StoredMessagePayload } from '../../../db'
+import { USER_AUTHOR, type StoredMessagePayload } from '../../../db'
 import { walkPathToRoot, indexMessageTree } from './branching'
 import {
   persistAndPublishMessage,
@@ -12,7 +12,8 @@ import {
 import { logRunStartFailure } from './run-dispatch'
 import type { SessionStreamRegistry } from '../runtime/session-stream-registry'
 import { rootExecutionContext } from '../runtime/execution-context'
-import { enqueueTurnTickets, resolveTurnRecipients } from '../runtime/conversation-dispatch'
+import { enqueueTurnTicket } from '../runtime/conversation-dispatch'
+import { turnRecipient } from '../runtime/conversation-strategy'
 import type { ToolSurface } from '@localixai/agent/agents'
 import type { MessageMutationResponse, PersistedMessage, RollbackResponse } from '../contracts'
 
@@ -111,27 +112,13 @@ export async function regenerate(
     // sibling, reachable via switchBranch). Drop it from the live view.
     publishMessageRemoved(streamRegistry, userId, sessionId, assistant.id)
 
-    const originalAgentId = participantAgentId(assistant.payload.from)
-    const [recipient] = await resolveTurnRecipients(
-      session,
-      historyMessages,
-      {
-        kind: 'runtime',
-        ...(originalAgentId && session.agents.some((agent) => agent.agentId === originalAgentId)
-          ? { recipient: originalAgentId }
-          : {}),
-      },
-      runner.leadership(userId, session.projectId),
-    )
-    if (!recipient) throw new InvalidRequestError('session_party_empty', 'Choose an agent first')
+    const recipient = turnRecipient(session, { kind: 'runtime' })
+    if (!recipient) throw new InvalidRequestError('session_agent_missing', 'Choose an agent first')
     // The branch moved: anything still queued answers rows that are no longer on it.
     await runner.cancelAgentTurns(userId, sessionId)
 
     const ts = now()
-    const asstPayload = emptyAssistantPayload(
-      randomUUID(),
-      sessionAgent(session, recipient.agentId),
-    )
+    const asstPayload = emptyAssistantPayload(randomUUID(), sessionAgent(session))
     await insertBranchSibling(
       ctx,
       userId,
@@ -139,13 +126,13 @@ export async function regenerate(
       toPersistedMessage(userId, sessionId, asstPayload, ts),
     )
 
-    void enqueueTurnTickets(runner.enqueueRun, {
+    void enqueueTurnTicket(runner.enqueueRun, {
       userId,
       session,
       // The regenerated reply answers the row it now hangs under.
       triggerMessageIds: parentId ? [parentId] : [],
       firstSlotId: asstPayload.id,
-      recipients: [recipient],
+      recipient,
       scope: { executionContext: rootExecutionContext(toolSurface) },
     }).catch(logRunStartFailure('regenerate', sessionId))
     ctx.notifications?.runs.retried(userId, sessionId)
@@ -187,22 +174,12 @@ export async function editMessage(
     // Branch from the edited message's tree parent (its ancestor chain to root),
     // independent of where the active leaf currently points.
     const parentId = target.parentId
-    const { parentById, msgById } = indexMessageTree(nodes)
+    const { parentById } = indexMessageTree(nodes)
     const historyIds = parentId ? walkPathToRoot(parentById, parentId) : []
-    const historyMessages = historyIds
-      .map((id) => msgById.get(id))
-      .filter((m): m is NonNullable<typeof m> => m !== undefined)
     // Who answers is known before the branch moves: an edit nobody can answer must not leave
     // the conversation rewound to a question with no reply.
-    const recipients = await resolveTurnRecipients(
-      session,
-      historyMessages,
-      { kind: 'user-message', text: content },
-      runner.leadership(userId, session.projectId),
-      runner.floorAdvisor({ userId, sessionId, projectId: session.projectId }),
-    )
-    const first = recipients[0]
-    if (!first) throw new InvalidRequestError('session_party_empty', 'Choose an agent first')
+    const recipient = turnRecipient(session, { kind: 'user-message', text: content })
+    if (!recipient) throw new InvalidRequestError('session_agent_missing', 'Choose an agent first')
     // The branch moves: anything still queued answers rows that are no longer on it.
     await runner.cancelAgentTurns(userId, sessionId)
     await repo.setSessionLeaf(sessionId, parentId)
@@ -229,22 +206,22 @@ export async function editMessage(
     const userPayload: StoredMessagePayload = {
       id: randomUUID(),
       role: 'user',
-      from: USER_PARTICIPANT,
+      from: USER_AUTHOR,
       content,
       ...(retainedBindings.length > 0 ? { bindings: retainedBindings } : {}),
     }
     const userPersisted = toPersistedMessage(userId, sessionId, userPayload, ts)
     await insertBranchSibling(ctx, userId, sessionId, userPersisted)
 
-    const asstPayload = emptyAssistantPayload(randomUUID(), sessionAgent(session, first.agentId))
+    const asstPayload = emptyAssistantPayload(randomUUID(), sessionAgent(session))
     await persistAndPublishMessage(repo, streamRegistry, userId, sessionId, asstPayload, ts)
 
-    void enqueueTurnTickets(runner.enqueueRun, {
+    void enqueueTurnTicket(runner.enqueueRun, {
       userId,
       session,
       triggerMessageIds: [userPersisted.id],
       firstSlotId: asstPayload.id,
-      recipients,
+      recipient,
       scope: {
         conversationId: userPayload.id,
         executionContext: rootExecutionContext(toolSurface),

@@ -17,12 +17,12 @@ describe('VBC tool-class vocabulary (single source of truth)', () => {
   // Note: `lsp_diagnostics` is NOT a read-result tool — the standalone tool was removed
   // (diagnostics now ride inline on edit results), so it must not reappear here.
   test('each base class has exactly its expected generic members', () => {
-    const baseReads = ['grep', 'list', 'ls', 'lsp', 'read', 'search']
+    const baseReads = ['grep', 'list', 'ls', 'lsp', 'Read', 'Search']
     expect([...PAGED_READ_RESULT_TOOLS].sort()).toEqual(baseReads.sort())
     for (const name of baseReads) expect(READ_RESULT_TOOLS.has(name)).toBe(true)
-    expect([...MUTATE_TOOLS].sort()).toEqual(['edit', 'write'].sort())
+    expect([...MUTATE_TOOLS].sort()).toEqual(['Edit', 'Write'].sort())
     expect([...PATCH_TOOLS].sort()).toEqual(['apply_patch', 'patch'].sort())
-    expect([...NONIDEMPOTENT_TOOLS].sort()).toEqual(['bash', 'shell', 'terminal'].sort())
+    expect([...NONIDEMPOTENT_TOOLS].sort()).toEqual(['Bash', 'shell', 'terminal'].sort())
   })
 
   test('the removed lsp_diagnostics tool is in no class', () => {
@@ -53,9 +53,9 @@ describe('VBC tool-class vocabulary (single source of truth)', () => {
   })
 
   test('bash/terminal are non-idempotent and never recoverable (cannot be re-run safely)', () => {
-    expect(NONIDEMPOTENT_TOOLS.has('bash')).toBe(true)
-    expect(READ_RESULT_TOOLS.has('bash')).toBe(false)
-    expect(ALL_MUTATE_TOOLS.has('bash')).toBe(false)
+    expect(NONIDEMPOTENT_TOOLS.has('Bash')).toBe(true)
+    expect(READ_RESULT_TOOLS.has('Bash')).toBe(false)
+    expect(ALL_MUTATE_TOOLS.has('Bash')).toBe(false)
   })
 
   test('patch tools live in PATCH_TOOLS, not the single-arg MUTATE_TOOLS', () => {

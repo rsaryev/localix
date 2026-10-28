@@ -14,12 +14,12 @@ export interface MiniAppWriteScope {
   deps: Pick<MiniAppServiceDeps, 'db'>
   repo: CapabilitySourceRepository
   inspections: MiniAppInspections
-  requireApp(
+  requireApp: (
     userId: string,
     name: string,
     projectId: string,
-  ): Promise<{ app: DiscoveredMiniApp; state: CapabilitySourceRecord | undefined }>
-  catalogFor(userId: string, projectId: string): Promise<{ catalog: MiniAppCatalog }>
+  ) => Promise<{ app: DiscoveredMiniApp; state: CapabilitySourceRecord | undefined }>
+  catalogFor: (userId: string, projectId: string) => Promise<{ catalog: MiniAppCatalog }>
 }
 
 /** A mini app's settings and its removal: each write records its own `mini-app` notice. */

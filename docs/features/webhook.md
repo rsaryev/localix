@@ -28,9 +28,9 @@ model-visible text, not a direct slash-command invocation. Webhook input can sti
 to act; it is not a separate command-dispatch API.
 
 An idle target starts a turn immediately. A busy target enqueues the text with source `external`;
-the default queue places it in the machine-wake band alongside loop wakes, behind queued user turns
-and participant handoffs. Both paths keep the triggering user row out of the visible transcript and
-associate the next visible assistant reply with **External** provenance.
+the default queue places it in the machine-wake band alongside loop wakes, behind queued user turns.
+Both paths keep the triggering user row out of the visible transcript and associate the next visible
+assistant reply with **External** provenance.
 
 The backend derives the URL from `HOST`, `PORT`, and the canonical webhook path. Wildcard bind
 addresses are converted to `127.0.0.1` in the address handed to same-machine callers.

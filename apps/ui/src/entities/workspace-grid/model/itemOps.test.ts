@@ -484,60 +484,6 @@ describe('resolveRoleGroupState', () => {
     expect(r.state).toBe(s) // no allocation — pure reveal
   })
 
-  test('LEGACY preview column wins over the editor role tiers (even the focused editor)', () => {
-    // Old-policy layout with a preview-TAGGED column; the editor group is focused.
-    const s: EditorState = {
-      ...base(),
-      root: {
-        type: 'branch',
-        id: 'b',
-        orientation: 'h',
-        sizes: [0.3, 0.35, 0.35],
-        children: [
-          makeLeaf('chat', ['chat:s1'], 'chat:s1', 'aux'),
-          makeLeaf('ed', ['file:a.ts'], 'file:a.ts', 'editor'),
-          makeLeaf('pv', ['preview'], 'preview', 'preview'),
-        ],
-      },
-      items: {
-        'chat:s1': { kind: 'chat', id: 'chat:s1', title: 'Chat' },
-        'file:a.ts': file('a.ts'),
-      },
-      activeGroup: 'ed',
-    }
-    const r = resolveRoleGroupState(s, 'preview', ids())
-    expect(r.groupId).toBe('pv') // the user's existing column, not the editor group
-    expect(r.state).toBe(s) // pure reveal, no allocation
-  })
-
-  test('a stale bottom strip is ignored for terminals — they reuse the editor group', () => {
-    // A layout still carrying an old bottom-TAGGED terminal strip; the editor group
-    // exists. Nothing opens at the bottom anymore, so a terminal reuses the editor
-    // group (center-stage) and leaves the stale strip untouched.
-    const s: EditorState = {
-      ...base(),
-      root: {
-        type: 'branch',
-        id: 'b',
-        orientation: 'h',
-        sizes: [0.3, 0.35, 0.35],
-        children: [
-          makeLeaf('chat', ['chat:s1'], 'chat:s1', 'aux'),
-          makeLeaf('ed', ['file:a.ts'], 'file:a.ts', 'editor'),
-          makeLeaf('bt', ['terminal:t1'], 'terminal:t1', 'bottom'),
-        ],
-      },
-      items: {
-        'chat:s1': { kind: 'chat', id: 'chat:s1', title: 'Chat' },
-        'file:a.ts': file('a.ts'),
-      },
-      activeGroup: 'ed',
-    }
-    const r = resolveRoleGroupState(s, 'terminal', ids())
-    expect(r.groupId).toBe('ed') // center-stage editor group, NOT the stale bottom strip
-    expect(r.state).toBe(s) // pure reveal, no allocation
-  })
-
   test('spawns a new role group when none exists or matches', () => {
     const s: EditorState = {
       ...base(),

@@ -4,7 +4,7 @@
  * Reactions are message state written through one repository path. Keeping add/remove and
  * publication together prevents the transcript and its reaction chips from diverging.
  *
- * IDEMPOTENT per (message, author, emoji). A reaction is not an event in the conversation: a
+ * IDEMPOTENT per (message, emoji). A reaction is not an event in the conversation: a
  * model that retries its turn, or a person who double-taps, has reacted once. That also makes
  * the write safe to repeat after a failure, which is why it needs no lease.
  *
@@ -12,7 +12,7 @@
  * opcode of its own: the client applies the row it is given, so the transcript and the marks on
  * it can never arrive out of step.
  */
-import type { ParticipantRef, StoredMessagePayload } from '../../../../db'
+import { USER_AUTHOR, type StoredMessagePayload } from '../../../../db'
 import type { ChatRepository } from '../../repository'
 import type { SessionStreamRegistry } from '../session-stream-registry'
 import { publishMessageSnapshot } from '../message-persistence'
@@ -23,26 +23,24 @@ export interface MessageReactionIo {
   now: () => string
 }
 
-/** The reactions a message would have after `from` marks it with `emoji`; null when unchanged. */
+/** The reactions a message would have after the person marks it with `emoji`; null when unchanged. */
 export function withReaction(
   payload: StoredMessagePayload,
-  from: ParticipantRef,
   emoji: string,
   at: string,
 ): StoredMessagePayload['reactions'] | null {
   const current = payload.reactions ?? []
-  if (current.some((r) => r.from === from && r.emoji === emoji)) return null
-  return [...current, { emoji, from, at }]
+  if (current.some((r) => r.emoji === emoji)) return null
+  return [...current, { emoji, from: USER_AUTHOR, at }]
 }
 
-/** The reactions a message would have after `from` takes `emoji` back; null when unchanged. */
+/** The reactions a message would have after the person takes `emoji` back; null when unchanged. */
 export function withoutReaction(
   payload: StoredMessagePayload,
-  from: ParticipantRef,
   emoji: string,
 ): StoredMessagePayload['reactions'] | null {
   const current = payload.reactions ?? []
-  const next = current.filter((r) => !(r.from === from && r.emoji === emoji))
+  const next = current.filter((r) => r.emoji !== emoji)
   return next.length === current.length ? null : next
 }
 
@@ -59,7 +57,6 @@ export async function setMessageReaction(
     userId: string
     sessionId: string
     messageId: string
-    from: ParticipantRef
     emoji: string
     /** Remove instead of add — the same gesture pressed a second time. */
     remove?: boolean
@@ -69,8 +66,8 @@ export async function setMessageReaction(
   if (!message) return false
   const at = io.now()
   const reactions = params.remove
-    ? withoutReaction(message.payload, params.from, params.emoji)
-    : withReaction(message.payload, params.from, params.emoji, at)
+    ? withoutReaction(message.payload, params.emoji)
+    : withReaction(message.payload, params.emoji, at)
   if (!reactions) return false
   const written = await io.repo.updateMessage(
     params.userId,

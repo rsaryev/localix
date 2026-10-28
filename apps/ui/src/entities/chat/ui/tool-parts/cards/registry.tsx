@@ -1,13 +1,12 @@
-import { currentToolName } from './legacyToolNames'
 import type { ComponentType } from 'react'
 import type { ToolCallItem } from '@localixai/agent/agents'
 import { ReadCard } from './ReadCard'
 import { SearchCard, GlobalSearchCard } from './SearchCard'
-import { MemoryCard, SkillCard, JobsCard } from './actionCards'
+import { SkillCard, JobsCard } from './actionCards'
 import { TerminalToolCard } from './TerminalToolCard'
 import { BrowserCard } from './BrowserCard'
 import { PlanToolCard } from './PlanToolCard'
-import { CodemodeCard } from './CodemodeCard'
+import { AgentCard, SendMessageCard, TaskStopCard } from './AgentCards'
 import { isCoreToolMetaName, type PresentableToolName } from './meta'
 import { toolCardFor } from '@/shared/contrib/toolCards'
 
@@ -24,21 +23,19 @@ export type ToolCardComponent = ComponentType<{ item: ToolCallItem }>
  * (+ a meta entry in `meta.ts` for its icon/verb/stacking).
  */
 export const TOOL_CARDS: Partial<Record<PresentableToolName, ToolCardComponent>> = {
-  read: ReadCard,
-  // Historical items of the removed image tool: the same card, which shows a `read` image too —
-  // a path, a size, the image glyph for `kind: 'image'`, and the picture itself.
-  view_image: ReadCard,
-  search: SearchCard,
-  global_search: GlobalSearchCard,
-  memory: MemoryCard,
-  skill: SkillCard,
-  jobs: JobsCard,
-  // Interactive `bash` actions (open/screen/keys/type) arrive as tool_call items
-  // named "bash" (plain commands are classified as `command` → CommandCard).
-  bash: TerminalToolCard,
-  browser: BrowserCard,
-  plan: PlanToolCard,
-  codemode: CodemodeCard,
+  Read: ReadCard,
+  Search: SearchCard,
+  GlobalSearch: GlobalSearchCard,
+  Skill: SkillCard,
+  Jobs: JobsCard,
+  // Interactive `Bash` actions (open/screen/keys/type) arrive as tool_call items
+  // named "Bash" (plain commands are classified as `command` → CommandCard).
+  Bash: TerminalToolCard,
+  Browser: BrowserCard,
+  Plan: PlanToolCard,
+  Agent: AgentCard,
+  SendMessage: SendMessageCard,
+  TaskStop: TaskStopCard,
 }
 
 /**
@@ -51,7 +48,7 @@ export const TOOL_CARDS: Partial<Record<PresentableToolName, ToolCardComponent>>
  * the right place to absorb the open keyspace.
  */
 export function getToolCard(name: string): ToolCardComponent | undefined {
-  return TOOL_CARDS[currentToolName(name) as PresentableToolName] ?? contributedToolCard(name)
+  return TOOL_CARDS[name as PresentableToolName] ?? contributedToolCard(name)
 }
 
 /**

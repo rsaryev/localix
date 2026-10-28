@@ -3,7 +3,7 @@
  * split into the Variables/Secrets views, and the explicit save, delete, rename and copy actions.
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import type {
   EnvironmentCreate,
   EnvironmentEdit,
@@ -15,6 +15,8 @@ export type Panel =
   | { kind: 'idle' }
   | { kind: 'new'; name: string; vars: EnvVariable[] }
   | { kind: 'edit'; name: string; vars: EnvVariable[] }
+
+const IDLE: Panel = { kind: 'idle' }
 
 const errorMessage = (err: unknown) =>
   err instanceof Error ? err.message : 'Something went wrong. Try again.'
@@ -36,7 +38,7 @@ export function useEnvironmentDraft({
   onRename: (name: string, to: string) => Promise<EnvironmentInfo>
   onDuplicate: (name: string) => Promise<EnvironmentInfo>
 }) {
-  const [panel, setPanel] = useState<Panel>({ kind: 'idle' })
+  const [openPanel, setPanel] = useState<Panel>(IDLE)
   const [saving, setSaving] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [variableTab, setVariableTab] = useState<'variables' | 'secrets'>('variables')
@@ -44,26 +46,27 @@ export function useEnvironmentDraft({
 
   // If the environment being edited is deleted out from under us (agent, another tab), fall back
   // to the idle prompt rather than editing a ghost.
-  useEffect(() => {
-    if (panel.kind === 'edit' && !environments.some((e) => e.name === panel.name)) {
-      setPanel({ kind: 'idle' })
-    }
-  }, [environments, panel])
+  const gone = openPanel.kind === 'edit' && !environments.some((e) => e.name === openPanel.name)
+  if (gone) setPanel(IDLE)
+  const panel = gone ? IDLE : openPanel
 
   const startNew = useCallback(() => {
     onError(null)
     setVariableTab('variables')
     setPanel({ kind: 'new', name: '', vars: [] })
     setRenameDraft(null)
-  }, [])
+  }, [onError])
 
-  const startEdit = useCallback((env: EnvironmentInfo) => {
-    onError(null)
-    setVariableTab('variables')
-    // Copy the rows — the draft is edited freely and only committed on Save.
-    setPanel({ kind: 'edit', name: env.name, vars: env.variables.map((v) => ({ ...v })) })
-    setRenameDraft(null)
-  }, [])
+  const startEdit = useCallback(
+    (env: EnvironmentInfo) => {
+      onError(null)
+      setVariableTab('variables')
+      // Copy the rows — the draft is edited freely and only committed on Save.
+      setPanel({ kind: 'edit', name: env.name, vars: env.variables.map((v) => ({ ...v })) })
+      setRenameDraft(null)
+    },
+    [onError],
+  )
 
   const setVars = useCallback((vars: EnvVariable[]) => {
     setPanel((p) => (p.kind === 'idle' ? p : { ...p, vars }))
@@ -124,7 +127,7 @@ export function useEnvironmentDraft({
     } finally {
       setSaving(false)
     }
-  }, [panel, saving, onCreate, onUpdate])
+  }, [panel, saving, onCreate, onUpdate, onError])
 
   const doRemove = useCallback(async () => {
     if (panel.kind !== 'edit') return
@@ -136,7 +139,7 @@ export function useEnvironmentDraft({
     } catch (err) {
       onError(errorMessage(err))
     }
-  }, [panel, onRemove])
+  }, [panel, onRemove, onError])
 
   const rename = useCallback(async () => {
     if (panel.kind !== 'edit' || renameDraft === null || saving) return
@@ -161,7 +164,7 @@ export function useEnvironmentDraft({
     } finally {
       setSaving(false)
     }
-  }, [onRename, panel, renameDraft, saving])
+  }, [onRename, onError, panel, renameDraft, saving])
 
   const duplicate = useCallback(async () => {
     if (panel.kind !== 'edit' || saving) return
@@ -180,7 +183,7 @@ export function useEnvironmentDraft({
     } finally {
       setSaving(false)
     }
-  }, [onDuplicate, panel, saving])
+  }, [onDuplicate, onError, panel, saving])
 
   return {
     panel,

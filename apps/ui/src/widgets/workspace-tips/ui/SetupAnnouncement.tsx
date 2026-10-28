@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { loadString } from '@localixai/mini-app-sdk/ui/storage'
 import { openSetup, SETUP_DONE_KEY, useSetupOpen } from '@/shared/lib/setupDialog'
 
@@ -15,11 +15,12 @@ let decided = false
 
 /** The setup dialog: at launch until it is closed once, and whenever the palette asks for it. */
 export function SetupAnnouncement() {
-  // Decided once per window, on the first render; later renders only follow the shared state.
-  if (!decided) {
+  // Decided once per window, when the first one mounts; later renders only follow the shared state.
+  useEffect(() => {
+    if (decided) return
     decided = true
     if (opensAtLaunch()) openSetup()
-  }
+  }, [])
   const open = useSetupOpen()
   if (!open) return null
   return (

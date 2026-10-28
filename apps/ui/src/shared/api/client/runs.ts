@@ -1,16 +1,24 @@
-import type { QueueClearResult, QueuePromoteResult, QueueRemovalResult } from '../contracts'
+import type {
+  QueueClearResult,
+  QueuePromoteResult,
+  QueueRemovalResult,
+  StopResult,
+} from '../contracts'
 import { client, unwrap } from '../internal'
 import { agentRunPreflight } from '../agentRunPreflight'
 
 /** Run control: stop, monitors, loops and the server-side message queue. */
 export const runsApi = {
-  async stop(sessionId: string): Promise<boolean> {
-    const json = await unwrap(
+  /**
+   * Stop the run. The person's queued messages are not delivered by a stop: they come back here,
+   * to be put in the composer.
+   */
+  async stop(sessionId: string): Promise<StopResult> {
+    return unwrap(
       await client.rpc.sessions[':id'].stop.$post({
         param: { id: sessionId },
       }),
     )
-    return json.stopped
   },
 
   /** Stop one of a session's monitors. False when it is already ended or not the user's. */

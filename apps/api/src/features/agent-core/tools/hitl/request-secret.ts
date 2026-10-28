@@ -3,7 +3,7 @@ import type { VaultItemType } from '../../../secrets/contracts'
 
 // The `request_secret` HITL CONTRACT — the REQUEST leg of the credential hand-off.
 //
-// There is deliberately no `request_secret` tool: the unified `vault` tool
+// There is deliberately no `request_secret` tool: the unified `Vault` tool
 // (features/secrets/agent-tool.ts) owns every credential action and raises this
 // envelope from its create/rotate paths. What lives here is only the wire contract
 // shared by that producer, the answer leg (chatService.submitSecret), and the chat

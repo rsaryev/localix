@@ -1,6 +1,6 @@
 # Agent preview control
 
-The `browser` tool relays agent commands through a foreground or background native Preview host into
+The `Browser` tool relays agent commands through a foreground or background native Preview host into
 the Visual Feedback probe. Use this page when changing tool actions, preview opening, command
 routing, tab identity, or probe delivery.
 
@@ -175,7 +175,7 @@ returns a fix-it that names the step index, and nothing is relayed.
 its own name because the manual Visual Feedback picker sends it too, and `buildPreviewCommand` is
 the one place the two vocabularies meet.
 
-A returned screenshot outlives its turn. Any tool image (a screenshot, an image `read`, an MCP
+A returned screenshot outlives its turn. Any tool image (a screenshot, an image `Read`, an MCP
 picture) is stored in the media store and recorded on the tool item as `attachments` (`mediaId`,
 never inline base64) by `run/tool-result-media.ts`. On a later turn the media stage
 (`history/stages/tool-images.ts`) puts the bytes back on the wire copy when the model reads images,

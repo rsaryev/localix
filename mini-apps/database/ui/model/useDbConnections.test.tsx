@@ -158,7 +158,10 @@ describe('useDbConnections list ownership', () => {
 
     let state: DbConnectionsState | undefined
     function Harness() {
-      state = useDbConnections()
+      const latest = useDbConnections()
+      React.useEffect(() => {
+        state = latest
+      })
       return null
     }
 
@@ -212,7 +215,10 @@ describe('useDbConnections list ownership', () => {
     const originalList = databaseApi.list.bind(databaseApi)
     let state: DbConnectionsState | undefined
     function Harness() {
-      state = useDbConnections()
+      const latest = useDbConnections()
+      React.useEffect(() => {
+        state = latest
+      })
       return null
     }
 
@@ -266,7 +272,10 @@ describe('useDbConnections list ownership', () => {
 
     let state: DbConnectionsState | undefined
     function Harness() {
-      state = useDbConnections()
+      const latest = useDbConnections()
+      React.useEffect(() => {
+        state = latest
+      })
       return null
     }
 
@@ -309,7 +318,10 @@ describe('useDbConnections list ownership', () => {
     let state: DbConnectionsState | undefined
 
     function Harness() {
-      state = useDbConnections()
+      const latest = useDbConnections()
+      React.useEffect(() => {
+        state = latest
+      })
       return null
     }
 
@@ -354,7 +366,10 @@ describe('useDbConnections list ownership', () => {
     let state: DbConnectionsState | undefined
 
     function Harness() {
-      state = useDbConnections()
+      const latest = useDbConnections()
+      React.useEffect(() => {
+        state = latest
+      })
       return null
     }
 
@@ -396,7 +411,10 @@ describe('useDbConnections list ownership', () => {
     let state: DbConnectionsState | undefined
 
     function Harness() {
-      state = useDbConnections()
+      const latest = useDbConnections()
+      React.useEffect(() => {
+        state = latest
+      })
       return null
     }
 

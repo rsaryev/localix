@@ -1,4 +1,4 @@
-/** Compact, stable-width elapsed time for the participant holding the floor. */
+/** Compact, stable-width elapsed time for the agent that is answering. */
 export function formatAnswerDuration(milliseconds: number): string {
   const seconds = Math.max(0, Math.floor(milliseconds / 1000))
   const hours = Math.floor(seconds / 3600)

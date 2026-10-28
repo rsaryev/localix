@@ -1,7 +1,7 @@
 /**
  * WHICH DECISION MODELS ANSWER — the one place that names them.
  *
- * No consumer names a model: routing, plugins and whatever asks next go through the decision
+ * No consumer names a model: mini apps, the browser goal check and whatever asks next go through the decision
  * service, which takes the first backend here that can answer for the user. Changing the model, or
  * adding a second one to fall back on, is an edit to this list; nothing that asks changes. A model
  * reached some other way than a provider connection (a local classifier) is another
@@ -11,7 +11,7 @@ import type { DecisionRequest, DecisionResult } from '@localixai/agent/runtime'
 
 /** Catalog ids of the decision models Localix uses, preferred first. */
 export const DECISION_MODELS = [
-  // Jev, measured best at "who speaks next" (OpenRouter's System One protocol).
+  // Jev, a small typed-decision model (OpenRouter's System One protocol).
   'openrouter/~typesafe/jev-latest',
 ] as const
 

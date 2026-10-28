@@ -24,7 +24,7 @@ describe('context manifest', () => {
       source: 'system',
       target: {
         kind: 'system-event',
-        token: 'notice:model_change:participant:lead',
+        token: 'notice:model_change',
         label: '@lead is now on model-b.',
       },
       resolution: { status: 'resolved', contributions: [] },

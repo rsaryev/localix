@@ -86,7 +86,7 @@ describe('the one wake delivery', () => {
     ])
   })
 
-  test("a fire's wake is addressed to the participant that armed it and keyed by the fire", () => {
+  test("a fire's wake is addressed to the agent that armed it and keyed by the fire", () => {
     const wake = triggerWake(
       { userId: 'u1', sessionId: 's1', owner: { kind: 'agent', agentId: 'qa' } },
       { content: 'x', source: 'bg-monitor', deliveryKey: 'trg:t1:3' },
@@ -97,15 +97,7 @@ describe('the one wake delivery', () => {
       content: 'x',
       source: 'bg-monitor',
       deliveryKey: 'trg:t1:3',
-      to: { participant: 'agent:qa' },
     })
-    // A user-armed trigger names no participant: the conversation chooses.
-    expect(
-      triggerWake(
-        { userId: 'u1', sessionId: 's1', owner: { kind: 'user' } },
-        { content: 'x', source: 'loop', deliveryKey: 'k' },
-      ).to,
-    ).toBeUndefined()
     expect(fireOutcomeOf({ status: 'missed', reason: 'gone' })).toEqual({
       ok: false,
       error: 'wake missed: gone',

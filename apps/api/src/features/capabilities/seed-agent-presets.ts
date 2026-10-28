@@ -50,7 +50,7 @@ export function upgradeAgentPreset(
 }
 
 export interface AgentPresetSeedPorts {
-  listAgents(userId: string): Promise<readonly Pick<AgentDefinition, 'id' | 'handle'>[]>
+  listAgents(userId: string): Promise<readonly Pick<AgentDefinition, 'id' | 'name'>[]>
   rules: Pick<VersionedCapabilityRuleRepository, 'readSnapshot' | 'publish'>
   sources: Pick<CapabilitySourceRepository, 'get' | 'patchConfig'>
 }
@@ -62,8 +62,8 @@ export async function seedAgentPresets(
 ): Promise<string[]> {
   const seeded: string[] = []
   for (const agent of await ports.listAgents(userId)) {
-    if (agent.id !== builtinAgentId(agent.handle)) continue
-    const rules = builtinAgentPreset(agent.handle)
+    if (agent.id !== builtinAgentId(agent.name)) continue
+    const rules = builtinAgentPreset(agent.name)
     if (rules.length === 0) continue
     const row = await ports.sources.get(userId, '', agent.id)
     const stored = row?.config[SEED_FIELD]

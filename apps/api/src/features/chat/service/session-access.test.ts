@@ -11,7 +11,7 @@ import { BUSY_STOP_FIRST } from './command-handlers-context'
 import type { SessionRecord } from '../repository'
 import type { PersistedMessage } from '../contracts'
 import type { AgentItem, ToolCallItem } from '@localixai/agent/agents'
-import { DEFAULT_AGENT_PARTICIPANT } from '../../../db'
+import { DEFAULT_AGENT_AUTHOR } from '../../../db'
 
 // The session mutation lock IS `lib/keyed-serializer.ts` (keyed by sessionId); its
 // FIFO / key-independence / no-poison contract is covered by keyed-serializer.test.ts.
@@ -59,7 +59,7 @@ const toolMsg = (items: AgentItem[]): PersistedMessage => ({
   userId: 'u',
   createdAt: '',
   updatedAt: '',
-  payload: { id: 'm', role: 'assistant', from: DEFAULT_AGENT_PARTICIPANT, items },
+  payload: { id: 'm', role: 'assistant', from: DEFAULT_AGENT_AUTHOR, items },
 })
 
 /**
@@ -123,8 +123,8 @@ describe('assertSessionNotBusy', () => {
 
 describe('findToolItemByCallId', () => {
   test('finds the matching tool item across messages, else null', () => {
-    const msgs = [toolMsg([tool('t1', 'bash')]), toolMsg([tool('t2', 'read')])]
-    expect(findToolItemByCallId(msgs, 't2')?.name).toBe('read')
+    const msgs = [toolMsg([tool('t1', 'Bash')]), toolMsg([tool('t2', 'Read')])]
+    expect(findToolItemByCallId(msgs, 't2')?.name).toBe('Read')
     expect(findToolItemByCallId(msgs, 'nope')).toBeNull()
   })
 })
@@ -134,14 +134,14 @@ describe('toSourceRuntime', () => {
     expect(toSourceRuntime('t', null)).toBeNull()
   })
   test('bash maps command/cwd/description/background', () => {
-    const item = tool('t', 'bash', {
+    const item = tool('t', 'Bash', {
       command: 'ls',
       cwd: '/w',
       description: 'list',
       background: true,
     })
     expect(toSourceRuntime('t', item)).toMatchObject({
-      toolName: 'bash',
+      toolName: 'Bash',
       command: 'ls',
       cwd: '/w',
       description: 'list',
@@ -149,9 +149,9 @@ describe('toSourceRuntime', () => {
     })
   })
   test('other tools map name + id only', () => {
-    expect(toSourceRuntime('t', tool('t', 'edit', { path: 'a' }))).toEqual({
+    expect(toSourceRuntime('t', tool('t', 'Edit', { path: 'a' }))).toEqual({
       toolCallId: 't',
-      toolName: 'edit',
+      toolName: 'Edit',
     })
   })
 })

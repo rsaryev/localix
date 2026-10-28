@@ -26,7 +26,7 @@ export interface PickerTarget {
  * the section `rest`) or the repo picker of a multi-root container. Returns null
  * when the project is unknown / not a git area, or a nested `relpath` isn't among
  * the discovered repos (the guard against a crafted `..` path). A plain single
- * repo maps the bare `<pid>` straight to its sections (no picker level — back-compat).
+ * repo maps the bare `<pid>` straight to its sections (no picker level).
  */
 export async function resolveTarget(
   service: ResourceGitService,

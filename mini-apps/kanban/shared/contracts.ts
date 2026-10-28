@@ -83,7 +83,7 @@ export const kanbanTaskSchema = z.object({
   kind: kanbanKindSchema,
   /** The epic this task belongs to; null for an epic or a top-level task. */
   parentTaskId: z.string().nullable(),
-  /** Stable registry identity of the assigned agent, and its handle for display. */
+  /** Stable registry identity of the assigned agent, and its name for display. */
   agentId: z.string().nullable(),
   assignee: z.string().nullable(),
   /** Why the card is blocked. */
@@ -126,7 +126,7 @@ export const createKanbanTaskSchema = z.object({
   status: kanbanStatusSchema.optional(),
   kind: kanbanKindSchema.optional(),
   parentTaskId: z.string().nullable().optional(),
-  /** Agent id or handle (with or without `@`); resolved against the agent registry. */
+  /** Agent id or name; resolved against the agent registry. */
   agent: z.string().trim().min(1).nullable().optional(),
   dependsOn: dependsOn.optional(),
   attachedPaths: attachedPaths.optional(),

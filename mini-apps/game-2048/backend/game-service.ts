@@ -14,10 +14,10 @@ import {
   stopped,
 } from '../shared/game'
 import { applyMove, playMoves, type Plan, type Played } from '../shared/play'
-import { askAgent, positionKey, type Seat, type Wake } from './ask-agent'
+import { askAgent, positionKey, type ChatRef, type Wake } from './ask-agent'
 import { askDecision } from './ask-decision'
 import { openJsonStore, type DecisionHost } from '@localixai/mini-app-sdk/backend'
-import { DECISION_HOLDS_SEAT, defaultOpponent } from '@localixai/mini-app-sdk/opponent'
+import { DECISION_HOLDS_TURN, defaultOpponent } from '@localixai/mini-app-sdk/opponent'
 
 /**
  * The most moves one run of the decision model plays — a safety bound, above any real game (2048
@@ -29,7 +29,7 @@ export const DECISION_RUN_MOVES = 2500
  * THE BOARD AT EACH CHAT, and every way it changes.
  *
  * One board per chat session, kept in that session's own folder (`resolveDir`, the host's session
- * storage). Every operation names its seat and resolves the folder AGAIN, through the host's
+ * storage). Every operation names its chat and resolves the folder AGAIN, through the host's
  * ownership check: a session that was deleted rejects before anything is read or written.
  *
  * Two kinds of caller change a game, and they differ in exactly one thing. A PERSON acts in the
@@ -59,28 +59,28 @@ export function createGameService(input: {
   const newId = input.newId ?? (() => randomUUID())
   const random = input.random ?? Math.random
 
-  const storeFor = async (seat: Seat) => {
+  const storeFor = async (chat: ChatRef) => {
     if (!input.resolveDir)
       throw new Error('This app keeps no per-chat data, so it cannot hold a board.')
     return openJsonStore({
-      dir: await input.resolveDir(seat.userId, seat.sessionId),
+      dir: await input.resolveDir(chat.userId, chat.sessionId),
       file: 'game.json',
       schema: gameSchema,
       initial: newGame({ id: newId(), mode: 'user', now: now(), random }),
     })
   }
 
-  const update = async (seat: Seat, change: (game: Game) => Game) =>
-    (await storeFor(seat)).update(change)
+  const update = async (chat: ChatRef, change: (game: Game) => Game) =>
+    (await storeFor(chat)).update(change)
 
   /**
    * A board whose opponent is not settled takes the default now: the decision model when it can
    * answer, else the agent. Only the backend load can ask (`decisions`); a tool call leaves it.
    */
-  const settle = async (seat: Seat, game: Game): Promise<Game> => {
+  const settle = async (chat: ChatRef, game: Game): Promise<Game> => {
     if (game.opponent !== null || !input.decisions) return game
-    const opponent = await defaultOpponent(input.decisions, seat.userId)
-    return update(seat, (current) =>
+    const opponent = await defaultOpponent(input.decisions, chat.userId)
+    return update(chat, (current) =>
       current.opponent === null ? { ...current, opponent } : current,
     )
   }
@@ -89,18 +89,18 @@ export function createGameService(input: {
   const runs = new Map<string, Promise<void>>()
 
   /** The decision model plays the board, one asked move at a time, until something stops it. */
-  const runDecision = async (seat: Seat) => {
+  const runDecision = async (chat: ChatRef) => {
     for (let played = 0; played < DECISION_RUN_MOVES; played++) {
-      const game = await (await storeFor(seat)).read()
+      const game = await (await storeFor(chat)).read()
       if (!decisionPlays(game) || game.waiting?.status !== 'thinking') return
       const key = positionKey(game)
-      const answer = await askDecision(input.decisions, seat, game, now())
+      const answer = await askDecision(input.decisions, chat, game, now())
       // A Stop that landed while the model was asked drops its answer.
       const unchanged = (current: Game) =>
         positionKey(current) === key &&
         decisionPlays(current) &&
         current.waiting?.status === 'thinking'
-      const after = await update(seat, (current) =>
+      const after = await update(chat, (current) =>
         !unchanged(current)
           ? current
           : 'direction' in answer
@@ -111,10 +111,10 @@ export function createGameService(input: {
     }
   }
 
-  const startDecision = (seat: Seat) => {
-    const key = `${seat.userId}:${seat.sessionId}`
+  const startDecision = (chat: ChatRef) => {
+    const key = `${chat.userId}:${chat.sessionId}`
     if (runs.has(key)) return
-    const run = runDecision(seat)
+    const run = runDecision(chat)
       .catch((error) => console.warn('[game-2048] the decision model stopped playing', error))
       .finally(() => runs.delete(key))
     runs.set(key, run)
@@ -126,21 +126,21 @@ export function createGameService(input: {
    * anyway). The answer is recorded only while the board still shows that position — the agent
    * may have moved before it arrived.
    */
-  const summon = async (seat: Seat, current: Game, again = false): Promise<Game> => {
-    const game = await settle(seat, current)
+  const summon = async (chat: ChatRef, current: Game, again = false): Promise<Game> => {
+    const game = await settle(chat, current)
     if (!agentPlays(game) || (game.waiting?.status === 'thinking' && !again)) return game
     const key = positionKey(game)
     if (game.opponent === 'decision') {
-      const playing = await update(seat, (latest) =>
+      const playing = await update(chat, (latest) =>
         positionKey(latest) === key && decisionPlays(latest)
           ? { ...latest, waiting: { since: now(), status: 'thinking' } }
           : latest,
       )
-      startDecision(seat)
+      startDecision(chat)
       return playing
     }
-    const waiting = await askAgent(input.wake, seat, game, now())
-    return update(seat, (current) =>
+    const waiting = await askAgent(input.wake, chat, game, now())
+    return update(chat, (current) =>
       positionKey(current) === key && agentPlays(current) ? { ...current, waiting } : current,
     )
   }
@@ -149,33 +149,33 @@ export function createGameService(input: {
     newGame({ id: newId(), mode, now: now(), best: game.best, opponent: game.opponent, random })
 
   return {
-    read: async (seat: Seat): Promise<Game> => settle(seat, await (await storeFor(seat)).read()),
+    read: async (chat: ChatRef): Promise<Game> => settle(chat, await (await storeFor(chat)).read()),
 
     // ── What a person does in the view ─────────────────────────────────────────────────────
-    personMove: (seat: Seat, direction: Direction) =>
-      update(seat, (game) => applyMove(game, direction, 'user', now(), random)),
-    newGame: async (seat: Seat, mode: Mode) =>
-      summon(seat, await update(seat, (game) => fresh(game, mode))),
+    personMove: (chat: ChatRef, direction: Direction) =>
+      update(chat, (game) => applyMove(game, direction, 'user', now(), random)),
+    newGame: async (chat: ChatRef, mode: Mode) =>
+      summon(chat, await update(chat, (game) => fresh(game, mode))),
     /** Hand the board to `mode`; the agent is asked to play when it is handed to it. */
-    mode: async (seat: Seat, mode: Mode) =>
-      summon(seat, await update(seat, (game) => ({ ...game, mode, waiting: null }))),
+    mode: async (chat: ChatRef, mode: Mode) =>
+      summon(chat, await update(chat, (game) => ({ ...game, mode, waiting: null }))),
     /** Ask the agent again to go on playing. */
-    remind: async (seat: Seat) => summon(seat, await (await storeFor(seat)).read(), true),
+    remind: async (chat: ChatRef) => summon(chat, await (await storeFor(chat)).read(), true),
     /**
      * Pause whoever plays the board — the decision model's run ends before its next move, and the
      * chat agent's next move is refused — until Continue (`remind`) hands it back.
      */
-    stop: (seat: Seat) =>
-      update(seat, (game) =>
+    stop: (chat: ChatRef) =>
+      update(chat, (game) =>
         agentPlays(game)
           ? { ...game, waiting: { since: now(), status: 'unreachable', reason: STOPPED_REASON } }
           : game,
       ),
     /** Who plays an `agent` board from now on; an `agent` board is handed to it at once. */
-    setOpponent: async (seat: Seat, opponent: Opponent) =>
+    setOpponent: async (chat: ChatRef, opponent: Opponent) =>
       summon(
-        seat,
-        await update(seat, (game) =>
+        chat,
+        await update(chat, (game) =>
           game.opponent === opponent ? game : { ...game, opponent, waiting: null },
         ),
         true,
@@ -183,10 +183,10 @@ export function createGameService(input: {
 
     // ── What the agent does through its tool ───────────────────────────────────────────────
     /** Play `plan` as one change; see `playMoves` for what is skipped and refused. */
-    agentMoves: async (seat: Seat, plan: Plan): Promise<Played> => {
+    agentMoves: async (chat: ChatRef, plan: Plan): Promise<Played> => {
       let result: Played | undefined
-      await update(seat, (current) => {
-        if (decisionPlays(current)) throw new MoveRefused(DECISION_HOLDS_SEAT)
+      await update(chat, (current) => {
+        if (decisionPlays(current)) throw new MoveRefused(DECISION_HOLDS_TURN)
         if (stopped(current))
           throw new MoveRefused('The user stopped you. Wait until they press Continue.')
         result = playMoves(current, plan, 'agent', now(), random)
@@ -194,7 +194,7 @@ export function createGameService(input: {
       })
       return result!
     },
-    agentNewGame: (seat: Seat, mode: Mode) => update(seat, (game) => fresh(game, mode)),
+    agentNewGame: (chat: ChatRef, mode: Mode) => update(chat, (game) => fresh(game, mode)),
 
     /** Test seam: wait for every decision run in flight. */
     idle: async () => {

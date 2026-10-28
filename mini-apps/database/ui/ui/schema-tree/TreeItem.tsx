@@ -36,6 +36,7 @@ export function TreeItem({
   children: ReactNode
 }) {
   return (
+    // oxlint-disable-next-line jsx-a11y/click-events-have-key-events -- ARIA tree pattern: Enter and Space on a focused row are handled by the role=tree container's delegated onKeyDown (SchemaTree)
     <div
       role="treeitem"
       data-row-key={row.key}

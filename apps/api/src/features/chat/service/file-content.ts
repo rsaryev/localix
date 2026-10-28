@@ -156,7 +156,7 @@ export async function readFile(
       localAfter.fingerprint === localBefore.fingerprint &&
       localAfter.bytes === buffer.byteLength
     )
-      rememberLocalTextSnapshot(resolved, localAfter, hash)
+      rememberLocalTextSnapshot(resolved, localAfter, hash, ctx.now)
   }
 
   // Conditional read. The open editor reconciles against disk on every coarse

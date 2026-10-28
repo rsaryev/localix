@@ -16,7 +16,7 @@ interface DirectoryOptions {
 
 /**
  * The names an `Agent(name)` deny rule of Claude Code's settings keeps from the model
- * (permissions.md, "Agent"): `delegate` would refuse the call, so the directory does not offer it.
+ * (permissions.md, "Agent"): `Agent` would refuse the call, so the directory does not offer it.
  */
 async function deniedAgentSpecifiers(homeDir: string, cwd: string | null): Promise<string[]> {
   const layers = await readSettingsLayers({ homeDir, cwd })
@@ -27,28 +27,13 @@ async function deniedAgentSpecifiers(homeDir: string, cwd: string | null): Promi
   )
 }
 
-/** Prompt directory and invocation admission are separate views of the same registry. */
+/** The prompt directory and the main-agent lookup. */
 export function createAgentDirectoryPorts(
   agentsService: AgentsService,
   options: DirectoryOptions = {},
 ) {
   const homeDir = options.homeDir ?? claudeCodeHome()
   return {
-    // No swallowing: an invitation checked against a registry that failed to load used to see
-    // "nobody is available" and told the model the agent did not exist.
-    listInvocableRegistryAgents: async (
-      userId: string,
-      host: string,
-      projectId?: string | null,
-    ) => {
-      const list = await agentsService.listInvocableAgents(userId, host, { projectId })
-      return list.map((agent) => ({
-        agentId: agent.record.id,
-        name: agent.record.handle,
-        description: agent.record.description,
-        leadershipPriority: agent.record.leadershipPriority,
-      }))
-    },
     resolveMainAgent: async (userId: string, projectId: string | null, cwd: string | null) => {
       const name = await claudeCodeMainAgent({ homeDir, cwd })
       return name ? agentsService.resolveMainAgent(userId, name, projectId) : null

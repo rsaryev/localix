@@ -72,6 +72,8 @@ export function relayText(value: string): string {
     .replace(/[‘’‚‛“”„‟‹›〈〉⟨⟩＜＞«»]/g, (c) => LOOKALIKES[c] ?? c)
     .replace(/\s+/g, ' ')
     .trim()
+  // Code points are the unit the budget counts, so a surrogate pair is one point.
+  // oxlint-disable-next-line typescript/no-misused-spread -- splitting by code point is the intent
   const points = [...folded]
   if (points.length <= RELAY_MAX_CODE_POINTS) return folded
   const head = Math.floor(RELAY_MAX_CODE_POINTS / 2)

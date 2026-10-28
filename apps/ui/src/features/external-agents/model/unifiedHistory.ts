@@ -1,6 +1,6 @@
 import type { RosterRow } from '@localixai/api/external-agent-contracts'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
-import { DEFAULT_AGENT_HANDLE } from '@localixai/api/participant'
+import { DEFAULT_AGENT_NAME } from '@localixai/api/author'
 import { isAtOrUnder } from '@localixai/path-containment/ancestry'
 import type { UiSession } from '@/shared/api/contracts'
 import { toUiSessionSummary } from '@/shared/api/converters'
@@ -36,20 +36,16 @@ export function nativeHistoryRows(
         isPinned: false,
         isArchived: false,
         runtimeStatus: 'idle',
-        modelChoices: { agents: {} },
-        agents: [
-          {
-            agentId: DEFAULT_AGENT_ID,
-            handle: DEFAULT_AGENT_HANDLE,
-            modelId: '',
-            providerConnectionId: null,
-            reasoningEffort: 'low',
-          },
-        ],
+        agent: {
+          agentId: DEFAULT_AGENT_ID,
+          name: DEFAULT_AGENT_NAME,
+          modelId: '',
+          providerConnectionId: null,
+          reasoningEffort: 'low',
+        },
         permissionMode: 'default',
         closedAt: null,
         description: null,
-        avatar: null,
         sourceToolCallId: null,
         externalAgentProvider: row.provider,
         externalAgentSessionKey: row.key,

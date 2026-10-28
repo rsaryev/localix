@@ -4,9 +4,9 @@ import { describeWithholdReason, remediableWithholds, type ToolLedger } from '..
 /**
  * `# Unavailable tools` — the tools this run does NOT have that a click could restore.
  *
- * Rendered only when the run holds `configure`: naming a remedy to a run that cannot
+ * Rendered only when the run holds `configure`, on the wire or behind `ToolSearch`: naming a remedy to a run that cannot
  * propose it would be a pointer to nothing (the same rule the sub-agents section applies
- * to `global_search`). And only REMEDIABLE withholds are listed: a tool a sub-agent can
+ * to `GlobalSearch`). And only REMEDIABLE withholds are listed: a tool a sub-agent can
  * structurally never carry, or one whose host authority is absent, is not the model's
  * business — telling it would only tempt a turn spent discovering that.
  *
@@ -31,7 +31,9 @@ export function buildWithheldToolsSection(
   /** The same, for mini apps: their backends are not imported until they are allowed. */
   awaitingConsentMiniApps: readonly string[] = [],
 ): string | null {
-  if (!ledger || !liveToolNames.includes(TOOL.configure)) return null
+  if (!ledger) return null
+  const configureDeferred = ledger.get(TOOL.Configure)?.state === 'deferred'
+  if (!liveToolNames.includes(TOOL.Configure) && !configureDeferred) return null
   const rows = remediableWithholds(ledger)
   if (
     rows.length === 0 &&
@@ -51,14 +53,14 @@ export function buildWithheldToolsSection(
     groups.set(key, group)
   }
   const propose = (kind: string, name: string) =>
-    `configure {action:"propose", change:{kind:"${kind}", name:"${name}"}}`
+    `${TOOL.Configure} {action:"propose", change:{kind:"${kind}", name:"${name}"}}`
   // A package is switched on in the Store: with `store` the agent asks, without it the person does.
-  const switchOn = liveToolNames.includes(TOOL.store)
-    ? 'find it with `store` (search installed:true), then enable it'
+  const switchOn = liveToolNames.includes(TOOL.Store)
+    ? 'find it with `Store` (search installed:true), then enable it'
     : 'ask the user to switch it on in the Store'
   return [
     WITHHELD_TOOLS_HEADER,
-    'These exist but are switched off for this run. If the task needs one, propose it with `configure` — the user approves with one click; never claim the tool does not exist:',
+    `These exist but are switched off for this run. If the task needs one, propose it with \`Configure\`${configureDeferred ? ' (load `Configure` with `ToolSearch` ("select:Configure") first)' : ''} — the user approves with one click; never claim the tool does not exist:`,
     ...[...groups.values()].map(
       (group) =>
         `- ${group.targets.join(', ')} — ${group.reason} → ${propose(group.remedyId, group.targets.length === 1 ? group.targets[0]! : '<tool>')}`,

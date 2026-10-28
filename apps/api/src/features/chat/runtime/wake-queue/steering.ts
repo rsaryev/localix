@@ -7,7 +7,7 @@ import { renderBatch } from './kinds'
 import { dropLeases, holdLeases, type LeaseOperations, type WakeQueueSharedState } from './leases'
 import { createSteerableSelection, type JoinFilter } from './steerable'
 
-export type { JoinFilter, SubagentSteeringAddress } from './steerable'
+export type { JoinFilter } from './steerable'
 
 /** What a running turn took: one delivery, however many queued entries it stands for. */
 export interface SteeringReservation {

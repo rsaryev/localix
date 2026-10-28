@@ -8,8 +8,8 @@ import { safeJsonParse } from '../../lib/json'
 /**
  * A SESSION'S ACTIVATED TOOLS, CHANGED AS ONE READ-MODIFY-WRITE.
  *
- * Only `activate_tools` writes the set — the model asking for a tool keeps it — but more than one
- * run can write at once (the speakers of a group chat). A whole-list `updateSession` lets each
+ * Only `ToolSearch` writes the set — the model asking for a tool keeps it — but more than one
+ * run can write at once (a turn and a subagent's, a retry). A whole-list `updateSession` lets each
  * write a list computed from what IT read, the record it loaded when it started, so one run's
  * activation erased another's. Here the read and the write share one transaction and the new list
  * is computed from the stored one, so no writer can drop another's names. (Tools an open mini app

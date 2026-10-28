@@ -120,7 +120,7 @@ describe('workItemToMessageBinding', () => {
     try {
       const [binding] = workItemToMessageBindings(item({ kind: 'fixture-mini-app:view' }))
       expect(binding?.target.attributes?.content).toContain(
-        'the browser tool with url "mini-app:fixture-mini-app"',
+        'the Browser tool with url "mini-app:fixture-mini-app"',
       )
     } finally {
       workItemKindRegistry.removeOwner('fixture-mini-app')

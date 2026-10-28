@@ -1,4 +1,4 @@
-import { createElement, useMemo, useSyncExternalStore, type ComponentType } from 'react'
+import { createElement, useMemo, type ComponentType } from 'react'
 import { Zap, ZapOff, Settings, RotateCcw, BarChart3, Search } from 'lucide-react'
 import {
   useGridStore,
@@ -13,10 +13,7 @@ import { openPageWorkItem } from './openPageWorkItem'
 import { miniAppViewRailAction } from './miniAppViewRailAction'
 import { requestConfirmation } from '@/shared/lib/confirmAction'
 import { railViewletRegistry } from '@/shared/contrib/uiContrib'
-import {
-  miniAppActivationVersion,
-  subscribeMiniAppActivation,
-} from '@/shared/contrib/miniAppActivation'
+import { useMiniAppRegistrySlice } from '@/shared/contrib/useMiniAppRegistrySlice'
 import { CMD } from '@/shared/lib/keybindings'
 import type { MiniAppViewSpec } from '@/shared/api/contracts'
 import type { RailAction, RailArea } from '@/widgets/workspace-shell'
@@ -128,16 +125,13 @@ export function useRailActions({
   // registry is populated by generic contrib discovery (see `discoverUi`) before
   // this hook first runs; a contributed viewlet opens its global singleton tab via
   // the generic `openWorkItem` grid path, so core needs no per-viewlet bus method.
-  // The registry is a mutable singleton, not React state. Without this explicit
-  // activation dependency, React Compiler can retain the empty cold-start list
-  // until an unrelated interaction.
-  const activationVersion = useSyncExternalStore(
-    subscribeMiniAppActivation,
-    miniAppActivationVersion,
-  )
+  // The registry is a mutable singleton, not React state: reading it through the registry slice
+  // re-renders when a mini app registers or activates, instead of keeping the empty cold-start
+  // list until an unrelated interaction.
+  const railViewlets = useMiniAppRegistrySlice('rail-viewlets', () => railViewletRegistry.list())
   const contributedViewlets = useMemo(
     () =>
-      railViewletRegistry.list().map((v) => ({
+      railViewlets.map((v) => ({
         kind: v.kind as WorkItemKind,
         // The glyph the screen registered: a line glyph like every other rail button. The manifest's
         // icon is a store/Dock tile and belongs to the store, Settings and the Dock only.
@@ -164,7 +158,7 @@ export function useRailActions({
         open: () =>
           openPageWorkItem(openSessionId, { workKind: v.kind, id: v.kind, title: v.title }),
       })),
-    [activationVersion, capabilityScope, openSessionId],
+    [railViewlets, capabilityScope, openSessionId],
   )
   const viewlets: ViewletDef[] = [...coreViewlets(openSessionId), ...contributedViewlets]
 

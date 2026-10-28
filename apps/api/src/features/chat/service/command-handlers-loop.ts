@@ -10,7 +10,7 @@ import { plural } from '../../agent-core/tools/tool-output'
 /**
  * Handles the `/loop …` control command. `list` replies directly; every other
  * form hands the AGENT an instruction to create the schedule itself via the
- * `loops` tool — the model derives the 5-field cron from any cadence stated in
+ * `Loops` tool — the model derives the 5-field cron from any cadence stated in
  * the task text (or omits it for a self-pacing dynamic loop), rephrases the
  * prompt as a single iteration, and runs the first iteration in the same turn.
  * (/loop is plain-text: there is no deterministic interval parser here — the
@@ -55,7 +55,7 @@ export async function handleLoopControlCommand(
       return `- \`${l.id.slice(0, 8)}\` | ${cadence}${l.target === 'subsession' ? ' | subsession' : ''}${stats} | ${l.prompt.slice(0, 60)}`
     })
     return directReply(
-      `**Active loops (${active.length}):**\n${lines.join('\n')}\n\nCancel one from the composer strip or with the \`loops\` tool.`,
+      `**Active loops (${active.length}):**\n${lines.join('\n')}\n\nCancel one from the composer strip or with \`Loops\`.`,
     )
   }
 
@@ -74,14 +74,14 @@ export async function handleLoopControlCommand(
   const maintenance = afterCmd.length === 0
   const taskPrompt = maintenance ? LOOP_MAINTENANCE_PROMPT : afterCmd
   const instruction = [
-    `[/loop] Set up a scheduled job with the \`loops\` tool, then run its first iteration now.`,
+    `[/loop] Set up a scheduled job with \`Loops\`, then run its first iteration now.`,
     `1. Derive the schedule FROM THE TASK TEXT: if it states a cadence ("every 5 minutes", "cada hora", "weekdays at 9am", "5m"), compute the 5-field cron yourself and pass it as \`cron\`. If it names NO cadence, omit \`cron\` — that creates a dynamic self-pacing loop.`,
     `2. ${PROMPT_RULE} Add target:"subsession" ONLY if the task itself says to run in a subsession.`,
     `3. Perform one iteration of the task now:`,
     ``,
     taskPrompt,
     ``,
-    `4. If you created a DYNAMIC loop, finish by calling \`loops\` action="reschedule" with the new job id and a delay_seconds you pick from what you observed (60–3600) — or \`loops\` action="remove" if no further runs are useful. Skipping the reschedule does not stop it: it fires again after the same delay.`,
+    `4. If you created a DYNAMIC loop, finish by calling \`Loops\` action="reschedule" with the new job id and a delay_seconds you pick from what you observed (60–3600) — or \`Loops\` action="remove" if no further runs are useful. Skipping the reschedule does not stop it: it fires again after the same delay.`,
   ].join('\n')
   return runMacroCommand(userId, sessionId, session, allMessages, prompt.trim(), instruction, ts, {
     commandOrigin: { command: '/loop', label: maintenance ? 'maint' : 'auto' },

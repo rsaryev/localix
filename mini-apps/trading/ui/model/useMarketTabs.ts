@@ -13,7 +13,7 @@
  *    always-present pair and selects All until that roster arrives;
  *  - cycling wraps, and an unknown current tab cycles from the start.
  */
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import type { Market } from '../../backend/contracts'
 import { ALL_TAB, FAVOURITES_TAB, buildMarketTabs, type MarketPickerTab } from './marketPicker'
 
@@ -38,14 +38,29 @@ export function useMarketTabs(opts: {
   const [tab, setTab] = useState<string>(ALL_TAB.key)
   const [tabs, setTabs] = useState<MarketPickerTab[]>(BASE_TABS)
 
-  useEffect(() => {
+  // Both follow their inputs while rendering (no effect, so no extra render with stale tabs):
+  // a new reset key collapses to the base pair and All...
+  const [seenResetKey, setSeenResetKey] = useState(resetKey)
+  if (!Object.is(seenResetKey, resetKey)) {
+    setSeenResetKey(resetKey)
     setTab(ALL_TAB.key)
     setTabs(BASE_TABS)
-  }, [resetKey])
-
-  useEffect(() => {
+  }
+  // ...and the roster, while the surface is live, rebuilds the per-type tabs.
+  const [seenRoster, setSeenRoster] = useState<{
+    enabled: boolean
+    query: string
+    markets: readonly Market[]
+  } | null>(null)
+  if (
+    !seenRoster ||
+    seenRoster.enabled !== enabled ||
+    seenRoster.query !== query ||
+    seenRoster.markets !== markets
+  ) {
+    setSeenRoster({ enabled, query, markets })
     if (enabled && query.trim() === '' && markets.length > 0) setTabs(buildMarketTabs(markets))
-  }, [enabled, query, markets])
+  }
 
   const cycleTab = useCallback(
     (dir: 1 | -1) => {

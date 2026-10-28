@@ -6,9 +6,8 @@
  * read the session, then wrote its stale `runtimeStatus` back over a run that had started in
  * between. An absent key is "leave it", never "set it to what I read".
  *
- * Membership and routes are not here: WHO is in the conversation goes through the one
- * participants writer (`runtime/conversation-participants.ts`), and what one of them runs on is
- * its own write. Archiving keeps the FIRST archive time rather than restamping it on every toggle.
+ * The route is not here: what the agent runs on is its own write (`updateSessionAgentRoute`).
+ * Archiving keeps the FIRST archive time rather than restamping it on every toggle.
  */
 import type { PermissionMode } from '../../../contracts/permission-modes'
 import type { SessionRecord } from '../repository'

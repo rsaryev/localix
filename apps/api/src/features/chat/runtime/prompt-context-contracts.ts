@@ -14,21 +14,21 @@ import type { TriggeredSkill } from './prompt-skill-triggers'
 import type { LoadedPlugins } from '../../plugins/loader'
 import type { LoadedMiniApps, LoadMiniAppsOptions } from '../../mini-apps/loader'
 import type { AvailabilityReader } from '../../capabilities/availability'
-import type { ParticipantLaneSnapshotRepository } from '../participant-lane-snapshot-repository'
+import type { SessionPromptSnapshotRepository } from '../session-prompt-snapshot-repository'
 import type { FrozenSessionContext } from './agent-runner-types'
 import type { RuntimeState } from './agent-runner-state'
-import type { createMemoryRepository } from '../../memory/repository'
 import type { createProjectsRepository } from '../../projects/repository'
 import type { SkillOverrides } from '../../agent-core/skill-overrides'
 
 export interface PromptContextDeps {
-  memoryRepo: ReturnType<typeof createMemoryRepository>
+  /** Where Claude Code's files are read from; the process's home by default (`claudeCodeHome`). */
+  claudeHome?: string
   projectsRepo: ReturnType<typeof createProjectsRepository>
   pluginRepo: CapabilitySourceRepository
   /** The `mini-app` rows of `capability_source`: each mini app's stored settings. */
   miniAppRepo: CapabilitySourceRepository
   contextSnapshots: RuntimeState['contextSnapshots']
-  laneSnapshots: ParticipantLaneSnapshotRepository
+  promptSnapshots: SessionPromptSnapshotRepository
   /**
    * Scope-level discovery cache (plugins / skills / providers / context files), shared by
    * a parent and every child that inherits its scope. See run-scope.ts.

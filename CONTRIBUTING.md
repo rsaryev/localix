@@ -27,20 +27,18 @@ The complete setup, package layout, cross-platform conventions, and per-package 
 the [development guide](docs/internals/contributing.md).
 
 `bun install` points git at the hooks in `.githooks/`. Every commit checks formatting and lint on
-staged files. Source, package-manifest, and compiler-configuration changes also check source and
-test types in affected workspaces and their consumers. Turbo prepares upstream declarations and
-reuses unchanged results; shared compiler or dependency changes select all workspaces.
+staged files. Both hooks stay light so they never heat a laptop or fail on its load; the unit tests
+run in CI on our own runner.
 
 The hook runs changed test files and existing co-located tests. Rust source, manifest, lockfile, and
 Tauri configuration changes run formatting and Clippy for the local platform when Cargo is
 available; missing Clippy or rustfmt then blocks the commit. Native CI also checks Linux.
 
-The hook does not rewrite or stage tracked files. Unstaged changes in packages being checked must be
-staged or stashed first, so the checks cannot validate an unstaged repair instead of the commit.
-Type checks may generate ignored build output. Every push runs the CI gates for the packages it
-changes and their dependents through `.githooks/pre-push`; commit or stash tracked changes first.
-`main` checks the whole tree. Full builds remain in CI; optional architecture, documentation, and
-dependency audits run when relevant.
+The hook does not rewrite or stage tracked files. A file it checks must have no unstaged edits, so
+it cannot validate an unstaged repair instead of the commit. Every push checks source and test types
+for the packages its commits change and their dependents through `.githooks/pre-push`; commit or
+stash tracked changes first. CI on `main` runs the tests over the whole tree. Full builds remain in
+CI; optional architecture, documentation, and dependency audits run when relevant.
 
 One development dependency is not OSI-licensed: `oxlint-plugin-react-doctor`, used only by the
 optional `bun run lint:react-doctor`, ships under a modified MIT license that restricts some uses of
@@ -59,8 +57,7 @@ functions, and `useX` for hooks. Tests normally sit beside production code as `*
 ## Required checks
 
 CI runs the core build, type checks, and tests for pull requests. Use focused tests while editing
-and let pre-commit run the affected-package checks described above. The required JavaScript checks
-are:
+and let the hooks run the checks described above. The required JavaScript checks are:
 
 ```bash
 bun run build
@@ -70,12 +67,13 @@ bun run test
 bun run check:bundle
 ```
 
-Build first when reproducing CI locally: type checks read workspace declarations from built output.
-Tests have two tiers in every workspace, the `scripts` workspace of repository contracts included:
-`bun run test` (unit tests) and `bun run test:integration` (real processes, PTYs and watchers). Both
-run through Turbo, which replays a package whose inputs did not change; CI runs them as parallel
-jobs. `check:tests` type-checks test files, while `test` executes them. `bun run coverage` holds the
-coverage gates. `check:bundle` stages the desktop bundle and starts its API outside the checkout.
+Type checks read workspace packages from source (the `@localixai/source` export condition), so they
+need no build first; the build and the tests still use `dist`. Tests have two tiers in every
+workspace, the `scripts` workspace of repository contracts included: `bun run test` (unit tests) and
+`bun run test:integration` (real processes, PTYs and watchers). Both run through Turbo, which
+replays a package whose inputs did not change; CI runs them as parallel jobs. `check:tests`
+type-checks test files, while `test` executes them. `bun run coverage` holds the coverage gates.
+`check:bundle` stages the desktop bundle and starts its API outside the checkout.
 
 The workflows have separate responsibilities:
 
@@ -104,8 +102,8 @@ scope does not mean the full CI suite has passed.
 Architecture, documentation, generated-output, vendor, plugin-manifest, dependency-audit, dead-code,
 global-isolation, and drop-in checks remain available as optional root scripts. Run them when
 relevant to a change. They are not required CI or release-verification gates. Full JavaScript
-formatting and lint checks are also available locally; pre-commit also checks affected types and
-focused tests.
+formatting and lint checks are also available locally; pre-commit also runs focused tests, and
+pre-push checks affected types.
 
 Add a deterministic regression test for changed behavior. Use DOM tests when interaction or
 accessibility needs rendered evidence. Run a focused test while iterating; CI runs the

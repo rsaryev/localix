@@ -5,7 +5,7 @@
  * VMs (`vm.ts`): a runtime the host hands in, exchanging JSON text with the host until stopped.
  */
 export { SCRIPT_WASM_FILE, SCRIPT_WORKER_FILE } from './assets'
-export { renderDeclarations, schemaToType, toIdentifier } from './declarations'
+export { toIdentifier } from './identifier'
 export {
   MAX_CALL_ARGS_CHARS,
   MAX_CALLS,

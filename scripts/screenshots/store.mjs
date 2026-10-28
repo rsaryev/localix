@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test'
-import { STALE_SKILL, STORE_INSTALLED, YOURS, YOURS_SCENARIOS } from './store-seed.mjs'
+import { STALE_SKILL, STORE_INSTALLED } from './store-seed.mjs'
 
 /**
  * The Store (`docs/internals/store.md`): its Discover page, shelves, a package's page and consent
@@ -9,7 +9,7 @@ import { STALE_SKILL, STORE_INSTALLED, YOURS, YOURS_SCENARIOS } from './store-se
  * read over the network when the runtime starts, so the assertions never name one plugin: they
  * check what any answer looks like.
  */
-const sections = (page) => page.getByRole('navigation', { name: 'Store sections' })
+const sections = (page) => page.getByRole('tablist', { name: 'Store sections' })
 const search = (page) => page.getByLabel('Search the Store')
 const deck = (page, name) => page.locator(`section[aria-label="${name}"]`)
 
@@ -19,15 +19,16 @@ async function openStore(page) {
   await page.locator('[data-listing]').first().waitFor()
 }
 
-/** A section of the sidebar by its label: its button, or its entry in the narrow picker. */
+const library = (page) => page.getByRole('navigation', { name: 'Your library' })
+
+/** A section by its tab, its library button, or its entry under More. */
 async function goTo(page, label) {
-  const name = new RegExp(`^${label}`)
-  if (await sections(page).isVisible()) {
-    await sections(page).getByRole('button', { name }).click()
-  } else {
-    await page.locator('[aria-label="Store sections"]').click()
-    await page.getByRole('option', { name }).click()
-  }
+  const tab = sections(page).getByRole('tab', { name: new RegExp(`^${label}`) })
+  if (await tab.count()) return tab.click()
+  const shelf = library(page).getByRole('button', { name: new RegExp(`^${label}`) })
+  if (await shelf.count()) return shelf.click()
+  await page.getByRole('button', { name: /^More sections/ }).click()
+  await page.getByRole('menuitemradio', { name: label }).click()
 }
 
 /** The Store's own heading for the section on show, in a wide, medium or narrow pane alike. */
@@ -40,7 +41,9 @@ async function openFirstPackage(page) {
 
 const COMPOSE = {
   async store(page) {
+    // The Store opens on Discover; the Mini apps shelf is a tab away.
     await openStore(page)
+    await goTo(page, 'Mini apps')
   },
   async 'store-discover'(page) {
     await openStore(page)
@@ -92,6 +95,16 @@ const COMPOSE = {
     await search(page).fill('git')
     await deck(page, 'Packages').waitFor()
   },
+  async 'store-search-wide'(page) {
+    await openStore(page)
+    // The Store alone in the window: the chat it opened beside is closed.
+    const chat = page.getByRole('tab', { name: /New Chat/ })
+    await chat.click({ button: 'right' })
+    await page.getByRole('menuitem', { name: 'Close', exact: true }).click()
+    await chat.waitFor({ state: 'detached' })
+    await search(page).fill('git')
+    await deck(page, 'Packages').waitFor()
+  },
   async 'store-installed'(page) {
     await openStore(page)
     await goTo(page, 'Installed')
@@ -129,8 +142,6 @@ const COMPOSE = {
 export async function composeStore(page, scenario) {
   await COMPOSE[scenario](page)
 }
-
-const wide = (page) => page.locator('[data-layout="wide"]').count()
 
 const VERIFY = {
   async store(page) {
@@ -215,6 +226,10 @@ const VERIFY = {
       page.getByRole('group', { name: 'Filters' }).or(page.getByLabel('Filters')),
     ).toBeVisible()
   },
+  async 'store-search-wide'(page) {
+    await VERIFY['store-search'](page)
+    await expect(page.getByRole('tab', { name: /New Chat/ })).toHaveCount(0)
+  },
   async 'store-installed'(page) {
     await expect(heading(page)).toHaveText('Installed')
     // The three mini apps the seed installed are there, beside the agents that come with Localix.
@@ -223,12 +238,9 @@ const VERIFY = {
     await expect(page.getByRole('switch').first()).toBeVisible()
   },
   async 'store-commands'(page) {
-    await expect(sections(page).locator('[aria-current="page"]')).toHaveAttribute(
-      'aria-label',
-      /^Commands/,
-    )
+    await expect(page.getByRole('button', { name: 'More sections: Commands' })).toBeVisible()
     const row = page.locator('[data-component^="command:"]').first()
-    await expect(row).toContainText(/In .+ · Mini app/)
+    await expect(row).toContainText(/In .+ · (Mini app|Plugin)/)
   },
   async 'store-yours'(page) {
     await expect(heading(page)).toHaveText('Yours')
@@ -262,29 +274,22 @@ const VERIFY = {
 }
 
 export async function verifyStore(page, scenario) {
-  const written = YOURS_SCENARIOS.includes(scenario) ? YOURS.length : 0
-  // A dialog hides the sidebar from the page's tree: its scenarios check the dialog instead.
-  if ((await wide(page)) && (await page.getByRole('dialog').count()) === 0) {
-    await expect(sections(page).getByRole('button', { name: /^Installed/ })).toContainText(
-      String(STORE_INSTALLED.length + written),
-    )
-    await expect(sections(page).getByRole('button', { name: /^Sources/ })).toBeVisible()
+  // A dialog hides the tabs from the page's tree: its scenarios check the dialog instead.
+  if ((await page.getByRole('dialog').count()) === 0) {
+    // The library beside the search; only Updates carries a count.
+    await expect(library(page).getByRole('button', { name: /^Installed/ })).toHaveText('Installed')
+    await expect(library(page).getByRole('button', { name: /^Sources/ })).toBeVisible()
     // Skills, Agents and MCP servers are one shelf each, never a second list of packages.
     for (const name of ['Skills', 'Agents', 'MCP servers'])
       expect(
         await sections(page)
-          .getByRole('button', { name: new RegExp(`^${name}`) })
+          .getByRole('tab', { name: new RegExp(`^${name}`) })
           .count(),
       ).toBeLessThanOrEqual(1)
-    await expect(
-      sections(page)
-        .getByRole('group', { name: 'Packages' })
-        .getByRole('button', { name: /^(Skills|Agents|MCP servers)/ }),
-    ).toHaveCount(0)
     // How a mini app works is not a shelf: no Screens, no Agent tools.
-    await expect(
-      sections(page).getByRole('button', { name: /^(Screens|Agent tools)/ }),
-    ).toHaveCount(0)
+    await expect(sections(page).getByRole('tab', { name: /^(Screens|Agent tools)/ })).toHaveCount(0)
+    // The page is never a column beside a section sidebar.
+    await expect(page.getByRole('navigation', { name: 'Store sections' })).toHaveCount(0)
   }
   await VERIFY[scenario](page)
 }

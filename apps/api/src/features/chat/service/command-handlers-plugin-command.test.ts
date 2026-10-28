@@ -3,7 +3,6 @@ import { tmpdir } from 'node:os'
 import { handlePluginCommand } from './command-handlers'
 import type { CommandHandlerContext } from './command-handlers-context'
 import { sessionFixture } from '../../../testing/session-fixture'
-import { noLeadership } from '../runtime/conversation-strategy'
 import { workflowCommand } from '../../plugins/workflow-commands'
 
 const session = sessionFixture({ id: 'plugin-command', userId: 'u' })
@@ -20,12 +19,7 @@ function fixture(commandName: string) {
       return 'now'
     },
     repo: { listMessages: forbidden },
-    runner: {
-      leadership: () => {
-        trace.push('leadership')
-        return noLeadership
-      },
-    },
+    runner: {},
     gatherEnabledPluginSkills: async () => [],
     gatherEnabledPluginCommands: async () => {
       trace.push('gather')
@@ -56,7 +50,7 @@ test('a missing nested plugin-command argument returns usage before resolving fi
   const f = fixture('sub:deploy')
   const result = await handlePluginCommand(f.ctx, 'u', session.id, session, '/FIXTURE:SUB:DEPLOY')
   expect(result).toEqual({ sessionId: session.id, messageId: 'usage' })
-  expect(f.trace).toEqual(['now', 'gather', 'leadership', 'reply'])
+  expect(f.trace).toEqual(['now', 'gather', 'reply'])
   expect(f.replies[0]).toContain('Usage: `/Fixture:sub:deploy <target>`')
   expect(f.replies[0]).toContain('Missing required argument `target`')
 })
@@ -99,7 +93,7 @@ test('a command that declares tools activates them for the chat before its run s
         return changed
       },
     },
-    runner: { leadership: () => noLeadership },
+    runner: {},
     gatherEnabledPluginSkills: async () => [],
     gatherEnabledPluginCommands: async () => [
       {
@@ -142,7 +136,7 @@ test('a plugin workflow runs as its command: the workflow tool is activated and 
         change: (current: string[]) => { next: string[] } | null,
       ) => change([]),
     },
-    runner: { leadership: () => noLeadership },
+    runner: {},
     gatherEnabledPluginSkills: async () => [],
     gatherEnabledPluginCommands: async () => [
       {
@@ -151,7 +145,6 @@ test('a plugin workflow runs as its command: the workflow tool is activated and 
         command: workflowCommand('acme', {
           name: 'release-audit',
           description: 'Audit the release',
-          file: '/fixture/acme/workflows/audit.js',
         }),
       },
     ],
@@ -165,8 +158,8 @@ test('a plugin workflow runs as its command: the workflow tool is activated and 
     },
   } as unknown as CommandHandlerContext
   await handlePluginCommand(ctx, 'u', run.id, run, '/acme:release-audit 1024, 1025')
-  expect(run.activatedTools).toEqual(['workflow'])
-  expect(instruction).toContain('`acme:release-audit` now with the `workflow` tool')
+  expect(run.activatedTools).toEqual(['Workflow'])
+  expect(instruction).toContain('`acme:release-audit` now with the `Workflow` tool')
   expect(instruction).toContain('Input: 1024, 1025')
 })
 
@@ -175,7 +168,7 @@ function dupCtx(prompt: string, skills: unknown[], replies: string[], runs: stri
     now: () => 'now',
     deps: {},
     repo: { listMessages: async () => [] },
-    runner: { leadership: () => noLeadership },
+    runner: {},
     gatherEnabledPluginSkills: async () => skills,
     gatherEnabledPluginCommands: async () => [
       { plugin: 'dup', pluginDir: tmpdir(), command: { name: 'tidy', prompt, args: [] } },

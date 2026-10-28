@@ -86,7 +86,7 @@ describe('MessageSources presentation', () => {
       id: 'tool-1',
       type: 'tool_call',
       toolCallId: 'tool-1',
-      name: 'search',
+      name: 'Search',
       status: 'completed',
       // Discovered and failed records are real registry entries, and deliberately not evidence —
       // so this message contributes nothing to an ANSWER and must not advertise otherwise.

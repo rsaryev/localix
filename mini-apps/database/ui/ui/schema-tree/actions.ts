@@ -1,6 +1,7 @@
-import { useLayoutEffect, useMemo, useRef } from 'react'
+import { useMemo } from 'react'
 import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
 import type { ColumnTreeRow, SchemaTreeRow, StatusTreeRow } from '../../model/schemaTreeRows'
+import { useLatest } from '@localixai/mini-app-sdk/ui/runtime-hooks'
 
 /**
  * Everything a row can ask its tree to do. Rows receive ONE stable object (see
@@ -31,10 +32,7 @@ export interface SchemaTreeActions {
  * identity — which is what lets a memoized row skip a render its data did not cause.
  */
 export function useStableActions<T extends object>(impl: T): T {
-  const latest = useRef(impl)
-  useLayoutEffect(() => {
-    latest.current = impl
-  })
+  const latest = useLatest(impl)
   return useMemo(
     () =>
       new Proxy({} as T, {
@@ -50,6 +48,6 @@ export function useStableActions<T extends object>(impl: T): T {
             : value
         },
       }),
-    [],
+    [latest],
   )
 }

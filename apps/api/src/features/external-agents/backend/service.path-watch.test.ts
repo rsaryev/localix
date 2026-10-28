@@ -31,8 +31,12 @@ describe('external agents: history watching', () => {
     service.setPathWatch(undefined)
 
     const frames: unknown[] = []
-    const unsubscribe = service.history.subscribe((frame) => frames.push(frame))
-    await new Promise((resolve) => setTimeout(resolve, 50))
+    const live = Promise.withResolvers<void>()
+    const unsubscribe = service.history.subscribe((frame) => {
+      frames.push(frame)
+      if ('live' in frame && frame.live) live.resolve()
+    })
+    await live.promise
     unsubscribe()
 
     expect(watched).toContain(join(home, '.claude', 'projects'))

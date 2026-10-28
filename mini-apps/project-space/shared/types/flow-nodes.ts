@@ -71,7 +71,8 @@ export function sizeOf(node: FlowNode, lines: string[]): { w: number; h: number 
       return { w: round4(w + h * 0.4), h: round4(h) }
     case 'subroutine':
       return { w: round4(w + 16), h: round4(h) }
-    default:
+    case 'rect':
+    case 'rounded':
       return { w: round4(w), h: round4(Math.max(44, h)) }
   }
 }

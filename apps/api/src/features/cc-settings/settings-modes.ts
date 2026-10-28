@@ -1,12 +1,15 @@
 import type { PermissionMode } from '../../contracts/permission-modes'
 import { isRecord } from '../../lib/record'
 import { readSettingsLayers, type SettingsFilesInput } from './settings-files'
-import { mergeSettingsSources } from './settings-merge'
+import { mergeSettingsSources, type SettingsSource } from './settings-merge'
 
 /**
  * Claude Code's mode settings for a folder (permissions.md, "Permission modes"):
  * `permissions.defaultMode` — the mode a session starts in — as the Localix mode it names, and
  * `permissions.disableBypassPermissionsMode: "disable"` from any settings file.
+ *
+ * `auto` and `bypassPermissions` count only from the user and managed files, never from a project's
+ * or the local one.
  *
  * `default` (also `manual`), `plan` and `bypassPermissions` have a Localix mode of the same
  * meaning. `acceptEdits`, `auto` and `dontAsk` have none — Localix has no edit-only, classifier
@@ -23,10 +26,20 @@ export async function claudeCodeModes(
   input: SettingsFilesInput,
 ): Promise<{ defaultMode?: PermissionMode; bypassDisabled: boolean }> {
   const layers = await readSettingsLayers(input)
-  const merged = mergeSettingsSources(layers)
-  const permissions = isRecord(merged.permissions) ? merged.permissions : {}
-  const named =
-    typeof permissions.defaultMode === 'string' ? MODES[permissions.defaultMode] : undefined
+  // The layer that wins `defaultMode` (the last that sets it, lowest first). `auto` and
+  // `bypassPermissions` take no effect from a project or local file, and the session then starts
+  // in the built-in default rather than in a lower file's mode (permission-modes.md).
+  let winner: { source: SettingsSource; mode: string } | undefined
+  for (const layer of layers) {
+    const permissions = layer.settings.permissions
+    const mode = isRecord(permissions) ? permissions.defaultMode : undefined
+    if (typeof mode === 'string') winner = { source: layer.source, mode }
+  }
+  const untrusted =
+    winner &&
+    (winner.source === 'project' || winner.source === 'local') &&
+    (winner.mode === 'bypassPermissions' || winner.mode === 'auto')
+  const named = winner && !untrusted ? MODES[winner.mode] : undefined
   // A lock: "disable" in any file holds, whatever a higher file says.
   const bypassDisabled = layers.some(
     (layer) =>

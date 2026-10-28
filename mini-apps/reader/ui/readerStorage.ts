@@ -1,5 +1,6 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { loadJSON, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
+import { useLatest } from '@localixai/mini-app-sdk/ui/runtime-hooks'
 
 import {
   normalizeReaderPreferences,
@@ -47,8 +48,7 @@ export function useSavedQuotes(path: string | null) {
   const [all, setAll] = useState<ReaderSavedQuote[]>(() =>
     (loadJSON<ReaderSavedQuote[]>(QUOTES_KEY) ?? []).map(normalizeReaderSavedQuote),
   )
-  const allRef = useRef(all)
-  allRef.current = all
+  const allRef = useLatest(all)
   const commit = (next: ReaderSavedQuote[]) => {
     allRef.current = next
     setAll(next)

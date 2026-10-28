@@ -5,6 +5,7 @@ import { backendClient } from '@/shared/api/client'
 import { previewControlBus } from '@/shared/lib/previewControlBus'
 import { usePreviewStore } from '../model/previewStore'
 import { useUnknownTabReply } from './useUnknownTabReply'
+import { turns } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 const globals = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -62,7 +63,8 @@ test('a command for a tab ID nothing hosts is answered with the open tabs', asyn
           expression: '1',
         },
       })
-      await new Promise((resolve) => setTimeout(resolve, 10))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      await turns()
     })
     expect(replies.some((r) => r.id === 'known')).toBe(false)
     const answered = replies.filter((r) => r.id === 'invented').map((r) => r.payload)

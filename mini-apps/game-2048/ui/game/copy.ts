@@ -4,7 +4,7 @@ import { agentPlays, stopped, type Game } from '../../shared/game'
 /**
  * The game in the PERSON's words — the view's headline and what a screen reader announces.
  *
- * `shared/describe.ts` speaks from the agent's seat ("You control the board"); the view speaks to
+ * `shared/describe.ts` speaks from the agent's side ("You control the board"); the view speaks to
  * whoever is looking at the board ("Your move", "The agent is playing"). Pure, so every state the
  * board can be in has a sentence a test can read.
  */

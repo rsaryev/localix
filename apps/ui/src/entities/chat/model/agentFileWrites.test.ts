@@ -12,7 +12,7 @@ const fileChange = (
     type: 'file_change',
     status,
     toolCallId: `call-${id}`,
-    name: 'edit',
+    name: 'Edit',
     changes,
   }) as unknown as AgentItem
 

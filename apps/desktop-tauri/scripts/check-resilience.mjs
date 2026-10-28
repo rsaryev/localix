@@ -79,7 +79,7 @@ async function main() {
   const home = mkdtempSync(join(tmpdir(), 'localix-resilience-'))
   const data = option(args, '--data')
   if (data) cpSync(data, join(home, '.localix'), { recursive: true })
-  const endpointFile = join(home, '.localix', 'api-runtime.json')
+  const endpointFile = join(home, '.localix', 'localix.db.api-runtime.json')
   const endpoint = () => {
     try {
       return JSON.parse(readFileSync(endpointFile, 'utf8'))

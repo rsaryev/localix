@@ -33,7 +33,7 @@ export function isTranscriptItemHidden(item: AgentItem): boolean {
  * server treated one of these as a collapsed row, it could remove the very
  * input/output needed to decide and render the live surface on first paint.
  */
-export const STANDALONE_TOOL_NAMES = ['ask', 'quiz', 'terminal'] as const
+export const STANDALONE_TOOL_NAMES = ['AskUserQuestion', 'quiz', 'terminal'] as const
 
 const standaloneToolNames: ReadonlySet<string> = new Set(STANDALONE_TOOL_NAMES)
 

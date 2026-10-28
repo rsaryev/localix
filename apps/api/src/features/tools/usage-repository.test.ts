@@ -1,3 +1,4 @@
+import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -14,7 +15,7 @@ import {
   setToolUsageRecorder,
 } from './usage-recorder'
 
-const tempDir = join(process.cwd(), 'tmp', 'tool-usage-repo-tests')
+const tempDir = join(tmpdir(), `localix-tool-usage-repo-tests-${process.pid}`)
 
 /**
  * The REAL database, migrations included — a fake would agree with a broken statement. Both
@@ -41,13 +42,13 @@ describe('tool usage repository', () => {
 
     expect(await repo.list('u1', '')).toEqual([])
 
-    await repo.recordUse('u1', '', 'read', { at: '2026-07-01T00:00:00.000Z' })
-    await repo.recordUse('u1', '', 'read', { at: '2026-07-02T00:00:00.000Z' })
-    await repo.recordUse('u1', '', 'read', { isError: true, at: '2026-07-03T00:00:00.000Z' })
+    await repo.recordUse('u1', '', 'Read', { at: '2026-07-01T00:00:00.000Z' })
+    await repo.recordUse('u1', '', 'Read', { at: '2026-07-02T00:00:00.000Z' })
+    await repo.recordUse('u1', '', 'Read', { isError: true, at: '2026-07-03T00:00:00.000Z' })
 
     expect(await repo.list('u1', '')).toEqual([
       {
-        toolName: 'read',
+        toolName: 'Read',
         calls: 3,
         errors: 1,
         // The FIRST write's timestamp, never moved by the two that followed.
@@ -62,12 +63,12 @@ describe('tool usage repository', () => {
   test('concurrent calls to one tool cannot lose an increment', async () => {
     const db = await makeDb()
     const repo = createToolUsageRepository(db)
-    await repo.recordUse('u1', '', 'bash')
+    await repo.recordUse('u1', '', 'Bash')
 
     // Parallel tool execution is real (`executionMode: 'parallel'`), and sub-agents in one tree
     // share a scope. A read-then-write recorder collapses these to a much smaller number; the
     // arithmetic has to happen inside the statement.
-    await Promise.all(Array.from({ length: 25 }, () => repo.recordUse('u1', '', 'bash')))
+    await Promise.all(Array.from({ length: 25 }, () => repo.recordUse('u1', '', 'Bash')))
 
     expect((await repo.list('u1', ''))[0]?.calls).toBe(26)
 
@@ -78,23 +79,23 @@ describe('tool usage repository', () => {
     const db = await makeDb()
     const repo = createToolUsageRepository(db)
 
-    await repo.recordRoster('u1', '', ['read', 'search'], '2026-07-01T00:00:00.000Z')
-    await repo.recordUse('u1', '', 'read', { at: '2026-07-05T00:00:00.000Z' })
+    await repo.recordRoster('u1', '', ['Read', 'Search'], '2026-07-01T00:00:00.000Z')
+    await repo.recordUse('u1', '', 'Read', { at: '2026-07-05T00:00:00.000Z' })
     // A later run surfaces the same roster plus one new name.
-    await repo.recordRoster('u1', '', ['read', 'search', 'bash'], '2026-07-09T00:00:00.000Z')
+    await repo.recordRoster('u1', '', ['Read', 'Search', 'Bash'], '2026-07-09T00:00:00.000Z')
 
     const byName = new Map((await repo.list('u1', '')).map((row) => [row.toolName, row]))
-    expect(byName.get('read')).toEqual({
-      toolName: 'read',
+    expect(byName.get('Read')).toEqual({
+      toolName: 'Read',
       calls: 1,
       errors: 0,
       firstSeenAt: '2026-07-01T00:00:00.000Z',
       lastUsedAt: '2026-07-05T00:00:00.000Z',
     })
     // Never surfaced before this run, so its clock starts now — not at the first run's timestamp.
-    expect(byName.get('bash')?.firstSeenAt).toBe('2026-07-09T00:00:00.000Z')
-    expect(byName.get('bash')?.lastUsedAt).toBeNull()
-    expect(byName.get('search')?.calls).toBe(0)
+    expect(byName.get('Bash')?.firstSeenAt).toBe('2026-07-09T00:00:00.000Z')
+    expect(byName.get('Bash')?.lastUsedAt).toBeNull()
+    expect(byName.get('Search')?.calls).toBe(0)
 
     await destroyDatabase(db)
   })
@@ -110,11 +111,11 @@ describe('tool usage repository', () => {
     //
     // The empty name is a different matter — it would be a real row keyed on nothing — so the
     // writer still filters those, and removing that filter DOES redden this.
-    await repo.recordRoster('u1', '', ['read', 'read', '', 'search'])
+    await repo.recordRoster('u1', '', ['Read', 'Read', '', 'Search'])
 
     expect((await repo.list('u1', '')).map((row) => row.toolName).sort()).toEqual([
-      'read',
-      'search',
+      'Read',
+      'Search',
     ])
 
     await destroyDatabase(db)
@@ -124,9 +125,9 @@ describe('tool usage repository', () => {
     const db = await makeDb()
     const repo = createToolUsageRepository(db)
 
-    await repo.recordUse('u1', '', 'read')
-    await repo.recordUse('u1', 'proj-a', 'read')
-    await repo.recordUse('u2', '', 'read')
+    await repo.recordUse('u1', '', 'Read')
+    await repo.recordUse('u1', 'proj-a', 'Read')
+    await repo.recordUse('u2', '', 'Read')
 
     expect((await repo.list('u1', ''))[0]?.calls).toBe(1)
     expect((await repo.list('u1', 'proj-a'))[0]?.calls).toBe(1)
@@ -143,34 +144,34 @@ describe('tool usage recorder', () => {
   })
 
   test('is a no-op with no sink registered', () => {
-    expect(() => recordToolUse('read', { userId: 'u1' })).not.toThrow()
-    expect(() => recordToolRoster(['read'], { userId: 'u1' })).not.toThrow()
+    expect(() => recordToolUse('Read', { userId: 'u1' })).not.toThrow()
+    expect(() => recordToolRoster(['Read'], { userId: 'u1' })).not.toThrow()
   })
 
   test('normalizes a null project to the no-project scope', () => {
     const seen: unknown[] = []
     setToolUsageRecorder((toolName, scope) => void seen.push([toolName, scope]))
 
-    recordToolUse('read', { userId: 'u1', projectId: null })
+    recordToolUse('Read', { userId: 'u1', projectId: null })
 
-    expect(seen).toEqual([['read', { userId: 'u1', projectId: '', isError: false }]])
+    expect(seen).toEqual([['Read', { userId: 'u1', projectId: '', isError: false }]])
   })
 
   test('a throwing sink never propagates, synchronously or asynchronously', async () => {
     setToolUsageRecorder(() => {
       throw new Error('sink exploded')
     })
-    expect(() => recordToolUse('read', { userId: 'u1' })).not.toThrow()
+    expect(() => recordToolUse('Read', { userId: 'u1' })).not.toThrow()
 
     setToolUsageRecorder(() => Promise.reject(new Error('sink rejected')))
-    expect(() => recordToolUse('read', { userId: 'u1' })).not.toThrow()
+    expect(() => recordToolUse('Read', { userId: 'u1' })).not.toThrow()
     // An unhandled rejection would surface on the next tick, not at the call.
     await Promise.resolve()
 
     setToolRosterRecorder(() => {
       throw new Error('roster sink exploded')
     })
-    expect(() => recordToolRoster(['read'], { userId: 'u1' })).not.toThrow()
+    expect(() => recordToolRoster(['Read'], { userId: 'u1' })).not.toThrow()
   })
 
   test('an empty roster does not reach the sink at all', () => {

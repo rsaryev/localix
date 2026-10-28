@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react'
+import { useRef, useState, type CSSProperties, type KeyboardEvent } from 'react'
 
 import { positionOfGame, type Game, type Move } from '../../shared/game'
 import type { Promotion, Square } from '../../shared/position'
@@ -31,14 +31,18 @@ const squareAt = (index: number, flip: boolean): Square => {
  * progress shows it at rest; a move made while the person watches lands in front of them.
  */
 function useArrivals(game: Game): Move[] {
-  const memo = useRef<{ id: string; count: number; arrivals: Move[] } | null>(null)
-  const seen = memo.current
   const count = game.moves.length
-  if (!seen || seen.id !== game.id || seen.count !== count) {
-    const since = !seen || seen.id !== game.id ? count : seen.count
-    memo.current = { id: game.id, count, arrivals: game.moves.slice(since) }
-  }
-  return memo.current!.arrivals
+  // State, adjusted while rendering: the first sight of a game has no arrivals.
+  const [seen, setSeen] = useState<{ id: string; count: number; arrivals: Move[] }>({
+    id: game.id,
+    count,
+    arrivals: [],
+  })
+  if (seen.id === game.id && seen.count === count) return seen.arrivals
+  const since = seen.id === game.id ? seen.count : count
+  const next = { id: game.id, count, arrivals: game.moves.slice(since) }
+  setSeen(next)
+  return next.arrivals
 }
 
 /**
@@ -74,10 +78,13 @@ export function Board({
   const buttons = useRef<(HTMLButtonElement | null)[]>([])
 
   // A new position ends whatever move was being built on the old one.
-  useEffect(() => {
+  const positionKey = `${game.id}:${game.moves.length}:${playable}`
+  const [builtOn, setBuiltOn] = useState(positionKey)
+  if (builtOn !== positionKey) {
+    setBuiltOn(positionKey)
     setPicked(null)
     setPromoting(null)
-  }, [game.id, game.moves.length, playable])
+  }
 
   const pieces = new Map(position.cells.map((cell) => [cell.square, cell.piece]))
   const targets = targetsOf(legal, picked)

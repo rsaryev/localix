@@ -38,11 +38,9 @@ export interface MiniAppRouteScope {
  * `Variables`. A contributed app is fetched with the RAW request, so nothing an app-level
  * middleware `set()` reaches it: `c.get('userId')` is `undefined` at runtime, always.
  *
- * It USED to declare `Variables: { userId: string }` "for compatibility", which made that exact
- * mistake type-check. A router moved in from the host kept core's `c.get('userId')` idiom across
- * sixty-odd handlers, compiled clean, and resolved every request as an unknown user — every panel
- * it served reported an empty workspace. A contract that types a value it never delivers is worse
- * than no contract: the compiler vouches for the bug.
+ * Declaring `Variables: { userId: string }` here would let `c.get('userId')` type-check and
+ * resolve every request as an unknown user. A contract that types a value it never delivers is
+ * worse than no contract: the compiler vouches for the bug.
  */
 export type MiniAppRouteContext = {
   Bindings: MiniAppRouteScope
@@ -52,10 +50,10 @@ export type MiniAppRouteContext = {
  * The HOST app's own Hono environment, where `userId` really is a context variable set by an
  * app-level middleware.
  *
- * Separate from {@link MiniAppRouteContext} on purpose. One type used to serve both, so a
- * contributed router typed against it could read `c.get('userId')` — correct in the host's app,
- * `undefined` in every mounted mini app — and the compiler agreed. Keeping them apart is what makes
- * "which app am I mounted in?" a question the types answer.
+ * Separate from {@link MiniAppRouteContext} on purpose: one type for both would let a
+ * contributed router read `c.get('userId')` — correct in the host's app, `undefined` in every
+ * mounted mini app. Keeping them apart makes "which app am I mounted in?" a question the types
+ * answer.
  */
 export type HostRouteContext = {
   Bindings: MiniAppRouteScope

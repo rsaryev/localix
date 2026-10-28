@@ -48,7 +48,10 @@ export type TreeClipboard = { paths: string[]; mode: 'cut' | 'copy' }
  * fs-change refresh, and the reveal-active-file effect. Returns everything the
  * tree render needs.
  */
-export function useFileTree(sessionId: string | null) {
+export function useFileTree(
+  sessionId: string | null,
+  { refreshDelayMs }: { refreshDelayMs?: number } = {},
+) {
   // Path of the file currently shown in the focused grid group, so the tree can
   // highlight it (and the diff tab's underlying file too) — editor-style feedback.
   const activeFilePath = useActiveFilePath()
@@ -195,7 +198,7 @@ export function useFileTree(sessionId: string | null) {
   )
 
   // Disk changes, a reconnect's missed frames: see the hook.
-  useLiveTreeRefresh(sessionId, childrenRef, reloadDir)
+  useLiveTreeRefresh(sessionId, childrenRef, reloadDir, refreshDelayMs)
 
   // Reveal a file in the tree: expand its ancestor folders (loading as needed)
   // and scroll it into view — "reveal in explorer". Returns a cancel fn so an

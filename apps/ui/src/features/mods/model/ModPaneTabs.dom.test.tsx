@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, expect, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import type { ModPaneRef, ModsOverview } from '@/shared/api/modsApi'
+import { turns } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -61,7 +62,10 @@ test('pane tabs follow the panes: opened in the background, focused when asked, 
   const read = spyOn(modsApi, 'overview').mockImplementation(async () => current)
   let mutate: (key: string, data: unknown, revalidate: boolean) => Promise<unknown> = async () => {}
   function Probe() {
-    mutate = useSWRConfig().mutate as typeof mutate
+    const config = useSWRConfig()
+    React.useEffect(() => {
+      mutate = config.mutate as typeof mutate
+    })
     return <ModPaneTabs />
   }
   useGridStore.getState().openItem({ kind: 'settings', id: 'settings', title: 'Settings' })
@@ -69,7 +73,7 @@ test('pane tabs follow the panes: opened in the background, focused when asked, 
   document.body.append(host)
   const root = createRoot(host)
   const cache = new Map()
-  const settle = () => React.act(async () => new Promise((resolve) => setTimeout(resolve, 10)))
+  const settle = () => React.act(async () => turns())
   const set = async (next: ModsOverview) => {
     current = next
     await React.act(async () => {

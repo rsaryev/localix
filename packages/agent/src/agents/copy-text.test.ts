@@ -13,7 +13,7 @@ describe('copyableMessageText', () => {
         items: [
           item({ id: 'text-1', type: 'text', text: 'first' }),
           item({ id: 'reasoning-1', type: 'reasoning', text: 'private chain of thought' }),
-          item({ id: 'tool-1', type: 'tool_call', toolCallId: 'call-1', name: 'read' }),
+          item({ id: 'tool-1', type: 'tool_call', toolCallId: 'call-1', name: 'Read' }),
           item({ id: 'text-2', type: 'text', text: 'second' }),
         ],
       }),

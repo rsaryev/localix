@@ -117,11 +117,13 @@ test('a watched log change uses the current log reader without reading screens',
       calls.push('screen')
       return null
     }
+    const read = Promise.withResolvers<void>()
     internals.readTurnsFor = async (keys) => {
       calls.push(`turns.changed:${keys.join(',')}`)
+      read.resolve()
     }
     changed()
-    await new Promise((resolve) => setTimeout(resolve, 150))
+    await read.promise
     expect(calls.slice(2)).toEqual(['turns.changed:codex:one,codex:two'])
   })
 })

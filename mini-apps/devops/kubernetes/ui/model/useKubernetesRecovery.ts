@@ -34,22 +34,23 @@ export function useKubernetesRecovery(options: KubernetesRecoveryOptions) {
     Object.values(state.resourceErrors).some(Boolean)
   const liveReadsEnabled = enabled && target === null && !hasReadFailure
 
+  // The bookkeeping follows the failure: cleared once nothing is failing and nothing is loading,
+  // and started afresh for a different failure. Decided while rendering, so the effect below only
+  // ever schedules the retry for the failure it sees.
+  if (enabled && !target) {
+    if (
+      !state.loading &&
+      !state.refreshing &&
+      (recovery.key || recovery.attempts || recovery.running)
+    ) {
+      setRecovery({ key: '', attempts: 0, running: false })
+    }
+  } else if (enabled && recovery.key !== key) {
+    setRecovery({ key, attempts: 0, running: false })
+  }
+
   useEffect(() => {
-    if (!enabled) return
-    if (!target) {
-      if (
-        !state.loading &&
-        !state.refreshing &&
-        (recovery.key || recovery.attempts || recovery.running)
-      ) {
-        setRecovery({ key: '', attempts: 0, running: false })
-      }
-      return
-    }
-    if (recovery.key !== key) {
-      setRecovery({ key, attempts: 0, running: false })
-      return
-    }
+    if (!enabled || !target) return
     if (
       state.loading ||
       state.refreshing ||

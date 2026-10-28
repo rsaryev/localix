@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import type { MessageContextBinding } from '@localixai/agent'
 
-import { USER_PARTICIPANT } from '../../../db/participant'
+import { USER_AUTHOR } from '../../../db/author'
 import { serializeMessagePayload } from '../../../db/payload'
 import { captureContextBindings } from '../../context-fabric/binding-capture'
 import { createContextProviderRegistry } from '../../context-fabric/registry'
@@ -88,7 +88,7 @@ describe('preview feedback API/history roundtrip', () => {
     const json = serializeMessagePayload({
       id: 'message-1',
       role: 'user',
-      from: USER_PARTICIPANT,
+      from: USER_AUTHOR,
       content: request.prompt,
       bindings,
     })

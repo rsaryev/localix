@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type RefObject } from 'react'
+import { useEffect, useState, type RefObject } from 'react'
 import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
 import {
   DropdownMenu,
@@ -8,6 +8,7 @@ import {
 import { formatChordText } from '@localixai/kit/keybindings'
 import { MenuEntries } from '@localixai/kit/menu-entries'
 import type { SpaceDocument } from '../../shared/format/document'
+import { useStableCallback } from '@localixai/mini-app-sdk/ui/runtime-hooks'
 import { menuSections, type MenuContext, type MenuTarget } from './menuItems'
 
 /**
@@ -69,9 +70,8 @@ function targetAt(
 
 export function useBoardMenu(root: RefObject<HTMLElement | null>, board: MenuBoard) {
   const [open, setOpen] = useState<Open | null>(null)
-  const current = useRef(board)
-  current.current = board
-  const resolve = useRef((x: number, y: number) => targetAt(root.current, current.current, x, y))
+  // The effect below lives as long as the board, and resolves a press against the board as it is.
+  const resolve = useStableCallback((x: number, y: number) => targetAt(root.current, board, x, y))
 
   useEffect(() => {
     const element = root.current
@@ -79,7 +79,7 @@ export function useBoardMenu(root: RefObject<HTMLElement | null>, board: MenuBoa
     let press: { x: number; y: number; moved: boolean; waiting: boolean } | null = null
     let released: { moved: boolean; at: number } | null = null
     const show = (x: number, y: number) => {
-      const target = resolve.current(x, y)
+      const target = resolve(x, y)
       if (target) setOpen({ x, y, target })
     }
     const down = (event: PointerEvent) => {
@@ -127,7 +127,7 @@ export function useBoardMenu(root: RefObject<HTMLElement | null>, board: MenuBoa
       window.removeEventListener('pointerup', up, true)
       element.removeEventListener('contextmenu', menu)
     }
-  }, [root])
+  }, [root, resolve])
 
   return { open, close: () => setOpen(null) }
 }
@@ -156,7 +156,6 @@ export function BoardMenu({
       onSelect: item.run,
     })),
   ])
-  const box = root.current?.getBoundingClientRect()
   return (
     <DropdownMenu
       open={open !== null && entries.length > 0}
@@ -167,9 +166,14 @@ export function BoardMenu({
         <span
           aria-hidden
           className="pointer-events-none absolute size-0"
-          style={
-            open && box ? { left: open.x - box.left, top: open.y - box.top } : { left: 0, top: 0 }
-          }
+          ref={(anchor) => {
+            // Placed against the board's own box, read once the board is on screen.
+            const box = root.current?.getBoundingClientRect()
+            if (!anchor || !open || !box) return
+            anchor.style.left = `${open.x - box.left}px`
+            anchor.style.top = `${open.y - box.top}px`
+          }}
+          style={{ left: 0, top: 0 }}
         />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-56">

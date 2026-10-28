@@ -184,7 +184,7 @@ export function grantCoversCall(scope: string, call: GrantCall): boolean {
   return targets.length === 1 && targets[0] === inner
 }
 
-/** The rule's Settings spelling: `tool:bash` over `git *` reads `bash(git *)`. */
+/** The rule's Settings spelling: `tool:Bash` over `git *` reads `bash(git *)`. */
 export function describeGrantRule(rule: { action: string; resource: string }): string {
   return `${rule.action.replace(/^tool:/u, '')}(${rule.resource})`
 }

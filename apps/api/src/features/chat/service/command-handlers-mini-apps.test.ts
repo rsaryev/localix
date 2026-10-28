@@ -60,7 +60,7 @@ describe('/mini-app', () => {
   test('with none installed it says where they come from', async () => {
     const text = await run({ list: async () => ({ miniApps: [] }) }, '/mini-app list')
     expect(text).toContain('No mini apps')
-    expect(text).toContain('/mini-app create')
+    expect(text).toContain('Store')
     expect(text).not.toMatch(/plugin/iu)
   })
 
@@ -101,36 +101,25 @@ describe('/mini-app', () => {
     ).toBe('Remove failed: "chess" ships with Localix; switch it off instead')
   })
 
-  test('reload rebuilds the person’s own mini apps and reports the ones that failed', async () => {
-    const report = (ok: boolean) => ({
-      ok,
-      steps: [{ title: 'UI build', ok, problems: ok ? [] : ['UI build failed: bad import'] }],
-    })
-    let reloads = 0
-    const text = await run(
-      {
-        reload: async () => {
-          reloads++
-          return [
-            { name: 'notes', report: report(true) },
-            { name: 'timer', report: report(false) },
-          ]
-        },
-      },
-      '/mini-app reload',
+  test('reload re-reads every mini app folder, building nothing', async () => {
+    let resyncs = 0
+    const text = await run({ resync: async () => void resyncs++ }, '/mini-app reload')
+    expect(resyncs).toBe(1)
+    expect(text).toBe(
+      'Mini apps reloaded. Their tools, screens and commands take effect on the next turn.',
     )
-    expect(reloads).toBe(1)
-    expect(text).toContain('Mini apps reloaded.')
-    expect(text).toContain('Rebuilt `notes`, `timer`.')
-    expect(text).toContain('UI build failed: bad import')
-    expect(text).not.toContain('- UI build: ok')
+  })
+
+  test('creating is not a sub-command: Localix runs and manages mini apps, it does not build them', async () => {
+    const text = await run({}, '/mini-app create a timer')
+    expect(text).toContain('Unknown sub-command `create`')
   })
 
   test('an unknown sub-command is told the actions instead of listing', async () => {
     const text = await run({}, '/mini-app disble chess')
     expect(text).toContain('Unknown sub-command `disble`')
     expect(text).toContain('/mini-app disable <name>')
-    expect(text).toContain('/mini-app create <what it should do>')
+    expect(text).not.toContain('/mini-app create')
     expect(text).not.toMatch(/plugin/iu)
   })
 

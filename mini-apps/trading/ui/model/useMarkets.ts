@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Market } from '../../backend/contracts'
 import { TradingApiError, tradingApi } from '../api/tradingApi'
 import type { TradingFailure } from '../problems'
@@ -17,6 +17,8 @@ export interface MarketsState {
 const MARKET_LIMIT = 500
 /** A keystroke is not a request. */
 const SEARCH_DEBOUNCE_MS = 200
+
+const EMPTY: MarketsState = { markets: [], loading: false, unreachable: false, error: null }
 
 /**
  * Loads a connection's market list once it is live. `groupMarkets` filters and groups it locally,
@@ -42,18 +44,22 @@ export function useMarkets(
   reloadNonce = 0,
   limit = MARKET_LIMIT,
 ): MarketsState {
-  const [state, setState] = useState<MarketsState>({
-    markets: [],
-    loading: false,
-    unreachable: false,
-    error: null,
+  // The last read to settle, tagged with the request it answered. A request that has not settled
+  // yet reads as `loading` over the previous page (which keeps filtering locally); a parked hook
+  // (no connection, or disabled) reads as empty. Neither needs a state write in an effect.
+  const request =
+    connectionId && enabled ? JSON.stringify([connectionId, query, reloadNonce, limit]) : null
+  const [settled, setSettled] = useState<{ request: string | null; value: MarketsState }>({
+    request: null,
+    value: EMPTY,
   })
+  if (request === null && settled.request !== null) setSettled({ request: null, value: EMPTY })
+  const pending = useMemo(() => ({ ...settled.value, loading: true }), [settled.value])
   const lastNonce = useRef(reloadNonce)
 
   useEffect(() => {
-    if (!connectionId || !enabled) {
+    if (!connectionId || !enabled || request === null) {
       lastNonce.current = reloadNonce
-      setState({ markets: [], loading: false, unreachable: false, error: null })
       return
     }
     // Only a nonce BUMP forces a venue reload — a connection/query change reuses the cache.
@@ -61,7 +67,7 @@ export function useMarkets(
     lastNonce.current = reloadNonce
     const search = query.trim()
     let cancelled = false
-    setState((s) => ({ ...s, loading: true }))
+    const settle = (value: MarketsState) => setSettled({ request, value })
     // While this is in flight the previously-loaded page keeps filtering locally, so the list
     // narrows as you type rather than blanking and refilling.
     const timer = setTimeout(
@@ -73,13 +79,13 @@ export function useMarkets(
               ...(search ? { query: search } : {}),
               ...(reload ? { reload: true } : {}),
             })
-            if (!cancelled) setState({ markets, loading: false, unreachable: false, error: null })
+            if (!cancelled) settle({ markets, loading: false, unreachable: false, error: null })
           } catch (err) {
             if (cancelled) return
             const unreachable =
               err instanceof TradingApiError &&
               (err.code === 'network_error' || err.code === 'not_connected')
-            setState({
+            settle({
               markets: [],
               loading: false,
               unreachable,
@@ -102,7 +108,8 @@ export function useMarkets(
       cancelled = true
       clearTimeout(timer)
     }
-  }, [connectionId, enabled, query, reloadNonce, limit])
+  }, [connectionId, enabled, query, reloadNonce, limit, request])
 
-  return state
+  if (request === null) return EMPTY
+  return settled.request === request ? settled.value : pending
 }

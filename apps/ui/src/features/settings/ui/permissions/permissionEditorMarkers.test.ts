@@ -8,7 +8,7 @@ const rule = (action: string, effect: CapabilityRule['effect'] = 'allow'): Capab
   effect,
 })
 
-const shipped = [rule('tool:*', 'deny'), rule('tool:read'), rule('tool:bash')]
+const shipped = [rule('tool:*', 'deny'), rule('tool:Read'), rule('tool:Bash')]
 
 describe('marking the rules the product does not ship', () => {
   test('a scope that matches what we ship marks nothing', () => {
@@ -27,20 +27,20 @@ describe('marking the rules the product does not ship', () => {
   })
 
   test('an added rule marks, and only it', () => {
-    const withExtra = [...shipped, rule('tool:write')]
+    const withExtra = [...shipped, rule('tool:Write')]
 
     expect(markUnshipped(withExtra, shipped)).toEqual([false, false, false, true])
   })
 
   test('an edited effect marks that row', () => {
-    const edited = [shipped[0]!, rule('tool:read', 'ask'), shipped[2]!]
+    const edited = [shipped[0]!, rule('tool:Read', 'ask'), shipped[2]!]
 
     expect(markUnshipped(edited, shipped)).toEqual([false, true, false])
   })
 
   /** Counted, not set-tested: a second copy of a rule we ship once is somebody's addition. */
   test('a duplicate of a shipped rule marks the copy', () => {
-    const duplicated = [...shipped, rule('tool:read')]
+    const duplicated = [...shipped, rule('tool:Read')]
 
     expect(markUnshipped(duplicated, shipped)).toEqual([false, false, false, true])
   })

@@ -1,29 +1,19 @@
 /**
- * WHAT HAPPENED TO THIS CONVERSATION, said in the conversation — and said to the agents too.
+ * WHAT HAPPENED TO THIS CONVERSATION, said in the conversation — and said to the agent too.
  *
- * "@qa joined." "@lead is now on claude-opus-5." "@lead reasoning effort set to low." Every one
- * of these is a fact about the conversation that changes how the next turn should go, and until
- * now only the first of them reached the model: the other two were drawn by the client, as rows no
- * backend body contains, so they vanished on reload and no agent ever saw them.
- *
- * That asymmetry produced exactly the confusions it looks like it would. A participant whose
- * colleague left kept addressing them, because each participant's roster lives in a CACHED prompt
- * section that is rebuilt only when the participants change. A model moved from a small to a
- * large one was asked to continue as though nothing had happened, which is the one moment the
- * answer's shape genuinely changes. And a reasoning level raised mid-conversation looked, from
- * inside the transcript, like the same model suddenly thinking harder for no stated reason.
+ * "lead is now on claude-opus-5." "lead reasoning effort set to low." Every one of these is a
+ * fact about the conversation that changes how the next turn should go. A model moved from a
+ * small to a large one was asked to continue as though nothing had happened, which is the one
+ * moment the answer's shape genuinely changes, and a reasoning level raised mid-conversation
+ * looked, from inside the transcript, like the same model suddenly thinking harder.
  *
  * So there is ONE writer here and every session event goes through it. The centred notice is
  * UI-only prose; its model-facing value is a resolved system context binding. At run intake
  * those bindings are reduced to current state and appended after the cacheable history prefix.
- *
- * Each line NAMES the participant it is about. A conversation may have several, and "Reasoning
- * effort set to low" in a conversation with three agents does not say whose — which is also true
- * of a private chat the moment its transcript is read by someone who was not there.
  */
 import { randomUUID } from 'node:crypto'
 
-import { SYSTEM_PARTICIPANT } from '../../../db'
+import { SYSTEM_AUTHOR } from '../../../db'
 import type { StoredSystemNotice } from '../../../db/payload'
 import { PERMISSION_MODE_NOTICE, type PermissionMode } from '../../../contracts/permission-modes'
 import type { AgentStreamEvent, PersistedMessage } from '../contracts'
@@ -41,26 +31,6 @@ export interface SessionNoticeIo {
   now: () => string
 }
 
-/** The sentence, or nothing at all when the membership did not actually move. */
-export function participantsChangeText(
-  before: readonly SessionAgentRoute[],
-  after: readonly SessionAgentRoute[],
-): string | null {
-  const had = new Set(before.map((member) => member.agentId))
-  const has = new Set(after.map((member) => member.agentId))
-  // Handles without @: a notice names agents, it does not address them, and the model copies the
-  // host's usage — an @ written to credit a colleague hands that colleague a turn.
-  const joined = after.filter((member) => !had.has(member.agentId)).map((m) => m.handle)
-  const left = before.filter((member) => !has.has(member.agentId)).map((m) => m.handle)
-  if (joined.length === 0 && left.length === 0) return null
-  const parts: string[] = []
-  // "joined" and "left" as separate clauses even in one edit: a swap is two facts, and a
-  // sentence that merged them ("replaced X with Y") would claim an intent nobody stated.
-  if (joined.length > 0) parts.push(`${joined.join(', ')} joined the conversation`)
-  if (left.length > 0) parts.push(`${left.join(', ')} left the conversation`)
-  return `${parts.join('; ')}.`
-}
-
 /** A model id without its provider prefix — what the picker and the transcript both call it. */
 const shortModelName = (modelId: string): string => {
   const parts = modelId.split('/')
@@ -68,44 +38,36 @@ const shortModelName = (modelId: string): string => {
 }
 
 /**
- * What changed about the people who STAYED: their model, their reasoning level.
+ * What changed about the conversation's agent: its model, its reasoning level.
  *
- * Only members present on both sides are compared. A newcomer's model is not a change — the
- * join line already says they are here, and the roster the next turn is built from carries what
- * they run on.
+ * Only an agent present on both sides is compared; a first assignment is not a change.
  *
  * The connection is deliberately absent: which credentials a model is reached through is an
  * account fact, not something the conversation can act on, and naming it to the model would be
  * noise it cannot use.
  */
 export function routeChangeNotices(
-  before: readonly SessionAgentRoute[],
-  after: readonly SessionAgentRoute[],
+  before: SessionAgentRoute | null,
+  after: SessionAgentRoute | null,
 ): StoredSystemNotice[] {
-  const previous = new Map(before.map((member) => [member.agentId, member]))
+  if (!before || !after || before.agentId !== after.agentId) return []
   const notices: StoredSystemNotice[] = []
-  for (const member of after) {
-    const was = previous.get(member.agentId)
-    if (!was) continue
-    const who = member.handle
-    if (member.modelId && was.modelId !== member.modelId) {
-      notices.push({
-        kind: 'model_change',
-        tone: 'neutral',
-        participant: member.handle,
-        text: `${who} is now on ${shortModelName(member.modelId)}.`,
-      })
-    }
-    if (member.reasoningEffort && was.reasoningEffort !== member.reasoningEffort) {
-      notices.push({
-        kind: 'reasoning_change',
-        tone: 'neutral',
-        participant: member.handle,
-        // The effort tier IS its own display label (`off`/`minimal`/`low`/…), so there is
-        // nothing to map.
-        text: `${who} reasoning effort set to ${member.reasoningEffort}.`,
-      })
-    }
+  const who = after.name
+  if (after.modelId && before.modelId !== after.modelId) {
+    notices.push({
+      kind: 'model_change',
+      tone: 'neutral',
+      text: `${who} is now on ${shortModelName(after.modelId)}.`,
+    })
+  }
+  if (after.reasoningEffort && before.reasoningEffort !== after.reasoningEffort) {
+    notices.push({
+      kind: 'reasoning_change',
+      tone: 'neutral',
+      // The effort tier IS its own display label (`off`/`minimal`/`low`/…), so there is
+      // nothing to map.
+      text: `${who} reasoning effort set to ${after.reasoningEffort}.`,
+    })
   }
   return notices
 }
@@ -132,7 +94,7 @@ export async function recordSessionNotice(
       {
         id: messageId,
         role: 'user',
-        from: SYSTEM_PARTICIPANT,
+        from: SYSTEM_AUTHOR,
         content: notice.text,
         ...(carriesModelContext(notice)
           ? { bindings: [systemNoticeBinding(notice, messageId, createdAt)] }
@@ -155,14 +117,7 @@ export async function recordSessionNotice(
   }
 }
 
-/**
- * Everything one edit changed about the conversation, as lines in it — the membership first,
- * then what the people who stayed now run on.
- *
- * In that order because that is the order it reads: who is here, and then what they are working
- * with. One call site (`updateSession`), so the two halves cannot be announced by different
- * writers or drift into different sentences.
- */
+/** Everything one edit changed about the conversation, as lines in it. */
 export async function announceSessionChanges(
   io: SessionNoticeIo,
   userId: string,
@@ -170,13 +125,9 @@ export async function announceSessionChanges(
   before: ConversationShape,
   after: ConversationShape,
 ): Promise<void> {
-  const change = participantsChangeText(before.agents, after.agents)
   const mode = permissionModeChangeNotice(before.permissionMode, after.permissionMode)
   const notices: StoredSystemNotice[] = [
-    ...(change
-      ? [{ kind: 'participants_change' as const, tone: 'neutral' as const, text: change }]
-      : []),
-    ...routeChangeNotices(before.agents, after.agents),
+    ...routeChangeNotices(before.agent, after.agent),
     ...(mode ? [mode] : []),
   ]
   for (const notice of notices) await recordSessionNotice(io, userId, sessionId, notice)
@@ -199,11 +150,11 @@ export function permissionModeChangeNotice(
 }
 
 /**
- * The fact about a conversation that a session edit can change and the participants must hear:
- * who is in it, on what each of them runs, and under which permission mode. A `SessionRecord`
- * satisfies it, so the caller passes the record before and after the write.
+ * What a session edit can change and the agent must hear: what it runs on, and under which
+ * permission mode. A `SessionRecord` satisfies it, so the caller passes the record before and
+ * after the write.
  */
 export interface ConversationShape {
-  agents: readonly SessionAgentRoute[]
+  agent: SessionAgentRoute | null
   permissionMode?: PermissionMode
 }

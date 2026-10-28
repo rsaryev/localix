@@ -1,4 +1,4 @@
-import { useId, useMemo, useRef, useState } from 'react'
+import { useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { TerminalSquare } from 'lucide-react'
 import { ResultCountStatus } from '@localixai/mini-app-sdk/ui/result-count-status'
 import {
@@ -36,6 +36,11 @@ export function KvCommandInput({
   // even when that external update shortens the result set.
   const activeIndex = Math.min(selectedIndex, Math.max(suggestions.length - 1, 0))
   const activeOptionId = open ? `${listId}-option-${activeIndex}` : undefined
+
+  // The `autoFocus` attribute, done by hand: the command field takes focus when it appears.
+  useLayoutEffect(() => {
+    inputRef.current?.focus()
+  }, [])
 
   const accept = (name: string) => {
     onValueChange(`${name} `)
@@ -101,7 +106,6 @@ export function KvCommandInput({
           }}
           placeholder="Redis command — e.g.  GET user:1   ·   KEYS *   ·   HGETALL cart:42"
           spellCheck={false}
-          autoFocus
           // No fill or radius override: Input already carries the `--input` veil and the scale's
           // 28px radius, and `bg-surface-raised` mixes from a darker ground than the console pane,
           // so the command field read as black.

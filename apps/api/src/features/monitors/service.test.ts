@@ -45,8 +45,6 @@ describe('a polled wait (`until`)', () => {
       sessionId: 's1',
       source: 'bg-monitor',
       deliveryKey: `trg:${trigger.id}:1`,
-      // The participant that started it answers.
-      to: { participant: 'agent:lead' },
     })
     expect(h.wakes[0]!.content).toContain('[Monitor mon-1 ended: pipeline] the condition was met')
     expect(h.wakes[0]!.content).toContain('success')
@@ -174,7 +172,7 @@ describe('the service', () => {
     expect(refused.ok).toBe(false)
     if (!refused.ok) {
       expect(refused.error).toContain('mon-1')
-      expect(refused.error).toContain('jobs action="stop"')
+      expect(refused.error).toContain('TaskStop')
     }
     // A stopped monitor frees its slot.
     h.service.stop('u1', 's1', 'mon-1')
@@ -255,7 +253,7 @@ describe('vault references', () => {
     h = await monitorHarness()
     const missing = await h.start(authed())
     expect(missing.ok).toBe(false)
-    if (!missing.ok) expect(missing.error).toContain('vault action:"create"')
+    if (!missing.ok) expect(missing.error).toContain('`Vault` action:"create"')
     await h.close()
     h = await monitorHarness({ noVault: true })
     const none = await h.start(authed())

@@ -1,4 +1,11 @@
-import { useLayoutEffect, useRef, useState, type PointerEvent, type RefObject } from 'react'
+import {
+  useEffectEvent,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type PointerEvent,
+  type RefObject,
+} from 'react'
 import { EdgeLabelRenderer, useReactFlow } from '@xyflow/react'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { LABEL_GAP, labelAnchor, nearestT, type LabelAnchor, type PathProbe } from './edge-label'
@@ -47,12 +54,14 @@ export function EdgeCaption({
   const press = useRef({ x: 0, y: 0, moved: false })
   const [anchor, setAnchor] = useState<LabelAnchor>({ ...fallback, across: true })
   const t = dragging ?? at
-  const latest = useRef(fallback)
-  latest.current = fallback
+  // The effect below re-places the caption on the line's geometry, not on the fallback point, so
+  // it reads the newest fallback without depending on it.
+  const unmeasured = useEffectEvent((): LabelAnchor => ({ ...fallback, across: true }))
 
   useLayoutEffect(() => {
     const probe = probeOf(path.current)
-    setAnchor(probe ? labelAnchor(probe, t) : { ...latest.current, across: true })
+    // oxlint-disable-next-line react/set-state-in-effect -- measures the drawn path in layout, and the caption must be placed from that measure before paint
+    setAnchor(probe ? labelAnchor(probe, t) : unmeasured())
   }, [path, d, t])
 
   const follow = (event: PointerEvent<HTMLDivElement>) => {

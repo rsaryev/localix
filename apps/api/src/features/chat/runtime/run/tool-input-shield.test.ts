@@ -1,4 +1,4 @@
-import { DEFAULT_AGENT_PARTICIPANT } from '../../../../db'
+import { DEFAULT_AGENT_AUTHOR } from '../../../../db'
 import { describe, expect, test } from 'bun:test'
 
 import { createSecretExposureShield } from '../../../secrets/exposure-shield'
@@ -48,7 +48,7 @@ function harness(opts: { shielded: boolean }) {
     sanitize: opts.shielded ? (value) => shield.redactValue('u1', value) : undefined,
   })
   const state = createRunTurnState({
-    payload: emptyAssistantPayload('a1', DEFAULT_AGENT_PARTICIPANT),
+    payload: emptyAssistantPayload('a1', DEFAULT_AGENT_AUTHOR),
     assistantCreatedAt: '2026-07-26T00:00:00.000Z',
     baseSessionTiming: emptySessionTiming(),
   })
@@ -87,7 +87,7 @@ describe('a tool call shows shielded arguments, never the executed ones', () => 
     await handleToolExecutionStart(h.ctx, {
       type: 'tool_execution_start',
       toolCallId: 'c1',
-      toolName: 'bash',
+      toolName: 'Bash',
       input: { command: `curl -H "X-Api-Key: ${SECRET}" https://api.example.com` },
     } as never)
 
@@ -103,7 +103,7 @@ describe('a tool call shows shielded arguments, never the executed ones', () => 
     await handleToolExecutionStart(h.ctx, {
       type: 'tool_execution_start',
       toolCallId: 'c1',
-      toolName: 'bash',
+      toolName: 'Bash',
       input: { command: `echo ${SECRET}` },
     } as never)
     const shown = toolInput(h.acc, 'c1') as { command: string }
@@ -112,7 +112,7 @@ describe('a tool call shows shielded arguments, never the executed ones', () => 
 
   test('streaming progress details are shielded too, before the result boundary', async () => {
     const h = harness({ shielded: true })
-    h.ctx.state.pendingTools.set('c1', { name: 'bash', input: {} })
+    h.ctx.state.pendingTools.set('c1', { name: 'Bash', input: {} })
     h.acc.startTool(0, 'c1', 'bash', { command: 'run' })
     await handleToolExecutionUpdate(h.ctx, {
       // BOTH keys, because two tools stream two different shapes: `output` is what
@@ -142,7 +142,7 @@ describe('a tool call shows shielded arguments, never the executed ones', () => 
     await handleToolExecutionStart(h.ctx, {
       type: 'tool_execution_start',
       toolCallId: 'c1',
-      toolName: 'bash',
+      toolName: 'Bash',
       input: { command: `echo ${SECRET}` },
     } as never)
     expect(JSON.stringify(h.ctx.state.pendingTools.get('c1'))).not.toContain(SECRET)
@@ -161,7 +161,7 @@ describe('a tool call shows shielded arguments, never the executed ones', () => 
 describe('the FIRST writer of a tool call shields it too', () => {
   const rawCall = {
     id: 'c1',
-    name: 'bash',
+    name: 'Bash',
     arguments: { command: `PGPASSWORD=${SECRET} psql -h db` },
   }
 

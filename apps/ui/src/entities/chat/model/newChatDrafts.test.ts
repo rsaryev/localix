@@ -13,7 +13,7 @@ const row = (patch: Partial<UiSession> = {}): UiSession =>
     messages: [],
     isRunning: false,
     isPinned: false,
-    agents: [{ agentId: plan.agentId, handle: 'localix' }],
+    agent: { agentId: plan.agentId, handle: 'localix' },
     ...patch,
   }) as UiSession
 
@@ -35,14 +35,8 @@ describe('window-owned draft eligibility', () => {
     { isArchived: true },
     { title: 'Keep this' },
     { isRunning: true },
-    { agents: [{ agentId: 'other', handle: 'other' }] },
-    {
-      agents: [
-        { agentId: plan.agentId, handle: 'localix' },
-        { agentId: 'other', handle: 'other' },
-      ],
-    },
-  ] as Partial<UiSession>[])('rejects used, reserved and different-party chats: %j', (patch) => {
+    { agent: { agentId: 'other', handle: 'other' } },
+  ] as Partial<UiSession>[])('rejects used, reserved and other agents chats: %j', (patch) => {
     const drafts = createNewChatDrafts()
     const session = row(patch)
     drafts.remember(session, 'P')

@@ -41,7 +41,6 @@ function settleRun(
     ...session,
     messages: settled,
     isRunning: false,
-    activeAgentId: null,
     pendingInteraction: survivingInteractions[0] ?? null,
     pendingInteractionQueue: survivingInteractions.slice(1),
     activePhase: null,
@@ -64,7 +63,6 @@ export const runReducers: StreamReducers<
     return {
       ...session,
       isRunning: true,
-      activeAgentId: event.agentId ?? null,
       activePhase: null,
       streamingMessageId: event.messageId,
     }

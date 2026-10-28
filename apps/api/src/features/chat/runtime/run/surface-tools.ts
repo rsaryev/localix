@@ -4,7 +4,7 @@ import type { PersistedMessage } from '../../contracts'
  * THE TOOLS AN OPEN MINI APP BRINGS TO A TURN — on the wire while its view is in the conversation's
  * context, gone once it is not.
  *
- * A mini app's tools are deferred behind `activate_tools`, so an agent looking at an open board or
+ * A mini app's tools are deferred behind `ToolSearch`, so an agent looking at an open board or
  * database tab still had to spend a call fetching the schema of the tool the tab was about —
  * the tab's context even LISTED the tool by name ("Useful agent tools: <the game's tool>"), as text. And
  * a tool once fetched, or brought by the mini app's own wake, stayed on the session for good: a

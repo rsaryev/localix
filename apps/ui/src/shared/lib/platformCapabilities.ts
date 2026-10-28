@@ -100,7 +100,7 @@ export function configurePlatformCapabilities(overrides: PlatformCapabilityOverr
   // Existing hosts supply a fire-and-forget opener. Preserve that adapter for workflows too.
   if (open && !overrides.external?.requestOpen) {
     external.requestOpen = async (url, systemBrowser) => {
-      await open(url, systemBrowser)
+      open(url, systemBrowser)
       return true
     }
   }

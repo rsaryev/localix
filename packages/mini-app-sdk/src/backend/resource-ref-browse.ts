@@ -21,15 +21,15 @@ import {
 
 interface ResourceBrowserOptions {
   byProvider: ReadonlyMap<string, ResourceRefProvider>
-  listProviderChildren(
+  listProviderChildren: (
     provider: ResourceRefProvider,
     userId: string,
     parentUri: string | null,
     query?: string,
     scope?: ResourceRefScope,
-  ): Promise<unknown>
+  ) => Promise<unknown>
   maxNodesPerProvider: number
-  warnListFailure(provider: string, error: unknown): ResourceNode[]
+  warnListFailure: (provider: string, error: unknown) => ResourceNode[]
 }
 
 /** Backend-owned navigation, grouping, search, and response caps for resource pickers. */

@@ -12,7 +12,7 @@ import {
 import { DiffStat } from '../ToolIO'
 import { ItemView } from '../ItemView'
 import { COLLAPSIBLE_MOTION } from '@localixai/kit/collapsible-motion'
-import { toolDisplayLabel, toolMeta } from './meta'
+import { toolMeta, toolSummaryNoun } from './meta'
 import { batchUnitCount } from './batchInput'
 import { useToolEventFocus } from '../eventFocusTarget'
 
@@ -65,7 +65,7 @@ export function StackedItemGroup({ items }: StackedItemGroupProps) {
       summary: mixed
         ? `${streaming ? 'Exploring' : 'Explored'} ${locations} locations${streaming ? '…' : ''}`
         : (chainSummary(items, streaming) ??
-          `${toolDisplayLabel(items[0].name)} ${items.length} ${meta.noun}`),
+          `${meta.label} ${items.length} ${toolSummaryNoun(items[0].name)}`),
       diffStats: chainDiffStats(items),
     }
   }, [items, meta, mixed])

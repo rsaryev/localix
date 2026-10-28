@@ -43,7 +43,7 @@ const openSchema = z.object({
 export type OpenPreviewInput = z.infer<typeof openSchema>
 
 /** Open a live preview for a URL on behalf of the UI — same path the agent's
- *  `browser` tool uses (injecting proxy + `preview.updated` → auto-reveal), bound
+ *  `Browser` tool uses (injecting proxy + `preview.updated` → auto-reveal), bound
  *  by the host so this route never imports the chat runtime. */
 export interface PreviewRoutesDeps {
   openPreview: (userId: string, input: OpenPreviewInput) => Promise<OpenPreviewCoreResult>

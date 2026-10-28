@@ -177,13 +177,10 @@ export function FileImageView({
           onLostPointerCapture={onLostPointerCapture}
           className={`flex min-h-0 flex-1 overflow-auto scrollbar-thin p-4 ${isFit ? 'items-center justify-center' : `touch-none select-none ${isPanning ? 'cursor-grabbing' : 'cursor-grab'}`}`}
         >
-          <img
-            ref={imgRef}
-            src={src}
-            alt={path}
-            onLoad={onImgLoad}
-            role="button"
-            tabIndex={0}
+          {/* A real button owns the zoom gesture and keys; fitting, it spans the pane so the image can
+              shrink inside it, zoomed it hugs the image so the pane scrolls and pans around it. */}
+          <button
+            type="button"
             aria-label={isFit ? 'Zoom image in' : `Zoom image in (${zoomOutGesture} to zoom out)`}
             title={
               isFit
@@ -201,10 +198,18 @@ export function FileImageView({
                 setScale('fit')
               }
             }}
-            draggable={false}
-            style={imgStyle}
-            className={`rounded-sm outline-none transition-[filter] focus-ring ${isFit ? 'm-auto max-h-full max-w-full cursor-zoom-in object-contain hover:brightness-95' : 'cursor-inherit'} ${pixelated ? '[image-rendering:pixelated]' : ''}`}
-          />
+            className={`rounded-sm outline-none focus-ring ${isFit ? 'flex h-full w-full cursor-zoom-in items-center justify-center' : 'block shrink-0 cursor-inherit'}`}
+          >
+            <img
+              ref={imgRef}
+              src={src}
+              alt={path}
+              onLoad={onImgLoad}
+              draggable={false}
+              style={imgStyle}
+              className={`block transition-[filter] ${isFit ? 'max-h-full max-w-full object-contain hover:brightness-95' : 'cursor-inherit'} ${pixelated ? '[image-rendering:pixelated]' : ''}`}
+            />
+          </button>
         </div>
       )}
     </div>

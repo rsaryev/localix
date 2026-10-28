@@ -55,9 +55,6 @@ export const EMPTY_RUNTIME: CcHooksRuntime = {
   async runTaskCompleted() {
     return { blocked: false }
   },
-  async runTeammateIdle() {
-    return { blocked: false }
-  },
   runPostCompact: noop,
   runInstructionsLoaded: noop,
   async runConfigChange() {

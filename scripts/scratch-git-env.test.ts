@@ -6,7 +6,7 @@ import { scratchGitEnv, scrubGitEnv } from './scratch-git-env.mjs'
 
 const root = resolve(import.meta.dir, '..')
 const SCANNED = ['scripts', 'apps', 'packages']
-const SKIP = new Set(['node_modules', 'dist', 'target', '.turbo', 'src', 'src-tauri'])
+const SKIP = new Set(['node_modules', 'dist', 'target', '.turbo', 'src', 'src-tauri', 'tmp'])
 
 /** Files under scripts/, apps/<x>/scripts and packages/<x>/scripts. */
 function scriptFiles(dir: string, inScripts: boolean, out: string[] = []): string[] {

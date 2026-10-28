@@ -14,14 +14,12 @@ import { dispatchAgentTicket } from './dispatch-agent'
 describe('dispatchAgentTicket — per-run model override', () => {
   const run = async (modelOverride?: string) => {
     const session = sessionFixture({ id: 's1' })
-    const agentId = session.agents[0]!.agentId
+    const agentId = session.agent!.agentId
     const ticket: AgentTurnTicket = {
-      speakerAgentId: agentId,
       assistantMessageId: 'a1',
       triggerMessageIds: [],
       source: 'user-default',
       scope: {
-        speakerAgentId: agentId,
         executionContext: rootExecutionContext(),
         ...(modelOverride ? { modelOverride } : {}),
       },
@@ -43,8 +41,8 @@ describe('dispatchAgentTicket — per-run model override', () => {
   }
 
   test('the run gets the override; the session record keeps the user choice', async () => {
-    const { session, agentId, dispatched } = await run('override-model')
-    const route = (s: typeof session) => s.agents.find((a) => a.agentId === agentId)!.modelId
+    const { session, dispatched } = await run('override-model')
+    const route = (s: typeof session) => s.agent!.modelId
     expect(route(dispatched.session)).toBe('override-model')
     expect(route(session)).not.toBe('override-model')
   })

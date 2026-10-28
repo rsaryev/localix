@@ -18,7 +18,7 @@ import {
 } from './cc-tool-fields'
 
 const EDIT_KEYS = ['file_path', 'old_string', 'new_string', 'replace_all'] as const
-/** NotebookEdit's own fields, which the `edit` tool never takes. */
+/** NotebookEdit's own fields, which the `Edit` tool never takes. */
 const NOTEBOOK_KEYS = ['notebook_path', 'new_source', 'edit_mode', 'cell_id', 'cell_type'] as const
 
 /** A batch of commands as the one line Claude Code's Bash would run (each stops the next). */
@@ -261,10 +261,10 @@ const research: ToolShape = {
 }
 
 export const FILE_AND_WEB_SHAPES: Record<string, ToolShape> = {
-  bash,
-  read,
-  edit,
-  write,
-  search,
-  research,
+  Bash: bash,
+  Read: read,
+  Edit: edit,
+  Write: write,
+  Search: search,
+  Research: research,
 }

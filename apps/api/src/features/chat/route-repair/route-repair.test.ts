@@ -5,7 +5,7 @@ import { createDatabase } from '../../../db/connection'
 import { migrateToLatest } from '../../../db/migrator'
 import { createCoreChangeFeed, recordCoreChanges } from '../../changes/core-entities'
 import { createRouteRepair, type StoredRouteHint } from './route-repair'
-import { createRouteSeatsRepository } from './seats-repository'
+import { createRouteRepairRepository } from './routes-repository'
 
 const DEEPSEEK = 'deepseek/deepseek-chat'
 const CATALOG = [
@@ -26,7 +26,7 @@ async function setup() {
   const published: string[][] = []
   const stranded: string[][] = []
   const repair = createRouteRepair({
-    seats: createRouteSeatsRepository(db),
+    routes: createRouteRepairRepository(db),
     connections: async () => connections,
     catalog: async () => CATALOG,
     projects: {
@@ -64,42 +64,32 @@ async function setup() {
         updated_at: '2026-01-01',
       })
       .execute()
-  await db
-    .insertInto('agent_sessions')
-    .values({
-      id: 's1',
-      user_id: 'u1',
-      title: 'chat',
-      project_id: 'p1',
-      model_choices: JSON.stringify({
-        agents: { a2: { modelId: DEEPSEEK, providerConnectionId: 'or-old' } },
-        chosenAt: { a2: '2026-01-01T00:00:00.000Z' },
-      }),
-    })
-    .execute()
-  const seat = (agent_id: string, provider_connection_id: string | null, model_id: string) =>
+  const session = (id: string, agent_id: string, connection: string | null, model_id: string) =>
     db
-      .insertInto('conversation_participants')
-      .values({ session_id: 's1', agent_id, handle: agent_id, provider_connection_id, model_id })
+      .insertInto('agent_sessions')
+      .values({
+        id,
+        user_id: 'u1',
+        title: 'chat',
+        project_id: 'p1',
+        agent_id,
+        agent_name: agent_id,
+        provider_connection_id: connection,
+        model_id,
+      })
       .execute()
-  await seat('a1', 'or-old', DEEPSEEK)
-  await seat('a3', 'openai-1', 'gpt-4o')
-  const seats = () =>
+  await session('s1', 'a1', 'or-old', DEEPSEEK)
+  await session('s3', 'a3', 'openai-1', 'gpt-4o')
+  const routes = () =>
     db
-      .selectFrom('conversation_participants')
+      .selectFrom('agent_sessions')
       .select(['agent_id', 'provider_connection_id'])
       .orderBy('agent_id')
       .execute()
-  const choices = async () =>
-    JSON.parse(
-      (await db.selectFrom('agent_sessions').select('model_choices').executeTakeFirstOrThrow())
-        .model_choices!,
-    )
   return {
     db,
     repair,
-    seats,
-    choices,
+    routes,
     projects,
     routing: () => routing,
     published,
@@ -116,7 +106,7 @@ describe('route repair', () => {
     const ref = (id: string) => ({ id, userId: 'u1', providerId: 'openrouter' })
 
     t.signIn([])
-    // The owner's delete: the foreign key empties the seat; the notice is what repair hears.
+    // The owner's delete: the foreign key empties the route; the notice is what repair hears.
     await t.db.deleteFrom('provider_connections').where('id', '=', 'or-old').execute()
     await recordCoreChanges(t.db, {
       entity: 'provider.connection',
@@ -124,9 +114,9 @@ describe('route repair', () => {
       ref: ref('or-old'),
     })
     await feed.settle()
-    // Nothing can serve the model yet: nothing is guessed, and the chat is reported stranded.
-    expect((await t.seats())[0]?.provider_connection_id).toBeNull()
-    expect(t.stranded.at(-1)).toEqual(['s1'])
+    // Nothing can serve the model yet: nothing is guessed, and the chats are reported stranded (s3 has no live connection either).
+    expect((await t.routes())[0]?.provider_connection_id).toBeNull()
+    expect(t.stranded.at(-1)).toEqual(['s1', 's3'])
 
     t.signIn([{ id: 'or-new', providerId: 'openrouter' }])
     await recordCoreChanges(t.db, {
@@ -135,14 +125,11 @@ describe('route repair', () => {
       ref: ref('or-new'),
     })
     await feed.settle()
-    expect(await t.seats()).toEqual([
+    expect(await t.routes()).toEqual([
       { agent_id: 'a1', provider_connection_id: 'or-new' },
-      // Another provider's seat is not crossed over to OpenRouter.
+      // Another provider's route is not crossed over to OpenRouter.
       { agent_id: 'a3', provider_connection_id: 'openai-1' },
     ])
-    const choices = await t.choices()
-    expect(choices.agents.a2.providerConnectionId).toBe('or-new')
-    expect(choices.chosenAt.a2).toBe('2026-01-01T00:00:00.000Z')
     expect(t.projects.get('p1')?.providerConnectionId).toBe('or-new')
     expect(t.routing()?.title?.providerConnectionId).toBe('or-new')
     expect(t.published.at(-1)).toEqual(['sessions', 'projects', 'profile'])
@@ -156,7 +143,7 @@ describe('route repair', () => {
     const published = t.published.length
     expect(await t.repair.repairUser('u1')).toEqual([])
     expect(t.published.length).toBe(published)
-    expect((await t.seats())[0]?.provider_connection_id).toBe('or-new')
+    expect((await t.routes())[0]?.provider_connection_id).toBe('or-new')
   })
 
   test('a gap is closed by the reconcile', async () => {
@@ -169,7 +156,7 @@ describe('route repair', () => {
       reconcile: () => t.repair.repairAll(),
     })
     await feed.settle()
-    expect((await t.seats())[0]?.provider_connection_id).toBe('or-new')
+    expect((await t.routes())[0]?.provider_connection_id).toBe('or-new')
     await feed.close()
   })
 
@@ -184,8 +171,8 @@ describe('route repair', () => {
         .execute()
     await t.repair.repairUser('u1')
     const notices = await sessionNotices()
-    // One for the seat, one for the choice map: both in s1.
-    expect(notices).toHaveLength(2)
+    // One for the rebound session.
+    expect(notices).toHaveLength(1)
     for (const notice of notices) {
       expect(notice.op).toBe('upserted')
       expect(JSON.parse(notice.ref_json!)).toEqual({ id: 's1', userId: 'u1' })
@@ -198,7 +185,7 @@ describe('route repair', () => {
     const published = t.published.length
     await feed.settle()
     expect(t.published.length).toBe(published)
-    expect(await sessionNotices()).toHaveLength(2)
+    expect(await sessionNotices()).toHaveLength(1)
     await feed.close()
   })
 
@@ -209,7 +196,7 @@ describe('route repair', () => {
       { id: 'or-new', providerId: 'openrouter' },
     ])
     await t.repair.repairUser('u1')
-    expect((await t.seats())[0]?.provider_connection_id).toBe('or-new')
+    expect((await t.routes())[0]?.provider_connection_id).toBe('or-new')
   })
 
   test('a local model installed repairs every user’s routes', async () => {
@@ -218,6 +205,6 @@ describe('route repair', () => {
     const handler = t.repair.handlers['local.model']
     if (handler === 'ignore') throw new Error('expected a handler')
     await handler({ entity: 'local.model', op: 'upserted', ref: { id: 'qwen' } })
-    expect((await t.seats())[0]?.provider_connection_id).toBe('or-new')
+    expect((await t.routes())[0]?.provider_connection_id).toBe('or-new')
   })
 })

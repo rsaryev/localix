@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
+import { turns as settle } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -10,8 +11,6 @@ afterAll(async () => {
   await new Promise((resolve) => setTimeout(resolve, 0))
   await teardown()
 })
-
-const settle = () => new Promise((resolve) => setTimeout(resolve, 10))
 
 describe('warm-hidden core work-item data sources', () => {
   test('a parked definition peek waits to read its target file', async () => {

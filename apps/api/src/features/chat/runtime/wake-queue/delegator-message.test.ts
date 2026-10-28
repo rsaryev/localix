@@ -5,7 +5,7 @@ import { createWakeQueue } from '../wake-queue'
 import { createSelfWakeBudget, MAX_CONSECUTIVE_SELF_WAKES } from './self-wake-budget'
 
 /**
- * A delegator's message (`delegate` action message) reaches its child either way: a running child
+ * A delegator's message (`SendMessage`) reaches its child either way: a running child
  * takes it at its next step, an idle child runs for it. Pinned on the real queue, because the two paths are
  * owned by different readers (steering and the drain) and a child that could only be reached one
  * way is exactly the one-shot child this replaced.
@@ -19,6 +19,8 @@ afterEach(async () => {
 function childQueue(running: boolean, closedAt: string | null = null) {
   const session = sessionFixture({ id: `child-${running}`, sessionKind: 'subagent', closedAt })
   const runs: string[] = []
+  let ran: () => void = () => {}
+  const hasRun = new Promise<void>((resolve) => (ran = resolve))
   // Every write a drained wake makes on its way to `run` is accepted and forgotten, so a drained
   // message actually reaches `run`.
   const reads: Record<string, unknown> = {
@@ -44,16 +46,23 @@ function childQueue(running: boolean, closedAt: string | null = null) {
     // Only THAT a run started matters here, never what it was given.
     run: async () => {
       runs.push('run')
+      ran()
       return { status: 'completed' as const }
     },
   })
   queues.push(queue)
+  // The first time the drain loop has nothing left to do for the session.
+  const drained = new Promise<void>((resolve) =>
+    queue.subscribe((event) => {
+      if (event.kind === 'idle') resolve()
+    }),
+  )
   const say = (content: string) =>
     queue.wake({ userId: session.userId, session, content, internal: true, source: 'delegator' })
-  return { session, queue, runs, say }
+  return { session, queue, runs, say, hasRun, drained }
 }
 
-test('a running child takes it at its next step, with no participant address needed', async () => {
+test('a running child takes it at its next step, with no agent address needed', async () => {
   const { session, queue, say } = childQueue(true)
   await say('the endpoint moved to /v2')
   expect(await queue.reserveSteerable(session.id)).toMatchObject([
@@ -62,11 +71,9 @@ test('a running child takes it at its next step, with no participant address nee
 })
 
 test('an idle child runs for it — a finished child is reachable, not one-shot', async () => {
-  const { session, queue, runs, say } = childQueue(false)
+  const { session, queue, runs, say, hasRun } = childQueue(false)
   await say('now add tests')
-  for (let i = 0; i < 100 && runs.length === 0; i++) {
-    await new Promise((resolve) => setTimeout(resolve, 5))
-  }
+  await hasRun
   expect(runs).toEqual(['run'])
   expect(await queue.list(session.id)).toEqual([])
 })
@@ -75,10 +82,10 @@ test('a CLOSED child is never woken: the drain dismisses the wake instead of run
   // Its close clears the queue, but a wake admitted a moment before the mark still reaches the
   // drain — the one door every queued turn passes. The test above is the positive control: the
   // same harness DOES run an open child.
-  const { session, queue, runs, say } = childQueue(false, '2026-10-01T00:00:00.000Z')
+  const { session, queue, runs, say, drained } = childQueue(false, '2026-10-01T00:00:00.000Z')
   await say('are you there?')
   await queue.drainPendingAndRun(session.id)
-  await new Promise((resolve) => setTimeout(resolve, 30))
+  await drained
   expect(runs).toEqual([])
   expect(await queue.list(session.id)).toEqual([])
 })

@@ -13,6 +13,14 @@
  */
 import type { PromptSection } from './section'
 import { CACHED_SECTIONS } from './catalog-cached'
+import { RUN_SECTIONS } from './catalog-run'
 import { TAIL_SECTIONS } from './catalog-tail'
 
-export const PROMPT_SECTIONS: readonly PromptSection[] = [...CACHED_SECTIONS, ...TAIL_SECTIONS]
+export const PROMPT_SECTIONS: readonly PromptSection[] = [
+  ...CACHED_SECTIONS,
+  // The runtime context opens first (its heading is the cache marker); what depends on the kind
+  // of run follows it, ahead of the rest of the tail.
+  TAIL_SECTIONS[0]!,
+  ...RUN_SECTIONS,
+  ...TAIL_SECTIONS.slice(1),
+]

@@ -11,7 +11,8 @@ import type {
 import { platformCapabilities } from '@/shared/lib/platformCapabilities'
 import { Button } from '@localixai/kit/button'
 import { IconButton } from '@localixai/kit/icon-button'
-import { CATEGORY_ICON, CATEGORY_LABEL, EventTimestamp, relativeTime } from './eventPresentation'
+import { formatTimeAgo } from '@localixai/mini-app-sdk/ui/utilities'
+import { CATEGORY_ICON, CATEGORY_LABEL, EventTimestamp } from './eventPresentation'
 import { EventTrace } from './EventTrace'
 
 const COPY_LABEL = {
@@ -105,8 +106,8 @@ export function EventDetail({
         {needsAction && <span className="text-status-warning">Needs action</span>}
         {(entry.occurrenceCount ?? 1) > 1 && (
           <span>
-            First {relativeTime(entry.firstSeenAt ?? entry.ts)} · Last{' '}
-            {relativeTime(entry.lastSeenAt ?? entry.ts)}
+            First {formatTimeAgo(entry.firstSeenAt ?? entry.ts)} · Last{' '}
+            {formatTimeAgo(entry.lastSeenAt ?? entry.ts)}
           </span>
         )}
       </div>
@@ -116,7 +117,7 @@ export function EventDetail({
           {actions.map((action) => (
             <Button
               key={action.id}
-              variant="outline"
+              variant="ghost"
               size="sm"
               disabled={!action.available || runningActionId !== null}
               onClick={() => onAction(action)}

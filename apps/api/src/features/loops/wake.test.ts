@@ -39,6 +39,6 @@ describe('buildLoopWake — which tools a fire may not call', () => {
   })
 
   test('a subsession round manages no loops: it is a fresh child with its own roster', () => {
-    expect(buildLoopWake(loop({ target: 'subsession' })).extraDisabledTools).toEqual(['loops'])
+    expect(buildLoopWake(loop({ target: 'subsession' })).extraDisabledTools).toEqual(['Loops'])
   })
 })

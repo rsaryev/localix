@@ -38,7 +38,10 @@ export function usePreviewViewport({
   )
   // The warm foreground pane can be hidden while a background command resizes
   // its replacement host. On reveal, reflect the remembered dimensions as well.
-  useEffect(() => {
+  // Reconciled while rendering, whenever the pane is revealed or the remembered dimensions change.
+  const [reconciledFor, setReconciledFor] = useState({ active, initialViewport })
+  if (reconciledFor.active !== active || reconciledFor.initialViewport !== initialViewport) {
+    setReconciledFor({ active, initialViewport })
     if (active)
       setViewport((previous) =>
         previous.width === (initialViewport?.width ?? null) &&
@@ -48,7 +51,7 @@ export function usePreviewViewport({
             ? { label: 'Custom', ...initialViewport }
             : PREVIEW_VIEWPORT_FILL,
       )
-  }, [active, initialViewport])
+  }
   const changeViewport = useCallback(
     (next: PreviewViewportPreset, opts: { byAgent?: boolean } = {}) => {
       setViewport(next)

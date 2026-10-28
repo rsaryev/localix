@@ -30,18 +30,25 @@ export function useSplitScroll({
   gutterCh: number
   viewportWidth: number
 }) {
-  const [bar, setBar] = useState<HTMLDivElement | null>(null)
+  // The shared scrollbar's element: a DOM handle, only touched from effects and event handlers.
+  const barRef = useRef<HTMLDivElement | null>(null)
   const [chPx, setChPx] = useState(0)
 
-  // One `ch` of the diff's own font, measured where the code renders.
+  // One `ch` of the diff's own font, measured where the code renders. The canvas's size is what
+  // follows the viewport, so its observer (which also reports once on attach) re-measures.
   useEffect(() => {
-    if (!enabled || !canvasEl) return
-    const probe = document.createElement('span')
-    probe.style.cssText = 'position:absolute;visibility:hidden;width:100ch'
-    canvasEl.appendChild(probe)
-    setChPx(probe.getBoundingClientRect().width / 100)
-    probe.remove()
-  }, [enabled, canvasEl, viewportWidth])
+    if (!enabled || !canvasEl || typeof ResizeObserver === 'undefined') return
+    const measure = () => {
+      const probe = document.createElement('span')
+      probe.style.cssText = 'position:absolute;visibility:hidden;width:100ch'
+      canvasEl.appendChild(probe)
+      setChPx(probe.getBoundingClientRect().width / 100)
+      probe.remove()
+    }
+    const observer = new ResizeObserver(measure)
+    observer.observe(canvasEl)
+    return () => observer.disconnect()
+  }, [enabled, canvasEl])
 
   const sidePx = viewportWidth / 2
   // Code area per side: half the viewport minus its gutter and the 2px change bar.
@@ -61,26 +68,28 @@ export function useSplitScroll({
   useEffect(() => {
     if (offset.current > overflow) {
       apply(overflow)
-      if (bar) bar.scrollLeft = overflow
+      if (barRef.current) barRef.current.scrollLeft = overflow
     }
-  }, [overflow, apply, bar])
+  }, [overflow, apply])
 
   // A trackpad's sideways swipe (or Shift+wheel) over the code moves the shared bar.
   useEffect(() => {
-    if (!enabled || !scrollEl || !bar || overflow === 0) return
+    if (!enabled || !scrollEl || overflow === 0) return
     const onWheel = (event: WheelEvent) => {
       const sideways = Math.abs(event.deltaX) > Math.abs(event.deltaY)
       if (!sideways && !event.shiftKey) return
+      const bar = barRef.current
+      if (!bar) return
       event.preventDefault()
       bar.scrollLeft += sideways ? event.deltaX : event.deltaY
     }
     scrollEl.addEventListener('wheel', onWheel, { passive: false })
     return () => scrollEl.removeEventListener('wheel', onWheel)
-  }, [enabled, scrollEl, bar, overflow])
+  }, [enabled, scrollEl, overflow])
 
   return {
     overflow,
-    barRef: setBar,
-    onBarScroll: () => bar && apply(bar.scrollLeft),
+    barRef,
+    onBarScroll: () => barRef.current && apply(barRef.current.scrollLeft),
   }
 }

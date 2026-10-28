@@ -10,7 +10,7 @@ import {
   settleReport,
   takeExpectedReport,
 } from '../../../agent-core/delegation-awaits'
-import { routedParticipants, sessionFixture } from '../../../../testing/session-fixture'
+import { routedAgent, sessionFixture } from '../../../../testing/session-fixture'
 import type { PersistedMessage } from '../../contracts'
 import type { RunParams } from '../run-contract'
 import { createWakeQueue } from '../wake-queue'
@@ -21,8 +21,8 @@ import { MAX_REPORT_HOLD_MS } from './holds'
  * of one delegator once the last of them is in, the person's lines typed while the agent worked —
  * and what waits is listed as waiting, not as work that would open a turn.
  */
-const lead = routedParticipants({ agentId: builtinAgentId('lead'), handle: 'lead' })[0]!
-const LEAD = `agent:${builtinAgentId('lead')}` as const
+const lead = routedAgent({ agentId: builtinAgentId('lead'), name: 'lead' })
+const LEAD = builtinAgentId('lead')
 const queues: Array<ReturnType<typeof createWakeQueue>> = []
 afterEach(async () => {
   await Promise.all(queues.splice(0).map((q) => q.close()))
@@ -30,7 +30,7 @@ afterEach(async () => {
 })
 
 function harness(opts: { busy?: boolean } = {}) {
-  const session = sessionFixture({ id: 's1', agents: [lead] })
+  const session = sessionFixture({ id: 's1', agent: lead })
   const messages: PersistedMessage[] = []
   const runs: RunParams[] = []
   const activeRuns = new Map<string, AbortController>()
@@ -63,7 +63,7 @@ function harness(opts: { busy?: boolean } = {}) {
       session,
       content: `${childSessionId} report`,
       source: 'subagent',
-      to: { participant: LEAD },
+      to: { agentId: LEAD },
       report: {
         label: childSessionId,
         childSessionId,
@@ -96,7 +96,7 @@ function harness(opts: { busy?: boolean } = {}) {
   }
 }
 
-const delegator = { sessionId: 's1', participant: LEAD }
+const delegator = { sessionId: 's1', agentId: LEAD }
 
 describe('the reports of one delegator', () => {
   test('wait for the last of them, then reach it as one turn', async () => {
@@ -114,7 +114,7 @@ describe('the reports of one delegator', () => {
     await h.settle(1)
     expect(h.runs).toHaveLength(1)
     const [turn] = h.delivered()
-    expect(turn).toContain('[2 delegated task reports]')
+    expect(turn).toContain('[2 subagent replies]')
     expect(turn).toContain('a is done')
     expect(turn).toContain('b is done')
     expect(await h.queue.list('s1')).toEqual([])
@@ -130,7 +130,7 @@ describe('the reports of one delegator', () => {
     dropExpectedReport('b')
     await h.settle(1)
     expect(h.runs).toHaveLength(1)
-    expect(h.delivered()[0]).toStartWith('[Delegated task finished] a (id: a)')
+    expect(h.delivered()[0]).toStartWith('[Subagent finished] a (id: a)')
   })
 
   test('none waits past the hold limit for a sibling still running', async () => {

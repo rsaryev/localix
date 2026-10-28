@@ -1,9 +1,5 @@
 import { projectSettingsSchema, type ProjectSettings } from '../projects/contracts'
-import {
-  agentSettingsSchema,
-  migrateLegacyResearchSettings,
-  type AgentSettings,
-} from '../user/contracts'
+import { agentSettingsSchema, type AgentSettings } from '../user/contracts'
 
 /** The persisted settings-envelope format understood by this resolver. */
 export const EFFECTIVE_CONFIG_SCHEMA_VERSION = 1 as const
@@ -71,7 +67,7 @@ function migrationInput(
 export function migrateAgentSettings(input: unknown): ConfigMigration<AgentSettings> {
   const migration = migrationInput(input, 'user')
   if (!migration.ok) return migration
-  const parsed = agentSettingsSchema.safeParse(migrateLegacyResearchSettings(migration.value))
+  const parsed = agentSettingsSchema.safeParse(migration.value)
   if (!parsed.success)
     return {
       ok: false,

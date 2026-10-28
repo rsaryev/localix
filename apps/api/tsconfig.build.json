@@ -1,6 +1,8 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "customConditions": [],
+    "incremental": false,
     "target": "ES2022",
     // `lib` must be restated whenever `target` is overridden: tsconfig.base.json sets
     // `lib` EXPLICITLY (to ES2020), and an explicit `lib` is inherited VERBATIM — it is

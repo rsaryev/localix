@@ -8,18 +8,16 @@ import type {
 
 /** Raw session shape (a superset of ChannelSessionSummary) the chat service returns. */
 /**
- * A created session as the service returns it: the party carries the route, because a
- * conversation with several agents runs several models and a single field could not say so.
- * A channel only ever drives a private chat, so its one participant IS the channel's model.
+ * A created session as the service returns it: the agent carries the route.
  */
 interface CreatedChatSession extends Omit<RawChatSession, 'modelId' | 'reasoningEffort'> {
-  agents: Array<{
+  agent: {
     agentId: string
-    handle: string
+    name: string
     providerConnectionId: string | null
     modelId: string
     reasoningEffort: ReasoningEffort
-  }>
+  } | null
 }
 
 interface RawChatSession {
@@ -27,7 +25,7 @@ interface RawChatSession {
   title: string
   projectId: string
   runtimeStatus: ChannelSessionSummary['runtimeStatus']
-  /** The route of the session's own participant — a channel drives a private chat. */
+  /** The route of the session's own agent — a channel drives a private chat. */
   modelId: string
   reasoningEffort: ReasoningEffort
   updatedAt: string
@@ -48,7 +46,7 @@ export interface ChannelWorkspaceDeps {
     ): Promise<RawChatSession[]>
     getChatSessionProjection(userId: string, sessionId: string): Promise<RawChatSession | null>
     /**
-     * Returns the full session, whose model lives on its participant rather than on the row —
+     * Returns the full session, whose model lives on its agent rather than on the row —
      * `toChannelSession` flattens the two shapes to the one a channel speaks.
      */
     createSession(
@@ -65,7 +63,7 @@ export interface ChannelWorkspaceDeps {
       userId: string,
       sessionId: string,
       /**
-       * The model and effort belong to a PARTICIPANT, so they travel under `route` — a session
+       * The model and effort belong to a AGENT, so they travel under `route` — a session
        * no longer has "a model". This port declared them flat, which the chat service silently
        * ignored: both channel operations below were no-ops. It only type-checked because the
        * shape happened to share `economyMode` with the real patch; removing that setting is
@@ -102,7 +100,7 @@ export interface ChannelWorkspaceDeps {
 }
 
 const toChannelSession = (s: RawChatSession | CreatedChatSession): ChannelSessionSummary => {
-  const route = 'agents' in s ? sessionRoute(s) : s
+  const route = 'agent' in s ? sessionRoute(s) : s
   return {
     id: s.id,
     title: s.title,

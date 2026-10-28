@@ -14,12 +14,6 @@ import {
   mapLeaves,
 } from './tree'
 
-/** The roles the DEFAULT policy places into. `preview` and `bottom` are
- *  deliberately excluded: they survive only as LEGACY tags on persisted layouts
- *  (see `existingLegacyGroup`) — nothing spawns a preview column or a bottom
- *  terminal strip anymore. */
-type PlacementRole = Exclude<GroupRole, 'preview' | 'bottom'>
-
 /** Kind → the role of the group it opens into. Two DEFAULT roles: a primary
  *  `editor` area for documents — including the live app preview AND terminals,
  *  which open CENTER STAGE as editor tabs; and one `aux` side panel that stacks
@@ -29,7 +23,7 @@ type PlacementRole = Exclude<GroupRole, 'preview' | 'bottom'>
  *  Covers every CORE kind (the Record type rejects a core kind that forgets a
  *  role); subsystem-contributed kinds are placed via the registry in
  *  `roleForKind` and need no entry here. */
-const PLACEMENT_POLICY: Record<CoreWorkItemKind, PlacementRole> = {
+const PLACEMENT_POLICY: Record<CoreWorkItemKind, GroupRole> = {
   // Primary editor area — documents + full-surface views.
   file: 'editor',
   diff: 'editor',
@@ -40,13 +34,11 @@ const PLACEMENT_POLICY: Record<CoreWorkItemKind, PlacementRole> = {
   'mini-app-view': 'editor',
   'global-search': 'editor',
   // The live preview opens as a TAB in the editor group — center stage, where
-  // files open — not its own column (the previous policy; see
-  // `existingLegacyGroup` for layouts that still carry one).
+  // files open — not its own column.
   preview: 'editor',
   // Terminals open as TABS in the editor group too — the same group the preview
   // opens into, so a terminal lands beside the app it's serving instead of a
-  // dedicated bottom strip (the previous policy; see `existingLegacyGroup` for
-  // layouts that still carry one).
+  // dedicated bottom strip.
   terminal: 'editor',
   // Aux side panel — companion views, stacked as tabs.
   chat: 'aux',
@@ -61,13 +53,13 @@ const PLACEMENT_POLICY: Record<CoreWorkItemKind, PlacementRole> = {
  *  nearest existing anchor (see `existingAnchorGroup`). `sizes` is in final
  *  tree order [first-child, second-child], which depends on `dir` (before/after). */
 const ROLE_SPAWN: Record<
-  Exclude<PlacementRole, 'aux'>,
-  { anchor: PlacementRole; dir: SplitDir; sizes: [number, number] }
+  Exclude<GroupRole, 'aux'>,
+  { anchor: GroupRole; dir: SplitDir; sizes: [number, number] }
 > = {
   editor: { anchor: 'aux', dir: 'left', sizes: [0.62, 0.38] }, // dir left → [editor(new), aux(base)]
 }
 
-export function roleForKind(kind: WorkItemKind): PlacementRole {
+export function roleForKind(kind: WorkItemKind): GroupRole {
   // A contribution may declare which default area it belongs to; without one it lands in the
   // primary editor area, which is right for the document-shaped surfaces most of them are. The
   // declaration exists so a conversation-shaped contribution can stack with the chats in `aux`
@@ -78,27 +70,12 @@ export function roleForKind(kind: WorkItemKind): PlacementRole {
   return PLACEMENT_POLICY[kind as CoreWorkItemKind] ?? 'editor'
 }
 
-/** LEGACY-layout override: preview used to claim its OWN column (role `preview`).
- *  A user whose persisted layout still carries a preview-tagged column keeps the
- *  preview routed there — we never re-home a column they already arranged. Returns
- *  that group's id, or null when the default policy applies.
- *
- *  Terminals are DELIBERATELY not overridden onto a legacy `bottom` strip: nothing
- *  opens at the bottom anymore, so a terminal always lands center-stage in the
- *  editor group (beside the preview). A stale bottom dock from an earlier layout is
- *  simply left where it is until the user closes it or resets the layout — new
- *  terminals never route into it. */
-export function existingLegacyGroup(root: GridNode, kind: WorkItemKind): string | null {
-  if (kind === 'preview') return findLeafByRole(root, 'preview')?.id ?? null
-  return null
-}
-
 /** Resolve a role group to split off, walking UP the anchor chain to the nearest
  *  EXISTING group instead of creating empty intermediates. `aux` is the
  *  guaranteed base. */
 function existingAnchorGroup(
   root: GridNode,
-  anchor: PlacementRole,
+  anchor: GroupRole,
   newId: () => string,
 ): { root: GridNode; groupId: string } {
   let role = anchor
@@ -115,7 +92,7 @@ function existingAnchorGroup(
  */
 function ensureRoleGroup(
   root: GridNode,
-  role: PlacementRole,
+  role: GroupRole,
   newId: () => string,
 ): { root: GridNode; groupId: string } {
   const existing = findLeafByRole(root, role)
@@ -145,15 +122,12 @@ function ensureRoleGroup(
 /**
  * Resolve where `kind` should open: the id of its role group, creating that group
  * (and any missing anchor) deterministically. Independent of focus/MRU, so the
- * same kind always lands in the same place. A legacy preview column (see
- * `existingLegacyGroup`) is reused before the default policy applies.
+ * same kind always lands in the same place.
  */
 export function resolveOpenTarget(
   root: GridNode,
   kind: WorkItemKind,
   newId: () => string,
 ): { root: GridNode; groupId: string } {
-  const legacy = existingLegacyGroup(root, kind)
-  if (legacy) return { root, groupId: legacy }
   return ensureRoleGroup(root, roleForKind(kind), newId)
 }

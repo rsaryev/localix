@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
+import { turns } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 
@@ -48,7 +49,7 @@ describe('UI-first startup', () => {
           </Routes>
         </MemoryRouter>,
       )
-      await new Promise((resolve) => setTimeout(resolve, 20))
+      await turns()
     })
 
     // Profile synchronization is background work, not a render gate.

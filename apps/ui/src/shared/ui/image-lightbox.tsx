@@ -90,6 +90,7 @@ export function ImageLightbox({
         {/* Wrapper shrinks to the image, so the corner controls hug the picture. */}
         <div className="relative inline-block">
           {isVideo ? (
+            // oxlint-disable-next-line jsx-a11y/media-has-caption -- a user's attachment carries no caption track to offer
             <video
               src={image.src}
               controls

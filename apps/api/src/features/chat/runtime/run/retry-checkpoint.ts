@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 
-import type { ParticipantRef, StoredMessagePayload } from '../../../../db'
+import type { AuthorRef, StoredMessagePayload } from '../../../../db'
 import { emptyAssistantPayload, toPersistedMessage } from '../message-envelope'
 import type { RunTurnState } from './turn-state'
 import type { RunEnv } from './types'
@@ -59,7 +59,7 @@ export async function prepareRetryContinuation(args: {
   userId: string
   sessionId: string
   /** Who authors the fresh response row — the session's agent, named by the caller. */
-  agent: ParticipantRef
+  agent: AuthorRef
   assistantMessageId: string
   completedTurnCheckpoint?: RetryCheckpoint['completedTurnCheckpoint']
   signal?: AbortSignal

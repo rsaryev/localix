@@ -72,7 +72,10 @@ export function mintCompletionReference(
 }
 
 export interface ResolveCompletionReferencesInput {
-  destination: Extract<ContextDestination, 'edit-prediction' | 'inline-completion'>
+  destination: Extract<
+    ContextDestination,
+    'edit-prediction' | 'inline-completion' | 'recommendation'
+  >
   userId: string
   sessionId: string
   references: readonly CompletionReference[]

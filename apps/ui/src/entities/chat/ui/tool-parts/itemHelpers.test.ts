@@ -17,7 +17,7 @@ import {
 
 describe('isStandaloneItem', () => {
   test('true for tool-backed items whose meta marks them standalone', () => {
-    expect(isStandaloneItem(tool({}, 'ask'))).toBe(true)
+    expect(isStandaloneItem(tool({}, 'AskUserQuestion'))).toBe(true)
   })
 
   test('true for an arbitrary extension tool that declares itself standalone', () => {
@@ -47,7 +47,7 @@ describe('isStandaloneItem', () => {
   })
 
   test('false for a tool without the standalone flag', () => {
-    expect(isStandaloneItem(tool({}, 'read'))).toBe(false)
+    expect(isStandaloneItem(tool({}, 'Read'))).toBe(false)
   })
 
   test('false for a non-tool-backed item', () => {
@@ -72,7 +72,7 @@ const DIFF = '@@ -1,1 +1,2 @@\n-a\n+b\n+c\n'
 const fileChange = (changes: Array<{ path: string; diff?: string }>): AgentItem =>
   ({
     type: 'file_change',
-    name: 'edit',
+    name: 'Edit',
     status: 'completed',
     changes: changes.map((c) => ({ kind: 'modify', ...c })),
   }) as unknown as AgentItem
@@ -119,7 +119,7 @@ describe('statusLabel', () => {
 
 describe('a refused call shows the person’s sentence, never the model’s', () => {
   const refused = (error: Record<string, unknown>): ToolBackedItem =>
-    ({ ...tool({}, 'bash'), status: 'failed', error }) as unknown as ToolBackedItem
+    ({ ...tool({}, 'Bash'), status: 'failed', error }) as unknown as ToolBackedItem
 
   test('a person’s decline is neutral, and its headline is their own act', () => {
     const item = refused({
@@ -213,7 +213,7 @@ describe('chainSummary', () => {
   const fileChange = (paths: string[]): AgentItem =>
     ({
       type: 'file_change',
-      name: 'edit',
+      name: 'Edit',
       changes: paths.map((path) => ({ path })),
     }) as unknown as AgentItem
 
@@ -237,23 +237,55 @@ describe('chainSummary', () => {
 
 describe('batched reads and searches', () => {
   test('the stack label names the first file or pattern and how many more ride along', () => {
-    expect(itemStackLabel(tool({ reads: [{ path: 'src/a.ts' }, 'b.ts', 'c.ts'] }, 'read'))).toBe(
+    expect(itemStackLabel(tool({ reads: [{ path: 'src/a.ts' }, 'b.ts', 'c.ts'] }, 'Read'))).toBe(
       'a.ts +2',
     )
-    expect(itemStackLabel(tool({ path: 'x.ts', reads: [{ path: 'y.ts' }] }, 'read'))).toBe(
+    expect(itemStackLabel(tool({ path: 'x.ts', reads: [{ path: 'y.ts' }] }, 'Read'))).toBe(
       'x.ts +1',
     )
-    expect(itemStackLabel(tool({ queries: ['alpha', 'beta'] }, 'search'))).toBe('alpha +1')
+    expect(itemStackLabel(tool({ queries: ['alpha', 'beta'] }, 'Search'))).toBe('alpha +1')
   })
 
-  test('the chain summary counts files and searches, not calls', () => {
+  test('the chain summary counts files and patterns, not calls', () => {
     const items = [
-      tool({ reads: [{ path: 'a.ts' }, { path: 'b.ts' }, { path: 'c.ts' }] }, 'read'),
-      tool({ path: 'd.ts' }, 'read'),
+      tool({ reads: [{ path: 'a.ts' }, { path: 'b.ts' }, { path: 'c.ts' }] }, 'Read'),
+      tool({ path: 'd.ts' }, 'Read'),
     ]
     expect(chainSummary(items, false)).toMatch(/\b4 files\b/)
-    expect(chainSummary([tool({ query: 'a', queries: ['b'] }, 'search')], false)).toMatch(
-      /\b2 searches\b/,
+    expect(chainSummary([tool({ query: 'a', queries: ['b'] }, 'Search')], false)).toMatch(
+      /\b2 patterns\b/,
     )
+  })
+})
+
+describe('a chain reads as one sentence whatever the tools', () => {
+  test('a tool reads by what it did and what it did it to', () => {
+    const agents = [
+      tool({ description: 'Review' }, 'Agent'),
+      tool({ description: 'Test' }, 'Agent'),
+    ]
+    expect(chainSummary(agents, false)).toBe('Started 2 agents')
+    expect(chainSummary(agents.slice(0, 1), true)).toBe('Starting 1 agent…')
+    expect(chainSummary([tool({}, 'SendMessage'), tool({}, 'Workflow')], false)).toBe(
+      'Sent 1 message, ran 1 workflow',
+    )
+    expect(chainSummary([tool({}, 'ContextBudget')], false)).toBe('Checked 1 context budget')
+    expect(chainSummary([tool({ query: 'a', queries: ['b'] }, 'Search')], false)).toBe(
+      'Searched 2 patterns',
+    )
+  })
+
+  test('an unregistered tool keeps its own name in the sentence', () => {
+    const todos = [tool({}, 'TodoWrite'), tool({}, 'TodoWrite'), tool({}, 'TodoWrite')]
+    expect(chainSummary(todos, false)).toBe('Ran 3 TodoWrite calls')
+    expect(chainSummary(todos.slice(0, 1), true)).toBe('Running 1 TodoWrite call…')
+    expect(chainSummary([tool({}, 'mcp_linear_issue'), tool({}, 'TodoWrite')], false)).toBe(
+      'Ran 1 MCP call, ran 1 TodoWrite call',
+    )
+  })
+
+  test('a call with nothing to name it by is named by its tool, not by a past tense', () => {
+    expect(itemStackLabel(tool({}, 'ContextBudget'))).toBe('ContextBudget')
+    expect(itemStackLabel(tool({}, 'Agent'))).toBe('Agent')
   })
 })

@@ -17,7 +17,7 @@ import type { SessionRecord } from '../../repository'
 import type { RunEnv } from './types'
 import { createWriteTool } from '../../../agent-core/tools/file/write'
 
-const tool = { name: 'bash', effect: 'external' as const }
+const tool = { name: 'Bash', effect: 'external' as const }
 const root = '/tmp/workspace'
 
 function unattendedGate(
@@ -112,7 +112,7 @@ describe('the run’s own plan directory', () => {
   const write = createWriteTool(undefined, root)
   const writeTo = (path: string) => ({
     toolCallId: 'call',
-    toolName: 'write',
+    toolName: 'Write',
     input: { path, content: '# Plan' },
   })
   const rootRun = {
@@ -138,7 +138,7 @@ describe('the run’s own plan directory', () => {
 
 describe('deny patterns of an agent or a skill', () => {
   const bashTool = {
-    name: 'bash',
+    name: 'Bash',
     description: 'sh',
     activeVerb: 'Running',
     inputSchema: z.unknown(),
@@ -147,7 +147,7 @@ describe('deny patterns of an agent or a skill', () => {
   const run = (command: string) =>
     unattendedGate([bashTool], [], { denyPatterns: ['Bash(rm *)'] })({
       toolCallId: 'c',
-      toolName: 'bash',
+      toolName: 'Bash',
       input: { command },
     })
 
@@ -163,12 +163,12 @@ describe('skill preapprovals', () => {
     const grants = skillPermissionRules(['Bash(git status:*)'])
     for (const command of ['git status', 'git status --short']) {
       expect(
-        evaluate(rules, tool, extractCallFacts('bash', { command }, root), grants).action,
+        evaluate(rules, tool, extractCallFacts('Bash', { command }, root), grants).action,
       ).toBe('allow')
     }
     for (const command of ['git status-malicious', 'git status && npm publish']) {
       expect(
-        evaluate(rules, tool, extractCallFacts('bash', { command }, root), grants).action,
+        evaluate(rules, tool, extractCallFacts('Bash', { command }, root), grants).action,
       ).toBe('ask')
     }
   })
@@ -177,11 +177,11 @@ describe('skill preapprovals', () => {
     const grants = skillPermissionRules(['Bash(git *)'])
 
     expect(
-      evaluate(rules, tool, extractCallFacts('bash', { command: 'git status' }, root), grants)
+      evaluate(rules, tool, extractCallFacts('Bash', { command: 'git status' }, root), grants)
         .action,
     ).toBe('allow')
     expect(
-      evaluate(rules, tool, extractCallFacts('bash', { command: 'npm publish' }, root), grants)
+      evaluate(rules, tool, extractCallFacts('Bash', { command: 'npm publish' }, root), grants)
         .action,
     ).toBe('ask')
   })
@@ -189,7 +189,7 @@ describe('skill preapprovals', () => {
   test('an agent deny survives a skill that declares an allow covering it', () => {
     const projectRules: PermissionRule[] = [
       {
-        permission: 'bash',
+        permission: 'Bash',
         pattern: 'git push*',
         action: 'deny',
         message: 'Do not push from this project.',
@@ -201,7 +201,7 @@ describe('skill preapprovals', () => {
       evaluate(
         projectRules,
         tool,
-        extractCallFacts('bash', { command: 'git push origin main' }, root),
+        extractCallFacts('Bash', { command: 'git push origin main' }, root),
         grants,
       ).action,
     ).toBe('deny')
@@ -247,9 +247,9 @@ describe('PermissionDenied on the assembled gate', () => {
 
   test('a refusal nobody was asked about tells the model it may retry when a hook says so', async () => {
     const { gate, asked } = deniedGate([])
-    const verdict = await gate({ toolCallId: 'c1', toolName: 'bash', input: { command: 'ls' } })
+    const verdict = await gate({ toolCallId: 'c1', toolName: 'Bash', input: { command: 'ls' } })
     expect(verdict?.blockedMessage).toContain(PERMISSION_RETRY_NOTE)
-    expect(asked[0]?.slice(0, 3)).toEqual(['bash', { command: 'ls' }, 'c1'])
+    expect(asked[0]?.slice(0, 3)).toEqual(['Bash', { command: 'ls' }, 'c1'])
   })
 
   test('hands the hook an MCP tool itself, so its matcher sees the Claude Code name', async () => {

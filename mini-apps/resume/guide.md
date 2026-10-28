@@ -2,7 +2,7 @@
 
 ## Create and edit
 
-Use existing `read` and file tools for source resumes, job descriptions and exported documents; do
+Use existing `Read` and file tools for source resumes, job descriptions and exported documents; do
 not introduce a separate ingestion workflow.
 
 Preserve the user's facts. Ask about missing dates, achievements or qualifications instead of

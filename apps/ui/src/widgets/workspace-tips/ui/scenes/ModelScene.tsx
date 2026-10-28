@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
-import { ChevronUp, Link2, Search, UserPlus, X } from 'lucide-react'
+import { ChevronUp, Link2, Search } from 'lucide-react'
 import type { ReasoningEffort } from '@localixai/agent'
 import { useChatStore } from '@/entities/chat/model/store'
 import {
@@ -44,10 +44,6 @@ export function ModelScene() {
   return (
     <div aria-hidden className="wt-model">
       <div className="wt-pane wt-composer">
-        <div className="wt-composer-party">
-          <span className="wt-avatar">LO</span> Localix <X className="size-2" />
-          <UserPlus className="ml-1 size-2.5 text-text-faint" />
-        </div>
         <span className="wt-swap wt-composer-text">
           <span className="wt-ph-a">Connect a provider in the app to start…</span>
           <span className="wt-ph-b">Describe the outcome you want…</span>

@@ -2,7 +2,7 @@ import { z } from 'zod'
 import type { CallClass } from '@localixai/agent/agents'
 
 /**
- * The `skill` tool's call contract: its input, the ports a host gives it, and what a call means to
+ * The `Skill` tool's call contract: its input, the ports a host gives it, and what a call means to
  * the permission path (its effect, and the skill a `get` runs). The tool itself is `skill.ts`.
  */
 
@@ -23,7 +23,23 @@ export const skillToolInputSchema = z.object({
     ),
 })
 
-/** A `context: fork` skill's subagent, as `delegate` starts one (`DelegateRequest`'s shape). */
+/**
+ * Claude Code's `Skill` call, `{ skill, args }`, is a `get` of that skill with those arguments.
+ * Localix's own calls (`action`, `name`) are left as written.
+ */
+export function prepareSkillArguments(raw: unknown): unknown {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return raw
+  const { skill, args, ...rest } = raw as Record<string, unknown>
+  if (typeof skill !== 'string') return raw
+  return {
+    ...rest,
+    action: rest.action ?? 'get',
+    name: rest.name ?? skill,
+    ...(args !== undefined && rest.arguments === undefined ? { arguments: args } : {}),
+  }
+}
+
+/** A `context: fork` skill's subagent, as `Agent` starts one (`AgentRequest`'s shape). */
 export interface SkillForkRequest {
   title: string
   task: string

@@ -37,16 +37,15 @@ export function tradingChartTabId(connectionId: string, symbol: string): string 
  *
  * Both the RENDER (which connection the tab charts) and the REF-BUILDER (which `localix://resource/trade/…`
  * the tab drags into chat) go through this helper, so "what the tab shows" and "what the
- * tab refers to" cannot diverge. They did: the render migrated a restored legacy
+ * tab refers to" cannot diverge. They did: the render mapped an unflagged
  * credentialed `connectionId` onto the venue's public profile while the drag ref kept the
  * raw id — a tab showing a public chart handed the agent a ref to an account-bearing
  * connection.
  *
  * The rules:
- * - A payload that CLAIMS `credentialed: true` (set only by an explicit opener, never by
- *   migration) keeps its connection id — that tab charts the account's venue view.
- * - Everything else is public: a legacy credentialed id (pre-`credentialed`-flag tabs) is
- *   migrated onto the venue's ephemeral `public:<exchange>` profile, so a restored tab can
+ * - A payload that CLAIMS `credentialed: true` (set only by an explicit opener) keeps its connection id — that tab charts the account's venue view.
+ * - Everything else is public: an id without the claim is
+ *   mapped onto the venue's ephemeral `public:<exchange>` profile, so a restored tab can
  *   never silently inherit account context.
  */
 export interface ChartSource {

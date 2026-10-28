@@ -1,9 +1,10 @@
 /**
- * MCP-tool hook executor (`type:"mcp_tool"`) — call a CONNECTED MCP tool with the
- * event input JSON and fold its result text like a command hook's stdout.
+ * MCP-tool hook executor (`type:"mcp_tool"`) — call a CONNECTED MCP tool with the hook's
+ * `input` and fold its result text like a command hook's stdout.
  *
  * Protocol (CC §MCP tool hooks):
- *   - The tool is called with the hook input JSON as its arguments.
+ *   - The tool is called with the hook's `input` as its arguments, `${path}` read from the hook
+ *     input JSON (`mcp-tool-input.ts`); a hook without `input` sends none.
  *   - Result text → parsed with the shared command-hook output schema (JSON →
  *     decision, else plain text = context on the context-adding events).
  *   - Server not connected / `isError: true` / any throw → NON-BLOCKING error (`{}`).
@@ -16,6 +17,7 @@
  */
 import type { CcHookHandler, CcHookInput, CcHookOutcome } from './contracts'
 import type { HookLogger } from './executor'
+import { mcpToolArguments } from './mcp-tool-input'
 import { foldHookOutput, worktreePathFromText } from './output-parse'
 
 /** The result of one injected MCP tool call. */
@@ -48,7 +50,7 @@ export async function runMcpToolHook(
   if (!callMcpTool || !handler.mcpTool) return {}
   let result: CcMcpToolResult
   try {
-    result = await callMcpTool(handler.mcpTool, input, signal)
+    result = await callMcpTool(handler.mcpTool, mcpToolArguments(handler.mcpInput, input), signal)
   } catch (err) {
     logger.warn(
       `[cc-hook:${label}] ${input.hook_event_name} mcp_tool "${handler.mcpTool}" threw: ${String(err)} — non-blocking`,

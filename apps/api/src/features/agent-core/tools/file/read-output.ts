@@ -49,7 +49,7 @@ export function truncateOutput(output: string, startOffset = 0): ReadOutput {
   return {
     bytes: totalBytes,
     truncated: true,
-    output: `${header}${slice}\n[…truncated at ${nextOffset - start} bytes. ${totalBytes - nextOffset} bytes remain — call read again with byte_offset=${nextOffset} to continue, OR use \`search\` to jump straight to a specific symbol/line instead of paging the whole file.]`,
+    output: `${header}${slice}\n[…truncated at ${nextOffset - start} bytes. ${totalBytes - nextOffset} bytes remain — call \`Read\` again with byte_offset=${nextOffset} to continue, OR use \`Search\` to jump straight to a specific symbol/line instead of paging the whole file.]`,
   }
 }
 
@@ -87,8 +87,8 @@ export function modelFacingFile(
     kept: 'first',
     advice:
       nextOffset !== undefined
-        ? `Call read again with byte_offset=${nextOffset} to continue, or use \`search\` to jump straight to a specific symbol/line.`
-        : 'Read again with a byte_offset to page further, or use `search` to jump straight to a specific symbol/line.',
+        ? `Call \`Read\` again with byte_offset=${nextOffset} to continue, or use \`Search\` to jump straight to a specific symbol/line.`
+        : 'Read again with a byte_offset to page further, or use `Search` to jump straight to a specific symbol/line.',
   })
   return `${r.content}\n${marker}`
 }

@@ -60,16 +60,6 @@ export interface ScopedCcHooks {
  * `allowed-tools` is a one-run grant, and remembering it would widen authority.
  */
 export interface RunIdentity {
-  /**
-   * WHICH PARTICIPANT is speaking.
-   *
-   * A multi-participant turn is the ordinary run dispatched once per member, so the only thing
-   * that distinguishes those runs is this stable execution address. Runtime consumers resolve
-   * the participant by this ID; participant order remains conversation state.
-   *
-   * A remembered wake identity may omit it before the next dispatch resolves an address.
-   */
-  speakerAgentId?: string
   /** Host candidate tool roster; native identity instructions are resolved separately. */
   hostTools?: readonly string[]
   /** Tools the host needs to finish the task; requirements never grant tool access. */
@@ -101,26 +91,8 @@ export interface RunIdentity {
 
 /** Identity plus the trusted authority the run acts under. */
 export interface RunScope extends RunIdentity {
-  /** Every concrete runtime dispatch has one unambiguous participant address. */
-  speakerAgentId: string
-  /** Scheduling generation, shared by explicit handoffs; never a second participant queue. */
+  /** The person's message this turn answers; scheduling generation for cancelling its tickets. */
   conversationId?: string
-  /** Why this participant has the floor. Volatile guidance, carried through retries. */
-  turnTrigger?: {
-    kind: 'colleague-request'
-    messageIds: readonly string[]
-    /**
-     * The request is a REPORT on work this participant handed out, not an assignment. A reply to
-     * a report that addresses nobody ends with the person instead of bouncing back to the
-     * reporter, which would otherwise ping-pong the floor until the handoff limit.
-     */
-    report?: boolean
-  }
-  /**
-   * Handoffs since the person last spoke: absent on a turn that answers them, one more on each
-   * colleague handoff. Bounded by `MAX_HANDOFF_CHAIN`; durable because it rides the ticket.
-   */
-  handoffDepth?: number
   /** Trusted invocation provenance + authority, separate from client-supplied UI capabilities. */
   executionContext: RunExecutionContext
 }

@@ -3,27 +3,27 @@ import { expect, test } from 'bun:test'
 import { askAgentForTurn, askDecisionForTurn, decisionTurns, type Wake } from './agent-turn'
 import type { DecisionHost, DecisionOutcome } from './decision'
 
-const seat = { userId: 'me', sessionId: 's1' }
+const chat = { userId: 'me', sessionId: 's1' }
 const turn = { message: 'Your move.', tools: ['chess'], key: 'g:3' }
 
-test('a delivered wake shows thinking and carries the seat and turn', async () => {
+test('a delivered wake shows thinking and carries the chat and turn', async () => {
   const seen: unknown[] = []
   const wake: Wake = async (request) => {
     seen.push(request)
     return { status: 'delivered' }
   }
-  expect(await askAgentForTurn(wake, seat, turn, 'T')).toEqual({ since: 'T', status: 'thinking' })
+  expect(await askAgentForTurn(wake, chat, turn, 'T')).toEqual({ since: 'T', status: 'thinking' })
   expect(seen).toEqual([{ userId: 'me', sessionId: 's1', ...turn }])
 })
 
 test('an undelivered wake or a load without wake shows why nobody was asked', async () => {
   const refused: Wake = async () => ({ status: 'refused', reason: 'gone' })
-  expect(await askAgentForTurn(refused, seat, turn, 'T')).toEqual({
+  expect(await askAgentForTurn(refused, chat, turn, 'T')).toEqual({
     since: 'T',
     status: 'unreachable',
     reason: 'gone',
   })
-  expect((await askAgentForTurn(undefined, seat, turn, 'T')).status).toBe('unreachable')
+  expect((await askAgentForTurn(undefined, chat, turn, 'T')).status).toBe('unreachable')
 })
 
 const decisionTurn = {
@@ -41,7 +41,7 @@ const host = (outcome: DecisionOutcome): DecisionHost => ({
   decide: async () => outcome,
 })
 
-test('a decision answers with the pick of its one question, billed to the seat', async () => {
+test('a decision answers with the pick of its one question, billed to the chat', async () => {
   const seen: unknown[] = []
   const decisions: DecisionHost = {
     available: async () => ({ model: 'm' }),
@@ -55,14 +55,14 @@ test('a decision answers with the pick of its one question, billed to the seat',
       }
     },
   }
-  expect(await askDecisionForTurn(decisions, seat, decisionTurn, 'T')).toEqual({
+  expect(await askDecisionForTurn(decisions, chat, decisionTurn, 'T')).toEqual({
     answer: { type: 'choice', choice: 'b', probabilities: { a: 0.2, b: 0.8 } },
   })
   expect(seen).toEqual([{ userId: 'me', purpose: 'move', sessionId: 's1' }])
 })
 
 test('a decision without a playable pick shows why, like an undelivered wake', async () => {
-  expect(await askDecisionForTurn(undefined, seat, decisionTurn, 'T')).toEqual({
+  expect(await askDecisionForTurn(undefined, chat, decisionTurn, 'T')).toEqual({
     waiting: {
       since: 'T',
       status: 'unreachable',
@@ -70,7 +70,7 @@ test('a decision without a playable pick shows why, like an undelivered wake', a
     },
   })
   expect(
-    await askDecisionForTurn(host({ status: 'unavailable', ms: 1 }), seat, decisionTurn, 'T'),
+    await askDecisionForTurn(host({ status: 'unavailable', ms: 1 }), chat, decisionTurn, 'T'),
   ).toMatchObject({
     waiting: { reason: expect.stringContaining('No decision model is connected') },
   })
@@ -80,7 +80,7 @@ test('a decision without a playable pick shows why, like an undelivered wake', a
     ms: 1,
     answers: { move: { type: 'choice', choice: 'z', probabilities: { z: 1 } } },
   }
-  expect(await askDecisionForTurn(host(outside), seat, decisionTurn, 'T')).toMatchObject({
+  expect(await askDecisionForTurn(host(outside), chat, decisionTurn, 'T')).toMatchObject({
     waiting: { reason: 'The decision model could not answer.' },
   })
 })
@@ -90,16 +90,16 @@ test('decision turns at one table run one after another, and idle waits for all 
   const log: string[] = []
   let release = () => {}
   const first = new Promise<void>((resolve) => (release = resolve))
-  turns.start(seat, async () => {
+  turns.start(chat, async () => {
     log.push('first:start')
     await first
     log.push('first:end')
   })
-  turns.start(seat, async () => {
+  turns.start(chat, async () => {
     log.push('second')
   })
   // Another table is not held up by this one.
-  turns.start({ ...seat, sessionId: 's2' }, async () => {
+  turns.start({ ...chat, sessionId: 's2' }, async () => {
     log.push('other')
   })
   await Promise.resolve()
@@ -118,10 +118,10 @@ test('a decision turn that throws is logged, and the next one still runs', async
   console.warn = (...args: unknown[]) => void warned.push(args[0])
   try {
     let ran = false
-    turns.start(seat, async () => {
+    turns.start(chat, async () => {
       throw new Error('store failed')
     })
-    turns.start(seat, async () => {
+    turns.start(chat, async () => {
       ran = true
     })
     await turns.idle()

@@ -26,20 +26,16 @@ function eventKey(notice: StoredSystemNotice): string {
     notice.kind === 'run_interrupted' ||
     notice.kind === 'turn_limit' ||
     // Continuing supersedes the ending it continues: the tail no longer says the turn failed.
-    notice.kind === 'run_continued' ||
-    // A status, not a lasting fact: the next turn's outcome supersedes it.
-    notice.kind === 'handoff_limit'
+    notice.kind === 'run_continued'
   ) {
     return 'run:latest-status'
   }
   // One plan, one current step: "v2 approved" supersedes "v2 presented" in the model's context,
   // or the tail would still say a plan waits for review while the agent implements it. Keyed
-  // before the participant rule below.
+  // before the agent rule below.
   if (notice.kind.startsWith('plan_')) return 'plan:latest-status'
   if (notice.kind === 'permission_mode_change') return 'session:permission-mode'
-  return notice.participant
-    ? `notice:${notice.kind}:participant:${notice.participant.toLocaleLowerCase()}`
-    : `notice:${notice.kind}`
+  return `notice:${notice.kind}`
 }
 
 /**

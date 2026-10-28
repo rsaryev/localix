@@ -15,9 +15,10 @@
  *
  * Every attempt returns whether a run was scheduled; false lets the failure finalize normally.
  */
+import { sleep } from '@localixai/agent/backoff'
 import type { CheckpointReason } from '@localixai/agent'
 
-import { backoffMs } from '../../../../lib/backoff'
+import { backoffMs } from '@localixai/agent/backoff'
 import type { SessionRecord } from '../../repository'
 import type { RuntimeState } from '../agent-runner-state'
 import { LocalContextBudgetExceededError } from '../context-budget'
@@ -106,16 +107,13 @@ async function checkpointAndRerun(args: RecoveryArgs, reason: CheckpointReason):
       env,
       userId,
       sessionId: session.id,
-      agent: sessionAgent(session, params.scope.speakerAgentId),
+      agent: sessionAgent(session),
       assistantMessageId,
       completedTurnCheckpoint: args.completedTurnCheckpoint,
       signal: abort.signal,
     })
     if (abort.signal.aborted) return false
-    ensureSessionStores(args.runtimeState, {
-      sessionId: session.id,
-      agentId: params.scope.speakerAgentId,
-    }).context.checkpointDue = reason
+    ensureSessionStores(args.runtimeState, session.id).context.checkpointDue = reason
     return reenterRun({
       env,
       params,
@@ -181,22 +179,6 @@ export function shouldTransientRetry(
   )
 }
 
-/** Abort-aware sleep; resolves early (without throwing) when the signal fires. */
-function backoffDelay(ms: number, signal: AbortSignal): Promise<void> {
-  return new Promise((resolve) => {
-    if (signal.aborted) return resolve()
-    const timer = setTimeout(() => {
-      signal.removeEventListener('abort', onAbort)
-      resolve()
-    }, ms)
-    const onAbort = () => {
-      clearTimeout(timer)
-      resolve()
-    }
-    signal.addEventListener('abort', onAbort, { once: true })
-  })
-}
-
 /**
  * Re-enter the same turn after a transient mid-stream provider failure, honoring Retry-After
  * when the provider stated one (clamped). The settled prefix is kept; only the failed suffix
@@ -204,7 +186,7 @@ function backoffDelay(ms: number, signal: AbortSignal): Promise<void> {
  */
 export async function attemptTransientRetry({
   error,
-  wait = backoffDelay,
+  wait = sleep,
   ...rest
 }: FailedRunRecoveryArgs): Promise<boolean> {
   const info = classifyRunError(rest.env.deps, rest.userId, error)
@@ -224,7 +206,7 @@ export async function attemptTransientRetry({
       env,
       userId,
       sessionId: session.id,
-      agent: sessionAgent(session, params.scope.speakerAgentId),
+      agent: sessionAgent(session),
       assistantMessageId,
       completedTurnCheckpoint: rest.completedTurnCheckpoint,
       checkpointState: rest.checkpointState,

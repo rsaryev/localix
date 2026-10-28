@@ -44,7 +44,7 @@ function fakeRegistry() {
   }
 }
 
-const settle = () => new Promise((resolve) => setTimeout(resolve, 20))
+const settle = () => new Promise((resolve) => setTimeout(resolve, 0))
 
 describe('a background job outlives its call', () => {
   // LOCALIX-388: `python3 -m http.server` with `timeout: 60` was closed after 60 s.

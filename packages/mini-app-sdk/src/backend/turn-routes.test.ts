@@ -1,18 +1,18 @@
 import { describe, expect, test } from 'bun:test'
 import { Hono } from 'hono'
 
-import type { Seat } from './agent-turn'
+import type { ChatRef } from './agent-turn'
 import type { MiniAppRouteContext, MiniAppRouteScope } from './http'
-import { seatedAnswer } from './turn-routes'
+import { chatAnswer } from './turn-routes'
 
 class MoveRefused extends Error {}
 
 /** One route over `action`, called the way the host calls it: the scope as `c.env`. */
 function call(
-  action: (seat: Seat) => Promise<{ secret: string; shown: string }>,
+  action: (chat: ChatRef) => Promise<{ secret: string; shown: string }>,
   sessionId?: string,
 ) {
-  const answer = seatedAnswer({
+  const answer = chatAnswer({
     missing: { code: 'no_table', message: 'This board belongs to a chat that is not available.' },
     refused: { error: MoveRefused, code: 'move_refused' },
     view: (game: { secret: string; shown: string }) => ({ shown: game.shown }),
@@ -27,16 +27,16 @@ function call(
   return app.request('/game', { method: 'POST' }, scope)
 }
 
-describe('a seated answer', () => {
-  test('acts for the verified seat and answers with the view of the new game', async () => {
-    const seats: Seat[] = []
-    const response = await call(async (seat) => {
-      seats.push(seat)
+describe('a chat answer', () => {
+  test('acts for the verified chat and answers with the view of the new game', async () => {
+    const chats: ChatRef[] = []
+    const response = await call(async (chat) => {
+      chats.push(chat)
       return { secret: 'fleet', shown: 'board' }
     }, 's1')
     expect(response.status).toBe(200)
     expect(await response.json()).toEqual({ shown: 'board' })
-    expect(seats).toEqual([{ userId: 'u1', sessionId: 's1' }])
+    expect(chats).toEqual([{ userId: 'u1', sessionId: 's1' }])
   })
 
   test('without a verified chat there is no table, and nothing is touched', async () => {

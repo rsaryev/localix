@@ -35,15 +35,9 @@ export const GUIDANCE: Record<RunShape, readonly string[]> = {
     // Role FRAMING only — this line must not NAME a tool (`run-shape.test.ts` pins that:
     // guidance survives a roster the tool is missing from); the capability line beside it is
     // derived from the roster (`prompt/sections/role.ts`).
-    // WHEN work goes to a child or a colleague is `# Collaboration`'s one rule; this line used to
-    // carry a second copy of it ("do trivial work inline"), which is how the two drifted. What
-    // stays here is the exception to "do it yourself": a leader once built the whole game alone on
-    // "let us do it as a team", then had the team rework its prototype, and the person spent the
-    // session undoing it.
-    // Every agent in a chat reads this, so it names no role: who leads is decided by priority and
-    // said only to the leader (`# Collaboration`, `## Leadership`). Nor does it mention colleagues:
-    // a lone agent has none, and with colleagues present `# Collaboration` opens by saying whose
-    // each part is.
+    // WHEN work goes to a child is `# Collaboration`'s one rule; this line used to carry a
+    // second copy of it ("do trivial work inline"), which is how the two drifted. It names no
+    // role: every agent in a chat reads it.
     'You work with the user in this session. Own the work you take on through to a verified result.',
   ],
   subagent: [
@@ -63,7 +57,7 @@ export const GUIDANCE: Record<RunShape, readonly string[]> = {
 }
 
 export const DESCRIPTIONS: Record<RunShape, string> = {
-  chat: 'Works with the user, with full project tools, forks and colleagues.',
+  chat: 'Works with the user, with full project tools and subagents.',
   subagent: 'Executes a focused delegated task and reports back to the session that spawned it.',
   automation: 'Unattended scheduled run: no human in the loop.',
 }

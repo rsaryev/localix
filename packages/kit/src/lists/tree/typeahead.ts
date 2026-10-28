@@ -51,7 +51,7 @@ export function createTypeahead(opts: { timeoutMs?: number; now?: () => number }
       )
       return match < 0 ? null : rows[match]!.path
     },
-    reset: buffer.reset,
+    reset: () => buffer.reset(),
   }
 }
 

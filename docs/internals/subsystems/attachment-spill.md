@@ -66,7 +66,7 @@ from `mediaId`. Missing media-store files leave that attachment unchanged.
 ### Build the manifest
 
 A text manifest names the path, detected extension, size, and known line count. It includes up to 50
-leading lines and instructs the agent to call `read` with `start_line`, `end_line`, or `offset`.
+leading lines and instructs the agent to call `Read` with `start_line`, `end_line`, or `offset`.
 
 Preview decoding reads at most 128 KiB. When only a prefix was decoded, the manifest omits a total
 line count because the full count is unknown. A non-text attachment receives a binary manifest with
@@ -110,7 +110,7 @@ These values are code constants, not user settings.
 - Spill cleanup is not awaited. A process crash or failed delete can leave files under the session's
   `.localix/attachments` directory.
 - The spill directory is hidden from default ripgrep discovery. The manifest supplies the exact path
-  so the agent can call `read` directly.
+  so the agent can call `Read` directly.
 
 ## Related guides
 

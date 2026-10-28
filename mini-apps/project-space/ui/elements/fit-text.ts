@@ -31,6 +31,26 @@ export const NOTE_FIT = { min: 12, max: 32 } as const
  * `key` names everything that changes what fits — the text, its face, the element's size — and
  * a resize of the box itself re-measures too.
  */
+/**
+ * The size the text takes in the frame as it is laid out now, or null while the frame has no room
+ * (a hidden tab). The text's own size is set while measuring and put back after, so nothing shows.
+ */
+function measureFit(frame: HTMLElement, text: HTMLElement): number | null {
+  const room = { w: frame.clientWidth, h: frame.clientHeight }
+  if (room.w === 0 || room.h === 0) return null
+  const before = text.style.fontSize
+  const next = fitFontSize(
+    (px) => {
+      text.style.fontSize = `${px}px`
+      return text.scrollHeight <= room.h && text.scrollWidth <= room.w
+    },
+    NOTE_FIT.min,
+    NOTE_FIT.max,
+  )
+  text.style.fontSize = before
+  return next
+}
+
 export function useFitFont(
   box: RefObject<HTMLElement | null>,
   content: RefObject<HTMLElement | null>,
@@ -42,20 +62,9 @@ export function useFitFont(
     const text = content.current
     if (!active || !frame || !text) return
     const measure = () => {
-      const room = { w: frame.clientWidth, h: frame.clientHeight }
       // A box not laid out yet (a hidden tab) has no room to measure against.
-      if (room.w === 0 || room.h === 0) return
-      const before = text.style.fontSize
-      const next = fitFontSize(
-        (px) => {
-          text.style.fontSize = `${px}px`
-          return text.scrollHeight <= room.h && text.scrollWidth <= room.w
-        },
-        NOTE_FIT.min,
-        NOTE_FIT.max,
-      )
-      text.style.fontSize = before
-      setSize(next)
+      const next = measureFit(frame, text)
+      if (next !== null) setSize(next)
     }
     measure()
     const observer = new ResizeObserver(measure)

@@ -7,7 +7,7 @@
  * each of those needs to see (and several need to replace) the SAME socket and cursor.
  */
 
-import { backoffMs } from '@localixai/api/backoff'
+import { backoffMs } from '@localixai/agent/backoff'
 
 const RECONNECT_BACKOFF = { baseMs: 1_000, maxMs: 8_000 }
 

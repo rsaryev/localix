@@ -3,7 +3,6 @@ import { splitMentionSegments, type MentionSegment } from './mentionSegments'
 
 const text = (value: string): MentionSegment => ({ type: 'text', value })
 const mention = (value: string): MentionSegment => ({ type: 'mention', value })
-const agent = (value: string, handle: string): MentionSegment => ({ type: 'agent', value, handle })
 const NL = text('\n') // the always-appended trailing newline
 
 describe('splitMentionSegments', () => {
@@ -55,64 +54,6 @@ describe('splitMentionSegments', () => {
       mention('@a.ts'),
       text(' and '),
       mention('@b/c.ts'),
-      NL,
-    ])
-  })
-})
-
-describe('splitMentionSegments — the party’s own handles', () => {
-  const PARTY = ['localix', 'qa', 'backend', 'back', 'all']
-
-  test('a handle in the party is its own segment, carrying who it names', () => {
-    // It needs the handle, not just the text: the pill is drawn in that member's colour.
-    expect(splitMentionSegments('@qa please check', PARTY)).toEqual([
-      agent('@qa', 'qa'),
-      text(' please check'),
-      NL,
-    ])
-  })
-
-  test('a handle outside the party stays plain text', () => {
-    expect(splitMentionSegments('@nobody hello', PARTY)).toEqual([text('@nobody hello'), NL])
-  })
-
-  test('punctuation after a handle ends it and stays in the sentence', () => {
-    // People write a name mid-sentence; a pill that swallowed the comma would be visibly wrong.
-    expect(splitMentionSegments('ok @qa, and you?', PARTY)).toEqual([
-      text('ok '),
-      agent('@qa', 'qa'),
-      text(', and you?'),
-      NL,
-    ])
-  })
-
-  test('the LONGEST handle wins, so a room holding both names pills the whole one', () => {
-    expect(splitMentionSegments('@backend ships it', PARTY)).toEqual([
-      agent('@backend', 'backend'),
-      text(' ships it'),
-      NL,
-    ])
-  })
-
-  test('a party handle beats the file reading of the same token', () => {
-    // `@backend` is a colleague here and a plausible path anywhere. In a room the colleague is
-    // what the person means, and a file chip would say the opposite of what the message does.
-    const [first] = splitMentionSegments('@backend/api.ts', PARTY)
-    expect(first).toEqual(agent('@backend', 'backend'))
-  })
-
-  test('with no party, nothing changes', () => {
-    expect(splitMentionSegments('@qa please check')).toEqual([text('@qa please check'), NL])
-  })
-
-  test('a chip is drawn exactly where the conversation routes', () => {
-    // The composer had its own grammar — whitespace-only boundary, case-sensitive — so "@QA" and
-    // "(@qa" routed to @qa with no chip in the draft.
-    expect(splitMentionSegments('@QA look', PARTY)[0]).toEqual(agent('@QA', 'qa'))
-    expect(splitMentionSegments('(@qa)', PARTY)).toEqual([
-      text('('),
-      agent('@qa', 'qa'),
-      text(')'),
       NL,
     ])
   })

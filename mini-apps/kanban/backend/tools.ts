@@ -1,13 +1,6 @@
 import type { AgentToolExecutionContext, MiniAppContext } from '@localixai/mini-app-sdk/backend'
 
-import {
-  AGENT_TARGET_STATUSES,
-  HUMAN_ASSIGNEE_ID,
-  leaderOf,
-  leadsBoard,
-  memberMay,
-  type BoardSpeaker,
-} from '../shared/rules'
+import { AGENT_TARGET_STATUSES, HUMAN_ASSIGNEE_ID } from '../shared/rules'
 import { BoardRefusal } from '../shared/errors'
 import { classifyKanbanCall } from './call-class'
 import { KANBAN_ACTIONS, KANBAN_TOOL, slimTask, type KanbanToolDetails } from '../shared/tool'
@@ -21,14 +14,7 @@ import {
 } from './describe'
 import { createCards } from './tool-create'
 import { completeCard } from './tool-complete'
-import {
-  describeDependencies,
-  describeOwnCards,
-  relatedCards,
-  resolveFor,
-  visibleTo,
-} from './member-view'
-import type { BoardSeat, BoardService } from './service'
+import type { BoardChat, BoardService } from './service'
 import { refuseOwnedMove, refuseUnreadFields, reviseChecklist } from './tool-input'
 
 type Result = { content: string; details?: KanbanToolDetails; isError?: boolean }
@@ -38,10 +24,10 @@ type Result = { content: string; details?: KanbanToolDetails; isError?: boolean 
  *
  * Every action acts on the board of the chat the call RUNS in (the session the host names in the
  * call's context), so an agent in one chat can never touch another chat's board. `take` needs to
- * know WHO is taking, and reads it from the call's speaker — never from the input, where a model
+ * know WHO is taking, and reads it from the agent the host names for the call — never from the input, where a model
  * could name someone else.
  *
- * The board is passive: no action starts a run, wakes an agent or invites a participant. Who does
+ * The board is passive: no action starts a run, wakes an agent or starts a conversation. Who does
  * a card's work is the agent's decision, made with its own tools.
  */
 
@@ -52,10 +38,7 @@ export function createKanbanTools(ctx: MiniAppContext, boards: BoardService) {
   const createEntry = z.object({
     title: z.string().describe('The card title.'),
     description: z.string().optional(),
-    agent: z
-      .string()
-      .optional()
-      .describe('Agent id or handle (with or without @) to assign, or "user" for the person.'),
+    agent: z.string().optional().describe('Agent id or name to assign, or "user" for the person.'),
     kind: z.enum(['epic', 'task']).optional(),
     parent: z.string().optional().describe('The epic this task belongs to (id or title).'),
     depends_on: z
@@ -71,10 +54,7 @@ export function createKanbanTools(ctx: MiniAppContext, boards: BoardService) {
     query: z.string().optional().describe('For "search": words every match contains.'),
     title: z.string().optional(),
     description: z.string().optional(),
-    agent: z
-      .string()
-      .optional()
-      .describe('Agent id or handle (with or without @) to assign, or "user" for the person.'),
+    agent: z.string().optional().describe('Agent id or name to assign, or "user" for the person.'),
     kind: z.enum(['epic', 'task']).optional(),
     parent: z.string().optional().describe('The epic the card belongs to (id or title).'),
     status: z
@@ -106,91 +86,75 @@ export function createKanbanTools(ctx: MiniAppContext, boards: BoardService) {
   /** The actions that name one card; `list`, `search` and `create` are answered before them. */
   type CardAction = Exclude<Input['action'], 'list' | 'search' | 'create'>
 
-  const seatOf = (context: AgentToolExecutionContext | undefined): BoardSeat => {
+  const chatOf = (context: AgentToolExecutionContext | undefined): BoardChat => {
     const sessionId = context?.session?.id
     if (!sessionId)
       throw new BoardRefusal(400, 'no_board', 'The board belongs to a chat; this call has none.')
     return { userId: ctx.userId, sessionId }
   }
 
-  const refuseFor = (verdict: { ok: true } | { ok: false; why: string }) => {
-    if (!verdict.ok) throw new BoardRefusal(409, 'leader_only', verdict.why)
-  }
-
   async function onTask(
-    seat: BoardSeat,
+    chat: BoardChat,
     action: CardAction,
     input: Input,
     context: AgentToolExecutionContext | undefined,
   ): Promise<Result> {
     if (!input.task_id) throw new BoardRefusal(400, 'task_required', `${action} requires task_id.`)
-    const board = await boards.read(seat)
-    const speaker = context?.session?.speaker
-    const task = resolveFor(board.tasks, speaker, input.task_id)
-    const fields = Object.keys(input).filter(
-      (field) => field !== 'action' && input[field as keyof Input] !== undefined,
-    )
-    // A member reads (never works) the cards its own depend on, or that depend on its own.
-    const readsRelated = action === 'detail' && relatedCards(board.tasks, speaker).includes(task)
-    if (!readsRelated) refuseFor(memberMay(action, task, speaker, fields))
+    const board = await boards.read(chat)
+    const actor = context?.session?.agent
+    const task = resolveTaskReference(board.tasks, input.task_id)
     if ((action === 'take' || action === 'complete') && task.agentId === HUMAN_ASSIGNEE_ID)
       throw new BoardRefusal(
         409,
         'human_card',
         `${task.id} is assigned to the person; it waits for them.`,
       )
-    const leads = leadsBoard(speaker)
     const done = (content: string, written: KanbanTask): Result => ({
       content,
-      details: { sessionId: seat.sessionId, task: written },
+      details: { sessionId: chat.sessionId, task: written },
     })
     switch (action) {
       case 'detail':
-        return done(
-          readsRelated
-            ? `${describeTask(task)} (read-only for you)\n\n${taskBrief(task, board)}`
-            : taskBrief(task, board),
-          task,
-        )
+        return done(taskBrief(task, board), task)
       case 'delete':
-        await boards.remove(seat, task.id)
-        return { content: `Deleted ${task.id}.`, details: { sessionId: seat.sessionId } }
+        await boards.remove(chat, task.id)
+        return { content: `Deleted ${task.id}.`, details: { sessionId: chat.sessionId } }
       case 'reorder':
         if (input.sort_order === undefined)
           throw new BoardRefusal(400, 'sort_order_required', 'reorder requires sort_order.')
         return done(
           `Reordered ${task.id}.`,
-          await boards.update(seat, task.id, { sortOrder: input.sort_order }, 'agent'),
+          await boards.update(chat, task.id, { sortOrder: input.sort_order }, 'agent'),
         )
       case 'take': {
-        if (!speaker)
+        if (!actor)
           throw new BoardRefusal(
             409,
-            'no_speaker',
-            'Only an agent speaking in this chat can take a card.',
+            'no_agent',
+            'Only an agent running in this chat can take a card.',
           )
-        if (task.agentId && task.agentId !== speaker.agentId) {
+        if (task.agentId && task.agentId !== actor.agentId) {
           const owner = `@${task.assignee ?? task.agentId}`
           throw new BoardRefusal(
             409,
             'task_assigned',
-            `${task.id} is assigned to ${owner}. Give ${owner} a turn, or delegate it with the card's detail as the brief. To do it yourself, reassign it first (update with agent).`,
+            `${task.id} is assigned to ${owner}. Hand it to a subagent (Agent) with the card's detail as the brief. To do it yourself, reassign it first (update with agent).`,
           )
         }
-        const taken = await boards.take(seat, task.id, {
-          agentId: speaker.agentId,
-          assignee: speaker.handle,
+        const taken = await boards.take(chat, task.id, {
+          agentId: actor.agentId,
+          assignee: actor.name,
         })
         return done(`Took ${task.id}. Do the work directly.`, taken)
       }
       case 'complete':
-        return completeCard(boards, seat, task, leads, input.items_done === true, leaderOf(speaker))
+        return completeCard(boards, chat, task, input.items_done === true)
       case 'block': {
         const reason = input.note?.trim()
         if (!reason) throw new BoardRefusal(400, 'note_required', 'block requires note.')
         return done(
           `Blocked ${task.id}.`,
-          await boards.update(seat, task.id, { status: 'blocked', error: reason }, 'agent'),
+          await boards.update(chat, task.id, { status: 'blocked', error: reason }, 'agent'),
         )
       }
       case 'update': {
@@ -201,7 +165,7 @@ export function createKanbanTools(ctx: MiniAppContext, boards: BoardService) {
             ? ' If the owner changed, the card went back to ready for its new owner to take.'
             : ''
         const written = await boards.update(
-          seat,
+          chat,
           task.id,
           {
             ...(input.title !== undefined ? { title: input.title } : {}),
@@ -222,9 +186,9 @@ export function createKanbanTools(ctx: MiniAppContext, boards: BoardService) {
     }
   }
 
-  async function list(seat: BoardSeat, input: Input, speaker?: BoardSpeaker): Promise<Result> {
-    const board = (await boards.read(seat)).tasks
-    let tasks = visibleTo(board, speaker)
+  async function list(chat: BoardChat, input: Input): Promise<Result> {
+    const board = (await boards.read(chat)).tasks
+    let tasks = board
     if (input.action === 'search') {
       const terms = input.query?.trim().toLowerCase().split(/\s+/).filter(Boolean) ?? []
       if (!terms.length) throw new BoardRefusal(400, 'query_required', 'search requires query.')
@@ -238,12 +202,8 @@ export function createKanbanTools(ctx: MiniAppContext, boards: BoardService) {
     const more =
       tasks.length > visible.length ? `\nShowing ${LIST_CAP} of ${tasks.length} tasks.` : ''
     return {
-      content: tasks.length
-        ? `${leadsBoard(speaker) ? describeBoard(visible) : `${describeOwnCards(visible, board)}${describeDependencies(visible, relatedCards(board, speaker))}`}${more}`
-        : leadsBoard(speaker)
-          ? 'No matching board tasks.'
-          : 'No matching cards are assigned to you. Read any card by id with detail.',
-      details: { sessionId: seat.sessionId, tasks: visible.map(slimTask) },
+      content: tasks.length ? `${describeBoard(visible)}${more}` : 'No matching board tasks.',
+      details: { sessionId: chat.sessionId, tasks: visible.map(slimTask) },
     }
   }
 
@@ -256,8 +216,7 @@ export function createKanbanTools(ctx: MiniAppContext, boards: BoardService) {
         'Read and edit this chat’s task board: epics, tasks, dependencies, checklists, owners and blockers. It is passive — no card state starts work.',
         'Put multi-part, durable work on the board; a small single deliverable needs no card.',
         'take a card before working it yourself (checks dependencies, assigns you, moves it to in_progress); complete it when done, or block it with the concrete obstacle.',
-        'In a group, the leader sees and edits the whole board; a member works only the cards assigned to it (and reads the cards they depend on), and its complete sends the card to review for the leader to verify.',
-        'For a card another agent should do, give that participant a turn or delegate it with the card’s detail as the brief; review the report before you complete or block the card.',
+        'For a card another agent should do, hand it to a subagent (Agent) with the card’s detail as the brief; review the report before you complete or block the card.',
       ].join(' '),
       inputSchema,
       mutates: true,
@@ -267,12 +226,10 @@ export function createKanbanTools(ctx: MiniAppContext, boards: BoardService) {
       async execute(_toolCallId, input, _signal, _onUpdate, context): Promise<Result> {
         try {
           refuseUnreadFields(input)
-          const seat = seatOf(context)
-          const speaker = context?.session?.speaker
-          if (input.action === 'list' || input.action === 'search')
-            return await list(seat, input, speaker)
-          if (input.action === 'create') return await createCards(ctx, boards, seat, input, speaker)
-          return await onTask(seat, input.action, input, context)
+          const chat = chatOf(context)
+          if (input.action === 'list' || input.action === 'search') return await list(chat, input)
+          if (input.action === 'create') return await createCards(ctx, boards, chat, input)
+          return await onTask(chat, input.action, input, context)
         } catch (error) {
           if (error instanceof BoardRefusal) return { content: error.message, isError: true }
           throw error

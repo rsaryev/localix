@@ -186,7 +186,7 @@ export function wrapSkillTool<T extends { name: string; execute: (...args: never
 ): T[] {
   if (!hearsIn(scope, 'skill.prompt')) return [...tools]
   return tools.map((tool) => {
-    if (tool.name !== 'skill') return tool
+    if (tool.name !== 'Skill') return tool
     const execute = tool.execute as (...args: unknown[]) => Promise<{ content: unknown }>
     return {
       ...tool,

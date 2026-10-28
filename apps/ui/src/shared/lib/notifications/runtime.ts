@@ -23,7 +23,7 @@ const reportRetry: RetryFailedRunDeps['report'] = (severity, title, body, run) =
     title,
     body,
     origin: { kind: 'session', sessionId: run.sessionId, projectId: run.projectId },
-    nativeKind: 'run',
+    native: true,
   })
 
 export interface NotificationCommandHost {

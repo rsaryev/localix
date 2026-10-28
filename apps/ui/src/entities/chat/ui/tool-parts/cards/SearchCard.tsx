@@ -37,17 +37,17 @@ function SearchLikeCard({
       hasError={hasError}
     >
       <ToolBody>
-        <IORow label="IN">
+        <IORow label="In">
           <span className="font-mono text-2xs text-text-faint">{inText}</span>
         </IORow>
         {output ? (
-          <IORow label="OUT">
+          <IORow label="Out">
             <OutputBlock linkify>{output}</OutputBlock>
           </IORow>
         ) : (
           !streaming &&
           !errorMessage && (
-            <IORow label="OUT">
+            <IORow label="Out">
               <span className="text-2xs text-text-faint">No matches</span>
             </IORow>
           )
@@ -126,12 +126,12 @@ function SearchBatchCard({ item }: { item: ToolCallItem }) {
     >
       <ToolBody>
         {glob && (
-          <IORow label="IN">
+          <IORow label="In">
             <span className="font-mono text-2xs text-text-faint">{glob}</span>
           </IORow>
         )}
         {rows.map((row, index) => (
-          <IORow key={`${row.query}:${index}`} label={String(index + 1)}>
+          <IORow key={`${row.query}:${index}`} label={index + 1}>
             <div className="flex min-w-0 flex-col gap-1">
               <span className="truncate font-mono text-2xs text-text-soft">{row.query}</span>
               {!streaming && (
@@ -151,7 +151,7 @@ function SearchBatchCard({ item }: { item: ToolCallItem }) {
   )
 }
 
-/** Rich card for the `search` tool — query + glob, match-line count, output block. */
+/** Rich card for the `Search` tool — query + glob, match-line count, output block. */
 export function SearchCard({ item }: { item: ToolCallItem }) {
   const batch = item.output
     ? searchBatchRows(item.output) !== undefined
@@ -191,9 +191,8 @@ function SingleSearchCard({ item }: { item: ToolCallItem }) {
 }
 
 /**
- * Rich card for `global_search` — and for `history_search` calls in older transcripts, which
- * were the same reads under the old name: the query and its result count (noting a match by
- * meaning), or what conversation was read.
+ * Rich card for `GlobalSearch`: the query and its result count (noting a match by meaning), or
+ * what conversation was read.
  */
 export function GlobalSearchCard({ item }: { item: ToolCallItem }) {
   const streaming = isItemStreaming(item)

@@ -35,7 +35,7 @@ type EditorSnapshot = ReturnType<typeof useFileEditor>
 
 async function mountEditor(initialVisible = true, formatOnSave: FormatOnSaveRunner | null = null) {
   const React = await import('react')
-  const { act } = React
+  const { act, useEffect } = React
   const { createRoot } = await import('react-dom/client')
   const host = document.createElement('div')
   const root = createRoot(host)
@@ -43,7 +43,10 @@ async function mountEditor(initialVisible = true, formatOnSave: FormatOnSaveRunn
   const formatOnSaveRef = { current: formatOnSave }
 
   function Harness() {
-    current = useFileEditor('session-a', 'shared.ts', formatOnSaveRef)
+    const value = useFileEditor('session-a', 'shared.ts', formatOnSaveRef)
+    useEffect(() => {
+      current = value
+    })
     return null
   }
 

@@ -1,17 +1,12 @@
 /**
  * `onFailure: "block"` (hooks.md, "Block the action when a hook fails"): a failed command or http
  * hook does "what exit code 2 does on that event, except on PermissionRequest, where it denies the
- * request". Stop, SubagentStop, TaskCompleted and TeammateIdle are untouched: exit 2 there sends
+ * request". Stop, SubagentStop, and TaskCompleted are untouched: exit 2 there sends
  * Claude back to work, "and Claude can't repair a hook that won't run".
  */
 import type { CcHookEvent, CcHookHandler, CcHookOutcome } from './contracts'
 
-const UNAFFECTED: ReadonlySet<CcHookEvent> = new Set([
-  'Stop',
-  'SubagentStop',
-  'TaskCompleted',
-  'TeammateIdle',
-])
+const UNAFFECTED: ReadonlySet<CcHookEvent> = new Set(['Stop', 'SubagentStop', 'TaskCompleted'])
 
 /** The outcome a failed hook stands for: a block when the hook asked for one, else as it was. */
 export function blockOnFailure(

@@ -2,7 +2,7 @@
  * WHAT IS WAITING ON THE PERSON — the vocabulary every "your turn" kind shares.
  *
  * Three things wait on the person: a blocking interaction (a permission card, an `ask`), a
- * participant addressing them by name, and a plan presented for review. Each used to be announced
+ * agent addressing them by name, and a plan presented for review. Each used to be announced
  * by its own producer in its own shape — the journal had a row builder per kind, a sidebar mark
  * per kind, and a reload restored only the ones
  * whose session happened to be loaded. So there is ONE item shape and ONE registry
@@ -22,7 +22,7 @@ export interface AttentionSubject {
   messageId?: string
   planId?: string
   version?: number
-  agentHandle?: string
+  agentName?: string
 }
 
 export interface AttentionItem {

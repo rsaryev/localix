@@ -182,7 +182,7 @@ export function ConnectionSettingsPanel({
 
         <div className="mt-auto flex flex-col gap-1.5 pt-4">
           <Button
-            variant="outline"
+            variant="ghost"
             size="lg"
             onClick={() => setSelectedItem({ type: 'provider', id: selectedConn.providerId })}
             className="w-full"

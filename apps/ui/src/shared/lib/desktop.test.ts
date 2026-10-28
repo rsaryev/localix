@@ -23,17 +23,7 @@ describe('getDesktopApiPort', () => {
     setWindow(win({ __LOCALIX_API_PORT: 5051 }))
     expect(getDesktopApiPort()).toBe(5051)
   })
-  test('falls back to the __api_port query param', () => {
-    setWindow(win({}, '?__api_port=6000'))
-    expect(getDesktopApiPort()).toBe(6000)
-  })
-
-  test('a non-numeric __api_port yields undefined, not NaN', () => {
-    setWindow(win({}, '?__api_port=not-a-number'))
-    expect(getDesktopApiPort()).toBeUndefined()
-  })
-
-  test('no global and no query param → undefined', () => {
+  test('no injected global → undefined', () => {
     setWindow(win())
     expect(getDesktopApiPort()).toBeUndefined()
   })

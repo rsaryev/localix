@@ -21,6 +21,9 @@ export const REALTIME_RESOURCES = [
   // The sources the Store reads from (`/rpc/store/sources`): one was switched, read again, added,
   // removed or moved on its own. Not in `store`: sources are not in the index.
   'store-sources',
+  // What the Store recommends for a working set, worked out in the background
+  // (`/rpc/store/recommendations`): an answer moved.
+  'store-recommendations',
   'semantic',
   // What loaded mods put on screen: their panes and what is drawn in them.
   'mods',

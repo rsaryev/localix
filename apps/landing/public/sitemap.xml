@@ -19,8 +19,6 @@
   <url><loc>https://localix.ai/docs/features--configure</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--project-instructions</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--sessions-and-projects</loc><priority>0.7</priority></url>
-  <url><loc>https://localix.ai/docs/features--conversations</loc><priority>0.7</priority></url>
-  <url><loc>https://localix.ai/docs/features--group-routing</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--decision-models</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--conversation-history</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--attachments</loc><priority>0.7</priority></url>
@@ -30,7 +28,6 @@
   <url><loc>https://localix.ai/docs/features--interactive-terminals</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--monitors</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--loops</loc><priority>0.7</priority></url>
-  <url><loc>https://localix.ai/docs/features--agent-companion</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--workspace</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--native-workspace-tabs</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--mini-apps</loc><priority>0.7</priority></url>
@@ -70,7 +67,9 @@
   <url><loc>https://localix.ai/docs/features--skills</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--mcp</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--hooks-and-commands</loc><priority>0.7</priority></url>
+  <url><loc>https://localix.ai/docs/features--claude-code-commands</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--hook-tool-calls</loc><priority>0.7</priority></url>
+  <url><loc>https://localix.ai/docs/features--hook-handlers</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--execution-environments</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--secrets</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--webhook</loc><priority>0.7</priority></url>

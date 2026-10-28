@@ -7,7 +7,7 @@ import { TOOL_WRAPPER_CHAIN } from '../chat/runtime/run/tool-wrapper-chain'
 const WRAPPERS = TOOL_WRAPPER_CHAIN.map((entry) => entry.label)
 
 const assembled = {
-  wireToolNames: ['bash', 'read', 'ledger_query', 'activate_tools'],
+  wireToolNames: ['bash', 'read', 'ledger_query', 'ToolSearch'],
   deferredToolNames: ['ticket_search', 'mcp_read_resource'],
   sourceByTool: new Map([
     ['ledger_query', 'mini-apps'],

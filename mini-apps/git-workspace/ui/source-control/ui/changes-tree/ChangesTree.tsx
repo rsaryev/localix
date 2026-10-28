@@ -166,6 +166,8 @@ export const ChangesTree = memo(function ChangesTree({
                 : 'Changes'
           }
           className="py-1"
+          // The rows hold the roving tab stop; the tree itself only has to be focusable.
+          tabIndex={-1}
           onFocus={(e) => {
             const path = pathOf(e.target)
             if (path) setRemembered(path)

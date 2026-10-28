@@ -128,15 +128,20 @@ describe('the sessions are read at once, in the order asked', () => {
     const { svc } = await service()
     let inFlight = 0
     let peak = 0
+    const release = Promise.withResolvers<void>()
     svc.transcript = (async (key: string) => {
       inFlight += 1
       peak = Math.max(peak, inFlight)
-      await new Promise((resolve) => setTimeout(resolve, 5))
+      await release.promise
       inFlight -= 1
       return sliceFor(key, 4)
     }) as AgentSessionsService['transcript']
 
-    await svc.context(['codex:a', 'codex:b', 'codex:c', 'codex:d'], 20_000)
+    const reading = svc.context(['codex:a', 'codex:b', 'codex:c', 'codex:d'], 20_000)
+    // One event-loop turn lets every read that can start do so before any of them finishes.
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    release.resolve()
+    await reading
 
     // Serially this is 1; the point of the change is that it is not.
     expect(peak).toBeGreaterThan(1)

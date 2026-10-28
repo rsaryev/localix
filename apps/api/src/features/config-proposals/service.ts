@@ -6,7 +6,7 @@ import { renderInspection } from './inspect'
 import { createRemedyRegistry, type RemedyRegistry } from './registry'
 
 /**
- * The `configure` tool's HOST, composed once per process and bound per run.
+ * The `Configure` tool's HOST, composed once per process and bound per run.
  *
  * Owns the proposals table (the durable trail of what the agent asked and what the human
  * decided) and hands the tool a `ConfigureHost` whose every method is a remedy-registry

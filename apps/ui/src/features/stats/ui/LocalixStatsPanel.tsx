@@ -120,8 +120,8 @@ export function LocalixStatsPanel({
   )
   // The breakdown and chart label a grouped row by the same rule the filter menu names it by,
   // so a row and the filter it sets read identically instead of one showing "builtin:qa" and
-  // the other "qa". `agentHandles` is that map for the agent grouping.
-  const agentHandles = useMemo(
+  // the other "qa". `agentNames` is that map for the agent grouping.
+  const agentNames = useMemo(
     () => new Map((keys?.agents ?? []).map((a) => [a.id, agentLabel(a)])),
     [keys],
   )
@@ -132,7 +132,7 @@ export function LocalixStatsPanel({
         ? // Rows with no speaker — the background calls a room makes for itself (titles,
           // completions) — group under the repository's 'unknown' key. Naming the bucket keeps the
           // breakdown adding up to the summary card instead of appearing to lose spend.
-          (key: string) => agentHandles.get(key) ?? (key === 'unknown' ? 'No agent' : shortKey(key))
+          (key: string) => agentNames.get(key) ?? (key === 'unknown' ? 'No agent' : shortKey(key))
         : shortKey
   // Drilling into that bucket would filter by an agent id nobody has, so it is not a link.
   const selectableKey = (key: string) => groupBy !== 'agent' || key !== 'unknown'

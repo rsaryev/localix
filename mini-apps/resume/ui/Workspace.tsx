@@ -1,9 +1,9 @@
-import { lazy, Suspense, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useEffectEvent, useId, useMemo, useRef, useState } from 'react'
 import { useNativeEditTarget, isPrimaryModifier } from '@localixai/kit/keybindings'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import { WorkbenchStatusBar, WorkbenchStatusItem } from '@localixai/kit/workbench-statusbar'
 import type { PublishMessageContext } from '@localixai/mini-app-sdk/ui'
-import type { ResumeDocument } from '../shared/schema'
+import type { ResumeDocument, ResumeSummary } from '../shared/schema'
 import { useResumes } from './useResumes'
 import { resumeMessageContext } from './bindings'
 import { WorkspaceActions } from './WorkspaceActions'
@@ -48,6 +48,28 @@ export function Workspace({
     if (command === 'undo') state.undo()
     else if (command === 'redo') state.redo()
   })
+  // Undo/redo chords, heard on the workspace element itself: it is a group landmark, not a control,
+  // so the listener is attached to the DOM handle instead of as a JSX handler.
+  const onShortcutKey = useEffectEvent((event: KeyboardEvent) => {
+    if (!active || state.pending || !isPrimaryModifier(event) || event.altKey) return
+    if (
+      event.target instanceof HTMLElement &&
+      event.target.closest('input, textarea, [contenteditable="true"]')
+    )
+      return
+    const key = event.key.toLowerCase()
+    if (key !== 'z' && key !== 'y') return
+    event.preventDefault()
+    if (key === 'y' || event.shiftKey) state.redo()
+    else state.undo()
+  })
+  useEffect(() => {
+    const element = root.current
+    if (!element) return
+    const listener = (event: KeyboardEvent) => onShortcutKey(event)
+    element.addEventListener('keydown', listener)
+    return () => element.removeEventListener('keydown', listener)
+  }, [])
   const { draft, base } = state
   const section = draft?.sections.find((item) => item.id === sectionId)
   const context = useMemo(
@@ -65,6 +87,16 @@ export function Workspace({
   const change = (value: ResumeDocument) => {
     state.setDraft(value)
     setConfirm(null)
+  }
+  const exportResume = async (
+    resume: ResumeSummary,
+    format: Parameters<typeof downloadResume>[1],
+  ) => {
+    try {
+      await downloadResume(await resumeApi.get(sessionId, resume.id), format, sessionId)
+    } catch (error) {
+      state.setError(error instanceof Error ? error.message : 'Export failed. Retry.')
+    }
   }
   const exportFile = async (format: Parameters<typeof downloadResume>[1]) => {
     if (!base || state.dirty || exporting) return
@@ -86,19 +118,6 @@ export function Workspace({
         role="group"
         aria-label="Resume workspace"
         className="@container flex h-full min-h-0 min-w-0 flex-col"
-        onKeyDown={(event) => {
-          if (!active || state.pending || !isPrimaryModifier(event) || event.altKey) return
-          if (
-            event.target instanceof HTMLElement &&
-            event.target.closest('input, textarea, [contenteditable="true"]')
-          )
-            return
-          const key = event.key.toLowerCase()
-          if (key !== 'z' && key !== 'y') return
-          event.preventDefault()
-          if (key === 'y' || event.shiftKey) state.redo()
-          else state.undo()
-        }}
       >
         {!library && base && draft && (
           <WorkspaceActions
@@ -140,13 +159,7 @@ export function Workspace({
             onRename={state.renameResume}
             onDelete={state.deleteResume}
             onDuplicate={state.duplicateResume}
-            onExport={async (resume, format) => {
-              try {
-                await downloadResume(await resumeApi.get(sessionId, resume.id), format, sessionId)
-              } catch (error) {
-                state.setError(error instanceof Error ? error.message : 'Export failed. Retry.')
-              }
-            }}
+            onExport={(resume, format) => void exportResume(resume, format)}
             resumes={state.resumes}
             pending={state.pending}
             onCreate={() => setCreating('blank')}

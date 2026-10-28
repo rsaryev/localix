@@ -7,7 +7,7 @@ import { hostWithMod } from './testing/testing-host'
 /** What `tool.call`'s `next(e)` resolves to, per tool, and what a hook's answer becomes. */
 
 const bash = defineAgentTool({
-  name: 'bash',
+  name: 'Bash',
   description: 'bash',
   activeVerb: 'Running',
   inputSchema: z.object({ command: z.string() }),
@@ -16,7 +16,7 @@ const bash = defineAgentTool({
 
 function writer(written: unknown[]) {
   return defineAgentTool({
-    name: 'write',
+    name: 'Write',
     description: 'write',
     activeVerb: 'Writing',
     inputSchema: z.object({}).passthrough(),

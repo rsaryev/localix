@@ -47,8 +47,6 @@ export const CC_HOOK_EVENTS = [
   // The task board (the `kanban` tool) gained a card, or is about to close one.
   'TaskCreated',
   'TaskCompleted',
-  // A conversation member other than the primary agent finished its turn.
-  'TeammateIdle',
   'PreCompact',
   // A context checkpoint (this host's compaction) was taken.
   'PostCompact',
@@ -56,7 +54,7 @@ export const CC_HOOK_EVENTS = [
   'Notification',
   // A CLAUDE.md / AGENTS.md / rules file entered the prompt.
   'InstructionsLoaded',
-  // The agent's `configure` tool, or a skill saved from Localix, changed configuration.
+  // The agent's `Configure` tool, or a skill saved from Localix, changed configuration.
   'ConfigChange',
   // The session moved to a project with another working directory.
   'CwdChanged',
@@ -122,8 +120,8 @@ export function isToolEvent(event: CcHookEvent): boolean {
 export type CcHookSource = 'user' | 'project' | 'local' | 'plugin' | 'skill' | 'agent'
 
 /**
- * Events on which a `type:"prompt"` (LLM-evaluated) handler is supported: the gate events of
- * the CC spec matrix whose `ok:false` has an effect this host can apply (see `prompt-hook.ts`),
+ * Events on which a `type:"prompt"` (LLM-evaluated) handler is supported: the events of the CC
+ * matrix whose `ok:false` has an effect this host can apply (see `prompt-hook.ts`),
  * plus `PermissionRequest` and `PermissionDenied`, where CC runs a prompt hook but discards its
  * verdict. On every other event a prompt handler is dropped at parse time.
  */
@@ -133,12 +131,13 @@ export const CC_PROMPT_HOOK_EVENTS = [
   'UserPromptSubmit',
   'UserPromptExpansion',
   'PreToolUse',
+  'PostToolUse',
+  'PostToolUseFailure',
   'PermissionRequest',
   'PermissionDenied',
   'PostToolBatch',
   'TaskCreated',
   'TaskCompleted',
-  'TeammateIdle',
 ] as const satisfies readonly CcHookEvent[]
 export function isPromptHookEvent(event: CcHookEvent): boolean {
   return (CC_PROMPT_HOOK_EVENTS as readonly string[]).includes(event)

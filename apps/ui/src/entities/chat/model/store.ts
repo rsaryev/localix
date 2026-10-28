@@ -1,11 +1,9 @@
 import { create } from 'zustand'
-import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
-import { toast } from '@/shared/lib/notify'
 import { makeOptimisticPair } from './optimisticPair'
 
 import type { applyStreamEventToSession } from '@/shared/api/client'
 import { backendClient, createWorkspaceSnapshot, type WorkspaceSnapshot } from '@/shared/api/client'
-import type { ProviderConnection, UiSession, Project, MessageBinding } from '@/shared/api/contracts'
+import type { ProviderConnection, UiSession, Project } from '@/shared/api/contracts'
 import { sessionRoute } from '@/shared/api/contracts'
 import { sessionRosterEventPatch } from './sessionRosterEvents'
 import { uiSessionSummary } from '@/shared/api/session-summary'
@@ -13,9 +11,7 @@ import { noticePosition } from '@/shared/api/applyStreamEvent/notices'
 
 import type { Message } from './types'
 import type { ReasoningEffort } from './reasoning'
-import type { PartyRouteChoice } from './sessionPartyRoute'
 import { mergeSessionBody } from './mergeSessionBody'
-import { findSessionInState } from './findSession'
 import { reconcileSessionListAfterReconnect } from './reconnect-session-list'
 import { loadLastWorkspace } from './persistence'
 import { rememberShellSessions } from '@/shared/lib/shellSnapshot'
@@ -42,6 +38,8 @@ export { logCurrentChatMessages } from './sessionActionsSlice'
 
 import { createProjectActions } from './projectActionsSlice'
 import { createSessionActions } from './sessionActionsSlice'
+import { createOptimisticSendActions, type OptimisticSendActions } from './optimisticSendSlice'
+import { createStopGenerationActions, type StopGenerationActions } from './stopGenerationSlice'
 import type { ConversationStartStrategy } from './conversationStartStrategy'
 
 /** Zustand setter passed into slice factories (the store's own `set`). */
@@ -55,7 +53,7 @@ export interface OptimisticSendIds {
   assistantId: string
 }
 
-export interface ChatStore {
+export interface ChatStore extends OptimisticSendActions, StopGenerationActions {
   _forgetSessions: (ids: readonly string[]) => void
   connections: ProviderConnection[]
   projects: Project[]
@@ -113,53 +111,19 @@ export interface ChatStore {
   toggleArchiveSession: (id: string) => Promise<void>
   moveSessionToProject: (id: string, projectId: string | null) => Promise<void>
   toggleUnreadSession: (id: string) => void
-  /**
-   * Choose the model for ONE participant of a conversation.
-   *
-   * `agentId` names whom the choice is for; omitted means the session's own participant, which
-   * is unambiguous in a private chat and is the first member in a group. A model belongs to an
-   * agent inside a conversation rather than to the conversation, because a group runs several
-   * at once.
-   */
+  /** Choose the model of the conversation's one agent. */
   setModelSelection: (
     sessionId: string,
     connectionId: string,
     modelId: string,
     reasoningEffort?: ReasoningEffort,
-    agentId?: string,
   ) => Promise<void>
-  /** `agentId` names whose effort; omitted, the conversation's own participant. */
-  setReasoningEffort: (s: string, e: ReasoningEffort, agentId?: string) => Promise<void>
-  /** One model and level for every participant of a group, in one write. */
-  applyPartyRoute: (
-    sessionId: string,
-    choice: PartyRouteChoice,
-    agentIds?: readonly string[],
-  ) => Promise<void>
-
-  /** Stop a session's run (server owns cancellation; we clear its queue + optimistic flag). */
-  stopGeneration: (sessionId: string) => void
+  setReasoningEffort: (s: string, e: ReasoningEffort) => Promise<void>
 
   /** De-globalized run flag: patch one session's `isRunning` (optimistic lead before
    *  `run.started` lands, or after a local stop). Live events drive it per-session
    *  through applyStreamEventToSession; this only sets the optimistic edge. */
   _setSessionRunning: (sessionId: string, value: boolean) => void
-  /**
-   * Paint the send instantly: append your message plus (when no run is live yet)
-   * an assistant skeleton row, both marked `optimistic`. The server echo replaces
-   * them in place (see applyStreamEvent `message.created`), so Enter→visible is a
-   * frame instead of a WebSocket round-trip plus the backend's persist chain.
-   */
-  _appendOptimisticSend: (
-    sessionId: string,
-    text: string,
-    bindings?: MessageBinding[],
-    /** Machine-composed (hidden) send — the painted user row carries isInternal. */
-    internal?: boolean,
-  ) => OptimisticSendIds
-  /** Roll one send's placeholders back on failure. Omit ids only for an edit-resync
-   *  that intentionally discards every unclaimed placeholder before reloading. */
-  _dropOptimistic: (sessionId: string, ids?: Partial<OptimisticSendIds>) => void
   /**
    * Paint an edit-resend instantly: rewrite the edited user row under a fresh
    * optimistic id (stable renderKey, so the row never remounts), drop the
@@ -312,61 +276,9 @@ export const useChatStore = create<ChatStore>()((set, get, api) => {
 
     ...createSessionActions({ customSet, get, autoCreateInFlight }),
 
-    stopGeneration: (sessionId) => {
-      if (!sessionId) return
-      const wasRunning = findSessionInState(get(), sessionId)?.isRunning ?? false
-      get()._setSessionRunning(sessionId, false)
-      const optimisticStop = findSessionInState(get(), sessionId)
-      // No "the person stopped it" marker here any more: the server records no finished-run row
-      // for a stopped run (`notifications/producers/runs.ts`), so there is nothing to suppress.
-      void backendClient.stop(sessionId).catch((error: unknown) => {
-        // A Stop that never reached the server was silent: the button flipped back and the agent
-        // kept working, with nothing saying why. The person pressed it, so they hear it failed.
-        toast.error('Could not stop the agent', {
-          description: errorMessage(error, '') || undefined,
-          action: { label: 'Retry', onClick: () => get().stopGeneration(sessionId) },
-        })
-        // A transport failure says nothing about server state. Restore the
-        // conservative running edge only if no stream event replaced our
-        // optimistic stop in the meantime, then reconcile authoritatively.
-        const state = get()
-        if (wasRunning && findSessionInState(state, sessionId) === optimisticStop) {
-          state._setSessionRunning(sessionId, true)
-        }
-        const beforeFetch = findSessionInState(get(), sessionId)
-        void backendClient
-          .getSession(sessionId)
-          .then((session) => {
-            const current = get()
-            if (findSessionInState(current, sessionId) === beforeFetch) {
-              current._replaceSession(session)
-            }
-          })
-          .catch(() => {})
-      })
-    },
+    ...createOptimisticSendActions({ customSet }),
 
-    _appendOptimisticSend: (sessionId, text, bindings, internal) => {
-      const pair = makeOptimisticPair(text, bindings, internal)
-      customSet((state) =>
-        patchSessionById(state, sessionId, (session) => {
-          // A live run already owns an assistant row (and will queue this
-          // message), so only your own line is painted — a second skeleton
-          // would read as a second reply in flight.
-          const assistant: Message | null =
-            session.isRunning || (session.queuedMessages?.length ?? 0) > 0 ? null : pair.assistant
-          return {
-            ...session,
-            messages: assistant
-              ? [...session.messages, pair.user, assistant]
-              : [...session.messages, pair.user],
-            // Drives the transcript's streaming visuals onto the skeleton row.
-            streamingMessageId: assistant ? assistant.id : session.streamingMessageId,
-          }
-        }),
-      )
-      return { userId: pair.user.id, assistantId: pair.assistant.id }
-    },
+    ...createStopGenerationActions({ get }),
 
     _beginOptimisticEdit: (sessionId, messageId, content) => {
       const { user, assistant } = makeOptimisticPair(content)
@@ -392,35 +304,6 @@ export const useChatStore = create<ChatStore>()((set, get, api) => {
             streamingMessageId: assistant.id,
           }
         }),
-      )
-    },
-
-    _dropOptimistic: (sessionId, ids) => {
-      const ownedIds = ids
-        ? new Set(
-            [ids.userId, ids.assistantId].filter(
-              (id): id is string => typeof id === 'string' && id.length > 0,
-            ),
-          )
-        : null
-      const shouldDrop = (message: Message) =>
-        Boolean(message.optimistic) && (!ownedIds || ownedIds.has(message.id))
-      customSet((state) =>
-        patchSessionById(state, sessionId, (session) =>
-          session.messages.some(shouldDrop)
-            ? {
-                ...session,
-                messages: session.messages.filter((message) => !shouldDrop(message)),
-                streamingMessageId:
-                  session.streamingMessageId &&
-                  (!ownedIds
-                    ? session.streamingMessageId.startsWith('optimistic-')
-                    : ownedIds.has(session.streamingMessageId))
-                    ? null
-                    : session.streamingMessageId,
-              }
-            : session,
-        ),
       )
     },
 
@@ -543,7 +426,7 @@ export const useSessionById = (sessionId: string | null) =>
   )
 
 /**
- * WHO the open conversation is with — the agent id of its first participant, or `null`.
+ * The open conversation's agent id, or `null`.
  *
  * A plain string selector rather than the session object: surfaces outside chat (Settings →
  * Capabilities opens on this agent's rules) want the identity and nothing else, and

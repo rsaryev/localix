@@ -18,7 +18,6 @@ export const PERMISSION_MODE_EVENTS: ReadonlySet<CcHookEvent> = new Set<CcHookEv
   'SubagentStop',
   'TaskCompleted',
   'Stop',
-  'TeammateIdle',
 ])
 
 /** Common fields every hook receives as JSON on stdin. */
@@ -181,8 +180,11 @@ export interface CcHookOutcome {
   initialUserMessage?: string
   /** SessionStart `reloadSkills`: scan the skill folders again once the hooks are done. */
   reloadSkills?: boolean
-  /** PreToolUse `hookSpecificOutput.permissionDecision` + reason. */
-  permissionDecision?: 'allow' | 'deny' | 'ask'
+  /**
+   * PreToolUse `hookSpecificOutput.permissionDecision` + reason. `defer` parks the call for a
+   * headless caller to resume; an interactive session warns and ignores the hook's result.
+   */
+  permissionDecision?: 'allow' | 'deny' | 'ask' | 'defer'
   permissionDecisionReason?: string
   /** PreToolUse `updatedInput` / `hookSpecificOutput.updatedInput`. */
   updatedInput?: unknown

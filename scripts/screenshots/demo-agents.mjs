@@ -21,7 +21,7 @@ export async function ensureDemoAgents(projectId) {
       'Write release notes and keep documentation current.',
     ],
   ]) {
-    const existing = agents.find((agent) => agent.record.handle === handle)
+    const existing = agents.find((agent) => agent.record.name === handle)
     // Made the way a person makes one, through the Store; its instructions are then its config.
     const id =
       existing?.record.id ??
@@ -36,6 +36,14 @@ export async function ensureDemoAgents(projectId) {
       await api(`/store/agent/${encodeURIComponent(id)}/config`, {
         scope: 'project',
         values: { instructions },
+        projectId,
+      })
+    // An agent file a fresh database finds in the project starts off, as any cloned repo's would;
+    // the person switches it on in the Store.
+    if (existing && !existing.enabled)
+      await api(`/store/agent/${encodeURIComponent(id)}/enable`, {
+        scope: 'project',
+        enabled: true,
         projectId,
       })
     ids[handle] = id

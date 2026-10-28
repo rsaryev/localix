@@ -6,6 +6,15 @@ import { WorkbenchNoticeBar } from '@localixai/kit/workbench-notice-bar'
 import { useDesktopUpdate, type DesktopUpdateState } from '@/shared/hooks/useDesktopUpdate'
 import { useBackgroundActivity } from '@/shared/lib/background-activity/useBackgroundActivity'
 import { restartToUpdate } from '../../model/restartToUpdate'
+import { storeApi } from '@/shared/api/store-client'
+import { useStoreRecommendations } from '@/shared/hooks/useStoreRecommendations'
+import {
+  isUpdateOfferDismissed,
+  useUpdateDismissals,
+} from '@/shared/lib/background-activity/dismissals'
+import { openStore } from '@/shared/lib/openStore'
+import { useChatStore } from '../../model/store'
+import { RecommendationsRow } from './RecommendationsRow'
 import { UpdateOffersRow } from './UpdateOffersRow'
 
 /**
@@ -66,11 +75,13 @@ export const UpdateStrip = memo(function UpdateStrip({ isFocused }: { isFocused:
 /**
  * The app's own update always wins the strip and is always shown while it is available (it is
  * the only one that needs a restart); hidden, it gives the place to the other offers. Otherwise
- * the Store's updates are offered, every package kind together (`UpdateOffersRow`).
+ * the Store's updates are offered, every package kind together (`UpdateOffersRow`), and with none
+ * to offer, what the Store recommends for the work (`RecommendationsRow`).
  */
 function FocusedUpdateStrip() {
   const { state, applyUpdate, noticeDismissed, dismissNotice } = useDesktopUpdate({ poll: false })
   const { updates } = useBackgroundActivity()
+  useUpdateDismissals()
   if (state?.available && (!noticeDismissed || state.installing)) {
     return (
       <UpdateRow
@@ -80,5 +91,16 @@ function FocusedUpdateStrip() {
       />
     )
   }
-  return <UpdateOffersRow offers={updates} />
+  if (updates.some((each) => each.id !== 'app' && !isUpdateOfferDismissed(each)))
+    return <UpdateOffersRow offers={updates} />
+  return <RecommendationsStrip />
+}
+
+/** The recommendations for the chat in focus and its project; nothing until they are worked out. */
+function RecommendationsStrip() {
+  const projectId = useChatStore((s) => s.activeProjectId ?? null)
+  const sessionId = useChatStore((s) => s.activeSessionId)
+  const answer = useStoreRecommendations(storeApi, projectId, sessionId)
+  if (!answer.data) return null
+  return <RecommendationsRow answer={answer.data} onSee={() => openStore({ recommended: true })} />
 }

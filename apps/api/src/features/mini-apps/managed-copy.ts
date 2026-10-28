@@ -4,7 +4,7 @@ import { basename, join } from 'node:path'
 
 import { MINI_APP_UI_ARTIFACT_DIR } from '@localixai/mini-app-sdk/ui-artifact'
 
-import { retainPreviousHashedFiles } from './authoring/ui-retained-files'
+import { retainPreviousHashedFiles } from './ui-retained-files'
 
 /**
  * One managed copy of a bundled mini app under `~/.localix/mini-apps/<name>`: how it is installed,
@@ -15,16 +15,6 @@ import { retainPreviousHashedFiles } from './authoring/ui-retained-files'
 /** Marks a directory as a first-party copy this process may refresh; user installs carry none. */
 export const MARKER_FILE = '.localix-managed.json'
 export const MARKER_KIND = 'localix-bundled-mini-app'
-/**
- * The kind copies carried before mini apps were named apart from plugins. Still read as managed, so
- * a copy installed then is refreshed in place (and rewritten with {@link MARKER_KIND}) instead of
- * passing for the person's own; `legacy-plugin-copies.ts` finds the old copies by it.
- */
-export const LEGACY_MARKER_KIND = 'localix-bundled-plugin'
-
-/** Whether a marker's `kind` names a copy this process manages. */
-export const isManagedMarkerKind = (kind: unknown): boolean =>
-  kind === MARKER_KIND || kind === LEGACY_MARKER_KIND
 /** Retired copies: the `.sync-` prefix keeps them invisible to discovery like every sync artifact. */
 const RETIRED_PREFIX = '.sync-retired-'
 
@@ -39,7 +29,7 @@ export async function readManagedFingerprint(dir: string): Promise<string | null
       kind?: unknown
       fingerprint?: unknown
     }
-    return isManagedMarkerKind(parsed.kind) && typeof parsed.fingerprint === 'string'
+    return parsed.kind === MARKER_KIND && typeof parsed.fingerprint === 'string'
       ? parsed.fingerprint
       : null
   } catch {

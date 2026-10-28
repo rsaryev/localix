@@ -29,13 +29,11 @@ const none: ReadonlySet<string> = new Set()
 afterEach(resetAttentionForTests)
 
 describe('the one ranking every channel shares', () => {
-  test('the dialog raises a blocked request over a plan over a mention, whatever their age', () => {
-    const mention = item({ kind: 'mention', sessionId: 'a', at: '2026-10-03T12:00:00.000Z' })
+  test('the dialog raises a blocked request over a plan, whatever their age', () => {
     const plan = item({ kind: 'plan', sessionId: 'b', at: '2026-10-03T11:00:00.000Z' })
     const hitl = item({ kind: 'interaction', sessionId: 'c', at: '2026-10-03T09:00:00.000Z' })
-    expect(dialogAttentionItem([mention, plan, hitl], null, none)).toBe(hitl)
-    expect(dialogAttentionItem([mention, plan], null, none)).toBe(plan)
-    expect(dialogAttentionItem([mention], null, none)).toBe(mention)
+    expect(dialogAttentionItem([plan, hitl], null, none)).toBe(hitl)
+    expect(dialogAttentionItem([plan], null, none)).toBe(plan)
   })
 
   test('within a kind the newest wins', () => {
@@ -47,19 +45,17 @@ describe('the one ranking every channel shares', () => {
   test('never the chat on screen, never a snoozed item, never a kind that does not interrupt', () => {
     const here = item({ kind: 'interaction', sessionId: 'open' })
     const snoozed = item({ kind: 'plan', sessionId: 'b' })
-    const mention = item({ kind: 'mention', sessionId: 'd' })
-    expect(dialogAttentionItem([here, snoozed, mention], 'open', new Set([snoozed.key]))).toBe(
-      mention,
-    )
+    const other = item({ kind: 'plan', sessionId: 'd' })
+    expect(dialogAttentionItem([here, snoozed, other], 'open', new Set([snoozed.key]))).toBe(other)
     expect(dialogAttentionItem([here], 'open', none)).toBeNull()
   })
 
-  test('the sidebar row shows its best item; mentions rank below plans', () => {
-    const mention = item({ kind: 'mention', sessionId: 's', at: '2026-10-03T12:00:00.000Z' })
-    const plan = item({ kind: 'plan', sessionId: 's', at: '2026-10-03T08:00:00.000Z' })
-    const items = [mention, plan]
-    expect(topAttentionItem(items, 's')).toBe(plan)
-    expect(attentionBySession(items).get('s')).toEqual([plan, mention])
+  test('the sidebar row shows its best item; plans rank below blocked requests', () => {
+    const hitl = item({ kind: 'interaction', sessionId: 's', at: '2026-10-03T08:00:00.000Z' })
+    const plan = item({ kind: 'plan', sessionId: 's', at: '2026-10-03T12:00:00.000Z' })
+    const items = [plan, hitl]
+    expect(topAttentionItem(items, 's')).toBe(hitl)
+    expect(attentionBySession(items).get('s')).toEqual([hitl, plan])
     // Memoized on the roster: every row reading it shares one grouping and stable arrays.
     expect(attentionBySession(items)).toBe(attentionBySession(items))
   })
@@ -75,7 +71,7 @@ describe('the one ranking every channel shares', () => {
     expect(
       dockAttentionCount([
         item({ kind: 'interaction', sessionId: 'a' }),
-        item({ kind: 'mention', sessionId: 'a' }),
+        item({ kind: 'plan', sessionId: 'a' }),
         item({ kind: 'plan', sessionId: 'b' }),
       ]),
     ).toBe(2)

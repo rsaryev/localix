@@ -1,16 +1,17 @@
+import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 
-import { agentParticipant, DEFAULT_AGENT_PARTICIPANT, USER_PARTICIPANT } from '../../db'
+import { agentAuthor, DEFAULT_AGENT_AUTHOR, USER_AUTHOR } from '../../db'
 import { createDatabase, destroyDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
-import { routedParticipants, sessionFixture } from '../../testing/session-fixture'
+import { routedAgent, sessionFixture } from '../../testing/session-fixture'
 import type { PersistedMessage } from './contracts'
 import { createChatRepository, type SessionRecord } from './repository'
 
-const tempDir = join(process.cwd(), 'tmp', 'chat-repository-last-message-tests')
+const tempDir = join(tmpdir(), `localix-chat-repository-last-message-tests-${process.pid}`)
 const TIMESTAMP = '2026-09-11T00:00:00.000Z'
 
 function session(id: string, seq: number, userId = 'user-a'): SessionRecord {
@@ -19,7 +20,7 @@ function session(id: string, seq: number, userId = 'user-a'): SessionRecord {
     userId,
     seq,
     title: id,
-    agents: routedParticipants({ modelId: '', reasoningEffort: 'low' }),
+    agent: routedAgent({ modelId: '', reasoningEffort: 'low' }),
     createdAt: TIMESTAMP,
     updatedAt: TIMESTAMP,
     lastMessageAt: TIMESTAMP,
@@ -48,8 +49,7 @@ function message(
     payload: {
       id,
       role: options.role ?? 'assistant',
-      from:
-        options.from ?? (options.role === 'user' ? USER_PARTICIPANT : DEFAULT_AGENT_PARTICIPANT),
+      from: options.from ?? (options.role === 'user' ? USER_AUTHOR : DEFAULT_AGENT_AUTHOR),
       content,
       isInternal: options.isInternal,
     },
@@ -82,7 +82,7 @@ describe('lastMessagesByUser', () => {
       await repo.insertSession(session('b', 2))
       await repo.insertMessages([
         message('a1', 'a', 'first', { role: 'user' }),
-        message('a2', 'a', 'the latest word', { from: agentParticipant('reviewer') }),
+        message('a2', 'a', 'the latest word', { from: agentAuthor('reviewer') }),
       ])
       await repo.insertMessages([message('b1', 'b', 'only one here', { role: 'user' })])
 
@@ -92,7 +92,7 @@ describe('lastMessagesByUser', () => {
       // The AUTHOR, not the role: a list of sessions with several agents has to say who
       // spoke, and `assistant` is the same word for all of them.
       expect(previews.get('a')).toMatchObject({ text: 'the latest word', from: 'agent:reviewer' })
-      expect(previews.get('b')).toMatchObject({ text: 'only one here', from: USER_PARTICIPANT })
+      expect(previews.get('b')).toMatchObject({ text: 'only one here', from: USER_AUTHOR })
     })
   })
 

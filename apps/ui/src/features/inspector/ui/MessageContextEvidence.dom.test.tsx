@@ -5,6 +5,7 @@ import type { VfCapture } from '@localixai/visual-feedback/protocol'
 import { resolveSendRefs, refFromContextBinding } from '@/entities/chat/model/sendRefs'
 import type { MessageAttachment, MessageContextBinding } from '@/shared/api/contracts'
 import { reviewCommentBinding } from '@/shared/lib/reviewCommentBinding'
+import { turns as settle } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -15,8 +16,6 @@ afterAll(async () => {
   await new Promise((resolve) => setTimeout(resolve, 0))
   await teardown()
 })
-
-const settle = () => new Promise((resolve) => setTimeout(resolve, 30))
 
 /** Immutable review evidence, budgeted and captured by the normal context pipeline. */
 function previewFeedbackBinding(input: {

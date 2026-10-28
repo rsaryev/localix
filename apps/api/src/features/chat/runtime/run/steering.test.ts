@@ -1,5 +1,5 @@
 import { sessionFixture } from '../../../../testing/session-fixture'
-import { DEFAULT_AGENT_PARTICIPANT } from '../../../../db'
+import { DEFAULT_AGENT_AUTHOR } from '../../../../db'
 /**
  * The steering taker's contract (run/steering.ts): FIFO consumption, persist
  * BEFORE the wire, grok-build interjection framing on the wire text only, and
@@ -9,7 +9,7 @@ import { DEFAULT_AGENT_PARTICIPANT } from '../../../../db'
  */
 import { describe, expect, it } from 'bun:test'
 
-import { addressedToSpeaker, createSteeringTaker, createToolCallDeferral } from './steering'
+import { createSteeringTaker, createToolCallDeferral } from './steering'
 import { frameDelegatorMessage, frameInterjection } from '../../../agent-core/interjection'
 import { createRunTurnState } from './turn-state'
 import { createItemAccumulator } from '../items'
@@ -20,7 +20,7 @@ import type { SessionRecord } from '../../repository'
 import type { ChatRepository } from '../../repository'
 import type { PersistedMessage } from '../../contracts'
 import type { RunEnv } from './types'
-import type { JoinFilter, SubagentSteeringAddress } from '../wake-queue/steering'
+import type { JoinFilter } from '../wake-queue/steering'
 
 function makeHarness(opts?: {
   hitlPending?: boolean
@@ -37,7 +37,6 @@ function makeHarness(opts?: {
   abort?: AbortController
   abortDuringReserve?: boolean
   subagent?: {
-    address: SubagentSteeringAddress
     canDeliver: () => boolean
     onDelivered: () => void
   }
@@ -208,6 +207,34 @@ describe('createSteeringTaker', () => {
     })
   })
 
+  it('takes every waiting delegator message at one boundary, not one per boundary', async () => {
+    // LOCALIX-430: two amendments arrived together and the second waited 77 s for the next
+    // boundary, while the child worked from a brief that was already half out of date.
+    const first = frameDelegatorMessage('also check logout')
+    const second = frameDelegatorMessage('and the reset flow')
+    const h = makeHarness({
+      turns: [
+        { userId: 'u1', content: first, queuedAt: 't1', source: 'delegator' },
+        { userId: 'u1', content: second, queuedAt: 't2', source: 'delegator' },
+      ],
+    })
+    expect(await h.taker()).toEqual([first, second])
+    expect(h.inserted.map((m) => m.payload.content)).toEqual([first, second])
+    expect(h.pendingCount()).toBe(0)
+  })
+
+  it('still takes a person’s messages one per boundary, behind a delegator’s', async () => {
+    const framed = frameDelegatorMessage('use /v2')
+    const h = makeHarness({
+      turns: [
+        { userId: 'u1', content: framed, queuedAt: 't1', source: 'delegator' },
+        { userId: 'u1', content: 'hello', queuedAt: 't2' },
+      ],
+    })
+    expect(await h.taker()).toEqual([framed])
+    expect(h.pendingCount()).toBe(1)
+  })
+
   it('waits for a completed tool boundary, then consumes an addressed child report once', async () => {
     let toolTurnComplete = false
     let delivered = 0
@@ -222,7 +249,6 @@ describe('createSteeringTaker', () => {
         },
       ],
       subagent: {
-        address: { participant: DEFAULT_AGENT_PARTICIPANT, allowUnaddressed: true },
         canDeliver: () => toolTurnComplete,
         onDelivered: () => {
           delivered += 1
@@ -259,7 +285,6 @@ describe('createSteeringTaker', () => {
       abort: controller,
       steerCtx: liveAssistantRow,
       subagent: {
-        address: { participant: DEFAULT_AGENT_PARTICIPANT, allowUnaddressed: true },
         canDeliver: () => true,
         onDelivered: () => {
           throw new Error('cancelled run must not deliver')
@@ -279,7 +304,6 @@ describe('createSteeringTaker', () => {
         { userId: 'u1', content: 'wait', queuedAt: 't1', source: 'subagent', internal: true },
       ],
       subagent: {
-        address: { participant: DEFAULT_AGENT_PARTICIPANT, allowUnaddressed: true },
         canDeliver: () => true,
         onDelivered: () => {
           throw new Error('HITL must remain in control')
@@ -314,7 +338,7 @@ describe('createSteeringTaker', () => {
    */
   const liveAssistantRow = (inserted: PersistedMessage[]) => {
     const state = createRunTurnState({
-      payload: emptyAssistantPayload('row-1', DEFAULT_AGENT_PARTICIPANT),
+      payload: emptyAssistantPayload('row-1', DEFAULT_AGENT_AUTHOR),
       assistantCreatedAt: '2026-07-17 00:00:00',
       baseSessionTiming: emptySessionTiming(),
     })
@@ -429,30 +453,6 @@ describe('a cancelled run does not consume what it cannot answer', () => {
     expect(await h.taker()).toEqual([frameInterjection('go on')])
     expect(h.released).toEqual([])
     expect(h.pendingCount()).toBe(0)
-  })
-})
-
-describe('steering follows the address', () => {
-  const participants = [
-    { agentId: 'builtin:backend', handle: 'backend' },
-    { agentId: 'builtin:qa', handle: 'qa' },
-  ]
-
-  it('takes what names nobody, the speaker, or everyone', () => {
-    expect(addressedToSpeaker('also handle retries', participants, 'builtin:backend')).toBe(true)
-    expect(addressedToSpeaker('@backend also retries', participants, 'builtin:backend')).toBe(true)
-    expect(addressedToSpeaker('@all stop', participants, 'builtin:backend')).toBe(true)
-  })
-
-  it('leaves a message for another participant to its own turn', () => {
-    // "@qa stop" typed while @backend works used to land in @backend's run.
-    expect(addressedToSpeaker('@qa stop', participants, 'builtin:backend')).toBe(false)
-  })
-
-  it('reads a handle in code as a reference, the way dispatch does', () => {
-    expect(addressedToSpeaker('see `@qa stop` in the log', participants, 'builtin:backend')).toBe(
-      true,
-    )
   })
 })
 

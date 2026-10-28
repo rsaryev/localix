@@ -8,7 +8,7 @@ import { isPathWithin } from '../../../lib/path-containment'
 /**
  * The parts of `~/.localix` agents AUTHOR, and so read and write without an outside-workspace
  * prompt in every role: session scratch (`tmp/`), per-task and default-project workspaces
- * (`workspace/`), the user's own mini apps (`mini-apps/`, where `/mini-app create` puts them),
+ * (`workspace/`), the user's own mini apps (`mini-apps/`, where a local install puts them),
  * and plugins (`plugins/`); and outside it the person's own skills (`~/.claude/skills`, the tree
  * shared with Claude Code, which also lets its agents edit skills there). A mini app's data
  * (`mini-apps-data/`) is not authored by the agent and is not among them.
@@ -63,24 +63,6 @@ function looksLikeAbsolutePath(token: string): boolean {
   return /^\\\\[A-Za-z0-9._-]+\\[A-Za-z0-9._$-]+/.test(token)
 }
 
-/** System roots that are safe to touch without prompting (never the user's project files). */
-const SAFE_SYSTEM_PREFIXES = [
-  '/usr',
-  '/bin',
-  '/sbin',
-  '/etc',
-  '/tmp',
-  '/var',
-  '/dev',
-  '/opt',
-  '/private',
-  '/System',
-  '/Library',
-  '/Applications',
-  '/proc',
-  '/run',
-]
-
 /**
  * Extract absolute path tokens from a shell command that point OUTSIDE the workspace and
  * live under the user's home (i.e. real user files, not system paths). Best-effort heuristic
@@ -110,8 +92,8 @@ export function outsideHomePathsInCommand(
   const base = cwd && path.isAbsolute(cwd) ? cwd : root
   const tokens = commandPathTokens(command, base, home)
   for (const token of tokens.absolute) {
-    if (SAFE_SYSTEM_PREFIXES.some((p) => token === p || token.startsWith(p + '/'))) continue
-    // Only flag paths under the user's home (real project files), not system locations.
+    // Only paths under the user's home (real project files) are flagged; a system location is
+    // never inside it — unless the home itself lies under `/var` or `/tmp`, and then it counts.
     if (!isInsideWorkspace(home, token)) continue
     if (!isInsideWorkspace(root, token)) found.add(token)
   }

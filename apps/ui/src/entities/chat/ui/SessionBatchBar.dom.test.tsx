@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, mock, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import type { Project, UiSession } from '@/shared/api/contracts'
+import { turns as settle } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 
@@ -13,8 +14,6 @@ afterAll(async () => {
   await new Promise((resolve) => setTimeout(resolve, 0))
   await teardown()
 })
-
-const settle = () => new Promise((resolve) => setTimeout(resolve, 20))
 
 const session = (id: string, projectId: string | null) =>
   ({ id, projectId, isArchived: false, isPinned: false, isUnread: false }) as unknown as UiSession

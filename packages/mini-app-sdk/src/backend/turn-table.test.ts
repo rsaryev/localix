@@ -5,8 +5,8 @@ import { join } from 'node:path'
 import { z } from 'zod'
 
 import { agentWaitSchema, type AgentWait } from '../agent-wait'
-import { DECISION_HOLDS_SEAT, opponentSchema } from '../opponent'
-import type { Seat, Wake } from './agent-turn'
+import { DECISION_HOLDS_TURN, opponentSchema } from '../opponent'
+import type { ChatRef, Wake } from './agent-turn'
 import type { DecisionHost } from './decision'
 import type { MiniAppWakeRequest } from './host-services'
 import { createTurnTable } from './turn-table'
@@ -46,7 +46,7 @@ const add = (game: Game, by: 'you' | 'agent', amount: number): Game => {
   }
 }
 
-const S1: Seat = { userId: 'u1', sessionId: 's1' }
+const S1: ChatRef = { userId: 'u1', sessionId: 's1' }
 
 function setup(
   options: {
@@ -96,7 +96,7 @@ function setup(
     key: (game) => `${game.id}:${game.count}`,
     live: (game) => game.status === 'playing',
     agentTurn: (game) => ({ message: `count ${game.count}`, tools: ['toy'] }),
-    askDecision: async (_decisions, _seat, game) => {
+    askDecision: async (_decisions, _chat, game) => {
       asked.push(game)
       await options.beforeAnswer?.()
       return answers.shift() ?? { amount: 1 }
@@ -162,13 +162,13 @@ describe('the agent’s turn', () => {
     expect((await table.agentTurn(S1, (current) => add(current, 'agent', 1))).answered).toBe(false)
   })
 
-  test('is refused while the decision model holds the seat', async () => {
+  test('is refused while the decision model holds the side', async () => {
     const { table } = setup()
     await table.setOpponent(S1, 'decision')
     const turn = table.agentTurn(S1, (game) => game)
     await expect(turn).rejects.toBeInstanceOf(Refused)
-    await expect(turn).rejects.toThrow(DECISION_HOLDS_SEAT)
-    await expect(table.agentUpdate(S1, (game) => game)).rejects.toThrow(DECISION_HOLDS_SEAT)
+    await expect(turn).rejects.toThrow(DECISION_HOLDS_TURN)
+    await expect(table.agentUpdate(S1, (game) => game)).rejects.toThrow(DECISION_HOLDS_TURN)
   })
 })
 
@@ -211,7 +211,7 @@ describe('the opponent', () => {
     expect(await table.read(S1)).toMatchObject({ count: 1, waiting })
   })
 
-  test('a turn that keeps the seat is played on, up to the bound', async () => {
+  test('a turn that keeps the chat is played on, up to the bound', async () => {
     const { table, asked } = setup({ decisions: decisionHost(true), agentRun: 2 })
     await table.update(S1, (game) => ({ ...game, owed: 3, opponent: 'decision' }))
     await table.remind(S1)

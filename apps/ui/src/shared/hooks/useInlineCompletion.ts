@@ -225,7 +225,7 @@ export function useInlineCompletion<TPayload>({
     setResolved(null)
     setRetryNonce((nonce) => nonce + 1)
     return true
-  }, [eligible])
+  }, [eligible, setBlockedKey, setResolved, setRetryNonce])
 
   const accept = useCallback(
     (unit: 'all' | 'word' | 'line' = 'all'): boolean => {
@@ -240,7 +240,7 @@ export function useInlineCompletion<TPayload>({
       setValue(acceptedValue)
       return true
     },
-    [contextKey, sessionId, setValue, suggestion, surface, value],
+    [contextKey, sessionId, setBlockedKey, setResolved, setValue, suggestion, surface, value],
   )
 
   const dismiss = useCallback((): boolean => {
@@ -249,7 +249,7 @@ export function useInlineCompletion<TPayload>({
     recordInlineAssistMetric('input', 'dismissed')
     setResolved(null)
     return true
-  }, [key, suggestion])
+  }, [key, setBlockedKey, setResolved, suggestion])
 
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent): boolean => {

@@ -3,7 +3,7 @@ import type { ToolCardContribution } from '@localixai/mini-app-sdk/ui'
 
 import { setEnabledMiniAppNames } from '@/shared/contrib/miniAppActivation'
 import { registerToolCard, removeToolCardsOf, toolCardFor } from '@/shared/contrib/toolCards'
-import { FALLBACK_META, toolDisplayLabel, toolMeta } from './meta'
+import { FALLBACK_META, toolMeta, toolSummaryNoun } from './meta'
 import { contributedToolCard, getToolCard, TOOL_CARDS } from './registry'
 
 /**
@@ -14,11 +14,11 @@ const OWNER = 'tool-card-fixture'
 const Icon = () => null
 const Card = () => null
 
-function contribution(tool: string, label = 'Board'): ToolCardContribution {
+function contribution(tool: string, label = 'Updated'): ToolCardContribution {
   return {
     tool,
     miniAppName: OWNER,
-    presentation: { label, noun: 'tasks', verb: 'Updating board', Icon, stackable: true },
+    presentation: { label, noun: 'board tasks', verb: 'Updating', Icon, stackable: true },
     Component: Card,
   }
 }
@@ -35,10 +35,10 @@ describe('contributed tool presentation', () => {
     registerToolCard(contribution('fixture_board'))
     const meta = toolMeta('fixture_board')
     expect(meta).not.toBe(FALLBACK_META)
-    expect(meta).toMatchObject({ label: 'Board', verb: 'Updating board', icon: Icon })
+    expect(meta).toMatchObject({ label: 'Updated', verb: 'Updating', icon: Icon })
     // MUTATION: build a fresh object per call → stacking compares by identity and this reddens.
     expect(toolMeta('fixture_board')).toBe(meta)
-    expect(toolDisplayLabel('fixture_board')).toBe('Board')
+    expect(toolSummaryNoun('fixture_board')).toBe('board tasks')
     expect(contributedToolCard('fixture_board')).toBe(Card)
     expect(getToolCard('fixture_board')).toBe(Card)
   })
@@ -48,17 +48,17 @@ describe('contributed tool presentation', () => {
     setEnabledMiniAppNames(new Set())
     registerToolCard(contribution('fixture_board'))
     expect(toolMeta('fixture_board')).toBe(FALLBACK_META)
-    expect(toolDisplayLabel('fixture_board')).toBe('fixture_board')
+    expect(toolSummaryNoun('fixture_board')).toBe('fixture_board calls')
     expect(contributedToolCard('fixture_board')).toBeUndefined()
   })
 
   test('a mini app cannot restyle or replace a built-in tool', () => {
     // MUTATION: consult the contributed table before the core one → red.
     setEnabledMiniAppNames(new Set([OWNER]))
-    registerToolCard(contribution('read', 'Hijacked'))
-    expect(toolMeta('read').label).not.toBe('Hijacked')
-    expect(contributedToolCard('read')).toBeUndefined()
-    expect(getToolCard('read')).toBe(TOOL_CARDS.read)
+    registerToolCard(contribution('Read', 'Hijacked'))
+    expect(toolMeta('Read').label).not.toBe('Hijacked')
+    expect(contributedToolCard('Read')).toBeUndefined()
+    expect(getToolCard('Read')).toBe(TOOL_CARDS.Read)
   })
 
   test('the first owner of a tool name keeps it, and removal frees it', () => {

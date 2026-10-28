@@ -2,7 +2,7 @@
  * Search response → the compact JSON the model reads. Pure.
  *
  * Every hit keeps what the model needs to ACT on it: chat hits carry `session_id` (and
- * `message_id`, which `global_search around_message_id` opens), file hits a `path` and `line`
+ * `message_id`, which `GlobalSearch around_message_id` opens), file hits a `path` and `line`
  * (which `read` opens), everything else its `ref` URI. The output is held under a budget by
  * dropping snippets first and then trailing hits — each step still valid JSON, and what was
  * dropped is counted, never silently cut.

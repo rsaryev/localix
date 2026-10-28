@@ -1,15 +1,15 @@
-import { USER_PARTICIPANT, conversationAgent } from '../../../db'
+import { USER_AUTHOR } from '../../../db'
 import { randomUUID } from 'node:crypto'
 import type { AgentItem } from '@localixai/agent/agents'
 import type { PersistedMessage, SessionDetail } from '../contracts'
-import { toPersistedMessage } from '../runtime/message-envelope'
+import { sessionAgent, toPersistedMessage } from '../runtime/message-envelope'
 
 /**
  * Import a conversation that came from somewhere else as a REAL Localix session.
  *
  * The counterpart to `openTranscript` on the UI side: that one shows a foreign conversation without
  * keeping it, this one keeps it. Everything downstream — search, digests, `@session:` refs,
- * `global_search` — then works on it because it is an ordinary session, not a special kind.
+ * `GlobalSearch` — then works on it because it is an ordinary session, not a special kind.
  *
  * WHAT THIS DELIBERATELY DOES NOT KNOW. There is no provider, no adapter, no file format and no
  * external id anywhere in this module. A caller arrives having already shaped its source into our
@@ -104,7 +104,7 @@ export async function importSession(
       {
         id: newId(),
         role: message.role,
-        from: message.role === 'user' ? USER_PARTICIPANT : conversationAgent(session.agents),
+        from: message.role === 'user' ? USER_AUTHOR : sessionAgent(session),
         ...(message.content === undefined ? {} : { content: message.content }),
         ...(message.items === undefined ? {} : { items: [...message.items] }),
       },

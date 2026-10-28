@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 
-import { DEFAULT_AGENT_PARTICIPANT, USER_PARTICIPANT } from '../../../../db'
+import { DEFAULT_AGENT_AUTHOR, USER_AUTHOR } from '../../../../db'
 import { createDatabase, destroyDatabase } from '../../../../db/connection'
 import { migrateToLatest } from '../../../../db/migrator'
-import { routedParticipants, sessionFixture } from '../../../../testing/session-fixture'
+import { routedAgent, sessionFixture } from '../../../../testing/session-fixture'
 import { captureForkSeed } from '../../../agent-core/fork-seed'
-import { FORK_CALL_RESULT } from '../../../agent-core/tools/delegate-fork'
+import { FORK_CALL_RESULT } from '../../../agent-core/tools/agent/agent-fork'
 import { resolveRunProfile } from '../../../agent-core/run-shape'
 import type { PersistedMessage } from '../../contracts'
 import { createModelContextRepository } from '../../model-context-repository'
@@ -34,7 +34,7 @@ const message = (
     id,
     sessionId,
     userId: 'u',
-    payload: { id, from: DEFAULT_AGENT_PARTICIPANT, ...payload },
+    payload: { id, from: DEFAULT_AGENT_AUTHOR, ...payload },
     createdAt: AT,
     updatedAt: AT,
   }) as never
@@ -42,7 +42,7 @@ const text = (id: string, role: 'user' | 'assistant') =>
   message(id, 'parent', {
     role,
     content: id,
-    ...(role === 'user' ? { from: USER_PARTICIPANT } : {}),
+    ...(role === 'user' ? { from: USER_AUTHOR } : {}),
   })
 
 const items = [
@@ -50,7 +50,7 @@ const items = [
     type: 'tool_call',
     id: 'i1',
     toolCallId: 'r1',
-    name: 'read',
+    name: 'Read',
     status: 'completed',
     turnIndex: 0,
     input: {},
@@ -71,7 +71,7 @@ async function parent() {
   const session = sessionFixture({
     id: 'parent',
     userId: 'u',
-    agents: routedParticipants(),
+    agent: routedAgent(),
     rootSessionId: 'parent',
   })
   await repo.insertSession(session)
@@ -89,7 +89,7 @@ const live = (): ForkLiveRun => ({
     ({
       id: 'a2',
       role: 'assistant',
-      from: DEFAULT_AGENT_PARTICIPANT,
+      from: DEFAULT_AGENT_AUTHOR,
       content: 'the parent’s words so far',
       items,
     }) as never,
@@ -145,7 +145,7 @@ describe('the fork port', () => {
           ({
             id: 'a2',
             role: 'assistant',
-            from: DEFAULT_AGENT_PARTICIPANT,
+            from: DEFAULT_AGENT_AUTHOR,
             content: '',
             items: recorded ? items : [],
           }) as never,
@@ -196,7 +196,7 @@ describe('the fork port', () => {
         sessionKind: 'subagent',
         parentSessionId: 'parent',
         rootSessionId: 'parent',
-        agents: routedParticipants(),
+        agent: routedAgent(),
         provenance: {
           kind: 'task-delegation',
           parentSessionId: 'parent',
@@ -245,7 +245,7 @@ describe('the fork port', () => {
         sessionKind: 'subagent',
         parentSessionId: 'parent',
         rootSessionId: 'parent',
-        agents: routedParticipants(),
+        agent: routedAgent(),
         provenance: {
           kind: 'task-delegation',
           parentSessionId: 'parent',
@@ -284,7 +284,7 @@ describe('the fork port', () => {
         sessionKind: 'subagent',
         parentSessionId: 'parent',
         rootSessionId: 'parent',
-        agents: routedParticipants(),
+        agent: routedAgent(),
         provenance: {
           kind: 'task-delegation',
           parentSessionId: 'parent',
@@ -298,7 +298,7 @@ describe('the fork port', () => {
     )
     await port.persist('fork', capture)
     await repo.insertMessage(
-      message('directive', 'fork', { role: 'user', from: USER_PARTICIPANT, content: 'Do it.' }),
+      message('directive', 'fork', { role: 'user', from: USER_AUTHOR, content: 'Do it.' }),
     )
     // What a delegator is handed back is the latest reply with words in it (`finalAssistantText`).
     expect(await repo.getLatestAutonomousAssistantContentMessage('u', 'fork')).toBeNull()

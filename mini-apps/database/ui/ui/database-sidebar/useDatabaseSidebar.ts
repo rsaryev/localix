@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { toast } from '@localixai/mini-app-sdk/ui'
 import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import type { DbConnectionConfig, DbConnectionInfo } from '../../dbClient'
@@ -94,21 +94,26 @@ export function useDatabaseSidebar(
   }, [connections, selectedId, strictSelection])
   const selectedIdEff = selected?.id ?? null
 
-  // Resource anchors can focus a nested table/column from anywhere in the app.
-  // Keep that connection selected when the workspace is already mounted.
+  // Resource anchors can focus a nested table/column from anywhere in the app, and Overview's
+  // "New connection" action switches to Explorer and opens the form (a nonce lets it be requested
+  // again after the form was cancelled). Both requests apply while rendering; only persisting the
+  // selection, a side effect, waits for the commit.
+  const [applied, setApplied] = useState<{ id?: string; nonce?: number }>({})
+  if (applied.id !== requestedConnectionId || applied.nonce !== requestAddNonce) {
+    setApplied({ id: requestedConnectionId, nonce: requestAddNonce })
+    if (requestedConnectionId && applied.id !== requestedConnectionId)
+      setSelectedId(requestedConnectionId)
+    if (requestAddNonce && applied.nonce !== requestAddNonce) {
+      setAdding(true)
+      setEditingConfig(null)
+    }
+  }
   useEffect(() => {
-    if (!requestedConnectionId) return
-    setSelectedId(requestedConnectionId)
-    saveDatabaseConnectionId(requestedConnectionId)
+    if (requestedConnectionId) saveDatabaseConnectionId(requestedConnectionId)
   }, [requestedConnectionId])
-
-  // Overview's "New connection" action switches to Explorer and opens the form.
-  // A nonce lets the same action be requested again after the form was cancelled.
-  useEffect(() => {
-    if (!requestAddNonce) return
-    editConfigRequest.current += 1
-    setAdding(true)
-    setEditingConfig(null)
+  // Layout phase, so a config fetch still in flight is already stale before anything resolves.
+  useLayoutEffect(() => {
+    if (requestAddNonce) editConfigRequest.current += 1
   }, [requestAddNonce])
 
   // One schema instance for the SELECTED connection's tree. Guarded empty id → no fetch.

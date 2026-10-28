@@ -3,7 +3,7 @@ import { REPOSITORY_URL, SITE_ORIGIN } from './site'
 const HOME_URL = `${SITE_ORIGIN}/`
 
 export const HOME_DESCRIPTION =
-  'Localix is an open source Agentic Development Environment: a team of AI agents with your editor, terminals and browser. Use any model, or run one locally.'
+  'Localix is an open source Agentic Development Environment: an AI agent, its subagents, your editor, terminals and browser. Use any model, or run one locally.'
 
 /**
  * The homepage's schema.org graph. `index.html` ships the same JSON for the first paint, and the
@@ -37,13 +37,13 @@ export const HOME_STRUCTURED_DATA = {
     },
     {
       '@type': 'VideoObject',
-      name: 'Localix demo: one /workflows run',
+      name: 'Localix demo: a landing page from one prompt',
       description:
-        'A /workflows prompt puts three cards on the board, agents build and test a dark 2048 game in the browser, and a Visual Feedback comment adds a light theme.',
+        'The Store, installing and playing the 2048 mini app, then one prompt: the agent builds a phone shop landing page and tests it in the browser, and a Visual Feedback comment removes a label.',
       thumbnailUrl: `${HOME_URL}films/demo.jpg`,
       contentUrl: `${HOME_URL}films/demo.mp4`,
-      uploadDate: '2026-10-19',
-      duration: 'PT39S',
+      uploadDate: '2026-10-28',
+      duration: 'PT55S',
       about: { '@id': `${HOME_URL}#app` },
     },
   ],

@@ -1,8 +1,8 @@
 import { expect, test } from 'bun:test'
 
-import { createDatabase, DEFAULT_AGENT_PARTICIPANT } from '../../db'
+import { createDatabase, DEFAULT_AGENT_AUTHOR } from '../../db'
 import { migrateToLatest } from '../../db/migrator'
-import { routedParticipants, sessionFixture } from '../../testing/session-fixture'
+import { routedAgent, sessionFixture } from '../../testing/session-fixture'
 import { createChatRepository } from './repository'
 
 const at = '2026-08-04T00:00:00.000Z'
@@ -17,7 +17,7 @@ test('a message edit is announced; streaming checkpoints between are not', async
       userId: 'u1',
       seq: 1,
       title: 's1',
-      agents: routedParticipants({ modelId: '', reasoningEffort: 'low' }),
+      agent: routedAgent({ modelId: '', reasoningEffort: 'low' }),
       createdAt: at,
       updatedAt: at,
       lastMessageAt: at,
@@ -28,7 +28,7 @@ test('a message edit is announced; streaming checkpoints between are not', async
     id: 'm1',
     sessionId: 's1',
     userId: 'u1',
-    payload: { id: 'm1', role: 'assistant', from: DEFAULT_AGENT_PARTICIPANT, content: '' },
+    payload: { id: 'm1', role: 'assistant', from: DEFAULT_AGENT_AUTHOR, content: '' },
     createdAt: at,
     updatedAt: at,
   })

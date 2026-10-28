@@ -8,6 +8,7 @@ import {
   createBoundedOutput,
   modelFacingOutput,
   spillFullOutput,
+  spillReaped,
   truncate,
   MAX_OUTPUT_BYTES,
 } from './bash-output'
@@ -42,8 +43,7 @@ describe('spillFullOutput', () => {
     const past = (Date.now() - 72 * 60 * 60 * 1000) / 1000
     await utimes(stale, past, past)
     await spillFullOutput('fresh', 'call-2', dir)
-    // reaping is fire-and-forget; give it a beat
-    await new Promise((r) => setTimeout(r, 50))
+    await spillReaped()
     const names = await readdir(dir)
     expect(names.some((n) => n === 'old-1.log')).toBe(false)
     expect(names.some((n) => n.startsWith('call-2'))).toBe(true)

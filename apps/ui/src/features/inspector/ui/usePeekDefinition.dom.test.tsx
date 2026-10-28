@@ -35,7 +35,10 @@ describe('usePeekDefinition', () => {
     )
     let view: ReturnType<typeof usePeekDefinitionType> | null = null
     function Tab({ target }: { target: PeekTarget | null }) {
-      view = usePeekDefinition('session-1', target)
+      const value = usePeekDefinition('session-1', target)
+      React.useEffect(() => {
+        view = value
+      })
       return null
     }
     const root = createRoot(document.createElement('div'))

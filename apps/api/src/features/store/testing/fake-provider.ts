@@ -18,6 +18,8 @@ export function fakeProvider(
     /** A kind the person makes here: no plan, install, update, sources or refresh. */
     madeHere?: boolean
     fails?: string
+    /** Sources it could not read this time, while it still lists the rest. */
+    problems?: string[]
     editorial?: Editorial[]
     /** The installs each project has, by project id and then listing id. */
     projectInstalls?: Record<string, Record<string, StoreInstall[]>>
@@ -26,6 +28,7 @@ export function fakeProvider(
   } = {},
 ) {
   let listings = initial
+  let problems = opts.problems ?? []
   const calls: string[] = []
   const listeners = new Set<() => void>()
   const record = (call: string) => void calls.push(call)
@@ -34,7 +37,7 @@ export function fakeProvider(
     async listings() {
       record('listings')
       if (opts.fails) throw new Error(opts.fails)
-      return { listings, problems: [] }
+      return { listings, problems }
     },
     async detail(id) {
       return makeListingDetail(listings.find((listing) => listing.ref.id === id)!)
@@ -101,8 +104,9 @@ export function fakeProvider(
     provider,
     calls,
     /** The provider's listings changed and it says so. */
-    change(next: Listing[]) {
+    change(next: Listing[], nextProblems = problems) {
       listings = next
+      problems = nextProblems
       for (const listener of listeners) listener()
     },
   }

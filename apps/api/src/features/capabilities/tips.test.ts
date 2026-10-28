@@ -87,7 +87,7 @@ describe('composerTips — curated tips follow the tool surface', () => {
   })
 
   test('the same tip ships once its tool is enabled', () => {
-    const tips = tipsOf(snapshot({ tools: { ...snapshot().tools, enabled: ['bash'] } }))
+    const tips = tipsOf(snapshot({ tools: { ...snapshot().tools, enabled: ['Bash'] } }))
     expect(ids(tips)).toContain('bash-background')
   })
 

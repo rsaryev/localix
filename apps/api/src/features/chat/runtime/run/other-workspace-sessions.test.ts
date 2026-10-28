@@ -35,7 +35,7 @@ describe('other workspace sessions', () => {
       true,
     )
     expect(section?.scope).toBe('state')
-    expect(section?.text).toContain('global_search with session_id')
+    expect(section?.text).toContain('GlobalSearch with session_id')
     expect(section?.text).toContain('s2 — Fix API — running')
     expect(section?.text).not.toContain('s3')
   })
@@ -48,7 +48,7 @@ describe('other workspace sessions', () => {
       false,
     )
     expect(section?.text).toContain('s3 — Test')
-    expect(section?.text).not.toContain('global_search')
+    expect(section?.text).not.toContain('GlobalSearch')
     expect(section?.text).not.toContain('s2')
   })
 

@@ -33,34 +33,42 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "@localixai/source": "./src/index.ts",
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
     "./protocol": {
+      "@localixai/source": "./src/protocol/index.ts",
       "import": "./dist/protocol/index.js",
       "types": "./dist/protocol/index.d.ts"
     },
     "./host": {
+      "@localixai/source": "./src/host/index.ts",
       "import": "./dist/host/index.js",
       "types": "./dist/host/index.d.ts"
     },
     "./keys": {
+      "@localixai/source": "./src/keys/index.ts",
       "import": "./dist/keys/index.js",
       "types": "./dist/keys/index.d.ts"
     },
     "./embedded": {
+      "@localixai/source": "./src/embedded/index.ts",
       "import": "./dist/embedded/index.js",
       "types": "./dist/embedded/index.d.ts"
     },
     "./console-buffer": {
+      "@localixai/source": "./src/actuate/console-capture.ts",
       "import": "./dist/actuate/console-capture.js",
       "types": "./dist/actuate/console-capture.d.ts"
     },
     "./probe-entry": {
+      "@localixai/source": "./src/probe/entry.ts",
       "types": "./dist/probe/entry.d.ts",
       "default": "./dist/probe/entry.js"
     },
     "./secret-shapes": {
+      "@localixai/source": "./src/core/secret-shapes.ts",
       "import": "./dist/core/secret-shapes.js",
       "types": "./dist/core/secret-shapes.d.ts"
     }
@@ -72,7 +80,7 @@
     "build": "shx rm -rf dist && tsc --project tsconfig.build.json",
     "prepack": "bun run build",
     "dev": "tsc --project tsconfig.build.json --watch --preserveWatchOutput",
-    "type-check": "tsc --noEmit",
+    "type-check": "node ../../scripts/tsc.mjs --noEmit",
     "test": "bun test src",
     "clean": "shx rm -rf dist .turbo"
   },

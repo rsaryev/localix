@@ -73,7 +73,7 @@ depends on the alias.
 | Vault workspace                  | Accepts a value on create or rotate.                                       | Read responses omit plaintext.                               |
 | Provider or mini app server code | Resolves a reference for the requested operation.                          | The trusted server process briefly holds the resolved value. |
 | Mini app interpolation           | Replaces `${secret:<alias>}` before the supported mini app operation runs. | The mini app's backend receives the resolved value.          |
-| Agent `vault` tool               | Lists, reads metadata, creates, updates metadata, rotates, or deletes.     | Each call is classified, so a scope can `ask` on the writes. |
+| Agent `Vault` tool               | Lists, reads metadata, creates, updates metadata, rotates, or deletes.     | Each call is classified, so a scope can `ask` on the writes. |
 
 Agent create and rotate actions collect values through a masked secret prompt. Delete requires
 explicit approval. Those three actions are declined when no human-reachable interactive session is
@@ -94,7 +94,7 @@ These spellings do not make arbitrary tools resolve secrets. Interpolation inser
 value; it does not URL-encode or shell-escape it. A missing referenced item fails resolution rather
 than substituting an empty value.
 
-The agent can inspect the item's metadata with this `vault` input:
+The agent can inspect the item's metadata with this `Vault` input:
 
 ```json
 { "action": "get", "key": "service-token" }

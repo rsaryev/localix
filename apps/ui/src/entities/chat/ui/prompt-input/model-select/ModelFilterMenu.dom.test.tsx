@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
+import { turns as settle } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -10,8 +11,6 @@ afterAll(async () => {
   await new Promise((resolve) => setTimeout(resolve, 0))
   await teardown()
 })
-
-const settle = () => new Promise((resolve) => setTimeout(resolve, 30))
 
 describe('ModelFilterMenu — facets combine, so each is a toggle', () => {
   test('rows are checkboxes that say what they filter and keep the menu open', async () => {

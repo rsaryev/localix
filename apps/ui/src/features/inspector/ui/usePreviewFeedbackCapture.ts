@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { VfCapture } from '@localixai/visual-feedback/protocol'
 import type { MessageAttachment } from '@/shared/api/contracts'
 import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
@@ -23,12 +23,10 @@ export function usePreviewFeedbackCapture(
     capture: undefined,
     ready: false,
   })
+  // No selector, or a quick add: nothing to take a picture of, so the capture is ready as it is.
+  const immediate = !capture?.selector || previewPickMode(capture) === 'quick-add'
   useEffect(() => {
-    setResult({ capture, ready: false })
-    if (!capture?.selector || previewPickMode(capture) === 'quick-add') {
-      setResult({ capture, ready: true })
-      return
-    }
+    if (immediate || !capture?.selector) return
     let cancelled = false
     void captureElement(capture.selector)
       .then((img) => {
@@ -65,6 +63,10 @@ export function usePreviewFeedbackCapture(
     return () => {
       cancelled = true
     }
-  }, [capture, captureElement])
-  return result
+  }, [capture, captureElement, immediate])
+  // A result belongs to the capture it was taken for; until the new one lands, it is not ready.
+  return useMemo(() => {
+    if (immediate) return { capture, ready: true }
+    return result.capture === capture ? result : { capture, ready: false }
+  }, [immediate, capture, result])
 }

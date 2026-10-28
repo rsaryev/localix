@@ -5,7 +5,6 @@ export interface PendingTurnStart {
   assistantMessageId: string
   userId: string
   sessionId: string
-  agentId: string
   createdAt: string
 }
 
@@ -21,18 +20,16 @@ export function createTurnStartRepository(db: Kysely<AppDatabase>) {
         assistantMessageId: row.assistant_message_id,
         userId: row.user_id,
         sessionId: row.session_id,
-        agentId: row.agent_id,
         createdAt: row.created_at,
       }))
     },
 
-    /** Whether this participant's run record was opened in the session since the slot was taken. */
+    /** Whether this agent's run record was opened in the session since the slot was taken. */
     async runStartedSince(start: PendingTurnStart): Promise<boolean> {
       const row = await db
         .selectFrom('agent_runs')
         .select('id')
         .where('session_id', '=', start.sessionId)
-        .where('agent_id', '=', start.agentId)
         .where('started_at', '>=', start.createdAt)
         .executeTakeFirst()
       return row !== undefined

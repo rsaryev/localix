@@ -5,7 +5,7 @@ import { extractTitle } from './html-text'
 import { extractReadable } from './readable-extract'
 
 /**
- * Internal readable-page loader for the composite `research` tool.
+ * Internal readable-page loader for the composite `Research` tool.
  *
  * This is intentionally not model-facing. Discovery and direct URL reads share
  * the one public `research` contract, while this module owns the bounded,
@@ -22,7 +22,6 @@ export interface ReadablePageInput {
   /** Article rendering mode; research uses Markdown. */
   format?: 'markdown' | 'text' | 'html'
   /** Back-compat internal alias for `format: "html"`. */
-  raw?: boolean
 }
 
 export interface ReadablePageDetails {
@@ -144,10 +143,10 @@ export async function fetchReadablePage(
     if (rawBody.startsWith('%PDF-')) return err(pdfError)
 
     const isHtml = contentType.includes('html') || /^\s*<(!doctype|html)/i.test(rawBody)
-    // `raw:true` is a back-compat alias for format:'html'. HTML defaults to the
+    // HTML defaults to the
     // Readability→Markdown pipeline so the article body (not chrome) survives the
     // maxChars cap; non-HTML (JSON/plain) is passed through untouched.
-    const format = input.raw ? 'html' : (input.format ?? 'markdown')
+    const format = input.format ?? 'markdown'
     let title: string | undefined
     let rendered: string
     if (!isHtml || format === 'html') {

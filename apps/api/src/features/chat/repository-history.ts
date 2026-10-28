@@ -67,7 +67,7 @@ export function createHistoryQueries(db: Kysely<AppDatabase>) {
 
     /**
      * Like searchHistory, but each hit also carries the matched message id +
-     * sequence so callers can anchor a context window around it (global_search
+     * sequence so callers can anchor a context window around it (GlobalSearch
      * v2 discovery mode). `match` must be a pre-sanitized FTS5 MATCH expression.
      */
     async searchHistoryDetailed(
@@ -147,7 +147,7 @@ export function createHistoryQueries(db: Kysely<AppDatabase>) {
 
     /**
      * First + last `count` user/assistant messages of a session (the "bookends"
-     * global_search discovery attaches to each hit). Overlapping rows (short
+     * GlobalSearch discovery attaches to each hit). Overlapping rows (short
      * sessions) appear in `first` only.
      */
     async getSessionBookends(
@@ -176,7 +176,7 @@ export function createHistoryQueries(db: Kysely<AppDatabase>) {
     },
 
     /**
-     * Recent sessions for global_search browse mode — newest activity first,
+     * Recent sessions for GlobalSearch browse mode — newest activity first,
      * with a cheap message count and the first user message payload (preview).
      */
     async listRecentSessionsForHistory(userId: string, limit: number): Promise<RecentSessionRow[]> {
@@ -212,7 +212,7 @@ export function createHistoryQueries(db: Kysely<AppDatabase>) {
       }))
     },
 
-    /** Title + timestamps for a set of session ids (global_search discovery grouping). */
+    /** Title + timestamps for a set of session ids (GlobalSearch discovery grouping). */
     async getSessionMetaByIds(userId: string, sessionIds: string[]): Promise<SessionMetaRow[]> {
       if (sessionIds.length === 0) return []
       const rows = await db

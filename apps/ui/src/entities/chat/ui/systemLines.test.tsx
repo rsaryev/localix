@@ -33,27 +33,13 @@ describe('system transcript lines', () => {
   test('renders a plugin result with a structured status icon and no emoji', () => {
     const html = renderToStaticMarkup(
       <CommandOutputLine
-        output={{ command: '/plugin', tone: 'success', text: '✅ Installed `review`.' }}
+        output={{ command: '/plugin', tone: 'success', text: 'Installed `review`.' }}
       />,
     )
 
     expect(html).toContain('lucide-circle-check')
     expect(html).toContain('Completed')
     expect(html).toContain('Installed')
-    expect(html).not.toContain('✅')
-    expect(html).not.toContain('bg-surface')
-  })
-
-  test('cleans legacy emoji from compact system notices', () => {
-    const html = renderToStaticMarkup(
-      <SystemNoticeLine
-        notice={{ kind: 'hook_notice', tone: 'warning', text: '⚠️ Hook needs attention' }}
-      />,
-    )
-
-    expect(html).toContain('lucide-triangle-alert')
-    expect(html).toContain('Hook needs attention')
-    expect(html).not.toContain('⚠')
     expect(html).not.toContain('bg-surface')
   })
 

@@ -1,4 +1,3 @@
-import { currentToolName } from './legacyToolNames'
 import type { ComponentType } from 'react'
 import { TOOL, type ToolName } from '@localixai/api/tool-names'
 import { isAlwaysStandaloneToolName } from '@localixai/api/item-format'
@@ -23,11 +22,11 @@ export { nonCoreToolMeta, type NonCoreToolName } from './nonCoreMeta'
  * Adding a tool: one entry here (+ a card in `registry.tsx` if it needs rich UI).
  */
 export interface ToolMeta {
-  /** Imperative label, e.g. "Read", "Searched" — used in stacked summaries. */
+  /** One past-tense word a finished summary opens with: "Started" in "Started 2 agents". */
   label: string
-  /** Plural noun for aggregated counts, e.g. "files", "searches". */
+  /** The plural that follows the count: "agents", "files", "Store actions". */
   noun: string
-  /** Present-participle verb for live state, e.g. "Reading". */
+  /** One present participle for live state: "Starting" in "Starting 2 agents…", the spinner. */
   verb: string
   icon: ComponentType<{ className?: string }>
   /**
@@ -59,26 +58,30 @@ export type PresentableToolName = ToolName | NonCoreToolName
 const META: Record<string, ToolMeta> = { ...CORE_META, ...NON_CORE_META }
 
 /**
- * The label to SHOW for a tool name.
- *
- * A registered tool has a curated label; an unregistered one has only its own name — and that beats
- * the generic fallback word, which is what a folded run of them was reduced to. Measured before this:
- * 200 consecutive `Bash` calls rendered as "Tool 200 calls · Tool, Tool +198", with the name gone
- * from both the summary and the preview.
- *
- * Asked separately from {@link toolMeta} on purpose: that function must keep returning the
- * `FALLBACK_META` IDENTITY, because `meta.test.ts` proves a card has a real entry by comparing
- * against it. A derived object would make that guard pass for everything.
+ * The name to SHOW for a call, where a summary or a preview has nothing better to name it by: the
+ * tool's own name, which is one spelling everywhere (`Agent`, `ContextBudget`, a mini app's own), and
+ * the family word for MCP tools. Never `label`: that is a past tense ("Started"), and a preview of
+ * "Started, Started +3" names nothing.
  */
 export function toolDisplayLabel(name: string): string {
-  const registered = META[name] ?? contributedToolMeta(name)
-  if (registered) return registered.label
-  return name.startsWith('mcp_') ? MCP_META.label : name
+  return name.startsWith('mcp_') ? 'MCP' : name
+}
+
+/**
+ * The plural a chain summary counts a tool in. A registered tool has its own noun; any other is
+ * counted in calls of its own name ("Ran 3 TodoWrite calls"), which is all that tells two of them
+ * apart in one sentence.
+ */
+export function toolSummaryNoun(name: string): string {
+  const meta = toolMeta(name)
+  return meta === FALLBACK_META || meta === MCP_META || meta === STANDALONE_FALLBACK_META
+    ? `${toolDisplayLabel(name)} ${meta.noun}`
+    : meta.noun
 }
 
 /** Look up presentation meta for a tool name (fallback for unknown tools). */
 export function toolMeta(name: string): ToolMeta {
-  const registered = META[currentToolName(name)] ?? contributedToolMeta(name)
+  const registered = META[name] ?? contributedToolMeta(name)
   if (registered) return registered
   if (name.startsWith('mcp_')) return MCP_META
   return isAlwaysStandaloneToolName(name) ? STANDALONE_FALLBACK_META : FALLBACK_META

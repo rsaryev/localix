@@ -10,7 +10,7 @@ import {
 } from '../shared/describe'
 import { MoveRefused, owesAgentMove, type Game } from '../shared/game'
 import { gameUri } from '../shared/resource'
-import type { Seat } from './ask-agent'
+import type { ChatRef } from './ask-agent'
 import type { GameService } from './game-service'
 
 /**
@@ -48,7 +48,7 @@ export const classifyChessCall = classifyByAction({
  * should outlive it. One note per game, updated — a note per game played would bury the rest.
  */
 export const GAME_OVER_ASK =
-  'The game is over. Tell the user in one short line, and offer another game. If this game showed you something about how this user plays that you did not know, keep it with your memory tool — update your one note on Chess rather than adding another.'
+  'The game is over. Tell the user in one short line, and offer another game. If this game showed you something about how this user plays that you did not know, keep it in your memory — update your one note on Chess rather than adding another.'
 
 type Result = { content: string; isError?: boolean; terminate?: boolean; details?: unknown }
 
@@ -63,7 +63,7 @@ function afterMove(game: Game, ends: boolean): string {
 }
 
 /** The table a tool call acts on: the chat the call runs in. */
-function seatOf(ctx: MiniAppContext, context: { session?: { id: string } } | undefined): Seat {
+function chatOf(ctx: MiniAppContext, context: { session?: { id: string } } | undefined): ChatRef {
   const sessionId = context?.session?.id
   if (!sessionId) throw new MoveRefused('Chess is played in a chat; this call has none.')
   return { userId: ctx.userId, sessionId }
@@ -77,17 +77,17 @@ export function createGameTools(ctx: MiniAppContext, games: GameService) {
     reason: ctx.z.string().max(200).optional(),
   })
   const actions = {
-    async move(seat: Seat, move: string | undefined): Promise<Result> {
+    async move(chat: ChatRef, move: string | undefined): Promise<Result> {
       if (!move) throw new MoveRefused('Name the move: `move` with one of the legal moves in SAN.')
-      const { game, answered } = await games.agentMove(seat, move)
+      const { game, answered } = await games.agentMove(chat, move)
       const ends = answered && game.status === 'playing'
       return { content: afterMove(game, ends), ...(ends ? { terminate: true } : {}) }
     },
-    async state(seat: Seat): Promise<Result> {
-      return { content: describeGame(await games.read(seat)) }
+    async state(chat: ChatRef): Promise<Result> {
+      return { content: describeGame(await games.read(chat)) }
     },
-    async new_game(seat: Seat, userPlays: 'white' | 'black'): Promise<Result> {
-      const game = await games.agentNewGame(seat, userPlays)
+    async new_game(chat: ChatRef, userPlays: 'white' | 'black'): Promise<Result> {
+      const game = await games.agentNewGame(chat, userPlays)
       const agentFirst = userPlays === 'black'
       return {
         content: [
@@ -105,14 +105,14 @@ export function createGameTools(ctx: MiniAppContext, games: GameService) {
           .filter((line) => line !== null)
           .join('\n'),
         details: ctx.ui.offer({
-          uri: gameUri(seat.sessionId),
+          uri: gameUri(chat.sessionId),
           label: 'Open Chess',
           description: 'This chat’s board',
         }),
       }
     },
-    async resign(seat: Seat, reason: string | undefined): Promise<Result> {
-      const game = await games.agentResign(seat)
+    async resign(chat: ChatRef, reason: string | undefined): Promise<Result> {
+      const game = await games.agentResign(chat)
       return {
         content: [
           `You resigned${reason ? ` — ${reason}` : ''}. The user won.`,
@@ -157,9 +157,9 @@ export function createGameTools(ctx: MiniAppContext, games: GameService) {
       classify: classifyChessCall,
       permissionPaths: () => [],
       async execute(_toolCallId, input, _signal, _onUpdate, context) {
-        let seat: Seat | null = null
+        let chat: ChatRef | null = null
         try {
-          seat = seatOf(ctx, context)
+          chat = chatOf(ctx, context)
           if (input.actions && input.action)
             throw new MoveRefused('Use either action or actions, not both.')
           if (!input.actions && !input.action)
@@ -180,16 +180,16 @@ export function createGameTools(ctx: MiniAppContext, games: GameService) {
             try {
               switch (step.action) {
                 case 'move':
-                  result = await actions.move(seat, step.move)
+                  result = await actions.move(chat, step.move)
                   break
                 case 'state':
-                  result = await actions.state(seat)
+                  result = await actions.state(chat)
                   break
                 case 'new_game':
-                  result = await actions.new_game(seat, step.userPlays ?? 'white')
+                  result = await actions.new_game(chat, step.userPlays ?? 'white')
                   break
                 case 'resign':
-                  result = await actions.resign(seat, step.reason)
+                  result = await actions.resign(chat, step.reason)
                   break
               }
             } catch (error) {
@@ -208,7 +208,7 @@ export function createGameTools(ctx: MiniAppContext, games: GameService) {
             if (
               result.terminate ||
               (input.actions && step.action === 'resign') ||
-              (input.actions && step.action !== 'state' && !owesAgentMove(await games.read(seat)))
+              (input.actions && step.action !== 'state' && !owesAgentMove(await games.read(chat)))
             )
               break
           }
@@ -219,7 +219,7 @@ export function createGameTools(ctx: MiniAppContext, games: GameService) {
           }
         } catch (error) {
           if (!(error instanceof MoveRefused)) throw error
-          const board = seat ? `\n\n${describeGame(await games.read(seat))}` : ''
+          const board = chat ? `\n\n${describeGame(await games.read(chat))}` : ''
           return { content: `${error.message}${board}`, isError: true }
         }
       },

@@ -9,8 +9,7 @@ import { renderPluginPrompt } from './plugin-commands'
 import { expandSkillContent, SKILL_SHELL_DISABLED_NOTICE } from './skill-commands'
 import { renderSkillBody, withSkillShellPolicy } from './skill-render'
 import type { SkillRecord } from './skills'
-import { routedParticipants, sessionFixture } from '../../../testing/session-fixture'
-import { noLeadership } from '../runtime/conversation-strategy'
+import { routedAgent, sessionFixture } from '../../../testing/session-fixture'
 
 // skills.md, "Inject dynamic context": with `disableSkillShellExecution`, "each command is replaced
 // with `[shell command execution disabled by policy]` instead of being run" — inline `!` commands
@@ -124,7 +123,7 @@ describe('a typed skill', () => {
   const session = sessionFixture({
     id: 's1',
     userId: 'u1',
-    agents: routedParticipants({ providerConnectionId: 'p1', modelId: 'gpt-4o' }),
+    agent: routedAgent({ providerConnectionId: 'p1', modelId: 'gpt-4o' }),
   })
 
   function context(content: string, disabled: boolean, rules = true) {
@@ -144,7 +143,7 @@ describe('a typed skill', () => {
     }
     const ctx = {
       repo: { listMessages: async () => [] },
-      runner: { isBusy: () => false, isRunning: () => false, leadership: () => noLeadership },
+      runner: { isBusy: () => false, isRunning: () => false },
       now: () => 'now',
       gatherSessionSkills: async () => [skill],
       gatherEnabledPluginSkills: async () => [],
@@ -153,7 +152,7 @@ describe('a typed skill', () => {
       ...(rules
         ? {
             loadSkillCommandRules: async () => [
-              { permission: 'bash', pattern: '*', action: 'deny', message: 'no' },
+              { permission: 'Bash', pattern: '*', action: 'deny', message: 'no' },
             ],
           }
         : {}),

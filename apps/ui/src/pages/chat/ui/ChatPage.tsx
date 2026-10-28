@@ -193,13 +193,12 @@ export function ChatPage() {
   // Page-level navigation (the rail, the shell) acts on the chat this page has open.
   useExternalSessionTerminal(activeSessionId)
   const uiNavigation = useUiNavigation({ sessionId: activeSessionId })
-  const { sessionId: routeSessionId, sectionId, projectId: routeProjectId, isLegacyRoute } = nav
+  const { sessionId: routeSessionId, sectionId, projectId: routeProjectId } = nav
   const routePathname = useLocation().pathname
   // A neutral landing that mints a fresh GLOBAL draft: the bare index ("/") OR
   // "/global" with no session. We do NOT resurrect the last chat there.
   const isHomeRoute =
     !STANDALONE_APP &&
-    !isLegacyRoute &&
     routeProjectId === null &&
     !routeSessionId &&
     (routePathname === '/' || routePathname.startsWith('/global'))
@@ -336,7 +335,7 @@ export function ChatPage() {
 
   // URL is the single source of truth for navigation: navigators write to it and
   // useUrlStoreSync syncs the Zustand data store FROM the URL (one-way), plus the
-  // normalization/legacy/home redirects and per-scope section + sidebar memory.
+  // normalization/home redirects and per-scope section + sidebar memory.
   const promptDeepLink = new URLSearchParams(useLocation().search).get('prompt')
   useUrlStoreSync({
     hasHydrated,
@@ -344,7 +343,6 @@ export function ChatPage() {
     routeSessionId,
     sectionId,
     routeProjectId,
-    isLegacyRoute,
     isHomeRoute,
     // A standalone app opens its own conversation (`useMiniApp`), never the last workspace.
     isColdIndex: !STANDALONE_APP && routePathname === '/',
@@ -370,7 +368,7 @@ export function ChatPage() {
       .openItem({ kind: 'problems', id: 'problems', title: 'Problems', scope: sessionId })
   }, [activeSessionId])
 
-  const { creatingChat, paletteCommands, startNewChat, startNewChatWith } = useNewChatAction({
+  const { creatingChat, paletteCommands, startNewChat } = useNewChatAction({
     openSessionId: activeSessionId,
     createSession,
     cycleFocusedTab,
@@ -495,7 +493,6 @@ export function ChatPage() {
               void togglePinSession(id)
             }}
             onOpenScopeSwitcher={() => setProjectSwitcher(true)}
-            onNewChat={startNewChatWith}
           />
         ) : undefined
       }
@@ -532,7 +529,7 @@ export function ChatPage() {
       onOpenSidebar={() => setSidebarOpen(true)}
       onCloseSidebar={() => setSidebarOpen(false)}
       // Rail, shortcut, palette, breadcrumb and sidebar all enter the same page-owned action.
-      // Their scope/participant/draft differences are data (`ConversationStartStrategy`).
+      // Their scope/agent/draft differences are data (`ConversationStartStrategy`).
       onCreateChat={hasHydrated ? startNewChat : () => undefined}
       titlebarContent={
         <TitlebarContent

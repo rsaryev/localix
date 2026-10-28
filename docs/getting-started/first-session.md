@@ -4,11 +4,6 @@ A Localix session keeps a conversation, agent configuration, and access to a wor
 walkthrough connects a model, opens a project, runs one bounded request, and shows you where to
 inspect it.
 
-![A release review with Team Lead, Frontend and QA participants](../assets/screenshots/conversations/participants--2026-10-15.png)
-
-_Demo workspace captured on 15 October 2026. The conversation is seeded; it does not demonstrate a
-successful model request or provider setup._
-
 ## Terminology
 
 | Term                | Meaning here                                                             |
@@ -52,16 +47,16 @@ previews, and format limits.
 
 ## Configuration
 
-| Control        | What it changes                                          | Boundary                                                            |
-| -------------- | -------------------------------------------------------- | ------------------------------------------------------------------- |
-| Model selector | The connection and model for a participant's route.      | The saved connection must still exist.                              |
-| Participants   | **Add participant** chooses agents for the conversation. | Available tools depend on the answering agent's effective policy.   |
-| `/help`        | The built-in command list and command-specific help.     | Plugin, mini app and surface-specific commands add to this catalog. |
+| Control        | What it changes                                      | Boundary                                                            |
+| -------------- | ---------------------------------------------------- | ------------------------------------------------------------------- |
+| Model selector | The connection and model for the conversation.       | The saved connection must still exist.                              |
+| Agent          | The agent you pick when you start the conversation.  | Available tools depend on the agent's effective policy.             |
+| `/help`        | The built-in command list and command-specific help. | Plugin, mini app and surface-specific commands add to this catalog. |
 
 The [capabilities guide](../features/capabilities.md) owns policy details. The
-[commands guide](../features/hooks-and-commands.md) owns the current slash-command catalog. Use the
-[conversation guide](../features/conversations.md) for addressing participants and choosing who
-answers.
+[commands guide](../features/hooks-and-commands.md) owns the current slash-command catalog. Use
+[Sessions and projects](../features/sessions-and-projects.md) for the queue, interruptions and what
+the agent sees, and [Subagents](../features/delegation.md) to run work in parallel.
 
 ## Limits
 

@@ -3,6 +3,7 @@ import { registerDom } from '@localixai/kit/testing/dom'
 import type { AttentionItem } from '@localixai/api/client'
 import type { UiSession } from '@/shared/api/contracts'
 import type { InspectorRequest } from '@/shared/lib/inspectorBus'
+import { turns as settle } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 const cleanups: Array<() => unknown> = []
@@ -21,8 +22,6 @@ afterAll(async () => {
   await teardown()
 })
 
-const settle = () => new Promise((resolve) => setTimeout(resolve, 20))
-
 const planItem: AttentionItem = {
   key: 'plan:root-1:plan-2',
   kind: 'plan',
@@ -30,7 +29,7 @@ const planItem: AttentionItem = {
   at: '2026-10-03T10:00:00.000Z',
   title: 'Cache layer',
   summary: ['Line 1', 'Line 2', 'Line 3', 'Line 4', 'Line 5', 'Line 6', 'Line 7'].join('\n'),
-  subject: { planId: 'plan-2', version: 2, agentHandle: 'lead' },
+  subject: { planId: 'plan-2', version: 2, agentName: 'lead' },
 }
 
 async function stubBackend(given: Record<string, (...args: never[]) => unknown>) {
@@ -59,7 +58,10 @@ async function render(items: AttentionItem[], activeSessionId: string | null = '
   cleanups.push(registerInspectorHandler((request) => void opened.push(request)))
   let path = ''
   function Where() {
-    path = useLocation().pathname
+    const { pathname } = useLocation()
+    React.useEffect(() => {
+      path = pathname
+    })
     return null
   }
   await React.act(async () => {
@@ -112,7 +114,7 @@ describe('the attention dialog, for a presented plan', () => {
     const { dialog } = await render([planItem])
     const text = dialog()?.textContent ?? ''
     expect(text).toContain('Billing')
-    expect(text).toContain('@lead presented plan v2')
+    expect(text).toContain('lead presented plan v2')
     expect(text).toContain('Cache layer')
     expect(text).toContain('Line 6')
     expect(text).not.toContain('Line 7')
@@ -147,7 +149,7 @@ describe('the attention dialog, for a presented plan', () => {
     )
   })
 
-  test('Approve opens the menu, approves that version with the mode and agent, then leaves', async () => {
+  test('Approve opens the menu, approves that version in the chosen mode, then leaves', async () => {
     const approvePlan = mock(async () => ({ plan: {}, wake: 'delivered' }))
     await stubBackend({ approvePlan })
     const { act, dialog } = await render([planItem])
@@ -171,15 +173,10 @@ describe('the attention dialog, for a presented plan', () => {
       [...document.body.querySelectorAll<HTMLElement>(`[role="${role}"]`)].find(
         (element) => element.querySelector('.truncate')?.textContent === name,
       )
-    await click(rowIn('menuitem', 'Agent'))
-    // Any agent is preselected; the item names the author by handle, so it leads, marked.
-    expect(rowIn('menuitemradio', 'Any agent')?.getAttribute('aria-checked')).toBe('true')
-    expect(rowIn('menuitemradio', 'Lead')?.textContent).toContain('Wrote the plan')
-    await click(rowIn('menuitemradio', 'Builder'))
     await click(rowIn('menuitem', 'Mode'))
     await click(rowIn('menuitemradio', 'Bypass'))
     await click(rowIn('menuitem', 'Approve'))
-    expect(approvePlan).toHaveBeenCalledWith('root-1', 'plan-2', 'bypass', 'builder')
+    expect(approvePlan).toHaveBeenCalledWith('root-1', 'plan-2', 'bypass')
     expect(dialog()).toBeNull()
   })
 
@@ -202,23 +199,14 @@ describe('the attention dialog, for a presented plan', () => {
     expect(dialog()).toBeNull()
   })
 
-  test('a plan outranks a newer mention, and nothing is raised for the chat on screen', async () => {
+  test('nothing is raised for the chat on screen', async () => {
     await stubBackend({})
-    const mention: AttentionItem = {
-      key: 'mention:root-1:m1',
-      kind: 'mention',
-      sessionId: 'root-1',
-      at: '2026-10-03T11:00:00.000Z',
-      title: 'Question',
-      summary: 'Which region?',
-      subject: { messageId: 'm1', agentHandle: 'lead' },
-    }
-    const shown = await render([mention, planItem])
+    const shown = await render([planItem])
     expect(shown.dialog()?.textContent).toContain('presented plan')
     await shown.act(async () => {
       while (cleanups.length) await cleanups.pop()?.()
     })
-    const here = await render([mention, planItem], 'root-1')
+    const here = await render([planItem], 'root-1')
     expect(here.dialog()).toBeNull()
   })
 })

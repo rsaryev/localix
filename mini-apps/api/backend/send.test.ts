@@ -651,10 +651,12 @@ describe('timeoutMs is honoured — it was declared, documented, passed in, and 
   test('a USER abort is NOT reported as a timeout — one is retryable, the other is not', async () => {
     stubSlowFetch(3_000)
     const ac = new AbortController()
-    setTimeout(() => ac.abort(), 50)
-    const err = await sendRequest(spec(), { ...OPTS, timeoutMs: 30_000, signal: ac.signal }).catch(
+    const pending = sendRequest(spec(), { ...OPTS, timeoutMs: 30_000, signal: ac.signal }).catch(
       (e) => e,
     )
+    await new Promise((r) => setTimeout(r, 0)) // the request is in flight
+    ac.abort()
+    const err = await pending
     expect(err).not.toBeInstanceOf(RequestTimeoutError)
   })
 

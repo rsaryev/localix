@@ -44,7 +44,6 @@ export async function durableStore(): Promise<DurableStore> {
     .addColumn('assistant_message_id', 'text', (c) => c.primaryKey())
     .addColumn('user_id', 'text', (c) => c.notNull())
     .addColumn('session_id', 'text', (c) => c.notNull())
-    .addColumn('agent_id', 'text', (c) => c.notNull())
     .addColumn('created_at', 'text', (c) => c.notNull())
     .execute()
   await db.schema
@@ -61,10 +60,8 @@ export async function durableStore(): Promise<DurableStore> {
 interface DurableQueueOptions {
   store?: DurableStore
   busy?: boolean
-  /** Runs before every transcript insert; throw to fail a delivery. */
+  /** Runs before every transcript insert; throw to fail a delivery, await to make it slow. */
   beforeInsert?: (rows: readonly PersistedMessage[]) => void | Promise<void>
-  /** Runs before the delivery reads the transcript; await to make a delivery slow. */
-  beforeRead?: () => void | Promise<void>
   context?: Partial<WakeQueueContext>
 }
 
@@ -87,10 +84,7 @@ export async function durableQueue(options: DurableQueueOptions = {}) {
       getMessage: async (_u: string, _s: string, id: string) => messages.get(id) ?? null,
       insertMessage: (row: PersistedMessage) => insert([row]),
       insertMessages: insert,
-      listMessages: async () => {
-        await options.beforeRead?.()
-        return [...messages.values()]
-      },
+      listMessages: async () => [...messages.values()],
     } as never,
     streamRegistry: {
       publish: (_u: string, _s: string, event: unknown) => void published.push(event),
@@ -115,9 +109,13 @@ export async function durableQueue(options: DurableQueueOptions = {}) {
     [...messages.values()]
       .filter((row) => row.payload.role === 'user')
       .map((row) => row.payload.content)
-  const until = async (done: () => boolean | Promise<boolean>, ms = 2_000) => {
-    for (const end = Date.now() + ms; Date.now() < end && !(await done());)
-      await new Promise((resolve) => setTimeout(resolve, 5))
+  /**
+   * Timer turns until `done`, counted rather than timed: a busy machine makes each turn slower, so
+   * the queue's own retry and lease timers get more time, never less.
+   */
+  const until = async (done: () => boolean | Promise<boolean>, turns = 2_000) => {
+    for (let i = 0; i < turns && !(await done()); i++)
+      await new Promise((resolve) => setTimeout(resolve, 0))
   }
   /** End the busy run, as its teardown does: the queue drains. */
   const idle = () => {

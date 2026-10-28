@@ -29,7 +29,6 @@ export function createTerminalRoutes(service: TerminalService, work: WorkRegistr
       // panes by the terminal port, through this same `recordTerminalWork`.
       recordTerminalWork(work, {
         owner: { userId, sessionId: input.sessionId },
-        agentId: null,
         label: input.command,
         terminal: session,
       })

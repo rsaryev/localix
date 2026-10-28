@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, expect, mock, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { listing } from '@/testing/store'
+import { turns as settle } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -13,8 +14,6 @@ afterAll(async () => {
   await new Promise((resolve) => setTimeout(resolve, 0))
   await teardown()
 })
-
-const settle = () => new Promise((resolve) => setTimeout(resolve, 20))
 
 const snapshot = (over: { skillOn: boolean }) =>
   ({
@@ -52,6 +51,9 @@ test('an agent’s Access tab switches what it may use, and each row opens its S
   const { __resetMiniAppContrib } = await import('@/shared/contrib/enabledMiniApps')
   const { inspector } = await import('@/shared/lib/inspectorBus')
   const { AgentAccess } = await import('./AgentAccess')
+  // Adopting the write's answer imports the mini app UI runtime on first use. Loaded here, so the
+  // wait below counts event-loop turns only, not a cold module import in a busy process.
+  await import('@/shared/contrib/miniAppUiDiscovery')
   __resetMiniAppContrib()
   __resetCapabilityCache()
   // The server is the truth: after the write, a re-read answers with the skill off.
@@ -95,8 +97,12 @@ test('an agent’s Access tab switches what it may use, and each row opens its S
     projectId: null,
     changes: [{ action: 'skill:deploy', resource: '*', effect: 'deny' }],
   })
-  await act(async () => settle())
-  expect(byLabel('Enable /deploy for this agent')).not.toBeNull()
+  // The write is done when its switch can be used again, not when the new state first shows.
+  const enable = () => byLabel('Enable /deploy for this agent') as HTMLButtonElement | null
+  // Each step in its own act: React renders what changed only when an act ends.
+  for (let step = 0; step < 100 && enable()?.disabled !== false; step++)
+    await act(async () => settle())
+  expect(enable()?.disabled).toBe(false)
 
   await act(async () => root.unmount())
   container.remove()

@@ -87,3 +87,22 @@ test('clock.every fires at most every 100 ms, and a mod holds at most 100 timers
   expect(() => system.clock.after(10, () => {}).cancel()).not.toThrow()
   system.dispose()
 })
+
+test('process.run rejects when the command is still running at its timeout', async () => {
+  const system = createSystemApi({ cwd: () => '/' })
+  await expect(system.process.run(['sleep', '30'], { timeoutMs: 50 })).rejects.toThrow(
+    'still running after 50 ms',
+  )
+  expect(await system.process.run(['echo', 'hi'], { timeoutMs: 5000 })).toMatchObject({
+    exitCode: 0,
+    stdout: 'hi\n',
+  })
+})
+
+test('process.run rejects at its timeout even when the process ignores SIGTERM', async () => {
+  const system = createSystemApi({ cwd: () => '/' })
+  // A busy shell that traps TERM: only SIGKILL ends it.
+  await expect(
+    system.process.run(['/bin/sh', '-c', 'trap "" TERM; while :; do :; done'], { timeoutMs: 50 }),
+  ).rejects.toThrow('still running after 50 ms')
+})

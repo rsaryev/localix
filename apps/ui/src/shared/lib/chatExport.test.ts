@@ -52,14 +52,14 @@ describe('sessionToMarkdown — redacted', () => {
               { type: 'text', text: 'Sure.' },
               {
                 type: 'command',
-                name: 'bash',
+                name: 'Bash',
                 status: 'completed',
                 command: 'cat /etc/passwd',
                 output: 'SECRET',
               },
               {
                 type: 'tool_call',
-                name: 'read',
+                name: 'Read',
                 status: 'failed',
                 input: { path: '/private' },
                 resultText: 'SECRET',
@@ -73,8 +73,8 @@ describe('sessionToMarkdown — redacted', () => {
     )
     expect(md).toBe(
       '# t\n\n## You\n\nrun it\n\n## Assistant\n\nSure.\n\n' +
-        '> `[tool: bash — completed · redacted]`\n\n' +
-        '> `[tool: read — failed · redacted]`\n\nDone.\n',
+        '> `[tool: Bash — completed · redacted]`\n\n' +
+        '> `[tool: Read — failed · redacted]`\n\nDone.\n',
     )
     expect(md).not.toContain('SECRET')
     expect(md).not.toContain('/etc/passwd')
@@ -86,13 +86,13 @@ describe('sessionToMarkdown — redacted', () => {
         role: 'assistant',
         content: '',
         items: [
-          { type: 'file_change', name: 'edit', status: 'completed', changes: [] },
+          { type: 'file_change', name: 'Edit', status: 'completed', changes: [] },
         ] as unknown as Message['items'],
       }),
     ]
     expect(sessionToMarkdown({ title: 't', messages })).toBe('# t\n')
     expect(sessionToMarkdown({ title: 't', messages }, opts)).toBe(
-      '# t\n\n## Assistant\n\n> `[tool: edit — completed · redacted]`\n',
+      '# t\n\n## Assistant\n\n> `[tool: Edit — completed · redacted]`\n',
     )
   })
 

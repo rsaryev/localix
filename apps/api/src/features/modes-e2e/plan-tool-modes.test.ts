@@ -19,8 +19,8 @@ describe('on the roster', () => {
     (mode) => {
       for (const handle of ['localix', 'lead', 'qa']) {
         const surface = modeSurface(builtinAgentPreset(handle), mode, [])
-        expect(surface.denied).not.toContain('plan')
-        expect(runRegistry('chat', mode, surface.denied).toolNames).toContain('plan')
+        expect(surface.denied).not.toContain('Plan')
+        expect(runRegistry('chat', mode, surface.denied).toolNames).toContain('Plan')
       }
     },
   )
@@ -29,8 +29,8 @@ describe('on the roster', () => {
     'a %s never holds it: the plan is the root conversation’s, reviewed by its person',
     (kind) => {
       const registry = runRegistry(kind, 'plan', [])
-      expect(registry.toolNames).not.toContain('plan')
-      expect(registry.ledger.get('plan')).toMatchObject({
+      expect(registry.toolNames).not.toContain('Plan')
+      expect(registry.ledger.get('Plan')).toMatchObject({
         state: 'withheld',
         reason: { layer: 'shape', kind: 'never' },
       })
@@ -44,7 +44,7 @@ describe('present', () => {
   test.each([...PERMISSION_MODES])(
     '%s: the gate lets it through — the class is session',
     async (mode) => {
-      const plan = runRegistry('chat', mode, []).tools.find((tool) => tool.name === 'plan')!
+      const plan = runRegistry('chat', mode, []).tools.find((tool) => tool.name === 'Plan')!
       expect(
         await modeSurface(builtinAgentPreset('localix'), mode, []).decide(plan, presentCall),
       ).toBe('allow')
@@ -54,7 +54,7 @@ describe('present', () => {
   test.each([...PERMISSION_MODES])('%s: the tool presents only in plan mode', async (mode) => {
     const presented: string[] = []
     const registry = runRegistry('chat', mode, [], [], planPortFor(mode, presented))
-    const plan = registry.tools.find((tool) => tool.name === 'plan')!
+    const plan = registry.tools.find((tool) => tool.name === 'Plan')!
     const result = await plan.execute('call-1', presentCall)
     if (mode === 'plan') {
       expect(result.isError).toBeUndefined()
@@ -70,7 +70,7 @@ describe('present', () => {
   test.each([...PERMISSION_MODES])(
     '%s: read and complete stay callable through the gate',
     async (mode) => {
-      const plan = runRegistry('chat', mode, []).tools.find((tool) => tool.name === 'plan')!
+      const plan = runRegistry('chat', mode, []).tools.find((tool) => tool.name === 'Plan')!
       const surface = modeSurface(builtinAgentPreset('localix'), mode, [])
       expect(await surface.decide(plan, { action: 'read' })).toBe('allow')
       expect(await surface.decide(plan, { action: 'complete', summary: 'done' })).toBe('allow')

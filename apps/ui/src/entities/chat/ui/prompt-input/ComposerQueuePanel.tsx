@@ -34,17 +34,22 @@ export const ComposerQueuePanel = memo(function ComposerQueuePanel({
   // A rename publishes a new contribution version; reading it re-resolves the names below.
   useMiniAppContribVersion()
   const agents = miniAppContribSnapshot().document?.agents ?? []
+  // A conversation has one agent: an addressed turn in its queue is that agent's.
+  const sessionAgentId = useChatStore(
+    (state) => state.sessions.find((session) => session.id === activeSessionId)?.agent?.agentId,
+  )
   const queue: QueuePanelItem[] = (serverQueue ?? []).map((q): QueuePanelItem => {
-    const agent = q.agentId ? resolveAuthorIdentity(q.agentId, undefined, agents) : undefined
+    const addressed = q.agentWeight !== undefined && sessionAgentId
+    const agent = addressed ? resolveAuthorIdentity(sessionAgentId, agents) : undefined
     return {
       id: q.id,
-      // The ticket's own text is the runtime's ("Turn for <agent id>"); a person reads a name.
+      // The ticket's own text is the runtime's; a person reads a name.
       text: agent ? `${agent.name} — waiting to answer` : q.preview,
       queueKind: q.kind,
       wakeSource: q.source,
       delivery: q.delivery,
       ...(q.failure ? { failure: q.failure } : {}),
-      ...(agent ? { agent: { handle: agent.handle, name: agent.name } } : {}),
+      ...(agent ? { agent: { name: agent.name } } : {}),
     }
   })
   /**

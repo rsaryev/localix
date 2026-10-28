@@ -18,7 +18,7 @@ export function buildPluginsPromptContext(
 ): string | undefined {
   const available = new Set(runtimeToolNames)
   const summaries = loadedPlugins.loaded.flatMap((plugin) =>
-    plugin.skills.length && available.has(TOOL.skill)
+    plugin.skills.length && available.has(TOOL.Skill)
       ? [`- ${plugin.name} — ${countLabel(plugin.skills.length, 'skill')}`]
       : [],
   )
@@ -29,10 +29,13 @@ export function buildPluginsPromptContext(
       const builtin = server.builtinExtensions.length
         ? `; built-in server kept for ${server.builtinExtensions.join(', ')}`
         : ''
-      const missing =
-        server.missing && server.extensions.length
-          ? `; NOT RUNNING: ${server.command} is not on PATH${server.installHint ? ` (install: ${server.installHint})` : ''}`
-          : ''
+      const missing = !server.extensions.length
+        ? ''
+        : server.missing
+          ? `; NOT RUNNING: ${server.command} is not on PATH${server.installHint ? ` (${server.installHint})` : ''}`
+          : server.installsOnFirstUse
+            ? '; installs on first use'
+            : ''
       return `- ${pluginName} — LSP "${server.id}": ${exts}${builtin}${missing} (diagnostics via edit/write results, not a tool)`
     }),
   )

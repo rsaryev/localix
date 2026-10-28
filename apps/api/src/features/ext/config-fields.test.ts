@@ -37,9 +37,10 @@ describe('configFieldBase', () => {
   })
 
   it('a stored value wins over the declared default', () => {
-    expect(configFieldBase('port', { default: 8080 }, { port: 9090 })).toEqual({
+    const stored = 9090 // a stored setting, never bound
+    expect(configFieldBase('port', { default: 8080 }, { port: stored })).toEqual({
       key: 'port',
-      value: 9090,
+      value: stored,
       isSet: true,
     })
   })

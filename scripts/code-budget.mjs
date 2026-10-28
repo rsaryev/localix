@@ -8,13 +8,13 @@
 //   bun run check:size          fails when the product code is over the limit
 //
 // Past the limit, new code is paid for by deleting dead code and duplication elsewhere.
-import { existsSync, readFileSync } from 'node:fs'
-import { spawnSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 import { codeLines } from './code-budget/lines.mjs'
 import { repoRoot as findRepoRoot } from './lib/paths.mjs'
+import { workingTreeFiles } from './lib/working-tree-files.mjs'
 
 const repoRoot = findRepoRoot()
 export const CONFIG_PATH = join(repoRoot, 'config/code-budget.json')
@@ -71,16 +71,8 @@ export function measureBudget(files, read, limit) {
 
 function main() {
   const config = JSON.parse(readFileSync(CONFIG_PATH, 'utf8'))
-  const listed = spawnSync('git', ['ls-files', '--cached', '--others', '--exclude-standard'], {
-    cwd: repoRoot,
-    encoding: 'utf8',
-    maxBuffer: 256 << 20,
-  })
-  if (listed.status !== 0) throw new Error(`git ls-files failed: ${listed.stderr}`)
   // The working tree is measured: a file deleted but not yet committed is gone.
-  const present = listed.stdout
-    .split('\n')
-    .filter((file) => file && existsSync(join(repoRoot, file)))
+  const present = workingTreeFiles(repoRoot)
   const files = budgetFiles(present, config.exclude)
   const result = measureBudget(
     files,

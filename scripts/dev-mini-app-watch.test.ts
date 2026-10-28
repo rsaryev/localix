@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, realpathSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 
@@ -38,14 +38,14 @@ function kitHarness(restageKit: () => Promise<void> | void = () => {}) {
     const timers = [...live.entries()]
     live.clear()
     for (const [, timer] of timers) timer.fn()
-    await Bun.sleep(0)
+    await new Promise((resolve) => setTimeout(resolve, 0))
   }
   return { repoRoot, listeners, change, pending, fire, handle }
 }
 
 const CONTENT_INPUT = 'apps/ui/src/shared/ui'
 
-// The API reloads on every source edit while the kit was staged once, so `/mini-app create` failed
+// The API reloads on every source edit while the kit was staged once, so building a mini app failed
 // with "the mini app kit has an unknown layout" until a restart. Every kit input is watched, and a
 // burst of changes re-stages the kit once.
 test('re-stages the mini app kit once per burst of changes to any of its inputs', async () => {
@@ -64,12 +64,12 @@ test('re-stages the mini app kit once per burst of changes to any of its inputs'
 // kept the machine at 250–400% CPU for as long as anyone edited.
 test('a content change waits for the inputs to go quiet; a layout change does not', () => {
   const kit = kitHarness()
-  expect(KIT_LAYOUT_INPUTS).toContain('apps/api/src/features/mini-apps/authoring/kit-layout.ts')
+  expect(KIT_LAYOUT_INPUTS).toContain('apps/api/src/features/mini-apps/kit-layout.ts')
   expect(KIT_LAYOUT_INPUTS).not.toContain(CONTENT_INPUT)
 
   kit.change(CONTENT_INPUT)
   expect(kit.pending()).toEqual([20_000])
-  kit.change('apps/api/src/features/mini-apps/authoring/kit-layout.ts')
+  kit.change('apps/api/src/features/mini-apps/kit-layout.ts')
   expect(kit.pending()).toEqual([1000])
   // A content save during a pending layout re-stage does not postpone it.
   kit.change(CONTENT_INPUT)
@@ -98,10 +98,10 @@ test('a stage never overlaps another; changes during one earn exactly one more',
   await kit.fire()
   expect(stages).toBe(1)
   release()
-  await Bun.sleep(0)
+  await new Promise((resolve) => setTimeout(resolve, 0))
   expect(stages).toBe(2)
   release()
-  await Bun.sleep(0)
+  await new Promise((resolve) => setTimeout(resolve, 0))
   expect(stages).toBe(2)
   expect(peak).toBe(1)
   kit.handle.close()
@@ -202,40 +202,5 @@ describe('dev mini app watcher', () => {
     timers.at(-1)?.()
     expect(restaged).toEqual(['project-space'])
     watcher.close()
-  })
-
-  // Bun's recursive fs.watch on macOS delivered a fraction of a burst like a scaffold's, so a
-  // freshly created mini app could miss its re-stage. The native watcher sees every mini app.
-  test('a real scaffold burst re-stages every mini app it touched (native watcher)', async () => {
-    const repoRoot = mkdtempSync(join(tmpdir(), 'dev-mini-app-watch-'))
-    try {
-      // A checkout has both bundled folders.
-      mkdirSync(join(repoRoot, 'mini-apps'))
-      mkdirSync(join(repoRoot, 'plugins'))
-      const restaged = new Set<string>()
-      const lines: string[] = []
-      const watcher = watchMiniAppsForRestage({
-        repoRoot,
-        outMiniApps: '/staged',
-        debounceMs: 30,
-        log: (line) => lines.push(line),
-        restage: ({ name }) => {
-          restaged.add(name)
-          return { staged: true }
-        },
-      })
-      await Bun.sleep(150)
-      for (const miniApp of ['alpha', 'beta', 'gamma']) {
-        mkdirSync(join(repoRoot, 'plugins', miniApp, 'backend'), { recursive: true })
-        writeFileSync(join(repoRoot, 'plugins', miniApp, 'plugin.json'), '{}')
-        writeFileSync(join(repoRoot, 'plugins', miniApp, 'backend', 'index.ts'), 'export {}\n')
-      }
-      await Bun.sleep(600)
-      watcher.close()
-      expect(lines.filter((line) => line.includes('stopped'))).toEqual([])
-      expect([...restaged].sort()).toEqual(['alpha', 'beta', 'gamma'])
-    } finally {
-      rmSync(repoRoot, { recursive: true, force: true })
-    }
   })
 })

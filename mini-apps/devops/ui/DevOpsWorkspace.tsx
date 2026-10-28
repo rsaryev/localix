@@ -58,10 +58,15 @@ export function DevOpsWorkspace({
     saveDevOpsArea(next)
   }
 
+  // A new request for an area (a link, an `@`-ref) moves the workspace there. Decided while
+  // rendering, when the request changes, so the old area never paints under the new request.
+  const [seenRequestedArea, setSeenRequestedArea] = useState<DevOpsArea | undefined>(undefined)
+  if (requestedArea !== seenRequestedArea) {
+    setSeenRequestedArea(requestedArea)
+    if (requestedArea) setAreaState(requestedArea)
+  }
   useEffect(() => {
-    if (!requestedArea) return
-    setAreaState(requestedArea)
-    saveDevOpsArea(requestedArea)
+    if (requestedArea) saveDevOpsArea(requestedArea)
   }, [requestedArea])
 
   const refreshAll = () => {

@@ -197,7 +197,7 @@ describe('useModelTaskRouting direct picks', () => {
           taskKey: 'agent:builtin:reviewer',
           sessionModelId: model.id,
           sessionConnectionId: 'conn-openai',
-          participantRoute: () => ({
+          agentRoute: () => ({
             providerConnectionId: 'conn-openai',
             modelId: model.id,
             reasoningEffort: effort,

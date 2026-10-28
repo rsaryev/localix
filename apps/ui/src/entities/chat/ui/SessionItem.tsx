@@ -23,6 +23,7 @@ import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@localixai/
 import { MenuEntries } from '@localixai/kit/menu-entries'
 import { CONTROL_FOCUS_VISIBLE } from '@localixai/mini-app-sdk/ui/classes'
 import { TreeGuide } from './SessionTreeGuide'
+import { focusOnMount } from './focusOnMount'
 
 // Tree indentation (px). Base matches the row's normal left padding; the step
 // is small and the depth is capped so deep fork chains stay readable. See the
@@ -161,6 +162,8 @@ export const SessionItem = memo(function SessionItem({
 
   const row = (
     <div
+      // A pointer convenience only: the inner role="button" row is the keyboard-reachable control.
+      role="presentation"
       style={{ paddingLeft: padLeft }}
       onContextMenu={(event) => {
         setMenuBoundary(event.currentTarget.closest<HTMLElement>('[data-context-menu-boundary]'))
@@ -273,7 +276,7 @@ export const SessionItem = memo(function SessionItem({
               if (e.key === 'Enter') handleSaveRename()
               if (e.key === 'Escape') handleCancelRename()
             }}
-            autoFocus
+            ref={focusOnMount}
             className={`h-6 w-full rounded-md border border-sidebar-border bg-sidebar px-1.5 text-sm text-sidebar-foreground ${CONTROL_FOCUS_VISIBLE}`}
             onClick={(e) => e.stopPropagation()}
           />

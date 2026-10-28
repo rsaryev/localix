@@ -1,6 +1,6 @@
 /**
  * The added events whose handlers can change what happens next: a command expansion, an
- * approval card, an automatic denial, a tool batch, a task-board write, a member going idle.
+ * approval card, an automatic denial, a tool batch, a task-board write.
  * Each fold follows the CC reference's decision control for its event.
  */
 import { absoluteFilePaths, claudeCodeHookCall, localInputFromHook } from '../ext/cc-tool-shapes'
@@ -23,7 +23,6 @@ type GateRunners = Pick<
   | 'runPostToolBatch'
   | 'runTaskCreated'
   | 'runTaskCompleted'
-  | 'runTeammateIdle'
 >
 
 const all = () => true
@@ -41,7 +40,7 @@ const teamName = (sessionId: string) => `session-${sessionId.slice(0, 8)}`
 export function createGateHookRunners(deps: HookDispatchDeps): GateRunners {
   const { select, runHandler, fireAsync, runAll, baseInput } = deps
   // CC's deprecated `team_name`, derived from the session as CC derives it.
-  const team = teamName(baseInput('TeammateIdle').session_id)
+  const team = teamName(baseInput('TaskCreated').session_id)
 
   /** The task events share an input shape and a fold; only `continue:false` differs (ignored). */
   async function runTask(event: 'TaskCreated' | 'TaskCompleted', task: CcTask) {
@@ -50,7 +49,6 @@ export function createGateHookRunners(deps: HookDispatchDeps): GateRunners {
       task_id: task.id,
       task_subject: task.subject,
       ...(task.description ? { task_description: task.description } : {}),
-      ...(task.teammateName ? { teammate_name: task.teammateName } : {}),
       team_name: team,
     }
     let blocked = false
@@ -176,27 +174,5 @@ export function createGateHookRunners(deps: HookDispatchDeps): GateRunners {
 
     runTaskCreated: (task) => runTask('TaskCreated', task),
     runTaskCompleted: (task) => runTask('TaskCompleted', task),
-
-    async runTeammateIdle(teammate) {
-      const input: CcHookInput = {
-        ...baseInput('TeammateIdle'),
-        teammate_name: teammate.name,
-        team_name: team,
-        agent_id: teammate.agentId,
-      }
-      let blocked = false
-      let reason: string | undefined
-      let stopReason: string | undefined
-      for (const o of await runAll('TeammateIdle', all, input, false)) {
-        if (o.continue === false) stopReason = o.stopReason || stopReason || 'Stopped by hook'
-        else if (o.blocked || o.decision === 'block') {
-          blocked = true
-          reason = reasonOf(o) ?? reason
-        }
-      }
-      // `continue:false` stops the member outright, whatever another handler asked.
-      if (stopReason) return { blocked: false, stopReason }
-      return { blocked, ...(reason ? { reason } : {}) }
-    },
   }
 }

@@ -253,7 +253,6 @@ pub(crate) fn deep_link_ready(app: AppHandle, caller: tauri::Webview) {
     });
     flush_startup_log();
     setup_tray_after_ready(&app);
-    crate::companion::start_once(&app);
 }
 
 #[cfg(test)]

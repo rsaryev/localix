@@ -39,6 +39,7 @@ describe('virtualized FileTreeEntries', () => {
 
     function Harness() {
       const [scrollEl, setScrollEl] = React.useState<HTMLDivElement | null>(null)
+      // oxlint-disable-next-line react/incompatible-library -- TanStack Virtual returns non-memoizable functions by design.
       const virtualizer = useVirtualizer<HTMLDivElement, HTMLDivElement>({
         count: rows.length,
         getScrollElement: () => scrollEl,

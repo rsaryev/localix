@@ -122,20 +122,18 @@ export function createUsageQueries(db: Kysely<AppDatabase>) {
           .orderBy('lastAt', 'desc')
           .limit(200)
           .execute(),
-        // Agents with spend, named by the handle their seat recorded. The handle comes from
-        // `conversation_participants` rather than the agent registry because the ledger must still name a
-        // participant whose agent record has since been deleted — DISTINCT over the join would
-        // multiply a member seated in many sessions, so the handle is picked as a max().
+        // Agents with spend, named by the name their session recorded. The name comes from
+        // the session rather than the agent registry because the ledger must still name an agent
+        // whose record has since been deleted — DISTINCT over the join would multiply an agent
+        // used in many sessions, so the name is picked as a max().
         db
           .selectFrom('usage_events as ue')
-          .leftJoin('conversation_participants as sa', (join) =>
-            join
-              .onRef('sa.agent_id', '=', 'ue.agent_id')
-              .onRef('sa.session_id', '=', 'ue.session_id'),
+          .leftJoin('agent_sessions as sa', (join) =>
+            join.onRef('sa.agent_id', '=', 'ue.agent_id').onRef('sa.id', '=', 'ue.session_id'),
           )
           .where('ue.user_id', '=', userId)
           .where('ue.agent_id', 'is not', null)
-          .select((eb) => ['ue.agent_id as id', eb.fn.max('sa.handle').as('handle')])
+          .select((eb) => ['ue.agent_id as id', eb.fn.max('sa.agent_name').as('name')])
           .groupBy('ue.agent_id')
           .orderBy('id', 'asc')
           .execute(),
@@ -144,7 +142,7 @@ export function createUsageQueries(db: Kysely<AppDatabase>) {
         models: modelRows.map((r) => r.model_id).filter(Boolean),
         providers: providerRows.map((r) => r.provider_id).filter((p): p is string => Boolean(p)),
         sessions: sessionRows.map((r) => ({ id: String(r.id), title: r.title ?? null })),
-        agents: agentRows.map((r) => ({ id: String(r.id), handle: r.handle ?? null })),
+        agents: agentRows.map((r) => ({ id: String(r.id), name: r.name ?? null })),
       }
     },
 

@@ -27,7 +27,6 @@ import { useAgentIdentity } from '@/shared/contrib/useAgentIdentity'
 import { messageClock } from '../model/messageTime'
 import type { MessagePosition } from '../model/messageGroups'
 import { DayDivider } from './DayDivider'
-import { useConversationMentionHandles } from '../model/useConversationMentionHandles'
 import { messageHasVisibleBody, messageIsEmpty } from './messageRenderable'
 import { useMessageContextActions } from './useMessageContextActions'
 import { useRunEventFocus } from './useRunEventFocus'
@@ -96,13 +95,12 @@ function MessageCardImpl({
   // The session of the transcript this card is drawn in — never the chat on screen, which a
   // card in a background pane or a replay of another chat does not belong to.
   const replaySessionId = useWorkItemSessionId()
-  const mentionHandles = useConversationMentionHandles(replaySessionId)
   const workItemVisible = useWorkItemVisible()
   const isEventRunTarget = useRunEventFocus(replaySessionId, messageId, workItemVisible) !== null
-  // Who said it, from the message's stored author — never from the session's party, which
-  // says who is here NOW and would relabel an old reply after a hand-off.
+  // Who said it, from the message's stored author — never from the session's current agent,
+  // which would relabel an old reply.
   const firstMessage = segments?.[0] ?? message
-  const author = useAgentIdentity(firstMessage.from, firstMessage.authorSnapshot)
+  const author = useAgentIdentity(firstMessage.from)
   // Once per RUN, not once per card. Consecutive replies by one agent are one utterance
   // broken across rows; naming the speaker on each of them is the noise grouping removes.
   const showAuthor = !compact && (position?.isFirstInGroup ?? true)
@@ -197,13 +195,7 @@ function MessageCardImpl({
   }
 
   const renderBody = () => (
-    <MessageBody
-      message={message}
-      isUser={isUser}
-      isStreaming={isStreaming}
-      isLast={isLast}
-      mentionHandles={mentionHandles}
-    />
+    <MessageBody message={message} isUser={isUser} isStreaming={isStreaming} isLast={isLast} />
   )
 
   const body = segments ? (
@@ -217,7 +209,6 @@ function MessageCardImpl({
           wakeSource={index === 0 ? undefined : segmentWakeSources?.[index]}
           isLast={index === segments.length - 1 && isLast === true}
           isStreaming={index === segments.length - 1 && isStreaming}
-          mentionHandles={mentionHandles}
         />
       ))}
       {!compact && (

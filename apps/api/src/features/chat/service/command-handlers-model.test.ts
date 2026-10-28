@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { routedParticipants, sessionFixture } from '../../../testing/session-fixture'
+import { routedAgent, sessionFixture } from '../../../testing/session-fixture'
 import { handleModelCommand } from './command-handlers-settings'
 import { INERT_CC_HOOKS, type CcHooksRuntime } from '../../cc-hooks'
 import { createCcHookSessions } from '../runtime/cc-hook-sessions'
@@ -22,7 +22,7 @@ async function run(prompt: string, hooks?: Partial<CcHooksRuntime>) {
     })
   const writes: unknown[] = []
   const session = sessionFixture({
-    agents: routedParticipants({ modelId: 'openrouter/sonnet', reasoningEffort: 'medium' }),
+    agent: routedAgent({ modelId: 'openrouter/sonnet', reasoningEffort: 'medium' }),
   })
   const ctx = {
     deps: {
@@ -30,13 +30,12 @@ async function run(prompt: string, hooks?: Partial<CcHooksRuntime>) {
       catalogService: { getCatalog: async () => ({ providers: [{ id: 'openrouter' }], models }) },
     },
     repo: {
-      updateSessionAgentRoutes: async (...args: unknown[]) => {
-        const [{ agentId: _agentId, ...route }] = args[2] as [{ agentId: string }]
+      updateSessionAgentRoute: async (_u: string, _id: string, route: unknown) => {
         writes.push(route)
       },
       updateSession: async () => {},
     },
-    runner: { leadership: () => async () => [], ccHookSessions },
+    runner: { ccHookSessions },
     publishSession: () => {},
     insertSystemNotice: async (_u: string, sessionId: string) => ({ sessionId, messageId: 'm' }),
   }
@@ -45,7 +44,6 @@ async function run(prompt: string, hooks?: Partial<CcHooksRuntime>) {
     session.userId,
     session.id,
     session,
-    [],
     prompt,
     '2026-01-01T00:00:00.000Z',
     async (text) => {
@@ -66,7 +64,7 @@ describe('/model never dumps the catalog', () => {
     expect(replies[0]).toContain('/model <name>')
   })
 
-  test('/model <name> still switches the participant directly', async () => {
+  test('/model <name> still switches the model directly', async () => {
     const { replies, writes } = await run('/model haiku')
     expect(replies).toEqual([])
     expect(writes).toEqual([{ modelId: 'openrouter/haiku', reasoningEffort: 'medium' }])

@@ -116,11 +116,11 @@ export function extraStates(el: Element): string[] {
   const expanded = el.getAttribute('aria-expanded')
   if (expanded === 'true') states.push('expanded')
   else if (expanded === 'false') states.push('collapsed')
-  if (el.getAttribute('aria-selected') === 'true' || (el as HTMLOptionElement).selected === true)
+  if (el.getAttribute('aria-selected') === 'true' || (el as HTMLOptionElement).selected)
     states.push('selected')
-  if ((el as HTMLInputElement).required === true || el.getAttribute('aria-required') === 'true')
+  if ((el as HTMLInputElement).required || el.getAttribute('aria-required') === 'true')
     states.push('required')
-  if ((el as HTMLInputElement).readOnly === true || el.getAttribute('aria-readonly') === 'true')
+  if ((el as HTMLInputElement).readOnly || el.getAttribute('aria-readonly') === 'true')
     states.push('readonly')
   return states
 }

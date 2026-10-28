@@ -49,12 +49,16 @@ describe('getProjectFileList', () => {
 
   test('overlapping keystrokes share the same walk', async () => {
     let walks = 0
+    let finish: () => void = () => {}
+    const walking = new Promise<void>((resolve) => (finish = resolve))
     const load = async () => {
       walks++
-      await new Promise((r) => setTimeout(r, 5))
+      await walking
       return { paths: ['a.ts'], omitted: 0 }
     }
-    await Promise.all(Array.from({ length: 8 }, () => getProjectFileList('/root', false, load)))
+    const lists = Array.from({ length: 8 }, () => getProjectFileList('/root', false, load))
+    finish()
+    await Promise.all(lists)
     expect(walks).toBe(1)
   })
 

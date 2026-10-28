@@ -11,7 +11,7 @@ Counts are from import scans of non-test files on 2026-10-21. A finding names th
 The stages in [the migration plan](migration-plan.md) have since landed. The baselines in
 `scripts/architecture-baselines/` now read A1–A8: 0, C1: 3, C4: 1, C6: 0, C7: 1, checked on every
 `bun run test`. The change feed is no longer read by the semantic index alone: the relay to client
-topics, the usage ledger projector, route repair, agent seats, capability cleanup, session residue
+topics, the usage ledger projector, route repair, agent handles, capability cleanup, session residue
 and the plugin backends consume it (`apps/api/src/bootstrap/core-reactors.ts`). The findings below
 record the code as it was on 2026-10-21, as the starting point those stages fixed; they are not the
 current state.
@@ -39,19 +39,19 @@ current state.
 
 ## Layers and ownership (A4–A8)
 
-| Finding                                                                                                                     | Where                                                                                                                                |
-| --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| 1,064 cross-feature imports over 204 edges in API features; 36 two-way cycles, 20 with values.                              | `apps/api/src/features/*`                                                                                                            |
-| The chat runner builds capabilities, usage, memory, user, projects and MCP repositories itself.                             | `apps/api/src/features/chat/runtime/agent-runner.ts`                                                                                 |
-| The chat service graph builds foreign repositories and the plugin service.                                                  | `apps/api/src/features/chat/service/service-graph.ts`                                                                                |
-| Raw SQL in chat service code outside repository modules.                                                                    | `apps/api/src/features/chat/service/delegated-runs.ts`, `apps/api/src/features/chat/service/command-handlers-agents.ts`              |
-| Availability and plugin dependency rules take Kysely directly.                                                              | `apps/api/src/features/capabilities/availability.ts`, `apps/api/src/features/plugins/dependencies-policy.ts`                         |
-| Agent tools import concrete repositories instead of ports (79 repository imports across features).                          | `apps/api/src/features/agent-core/tools/memory/memory.ts`, `apps/api/src/features/agent-core/tools/context-search/context-search.ts` |
-| The storage layer type-imports feature modules.                                                                             | `apps/api/src/db/payload.ts`                                                                                                         |
-| `ApiError`, an HTTP-shaped error, is thrown from 69 non-route feature files.                                                | `apps/api/src/lib/errors.ts`                                                                                                         |
-| UI feature slices import each other: 129 imports over 23 edges, cycles chat↔settings, chat↔inspector, chat↔external-agents. | `apps/ui/src/features/inspector/model/revealPreview.ts`, `apps/ui/src/entities/chat/model/seatEffortMemory.ts`                       |
-| UI slices have no public entry; outsiders import `model/store` and other internals.                                         | `apps/ui/src/features/companion/model/roster.ts`                                                                                     |
-| Desktop calls bypass the platform layer in inspector and companion features.                                                | `apps/ui/src/features/inspector/ui/useNativeBrowserPage.ts`                                                                          |
+| Finding                                                                                                                     | Where                                                                                                                                         |
+| --------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1,064 cross-feature imports over 204 edges in API features; 36 two-way cycles, 20 with values.                              | `apps/api/src/features/*`                                                                                                                     |
+| The chat runner builds capabilities, usage, memory, user, projects and MCP repositories itself.                             | `apps/api/src/features/chat/runtime/agent-runner.ts`                                                                                          |
+| The chat service graph builds foreign repositories and the plugin service.                                                  | `apps/api/src/features/chat/service/service-graph.ts`                                                                                         |
+| Raw SQL in chat service code outside repository modules.                                                                    | `apps/api/src/features/chat/service/delegated-runs.ts`, `apps/api/src/features/chat/service/command-handlers-agents.ts`                       |
+| Availability and plugin dependency rules take Kysely directly.                                                              | `apps/api/src/features/capabilities/availability.ts`, `apps/api/src/features/plugins/dependencies-policy.ts`                                  |
+| Agent tools import concrete repositories instead of ports (79 repository imports across features).                          | `apps/api/src/features/agent-core/tools/history/history-search.ts`, `apps/api/src/features/agent-core/tools/context-search/context-search.ts` |
+| The storage layer type-imports feature modules.                                                                             | `apps/api/src/db/payload.ts`                                                                                                                  |
+| `ApiError`, an HTTP-shaped error, is thrown from 69 non-route feature files.                                                | `apps/api/src/lib/errors.ts`                                                                                                                  |
+| UI feature slices import each other: 129 imports over 23 edges, cycles chat↔settings, chat↔inspector, chat↔external-agents. | `apps/ui/src/features/inspector/model/revealPreview.ts`, `apps/ui/src/entities/chat/model/seatEffortMemory.ts`                                |
+| UI slices have no public entry; outsiders import `model/store` and other internals.                                         | `apps/ui/src/features/external-agents/model/openSession.ts`                                                                                   |
+| Desktop calls bypass the platform layer in the inspector feature.                                                           | `apps/ui/src/features/inspector/ui/useNativeBrowserPage.ts`                                                                                   |
 
 Good examples to copy: the directory port in `apps/api/src/bootstrap/agent-directory-ports.ts`, the
 pure policy in `apps/api/src/features/agents/policy.ts`, and the runtime ports in
@@ -75,7 +75,7 @@ Follow-ups driven by the writer instead of a consumer, most valuable first:
    (`apps/api/src/features/provider-connections/service.ts`).
 2. MCP server and plugin delete leave name-keyed rules, OAuth tokens and vault bindings
    (`apps/api/src/features/mcp/service.ts`, `apps/api/src/features/plugins/service.ts`).
-3. Agent delete runs three non-transactional steps and leaves seats, cards and handles
+3. Agent delete runs three non-transactional steps and leaves session agents, cards and handles
    (`apps/api/src/features/agents/service.ts`).
 4. Project changes never refresh project-scoped plugin backends
    (`apps/api/src/bootstrap/mini-app-hosts.ts`).
@@ -87,17 +87,17 @@ Follow-ups driven by the writer instead of a consumer, most valuable first:
 
 ## References that outlive their target (P10, C1)
 
-| Holder                                             | Target              | After the target is deleted                                      |
-| -------------------------------------------------- | ------------------- | ---------------------------------------------------------------- |
-| `conversation_participants.provider_connection_id` | Provider connection | Set to null; the model stays, so new chats inherit a dead route. |
-| `agent_sessions.model_choices`                     | Provider connection | The dead id stays and is offered as the newest pick.             |
-| Project settings and user model routing            | Provider connection | The dead id stays; runs recover, the UI does not.                |
-| `conversation_participants.agent_id` and `handle`  | Agent               | Turns fail as unavailable; a renamed handle no longer routes.    |
-| Capability rules keyed by name                     | Skill, plugin, MCP  | A new item with the same name inherits the old allow or deny.    |
-| `agent_sessions.pinned_skills`, skill usage rows   | Skill               | Silently skipped, or inherited by a new skill with the name.     |
-| Provider condition rows in the notification inbox  | Provider connection | Stay open with a sign-in action for a connection that is gone.   |
-| Notification inbox rows for a deleted chat         | Chat                | Stay until a restart sweep, linking to nothing.                  |
-| Vault bindings of a removed plugin                 | Plugin              | Keep the secret marked in use.                                   |
+| Holder                                            | Target              | After the target is deleted                                      |
+| ------------------------------------------------- | ------------------- | ---------------------------------------------------------------- |
+| `agent_sessions.provider_connection_id`           | Provider connection | Set to null; the model stays, so new chats inherit a dead route. |
+| `agent_sessions.model_choices`                    | Provider connection | The dead id stays and is offered as the newest pick.             |
+| Project settings and user model routing           | Provider connection | The dead id stays; runs recover, the UI does not.                |
+| `agent_sessions.agent_id` and `agent_name`        | Agent               | Turns fail as unavailable; a renamed agent no longer matches.    |
+| Capability rules keyed by name                    | Skill, plugin, MCP  | A new item with the same name inherits the old allow or deny.    |
+| `agent_sessions.pinned_skills`, skill usage rows  | Skill               | Silently skipped, or inherited by a new skill with the name.     |
+| Provider condition rows in the notification inbox | Provider connection | Stay open with a sign-in action for a connection that is gone.   |
+| Notification inbox rows for a deleted chat        | Chat                | Stay until a restart sweep, linking to nothing.                  |
+| Vault bindings of a removed plugin                | Plugin              | Keep the secret marked in use.                                   |
 
 ## Client synchronization (C6, P11, P12)
 

@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { RAIL_ENTRY_DRAG_MIME } from '../model/railDrag'
+import { turns } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -239,7 +240,7 @@ describe('WorkspaceShell responsive ownership', () => {
       await act(async () => {
         openMiniApps!.focus()
         openMiniApps!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
-        await new Promise((resolve) => setTimeout(resolve, 30))
+        await turns(3)
       })
       expect(document.body.querySelector('[role="menu"]')?.textContent).toContain(
         'No tools available',

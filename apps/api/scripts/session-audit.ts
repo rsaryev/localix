@@ -59,14 +59,6 @@ function auditSession(sessionId: string) {
     started_at: string
     finished_at: string | null
   }>
-  const participantCount = (
-    db
-      .query('select count(*) as count from conversation_participants where session_id = ?')
-      .get(sessionId) as {
-      count: number
-    }
-  ).count
-
   interface ToolItem {
     type: string
     toolCallId?: string
@@ -114,7 +106,7 @@ function auditSession(sessionId: string) {
     )
     const itemText = textItems.map((item) => item.text).join('')
     const flatText = typeof p.content === 'string' ? p.content : ''
-    const author = p.authorSnapshot?.handle ?? p.from?.replace(/^agent:/, '') ?? 'unknown'
+    const author = p.from?.replace(/^agent:/, '') ?? 'unknown'
     const visibility = p.isInternal ? ' hidden' : ''
     const timing = p.timing
     const usage = p.usage
@@ -137,12 +129,6 @@ function auditSession(sessionId: string) {
         `#${row.sequence}: ${fmt(input)} input tokens with only ${cacheRate}% cached across ${timing?.turns} turns — inspect request prefixes; usage alone does not establish the cause`,
       )
     const durations = new Map((timing?.tools ?? []).map((t) => [t.toolCallId, t.durationMs]))
-    const active = tools.some((tool) => tool.status === 'running')
-    // A group turn hands the floor through its reply; a turn without one leaves colleagues a
-    // placeholder line and the person nothing.
-    if (participantCount >= 2 && !active && !itemText.trim() && !p.isInternal) {
-      flags.push(`#${row.sequence}: @${author} ended a group turn without a message`)
-    }
     // A reply with no tool work should cost one model request; more means the model was asked again.
     if (tools.length === 0 && (timing?.turns ?? 0) > 1) {
       flags.push(
@@ -173,14 +159,14 @@ function auditSession(sessionId: string) {
         flags.push(`#${row.sequence}: ${tool.name} failed — ${clip(tool.resultText, 120)}`)
       if (ms !== undefined && ms > slowMs)
         flags.push(`#${row.sequence}: ${tool.name} took ${secs(ms)} (${clip(target, 60)})`)
-      if (tool.name === 'read' && typeof input?.path === 'string') {
+      if (tool.name === 'Read' && typeof input?.path === 'string') {
         const n = (readsSinceWrite.get(input.path) ?? 0) + 1
         readsSinceWrite.set(input.path, n)
         if (n > 1)
           flags.push(`#${row.sequence}: ${input.path} read ${n}× without a write in between`)
       }
       // A batched write/edit names its files per entry.
-      if (tool.name === 'write' || tool.name === 'edit' || tool.name === 'apply_patch')
+      if (tool.name === 'Write' || tool.name === 'Edit' || tool.name === 'apply_patch')
         for (const path of mutationInputPaths(input)) readsSinceWrite.delete(path)
       // Historical `apply_patch` items (the tool is gone) carry several paths; the diagnostic
       // cannot prove a read is stale across them.

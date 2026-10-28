@@ -16,6 +16,31 @@ afterEach(async () => {
   setRailRecentsMode(DEFAULT_RAIL_RECENTS_MODE)
 })
 
+/**
+ * Holds the flyout's intent timers (open 120 ms, close 220 ms) instead of waiting for them: every
+ * other timer passes through, and a test fires a held one at the moment it means to.
+ */
+function holdIntentTimers() {
+  const held: Array<{ delay: number; run: () => void }> = []
+  const real = window.setTimeout
+  const hold = ((fn: () => void, delay?: number, ...rest: unknown[]) => {
+    if (delay === 120 || delay === 220) {
+      held.push({ delay, run: fn })
+      return 0
+    }
+    return (real as (...args: unknown[]) => number)(fn, delay, ...rest)
+  }) as unknown as typeof window.setTimeout
+  window.setTimeout = hold
+  globalThis.setTimeout = hold
+  return {
+    held,
+    release: () => {
+      window.setTimeout = real
+      globalThis.setTimeout = real
+    },
+  }
+}
+
 function entry(id: string, label: string, active = false): RailEntry {
   return { id, icon: null, label, active, onClick: () => {} }
 }
@@ -114,15 +139,19 @@ describe('RailRecentsDock', () => {
     const { host, act, cleanup } = await mount([entry('reader', 'Reader')])
     try {
       const trigger = host.querySelector<HTMLButtonElement>('[data-rail-recents-trigger]')!
-      // React derives onPointerEnter from the native pointerover event.
-      await act(async () => {
-        trigger.dispatchEvent(new Event('pointerover', { bubbles: true }))
-      })
-      // Intent delay: a pointer merely crossing the trigger opens nothing.
-      expect(flyoutLabels()).toEqual([])
-      await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 200))
-      })
+      const timers = holdIntentTimers()
+      try {
+        // React derives onPointerEnter from the native pointerover event.
+        await act(async () => {
+          trigger.dispatchEvent(new Event('pointerover', { bubbles: true }))
+        })
+        // Intent delay: a pointer merely crossing the trigger opens nothing.
+        expect(flyoutLabels()).toEqual([])
+        expect(timers.held.map((timer) => timer.delay)).toEqual([120])
+        await act(async () => timers.held[0]!.run())
+      } finally {
+        timers.release()
+      }
       expect(flyoutLabels()).toEqual(['Reader'])
     } finally {
       await cleanup()
@@ -140,11 +169,19 @@ describe('RailRecentsDock', () => {
       const content = document.querySelector<HTMLElement>('[data-slot="popover-content"]')!
       await act(async () => reportSlotMenu(true))
 
-      // The pointer travels off the flyout and onto the menu: still open, and the
-      // close timer never even gets scheduled.
+      // The pointer travels off the flyout and onto the menu: still open even
+      // once the close grace runs out.
+      const timers = holdIntentTimers()
+      try {
+        await act(async () => {
+          content.dispatchEvent(new Event('pointerout', { bubbles: true }))
+        })
+      } finally {
+        timers.release()
+      }
+      // Whatever close grace was started, letting it run out must not shut the flyout.
       await act(async () => {
-        content.dispatchEvent(new Event('pointerout', { bubbles: true }))
-        await new Promise((resolve) => setTimeout(resolve, 300))
+        for (const timer of timers.held) timer.run()
       })
       expect(flyoutLabels()).toEqual(['Reader'])
 

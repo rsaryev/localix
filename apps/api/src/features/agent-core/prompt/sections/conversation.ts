@@ -1,177 +1,45 @@
 import {
-  CONVERSATION_TURN_CONTROL,
+  BOARD_OWNER,
   HUMAN_ASK_CONTROL,
   HUMAN_BOARD_CONTROL,
   HUMAN_NO_ASK_CONTROL,
-  LEADER_BOARD,
-  MEMBER_BOARD,
-  MEMBER_BOARD_SKIP,
-  MEMBER_SKIP,
-  SKIP_ANSWER_CONTROL,
-  SOLO_BOARD,
-  SOLO_TURN_CONTROL,
-  TEAM_CONVERSATION,
-  TEAM_LEADERSHIP,
-  TEAM_MEMBER,
-  TOPIC_CONTROL,
-} from './team-contract'
+} from './turn-contract'
 import type { BuildAgentSystemPromptParams } from '../contracts'
 
-export interface ConversationParticipant {
-  handle: string
-  description?: string
-}
-
-/**
- * The conversation in two sections, split by how often each changes.
- *
- * They used to be one section in the cached prefix, and the roster in it changes every time an
- * agent is tagged in or the user removes one, mid-conversation. Each change rewrote the cached
- * prefix for every participant. So the RULES (which change only when the conversation goes from
- * one agent to several, or leadership moves) stay in the prefix, and the ROSTER rides the volatile
- * tail.
- *
- * `multi` is the membership snapshot the run STARTED with; the host routes the reply against the
- * roster at its end, so a colleague tagged in mid-turn takes part from the next turn.
- */
-
-/** Does the run's conversation hold anyone besides the speaker? */
-export function isMultiAgentConversation(
-  conversation: { self: string; participants: readonly ConversationParticipant[] } | undefined,
-): boolean {
-  return (
-    conversation?.participants.some((participant) => participant.handle !== conversation.self) ??
-    false
-  )
-}
-
-/** `# Conversation turn control` — how a turn in this conversation hands the floor on. */
+/** `# Conversation turn control` — how a turn with the person is run. */
 export function buildTurnControlSection(input: {
-  multi: boolean
-  isLeader?: boolean
-  canChangeTopic?: boolean
-  /** The run holds `skip_answer`. */
-  canSkip?: boolean
-  /** A tag can bring an agent in: an open chat, not a delegated child or a job. */
-  canInvite?: boolean
   /** The run holds a task board tool; board rules render only then. */
   hasBoard?: boolean
   /** The run holds `ask`. */
   canAsk?: boolean
 }): string {
-  const topic = input.canChangeTopic ? [TOPIC_CONTROL] : []
   const board = (line: string) => (input.hasBoard ? [line] : [])
-  const human = [
-    input.canAsk ? HUMAN_ASK_CONTROL : HUMAN_NO_ASK_CONTROL,
-    ...board(HUMAN_BOARD_CONTROL),
-  ]
-  if (!input.multi) {
-    return [
-      '# Conversation turn control',
-      ...(input.canInvite ? [SOLO_TURN_CONTROL] : []),
-      ...human,
-      ...board(SOLO_BOARD),
-      ...topic,
-    ].join('\n')
-  }
   return [
     '# Conversation turn control',
-    CONVERSATION_TURN_CONTROL,
-    ...human,
-    ...(input.canSkip ? [SKIP_ANSWER_CONTROL] : []),
-    ...topic,
-    'Only the user removes participants; keep colleagues after their work is done.',
-    TEAM_CONVERSATION,
-    ...(input.isLeader
-      ? ['## Leadership', TEAM_LEADERSHIP, ...board(LEADER_BOARD)]
-      : [
-          '## Your part',
-          TEAM_MEMBER,
-          ...(input.canSkip ? [MEMBER_SKIP] : []),
-          ...board(MEMBER_BOARD),
-          ...(input.canSkip ? board(MEMBER_BOARD_SKIP) : []),
-        ]),
-    'Workspace files are shared with everyone; never read a colleague’s private scratch files.',
-    'Do not sign your messages or narrate who speaks next.',
+    input.canAsk ? HUMAN_ASK_CONTROL : HUMAN_NO_ASK_CONTROL,
+    ...board(HUMAN_BOARD_CONTROL),
+    ...board(BOARD_OWNER),
   ].join('\n')
 }
 
 /**
- * `# Conversation participants` — who is here, from the speaker's point of view.
- *
- * Only agents are listed. The person is not a participant: they are described in `CLAUDE.md`, as in
- * Claude Code, and reached through `ask`, never a mention. It rides here, in the volatile tail, so
- * a change of roster never rewrites the cached prefix.
- */
-export function buildParticipantsSection(input: {
-  self: string
-  participants: readonly ConversationParticipant[]
-  /** The elected leader's handle; marked only once the conversation has colleagues. */
-  leader?: string
-}): string {
-  const others = input.participants.filter((participant) => participant.handle !== input.self)
-  const leader = others.length ? input.leader : undefined
-  return [
-    '# Conversation participants',
-    `You are ${input.self}. Other participants (agents are addressed with @):`,
-    ...others.map(
-      (participant) =>
-        `- @${participant.handle}${participant.handle === leader ? ' (leader)' : ''}${participant.description ? `: ${participant.description}` : ''}`,
-    ),
-    ...(!leader
-      ? []
-      : leader === input.self
-        ? ['You are the leader.']
-        : [
-            `The leader is @${leader}: report to them, and send board or process problems to them.`,
-          ]),
-  ].join('\n')
-}
-
-/**
- * `# Agent directory` — every agent of the registry and what can be done with it: an agent
- * addressed in a reply joins and answers (`@handle`), and `delegate` hands one a task as
- * `agent: "<name>"`. Every agent of an open chat reads it, whichever of them leads; it is the only
- * listing of the registry the model gets, and the only place the agents `delegate` can reach are
- * named: your `.claude/agents` files, the enabled plugins' agents and the built-in Explore and Plan.
+ * `# Agent directory` — the agents `Agent` can start as a subagent with `subagent_type: "<name>"`.
+ * It is the only listing of the registry the model gets, and the only place the agents `Agent` can
+ * start are named: your `.claude/agents` files, the enabled plugins' agents and the built-in
+ * Explore and Plan. The host passes only agents `Agent` can hand a task to.
  */
 export function buildAgentDirectorySection(
   agents: NonNullable<BuildAgentSystemPromptParams['agentDirectory']>,
   opts: { canDelegate: boolean },
 ): string | null {
-  const canTag = agents.some((agent) => agent.inConversation || agent.available)
-  const delegable = opts.canDelegate && agents.some((agent) => agent.delegable)
-  if (!canTag && !delegable) return null
+  if (!opts.canDelegate || agents.length === 0) return null
   return [
     '# Agent directory',
-    ...(canTag
-      ? [
-          'Current registry. Tag an available agent with @handle to bring it into this conversation.',
-        ]
-      : []),
-    ...(delegable
-      ? [
-          'Agents `delegate` can hand a task to as `agent: "<name>"` are marked delegable. Each runs with its own instructions, tools and model and sees only the task; `general-purpose` is yourself.',
-        ]
-      : []),
+    'Agents `Agent` can start as `subagent_type: "<name>"` are marked subagent. Each runs with its own instructions, tools and model and sees only its prompt; `general-purpose` is yourself.',
     ...agents.map((agent) => {
-      const tagged = agent.inConversation || agent.available
-      const marks = [
-        ...(canTag
-          ? [agent.inConversation ? 'participant' : agent.available ? 'available' : 'unavailable']
-          : []),
-        ...(opts.canDelegate && agent.delegable
-          ? [agent.self ? 'delegable, yourself' : 'delegable']
-          : []),
-        ...(canTag ? [`priority ${agent.leadershipPriority}`] : []),
-      ]
-      const tools =
-        opts.canDelegate && agent.delegable && agent.tools
-          ? ` (tools: ${agent.tools.join(', ')})`
-          : ''
-      return `- ${tagged ? '@' : ''}${agent.handle} (${marks.join(', ')})${
-        agent.description ? `: ${agent.description}` : ''
-      }${tools}`
+      const mark = agent.self ? 'subagent, yourself' : 'subagent'
+      const tools = agent.tools ? ` (tools: ${agent.tools.join(', ')})` : ''
+      return `- ${agent.name} (${mark})${agent.description ? `: ${agent.description}` : ''}${tools}`
     }),
   ].join('\n')
 }

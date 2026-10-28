@@ -1,6 +1,6 @@
 import { randomInt, randomUUID } from 'node:crypto'
 
-import { openJsonStore, type DecisionHost, type Seat } from '@localixai/mini-app-sdk/backend'
+import { openJsonStore, type DecisionHost, type ChatRef } from '@localixai/mini-app-sdk/backend'
 
 import {
   gameSchema,
@@ -35,7 +35,7 @@ export const MAX_HEADINGS = 200
  * THE BOARD AT EACH CHAT, and every way it changes.
  *
  * One board per chat session, kept in that session's own folder (`resolveDir`, the host's session
- * storage). Every operation names its seat and resolves the folder AGAIN, through the host's
+ * storage). Every operation names its chat and resolves the folder AGAIN, through the host's
  * ownership check: a session that was deleted rejects before anything is read or written.
  *
  * The person's game runs in the view, which sends the headings it played (`personTurns`); they are
@@ -61,39 +61,39 @@ export function createGameService(input: {
   const newSeed = input.newSeed ?? (() => randomInt(0, 0xffffffff))
   const paceMs = input.paceMs ?? MODEL_PACE_MS
 
-  const storeFor = async (seat: Seat) => {
+  const storeFor = async (chat: ChatRef) => {
     if (!input.resolveDir)
       throw new Error('This app keeps no per-chat data, so it cannot hold a board.')
     return openJsonStore({
-      dir: await input.resolveDir(seat.userId, seat.sessionId),
+      dir: await input.resolveDir(chat.userId, chat.sessionId),
       file: 'game.json',
       schema: gameSchema,
       initial: newGame({ id: newId(), mode: 'user', now: now(), seed: newSeed() }),
     })
   }
 
-  const read = async (seat: Seat) => (await storeFor(seat)).read()
-  const update = async (seat: Seat, change: (game: Game) => Game) =>
-    (await storeFor(seat)).update(change)
+  const read = async (chat: ChatRef) => (await storeFor(chat)).read()
+  const update = async (chat: ChatRef, change: (game: Game) => Game) =>
+    (await storeFor(chat)).update(change)
 
   /** One run per board at a time: a second start while one plays joins it. */
   const runs = new Map<string, Promise<void>>()
   const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
   /** The model steers until something stops it. */
-  const runModel = async (seat: Seat) => {
+  const runModel = async (chat: ChatRef) => {
     for (let played = 0; played < MODEL_RUN_MOVES; played++) {
-      const game = await read(seat)
+      const game = await read(chat)
       if (!modelPlays(game) || game.waiting?.status !== 'thinking') return
       const started = Date.now()
-      const answer = await askDecision(input.decisions, seat, game, now())
+      const answer = await askDecision(input.decisions, chat, game, now())
       // A Stop, a new game or the person taking over while the model was asked drops its answer.
       const unchanged = (current: Game) =>
         current.id === game.id &&
         current.tick === game.tick &&
         modelPlays(current) &&
         current.waiting?.status === 'thinking'
-      const after = await update(seat, (current) =>
+      const after = await update(chat, (current) =>
         !unchanged(current)
           ? current
           : 'direction' in answer
@@ -106,24 +106,24 @@ export function createGameService(input: {
     }
   }
 
-  const startModel = (seat: Seat) => {
-    const key = `${seat.userId}:${seat.sessionId}`
+  const startModel = (chat: ChatRef) => {
+    const key = `${chat.userId}:${chat.sessionId}`
     if (runs.has(key)) return
-    const run = runModel(seat)
+    const run = runModel(chat)
       .catch((error) => console.warn('[snake] the decision model stopped playing', error))
       .finally(() => runs.delete(key))
     runs.set(key, run)
   }
 
   /** After a person's action: when the model now steers, start it. */
-  const summon = async (seat: Seat, game: Game): Promise<Game> => {
+  const summon = async (chat: ChatRef, game: Game): Promise<Game> => {
     if (!modelPlays(game)) return game
-    const playing = await update(seat, (latest) =>
+    const playing = await update(chat, (latest) =>
       latest.id === game.id && modelPlays(latest)
         ? { ...latest, waiting: { since: now(), status: 'thinking' } }
         : latest,
     )
-    startModel(seat)
+    startModel(chat)
     return playing
   }
 
@@ -138,34 +138,34 @@ export function createGameService(input: {
      * The headings the person played since tick `fromTick`, one per tick. Refused when the stored
      * board is not at that tick (another tab moved it, or a new game began): the view reads again.
      */
-    personTurns: (seat: Seat, fromTick: number, headings: readonly Direction[]) =>
-      update(seat, (game) => {
+    personTurns: (chat: ChatRef, fromTick: number, headings: readonly Direction[]) =>
+      update(chat, (game) => {
         if (game.mode !== 'user') throw new MoveRefused('The decision model steers this board.')
         if (game.tick !== fromTick)
           throw new MoveRefused('The board moved on since. Read it again and continue from there.')
         return replay(game, headings)
       }),
-    newGame: async (seat: Seat, mode: Mode) =>
-      summon(seat, await update(seat, (game) => fresh(game, mode))),
+    newGame: async (chat: ChatRef, mode: Mode) =>
+      summon(chat, await update(chat, (game) => fresh(game, mode))),
     /** Hand the board to `mode`; the model starts at once when it is handed to it. */
-    mode: async (seat: Seat, mode: Mode) =>
-      summon(seat, await update(seat, (game) => ({ ...game, mode, waiting: null }))),
+    mode: async (chat: ChatRef, mode: Mode) =>
+      summon(chat, await update(chat, (game) => ({ ...game, mode, waiting: null }))),
     /** Continue: ask the model again after a miss or a Stop. */
-    remind: async (seat: Seat) => {
-      const game = await update(seat, (current) =>
+    remind: async (chat: ChatRef) => {
+      const game = await update(chat, (current) =>
         modelPlays(current) ? { ...current, waiting: null } : current,
       )
-      return summon(seat, game)
+      return summon(chat, game)
     },
     /** Pause the model before its next move, until Continue. */
-    stop: (seat: Seat) =>
-      update(seat, (game) =>
+    stop: (chat: ChatRef) =>
+      update(chat, (game) =>
         modelPlays(game)
           ? { ...game, waiting: { since: now(), status: 'unreachable', reason: STOPPED_REASON } }
           : game,
       ),
     /** A new game started by the chat agent: always the person's to play. */
-    agentNewGame: (seat: Seat) => update(seat, (game) => fresh(game, 'user')),
+    agentNewGame: (chat: ChatRef) => update(chat, (game) => fresh(game, 'user')),
 
     /** Test seam: wait for every model run in flight. */
     idle: async () => {

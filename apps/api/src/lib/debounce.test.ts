@@ -1,7 +1,9 @@
-import { describe, expect, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, jest, test } from 'bun:test'
 import { createDebouncer, createThrottle } from './debounce'
 
-const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
+beforeEach(() => jest.useFakeTimers())
+afterEach(() => jest.useRealTimers())
+const advance = (ms: number) => void jest.advanceTimersByTime(ms)
 
 describe('createDebouncer', () => {
   test('runs the scheduled fn once after the quiet period', async () => {
@@ -11,7 +13,7 @@ describe('createDebouncer', () => {
       calls++
     })
     expect(calls).toBe(0) // trailing edge — not yet
-    await sleep(40)
+    advance(40)
     expect(calls).toBe(1)
   })
 
@@ -21,7 +23,7 @@ describe('createDebouncer', () => {
     d.schedule(() => ran.push('a'))
     d.schedule(() => ran.push('b'))
     d.schedule(() => ran.push('c'))
-    await sleep(40)
+    advance(40)
     expect(ran).toEqual(['c'])
   })
 
@@ -32,7 +34,7 @@ describe('createDebouncer', () => {
       calls++
     })
     d.cancel()
-    await sleep(40)
+    advance(40)
     expect(calls).toBe(0)
   })
 
@@ -42,11 +44,11 @@ describe('createDebouncer', () => {
     d.schedule(() => {
       calls++
     })
-    await sleep(40)
+    advance(40)
     d.schedule(() => {
       calls++
     })
-    await sleep(40)
+    advance(40)
     expect(calls).toBe(2)
   })
 
@@ -73,7 +75,7 @@ describe('createThrottle', () => {
     t.schedule(() => seen.push('b'))
     t.schedule(() => seen.push('c'))
     expect(seen).toEqual(['a'])
-    await sleep(60)
+    advance(60)
     expect(seen).toEqual(['a', 'c'])
   })
 
@@ -83,7 +85,7 @@ describe('createThrottle', () => {
     t.schedule(() => calls++)
     t.schedule(() => calls++)
     t.cancel()
-    await sleep(40)
+    advance(40)
     expect(calls).toBe(1)
   })
 })

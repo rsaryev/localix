@@ -2,7 +2,7 @@ import { readdir } from 'node:fs/promises'
 import type { Dirent } from 'node:fs'
 import path from 'node:path'
 import { ENVIRONMENTS_DIR } from './environments'
-import { LEGACY_REQUEST_EXT, REQUEST_EXT } from './paths'
+import { REQUEST_EXT } from './paths'
 
 /** Depth cap for the walk: a collection is a human-maintained tree, not a filesystem. */
 const MAX_DEPTH = 8
@@ -36,18 +36,14 @@ async function walk(
         found.push(path.relative(root, absolute).split(path.sep).join('/'))
       }
       found.push(...(await walk(absolute, root, depth + 1, selection)))
-    } else if (
-      selection === 'files' &&
-      entry.isFile() &&
-      (entry.name.endsWith(REQUEST_EXT) || entry.name.endsWith(LEGACY_REQUEST_EXT))
-    ) {
+    } else if (selection === 'files' && entry.isFile() && entry.name.endsWith(REQUEST_EXT)) {
       found.push(absolute)
     }
   }
   return found
 }
 
-/** Absolute canonical and legacy request-file candidates, in filesystem traversal order. */
+/** Absolute request-file paths, in filesystem traversal order. */
 export function walkCollectionFiles(root: string): Promise<string[]> {
   return walk(root, root, 0, 'files')
 }

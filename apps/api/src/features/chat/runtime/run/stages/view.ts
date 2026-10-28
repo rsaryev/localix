@@ -18,14 +18,16 @@ import type { RunFrame } from './frame'
 import type { ResolvedTurn } from './turn'
 
 export async function resolveRunView(frame: RunFrame, turn: ResolvedTurn): Promise<ModelView> {
-  const { env, params, session, speakerAgentId } = frame
+  const { env, params, session } = frame
   const lane = frame.stores.context
   const forced = lane.checkpointDue
   // Consumed here: the signal asks for ONE checkpoint, on the next turn that builds a view.
   delete lane.checkpointDue
+  const manual = lane.manualCompact
+  delete lane.manualCompact
   return loadModelView(createModelContextRepository(env.deps.db), {
     sessionId: session.id,
-    viewer: sessionAgent(session, speakerAgentId),
+    viewer: sessionAgent(session),
     historyMessages: params.historyMessages,
     currentMessageId: frame.assistantMessageId,
     ...(params.contextBoundaryId ? { contextBoundaryId: params.contextBoundaryId } : {}),
@@ -36,6 +38,7 @@ export async function resolveRunView(frame: RunFrame, turn: ResolvedTurn): Promi
     depth: budgetDepth(session, frame.fork),
     contextLimit: turn.contextLimit,
     ...(forced ? { forced } : {}),
+    ...(manual ? { manual } : {}),
   })
 }
 
@@ -45,9 +48,10 @@ export async function resolveRunView(frame: RunFrame, turn: ResolvedTurn): Promi
  * applies), and a checkpoint a mod asked for (`$.session.compact`) is taken now.
  *
  * Then Claude Code's `PreCompact` hooks, before the checkpoint is committed (a checkpoint is this
- * runtime's compaction, trigger `auto`). hooks.md: a block on a proactive compaction skips it
- * and "the conversation continues uncompacted"; on one recovering from a context-limit error
- * "the underlying error surfaces and the current request fails".
+ * runtime's compaction: trigger `auto`, or `manual` with the instructions after `/compact`).
+ * hooks.md: a block on a proactive compaction skips it and "the conversation continues
+ * uncompacted"; on one recovering from a context-limit error "the underlying error surfaces and
+ * the current request fails".
  */
 export async function reviewRunView(
   view: ModelView,
@@ -62,7 +66,9 @@ export async function reviewRunView(
         ? { ...view, due: 'threshold' }
         : view
   if (!reviewed.due || !ccHooks?.active) return reviewed
-  const preCompact = await ccHooks.runPreCompact('auto')
+  const preCompact = reviewed.manual
+    ? await ccHooks.runPreCompact('manual', reviewed.manual.instructions)
+    : await ccHooks.runPreCompact('auto')
   if (!preCompact.blocked) return { ...reviewed, preCompactRan: true }
   if (reviewed.due === 'overflow')
     throw new Error(

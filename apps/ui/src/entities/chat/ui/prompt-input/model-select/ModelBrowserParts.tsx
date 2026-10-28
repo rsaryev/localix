@@ -43,7 +43,7 @@ export function WorkloadOffOverlay({
     <div className="absolute inset-0 z-(--z-controls) flex flex-col items-center justify-center gap-3 px-8 text-center">
       <p className="text-xs text-text-faint">{label} is off</p>
       {onTurnOn && (
-        <Button variant="outline" size="sm" onClick={onTurnOn}>
+        <Button variant="ghost" size="sm" onClick={onTurnOn}>
           Turn on
         </Button>
       )}

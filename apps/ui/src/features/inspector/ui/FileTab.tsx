@@ -262,12 +262,12 @@ function SessionFileTab({
             actionsLabel="File conflict actions"
             actions={
               <>
-                <Button size="xs" variant="outline" disabled={saving} onClick={compareWithDisk}>
+                <Button size="xs" variant="ghost" disabled={saving} onClick={compareWithDisk}>
                   Compare
                 </Button>
                 <Button
                   size="xs"
-                  variant="outline"
+                  variant="ghost"
                   disabled={saving}
                   onClick={() => void overwrite()}
                 >
@@ -275,7 +275,7 @@ function SessionFileTab({
                 </Button>
                 <Button
                   size="xs"
-                  variant="outline"
+                  variant="ghost"
                   disabled={saving}
                   onClick={() => void reloadFromDisk()}
                 >

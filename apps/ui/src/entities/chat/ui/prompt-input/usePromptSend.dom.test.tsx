@@ -68,3 +68,58 @@ test('context-only submit sends empty prose and structured refs, never synthetic
     host.remove()
   }
 })
+
+// Enter on an empty composer sent the active tab's automatic context as a
+// message of its own (empty text), which was queued behind the run and then started one.
+test('Enter on an empty composer sends nothing, whatever ambient context is attached', async () => {
+  const React = await import('react')
+  const { act } = React
+  const { createRoot } = await import('react-dom/client')
+  const { usePromptSend } = await import('./usePromptSend')
+  const ambient: MessageBinding[] = [
+    {
+      kind: 'context',
+      id: 'tab',
+      source: 'active-tab',
+      target: {
+        kind: 'snippet',
+        token: '@snippet:tab',
+        label: 'Tab',
+        attributes: { content: 'x' },
+      },
+      resolution: { status: 'pending', contributions: [] },
+    },
+  ]
+  const sends: unknown[] = []
+  const ctxRefs = {
+    pinnedRefs: [],
+    refsForSend: async () => ambient,
+    clearPinnedRefs: () => {},
+  } as unknown as ReturnType<typeof useContextRefs>
+  function Harness() {
+    const { handleSend } = usePromptSend({
+      prompt: '  ',
+      ctxRefs,
+      onSend: (text) => sends.push(text),
+      isEditing: false,
+      openCommandActive: false,
+      submitOpenResource: () => {},
+    })
+    return <button onClick={handleSend}>Submit fixture</button>
+  }
+  const host = document.createElement('div')
+  document.body.appendChild(host)
+  const root = createRoot(host)
+  try {
+    await act(async () => {
+      root.render(<Harness />)
+    })
+    await act(async () => {
+      host.querySelector('button')!.click()
+    })
+    expect(sends).toEqual([])
+  } finally {
+    await act(async () => root.unmount())
+    host.remove()
+  }
+})

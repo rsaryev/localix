@@ -17,47 +17,49 @@ const runs = (rule: string, tool: string, input: Record<string, unknown>) =>
 describe('file rules', () => {
   test('a relative directory pattern names that directory of the working directory only', () => {
     const edit = (path: string) => ({ edits: [{ path, old_string: 'a', new_string: 'b' }] })
-    expect(runs('Edit(src/**)', 'edit', edit('/proj/src/a.ts'))).toBe(true)
-    expect(runs('Edit(src/**)', 'edit', edit('src/a.ts'))).toBe(true)
-    expect(runs('Edit(src/**)', 'edit', edit('lib/src/a.ts'))).toBe(false)
-    expect(runs('Edit(**/src/**)', 'edit', edit('lib/src/a.ts'))).toBe(true)
-    expect(runs('Edit(*.ts)', 'edit', edit('deep/a.ts'))).toBe(true)
+    expect(runs('Edit(src/**)', 'Edit', edit('/proj/src/a.ts'))).toBe(true)
+    expect(runs('Edit(src/**)', 'Edit', edit('src/a.ts'))).toBe(true)
+    expect(runs('Edit(src/**)', 'Edit', edit('lib/src/a.ts'))).toBe(false)
+    expect(runs('Edit(**/src/**)', 'Edit', edit('lib/src/a.ts'))).toBe(true)
+    expect(runs('Edit(*.ts)', 'Edit', edit('deep/a.ts'))).toBe(true)
   })
 
   test('`//` and `~/` anchor at the filesystem root and home', () => {
-    expect(runs('Read(//etc/**)', 'read', { path: '/etc/hosts' })).toBe(true)
-    expect(runs('Read(~/.ssh/**)', 'read', { path: `${homedir()}/.ssh/id_rsa` })).toBe(true)
-    expect(runs('Read(~/.ssh/**)', 'read', { path: '/proj/.ssh/id_rsa' })).toBe(false)
+    expect(runs('Read(//etc/**)', 'Read', { path: '/etc/hosts' })).toBe(true)
+    expect(runs('Read(~/.ssh/**)', 'Read', { path: `${homedir()}/.ssh/id_rsa` })).toBe(true)
+    expect(runs('Read(~/.ssh/**)', 'Read', { path: '/proj/.ssh/id_rsa' })).toBe(false)
   })
 })
 
 describe('named fields', () => {
   test('Agent, Skill and WebFetch rules read the agent, the skill and the host', () => {
-    expect(runs('Agent(Explore)', 'delegate', { task: 't', agent: 'Explore' })).toBe(true)
-    expect(runs('Agent(Explore)', 'delegate', { task: 'Explore', agent: 'Plan' })).toBe(false)
-    expect(runs('Skill(deploy)', 'skill', { action: 'get', name: 'deploy' })).toBe(true)
+    expect(runs('Agent(Explore)', 'Agent', { prompt: 't', subagent_type: 'Explore' })).toBe(true)
+    expect(runs('Agent(Explore)', 'Agent', { prompt: 'Explore', subagent_type: 'Plan' })).toBe(
+      false,
+    )
+    expect(runs('Skill(deploy)', 'Skill', { action: 'get', name: 'deploy' })).toBe(true)
     const fetch = { question: 'q', urls: ['https://docs.Example.com/a'] }
-    expect(runs('WebFetch(domain:*.example.com)', 'research', fetch)).toBe(true)
-    expect(runs('WebFetch(domain:example.com)', 'research', fetch)).toBe(false)
+    expect(runs('WebFetch(domain:*.example.com)', 'Research', fetch)).toBe(true)
+    expect(runs('WebFetch(domain:example.com)', 'Research', fetch)).toBe(false)
   })
 
   test('a parameter rule matches the field Claude Code’s input carries', () => {
-    expect(runs('Bash(run_in_background:true)', 'bash', { command: 'x', background: true })).toBe(
+    expect(runs('Bash(run_in_background:true)', 'Bash', { command: 'x', background: true })).toBe(
       true,
     )
-    expect(runs('Bash(run_in_background:true)', 'bash', { command: 'x' })).toBe(false)
+    expect(runs('Bash(run_in_background:true)', 'Bash', { command: 'x' })).toBe(false)
   })
 })
 
 describe('the call', () => {
   test('a Bash rule matches any command of a batch', () => {
-    expect(runs('Bash(rm *)', 'bash', { commands: ['ls', 'rm -rf build'] })).toBe(true)
-    expect(runs('Bash(rm *)', 'bash', { commands: ['ls', 'pwd'] })).toBe(false)
+    expect(runs('Bash(rm *)', 'Bash', { commands: ['ls', 'rm -rf build'] })).toBe(true)
+    expect(runs('Bash(rm *)', 'Bash', { commands: ['ls', 'pwd'] })).toBe(false)
   })
 
   test('the tool part is this call’s name', () => {
-    expect(runs('Glob', 'search', { query: 'TODO' })).toBe(false)
-    expect(runs('Grep', 'search', { query: 'TODO' })).toBe(true)
-    expect(runs('Glob', 'search', { glob: '*.md' })).toBe(true)
+    expect(runs('Glob', 'Search', { query: 'TODO' })).toBe(false)
+    expect(runs('Grep', 'Search', { query: 'TODO' })).toBe(true)
+    expect(runs('Glob', 'Search', { glob: '*.md' })).toBe(true)
   })
 })

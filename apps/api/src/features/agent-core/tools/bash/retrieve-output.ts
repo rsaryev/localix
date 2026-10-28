@@ -66,7 +66,7 @@ function artifactOutput(artifact: ToolOutputArtifact): { toolName: string; text:
 
 /**
  * Resolve the richest stored text of one tool call from a session's messages —
- * the shared lookup behind `tool_output` action="get" (serves it back) and
+ * the shared lookup behind `ToolOutput` action="get" (serves it back) and
  * action="search" lazy indexing (chunks it on first search). Null when the id
  * doesn't exist; text may still be '' for a call that stored nothing.
  */
@@ -85,7 +85,7 @@ export function storedToolCallOutput(
 }
 
 /**
- * Exact-output leg of the consolidated `tool_output` model tool. Kept as a narrow
+ * Exact-output leg of the consolidated `ToolOutput` model tool. Kept as a narrow
  * function because context search also uses the same durable artifact/history sources
  * for lazy indexing; the model-facing schema lives in context-search.ts.
  */
@@ -95,17 +95,11 @@ export async function retrieveStoredOutput(
   sessionId: string,
   wanted: string,
   artifactStore?: RetrieveOutputArtifactStore,
-  participant?: string,
 ): Promise<AgentToolResult> {
   let artifactError: unknown
   if (artifactStore) {
     try {
-      const artifact = await artifactStore.getToolOutputArtifact(
-        userId,
-        sessionId,
-        wanted,
-        participant,
-      )
+      const artifact = await artifactStore.getToolOutputArtifact(userId, sessionId, wanted)
       if (artifact) return outputResult(artifactOutput(artifact), wanted)
     } catch (error) {
       // Backward-compatible message history remains an independent recovery
@@ -128,10 +122,7 @@ export async function retrieveStoredOutput(
       isError: true,
     }
   }
-  const stored =
-    message && (!participant || message.payload.from === participant)
-      ? storedToolCallOutput([message], wanted)
-      : null
+  const stored = message ? storedToolCallOutput([message], wanted) : null
   if (!stored) {
     return {
       content: `No tool call with id "${wanted}" found in this session's history.`,

@@ -7,7 +7,7 @@ import { createAgentInvocationService } from './invocation-service'
 const agent = agentSummarySchema.parse({
   record: {
     id: 'native:global:test',
-    handle: 'worker',
+    name: 'worker',
     description: '',
     instructions: 'Work',
   },
@@ -24,7 +24,7 @@ describe('shared invocation decisions', () => {
   test('run resolution returns definition and policy from exactly one admitted snapshot', async () => {
     let reads = 0
     const capabilities = composeCapabilities([
-      { action: 'tool:write', resource: '*', effect: 'deny' },
+      { action: 'tool:Write', resource: '*', effect: 'deny' },
     ])
     const service = createAgentInvocationService(async () => {
       reads++
@@ -37,9 +37,9 @@ describe('shared invocation decisions', () => {
     expect(resolved.agent.definition).toBe(agent.record)
     expect(resolved.agent.capabilities).toBe(capabilities)
     expect(resolved.agent.approval).toBe('policy')
-    expect(resolved.agent.capabilities.allows('tool', 'write')).toBe(false)
+    expect(resolved.agent.capabilities.allows('tool', 'Write')).toBe(false)
     for (const [id, host, project, status] of [
-      [agent.record.handle, 'chat', '', 'agent_not_found'],
+      [agent.record.name, 'chat', '', 'agent_not_found'],
       [agent.record.id, 'unknown', '', 'unknown_host'],
       [agent.record.id, 'automation', '', 'approval_unsupported'],
       // An installation entry (`projectId: ''`) is visible from any project.

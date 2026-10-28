@@ -38,7 +38,9 @@ The host-root guard blocks extracted paths into the Localix installation or sour
 tree contains the session's own project directory. Agents ordinarily work in `~/.localix` and in the
 session project. Rules are the user's to edit, and a Bypass session stops asking, so this boundary
 is not a rule: the gate refuses the call in code before any rule is evaluated, and no preset,
-project rule or permission mode lifts it.
+project rule or permission mode lifts it. One folder inside the installation is open to reading: the
+mini app kit, whose SDK declarations a mini app is written against. The `Read` and `Search` tools
+may open it; writes, edits and shell commands stay blocked there.
 
 | Question               | Answer                                                                                                                                                                        |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -73,9 +75,9 @@ dangerous commands:
 
 | Position | Capability  | Resource    | Effect  |
 | -------- | ----------- | ----------- | ------- |
-| 1        | `tool:bash` | `*`         | `ask`   |
-| 2        | `tool:bash` | `git *`     | `allow` |
-| 3        | `tool:bash` | `dangerous` | `ask`   |
+| 1        | `tool:Bash` | `*`         | `ask`   |
+| 2        | `tool:Bash` | `git *`     | `allow` |
+| 3        | `tool:Bash` | `dangerous` | `ask`   |
 
 `git status` matches rows 1 and 2, so it is allowed. `git push --force` also matches row 3, so it
 asks. Moving row 2 below row 3 would allow that force push. These rows illustrate ordering; keep the
@@ -116,7 +118,7 @@ followed by an authored allow remains an allowlist with an exception, even when 
 | `npm i*`              | An anchored glob — `*` stands for any run of characters.                             |
 
 "Inside" is the session workspace plus the parts of `~/.localix` agents author — `workspace/`,
-`tmp/`, `mini-apps/` (the person's own mini apps, where `/mini-app create` puts them), `plugins/`
+`tmp/`, `mini-apps/` (the person's own mini apps, where a local install puts them), `plugins/`
 (installed Claude Code plugins) and `skills/` — for reads and writes alike, in every role. The rest
 of `~/.localix` (the database, the vault, the captured login-shell environment, backups) is outside,
 so touching it asks
@@ -148,23 +150,23 @@ Every shipped role includes these rows after its general tool allowances:
 | Permission  | Pattern             | Action | Purpose                                                  |
 | ----------- | ------------------- | ------ | -------------------------------------------------------- |
 | `tool:*`    | `outside-workspace` | `ask`  | Confirm reads or writes beyond the session workspace.    |
-| `tool:bash` | `dangerous`         | `ask`  | Confirm commands matched by the shell danger classifier. |
+| `tool:Bash` | `dangerous`         | `ask`  | Confirm commands matched by the shell danger classifier. |
 
 The guards follow the roster's general tool allowances. This order makes an outside-workspace read
-ask even though an earlier row allows the read tool. The guards win because they come later, rather
-than because class patterns have a higher priority.
+ask even though an earlier row allows the `Read` tool. The guards win because they come later,
+rather than because class patterns have a higher priority.
 
 They are not necessarily the final rows. Role-specific restrictions follow them; a matching later
 restriction can refuse a call instead of asking.
 
 What **Always** writes is placed to keep that true. It must come after the rule that raised the
-card, or it silences nothing. Appended at the very end it would also put `tool:bash git * allow`
-after `tool:bash dangerous ask`, and the last match for `git push --force` would then be the allow.
+card, or it silences nothing. Appended at the very end it would also put `tool:Bash git * allow`
+after `tool:Bash dangerous ask`, and the last match for `git push --force` would then be the allow.
 So the new row goes in just before the trailing `dangerous`, `catastrophic` and `secrets` guards
 that could decide the same calls: past everything else, never past a guard.
 
 You can explicitly override a guard with a later row naming the same class, such as
-`tool:bash dangerous allow`. Permanent approvals preserve the trailing guards so approving one
+`tool:Bash dangerous allow`. Permanent approvals preserve the trailing guards so approving one
 command does not silently allow every dangerous command.
 
 The shell classifier recognizes specific destructive families, privileged execution, writes to real
@@ -202,18 +204,18 @@ wrote for Claude Code keep working: `~/.claude/settings.json` (or
 `.claude/settings.local.json` at the repository root, and your organization's managed settings. They
 are read on every run, so an edit applies from the next message, and Localix never writes them.
 
-| Claude Code rule | In a Localix run                                                                                                                       |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `deny`           | Refuses the call, whatever the agent's own rules allow. A bare tool (`WebFetch`, `mcp__github`) is also taken out of the model's view. |
-| `ask`            | Raises a confirmation card for a call the agent's rules allow. Bypass and Autonomous stop asking, as `bypassPermissions` does.         |
-| `allow`          | Answers the agent's catch-all question (`*` with `ask`), like a skill's `allowed-tools`. It never lifts the agent's own denial.        |
+| Claude Code rule | In a Localix run                                                                                                                                                                     |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `deny`           | Refuses the call, whatever the agent's own rules allow. A bare tool (`WebFetch`, `mcp__github`, `Configure`) is also taken out of the model's view, `ToolSearch`'s catalog included. |
+| `ask`            | Raises a confirmation card for a call the agent's rules allow. Bypass and Autonomous stop asking, as `bypassPermissions` does.                                                       |
+| `allow`          | Answers the agent's catch-all question (`*` with `ask`), like a skill's `allowed-tools`. It never lifts the agent's own denial.                                                      |
 
 Rules combine as in Claude Code: a deny in any file beats an ask in any file, which beats an allow;
 the order of files and rules does not matter. `Bash(…)` rules match each subcommand of a compound
 line after `timeout`, `nice`, `nohup` and similar wrappers; `Read(…)` and `Edit(…)` paths use Claude
 Code's anchors (`//abs`, `~/home`, `/` for the settings file's own folder, relative for the working
 directory) and gitignore matching with `!` carve-outs; `WebFetch(domain:…)` matches the pages
-`research` reads; `mcp__<server>` and `mcp__<server>__<tool>` match MCP tools; `Agent(…)` matches
+`Research` reads; `mcp__<server>` and `mcp__<server>__<tool>` match MCP tools; `Agent(…)` matches
 the agent type a task is delegated to (`general-purpose` when the call names none) and `Skill(…)` a
 skill.
 
@@ -258,7 +260,7 @@ inspect or revoke current session grants. When no client can receive a confirmat
 - A session grant is scoped to its requester and program, path, folder, or declared resource, capped
   in memory, and does not survive an API process restart. A folder level is never offered at or
   above the home folder.
-- Core `write` and `edit` calls under Localix-owned state receive a narrow host carve-out, and it
+- Core `Write` and `Edit` calls under Localix-owned state receive a narrow host carve-out, and it
   still requires the rules to allow the call. Read tools do not receive that carve-out.
 
 ## Related guides

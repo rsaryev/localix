@@ -6,7 +6,7 @@ import { createSession, type SessionLifecycleCtx } from './session-lifecycle'
 /**
  * A project id from a recreated database is a missing PROJECT, not an unavailable agent.
  *
- * The seat resolver cannot find agents in a project that does not exist, so the New chat a
+ * The route resolver cannot find agents in a project that does not exist, so the New chat a
  * stale workspace window minted for it was refused as `agent_unavailable` — "Selected agent is
  * unavailable", about the wrong thing, and with nothing the client could recognize and drop.
  */
@@ -31,12 +31,12 @@ function ctx(overrides: Partial<SessionLifecycleCtx> = {}): SessionLifecycleCtx 
 }
 
 describe('createSession — a stated project must exist', () => {
-  test('an unknown project is refused as project_not_found before seating anyone', async () => {
-    let seated = 0
+  test('an unknown project is refused as project_not_found before choosing anyone', async () => {
+    let created = 0
     const deps = ctx({
       projectExists: async (_userId, projectId) => projectId === 'PRJ-1',
       resolveSessionAgent: async () => {
-        seated += 1
+        created += 1
         return null
       },
     })
@@ -46,7 +46,7 @@ describe('createSession — a stated project must exist', () => {
     expect(isApiError(failure)).toBe(true)
     expect((failure as { status: number }).status).toBe(404)
     expect((failure as { code: string }).code).toBe('project_not_found')
-    expect(seated).toBe(0)
+    expect(created).toBe(0)
   })
 
   test('a project the user holds is not refused', async () => {

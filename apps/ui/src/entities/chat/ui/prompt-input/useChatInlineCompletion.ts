@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 
 import {
@@ -68,27 +68,36 @@ export function useChatInlineCompletion(input: {
   )
 
   // Replies this window watched being written are fresh however long they took; and when each
-  // was first seen SETTLED, which is what the pause before asking counts from.
+  // was first seen SETTLED, which is what the pause before asking counts from. Both are read only
+  // by the effect below, never while rendering.
   const watchedLive = useRef(new Set<string>())
   const settledAt = useRef(new Map<string, number>())
-  const { subjectId, subjectCreatedAt } = sessionContextVersion
+  const { lastMessageId, updatedAt, subjectId, subjectCreatedAt } = sessionContextVersion
   useEffect(() => {
-    if (input.generating && sessionContextVersion.lastMessageId)
-      watchedLive.current.add(sessionContextVersion.lastMessageId)
-  }, [input.generating, sessionContextVersion.lastMessageId])
-  // In an effect, not during render; until it runs, the pause simply counts from now.
+    if (input.generating && lastMessageId) watchedLive.current.add(lastMessageId)
+  }, [input.generating, lastMessageId])
+
+  // The reply whose pause after settling has run out and that is still worth a call. The pause is
+  // a timer and the freshness is judged when it runs out, so the clock is read in the effect and
+  // the render only sees the outcome. An old conversation opened to be read never gets there.
+  const [predictableId, setPredictableId] = useState<string | null>(null)
   useEffect(() => {
-    if (subjectId && !input.generating && !settledAt.current.has(subjectId))
-      settledAt.current.set(subjectId, Date.now())
-  }, [input.generating, subjectId])
+    if (!subjectId || input.generating) return
+    const now = Date.now()
+    if (!settledAt.current.has(subjectId)) settledAt.current.set(subjectId, now)
+    const timer = setTimeout(
+      () => {
+        const subject = { id: subjectId, createdAt: subjectCreatedAt }
+        if (isFreshReplySubject(subject, watchedLive.current, Date.now()))
+          setPredictableId(subjectId)
+      },
+      replyPredictionDelayMs(settledAt.current.get(subjectId)!, now),
+    )
+    return () => clearTimeout(timer)
+  }, [subjectId, subjectCreatedAt, input.generating])
 
   const empty = prompt.length === 0
-  const now = Date.now()
-  const replyMode =
-    empty &&
-    Boolean(subjectId) &&
-    !input.generating &&
-    isFreshReplySubject({ id: subjectId, createdAt: subjectCreatedAt }, watchedLive.current, now)
+  const replyMode = empty && Boolean(subjectId) && !input.generating && predictableId === subjectId
 
   const chatCompletionContextKey = useMemo(
     () =>
@@ -96,12 +105,8 @@ export function useChatInlineCompletion(input: {
       // session's `updatedAt` is not a new question, and must not buy a second answer.
       replyMode
         ? JSON.stringify(['reply', subjectId, completionRefsKey])
-        : JSON.stringify([
-            sessionContextVersion.lastMessageId,
-            sessionContextVersion.updatedAt,
-            completionRefsKey,
-          ]),
-    [replyMode, subjectId, sessionContextVersion, completionRefsKey],
+        : JSON.stringify([lastMessageId, updatedAt, completionRefsKey]),
+    [replyMode, subjectId, lastMessageId, updatedAt, completionRefsKey],
   )
 
   const offered = useComposerSuggestion(sessionId)
@@ -117,9 +122,8 @@ export function useChatInlineCompletion(input: {
     active: input.active && (!empty || (replyMode && !offered)),
     focused: replyMode || input.focused,
     caretAtEnd: replyMode || input.caretAtEnd,
-    ...(replyMode
-      ? { debounceMs: replyPredictionDelayMs(settledAt.current.get(subjectId) ?? now, now) }
-      : {}),
+    // The pause already ran out (see above), so the ghost is asked for at once.
+    ...(replyMode ? { debounceMs: 0 } : {}),
   })
   return offered && empty ? offeredCompletion(offered, completion, setPrompt) : completion
 }

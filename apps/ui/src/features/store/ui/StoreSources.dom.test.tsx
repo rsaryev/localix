@@ -105,7 +105,7 @@ describe('the Store’s sources', () => {
         .getAttribute('aria-labelledby')!
         .split(' ')
         .map((id) => view.host.querySelector<HTMLElement>(`[id="${id}"]`))
-      expect(named.every((el) => el !== null && el.getAttribute('aria-hidden') === null)).toBe(true)
+      expect(named.every((el) => el?.getAttribute('aria-hidden') === null)).toBe(true)
       const name = named.map((el) => el!.textContent).join(' ')
       expect(name).toContain('Auto-update')
       expect(name).toContain('claude-plugins-official')

@@ -1,4 +1,4 @@
-import { builtinAgentId, DEFAULT_AGENT_HANDLE } from '@localixai/agent/agents'
+import { builtinAgentId, DEFAULT_AGENT_NAME } from '@localixai/agent/agents'
 import type { Rule } from '../agent-core/capability-rule'
 
 /** Only the installed Localix definition has a shipped policy. */
@@ -16,7 +16,7 @@ const HOSTS = ['chat', 'delegation', 'automation', 'channel', 'verification']
  *
  * That also makes them removable, by the user, in the editor, deliberately — which is the
  * honest arrangement for a local app whose owner is the person running it. What it stops is
- * the quiet removal: an "Always" on a card writes `tool:bash` over `git *`, and that row is
+ * the quiet removal: an "Always" on a card writes `tool:Bash` over `git *`, and that row is
  * placed BEFORE these guards (`persistPermissionRule`), because last match wins and both match
  * `git push --force` — appended, it used to be the one that decided.
  */
@@ -28,20 +28,20 @@ const BASELINE: Rule[] = [
     message: 'This reads or touches a path OUTSIDE the project workspace. Allow it?',
   },
   {
-    action: 'tool:bash',
+    action: 'tool:Bash',
     resource: 'dangerous',
     effect: 'ask',
     message: 'This command looks destructive (rm -rf / sudo / etc.). Allow it?',
   },
 ]
 
-export function builtinAgentPreset(handle: string): Rule[] {
-  return agentPreset(handle)
+export function builtinAgentPreset(name: string): Rule[] {
+  return agentPreset(name)
 }
 
-function agentPreset(handle: string): Rule[] {
-  if (handle !== DEFAULT_AGENT_HANDLE) return []
-  const id = builtinAgentId(handle)
+function agentPreset(name: string): Rule[] {
+  if (name !== DEFAULT_AGENT_NAME) return []
+  const id = builtinAgentId(name)
   return [
     // Tools are open candidates; the run shape and saved policy still control admission.
     ...BASELINE,
@@ -89,8 +89,8 @@ export function builtinAgentPresetFor(agentId: string): Rule[] | null {
  * agent that is not this one.
  */
 export function inheritedAgentPreset(agentId: string): Rule[] {
-  const defaultId = builtinAgentId(DEFAULT_AGENT_HANDLE)
-  return builtinAgentPreset(DEFAULT_AGENT_HANDLE).map((rule) =>
+  const defaultId = builtinAgentId(DEFAULT_AGENT_NAME)
+  return builtinAgentPreset(DEFAULT_AGENT_NAME).map((rule) =>
     rule.resource === defaultId ? { ...rule, resource: agentId } : rule,
   )
 }

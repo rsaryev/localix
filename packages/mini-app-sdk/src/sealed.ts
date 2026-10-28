@@ -18,7 +18,7 @@ const digestSchema = z.string().regex(/^[0-9a-f]{64}$/)
 
 /** The whole commitment, as the owning backend stores it. Never send it to another audience. */
 export const sealedSchema = z.object({
-  /** Who committed: a player, a seat, an agent id — the mini app decides. */
+  /** Who committed: a player, a side, an agent id — the mini app decides. */
   owner: z.string().min(1),
   value: z.string(),
   salt: z.string().min(1),

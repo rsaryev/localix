@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { agentHandleSchema } from '@localixai/agent/agents'
+import { agentNameSchema } from '@localixai/agent/agents'
 import {
   ConflictError,
   InternalError,
@@ -61,13 +61,17 @@ export async function createAgentFile(
   config?: Record<string, unknown>,
 ): Promise<AgentSummary> {
   const projectId = input.projectId ?? ''
-  if (input.handle.includes(':'))
-    throw new InvalidRequestError('agent_name_invalid', 'An agent file name has no ":"')
-  const handle = agentHandleSchema.parse(input.handle)
+  const handle = agentNameSchema.parse(input.name)
+  // The file is `<name>.md`, so a name that would leave the folder or is reserved is refused.
+  if (handle.includes(':') || /[\\/\0]|^\.+$/.test(handle))
+    throw new InvalidRequestError(
+      'agent_name_invalid',
+      'An agent name has no ":", "/" or "\\", and is not made of dots only',
+    )
   const dir = await agentsFolderFor(ports, userId, projectId)
   const path = agentFilePath(dir, handle)
   const taken = (await ports.list(userId, projectId)).some(
-    (agent) => agent.editable && agent.projectId === projectId && agent.record.handle === handle,
+    (agent) => agent.editable && agent.projectId === projectId && agent.record.name === handle,
   )
   if (taken || existsSync(path))
     throw new ConflictError('agent_exists', `An agent named "${handle}" already exists.`)
@@ -80,7 +84,7 @@ export async function createAgentFile(
     config: { name: handle, path, bodyHash: '', ...config },
   })
   try {
-    await writeAgentFile(path, agentFileText('', { ...input, handle }))
+    await writeAgentFile(path, agentFileText('', { ...input, name: handle }))
   } catch (error) {
     await ports.sources.remove(userId, projectId, id)
     await ports.rules.replace(userId, id, [])

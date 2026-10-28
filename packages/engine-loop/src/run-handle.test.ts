@@ -39,7 +39,7 @@ describe('a run handle', () => {
     })
     const iterator = run[Symbol.asyncIterator]()
     await iterator.next()
-    await Bun.sleep(10)
+    for (let turn = 0; turn < 10; turn++) await new Promise((resolve) => setTimeout(resolve, 0)) // the body parks on the full queue
     run.abort('stop')
     expect((await run.result).terminal).toBe('aborted')
   })
@@ -59,7 +59,7 @@ describe('a run handle', () => {
     const events: AgentEvent[] = []
     for await (const event of run) {
       events.push(event)
-      await Bun.sleep(1)
+      await new Promise((resolve) => setTimeout(resolve, 0))
     }
     expect(events[0]!.type).toBe('tool_execution_start')
     expect(last(events)!.type).toBe('tool_execution_end')

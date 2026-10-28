@@ -25,12 +25,12 @@ describe('Button', () => {
 
   test('shares focus, disabled, and reduced-motion feedback across variants', () => {
     const html = renderToStaticMarkup(
-      <Button variant="outline" disabled>
+      <Button variant="ghost" disabled>
         Retry
       </Button>,
     )
 
-    expect(html).toContain('data-variant="outline"')
+    expect(html).toContain('data-variant="ghost"')
     expect(html).toContain('focus-visible:ring-control-border-focus')
     expect(html).toContain('disabled:pointer-events-none')
     expect(html).toContain('motion-reduce:transition-none')
@@ -79,7 +79,7 @@ describe('Button', () => {
           </Button>,
         ),
       ).toContain('data-surface="fill"')
-    for (const variant of ['default', 'ghost', 'outline', 'field'] as const)
+    for (const variant of ['default', 'ghost', 'field'] as const)
       expect(
         renderToStaticMarkup(
           <Button variant={variant} recommended>

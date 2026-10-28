@@ -1,3 +1,4 @@
+import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -10,7 +11,7 @@ import { createDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import { createMcpService, type McpService } from './service'
 
-const tempDir = join(process.cwd(), 'tmp', 'mcp-service-tests')
+const tempDir = join(tmpdir(), `localix-mcp-service-tests-${process.pid}`)
 
 async function freshService(): Promise<McpService> {
   const db = createDatabase({ filename: join(tempDir, `${randomUUID()}.sqlite`) })

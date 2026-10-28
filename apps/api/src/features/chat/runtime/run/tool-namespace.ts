@@ -11,7 +11,7 @@ export interface ClaimedToolSet {
  * Descriptor-owned UI metadata for every tool the runtime may dispatch.
  *
  * This must be indexed from `dispatchTools`, not only the initially model-visible
- * `tools` projection: plugin/MCP tools can be revealed later by `activate_tools`,
+ * `tools` projection: plugin/MCP tools can be revealed later by `ToolSearch`,
  * but their presentation contract (`activeVerb`, `standalone`) is already part of
  * the canonical descriptor. Keeping the lookup generic lets any deferred tool own
  * an interactive surface without the chat runtime knowing its name.

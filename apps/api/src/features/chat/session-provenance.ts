@@ -16,16 +16,7 @@ export type SessionProvenance =
       parentSessionId: string
       toolCallId: string
       /**
-       * WHICH PARTICIPANT of the parent spawned it.
-       *
-       * The parent session id is not enough once a conversation can have several agents in it:
-       * a room's members share one session, so every member's prompt listed every member's
-       * children as its own — the same misattribution the history projection exists to stop,
-       * arriving through the roster instead of the transcript.
-       */
-      parentParticipant?: string
-      /**
-       * How urgent the delegated task is (`delegation-lanes.ts`): set on `delegate`, inherited by
+       * How urgent the delegated task is (`delegation-lanes.ts`): set on `Agent`, inherited by
        * the child's later runs, overwritten by a message that names another. Absent on a child
        * delegated before priorities existed — read as `normal`.
        */
@@ -36,6 +27,8 @@ export type SessionProvenance =
        * — a walk can be wrong (a deleted row) and every run would pay for it.
        */
       depth?: number
+      /** The name the `Agent` call gave it: `SendMessage` and `TaskStop` reach it by this name. */
+      name?: string
       /** Agent ids that delegated down to it, root first — the agents it may never hand work to. */
       chain?: string[]
       /**
@@ -58,7 +51,7 @@ export type SessionProvenance =
        */
       agentPermissionMode?: AgentPermissionMode
       /**
-       * Set on a FORK (`delegate` with `context: "fork"`): a child that continues its parent's line.
+       * Set on a FORK (`Agent` with `context: "fork"`): a child that continues its parent's line.
        * It reads the parent's rows from the root up to `baseMessageId` (the last row before the
        * turn the call was made in; null when there is none), then its own, whose first is
        * `snapshotMessageId`: the copy of the parent's row at the call. See `chat/runtime/fork`.
@@ -70,7 +63,6 @@ export type SessionProvenance =
   | {
       kind: 'skill-fork'
       parentSessionId: string
-      parentParticipant?: string
     }
   | { kind: 'thread'; parentSessionId: string; phase: 'message' }
   | { kind: 'fork'; parentSessionId: string }
@@ -143,9 +135,9 @@ export function parseSessionProvenance(raw: string): SessionProvenance {
         'kind',
         'parentSessionId',
         'toolCallId',
-        'parentParticipant',
         'priority',
         'depth',
+        'name',
         'chain',
         'workingDir',
         'worktreeByHook',
@@ -155,10 +147,10 @@ export function parseSessionProvenance(raw: string): SessionProvenance {
       ]) &&
         isString(value.parentSessionId) &&
         isString(value.toolCallId) &&
-        optionalString(value.parentParticipant) &&
         (value.priority === undefined || isDelegationPriority(value.priority)) &&
         (value.depth === undefined || isDepth(value.depth)) &&
         (value.chain === undefined || isStringList(value.chain)) &&
+        optionalString(value.name) &&
         optionalString(value.workingDir) &&
         (value.worktreeByHook === undefined || value.worktreeByHook === true) &&
         optionalString(value.agentType) &&
@@ -169,9 +161,9 @@ export function parseSessionProvenance(raw: string): SessionProvenance {
             kind: 'task-delegation',
             parentSessionId: value.parentSessionId,
             toolCallId: value.toolCallId,
-            ...(value.parentParticipant ? { parentParticipant: value.parentParticipant } : {}),
             ...(isDelegationPriority(value.priority) ? { priority: value.priority } : {}),
             ...(isDepth(value.depth) ? { depth: value.depth } : {}),
+            ...(value.name ? { name: value.name } : {}),
             ...(isStringList(value.chain) ? { chain: value.chain } : {}),
             ...(value.workingDir ? { workingDir: value.workingDir } : {}),
             ...(value.worktreeByHook === true ? { worktreeByHook: true as const } : {}),
@@ -202,14 +194,8 @@ export function parseSessionProvenance(raw: string): SessionProvenance {
         ? { kind: 'hook', parentSessionId: value.parentSessionId, phase: 'verifier' }
         : reject(raw)
     case 'skill-fork':
-      return hasOnlyKeys(value, ['kind', 'parentSessionId', 'parentParticipant']) &&
-        isString(value.parentSessionId) &&
-        optionalString(value.parentParticipant)
-        ? {
-            kind: 'skill-fork',
-            parentSessionId: value.parentSessionId,
-            ...(value.parentParticipant ? { parentParticipant: value.parentParticipant } : {}),
-          }
+      return hasOnlyKeys(value, ['kind', 'parentSessionId']) && isString(value.parentSessionId)
+        ? { kind: 'skill-fork', parentSessionId: value.parentSessionId }
         : reject(raw)
     case 'thread':
       return hasOnlyKeys(value, ['kind', 'parentSessionId', 'phase']) &&

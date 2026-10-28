@@ -53,7 +53,7 @@ const editEntrySchema = z.object({
     .string()
     .min(1)
     .describe(
-      'Copied verbatim from a `read` result (same indentation and line breaks); include a line or two around it when it is not unique.',
+      'Copied verbatim from a `Read` result (same indentation and line breaks); include a line or two around it when it is not unique.',
     ),
   new_string: z.string().describe('The replacement; empty deletes the span.'),
   replace_all: z
@@ -110,7 +110,7 @@ export function createEditTool(
   ): Promise<FileResult> {
     const existing = await statIfExists(path)
     if (!existing?.isFile()) {
-      return failedFile(path, `${path} does not exist. Use \`write\` to create a new file.`)
+      return failedFile(path, `${path} does not exist. Use \`Write\` to create a new file.`)
     }
     if (mtimes.isStale(path, existing.mtimeMs)) {
       return failedFile(path, staleFileMessage(path), true)
@@ -141,7 +141,7 @@ export function createEditTool(
   }
 
   return defineAgentTool<EditToolInput, EditToolDetails>({
-    name: TOOL.edit,
+    name: TOOL.Edit,
     label: 'Edit',
     activeVerb: 'Editing',
     // Which edit tool fits which change is the prompt's routing line, stated once there.

@@ -112,7 +112,7 @@ test('a process list that failed to load says so, and never claims to be empty',
   const root = createRoot(host)
   try {
     await act(async () => root.render(<Workspace />))
-    await act(async () => Bun.sleep(0))
+    await act(async () => new Promise((r) => setTimeout(r, 0)))
     expect(host.textContent).toContain('Test CPU')
     expect(host.textContent).not.toContain('No matching processes')
     expect(host.querySelectorAll('[role="alert"]').length).toBeGreaterThanOrEqual(1)

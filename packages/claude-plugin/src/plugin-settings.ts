@@ -26,7 +26,7 @@ function supported(raw: unknown, path: string, issues: PluginIssue[]): PluginSet
   else if (record.agent !== undefined)
     issues.push(issue('error', `${path}#agent`, '"agent" must name one of the plugin’s agents'))
   const line = record.subagentStatusLine as Record<string, unknown> | undefined
-  if (line && line.type === 'command' && typeof line.command === 'string' && line.command)
+  if (line?.type === 'command' && typeof line.command === 'string' && line.command)
     out.subagentStatusLine = { type: 'command', command: line.command }
   else if (line !== undefined)
     issues.push(

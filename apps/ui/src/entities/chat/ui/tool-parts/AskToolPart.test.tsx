@@ -19,7 +19,7 @@ const item = (output: AskToolDetails): ToolCallItem =>
     id: 'item-1',
     type: 'tool_call',
     toolCallId: 'call-ask',
-    name: 'ask',
+    name: 'AskUserQuestion',
     status: 'completed',
     activeVerb: 'Awaiting user input',
     input,

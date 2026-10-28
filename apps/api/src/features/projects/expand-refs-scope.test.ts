@@ -1,3 +1,4 @@
+import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -9,7 +10,7 @@ import { ApiError } from '../../lib/errors'
 import { expandRefsRequestSchema } from './contracts'
 import { createProjectsService } from './service'
 
-const tempDir = join(process.cwd(), 'tmp', 'expand-refs-scope-tests')
+const tempDir = join(tmpdir(), `localix-expand-refs-scope-tests-${process.pid}`)
 
 /**
  * The directory a composer's refs expand against is the SERVER's answer for the sending session.

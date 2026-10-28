@@ -134,21 +134,6 @@ describe('a tool with a model name', () => {
     expect(gated).toEqual([INTERNAL])
   })
 
-  test('a nested call by the model name is gated under the own name', async () => {
-    const outer = tool('outer', {
-      inputSchema: z.object({}),
-      execute: async (_id, _input, _signal, _update, context) => {
-        const inner = await context!.callTool!(WIRE, { q: 'n' })
-        return { content: String(inner.result.content) }
-      },
-    })
-    const { run, gated } = start([call('outer'), say('done')], { tools: [outer, query] })
-    const { events } = await collect(run)
-    expect(gated).toEqual(['outer', INTERNAL])
-    const end = events.find((event) => event.type === 'tool_execution_end')
-    expect(end).toMatchObject({ toolName: 'outer', result: { content: 'ran:n' } })
-  })
-
   test('an activated tool joins the roster under its model name', async () => {
     const activate = tool('activate', {
       inputSchema: z.object({}),

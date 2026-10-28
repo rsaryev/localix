@@ -135,7 +135,7 @@ export function captureApplicationFailure(
     body: failureMessage(error),
     origin,
     occurredAt: ts,
-    nativeKind: 'run',
+    native: true,
   })
 }
 

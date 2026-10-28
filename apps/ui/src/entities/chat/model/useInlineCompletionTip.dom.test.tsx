@@ -10,14 +10,15 @@ afterAll(async () => {
   await teardown()
 })
 
-beforeEach(() => {
+beforeEach(async () => {
   jest.useFakeTimers()
+  ;(await import('./streamTips')).__resetTipBand()
 })
 afterEach(() => {
   jest.useRealTimers()
 })
 
-// Past the stream tips' 2 s show delay, on the faked clock.
+// Past a rotation's first beat, on the faked clock.
 const waitForTip = async () => {
   jest.advanceTimersByTime(2100)
 }
@@ -53,9 +54,7 @@ describe('inline completion in the rotating tip strip', () => {
     const root = createRoot(host)
     try {
       await act(async () => root.render(<Harness />))
-      expect(host.textContent).toBe('') // Same delay as all stream tips.
-      await act(waitForTip)
-      expect(host.textContent).toContain('Inline completion')
+      expect(host.textContent).toContain('Inline completion') // Up at once, like every tip.
       expect(host.querySelectorAll('[data-slot="workbench-notice-bar"]').length).toBe(1)
       // An edit elsewhere after the tip rendered must not be undone by the action.
       await act(async () =>
@@ -95,7 +94,7 @@ describe('inline completion in the rotating tip strip', () => {
   })
 
   test('eligibility and dismissal use the shared selector and survive the next run', async () => {
-    const { act } = await import('react')
+    const { act, useEffect } = await import('react')
     const { createRoot } = await import('react-dom/client')
     const { HINT, isDismissed, resetDismissed } = await import('@localixai/kit/lib')
     const { useUserSettings } = await import('@/shared/lib/user-settings/useUserSettings')
@@ -111,7 +110,9 @@ describe('inline completion in the rotating tip strip', () => {
     let eligible = false
     function Harness({ idle = true, running = true }: { idle?: boolean; running?: boolean }) {
       const tips = useInlineCompletionTip(pool, idle)
-      eligible = pickStreamTip(context, new Set(), tips) !== null
+      useEffect(() => {
+        eligible = pickStreamTip(context, new Set(), tips) !== null
+      })
       const { tip, dismiss } = useStreamTip(running, context, tips)
       return <StatusTipStrip tip={tip} onDismissTip={dismiss} />
     }

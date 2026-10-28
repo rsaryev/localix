@@ -24,7 +24,6 @@ import { navigateUiAction } from '@/shared/lib/uiNavigation'
 import type { SystemNoticeRecovery } from '@/shared/api/contracts'
 import type { SystemNotice, SystemNoticeKind, SystemNoticeTone } from '../model/types'
 import { messageClock } from '../model/messageTime'
-import { cleanSystemMessageText } from '../model/systemMessageText'
 import { systemMessageLabel } from './coalesceSystemMessages'
 import { PERMISSION_MODE_PRESENTATION } from './prompt-input/permissionModeIcons'
 
@@ -148,9 +147,9 @@ export const SystemNoticeLine = memo(function SystemNoticeLine({
 }) {
   const clock = messageClock(createdAt)
   const recap = notice.kind === 'session_recap'
-  const spoken = cleanSystemMessageText(notice.text)
+  const spoken = notice.text
   const full = systemMessageLabel(recap ? `Recap: ${spoken}` : spoken, repeatCount)
-  const detail = notice.detail ? cleanSystemMessageText(notice.detail) : undefined
+  const detail = notice.detail || undefined
   const recoveries = notice.recovery ?? []
   const ending = TURN_ENDING_LABELS[notice.kind]
   const text = ending ? systemMessageLabel(ending, repeatCount) : full

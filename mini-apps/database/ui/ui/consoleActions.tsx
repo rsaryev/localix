@@ -44,7 +44,7 @@ export function StopButton({
   return (
     <Button
       size="xs"
-      variant="outline"
+      variant="ghost"
       title={title}
       className={cn(
         'text-text-soft hover:border-status-error/60 hover:bg-transparent hover:text-status-error',

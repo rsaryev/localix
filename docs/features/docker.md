@@ -23,7 +23,7 @@ Docker-compatible daemon is required.
 
 ### Agent access
 
-The workbench contributes no Docker agent tool. An agent can run Docker commands through `bash` when
+The workbench contributes no Docker agent tool. An agent can run Docker commands through `Bash` when
 the CLI is installed and its permission rules allow the command.
 
 Docker still reaches the agent as context rather than as a tool — `localix://resource/docker`

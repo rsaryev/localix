@@ -9,7 +9,7 @@ const chat = {
   id: 's1',
   userId: 'u1',
   sessionKind: 'chat',
-  agents: [{ agentId: 'qa', handle: 'qa' }],
+  agents: [{ agentId: 'qa', name: 'qa' }],
 } as unknown as SessionRecord
 const job = { id: 's1', userId: 'u1', sessionKind: 'job' } as unknown as SessionRecord
 
@@ -54,7 +54,6 @@ describe('wakeSession answers whether the wake landed', () => {
       ctx(async () => chat, woke),
       request('report', {
         source: 'subagent',
-        to: { participant: 'agent:qa', handle: 'qa' },
         deliveryKey: 'child-terminal:c1',
         receipt: true,
       }),
@@ -65,23 +64,10 @@ describe('wakeSession answers whether the wake landed', () => {
     )
     expect(woke[0]).toMatchObject({
       source: 'subagent',
-      to: { participant: 'agent:qa', handle: 'qa' },
       deliveryKey: 'child-terminal:c1',
       receipt: true,
     })
     expect(Object.keys(woke[1]!).sort()).toEqual(['content', 'session', 'source', 'userId'])
-  })
-
-  test('an addressee who LEFT is dropped, so the wake still lands and the conversation chooses', async () => {
-    // The drain dismisses a delivery no current participant answers — a loop armed by a removed
-    // participant would otherwise vanish on every fire.
-    const woke: Record<string, unknown>[] = []
-    const res = await wakeSession(
-      ctx(async () => chat, woke),
-      request('tick', { source: 'loop', to: { participant: 'agent:backend', handle: 'backend' } }),
-    )
-    expect(res).toEqual({ delivered: true })
-    expect(woke[0]).not.toHaveProperty('to')
   })
 
   test('a deleted session is `gone` — the ordinary case, no detail', async () => {

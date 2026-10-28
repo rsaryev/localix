@@ -15,7 +15,7 @@ import { event, QUEUED_AT, report } from './testing/test-entries'
 afterEach(() => __resetExpectedReports())
 
 const barrier = { awaits: awaitsReports, subscribe: onReportSettled }
-const lead = { sessionId: 'entries', participant: 'agent:lead' }
+const lead = { sessionId: 'entries' }
 const at = Date.parse(QUEUED_AT)
 
 describe('a report waits for its siblings', () => {
@@ -24,7 +24,7 @@ describe('a report waits for its siblings', () => {
     expectReport('b', lead)
     takeExpectedReport('a')
     settleReport('a')
-    const listed = [report('a', 'agent:lead'), event('loop')]
+    const listed = [report('a'), event('loop')]
     expect([...heldEntries('entries', listed, barrier, at).ids]).toEqual(['a'])
     takeExpectedReport('b')
     // On its way, not queued yet: still owed — or `a` would go alone just before it.
@@ -38,29 +38,28 @@ describe('a report waits for its siblings', () => {
     expectReport('b', lead)
     takeExpectedReport('a')
     takeExpectedReport('b')
-    const listed = [report('a', 'agent:lead'), report('b', 'agent:lead')]
+    const listed = [report('a'), report('b')]
     expect(heldEntries('entries', listed, barrier, at).ids.size).toBe(0)
   })
 
-  test("another delegator's children, or another session's, are not this report's siblings", () => {
-    expectReport('qa-child', { sessionId: 'entries', participant: 'agent:qa' })
-    expectReport('elsewhere', { sessionId: 'other', participant: 'agent:lead' })
-    expect(heldEntries('entries', [report('a', 'agent:lead')], barrier, at).ids.size).toBe(0)
+  test("another session's children are not this report's siblings", () => {
+    expectReport('elsewhere', { sessionId: 'other' })
+    expect(heldEntries('entries', [report('a')], barrier, at).ids.size).toBe(0)
   })
 
   test('none waits past the hold limit, and the limit is when the drain looks again', () => {
     expectReport('slow', lead)
-    const listed = [report('a', 'agent:lead')]
+    const listed = [report('a')]
     expect(heldEntries('entries', listed, barrier, at).releaseAt).toBe(at + MAX_REPORT_HOLD_MS)
     expect(heldEntries('entries', listed, barrier, at + MAX_REPORT_HOLD_MS).ids.size).toBe(0)
   })
 
   test('a band already claimed is past deciding; without a ledger nothing is held', () => {
     expectReport('slow', lead)
-    const claimed = report('a', 'agent:lead')
+    const claimed = report('a')
     claimed.value = { ...claimed.value, batch: 'a' }
     expect(heldEntries('entries', [claimed], barrier, at).ids.size).toBe(0)
-    expect(heldEntries('entries', [report('a', 'agent:lead')], undefined, at).ids.size).toBe(0)
+    expect(heldEntries('entries', [report('a')], undefined, at).ids.size).toBe(0)
   })
 })
 
@@ -78,7 +77,7 @@ describe('the delegation ledger', () => {
     unsubscribe()
     dropExpectedReport('b')
     expect(settled).toEqual(['entries', 'entries'])
-    expect(awaitsReports('entries', 'agent:lead')).toBe(false)
+    expect(awaitsReports('entries')).toBe(false)
   })
 
   test('a new wait while a report is on its way stands after that report settles', () => {
@@ -87,7 +86,7 @@ describe('the delegation ledger', () => {
     // The delegator messaged the child again: the next run owes it another report.
     expectReport('a')
     settleReport('a')
-    expect(awaitsReports('entries', 'agent:lead')).toBe(true)
+    expect(awaitsReports('entries')).toBe(true)
     expect(takeExpectedReport('a')).toBe(true)
   })
 })

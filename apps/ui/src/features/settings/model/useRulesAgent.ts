@@ -16,7 +16,7 @@ import { useActiveSessionAgentId } from '@/entities/chat/model/store'
 export function useRulesAgent(project: string) {
   const { agents } = useAgents(project)
   const pickable = useMemo(
-    () => agents.map(({ record }) => ({ id: record.id, label: record.label || record.handle })),
+    () => agents.map(({ record }) => ({ id: record.id, label: record.name })),
     [agents],
   )
   const [picked, setPicked] = useState<string | null>(null)

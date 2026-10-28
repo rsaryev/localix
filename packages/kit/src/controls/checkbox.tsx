@@ -22,17 +22,15 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
   ({ className, indeterminate = false, ...props }, forwardedRef) => {
     const controlProps = useFieldControlProps(props, true)
     const inputRef = React.useRef<HTMLInputElement | null>(null)
-    const indeterminateRef = React.useRef(indeterminate)
-    indeterminateRef.current = indeterminate
     const setInputRef = React.useCallback(
       (node: HTMLInputElement | null) => {
         inputRef.current = node
-        if (node) node.indeterminate = indeterminateRef.current
         assignRef(forwardedRef, node)
       },
       [forwardedRef],
     )
 
+    // Runs on mount too, so the first paint already shows the mixed state.
     React.useLayoutEffect(() => {
       if (inputRef.current) inputRef.current.indeterminate = indeterminate
     }, [indeterminate])

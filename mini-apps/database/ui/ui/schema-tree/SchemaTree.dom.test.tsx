@@ -3,6 +3,10 @@ import { registerDom } from '@localixai/kit/testing'
 import type { DbConnectionInfo, DbSchemas, DbTableSchema } from '../../dbClient'
 import type { SchemaState } from '../../model/useSchema'
 
+const turns = async (n = 10) => {
+  for (let i = 0; i < n; i++) await new Promise((r) => setImmediate(r))
+}
+
 let teardown: () => Promise<void>
 beforeAll(() => {
   teardown = registerDom()
@@ -100,7 +104,7 @@ describe('schema tree — windowed', () => {
       first.focus()
       await act(async () => {
         first.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }))
-        await new Promise((resolve) => setTimeout(resolve, 50))
+        await turns()
       })
       const active = document.activeElement as HTMLElement | null
       expect(active?.textContent).toContain('t1999')

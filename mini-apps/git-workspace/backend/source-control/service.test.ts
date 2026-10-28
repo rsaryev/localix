@@ -4,6 +4,10 @@ import { createSourceControlService } from './service'
 import type { SourceControlBackend } from './ports'
 import type { RepoBranch, RepoStatus, RepoWithStatus } from './contracts'
 
+const turns = async (n = 10) => {
+  for (let i = 0; i < n; i++) await new Promise((r) => setImmediate(r))
+}
+
 const status = (root: string): RepoStatus => ({
   root,
   branch: 'main',
@@ -58,7 +62,7 @@ function makeService(
 }
 
 /** Let every pending promise chain (including timers) run to a standstill. */
-const settle = () => new Promise((resolve) => setTimeout(resolve, 5))
+const settle = () => turns()
 
 const repoRow = (root: string, isPrimary = true): RepoWithStatus => ({
   root,
@@ -247,7 +251,7 @@ describe('writes to one repository are serialized', () => {
     const { backend } = fakeBackend({
       stage: async () => {
         peak = Math.max(peak, ++inFlight)
-        await new Promise((r) => setTimeout(r, 5))
+        await turns()
         inFlight--
       },
     })

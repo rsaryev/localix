@@ -95,12 +95,12 @@ userMsg(
 )
 asstMsg("I'll scan the project first, then scaffold the components.", [
   toolItem(
-    'read',
+    'Read',
     { path: 'package.json' },
     JSON.stringify({ name: 'site', dependencies: { react: '^19', 'react-dom': '^19' } }, null, 2),
   ),
   toolItem(
-    'read',
+    'Read',
     { path: 'tsconfig.json' },
     JSON.stringify(
       { compilerOptions: { jsx: 'react-jsx', strict: true, module: 'ESNext' } },
@@ -108,10 +108,10 @@ asstMsg("I'll scan the project first, then scaffold the components.", [
       2,
     ),
   ),
-  toolItem('bash', { command: 'ls -R src' }, bashOutput('ls', 12)),
-  toolItem('bash', { command: 'npm run build' }, bashOutput('vite build', 40)),
+  toolItem('Bash', { command: 'ls -R src' }, bashOutput('ls', 12)),
+  toolItem('Bash', { command: 'npm run build' }, bashOutput('vite build', 40)),
   toolItem(
-    'write',
+    'Write',
     { path: 'src/plan.md', content: tsxContent('Plan', 2500) },
     'Wrote 2.5KB to src/plan.md',
   ),
@@ -125,26 +125,26 @@ for (let t = 0; t < TURNS; t++) {
   const comp2 = components[(t + 1) % components.length]
   const parts: ToolCallItem[] = [
     toolItem(
-      'write',
+      'Write',
       { path: `src/components/${comp}/${comp}.tsx`, content: tsxContent(comp, 3000) },
       `Wrote 3.0KB to ${comp}.tsx`,
     ),
     toolItem(
-      'write',
+      'Write',
       { path: `src/components/${comp}/${comp}.module.css`, content: cssContent(comp, 2000) },
       `Wrote 2.0KB to ${comp}.module.css`,
     ),
-    toolItem('read', { path: `src/components/${comp}/${comp}.tsx` }, tsxContent(comp, 3000)), // read back (superseded by the write above? no — same turn; later re-reads supersede)
-    toolItem('bash', { command: `npm run build -- --filter ${comp}` }, bashOutput('build', 18)),
+    toolItem('Read', { path: `src/components/${comp}/${comp}.tsx` }, tsxContent(comp, 3000)), // read back (superseded by the write above? no — same turn; later re-reads supersede)
+    toolItem('Bash', { command: `npm run build -- --filter ${comp}` }, bashOutput('build', 18)),
   ]
   // Every 3rd turn: re-read + re-write an EARLIER component (supersession) + an edit.
   if (t % 3 === 2) {
     parts.push(
-      toolItem('read', { path: `src/components/${comp2}/${comp2}.tsx` }, tsxContent(comp2, 3000)),
+      toolItem('Read', { path: `src/components/${comp2}/${comp2}.tsx` }, tsxContent(comp2, 3000)),
     )
     parts.push(
       toolItem(
-        'edit',
+        'Edit',
         {
           path: `src/components/${comp2}/${comp2}.tsx`,
           edits: [
@@ -157,7 +157,7 @@ for (let t = 0; t < TURNS; t++) {
     )
     parts.push(
       toolItem(
-        'write',
+        'Write',
         { path: `src/components/${comp2}/${comp2}.module.css`, content: cssContent(comp2, 2200) },
         `Wrote 2.2KB to ${comp2}.module.css`,
       ),
@@ -169,9 +169,9 @@ for (let t = 0; t < TURNS; t++) {
 
 // --- Final turn: verify ---
 asstMsg('Running the full build and a quick lint to verify everything compiles.', [
-  toolItem('bash', { command: 'npm run build' }, bashOutput('vite build', 60)),
-  toolItem('bash', { command: 'npm run lint' }, bashOutput('eslint', 30)),
-  toolItem('read', { path: 'src/App.tsx' }, tsxContent('App', 4000)),
+  toolItem('Bash', { command: 'npm run build' }, bashOutput('vite build', 60)),
+  toolItem('Bash', { command: 'npm run lint' }, bashOutput('eslint', 30)),
+  toolItem('Read', { path: 'src/App.tsx' }, tsxContent('App', 4000)),
 ])
 
 writeFileSync(outPath, JSON.stringify(messages, null, 0))

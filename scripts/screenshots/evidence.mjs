@@ -1,8 +1,6 @@
 import { expect } from '@playwright/test'
 
 export async function verifyEvidence(page, scenario) {
-  if (scenario.startsWith('island-'))
-    return (await import('./agent-island.mjs')).verifyIsland(page, scenario)
   if (scenario === 'agent-command')
     return (await import('./agent-command.mjs')).verifyAgentCommand(page)
   if (scenario === 'agent-management')
@@ -14,16 +12,21 @@ export async function verifyEvidence(page, scenario) {
     return (await import('./visual-feedback.mjs')).verifyVisualFeedback(page)
   if (scenario === 'session-window-drag')
     return (await import('./session-drag.mjs')).verifySessionDrag(page)
-  if (scenario === 'party-route') return (await import('./party-route.mjs')).verifyPartyRoute(page)
-  if (scenario === 'model-command')
-    return (await import('./model-command.mjs')).verifyModelCommand(page)
   if (scenario === 'cloud-connection')
     return (await import('./cloud-connection.mjs')).verifyCloudConnection(page)
   if (scenario === 'unfinished-reply')
     return (await import('./unfinished-reply.mjs')).verifyUnfinishedReply(page)
+  if (scenario === 'settings-strip')
+    return (await import('./settings-strip.mjs')).verifySettingsStrip(page)
+  if (scenario === 'tool-sections')
+    return (await import('./tool-sections.mjs')).verifyToolSections(page)
+  if (scenario === 'agent-children')
+    return (await import('./agent-children.mjs')).verifyAgentChildren(page)
+  if (['status-line', 'mcp-prompts', 'plugin-waiting'].includes(scenario))
+    return (await import('./composer-surfaces.mjs')).verifyComposerSurfaces(page, scenario)
+  if (['for-your-work', 'for-your-work-all'].includes(scenario))
+    return (await import('./recommendations.mjs')).verifyRecommendations(page, scenario)
   if (scenario.startsWith('store')) return (await import('./store.mjs')).verifyStore(page, scenario)
-  if (scenario === 'codemode-card')
-    return (await import('./codemode-card.mjs')).verifyCodemodeCard(page)
   if (['local-models-settings', 'semantic-search'].includes(scenario))
     return (await import('./local-models.mjs')).verifyLocalModels(page, scenario)
   if (['trading', 'system-overview', 'kubernetes'].includes(scenario))
@@ -46,7 +49,7 @@ export async function verifyEvidence(page, scenario) {
     await expect(page.getByRole('region', { name: 'Session history', exact: true })).toBeHidden()
     await expect(page.getByRole('combobox', { name: 'Browser address', exact: true })).toBeHidden()
     await expect(page.locator('[data-slot="terminal-pane"]')).toHaveCount(0)
-    await expect(page.getByRole('button', { name: 'Add participant', exact: true })).toBeHidden()
+    await expect(page.getByRole('combobox', { name: 'Message', exact: true })).toHaveCount(0)
     return
   }
   if (scenario === 'browser-preview') {
@@ -56,53 +59,8 @@ export async function verifyEvidence(page, scenario) {
     await expect(preview.getByRole('checkbox', { name: 'Review the changes' })).toBeChecked()
     await expect(preview.getByRole('checkbox', { name: 'Check the mobile layout' })).toBeChecked()
     await expect(preview.getByRole('checkbox', { name: 'Publish release notes' })).not.toBeChecked()
-    await expect(
-      page.getByRole('group', { name: 'Conversation participants', exact: true }),
-    ).toBeVisible()
+    await expect(page.getByRole('combobox', { name: 'Message', exact: true }).last()).toBeVisible()
     await expect(page.getByRole('button', { name: 'Visual Feedback', exact: true })).toBeVisible()
-  } else if (scenario === 'participants') {
-    const roster = page.getByRole('group', { name: 'Conversation participants', exact: true })
-    await expect(roster.locator('[data-slot="participant-chip"]')).toHaveCount(3)
-    for (const handle of ['localix', 'frontend', 'qa'])
-      await expect(roster.getByTitle(`Show @${handle}'s model`, { exact: true })).toBeVisible()
-    await expect(
-      page.getByRole('heading', { name: 'Release checklist', exact: true }),
-    ).toBeVisible()
-    await expect(page.getByText(/Both release states pass the checks/)).toBeVisible()
-    await expect(roster.getByRole('button', { name: /^Usage for / })).toHaveCount(0)
-    const total = page
-      .getByRole('group', { name: 'Conversation actions', exact: true })
-      .getByRole('button', { name: 'Total session usage', exact: true })
-    await expect(total).toHaveText('')
-    await expect(
-      roster.getByRole('button', { name: 'Total session usage', exact: true }),
-    ).toHaveCount(0)
-    await expect(page.getByRole('button', { name: 'Voice input', exact: true })).toHaveCount(0)
-    await expect(
-      page.getByRole('button', { name: 'Choose models for 3 participants', exact: true }),
-    ).toBeVisible()
-    const mode = page.getByRole('button', { name: /^Permission mode:/ })
-    await expect(mode).toHaveAttribute('data-slot', 'composer-chip')
-    await expect(mode.locator('.lucide-chevron-down')).toBeVisible()
-    // The first seat is selected by default; clicking another selects it without a mention.
-    const localixChip = roster.getByTitle("Show @localix's model", { exact: true })
-    const frontendChip = roster.getByTitle("Show @frontend's model", { exact: true })
-    await expect(localixChip).toHaveAttribute('aria-pressed', 'true')
-    await frontendChip.click()
-    await expect(frontendChip).toHaveAttribute('aria-pressed', 'true')
-    await expect(localixChip).toHaveAttribute('aria-pressed', 'false')
-    await expect(page.locator('textarea').first()).not.toHaveValue(/@frontend/)
-    await total.hover()
-    await expect(page.getByText('Session total', { exact: true })).toBeVisible()
-    await expect(page.getByText('9,900', { exact: true })).toBeVisible()
-    await expect(page.getByText('By participant', { exact: true })).toBeVisible()
-    await expect(
-      page.getByRole('progressbar', { name: 'Frontend context usage', exact: true }),
-    ).toBeVisible()
-    await page.getByRole('heading', { name: 'Release checklist', exact: true }).hover()
-    await expect(page.getByText('Session total', { exact: true })).toHaveCount(0)
-    await expect(page.getByRole('menu')).toHaveCount(0)
-    await expect(page.getByText('Add participant', { exact: true })).toHaveCount(0)
   } else if (scenario === 'resume') {
     const document = page.getByRole('document', { name: 'Page 1', exact: true })
     await expect(document).toContainText('Alex Morgan')
@@ -148,7 +106,7 @@ export async function verifyEvidence(page, scenario) {
         ratio: 0.99,
       })
   } else if (scenario === 'models') {
-    await expect(page.getByText('API Key(s) (manual)', { exact: true })).toBeVisible()
+    await expect(page.getByText(/^API Key\(s\)/).first()).toBeVisible()
     await expect(page.locator('input[type="password"]')).toHaveValue('')
   } else if (scenario === 'catalog') {
     await expect(page.getByText('Database', { exact: true }).last()).toBeVisible()

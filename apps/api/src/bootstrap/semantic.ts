@@ -1,7 +1,7 @@
 /**
  * Composition of semantic search: the store, the service (engine + indexer) and the core sources
  * it indexes. Needs only the database, so it is built right after infra and handed to every
- * consumer — mini app hosts (`host.semantic`), global search (its strategy), group routing (its
+ * consumer — mini app hosts (`host.semantic`), global search (its strategy), chat (its
  * vectors, `semantic-vectors.ts`) and the routes.
  * Nothing starts here: `boot()` runs post-listen, when spawning a process is safe.
  */

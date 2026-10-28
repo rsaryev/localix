@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
+import { registerCompletionWorkingSet } from '@/shared/api/completionWorkingSet'
 import { listing, renderStore } from '@/testing/store'
 
 let teardown: () => Promise<void>
@@ -103,7 +104,7 @@ describe('Discover', () => {
       await view.click(view.button('Update all'))
       expect(view.calls).toEqual(['update all'])
       await view.click(view.button('See updates'))
-      expect(view.host.querySelector('[aria-current="page"]')?.textContent).toContain('Updates')
+      expect(view.activeSection()).toContain('Updates')
     } finally {
       await view.done()
     }
@@ -177,12 +178,107 @@ describe('Discover', () => {
     }
   })
 
-  test('narrow, rows scroll sideways', async () => {
-    const view = await renderStore({ listings: LISTINGS, discover: DISCOVER, width: 600 })
+  test('a row is whole tiles in as many columns as the pane fits, at most two rows of them', async () => {
+    const all = [ref('chess'), ref('kanban'), ref('lint', 'plugin'), ref('docs', 'plugin')]
+    const discover = { ...DISCOVER, rows: [row('start', 'Start here', all)] }
+    const tiles = (host: HTMLElement) => {
+      const grid = section(host, 'Start here')!.querySelector<HTMLElement>('ul')!
+      return { columns: grid.style.gridTemplateColumns, shown: grid.querySelectorAll('li').length }
+    }
+    const narrow = await renderStore({ listings: LISTINGS, discover, width: 400 })
     try {
-      const strip = section(view.host, 'Mini apps')!.querySelector('ul')!
-      expect(strip.className).toContain('snap-x')
-      expect(strip.className).toContain('overflow-x-auto')
+      expect(tiles(narrow.host)).toEqual({ columns: 'repeat(1, minmax(0, 1fr))', shown: 2 })
+      expect(narrow.host.querySelector('[aria-label^="Scroll Start here"]')).toBeNull()
+    } finally {
+      await narrow.done()
+    }
+    const wide = await renderStore({ listings: LISTINGS, discover, width: 1400 })
+    try {
+      expect(tiles(wide.host)).toEqual({ columns: 'repeat(4, minmax(0, 1fr))', shown: 4 })
+    } finally {
+      await wide.done()
+    }
+  })
+
+  test('For your work shows what suits the tabs open beside it, asked with them', async () => {
+    const stop = registerCompletionWorkingSet(() => [
+      { kind: 'file', token: '@file:Dockerfile', label: 'Dockerfile' },
+    ])
+    const asked: string[] = []
+    const view = await renderStore({
+      listings: LISTINGS,
+      discover: DISCOVER,
+      recommended: ['docs'],
+      recommendAsked: asked,
+      sessionId: 's1',
+    })
+    try {
+      const titles = [...view.host.querySelectorAll('[data-store-scroller] section')].map((s) =>
+        s.getAttribute('aria-label'),
+      )
+      expect(titles.slice(0, 2)).toEqual(['Start here', 'For your work'])
+      const mine = section(view.host, 'For your work')!
+      expect(mine.querySelector('[data-listing="docs"]')!.textContent).toContain('Docs')
+      expect(asked).toEqual(['Dockerfile in s1'])
+    } finally {
+      stop()
+      await view.done()
+    }
+  })
+
+  test('For your work is left out when nothing suits it', async () => {
+    const view = await renderStore({ listings: LISTINGS, discover: DISCOVER, recommended: [] })
+    try {
+      expect(section(view.host, 'For your work')).toBeNull()
+    } finally {
+      await view.done()
+    }
+  })
+
+  test('For your work appears once the background has worked it out, on its poke', async () => {
+    const view = await renderStore({
+      listings: LISTINGS,
+      discover: DISCOVER,
+      recommended: ['docs'],
+      recommendPending: true,
+    })
+    try {
+      expect(section(view.host, 'For your work')).toBeNull()
+      await view.recommendationsReady()
+      expect(section(view.host, 'For your work')!.textContent).toContain('Docs')
+    } finally {
+      await view.done()
+    }
+  })
+
+  test('See all on For your work opens every recommendation, best first', async () => {
+    const view = await renderStore({
+      listings: LISTINGS,
+      discover: DISCOVER,
+      recommended: ['docs', 'chess'],
+    })
+    try {
+      await view.click(view.button('See all For your work'))
+      expect(view.host.querySelector('h2')?.textContent).toBe('For your work')
+      const order = [...view.host.querySelectorAll('[data-listing]')].map((card) =>
+        card.getAttribute('data-listing'),
+      )
+      expect(order).toEqual(['docs', 'chess'])
+    } finally {
+      await view.done()
+    }
+  })
+
+  test('opened at its recommendations, the Store shows them', async () => {
+    const view = await renderStore({
+      listings: LISTINGS,
+      discover: DISCOVER,
+      recommended: ['chess'],
+      target: { recommended: true },
+    })
+    try {
+      expect(view.host.querySelector('h2')?.textContent).toBe('For your work')
+      expect(view.card('chess')).not.toBeNull()
     } finally {
       await view.done()
     }

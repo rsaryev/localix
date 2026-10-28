@@ -24,7 +24,6 @@ const authority = {
 } as unknown as RunScope['executionContext']
 
 const fullScope: RunScope = {
-  speakerAgentId: 'agent-1',
   executionContext: authority,
   profileOverride: { id: 'worker' } as unknown as RunScope['profileOverride'],
   extraDisabledTools: ['bash'],
@@ -36,22 +35,15 @@ const fullScope: RunScope = {
 const turn = { userId: 'u1', session, historyMessages: [], assistantMessageId: 'a1' }
 
 describe('dispatchParams', () => {
-  test('carries an explicit speaker without reordering the conversation roster', () => {
+  test('carries the agent with the session untouched', () => {
     const addressedSession = {
       ...session,
-      agents: [
-        { agentId: 'alpha', handle: 'alpha' },
-        { agentId: 'beta', handle: 'beta' },
-      ],
+      agent: { agentId: 'beta', name: 'beta' },
     } as SessionRecord
-    const params = dispatchParams(
-      { ...turn, session: addressedSession },
-      { ...fullScope, speakerAgentId: 'beta' },
-    )
+    const params = dispatchParams({ ...turn, session: addressedSession }, { ...fullScope })
 
-    expect(params.scope.speakerAgentId).toBe('beta')
     expect(params.session).toBe(addressedSession)
-    expect(params.session.agents.map((agent) => agent.agentId)).toEqual(['alpha', 'beta'])
+    expect(params.session.agent?.agentId).toBe('beta')
   })
 
   test('snapshots mandatory tools and preserves them through identity capture and reentry', () => {

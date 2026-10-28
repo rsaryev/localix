@@ -34,10 +34,6 @@ export type SystemNoticeKind =
   /** A run that ended in an error the same request might survive. */
   | 'run_failed'
   | 'run_continued'
-  /** Someone joined or left; the model reads the deduplicated system context binding. */
-  | 'participants_change'
-  /** A chain of participant handoffs reached its bound; the conversation is back with the person. */
-  | 'handoff_limit'
   /**
    * Where the agent's working view now begins: the turns above were checkpointed. Client-owned
    * (`modelViewDivider.ts`), drawn from the session's `modelView`.
@@ -117,7 +113,6 @@ export interface Message {
    * client synthesizes (terminal waits), which nobody authored.
    */
   from?: string
-  authorSnapshot?: { handle: string }
   /** The person's marks on this message, with one entry per (author, emoji). */
   reactions?: { emoji: string; from: string; at: string }[]
   /** The person keeps this message in the agent's view across context checkpoints. */
@@ -184,6 +179,12 @@ export interface Message {
    * persisted and never sent anywhere.
    */
   optimistic?: boolean
+  /**
+   * An optimistic user row painted while a run was active: the backend queues it, so it belongs
+   * in the queue dock and not in the transcript. Held back from the first frame until the send
+   * settles (cleared if the backend started a turn instead); the delivered row replaces it.
+   */
+  awaitsQueue?: boolean
   /**
    * Minted by the client and absent from every backend body, so a whole-body replace
    * must CARRY it rather than let the fresh body delete it (`mergeSessionBody`).

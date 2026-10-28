@@ -41,7 +41,7 @@ export function searchInputQueries(input: unknown): string[] {
  * for a call whose input names nothing yet (still streaming).
  */
 export function batchUnitCount(name: string, input: unknown): number {
-  if (name === 'read') return Math.max(1, readInputPaths(input).length)
-  if (name === 'search') return Math.max(1, searchInputQueries(input).length)
+  if (name === 'Read') return Math.max(1, readInputPaths(input).length)
+  if (name === 'Search') return Math.max(1, searchInputQueries(input).length)
   return 1
 }

@@ -23,6 +23,13 @@ const CONTROL_COMMANDS = [
   'mini-apps',
   'loop',
   'agents',
+  'compact',
+  'init',
+  'status',
+  'hooks',
+  'diff',
+  'add-dir',
+  'export',
 ] as const
 
 /** Built-in slash commands handled by the service. */

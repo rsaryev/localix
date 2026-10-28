@@ -23,7 +23,7 @@ function deferred<T>() {
 
 test('row mutation commit owns one immutable staging window', async () => {
   const React = await import('react')
-  const { act } = React
+  const { act, useEffect } = React
   const { createRoot } = await import('react-dom/client')
   const { useRowMutations } = await import('./useRowMutations')
 
@@ -35,12 +35,15 @@ test('row mutation commit owns one immutable staging window', async () => {
   let state: ReturnType<typeof UseRowMutations> | undefined
 
   function Harness() {
-    state = useRowMutations(columns, {
+    const value = useRowMutations(columns, {
       onCommitChanges: async (changes) => {
         calls += 1
         submitted = changes
         return pending.promise
       },
+    })
+    useEffect(() => {
+      state = value
     })
     return null
   }

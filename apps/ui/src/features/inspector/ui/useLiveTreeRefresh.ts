@@ -28,11 +28,15 @@ export function useLiveTreeRefresh(
   sessionId: string | null,
   childrenRef: RefObject<Record<string, DirEntry[]>>,
   reloadDir: (dir: string, options?: { quiet?: boolean }) => Promise<boolean>,
+  /** The queue's coalesce window; a test passes 0 rather than wait it out. */
+  refreshDelayMs?: number,
 ) {
   useEffect(() => {
     if (!sessionId) return
     // Quiet: a failed watch-driven refresh is churn, not news — see `reloadDir`.
-    const queue = createDirRefreshQueue((dir) => reloadDir(dir, { quiet: true }))
+    const queue = createDirRefreshQueue((dir) => reloadDir(dir, { quiet: true }), {
+      delayMs: refreshDelayMs,
+    })
     const reloadLoaded = () => queue.request(Object.keys(childrenRef.current))
     const offChange = onFsChange(({ sessionId: changed, paths }) => {
       if (changed !== sessionId) return
@@ -48,5 +52,5 @@ export function useLiveTreeRefresh(
       unwatch()
       queue.reset()
     }
-  }, [sessionId, childrenRef, reloadDir])
+  }, [sessionId, childrenRef, reloadDir, refreshDelayMs])
 }

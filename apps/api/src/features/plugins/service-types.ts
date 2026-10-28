@@ -117,11 +117,6 @@ export interface PluginService {
   ): Promise<void>
   setConfig(userId: string, input: SetPluginConfigRequest): Promise<PluginRecord>
   /**
-   * Rewrite config an older build stored in a shape `setConfig` no longer writes (a sensitive
-   * value in plain text, a user-scope plugin's per-project copy). Run at boot; idempotent.
-   */
-  reconcileStoredConfig(userId: string): Promise<number>
-  /**
    * Install from a source. `onPhase('installing')` is told once the source is fetched and the files
    * are being written (an update's progress row moves on). With `replace`, a marketplace copy whose
    * computed version is the one installed installs nothing and comes back `upToDate`.

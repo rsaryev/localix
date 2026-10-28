@@ -9,6 +9,7 @@ import { spaceTypes } from '../../shared/types'
 import { dragOps, followersOf, type Follower } from './moves'
 import { SNAP_PX, snapBox, type Guide } from './snap'
 import { flowCache, toFlow, type ElementNode } from './toFlow'
+import { useLatest, useStableCallback } from '@localixai/mini-app-sdk/ui/runtime-hooks'
 import { useBoardSelection } from './useBoardSelection'
 
 /**
@@ -32,8 +33,8 @@ interface Drag {
 
 export function useLiveBoard(view: SpaceView, apply: (ops: readonly SpaceOp[]) => void) {
   const camera = useCanvasCamera()
-  const cache = useRef(flowCache())
-  const flow = useMemo(() => toFlow(view, spaceTypes, cache.current), [view])
+  const [cache] = useState(flowCache)
+  const flow = useMemo(() => toFlow(view, spaceTypes, cache), [view, cache])
   const selection = useBoardSelection(view.space)
   const { selected, applySelection, groupOf } = selection
   const [live, setLiveState] = useState<Live>(new Map())
@@ -42,8 +43,7 @@ export function useLiveBoard(view: SpaceView, apply: (ops: readonly SpaceOp[]) =
   const drag = useRef<Drag | null>(null)
   const suspendSnap = useRef(false)
   // The callbacks below are handed to the library once; they read the board through a ref.
-  const board = useRef({ space: view.space })
-  board.current = { space: view.space }
+  const board = useLatest({ space: view.space })
 
   const setLive = useCallback((next: Live) => {
     liveRef.current = next
@@ -66,29 +66,30 @@ export function useLiveBoard(view: SpaceView, apply: (ops: readonly SpaceOp[]) =
   // The elements on the board when it first drew. Any other one arrived later — placed, pasted,
   // created by the agent — and settles in with `space-arrived`. Only those: giving the class to a
   // node already on screen would start its animation there and then.
-  const initial = useRef<ReadonlySet<string> | null>(null)
-  initial.current ??= new Set(flow.nodes.map((node) => node.id))
+  const [initial] = useState<ReadonlySet<string>>(() => new Set(flow.nodes.map((node) => node.id)))
 
   // A node shown as it is (not dragged) is derived once per base node and selection state, and
   // then handed back as the same object: the library redraws only nodes that are new objects, and
   // a click that selects one note must redraw that note, not the board. Weak keys release a
   // deleted base node and its full content; id-keyed caches retained every deleted card forever.
-  const shown = useRef(new WeakMap<ElementNode, { selected: boolean; node: ElementNode }>())
+  const [shown] = useState(
+    () => new WeakMap<ElementNode, { selected: boolean; node: ElementNode }>(),
+  )
   const nodes = useMemo(
     () =>
       flow.nodes.map((node): ElementNode => {
         const moved = live.get(node.id)
         const on = selected.has(node.id)
-        const cached = shown.current.get(node)
+        const cached = shown.get(node)
         if (!moved && cached?.selected === on) return cached.node
-        const arrived = !initial.current?.has(node.id)
+        const arrived = !initial.has(node.id)
         const next = {
           ...node,
           selected: on,
           ...(arrived ? { className: cn(node.className, 'space-arrived') } : {}),
         }
         if (!moved) {
-          shown.current.set(node, { selected: on, node: next })
+          shown.set(node, { selected: on, node: next })
           return next
         }
         const width = moved.w ?? node.width
@@ -101,34 +102,37 @@ export function useLiveBoard(view: SpaceView, apply: (ops: readonly SpaceOp[]) =
           measured: { width, height },
         }
       }),
-    [flow.nodes, live, selected],
+    [flow.nodes, live, selected, shown, initial],
   )
-  const shownEdges = useRef(
-    new WeakMap<CanvasEdgeType, { selected: boolean; edge: CanvasEdgeType }>(),
+  const [shownEdges] = useState(
+    () => new WeakMap<CanvasEdgeType, { selected: boolean; edge: CanvasEdgeType }>(),
   )
   // A caption dragged along its line writes where it was let go — one stable callback per
   // connector, so handing it over does not make every edge a new object on every render.
-  const applyRef = useRef(apply)
-  applyRef.current = apply
-  const selectRef = useRef(selection.select)
-  selectRef.current = selection.select
-  const captions = useRef(new Map<string, { move: (at: number) => void; select: () => void }>())
-  const captionOf = (id: string) => {
-    let caption = captions.current.get(id)
-    if (!caption) {
-      caption = {
-        move: (at) => applyRef.current([{ op: 'edge', id, labelAt: at }]),
-        select: () => selectRef.current([id]),
+  const applyLatest = useStableCallback(apply)
+  const selectLatest = useStableCallback(selection.select)
+  const [captions] = useState(
+    () => new Map<string, { move: (at: number) => void; select: () => void }>(),
+  )
+  const captionOf = useCallback(
+    (id: string) => {
+      let caption = captions.get(id)
+      if (!caption) {
+        caption = {
+          move: (at) => applyLatest([{ op: 'edge', id, labelAt: at }]),
+          select: () => selectLatest([id]),
+        }
+        captions.set(id, caption)
       }
-      captions.current.set(id, caption)
-    }
-    return caption
-  }
+      return caption
+    },
+    [captions, applyLatest, selectLatest],
+  )
   const edges = useMemo(
     (): CanvasEdgeType[] =>
       flow.edges.map((edge) => {
         const on = selected.has(edge.id)
-        const cached = shownEdges.current.get(edge)
+        const cached = shownEdges.get(edge)
         if (cached?.selected === on) return cached.edge
         const caption = captionOf(edge.id)
         const next = {
@@ -136,10 +140,10 @@ export function useLiveBoard(view: SpaceView, apply: (ops: readonly SpaceOp[]) =
           selected: on,
           data: { ...edge.data, onLabelMove: caption.move, onLabelSelect: caption.select },
         }
-        shownEdges.current.set(edge, { selected: on, edge: next })
+        shownEdges.set(edge, { selected: on, edge: next })
         return next
       }),
-    [flow.edges, selected],
+    [flow.edges, selected, shownEdges, captionOf],
   )
 
   /** Where the dragged nodes' changes put everything that moves, snapped as one box. */
@@ -207,7 +211,7 @@ export function useLiveBoard(view: SpaceView, apply: (ops: readonly SpaceOp[]) =
         .map(([, element]) => element)
       drag.current = { followers, others, sizes }
     },
-    [groupOf],
+    [groupOf, board],
   )
 
   /** Write what the board shows now, and let the server's answer take over from the live view. */
@@ -226,7 +230,7 @@ export function useLiveBoard(view: SpaceView, apply: (ops: readonly SpaceOp[]) =
       at.x !== undefined && at.y !== undefined ? [{ id, x: at.x, y: at.y }] : [],
     )
     commit(dragOps(board.current.space, shown, spaceTypes))
-  }, [commit])
+  }, [commit, board])
 
   return {
     nodes,

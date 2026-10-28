@@ -67,7 +67,7 @@ export function useClientBridge(input: {
       } else if (data.type === 'fault' && payload && PHASES.has(String(payload.phase))) {
         latest.current.onFault({
           phase: payload.phase as ModClientFault['phase'],
-          reason: String(payload.reason ?? '').slice(0, 4096),
+          reason: (typeof payload.reason === 'string' ? payload.reason : '').slice(0, 4096),
         })
       } else if (data.type === 'size' && payload) {
         const width = Number(payload.width)
@@ -79,7 +79,7 @@ export function useClientBridge(input: {
           })
       } else if (data.type === 'open' && payload) {
         // A link the person pressed in the frame: only while they are in it, only to the web.
-        const href = String(payload.href ?? '')
+        const href = typeof payload.href === 'string' ? payload.href : ''
         // Plugin code asked, so the person confirms the handoff, as for any untrusted link.
         if (document.activeElement === frame && SAFE_HREF.test(href))
           void platformCapabilities().external.requestOpen(href, false)

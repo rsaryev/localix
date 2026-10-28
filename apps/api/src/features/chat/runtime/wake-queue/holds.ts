@@ -48,8 +48,7 @@ export function heldEntries(
   let releaseAt: number | undefined
   for (const group of groups.values()) {
     const queued = new Set(group.map((item) => item.value.report.childSessionId))
-    const participant = group[0]!.value.to?.participant
-    if (!barrier.awaits(sessionId, participant, queued)) continue
+    if (!barrier.awaits(sessionId, queued)) continue
     const oldest = Math.min(...group.map((item) => Date.parse(item.value.queuedAt) || nowMs))
     const deadline = oldest + MAX_REPORT_HOLD_MS
     if (nowMs >= deadline) continue

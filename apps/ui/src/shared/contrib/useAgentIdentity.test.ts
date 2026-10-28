@@ -1,28 +1,22 @@
 import { describe, expect, test } from 'bun:test'
-import {
-  agentAuthorId,
-  humanizeHandle,
-  resolveAuthorIdentity,
-  agentProfileUri,
-} from './useAgentIdentity'
+import { agentAuthorId, resolveAuthorIdentity, agentProfileUri } from './useAgentIdentity'
 
-test('deleted authors keep their snapshot and never resolve through a replacement handle', () => {
-  const identity = resolveAuthorIdentity('deleted-id', { handle: 'old-name' }, [
-    { record: { id: 'new-id', handle: 'deleted-id', label: 'Impostor' }, projectId: 'other' },
-    { record: { id: 'another-id', handle: 'old-name', label: 'Replacement' }, projectId: 'other' },
+test('a deleted author falls back to its id and never resolves through a replacement name', () => {
+  const identity = resolveAuthorIdentity('deleted-id', [
+    { record: { id: 'new-id', name: 'deleted-id' }, projectId: 'other' },
+    { record: { id: 'another-id', name: 'old-name' }, projectId: 'other' },
   ])
   expect(identity).toEqual({
     agentId: 'deleted-id',
-    handle: 'old-name',
-    name: 'Old name',
+    name: 'deleted-id',
     scope: '',
   })
   expect(agentProfileUri(identity)).toBe('localix://ui/work-item/store?kind=agent&id=deleted-id')
   expect(
-    resolveAuthorIdentity('new-id', undefined, [
-      { record: { id: 'new-id', handle: 'reviewer', label: 'Reviewer' }, projectId: 'p' },
+    resolveAuthorIdentity('new-id', [
+      { record: { id: 'new-id', name: 'reviewer' }, projectId: 'p' },
     ]),
-  ).toEqual({ agentId: 'new-id', handle: 'reviewer', name: 'Reviewer', scope: 'p' })
+  ).toEqual({ agentId: 'new-id', name: 'reviewer', scope: 'p' })
 })
 
 describe('agentAuthorId', () => {
@@ -40,16 +34,5 @@ describe('agentAuthorId', () => {
 
   test('a handle may contain the separator', () => {
     expect(agentAuthorId('agent:acme:reviewer')).toBe('acme:reviewer')
-  })
-})
-
-describe('humanizeHandle', () => {
-  test.each([
-    ['reviewer', 'Reviewer'],
-    ['code-reviewer', 'Code reviewer'],
-    ['code_reviewer', 'Code reviewer'],
-    ['docs.writer', 'Docs writer'],
-  ])('%s reads as %s', (handle, expected) => {
-    expect(humanizeHandle(handle)).toBe(expected)
   })
 })

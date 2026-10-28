@@ -58,7 +58,7 @@ export function queryDraftFromUrl(
 /** Compose the URL input from the canonical base and enabled Params rows. */
 export function urlWithQuery(url: string, query: readonly Pair[]): string {
   const { beforeHash, hash } = splitHash(url)
-  // Tolerate legacy files whose URL still contains a query; the grid remains the source of truth.
+  // The grid is the source of truth for the query; anything after `?` in the URL is replaced.
   const base = beforeHash.split('?', 1)[0] ?? beforeHash
   const active = query.filter((pair) => !pair.disabled)
   if (active.length === 0) return `${base}${hash}`
@@ -66,7 +66,7 @@ export function urlWithQuery(url: string, query: readonly Pair[]): string {
   return `${base}?${raw}${hash}`
 }
 
-/** Normalize a saved legacy URL that embedded its query into the canonical two-field model. */
+/** Normalize a URL that embeds its query (an import, a hand-edited file) into the canonical two-field model. */
 export function canonicalUrlQuery(
   url: string,
   query: readonly Pair[],

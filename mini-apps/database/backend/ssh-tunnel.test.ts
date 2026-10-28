@@ -255,7 +255,7 @@ describe('establish through an SSH tunnel (secret resolution + rewrite, no socke
         resolve: async (_userId, key) => {
           inFlight += 1
           peak = Math.max(peak, inFlight)
-          await Bun.sleep(10)
+          await new Promise((r) => setTimeout(r, 0))
           inFlight -= 1
           return `resolved-${key}`
         },

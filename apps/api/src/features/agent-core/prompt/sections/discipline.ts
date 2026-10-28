@@ -3,7 +3,6 @@ import { TOOL } from '../../tool-names'
 import type { RunProfile } from '../../run-shape'
 import {
   batchLine,
-  codemodeLine,
   childReportLine,
   fileRoutingLine,
   lspDiagnosticsLine,
@@ -92,7 +91,7 @@ function buildSubagentExecutionDiscipline(toolNames: readonly string[] = []): st
   // A stock sub-agent HAS `bash` — telling it to punt to the parent would send the work
   // (and the files) back into the context delegation exists to protect. The caveat still
   // applies to a plugin agent whose declared `tools` list withholds the shell.
-  if (has(TOOL.bash)) {
+  if (has(TOOL.Bash)) {
     lines.push(
       '- You have a shell: verify what you claim. Type-check or test a change before reporting it, and check a fact with a command rather than guessing — an unverified answer sends the parent back to re-read the files this delegation kept out of its context.',
     )
@@ -107,7 +106,6 @@ function buildSubagentExecutionDiscipline(toolNames: readonly string[] = []): st
     failureDiagnosisLine(has),
     fileRoutingLine(has),
     batchLine(has),
-    codemodeLine(has),
     lspDiagnosticsLine(has),
     editorBufferLine(has),
   )
@@ -138,7 +136,7 @@ export function buildExecutionDiscipline(
 
   if (toolNames.length > 0) {
     lines.push(
-      has(TOOL.read)
+      has(TOOL.Read)
         ? '- Use tools whenever they materially improve correctness, completeness, or grounding. If you say you will check or read something, call the tool in the SAME turn; never end with only a promise.'
         : '- Use available tools whenever they materially improve the result. If you promise a tool action, call it in the SAME turn.',
     )
@@ -160,27 +158,27 @@ export function buildExecutionDiscipline(
   // Tool routing (one line) — per-tool FORMAT (patch envelope, `old_string`) is the schemas'.
   pushPresent(lines, fileRoutingLine(has))
 
-  if (hasAny(TOOL.write, TOOL.bash)) {
+  if (hasAny(TOOL.Write, TOOL.Bash)) {
     lines.push(
-      has(TOOL.write)
+      has(TOOL.Write)
         ? '- Non-interactive by default: pass unattended flags for scaffolders/installers/wizards, or edit files directly. A TTY prompt stalls the turn.'
         : '- Non-interactive by default: pass unattended flags; a TTY prompt stalls the turn.',
     )
   }
-  pushPresent(lines, batchLine(has), codemodeLine(has))
+  pushPresent(lines, batchLine(has))
 
   // `background:true` itself is bash's own description; the cross-tool half is the manager.
-  if (has(TOOL.bash) && has(TOOL.jobs)) {
+  if (has(TOOL.Bash) && has(TOOL.Jobs)) {
     lines.push(
-      '- Manage background processes with `jobs`: trust their startup output, and never start a duplicate or poll one with sleep/curl/lsof/ps.',
+      '- Manage background processes with `Jobs`: trust their startup output, and never start a duplicate or poll one with sleep/curl/lsof/ps.',
     )
   }
   // ONE loops rule. It used to say "recurring work belongs to the user's `/loop`" to a run that
   // held the loop tool itself — telling the model not to use a tool it had been given.
-  if (has(TOOL.bash)) {
+  if (has(TOOL.Bash)) {
     lines.push(
-      has(TOOL.loops)
-        ? `- Recurring or scheduled work is a loop armed with \`${TOOL.loops}\` — never crontab, launchd/systemd or a shell sleep loop.`
+      has(TOOL.Loops)
+        ? `- Recurring or scheduled work is a loop armed with \`${TOOL.Loops}\` — never crontab, launchd/systemd or a shell sleep loop.`
         : '- Do NOT fake a SCHEDULE with crontab, launchd/systemd, or a shell sleep loop: do the task once and report; recurring work is a loop the user starts with `/loop`.',
     )
   }
@@ -188,12 +186,12 @@ export function buildExecutionDiscipline(
   // WAITING (`bash until`, never a sleep loop) is stated once, on bash's `until` field: it used
   // to be there, in bash's description, in `jobs` and here, and the field is where the model is
   // looking when it reaches for a loop. Per-tool usage for interactive bash (PTY) and
-  // tool_output is likewise the schema's; execution discipline keeps cross-tool behavior.
+  // ToolOutput is likewise the schema's; execution discipline keeps cross-tool behavior.
 
   pushPresent(lines, lspDiagnosticsLine(has), editorBufferLine(has))
   // NB: skill-SAVE guidance lives in the skill tool's schema; the <system-reminder>
   // rule + the "be honest, never finish silently" rule live in "# Core principles".
-  const metaTools = [TOOL.memory, TOOL.skill].filter(has)
+  const metaTools = [TOOL.Skill].filter(has)
   if (metaTools.length > 0) {
     lines.push(
       `- Never call ${metaTools.join('/')} as a capability demonstration or self-test. These utilities have persistent side effects; use them only when the task requires them.`,

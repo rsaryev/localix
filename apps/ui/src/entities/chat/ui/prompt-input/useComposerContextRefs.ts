@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 
 import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
@@ -50,9 +50,12 @@ export function useComposerContextRefs(
   const dismissLink = useCallback((key: string) => {
     setDismissedAutoLinks((prev) => new Set(prev).add(key))
   }, [])
-  useEffect(() => {
+  // A selection dismissal ends with the selection: pruned as the tab links change, while rendering.
+  const [seenTabLinks, setSeenTabLinks] = useState(activeTabLinks)
+  if (seenTabLinks !== activeTabLinks) {
+    setSeenTabLinks(activeTabLinks)
     setDismissedAutoLinks((prev) => retainCurrentSelectionDismissals(prev, activeTabLinks))
-  }, [activeTabLinks])
+  }
   const autoLinks = useMemo(
     () => ambientAutoRefs(activeTabLinks, dismissedAutoLinks, visible, dismissLink),
     [activeTabLinks, dismissedAutoLinks, visible, dismissLink],

@@ -9,12 +9,12 @@
  *                       append-only: a context rebuilt per turn and dropped on the next rewrote
  *                       history the model had already seen (prefix cache, preserved thinking).
  *
- * `participant-view` runs between them (its own file): turn contexts are private to the agent
- * whose run sent them, so they are inserted into the viewer's projection, never before it.
+ * `agent-history` runs between them (its own file): turn contexts are private to the agent's
+ * runs, so they are inserted into its projection, never before it.
  */
 import type { HistoryStage } from '@localixai/agent/history'
 
-import { SYSTEM_PARTICIPANT } from '../../../../../db'
+import { SYSTEM_AUTHOR } from '../../../../../db'
 import type { PersistedMessage } from '../../../contracts'
 import type { StoredTurnContext } from '../../model-view/turn-context'
 import { rowsAfterClear } from '../../model-view/view'
@@ -52,7 +52,7 @@ export function turnContextRow(
     payload: {
       id,
       role: 'user',
-      from: SYSTEM_PARTICIPANT,
+      from: SYSTEM_AUTHOR,
       content: context.content,
       isInternal: true,
       ...(context.bindings?.length ? { bindings: context.bindings } : {}),

@@ -38,6 +38,14 @@ export interface TimeoutPromoterOptions {
    * reported to the model as a call still running in the background.
    */
   clockStartsAtGate?: boolean
+  /** Arms the budget: calls `fire` after `ms` and returns a cancel. Tests inject a manual one. */
+  armBudget?: (fire: () => void, ms: number) => () => void
+}
+
+const realBudget = (fire: () => void, ms: number): (() => void) => {
+  const timer = setTimeout(fire, ms)
+  timer.unref?.()
+  return () => clearTimeout(timer)
 }
 
 /** What the gate inside the chain finds on a call's context: start the call's budget now. */
@@ -60,7 +68,7 @@ function promotedResult(input: {
     content:
       `No result from \`${input.toolName}\` after ${seconds}s — it is still running in the ` +
       `background (job_id: ${input.jobId}): ${input.label}\n` +
-      `[its result returns automatically next turn; \`jobs\` action="list"/"stop" with ` +
+      `[its result returns automatically next turn; \`Jobs\` action="list", \`TaskStop\` with ` +
       `job_id="${input.jobId}"]`,
   }
 }
@@ -79,7 +87,7 @@ export function wrapToolsWithTimeoutPromoter(
         // Our own controller, chained to the run's: a promoted job needs to be stoppable on
         // its own, without taking away the run's ability to cancel everything. A tool that
         // honours cancellation therefore actually stops; one that ignores its signal does
-        // not, which is why `jobs action="stop"` reports a stop as REQUESTED, not confirmed.
+        // not, which is why `TaskStop` reports a stop as REQUESTED, not confirmed.
         const controller = new AbortController()
         const relayAbort = () => controller.abort()
         if (signal?.aborted) controller.abort()
@@ -100,7 +108,7 @@ export function wrapToolsWithTimeoutPromoter(
 
         // A call the gate refuses, or that a hook answers before the gate, settles first.
         if (options.clockStartsAtGate) await Promise.race([clockStarted, inflight.then(noop, noop)])
-        const settled = await raceBudget(inflight, budgetMs)
+        const settled = await raceBudget(inflight, budgetMs, options.armBudget ?? realBudget)
         if (settled !== PENDING) return settled
 
         // At capacity, promotion would trade a bounded wait for an unbounded pile of jobs.
@@ -113,7 +121,7 @@ export function wrapToolsWithTimeoutPromoter(
         const dispose = registry.registerActions(
           toolCallId,
           {
-            // A stop is REQUESTED, not confirmed — the `jobs` tool says so, and for a tool
+            // A stop is REQUESTED, not confirmed — the `Jobs` tool says so, and for a tool
             // that ignores its signal that is the only truthful wording.
             kill: { label: 'Stop', icon: 'square', execute: () => controller.abort() },
           },
@@ -158,17 +166,17 @@ const noop = () => {}
 async function raceBudget(
   inflight: Promise<AgentToolResult>,
   budgetMs: number,
+  arm: (fire: () => void, ms: number) => () => void,
 ): Promise<AgentToolResult | typeof PENDING> {
-  let timer: ReturnType<typeof setTimeout> | undefined
+  let cancel = noop
   try {
     return await Promise.race([
       inflight,
       new Promise<typeof PENDING>((resolve) => {
-        timer = setTimeout(() => resolve(PENDING), budgetMs)
-        timer.unref?.()
+        cancel = arm(() => resolve(PENDING), budgetMs)
       }),
     ])
   } finally {
-    if (timer) clearTimeout(timer)
+    cancel()
   }
 }

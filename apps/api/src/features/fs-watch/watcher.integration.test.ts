@@ -21,6 +21,12 @@ async function tempRoot(): Promise<string> {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
+/** Poll until `done` holds or the deadline passes: real fs events arrive late on a busy machine. */
+async function until(done: () => boolean, deadlineMs = 5_000): Promise<void> {
+  const end = Date.now() + deadlineMs
+  while (!done() && Date.now() < end) await sleep(25)
+}
+
 /**
  * Watch `root`, run `act`, and collect every directory reported until the watcher has been
  * quiet for a while. Collecting (instead of taking the first batch) is what lets a test say a
@@ -143,7 +149,7 @@ describe('createDirWatcher (real fs)', () => {
     await writeFile(path.join(root, 'created.ts'), '1')
     await writeFile(path.join(root, 'edited.ts'), '2')
     await rm(path.join(root, 'doomed.ts'))
-    await sleep(500)
+    await until(() => seen.size >= 3)
     expect(seen.get(path.join(root, 'created.ts'))).toBe('create')
     expect(seen.get(path.join(root, 'edited.ts'))).toBe('update')
     expect(seen.get(path.join(root, 'doomed.ts'))).toBe('delete')

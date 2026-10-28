@@ -3,7 +3,7 @@ import { DEFAULT_REASONING_EFFORT } from '@localixai/agent'
 import { birthRoute } from './agent-route-resolution'
 import { rememberedEffort } from './service/session-route-defaults'
 
-describe('birthRoute — the one decision of a new seat', () => {
+describe('birthRoute — the one decision of a new session’s route', () => {
   test('an explicit choice wins over every default', () => {
     const route = birthRoute({
       chosen: { modelId: 'picked/model', providerConnectionId: 'c1', reasoningEffort: 'max' },
@@ -18,7 +18,7 @@ describe('birthRoute — the one decision of a new seat', () => {
     })
   })
 
-  test('the model falls to the card, your last pick, then the project — never another seat', () => {
+  test('the model falls to the card, your last pick, then the project — never another session’s', () => {
     expect(birthRoute({ recentForAgent: { modelId: 'r' }, agent: { modelId: 'a' } }).modelId).toBe(
       'a',
     )
@@ -44,7 +44,7 @@ describe('birthRoute — the one decision of a new seat', () => {
     expect(route).toMatchObject({ modelId: 'haiku', reasoningEffort: 'low', modelOrigin: 'recent' })
   })
 
-  test('the effort is the level remembered for THAT model, never another seat’s', () => {
+  test('the effort is the level remembered for THAT model, never another session’s', () => {
     const route = birthRoute({
       recentForAgent: { modelId: 'openai/a' },
       agent: { reasoningEffort: 'low' },

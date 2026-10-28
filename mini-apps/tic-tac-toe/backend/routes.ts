@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
-import { jsonBody, seatedAnswer, type MiniAppRouteContext } from '@localixai/mini-app-sdk/backend'
+import { jsonBody, chatAnswer, type MiniAppRouteContext } from '@localixai/mini-app-sdk/backend'
 
 import { MoveRefused, OPPONENTS, type Game } from '../shared/game'
 import type { GameService } from './game-service'
@@ -19,7 +19,7 @@ const emptyBody = z.object({})
  * taken.").
  */
 export function createGameRoutes(games: GameService) {
-  const answer = seatedAnswer<Game>({
+  const answer = chatAnswer<Game>({
     missing: { code: 'no_table', message: 'This board belongs to a chat that is not available.' },
     refused: { error: MoveRefused, code: 'move_refused' },
   })
@@ -27,16 +27,16 @@ export function createGameRoutes(games: GameService) {
   return new Hono<MiniAppRouteContext>()
     .get('/game', (c) => {
       c.header('Cache-Control', 'no-store')
-      return answer(c, (seat) => games.read(seat))
+      return answer(c, (chat) => games.read(chat))
     })
     .post('/game/move', jsonBody(moveBody), (c) =>
-      answer(c, (seat) => games.personMove(seat, c.req.valid('json').cell)),
+      answer(c, (chat) => games.personMove(chat, c.req.valid('json').cell)),
     )
     .post('/game/new', jsonBody(newGameBody), (c) =>
-      answer(c, (seat) => games.newGame(seat, c.req.valid('json').first)),
+      answer(c, (chat) => games.newGame(chat, c.req.valid('json').first)),
     )
-    .post('/game/remind', jsonBody(emptyBody), (c) => answer(c, (seat) => games.remind(seat)))
+    .post('/game/remind', jsonBody(emptyBody), (c) => answer(c, (chat) => games.remind(chat)))
     .post('/game/opponent', jsonBody(opponentBody), (c) =>
-      answer(c, (seat) => games.setOpponent(seat, c.req.valid('json').opponent)),
+      answer(c, (chat) => games.setOpponent(chat, c.req.valid('json').opponent)),
     )
 }

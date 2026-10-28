@@ -70,7 +70,7 @@ DevOps Workspace and Kubernetes detail tabs
 | Apply manifest          | Strip server-owned fields, dry-run `All`, then server-side apply | No rollback is implemented after a successful apply                  |
 
 The workbench contributes **no agent tools**: wrapper schemas would cost roughly 930 tokens on every
-request to repeat verbs of a CLI the agent already drives through `bash`. `kubectl delete` and
+request to repeat verbs of a CLI the agent already drives through `Bash`. `kubectl delete` and
 `kubectl drain` match bash's dangerous-command patterns; the agent's permission rules decide whether
 to allow, confirm, or deny them. The panel, routes, resource/search/context providers, and the live
 pod watch are unaffected.

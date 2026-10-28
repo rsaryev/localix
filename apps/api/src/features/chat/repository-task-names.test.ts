@@ -1,3 +1,4 @@
+import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -8,9 +9,9 @@ import { createDatabase, destroyDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import { AGENT_TASK_ROOT_PATH, resolveAgentTaskReference } from '../agent-core/agent-task-name'
 import { createChatRepository, type SessionRecord } from './repository'
-import { routedParticipants, sessionFixture } from '../../testing/session-fixture'
+import { routedAgent, sessionFixture } from '../../testing/session-fixture'
 
-const tempDir = join(process.cwd(), 'tmp', 'chat-repository-task-name-tests')
+const tempDir = join(tmpdir(), `localix-chat-repository-task-name-tests-${process.pid}`)
 
 /**
  * A minimal session literal. `taskName` is deliberately NOT set anywhere in this file: it is
@@ -29,7 +30,7 @@ function session(
     userId: 'user-a',
     seq,
     title: id,
-    agents: routedParticipants({ modelId: '', reasoningEffort: 'low' }),
+    agent: routedAgent({ modelId: '', reasoningEffort: 'low' }),
     createdAt: timestamp,
     updatedAt: timestamp,
     lastMessageAt: timestamp,

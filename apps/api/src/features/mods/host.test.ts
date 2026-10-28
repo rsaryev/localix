@@ -44,7 +44,7 @@ function ports(dir: string) {
     dataDir: (plugin) => join(dir, 'data', plugin),
     workspaceDir: dir,
     submitPrompt: async () => {},
-    complete: INERT_MOD_PORTS.complete,
+    complete: (...args) => INERT_MOD_PORTS.complete(...args),
     log: () => {},
     notify: () => {},
     changed: () => changes.push(1),
@@ -101,12 +101,14 @@ describe('mods host', () => {
     expect(host.loaded()).toEqual(['first-mod'])
     expect(host.registry.commands().map((command) => command.name)).toEqual(['tally'])
 
-    const [read, bash] = scope.wrapTools([tool('read'), tool('bash')])
-    expect((await read!.execute('t1', {})).content).toBe('read ran')
+    const [read, bash] = scope.wrapTools([tool('Read'), tool('Bash')])
+    expect((await read!.execute('t1', {})).content).toBe('Read ran')
     // Awaited before `expect`: Bun's `expect(promise).rejects` waits without taking the messages
     // a worker posts, and the mod runs in one.
     const denied = await bash!.execute('t2', { command: 'ls' }).catch((error: Error) => error)
-    expect(String(denied)).toContain('Bash is off: use the file tools')
+    expect(denied instanceof Error ? denied.message : '').toContain(
+      'Bash is off: use the file tools',
+    )
 
     const [count] = scope.tools()
     expect(count!.name).toBe('mcp__first-mod__count')
@@ -132,7 +134,7 @@ describe('mods host', () => {
 
   test('a pane draws through ui.render, and its button runs the closure', async () => {
     const { host, scope, pane, changes } = await loadFirstMod()
-    await scope.wrapTools([tool('read')])[0]!.execute('t1', {})
+    await scope.wrapTools([tool('Read')])[0]!.execute('t1', {})
     const drawing = await host.panes.render(pane, 'tally')
     expect(drawing?.tree).toEqual([
       {
@@ -154,7 +156,7 @@ describe('mods host', () => {
 
   test('each project runs its own instance of the mod, with its own state', async () => {
     const { host, dir, scope } = await loadFirstMod()
-    await scope.wrapTools([tool('read')])[0]!.execute('t1', {})
+    await scope.wrapTools([tool('Read')])[0]!.execute('t1', {})
     const other = await createModRunScope(
       host,
       { userId: 'u1', sessionId: 's2', cwd: join(dir, 'other') },

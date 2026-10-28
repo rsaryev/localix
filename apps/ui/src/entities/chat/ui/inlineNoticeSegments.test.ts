@@ -20,7 +20,7 @@ const text = (id: string, value: string) => ({
   status: 'completed' as const,
   text: value,
 })
-const tool = (id: string) => ({ id, type: 'tool_call', status: 'running', name: 'bash' })
+const tool = (id: string) => ({ id, type: 'tool_call', status: 'running', name: 'Bash' })
 const body = (message: Message) =>
   inlineNoticeSegments(message).map((segment) =>
     segment.kind === 'notice'

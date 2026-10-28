@@ -86,7 +86,7 @@ describe('contextStoreRepository', () => {
       userId: 'u1',
       sessionId: 's1',
       toolCallId: 'call_huge',
-      toolName: 'bash',
+      toolName: 'Bash',
       text,
     })
 
@@ -104,7 +104,7 @@ describe('contextStoreRepository', () => {
       userId: 'u1',
       sessionId: 's1',
       toolCallId: 'call_1',
-      toolName: 'bash',
+      toolName: 'Bash',
       text,
     })
     expect(sections.sections).toBeGreaterThan(1)
@@ -124,7 +124,7 @@ describe('contextStoreRepository', () => {
 
   test('re-indexing a tool call replaces its chunks (no stale accumulation)', async () => {
     const store = await setup()
-    const base = { userId: 'u1', sessionId: 's1', toolCallId: 'call_x', toolName: 'bash' }
+    const base = { userId: 'u1', sessionId: 's1', toolCallId: 'call_x', toolName: 'Bash' }
     await store.indexToolOutput({ ...base, text: 'first version speaks about walruses' })
     await store.indexToolOutput({ ...base, text: 'second version speaks about penguins' })
     expect(await store.searchChunks('u1', 's1', '"walruses"')).toEqual([])
@@ -134,7 +134,7 @@ describe('contextStoreRepository', () => {
 
   test('toolCallId filter scopes the search', async () => {
     const store = await setup()
-    const base = { userId: 'u1', sessionId: 's1', toolName: 'bash' }
+    const base = { userId: 'u1', sessionId: 's1', toolName: 'Bash' }
     await store.indexToolOutput({ ...base, toolCallId: 'a', text: 'zebra appears here' })
     await store.indexToolOutput({ ...base, toolCallId: 'b', text: 'zebra appears there too' })
     const all = await store.searchChunks('u1', 's1', '"zebra"')
@@ -146,7 +146,7 @@ describe('contextStoreRepository', () => {
 
   test('same toolCallId in two sessions never deletes or satisfies the other session', async () => {
     const store = await setup()
-    const shared = { userId: 'u1', toolCallId: 'shared-call', toolName: 'bash' }
+    const shared = { userId: 'u1', toolCallId: 'shared-call', toolName: 'Bash' }
     await store.indexToolOutput({
       ...shared,
       sessionId: 's1',
@@ -188,7 +188,7 @@ describe('contextStoreRepository', () => {
     await hook(
       {
         toolCallId: 'write_1',
-        toolName: 'write',
+        toolName: 'Write',
         input: {
           path: 'src/safe.ts',
           content: `${safeContent}// token=${secret}\n`,
@@ -222,7 +222,7 @@ describe('contextStoreRepository', () => {
       userId: 'u1',
       sessionId: 's1',
       toolCallId: 'call_exact',
-      toolName: 'write',
+      toolName: 'Write',
       toolInput: { path: 'a.ts', content: 'original input' },
       isError: false,
     }
@@ -231,7 +231,7 @@ describe('contextStoreRepository', () => {
     await store.putToolOutputArtifact({ ...base, text: 'replacement output' })
     expect(await store.getToolOutputArtifact('u1', 's1', 'call_exact')).toEqual({
       toolCallId: 'call_exact',
-      toolName: 'write',
+      toolName: 'Write',
       text: 'replacement output',
       input: { path: 'a.ts', content: 'original input' },
       isError: false,

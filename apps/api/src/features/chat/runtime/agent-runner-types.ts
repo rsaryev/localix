@@ -1,4 +1,3 @@
-import type { SemanticVectors } from '@localixai/mini-app-sdk/backend'
 import type { ChatFeaturePorts } from '../feature-ports'
 import type { DecisionService } from '../../decisions/service'
 import type { GlobalSearchPort } from '../../agent-core/tools/global-search/global-search'
@@ -23,7 +22,6 @@ import type {
 } from '../../agent-core/tools/terminal/terminal-job'
 import type { PreviewControl } from '../../agent-core/tools/preview/preview-control'
 import type { MiniAppCommandControl } from './mini-app-command-registry'
-import type { MiniAppAuthoring } from '../../mini-apps/authoring/service'
 import type { MediaStore } from '../../media/store'
 import type { MonitorService } from '../../monitors/service'
 import type { ExitNotices } from './exit-notices'
@@ -52,13 +50,13 @@ export interface RunnerDeps {
    * The chat repository the runner READS SESSIONS through — the service graph's, with the
    * model chain applied on read (`withResolvedRoutes`), never one of the runner's own.
    *
-   * The runner used to build its own from `db`. A seat stores a model only when someone chose
-   * one for that participant in that conversation; every other seat is blank and answered on
+   * The runner used to build its own from `db`. A route stores a model only when someone chose
+   * one for that agent in that conversation; every other route is blank and answered on
    * read by the chain. A raw repository returns the blank, so every turn the runner started
    * from its own read — a reaction, a loop tick, a board wake, a webhook — failed with
    * `NO_MODEL` while the typed turns beside it, which arrive carrying the service's resolved
-   * record, ran fine. Observed live on the first reaction placed in a room: three
-   * "No model selected" rows under three members whose models were in plain view.
+   * record, ran fine. Observed live on the first reaction placed in a chat: a
+   * "No model selected" row under an agent whose model was in plain view.
    */
   repo: ChatRepository
   /** Other features' stores, shared with the chat service graph. */
@@ -92,9 +90,7 @@ export interface RunnerDeps {
   readTerminalJob?: (input: { userId: string; terminalId: string }) => TerminalSnapshot | null
   /** Drives the interactive `terminal` tool (open/screen/keys/type/list/close). */
   terminalControl?: TerminalControl
-  /** Backs the `mini_app_build` tool: the host's authoring of the user's own mini apps. */
-  miniAppAuthoring?: MiniAppAuthoring
-  /** Drives the `browser` tool — relays commands to the open preview's probe. */
+  /** Drives the `Browser` tool — relays commands to the open preview's probe. */
   previewControl?: PreviewControl
   /**
    * Awaitable mini app→UI command relay — backs `ToolSessionContext.emitCommandWithReply` for tools
@@ -123,12 +119,12 @@ export interface RunnerDeps {
   documentExtract?: () => DocumentExtractPort | undefined
   /**
    * Bump the capability revision and poke clients — for a capability mutation made INSIDE a
-   * run (the `skill` tool's save/delete). Absent in isolated hosts: nothing is announced.
+   * run (the `Skill` tool's save/delete). Absent in isolated hosts: nothing is announced.
    */
   announceCapabilityChange?: () => void
   /**
    * A skill's content as the model reads it (`service/skill-render.ts`): its injected commands
-   * run, its arguments and `${CLAUDE_*}` variables substituted — the `skill` tool's `get` renders
+   * run, its arguments and `${CLAUDE_*}` variables substituted — the `Skill` tool's `get` renders
    * through it as a typed `/name` does. Absent in isolated hosts: the content as written.
    */
   renderSkill?: (
@@ -178,52 +174,29 @@ export interface RunnerDeps {
    */
   sanitizeText?: (userId: string, text: string) => string
   /**
-   * The `configure` tool's host: renders proposal cards and applies APPROVED changes through
+   * The `Configure` tool's host: renders proposal cards and applies APPROVED changes through
    * the capabilities/agents/user services. Composed after chat (it needs the toggle service,
    * which needs chat), so it arrives through a forward-holder getter like `monitors`.
    */
   configProposals?: ConfigProposalService
   /**
-   * The `plan` tool's host and the approved-plan prompt section's source (features/plans).
+   * The `Plan` tool's host and the approved-plan prompt section's source (features/plans).
    * Composed after chat — an approval changes a session's mode and wakes it — so forward-held.
    */
   plans?: PlanService
-  /** The search palette's service — the agent's `global_search` (forward-held, built after chat). */
+  /** The search palette's service — the agent's `GlobalSearch` (forward-held, built after chat). */
   globalSearch?: GlobalSearchPort
-  /** The Store, for the agent's `store` tool (forward-held: the Store is built after chat). */
+  /** The Store, for the agent's `Store` tool (forward-held: the Store is built after chat). */
   store?: StoreAgentPort
-  /**
-   * The embedding model on demand (`embeddings/semantic-vectors.ts`), null while it cannot run.
-   * Group routing's fallback when no decision model is reachable (`floor-advisor.ts`).
-   */
-  vectors?: SemanticVectors
-  /** The decision model (`features/decisions`): group routing's first strategy. */
+  /** The decision model (`features/decisions`): games, the browser's goal check and mini apps. */
   decisions?: DecisionService
-  /** The engine's script sandbox (`AgentEngine.scripts`): what the `codemode` tool runs on. */
+  /** The engine's script sandbox (`AgentEngine.scripts`): what `Workflow` scripts run on. */
   scripts?: ScriptSandbox
   /**
    * The text of `file` as an editor this user holds it open (possibly unsaved), or undefined.
    * Lets the file tools tell the model when its write lands under the person's unsaved edits.
    */
   editorBufferText?: (userId: string, file: string) => string | undefined
-  /**
-   * Native registry agents admitted on the requested invocation host.
-   * A narrow callback (not the full agents service) so the chat runtime stays
-   * decoupled from the agents feature — mirrors the other injected-capability deps.
-   * Returns `[]` (or is absent) when the registry is empty.
-   */
-  listInvocableRegistryAgents?: (
-    userId: string,
-    host: string,
-    projectId: string | null,
-  ) => Promise<
-    {
-      agentId: string
-      name: string
-      description: string
-      leadershipPriority?: number
-    }[]
-  >
   /**
    * The agent the `agent` setting names for a folder (Claude Code's settings files, then the
    * agents' catalog): the main thread runs as it. Null: none named, or it is not available.
@@ -242,10 +215,8 @@ export interface RunnerDeps {
       agentId: string
       name: string
       description: string
-      leadershipPriority?: number
       enabled: boolean
-      canJoinConversation: boolean
-      /** `delegate` can hand it a task. */
+      /** `Agent` can hand it a task. */
       delegable?: boolean
       tools?: readonly string[]
       self?: boolean

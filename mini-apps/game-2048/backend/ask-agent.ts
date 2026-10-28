@@ -1,4 +1,4 @@
-import { askAgentForTurn, type Seat, type Wake } from '@localixai/mini-app-sdk/backend'
+import { askAgentForTurn, type ChatRef, type Wake } from '@localixai/mini-app-sdk/backend'
 
 import { describeGame } from '../shared/describe'
 import { MAX_MOVES, type AgentWait, type Game } from '../shared/game'
@@ -17,7 +17,7 @@ import { MAX_MOVES, type AgentWait, type Game } from '../shared/game'
  * whole game in this one turn.
  */
 
-export type { Seat, Wake }
+export type { ChatRef, Wake }
 
 /** The one tool a woken turn answers with — the host puts it on the wire before it starts. */
 export const ANSWER_TOOLS = ['game_2048']
@@ -44,10 +44,10 @@ export const positionKey = (game: Game) => `${game.id}:${game.moves}`
 /** The wait the view shows after asking — or the reason nobody was asked. */
 export async function askAgent(
   wake: Wake | undefined,
-  seat: Seat,
+  chat: ChatRef,
   game: Game,
   now: string,
 ): Promise<AgentWait> {
   const turn = { message: askToPlay(game), tools: ANSWER_TOOLS, key: positionKey(game) }
-  return askAgentForTurn(wake, seat, turn, now)
+  return askAgentForTurn(wake, chat, turn, now)
 }

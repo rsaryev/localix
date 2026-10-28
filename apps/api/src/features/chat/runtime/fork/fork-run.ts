@@ -45,24 +45,31 @@ export async function loadForkRun(
 
 /** How a run keys and times the provider's prompt cache (`AgentRuntimeRunInput`). */
 export interface RunCacheKey {
-  sessionId: string
+  /** What a provider that routes its cache by key is sent (`AgentRuntimeRunInput.promptCacheKey`). */
+  promptCacheKey: string
   idleMs: number | undefined
   retention: 'short' | 'long' | undefined
 }
 
 /**
- * The cache identity of a run. An ordinary run is keyed by its own session. A fork is keyed by its
- * parent's (providers that look the cache up by key, not only by prefix, find the parent's entry),
+ * The cache identity of a run. An ordinary run is keyed as the host keys its sessions (the key
+ * its agent, model and project share, `prompt-cache-key.ts`). A fork is keyed by its parent's
+ * key, the one stored in its seed, not recomputed: it may work in another folder (a worktree) or
+ * be asked of another agent's line, and only the parent's key finds the parent's entry,
  * keeps the parent's retention, and its first request follows the parent's by moments, so no idle
  * gap is reported against it.
  */
 export function runCacheKey(
   fork: ForkRun | undefined,
-  own: { sessionId: string; idleMs: number | undefined; retention: 'short' | 'long' | undefined },
+  own: {
+    promptCacheKey: string
+    idleMs: number | undefined
+    retention: 'short' | 'long' | undefined
+  },
 ): RunCacheKey {
   if (!fork) return own
   return {
-    sessionId: fork.seed.cacheSessionId,
+    promptCacheKey: fork.seed.cacheSessionId,
     idleMs: fork.first ? 0 : own.idleMs,
     retention: fork.seed.promptCacheRetention ?? own.retention,
   }

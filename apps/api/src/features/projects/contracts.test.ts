@@ -22,9 +22,9 @@ describe('projectRef', () => {
 
 describe('permissionRuleSchema', () => {
   test('defaults pattern to "*" and enforces the action enum', () => {
-    const parsed = permissionRuleSchema.parse({ permission: 'bash', action: 'allow' })
+    const parsed = permissionRuleSchema.parse({ permission: 'Bash', action: 'allow' })
     expect(parsed.pattern).toBe('*')
-    expect(permissionRuleSchema.safeParse({ permission: 'bash', action: 'maybe' }).success).toBe(
+    expect(permissionRuleSchema.safeParse({ permission: 'Bash', action: 'maybe' }).success).toBe(
       false,
     )
   })

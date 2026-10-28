@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { createBashTool } from './bash'
 import type { SpawnTerminalJob, TerminalJobHandle } from '../terminal/terminal-job'
-import { FAST_SETTLE } from './testing/test-settle'
 
 function fakeTerminalHost(url: string): { spawn: SpawnTerminalJob; commands: string[] } {
   const commands: string[] = []
@@ -21,13 +20,16 @@ function fakeTerminalHost(url: string): { spawn: SpawnTerminalJob; commands: str
   return { spawn, commands }
 }
 
+// The fake host prints nothing, so each spawn waits out the whole cap: keep it tiny.
+const SETTLE = { minMs: 0, maxMs: 20, quietMs: 10 }
+
 describe('background bash on a terminal host', () => {
   test('tells the host a notify job wakes the agent, so its exit is reported once', async () => {
     // The host announced every PTY exit, and a `notify` job's woken turn announced it again.
     const asked: (boolean | undefined)[] = []
     const host = fakeTerminalHost('http://localhost:5174')
     const tool = createBashTool(undefined, undefined, {
-      backgroundSettle: FAST_SETTLE,
+      backgroundSettle: SETTLE,
       spawnTerminalJob: (input) => {
         asked.push(input.wakesAgent)
         return host.spawn(input)

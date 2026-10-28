@@ -99,7 +99,9 @@ export function StructureRow({
         />
         <datalist id={dataListId}>
           {typeOptions.map((type) => (
-            <option key={type} value={type} />
+            <option key={type} value={type}>
+              {type}
+            </option>
           ))}
         </datalist>
       </td>

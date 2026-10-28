@@ -1,4 +1,3 @@
-import type { ParticipantRef } from '../../../db/participant'
 import type { MessageBinding } from './messages'
 
 /**
@@ -52,7 +51,7 @@ export interface SessionLoopSummary {
   runCount: number
   /**
    * ISO timestamp until which this loop's occurrence is being HELD because the provider route
-   * of the participant it is addressed to is exhausted (a prior run on that route failed
+   * of the agent it is addressed to is exhausted (a prior run on that route failed
    * rate-limited, so `finalize` set a route cooldown the loop gate consults before firing).
    * `null` when nothing is holding it.
    *
@@ -112,7 +111,7 @@ export type WakeSource =
    */
   | 'reaction'
   /**
-   * THE AGENT THAT DELEGATED A TASK SPOKE TO ITS CHILD — `delegate` action message.
+   * THE AGENT THAT DELEGATED A TASK SPOKE TO ITS CHILD — `SendMessage`.
    *
    * The reverse of `subagent`: that one carries a child's report up, this carries its delegator's
    * word down. A running child takes it at its next step boundary (`isDelegatorMessage`); an idle
@@ -150,18 +149,8 @@ export interface WakeRequest {
   content: string
   /** Who woke it; drives the "via …" chip and the self-caused chain budget. */
   source: WakeSource
-  /** Which participant the turn concerns; absent lets the conversation strategy choose. */
-  to?: { participant: ParticipantRef; handle?: string }
-  /**
-   * THE PERSON'S WORDS THIS WAKE CARRIES — route it as the conversation routes a typed message
-   * with this text. Without it an unaddressed wake goes to one participant by the runtime rule
-   * (least recently dispatched), which is right for a machine report and wrong for something the
-   * person said: an approval handed to "@backend" reached whoever was least
-   * recent, and `@all` reached one agent. With it the strategy reads the text exactly as it reads
-   * a message — its `@handle` mentions, `@all`, and its default answerer when none is named
-   * (empty text = no mention). Mutually exclusive with `to`, which wins when both are set.
-   */
-  addressedAs?: string
+  /** Which agent the turn concerns; absent means the session's agent.
+  to?: { agentId: string }
   /** Idempotency key: a second wake with the same key is the same delivery. */
   deliveryKey?: string
   /**
@@ -197,7 +186,7 @@ export interface WakeRequest {
   report?: DelegatedReport
 }
 
-/** One run of a delegated child, as its report reaches the participant who delegated. */
+/** One run of a delegated child, as its report reaches the agent who delegated. */
 export interface DelegatedReport {
   /** The child's label (the delegation title). */
   label: string
@@ -210,6 +199,8 @@ export interface DelegatedReport {
   text: string | null | undefined
   /** The run stopped at its turn limit (CC `maxTurns`): the text is partial output. */
   partial?: boolean
+  /** The run ended right after the child messaged its delegator: it is waiting for the answer. */
+  waiting?: boolean
 }
 
 /**
@@ -226,9 +217,7 @@ export interface SessionQueueItem {
   kind: 'user' | 'wake'
   /** Lower drains first (user=0, wake=10) — mirrors the backend priority band. */
   priority: number
-  /** Addressed agent turn. Absent for user, control, and background events. */
-  agentId?: string
-  /** Domain weight for an addressed agent turn; higher values run first. */
+  /** Domain weight for an addressed agent turn (absent otherwise); higher values run first. */
   agentWeight?: number
   /** Truncated preview of the queued content for the composer strip. */
   preview: string
@@ -263,6 +252,20 @@ export type QueueRemovalResult =
 export type QueuePromoteResult =
   | { promoted: true }
   | { promoted: false; reason: 'leased' | 'not_found' | 'not_user' | 'batched' }
+
+/** One queued message of the person's handed back to the composer when they pressed Stop. */
+export interface QueueReturnedMessage {
+  content: string
+  bindings?: MessageBinding[]
+  /** The optimistic row the client painted for it, so it can be dropped. */
+  clientMessageId?: string
+}
+
+/** What a Stop answers: whether anything stopped, and the messages that were waiting. */
+export interface StopResult {
+  stopped: boolean
+  returned: QueueReturnedMessage[]
+}
 
 export interface QueueClearResult {
   removed: number

@@ -76,6 +76,7 @@ export function HistorySearchField({
         inset
         value={value}
         onValueChange={onChange}
+        // oxlint-disable-next-line jsx-a11y/no-autofocus -- SearchInput focuses by hand once; the field only appears after the person opens search
         autoFocus
         placeholder="Filter chats in this workspace…"
         className="w-full"

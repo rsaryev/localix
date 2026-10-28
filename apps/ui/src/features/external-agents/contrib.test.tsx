@@ -25,7 +25,7 @@ test('core external transcripts and resource anchors work without a mini app or 
   const uri = externalSessionUri('codex:s1')
   expect(kind.scope).toBe('global')
   expect(kind.miniAppName).toBeUndefined()
-  expect(kind.agentContext).toMatchObject({ tools: ['external_agent_sessions'] })
+  expect(kind.agentContext).toMatchObject({ tools: ['ExternalAgentSessions'] })
   expect(anchors[0]?.resolve(uri)).toMatchObject({
     kind: 'work-item',
     workKind: kind.kind,

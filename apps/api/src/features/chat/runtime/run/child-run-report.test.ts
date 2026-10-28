@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 
-import { sessionFixture, routedParticipants } from '../../../../testing/session-fixture'
+import { sessionFixture, routedAgent } from '../../../../testing/session-fixture'
 import type { WakeRequest } from '../../contracts'
 import {
   getAgentService,
@@ -37,7 +37,7 @@ afterEach(() => {
 
 const root = sessionFixture({
   id: 'root',
-  agents: routedParticipants({ agentId: 'builtin:lead', handle: 'lead' }),
+  agent: routedAgent({ agentId: 'builtin:lead', name: 'lead' }),
 })
 const child = sessionFixture({
   id: 'child',
@@ -49,12 +49,26 @@ const child = sessionFixture({
     kind: 'task-delegation',
     parentSessionId: 'root',
     toolCallId: 'tc1',
-    parentParticipant: 'agent:builtin:lead',
   },
 })
 
 /** `awaited: false` is a run nobody delegated: a person talking to the child in its own chat. */
-function harness(opts: { closed?: boolean; awaited?: boolean; queued?: () => boolean } = {}) {
+function harness(
+  opts: {
+    closed?: boolean
+    awaited?: boolean
+    queued?: () => boolean
+    /** Stored assistant rows by id, where a run is more than one row; the rest answer `answer of <id>`. */
+    rows?: Record<
+      string,
+      {
+        content: string
+        continuedFromMessageId?: string
+        items?: { type: string; name: string; status: string }[]
+      }
+    >
+  } = {},
+) {
   if (opts.awaited !== false) expectReport('child')
   const events: string[] = []
   const woken: WakeRequest[] = []
@@ -84,7 +98,7 @@ function harness(opts: { closed?: boolean; awaited?: boolean; queued?: () => boo
     repo: {
       getMessage: async (_u: string, _s: string, id: string) => ({
         id,
-        payload: { role: 'assistant', content: `answer of ${id}` },
+        payload: { role: 'assistant', content: `answer of ${id}`, ...opts.rows?.[id] },
       }),
       // The child read fresh (a close may have landed during the run); the root for the handle.
       getSession: async (_u: string, id: string) =>
@@ -105,7 +119,7 @@ function harness(opts: { closed?: boolean; awaited?: boolean; queued?: () => boo
 }
 
 describe('a delegated child reports every run', () => {
-  test('the run it was launched with, addressed to the delegating participant in the root chat', async () => {
+  test('the run it was launched with, to the root chat', async () => {
     const h = harness()
     await reportChildRun(h.env, { userId: 'u', session: child, runId: 'm1', outcome: 'completed' })
 
@@ -115,7 +129,6 @@ describe('a delegated child reports every run', () => {
       source: 'subagent',
       deliveryKey: 'child-terminal:child:m1',
       receipt: true,
-      to: { participant: 'agent:builtin:lead', handle: 'lead' },
     })
     expect(h.woken[0]!.content).toContain('Audit the API')
     expect(h.woken[0]!.content).toContain('answer of m1')
@@ -132,6 +145,65 @@ describe('a delegated child reports every run', () => {
       'child-terminal:child:m2',
     ])
     expect(h.woken[1]!.content).toContain('answer of m2')
+  })
+
+  test('a run a steer split into rows reports every reply since it began, not the last row alone', async () => {
+    // LOCALIX-430: the delegator amended the brief mid-run; the child had already written the
+    // review in the row before, and the report was the 244 characters it said after.
+    const h = harness({
+      rows: {
+        m1: { content: 'The full review of the API.' },
+        m2: { content: 'See my previous report.', continuedFromMessageId: 'm1' },
+      },
+    })
+    await reportChildRun(h.env, { userId: 'u', session: child, runId: 'm2', outcome: 'completed' })
+
+    expect(h.woken[0]!.content).toContain('The full review of the API.')
+    expect(h.woken[0]!.content).toContain('See my previous report.')
+    expect(h.woken[0]).toMatchObject({ deliveryKey: 'child-terminal:child:m2' })
+    expect(h.woken[0]!.report?.text).toBe('The full review of the API.\n\nSee my previous report.')
+  })
+
+  test('a child that messaged its delegator and ended its turn is said to be waiting, not finished', async () => {
+    // LOCALIX-430: "[Subagent finished]" for a child that had asked a question and stopped.
+    const h = harness({
+      rows: {
+        m1: {
+          content: 'Waiting for the branch name.',
+          items: [
+            { type: 'tool_call', name: 'Read', status: 'completed' },
+            { type: 'tool_call', name: 'SendMessage', status: 'completed' },
+          ],
+        },
+      },
+    })
+    await reportChildRun(h.env, { userId: 'u', session: child, runId: 'm1', outcome: 'completed' })
+    expect(h.woken[0]!.content.startsWith('[Subagent is waiting for your answer]')).toBe(true)
+    expect(h.woken[0]!.content).not.toContain('finished')
+    expect(h.woken[0]!.report?.waiting).toBe(true)
+  })
+
+  test('a child that messaged its delegator and kept working is finished when it ends', async () => {
+    const h = harness({
+      rows: {
+        m1: {
+          content: 'Done.',
+          items: [
+            { type: 'tool_call', name: 'SendMessage', status: 'completed' },
+            { type: 'tool_call', name: 'Edit', status: 'completed' },
+          ],
+        },
+      },
+    })
+    await reportChildRun(h.env, { userId: 'u', session: child, runId: 'm1', outcome: 'completed' })
+    expect(h.woken[0]!.content.startsWith('[Subagent finished]')).toBe(true)
+    expect(h.woken[0]!.report?.waiting).toBeUndefined()
+  })
+
+  test('a follow-up run reports only its own replies, not the run the parent already read', async () => {
+    const h = harness({ rows: { m2: { content: 'Second answer.' } } })
+    await reportChildRun(h.env, { userId: 'u', session: child, runId: 'm2', outcome: 'completed' })
+    expect(h.woken[0]!.report?.text).toBe('Second answer.')
   })
 
   test('a run stopped at its turn limit reports its output marked partial (CC maxTurns)', async () => {

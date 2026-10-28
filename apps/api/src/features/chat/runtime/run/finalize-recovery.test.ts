@@ -129,7 +129,7 @@ describe('a failed run says what happened, as the system', () => {
   })
 
   test('a 429 holds the ROUTE the run took, not the session: another route stays admitted', async () => {
-    // Keyed per session, one participant's 429 on provider A held a participant of the same
+    // Keyed per session, one agent's 429 on provider A held an agent of the same
     // conversation that runs on provider B.
     const h = setup()
     const now = Date.now()

@@ -32,11 +32,13 @@ export function useMarketPrices(
   // one key (no re-fetch); a different page is a different key (supersede + re-fetch).
   const key = useMemo(() => [...symbols].sort().join(','), [symbols])
 
+  // A parked hook (no venue, disabled, or no rows) drops what it held while rendering, so a
+  // later re-enable never flashes the old page's prices.
+  const parked = !connectionId || !enabled || key === ''
+  if (parked && prices.size > 0) setPrices(new Map())
+
   useEffect(() => {
-    if (!connectionId || !enabled || key === '') {
-      setPrices(new Map())
-      return
-    }
+    if (!connectionId || !enabled || key === '') return
     const list = key.split(',')
     let cancelled = false
     const timer = setTimeout(() => {

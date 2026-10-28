@@ -23,10 +23,6 @@ interface ActionButtonsProps {
   recordingSeconds?: number
   onMicClick?: () => void
   onCancelRecording?: () => void
-  /** Smaller controls for embedded surfaces such as the agent island. */
-  compact?: boolean
-  /** Replaces the idle voice button, e.g. a link out to the full conversation. */
-  idleAction?: ReactNode
 }
 
 // The composer's square-action radius: its icon actions deliberately sit on
@@ -54,10 +50,8 @@ export function ActionButtons({
   recordingSeconds = 0,
   onMicClick,
   onCancelRecording,
-  compact = false,
-  idleAction,
 }: ActionButtonsProps) {
-  const size = compact ? 'sm' : 'lg'
+  const size = 'lg'
   return (
     <div
       role="group"
@@ -141,8 +135,7 @@ export function ActionButtons({
             <StopIcon className="size-3.5" />
           </IconButton>
         ) : !hasPrompt ? (
-          (idleAction ??
-          (canRecord && hasApiKey ? (
+          canRecord && hasApiKey ? (
             <IconButton
               size={size}
               tooltip="Record voice message"
@@ -154,7 +147,7 @@ export function ActionButtons({
             >
               <MicIcon className="size-4" />
             </IconButton>
-          ) : null))
+          ) : null
         ) : (
           <IconButton
             size={size}

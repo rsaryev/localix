@@ -19,8 +19,6 @@ export const MIN_GROUP_H = 120
 export const ROLE_MIN_W: Record<GroupRole, number> = {
   editor: 360,
   aux: 340,
-  preview: 300, // LEGACY: a persisted preview column from the old own-column policy
-  bottom: 240, // LEGACY: a persisted terminal strip from the old bottom-strip policy
 }
 
 /** The minimums above are authored against the DEFAULT 14px root font-size.

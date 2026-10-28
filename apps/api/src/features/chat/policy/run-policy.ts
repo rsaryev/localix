@@ -2,7 +2,7 @@
  * THE RUN'S POLICY: the session's decisions plus the ones only a run can make.
  *
  * Resolved once per run, before the agent is admitted (`runtime/run/stages/policy.ts`), and read
- * by every stage after it: which host admits the agent, who owns the topic, whether a person can
+ * by every stage after it: which host admits the agent, whether a person can
  * answer, why the turn started. A stage that needs to know one of these reads it here; it does
  * not ask the session record again. The trace records which variant decided each axis, and the
  * composition snapshot keeps it, so "why did this run behave so" has one place to look.
@@ -12,7 +12,6 @@
 import { chooseOn, type Axis } from './axis'
 import { humanAxis, type HumanDecision } from './axes/human'
 import { invocationAxis, type InvocationDecision } from './axes/invocation'
-import { seatAxis, type SeatDecision, type SeatMember } from './axes/seat'
 import { triggerAxis, type TriggerDecision, type TriggerFacts } from './axes/trigger'
 import {
   resolveSessionPolicy,
@@ -24,18 +23,14 @@ import {
 import type { RunInvocation } from '../runtime/execution-context'
 
 export interface RunPolicyFacts {
-  session: SessionPolicyFacts & { agents: readonly SeatMember[] }
-  speakerAgentId: string
+  session: SessionPolicyFacts
   invocation: RunInvocation
   trigger: TriggerFacts
   hitl: { targetSessionId: string | null; reachable: boolean }
-  /** Leadership priority by agent id, from the registry read once for this run. */
-  priorities: ReadonlyMap<string, number>
 }
 
 export interface RunPolicy extends SessionPolicy {
   invocation: InvocationDecision
-  seat: SeatDecision
   trigger: TriggerDecision
   human: HumanDecision
 }
@@ -44,7 +39,6 @@ export interface RunPolicy extends SessionPolicy {
 export const RUN_AXES = [
   ...SESSION_AXES,
   invocationAxis.name,
-  seatAxis.name,
   triggerAxis.name,
   humanAxis.name,
 ] as const
@@ -58,13 +52,7 @@ export function resolveRunPolicy(facts: RunPolicyFacts): RunPolicy {
     return choice.decision
   }
   const invocation = pick(invocationAxis, { invocation: facts.invocation })
-  const seat = pick(seatAxis, {
-    conversation: session.conversation,
-    agents: facts.session.agents,
-    speakerAgentId: facts.speakerAgentId,
-    priorities: facts.priorities,
-  })
   const trigger = pick(triggerAxis, facts.trigger)
   const human = pick(humanAxis, { hitl: facts.hitl, permission: session.permission })
-  return { ...session, invocation, seat, trigger, human, trace }
+  return { ...session, invocation, trigger, human, trace }
 }

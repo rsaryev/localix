@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { SearchGroup } from '@localixai/api/client'
 import { searchApi, SearchApiError } from '../api/searchApi'
 import { ALL_SCOPE, parseScope, scopeById, scopeToDomains, type ScopeDef } from './scopes'
@@ -101,9 +101,7 @@ export function useGlobalSearch(opts: UseGlobalSearchOptions = {}): GlobalSearch
   const [debounced, setDebounced] = useState(opts.initialQuery ?? '')
 
   // Last-write-wins guard shared by the paged fetch AND load-more.
-  const coordinatorRef = useRef<SearchRequestCoordinator | null>(null)
-  if (!coordinatorRef.current) coordinatorRef.current = new SearchRequestCoordinator()
-  const coordinator = coordinatorRef.current
+  const [coordinator] = useState(() => new SearchRequestCoordinator())
 
   const invalidateRequests = useCallback(() => {
     coordinator.invalidate()

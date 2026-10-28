@@ -170,40 +170,30 @@ export function ChatSurface({ sessionId, isFocused, resolvedTheme }: ChatSurface
       activeSessionId,
   )
 
-  // The composer speaks for the session's own participant. A group's per-member picker asks
-  // for a member's route by handle instead; this surface drives a private chat.
+  // The composer speaks for the conversation's one agent.
   const activeRoute = activeSession ? sessionRoute(activeSession) : null
   const model = activeRoute?.modelId ?? ''
-  // The seat always stores a level; the default stands in only before a chat exists.
+  // The route always stores a level; the default stands in only before a chat exists.
   const reasoningEffort = activeRoute?.reasoningEffort ?? DEFAULT_REASONING_EFFORT
   // Stable identities: the model picker is memoized, and this surface re-renders on
   // every composer keystroke (the draft lives here) — inline arrows here would hand
   // it fresh props each stroke and its `memo()` would never bail.
   const selectModel = useCallback(
-    async (
-      connectionId: string,
-      nextModel: string,
-      nextReasoningEffort?: ReasoningEffort,
-      // Which participant the choice is for. Absent on a chat that does not exist yet, where
-      // the store falls back to the freshly created session's own participant.
-      agentId?: string,
-    ) => {
+    async (connectionId: string, nextModel: string, nextReasoningEffort?: ReasoningEffort) => {
       let nextSessionId = activeSessionId
       if (!nextSessionId) {
         const session = await createSession(undefined, activeConversationDraft())
         nextSessionId = session?.id ?? null
       }
       if (!nextSessionId) return
-      await setModelSelection(nextSessionId, connectionId, nextModel, nextReasoningEffort, agentId)
+      await setModelSelection(nextSessionId, connectionId, nextModel, nextReasoningEffort)
     },
     [activeSessionId, createSession, setModelSelection],
   )
   const selectReasoningEffort = useCallback(
-    // `agentId` is whose effort it is. Absent — the compact control beside the composer, which
-    // speaks for the conversation — the store falls back to its own participant.
-    (nextEffort: ReasoningEffort, agentId?: string) => {
+    (nextEffort: ReasoningEffort) => {
       if (!activeSessionId) return
-      void setReasoningEffort(activeSessionId, nextEffort, agentId)
+      void setReasoningEffort(activeSessionId, nextEffort)
     },
     [activeSessionId, setReasoningEffort],
   )

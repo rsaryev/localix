@@ -10,12 +10,12 @@ import { withheldToolStubs } from './withheld-stub'
  */
 describe('withheld tool stubs', () => {
   const ledger: ToolLedger = new Map([
-    ['write', { state: 'withheld', reason: { layer: 'policy', kind: 'rule', denial: null } }],
-    ['read', { state: 'live' }],
+    ['Write', { state: 'withheld', reason: { layer: 'policy', kind: 'rule', denial: null } }],
+    ['Read', { state: 'live' }],
   ])
 
   test('only a withheld built-in gets a stub', () => {
-    expect(withheldToolStubs(ledger, new Set()).map((t) => t.name)).toEqual(['write'])
+    expect(withheldToolStubs(ledger, new Set()).map((t) => t.name)).toEqual(['Write'])
   })
 
   test.each([
@@ -31,5 +31,23 @@ describe('withheld tool stubs', () => {
     const result = await stub!.execute('t', {})
     expect(result.isError).toBe(true)
     expect(result.content).toContain('unavailable in this run')
+  })
+
+  test('names the tool and its remedy as the model calls them, with `Configure` behind `ToolSearch`', async () => {
+    const deferred: ToolLedger = new Map([
+      [
+        'Write',
+        {
+          state: 'withheld',
+          reason: { layer: 'policy', kind: 'rule', denial: null },
+          remedy: { remedyId: 'tool.enable', target: 'Write' },
+        },
+      ],
+      ['Configure', { state: 'deferred', source: 'Localix' }],
+    ])
+    const [stub] = withheldToolStubs(deferred, new Set())
+    const result = await stub!.execute('t', {})
+    expect(result.content).toContain('`Write` is unavailable in this run')
+    expect(result.content).toContain('name:"Write"')
   })
 })

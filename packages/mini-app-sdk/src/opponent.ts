@@ -27,8 +27,8 @@ export async function defaultOpponent(
   return available ? 'decision' : 'agent'
 }
 
-/** What a game's agent tool says when the decision model holds the seat it would move from. */
-export const DECISION_HOLDS_SEAT =
+/** What a game's agent tool says when the decision model holds the side it would move from. */
+export const DECISION_HOLDS_TURN =
   'The decision model plays your side at this table. The user can switch the opponent back to you on the board.'
 
 /** Who plays the other side at a table, in the person's words; an unsettled table is the agent's. */

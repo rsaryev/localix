@@ -14,10 +14,10 @@ afterEach(() => {
 })
 
 type Result = { content: string; isError?: boolean; details?: KanbanToolDetails }
-const SPEAKER = { agentId: 'builtin:localix', handle: 'localix' }
+const AGENT = { agentId: 'builtin:localix', name: 'localix' }
 
 /**
- * The mini app's one tool, called as a run in `session` would: the host names session and speaker.
+ * The mini app's one tool, called as a run in `session` would: the host names session and agent.
  */
 function tool() {
   const root = mkdtempSync(join(tmpdir(), 'kanban-tool-'))
@@ -28,13 +28,13 @@ function tool() {
     sessionStorage: {
       resolveDataDir: async (_user: string, session: string) => join(root, session),
     },
-    agents: { list: async () => [{ id: 'builtin:qa', handle: 'qa' }] },
+    agents: { list: async () => [{ id: 'builtin:qa', name: 'qa' }] },
     defineTool: (definition: unknown) => definition,
     ui: { offer: (destination: object) => ({ type: 'ui.navigate', ...destination }) },
   } as unknown as MiniAppContext
   const registered = register(ctx).tools ?? []
   const kanban = registered.find((candidate) => candidate.name === 'kanban')!
-  const act = (input: object, session: object | null = { id: 's1', speaker: SPEAKER }) =>
+  const act = (input: object, session: object | null = { id: 's1', agent: AGENT }) =>
     kanban.execute(
       'call-1',
       input as never,
@@ -61,13 +61,13 @@ describe('kanban tool', () => {
       action: 'create',
       creates: [
         { title: 'Design the API' },
-        { title: 'Build it', depends_on: ['Design the API'], agent: '@qa' },
+        { title: 'Build it', depends_on: ['Design the API'], agent: 'qa' },
       ],
     })
     expect(created.isError).toBeUndefined()
     expect(created.details?.reveal?.uri).toBe('localix://resource/kanban/board/s1')
     const listed = await act({ action: 'list' })
-    expect(listed.content).toContain('LX-2 — Build it → @qa ⇐ deps: LX-1')
+    expect(listed.content).toContain('LX-2 — Build it → qa ⇐ deps: LX-1')
   })
 
   // A refused later entry used to fail the call whole: the earlier entries were on the board but
@@ -89,14 +89,14 @@ describe('kanban tool', () => {
     expect(result.isError).toBe(true)
   })
 
-  test('take records the SPEAKER, never a name from the input', async () => {
+  test('take records the AGENT, never a name from the input', async () => {
     const { act } = tool()
     await act({ action: 'create', title: 'Do it' })
     const taken = await act({ action: 'take', task_id: 'LX-1' })
     expect(taken.details?.task).toMatchObject({
       status: 'in_progress',
-      agentId: SPEAKER.agentId,
-      assignee: SPEAKER.handle,
+      agentId: AGENT.agentId,
+      assignee: AGENT.name,
     })
   })
 
@@ -220,6 +220,60 @@ describe('kanban tool', () => {
     const refused = await act({ action: 'take', task_id: 'LX-1' })
     expect(refused.content).toContain('complete the epic itself once they are done')
     expect((await act({ action: 'complete', task_id: 'LX-1' })).isError).toBeUndefined()
+  })
+
+  test('complete goes straight to done, ticks the checklist on request, and a done card stays done', async () => {
+    const { act } = tool()
+    await act({ action: 'create', title: 'Write tests', items: ['Unit', 'E2E'] })
+    await act({ action: 'take', task_id: 'LX-1' })
+    const done = await act({ action: 'complete', task_id: 'LX-1', items_done: true })
+    expect(done.details?.task?.status).toBe('done')
+    expect(done.details?.task?.subtasks?.every((item) => item.done)).toBe(true)
+    const again = await act({ action: 'complete', task_id: 'LX-1' })
+    expect(again.isError).toBeFalsy()
+    expect(again.content).toBe('LX-1 is already done; nothing changed.')
+  })
+
+  test('the agent reads and edits every card, whoever owns it', async () => {
+    const { act } = tool()
+    await act({
+      action: 'create',
+      creates: [{ title: 'Write tests', agent: 'qa' }],
+    })
+    expect((await act({ action: 'list' })).content).toContain('LX-1')
+    expect((await act({ action: 'update', task_id: 'LX-1', priority: 1 })).isError).toBeFalsy()
+    expect((await act({ action: 'delete', task_id: 'LX-1' })).content).toBe('Deleted LX-1.')
+  })
+
+  test('a card described beside creates is refused instead of dropped', async () => {
+    const { act } = tool()
+    const refused = await act({
+      action: 'create',
+      title: 'Launch',
+      kind: 'epic',
+      creates: [{ title: 'Build', agent: 'qa' }],
+    })
+    expect(refused.isError).toBe(true)
+    expect(refused.content).toContain('create got title, kind beside creates')
+    expect((await act({ action: 'list' })).content).not.toContain('Build')
+  })
+
+  test('an epic is created without a checklist of its own', async () => {
+    const { act } = tool()
+    const refused = await act({
+      action: 'create',
+      creates: [{ title: 'Launch', kind: 'epic', items: ['Plan'] }],
+    })
+    expect(refused.isError).toBe(true)
+    expect(refused.content).toContain('An epic holds no checklist')
+  })
+
+  test('reassigning a running card puts it back to ready for its new owner', async () => {
+    const { act } = tool()
+    await act({ action: 'create', title: 'Write tests' })
+    await act({ action: 'take', task_id: 'LX-1' })
+    const moved = await act({ action: 'update', task_id: 'LX-1', agent: 'qa' })
+    expect(moved.details?.task?.status).toBe('ready')
   })
 
   test('an unknown reference lists the cards that do exist', async () => {

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import type { LanguageModelRequest } from '@localixai/agent/runtime'
-import { USER_PARTICIPANT } from '../../../db'
+import { USER_AUTHOR } from '../../../db'
 import type { StoredSystemNotice } from '../../../db'
 import type { PersistedMessage } from '../contracts'
 import { RECAP_AFTER_MS } from './eligibility'
@@ -21,7 +21,7 @@ function row(
     userId: 'u1',
     createdAt: iso,
     updatedAt: iso,
-    payload: { id, role, from: USER_PARTICIPANT, content } as never,
+    payload: { id, role, from: USER_AUTHOR, content } as never,
   }
 }
 
@@ -54,7 +54,7 @@ function harness(options: Options = {}) {
         ({
           id: 's1',
           runtimeStatus: options.running ? 'running' : 'idle',
-          agents: [{ providerConnectionId: 'chat-connection', modelId: 'chat-model' }],
+          agent: { providerConnectionId: 'chat-connection', modelId: 'chat-model' },
         }) as never,
       listMessages: async () => state.rows,
     },

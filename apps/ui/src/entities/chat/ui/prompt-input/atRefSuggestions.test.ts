@@ -11,7 +11,6 @@ import {
   buildTypeRows,
   rowsOwnedBy,
 } from './atRefSuggestions'
-import { buildAgentRows } from './atRefAgentRows'
 
 describe('buildTypeRows', () => {
   it('offers every typeable kind for a bare @, filtered by keyword prefix', () => {
@@ -53,18 +52,18 @@ describe('buildCallRows', () => {
   it('walks the transcript newest-first, dedupes by toolCallId, marks failures', () => {
     const rows = buildCallRows(
       [
-        { items: [{ toolCallId: 'c1', name: 'read', status: 'completed' }] },
+        { items: [{ toolCallId: 'c1', name: 'Read', status: 'completed' }] },
         {
           items: [
-            { toolCallId: 'c2', name: 'bash', status: 'failed' },
-            { toolCallId: 'c1', name: 'read' },
+            { toolCallId: 'c2', name: 'Bash', status: 'failed' },
+            { toolCallId: 'c1', name: 'Read' },
           ],
         },
       ],
       '',
     )
     expect(rows.map((r) => r.id)).toEqual(['c1', 'c2'])
-    expect(rows[1]?.label).toBe('bash (failed)')
+    expect(rows[1]?.label).toBe('Bash (failed)')
   })
 })
 
@@ -200,37 +199,5 @@ describe('buildSearchHitRows', () => {
       path: 'src/app/main.ts',
       description: 'src/app',
     })
-  })
-})
-
-describe('buildAgentRows', () => {
-  const party = [
-    { handle: 'lead', name: 'Tech Lead' },
-    { handle: 'qa', name: 'QA' },
-    { handle: 'backend', name: 'Backend' },
-  ]
-  it('offers the conversation members a partial names, by handle or display name', () => {
-    expect(buildAgentRows(party, 'qa').map((r) => r.handle)).toEqual(['qa'])
-    expect(buildAgentRows(party, 'tech').map((r) => r.handle)).toEqual(['lead'])
-    expect(buildAgentRows(party, '').map((r) => r.handle)).toEqual(['lead', 'qa', 'backend', 'all'])
-  })
-
-  it('offers @all beside the members, ranked like any other handle', () => {
-    // It answers the same question they do — who is this message for — so it is offered with
-    // them rather than among the ref kinds, and a partial that names a member does not bury it.
-    const [row] = buildAgentRows(party, 'all')
-    expect(row!.handle).toBe('all')
-    expect(row!.label).toBe('@all')
-    expect(row!.description).toBe('everyone in the room')
-    expect(buildAgentRows(party, 'ba').map((r) => r.handle)).toEqual(['backend'])
-  })
-  it('inserts as a plain text mention, labelled with the @handle', () => {
-    const [row] = buildAgentRows(party, 'qa')
-    expect(row!.kind).toBe('agent')
-    expect(row!.label).toBe('@qa')
-    expect(row!.description).toBe('QA')
-  })
-  it('builds nothing for a one-to-one, which has nobody to address', () => {
-    expect(buildAgentRows([], 'qa')).toEqual([])
   })
 })

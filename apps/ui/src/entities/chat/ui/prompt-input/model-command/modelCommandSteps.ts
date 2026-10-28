@@ -8,17 +8,12 @@ import {
   maxTurnsChoices,
   maxTurnsLabel,
 } from '../model-select/modelSettingChoices'
-import { levelLabel, partyStatusText, summarizeParty } from '../model-select/partyRoute'
 import { resolveLiveTaskModel } from '../model-select/taskReasoning'
 import {
-  ALL_AGENTS,
-  commandTarget,
   connectionModel,
-  hasAgentStep,
   startReasoning,
   targetSlot,
   type ModelCommandContext,
-  type ModelCommandTarget,
 } from './modelCommandTarget'
 
 /** Settings steps: leave the value as it is, or clear it back to the inherited default. */
@@ -32,63 +27,30 @@ const matches = (query: string, ...texts: (string | undefined)[]) => {
 }
 
 /**
- * Which steps do not apply — exactly where the picker shows no such column or control: Agents in
- * a one-agent chat, Reasoning for a model that does not reason, and Turns / Context window for
- * "All agents" (the picker offers those for one participant only), and Context limit for a model
- * whose Auto already is its whole window (the picker shows no such row there).
+ * Which steps do not apply — exactly where the picker shows no such control: the agent is the
+ * conversation's own and is never asked for, Reasoning for a model that does not reason, and
+ * Context limit for a model whose Auto already is its whole window (the picker shows no such row
+ * there).
  */
 export function skipModelStep(
   context: ModelCommandContext,
   name: string,
   committed: ReadonlyMap<string, string>,
 ): boolean {
-  if (name === 'agent') return !hasAgentStep(context)
+  if (name === 'agent') return true
   if (name === 'reasoning') {
     const model = connectionModel(context, committed.get('provider'), committed.get('model'))
     return model !== undefined && !model.supportsReasoning
   }
-  if (name === 'turns' || name === 'context') {
-    if (committed.get('agent') === ALL_AGENTS) return true
-    if (name === 'turns') return false
+  if (name === 'context') {
     const model = connectionModel(context, committed.get('provider'), committed.get('model'))
     return model !== undefined && !contextLimitOptions(model.contextLength).adjustable
   }
   return false
 }
 
-export function agentOptions(context: ModelCommandContext, query: string): SlashArgOption[] {
-  const { participants, models, connections, sessionConnectionId } = context
-  const nameOf = (target: ModelCommandTarget) => {
-    const live = resolveLiveTaskModel(models, connections, targetSlot(context, target))
-    return live?.model.name ?? null
-  }
-  const party = summarizeParty(participants, sessionConnectionId)
-  const all: SlashArgOption = {
-    value: ALL_AGENTS,
-    label: 'All agents',
-    description: partyStatusText(party, nameOf({ kind: 'party', members: participants })),
-  }
-  const members = participants.map((member) => {
-    const slot = targetSlot(context, { kind: 'agent', member })
-    const name = nameOf({ kind: 'agent', member })
-    return {
-      value: `@${member.handle}`,
-      label: member.label ?? `@${member.handle}`,
-      description: name
-        ? `${name} · ${levelLabel(slot?.reasoningEffort ?? 'medium')}`
-        : (member.inheritedLabel ?? 'Not set'),
-    }
-  })
-  return [all, ...members].filter((row) => matches(query, row.label, row.value))
-}
-
-function currentConnectionId(context: ModelCommandContext, target: ModelCommandTarget | null) {
-  if (!target) return null
-  const live = resolveLiveTaskModel(
-    context.models,
-    context.connections,
-    targetSlot(context, target),
-  )
+function currentConnectionId(context: ModelCommandContext) {
+  const live = resolveLiveTaskModel(context.models, context.connections, targetSlot(context))
   return live?.connection.id ?? null
 }
 
@@ -99,10 +61,8 @@ export function modelStepOptions(
   query: string,
   committed: Readonly<Record<string, string>>,
 ): SlashArgOption[] {
-  if (name === 'agent') return agentOptions(context, query)
-  const target = commandTarget(context, committed.agent)
   if (name === 'provider') {
-    const current = currentConnectionId(context, target)
+    const current = currentConnectionId(context)
     return context.connections
       .filter((connection) => matches(query, connection.label, connection.providerId))
       .map((connection) => ({
@@ -114,7 +74,7 @@ export function modelStepOptions(
   const connection = context.connections.find((row) => row.id === committed.provider)
   if (name === 'model') {
     if (!connection) return []
-    const slot = target ? targetSlot(context, target) : null
+    const slot = targetSlot(context)
     return filterModels([...context.models], connection.providerId, query)
       .slice(0, MAX_ROWS)
       .map((model) => ({
@@ -124,9 +84,10 @@ export function modelStepOptions(
       }))
   }
   const model = connectionModel(context, committed.provider, committed.model)
-  if (!model || !target) return []
+  const { agent } = context
+  if (!model || !agent) return []
   if (name === 'reasoning') {
-    const start = startReasoning(context, target, model)
+    const start = startReasoning(context, model)
     return modelReasoningOptions(model.reasoningEfforts)
       .filter((option) => matches(query, option.label, option.value))
       .map((option) => ({
@@ -135,20 +96,15 @@ export function modelStepOptions(
         description: `${option.description}${option.value === start ? ' · current' : ''}`,
       }))
   }
-  if (target.kind !== 'agent') return []
   const entry = agentModelSettingsFor(
     context.agentModelSettings,
-    target.member.agentId,
+    agent.agentId,
     model.providerId,
     model.id,
   )
   if (name === 'turns') {
-    const inherited = inheritedMaxTurns(context.maxTurns, target.member.maxTurnsLimit)
-    const { current, options } = maxTurnsChoices(
-      entry?.maxTurns,
-      inherited,
-      target.member.maxTurnsLimit,
-    )
+    const inherited = inheritedMaxTurns(context.maxTurns, agent.maxTurnsLimit)
+    const { current, options } = maxTurnsChoices(entry?.maxTurns, inherited, agent.maxTurnsLimit)
     return [
       {
         value: KEEP,

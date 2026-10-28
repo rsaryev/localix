@@ -7,6 +7,10 @@ import {
   type InspectorRequest,
 } from '@localixai/kit/testing'
 
+const turns = async (n = 10) => {
+  for (let i = 0; i < n; i++) await new Promise((r) => setImmediate(r))
+}
+
 let teardown: () => Promise<void>
 let originalFetch: typeof fetch
 const realtimeMethods = { ...miniAppRealtime }
@@ -108,7 +112,7 @@ describe('Database Workspace navigation', () => {
     try {
       await act(async () => {
         root.render(<DatabaseWorkspace sessionId="chat-a" requestedArea="overview" />)
-        await new Promise((resolve) => setTimeout(resolve, 10))
+        await turns()
       })
       expect(host.textContent).toContain('Primary PostgreSQL')
       expect(host.textContent).toContain('Connections')
@@ -160,7 +164,7 @@ describe('Database Workspace navigation', () => {
     try {
       await act(async () => {
         root.render(<DatabaseWorkspace sessionId="chat-a" requestedArea="overview" />)
-        await new Promise((resolve) => setTimeout(resolve, 10))
+        await turns()
       })
       const add = host.querySelector<HTMLButtonElement>('[aria-label="New connection"]')
       await act(async () => add?.click())
@@ -206,14 +210,14 @@ describe('Database Workspace navigation', () => {
     try {
       await act(async () => {
         root.render(<DatabaseWorkspace sessionId="chat-a" requestedArea="explorer" />)
-        await new Promise((resolve) => setTimeout(resolve, 20))
+        await turns()
       })
       const expand = host.querySelector<HTMLButtonElement>(
         '[aria-label="Expand Primary PostgreSQL"]',
       )
       await act(async () => {
         expand?.click()
-        await new Promise((resolve) => setTimeout(resolve, 30))
+        await turns()
       })
       const tableRow = [...host.querySelectorAll<HTMLElement>('[role="treeitem"]')].find(
         (element) => element.getAttribute('title')?.startsWith('Click to open data'),
@@ -283,9 +287,10 @@ describe('Database Workspace navigation', () => {
           />,
         )
       })
-      for (let attempt = 0; attempt < 20 && !host.textContent?.includes('name'); attempt += 1) {
-        await act(async () => new Promise((resolve) => setTimeout(resolve, 10)))
-      }
+      // The grid loads lazily from disk: wait for what is asserted, however busy the machine is.
+      const shown = () => ['Rows 1–1', 'name', 'Page 1'].every((t) => host.textContent?.includes(t))
+      for (const deadline = Date.now() + 5_000; !shown() && Date.now() < deadline;)
+        await act(async () => new Promise((resolve) => setTimeout(resolve, 0)))
       // The row count is stated ONCE now, by the workspace's own status line. This used to read
       // `'1 row'` — the shared `ResultFooter`'s phrasing from the second, duplicate bar that sat
       // directly above the pagination one. Same claim (the grid rendered its result), surviving
@@ -367,7 +372,7 @@ describe('Database Workspace navigation', () => {
     try {
       await act(async () => {
         root.render(<DbConnectionTab sessionId="chat-a" connectionId="primary" />)
-        await new Promise((resolve) => setTimeout(resolve, 30))
+        await turns()
       })
       const actions = host.querySelector<HTMLButtonElement>(
         '[aria-label="Actions for Primary PostgreSQL"]',
@@ -421,7 +426,7 @@ describe('Database Workspace navigation', () => {
             requestedResourceUri="localix://resource/db/primary/_/public/users"
           />,
         )
-        await new Promise((resolve) => setTimeout(resolve, 30))
+        await turns()
       })
       expect(host.textContent).toContain('Primary PostgreSQL')
       expect(opened.at(-1)).toMatchObject({

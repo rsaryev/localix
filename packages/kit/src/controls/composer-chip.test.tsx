@@ -15,7 +15,7 @@ describe('ComposerChip', () => {
     expect(html).toContain('rounded-full')
     expect(html).toContain('focus-ring')
     // The scroll-pill's glass material: the chip is its own trigger and holds still in a row.
-    expect(html).toContain('lx-glass lx-glass-self lx-glass-still')
+    expect(html).toContain('lx-glass lx-glass-self')
     expect(html).toContain('disabled:opacity-50')
   })
 

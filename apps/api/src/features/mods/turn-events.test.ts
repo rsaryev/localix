@@ -7,7 +7,7 @@ import { hostWithMod } from './testing/testing-host'
 /** A turn's events as a mod hears them: whose turn it is, and how it ended. */
 
 const read = defineAgentTool({
-  name: 'read',
+  name: 'Read',
   description: 'read',
   activeVerb: 'Reading',
   inputSchema: z.object({ path: z.string() }),

@@ -33,7 +33,7 @@ export function createBackgroundEmitter({
   updateOwnedItem,
   currentRow,
 }: BackgroundEmitterContext): AsyncToolRegistry['emitBackground'] {
-  const { env, state, userId, session, agentId, assistantMessageId } = args
+  const { env, state, userId, session, assistantMessageId } = args
   const { actionRegistry, work } = env.state
   // Background producers report cumulative output. Publishing the whole assistant
   // message on every producer tick amplifies one growing command into O(total
@@ -95,10 +95,14 @@ export function createBackgroundEmitter({
     // The item is the CALL that started the job, and that call succeeded: a job later stopped
     // (by the agent, the person, its own timeout, or a stop signal) did what it was asked until
     // then. `aborted` read as "this tool call was cancelled"; the job's own outcome rides
-    // `details.jobStatus`. Only a job that exited non-zero on its own failed.
+    // `details.jobStatus`. Only a job that exited non-zero on its own failed; a job with no
+    // process (a workflow) says how it ended through `jobStatus` alone.
     const itemStatus: AgentItemStatus = !done
       ? 'running'
-      : jobStatus === 'killed' || jobStatus === 'timeout' || opts?.exitCode === 0
+      : jobStatus === 'completed' ||
+          jobStatus === 'killed' ||
+          jobStatus === 'timeout' ||
+          opts?.exitCode === 0
         ? 'completed'
         : 'failed'
     // Rebuild the background tool's item with the latest output (live on every
@@ -219,7 +223,7 @@ export function createBackgroundEmitter({
       // the `persistAndPublish` above just stored on this item.
       const remind = () =>
         env.queueMidRunReminder(
-          { sessionId: session.id, agentId },
+          session.id,
           backgroundJobFinishedReminder(
             cmd,
             opts?.exitCode ?? undefined,
@@ -231,7 +235,7 @@ export function createBackgroundEmitter({
         )
       const notice = exitNotices.get(toolCallId)
       exitNotices.delete(toolCallId)
-      // A killed job is not news the caller waits for: the model stopped it (`jobs stop`) or
+      // A killed job is not news the caller waits for: the model stopped it (`TaskStop`) or
       // the user did (the Stop button), and either already knows. A wake here bought one
       // whole model turn to acknowledge "yes, it stopped" — measured on a probe session.
       if (opts?.notify && jobStatus !== 'killed') {
@@ -246,7 +250,7 @@ export function createBackgroundEmitter({
         )
       } else {
         void notice?.then((armed) => armed?.dismiss(jobStatus))
-        // The agent's own `jobs stop` already answered it: a reminder repeating it is noise.
+        // The agent's own `TaskStop` already answered it: a reminder repeating it is noise.
         if (opts?.stop?.by !== 'agent') remind()
       }
     }

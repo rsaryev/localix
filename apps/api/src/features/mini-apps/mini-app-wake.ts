@@ -5,7 +5,7 @@
  * every gap in it broke the first mini app that leaned on it — a game waiting for the agent's move:
  *   - nothing came back, so the game could not tell a wake that landed from one that went nowhere,
  *     and waited for a move that was never coming;
- *   - the woken turn found the game's tools deferred behind `activate_tools`, and spent its first
+ *   - the woken turn found the game's tools deferred behind `ToolSearch`, and spent its first
  *     call fetching the schema of the tool it had been woken to use;
  *   - the turn read as "via External", a webhook, and the model got the mini app's words with
  *     nothing saying the person had not typed them;

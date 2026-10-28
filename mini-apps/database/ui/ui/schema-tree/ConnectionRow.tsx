@@ -17,6 +17,7 @@ import { ConnectionBadges } from '../ConnectionBadge'
 import { ConnectionActions } from '../explorer/ConnectionActions'
 import type { RowViewProps } from './ObjectRows'
 import { TreeChevron, TreeItem } from './TreeItem'
+import { focusOnMount } from '../focusOnMount'
 
 export function connectionStatus(connected: boolean, reconnecting: boolean): string {
   if (reconnecting) return 'Connecting'
@@ -62,7 +63,7 @@ export function ConnectionRowView({
       {renaming ? (
         <Input
           value={row.renameDraft ?? ''}
-          autoFocus
+          ref={focusOnMount}
           onClick={(event) => event.stopPropagation()}
           onChange={(event) => actions.renameChange?.(connection.id, event.target.value)}
           onBlur={() => actions.renameCommit?.()}
@@ -99,7 +100,7 @@ export function ConnectionRowView({
       >
         <SquareTerminal className="size-3" />
       </IconButton>
-      <span onClick={(event) => event.stopPropagation()}>
+      <span role="presentation" onClick={(event) => event.stopPropagation()}>
         <ConnectionActions
           displayName={displayName}
           entries={() => actions.menuFor(row) ?? []}

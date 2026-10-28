@@ -112,13 +112,6 @@ export async function validateSkillFile(skillMdPath: string): Promise<SkillValid
       `Skill "${dirName}" has "disallowed-tools: *" which blocks all tools — the skill can't do anything useful. Use specific tool names to block only what's needed.`,
     )
   }
-  // `argument-hint` without `arguments` — the hint shows in the composer but no named
-  // substitutions are available (the user can still pass $ARGUMENTS).
-  if (fields['argument-hint'] && !fields.arguments) {
-    warnings.push(
-      `Skill "${dirName}" declares "argument-hint" but no "arguments" — add an "arguments: name1 name2" field if you want named positional substitution.`,
-    )
-  }
   // `allowed-tools` and `disallowed-tools` overlap — a tool in both is confusing.
   if (fields['allowed-tools'] && fields['disallowed-tools']) {
     const allowed = new Set(

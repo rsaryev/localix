@@ -21,6 +21,7 @@ import { markdownBody } from '../shared/markdown'
 import { createTemplateDocument, type TemplateId } from '../shared/templates'
 import { createSampleDocument } from '../shared/sample'
 import { TemplateGallery } from './TemplateGallery'
+import { focusOnMount } from './focusOnMount'
 
 type Source = 'sample' | 'blank' | 'import'
 export function CreateResumeDialog({
@@ -45,6 +46,23 @@ export function CreateResumeDialog({
   const [leftovers, setLeftovers] = useState('')
   const [includeLeftovers, setIncludeLeftovers] = useState(true)
   const [sourceReview, setSourceReview] = useState(false)
+  const readFile = async (file: File) => {
+    setReading(true)
+    try {
+      const result = await importResumeFile(file)
+      setImported(result.document)
+      setLeftovers(result.leftovers)
+      setSourceReview(result.source)
+      setTemplate(result.document.presentation.template)
+      if (!title.trim()) setTitle(result.document.title)
+      setError(null)
+    } catch (failure) {
+      setImported(null)
+      setError(failure instanceof Error ? failure.message : 'Could not import this file.')
+    } finally {
+      setReading(false)
+    }
+  }
   const submit = async () => {
     if (!title.trim()) {
       setError('Enter a name for this resume.')
@@ -106,7 +124,7 @@ export function CreateResumeDialog({
         <DialogBody className="@container space-y-5">
           <Field label="Resume name" required error={!title.trim() && error ? error : undefined}>
             <Input
-              autoFocus
+              ref={focusOnMount}
               value={title}
               maxLength={500}
               placeholder="Software Engineer"
@@ -153,26 +171,9 @@ export function CreateResumeDialog({
                 type="file"
                 accept=".json,.yaml,.yml,.pdf,.docx,.doc,.odt,.md,.txt"
                 disabled={pending || reading}
-                onChange={async (event) => {
+                onChange={(event) => {
                   const file = event.target.files?.[0]
-                  if (!file) return
-                  setReading(true)
-                  try {
-                    const result = await importResumeFile(file)
-                    setImported(result.document)
-                    setLeftovers(result.leftovers)
-                    setSourceReview(result.source)
-                    setTemplate(result.document.presentation.template)
-                    if (!title.trim()) setTitle(result.document.title)
-                    setError(null)
-                  } catch (failure) {
-                    setImported(null)
-                    setError(
-                      failure instanceof Error ? failure.message : 'Could not import this file.',
-                    )
-                  } finally {
-                    setReading(false)
-                  }
+                  if (file) void readFile(file)
                 }}
               />
             </Field>

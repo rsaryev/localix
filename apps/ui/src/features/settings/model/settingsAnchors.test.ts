@@ -27,13 +27,6 @@ describe('settings UI anchors', () => {
     expect(parseSettingsAnchorUri('file:///tmp/a')).toBeNull()
   })
 
-  test('an old link to the permission rules opens Settings → Permissions', () => {
-    expect(parseSettingsAnchorUri('localix://ui/settings/rules')).toEqual({
-      tab: 'permissions',
-      anchor: undefined,
-    })
-  })
-
   test('carries exact project and no-project scopes in canonical section links', () => {
     expect(sectionUri('sample-plugin', 'PRJ-1')).toBe(
       'localix://ui/settings/project/section-sample-plugin?scope=PRJ-1',

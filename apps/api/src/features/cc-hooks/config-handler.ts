@@ -107,6 +107,7 @@ export function parseHandler(
       ...(typeof hRaw.model === 'string' && hRaw.model.trim()
         ? { promptModel: hRaw.model.trim() }
         : {}),
+      ...(type === 'prompt' && hRaw.continueOnBlock === true ? { continueOnBlock: true } : {}),
       ...(type === 'agent' &&
       typeof hRaw.maxTurns === 'number' &&
       Number.isFinite(hRaw.maxTurns) &&
@@ -175,6 +176,7 @@ export function parseHandler(
       ...pluginName,
       command: '', // unused for mcp_tool handlers
       mcpTool,
+      ...(isRecord(hRaw.input) ? { mcpInput: hRaw.input } : {}),
       timeoutMs: clampTimeoutMs(hRaw.timeout, eventDefaultSec),
       ...commonHandlerFields(hRaw),
     }

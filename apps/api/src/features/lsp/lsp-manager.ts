@@ -13,6 +13,7 @@ import { notifyWatchedFiles } from './lsp-watched-files'
 import { killProcessTree, stillRunning } from '../agent-core/tools/bash/process-tree'
 import type { LspManager, LspServerState } from './lsp-manager-types'
 import type { LspHealthObserver } from '../notifications/conditions/lsp'
+import type { LspInstaller } from './lsp-installer'
 
 // Manager interface + server-state types live in ./lsp-manager-types; re-exported
 // here so the historical `./lsp-manager` import surface stays unchanged.
@@ -27,6 +28,9 @@ interface LspManagerOptions {
   createClient?: typeof createLspClient
   /** A server that crashed or failed to start, as a standing Event Center row until it is ready. */
   health?: LspHealthObserver
+  /** Fetches a built-in server on first use when nothing local provides it. */
+  installer?: LspInstaller
+  now?: () => number
 }
 
 export function createLspManager(options: LspManagerOptions = {}): LspManager {
@@ -96,6 +100,8 @@ export function createLspManager(options: LspManagerOptions = {}): LspManager {
     clearIdleTimer,
     armIdleEviction,
     notifyUpdate,
+    ...(options.installer ? { installer: options.installer } : {}),
+    now: options.now ?? Date.now,
   })
 
   // Write-path twin of withReadyClient: start the server if needed, run a
@@ -107,6 +113,11 @@ export function createLspManager(options: LspManagerOptions = {}): LspManager {
     push: (client: NonNullable<ManagedClient['client']>) => Promise<T>,
   ): Promise<T | undefined> {
     const mc = await ensureServer(filePath, projectRoot)
+    // Installing: the buffer is opened once the server is ready (`lsp-server-startup.ts`).
+    if (mc?.status === 'installing') {
+      ;(mc.pending ??= new Map()).set(filePath, push)
+      return undefined
+    }
     if (mc?.client && mc.status === 'ready') {
       try {
         return await push(mc.client).catch(() => undefined)

@@ -3,7 +3,7 @@ import { classifyByAction, type MiniAppContext } from '@localixai/mini-app-sdk/b
 import { describeForAgent, recordLine, resultLine, roundLine } from '../shared/describe'
 import { MoveRefused, viewFor, type Game, type Move, type Player } from '../shared/game'
 import { gameUri } from '../shared/resource'
-import type { Seat } from './ask-agent'
+import type { ChatRef } from './ask-agent'
 import type { GameService } from './game-service'
 
 /** Reading the table is a read; every other action changes only this chat's game — `session`. */
@@ -28,12 +28,12 @@ export const classifyRockPaperScissorsCall = classifyByAction({
 
 /** What the agent is asked when its move reveals a round. */
 export const ROUND_OVER_ASK =
-  'The round is revealed on the table. React to it in one short line and offer the next round. If the rounds so far showed you a habit of this user’s you did not know, keep it with your memory tool — update your one note on Rock Paper Scissors rather than adding another.'
+  'The round is revealed on the table. React to it in one short line and offer the next round. If the rounds so far showed you a habit of this user’s you did not know, keep it in your memory — update your one note on Rock Paper Scissors rather than adding another.'
 
 type Result = { content: string; isError?: boolean; terminate?: boolean; details?: unknown }
 
 /** The table a tool call acts on: the chat the call runs in. */
-function seatOf(ctx: MiniAppContext, context: { session?: { id: string } } | undefined): Seat {
+function chatOf(ctx: MiniAppContext, context: { session?: { id: string } } | undefined): ChatRef {
   const sessionId = context?.session?.id
   if (!sessionId)
     throw new MoveRefused('Rock Paper Scissors is played in a chat; this call has none.')
@@ -56,21 +56,21 @@ function afterMove(game: Game, answered: boolean): Result {
 
 export function createGameTools(ctx: MiniAppContext, games: GameService) {
   const actions = {
-    async play(seat: Seat, move: Move | undefined): Promise<Result> {
+    async play(chat: ChatRef, move: Move | undefined): Promise<Result> {
       if (!move) throw new MoveRefused('Name your move: `move`, one of rock, paper or scissors.')
-      const { game, answered } = await games.agentMove(seat, move)
+      const { game, answered } = await games.agentMove(chat, move)
       return afterMove(game, answered)
     },
-    async state(seat: Seat): Promise<Result> {
-      return { content: describeForAgent(viewFor(await games.read(seat), 'agent')) }
+    async state(chat: ChatRef): Promise<Result> {
+      return { content: describeForAgent(viewFor(await games.read(chat), 'agent')) }
     },
-    async next_round(seat: Seat, first: Player): Promise<Result> {
-      const game = await games.agentNextRound(seat, first)
+    async next_round(chat: ChatRef, first: Player): Promise<Result> {
+      const game = await games.agentNextRound(chat, first)
       return {
         content: [
           `Round ${game.round.number} is on this chat’s table.`,
           game.opponent === 'decision'
-            ? 'The decision model plays the other seat at this table, so the user opens and you do not play.'
+            ? 'The decision model plays the other side at this table, so the user opens and you do not play.'
             : first === 'agent'
               ? 'You open: call rock_paper_scissors with action "play" now.'
               : 'The user opens; the table wakes you after they have chosen.',
@@ -79,7 +79,7 @@ export function createGameTools(ctx: MiniAppContext, games: GameService) {
           .filter((line) => line !== null)
           .join('\n'),
         details: ctx.ui.offer({
-          uri: gameUri(seat.sessionId),
+          uri: gameUri(chat.sessionId),
           label: 'Open Rock Paper Scissors',
           description: 'This chat’s table',
         }),
@@ -113,21 +113,21 @@ export function createGameTools(ctx: MiniAppContext, games: GameService) {
       classify: classifyRockPaperScissorsCall,
       permissionPaths: () => [],
       async execute(_toolCallId, input, _signal, _onUpdate, context) {
-        let seat: Seat | null = null
+        let chat: ChatRef | null = null
         try {
-          seat = seatOf(ctx, context)
+          chat = chatOf(ctx, context)
           switch (input.action) {
             case 'play':
-              return await actions.play(seat, input.move)
+              return await actions.play(chat, input.move)
             case 'state':
-              return await actions.state(seat)
+              return await actions.state(chat)
             case 'next_round':
-              return await actions.next_round(seat, input.first === 'agent' ? 'agent' : 'you')
+              return await actions.next_round(chat, input.first === 'agent' ? 'agent' : 'you')
           }
         } catch (error) {
           if (!(error instanceof MoveRefused)) throw error
-          const table = seat
-            ? `\n\n${describeForAgent(viewFor(await games.read(seat), 'agent'))}`
+          const table = chat
+            ? `\n\n${describeForAgent(viewFor(await games.read(chat), 'agent'))}`
             : ''
           return { content: `${error.message}${table}`, isError: true }
         }

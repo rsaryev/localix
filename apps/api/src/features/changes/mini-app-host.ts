@@ -18,6 +18,7 @@ import {
   type RefSchemas,
 } from '@localixai/change-feed'
 import type { AppDatabase } from '../../db/types'
+import { createOwnedRegistrations, type SettleOutcome } from '../../lib/owned-registrations'
 import { changeRetryDelayMs } from './retry'
 import type { CoreChangeFeed } from './core-entities'
 import { createCoreDeletionFollower } from './core-deletions'
@@ -46,6 +47,8 @@ export function createMiniAppChangeHosts(deps: {
     agentLivesOn: (agentId) => agentLivesOn(deps.db, agentId),
     core: deps.core,
   })
+  // `record` is fire-and-forget for the mini app; `settle` waits for these writes to land.
+  const recording = new Set<Promise<unknown>>()
   const feeds = new Map<string, ChangeFeed<RefSchemas, Record<string, never>>>()
   const feedFor = (stream: string) => {
     let feed = feeds.get(stream)
@@ -62,6 +65,9 @@ export function createMiniAppChangeHosts(deps: {
     return feed
   }
 
+  /** What each mini app's backend holds, so a reloaded backend replaces its own subscriptions. */
+  const registrations = createOwnedRegistrations()
+
   return {
     forMiniApp(miniAppName: string): ChangeFeedHost {
       const stream = `mini-app:${miniAppName}`
@@ -73,23 +79,57 @@ export function createMiniAppChangeHosts(deps: {
           if (kept.length < list.length) {
             deps.log?.('changes.mini_app_invalid_entity', { miniApp: miniAppName })
           }
-          void recordChanges(deps.db, stream, kept)
+          const write = recordChanges(deps.db, stream, kept)
+          recording.add(write)
+          void write.then(
+            () => recording.delete(write),
+            () => recording.delete(write),
+          )
         },
         async subscribe(consumer, handler) {
           if (!NAME.test(consumer)) throw new Error(`invalid change consumer name "${consumer}"`)
-          // One handler answers for every kind the mini app names.
-          const handlers = new Proxy({} as ConsumerHandlers<RefSchemas, Record<string, never>>, {
-            get: () => (delivery: MiniAppChange) => handler(delivery),
-          })
-          // A mini app's handler acts on its own data; it is never rebuilt by the host.
-          const started = await feedFor(stream).subscribe(consumer, handlers, { kind: 'reactor' })
-          return () => started.stop()
+          // The same mini app subscribing again is its backend being loaded again: the feed keeps
+          // ONE subscription under the consumer name and this load's handler answers through it.
+          // Which load answers is the backend host's verdict (`settle`), so a duplicate it discards
+          // never displaces the wired backend. A mini app's handler acts on its own data; the host
+          // never rebuilds it.
+          const { dispose, opened } = registrations.bind(
+            miniAppName,
+            `consumer:${consumer}`,
+            handler,
+            async (current) => {
+              // One handler answers for every kind the mini app names.
+              const handlers = new Proxy(
+                {} as ConsumerHandlers<RefSchemas, Record<string, never>>,
+                { get: () => (delivery: MiniAppChange) => current()(delivery) },
+              )
+              const started = await feedFor(stream).subscribe(consumer, handlers, {
+                kind: 'reactor',
+              })
+              return () => started.stop()
+            },
+          )
+          await opened
+          return async () => dispose()
         },
         async followCoreDeletions(consumer, handler) {
           if (!NAME.test(consumer)) throw new Error(`invalid change consumer name "${consumer}"`)
           return followCore(miniAppName, consumer, handler)
         },
       }
+    },
+
+    /** The mini app is gone (disabled or removed): stop the subscriptions its backend held. */
+    releaseMiniApp: (miniAppName: string) => registrations.releaseOwner(miniAppName),
+
+    /** The backend host's verdict on a pass that loaded the mini app again: which load answers. */
+    settleMiniApp: (miniAppName: string, outcome: SettleOutcome) =>
+      registrations.settle(miniAppName, outcome),
+
+    /** Tests: the recorded changes are written and every mini app consumer has read them. */
+    async settle(): Promise<void> {
+      while (recording.size > 0) await Promise.allSettled(recording)
+      for (const feed of feeds.values()) await feed.settle()
     },
 
     /** Retention for every mini app stream (with the core's). */

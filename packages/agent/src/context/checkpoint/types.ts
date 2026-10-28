@@ -32,7 +32,7 @@ export type CheckpointReason =
 export interface CheckpointEntry<M extends ChatMessage = ChatMessage> {
   message: M
   /**
-   * Somebody — the person, or a colleague in a group — started a turn here. Eviction cuts only
+   * The person started a turn here. Eviction cuts only
    * in front of such a message, so the kept history never opens with a reply to a question the
    * model can no longer see.
    */

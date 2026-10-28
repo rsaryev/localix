@@ -36,7 +36,7 @@ export async function judgeJoin(
       provenance: `${joining.plugin}@localix`,
       uses: { events: joining.events, calls: [] },
     },
-    () => ({}),
+    () => ({ allow: true }),
     scene,
     judges,
   )) as { refuse?: unknown } | undefined

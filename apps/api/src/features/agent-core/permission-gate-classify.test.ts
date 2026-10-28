@@ -33,17 +33,7 @@ const denyEffect = (effect: string): PermissionRule[] => [
   { permission: '*', pattern: `effect:${effect}`, action: 'deny' },
 ]
 
-test('the protocol topic boundary remains executable under stale tool and mode rules', async () => {
-  const control = fixture('set_topic', { classify: () => ({ effect: 'session' }) })
-  expect(
-    blocked(
-      await verdict(
-        control,
-        [{ permission: '*', pattern: '*', action: 'deny' }, ...denyEffect('session')],
-        { title: 'T', goal: 'G', previousTopicSummary: 'None.' },
-      ),
-    ),
-  ).toBe(false)
+test('a blanket deny blocks a tool with no allowing rule', async () => {
   expect(
     blocked(
       await verdict(fixture('other_tool'), [{ permission: '*', pattern: '*', action: 'deny' }]),

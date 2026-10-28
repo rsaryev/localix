@@ -102,6 +102,7 @@ function ModPane({ pane }: { pane: ModPaneRef }) {
           </IconButton>
         }
       />
+      {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- delegated keys: Escape and the hotkeys come from the focused Buttons inside; the region only holds the focus scope */}
       <div
         ref={body}
         role="region"

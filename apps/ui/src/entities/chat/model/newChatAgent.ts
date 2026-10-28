@@ -3,7 +3,7 @@ import { findSessionInState } from './findSession'
 import type { ChatStore } from './store'
 
 /**
- * Whom a new chat should be with when nobody said — the agent of the chat you are in.
+ * The agent a new chat should have when nobody said — the agent of the chat you are in.
  *
  * "New chat" says nothing about an agent, and the server's answer for "nobody said" is the
  * default assistant. So pressing + while talking to @qa dropped you into a chat with somebody
@@ -25,10 +25,10 @@ export function inheritedAgentId(
     : undefined
   if (!active || (active.sessionKind ?? 'chat') !== 'chat') return undefined
   if ((active.projectId ?? null) !== targetProjectId) return undefined
-  // The party head directly, not `sessionRoute`: its blank fallback answers with the default
-  // agent's id for a session whose party never committed, and turning a broken record into an
+  // The session's agent directly, not `sessionRoute`: its blank fallback answers with the default
+  // agent's id for a session that never committed one, and turning a broken record into an
   // explicit request is not inheritance — it is inventing one.
-  return active.agents?.[0]?.agentId || undefined
+  return active.agent?.agentId || undefined
 }
 
 /** The server's answer for an agent that is withdrawn, or not allowed in a chat. */

@@ -18,7 +18,6 @@ const plan = (overrides: Partial<SessionPlan> = {}): SessionPlan => ({
   status: 'presented',
   title: 'Cache layer',
   body: '## Goal\nFast',
-  authorAgentId: 'lead',
   approvedMode: null,
   createdAt: '2026-10-03T00:00:00.000Z',
   decidedAt: null,

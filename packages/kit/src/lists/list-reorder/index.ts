@@ -13,7 +13,6 @@
 export { DragHandle } from './DragHandle'
 export { computeDropIndex, moveItem } from './dropIndex'
 export {
-  REORDER_KEYS,
   useListReorder,
   type ListReorder,
   type ReorderHandleProps,

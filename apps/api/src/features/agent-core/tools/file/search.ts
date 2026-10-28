@@ -59,11 +59,11 @@ export function createSearchTool(
   // `unknown` when any return omits `details`, erasing the SearchToolDetails every
   // other return site builds.
   const tool = defineAgentTool<SearchInput, SearchToolDetails>({
-    name: TOOL.search,
+    name: TOOL.Search,
     label: 'Search Files',
     activeVerb: 'Searching',
     description: [
-      'Search file contents with ripgrep, or find files by name (only `glob`). One call returns file:line for every hit; then `read` just that span. Put several patterns in one call (`queries`) rather than one repository-wide scan.',
+      'Search file contents with ripgrep, or find files by name (only `glob`). One call returns file:line for every hit; then `Read` just that span. Put several patterns in one call (`queries`) rather than one repository-wide scan.',
       'A truncated result means narrow the next search; an empty one was already widened, so "no matches" is final.',
     ].join('\n'),
     inputSchema: searchToolInputSchema,
@@ -113,7 +113,7 @@ export function createSearchTool(
       if (!input.glob) {
         return {
           content:
-            'search needs a query (ripgrep regex), OR a glob to list files by name (e.g. glob:"**/*.ts" or glob:"plugin.json"). To list one directory, use `read` on its path.',
+            'search needs a query (ripgrep regex), OR a glob to list files by name (e.g. glob:"**/*.ts" or glob:"plugin.json"). To list one directory, use `Read` on its path.',
           isError: true,
         }
       }
@@ -214,7 +214,7 @@ export function createSearchTool(
       onUpdate?.(details)
       return {
         content: unavailable
-          ? 'ripgrep (rg) is not available in this environment. Fall back to `bash` with grep/find for this search.'
+          ? 'ripgrep (rg) is not available in this environment. Fall back to `Bash` with grep/find for this search.'
           : `Failed to run search: ${message}`,
         details,
         isError: true,

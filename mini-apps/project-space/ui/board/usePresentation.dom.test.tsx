@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
-import { act } from 'react'
+import { act, useEffect } from 'react'
 import { CanvasProvider } from '@localixai/kit/canvas'
 import { registerDom } from '@localixai/kit/testing'
 import { emptySpace, type SpaceDocument } from '../../shared/format/document'
@@ -27,13 +27,21 @@ const frames = (ids: string[]) =>
   ).space
 
 test('a presentation stays on its frame when others come and go, and ends when its own goes', async () => {
+  const glides: unknown[] = []
   const director = {
     size: () => ({ width: 800, height: 600 }),
-    glide: async (viewport: unknown) => viewport,
+    glide: async (viewport: unknown) => {
+      glides.push(viewport)
+      return viewport
+    },
   } as unknown as CameraDirector
   let shown: Presentation | undefined
   function Probe({ space }: { space: SpaceDocument }) {
-    shown = usePresentation(space, director, () => undefined)
+    const presentation = usePresentation(space, director, () => undefined)
+    // Read by the test after the commit, not written while rendering.
+    useEffect(() => {
+      shown = presentation
+    })
     return null
   }
   const host = document.createElement('div')
@@ -59,8 +67,12 @@ test('a presentation stays on its frame when others come and go, and ends when i
     expect(shown!.frames[shown!.index]).toBe('b')
     expect(shown!.slide?.has('b')).toBe(true)
     // "b" itself goes: the presentation ends instead of showing another frame as this one.
+    const glidesBefore = glides.length
     await render(frames(['c']))
     expect(shown!.active).toBe(false)
+    // The board comes back to where it was before the talk, exactly once.
+    expect(glides.length).toBe(glidesBefore + 1)
+    expect(glides.at(-1)).toEqual({ x: 0, y: 0, zoom: 1 })
   } finally {
     await act(async () => root.unmount())
     host.remove()

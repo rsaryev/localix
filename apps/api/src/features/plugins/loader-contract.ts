@@ -3,7 +3,7 @@ import type { McpServerRecord } from '../mcp/repository'
 import type { DiscoveredSkill } from '../agent-core/skill-discovery'
 import { mapCcRuleList } from '../ext/cc-tool-names'
 import { normalizeCcToolName } from './discovery'
-import type { LocalixKey, PluginAgent, PluginMonitor } from './contracts'
+import type { PluginAgent, PluginMonitor } from './contracts'
 import type { PluginOutputStyle } from './output-styles'
 
 /**
@@ -31,12 +31,8 @@ export interface LoadedPluginAgent {
   disallowedTools?: readonly string[]
   /** `tools: Agent(a, b)`: the agent types it may delegate to as the main thread (none: all). */
   agentTypes?: readonly string[]
-  /** Advisory model hint from frontmatter `model:`. */
-  preferredModel?: string
   /** CC `skills:` — skill names to preload when this agent runs. */
   pinnedSkills?: string[]
-  /** CC `effort:` — advisory reasoning effort hint. */
-  preferredEffort?: string
   /** CC `maxTurns:` — the most turns a delegated run of it takes. */
   maxTurns?: number
   /** CC `background:` — a delegated run never holds the delegating call, even when asked to. */
@@ -53,8 +49,6 @@ export interface LoadedPluginAgent {
   memory?: 'user' | 'project' | 'local'
   /** CC `initialPrompt` — leads the chat's first turn when it runs as the main session agent. */
   initialPrompt?: string
-  /** The file's `localix:` key (priority, model route, memory scope). */
-  localix?: LocalixKey
 }
 
 /**
@@ -107,8 +101,8 @@ export interface LoadedPlugins {
   monitors: LoadedPluginMonitor[]
   /**
    * Custom worker ROLES (sub-agents) from enabled plugins — manifest data,
-   * namespaced `<plugin>:<name>`: the subagent types `delegate` runs a task as, as Claude Code's
-   * Agent tool does (`agent-core/tools/delegate-agent-type.ts`).
+   * namespaced `<plugin>:<name>`: the subagent types `Agent` runs a task as, as Claude Code's
+   * Agent tool does (`agent-core/tools/agent/agent-type.ts`).
    */
   agents: LoadedPluginAgent[]
   /**
@@ -193,9 +187,7 @@ export function buildLoadedAgent(
       : {}),
     ...(agent.disallowedTools ? { disallowedTools: agent.disallowedTools.map(denyEntry) } : {}),
     ...(agent.agentTypes?.length ? { agentTypes: agent.agentTypes } : {}),
-    ...(agent.preferredModel ? { preferredModel: agent.preferredModel } : {}),
     ...(agent.pinnedSkills?.length ? { pinnedSkills: agent.pinnedSkills } : {}),
-    ...(agent.preferredEffort ? { preferredEffort: agent.preferredEffort } : {}),
     ...(agent.maxTurns ? { maxTurns: agent.maxTurns } : {}),
     ...(agent.background ? { background: true } : {}),
     ...(agent.isolation ? { isolation: agent.isolation } : {}),
@@ -204,6 +196,5 @@ export function buildLoadedAgent(
     ...(agent.autoCompactWindow ? { autoCompactWindow: agent.autoCompactWindow } : {}),
     ...(agent.memory ? { memory: agent.memory } : {}),
     ...(agent.initialPrompt ? { initialPrompt: subst(agent.initialPrompt) } : {}),
-    ...(agent.localix ? { localix: agent.localix } : {}),
   }
 }

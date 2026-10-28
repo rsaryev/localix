@@ -12,7 +12,6 @@ test('every settings destination has exactly one primary section', () => {
   }
   expect(primarySettingsSection({ kind: 'project', id: 'project-1' })).toBe('project')
   expect(primarySettingsSection('permissions')).toBe('permissions')
-  expect(primarySettingsSection(parseSettingsTab('rules', undefined))).toBe('permissions')
   // Items (agents, skills, MCP servers, plugins, mini apps) are managed in the Store, not here.
   const layout: Record<string, string[]> = {}
   for (const section of SETTINGS_SECTIONS) (layout[section.group] ??= []).push(section.label)

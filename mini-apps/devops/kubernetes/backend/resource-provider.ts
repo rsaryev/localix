@@ -21,9 +21,8 @@
  *   localix://resource/k8s/<ctx>/node/<name>                  → a node (folder → describe/manifest)
  *   localix://resource/k8s/<ctx>/node/<name>/{describe,manifest} → a node leaf
  *
- * BACKWARDS-COMPATIBLE: the original pod grammar (3-segment pod + logs/describe/events
- * leaves) is unchanged; deployments/services (a `deployment`/`service` kind segment)
- * and nodes (a `node` marker segment) are additive. The active context is carried IN
+ * Pods use the 3-segment grammar (pod + logs/describe/events leaves); deployments/services
+ * carry a `deployment`/`service` kind segment and nodes a `node` marker segment. The active context is carried IN
  * the URI (never mutating kubeconfig; each API client selects the requested context).
  * Introspection only; no secrets/kubeconfig contents cross the wire.
  *

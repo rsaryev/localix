@@ -89,7 +89,7 @@ describe('a tool card acts for its own chat', () => {
       type: 'tool_call',
       status: 'completed',
       toolCallId: 'tc-read',
-      name: 'read',
+      name: 'Read',
       input: { path: '/w/README.md' },
       output: { path: '/w/README.md' },
     } as unknown as ToolCallItem
@@ -111,7 +111,7 @@ describe('a tool card acts for its own chat', () => {
       type: 'command',
       status: 'completed',
       toolCallId: 'tc-bg',
-      name: 'bash',
+      name: 'Bash',
       command: 'npm run dev',
       isBackground: true,
       jobStatus: 'running',
@@ -134,7 +134,7 @@ describe('a tool card acts for its own chat', () => {
       type: 'command',
       status: 'completed',
       toolCallId: 'tc-fg',
-      name: 'bash',
+      name: 'Bash',
       command: 'ls',
       exitCode: 0,
     } as unknown as CommandItem

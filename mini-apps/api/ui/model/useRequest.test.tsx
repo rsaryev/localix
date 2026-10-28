@@ -75,7 +75,7 @@ describe('useRequest request ownership', () => {
 
   test('a late response for the previous name cannot replace the current request', async () => {
     const React = await import('react')
-    const { act } = React
+    const { act, useEffect } = React
     const { createRoot } = await import('react-dom/client')
     const { restApi } = await import('../restApi')
     const { useRequest } = await import('./useRequest')
@@ -92,7 +92,11 @@ describe('useRequest request ownership', () => {
     let currentName: string | undefined
 
     function Harness({ name }: { name: string }) {
-      currentName = useRequest('session-a', name).request?.name
+      const loaded = useRequest('session-a', name).request?.name
+      // Captured in an effect: the test reads what the committed render returned.
+      useEffect(() => {
+        currentName = loaded
+      })
       return null
     }
 

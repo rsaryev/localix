@@ -34,7 +34,7 @@ export function PreviewBlockedOverlay({
               <ExternalLink data-icon="inline-start" aria-hidden /> Open in browser
             </Button>
             {injectUrl && onEngage && (
-              <Button type="button" variant="outline" size="sm" onClick={onEngage}>
+              <Button type="button" variant="ghost" size="sm" onClick={onEngage}>
                 Try embedded view
               </Button>
             )}

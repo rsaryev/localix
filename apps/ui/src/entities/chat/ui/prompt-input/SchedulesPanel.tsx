@@ -4,6 +4,7 @@ import { backendClient } from '@/shared/api/client'
 import { toast } from '@/shared/lib/notify'
 import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { useCountdown } from '@/shared/hooks/useCountdown'
+import { useNow } from './useNow'
 import type { SessionLoopSummary } from '@/shared/api/contracts'
 import { Spinner } from '@localixai/kit/spinner'
 import { IconButton } from '@localixai/kit/icon-button'
@@ -66,7 +67,8 @@ export function LoopRunMetadata({
 function LoopRow({ loop, onCancel }: { loop: SessionLoopSummary; onCancel: (id: string) => void }) {
   const countdown = useCountdown(loop.nextRunAt)
   // Recomputed on the same tick as the countdown so a lapsing hold disappears on its own.
-  const hold = loopHoldLabel(loop, Date.now())
+  const now = useNow()
+  const hold = loopHoldLabel(loop, now)
   const [cancelling, setCancelling] = useState(false)
   const [running, setRunning] = useState(false)
   const busy = cancelling || running

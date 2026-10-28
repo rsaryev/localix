@@ -1,4 +1,4 @@
-import { useEffect, useRef, type RefObject } from 'react'
+import { useEffect, useEffectEvent, useRef, type RefObject } from 'react'
 import { StickyNote, Type } from 'lucide-react'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { MarkdownRenderer } from '@localixai/kit/markdown'
@@ -145,15 +145,14 @@ function useFitHeight(
     active: boolean
   },
 ) {
-  const latest = useRef({ width, height, resize })
-  latest.current = { width, height, resize }
+  const latest = useEffectEvent(() => ({ width, height, resize }))
   useEffect(() => {
     const node = content.current
     if (!active || !node) return
     let timer: ReturnType<typeof setTimeout> | undefined
     const fit = () => {
       const needed = Math.max(24, Math.ceil(node.offsetHeight))
-      const now = latest.current
+      const now = latest()
       if (Math.abs(needed - now.height) > FIT_TOLERANCE_PX) now.resize({ w: now.width, h: needed })
     }
     const observer = new ResizeObserver(() => {

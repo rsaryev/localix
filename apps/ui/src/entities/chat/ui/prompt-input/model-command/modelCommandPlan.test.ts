@@ -1,16 +1,14 @@
 import { describe, expect, test } from 'bun:test'
 import { resolveCommandSpec } from '@localixai/api/slash-catalog'
 import { resolveModelCommand } from './modelCommandPlan'
-import { context, member } from './testing/modelCommandFixture'
+import { agentRow, context } from './testing/modelCommandFixture'
 
 const MODEL_ARGS = resolveCommandSpec('model')!.args!
-const solo = context([member('solo', 'openai/gpt', 'high')])
-const group = context([member('lead', 'openai/gpt', 'high'), member('qa', 'anthropic/opus', 'max')])
+const solo = context(agentRow('solo', 'openai/gpt', 'high'))
 
 describe('resolveModelCommand', () => {
-  test('a one-agent chat names its agent too: All agents is always a choice', () => {
-    expect(resolveModelCommand(solo, '@solo conn-anthropic anthropic/opus ', MODEL_ARGS)).toEqual({
-      kind: 'agent',
+  test('the conversation’s agent is the target; the plan names it', () => {
+    expect(resolveModelCommand(solo, 'conn-anthropic anthropic/opus ', MODEL_ARGS)).toEqual({
       agentId: 'id-solo',
       connectionId: 'conn-anthropic',
       modelId: 'anthropic/opus',
@@ -22,88 +20,58 @@ describe('resolveModelCommand', () => {
   })
 
   test('re-picking the running model keeps its level, clamped to what it offers', () => {
-    const offOnOpus = context([member('solo', 'anthropic/opus', 'off')])
+    const offOnOpus = context(agentRow('solo', 'anthropic/opus', 'off'))
     expect(
-      resolveModelCommand(offOnOpus, '@solo conn-anthropic anthropic/opus', MODEL_ARGS)
-        ?.reasoningEffort,
+      resolveModelCommand(offOnOpus, 'conn-anthropic anthropic/opus', MODEL_ARGS)?.reasoningEffort,
     ).toBe('low')
   })
 
   test('a remembered level for this agent on the model is where it starts', () => {
-    const remembered = context([member('solo', 'openai/gpt')], {
+    const remembered = context(agentRow('solo', 'openai/gpt'), {
       agentModelSettings: [
         { agentId: 'id-solo', providerId: 'anthropic', modelId: 'anthropic/opus', effort: 'max' },
       ],
     })
     expect(
-      resolveModelCommand(remembered, '@solo conn-anthropic anthropic/opus', MODEL_ARGS)
-        ?.reasoningEffort,
+      resolveModelCommand(remembered, 'conn-anthropic anthropic/opus', MODEL_ARGS)?.reasoningEffort,
     ).toBe('max')
   })
 
   test('a non-reasoning model stores off, as the picker does', () => {
-    expect(
-      resolveModelCommand(solo, '@solo conn-openai openai/plain', MODEL_ARGS)?.reasoningEffort,
-    ).toBe('off')
+    expect(resolveModelCommand(solo, 'conn-openai openai/plain', MODEL_ARGS)?.reasoningEffort).toBe(
+      'off',
+    )
   })
 
   test('a level the model does not offer is refused, not stored', () => {
+    expect(resolveModelCommand(solo, 'conn-anthropic anthropic/opus off', MODEL_ARGS)).toBeNull()
     expect(
-      resolveModelCommand(solo, '@solo conn-anthropic anthropic/opus off', MODEL_ARGS),
-    ).toBeNull()
-    expect(
-      resolveModelCommand(solo, '@solo conn-anthropic anthropic/opus high', MODEL_ARGS)
-        ?.reasoningEffort,
+      resolveModelCommand(solo, 'conn-anthropic anthropic/opus high', MODEL_ARGS)?.reasoningEffort,
     ).toBe('high')
   })
 
   test('settings: keep leaves them, default clears them, a value sets them', () => {
-    const plan = resolveModelCommand(
-      solo,
-      '@solo conn-openai openai/gpt low default 600k',
-      MODEL_ARGS,
-    )
+    const plan = resolveModelCommand(solo, 'conn-openai openai/gpt low default 600k', MODEL_ARGS)
     expect(plan).toMatchObject({
-      kind: 'agent',
       settings: { maxTurns: null, contextLimit: 600_000 },
     })
     expect(
-      resolveModelCommand(solo, '@solo conn-openai openai/gpt low keep full', MODEL_ARGS),
+      resolveModelCommand(solo, 'conn-openai openai/gpt low keep full', MODEL_ARGS),
     ).toMatchObject({ settings: { contextLimit: 'full' } })
     expect(
-      resolveModelCommand(solo, '@solo conn-openai openai/gpt low keep auto', MODEL_ARGS),
+      resolveModelCommand(solo, 'conn-openai openai/gpt low keep auto', MODEL_ARGS),
     ).toMatchObject({ settings: { contextLimit: null } })
-    const kept = resolveModelCommand(solo, '@solo conn-openai openai/gpt low keep keep', MODEL_ARGS)
+    const kept = resolveModelCommand(solo, 'conn-openai openai/gpt low keep keep', MODEL_ARGS)
     expect(kept).toMatchObject({ settings: {} })
   })
 
   test('a context limit the model does not offer is refused, not stored', () => {
-    expect(
-      resolveModelCommand(solo, '@solo conn-openai openai/gpt low keep 50%', MODEL_ARGS),
-    ).toBeNull()
-    expect(
-      resolveModelCommand(solo, '@solo conn-openai openai/gpt low keep 2m', MODEL_ARGS),
-    ).toBeNull()
-  })
-
-  test('a group names its member, and All agents becomes one batch for the room', () => {
-    expect(
-      resolveModelCommand(group, '@qa conn-openai openai/gpt minimal', MODEL_ARGS),
-    ).toMatchObject({ kind: 'agent', agentId: 'id-qa', reasoningEffort: 'minimal' })
-    expect(
-      resolveModelCommand(group, 'all conn-anthropic anthropic/opus high', MODEL_ARGS),
-    ).toEqual({
-      kind: 'party',
-      connectionId: 'conn-anthropic',
-      modelId: 'anthropic/opus',
-      reasoningEffort: 'high',
-    })
+    expect(resolveModelCommand(solo, 'conn-openai openai/gpt low keep 50%', MODEL_ARGS)).toBeNull()
+    expect(resolveModelCommand(solo, 'conn-openai openai/gpt low keep 2m', MODEL_ARGS)).toBeNull()
   })
 
   test('text that is not a step selection is left to the server (`/model <name>`)', () => {
     expect(resolveModelCommand(solo, 'opus', MODEL_ARGS)).toBeNull()
-    expect(resolveModelCommand(solo, 'conn-openai openai/gpt', MODEL_ARGS)).toBeNull()
-    expect(resolveModelCommand(group, 'opus', MODEL_ARGS)).toBeNull()
-    expect(resolveModelCommand(solo, '@solo conn-openai no-such-model', MODEL_ARGS)).toBeNull()
+    expect(resolveModelCommand(solo, 'conn-openai no-such-model', MODEL_ARGS)).toBeNull()
   })
 })

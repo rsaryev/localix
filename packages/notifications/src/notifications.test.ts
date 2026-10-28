@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
-  migrateNotificationPreferences,
+  parseNotificationPreferences,
   type NotificationChannel,
   type NotificationTransport,
 } from './contracts'
@@ -405,25 +405,20 @@ describe('notification policy + router', () => {
 })
 
 describe('notification preferences contract', () => {
-  it('uses conservative defaults and migrates the legacy web toggle', () => {
-    expect(migrateNotificationPreferences(undefined)).toEqual(DEFAULT_NOTIFICATION_PREFERENCES)
-    expect(migrateNotificationPreferences({ osNotifications: true })).toEqual({
-      condition: 'unfocused',
-      terminalMethod: 'auto',
-    })
-    expect(migrateNotificationPreferences({ osNotifications: false })).toEqual({
-      condition: 'off',
-      terminalMethod: 'auto',
-    })
+  it('uses conservative defaults', () => {
+    expect(parseNotificationPreferences(undefined)).toEqual(DEFAULT_NOTIFICATION_PREFERENCES)
+    expect(parseNotificationPreferences({ osNotifications: false })).toEqual(
+      DEFAULT_NOTIFICATION_PREFERENCES,
+    )
   })
 
   it('retains valid fields and rejects malformed persisted/config values', () => {
-    expect(migrateNotificationPreferences({ condition: 'always', terminalMethod: 'bel' })).toEqual({
+    expect(parseNotificationPreferences({ condition: 'always', terminalMethod: 'bel' })).toEqual({
       condition: 'always',
       terminalMethod: 'bel',
     })
     expect(
-      migrateNotificationPreferences({ condition: 'sometimes', terminalMethod: 'shell' }),
+      parseNotificationPreferences({ condition: 'sometimes', terminalMethod: 'shell' }),
     ).toEqual(DEFAULT_NOTIFICATION_PREFERENCES)
   })
 })

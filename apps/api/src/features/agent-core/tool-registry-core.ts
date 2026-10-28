@@ -49,13 +49,13 @@ export function buildRegistryContext(options: RuntimeToolRegistryOptions): Regis
   // it is gated separately from `bash` itself: a run may investigate with the shell and
   // still have no business leaving a dev server behind. Dropping the FIELD (not just
   // denying the call) means the model never spends a turn — and a HITL prompt — proposing
-  // one, and the `bash` schema stops advertising a capability this run does not have.
+  // one, and the `Bash` schema stops advertising a capability this run does not have.
   const allowBackgroundBash =
     // Default DERIVED, not `true`: a background job is unmanageable without its `jobs`
     // manager (a scope can switch it off), so the registry answers that itself rather than
     // trusting a caller to remember. The chat runtime still passes an explicit value.
-    (core.allowBackgroundBash ?? isToolLive(agentProfile, TOOL.jobs, policy.disabledTools ?? [])) &&
-    hasToolFeature(agentProfile, 'bash', 'background')
+    (core.allowBackgroundBash ?? isToolLive(agentProfile, TOOL.Jobs, policy.disabledTools ?? [])) &&
+    hasToolFeature(agentProfile, TOOL.Bash, 'background')
 
   const bashTool = createBashTool(core.env, core.defaultCwd, {
     allowBackground: allowBackgroundBash,

@@ -1,0 +1,16 @@
+{
+  "name": "mini-app-authoring",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Create, build, check, install and share Localix mini apps from Claude Code or Localix.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "test": "bun test src",
+    "type-check": "node ../../scripts/tsc.mjs --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.3",
+    "typescript": "^7.0.2"
+  }
+}

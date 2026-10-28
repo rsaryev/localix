@@ -9,7 +9,7 @@ import {
 
 /** Reuse the same brand marks as external agents for provider connections. */
 export function providerIcon(providerId: string | undefined) {
-  switch (providerId) {
+  switch (providerId ?? '') {
     case 'openai':
     case 'openai-codex':
       return CodexMark

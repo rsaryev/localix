@@ -7,7 +7,7 @@
  *
  * ## Unknown-name policy
  * `normalizeCcToolName` passes unknown names through as their lowercased input
- * so engine tool names used directly (`"bash"`, `"read"`) continue to work.
+ * so the names of mini app and plugin tools (`chess`) continue to work.
  * `mapCcToolList` with `{ dropUnknown: true }` silently drops any token that
  * has no entry in the name table (the legacy names, the names a hook sees a
  * shaped tool's calls under, and every built-in by its own name) —
@@ -28,57 +28,50 @@ import { claudeCodeNames, shapedToolNames } from './cc-tool-shapes'
  */
 export const CC_LEGACY_TOOL_NAMES: Readonly<Record<string, string>> = {
   // File system
-  read: 'read',
-  write: 'write',
-  edit: 'edit',
-  multiedit: 'edit', // `edit`'s `edits` array is MultiEdit natively (several edits, in order)
-  bash: 'bash',
-  grep: 'search',
-  glob: 'search',
-  ls: 'search',
+  read: 'Read',
+  write: 'Write',
+  edit: 'Edit',
+  multiedit: 'Edit', // `Edit`'s `edits` array is MultiEdit natively (several edits, in order)
+  bash: 'Bash',
+  grep: 'Search',
+  glob: 'Search',
+  ls: 'Search',
   // CC notebook / shell tools → closest engine equivalents
-  notebookread: 'read', // reads notebook cells → read
-  notebookedit: 'edit', // edits notebook cells → edit on the .ipynb JSON
-  // `KillShell` / `BashOutput` (now TaskStop / TaskOutput) stop or read a background job; neither
-  // runs a command, so they stay unmapped. Mapping them to `bash` handed an agent whose author
-  // made it read-only the whole shell.
+  notebookread: 'Read', // reads notebook cells → Read
+  notebookedit: 'Edit', // edits notebook cells → Edit on the .ipynb JSON
+  // `KillShell` (now `TaskStop`) stops a background job, as `TaskStop` does here; `BashOutput`
+  // (now `TaskOutput`) reads one and stays unmapped. Mapping either to `bash` handed an agent whose
+  // author made it read-only the whole shell.
+  killshell: 'TaskStop',
   // CC `Skill` invokes skills; leaving it out of a subagent's `tools` switches skills off (CC).
-  skill: 'skill',
+  skill: 'Skill',
   // Both CC web primitives converge on the one composite, keyless research
   // capability. It accepts known URLs as well as search queries, so neither
   // imported declaration loses its underlying authority.
-  webfetch: 'research',
-  websearch: 'research',
-  askuserquestion: 'ask',
-  // CC `Agent` (formerly `Task`) spawns subagents; the engine's is `delegate`. Its type allowlist
+  webfetch: 'Research',
+  websearch: 'Research',
+  askuserquestion: 'AskUserQuestion',
+  // CC `Agent` (formerly `Task`) starts subagents, as `Agent` does here. Its type allowlist
   // (`Agent(worker)`) is not part of the tool name: an agent file's `tools` list keeps it apart
   // (`delegableAgentTypes` in `plugins/discovery-cc-files.ts`).
-  agent: 'delegate',
-  task: 'delegate',
+  task: 'Agent',
 }
 
 /**
  * Tools no `tools` list switches off: the run's own plumbing, not a capability an author grants.
- * `tool_output` is the recovery path an elided result points at; `activate_tools` (Claude Code's
- * `ToolSearch`) loads the deferred tools the list already allows, MCP tools included, so
- * without it a list naming `mcp__server__tool` could not reach it; `context_budget`,
- * `set_topic` and `skip_answer` only report on or label the conversation. Every other tool is
- * Localix-only (`plan`, `loops`, `workflow`, `jobs`, `browser` …) and goes off with a list that
- * does not name it, as Claude Code's exact `tools` list does.
+ * `ToolOutput` is the recovery path an elided result points at; `ToolSearch` loads the deferred
+ * tools the list already allows, MCP tools included, so without it a list naming
+ * `mcp__server__tool` could not reach it; `ContextBudget` only reports on the conversation. Every other tool is Localix-only (`Plan`, `Loops`, `Workflow`, `Jobs`,
+ * `Browser` …) and goes off with a list that does not name it, as Claude Code's exact `tools` list
+ * does.
  */
-export const CC_ALWAYS_ON_TOOLS: readonly string[] = [
-  'activate_tools',
-  'tool_output',
-  'context_budget',
-  'set_topic',
-  'skip_answer',
-]
+export const CC_ALWAYS_ON_TOOLS: readonly string[] = ['ToolSearch', 'ToolOutput', 'ContextBudget']
 
 /**
  * Every name a tool list may use → the engine tool it names. One table: the legacy names above,
  * each shaped tool's own name and every Claude Code name a hook sees its calls under
  * (`claudeCodeNames`), and each built-in by its own name. A name two tools answer to resolves to
- * the first (`TaskStop` is `jobs`', as for a hook; stopping a child run needs `delegate`).
+ * the first.
  */
 const NAME_TABLE: Readonly<Record<string, string>> = (() => {
   const table: Record<string, string> = { ...CC_LEGACY_TOOL_NAMES }
@@ -110,18 +103,14 @@ const lookupName = (lower: string): string | undefined => NAME_TABLE[lower]
  * CC tool allowlist directly. Docs: docs/extending/claude-code-plugins.md ("Tool names").
  */
 export const CC_SEMANTIC_GAPS: Readonly<Record<string, string>> = {
-  notebookedit: '`NotebookEdit` → mapped to `edit` (no notebook-cell tool; edits the .ipynb JSON)',
-  grep: '`Grep` → mapped to `search`, which is also `Glob`: listing files and searching them share one grant',
-  glob: '`Glob` → mapped to `search`, which is also `Grep`: listing files and searching them share one grant',
-  webfetch: '`WebFetch` → mapped to `research`, which also searches the web',
-  websearch: '`WebSearch` → mapped to `research`, which also fetches pages',
-  sendmessage:
-    '`SendMessage` → mapped to `delegate`, whose other actions start and stop child agents: there is no per-action grant',
-  taskstop:
-    '`TaskStop` → mapped to `jobs` (list, read, stop background jobs); stopping a child agent run belongs to `delegate`',
+  notebookedit: '`NotebookEdit` → mapped to `Edit` (no notebook-cell tool; edits the .ipynb JSON)',
+  grep: '`Grep` → mapped to `Search`, which is also `Glob`: listing files and searching them share one grant',
+  glob: '`Glob` → mapped to `Search`, which is also `Grep`: listing files and searching them share one grant',
+  webfetch: '`WebFetch` → mapped to `Research`, which also searches the web',
+  websearch: '`WebSearch` → mapped to `Research`, which also fetches pages',
   monitor:
-    "`Monitor` → mapped to `bash`, whose `until` waits on a command; it grants the shell as Claude Code's Monitor does",
-  exitplanmode: '`ExitPlanMode` → mapped to `plan`, which also writes and reads plan documents',
+    "`Monitor` → mapped to `Bash`, whose `until` waits on a command; it grants the shell as Claude Code's Monitor does",
+  exitplanmode: '`ExitPlanMode` → mapped to `Plan`, which also writes and reads plan documents',
   todowrite:
     '`TodoWrite` has no core tool: a task board is a plugin or mini app tool, so it is dropped',
   todoread:
@@ -130,11 +119,11 @@ export const CC_SEMANTIC_GAPS: Readonly<Record<string, string>> = {
   taskupdate: '`TaskUpdate` has no core tool (task board): dropped',
   tasklist: '`TaskList` has no core tool (task board): dropped',
   taskget: '`TaskGet` has no core tool (task board): dropped',
-  taskoutput: '`TaskOutput` has no core tool: read a background job with `jobs`; dropped',
+  taskoutput: '`TaskOutput` has no core tool: read a background job with `Jobs`; dropped',
   enterplanmode: '`EnterPlanMode` has no equivalent: Localix has no plan mode to enter; dropped',
-  lsp: '`LSP` has no equivalent: Localix has no language-server tool; use `search` and `read`; dropped',
-  enterworktree: '`EnterWorktree` has no equivalent: worktrees are made with `bash`; dropped',
-  exitworktree: '`ExitWorktree` has no equivalent: worktrees are left with `bash`; dropped',
+  lsp: '`LSP` has no equivalent: Localix has no language-server tool; use `Search` and `Read`; dropped',
+  enterworktree: '`EnterWorktree` has no equivalent: worktrees are made with `Bash`; dropped',
+  exitworktree: '`ExitWorktree` has no equivalent: worktrees are left with `Bash`; dropped',
   pushnotification: '`PushNotification` has no equivalent tool; dropped',
 }
 

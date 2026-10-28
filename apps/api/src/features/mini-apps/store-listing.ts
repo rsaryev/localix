@@ -111,7 +111,10 @@ export interface OwnMiniApp {
   bundled?: boolean
 }
 
-/** The row of an app the person made (`mini_app_build`): installed, with nothing to install. */
+/**
+ * The row of an app the person made (installed from their own folder by the mini-app-authoring
+ * plugin, or copied into `~/.localix/mini-apps`): installed, with nothing to install.
+ */
 export function ownMiniAppEntry(app: OwnMiniApp): MiniAppStoreEntry {
   return {
     name: app.name,

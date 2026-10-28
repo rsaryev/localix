@@ -112,20 +112,6 @@ mod app_runner_ui;
 #[cfg(target_os = "macos")]
 mod app_runner_web;
 mod commands;
-#[cfg_attr(not(target_os = "macos"), path = "companion_unsupported.rs")]
-mod companion;
-#[cfg(target_os = "macos")]
-mod companion_commands;
-#[cfg(target_os = "macos")]
-mod companion_destination;
-#[cfg(target_os = "macos")]
-mod companion_lifecycle;
-#[cfg(target_os = "macos")]
-mod companion_macos;
-#[cfg(target_os = "macos")]
-mod companion_material;
-#[cfg(target_os = "macos")]
-mod companion_pointer;
 mod deeplink;
 mod frontend_flush;
 #[cfg(target_os = "macos")]
@@ -277,17 +263,12 @@ pub fn run() {
             tauri_plugin_window_state::Builder::default()
                 .with_state_flags(window_state_flags())
                 // Native Mac workspace sessions own all secondary windows, including drag previews.
-                .with_filter(|label| {
-                    label != companion::LABEL && (!cfg!(target_os = "macos") || label == "main")
-                })
+                .with_filter(|label| !cfg!(target_os = "macos") || label == "main")
                 .build(),
         )
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_dialog::init());
-    let builder = builder.plugin(tauri_plugin_global_shortcut::Builder::new().build());
-    #[cfg(target_os = "macos")]
-    let builder = builder.plugin(tauri_nspanel::init());
     let builder = with_updater(builder);
     #[cfg(target_os = "macos")]
     let builder = builder.manage(crate::workspace_drag_state::WorkspaceDrags::default());
@@ -384,14 +365,6 @@ pub fn run() {
             forward_menu_command(app, id);
         })
         .invoke_handler(tauri::generate_handler![
-            companion::companion_ready,
-            companion::companion_workspace_focus,
-            companion::companion_open_session,
-            companion::companion_set_expanded,
-            companion::companion_geometry,
-            companion::companion_set_grab,
-            companion::island_enabled,
-            companion::set_island_enabled,
             notify,
             frontend_log,
             focus_app,
@@ -448,7 +421,6 @@ pub fn run() {
         ])
         .manage(PendingUpdate::default())
         .manage(DeepLinks::default())
-        .manage(companion::CompanionState::default())
         .manage(ZoomState::default())
         .manage(MenuState::default())
         .manage(ApiSidecar::default())
@@ -526,7 +498,6 @@ pub fn run() {
             // first, they overlap. A `ready` that arrives before the window exists is recorded and
             // replayed by `resync_runtime_status`, which is what that handshake is for.
             start_api(app.handle(), api_launch);
-            companion::install_shortcut(app.handle());
 
             app.state::<crate::workspace_windows::WorkspaceWindows>()
                 .set_init_script(init_script.clone());

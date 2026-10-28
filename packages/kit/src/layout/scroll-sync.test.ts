@@ -69,7 +69,9 @@ describe('createScrollSyncGuard', () => {
       expect(callbacks).toBe(1)
       expect(guard.isGuarded()).toBe(false)
     } finally {
-      globalThis.requestAnimationFrame = original
+      // Assigning `undefined` back would leave the key behind for every later file.
+      if (original) globalThis.requestAnimationFrame = original
+      else Reflect.deleteProperty(globalThis, 'requestAnimationFrame')
     }
   })
 

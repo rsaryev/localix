@@ -19,7 +19,7 @@ function now(): number {
 // Native timer captured at MODULE LOAD — before the page's own scripts can patch
 // window.setTimeout — so the settle's fallback fires even in a backgrounded tab, where
 // rAF is paused and never runs. This is what stops a paused rAF from stalling the whole
-// `browser` tool round-trip.
+// `Browser` tool round-trip.
 const nativeSetTimeout: (cb: () => void, ms: number) => unknown =
   typeof setTimeout === 'function' ? setTimeout.bind(globalThis) : () => undefined
 

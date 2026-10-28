@@ -4,7 +4,6 @@ import {
   asRecord,
   baseName,
   countNonEmptyLines,
-  formatBytes,
   numField,
   pretty,
   strField,
@@ -19,21 +18,6 @@ describe('baseName', () => {
   test('strips trailing slashes', () => {
     expect(baseName('src/foo/')).toBe('foo')
     expect(baseName('/a/b///')).toBe('b')
-  })
-})
-
-describe('formatBytes', () => {
-  test('scales B / KB / MB at 1024 boundaries', () => {
-    expect(formatBytes(532)).toBe('532 B')
-    expect(formatBytes(1023)).toBe('1023 B')
-    expect(formatBytes(1024)).toBe('1.0 KB')
-    expect(formatBytes(1024 * 1024)).toBe('1.0 MB')
-    expect(formatBytes(1536 * 1024)).toBe('1.5 MB')
-  })
-  test('negative or non-finite → empty string', () => {
-    expect(formatBytes(-1)).toBe('')
-    expect(formatBytes(Number.NaN)).toBe('')
-    expect(formatBytes(Infinity)).toBe('')
   })
 })
 

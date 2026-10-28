@@ -17,7 +17,7 @@ export function ToolImages({ item }: { item: ToolBackedItem }) {
   const paging = useLightboxPaging(images)
   if (images.length === 0) return null
   return (
-    <IORow label="IMG">
+    <IORow label="Out">
       <div className="flex flex-wrap gap-2">
         {images.map((image, index) => (
           <button

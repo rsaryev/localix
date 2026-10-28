@@ -1,4 +1,4 @@
-import { basename } from 'node:path'
+import { basename, dirname } from 'node:path'
 
 import type { DiscoveredPlugin } from './discovery'
 import type { PluginValidation } from './contracts'
@@ -77,7 +77,12 @@ export function validatePlugin(
   // remove deletes by it) — a mismatch makes Settings show one name while the disk
   // shows another, so nudge authors to keep them aligned.
   const dirName = basename(plugin.dir)
-  if (!plugin.error && dirName !== plugin.manifest.name) {
+  // Claude Code's own cache keeps a plugin at `cache/<marketplace>/<name>/<version>`: the version
+  // is the folder, and the name is the one above it.
+  const inVersionedCache =
+    basename(dirname(plugin.dir)) === plugin.manifest.name &&
+    basename(dirname(dirname(dirname(plugin.dir)))) === 'cache'
+  if (!plugin.error && dirName !== plugin.manifest.name && !inVersionedCache) {
     warnings.push(
       `Manifest name "${plugin.manifest.name}" doesn't match its directory "${dirName}" — installs/removals key on the manifest name.`,
     )

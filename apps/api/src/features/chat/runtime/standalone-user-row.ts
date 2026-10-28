@@ -1,7 +1,7 @@
 /** Standalone user rows share one idempotent insert/publish path. */
 import { randomUUID } from 'node:crypto'
 import type { StoredSystemNotice } from '../../../db'
-import { SYSTEM_PARTICIPANT, USER_PARTICIPANT } from '../../../db'
+import { SYSTEM_AUTHOR, USER_AUTHOR } from '../../../db'
 import type { PersistedMessage } from '../contracts'
 import type { ChatRepository } from '../repository'
 import type { SessionStreamRegistry } from './session-stream-registry'
@@ -35,7 +35,7 @@ async function insertUserRow(
   params: UserRowParams,
   mark:
     // Notice prose is always presentation-only; the sibling system context binding is what the
-    // room receives through the runtime tail.
+    // agent receives through the runtime tail.
     | { uiOnly?: true; systemNotice?: StoredSystemNotice }
     | { origin: 'user-steer' }
     | { isInternal: true; origin: string },
@@ -52,8 +52,7 @@ async function insertUserRow(
     {
       id: messageId,
       role: 'user',
-      from:
-        'origin' in mark && mark.origin === 'user-steer' ? USER_PARTICIPANT : SYSTEM_PARTICIPANT,
+      from: 'origin' in mark && mark.origin === 'user-steer' ? USER_AUTHOR : SYSTEM_AUTHOR,
       content: params.content,
       ...(params.clientMessageIds?.length ? { clientMessageIds: params.clientMessageIds } : {}),
       ...(noticeBinding ? { bindings: [noticeBinding] } : {}),
@@ -129,7 +128,7 @@ export function createSteeredUserMessage(
     {
       id: params.messageId ?? randomUUID(),
       role: 'user',
-      from: USER_PARTICIPANT,
+      from: USER_AUTHOR,
       content: params.content,
       ...(params.clientMessageIds?.length ? { clientMessageIds: params.clientMessageIds } : {}),
       ...(params.internal ? { isInternal: true, origin: params.source } : { origin: 'user-steer' }),

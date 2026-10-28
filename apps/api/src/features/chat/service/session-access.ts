@@ -95,7 +95,7 @@ export const toSourceRuntime = (
 
   const toolName = toolItem.name
 
-  if (toolName === TOOL.bash) {
+  if (toolName === TOOL.Bash) {
     return {
       toolCallId,
       toolName,

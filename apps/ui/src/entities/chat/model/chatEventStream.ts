@@ -99,8 +99,7 @@ export function useChatEventStream(enabled = true): void {
   // state; the only active-session branch left is the focused retry toast.
   const handleSessionEvent = useCallback((sessionId: string, parsed: AgentStreamEvent) => {
     if (parsed.type === 'run.started') {
-      if (parsed.agentId) answerClock.start(sessionId, parsed.agentId)
-      else answerClock.end(sessionId)
+      answerClock.start(sessionId)
     } else if (parsed.type === 'run.completed' || parsed.type === 'run.failed') {
       answerClock.end(sessionId)
     }

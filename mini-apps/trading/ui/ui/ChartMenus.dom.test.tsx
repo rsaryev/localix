@@ -11,6 +11,10 @@ import { afterAll, afterEach, beforeAll, describe, expect, mock, test } from 'bu
 import '@localixai/kit/testing/host-runtime'
 import { composerBus, registerDom, type ComposerInsert } from '@localixai/kit/testing'
 
+const turns = async (n = 10) => {
+  for (let i = 0; i < n; i++) await new Promise((r) => setImmediate(r))
+}
+
 let teardown: () => Promise<void>
 const cleanups: Array<() => unknown> = []
 
@@ -28,7 +32,7 @@ afterAll(async () => {
   await teardown()
 })
 
-const settle = () => new Promise((resolve) => setTimeout(resolve, 20))
+const settle = () => turns()
 
 /** A menu row's label — the first truncating span, past its icon. */
 const label = (element: Element) => element.querySelector('.truncate')?.textContent

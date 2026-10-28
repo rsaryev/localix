@@ -33,7 +33,7 @@ describe('Kubernetes pod watch start', () => {
     registry.subscribe('ctx', 'default', { onFrame: () => {} })
     expect(gates).toHaveLength(1)
     gates[0]!()
-    await Bun.sleep(0)
+    await new Promise((r) => setTimeout(r, 0))
     expect(created).toHaveLength(1)
     await registry.stopAll()
     expect(created[0]!.stopped).toBe(1)
@@ -44,9 +44,9 @@ describe('Kubernetes pod watch start', () => {
     const registry = new ApiPodWatchRegistry(1, create)
     const unsubscribe = registry.subscribe('ctx', 'default', { onFrame: () => {} })
     unsubscribe()
-    await Bun.sleep(10) // the idle stop runs while the cluster is still answering
+    for (let i = 0; i < 5; i++) await new Promise((r) => setTimeout(r, 0)) // the idle stop runs while the cluster is still answering
     gates[0]!()
-    await Bun.sleep(0)
+    await new Promise((r) => setTimeout(r, 0))
     expect(created[0]!.started).toBe(0)
   })
 })

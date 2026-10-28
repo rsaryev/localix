@@ -4,7 +4,6 @@ import { createRunMacroCommand } from './run-macro'
 import type { PersistedMessage } from '../contracts'
 import type { SessionRecord } from '../repository'
 import type { AgentTurnAdmission } from '../runtime/agent-turn-ticket'
-import { noLeadership } from '../runtime/conversation-strategy'
 
 function harness(opts: { busy?: boolean } = {}) {
   const woken: unknown[] = []
@@ -39,8 +38,6 @@ function harness(opts: { busy?: boolean } = {}) {
       },
       isBusy: () => opts.busy === true,
       cancelAgentTurns: async () => {},
-      leadership: () => noLeadership,
-      floorAdvisor: () => async () => null,
       wake: async (params: unknown) => {
         woken.push(params)
       },
@@ -106,7 +103,6 @@ describe('runMacroCommand', () => {
     expect(h.runArgs?.triggerMessageIds).toEqual([userRow!.id])
     expect(h.runArgs).not.toHaveProperty('historyMessages')
     expect(h.runArgs?.assistantMessageId).toBe(slot!.id)
-    expect(h.runArgs?.scope.speakerAgentId).toBe(session.agents[0]!.agentId)
   })
 
   test('publishes the user echo before loading history', async () => {
@@ -153,10 +149,10 @@ describe('runMacroCommand', () => {
     await h.run('u', 's', session, [], '/x', 'do x', '2026-01-04', {
       extraDisabledTools: ['bash'],
       extraAllowedTools: [],
-      requiredTools: [{ name: 'mini_app_build' }],
+      requiredTools: [{ name: 'Browser' }],
     })
     expect(h.runArgs?.scope.extraDisabledTools).toEqual(['bash'])
-    expect(h.runArgs?.scope.requiredTools).toEqual([{ name: 'mini_app_build' }])
+    expect(h.runArgs?.scope.requiredTools).toEqual([{ name: 'Browser' }])
     expect(h.runArgs?.scope).not.toHaveProperty('extraAllowedTools') // empty array omitted
   })
 
@@ -184,7 +180,7 @@ describe('runMacroCommand', () => {
     const res = await h.run('u', 's', session, [], '/sample-command', 'review it', '2026-01-06', {
       commandOrigin: { command: '/sample-command', label: 'skill' },
       extraAllowedTools: ['bash'],
-      requiredTools: [{ name: 'mini_app_build' }],
+      requiredTools: [{ name: 'Browser' }],
       modelId: 'fast-model',
     })
     expect(res).toMatchObject({ queued: true })
@@ -199,47 +195,11 @@ describe('runMacroCommand', () => {
           origin: { command: '/sample-command', label: 'skill' },
           identity: {
             extraAllowedTools: ['bash'],
-            requiredTools: [{ name: 'mini_app_build' }],
+            requiredTools: [{ name: 'Browser' }],
             modelOverride: 'fast-model',
           },
         },
       },
     ])
-  })
-
-  test('a command addressed to nobody goes to the leader, whoever answered last', async () => {
-    // The strategy reads the transcript's last row as "who answered the user last"; with the
-    // command's own row counted, that rule never matched and the turn went elsewhere.
-    const room = sessionFixture({
-      id: 's',
-      agents: [
-        {
-          agentId: 'a',
-          handle: 'a',
-          providerConnectionId: null,
-          modelId: 'm',
-          reasoningEffort: 'medium',
-        },
-        {
-          agentId: 'b',
-          handle: 'b',
-          providerConnectionId: null,
-          modelId: 'm',
-          reasoningEffort: 'medium',
-        },
-      ],
-    })
-    const answeredByA = (id: string) =>
-      ({
-        id,
-        payload: { id, role: 'assistant', from: 'agent:a', to: 'user', content: 'hi' },
-      }) as unknown as PersistedMessage
-    const answeredByB = {
-      id: 'b1',
-      payload: { id: 'b1', role: 'assistant', from: 'agent:b', to: 'user', content: 'done' },
-    } as unknown as PersistedMessage
-    const h = harness()
-    await h.run('u', 's', room, [answeredByA('a1'), answeredByB], '/x', 'do x', '2026-01-07')
-    expect(h.runArgs?.scope.speakerAgentId).toBe('a')
   })
 })

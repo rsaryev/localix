@@ -124,9 +124,10 @@ viewport. Search remains present in both layouts. The full inventory and saving 
 [Settings](../features/settings.md).
 
 Settings uses `SettingsWorkspace` for the pane layout and `SettingsNavigation` for the grouped rail
-and narrow section picker. Sections are built from `SettingsSection`; lists inside it inherit the
-section surface. A `SettingsRow` with the `responsive` layout stacks its label above the control
-until the container is 36rem wide.
+and narrow section picker; the picker takes the `xl` rung of the search beside it (`SidebarNav`'s
+`selectSize`), so the two read as one strip. Sections are built from `SettingsSection`; lists inside
+it inherit the section surface. A `SettingsRow` with the `responsive` layout stacks its label above
+the control until the container is 36rem wide.
 
 Form actions use the same 36px `xl` control tier as their inputs. A section containing one control
 omits the second heading/body tier: `SettingsSection` without children puts its value in the heading
@@ -155,7 +156,7 @@ and Settings are drawn with these.
 | A pill that acts: a tag, a category to browse       | `chip` (`ChipButton`)                               | `composer-chip` (the glass pill of the composer)       |
 | A notice above content, with actions                | `workbench-notice-bar` (set `role` yourself)        | A bordered `div` with an icon and two buttons          |
 | Nothing here, or a failure with a retry             | `empty-hint`, `state-notice`                        | A centred `<p>`                                        |
-| A row of tiles that scrolls sideways                | `shelf-row` with `tile-card`                        | A wrapping grid (`card-grid`)                          |
+| A storefront row of tiles with See all              | `shelf-row` with `tile-card`                        | A full list of item cards (`card-grid`)                |
 | A browsable card that opens a page                  | `item-card` inside `card-grid`                      | A navigable sidebar row                                |
 | The install control of a package                    | `get-button`                                        | A generic `button`                                     |
 | Tabs inside a pane                                  | `tabs`                                              | A `role="tablist"` row of buttons                      |
@@ -289,10 +290,10 @@ last column is what the corresponding check found on its first run.
 | An overlay takes its motion from one recipe                                        | `packages/kit/src/overlays/overlay-motion.test.ts` | 7     |
 
 The token-drift rules have one owner, `apps/api/src/contracts/ui-token-rules.ts`, and two readers:
-the guard above, over the app and the bundled mini apps, and the style step of `mini_app_build`,
-over a mini app a person builds in `~/.localix/mini-apps`, where no repository guard can see it. The
-style step adds one rule of its own: a native button, input, select or textarea where the kit has a
-control.
+the guard above, over the app and the bundled mini apps, and the style step of the
+mini-app-authoring plugin's check (through the kit's tools), over a mini app a person builds outside
+the repository, where no repository guard can see it. The style step adds one rule of its own: a
+native button, input, select or textarea where the kit has a control.
 
 ## Configuration
 

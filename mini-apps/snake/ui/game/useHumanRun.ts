@@ -71,7 +71,7 @@ export function useHumanRun(input: {
 
   const steer = useCallback(
     (direction: Direction) => {
-      if (!enabled || !stored || stored.status !== 'playing') return
+      if (!enabled || stored?.status !== 'playing') return
       if (!run.current) {
         run.current = {
           game: stored,
@@ -115,5 +115,6 @@ export function useHumanRun(input: {
   // Leaving the view saves what was played.
   useEffect(() => () => save(), [save])
 
-  return { game: shown ?? stored, running: run.current !== null || shown !== null, steer }
+  // `shown` is set whenever a run exists and cleared only after it has ended and been saved.
+  return { game: shown ?? stored, running: shown !== null, steer }
 }

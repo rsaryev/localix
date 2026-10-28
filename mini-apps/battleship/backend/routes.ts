@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
-import { jsonBody, seatedAnswer, type MiniAppRouteContext } from '@localixai/mini-app-sdk/backend'
+import { jsonBody, chatAnswer, type MiniAppRouteContext } from '@localixai/mini-app-sdk/backend'
 
 import { OPPONENTS, PLAYERS, ShotRefused, viewFor, type Game } from '../shared/game'
 import { SIZE } from '../shared/rules'
@@ -28,7 +28,7 @@ const emptyBody = z.object({})
  * rules refuse answers 409 with the rules' own sentence ("E5 is already known").
  */
 export function createGameRoutes(games: GameService) {
-  const answer = seatedAnswer({
+  const answer = chatAnswer({
     missing: { code: 'no_table', message: 'This board belongs to a chat that is not available.' },
     refused: { error: ShotRefused, code: 'shot_refused' },
     view: (game: Game) => viewFor(game, 'you'),
@@ -37,17 +37,17 @@ export function createGameRoutes(games: GameService) {
   return new Hono<MiniAppRouteContext>()
     .get('/game', (c) => {
       c.header('Cache-Control', 'no-store')
-      return answer(c, (seat) => games.read(seat))
+      return answer(c, (chat) => games.read(chat))
     })
     .post('/game/fire', jsonBody(shotBody), (c) =>
-      answer(c, (seat) => games.personShot(seat, c.req.valid('json').cell)),
+      answer(c, (chat) => games.personShot(chat, c.req.valid('json').cell)),
     )
-    .post('/game/reshuffle', jsonBody(emptyBody), (c) => answer(c, (seat) => games.reshuffle(seat)))
+    .post('/game/reshuffle', jsonBody(emptyBody), (c) => answer(c, (chat) => games.reshuffle(chat)))
     .post('/game/new', jsonBody(newGameBody), (c) =>
-      answer(c, (seat) => games.newGame(seat, c.req.valid('json').first)),
+      answer(c, (chat) => games.newGame(chat, c.req.valid('json').first)),
     )
-    .post('/game/remind', jsonBody(emptyBody), (c) => answer(c, (seat) => games.remind(seat)))
+    .post('/game/remind', jsonBody(emptyBody), (c) => answer(c, (chat) => games.remind(chat)))
     .post('/game/opponent', jsonBody(opponentBody), (c) =>
-      answer(c, (seat) => games.setOpponent(seat, c.req.valid('json').opponent)),
+      answer(c, (chat) => games.setOpponent(chat, c.req.valid('json').opponent)),
     )
 }

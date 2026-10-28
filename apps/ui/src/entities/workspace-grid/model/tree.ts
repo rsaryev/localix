@@ -16,12 +16,9 @@ export type SplitDir = 'left' | 'right' | 'up' | 'down'
 // DEFAULT placement roles: a primary `editor` area (documents + the live app
 // preview + terminals, all opening as editor tabs) and one `aux` side panel that
 // stacks the companion views (chat, source control, task, problems) as tabs.
-// `preview` and `bottom` are LEGACY tags: the old policy gave the preview its own
-// column and terminals a bottom strip; persisted layouts that still carry such a
-// tagged group keep it (placement reuses it), but nothing spawns one anymore.
 // Only the default — the user splits further by hand (manual groups are
 // untagged). The kind→role + role→spawn tables live in `placement.ts`.
-export type GroupRole = 'editor' | 'aux' | 'bottom' | 'preview'
+export type GroupRole = 'editor' | 'aux'
 
 export interface LeafNode {
   type: 'leaf'

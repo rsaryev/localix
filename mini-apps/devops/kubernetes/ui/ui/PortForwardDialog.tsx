@@ -56,7 +56,6 @@ export function PortForwardDialog({
   // a genuinely different target, otherwise an inventory tick would erase input.
   const [lastPodKey, setLastPodKey] = useState(podKey)
   if (lastPodKey !== podKey) {
-    requestSeq.current += 1
     setLastPodKey(podKey)
     setPortChoice(initialPortForwardChoice(containerPorts))
     setCustomPodPort('')
@@ -65,6 +64,11 @@ export function PortForwardDialog({
     setFailure(null)
   }
 
+  // A request still opening a tunnel for the previous target (or for a dialog that is gone) is
+  // stale: `start` stops its late forward instead of adopting it.
+  useEffect(() => {
+    requestSeq.current += 1
+  }, [podKey])
   useEffect(
     () => () => {
       requestSeq.current += 1

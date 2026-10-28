@@ -30,12 +30,12 @@ export interface RunFrame {
   readonly env: RunEnv
   readonly params: RunParams
   readonly userId: string
-  readonly speakerAgentId: string
+  readonly agentId: string
   /** The row the run opened on; `currentAssistantMessageId` is the one it ends on. */
   readonly assistantMessageId: string
   /** Set when the session is a fork: what its parent's run handed it (`chat/runtime/fork`). */
   readonly fork?: ForkRun
-  /** What a fork of THIS run is made from, once the request is built; read when `delegate` forks. */
+  /** What a fork of THIS run is made from, once the request is built; read when `Agent` forks. */
   forkLive?: ForkLiveRun
   /** Throws once a stop or delete revoked this run's admission ticket. */
   readonly assertAdmitted: () => void
@@ -44,7 +44,7 @@ export interface RunFrame {
   readonly isContinuation: boolean
   /** Model resolution may rebind the provider; every later reader must see the rebound row. */
   session: SessionRecord
-  speakerRoute: SessionAgentRoute
+  route: SessionAgentRoute
   /** The row the runtime-status writes go through, kept in step with `activeRunSessions`. */
   runtimeSession: SessionRecord
   readonly publishRuntimeSession: (status: SessionRecord['runtimeStatus']) => Promise<void>
@@ -57,7 +57,7 @@ export interface RunFrame {
   readonly stores: SessionStores
   /** Late-bound event context: follows the current assistant row across steer splits. */
   readonly steerCtxRef: { current: TurnEventContext | null }
-  /** The context budget, read lazily by `context_budget` and by the failure diagnostics. */
+  /** The context budget, read lazily by `ContextBudget` and by the failure diagnostics. */
   readonly budget: { frame?: ContextBudgetFrame; fixed?: FixedContextDescription }
   /** Whether the failure happened at the provider or before it (preflight). */
   providerAttemptStarted: boolean

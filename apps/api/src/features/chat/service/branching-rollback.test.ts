@@ -16,7 +16,6 @@ afterEach(async () => {
 })
 
 const session = sessionFixture({ id: 's', userId: 'u' })
-const agentId = session.agents[0]!.agentId
 
 function busyQueue() {
   const queue = createWakeQueue({
@@ -31,30 +30,39 @@ function busyQueue() {
     run: async () => ({ status: 'completed' as const }),
   })
   queues.push(queue)
-  const ticket = (slot: string, triggers: string[], speakerAgentId = agentId) =>
+  const ticket = (slot: string, triggers: string[]) =>
     queue.wake({
       userId: 'u',
       session,
       content: '',
       agentTurn: {
-        speakerAgentId,
         assistantMessageId: slot,
         triggerMessageIds: triggers,
-        source: 'agent-request',
-        scope: { speakerAgentId, executionContext: rootExecutionContext() },
+        source: 'runtime',
+        scope: { executionContext: rootExecutionContext() },
       },
     })
   return { queue, ticket }
 }
 
 describe('cancelling agent turns by transcript rows', () => {
-  test('takes the tickets answering, or writing into, the named rows and no others', async () => {
+  test('keeps a ticket that touches none of the named rows', async () => {
     const { queue, ticket } = busyQueue()
-    await ticket('slot-kept', ['m-kept'], 'agent-a')
-    await ticket('slot-answering', ['m-gone'], 'agent-b')
-    await ticket('slot-gone', ['m-kept'], 'agent-c')
+    await ticket('slot-kept', ['m-kept'])
     await queue.cancelAgentTurns('u', 's', { messageIds: ['m-gone', 'slot-gone'] })
-    expect((await queue.list('s')).map((item) => item.agentId)).toEqual(['agent-a'])
+    expect(await queue.list('s')).toHaveLength(1)
+  })
+
+  test('takes the ticket answering a named row, or writing into it', async () => {
+    const answering = busyQueue()
+    await answering.ticket('slot-answering', ['m-gone'])
+    await answering.queue.cancelAgentTurns('u', 's', { messageIds: ['m-gone'] })
+    expect(await answering.queue.list('s')).toEqual([])
+
+    const writing = busyQueue()
+    await writing.ticket('slot-gone', ['m-kept'])
+    await writing.queue.cancelAgentTurns('u', 's', { messageIds: ['slot-gone'] })
+    expect(await writing.queue.list('s')).toEqual([])
   })
 })
 

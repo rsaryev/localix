@@ -67,7 +67,7 @@ describe('decisions over the user’s connections', () => {
     )
     expect(outcome.status).toBe('answered')
     expect(asked).toHaveLength(1)
-    await Bun.sleep(0)
+    await new Promise((resolve) => setTimeout(resolve, 0))
     expect(ledger).toEqual([
       expect.objectContaining({
         finishReason: 'decision',

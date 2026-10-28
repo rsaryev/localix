@@ -68,7 +68,9 @@ describe('a board frame does not re-render every card', () => {
       // Stands in for the board's own churning state (dropTarget / draggingId):
       // it changes, the board re-renders, but no card's props change.
       const [frame, setFrame] = React.useState(0)
-      bump = setFrame
+      React.useEffect(() => {
+        bump = setFrame
+      }, [setFrame])
       return React.createElement(
         'div',
         { 'data-frame': frame },

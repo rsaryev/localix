@@ -66,11 +66,10 @@ export function createToolOutputTool(
   userId: string,
   sessionId: string,
   allowedActions: readonly ToolOutputAction[] = TOOL_OUTPUT_ACTIONS,
-  participant?: string,
 ) {
   const inputSchema = buildToolOutputInputSchema(allowedActions)
   return defineAgentTool({
-    name: TOOL.tool_output,
+    name: TOOL.ToolOutput,
     label: 'Tool output',
     activeVerb: 'Inspecting output',
     description: [
@@ -104,7 +103,7 @@ export function createToolOutputTool(
             isError: true,
           }
         }
-        return retrieveStoredOutput(repo, userId, sessionId, input.tool_call_id, store, participant)
+        return retrieveStoredOutput(repo, userId, sessionId, input.tool_call_id, store)
       }
 
       if (!input.queries?.length) {
@@ -119,15 +118,11 @@ export function createToolOutputTool(
         // the durable store first, so pointers minted before indexing (or by a
         // checkpoint's masked result) never dead-end.
         if (wanted && !(await store.hasChunks(userId, sessionId, wanted))) {
-          const artifact = await store.getToolOutputArtifact(userId, sessionId, wanted, participant)
+          const artifact = await store.getToolOutputArtifact(userId, sessionId, wanted)
           const message = artifact
             ? null
             : await repo.findActiveBranchToolCallMessage(userId, sessionId, wanted)
-          const stored =
-            artifact ??
-            (message && (!participant || message.payload.from === participant)
-              ? storedToolCallOutput([message], wanted)
-              : null)
+          const stored = artifact ?? (message ? storedToolCallOutput([message], wanted) : null)
           if (!stored) {
             return {
               content: `No tool call with id "${wanted}" found in this session's history.`,
@@ -143,7 +138,7 @@ export function createToolOutputTool(
               content:
                 `The ${stored.toolName} output "${wanted}" is not indexed for search, and will not be: ` +
                 'search and recovery results are kept out of the index so their hits cannot echo. ' +
-                `Read it in full with tool_output(action="get", tool_call_id="${wanted}"), or search the ` +
+                `Read it in full with ToolOutput(action="get", tool_call_id="${wanted}"), or search the ` +
                 'original tool call whose output it reports on.',
               isError: true,
             }
@@ -180,7 +175,6 @@ export function createToolOutputTool(
           const rows = await store.searchChunks(userId, sessionId, match, {
             ...(wanted ? { toolCallId: wanted } : {}),
             limit: HITS_PER_QUERY,
-            participant,
           })
           for (const hit of rows) {
             const key = `${hit.toolCallId}#${hit.chunkIndex}`
@@ -194,18 +188,18 @@ export function createToolOutputTool(
         }
         const partialNote = headEvicted
           ? `\n\n[partial index: earlier sections of ${wanted} were evicted by the session cap, so this` +
-            ' search covered only the later ones — tool_output(action="get", tool_call_id) still has the full text]'
+            ' search covered only the later ones — ToolOutput(action="get", tool_call_id) still has the full text]'
           : sessionSaturated
             ? '\n\n[partial index: this session filled its section cap, so the oldest indexed sections' +
               ' have been evicted — scope with tool_call_id to re-index one output, or use' +
-              ' tool_output(action="get", tool_call_id) for its full text]'
+              ' ToolOutput(action="get", tool_call_id) for its full text]'
             : ''
         if (hits.length === 0) {
           return {
             content:
               `No indexed sections match ${searchable.map((q) => `"${q}"`).join(', ')}` +
               (wanted ? ` in tool call ${wanted}.` : ' in this session.') +
-              ' Try different keywords, or tool_output(action="get", tool_call_id) for the full text.' +
+              ' Try different keywords, or ToolOutput(action="get", tool_call_id) for the full text.' +
               partialNote,
           }
         }

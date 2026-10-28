@@ -1,4 +1,3 @@
-import { existsSync, renameSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { isCredentialEnvName } from '../../lib/credential-env-name'
@@ -50,19 +49,6 @@ export function isPlainObject(v: unknown): v is Record<string, unknown> {
 export function pluginDataDir(pluginId: string, home: string): string {
   const root = join(home, '.localix', 'plugin-data')
   const dir = join(root, pluginId.replace(/[^a-zA-Z0-9_-]/g, '-'))
-  // An earlier Localix keyed the folder by the bare name: a `name@marketplace` plugin takes it
-  // over once, its files kept, unless its own folder exists already.
-  const at = pluginId.indexOf('@')
-  if (at > 0) {
-    const legacy = join(root, pluginId.slice(0, at).replace(/[^a-zA-Z0-9_-]/g, '-'))
-    if (!existsSync(dir) && existsSync(legacy)) {
-      try {
-        renameSync(legacy, dir)
-      } catch {
-        // Another process moved it first, or the disk refused: the new folder starts empty.
-      }
-    }
-  }
   return dir
 }
 

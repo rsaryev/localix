@@ -42,7 +42,7 @@ export interface ListReorder {
 }
 
 /** The keyboard gesture, advertised on the handle and spelled once. */
-export const REORDER_KEYS = 'Alt+ArrowUp Alt+ArrowDown'
+const REORDER_KEYS = 'Alt+ArrowUp Alt+ArrowDown'
 
 const DRAG_MIME = 'application/x-localix-list-reorder'
 

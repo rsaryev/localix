@@ -1,9 +1,15 @@
 import os from 'node:os'
 
 import { localixHome } from '../../lib/env'
-import { canonicalCandidate, hostRootContaining, hostRoots } from '../../lib/host-roots'
+import {
+  canonicalCandidate,
+  hostRootContaining,
+  hostRoots,
+  readableHostRoots,
+} from '../../lib/host-roots'
 import { isPathWithin } from '../../lib/path-containment'
 import type { CallFacts } from './permission-facts'
+import { TOOL } from './tool-names'
 import { resolveToolCwd } from './tools/environment'
 import { commandPathTokens } from './tools/workspace'
 
@@ -22,9 +28,10 @@ import { commandPathTokens } from './tools/workspace'
  * because the outside-workspace extractor keeps only paths under the home dir and a packaged
  * install lives under `/Applications` or `C:\Program Files`.
  *
- * The one exemption: a host root that CONTAINS the session's own project directory. A developer
- * who deliberately opened the Localix checkout as their project keeps working on it; a session
- * anywhere else does not reach it. `~/.localix` is never a violation (and `host-roots.ts`
+ * Two exemptions. The mini app kit directory is readable (read and search only). A host root
+ * that CONTAINS the session's own project directory is the other: a developer who deliberately
+ * opened the Localix checkout as their project keeps working on it; a session anywhere else
+ * does not reach it. `~/.localix` is never a violation (and `host-roots.ts`
  * already refuses any root that would swallow it).
  */
 
@@ -50,6 +57,7 @@ function candidatePaths(input: unknown, call: CallFacts, root: string | undefine
  * `roots` is injectable for tests; production reads the process-wide {@link hostRoots}.
  */
 export function hostRootDenial(
+  toolName: string,
   input: unknown,
   call: CallFacts,
   root: string | undefined,
@@ -59,8 +67,18 @@ export function hostRootDenial(
   const guarded = roots.filter((r) => !project.some((p) => isPathWithin(r, p)))
   if (guarded.length === 0) return undefined
   const state = localixHome()
+  // The mini app kit is readable through the read-only file tools — its SDK declarations are the
+  // contract a mini app is written against — and nothing else: no write, edit or shell.
+  const readable = toolName === TOOL.Read || toolName === TOOL.Search ? readableHostRoots() : []
   for (const candidate of candidatePaths(input, call, root)) {
     if (isPathWithin(state, candidate) || isPathWithin(state, canonicalCandidate(candidate))) {
+      continue
+    }
+    if (
+      readable.some(
+        (r) => isPathWithin(r, candidate) || isPathWithin(r, canonicalCandidate(candidate)),
+      )
+    ) {
       continue
     }
     if (hostRootContaining(candidate, guarded)) return `Blocked: ${candidate} ${HOST_ROOT_DENIAL}`

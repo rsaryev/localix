@@ -1,8 +1,8 @@
+import type { AvailabilityWriter } from '../capabilities/availability'
 import type { CapabilitySourceRepository } from '../capabilities/source-repository'
 import type { FileWatchDeps, createFileWatchService } from '../fs-watch/service'
 import type { ContextStore } from '../context-store/repository'
 import type { McpRepository } from '../mcp/repository'
-import type { MemoryRepository } from '../memory/repository'
 import type { PluginService } from '../plugins/service-types'
 import type { MiniAppService } from '../mini-apps/service'
 import type { createProjectsRepository } from '../projects/repository'
@@ -16,10 +16,11 @@ import type { UserProfileRepository } from '../user/repository'
  */
 export interface ChatFeaturePorts {
   usageRepo: UsageRepository
-  memoryRepo: MemoryRepository
   userProfileRepo: UserProfileRepository
   projectsRepo: ReturnType<typeof createProjectsRepository>
   mcpRepo: McpRepository
+  /** Where a capability's on/off switch is stored (`/mcp enable|disable`). */
+  availabilityWriter: AvailabilityWriter
   /** Plugin capability sources (`kind: 'plugin'`). */
   pluginRepo: CapabilitySourceRepository
   /** Mini app capability sources (`kind: 'mini-app'`). */
@@ -28,7 +29,7 @@ export interface ChatFeaturePorts {
   contextStore: ContextStore
   /** The host's plugin service: one per process, so one inspection cache and `onChanged` owner. */
   pluginService: PluginService
-  /** The host's mini app service: authoring for `/mini-app` and `mini_app_build`. */
+  /** The host's mini app service: what `/mini-app` reads and changes. */
   miniAppService: MiniAppService
   /** Builds the session file-tree watcher (`fs-watch`). */
   createFileWatcher: (deps: FileWatchDeps) => ReturnType<typeof createFileWatchService>

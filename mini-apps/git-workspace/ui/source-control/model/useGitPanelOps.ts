@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import { toast } from '@localixai/mini-app-sdk/ui'
 import { MiniAppApiError } from '@localixai/mini-app-sdk/ui'
 import { sourceControlApi } from '../../api'
@@ -54,7 +54,10 @@ export function useGitPanelOps(sessionId: string | null, repoRoot?: string) {
   // workspace's amend prefill / commit-message history.
   const headRequest = useRef(0)
   const currentScope = useRef(scopeKey)
-  currentScope.current = scopeKey
+  // Published when the render commits, so a discarded render never moves what late answers compare to.
+  useLayoutEffect(() => {
+    currentScope.current = scopeKey
+  }, [scopeKey])
 
   /** Re-read HEAD's message + the recall list; resolves whether the answer was applied. */
   const refreshHead = useCallback(async (): Promise<boolean> => {

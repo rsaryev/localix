@@ -44,7 +44,6 @@ async function seededBoardDatabase() {
     kind: 'task-delegation',
     parentSessionId: 'parent',
     toolCallId: 'call-1',
-    parentParticipant: 'agent:builtin:lead',
     kanbanTaskId: 'LX-7',
   })
   await session('loop', { kind: 'loop', parentSessionId: 'parent', loopId: 'l1' })
@@ -86,7 +85,6 @@ describe('the task board leaves core', () => {
         kind: 'task-delegation',
         parentSessionId: 'parent',
         toolCallId: 'call-1',
-        parentParticipant: 'agent:builtin:lead',
       },
       loop: { kind: 'loop', parentSessionId: 'parent', loopId: 'l1' },
       parent: { kind: 'root' },

@@ -1,4 +1,12 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useInsertionEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type RefObject,
+} from 'react'
 import {
   miniAppCompletion,
   miniAppEditor,
@@ -31,13 +39,19 @@ export function useMiniAppWorkspaceChanges(
   const [live, setLive] = useState<{ sessionId: string; live: boolean } | null>(null)
   useEffect(() => {
     if (!sessionId || !enabled) return
-    setLive(null)
     try {
-      return miniAppFiles.watchWorkspace(sessionId, (change) => handler.current(change), {
+      const stop = miniAppFiles.watchWorkspace(sessionId, (change) => handler.current(change), {
         windowMs,
         onLive: (next) => setLive({ sessionId, live: next }),
       })
+      // An answer belongs to the subscription that got it: ending one clears it, so a new one
+      // starts "unknown" until the host answers again.
+      return () => {
+        stop()
+        setLive(null)
+      }
     } catch {
+      // oxlint-disable-next-line react/set-state-in-effect -- the host refused the watch outright: that IS the answer (no live signal), and it exists only here
       setLive({ sessionId, live: false })
       return undefined
     }
@@ -85,4 +99,41 @@ export function useMiniAppWorkspace(): MiniAppWorkspaceSnapshot {
     miniAppWorkspace.getSnapshot,
     miniAppWorkspace.getSnapshot,
   )
+}
+
+/**
+ * A ref that holds the LATEST value, for callbacks handed once to a library that keeps them, so
+ * the callback keeps its identity yet reads the value as it is when it runs.
+ *
+ * It is written in an insertion effect, never while rendering: that runs before any layout effect
+ * of the same commit, so a child's layout effect already finds the new value, and a render that
+ * React throws away leaves nothing behind. Read `.current` only in events and effects.
+ */
+export function useLatest<T>(value: T): RefObject<T> {
+  const latest = useRef(value)
+  useInsertionEffect(() => {
+    latest.current = value
+  })
+  return latest
+}
+
+/** A function whose identity never changes but which always runs the latest `fn` given to it. */
+export function useStableCallback<A extends unknown[], R>(fn: (...args: A) => R) {
+  const latest = useLatest(fn)
+  return useCallback((...args: A) => latest.current(...args), [latest])
+}
+
+/**
+ * `value` once it has stopped changing for `delay` ms: a search reads after the last key, not on
+ * every one. An earlier value never lands after a later one. A `delay` of 0 or less passes the
+ * value straight through.
+ */
+export function useDebounced<T>(value: T, delay: number): T {
+  const [settled, setSettled] = useState(value)
+  useEffect(() => {
+    if (delay <= 0) return
+    const timer = setTimeout(() => setSettled(value), delay)
+    return () => clearTimeout(timer)
+  }, [value, delay])
+  return delay <= 0 ? value : settled
 }

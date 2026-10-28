@@ -76,12 +76,13 @@ describe('the inline completion answer cache', () => {
   })
 
   it('two askers at once share one call', async () => {
-    let release!: (reply: string) => void
-    const h = harness(() => new Promise((resolve) => (release = resolve)))
+    const release = Promise.withResolvers<string>()
+    const h = harness(() => release.promise)
     const a = h.ask()
     const b = h.ask()
-    await new Promise((resolve) => setTimeout(resolve, 10))
-    release('chat: "Yes"')
+    // One event-loop turn: both askers are in before the model answers.
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    release.resolve('chat: "Yes"')
     expect((await a).completions).toEqual({ chat: 'Yes' })
     expect((await b).completions).toEqual({ chat: 'Yes' })
     expect(h.calls).toHaveLength(1)

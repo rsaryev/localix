@@ -7,6 +7,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, mock, test } from 'bu
 import { registerDom } from '@localixai/kit/testing/dom'
 import type { ResumePoint, SessionPlan } from '@localixai/api/client'
 import type { UiSession } from '@/shared/api/contracts'
+import { turns as settle } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 const cleanups: Array<() => unknown> = []
@@ -23,8 +24,6 @@ afterAll(async () => {
   await teardown()
 })
 
-const settle = () => new Promise((resolve) => setTimeout(resolve, 20))
-
 const approved: SessionPlan = {
   id: 'plan-1',
   sessionId: 's1',
@@ -32,7 +31,6 @@ const approved: SessionPlan = {
   status: 'approved',
   title: 'Landing page',
   body: '1. Build it',
-  authorAgentId: 'lead',
   approvedMode: 'default',
   createdAt: '2026-10-03T00:00:00.000Z',
   decidedAt: '2026-10-03T00:01:00.000Z',

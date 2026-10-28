@@ -13,7 +13,7 @@ afterAll(async () => {
 
 describe('useSearchProject', () => {
   test('reads the projects without re-rendering forever, and falls back to the active one', async () => {
-    const { act } = await import('react')
+    const { act, useEffect } = await import('react')
     const { createRoot } = await import('react-dom/client')
     const { useChatStore } = await import('@/entities/chat/model/store')
     const { useSearchProject } = await import('./useSearchProject')
@@ -27,8 +27,11 @@ describe('useSearchProject', () => {
     let renders = 0
     let seen: ReturnType<typeof useSearchProject> | null = null
     function Probe() {
-      renders += 1
-      seen = useSearchProject(null)
+      const value = useSearchProject(null)
+      useEffect(() => {
+        renders += 1
+        seen = value
+      })
       return null
     }
     const host = document.createElement('div')

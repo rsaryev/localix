@@ -8,8 +8,9 @@ import type { AppDatabase } from '../db'
 import { createAvailabilityWriter, readAvailability } from '../features/capabilities/availability'
 import { onCapabilityRevision } from '../features/capabilities/revision'
 import type { AgentsService } from '../features/agents/service-contract'
-import { createAgentSeatsRepository } from '../features/chat/agent-seats/seats-repository'
+import { createAgentNamesRepository } from '../features/chat/agent-names/names-repository'
 import { agentStoreProviderOf } from '../features/agents/store-wiring'
+import type { AgentModelChoicesPort } from '../features/agents/model-choices-port'
 import type { McpService } from '../features/mcp/service'
 import { mcpStoreProviderOf } from '../features/mcp/store-wiring'
 import type { SkillFiles } from '../features/skills-curator/store-provider'
@@ -25,7 +26,11 @@ import { openStoreIndexDatabase } from '../features/store/index-repository-open'
 import { createProjectSignals } from '../features/store/project-signals'
 import { createStoreSemanticSource } from '../features/store/semantic'
 import { STORE_COLLECTION } from '../features/store/search-provider'
-import { createStoreService, type StoreService } from '../features/store/service'
+import {
+  createStoreService,
+  type StoreContextPort,
+  type StoreService,
+} from '../features/store/service'
 import { localixHome, userHome } from '../lib/env'
 import type { PluginService } from '../features/plugins/service-types'
 import { pluginStoreProviderOf } from '../features/plugins/store-wiring'
@@ -48,10 +53,14 @@ export function createStorePhase(deps: {
   skills: { files: SkillFiles; curator: SkillsCuratorService }
   /** The agents service: the agents provider's. */
   agentsService: AgentsService
+  /** The person's model choices for agents (their settings): the agents provider's model field. */
+  agentModelChoices?: AgentModelChoicesPort
   /** The plugin service: its marketplaces are the plugins provider's sources. */
   pluginService?: PluginService
   semanticService?: Pick<SemanticService, 'registerSource' | 'resync' | 'changed'>
   resolveProjectCwd: (userId: string, projectId: string) => Promise<string | null>
+  /** What the working set says, for recommendations (`store-context.ts`). */
+  workingContext?: StoreContextPort
   owner: string
   /** The index file; `:memory:` in a harness. */
   indexFile?: string
@@ -95,10 +104,13 @@ export function createStorePhase(deps: {
         {
           chatsOf: async (agentId) =>
             new Set(
-              (await createAgentSeatsRepository(deps.db).seats(agentId)).map((s) => s.sessionId),
+              (await createAgentNamesRepository(deps.db).sessionAgents(agentId)).map(
+                (s) => s.sessionId,
+              ),
             ).size,
         },
         onChange,
+        deps.agentModelChoices,
       ),
       ...(deps.pluginService
         ? [
@@ -116,6 +128,7 @@ export function createStorePhase(deps: {
       return search.search(...args)
     },
     projectWords: (...args) => signals.of(...args),
+    ...(deps.workingContext ? { workingContext: deps.workingContext } : {}),
     ...(deps.semanticService
       ? {
           resyncMeaning: () => void deps.semanticService!.resync(STORE_COLLECTION).catch(() => {}),

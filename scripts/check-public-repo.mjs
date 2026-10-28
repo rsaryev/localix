@@ -365,9 +365,15 @@ assert(
   'Shared setup must use a frozen install',
 )
 assert(ci.includes('uses: ./.github/actions/setup-workspace'), 'CI must use shared workspace setup')
-// CI runs both test tiers, each in a job of its own.
-const requiredCiGates = [...requiredValidationCommands, 'bun run test:integration']
-for (const gate of requiredCiGates) {
+// CI runs the build, the type and size gates and the unit tests, on our own runner; the hooks stay
+// light (format, lint and changed tests before a commit, types before a push).
+for (const gate of [
+  'bun run build',
+  'bun run type-check',
+  'bun run check:tests',
+  'bun run check:size',
+  'bun run test',
+]) {
   assert(ci.includes(gate), `CI must run: ${gate}`)
 }
 

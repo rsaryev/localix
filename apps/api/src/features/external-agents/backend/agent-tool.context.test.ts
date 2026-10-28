@@ -75,7 +75,7 @@ test('linked context gives the core agent a key for deeper read-only investigati
   expect(context.provider.supports(reference, 'chat')).toBe(true)
   const [captured] = await context.provider.resolve(reference, request, signal)
   expect(captured?.content).toContain('key: codex:s1')
-  expect(captured?.content).toContain('external_agent_sessions')
+  expect(captured?.content).toContain('ExternalAgentSessions')
   expect(captured?.content).toContain('raising "from"')
   expect(captured?.content).toContain('[tool:read_file]')
   expect(captured?.content.length).toBeLessThanOrEqual(3000)

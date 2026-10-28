@@ -42,8 +42,8 @@ describe('scoped to the run’s own conversation', () => {
     createPermissionGate({
       rules: PLAN_MODE,
       toolsByName: new Map<string, AgentTool>([
-        ['write', write as AgentTool],
-        ['edit', edit as AgentTool],
+        ['Write', write as AgentTool],
+        ['Edit', edit as AgentTool],
       ]),
       root: CWD,
       hostRoots: [],
@@ -62,15 +62,15 @@ describe('scoped to the run’s own conversation', () => {
 
   test('in plan mode the own plan file is written and a foreign one is refused', async () => {
     const gate = gateFor(OWN)
-    expect(await blocked(gate, 'write', { path: PLAN, content: 'x' })).toBe(false)
-    expect(await blocked(gate, 'write', { path: FOREIGN, content: 'x' })).toBe(true)
-    expect(await blocked(gate, 'edit', { path: FOREIGN, old_string: 'a', new_string: 'b' })).toBe(
+    expect(await blocked(gate, 'Write', { path: PLAN, content: 'x' })).toBe(false)
+    expect(await blocked(gate, 'Write', { path: FOREIGN, content: 'x' })).toBe(true)
+    expect(await blocked(gate, 'Edit', { path: FOREIGN, old_string: 'a', new_string: 'b' })).toBe(
       true,
     )
   })
 
   test('a run with no plan dir of its own (a delegated one) writes no plan file', async () => {
-    expect(await blocked(gateFor(undefined), 'write', { path: PLAN, content: 'x' })).toBe(true)
+    expect(await blocked(gateFor(undefined), 'Write', { path: PLAN, content: 'x' })).toBe(true)
   })
 })
 

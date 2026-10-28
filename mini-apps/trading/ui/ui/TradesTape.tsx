@@ -11,6 +11,8 @@ import { askAgent, buildTapePrintPrefill } from '../model/askAgent'
 import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { tradeFlow } from '../model/tradeFlow'
 
+const NO_TRADES: PublicTrade[] = []
+
 /**
  * Recent-trades tape. There is no reliable PUBLIC REST trade tape on some venues
  * (Hyperliquid's `fetchTrades` needs a wallet and returns the caller's own fills), so this
@@ -35,25 +37,35 @@ export function TradesTape({
 }) {
   // The chat whose composer a clicked print goes to — the tab's own; none, no question.
   const sessionId = useWorkItemSessionId()
-  const [trades, setTrades] = useState<PublicTrade[]>([])
+  const target = `${connectionId}/${symbol}`
+  // The tape belongs to the market it was fed from: another market starts empty (a fresh feed,
+  // not a merge across symbols) without a reset effect.
+  const [tape, setTape] = useState<{ target: string; trades: PublicTrade[] }>({
+    target,
+    trades: [],
+  })
+  const trades = tape.target === target ? tape.trades : NO_TRADES
   // Grace window: while the websocket is still coming up, "needs a market-data stream" would read
-  // as a capability claim — and then contradict itself when the first prints arrive.
-  const [settling, setSettling] = useState(true)
+  // as a capability claim — and then contradict itself when the first prints arrive. Every market
+  // opens its own window, restarted while rendering when the market changes.
+  const [grace, setGrace] = useState({ target, over: false })
+  if (grace.target !== target) setGrace({ target, over: false })
+  const settling = !(grace.target === target && grace.over)
   const enabled = !!connectionId && !!symbol
 
-  // Reset the tape when the target market changes (a fresh feed, not a merge across symbols).
   useEffect(() => {
-    setTrades([])
-    setSettling(true)
-    const timer = setTimeout(() => setSettling(false), 5000)
+    const timer = setTimeout(() => setGrace({ target, over: true }), 5000)
     return () => clearTimeout(timer)
-  }, [connectionId, symbol])
+  }, [target])
 
   const { delivering } = useTradingStream({
     params: enabled ? { connectionId, channel: 'trades', symbol } : null,
     onData: (payload) => {
       if (payload.channel !== 'trades') return
-      setTrades((prev) => reconcileTrades(prev, payload.trades))
+      setTape((prev) => ({
+        target,
+        trades: reconcileTrades(prev.target === target ? prev.trades : NO_TRADES, payload.trades),
+      }))
     },
   })
 

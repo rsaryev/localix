@@ -41,6 +41,13 @@ export function splitTokenList(raw: string | string[] | undefined): string[] | u
     } else if (ch === ')') {
       depth = Math.max(0, depth - 1)
       buf += ch
+    } else if (ch === '{') {
+      // A brace glob (`*.{ts,tsx}`) keeps its own commas.
+      depth++
+      buf += ch
+    } else if (ch === '}') {
+      depth = Math.max(0, depth - 1)
+      buf += ch
     } else if ((ch === ',' || ch === ' ') && depth === 0) {
       const t = buf.trim().replace(/^["']|["']$/g, '')
       if (t) out.push(t)

@@ -6,7 +6,7 @@ import { ExternalHistoryList } from './ExternalHistoryList'
 import { toast } from '@/shared/lib/notify'
 import { useExternalHistory } from '../model/useExternalHistory'
 import { externalHistoryGroups } from '../model/historyGroups'
-import type { SessionGroupingMode } from '@/entities/chat/model/sessionGrouping'
+import type { ExternalGroupingMode } from '../model/historyRows'
 import type { SortMode } from '@/entities/chat/model/useSidebarSessions'
 import { useRoutedNavigation } from '@/shared/hooks/useRoutedNavigation'
 import { openExternalSessionTerminal } from '../model/openSession'
@@ -23,7 +23,7 @@ export default function ExternalHistorySidebar({
   search: string
   enabled: boolean
   scope?: { provider?: string; cwd?: string }
-  groupingMode?: SessionGroupingMode
+  groupingMode?: ExternalGroupingMode
   sortMode?: SortMode
 }) {
   const navigation = useRoutedNavigation()

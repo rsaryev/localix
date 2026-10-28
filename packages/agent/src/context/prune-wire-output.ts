@@ -33,7 +33,7 @@ export const MIDDLE_TRUNCATE_THRESHOLD = MIDDLE_TRUNCATE_HEAD + MIDDLE_TRUNCATE_
  * POINTER rather than as content) and was keeping a hand-copied list "in sync" by comment.
  */
 export const MIDDLE_TRUNCATE_MARKER = '…middle truncated to save context'
-// A STRUCTURAL crush is reversible (GP-2 `tool_output`), so it's safe to apply it
+// A STRUCTURAL crush is reversible (GP-2 `ToolOutput`), so it's safe to apply it
 // to mid-size structured output too — not just the >4500-char giants that head+tail
 // truncation targets. Below this, an output isn't worth bounding at all.
 export const CRUSH_MIN_CHARS = 1000
@@ -70,7 +70,7 @@ export function isCompressedContent(text: string): boolean {
  * nothing — while the module documents that budget as "a hard ceiling".
  *
  * The excerpt is the only part that can go: the bracketed clause already names
- * `tool_output(action="get", tool_call_id=…)`, so dropping the body loses nothing unrecoverable. Applied
+ * `ToolOutput(action="get", tool_call_id=…)`, so dropping the body loses nothing unrecoverable. Applied
  * ONLY over budget — the excerpt is genuinely useful, and giving it up to fit is the same trade
  * the boundary quantum already collapses for.
  *
@@ -95,7 +95,7 @@ export function truncateMiddle(s: string, locator?: string, recoveryToolAvailabl
   // otherwise the model re-runs the command to see a dropped middle line.
   const recover =
     locator && recoveryToolAvailable
-      ? `; full original via tool_output(action="get", tool_call_id="${locator}")`
+      ? `; full original via ToolOutput(action="get", tool_call_id="${locator}")`
       : ''
   return `${s.slice(0, MIDDLE_TRUNCATE_HEAD)}\n[${MIDDLE_TRUNCATE_MARKER} — ${omitted} chars omitted; start + end kept${recover}]\n${s.slice(-MIDDLE_TRUNCATE_TAIL)}`
 }
@@ -111,7 +111,7 @@ export function truncateMiddle(s: string, locator?: string, recoveryToolAvailabl
  * here on the wire copy. Read-class tools are deliberately excluded: their bounded
  * live-working-set policy is separate, and built-in readers already page/cap their
  * output. The durable item remains unchanged and the marker carries its
- * `tool_call_id`, so `tool_output` can recover the full value.
+ * `tool_call_id`, so `ToolOutput` can recover the full value.
  *
  * The tail survives because exit status and diagnostics usually land there.
  */
@@ -133,7 +133,7 @@ function boundToolText(
 
   const recover =
     locator && recoveryToolAvailable
-      ? `; full original via tool_output(action="get", tool_call_id="${locator}")`
+      ? `; full original via ToolOutput(action="get", tool_call_id="${locator}")`
       : ''
   const makeMarker = () =>
     `[Tool output ${ELISION_MARKER} — showing ${keep === 'head' ? 'beginning' : 'end'}; ` +
@@ -263,7 +263,7 @@ export function createToolResultPruner(
     if (next === joined) return r
     // Collapse the text run into ONE part at the first text position and keep every
     // non-text part in order. Dropping an image/file part here would lose bytes no
-    // `tool_output` pointer can bring back, so only text is ever rewritten.
+    // `ToolOutput` pointer can bring back, so only text is ever rewritten.
     const first = textAt[0]!
     const absorbed = new Set(textAt.slice(1))
     return {

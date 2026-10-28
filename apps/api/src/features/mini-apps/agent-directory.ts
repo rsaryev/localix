@@ -19,7 +19,7 @@ export function createMiniAppAgentDirectory(ports: {
     userId: string,
     projectId: string | null,
   ) => Promise<
-    readonly { id: string; handle: string; description?: string | null; enabled: boolean }[]
+    readonly { id: string; name: string; description?: string | null; enabled: boolean }[]
   >
   /** Raise the person's mention attention for this (already owner-checked) session. */
   notifyHuman?: (
@@ -42,7 +42,7 @@ export function createMiniAppAgentDirectory(ports: {
         .filter((agent) => agent.enabled)
         .map((agent) => ({
           id: agent.id,
-          handle: agent.handle,
+          name: agent.name,
           ...(agent.description ? { description: agent.description } : {}),
         }))
     },

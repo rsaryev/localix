@@ -79,7 +79,7 @@ describe('LocalEnvironment', () => {
   })
 
   it('exec respects timeout and returns exitCode 124', async () => {
-    const result = await env.exec('sleep 60', { timeout: 1 })
+    const result = await env.exec('sleep 60', { timeout: 0.1 })
     expect(result.exitCode).toBe(124)
     expect(result.stderr).toContain('Timed out')
   }, 5000)

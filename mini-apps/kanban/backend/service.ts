@@ -27,7 +27,7 @@ import {
 import { openBoardStore, type BoardStore } from './store'
 
 /** The board a call acts on: the chat it belongs to, and that chat's owner. */
-export interface BoardSeat {
+export interface BoardChat {
   userId: string
   sessionId: string
 }
@@ -39,8 +39,6 @@ export interface BoardServiceDeps {
   agents?: MiniAppAgentDirectory
   now?: () => string
 }
-
-const strip = (reference: string) => reference.trim().replace(/^@/, '').trim()
 
 /** An input the contract refuses is the caller's to fix, so it answers as a refusal naming the field. */
 function parseInput<S extends z.ZodType>(schema: S, raw: unknown): z.output<S> {
@@ -60,26 +58,26 @@ function parseInput<S extends z.ZodType>(schema: S, raw: unknown): z.output<S> {
  */
 export function createBoardService(deps: BoardServiceDeps) {
   const now = deps.now ?? (() => new Date().toISOString())
-  const storeOf = async (seat: BoardSeat): Promise<BoardStore> =>
-    openBoardStore(await deps.resolveDir(seat.userId, seat.sessionId))
+  const storeOf = async (chat: BoardChat): Promise<BoardStore> =>
+    openBoardStore(await deps.resolveDir(chat.userId, chat.sessionId))
 
   async function resolveAssignment(
-    seat: BoardSeat,
+    chat: BoardChat,
     reference: string | null | undefined,
   ): Promise<Assignment | undefined> {
     if (reference === undefined) return undefined
     if (reference === null) return { agentId: null, assignee: null }
     if (!deps.agents)
       throw new BoardRefusal(409, 'agents_unavailable', 'This board cannot assign agents here.')
-    const wanted = strip(reference)
+    const wanted = reference.trim()
     // The person is not an agent and the directory does not list them: their id is the board's own.
     if (wanted === HUMAN_ASSIGNEE_ID) return { agentId: HUMAN_ASSIGNEE_ID, assignee: 'you' }
-    const agents = await deps.agents.list(seat.userId, seat.sessionId)
+    const agents = await deps.agents.list(chat.userId, chat.sessionId)
     const agent =
       agents.find((candidate) => candidate.id === wanted) ??
-      agents.find((candidate) => candidate.handle === wanted)
-    if (agent) return { agentId: agent.id, assignee: agent.handle }
-    const available = agents.map((candidate) => `@${candidate.handle} (${candidate.id})`).join(', ')
+      agents.find((candidate) => candidate.name === wanted)
+    if (agent) return { agentId: agent.id, assignee: agent.name }
+    const available = agents.map((candidate) => `${candidate.name} (${candidate.id})`).join(', ')
     throw new BoardRefusal(
       404,
       'agent_unavailable',
@@ -88,40 +86,40 @@ export function createBoardService(deps: BoardServiceDeps) {
   }
 
   /** A card handed to the person waits on them: tell them wherever they are. */
-  const tellHuman = (seat: BoardSeat, task: KanbanTask) => {
+  const tellHuman = (chat: BoardChat, task: KanbanTask) => {
     if (task.agentId !== HUMAN_ASSIGNEE_ID) return
     void deps.agents
-      ?.notifyHuman?.(seat.userId, seat.sessionId, {
+      ?.notifyHuman?.(chat.userId, chat.sessionId, {
         key: `kanban:${task.id}`,
         text: `${task.id} is assigned to you: ${task.title}`,
       })
       .catch(() => {})
   }
 
-  const announce = (seat: BoardSeat, type: 'task.created' | 'task.updated', task: KanbanTask) =>
-    ({ type, sessionId: seat.sessionId, task }) satisfies BoardEvent
+  const announce = (chat: BoardChat, type: 'task.created' | 'task.updated', task: KanbanTask) =>
+    ({ type, sessionId: chat.sessionId, task }) satisfies BoardEvent
 
   return {
-    async read(seat: BoardSeat): Promise<KanbanBoard> {
-      return (await storeOf(seat)).read()
+    async read(chat: BoardChat): Promise<KanbanBoard> {
+      return (await storeOf(chat)).read()
     },
 
-    async get(seat: BoardSeat, id: string): Promise<KanbanTask> {
-      return requireTask(await (await storeOf(seat)).read(), id)
+    async get(chat: BoardChat, id: string): Promise<KanbanTask> {
+      return requireTask(await (await storeOf(chat)).read(), id)
     },
 
     async create(
-      seat: BoardSeat,
+      chat: BoardChat,
       raw: CreateKanbanTaskRequest,
       origin: KanbanOrigin,
     ): Promise<KanbanTask> {
       const input = parseInput(createKanbanTaskSchema, raw)
-      const assignment = (await resolveAssignment(seat, input.agent)) ?? {
+      const assignment = (await resolveAssignment(chat, input.agent)) ?? {
         agentId: null,
         assignee: null,
       }
       const created = await (
-        await storeOf(seat)
+        await storeOf(chat)
       ).update((board) => {
         const { board: next, task } = createTask(
           board,
@@ -141,25 +139,25 @@ export function createBoardService(deps: BoardServiceDeps) {
           origin,
           now(),
         )
-        return { board: next, events: [announce(seat, 'task.created', task)], result: task }
+        return { board: next, events: [announce(chat, 'task.created', task)], result: task }
       })
-      tellHuman(seat, created)
+      tellHuman(chat, created)
       return created
     },
 
     async update(
-      seat: BoardSeat,
+      chat: BoardChat,
       id: string,
       raw: UpdateKanbanTaskRequest,
       actor: KanbanActor,
     ): Promise<KanbanTask> {
       const { expectedUpdatedAt, agent, ...patch } = parseInput(updateKanbanTaskSchema, raw)
-      const assignment = await resolveAssignment(seat, agent)
+      const assignment = await resolveAssignment(chat, agent)
       const before = assignment
-        ? (await (await storeOf(seat)).read()).tasks.find((t) => t.id === id)
+        ? (await (await storeOf(chat)).read()).tasks.find((t) => t.id === id)
         : undefined
       const updated = await (
-        await storeOf(seat)
+        await storeOf(chat)
       ).update((board) => {
         const { board: next, task } = updateTask(
           board,
@@ -172,33 +170,33 @@ export function createBoardService(deps: BoardServiceDeps) {
           },
           now(),
         )
-        return { board: next, events: [announce(seat, 'task.updated', task)], result: task }
+        return { board: next, events: [announce(chat, 'task.updated', task)], result: task }
       })
-      if (assignment && before?.agentId !== HUMAN_ASSIGNEE_ID) tellHuman(seat, updated)
+      if (assignment && before?.agentId !== HUMAN_ASSIGNEE_ID) tellHuman(chat, updated)
       return updated
     },
 
-    async move(seat: BoardSeat, moves: readonly KanbanMove[], actor: KanbanActor) {
-      return (await storeOf(seat)).update((board) => {
+    async move(chat: BoardChat, moves: readonly KanbanMove[], actor: KanbanActor) {
+      return (await storeOf(chat)).update((board) => {
         const { board: next, tasks } = applyMoves(board, moves, actor, now())
         return {
           board: next,
-          events: tasks.map((task) => announce(seat, 'task.updated', task)),
+          events: tasks.map((task) => announce(chat, 'task.updated', task)),
           result: tasks,
         }
       })
     },
 
-    async remove(seat: BoardSeat, id: string): Promise<void> {
+    async remove(chat: BoardChat, id: string): Promise<void> {
       await (
-        await storeOf(seat)
+        await storeOf(chat)
       ).update((board) => {
         const { board: next, pruned } = removeTask(board, id, now())
         return {
           board: next,
           events: [
-            { type: 'task.deleted', sessionId: seat.sessionId, taskId: id } satisfies BoardEvent,
-            ...pruned.map((task) => announce(seat, 'task.updated', task)),
+            { type: 'task.deleted', sessionId: chat.sessionId, taskId: id } satisfies BoardEvent,
+            ...pruned.map((task) => announce(chat, 'task.updated', task)),
           ],
           result: undefined,
         }
@@ -206,19 +204,19 @@ export function createBoardService(deps: BoardServiceDeps) {
     },
 
     async take(
-      seat: BoardSeat,
+      chat: BoardChat,
       id: string,
       taker: { agentId: string; assignee: string },
     ): Promise<KanbanTask> {
-      return (await storeOf(seat)).update((board) => {
+      return (await storeOf(chat)).update((board) => {
         const { board: next, task } = takeTask(board, id, taker, now())
-        return { board: next, events: [announce(seat, 'task.updated', task)], result: task }
+        return { board: next, events: [announce(chat, 'task.updated', task)], result: task }
       })
     },
 
     /** Follow one board's changes; resolves once the session's ownership was checked. */
-    async subscribe(seat: BoardSeat, listener: (event: BoardEvent) => void): Promise<() => void> {
-      return (await storeOf(seat)).subscribe(listener)
+    async subscribe(chat: BoardChat, listener: (event: BoardEvent) => void): Promise<() => void> {
+      return (await storeOf(chat)).subscribe(listener)
     },
   }
 }

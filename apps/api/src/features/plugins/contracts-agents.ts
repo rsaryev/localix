@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { PLUGIN_QUALIFIED_NAME_RE } from './contracts-base'
+import { isValidCcAgentName } from './agent-names'
 
 /**
  * A custom worker ROLE a plugin contributes — the same thing a registry agent is, declared in a
@@ -7,22 +7,14 @@ import { PLUGIN_QUALIFIED_NAME_RE } from './contracts-base'
  * tools) a forked run takes, so an enabled plugin agent rides the existing dispatch. Selected as
  * `<plugin>:<name>` (a skill's `agent:`). Pure manifest data.
  */
-export const localixKeySchema = z.object({
-  /** Conversation election, −2..2; the higher leads. */
-  priority: z.number().int().min(-2).max(2).catch(0),
-  /** A Localix model route, `<provider>/<model>`, for a file whose `model` is `inherit`. */
-  model: z.string().trim().min(1).optional().catch(undefined),
-  /** A reasoning effort Claude Code's own `effort` set does not name. */
-  effort: z.string().trim().min(1).optional().catch(undefined),
-  memoryScope: z.enum(['global', 'project', 'session']).optional().catch(undefined),
-})
-export type LocalixKey = z.infer<typeof localixKeySchema>
-
 export const pluginAgentSchema = z.object({
   // Accepts a namespaced `foo:bar` name (nested `agents/foo/bar.md`); a plain name is
-  // the single-segment case (PLUGIN_QUALIFIED_NAME_RE ⊇ PLUGIN_NAME_RE). Assignee
+  // the single-segment case. Claude Code's name rules apply (`agent-names.ts`). Assignee
   // resolution splits on the FIRST `:` so `<plugin>:foo:bar` still routes correctly.
-  name: z.string().regex(PLUGIN_QUALIFIED_NAME_RE),
+  name: z
+    .string()
+    .max(256)
+    .refine((name) => isValidCcAgentName(name, { namespaced: true })),
   label: z.string().max(60).optional(),
   description: z.string().default(''),
   /** The worker identity/system prompt for this role. */
@@ -31,7 +23,7 @@ export const pluginAgentSchema = z.object({
   tools: z.array(z.string()).optional(),
   /**
    * CC `disallowedTools` — engine tool names removed from the worker's surface.
-   * Applied when the agent is dispatched as a delegated task run or sub-agent via `delegate`.
+   * Applied when the agent is dispatched as a delegated task run or sub-agent via `Agent`.
    */
   disallowedTools: z.array(z.string()).optional(),
   /**
@@ -41,12 +33,6 @@ export const pluginAgentSchema = z.object({
    */
   agentTypes: z.array(z.string()).optional(),
   /**
-   * CC `model` — preferred model alias for this agent (e.g. "opus", "sonnet", a full
-   * model id). Informational hint; the canonical `agentSettings.modelRouting` takes
-   * precedence, but this can be surfaced in the Settings picker as a suggested default.
-   */
-  preferredModel: z.string().optional(),
-  /**
    * CC `skills` — skill names to preload into the agent's context when it runs.
    * The agent sees these skills' full content, not just their descriptions.
    * Comma/space-separated string or YAML inline array.
@@ -55,18 +41,13 @@ export const pluginAgentSchema = z.object({
    */
   pinnedSkills: z.array(z.string()).optional(),
   /**
-   * CC `effort` — preferred reasoning effort for this agent (e.g. "high", "low").
-   * Advisory; the session's settings take precedence.
-   */
-  preferredEffort: z.string().optional(),
-  /**
    * CC `maxTurns` — max agentic turns (tool batches) before the sub-agent stops.
    * ENFORCED: the delegate runtime caps the child run's `n` (turn limit) at this.
    */
   maxTurns: z.number().int().positive().optional(),
   /**
-   * CC `background` — a `delegate` start as this agent never holds the call for its report, even
-   * with `wait: true` (`agent-core/tools/delegate-agent-type.ts`).
+   * CC `background` — an `Agent` start as this agent never holds the call for its report, even
+   * with `wait: true` (`agent-core/tools/agent/agent-type.ts`).
    */
   background: z.boolean().optional(),
   /**
@@ -77,7 +58,7 @@ export const pluginAgentSchema = z.object({
   /** CC `autoCompactWindow` — the child's context window for compaction, 100000–1000000 tokens. */
   autoCompactWindow: z.number().int().min(100_000).max(1_000_000).optional(),
   /**
-   * The agent asked to run in a directory of its own: a `delegate` start as this agent works in a
+   * The agent asked to run in a directory of its own: an `Agent` start as this agent works in a
    * fresh git worktree of the chat's repository, kept for the child's life.
    *
    * Claude Code spells this `worktree` in the file; `discovery-cc-files.ts` translates it at the
@@ -114,10 +95,5 @@ export const pluginAgentSchema = z.object({
    * sub-agent's runs. Raw, and ignored for a plugin agent exactly as `hooks` is.
    */
   mcpServers: z.unknown().optional(),
-  /**
-   * The `localix:` key of an agent file: what Claude Code has no place for. Claude Code ignores
-   * unknown keys without an error, so a file stays valid there (`agents/catalog/agent-file.ts`).
-   */
-  localix: localixKeySchema.optional(),
 })
 export type PluginAgent = z.infer<typeof pluginAgentSchema>

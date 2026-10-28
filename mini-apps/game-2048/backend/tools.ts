@@ -11,7 +11,7 @@ import {
 } from '../shared/game'
 import type { Plan, Played } from '../shared/play'
 import { gameUri } from '../shared/resource'
-import type { Seat } from './ask-agent'
+import type { ChatRef } from './ask-agent'
 import type { GameService } from './game-service'
 
 /**
@@ -58,7 +58,7 @@ interface PlanInput {
 }
 
 /** The table a tool call acts on: the chat the call runs in. */
-function seatOf(ctx: MiniAppContext, context: { session?: { id: string } } | undefined): Seat {
+function chatOf(ctx: MiniAppContext, context: { session?: { id: string } } | undefined): ChatRef {
   const sessionId = context?.session?.id
   if (!sessionId) throw new MoveRefused('2048 is played in a chat; this call has none.')
   return { userId: ctx.userId, sessionId }
@@ -118,9 +118,9 @@ function afterMoves(result: Played, plan: Plan): Result {
 }
 
 export function createGameTools(ctx: MiniAppContext, games: GameService) {
-  const openBoard = (seat: Seat) =>
+  const openBoard = (chat: ChatRef) =>
     ctx.ui.offer({
-      uri: gameUri(seat.sessionId),
+      uri: gameUri(chat.sessionId),
       label: 'Open 2048',
       description: 'This chat’s game',
     })
@@ -170,11 +170,11 @@ export function createGameTools(ctx: MiniAppContext, games: GameService) {
       behaviorHints: { idempotentHint: false },
       permissionPaths: () => [],
       async execute(_toolCallId, input, _signal, _onUpdate, context) {
-        let seat: Seat | null = null
+        let chat: ChatRef | null = null
         try {
-          seat = seatOf(ctx, context)
+          chat = chatOf(ctx, context)
           if (input.action === 'state') {
-            const game = await games.read(seat)
+            const game = await games.read(chat)
             return { content: [describeGame(game), '', nextLine(game)].join('\n') }
           }
           const plan = planOf(input)
@@ -182,9 +182,9 @@ export function createGameTools(ctx: MiniAppContext, games: GameService) {
             const mode = input.mode ?? 'user'
             if (plan && mode !== 'agent')
               throw new MoveRefused('Moves need a game you control: new_game with mode "agent".')
-            const game = await games.agentNewGame(seat, mode)
-            const details = openBoard(seat)
-            if (plan) return { ...afterMoves(await games.agentMoves(seat, plan), plan), details }
+            const game = await games.agentNewGame(chat, mode)
+            const details = openBoard(chat)
+            if (plan) return { ...afterMoves(await games.agentMoves(chat, plan), plan), details }
             return {
               content: [
                 'A new game is on this chat’s board.',
@@ -199,10 +199,10 @@ export function createGameTools(ctx: MiniAppContext, games: GameService) {
             throw new MoveRefused(
               'Name the moves: "prefer", an order such as ["down","left","right","up"], or an exact "moves" list.',
             )
-          return afterMoves(await games.agentMoves(seat, plan), plan)
+          return afterMoves(await games.agentMoves(chat, plan), plan)
         } catch (error) {
           if (!(error instanceof MoveRefused)) throw error
-          const game = seat ? await games.read(seat) : null
+          const game = chat ? await games.read(chat) : null
           const board = game
             ? `\n\n${[endLine(game), drawBoard(game)].filter(Boolean).join('\n')}`
             : ''

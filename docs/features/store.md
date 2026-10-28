@@ -9,7 +9,7 @@ happens before anything is installed.
 
 | Outcome                            | How                                                                 | Boundary                                                                  |
 | ---------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| Open the Store                     | The rail's **+**, **Open the Store** in Settings, or the palette    | It opens in one tab of its own.                                           |
+| Open the Store                     | The rail's **+**, **Open the Store** in Settings, or the palette    | It opens in one tab of its own, on Discover.                              |
 | Browse plugins                     | The **Plugins** shelf, or a capability shelf such as **Skills**     | Every plugin of every marketplace you have, one card per package.         |
 | Search everything                  | The search field at the top of the Store                            | Finds by words and, once the built-in model is ready, by meaning.         |
 | Find a package from anywhere       | Type in the search palette: a **Store** group follows what you have | At most five packages you have not installed; Enter opens its Store page. |
@@ -29,29 +29,42 @@ one; an agent's page has **Overview**, **Settings** (its definition, written bac
 
 ### Finding your way
 
-The Store opens in its own tab. A search across everything sits on top and the sections sit beside
-it: **Discover**, a shelf for each kind of package you install (**Mini apps**, **Plugins**), then
-**What packages give**, one shelf for each thing you can look for (**Skills**, **Agents**,
-**Commands**, **Hooks**, **MCP servers** and the like), then **Installed**, **Updates** and
-**Sources**. A section with nothing on it is not shown. A skill, an agent or an MCP server has one
-shelf and one count: it lists the ones you or your project have and the ones inside plugins, each
-saying where it is from (**Your skills**, **In Lint · Plugin**), so no name appears twice.
+The Store opens in its own tab. The top row holds a search across everything and your library on the
+right: **Installed**, **Updates** (with how many wait), **Yours**, **Project** and **Sources**.
+Under it the catalog is a row of tabs: **Discover**, a tab for each kind of package you install
+(**Mini apps**, **Plugins**), then **Skills**, **Agents** and **MCP servers**. The rarer things
+packages give, such as **Commands**, **Hooks** and **Mods**, are under **More**, which takes the
+name of the one you chose. A section with nothing on it is not shown.
 
-The Store lays itself out by its own width, not the window's. In a wide tab the sections are a
-sidebar with labels. In a medium one they shrink to icons, and hovering, focusing or touching the
-icons opens a light panel with the labels over the page, which does not move. In a narrow one they
-become a single picker beside the search, rows scroll sideways, lists have one column and a package
-page pins **Get** to the bottom. Nothing ever scrolls the page sideways.
+A skill, an agent or an MCP server has one shelf: it lists the ones you or your project have and the
+ones inside plugins, each saying where it is from (**Your skills**, **In Lint · Plugin**), so no
+name appears twice.
 
-![Discover: Start here, rows by kind and the categories](../assets/screenshots/store/discover--2026-10-25.png)
+The Store lays itself out by its own width, not the window's. In a narrow pane the library shows
+only its icons, and the catalog's tabs scroll sideways if they still do not fit. Rows of tiles show
+only whole tiles, as many side by side as fit, and **See all** opens the rest. In a narrow tab lists
+have one column and a package page pins **Get** to the bottom. Nothing ever scrolls the page
+sideways.
+
+![Discover: Start here, rows by kind and the categories](../assets/screenshots/store/discover--2026-10-28.png)
 
 ### Discover
 
 Discover is one answer from the Store, top to bottom: a strip of updates when there are any, **Start
-here**, a row for the open project when its languages match something, editorial **Collections**, a
-row per kind and **New & updated**, then the categories. Every row has **See all** for the full
-list. When the editorial sources cannot be read, **Start here** falls back to the official listings
-instead of being empty.
+here**, **For your work**, a row for the open project when its languages match something, editorial
+**Collections**, a row per kind and **New & updated**, then the categories.
+
+**For your work** is ten packages you have not installed. First come the ones that suit what you
+work on: your open tabs, the chips in the composer, the open project and what you already installed.
+Localix finds them by meaning with the built-in embedding model, which runs on your computer, and
+works them out in the background as you open things. Trusted packages fill the rest, so the row is
+never empty. **See all** lists every recommendation, best first. When something new suits your work,
+the strip above the composer says **Recommended for you**; **See** opens the list in the Store, and
+hiding it keeps it hidden until there is something new.
+
+![Discover: For your work under Start here, none of it installed](../assets/screenshots/store/for-your-work--2026-10-27.png)
+
+![See all on For your work: every recommendation, best first](../assets/screenshots/store/for-your-work-all--2026-10-27.png)
 
 ### Shelves and lists
 
@@ -61,15 +74,15 @@ of thousands of plugins opens at once. Category tabs narrow it, with the ones th
 letters on a tile, in a colour taken from its name. A shield means Localix or Anthropic publishes
 it; a package from a community source says **Community**.
 
-![The Plugins shelf, a long list read a page at a time](../assets/screenshots/store/plugins--2026-10-25.png)
+![The Plugins shelf, a long list read a page at a time](../assets/screenshots/store/plugins--2026-10-28.png)
 
-![The Mini apps shelf: Open on the three installed, Get on the rest](../assets/screenshots/store/mini-apps--2026-10-25.png)
+![The Mini apps shelf: Open on the three installed, Get on the rest](../assets/screenshots/store/mini-apps--2026-10-28.png)
 
 A capability shelf lists the components themselves. **Commands** shows each command with what it
 does and the package it comes from; choosing a row opens that package's page on **What's inside**
 with the command marked.
 
-![The Commands shelf, each command with the package it comes from](../assets/screenshots/store/commands--2026-10-25.png)
+![The Commands shelf, each command with the package it comes from](../assets/screenshots/store/commands--2026-10-28.png)
 
 ### A package's page
 
@@ -81,7 +94,7 @@ followed by **More from** the publisher and **You might also like**. The page op
 what the shelf knew, and a plugin whose files live elsewhere fills in its contents when they have
 been read.
 
-![A mini app's page: screenshots, description, what is inside](../assets/screenshots/store/listing--2026-10-25.png)
+![A mini app's page: screenshots, description, what is inside](../assets/screenshots/store/listing--2026-10-28.png)
 
 ### Get
 
@@ -131,7 +144,7 @@ fetches it then, reads what it contains, and the install that follows uses that 
 
 ### Through the assistant
 
-The assistant's `store` tool works over the same service and only the sources you added: it can
+The assistant's `Store` tool works over the same service and only the sources you added: it can
 search, read a package's plan, install, update, remove, enable, disable, and create an agent or a
 skill, but it cannot add or remove a source. Each change shows a card with the plan and waits for
 your yes; the plan's consent goes to the Store only after it. An install or update starts a job, so
@@ -139,7 +152,11 @@ the assistant reads the package again to see the result. A run nobody can answer
 change. `/plugin install` shows the same plan for a plugin from a Store source, and installs once
 you repeat it with `--yes`.
 
-![The sheet before a community plugin is installed](../assets/screenshots/store/consent--2026-10-25.png)
+One `Store` search can carry up to eight queries, so the assistant looks several things up in one
+call: the answer comes back grouped by query, five packages each, and a package two queries find is
+listed once.
+
+![The sheet before a community plugin is installed](../assets/screenshots/store/consent--2026-10-28.png)
 
 ### Search results
 
@@ -148,7 +165,7 @@ you typed past. **Packages** lists the matches, **Inside packages** the skills, 
 components that match. Chips narrow them by kind, category, source, trust and whether you have them.
 With no match, the Store suggests categories.
 
-![Search results grouped as packages and what is inside them](../assets/screenshots/store/search--2026-10-25.png)
+![Search results grouped as packages and what is inside them](../assets/screenshots/store/search--2026-10-28.png)
 
 ### Library
 
@@ -157,7 +174,7 @@ menu updates it, opens its settings (**Configure**) or removes it, and chips fil
 package installed for one project says which. **Updates** lists what has a newer version with
 **Update all**.
 
-![Installed: every kind with its scope, version and switch](../assets/screenshots/store/installed--2026-10-25.png)
+![Installed: every kind with its scope, version and switch](../assets/screenshots/store/installed--2026-10-28.png)
 
 ### Sources
 
@@ -170,7 +187,7 @@ removing a default says it will not come back. Choosing a source opens the Store
 `mini-app-catalog.json` address, or a folder. The Store reads it, shows the publisher, the count and
 sample icons, asks which kind you mean when both fit, and adds it only when you choose **Add**.
 
-![Sources, with the Add source dialog reading an address](../assets/screenshots/store/sources--2026-10-25.png)
+![Sources, with the Add source dialog reading an address](../assets/screenshots/store/sources--2026-10-28.png)
 
 ## Limits
 

@@ -19,6 +19,7 @@
 import { randomUUID } from 'node:crypto'
 
 import { errorMessage } from '../../lib/errors'
+import { behindWrites } from './behind-writes'
 import {
   displayPrefix,
   type WorkKind,
@@ -30,7 +31,6 @@ import type { WorkRepository } from './repository'
 
 export interface StartWork {
   owner: WorkOwner
-  agentId: string | null
   kind: WorkKind
   label: string
   toolCallId: string
@@ -63,10 +63,8 @@ export function createWorkRegistry(deps: WorkRegistryDeps) {
   const marks = new Map<string, number>()
   const owns = (record: WorkRecord, owner: WorkOwner) =>
     record.userId === owner.userId && record.sessionId === owner.sessionId
-  const behind = (what: string, write: () => Promise<unknown>) =>
-    void write().catch((error: unknown) =>
-      deps.logger?.warn(`work record ${what} not stored: ${errorMessage(error)}`),
-    )
+  const writes = behindWrites((message) => deps.logger?.warn(message))
+  const { behind } = writes
   // A subscription rather than a constructor dependency: the registry is built at boot, before the
   // stream that publishes its changes exists.
   const listeners = new Set<(owner: WorkOwner) => void>()
@@ -193,6 +191,9 @@ export function createWorkRegistry(deps: WorkRegistryDeps) {
 
     mint,
 
+    /** Resolves once every row write started so far has landed (or been logged as failed). */
+    flushWrites: writes.flush,
+
     /** Called with the owning session each time its set of running work changes. */
     onChange(listener: (owner: WorkOwner) => void): () => void {
       listeners.add(listener)
@@ -210,7 +211,6 @@ export function createWorkRegistry(deps: WorkRegistryDeps) {
         id: randomUUID(),
         userId: input.owner.userId,
         sessionId: input.owner.sessionId,
-        agentId: input.agentId,
         displayId: input.displayId ?? mint(input.owner, input.kind),
         kind: input.kind,
         label: input.label,

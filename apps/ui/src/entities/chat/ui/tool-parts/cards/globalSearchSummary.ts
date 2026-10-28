@@ -10,7 +10,7 @@ export interface GlobalSearchSummary {
   byMeaning: boolean
 }
 
-/** Hits in a `global_search` result: the JSON payload's groups, or one line per hit otherwise. */
+/** Hits in a `GlobalSearch` result: the JSON payload's groups, or one line per hit otherwise. */
 function countHits(resultText: string): number | null {
   try {
     const payload = JSON.parse(resultText) as { groups?: Array<{ hits?: unknown[] }> }
@@ -21,7 +21,7 @@ function countHits(resultText: string): number | null {
   }
 }
 
-/** What a `global_search` (or legacy `history_search`) call did, for its transcript card. */
+/** What a `GlobalSearch` call did, for its transcript card. */
 export function globalSearchSummary(
   input: unknown,
   resultText: string | undefined,

@@ -1,11 +1,11 @@
 import { describe, expect, test } from 'bun:test'
-import { resolveOpenTarget, roleForKind, existingLegacyGroup } from './placement'
+import { resolveOpenTarget, roleForKind } from './placement'
 import { makeLeaf, findLeafByRole, leaves, type GridNode } from './tree'
 import { WORK_ITEM_CAPS } from './capabilities'
 import type { WorkItemKind } from '@/shared/lib/workItem'
 
 const ALL_KINDS = Object.keys(WORK_ITEM_CAPS) as WorkItemKind[]
-const ROLES = ['editor', 'aux'] // `preview` + `bottom` are legacy-only — never policy targets
+const ROLES = ['editor', 'aux']
 
 // A seeded aux base, like the live grid after chat-sync adopts the first leaf.
 const auxRoot = (): GridNode => makeLeaf('aux', ['chat:s1'], 'chat:s1', 'aux')
@@ -20,7 +20,7 @@ describe('placement coverage', () => {
     // The "no fall-through" claim this test used to make was not testable here:
     // `roleForKind` ends in `?? 'editor'`, so a missing policy entry yields 'editor',
     // which is in ROLES — green. (The real no-gap guard is the type: PLACEMENT_POLICY
-    // is `Record<WorkItemKind, PlacementRole>`, so a gap fails to compile.)
+    // is `Record<WorkItemKind, GroupRole>`, so a gap fails to compile.)
     //
     // What the type does NOT guard, and this now does: that the aux routing still
     // exists at all. Collapsing every kind to 'editor' — losing the companion column —
@@ -66,7 +66,6 @@ describe('placement (default: editor + aux side)', () => {
     const prev = resolveOpenTarget(r, 'preview', id)
     r = prev.root
     expect(prev.groupId).toBe(file.groupId) // SAME group files open into
-    expect(findLeafByRole(r, 'preview')).toBeNull() // no dedicated column spawned
     expect(leaves(r)).toHaveLength(2) // still just editor + aux
   })
 
@@ -78,28 +77,6 @@ describe('placement (default: editor + aux side)', () => {
     expect(findLeafByRole(r, 'editor')?.id).toBe(prev.groupId)
     expect(findLeafByRole(r, 'aux')?.id).toBe('aux') // chat base preserved
     expect(leaves(r)).toHaveLength(2) // editor + aux
-  })
-
-  test('LEGACY: a persisted preview column keeps hosting the preview (never re-homed)', () => {
-    // Old-policy layout: [editor | preview | aux] with a preview-TAGGED group.
-    const id = gen()
-    let r: GridNode = auxRoot()
-    r = resolveOpenTarget(r, 'file', id).root // editor group
-    const legacy = makeLeaf('legacy-preview', ['preview'], 'preview', 'preview')
-    const editorId = findLeafByRole(r, 'editor')!.id
-    r = {
-      type: 'branch',
-      id: 'root',
-      orientation: 'h',
-      children: [findLeafByRole(r, 'editor')!, legacy, findLeafByRole(r, 'aux')!],
-      sizes: [0.4, 0.3, 0.3],
-    }
-    expect(existingLegacyGroup(r, 'preview')).toBe('legacy-preview')
-    expect(existingLegacyGroup(r, 'file')).toBeNull() // preview-only override
-    const prev = resolveOpenTarget(r, 'preview', id)
-    expect(prev.groupId).toBe('legacy-preview') // reused, not the editor
-    expect(prev.root).toBe(r) // tree untouched
-    expect(resolveOpenTarget(r, 'file', id).groupId).toBe(editorId) // files unaffected
   })
 
   test('an editor kind spawns the primary editor group off the aux base', () => {
@@ -120,7 +97,6 @@ describe('placement (default: editor + aux side)', () => {
     const t = resolveOpenTarget(r, 'terminal', id)
     r = t.root
     expect(t.groupId).toBe(file.groupId) // SAME group files open into
-    expect(findLeafByRole(r, 'bottom')).toBeNull() // no bottom strip spawned
     expect(leaves(r)).toHaveLength(2) // still just editor + aux
   })
 
@@ -132,38 +108,6 @@ describe('placement (default: editor + aux side)', () => {
     expect(findLeafByRole(r, 'editor')?.id).toBe(t.groupId)
     expect(findLeafByRole(r, 'aux')?.id).toBe('aux') // chat base preserved
     expect(leaves(r)).toHaveLength(2) // editor + aux
-  })
-
-  test('a stale bottom strip is NOT reused for terminals — they open center-stage', () => {
-    // A layout still carrying an old bottom-TAGGED terminal strip. Nothing opens at
-    // the bottom anymore, so a NEW terminal must NOT route into it — it lands in the
-    // editor group beside the preview. The stale strip is left where it is.
-    const id = gen()
-    let r: GridNode = auxRoot()
-    r = resolveOpenTarget(r, 'file', id).root // editor group
-    const editorLeaf = findLeafByRole(r, 'editor')!
-    const legacy = makeLeaf('legacy-bottom', ['terminal:t1'], 'terminal:t1', 'bottom')
-    r = {
-      type: 'branch',
-      id: 'root',
-      orientation: 'h',
-      children: [
-        {
-          type: 'branch',
-          id: 'col',
-          orientation: 'v',
-          children: [editorLeaf, legacy],
-          sizes: [0.72, 0.28],
-        },
-        findLeafByRole(r, 'aux')!,
-      ],
-      sizes: [0.62, 0.38],
-    }
-    expect(existingLegacyGroup(r, 'terminal')).toBeNull() // no bottom override anymore
-    expect(existingLegacyGroup(r, 'file')).toBeNull() // preview-only override
-    const t = resolveOpenTarget(r, 'terminal', id)
-    expect(t.groupId).toBe(editorLeaf.id) // center-stage, NOT the bottom strip
-    expect(resolveOpenTarget(r, 'file', id).groupId).toBe(editorLeaf.id) // files share the editor group
   })
 
   test('same kind always lands in the same group regardless of open order', () => {

@@ -40,23 +40,31 @@ export function DiagnosticsSettings({ embedded = false }: { embedded?: boolean }
   // request could land after a faster later one and paint the wrong scope's report.
   // The same bump invalidates a request whose panel unmounted before it settled.
   const reqId = useRef(0)
-  const refresh = useCallback(async () => {
+  const resolve = useCallback(
+    async (id: number) => {
+      try {
+        const next = await effectiveConfigApi.get({
+          projectId: projectId || undefined,
+          sessionId: sessionId.trim() || undefined,
+        })
+        if (id === reqId.current) setReport(next)
+      } catch (e) {
+        if (id === reqId.current)
+          setError(inlineFailure(e, 'The effective configuration could not be resolved.'))
+      } finally {
+        if (id === reqId.current) setLoading(false)
+      }
+    },
+    [projectId, sessionId],
+  )
+  // A press of Refresh (or Retry) starts a read of its own; the effect below starts the ones the
+  // scope and the panel's visibility ask for.
+  const refresh = useCallback(() => {
     const id = ++reqId.current
     setLoading(true)
     setError(null)
-    try {
-      const next = await effectiveConfigApi.get({
-        projectId: projectId || undefined,
-        sessionId: sessionId.trim() || undefined,
-      })
-      if (id === reqId.current) setReport(next)
-    } catch (e) {
-      if (id === reqId.current)
-        setError(inlineFailure(e, 'The effective configuration could not be resolved.'))
-    } finally {
-      if (id === reqId.current) setLoading(false)
-    }
-  }, [projectId, sessionId])
+    void resolve(id)
+  }, [resolve])
 
   useEffect(() => {
     if (!workItemVisible) return
@@ -65,13 +73,16 @@ export function DiagnosticsSettings({ embedded = false }: { embedded?: boolean }
     // counter — which is the point. Reading `reqId.current` inside the cleanup body instead
     // is the shape that trips the stale-capture warning, and it buys nothing here.
     const seq = reqId
-    void refresh()
+    void resolve(++seq.current)
     // Invalidate an in-flight resolve when the scope changes OR the panel unmounts, so its
-    // late response cannot paint over a newer one — or over a panel that is already gone.
+    // late response cannot paint over a newer one — or over a panel that is already gone. The
+    // next read starts from "loading", with no failure left over from the last scope.
     return () => {
       seq.current++
+      setLoading(true)
+      setError(null)
     }
-  }, [refresh, workItemVisible])
+  }, [resolve, workItemVisible])
 
   return (
     <div className="space-y-8 text-left">
@@ -115,16 +126,16 @@ export function DiagnosticsSettings({ embedded = false }: { embedded?: boolean }
             spellCheck={false}
             onChange={(e) => setSessionId(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') void refresh()
+              if (e.key === 'Enter') refresh()
             }}
           />
         </label>
         <Button
-          variant="outline"
+          variant="ghost"
           size="xl"
           aria-busy={loading}
           onClick={() => {
-            void refresh()
+            refresh()
           }}
         >
           {loading ? (
@@ -148,7 +159,7 @@ export function DiagnosticsSettings({ embedded = false }: { embedded?: boolean }
       <SettingProblems
         subject="Effective configuration"
         errors={error ? [error] : []}
-        onRetry={() => void refresh()}
+        onRetry={refresh}
       />
 
       {loading && !report ? (

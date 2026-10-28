@@ -119,8 +119,16 @@ export function useKubernetesNodeTab({
   }, [context, name])
 
   useEffect(() => {
-    if (active && (view === 'pods' || view === 'overview')) void refreshPods()
+    let cancelled = false
+    // Started from a microtask: the read's loading and results are set from its own callbacks, not
+    // while this effect runs.
+    if (active && (view === 'pods' || view === 'overview')) {
+      queueMicrotask(() => {
+        if (!cancelled) void refreshPods()
+      })
+    }
     return () => {
+      cancelled = true
       podsSeq.current += 1
     }
   }, [active, refreshPods, view])

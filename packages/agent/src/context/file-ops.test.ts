@@ -10,7 +10,7 @@ const run = (...items: ReturnType<typeof namedTool>[]): ChatMessage[] => [
 describe('extractFileOperations', () => {
   test('a batched read lists every file it read, not just the first', () => {
     const ops = extractFileOperations(
-      run(namedTool('read', { path: 'src/a.ts', reads: [{ path: 'src/b.ts' }, 'src/c.ts'] })),
+      run(namedTool('Read', { path: 'src/a.ts', reads: [{ path: 'src/b.ts' }, 'src/c.ts'] })),
     )
     expect(ops.read).toEqual(['src/a.ts', 'src/b.ts', 'src/c.ts'])
   })
@@ -18,8 +18,8 @@ describe('extractFileOperations', () => {
   test('a file of the batch that was later changed is listed as modified only', () => {
     const ops = extractFileOperations(
       run(
-        namedTool('read', { reads: [{ path: 'src/a.ts' }, { path: 'src/b.ts' }] }),
-        namedTool('write', { path: 'src/b.ts', content: 'x' }),
+        namedTool('Read', { reads: [{ path: 'src/a.ts' }, { path: 'src/b.ts' }] }),
+        namedTool('Write', { path: 'src/b.ts', content: 'x' }),
       ),
     )
     expect(ops.read).toEqual(['src/a.ts'])

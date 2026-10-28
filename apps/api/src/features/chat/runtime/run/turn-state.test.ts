@@ -163,10 +163,10 @@ describe('settleToolTiming — human waits are never tool time', () => {
     const s = newState()
     s.toolStartTimes.set('call-1', 0)
     s.hitlWaitedMs.set('call-1', 221_000)
-    settleToolTiming(s, 'call-1', 'bash', 233_000)
+    settleToolTiming(s, 'call-1', 'Bash', 233_000)
     expect(s.timing.hitlMs).toBe(221_000)
     expect(s.timing.toolMs).toBe(12_000)
-    expect(s.timing.tools).toEqual([{ toolCallId: 'call-1', toolName: 'bash', durationMs: 12_000 }])
+    expect(s.timing.tools).toEqual([{ toolCallId: 'call-1', toolName: 'Bash', durationMs: 12_000 }])
     expect(s.hitlWaitedMs.size).toBe(0)
   })
 
@@ -183,7 +183,7 @@ describe('settleToolTiming — human waits are never tool time', () => {
   it('a call that never started leaves the clocks untouched but clears its ledger', () => {
     const s = newState()
     s.hitlWaitedMs.set('ghost', 5_000)
-    settleToolTiming(s, 'ghost', 'bash', 9_000)
+    settleToolTiming(s, 'ghost', 'Bash', 9_000)
     expect(s.timing.hitlMs).toBe(0)
     expect(s.timing.tools).toEqual([])
     expect(s.hitlWaitedMs.size).toBe(0)

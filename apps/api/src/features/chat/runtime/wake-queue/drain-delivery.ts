@@ -1,23 +1,18 @@
 /**
  * THE DELIVERY STAGE: one claimed band becomes one turn of the conversation.
  *
- *   word the band (`kinds.ts`, render) → invite the agents the person's words tag → resolve the
- *   recipients by the band's route → dismiss it when nobody answers → drop colleague chains the
- *   person's words supersede → write the turn's user row and first slot (ids from the band, so a
- *   replay writes the same rows) → one ticket per recipient → acknowledge.
+ *   word the band (`kinds.ts`, render) → resolve the recipient by the band's route → dismiss it
+ *   when nobody answers → write the turn's user row and first slot (ids from the band, so a
+ *   replay writes the same rows) → one ticket for the conversation's agent → acknowledge.
  *
  * The drain owns selection, the lease and the retry; this stage owns what the band says and to
  * whom. An error before acknowledgement leaves the band leased for the drain to release and retry.
  */
 import type { QueueItem } from '../../../../lib/priority-queue'
-import { agentParticipant } from '../../../../db/participant'
+import { agentAuthor } from '../../../../db/author'
 import type { SessionRecord } from '../../repository'
-import {
-  enqueueTurnTickets,
-  resolveTurnRecipients,
-  supersedeColleagueChains,
-} from '../conversation-dispatch'
-import { noLeadership } from '../conversation-strategy'
+import { enqueueTurnTicket } from '../conversation-dispatch'
+import { turnRecipient } from '../conversation-strategy'
 import { sessionExecutionContext } from '../execution-context'
 import { insertInternalTurn } from '../message-persistence'
 import { mergeIdentity } from '../run-params'
@@ -25,9 +20,8 @@ import { createRunCompletion, type RunExecutionOutcome } from '../run-outcome'
 import { queueDeliveryMessageIds } from '../wake-queue-repository'
 import type { DrainDependencies } from './drain-contracts'
 import { commandOf, type PendingTurn } from './entry'
-import { personSpeaks, renderBatch, routeEvent } from './kinds'
+import { renderBatch, routeEvent } from './kinds'
 import type { WakeQueueSharedState } from './leases'
-import { bandRecipient } from './selection'
 
 export interface ClaimedBand {
   sessionId: string
@@ -64,7 +58,7 @@ export async function deliverBand(
     onError = console.warn,
   } = deps
   const { sessionId, band, retire } = claimed
-  let session = claimed.session
+  const session = claimed.session
   const bandIds = band.map((item) => item.id)
   const head = band[0]!.value
   const turns = band.map((item) => item.value)
@@ -76,42 +70,24 @@ export async function deliverBand(
   const miniApps = [...new Set(turns.flatMap((turn) => turn.miniApps ?? []))]
   const sources = new Set(turns.map((turn) => turn.source).filter(Boolean))
   const origin = sources.size === 1 ? [...sources][0] : undefined
-  const routedTo = bandRecipient(turns)
-  const speaks = personSpeaks(head)
   const command = commandOf(head)
 
-  // Resolve recipients before creating the immutable assistant author slot. When the person
-  // speaks, the agents their words tag join first, so the address can reach them.
-  const history = await repo.listMessages(head.userId, sessionId)
-  const event = routeEvent(head, content, routedTo?.participant)
-  if (deps.inviteAddressed && speaks && event.kind === 'user-message')
-    session = await deps.inviteAddressed(head.userId, session, event.text)
-  const recipients = await resolveTurnRecipients(
-    session,
-    history,
-    event,
-    deps.leadership?.(head.userId, session.projectId) ?? noLeadership,
-    // Only the person's own words are advised on: a hidden webhook or wake text is not theirs.
-    speaks
-      ? deps.floorAdvisor?.({ userId: head.userId, sessionId, projectId: session.projectId })
-      : undefined,
-  )
-  // A delivery no current participant answers (its addressee left the conversation) is
-  // dismissed BEFORE any row is minted: a slot created for it would stay an empty assistant
-  // turn in the transcript.
-  if (recipients.length === 0) {
+  // Resolve the recipient before creating the immutable assistant author slot.
+  const recipient = turnRecipient(session, routeEvent(head, content))
+  // A session without an agent answers nothing: dismissed BEFORE any row is minted, since a slot
+  // created for it would stay an empty assistant turn in the transcript.
+  if (!recipient) {
     if (!(await leases.ack(head.userId, sessionId, bandIds)))
       throw new Error('Delivery lost its durable lease')
     retire()
     continuations.settleCompletion(
       bandIds,
-      dismissed('No current participant matches this delivery.'),
+      dismissed('The session has no agent to answer this delivery.'),
     )
     return 'next'
   }
-  if (speaks) await supersedeColleagueChains(deps.cancelAgentTurns, head.userId, sessionId)
   const { userMessage, assistantMessage } = await insertInternalTurn({
-    agent: agentParticipant(recipients[0]!.agentId),
+    agent: agentAuthor(recipient.agentId),
     repo,
     streamRegistry,
     now,
@@ -121,7 +97,6 @@ export async function deliverBand(
     internal: head.internal,
     ...(origin ? { origin } : {}),
     ...(command?.origin ? { commandOrigin: command.origin } : {}),
-    ...(routedTo ? { to: routedTo } : {}),
     ...(bindings.length > 0 ? { bindings } : {}),
     ...(miniApps.length > 0 ? { miniApps } : {}),
     clientMessageIds: turns.flatMap((turn) => (turn.clientMessageId ? [turn.clientMessageId] : [])),
@@ -145,19 +120,19 @@ export async function deliverBand(
   // The shared completion resolves the original waiter only when that child (or a later
   // descendant) is terminal.
   void completion.promise.then(() => continuations.detachContinuations(bandIds))
-  // Convert the strategy's recipients into addressed tickets; the event loop consumes them one
-  // at a time through the same path as acknowledge and runtime producers.
+  // Convert the recipient into an addressed ticket; the event loop consumes it through the
+  // same path as acknowledge and runtime producers.
   try {
-    await enqueueTurnTickets(deps.enqueueRun, {
+    await enqueueTurnTicket(deps.enqueueRun, {
       userId: head.userId,
       session,
       triggerMessageIds: [userMessage.id],
       firstSlotId: assistantMessage.id,
-      recipients,
+      recipient,
       completion,
       scope: {
-        // A remembered task identity can narrow this run, but the strategy owns its concrete
-        // participant address. Authority is always re-derived.
+        // A remembered task identity can narrow this run, but the session's agent is the
+        // concrete address. Authority is always re-derived.
         ...mergeIdentity(state.sessionRunIdentity.get(sessionId), {
           ...(extraDisabledTools ? { extraDisabledTools } : {}),
           ...command?.identity,
@@ -167,8 +142,8 @@ export async function deliverBand(
         conversationId: userMessage.id,
       },
     })
-    // Checkpoint delivery only after every execution ticket is durable. Retrying an interrupted
-    // fan-out uses the same assistant ids and cannot duplicate a ticket.
+    // Checkpoint delivery only after the execution ticket is durable. Retrying an interrupted
+    // delivery uses the same assistant ids and cannot duplicate it.
     if (!(await leases.ack(head.userId, sessionId, bandIds)))
       throw new Error('Delivery lost its durable lease')
     retire()

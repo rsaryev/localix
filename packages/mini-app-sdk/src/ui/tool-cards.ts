@@ -14,11 +14,11 @@ import type { IconComponent, MiniAppOwnedContribution } from './contrib'
  * it owns.
  */
 export interface ToolPresentation {
-  /** Imperative label for stacked summaries, e.g. "Board". */
+  /** One past-tense word a finished summary opens with: "Updated" in "Updated 3 board tasks". */
   label: string
-  /** Plural noun for aggregated counts, e.g. "tasks". */
+  /** The plural that follows the count: "board tasks". */
   noun: string
-  /** Present-participle verb for live state, e.g. "Updating board". */
+  /** One present participle for live state: "Updating" in "Updating 3 board tasks…". */
   verb: string
   Icon: IconComponent
   /** A run of consecutive calls collapses into one summary row. */

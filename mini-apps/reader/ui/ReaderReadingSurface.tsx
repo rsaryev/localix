@@ -40,6 +40,11 @@ export interface ReaderSurfaceTools {
   annotations: ReturnType<typeof useReaderAnnotationActions>
 }
 
+/** The person's own hand takes over from a jump to an exact place: it is no longer owed. */
+function forgetExactNavigation(exact: { current: unknown }) {
+  exact.current = null
+}
+
 /** The scrolled reading viewport with its article, overlays, ruler, note popover and toolbar. */
 export function ReaderReadingSurface({
   refs,
@@ -80,6 +85,7 @@ export function ReaderReadingSurface({
       }}
     >
       <div
+        // oxlint-disable-next-line react/refs -- the scroll container's own ref, handed in by the pane that reads its scroll position; it is only attached here, never read while rendering
         ref={refs.scroll}
         className="reader-scroll h-full overflow-auto scrollbar-thin"
         data-view-mode={preferences.viewMode}
@@ -91,17 +97,15 @@ export function ReaderReadingSurface({
             ? 'ArrowLeft ArrowRight ArrowUp ArrowDown Home End'
             : 'ArrowLeft ArrowRight'
         }
+        // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a scroll container made focusable so the keyboard can page through the chapter
         tabIndex={0}
         aria-hidden={speed.speedReadingOpen || undefined}
         inert={speed.speedReadingOpen || undefined}
-        onPointerDown={() => {
-          position.exactNavigationRef.current = null
-        }}
-        onWheel={() => {
-          position.exactNavigationRef.current = null
-        }}
+        onPointerDown={() => forgetExactNavigation(position.exactNavigationRef)}
+        onWheel={() => forgetExactNavigation(position.exactNavigationRef)}
         onScroll={onScroll}
       >
+        {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- delegated events: selection, links and annotation keys arrive from the text inside; the article is the one place that reads them */}
         <article
           ref={refs.article}
           key={`${sourceKey}:${chapter.index}`}
@@ -156,6 +160,7 @@ export function ReaderReadingSurface({
       {selectionTarget && (
         <ReaderSelectionToolbar
           ref={textSelection.selectionToolbarRef}
+          // oxlint-disable-next-line react/refs -- the hook's result holds the toolbar's ref (only attached above, never read while rendering), so the rule takes every field of it for a ref read; `style` is plain data
           style={textSelection.selectionToolbarStyle}
           placement={textSelection.selectionToolbarPlacement}
           visible={textSelection.selectionToolbarVisible}

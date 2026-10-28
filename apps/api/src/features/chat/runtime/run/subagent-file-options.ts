@@ -1,5 +1,6 @@
-import { readFile } from 'node:fs/promises'
+import { TOOL } from '../../../agent-core/tool-names'
 import { join } from 'node:path'
+import { readMemoryIndex } from '../../../memory/auto-memory'
 import type { LoadedPluginAgent } from '../../../plugins/loader-contract'
 
 /**
@@ -18,10 +19,9 @@ export interface SubagentRunOptions {
   instructions?: string
   /** Tools the run must hold although the agent's `tools` leave them out. */
   enableTools: string[]
+  /** The `memory` folder, which the run writes without a card (`memory-roots.ts`). */
+  memoryDir?: string
 }
-
-const MEMORY_LINES = 200
-const MEMORY_BYTES = 25 * 1024
 
 export function agentMemoryDir(
   agent: Pick<LoadedPluginAgent, 'name' | 'memory'>,
@@ -35,7 +35,7 @@ export function agentMemoryDir(
       return join(dirs.projectDir, '.claude', 'agent-memory', leaf)
     case 'local':
       return join(dirs.projectDir, '.claude', 'agent-memory-local', leaf)
-    default:
+    case undefined:
       return null
   }
 }
@@ -50,10 +50,8 @@ export async function subagentRunOptions(
   }
   const dir = agentMemoryDir(agent, dirs)
   if (!dir) return options
-  const raw = await readFile(join(dir, 'MEMORY.md'), 'utf8').catch(() => '')
-  const lines = raw.split('\n').slice(0, MEMORY_LINES).join('\n')
-  const head = Buffer.from(lines).subarray(0, MEMORY_BYTES).toString('utf8')
-  const clipped = head.length < raw.length
+  const { index: head, clipped } = await readMemoryIndex(dir)
+  options.memoryDir = dir
   options.instructions = [
     '# Agent memory',
     `You have a persistent memory folder at ${dir}, kept across conversations. Read it before you start, and save what you learn there (codebase patterns, decisions, recurring issues) before you finish. Keep an index in MEMORY.md and put details in topic files beside it.`,
@@ -61,7 +59,7 @@ export async function subagentRunOptions(
       ? `## MEMORY.md${clipped ? ' (first 200 lines or 25KB; curate it to stay within that)' : ''}\n${head}`
       : 'MEMORY.md does not exist yet.',
   ].join('\n\n')
-  options.enableTools = ['read', 'write', 'edit']
+  options.enableTools = [TOOL.Read, TOOL.Write, TOOL.Edit]
   return options
 }
 

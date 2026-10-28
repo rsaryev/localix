@@ -1,4 +1,4 @@
-import { promises as fs } from 'node:fs'
+import { readJsonFile } from '../../lib/json'
 import { listItems } from './config-lists'
 import { join, resolve } from 'node:path'
 
@@ -65,14 +65,6 @@ interface InstallRecord {
 
 const SCOPES = new Set<CcScope>(['user', 'project', 'local'])
 
-async function readJson(file: string): Promise<unknown> {
-  try {
-    return JSON.parse(await fs.readFile(file, 'utf8')) as unknown
-  } catch {
-    return undefined
-  }
-}
-
 /**
  * `enabledPlugins` across the settings files Claude Code reads (`cc-settings/settings-files.ts`),
  * lowest precedence first, the later file winning key by key; managed settings come last, so a
@@ -135,7 +127,7 @@ async function marketplaceListing(known: unknown, id: string): Promise<Listing |
   const at = id.lastIndexOf('@')
   const record = at > 0 && isRecord(known) ? known[id.slice(at + 1)] : undefined
   if (!isRecord(record) || typeof record.installLocation !== 'string') return undefined
-  const catalog = await readJson(join(record.installLocation, MARKETPLACE_FILE))
+  const catalog = await readJsonFile(join(record.installLocation, MARKETPLACE_FILE))
   if (!isRecord(catalog) || !Array.isArray(catalog.plugins)) return undefined
   const entry = catalog.plugins.find(
     (item): item is MarketplaceEntry => isRecord(item) && item.name === id.slice(0, at),
@@ -194,9 +186,9 @@ export async function readClaudeCodeInstalls(
     (opts.env ?? process.env).CLAUDE_CODE_PLUGIN_CACHE_DIR?.trim() ||
     join(claudeConfigDir(opts.homeDir, opts.env), 'plugins')
   const [records, enabled, known] = await Promise.all([
-    readJson(join(pluginsRoot, 'installed_plugins.json')).then(installRecords),
+    readJsonFile(join(pluginsRoot, 'installed_plugins.json')).then(installRecords),
     enabledPlugins(opts),
-    readJson(join(pluginsRoot, 'known_marketplaces.json')),
+    readJsonFile(join(pluginsRoot, 'known_marketplaces.json')),
   ])
   const ids = [...new Set([...records.keys(), ...enabled.keys()])].sort()
   const installs = await Promise.all(

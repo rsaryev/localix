@@ -35,7 +35,7 @@ export function DockerContainerHeader({
         <div className="ml-auto flex items-center gap-1 @max-sm:ml-0 @max-sm:w-full @max-sm:flex-wrap">
           {model.running && (
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               aria-label="Exec into container"
               title="Exec into container"
@@ -124,7 +124,7 @@ function ActionButton({
 }) {
   return (
     <Button
-      variant="outline"
+      variant="ghost"
       size="sm"
       aria-label={label}
       title={label}

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import type { ResourceNode } from '@/shared/api/contracts'
 import { useUiNavigation } from '@/shared/hooks/useUiNavigation'
 import { canNavigateUi, navigateUi } from '@/shared/lib/uiNavigation'
@@ -35,7 +35,13 @@ export function useOpenResourceCommand(
   const navigation = useComposerNavigation(sessionId)
   const drill = useResourceDrill({ active, partial, includeUiAnchors: true, sessionId })
   const [activeIndex, setActiveIndex] = useState(0)
-  useEffect(() => setActiveIndex(0), [drill.parent, drill.segment])
+  // Another level or another filter is a new list: the highlight starts at the top again.
+  const level = `${drill.parent ?? ''}\u0000${drill.segment}`
+  const [highlightedLevel, setHighlightedLevel] = useState(level)
+  if (highlightedLevel !== level) {
+    setHighlightedLevel(level)
+    setActiveIndex(0)
+  }
   const rows = useMemo<OpenResourceRow[]>(() => {
     const current =
       drill.parent && canNavigateUi(drill.parent)

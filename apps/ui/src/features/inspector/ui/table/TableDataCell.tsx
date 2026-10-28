@@ -1,4 +1,3 @@
-import type { MutableRefObject } from 'react'
 import { ArrowUpRight, Filter, Maximize2 } from 'lucide-react'
 import { formatCell, resolveAlign, type TableColumn, type TableRow } from '@localixai/dataview'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
@@ -18,7 +17,8 @@ interface TableDataCellProps {
   isLinkColumn: boolean
   showCellActions: boolean
   allowNullValues: boolean
-  ctxCol: MutableRefObject<string | null>
+  /** Reports the column of a right-clicked cell, for the row menu's "Copy cell value". */
+  onContextColumn: (columnId: string) => void
   onStartEdit: (row: TableRow, columnId: string) => void
   onCommitEdit: (row: TableRow, columnId: string, next: string | null) => void
   onCancelEdit: () => void
@@ -39,7 +39,7 @@ export function TableDataCell({
   isLinkColumn,
   showCellActions,
   allowNullValues,
-  ctxCol,
+  onContextColumn,
   onStartEdit,
   onCommitEdit,
   onCancelEdit,
@@ -56,6 +56,7 @@ export function TableDataCell({
     return (
       // While a cell is being edited, keep the browser's native input menu
       // (paste) — don't open the row menu — by stopping the contextmenu here.
+      // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- pointer-only: the native input menu is the editor's own; editing has its keyboard path in the input
       <div
         role="cell"
         aria-colindex={columnIndex + 2}
@@ -73,12 +74,11 @@ export function TableDataCell({
     )
   }
   return (
+    // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- pointer shortcuts (right-click menu, double-click to edit); the same actions are on the row's edit and delete buttons
     <div
       role="cell"
       aria-colindex={columnIndex + 2}
-      onContextMenu={() => {
-        ctxCol.current = col.id
-      }}
+      onContextMenu={() => onContextColumn(col.id)}
       onDoubleClick={
         columnEditable
           ? (e) => {

@@ -2,15 +2,15 @@ import type { AgentRoute } from '../../agent-model-route'
 import { holdReport } from '../../delegation-awaits'
 import { delegationNote } from '../../delegation-hierarchy'
 import type { LaneSpec } from '../../delegation-lanes'
-import { ONE_SHOT_EXECUTION } from '../../prompt/sections/team-contract'
+import { ONE_SHOT_EXECUTION } from '../../prompt/sections/subagent-contract'
 import {
   GENERAL_PURPOSE_TYPE,
   prepareAgentChild,
   type AgentChild,
-  resolveDelegateTarget,
-  type DelegateAgentPorts,
-  type DelegateTarget,
-} from '../delegate-agent-type'
+  resolveAgentTarget,
+  type AgentLaunchPorts,
+  type AgentTarget,
+} from '../agent/agent-type'
 import type { TaskDelegationOptions } from '../task-delegation'
 import type { WorkflowAgentOutcome, WorkflowAgentRequest } from './runner'
 import type { AgentWorktree } from './worktree'
@@ -18,12 +18,12 @@ import type { AgentWorktree } from './worktree'
 /**
  * ONE AGENT OF A WORKFLOW, as a child session of the chat that runs it.
  *
- * The same child `delegate` starts (`delegate-start.ts`) — created under the chat, listed with its
+ * The same child `Agent` starts (`agent-start.ts`) — created under the chat, listed with its
  * other children — with what a workflow needs on top. The call always waits for the report, for as
  * long as the agent runs, because the script's next step reads it. The per-turn delegation budget
  * does not apply: a workflow has its own limit (`MAX_AGENTS_PER_RUN`). It runs in its run's pool
  * of lanes, at the workflow's concurrency, not in the chat's three. And it takes the script's
- * options: a `model` and an `effort` of its own, and a git worktree for `isolation: 'worktree'`.
+ * options: a git worktree for `isolation: 'worktree'`.
  */
 
 /** How long one agent's report is waited for; past it the agent counts as failed (null). */
@@ -37,17 +37,12 @@ export interface WorkflowAgentDeps {
   stop: (childId: string) => Promise<void>
   /** The run the agent belongs to: its id names worktrees, its lane is its pool. */
   run: { id: string; lane?: LaneSpec }
-  /** The route for an agent's `model` and `effort`, with a note for what could not be applied. */
-  route?: (request: {
-    model?: string
-    effort?: string
-  }) => Promise<{ route: AgentRoute; notes: string[] }>
   /** A fresh worktree of the chat's repository, for `isolation: 'worktree'`. */
   isolate?: (name: string) => Promise<AgentWorktree>
   /** What a finished child spent, from the usage ledger. */
   spend?: (childId: string) => Promise<{ outputTokens: number; costUsd: number | null } | null>
-  /** The route and worktree a catalog agent's child is created with, as `delegate`'s are. */
-  plugins?: DelegateAgentPorts
+  /** The route and worktree a catalog agent's child is created with, as `Agent`'s are. */
+  plugins?: AgentLaunchPorts
 }
 
 /** What the child is told before its task: its reply is data for a script, not a message. */
@@ -72,27 +67,20 @@ export async function startWorkflowAgent(
   const scope = { projectId: opts.projectId }
   const delegator = await opts.resolveAgent(self, scope)
   if (!delegator) throw new Error('The agent running this workflow is unavailable')
-  const target: DelegateTarget = request.agentType
-    ? await resolveDelegateTarget(request.agentType, delegator, opts)
+  const target: AgentTarget = request.agentType
+    ? await resolveAgentTarget(request.agentType, delegator, opts)
     : { agent: delegator }
   if ('refusal' in target) throw new Error(`agentType: ${target.refusal}`)
   const { agent, type } = target
-  // An agent brings its own model, skills and limits; the script's own model and effort win
-  // below. The workflow makes the worktree itself, so the agent's own isolation adds none.
-  const typed: AgentChild = type
-    ? await prepareAgentChild(`agent ${agent.handle}`, type, deps.plugins, {
-        toolCallId,
-        ...(request.model ? { model: request.model } : {}),
-        isolated: true,
-      })
-    : { provenance: {}, route: {}, notes: [] }
+  // An agent brings its skills and limits, and its route is the person's choice for it (else the
+  // session's). The workflow makes the worktree itself, so the agent's own isolation adds none.
+  const typed: AgentChild = await prepareAgentChild(`agent ${agent.name}`, type, deps.plugins, {
+    toolCallId,
+    agentId: agent.agentId,
+    isolated: true,
+  })
   const notes: string[] = [...typed.notes]
-  let route: AgentRoute = typed.route
-  if ((request.model || request.effort) && deps.route) {
-    const resolved = await deps.route({ model: request.model, effort: request.effort })
-    route = resolved.route
-    notes.push(...resolved.notes)
-  }
+  const route: AgentRoute = typed.route
   if (request.isolation === 'worktree' && !deps.isolate)
     throw new Error("isolation: 'worktree' is not available in this chat")
   const worktree =
@@ -115,7 +103,7 @@ export async function startWorkflowAgent(
         priority: 'normal',
         depth: depth + 1,
         chain: [...chain, self],
-        agentType: type ? agent.handle : GENERAL_PURPOSE_TYPE,
+        agentType: type ? agent.name : GENERAL_PURPOSE_TYPE,
         ...(worktree ? { workingDir: worktree.workingDir } : {}),
         ...(worktree?.byHook ? { worktreeByHook: true as const } : {}),
       },
@@ -125,10 +113,10 @@ export async function startWorkflowAgent(
     })
     const runAs = {
       ...agent,
-      agentType: type ? agent.handle : GENERAL_PURPOSE_TYPE,
+      agentType: type ? agent.name : GENERAL_PURPOSE_TYPE,
       maxTurns: type?.maxTurns ?? agent.maxTurns,
     }
-    const text = await runChild(child.id, runAs, delegator.handle, workflow, request, deps, signal)
+    const text = await runChild(child.id, runAs, delegator.name, workflow, request, deps, signal)
     const spent = await deps.spend?.(child.id).catch(() => null)
     return {
       text,
@@ -152,7 +140,7 @@ export async function startWorkflowAgent(
 /** Start the child's run in its lane and wait for its report: the text, or null. */
 async function runChild(
   childId: string,
-  agent: { agentType: string; handle: string; maxTurns?: number },
+  agent: { agentType: string; name: string; maxTurns?: number },
   delegator: string,
   workflow: string,
   request: WorkflowAgentRequest,
@@ -173,6 +161,9 @@ async function runChild(
   signal.addEventListener('abort', onAbort, { once: true })
   if (signal.aborted) onAbort()
   try {
+    // The stop above ran before the start arms the delegator's wait (`expectReport`), so it
+    // found nothing to drop: a start made now would run the child and report it to the chat.
+    if (signal.aborted) return null
     const early = await opts.startSubagentTask(
       opts.userId,
       childId,
@@ -180,7 +171,7 @@ async function runChild(
       {
         ...(agent.maxTurns ? { maxTurns: agent.maxTurns } : {}),
         agentType: agent.agentType,
-        label: `agent ${agent.handle}`,
+        label: `agent ${agent.name}`,
         priority: 'normal',
         ...(deps.run.lane ? { lane: deps.run.lane } : {}),
       },

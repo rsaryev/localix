@@ -1,3 +1,4 @@
+import { TOOL } from '../../agent-core/tool-names'
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { shellQuote, type HostRouteContext } from '@localixai/mini-app-sdk/backend'
@@ -101,7 +102,7 @@ export function createOwnedAgentRoutes(
         } else if (entry.closed) unsubscribe()
       })
       agents.handleToolCall({
-        toolName: 'bash',
+        toolName: TOOL.Bash,
         sessionId,
         input: { action: 'open' },
         result: {

@@ -17,7 +17,7 @@ export interface FileOperations {
 }
 
 /** Tools whose `path` argument names a file they only read (`view_image`: historical items). */
-const READ_TOOLS: ReadonlySet<string> = new Set(['read', 'view_image'])
+const READ_TOOLS: ReadonlySet<string> = new Set(['Read', 'view_image'])
 
 /**
  * Paths read and modified by COMPLETED tool calls, in first-seen order.

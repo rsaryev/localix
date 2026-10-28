@@ -9,6 +9,7 @@ import { mergeSessionState } from '@/entities/chat/model/sessionListHelpers'
 import { useChatStore } from '@/entities/chat/model/store'
 import type { ChatStore } from '@/entities/chat/model/store'
 import { useUrlStoreSync } from './useUrlStoreSync'
+import { turns } from '@/testing/settle'
 
 // REPRO: twelve restored workspace windows each remembered a deleted project. Each one left
 // the dead route for the neutral home at the same moment, and the home landing minted a
@@ -98,7 +99,6 @@ describe('landing from a dead project route in many windows', () => {
               routeSessionId: null,
               sectionId: null,
               routeProjectId: null,
-              isLegacyRoute: false,
               isHomeRoute: true,
               // useDeadProjectRoute replaced the URL: a home, not a cold launch index.
               isColdIndex: false,
@@ -119,7 +119,7 @@ describe('landing from a dead project route in many windows', () => {
       })
       for (let i = 0; i < 50 && redirects.length < 12; i++) {
         await act(async () => {
-          await new Promise((resolve) => setTimeout(resolve, 5))
+          await turns(3)
         })
       }
 

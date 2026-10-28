@@ -15,10 +15,12 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "@localixai/source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
     "./worker": {
+      "@localixai/source": "./src/worker.ts",
       "types": "./dist/worker.d.ts",
       "import": "./dist/worker.js"
     }
@@ -26,7 +28,7 @@
   "scripts": {
     "build": "shx rm -rf dist && tsc --project tsconfig.build.json",
     "dev": "tsc --project tsconfig.build.json --watch --preserveWatchOutput",
-    "type-check": "tsc --noEmit --incremental --tsBuildInfoFile node_modules/.tmp/tsconfig.tsbuildinfo",
+    "type-check": "node ../../scripts/tsc.mjs --noEmit",
     "test": "bun test src",
     "clean": "shx rm -rf dist .turbo"
   },

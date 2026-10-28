@@ -29,6 +29,10 @@ concurrency:
     github.sha) }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+# Jobs run on our own runner (`localix`: one job per fresh container on the CI server, see
+# docs/internals/contributing.md). A pull request from a fork runs on GitHub's machines instead,
+# so code from outside never runs on ours.
+#
 # `app` checks the JavaScript workspace as four parallel jobs (types, unit tests, integration and
 # repository tests, desktop bundle); each builds from its own Turbo cache rather than waiting on a
 # shared build job, which would only lengthen the critical path. `desktop` scans the repository and
@@ -36,7 +40,7 @@ concurrency:
 jobs:
   app:
     name: App (${{ matrix.check }})
-    runs-on: ubuntu-24.04
+    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-24.04' || 'localix' }}
     timeout-minutes: 25
     permissions:
       contents: read
@@ -51,8 +55,12 @@ jobs:
               bun run type-check
               bun run check:tests
               bun run check:size
-          # Tests, integration tests, coverage and the desktop bundle run locally (pre-push and on
-          # demand) for now: on shared runners their timing made Checks red on unchanged code.
+          # The unit tests run here, on our own runner, and nowhere else by default: on a busy
+          # laptop (pre-push) and on shared runners their timing made them fail on unchanged code.
+          # Integration tests, coverage and the desktop bundle run on demand.
+          - check: tests
+            cache: unit
+            run: bun run test
     # A pull request checks and tests only the packages it changes and their dependents (Turbo's
     # --affected against its base; a global input selects everything). Main deliberately checks
     # the whole tree, unfiltered, so every main commit has a full run a release can rely on. The
@@ -135,7 +143,7 @@ jobs:
 
   desktop:
     name: Desktop (Rust) and repository scans
-    runs-on: ubuntu-22.04
+    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-24.04' || 'localix' }}
     timeout-minutes: 30
     permissions:
       contents: read
@@ -249,7 +257,7 @@ jobs:
     name: Checks passed
     if: always()
     needs: [app, desktop]
-    runs-on: ubuntu-24.04
+    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-24.04' || 'localix' }}
     timeout-minutes: 5
     permissions:
       actions: write

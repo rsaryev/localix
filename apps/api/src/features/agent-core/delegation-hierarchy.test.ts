@@ -7,9 +7,9 @@ describe('the delegation depth limit', () => {
     expect([0, 1, 2, 3].map(delegatesAt)).toEqual([true, false, false, false])
   })
 
-  test('a delegated child is told to do its task itself, without naming a removed tool', () => {
+  test('a subagent is told to do its task itself, without naming a tool it does not have', () => {
     const note = delegationNote(1)
-    expect(note).toContain('cannot be delegated again')
-    expect(note).not.toContain('`agents`')
+    expect(note).toContain('Do this task yourself')
+    expect(note).not.toContain('`Agent`')
   })
 })

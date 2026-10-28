@@ -11,7 +11,7 @@ import {
   type Player,
 } from '../shared/game'
 import { SIZE, placeFleet } from '../shared/rules'
-import { ANSWER_TOOLS, askForShot, positionKey, type Seat } from './ask-agent'
+import { ANSWER_TOOLS, askForShot, positionKey, type ChatRef } from './ask-agent'
 import { askDecision } from './ask-decision'
 import { createTurnTable, type TurnTableHosts } from '@localixai/mini-app-sdk/backend'
 
@@ -81,18 +81,18 @@ export function createGameService(
 
     // ── What a person does in the view ─────────────────────────────────────────────────────
     /** Fire at `cell` (0–99) on the agent's board. */
-    personShot: (seat: Seat, cell: number) =>
-      table.personTurn(seat, (game, at) => applyShot(game, 'you', cell, at)),
+    personShot: (chat: ChatRef, cell: number) =>
+      table.personTurn(chat, (game, at) => applyShot(game, 'you', cell, at)),
     /** Place the person's fleet anew — only before anyone has fired, when it can change nothing. */
-    reshuffle: (seat: Seat) =>
-      table.update(seat, (game) => {
+    reshuffle: (chat: ChatRef) =>
+      table.update(chat, (game) => {
         if (game.shots.length > 0)
           throw new ShotRefused('The fleet is set once the first shot is fired.')
         return { ...game, fleets: { ...game.fleets, you: placeFleet(random) } }
       }),
     /** The next game at this table, with `first` firing first — else the side that did not. */
-    newGame: (seat: Seat, first?: Player) =>
-      table.personTurn(seat, (game, at) => nextGame(game, at, first)),
+    newGame: (chat: ChatRef, first?: Player) =>
+      table.personTurn(chat, (game, at) => nextGame(game, at, first)),
     /** Ask the agent again for the shot it owes. */
     remind: table.remind,
     /** Who fires from the agent's side from now on; a shot it owes is asked of it at once. */
@@ -103,14 +103,14 @@ export function createGameService(
      * Fire at `cell` (0–99) on the user's board. `answered` says whether the shot answered the
      * board's own question — a wake was waiting on it — rather than a request typed in the chat.
      */
-    agentShot: (seat: Seat, cell: number) =>
-      table.agentTurn(seat, (game, at) => applyShot(game, 'agent', cell, at)),
+    agentShot: (chat: ChatRef, cell: number) =>
+      table.agentTurn(chat, (game, at) => applyShot(game, 'agent', cell, at)),
     /**
      * The next game at this table, with `first` firing first. Against the decision model the user
      * opens: only a person's action asks that model, and a tool call is never one.
      */
-    agentNewGame: (seat: Seat, first: Player) =>
-      table.update(seat, (game, at) =>
+    agentNewGame: (chat: ChatRef, first: Player) =>
+      table.update(chat, (game, at) =>
         nextGame(game, at, game.opponent === 'decision' ? 'you' : first),
       ),
   }

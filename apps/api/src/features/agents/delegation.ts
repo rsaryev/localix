@@ -1,20 +1,19 @@
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
-import { isForkName } from '../agent-core/tools/delegate-fork'
+import { isForkName } from '../agent-core/tools/agent/agent-fork'
 import type { AgentSnapshot, BoundAgent } from './bindings/bindings'
 import type { CatalogAgent } from './catalog/agent-file'
 import type { AgentRecord, AgentSummary } from './contracts'
-import { canJoinConversation } from './policy'
 
 /**
  * Who a task goes to.
  *
- * `resolveDelegation` is the one lookup behind `delegate`, a workflow's `agent()` and a skill's
+ * `resolveDelegation` is the one lookup behind `Agent`, a workflow's `agent()` and a skill's
  * `context: fork`: the catalog's own `resolve` (so a file or plugin agent replaces a built-in of
  * the same name, and a bare plugin name only counts when one plugin alone has it), then Access.
  * Nothing else matches names.
  */
 export type DelegationTarget =
-  /** Seat this agent in a fresh child; its definition is what the child runs on. */
+  /** Start this agent as a fresh child; its definition is what the child runs on. */
   | { kind: 'agent'; agent: AgentRecord; definition: CatalogAgent }
   /** `general-purpose` and its alias: the delegating agent itself. */
   | { kind: 'self'; type: string }
@@ -27,11 +26,8 @@ export interface AgentDirectoryRow {
   agentId: string
   name: string
   description: string
-  leadershipPriority: number
   enabled: boolean
-  /** A tag in a reply can bring it into a conversation. */
-  canJoinConversation: boolean
-  /** `delegate` can hand it a task. */
+  /** `Agent` can hand it a task. */
   delegable: boolean
   /** Its exact tool list, when its file has one. */
   tools?: string[]
@@ -64,7 +60,7 @@ export function createAgentDelegation(deps: DelegationDeps) {
       reference: string,
       projectId?: string | null,
     ): Promise<DelegationTarget> {
-      // `fork` asks for a fork of the delegator (`delegate-fork.ts`); no agent can take the name.
+      // `fork` asks for a fork of the delegator (`agent-fork.ts`); no agent can take the name.
       if (isForkName(reference.trim().replace(/^@/, ''))) return { kind: 'unavailable' }
       const snapshot = await deps.snapshot(userId, projectId ?? '')
       const found = entryOf(snapshot, reference)
@@ -105,12 +101,10 @@ export function createAgentDelegation(deps: DelegationDeps) {
         const definition = definitions.get(summary.record.id)
         return {
           agentId: summary.record.id,
-          name: summary.record.handle,
+          name: summary.record.name,
           description: summary.record.description,
-          leadershipPriority: summary.record.leadershipPriority,
           enabled: summary.enabled,
-          canJoinConversation: canJoinConversation(summary),
-          delegable: delegates(summary) && !isForkName(summary.record.handle),
+          delegable: delegates(summary) && !isForkName(summary.record.name),
           ...(definition?.tools ? { tools: definition.tools } : {}),
           ...(definition?.self ? { self: true } : {}),
         }

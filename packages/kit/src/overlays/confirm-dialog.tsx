@@ -89,7 +89,7 @@ export function ConfirmDialog({
             className="border-t-0 pt-1 pb-4 [&>[data-slot=alert-dialog-footer-actions]]:w-full [&>[data-slot=alert-dialog-footer-actions]]:flex-row [&>[data-slot=alert-dialog-footer-actions]>*]:flex-1"
           >
             <AlertDialog.Cancel asChild>
-              <Button variant="outline" className="text-text-soft">
+              <Button variant="ghost" className="text-text-soft">
                 {cancelLabel}
               </Button>
             </AlertDialog.Cancel>

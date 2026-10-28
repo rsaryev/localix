@@ -2,12 +2,10 @@ import { API_BASE_URL } from '@/shared/api/internal'
 
 /**
  * Resolve a message attachment to a usable `src`. Media bytes
- * live EITHER inline as base64 (`data` — legacy messages + small uploads) OR as a
+ * live EITHER inline as base64 (`data` — small uploads) OR as a
  * file served by the API (`mediaId`, loaded from `GET /rpc/media/:id`). This is
  * the single place the UI bridges the two so render paths stay storage-agnostic.
- *
- * Back-compat: an attachment with inline `data` keeps its data URL, so old
- * sessions render unchanged even after the switch to file-backed storage.
+
  */
 export function mediaSrc(att: { mediaType: string; data?: string; mediaId?: string }): string {
   if (att.mediaId) return `${API_BASE_URL}/rpc/media/${encodeURIComponent(att.mediaId)}`

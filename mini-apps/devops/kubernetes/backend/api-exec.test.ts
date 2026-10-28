@@ -30,9 +30,9 @@ describe('pod exec relay', () => {
     socket.close()
     await socketClosed
     // Give the server its close callback before the cluster answers.
-    await Bun.sleep(20)
+    for (let i = 0; i < 20; i++) await new Promise((r) => setTimeout(r, 0))
     resolveRemote({ close: () => void closed++, addEventListener: () => {} })
-    await Bun.sleep(0)
+    await new Promise((r) => setTimeout(r, 0))
     expect(closed).toBe(1)
     await registry.stopAll()
   })

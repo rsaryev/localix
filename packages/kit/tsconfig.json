@@ -9,6 +9,7 @@
     /* Source-only package: the consuming bundler (the app's Vite, a plugin's artifact build)
        compiles it, so it is checked here and never emitted. */
     "moduleResolution": "bundler",
+    "customConditions": ["@localixai/source"],
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",

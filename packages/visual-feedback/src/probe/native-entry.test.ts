@@ -1,6 +1,10 @@
 import { afterAll, beforeAll, expect, spyOn, test } from 'bun:test'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
 
+const turns = async (n = 10) => {
+  for (let i = 0; i < n; i++) await new Promise((r) => setImmediate(r))
+}
+
 beforeAll(() => GlobalRegistrator.register())
 afterAll(async () => {
   delete window.__localixBrowser
@@ -17,7 +21,7 @@ test('the native bridge installs once and returns an agent snapshot by command I
   for (let attempt = 0; attempt < 20; attempt += 1) {
     outcome = bridge!.take('snapshot-1')
     if (outcome) break
-    await new Promise((resolve) => setTimeout(resolve, 10))
+    await turns()
   }
   expect(outcome).toMatchObject({ ok: true, result: { action: 'snapshot' } })
   expect(bridge!.take('snapshot-1')).toBeUndefined()

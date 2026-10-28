@@ -8,6 +8,7 @@ import {
   WorkbenchStatusItem,
 } from '@localixai/kit/workbench-statusbar'
 import type { ReactNode } from 'react'
+import { LspInstallStatusItem } from './LspInstallStatusItem'
 
 interface StatusBarProps {
   lspServers?: LspServerState[]
@@ -27,7 +28,9 @@ function LspStatusItem({
   const totalErrors = servers.reduce((s, v) => s + v.errorCount, 0)
   const totalWarnings = servers.reduce((s, v) => s + v.warningCount, 0)
   const hasServerError = servers.some((server) => server.status === 'error')
-  const isStarting = servers.some((server) => server.status === 'starting')
+  const isStarting = servers.some(
+    (server) => server.status === 'starting' || server.status === 'installing',
+  )
   const tone =
     hasServerError || totalErrors > 0
       ? 'text-status-error'
@@ -89,6 +92,7 @@ export function StatusBar({ lspServers, onOpenProblems, trailing }: StatusBarPro
     <WorkbenchStatusBar aria-label="Session status" divided>
       {realtime === 'reconnecting' && <RealtimeStatusItem />}
       {hasLsp && <LspStatusItem servers={lspServers!} onOpenProblems={onOpenProblems} />}
+      {hasLsp && <LspInstallStatusItem servers={lspServers!} />}
       {/* App-wide background work sits at the trailing edge, as in an editor's status bar. */}
       {trailing}
     </WorkbenchStatusBar>

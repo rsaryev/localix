@@ -11,6 +11,8 @@
  * Who the context is for. `inline-completion` serves every text-input ghost surface (chat
  * composer, commit subject, any mini app field) and `edit-prediction` every editor; a provider
  * declares which of them its content suits, so a keystroke never pays for a chat-sized read.
+ * `recommendation` is the Store's: what the person works on, embedded on this computer to find
+ * the packages that suit it. A provider that declares it shapes what the Store suggests.
  */
 export type ContextDestination =
   | 'chat'
@@ -18,6 +20,7 @@ export type ContextDestination =
   | 'inline-completion'
   | 'title-generation'
   | 'subagent'
+  | 'recommendation'
 
 export type ContextScope = 'document' | 'project' | 'session' | 'global'
 export type ContextSensitivity = 'public' | 'project' | 'sensitive' | 'forbidden'

@@ -146,32 +146,6 @@ describe('announceInterruptedRuns', () => {
     expect(h.inserted).toEqual([])
   })
 
-  test("in a conversation it names whose reply was cut off, and reads that participant's tools", async () => {
-    // It read the session's LAST reply whoever wrote it, so it could warn about a colleague's
-    // tool while saying nothing about whose reply was incomplete.
-    const reply = (id: string, from: string, handle: string, status: string) =>
-      ({
-        id,
-        payload: {
-          id,
-          role: 'assistant',
-          from,
-          authorSnapshot: { handle },
-          items: [{ type: 'tool_call', status, name: 'bash' }],
-        },
-      }) as unknown as PersistedMessage
-    const h = harness({
-      history: [
-        reply('a', 'agent:backend', 'backend', 'running'),
-        reply('b', 'agent:qa', 'qa', 'completed'),
-      ],
-    })
-    await announceInterruptedRuns(h.deps, [
-      { runId: 'r1', sessionId: 's1', userId: 'u1', agentId: 'backend' },
-    ])
-    expect(h.inserted[0]?.content).toBe(`backend: ${interruptedWithPendingToolNotice(['bash'])}`)
-  })
-
   test('a call the restart cut off stops spinning, and is still read as one whose effect is unknown', async () => {
     const reply = {
       id: 'a',
@@ -180,8 +154,8 @@ describe('announceInterruptedRuns', () => {
         role: 'assistant',
         from: 'agent:localix',
         items: [
-          { type: 'tool_call', status: 'completed', name: 'read' },
-          { type: 'tool_call', status: 'running', name: 'bash' },
+          { type: 'tool_call', status: 'completed', name: 'Read' },
+          { type: 'tool_call', status: 'running', name: 'Bash' },
         ],
       },
     } as unknown as PersistedMessage
@@ -195,17 +169,17 @@ describe('announceInterruptedRuns', () => {
     expect(settled[1]?.error?.code).toBe('PROCESS_RESTART')
     expect(
       pendingToolNames({
-        items: settled.map((item, i) => ({ ...item, name: ['read', 'bash'][i] })),
+        items: settled.map((item, i) => ({ ...item, name: ['Read', 'Bash'][i] })),
       }),
-    ).toEqual(['bash'])
+    ).toEqual(['Bash'])
   })
 })
 
 describe('the notice tells the truth about what was in flight', () => {
   test('a still-running tool call is named, and repeating is not advised blindly', () => {
-    const notice = interruptedWithPendingToolNotice(['bash'])
+    const notice = interruptedWithPendingToolNotice(['Bash'])
 
-    expect(notice).toContain('bash')
+    expect(notice).toContain('Bash')
     // "Send again" is safe advice only when nothing outside the process changed. A dispatched
     // bash command may have pushed or deployed, and nothing records whether it did.
     expect(notice).toContain('may or may not have taken effect')
@@ -215,22 +189,22 @@ describe('the notice tells the truth about what was in flight', () => {
   test('names are de-duplicated and bounded, so the line stays readable', () => {
     const notice = interruptedWithPendingToolNotice(['bash', 'bash', 'write', 'patch', 'read'])
     expect(notice.match(/bash/gu)).toHaveLength(1)
-    expect(notice).not.toContain('read')
+    expect(notice).not.toContain('Read')
   })
 
   test('reads the running calls out of the persisted payload', () => {
     expect(
       pendingToolNames({
         items: [
-          { status: 'completed', toolName: 'read' },
-          { status: 'running', toolName: 'bash' },
+          { status: 'completed', toolName: 'Read' },
+          { status: 'running', toolName: 'Bash' },
         ],
       }),
-    ).toEqual(['bash'])
+    ).toEqual(['Bash'])
   })
 
   test('a payload with nothing running yields the plain notice path', () => {
-    expect(pendingToolNames({ items: [{ status: 'completed', toolName: 'read' }] })).toEqual([])
+    expect(pendingToolNames({ items: [{ status: 'completed', toolName: 'Read' }] })).toEqual([])
     // Shapes that carry no items at all must not throw — this runs at boot, on every
     // interrupted session, before anything else can go right.
     expect(pendingToolNames({})).toEqual([])

@@ -1,3 +1,4 @@
+import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -7,9 +8,9 @@ import { createDatabase, destroyDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import { serializeMessagePayload, type StoredMessagePayload } from '../../db/payload'
 import { createUsageRepository } from './repository'
-import { DEFAULT_AGENT_PARTICIPANT } from '../../db'
+import { DEFAULT_AGENT_AUTHOR } from '../../db'
 
-const tempDir = join(process.cwd(), 'tmp', 'usage-reconcile-tests')
+const tempDir = join(tmpdir(), `localix-usage-reconcile-tests-${process.pid}`)
 
 describe('usage repository — assistant-message reconciliation', () => {
   beforeAll(async () => {
@@ -29,27 +30,24 @@ describe('usage repository — assistant-message reconciliation', () => {
     await db
       .insertInto('agent_sessions')
       .values([
-        { id: 'session-1', user_id: 'user-1', project_id: 'PRJ-test', title: 'Usage' },
-        { id: 'session-2', user_id: 'user-1', project_id: 'PRJ-test', title: 'Bare model' },
-      ])
-      .execute()
-    // Repair falls back to the route of a session's first participant, so these rows are the
-    // fixture's actual subject rather than scaffolding.
-    await db
-      .insertInto('conversation_participants')
-      .values([
         {
-          session_id: 'session-1',
+          id: 'session-1',
+          user_id: 'user-1',
+          project_id: 'PRJ-test',
+          title: 'Usage',
+          // Repair falls back to the session's route, so these columns are the fixture's actual
+          // subject rather than scaffolding.
           agent_id: 'builtin:localix',
-          handle: 'localix',
-          position: 0,
+          agent_name: 'localix',
           model_id: 'new/model',
         },
         {
-          session_id: 'session-2',
+          id: 'session-2',
+          user_id: 'user-1',
+          project_id: 'PRJ-test',
+          title: 'Bare model',
           agent_id: 'builtin:localix',
-          handle: 'localix',
-          position: 0,
+          agent_name: 'localix',
           model_id: 'bare-model',
         },
       ])
@@ -68,7 +66,7 @@ describe('usage repository — assistant-message reconciliation', () => {
           payload_json: payload({
             id: 'missing-turn',
             role: 'assistant',
-            from: DEFAULT_AGENT_PARTICIPANT,
+            from: DEFAULT_AGENT_AUTHOR,
             content: 'done',
             usage: {
               inputTokens: 80,
@@ -111,7 +109,7 @@ describe('usage repository — assistant-message reconciliation', () => {
           payload_json: payload({
             id: 'existing-turn',
             role: 'assistant',
-            from: DEFAULT_AGENT_PARTICIPANT,
+            from: DEFAULT_AGENT_AUTHOR,
             usage: { totalTokens: 999 },
           }),
           created_at: createdAt,
@@ -126,7 +124,7 @@ describe('usage repository — assistant-message reconciliation', () => {
           payload_json: payload({
             id: 'no-usage',
             role: 'assistant',
-            from: DEFAULT_AGENT_PARTICIPANT,
+            from: DEFAULT_AGENT_AUTHOR,
             content: 'synthetic',
           }),
           created_at: createdAt,
@@ -141,7 +139,7 @@ describe('usage repository — assistant-message reconciliation', () => {
           payload_json: payload({
             id: 'bare-model-turn',
             role: 'assistant',
-            from: DEFAULT_AGENT_PARTICIPANT,
+            from: DEFAULT_AGENT_AUTHOR,
             usage: { inputTokens: 2, outputTokens: 1 },
           }),
           created_at: createdAt,
@@ -170,7 +168,7 @@ describe('usage repository — assistant-message reconciliation', () => {
           payload_json: payload({
             id: 'aux-collision-turn',
             role: 'assistant',
-            from: DEFAULT_AGENT_PARTICIPANT,
+            from: DEFAULT_AGENT_AUTHOR,
             usage: { totalTokens: 500 },
           }),
           created_at: createdAt,
@@ -272,15 +270,8 @@ describe('usage repository — assistant-message reconciliation', () => {
         id: 'long-session',
         user_id: 'user-1',
         title: 'Long',
-      })
-      .execute()
-    await db
-      .insertInto('conversation_participants')
-      .values({
-        session_id: 'long-session',
         agent_id: 'builtin:localix',
-        handle: 'localix',
-        position: 0,
+        agent_name: 'localix',
         model_id: 'model',
       })
       .execute()
@@ -294,7 +285,7 @@ describe('usage repository — assistant-message reconciliation', () => {
       payload_json: serializeMessagePayload({
         id: `turn-${index.toString().padStart(4, '0')}`,
         role: 'assistant',
-        from: DEFAULT_AGENT_PARTICIPANT,
+        from: DEFAULT_AGENT_AUTHOR,
         usage: { inputTokens: 2, outputTokens: 1, totalTokens: 3 },
       }),
       created_at: '2026-07-20T03:04:05.000Z',

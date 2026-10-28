@@ -1,5 +1,4 @@
 import { NotFoundError } from '../../../lib/domain-errors'
-import { summarizeParticipantUsage } from '@localixai/agent'
 import { getLoopEngine } from '../../loops/runtime-binding'
 import { toLoopSummary } from '../../loops/contracts'
 import type { createProjectsRepository } from '../../projects/repository'
@@ -49,7 +48,6 @@ export interface SessionDetailContext {
   /** Live run state — only the runner knows it; nothing here is persisted. */
   runner: {
     isRunning: (sessionId: string) => boolean
-    activeAgentId: (sessionId: string) => string | undefined
     listQueued: (sessionId: string) => Promise<SessionDetail['queuedMessages']>
     listSessionAutoApprovedTools?: (sessionId: string) => string[]
     listWork: (userId: string, sessionId: string) => SessionWork[]
@@ -241,7 +239,6 @@ export async function getSessionDetail(
     sessionTiming: deriveSessionTiming(messages.map((m) => m.payload)),
     messageCount: messages.length,
     sessionUsage,
-    participantUsage: summarizeParticipantUsage(messages.map((message) => message.payload)),
     work: runner.listWork(userId, id),
     terminalWaits: runner.getTerminalWaits?.(userId, id) ?? [],
     loops: (() => {
@@ -259,7 +256,6 @@ export async function getSessionDetail(
     pendingInteractions,
     pendingInteraction: pendingInteractions[0] ?? null,
     isRunning: runner.isRunning(id),
-    activeAgentId: runner.activeAgentId(id) ?? null,
     sourceRuntime,
     lspServers,
     // Current "Always allow" set so the composer permissions chip survives a

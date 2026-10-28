@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useState } from 'react'
 
 /**
  * A `Set` whose IDENTITY only changes when its CONTENTS change.
@@ -12,21 +12,20 @@ import { useRef } from 'react'
  */
 export function useStableIdSet(ids: Iterable<string>): Set<string> {
   const next = ids instanceof Set ? ids : new Set(ids)
-  const held = useRef<Set<string>>(next)
-  const prev = held.current
-  if (prev === next) return prev
-  if (prev.size === next.size) {
+  const [held, setHeld] = useState<Set<string>>(next)
+  if (held === next) return held
+  if (held.size === next.size) {
     let same = true
     for (const id of next) {
-      if (!prev.has(id)) {
+      if (!held.has(id)) {
         same = false
         break
       }
     }
-    if (same) return prev
+    if (same) return held
   }
-  // Writing a ref during render is safe here: the value is derived purely from the
-  // arguments, so a re-run (StrictMode, a discarded render) produces the same set.
-  held.current = next
+  // Adjusting state while rendering is React's own pattern for "state derived from props": React
+  // re-runs this component at once with the new set, and that second pass finds equal contents.
+  setHeld(next)
   return next
 }

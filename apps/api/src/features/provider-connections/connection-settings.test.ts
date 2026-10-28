@@ -1,3 +1,4 @@
+import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -8,7 +9,7 @@ import { migrateToLatest } from '../../db/migrator'
 import { cleanSettings } from './connection-settings'
 import { createProviderConnectionsService } from './service'
 
-const tempDir = join(process.cwd(), 'tmp', 'provider-connection-settings-tests')
+const tempDir = join(tmpdir(), `localix-provider-connection-settings-tests-${process.pid}`)
 
 /**
  * A cloud connection names where its requests go (a region, a resource, a project) beside its

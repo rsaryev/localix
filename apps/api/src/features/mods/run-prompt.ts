@@ -95,7 +95,7 @@ export function composeInput(facts: ComposeFacts) {
     surfaces: ['desktop'],
     tools,
     outputStyle: facts.outputStyle,
-    traits: tools.includes('skill') ? ['skills'] : [],
+    traits: tools.includes('Skill') ? ['skills'] : [],
   }
 }
 

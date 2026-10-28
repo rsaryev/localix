@@ -2,7 +2,7 @@
  * THE VOLATILE TAIL of a run's system prompt.
  *
  * Everything from "# Runtime context" onward is per-turn or per-session: the date, the session
- * id, the MCP inventory, the room's new marks, scratch, sub-agents and loops. It never
+ * id, the MCP inventory, the person's new marks, scratch, sub-agents and loops. It never
  * rides the cached system prompt; the run carries it as the turn's runtime context inside the
  * conversation (`chat/runtime/model-view/turn-context.ts`).
  *
@@ -12,7 +12,7 @@
  * the `state` sections that changed, while `turn` sections belong to the turn they arrive with.
  *
  * Which sections ride the tail is the catalog's to say (`catalog.ts`, tier `state` or `turn`): a
- * line added to the CACHED prefix costs every member of every room its prefix on the turn the
+ * line added to the CACHED prefix costs every run its prefix on the turn the
  * fact changes, and a line added here costs nothing.
  */
 
@@ -23,7 +23,7 @@
  */
 export const RUNTIME_CONTEXT_PROTOCOL = [
   '# Context protocol',
-  'Runtime facts (date, environment, participants, jobs, loops, …) arrive inside the ' +
+  'Runtime facts (date, environment, jobs, loops, …) arrive inside the ' +
     'conversation in <runtime-context> blocks. A block without `update` is complete. An ' +
     '`update` block carries only the sections that changed since the previous block: the latest ' +
     'version of each section is current, and a section shown as "(no longer present)" is gone.',
@@ -32,10 +32,10 @@ export const RUNTIME_CONTEXT_PROTOCOL = [
 ].join('\n')
 
 /**
- * One section of the runtime context. `state` is a standing fact (the jobs running, the room's
- * roster): it is re-sent only when its text changes, and the latest version is current. `turn`
- * is about THIS turn only (the skills its message triggered, the marks placed since the member
- * last spoke) and is never carried forward.
+ * One section of the runtime context. `state` is a standing fact (the jobs running, the loops):
+ * it is re-sent only when its text changes, and the latest version is current. `turn` is about
+ * THIS turn only (the skills its message triggered, the marks placed since the agent last
+ * spoke) and is never carried forward.
  */
 export interface RuntimeSection {
   key: string

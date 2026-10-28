@@ -23,7 +23,7 @@ persisted presentation state.
 | Compare provider state        | Overview derives container, image, project, pod, deployment, node, and issue summaries.                | A failed collection shows an issue instead of treating stale data as current health.           |
 | Inspect containers            | Docker contributes inventory, details, logs, stats, processes, search, and resource references.        | Daemon access and some actions require the Docker CLI.                                         |
 | Inspect clusters              | Kubernetes contributes workloads, pods, deployments, services, nodes, metrics, search, and references. | Kubeconfig credentials, network access, and RBAC control results.                              |
-| Drive engines from an agent   | Neither backend contributes an agent tool; the agent runs `docker` and `kubectl` through `bash`.       | CLI calls use the agent's permission rules; cluster access also requires credentials and RBAC. |
+| Drive engines from an agent   | Neither backend contributes an agent tool; the agent runs `docker` and `kubectl` through `Bash`.       | CLI calls use the agent's permission rules; cluster access also requires credentials and RBAC. |
 | Navigate from resources       | Provider anchors open entity tabs or route broad URIs into the matching DevOps area.                   | Detail work items are not restored after an application restart.                               |
 
 ## How it works

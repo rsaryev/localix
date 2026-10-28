@@ -1,3 +1,4 @@
+import { backoffMs } from '@localixai/agent/backoff'
 import type { ExchangeStreamBackend, StreamChannel, StreamParams, StreamPayload } from './backend'
 
 /**
@@ -78,7 +79,7 @@ export interface TradingStreamRegistryOptions {
 /** Backoff delay for the Nth restart attempt: `base·2^(n-1)`, capped at `max`. Pure. */
 export function backoffDelay(attempt: number, baseMs: number, maxMs: number): number {
   if (attempt <= 0) return 0
-  return Math.min(baseMs * 2 ** (attempt - 1), maxMs)
+  return backoffMs(attempt - 1, { baseMs, maxMs })
 }
 
 /** Stable key for a stream: connection + channel + symbol + timeframe. Pure. */

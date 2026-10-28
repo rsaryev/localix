@@ -102,6 +102,7 @@ export function Board({
   return (
     <div
       ref={boardRef}
+      // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- the board is a keyboard-steered application surface; it must take focus to receive the arrow keys
       tabIndex={0}
       role="application"
       aria-label={boardLabel(game)}

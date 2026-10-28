@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'bun:test'
-import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 
 import { tempDirPerTest } from '@localixai/testing'
@@ -82,12 +81,6 @@ describe('the default marketplaces on start', () => {
     expect(calls).toHaveLength(2)
     await forgetDefaultMarketplaceRemoval(root(), 'claude-community')
     expect((await ensure(add))['claude-community']).toEqual({ status: 'registered' })
-  })
-
-  test('the official Localix one an earlier version remembered removing stays removed', async () => {
-    await fs.mkdir(root(), { recursive: true })
-    await fs.writeFile(join(root(), '.official.json'), JSON.stringify({ removed: true }))
-    expect((await ensure(adder().add)).localix).toEqual({ status: 'declined' })
   })
 
   test('none is fetched offline, and a failed fetch is tried again at the next start', async () => {

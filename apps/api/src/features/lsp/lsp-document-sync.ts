@@ -17,11 +17,11 @@ interface DocumentSyncPorts {
   pullDiagnostics: { delete(filePath: string): boolean }
   syncKind: number | undefined
   saveCarriesText: boolean
-  isDisposed(): boolean
-  waitForPush(filePath: string, timeout: number): Promise<boolean>
-  requestDiagnostics(filePath: string): Promise<{ handled: boolean; matched: boolean }>
+  isDisposed: () => boolean
+  waitForPush: (filePath: string, timeout: number) => Promise<boolean>
+  requestDiagnostics: (filePath: string) => Promise<{ handled: boolean; matched: boolean }>
   /** The server's own language id for a file (a plugin's `extensionToLanguage`). */
-  languageIdFor?(filePath: string): string | undefined
+  languageIdFor?: (filePath: string) => string | undefined
 }
 
 /** Synchronize editor buffers and transient disk reads through the same document lifecycle. */

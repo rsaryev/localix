@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useEffectEvent, useMemo } from 'react'
 import {
   ArrowDown,
   ArrowLeft,
@@ -44,13 +44,12 @@ function useFollowLayout(
   size: { w: number; h: number } | null,
   { width, height, resize }: Pick<ElementViewProps, 'width' | 'height' | 'resize'>,
 ) {
-  const latest = useRef(resize)
-  latest.current = resize
+  const write = useEffectEvent(resize)
   const w = size?.w
   const h = size?.h
   useEffect(() => {
     if (w === undefined || h === undefined) return
-    if (Math.abs(w - width) > 2 || Math.abs(h - height) > 2) latest.current({ w, h })
+    if (Math.abs(w - width) > 2 || Math.abs(h - height) > 2) write({ w, h })
   }, [w, h, width, height])
 }
 

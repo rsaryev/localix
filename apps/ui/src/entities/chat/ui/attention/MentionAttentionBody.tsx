@@ -1,5 +1,5 @@
 /**
- * "@lead assigned you a card" — a board card in a chat the person is not in now waits on them.
+ * "@localix assigned you a card" — a board card in a chat the person is not in now waits on them.
  *
  * Only a way in, never a reply box: the card is handled on the board or by an ordinary message,
  * and a composer here would have no attachments, no bindings and no transcript above it. Nothing is
@@ -15,11 +15,11 @@ import { formatRelativeTime } from '@localixai/mini-app-sdk/ui/utilities'
 import type { AttentionBodyProps } from './types'
 
 export function MentionAttentionBody({ item, sessionTitle, openChat }: AttentionBodyProps) {
-  const from = item.subject.agentHandle ?? ''
+  const from = item.subject.agentName ?? ''
   const at = Date.parse(item.at)
   return (
     <DialogContent size="md" aria-describedby={undefined}>
-      {/* Named by WHO assigned it, because in a room that is the first thing worth knowing. */}
+      {/* Named by WHO assigned it: the first thing worth knowing. */}
       <DialogHeader
         actionsLabel="Mention actions"
         actions={

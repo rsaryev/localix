@@ -19,6 +19,8 @@ describe('drain — a queued slash command', () => {
     const session = sessionFixture({ id: 's1' })
     const messages: PersistedMessage[] = []
     const runs: RunParams[] = []
+    let started: () => void = () => {}
+    const firstRun = new Promise<void>((resolve) => (started = resolve))
     const queue = createWakeQueue({
       repo: {
         listMessages: async () => [...messages],
@@ -37,6 +39,7 @@ describe('drain — a queued slash command', () => {
       state: { activeRuns: new Map(), drainingSessions: new Set(), sessionRunIdentity: new Map() },
       run: async (params: RunParams) => {
         runs.push(params)
+        started()
         return { status: 'completed' as const }
       },
     })
@@ -52,12 +55,12 @@ describe('drain — a queued slash command', () => {
         origin: { command: '/sample-command', label: 'skill' },
         identity: {
           extraAllowedTools: ['bash'],
-          requiredTools: [{ name: 'mini_app_build' }],
+          requiredTools: [{ name: 'Browser' }],
           modelOverride: 'fast-model',
         },
       },
     })
-    for (let i = 0; i < 200 && runs.length === 0; i++) await new Promise((r) => setTimeout(r, 5))
+    await firstRun
 
     const userRow = messages.find((message) => message.payload.role === 'user')!
     expect(userRow.payload).toMatchObject({
@@ -68,7 +71,7 @@ describe('drain — a queued slash command', () => {
     expect(userRow.payload.isInternal).toBeUndefined()
     expect(runs[0]!.scope).toMatchObject({
       extraAllowedTools: ['bash'],
-      requiredTools: [{ name: 'mini_app_build' }],
+      requiredTools: [{ name: 'Browser' }],
       modelOverride: 'fast-model',
       conversationId: userRow.id,
     })

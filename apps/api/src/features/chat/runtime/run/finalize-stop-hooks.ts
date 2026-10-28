@@ -14,7 +14,7 @@
  * still keep the child working; the delegating parent learns of the end too late to.
  */
 import type { CcHooksRuntime } from '../../../cc-hooks'
-import { GENERAL_PURPOSE_TYPE } from '../../../agent-core/tools/delegate-agent-type'
+import { GENERAL_PURPOSE_TYPE } from '../../../agent-core/tools/agent/agent-type'
 import type { SessionRecord } from '../../repository'
 import type { RunParams } from './types'
 
@@ -25,7 +25,7 @@ const SUBAGENT_STOP_REASON = 'A SubagentStop hook asked you to keep working. Con
 export async function runStopHooks(args: {
   ccHooks: CcHooksRuntime
   session: SessionRecord
-  scope: Pick<RunParams['scope'], 'ccScopedHooks' | 'speakerAgentId'>
+  scope: Pick<RunParams['scope'], 'ccScopedHooks'>
   stopHookActive: boolean
   /** The reply that ends the turn (`last_assistant_message`). */
   content: string | null

@@ -30,7 +30,6 @@ export function sessionRowPatch(patch: Partial<SessionRecord>) {
       ? { pinned_skills: JSON.stringify(patch.pinnedSkills) }
       : {}),
     ...(patch.description !== undefined ? { description: patch.description } : {}),
-    ...(patch.avatar !== undefined ? { avatar: patch.avatar } : {}),
     ...(patch.activatedTools !== undefined
       ? {
           activated_tools: patch.activatedTools.length

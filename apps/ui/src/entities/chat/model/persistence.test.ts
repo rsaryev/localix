@@ -3,10 +3,8 @@ import { installTestLocalStorage, removeTestLocalStorage } from '@localixai/kit/
 
 import * as persistence from './persistence'
 import {
-  forgetActiveProjectId,
   forgetLastWorkspace,
   forgetSessionLocation,
-  loadActiveProjectId,
   loadLastWorkspace,
   loadRememberedActiveSession,
   recordChatLocation,
@@ -56,13 +54,6 @@ describe('persistence — round trips', () => {
     recordChatLocation('p1', 's1')
     expect(loadRememberedActiveSession('p1')).toBe('s1')
   })
-
-  test('recording a chat records its project as active; forgetting clears it', () => {
-    recordChatLocation('proj-1', 's1')
-    expect(loadActiveProjectId()).toBe('proj-1')
-    forgetActiveProjectId()
-    expect(loadActiveProjectId()).toBeNull()
-  })
 })
 
 describe('persistence — project-scoped active session key', () => {
@@ -103,9 +94,7 @@ describe('persistence — degrades gracefully on storage failure', () => {
     })
 
     expect(loadRememberedActiveSession('p')).toBeNull()
-    expect(loadActiveProjectId()).toBeNull()
     expect(() => recordChatLocation('p', 'x')).not.toThrow()
-    expect(() => forgetActiveProjectId()).not.toThrow()
   })
 })
 
@@ -135,15 +124,15 @@ describe('persistence — the launch-restore pair', () => {
     expect(loadLastWorkspace()).toEqual({ projectId: 'p1', sessionId: null })
   })
 
-  test('an absent record falls back to the legacy keys so one update does not lose the workspace', () => {
+  test('an absent record restores nothing', () => {
     const map = installStorage()
-    recordChatLocation('p-legacy', 's-legacy')
+    recordChatLocation('p1', 's1')
     map.delete('localix_last_workspace')
 
-    expect(loadLastWorkspace()).toEqual({ projectId: 'p-legacy', sessionId: 's-legacy' })
+    expect(loadLastWorkspace()).toBeNull()
   })
 
-  test('a pair confirmed dead stays dead: the legacy keys do not revive it', () => {
+  test('a pair confirmed dead stays dead', () => {
     recordChatLocation('p-gone', 's1')
     forgetLastWorkspace()
     expect(loadLastWorkspace()).toBeNull()

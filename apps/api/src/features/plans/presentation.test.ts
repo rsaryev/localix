@@ -40,12 +40,11 @@ beforeEach(async () => {
     publish: () => undefined,
     setMode: async () => undefined,
     wake: async () => ({ status: 'delivered' }),
-    participants: async () => ['lead'],
     lifecycle: {
       notice: async (_owner, notice) => {
         notices.push(notice.text)
       },
-      authorHandle: async () => null,
+      authorName: async () => null,
       awaiting: (_owner, plan) => signals.push(`awaiting v${plan.version}`),
       settled: (_owner, _id, reason) => signals.push(`settled ${reason}`),
       completed: () => undefined,
@@ -56,7 +55,7 @@ afterEach(() => destroyDatabase(db))
 
 const versions = async () =>
   (await plans.list(owner)).map((plan) => [plan.version, plan.status] as const)
-const present = (input = {}) => plans.present(owner, 'lead', input)
+const present = (input = {}) => plans.present(owner, input)
 
 describe('presenting from the file', () => {
   test('snapshots the draft as v1, titled by its heading', async () => {

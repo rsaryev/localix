@@ -14,10 +14,12 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "@localixai/source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
     "./testing": {
+      "@localixai/source": "./src/testing/index.ts",
       "types": "./dist/testing/index.d.ts",
       "import": "./dist/testing/index.js"
     }
@@ -26,7 +28,7 @@
     "build": "shx rm -rf dist && tsc --project tsconfig.build.json",
     "dev": "tsc --project tsconfig.build.json --watch --preserveWatchOutput",
     "test": "bun test src",
-    "type-check": "tsc --noEmit",
+    "type-check": "node ../../scripts/tsc.mjs --noEmit",
     "clean": "shx rm -rf dist .turbo"
   },
   "dependencies": {

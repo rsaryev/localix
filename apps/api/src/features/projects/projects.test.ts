@@ -1,3 +1,4 @@
+import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { createChatFeaturePorts } from '../../bootstrap/chat-feature-ports'
 import { mkdir, rm, writeFile } from 'node:fs/promises'
@@ -15,7 +16,7 @@ import {
 } from '../chat/test-harness'
 import { createProviderConnectionsService } from '../provider-connections/service'
 
-const tempDir = join(process.cwd(), 'tmp', 'projects-tests')
+const tempDir = join(tmpdir(), `localix-projects-tests-${process.pid}`)
 
 describe('projects feature', () => {
   let db: any

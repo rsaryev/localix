@@ -5,7 +5,7 @@ import {
 } from '@localixai/mini-app-sdk/backend'
 
 import { MOVES, type AgentWait, type Game, type Move } from '../shared/game'
-import type { Seat } from './ask-agent'
+import type { ChatRef } from './ask-agent'
 
 /**
  * HOW THE TABLE ASKS THE DECISION MODEL FOR ITS MOVE — when the table's opponent is `decision`.
@@ -21,7 +21,7 @@ export const DECISION_PURPOSE = 'move'
 
 const VERDICT = { won: 'person won', lost: 'you won', draw: 'draw' } as const
 
-/** The table from the model's seat: finished rounds and the score, never the round in play. */
+/** The table from the model's side: finished rounds and the score, never the round in play. */
 export function moveAsk(game: Game): DecisionAsk {
   const finished = game.history.filter(
     (round) => round.outcome !== null && round.id !== game.round.id,
@@ -53,11 +53,11 @@ export function moveAsk(game: Game): DecisionAsk {
 /** The decision model's move, or the wait that says why there is none. */
 export async function askDecision(
   decisions: DecisionHost | undefined,
-  seat: Seat,
+  chat: ChatRef,
   game: Game,
   now: string,
 ): Promise<{ move: Move } | { waiting: AgentWait }> {
   const turn = { ask: moveAsk(game), question: 'move', purpose: DECISION_PURPOSE }
-  const answered = await askDecisionForTurn(decisions, seat, turn, now)
+  const answered = await askDecisionForTurn(decisions, chat, turn, now)
   return 'answer' in answered ? { move: answered.answer.choice as Move } : answered
 }

@@ -60,20 +60,20 @@ const usage = (name: string, over: Partial<ToolUsageRecord> = {}): ToolUsageReco
   ...over,
 })
 
-const ballast = usage('bash', { calls: TOOL_GC_MIN_TOTAL_CALLS, lastUsedAt: daysAgo(1) })
+const ballast = usage('Bash', { calls: TOOL_GC_MIN_TOTAL_CALLS, lastUsedAt: daysAgo(1) })
 
 describe('surfacedFromSnapshot', () => {
   test('attributes each enabled tool from the catalog, and MCP from its server', () => {
     const result = surfacedFromSnapshot(
       snapshot({
-        enabled: ['read', 'plugin_query'],
-        catalog: [meta('read'), meta('plugin_query', 'fixture-plugin')],
+        enabled: ['Read', 'plugin_query'],
+        catalog: [meta('Read'), meta('plugin_query', 'fixture-plugin')],
         mcp: [{ serverId: 'srv-1', serverName: 'linear', tools: ['mcp_linear_search'] }],
       }),
     )
 
     expect(result).toEqual([
-      { name: 'read', source: 'builtin', originId: '' },
+      { name: 'Read', source: 'builtin', originId: '' },
       { name: 'plugin_query', source: 'mini-app', originId: 'fixture-plugin' },
       { name: 'mcp_linear_search', source: 'mcp', originId: 'srv-1' },
     ])
@@ -85,31 +85,31 @@ describe('surfacedFromSnapshot', () => {
     // the run does not send.
     const result = surfacedFromSnapshot(
       snapshot({
-        enabled: ['read'],
-        disabled: [{ name: 'loops', reason: 'disabled by settings', source: 'settings' }],
-        catalog: [meta('read'), meta('loops')],
+        enabled: ['Read'],
+        disabled: [{ name: 'Loops', reason: 'disabled by settings', source: 'settings' }],
+        catalog: [meta('Read'), meta('Loops')],
       }),
     )
 
-    expect(result.map((tool) => tool.name)).toEqual(['read'])
+    expect(result.map((tool) => tool.name)).toEqual(['Read'])
   })
 })
 
 /**
- * The MCP half of the same drift. `mcp_resources` is a builtin NAME, so every scope lists it,
+ * The MCP half of the same drift. `McpResources` is a builtin NAME, so every scope lists it,
  * but `buildMcpResourceTools` returns [] unless some connected server
  * advertises the `resources` capability. Measured live: the PRJ-1 scope has no MCP servers at all
  * and was counting all three.
  */
 describe('MCP resource tools are not counted without a server', () => {
   const withResourceTools = {
-    enabled: ['read', 'mcp_resources'],
-    catalog: [meta('read')],
+    enabled: ['Read', 'McpResources'],
+    catalog: [meta('Read')],
   }
 
   test('no servers at all — the tool cannot be on the wire', () => {
     expect(surfacedFromSnapshot(snapshot(withResourceTools)).map((tool) => tool.name)).toEqual([
-      'read',
+      'Read',
     ])
   })
 
@@ -122,7 +122,7 @@ describe('MCP resource tools are not counted without a server', () => {
         mcp: [{ serverId: 's1', serverName: 'files', tools: [] }],
       }),
     )
-    expect(report.map((tool) => tool.name)).toEqual(['read', 'mcp_resources'])
+    expect(report.map((tool) => tool.name)).toEqual(['Read', 'McpResources'])
   })
 
   test('an UNPROBED server is an unknown, not a licence to drop them', () => {
@@ -139,9 +139,9 @@ describe('buildToolGcReport', () => {
     // total from `enabled.length`, is how a pill ends up claiming 128 while 118 went on the wire.
     const report = buildToolGcReport({
       snapshot: snapshot({
-        enabled: ['read', 'plugin_query', 'other_plugin_tool'],
+        enabled: ['Read', 'plugin_query', 'other_plugin_tool'],
         catalog: [
-          meta('read'),
+          meta('Read'),
           meta('plugin_query', 'fixture-plugin'),
           meta('other_plugin_tool', 'other'),
         ],
@@ -162,7 +162,7 @@ describe('buildToolGcReport', () => {
 
   test('names the servers it could not see rather than under-reporting silently', () => {
     const report = buildToolGcReport({
-      snapshot: snapshot({ enabled: ['read'], catalog: [meta('read')], mcpUnprobedServers: ['a'] }),
+      snapshot: snapshot({ enabled: ['Read'], catalog: [meta('Read')], mcpUnprobedServers: ['a'] }),
       usage: [],
       now: NOW,
     })
@@ -216,8 +216,8 @@ describe('buildToolGcReport', () => {
     // Counts are always answerable; judgements are not. The two must not be gated together, or a
     // fresh install would show no pill at all.
     const report = buildToolGcReport({
-      snapshot: snapshot({ enabled: ['read', 'loops'], catalog: [meta('read'), meta('loops')] }),
-      usage: [usage('loops', { firstSeenAt: daysAgo(90) })],
+      snapshot: snapshot({ enabled: ['Read', 'Loops'], catalog: [meta('Read'), meta('Loops')] }),
+      usage: [usage('Loops', { firstSeenAt: daysAgo(90) })],
       now: NOW,
     })
 

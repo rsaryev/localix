@@ -12,18 +12,18 @@ const call = {
 
 describe('run tool requirements', () => {
   test('every turn requires recovery, independently of host requirements', () => {
-    expect(() => assertRunToolRequirements([], [])).toThrow('tool_output')
+    expect(() => assertRunToolRequirements([], [])).toThrow('ToolOutput')
     expect(() => assertRunToolRequirements([recovery], [])).not.toThrow()
-    expect(() => assertRunToolRequirements([], [])).toThrow('tool_output')
+    expect(() => assertRunToolRequirements([], [])).toThrow('ToolOutput')
     expect(() =>
-      assertRunToolRequirements([recovery], [], [{ name: 'jobs', resources: ['list'] }]),
-    ).toThrow('jobs')
+      assertRunToolRequirements([recovery], [], [{ name: 'Jobs', resources: ['list'] }]),
+    ).toThrow('Jobs')
   })
 
   test('a registered search-only tool cannot fulfill the recovery protocol', () => {
     const searchOnly = createToolOutputTool({} as never, {} as never, 'user', 'session', ['search'])
     expect(() => assertRunToolRequirements([searchOnly], [])).toThrow(
-      'tool_output(get) is unavailable',
+      'ToolOutput(get) is unavailable',
     )
     const getOnly = createToolOutputTool({} as never, {} as never, 'user', 'session', ['get'])
     expect(() => assertRunToolRequirements([getOnly], [])).not.toThrow()
@@ -63,7 +63,7 @@ describe('run tool requirements', () => {
     // An allow that a RULE produced is attributed, so the UI can explain why nothing was
     // asked. Only the absence of any matching rule stays silent.
     expect(await gate(call)).toMatchObject({
-      provenance: { decision: 'rule-allow', detail: 'tool_output(get)' },
+      provenance: { decision: 'rule-allow', detail: 'ToolOutput(get)' },
     })
     expect(
       await gate({ ...call, input: { action: 'search', queries: ['something'] } }),
@@ -77,6 +77,6 @@ describe('run tool requirements', () => {
         [recovery],
         [{ permission: recovery.name, pattern: 'get', action: 'deny' }],
       ),
-    ).toThrow('tool_output(get)')
+    ).toThrow('ToolOutput(get)')
   })
 })

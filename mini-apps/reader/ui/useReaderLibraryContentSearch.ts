@@ -13,30 +13,38 @@ export function useReaderLibraryContentSearch({
   /** The books view, outside selection mode. */
   enabled: boolean
 }) {
-  const [contentSearch, setContentSearch] = useState<ReaderLibrarySearchResponse | null>(null)
-  const [contentSearchLoading, setContentSearchLoading] = useState(false)
+  const value = query.trim()
+  const active = enabled && value.length >= 2
+  // What the last finished search answered, and for which text. Loading is "the text in the box
+  // is not the text last answered", so nothing is set while the box changes.
+  const [answer, setAnswer] = useState<{
+    value: string
+    response: ReaderLibrarySearchResponse | null
+  } | null>(null)
+  // Leaving the search (a short query, another view) forgets its answer.
+  if (!active && answer) setAnswer(null)
 
   useEffect(() => {
-    const value = query.trim()
-    if (!enabled || value.length < 2) {
-      setContentSearch(null)
-      setContentSearchLoading(false)
-      return
-    }
+    if (!active) return
     const controller = new AbortController()
-    setContentSearchLoading(true)
     const timer = window.setTimeout(() => {
-      void readerApi
-        .searchLibrary(value, controller.signal)
-        .then((next) => setContentSearch(next))
-        .catch(() => !controller.signal.aborted && setContentSearch(null))
-        .finally(() => !controller.signal.aborted && setContentSearchLoading(false))
+      void readerApi.searchLibrary(value, controller.signal).then(
+        (response) => {
+          if (!controller.signal.aborted) setAnswer({ value, response })
+        },
+        () => {
+          if (!controller.signal.aborted) setAnswer({ value, response: null })
+        },
+      )
     }, LIBRARY_CONTENT_SEARCH_DEBOUNCE_MS)
     return () => {
       window.clearTimeout(timer)
       controller.abort()
     }
-  }, [enabled, query])
+  }, [active, value])
 
-  return { contentSearch, contentSearchLoading }
+  return {
+    contentSearch: active ? (answer?.response ?? null) : null,
+    contentSearchLoading: active && answer?.value !== value,
+  }
 }

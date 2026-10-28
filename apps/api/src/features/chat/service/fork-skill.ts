@@ -1,12 +1,10 @@
-import { agentRoute, sessionRoute } from '../../../contracts/session-route'
-import { agentParticipant } from '../../../db'
+import { sessionRoute } from '../../../contracts/session-route'
 import { randomUUID } from 'node:crypto'
 
-import { isModelAliasFamily, resolveModelAlias } from '../../agent-core/model-alias'
+import type { AgentRoute } from '../../agent-core/agent-model-route'
 import { isDelegationParent } from '../../agent-core/delegation-policy'
-import { GENERAL_PURPOSE_TYPE } from '../../agent-core/tools/delegate-agent-type'
+import { GENERAL_PURPOSE_TYPE } from '../../agent-core/tools/agent/agent-type'
 import { awaitAgentService } from '../runtime/agent-service-binding'
-import { resolveDeclaredReasoningEffort } from '../../../db/types'
 import { childExecutionContext } from '../runtime/execution-context'
 import type { createChatRepository, SessionRecord } from '../repository'
 import * as sessionLifecycle from './session-lifecycle'
@@ -21,12 +19,10 @@ export interface ForkSkillDeps {
   runAgent: RunAgentFn
   sessionLifecycleCtx: SessionLifecycleCtx
   /**
-   * Catalog model ids, for resolving a declared `model:` FAMILY ALIAS (`sonnet`/`opus`/`haiku`/
-   * `fable`) to a concrete id. Without them `resolveModelAlias` falls back to the parent model, so
-   * the alias form — the one the CC convention and this repo's own docs teach — silently did
-   * nothing. Read only when an alias actually needs resolving.
+   * The model and effort the person chose for an agent (`agentSettings.agentModelChoices`). The
+   * fork runs on it, else on its parent's route: the skill's own `model` and `effort` are not read.
    */
-  listModelIds?: () => Promise<readonly string[]>
+  chosenRoute?: (userId: string, agentId: string) => Promise<AgentRoute>
 }
 
 export type SpawnForkSkillFn = (
@@ -35,21 +31,13 @@ export type SpawnForkSkillFn = (
   prompt: string,
   opts?: {
     title?: string
-    preferredModel?: string
-    preferredEffort?: string
     /** CC skill frontmatter `hooks` — activated for the forked child run (Stop→SubagentStop). */
     hooks?: unknown
     /** The plugin shipping the skill: its `hooks` get that plugin's root and data dir. */
     hooksPlugin?: ScopedCcHooks['plugin']
     /**
-     * The participant the fork is for — and the agent that runs it: its route is inherited and
-     * its report comes back to it. Absent means the conversation's first participant — the
-     * direct-chat case.
-     */
-    invokedBy?: string
-    /**
      * CC `agent:` — the agent the fork runs as. A catalog agent (a file, a plugin's, `Explore`) is
-     * seated in the child and runs on its own definition; `general-purpose` or none is the
+     * used by the child and runs on its own definition; `general-purpose` or none is the
      * invoking agent itself.
      */
     agent?: string
@@ -57,8 +45,8 @@ export type SpawnForkSkillFn = (
 ) => Promise<string>
 
 /**
- * Run a skill task in its own child session, seated by the INVOKING agent unless the skill's
- * `agent:` names another: that agent is seated instead and every run takes its prompt, tool limits
+ * Run a skill task in its own child session, started as the INVOKING agent unless the skill's
+ * `agent:` names another: that agent is used bystead and every run takes its prompt, tool limits
  * and model — Claude Code: "The `agent` field determines the execution environment". The child
  * shares the parent's workspace. The factory closes over the required service ports instead of the
  * full chat service.
@@ -71,13 +59,9 @@ export function createSpawnForkSkill(deps: ForkSkillDeps): SpawnForkSkillFn {
     if (!isDelegationParent(parentSession)) {
       throw new Error('Only a root chat may fork. Subsessions cannot create child work.')
     }
-    // The participant who asked for the fork, not whoever joined first: it is that agent the
-    // child runs, its model the child inherits and its report the child owes.
-    const parentRoute =
-      (opts?.invokedBy ? agentRoute(parentSession, opts.invokedBy) : undefined) ??
-      sessionRoute(parentSession)
-    // Map a declared CC effort string to a level this system can actually carry: an unknown
-    // value means "not specified" and inherits — see `resolveDeclaredReasoningEffort`.
+    // The session's agent asked for the fork: it is that agent the child runs, its model the
+    // child inherits and its report the child owes.
+    const parentRoute = sessionRoute(parentSession)
     const named = opts?.agent
       ? await (
           await awaitAgentService()
@@ -91,19 +75,16 @@ export function createSpawnForkSkill(deps: ForkSkillDeps): SpawnForkSkillFn {
           ? `The skill's agent "${opts?.agent}" names several agents: ${named.names.join(', ')}.`
           : `The skill's agent "${opts?.agent}" is not an enabled agent here.`,
       )
-    const type = named?.kind === 'agent' ? named.type : undefined
-    const effort = resolveDeclaredReasoningEffort(opts?.preferredEffort ?? type?.preferredEffort)
-    // A family alias needs the catalog to become a concrete id; nothing else does, so the read is
-    // skipped for the common cases (no declaration, or an already-qualified id).
-    const declaredModel = opts?.preferredModel ?? type?.preferredModel
-    const modelIds =
-      declaredModel && isModelAliasFamily(declaredModel) ? await deps.listModelIds?.() : undefined
-    const modelId =
-      resolveModelAlias(declaredModel, parentRoute.modelId ?? undefined, modelIds) ?? undefined
-    const providerConnectionId = parentRoute.providerConnectionId
     const childAgentId = named?.kind === 'agent' ? named.agent.agentId : parentRoute.agentId
+    // The person's choice for the agent, else the parent's route: the same rule as `Agent`.
+    const chosen = (await deps.chosenRoute?.(userId, childAgentId)) ?? {}
+    const modelId = chosen.modelId ?? parentRoute.modelId ?? undefined
+    const providerConnectionId = chosen.modelId
+      ? (chosen.providerConnectionId ?? null)
+      : parentRoute.providerConnectionId
+    const effort = chosen.reasoningEffort
     const child = await sessionLifecycle.createSession(sessionLifecycleCtx, userId, {
-      agents: [{ agentId: childAgentId }],
+      agent: { agentId: childAgentId },
       title: opts?.title ?? 'Forked skill',
       parentSessionId: parentId,
       sessionKind: 'job',
@@ -111,16 +92,11 @@ export function createSpawnForkSkill(deps: ForkSkillDeps): SpawnForkSkillFn {
       provenance: {
         kind: 'skill-fork',
         parentSessionId: parentId,
-        // WHICH member forked it. A child session has one parent participant; callers that
-        // dispatch from a multi-participant conversation must supply that address explicitly.
-        ...(parentSession.agents?.length
-          ? { parentParticipant: agentParticipant(parentRoute.agentId) }
-          : {}),
       },
       providerConnectionId,
       // A fork is created fresh, so it must not end up holding authority its parent did not have.
       modelId,
-      // Apply skill's preferred reasoning effort when declared.
+      // The person's effort for the agent when they chose one; else the parent's, at birth.
       ...(effort ? { reasoningEffort: effort } : {}),
       projectId: parentSession.projectId,
     })
@@ -136,7 +112,7 @@ export function createSpawnForkSkill(deps: ForkSkillDeps): SpawnForkSkillFn {
                 raw: opts.hooks,
                 source: 'skill' as const,
                 asSubagent: true,
-                agentType: named?.kind === 'agent' ? named.agent.handle : GENERAL_PURPOSE_TYPE,
+                agentType: named?.kind === 'agent' ? named.agent.name : GENERAL_PURPOSE_TYPE,
                 ...(opts.hooksPlugin ? { plugin: opts.hooksPlugin } : {}),
               },
             ],

@@ -63,7 +63,7 @@ async function rulesFor(tree: Record<string, string>, options: { projectTrusted?
 
 const settings = (permissions: Record<string, string[]>, extra: object = {}) =>
   JSON.stringify({ permissions, ...extra })
-const bash = (command: string) => ({ toolName: 'bash', input: { command }, commands: [command] })
+const bash = (command: string) => ({ toolName: 'Bash', input: { command }, commands: [command] })
 
 describe('Claude Code permission rules from settings files', () => {
   test('a deny in any file beats an allow in any other, whatever the order', async () => {
@@ -112,7 +112,7 @@ describe('Claude Code permission rules from settings files', () => {
     })
     const project = join(root, 'project')
     const home = join(root, 'home')
-    const read = (path: string) => decide({ toolName: 'read', paths: [path] })
+    const read = (path: string) => decide({ toolName: 'Read', paths: [path] })
     // A bare name at any depth under the working directory, never above it.
     expect(read(join(project, '.env'))).toBe('deny')
     expect(read(join(project, 'apps/api/.env'))).toBe('deny')
@@ -127,16 +127,16 @@ describe('Claude Code permission rules from settings files', () => {
     // A Read denial guards writes too; `//` is the filesystem root.
     expect(
       decide({
-        toolName: 'write',
+        toolName: 'Write',
         paths: [join(project, '.env')],
         writes: [join(project, '.env')],
       }),
     ).toBe('deny')
-    expect(decide({ toolName: 'edit', paths: ['/etc/hosts'], writes: ['/etc/hosts'] })).toBe('deny')
+    expect(decide({ toolName: 'Edit', paths: ['/etc/hosts'], writes: ['/etc/hosts'] })).toBe('deny')
     // A shell line that names the file.
     expect(decide({ ...bash('cat .env'), paths: [join(project, '.env')] })).toBe('deny')
     // An allow single-directory pattern stays at the working directory.
-    const edit = (path: string) => decide({ toolName: 'edit', paths: [path], writes: [path] })
+    const edit = (path: string) => decide({ toolName: 'Edit', paths: [path], writes: [path] })
     expect(edit(join(project, 'src/app.ts'))).toBe('allow')
     expect(edit(join(project, 'vendor/src/lib.js'))).toBeUndefined()
   })
@@ -166,6 +166,15 @@ describe('Claude Code permission rules from settings files', () => {
     expect(decide(bash('git push'))).toBe('ask')
   })
 
+  test('a bare deny of a tool by the name the model calls it takes ours away', async () => {
+    const { rules } = await rulesFor({
+      'home/.claude/settings.json': settings({ deny: ['Configure', 'Vault'] }),
+    })
+    expect(settingsRemoveTool(rules, { name: 'Configure' })).toBe(true)
+    expect(settingsRemoveTool(rules, { name: 'Vault' })).toBe(true)
+    expect(settingsRemoveTool(rules, { name: 'Store' })).toBe(false)
+  })
+
   test('MCP and web rules', async () => {
     const { rules, decide } = await rulesFor({
       'home/.claude/settings.json': settings({
@@ -175,27 +184,30 @@ describe('Claude Code permission rules from settings files', () => {
     })
     const gh = { name: 'mcp_github_create_issue', aliases: ['mcp__github__create_issue'] }
     expect(settingsRemoveTool(rules, gh)).toBe(true)
-    expect(settingsRemoveTool(rules, { name: 'research' })).toBe(false)
+    expect(settingsRemoveTool(rules, { name: 'Research' })).toBe(false)
     expect(decide({ toolName: 'mcp_linear_list', aliases: ['mcp__linear__list'] })).toBe('allow')
-    const fetch = (url: string) => decide({ toolName: 'research', input: { urls: [url] } })
+    const fetch = (url: string) => decide({ toolName: 'Research', input: { urls: [url] } })
     expect(fetch('https://a.b.evil.example/x')).toBe('deny')
     expect(fetch('https://docs.example.com/page')).toBe('allow')
     expect(fetch('https://example.com/')).toBeUndefined()
   })
 
-  test('an Agent rule judges a delegate call by the type it runs, general-purpose when none', async () => {
+  test('an Agent rule judges an Agent call by the type it runs, general-purpose when none', async () => {
     const { decide } = await rulesFor({
       'home/.claude/settings.json': settings({
-        deny: ['Agent(general-purpose)', 'Agent(Explore)'],
+        deny: ['Agent(general-purpose)', 'Task(Explore)'],
       }),
     })
-    const start = (input: object) => decide({ toolName: 'delegate', input })
-    expect(start({ title: 't', task: 'x' })).toBe('deny')
-    expect(start({ title: 't', task: 'x', agent: 'claude' })).toBe('deny')
-    expect(start({ title: 't', task: 'x', agent: 'Explore' })).toBe('deny')
-    expect(start({ title: 't', task: 'x', agent: 'reviewer' })).toBeUndefined()
-    // Only a start names a type: listing or stopping children runs nothing.
-    expect(start({ action: 'list' })).toBeUndefined()
-    expect(start({ action: 'stop', run: 'sub-1' })).toBeUndefined()
+    const start = (input: object) => decide({ toolName: 'Agent', input })
+    const call = { description: 't', prompt: 'x' }
+    expect(start(call)).toBe('deny')
+    expect(start({ ...call, subagent_type: 'claude' })).toBe('deny')
+    expect(start({ ...call, subagent_type: 'Explore' })).toBe('deny')
+    expect(start({ ...call, subagent_type: 'reviewer' })).toBeUndefined()
+    // Messaging or stopping a subagent starts nothing.
+    expect(
+      decide({ toolName: 'SendMessage', input: { to: 'sub-1', message: 'go' } }),
+    ).toBeUndefined()
+    expect(decide({ toolName: 'TaskStop', input: { task_id: 'sub-1' } })).toBeUndefined()
   })
 })

@@ -1,8 +1,12 @@
-import { ToolListChangedNotificationSchema } from '@modelcontextprotocol/sdk/types.js'
+import {
+  PromptListChangedNotificationSchema,
+  ToolListChangedNotificationSchema,
+} from '@modelcontextprotocol/sdk/types.js'
 import { errorMessage } from '../../lib/errors'
 import type { McpServerRecord } from './repository'
 import { isMcpAuthenticationRequiredError, type McpClientLike } from './mcp-wire'
 import { listToolDefs, withDiscoveryRetry } from './mcp-tool-discovery'
+import { listPromptDefs } from './mcp-prompts'
 import { mcpConnectionKey as keyFor } from './mcp-connection-key'
 import type { McpConnectionObserver } from '../notifications/conditions/mcp'
 import type { ToolMetadataStore } from './mcp-tool-metadata-store'
@@ -11,11 +15,16 @@ import type { ChannelRouter } from './mcp-channels'
 
 /** CC caps server instructions at 2KB before they reach the model. */
 const MCP_INSTRUCTIONS_MAX_CHARS = 2_000
+/** `prompts/list` is a convenience: past this a connection serves its tools without them. */
+const DEFAULT_PROMPT_LIST_TIMEOUT_MS = 5_000
 
 export interface ConnectionPoolDeps {
+  /** Told when a server's prompts were listed or changed: a menu reads them, so it re-reads. */
+  promptsChanged(): (() => void) | undefined
   connect: (server: McpServerRecord, cwd: string) => Promise<McpClientLike>
   metadata: ToolMetadataStore
   startupTimeoutMs: number
+  promptListTimeoutMs?: number
   /** Read on every connect outcome; set once by the composition root. */
   observer: () => McpConnectionObserver | undefined
   /** Claude Code channels: a channel server's events go to the chat that last gathered it. */
@@ -44,6 +53,7 @@ function capInstructions(raw: string | undefined): string | undefined {
 /** Connection lifecycle: single-flight connect, startup deadline, health, eviction. */
 export function createConnectionPool(deps: ConnectionPoolDeps): ConnectionPool {
   const { connect, metadata, startupTimeoutMs } = deps
+  const promptListTimeoutMs = deps.promptListTimeoutMs ?? DEFAULT_PROMPT_LIST_TIMEOUT_MS
   const cache = new Map<string, CacheEntry>()
 
   function isAlive(entry: CacheEntry): boolean {
@@ -57,6 +67,8 @@ export function createConnectionPool(deps: ConnectionPoolDeps): ConnectionPool {
   async function evict(entry: CacheEntry): Promise<void> {
     if (cache.get(entry.key) === entry) cache.delete(entry.key)
     entry.broken = true
+    // Its prompts leave the menu with it.
+    if (entry.connection) deps.promptsChanged()?.()
     const connection = entry.connection ?? (await entry.promise.catch(() => undefined))
     await connection?.client.close().catch(() => {})
   }
@@ -85,6 +97,8 @@ export function createConnectionPool(deps: ConnectionPoolDeps): ConnectionPool {
         const previousOnClose = client.onclose
         client.onclose = () => {
           entry.broken = true
+          // A closed connection's prompts are no longer offered (`cachedPrompts` skips it).
+          deps.promptsChanged()?.()
           previousOnClose?.()
         }
         // CC `list_changed`: when the server announces its tool list changed,
@@ -98,13 +112,48 @@ export function createConnectionPool(deps: ConnectionPoolDeps): ConnectionPool {
             })
             .catch(() => {})
         })
+        // A server that announces new prompts is listed again in place, best-effort.
+        client.setNotificationHandler?.(PromptListChangedNotificationSchema, () => {
+          void listPromptDefs(client)
+            .then((prompts) => {
+              if (entry.connection) entry.connection.prompts = prompts
+              deps.promptsChanged()?.()
+            })
+            .catch(() => {})
+        })
         // Before discovery: a channel may push as soon as it is initialized.
         const channel = deps.channels?.listen(server, key, client, logger) ?? false
         const toolDefs = await withDiscoveryRetry(() => listToolDefs(client))
         metadata.reconcile(key, server.name, toolDefs, logger, channel)
         const instructions = capInstructions(client.getInstructions?.())
-        const connection: ClientConnection = { client, toolDefs, instructions }
+        // Prompts are a convenience: a server whose `prompts/list` fails, or never answers, still
+        // serves its tools. An answer that comes after the wait is still applied when it arrives.
+        const listing = listPromptDefs(client).catch(() => [])
+        const late = Symbol('late')
+        let expire = () => {}
+        const timer = new Promise<typeof late>((resolve) => {
+          const id = setTimeout(resolve, promptListTimeoutMs, late)
+          id.unref?.()
+          expire = () => clearTimeout(id)
+        })
+        const listed = await Promise.race([listing, timer])
+        expire()
+        const connection: ClientConnection = {
+          client,
+          toolDefs,
+          prompts: listed === late ? [] : listed,
+          instructions,
+        }
+        if (listed === late) {
+          void listing.then((prompts) => {
+            if (entry.connection !== connection || entry.broken) return
+            connection.prompts = prompts
+            deps.promptsChanged()?.()
+          })
+        }
         entry.connection = connection
+        // The cached set changed whatever it now holds: a reconnect may have none.
+        deps.promptsChanged()?.()
         return connection
       } catch (err) {
         // Crumple-zone release (Release It! — a failure must not leak a resource):

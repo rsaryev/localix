@@ -82,6 +82,7 @@ export function createRunTurnState(init: {
     turnsWithUsage: 0,
     turnsWithActualCost: 0,
     lastTurnContextTokens: undefined,
+    lastTurnUsage: undefined,
     initialContextEstimate: undefined,
     contextEstimateDrift: undefined,
     pendingTools: new Map(),
@@ -190,6 +191,12 @@ export function accumulateTurnUsage(
   // turn cut short, whose counts are estimates.
   if (normalized.inputTokens > 0 && !usage.estimated) {
     state.lastTurnContextTokens = normalized.inputTokens + normalized.outputTokens
+    state.lastTurnUsage = {
+      inputTokens: normalized.inputTokens,
+      outputTokens: normalized.outputTokens,
+      cacheReadTokens: normalized.cacheReadTokens,
+      cacheWriteTokens: normalized.cacheWriteTokens,
+    }
     // Only the FIRST measured turn describes the request the estimate was made for;
     // later turns carry messages the estimate never saw. Set once, never overwritten.
     state.contextEstimateDrift ??= computeContextEstimateDrift(

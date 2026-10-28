@@ -1,10 +1,10 @@
 # Understand Localix
 
 Localix is an open source **ADE** (Agentic Development Environment): a workspace where you and
-agents share conversations, an editor, terminals, previews, databases, and a project board. Assign
-participants their own roles and models, attach visible context, and control agent tool access
-through capability rules. Mini apps, bundled or your own, add workbenches and tools to the same app;
-Claude Code plugins add skills, commands, agents, hooks and servers.
+agents share conversations, an editor, terminals, previews, databases, and a project board. Pick an
+agent with its own role and model, run subagents in parallel, attach visible context, and control
+agent tool access through capability rules. Mini apps, bundled or your own, add workbenches and
+tools to the same app; Claude Code plugins add skills, commands, agents, hooks and servers.
 
 ![Claude Code open in a real terminal beside a Localix demo chat](../assets/screenshots/external-agents/history--2026-10-08.png)
 
@@ -28,8 +28,8 @@ _Demo workspace captured on 8 October 2026. The conversation is seeded._
 | Term                                | Meaning                                                                                                         |
 | ----------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | **Agentic Development Environment** | The Localix category: connected development surfaces, context, model routes, agents, and extensible workbenches |
-| **Session**                         | A stored transcript with project, model selections, participants, and runtime state                             |
-| **Delegated task**                  | A child session that runs one task for an agent, started explicitly with the `delegate` tool                    |
+| **Session**                         | A stored transcript with project, model selection, agent, and runtime state                                     |
+| **Delegated task**                  | A child session that runs one task for an agent, started explicitly with the `Agent` tool                       |
 | **Workbench**                       | A mini-app-contributed product surface and its matching domain capabilities                                     |
 
 ## How it works
@@ -44,8 +44,8 @@ each turn's tool surface from the answering agent's capability rules, enabled mi
 skills, and other configured extensions.
 
 The bundled Kanban mini app keeps one board per chat with its tasks, dependencies, and results. It
-never starts work. An agent explicitly takes a task and may explicitly `delegate` it when a child
-session is useful.
+never starts work. An agent explicitly takes a task and may explicitly hand it to a subagent
+(`Agent`) when a child session is useful.
 
 Mini app and plugin discovery follows the current project. The shared UI catalog uses the default
 assistant's policy; each agent run uses its own policy. Opening a mini app view does not give every
@@ -72,7 +72,7 @@ agent permission to call its tools.
 - A Kanban card does not create a workspace or execution context. Any explicit delegation uses the
   owning session hierarchy and workspace.
 - Nothing checks a completed Kanban task automatically. The acting agent records the result with
-  `complete`; invite QA into the conversation when a change needs an independent look.
+  `complete`; start a QA subagent when a change needs an independent look.
 - Visual Feedback requires a supported Localix preview with a connected or injectable probe. Source
   locations depend on available mapping; arbitrary browser tabs and desktop windows are not capture
   targets.

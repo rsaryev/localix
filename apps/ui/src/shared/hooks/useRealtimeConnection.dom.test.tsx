@@ -1,5 +1,6 @@
 import { afterAll, afterEach, beforeAll, beforeEach, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
+import { turns } from '@/testing/settle'
 
 // Deliberately NO `mock.module('@/shared/lib/desktop')`. bun's module mocks are
 // process-global, so mocking it here silently broke desktop.test.ts in the same
@@ -125,10 +126,10 @@ test('a brief drop never reaches the UI', async () => {
   // grace window. Reporting it would flicker an indicator for a healthy app.
   await act(async () => {
     socket.close()
-    await new Promise((resolve) => setTimeout(resolve, 30))
+    await turns(3)
   })
   expect(host.textContent).toBe('live')
-  expect(RECONNECTING_GRACE_MS).toBeGreaterThan(30)
+  expect(RECONNECTING_GRACE_MS).toBeGreaterThan(0)
 
   await act(async () => root.unmount())
   host.remove()

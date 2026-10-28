@@ -49,6 +49,7 @@ export function EnginePicker({
             value={search}
             onValueChange={setSearch}
             placeholder="Search databases…"
+            // oxlint-disable-next-line jsx-a11y/no-autofocus -- SearchInput's own prop: it focuses the field by hand on mount, no DOM autofocus attribute is set
             autoFocus
             className="w-full"
           />
@@ -134,9 +135,9 @@ export function EnginePicker({
 
   return (
     <div className="mb-2.5">
-      <label id="database-engine-label" className="mb-1 block text-2xs text-text-soft">
+      <span id="database-engine-label" className="mb-1 block text-2xs text-text-soft">
         Database
-      </label>
+      </span>
       <div className="flex min-w-0 items-center gap-1.5">
         <span
           className={cn(

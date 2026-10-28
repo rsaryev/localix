@@ -1,9 +1,10 @@
 /** CodeEditor integration for the SQL console: the ready-API ref, the ephemeral AI
  *  next-edit hunks, and the mount-only editor extensions (statement highlight,
- *  ⌘/Ctrl-click table links, column tint) fed through live refs. */
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+ *  ⌘/Ctrl-click table links, column tint) fed through latest boxes. */
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { EditorSuggestion } from '@localixai/kit/code-editor'
 import type { DbDialect } from '../../../shared/driver-catalog'
+import { useLatest } from '@localixai/mini-app-sdk/ui/runtime-hooks'
 import type { SqlCatalog } from '../../model/sql-diagnostics/catalog'
 import type { SqlRunFailure } from '../../model/sql-diagnostics/run-error'
 import {
@@ -51,6 +52,9 @@ export function useEditorIntegration(opts: {
   } = opts
   const [problems, setProblems] = useState<SqlProblemSummary>(NO_PROBLEMS)
   const editorApiRef = useRef<EditorApi | null>(null)
+  const onEditorReady = (api: EditorApi) => {
+    editorApiRef.current = api
+  }
   // Ephemeral AI edit-prediction hunks for the query buffer — rendered through the
   // SAME inline mini-diff decoration as review suggestions, one per hunk. Apply
   // routes THAT hunk to the editor's acceptNextEdit (Tab cascades the same way);
@@ -68,35 +72,24 @@ export function useEditorIntegration(opts: {
       return rest.length > 0 ? rest : null
     })
   }
-  // Live refs so the mount-only editor extensions read the current table set +
-  // handler at interaction time (after commit). Assigned in a layout effect —
-  // never during render.
-  const tableNamesRef = useRef(tableNames)
-  const onOpenTableRef = useRef(onOpenTable)
-  const columnNamesRef = useRef(columnNames)
-  const catalogRef = useRef(catalog)
-  const dialectRef = useRef(dialect)
-  const onWantColumnsRef = useRef(onWantColumns)
-  const runFailureRef = useRef(runFailure)
-  const engineCheckRef = useRef(engineCheck)
-  useLayoutEffect(() => {
-    engineCheckRef.current = engineCheck
-    runFailureRef.current = runFailure
-    tableNamesRef.current = tableNames
-    onOpenTableRef.current = onOpenTable
-    columnNamesRef.current = columnNames
-    catalogRef.current = catalog
-    dialectRef.current = dialect
-    onWantColumnsRef.current = onWantColumns
-  })
+  // Latest boxes so the mount-only editor extensions read the current table set + handler at
+  // interaction time (after commit). Each box is updated in a layout effect, never during render.
+  const tableNamesLatest = useLatest(tableNames)
+  const onOpenTableLatest = useLatest(onOpenTable)
+  const columnNamesLatest = useLatest(columnNames)
+  const catalogLatest = useLatest(catalog)
+  const dialectLatest = useLatest(dialect)
+  const onWantColumnsLatest = useLatest(onWantColumns)
+  const runFailureLatest = useLatest(runFailure)
+  const engineCheckLatest = useLatest(engineCheck)
   const diagnostics = useMemo(
     () =>
       createSqlDiagnostics({
-        getCatalog: () => catalogRef.current ?? null,
-        getDialect: () => dialectRef.current,
-        onWantColumns: (tables) => onWantColumnsRef.current?.(tables),
-        getRunFailure: () => runFailureRef.current ?? null,
-        getEngineCheck: () => engineCheckRef.current ?? null,
+        getCatalog: () => catalogLatest.current ?? null,
+        getDialect: () => dialectLatest.current,
+        onWantColumns: (tables) => onWantColumnsLatest.current?.(tables),
+        getRunFailure: () => runFailureLatest.current ?? null,
+        getEngineCheck: () => engineCheckLatest.current ?? null,
         // Summaries repeat on every keystroke; keep the old object when nothing changed, so
         // the run bar does not re-render per key.
         onProblems: (next) =>
@@ -110,29 +103,29 @@ export function useEditorIntegration(opts: {
               : next,
           ),
       }),
-    [],
+    [catalogLatest, dialectLatest, onWantColumnsLatest, runFailureLatest, engineCheckLatest],
   )
   // A new catalog is the schema moving (a table's columns arrived, a reload), a new failure is a
   // run finishing, a new engine check is a connection switch: either way, re-draw.
   useEffect(() => diagnostics.refresh(), [catalog, dialect, runFailure, engineCheck, diagnostics])
   // Editor extensions — stable across renders so the mount-only CodeEditor slot never churns:
-  // the active-statement highlight + ⌘/Ctrl-click table links (read live via refs;
-  // the remaining react-hooks/refs hint here is a false positive — these closures
-  // only run on editor interaction, never during render).
+  // the active-statement highlight + ⌘/Ctrl-click table links (read live through the latest
+  // boxes: these closures only run on editor interaction, never during render).
   const editorExtensions = useMemo(
     () => [
       sqlStatementHighlight(),
       sqlTableLinks(
-        () => tableNamesRef.current ?? EMPTY_TABLE_SET,
-        (t) => onOpenTableRef.current?.(t),
+        () => tableNamesLatest.current ?? EMPTY_TABLE_SET,
+        (t) => onOpenTableLatest.current?.(t),
       ),
-      sqlColumnHighlight(() => columnNamesRef.current ?? EMPTY_TABLE_SET),
+      sqlColumnHighlight(() => columnNamesLatest.current ?? EMPTY_TABLE_SET),
       diagnostics.extension,
     ],
-    [diagnostics],
+    [diagnostics, tableNamesLatest, onOpenTableLatest, columnNamesLatest],
   )
   return {
     editorApiRef,
+    onEditorReady,
     nextEdits,
     setNextEdits,
     onApplyNextEdit,

@@ -25,6 +25,7 @@ export const CONTEXT_DESTINATIONS = [
   'inline-completion',
   'title-generation',
   'subagent',
+  'recommendation',
 ] as const satisfies readonly ContextDestination[]
 
 /** Hard ceilings for a mini-app-declared automatic/explicit contribution. A single

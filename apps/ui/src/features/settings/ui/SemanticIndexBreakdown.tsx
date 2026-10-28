@@ -13,7 +13,7 @@ function buildPercent(collection: Collection): number | null {
 }
 
 /**
- * The index by category, as the chat's usage card breaks a session down by participant: one row
+ * The index by category, as a table: one row
  * per collection — what its source calls it, how many items it holds — and a bar. At rest the bar
  * is the category's share of the index; while it builds, how far the build has come. The list is
  * the status's own, so a plugin's collection appears with it, named by its source.

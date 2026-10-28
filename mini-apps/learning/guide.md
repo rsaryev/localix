@@ -4,9 +4,9 @@ Call `learning_course` with `action: "guide"` for the exact format and quality c
 also works without reading this guide first.
 
 Use the learner’s stated goal, experience, language, time and preferred depth. Ask for missing
-preferences together with the host’s `ask` tool when they materially affect the route. Do not ask
-again for information already supplied. Never ask whether to generate everything or progressively:
-courses always prepare one complete module at a time.
+preferences together with the host’s `AskUserQuestion` tool when they materially affect the route.
+Do not ask again for information already supplied. Never ask whether to generate everything or
+progressively: courses always prepare one complete module at a time.
 
 Write a compact outline JSON file, then call `draft` with `outline_path` to generate the complete
 pending hierarchy in one call. Author every lesson in the first module with ordinary file tools;
@@ -25,7 +25,7 @@ unrelated material, then validate and activate the same course. Read learner att
 reviews before choosing difficulty. Preparing material does not complete a lesson for the learner.
 
 For bundle structure, examples, and the detailed quality checklist, read
-[Course bundle](guide/course-bundle.md) (mini_app_guide page "course-bundle") before writing
+[Course bundle](guide/course-bundle.md) (MiniAppGuide page "course-bundle") before writing
 manifests.
 
 ## Review learner practice

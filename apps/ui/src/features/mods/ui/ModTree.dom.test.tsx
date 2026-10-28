@@ -51,14 +51,17 @@ test('a mod’s drawing renders with kit controls and sends what the person does
 
   const field = host.querySelector('input')!
   await act(async () => {
-    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
-    setter.call(field, 'milk')
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(field, 'milk')
     field.dispatchEvent(new Event('input', { bubbles: true }))
   })
   await act(async () => {
     field.form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
   })
-  expect(actions.at(-1)).toEqual({ kind: 'submit', element: 'note', value: 'milk' })
+  // Typing raises `ui.input` of kind `change` as it goes; Enter raises `submit`.
+  expect(actions.slice(1)).toEqual([
+    { kind: 'change', element: 'note', value: 'milk' },
+    { kind: 'submit', element: 'note', value: 'milk' },
+  ])
 
   await act(async () => root.unmount())
   host.remove()

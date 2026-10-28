@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react'
 import { useCanvasCamera } from '@localixai/kit/canvas'
 import { subjectOf } from '../../shared/camera-target'
 import type { SpaceDocument, SpaceElement } from '../../shared/format/document'
@@ -43,8 +43,8 @@ export function useFollowFocus(
       return `${id}:${box.x},${box.y},${box.w},${box.h}`
     })
     .join('|')
-  const current = useRef({ ids, boxes, space, director, still })
-  current.current = { ids, boxes, space, director, still }
+  // The effect answers a change of the key, but reads everything else as it is by then.
+  const latest = useEffectEvent(() => ({ ids, boxes, space, director, still }))
   const intent = useRef(false)
   // A click on the element that already has the focus changes no selection, and must still go
   // there: the intent itself is a change the effect answers.
@@ -58,13 +58,7 @@ export function useFollowFocus(
     const deliberate = intent.current
     intent.current = false
     const go = () => {
-      const {
-        ids: focused,
-        boxes: focus,
-        space: board,
-        director: guide,
-        still: now,
-      } = current.current
+      const { ids: focused, boxes: focus, space: board, director: guide, still: now } = latest()
       if (!key || now.busy || now.editing || focus.length === 0) return
       const size = guide.size()
       if (!size) return

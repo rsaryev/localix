@@ -1,4 +1,4 @@
-import { SYSTEM_PARTICIPANT } from '../../../db'
+import { SYSTEM_AUTHOR } from '../../../db'
 import { randomUUID } from 'node:crypto'
 
 import type { StoredCommandOutput, StoredMessagePayload, StoredSystemNotice } from '../../../db'
@@ -53,7 +53,7 @@ export function createSyntheticMessages(deps: SyntheticMessageDeps) {
     const asstPayload: StoredMessagePayload = {
       id: randomUUID(),
       role: 'assistant',
-      from: SYSTEM_PARTICIPANT,
+      from: SYSTEM_AUTHOR,
       content: replyText,
       ...(commandOutput ? { uiOnly: true, commandOutput } : {}),
     }

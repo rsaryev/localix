@@ -147,7 +147,7 @@ export function PreviewTab({
   }, [vf, injectUrl, engaged, engage])
   const feedback = { on: vf.mode === 'comment', available: vfAvailable, onToggle: onToggleComment }
 
-  // The agent's `browser` tool commands, answered by this tab's probe.
+  // The agent's `Browser` tool commands, answered by this tab's probe.
   usePreviewCommandRelay({
     enabled: backgroundHost || active,
     sessionId,

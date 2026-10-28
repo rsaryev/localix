@@ -115,7 +115,7 @@ export interface HistoryRun {
    */
   requestPolicy(init: {
     initialEstimate: ContextEstimate
-    /** Is the recovery tool (`tool_output`) in this run's registry? */
+    /** Is the recovery tool (`ToolOutput`) in this run's registry? */
     recoveryToolAvailable: boolean
   }): RuntimeContextPolicy
 }

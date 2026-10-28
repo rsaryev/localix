@@ -7,7 +7,7 @@ import {
 import { shotsBy, viewFor, type AgentWait, type Game } from '../shared/game'
 import { suggestedCells, targetGrid } from '../shared/describe'
 import { FLEET, SIZE, cellAt, cellName, colOf, knownCells, rowOf, shipAt } from '../shared/rules'
-import type { Seat } from './ask-agent'
+import type { ChatRef } from './ask-agent'
 
 /**
  * HOW THE BOARD ASKS THE DECISION MODEL FOR ITS SHOT — when the table's opponent is `decision`.
@@ -93,13 +93,13 @@ export function shotAsk(game: Game): DecisionAsk {
 /** The decision model's shot: the cell (0–99), or the wait that says why there is none. */
 export async function askDecision(
   decisions: DecisionHost | undefined,
-  seat: Seat,
+  chat: ChatRef,
   game: Game,
   now: string,
 ): Promise<{ cell: number } | { waiting: AgentWait }> {
   const ask = shotAsk(game)
   const turn = { ask, question: 'shot', purpose: DECISION_PURPOSE }
-  const answered = await askDecisionForTurn(decisions, seat, turn, now)
+  const answered = await askDecisionForTurn(decisions, chat, turn, now)
   if (!('answer' in answered)) return answered
   const cell = cellAt(answered.answer.choice)
   return cell === null

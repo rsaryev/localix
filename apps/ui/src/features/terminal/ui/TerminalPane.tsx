@@ -20,8 +20,8 @@ import { TerminalConnectionState, TerminalStickyCommand } from './TerminalPaneSt
 import type { PastePrompt } from './terminalInput'
 import { useTerminalConnection } from './useTerminalConnection'
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@localixai/kit/context-menu'
-import { MenuEntries } from '@localixai/kit/menu-entries'
 import { terminalContextMenu } from './terminalContextMenu'
+import { TerminalContextMenuEntries } from './TerminalContextMenuEntries'
 import {
   DROP_TARGET_HINT,
   DROP_TARGET_OVERLAY_ACTIVE,
@@ -194,7 +194,7 @@ export function TerminalPane({
               termRef.current?.focus()
             }}
           >
-            <MenuEntries entries={buildTerminalMenu()} family="context" />
+            <TerminalContextMenuEntries build={buildTerminalMenu} />
           </ContextMenuContent>
         </ContextMenu>
         {pathDrop.active && (

@@ -11,7 +11,7 @@ export const MODEL_TRIM_KEEP_RECENT_TOKENS = 16384
 
 // The kept-tail window scales MILDLY + BOUNDED with the model context window.
 // A flat 16k tail on a 128k/1M model elides the older reads of a 3–5 file working set
-// despite ample headroom, forcing tool_output round-trips. So we scale by a small
+// despite ample headroom, forcing ToolOutput round-trips. So we scale by a small
 // FRACTION of the window, FLOORED at 16384 (small windows keep today's tail) and CAPPED
 // at 65536, because the tail must stay bounded even on a 1M window. See
 // resolveKeepRecentTokens.

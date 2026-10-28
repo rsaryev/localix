@@ -2,8 +2,8 @@
  * THE READS EVERY ATTENTION CHANNEL SHARES — so the dialog, the sidebar and the dock cannot rank
  * or count the same roster differently.
  *
- * Each channel used to filter and sort its own inbox, and they drifted: the dock counted mentions
- * the sidebar never showed, and the mention dialog had to read the HITL inbox to know whether to
+ * Each channel used to filter and sort its own inbox, and they drifted: the dock counted plans
+ * the sidebar never showed, and the plan dialog had to read the HITL inbox to know whether to
  * stay out of the way. Here the order is defined once (`compareAttention`: policy priority, then
  * newest first) and each channel asks one question of it:
  *

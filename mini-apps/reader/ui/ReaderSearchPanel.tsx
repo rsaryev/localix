@@ -124,14 +124,16 @@ export function ReaderSearchPanel({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<{ message: string; detail?: string } | null>(null)
   const minimum = options.mode === 'regex' ? 1 : 2
+  // A query too short to search for shows nothing, in the render that made it so.
+  const tooShort = query.trim().length < minimum
+  if (tooShort && (result || error || loading)) {
+    setResult(null)
+    setError(null)
+    setLoading(false)
+  }
   useEffect(() => {
     const value = query.trim()
-    if (value.length < minimum) {
-      setResult(null)
-      setError(null)
-      setLoading(false)
-      return
-    }
+    if (tooShort) return
     const controller = new AbortController()
     const timer = window.setTimeout(() => {
       setLoading(true)
@@ -165,7 +167,7 @@ export function ReaderSearchPanel({
       window.clearTimeout(timer)
       controller.abort()
     }
-  }, [currentChapter, minimum, options, query, source])
+  }, [currentChapter, tooShort, options, query, source])
 
   // Owned here, above the branch that draws it: the branch is gone the moment a search works.
   const searchProblem = useReaderProblem(
@@ -198,6 +200,7 @@ export function ReaderSearchPanel({
             onValueChange={setQuery}
             placeholder="Search this book"
             aria-label="Search inside book"
+            // oxlint-disable-next-line jsx-a11y/no-autofocus -- the Search tab is opened in order to type into it; the kit field takes the focus itself and offers no ref to do it from here
             autoFocus
             className="min-w-0 flex-1"
           />

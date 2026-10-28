@@ -36,7 +36,7 @@ interface SettingsPanelProps {
   defaultScope?: string
 }
 
-/** Settings adapts to its pane: grouped navigation when wide, a section picker when narrow. */
+/** Settings adapts to its pane: grouped navigation when wide, search over a tab strip when narrow. */
 export function SettingsPanel({
   activeTab: activeTabProp,
   onTabChange: onTabChangeProp,
@@ -79,7 +79,7 @@ export function SettingsPanel({
 
   const onProjectTab = isProjectTab(activeTab)
   const activeProjId = onProjectTab ? activeTab.id : defaultScope || projects[0]?.id || null
-  // The primary tab bar tracks string tabs; a project view maps to the 'project' tab.
+  // The section navigation tracks string tabs; a project view maps to the 'project' tab.
   const primaryActive = primarySettingsSection(activeTab)
 
   const addProject = async () => {

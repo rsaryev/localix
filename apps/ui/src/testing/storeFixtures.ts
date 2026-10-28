@@ -16,6 +16,7 @@ import {
   type Scope,
   type ShelfPlan,
   type SourceView,
+  type StoreProblem,
   type ActionResult,
 } from '@localixai/store'
 import { makeListing } from '@localixai/store/testing'
@@ -109,12 +110,18 @@ export function installExtra(
 
 export interface StoreFake {
   listings: Listing[]
-  problems?: string[]
+  problems?: StoreProblem[]
   sources?: SourceView[]
   previewFails?: string
   /** Kinds whose preview reads the address; the others refuse it. */
   understood?: string[]
   discover?: Partial<DiscoverResponse>
+  /** What a recommendation answers, by listing id. */
+  recommended?: string[]
+  /** The background has not worked the recommendations out yet. */
+  recommendPending?: boolean
+  /** Each recommendation asked, as its references' labels and the chat: `Dockerfile in s1`. */
+  recommendAsked?: string[]
   /** The settings of an install, by listing id and scope. */
   configs?: Record<string, Partial<Record<Scope, ListingConfig>>>
   /** The kinds that can make an item, with the form of each. */

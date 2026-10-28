@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 
 import { backendClient } from '@/shared/api/client'
 import { eventSocket } from '@/shared/api/eventSocket'
@@ -27,7 +27,9 @@ export function useTerminalLiveness(
   // The request a response belongs to: a late answer for another session or focus is dropped,
   // and one already in flight is not sent again (StrictMode runs the effect twice).
   const keyRef = useRef('')
-  keyRef.current = `${sessionId ?? ''}:${isFocused}`
+  useLayoutEffect(() => {
+    keyRef.current = `${sessionId ?? ''}:${isFocused}`
+  }, [sessionId, isFocused])
   const inFlightRef = useRef<string | null>(null)
 
   useEffect(() => {

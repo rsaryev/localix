@@ -2,6 +2,25 @@ import { useMemo } from 'react'
 import { databaseApi } from '../../api/databaseApi'
 import { engineProblemRanges, type EngineProblemRange } from './engine-check'
 
+function createEngineCheck(connectionId: string): (sql: string) => Promise<EngineProblemRange[]> {
+  let inflight: AbortController | null = null
+  return async (sql: string) => {
+    inflight?.abort()
+    const controller = new AbortController()
+    inflight = controller
+    try {
+      return engineProblemRanges(
+        sql,
+        await databaseApi.validate(connectionId, sql, controller.signal),
+      )
+    } catch {
+      return []
+    } finally {
+      if (inflight === controller) inflight = null
+    }
+  }
+}
+
 /**
  * The connection's compile-only check as one stable function per connection, for the editors'
  * diagnostics. A newer check aborts the older request: while the user types, only the answer for
@@ -11,23 +30,5 @@ import { engineProblemRanges, type EngineProblemRange } from './engine-check'
 export function useEngineCheck(
   connectionId: string | undefined,
 ): ((sql: string) => Promise<EngineProblemRange[]>) | null {
-  return useMemo(() => {
-    if (!connectionId) return null
-    let inflight: AbortController | null = null
-    return async (sql: string) => {
-      inflight?.abort()
-      const controller = new AbortController()
-      inflight = controller
-      try {
-        return engineProblemRanges(
-          sql,
-          await databaseApi.validate(connectionId, sql, controller.signal),
-        )
-      } catch {
-        return []
-      } finally {
-        if (inflight === controller) inflight = null
-      }
-    }
-  }, [connectionId])
+  return useMemo(() => (connectionId ? createEngineCheck(connectionId) : null), [connectionId])
 }

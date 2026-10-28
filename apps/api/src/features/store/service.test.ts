@@ -83,13 +83,60 @@ describe('the Store', () => {
     expect(pokes()).toBe(before)
   })
 
-  test('a provider that cannot list is a problem; the others still answer', async () => {
+  test('a provider that cannot list is a problem of its kind; the others still answer', async () => {
     const broken = fakeProvider('plugin', [], { fails: 'marketplace unreachable' })
     const apps = fakeProvider('mini-app', [chess])
     const { store } = storeOf([apps.provider, broken.provider])
-    const page = await store.listings(actor, {})
-    expect(ids(page)).toEqual(['chess'])
-    expect(page.problems).toEqual(['marketplace unreachable'])
+    expect(ids(await store.listings(actor, {}))).toEqual(['chess'])
+    expect((await store.listings(actor, { shelf: 'package:plugin' })).problems).toEqual([
+      { kind: 'plugin', message: 'marketplace unreachable' },
+    ])
+  })
+
+  // A plugin marketplace that could not be read was once said above the mini apps too.
+  test('a source that could not be read is said only on the shelves that list its kind', async () => {
+    const plugins = fakeProvider('plugin', [review], {
+      problems: ['The plugin marketplace "llx" could not be read'],
+    })
+    const apps = fakeProvider('mini-app', [chess])
+    const { store } = storeOf([apps.provider, plugins.provider])
+    const problems = async (query: Parameters<typeof store.listings>[1]) =>
+      (await store.listings(actor, query)).problems.map((problem) => problem.kind)
+    expect(await problems({ shelf: 'package:plugin' })).toEqual(['plugin'])
+    // A plugin gives skills, agents and MCP servers: their shelves miss what it would have given.
+    expect(await problems({ shelf: 'capability:skill' })).toEqual(['plugin'])
+    expect(await problems({ shelf: 'package:mini-app' })).toEqual([])
+    expect(await problems({ shelf: 'installed' })).toEqual([])
+    expect(await problems({})).toEqual([])
+    expect(await problems({ q: 'review' })).toEqual([])
+  })
+
+  test('a source removed once it could not be read leaves the lists: they hear it and say nothing', async () => {
+    const plugins = fakeProvider('plugin', [review], {
+      problems: ['The plugin marketplace "llx" could not be read'],
+    })
+    const { store } = storeOf([plugins.provider])
+    let pokes = 0
+    store.subscribe(() => pokes++)
+    expect((await store.listings(actor, { shelf: 'package:plugin' })).problems).toHaveLength(1)
+    await store.settled()
+    const before = pokes
+    // Its listings are the same — an unread source had none — only what could not be read moved.
+    plugins.change([review], [])
+    await store.settled()
+    expect(pokes).toBeGreaterThan(before)
+    expect((await store.listings(actor, { shelf: 'package:plugin' })).problems).toEqual([])
+  })
+
+  test('a mini app source that could not be read is said where mini apps give something', async () => {
+    const apps = fakeProvider('mini-app', [chess], { problems: ['The catalog answered 503'] })
+    const { store } = storeOf([apps.provider])
+    const problems = async (shelf: string) =>
+      (await store.listings(actor, { shelf } as never)).problems.map((problem) => problem.kind)
+    expect(await problems('package:mini-app')).toEqual(['mini-app'])
+    expect(await problems('capability:command')).toEqual(['mini-app'])
+    expect(await problems('capability:skill')).toEqual([])
+    expect(await problems('package:plugin')).toEqual([])
   })
 
   test('a page comes with facets over every listing', async () => {

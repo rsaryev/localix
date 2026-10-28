@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type RefObject } from 'react'
+import { useEffect, useEffectEvent, useState, useSyncExternalStore, type RefObject } from 'react'
 import { useCanvasCamera } from '@localixai/kit/canvas'
 import { visibleRect } from '../../shared/camera'
 import { subjectOf } from '../../shared/camera-target'
@@ -26,6 +26,28 @@ export interface Follow {
   showUnseen: () => void
 }
 
+/**
+ * The ids changed off screen that the person has not looked at. What the camera sees when a change
+ * arrives is an outside fact, so the list is a small store the effect writes to, not a state it sets.
+ */
+function createUnseen() {
+  let ids: string[] = []
+  const listeners = new Set<() => void>()
+  const publish = (next: string[]) => {
+    ids = next
+    for (const listener of listeners) listener()
+  }
+  return {
+    subscribe: (listener: () => void) => {
+      listeners.add(listener)
+      return () => void listeners.delete(listener)
+    },
+    get: () => ids,
+    add: (more: readonly string[]) => publish([...new Set([...ids, ...more])]),
+    clear: () => publish([]),
+  }
+}
+
 export function useFollow(
   remote: RemoteChange | null,
   space: SpaceDocument,
@@ -34,9 +56,9 @@ export function useFollow(
 ): Follow {
   const camera = useCanvasCamera()
   const [following, setFollowing] = useState(false)
-  const [unseen, setUnseen] = useState<string[]>([])
-  const board = useRef({ space, director, following })
-  board.current = { space, director, following }
+  const [offscreen] = useState(createUnseen)
+  const unseen = useSyncExternalStore(offscreen.subscribe, offscreen.get)
+  const latest = useEffectEvent(() => ({ space, director, following }))
 
   // The person's own hand on the camera ends following — the wheel, a pinch, or a press on the
   // board (a pan with Space or the hand, a drag, the minimap) — as it ends a flight. Not a press on
@@ -59,7 +81,7 @@ export function useFollow(
 
   useEffect(() => {
     if (!remote) return
-    const { space: now, director: guide, following: on } = board.current
+    const { space: now, director: guide, following: on } = latest()
     // What the person just added from a chat is focused by `useAddedFocus`, not shown twice.
     const ids = remote.ids.filter((id) => now.elements[id] && !isAddedFocus(id))
     const size = guide.size()
@@ -70,12 +92,12 @@ export function useFollow(
       void guide.frame(rect, subjectOf(now, ids), { spotlight: ids })
       return
     }
-    setUnseen((current) => [...new Set([...current, ...ids])])
-  }, [camera, remote])
+    offscreen.add(ids)
+  }, [camera, remote, offscreen])
 
   const showUnseen = () => {
     const ids = unseen.filter((id) => space.elements[id])
-    setUnseen([])
+    offscreen.clear()
     if (ids.length === 0) return
     const rect = boundsOfBoxes(ids.map((id) => space.elements[id] as SpaceElement))
     void director.frame(rect, subjectOf(space, ids), { spotlight: ids })

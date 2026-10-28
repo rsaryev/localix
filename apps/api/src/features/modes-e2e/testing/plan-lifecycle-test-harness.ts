@@ -7,7 +7,7 @@
  * the mode hook fires, the journal row the attention item mirrors — were never run together.
  * Here each seam is the production function: `updateSession` (with its mode notice and the mode
  * hook), `recordSessionNotice`, `startAgentNotifications` (attention registry + journal mirror).
- * Only what needs a model is a recorder: the wake, and the participant handle lookup.
+ * Only what needs a model is a recorder: the wake, and the agent handle lookup.
  *
  * Every observable step lands in ONE ordered log (`events`), so a test can assert not just that
  * a mode line and a wake happened but that the mode moved before the turn it opens.
@@ -30,13 +30,12 @@ import { startAgentNotifications } from '../../notifications/producers'
 import type { InboxEntry } from '../../notifications/contracts'
 import { createPlanRepository } from '../../plans/repository'
 import { createPlanService } from '../../plans/service'
-import { resolveTurnRecipients } from '../../chat/runtime/conversation-dispatch'
+import { turnRecipient } from '../../chat/runtime/conversation-strategy'
 import { createPendingTurn } from '../../chat/runtime/wake-queue/entry'
 import { routeEvent } from '../../chat/runtime/wake-queue/kinds'
-import { noLeadership } from '../../chat/runtime/conversation-strategy'
 import { createMemoryWorkRepository } from '../../work/testing/memory-repository'
 import { createWorkRegistry } from '../../work/registry'
-import { routedParticipants } from '../../../testing/session-fixture'
+import { routedAgent } from '../../../testing/session-fixture'
 import { createMemoryPlanFiles, withStoredVersions } from '../../../testing/plan-files-fixture'
 
 export const USER = 'user-1'
@@ -60,9 +59,8 @@ function sessionRow(id: string, overrides: Partial<SessionRecord> = {}): Session
     parentSessionId: null,
     rootSessionId: id,
     sessionKind: 'chat',
-    agents: routedParticipants(),
+    agent: routedAgent(),
     description: null,
-    avatar: null,
     runtimeStatus: 'idle',
     sourceToolCallId: null,
     provenance: { kind: 'root' },
@@ -73,23 +71,12 @@ function sessionRow(id: string, overrides: Partial<SessionRecord> = {}): Session
   }
 }
 
-/** The root's participants by handle (agent id `agent-<handle>`); one agent unless given. */
-export async function createPlanLifecycle(handles?: readonly string[]) {
+/** A root conversation with its one agent, and a subagent child under it. */
+export async function createPlanLifecycle() {
   const db = createDatabase()
   await migrateToLatest(db)
   const chat = createChatRepository(db)
-  await chat.insertSession(
-    sessionRow(
-      ROOT,
-      handles
-        ? {
-            agents: handles.map(
-              (handle) => routedParticipants({ agentId: `agent-${handle}`, handle })[0],
-            ),
-          }
-        : {},
-    ),
-  )
+  await chat.insertSession(sessionRow(ROOT))
   await chat.insertSession(
     sessionRow(CHILD, {
       seq: 2,
@@ -163,12 +150,10 @@ export async function createPlanLifecycle(handles?: readonly string[]) {
       wakes.push(request)
       return { status: 'delivered' }
     },
-    participants: async ({ userId, sessionId }) =>
-      (await requireSession(userId, sessionId)).agents.map((member) => member.handle),
     lifecycle: {
       notice: ({ userId, sessionId }, notice) =>
         recordSessionNotice(sessions, userId, sessionId, notice),
-      authorHandle: async () => 'lead',
+      authorName: async () => 'lead',
       awaiting: ({ userId }, plan, handle) => signals.plans.awaiting(userId, plan, handle),
       settled: ({ userId, sessionId }, planId, reason) =>
         signals.plans.settled(userId, sessionId, planId, reason),
@@ -218,20 +203,14 @@ export async function createPlanLifecycle(handles?: readonly string[]) {
     session: (id: string) => requireSession(USER, id),
     /**
      * The handles a recorded wake reaches, routed as the drain routes it: the queue's own rule for
-     * its kind (`wake-queue/kinds.ts`) through the conversation's strategy, over the transcript.
+     * its kind (`wake-queue/kinds.ts`) through the conversation's strategy.
      */
     addressees: async (request: WakeRequest): Promise<string[]> => {
       const session = await requireSession(USER, request.sessionId)
       const turn = createPendingTurn({ ...request, session }, '')
-      const recipients = await resolveTurnRecipients(
-        session,
-        await chat.listMessages(USER, request.sessionId),
-        routeEvent(turn, request.content, request.to?.participant),
-        noLeadership,
-      )
-      return recipients.map(
-        ({ agentId }) => session.agents.find((member) => member.agentId === agentId)!.handle,
-      )
+      const recipient = turnRecipient(session, routeEvent(turn, request.content))
+      if (!recipient) return []
+      return session.agent ? [session.agent.name] : []
     },
     /** Everything the root conversation says, as stored — notice kinds in order. */
     noticeKinds: async () =>

@@ -20,13 +20,13 @@ describe('normalizeToolCallHistory', () => {
         {
           type: 'tool_call',
           id: 'completed',
-          name: 'read',
+          name: 'Read',
           arguments: { path: 'a.txt' },
         },
         {
           type: 'tool_call',
           id: 'interrupted',
-          name: 'write',
+          name: 'Write',
           arguments: { path: 'b.txt' },
         },
       ]),
@@ -36,7 +36,7 @@ describe('normalizeToolCallHistory', () => {
           {
             type: 'tool_result',
             toolCallId: 'completed',
-            toolName: 'read',
+            toolName: 'Read',
             content: 'contents',
           },
         ],
@@ -56,7 +56,7 @@ describe('normalizeToolCallHistory', () => {
           {
             type: 'tool_result',
             toolCallId: 'interrupted',
-            toolName: 'write',
+            toolName: 'Write',
             content: 'aborted',
             isError: true,
           },
@@ -71,26 +71,26 @@ describe('normalizeToolCallHistory', () => {
 
   test('removes orphan results without reordering valid results or surrounding messages', () => {
     const messages: AgentMessage[] = [
-      assistant([{ type: 'tool_call', id: 'valid', name: 'read', arguments: {} }]),
+      assistant([{ type: 'tool_call', id: 'valid', name: 'Read', arguments: {} }]),
       {
         role: 'tool',
         results: [
           {
             type: 'tool_result',
             toolCallId: 'orphan-before',
-            toolName: 'bash',
+            toolName: 'Bash',
             content: 'stale',
           },
           {
             type: 'tool_result',
             toolCallId: 'valid',
-            toolName: 'read',
+            toolName: 'Read',
             content: 'kept',
           },
           {
             type: 'tool_result',
             toolCallId: 'orphan-after',
-            toolName: 'write',
+            toolName: 'Write',
             content: 'stale',
           },
         ],
@@ -102,7 +102,7 @@ describe('normalizeToolCallHistory', () => {
           {
             type: 'tool_result',
             toolCallId: 'only-orphan',
-            toolName: 'read',
+            toolName: 'Read',
             content: 'drop the message',
           },
         ],
@@ -119,7 +119,7 @@ describe('normalizeToolCallHistory', () => {
           {
             type: 'tool_result',
             toolCallId: 'valid',
-            toolName: 'read',
+            toolName: 'Read',
             content: 'kept',
           },
         ],
@@ -132,14 +132,14 @@ describe('normalizeToolCallHistory', () => {
 
   test('leaves an already paired history structurally unchanged', () => {
     const messages: AgentMessage[] = [
-      assistant([{ type: 'tool_call', id: 'call-1', name: 'read', arguments: {} }]),
+      assistant([{ type: 'tool_call', id: 'call-1', name: 'Read', arguments: {} }]),
       {
         role: 'tool',
         results: [
           {
             type: 'tool_result',
             toolCallId: 'call-1',
-            toolName: 'read',
+            toolName: 'Read',
             content: 'ok',
           },
         ],
@@ -155,7 +155,7 @@ describe('normalizeToolCallHistory', () => {
 
   test('repairs a result tool name from its originating call id', () => {
     const messages: AgentMessage[] = [
-      assistant([{ type: 'tool_call', id: 'call-1', name: 'read', arguments: {} }]),
+      assistant([{ type: 'tool_call', id: 'call-1', name: 'Read', arguments: {} }]),
       {
         role: 'tool',
         results: [
@@ -179,7 +179,7 @@ describe('normalizeToolCallHistory', () => {
         {
           type: 'tool_result',
           toolCallId: 'call-1',
-          toolName: 'read',
+          toolName: 'Read',
           content: 'contents',
           details: { source: 'persisted-history' },
         },
@@ -195,8 +195,8 @@ describe('normalizeToolCallHistory', () => {
   test('does not guess a tool name when duplicate call ids disagree', () => {
     const messages: AgentMessage[] = [
       assistant([
-        { type: 'tool_call', id: 'duplicate', name: 'read', arguments: {} },
-        { type: 'tool_call', id: 'duplicate', name: 'write', arguments: {} },
+        { type: 'tool_call', id: 'duplicate', name: 'Read', arguments: {} },
+        { type: 'tool_call', id: 'duplicate', name: 'Write', arguments: {} },
       ]),
       {
         role: 'tool',

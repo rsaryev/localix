@@ -94,9 +94,9 @@ export const LISTS: readonly KitCatalogEntry[] = [
     provider: 'kit',
     exports: ['ShelfRow'],
     summary:
-      'A titled row of tiles that scrolls sideways with snap, faded edges, hover arrows and "See all".',
-    use: 'A storefront row previewing a longer list; the host picks `perView` from its pane’s width.',
-    not: 'Not a wrapping grid (`card-grid`) nor tabs (`tabs`).',
+      'A titled row of tiles with "See all": a grid of whole tiles cut to a few rows (`columns`, `rows`), or a strip that scrolls sideways with snap, faded edges and hover arrows (`perView`).',
+    use: 'A storefront row previewing a longer list; the host picks `columns` or `perView` from its pane’s width.',
+    not: 'Not a full list of item cards (`card-grid`) nor tabs (`tabs`).',
   },
   {
     specifier: k('tile-card'),

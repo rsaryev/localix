@@ -117,7 +117,7 @@ describe('the Store’s search results', () => {
     try {
       await view.type(input(), '')
       expect(results().querySelector('h2')?.textContent).not.toContain('Results for')
-      expect(view.host.querySelector('[aria-current="page"]')?.textContent).toContain('Discover')
+      expect(view.activeSection()).toContain('Discover')
     } finally {
       await view.done()
     }

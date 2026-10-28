@@ -47,7 +47,10 @@ describe('useBrowsePage re-show', () => {
     }
     let latest: BrowsePage | null = null
     function Probe({ visible }: { visible: boolean }) {
-      latest = useBrowsePage({ connection, target: { table: 'users' }, visible })
+      const page = useBrowsePage({ connection, target: { table: 'users' }, visible })
+      React.useEffect(() => {
+        latest = page
+      })
       return null
     }
     const host = document.createElement('div')

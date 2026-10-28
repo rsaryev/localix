@@ -14,7 +14,7 @@ describe('network guard', () => {
     try {
       expect(await (await fetch(`http://127.0.0.1:${server.port}/`)).text()).toBe('local')
     } finally {
-      server.stop(true)
+      await server.stop(true)
     }
   })
 
@@ -26,7 +26,7 @@ describe('network guard', () => {
       expect(fetch(url)).rejects.toThrow('Unmocked network request')
       expect(await allowNetwork(async () => (await fetch(url)).text())).toBe('ok')
     } finally {
-      server.stop(true)
+      await server.stop(true)
     }
   })
 })

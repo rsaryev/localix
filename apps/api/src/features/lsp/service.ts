@@ -3,6 +3,7 @@ import { createLspEditCommitter } from './edit-commit'
 import { bufferEditFor } from './edit-routing'
 import { createWorkspaceEditApplicator } from './service-workspace-edit'
 import { createServiceNavigation } from './service-navigation'
+import { createStatusPublisher } from './service-status'
 
 export type { LspDocumentService, LspServiceDeps } from './service-contract'
 export type {
@@ -40,15 +41,21 @@ export function createLspDocumentService(deps: LspServiceDeps): LspDocumentServi
     deps.publish(doc.userId, doc.sessionId, { file: doc.file, diagnostics })
   }
 
+  const publishStatus = createStatusPublisher(deps.publishStatus)
+
   // Any server status/diagnostics change for a root re-pushes every file the
   // editor has open under it — bounds egress to actually-open documents.
-  const unsubscribe = deps.lspManager.onUpdate((projectRoot) => {
+  const unsubscribe = deps.lspManager.onUpdate((projectRoot, states) => {
     const keys = byRoot.get(projectRoot)
     if (!keys) return
+    const docs: OpenDoc[] = []
     for (const k of keys) {
       const doc = open.get(k)
-      if (doc) publishFor(doc)
+      if (!doc) continue
+      publishFor(doc)
+      docs.push(doc)
     }
+    publishStatus(docs, states)
   })
 
   // A rename's or a code action's WorkspaceEdit: files an editor holds open go back to that

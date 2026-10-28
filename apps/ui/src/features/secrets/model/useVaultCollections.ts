@@ -12,6 +12,9 @@ import { useResourceRevision } from '@/shared/api/useResourceRevision'
 import type { VaultSection } from './vaultSections'
 import { vaultFailure } from './vaultProblem'
 
+/** Stands in for the histories of a revision that has read none yet (a stable identity). */
+const NO_VERSIONS: Record<string, VaultVersionMeta[]> = {}
+
 /**
  * THE VAULT'S SECONDARY COLLECTIONS — consumers, per-item versions, and the audit log.
  *
@@ -33,85 +36,101 @@ export function useVaultCollections(
   onFailure: (problem: Problem) => void,
 ) {
   const revision = useResourceRevision('vault')
-  useEffect(() => {
-    setVersionsByKey({})
-  }, [revision])
   const [bindingsByKey, setBindingsByKey] = useState<Record<string, SecretBinding[]>>({})
-  const [loadingUsage, setLoadingUsage] = useState(false)
-  const [versionsByKey, setVersionsByKey] = useState<Record<string, VaultVersionMeta[]>>({})
-  const [loadingVersions, setLoadingVersions] = useState(false)
+  // Histories are tagged with the vault revision they were read at: a newer revision makes every
+  // one of them stale at once, with nothing to reset.
+  const [versions, setVersions] = useState<{
+    revision: number
+    byKey: Record<string, VaultVersionMeta[]>
+  }>({ revision, byKey: {} })
+  const versionsByKey = versions.revision === revision ? versions.byKey : NO_VERSIONS
   const [activity, setActivity] = useState<VaultAuditEntry[]>([])
-  const [loadingActivity, setLoadingActivity] = useState(false)
+  // Each demand-driven read is "loading" from the moment its section (or item) asks for it until
+  // it settles; the cleanup of a read marks the next one as unsettled.
+  const [usageSettled, setUsageSettled] = useState(false)
+  const [versionsSettled, setVersionsSettled] = useState(false)
+  const [activitySettled, setActivitySettled] = useState(false)
+  const loadingUsage = section === 'usage' && !usageSettled
+  const loadingVersions = !!selectedKey && !versionsByKey[selectedKey] && !versionsSettled
+  const loadingActivity = section === 'activity' && !activitySettled
 
   const totalConsumers = Object.values(bindingsByKey).reduce(
     (count, bindings) => count + bindings.length,
     0,
   )
 
-  const loadAllUsage = useCallback(async () => {
-    setLoadingUsage(true)
-    try {
-      const pairs = await Promise.all(
-        items.map(async (item) => [item.key, await secretsApi.bindings(item.key)] as const),
-      )
-      setBindingsByKey(Object.fromEntries(pairs))
-    } catch (caught) {
-      onFailure(vaultFailure(caught, 'Vault usage could not be loaded.'))
-    } finally {
-      setLoadingUsage(false)
-    }
-  }, [items, onFailure])
-
   useEffect(() => {
-    if (section === 'usage') void loadAllUsage()
-  }, [loadAllUsage, section])
+    if (section !== 'usage') return
+    let active = true
+    void Promise.all(
+      items.map(async (item) => [item.key, await secretsApi.bindings(item.key)] as const),
+    )
+      .then((pairs) => {
+        if (active) setBindingsByKey(Object.fromEntries(pairs))
+      })
+      .catch((caught: unknown) => {
+        if (active) onFailure(vaultFailure(caught, 'Vault usage could not be loaded.'))
+      })
+      .finally(() => {
+        if (active) setUsageSettled(true)
+      })
+    return () => {
+      active = false
+      setUsageSettled(false)
+    }
+  }, [items, onFailure, section])
 
   useEffect(() => {
     if (!selectedKey || versionsByKey[selectedKey]) return
     let active = true
-    setLoadingVersions(true)
     void secretsApi
       .versions(selectedKey)
-      .then((versions) => {
+      .then((read) => {
         if (active)
-          setVersionsByKey((current) => ({
-            ...current,
-            [selectedKey]: versions,
+          setVersions((current) => ({
+            revision,
+            byKey: { ...(current.revision === revision ? current.byKey : {}), [selectedKey]: read },
           }))
       })
       .catch((caught: unknown) => {
         if (active) onFailure(vaultFailure(caught, "This item's history could not be loaded."))
       })
       .finally(() => {
-        if (active) setLoadingVersions(false)
+        if (active) setVersionsSettled(true)
       })
     return () => {
       active = false
+      setVersionsSettled(false)
     }
   }, [selectedKey, versionsByKey, onFailure, revision])
 
-  const loadActivity = useCallback(async () => {
-    setLoadingActivity(true)
-    try {
-      setActivity(await secretsApi.activity())
-    } catch (caught) {
-      onFailure(vaultFailure(caught, 'Vault activity could not be loaded.'))
-    } finally {
-      setLoadingActivity(false)
-    }
-  }, [onFailure])
-
   useEffect(() => {
-    if (section === 'activity') void loadActivity()
-  }, [loadActivity, section, revision])
+    if (section !== 'activity') return
+    let active = true
+    secretsApi
+      .activity()
+      .then((read) => {
+        if (active) setActivity(read)
+      })
+      .catch((caught: unknown) => {
+        if (active) onFailure(vaultFailure(caught, 'Vault activity could not be loaded.'))
+      })
+      .finally(() => {
+        if (active) setActivitySettled(true)
+      })
+    return () => {
+      active = false
+      setActivitySettled(false)
+    }
+  }, [onFailure, section, revision])
 
   /** A saved item's history is stale the moment it is written — drop it so the next
    *  selection re-fetches rather than showing the version list from before the save. */
   const forgetVersions = useCallback((key: string) => {
-    setVersionsByKey((current) => {
-      const next = { ...current }
-      delete next[key]
-      return next
+    setVersions((current) => {
+      const byKey = { ...current.byKey }
+      delete byKey[key]
+      return { ...current, byKey }
     })
   }, [])
 

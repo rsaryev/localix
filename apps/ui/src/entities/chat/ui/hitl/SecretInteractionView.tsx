@@ -5,6 +5,7 @@ import { Button } from '@localixai/kit/button'
 import { Input } from '@localixai/kit/input'
 import { Kbd } from '@localixai/kit/kbd'
 import type { PendingRequestSecretInteraction } from '../../model/agent-runtime'
+import { focusOnMount } from '../focusOnMount'
 import { HitlInteractionFrame } from './HitlInteractionFrame'
 import type { HitlFrameChrome } from './HitlInteractionFrame'
 
@@ -93,7 +94,7 @@ export function SecretInteractionView({
           type="password"
           autoComplete="off"
           spellCheck={false}
-          autoFocus
+          ref={focusOnMount}
           disabled={submitting}
           value={value}
           onChange={(event) => setValue(event.target.value)}

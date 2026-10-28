@@ -62,7 +62,7 @@ export function ResourceContextButton({
 
   if (mode === 'action') {
     return (
-      <Button variant="outline" size="sm" {...common}>
+      <Button variant="ghost" size="sm" {...common}>
         <Link2 className="size-3" />
         <span className="@max-sm:sr-only">Link</span>
       </Button>

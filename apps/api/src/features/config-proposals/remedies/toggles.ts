@@ -32,35 +32,40 @@ const toolEnableSchema = z.object({
 /** The default for an omitted `enabled`, applied on READ — see the schema comment. */
 const switchedOn = (change: { enabled?: boolean }): boolean => change.enabled ?? true
 
+/** The tool's own name, the one its rule is written under. */
+const toolOf = (change: { name: string }): string => change.name
+
 export const toolEnableRemedy: Remedy<z.infer<typeof toolEnableSchema>> = {
   id: 'tool.enable',
   schema: toolEnableSchema,
   async describe(ctx, change) {
     const on = switchedOn(change)
+    const name = toolOf(change)
     return {
-      key: `tool.enable:${change.name}`,
+      key: `tool.enable:${name}`,
       remedyId: 'tool.enable',
       // No rule syntax and no `+`/`-` marker. A disable proposal rendered as `- tool:x · deny`
       // reads as REMOVING a denial, which is the opposite of what it does; the subject and its
       // new state say it once, in the direction a person reads.
-      title: `${on ? 'Enable' : 'Disable'} the ${change.name} tool`,
+      title: `${on ? 'Enable' : 'Disable'} the ${name} tool`,
       detail: on
         ? "Adds the tool to this agent's roster."
         : "Removes the tool from this agent's roster.",
-      diff: [`${change.name} → ${on ? 'on' : 'off'}`],
+      diff: [`${name} → ${on ? 'on' : 'off'}`],
       agentId: ctx.agentId,
       reload: 'next-run',
     }
   },
   async apply(ctx, change) {
     const on = switchedOn(change)
+    const name = toolOf(change)
     const origin = ctx.origin()
     await ctx.ports.rules.mutate(ctx.userId, ctx.agentId, (rules) =>
-      applySwitches(rules, 'tool', [{ name: change.name, enabled: on }]).map((rule) =>
-        rule.action === `tool:${change.name}` && rule.resource === '*' ? { ...rule, origin } : rule,
+      applySwitches(rules, 'tool', [{ name, enabled: on }]).map((rule) =>
+        rule.action === `tool:${name}` && rule.resource === '*' ? { ...rule, origin } : rule,
       ),
     )
     ctx.ports.bumpCapabilityRevision()
-    return { summary: `${change.name} is now ${on ? 'enabled' : 'disabled'} for this agent.` }
+    return { summary: `${name} is now ${on ? 'enabled' : 'disabled'} for this agent.` }
   },
 }

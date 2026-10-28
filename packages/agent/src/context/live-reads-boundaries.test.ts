@@ -24,8 +24,8 @@ describe('classifyReads — supersession threshold (minChars)', () => {
   // Kills: live-reads.ts `if (size > minChars)` (supersession) → `>=`.
   // Kills: live-reads.ts `if (chars > minChars && bytes <= budgetBytes)` (candidate) → `>=`.
   it('a read result EXACTLY at minChars neither supersedes nor becomes a live read', () => {
-    const first = namedTool('read', { path: 'a.ts' }, { resultText: body(800) })
-    const short = namedTool('read', { path: 'a.ts' }, { resultText: body(MIN) })
+    const first = namedTool('Read', { path: 'a.ts' }, { resultText: body(800) })
+    const short = namedTool('Read', { path: 'a.ts' }, { resultText: body(MIN) })
     const { live, fates } = classifyReads([msg({ items: [first, short] })], { minChars: MIN })
 
     // the earlier read is still the model's only copy of the file
@@ -38,8 +38,8 @@ describe('classifyReads — supersession threshold (minChars)', () => {
   // Control: ONE char over the threshold and the same read DOES supersede — proving the
   // assertion above can flip, and pinning the other side of the same comparison.
   it('a read result ONE char over minChars supersedes the earlier read of the same file', () => {
-    const first = namedTool('read', { path: 'a.ts' }, { resultText: body(800) })
-    const second = namedTool('read', { path: 'a.ts' }, { resultText: body(MIN + 1) })
+    const first = namedTool('Read', { path: 'a.ts' }, { resultText: body(800) })
+    const second = namedTool('Read', { path: 'a.ts' }, { resultText: body(MIN + 1) })
     const { live, fates } = classifyReads([msg({ items: [first, second] })], { minChars: MIN })
 
     expect(fates.get(first.toolCallId!)).toBe('refreshed')
@@ -48,16 +48,16 @@ describe('classifyReads — supersession threshold (minChars)', () => {
   })
 })
 
-describe('classifyReads — only a completed `read` can win protection', () => {
+describe('classifyReads — only a completed `Read` can win protection', () => {
   // `search`/`lsp` results describe many files and are cheaply reproducible: they
   // supersede, but they never take a live-read slot.
-  // Kills: live-reads.ts `if (item.name !== 'read' || item.status !== 'completed')` → `&&`.
-  it('a `search` result is NOT a live read (a `read` of the same shape is)', () => {
-    const search = namedTool('search', { path: 'a.ts' }, { resultText: body(800) })
+  // Kills: live-reads.ts `if (item.name !== 'Read' || item.status !== 'completed')` → `&&`.
+  it('a `Search` result is NOT a live read (a `Read` of the same shape is)', () => {
+    const search = namedTool('Search', { path: 'a.ts' }, { resultText: body(800) })
     expect(classifyReads([msg({ items: [search] })]).live.size).toBe(0)
 
     // control: identical shape, name `read` → protected. Proves the 0 above is not vacuous.
-    const read = namedTool('read', { path: 'a.ts' }, { resultText: body(800) })
+    const read = namedTool('Read', { path: 'a.ts' }, { resultText: body(800) })
     expect(classifyReads([msg({ items: [read] })]).live.size).toBe(1)
   })
 })
@@ -67,20 +67,20 @@ describe('classifyReads — budgetBytes', () => {
   // Kills: live-reads.ts `bytes <= budgetBytes` (candidate) → `<`.
   // Kills: live-reads.ts `if (spent + c.bytes > budgetBytes) continue` → `>=`.
   it('a read EXACTLY at budgetBytes is still protected', () => {
-    const read = namedTool('read', { path: 'a.ts' }, { resultText: body(800) })
+    const read = namedTool('Read', { path: 'a.ts' }, { resultText: body(800) })
     const { live } = classifyReads([msg({ items: [read] })], { budgetBytes: 800 })
     expect(live.has(read.toolCallId!)).toBe(true)
   })
 
   it('a read ONE byte over budgetBytes is not', () => {
-    const read = namedTool('read', { path: 'a.ts' }, { resultText: body(801) })
+    const read = namedTool('Read', { path: 'a.ts' }, { resultText: body(801) })
     const { live } = classifyReads([msg({ items: [read] })], { budgetBytes: 800 })
     expect(live.has(read.toolCallId!)).toBe(false)
   })
 
   it('applies the byte boundary to CJK while minChars remains character-based', () => {
     const resultText = '你'.repeat(MIN + 1) // 401 chars, 1203 UTF-8 bytes
-    const read = namedTool('read', { path: 'cjk.ts' }, { resultText })
+    const read = namedTool('Read', { path: 'cjk.ts' }, { resultText })
 
     expect(
       classifyReads([msg({ items: [read] })], { budgetBytes: 1203 }).live.has(read.toolCallId!),
@@ -93,14 +93,14 @@ describe('classifyReads — budgetBytes', () => {
   // The budget is CUMULATIVE: two reads whose sizes sum exactly to it both survive.
   // Kills: live-reads.ts `if (spent + c.bytes > budgetBytes) continue` → `>=`.
   it('two reads summing EXACTLY to budgetBytes are both protected', () => {
-    const a = namedTool('read', { path: 'a.ts' }, { resultText: body(600) })
-    const b = namedTool('read', { path: 'b.ts' }, { resultText: body(600) })
+    const a = namedTool('Read', { path: 'a.ts' }, { resultText: body(600) })
+    const b = namedTool('Read', { path: 'b.ts' }, { resultText: body(600) })
     const { live } = classifyReads([msg({ items: [a, b] })], { budgetBytes: 1200 })
     expect(live.size).toBe(2)
 
     // control: one char more and the OLDER read (sorted last) is dropped.
-    const c = namedTool('read', { path: 'c.ts' }, { resultText: body(601) })
-    const d = namedTool('read', { path: 'd.ts' }, { resultText: body(600) })
+    const c = namedTool('Read', { path: 'c.ts' }, { resultText: body(601) })
+    const d = namedTool('Read', { path: 'd.ts' }, { resultText: body(600) })
     const tight = classifyReads([msg({ items: [c, d] })], { budgetBytes: 1200 })
     expect(tight.live.has(d.toolCallId!)).toBe(true) // most recent wins
     expect(tight.live.has(c.toolCallId!)).toBe(false)
@@ -111,9 +111,9 @@ describe('classifyReads — malformed limits fail closed', () => {
   it.each([0, -1, Number.NaN])(
     'budgetBytes=%p falls back to the bounded default instead of disabling protection',
     (budgetBytes) => {
-      const normal = namedTool('read', { path: 'a.ts' }, { resultText: body(800) })
+      const normal = namedTool('Read', { path: 'a.ts' }, { resultText: body(800) })
       const oversized = namedTool(
-        'read',
+        'Read',
         { path: 'b.ts' },
         {
           resultText: body(DEFAULT_LIVE_READ_BUDGET_BYTES + 1),
@@ -130,7 +130,7 @@ describe('classifyReads — malformed limits fail closed', () => {
     'maxLiveReads=%p falls back to the default bound instead of disabling or unbounding it',
     (maxLiveReads) => {
       const reads = Array.from({ length: 7 }, (_, i) =>
-        namedTool('read', { path: `f${i}.ts` }, { resultText: body(800) }),
+        namedTool('Read', { path: `f${i}.ts` }, { resultText: body(800) }),
       )
       const { live } = classifyReads([msg({ items: reads })], { maxLiveReads })
 
@@ -141,12 +141,12 @@ describe('classifyReads — malformed limits fail closed', () => {
   )
 
   it('floors a fractional maxLiveReads instead of exceeding the stated count', () => {
-    const read = namedTool('read', { path: 'a.ts' }, { resultText: body(800) })
+    const read = namedTool('Read', { path: 'a.ts' }, { resultText: body(800) })
     expect(classifyReads([msg({ items: [read] })], { maxLiveReads: 0.5 }).live.size).toBe(0)
   })
 
   it('keeps maxLiveReads: 0 as the explicit protection off-switch', () => {
-    const read = namedTool('read', { path: 'a.ts' }, { resultText: body(800) })
+    const read = namedTool('Read', { path: 'a.ts' }, { resultText: body(800) })
     expect(classifyReads([msg({ items: [read] })], { maxLiveReads: 0 }).live.size).toBe(0)
   })
 })

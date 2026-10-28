@@ -81,6 +81,7 @@ export function ConfigForm({
   }
 
   return (
+    // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- delegated Mod+S: the keydown comes from the fields inside, the form is never the target
     <form
       // The form says what is wrong at the field; the browser's own bubble would say it twice.
       noValidate

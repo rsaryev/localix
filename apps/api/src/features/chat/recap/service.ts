@@ -96,7 +96,7 @@ export function createRecapService(deps: RecapServiceDeps) {
       if (!verdict.ok) return { status: 'skipped', reason: verdict.reason }
 
       const slot = settings?.modelRouting?.sessionRecap
-      const route = slot?.modelId ? slot : session.agents[0]
+      const route = slot?.modelId ? slot : session.agent
       if (!route?.modelId) return { status: 'unavailable' }
       const built = await buildLanguageModel(userId, route.modelId, route.providerConnectionId)
       if (!built) return { status: 'unavailable' }

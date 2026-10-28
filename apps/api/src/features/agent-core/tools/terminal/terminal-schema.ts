@@ -18,7 +18,7 @@ export const INTERACTIVE_ACTIONS = [
 export const DEFAULT_WAIT_MS = 15_000
 export const MAX_WAIT_MS = 120_000
 
-/** Zod fields the `bash` schema merges in to expose the interactive actions. */
+/** Zod fields the `Bash` schema merges in to expose the interactive actions. */
 export const terminalActionFields = {
   action: z
     .enum(INTERACTIVE_ACTIONS)

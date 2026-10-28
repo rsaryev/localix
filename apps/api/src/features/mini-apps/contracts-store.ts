@@ -48,6 +48,24 @@ export const installMiniAppRequestSchema = z.object({
   acceptUnverified: z.boolean().optional(),
 })
 
+/** A package the person built (`mini-app build`), handed over by the mini-app-authoring plugin. */
+export const installLocalMiniAppRequestSchema = z.object({
+  /** The package folder, absolute. */
+  dir: z.string().min(1),
+  /** The source folder it was built from, recorded beside the installed copy. */
+  source: z.string().min(1),
+})
+
+export const installLocalMiniAppResponseSchema = z.object({
+  name: z.string(),
+  version: z.string(),
+  /** What Localix mentions about the app but does not refuse. */
+  warnings: z.array(z.string()),
+})
+
+/** The mini app kit this Localix builds mini apps against. */
+export const miniAppKitResponseSchema = z.object({ dir: z.string() })
+
 /** One catalog the store reads (`catalogs.ts`). */
 export const miniAppCatalogSchema = z.object({ url: z.string(), builtIn: z.boolean() })
 export type MiniAppCatalogEntryRecord = z.infer<typeof miniAppCatalogSchema>

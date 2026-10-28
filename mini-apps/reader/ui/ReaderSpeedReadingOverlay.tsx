@@ -4,6 +4,7 @@ import { IconButton } from '@localixai/kit/icon-button'
 import { WorkbenchStatusBar, WorkbenchStatusItem } from '@localixai/kit/workbench-statusbar'
 import { WorkbenchToolbar, WorkbenchToolbarSection } from '@localixai/kit/workbench-toolbar'
 
+import { focusOnMount } from './focusOnMount'
 import type { ReaderPreferences, ReaderSpeedToken } from './model'
 import { readerSpeedTokenParts, readerSpeedWpmStep } from './readerPaneModel'
 
@@ -33,6 +34,7 @@ export function ReaderSpeedReadingOverlay({
   if (!token) return null
   const [before, focus, after] = readerSpeedTokenParts(token)
   return (
+    // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- delegated keys: Escape, Space and the arrows come from the focused controls inside; the region is the focus scope that reads them
     <div
       className="reader-speed-reading absolute inset-0 z-(--z-controls) flex flex-col bg-[var(--reader-paper)]"
       role="region"
@@ -118,7 +120,7 @@ export function ReaderSpeedReadingOverlay({
           </IconButton>
           <IconButton
             emphasis="solid"
-            autoFocus
+            ref={focusOnMount}
             onClick={() => setPlaying((value) => !value)}
             aria-label={playing ? 'Pause speed reading' : 'Resume speed reading'}
             tooltip={playing ? 'Pause (Space)' : 'Resume (Space)'}

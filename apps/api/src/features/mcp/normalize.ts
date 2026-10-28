@@ -55,8 +55,8 @@ export function normalizeMcpServerEntry(
       throw new Error('remote server is missing a "url" or "serverUrl"')
     }
     const headers = coerceStringRecord(raw.headers)
-    // Over a web socket neither a header nor a helper's output can be sent (the SDK transport
-    // connects by URL alone), so a helper there would run for nothing.
+    // A web socket sends its static `headers` on the upgrade; a `headersHelper` is for http
+    // servers (Claude Code's reference lists it there), so over a socket it would run for nothing.
     const headersHelper =
       !isWs && typeof raw.headersHelper === 'string' && raw.headersHelper.trim().length > 0
         ? raw.headersHelper

@@ -23,10 +23,9 @@ writes must still reach the board a person has open.
 ## The agent's tool
 
 One tool, `kanban`, with an `action`: `list`, `search`, `create`, `update`, `take`, `complete`,
-`block`, `reorder`, `delete`, `detail`. `take` records the agent the host names as the speaker,
-never a name from the input. A card another agent should do is handed over with a turn; isolated
-side work can go to a child session with `delegate`, using `detail` as its task. The board never
-runs it.
+`block`, `reorder`, `delete`, `detail`. `take` records the agent the host names for the call, never
+a name from the input. A card another agent should do is handed over with a turn; isolated side work
+can go to a subagent with `Agent`, using `detail` as its prompt. The board never runs it.
 
 Each move has one action: `take` (dependencies, owner) reaches `in_progress`, `complete` reaches
 `done`, `block` reaches `blocked`; `update` edits a card and moves it only to `backlog`, `ready` or
@@ -34,12 +33,9 @@ Each move has one action: `take` (dependencies, owner) reaches `in_progress`, `c
 action does not read is refused by name (`backend/tool-input.ts`), never dropped. An epic is closed
 with `complete` too; the completion that finishes its last task names it.
 
-The host names the speaker's role (`leader`, `member` or `solo`; missing reads as leader). A member
-lists, reads and works only the cards assigned to it, updates only their `items` and `priority`,
-cannot `delete` or `reorder`, and creates cards unassigned in backlog. Its `complete` moves a card
-to `review`; the leader's `complete` moves it to `done`, and `update status: ready` sends it back.
-The rule is one pure function, `memberMay` in `shared/rules.ts`. Reassigning an `in_progress` or
-`review` card resets it to `ready` for its new owner.
+The conversation's agent reads and edits the whole board. `complete` moves a card to `done` (a
+person moves cards to `review` on the board). Reassigning an `in_progress` or `review` card resets
+it to `ready` for its new owner.
 
 ## Limits
 

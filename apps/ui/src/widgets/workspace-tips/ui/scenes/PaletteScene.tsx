@@ -56,7 +56,7 @@ export function PaletteScene() {
           <SquareTerminal className="size-3 text-text-faint" />
           <span className="wt-q">
             <span className="wt-q-empty">Run a command…</span>
-            {[...'group'].map((letter, i) => (
+            {Array.from('group').map((letter, i) => (
               <span key={i} className="wt-q-letter" style={{ '--i': i } as CSSProperties}>
                 {letter}
               </span>

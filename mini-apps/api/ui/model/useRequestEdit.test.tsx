@@ -46,13 +46,17 @@ describe('request edit lifecycle', () => {
 
   test('an auth-only reload does not erase an unsaved URL edit', async () => {
     const React = await import('react')
-    const { act } = React
+    const { act, useEffect } = React
     const { createRoot } = await import('react-dom/client')
     const { useRequestEdit } = await import('./useRequestEdit')
     let state!: ReturnType<typeof useRequestEdit>
 
     function Harness({ value }: { value: RequestInfo }) {
-      state = useRequestEdit('session-a', value, () => {})
+      const edit = useRequestEdit('session-a', value, () => {})
+      // Captured in an effect: the test reads what the committed render returned.
+      useEffect(() => {
+        state = edit
+      })
       return null
     }
 
@@ -74,12 +78,16 @@ describe('request edit lifecycle', () => {
 
   test('a clean draft follows an external request update', async () => {
     const React = await import('react')
-    const { act } = React
+    const { act, useEffect } = React
     const { createRoot } = await import('react-dom/client')
     const { useRequestEdit } = await import('./useRequestEdit')
     let state!: ReturnType<typeof useRequestEdit>
     function Harness({ value }: { value: RequestInfo }) {
-      state = useRequestEdit('session-a', value, () => {})
+      const edit = useRequestEdit('session-a', value, () => {})
+      // Captured in an effect: the test reads what the committed render returned.
+      useEffect(() => {
+        state = edit
+      })
       return null
     }
     const root = createRoot(document.createElement('div'))
@@ -95,7 +103,7 @@ describe('request edit lifecycle', () => {
 
   test('save adopts the server-normalized draft before reload', async () => {
     const React = await import('react')
-    const { act } = React
+    const { act, useEffect } = React
     const { createRoot } = await import('react-dom/client')
     const { restApi } = await import('../restApi')
     const { useRequestEdit } = await import('./useRequestEdit')
@@ -108,7 +116,11 @@ describe('request edit lifecycle', () => {
     }
     let state!: ReturnType<typeof useRequestEdit>
     function Harness() {
-      state = useRequestEdit('session-a', initial, () => {})
+      const edit = useRequestEdit('session-a', initial, () => {})
+      // Captured in an effect: the test reads what the committed render returned.
+      useEffect(() => {
+        state = edit
+      })
       return null
     }
     const root = createRoot(document.createElement('div'))

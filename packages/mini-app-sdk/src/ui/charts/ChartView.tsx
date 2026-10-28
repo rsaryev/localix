@@ -5,7 +5,7 @@ import {
   type TableColumn,
   type TableRow,
 } from '@localixai/dataview'
-import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
+import { useWorkItemVisible } from '../visibility'
 import { CartesianChart, EmptyChart } from './CartesianChart'
 import { PieChart } from './PieChart'
 

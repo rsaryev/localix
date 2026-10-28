@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test'
+import { describe, expect, jest, test } from 'bun:test'
 import type { MonacoEditorExtension } from '@localixai/kit/code-editor'
 
 type MonacoEditorExtensionContext = Parameters<MonacoEditorExtension['setup']>[0]
@@ -70,6 +70,7 @@ describe('sqlDiagnostics extension', () => {
       getDialect: () => 'postgres',
       onWantColumns: (tables) => wanted.push(...tables.map((t) => t.name)),
     })
+    jest.useFakeTimers()
     const disposable = diagnostics.extension.setup(context) as { dispose(): void }
     expect(markers.get('localix-sql')).toEqual([])
     expect(wanted).toEqual(['users'])
@@ -77,7 +78,8 @@ describe('sqlDiagnostics extension', () => {
     loaded = true
     catalog = createSqlCatalog(schemas, getTable)
     diagnostics.refresh()
-    await Bun.sleep(300)
+    jest.advanceTimersByTime(300)
+    jest.useRealTimers()
     expect(markers.get('localix-sql')!.map((m) => m.message)).toEqual([
       'Column "nmae" does not exist in "users". Did you mean "name"?',
     ])

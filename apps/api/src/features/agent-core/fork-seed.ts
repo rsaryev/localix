@@ -33,11 +33,14 @@ export type ForkSeedTool = z.infer<typeof forkSeedToolSchema>
 export const forkSeedSchema = z.object({
   systemPrompt: z.string(),
   tools: z.array(forkSeedToolSchema),
-  /** What the provider keys its cache on: the parent's session, not the fork's. */
+  /**
+   * What the provider keys its cache on: the parent's prompt cache key, not the fork's. (The field
+   * kept its name from when that key was the parent's session id; seeds stored then read the same.)
+   */
   cacheSessionId: z.string(),
   /**
    * The names the parent's run held, which decide what its own past tool work is shown as
-   * (`participant-audience.ts`): the same names give the same projection of the same rows.
+   * (`chat/runtime/history/stages/agent-history.ts`): the same names give the same projection of the same rows.
    */
   toolNames: z.array(z.string()),
   /**
@@ -79,14 +82,14 @@ export function captureForkSeed(input: ForkSeedInput): ForkSeed {
   }
 }
 
-/** A fork cannot fork or delegate again; the tool stays listed so the tools block is unchanged. */
+/** A fork cannot fork or start subagents; the tool stays listed so the tools block is unchanged. */
 export const NESTED_FORK_REFUSAL =
-  'A fork cannot fork or delegate again: do the work yourself with your own tools.'
+  'A fork cannot fork or start subagents: do the work yourself with your own tools.'
 
 /** A tool the fork was shown and cannot run. It refuses; it is never confirmed or run. */
 function refusal(tool: ForkSeedTool): AgentTool {
   const text =
-    tool.name === TOOL.delegate
+    tool.name === TOOL.Agent
       ? NESTED_FORK_REFUSAL
       : `\`${tool.name}\` is not available in this fork: use another tool.`
   return {

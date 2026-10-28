@@ -53,8 +53,7 @@ import { emaStepper, incrementalLine, rsiStepper, smaStepper } from './indicator
  * The PARAMETERIZED indicator catalog: any `IndicatorParams` (parsed from a canonical id like
  * `ema:200` — see backend/indicator-spec.ts, the grammar shared with the manage_chart tool)
  * becomes a drawable {@link IndicatorSpec}. The fixed menu presets are just six well-known
- * parameterizations, and the historical preset ids (`sma20`, `bb20`, …) parse as aliases, so
- * saved prefs migrate by normalization rather than by a stored version.
+ * parameterizations.
  */
 
 /** Fixed accents for the menu presets — the exact colors the chart always used. */

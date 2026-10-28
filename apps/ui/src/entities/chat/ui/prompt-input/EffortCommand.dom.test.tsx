@@ -3,7 +3,7 @@ import { registerDom } from '@localixai/kit/testing/dom'
 import type { ComposerCommands } from './useComposerCommands'
 import { effortStepOptions, skipEffortStep } from './model-command/modelCommandEffort'
 import type { ModelCommandContext } from './model-command/modelCommandTarget'
-import { context, member } from './model-command/testing/modelCommandFixture'
+import { agentRow, context } from './model-command/testing/modelCommandFixture'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -16,18 +16,19 @@ afterEach(() => jest.useRealTimers())
 
 /** The composer's command engine fed `/effort`'s steps, the way `useModelCommand` feeds it. */
 async function mount(ctx: ModelCommandContext) {
-  const { act, useState } = await import('react')
+  const { act, useEffect, useState } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { useComposerCommands } = await import('./useComposerCommands')
-  const load = async (_c: unknown, arg: string, query: string, committed: Record<string, string>) =>
-    effortStepOptions(ctx, arg, query, committed)
-  const skip = (_c: unknown, name: string, committed: ReadonlyMap<string, string>) =>
-    skipEffortStep(ctx, name, committed)
+  const load = async (_c: unknown, arg: string, query: string) => effortStepOptions(ctx, arg, query)
+  const skip = (_c: unknown, name: string) => skipEffortStep(ctx, name)
   const state = { composer: null as unknown as ComposerCommands, prompt: '' }
   function Harness() {
     const [value, setValue] = useState('/effort ')
-    state.prompt = value
-    state.composer = useComposerCommands(value, setValue, [], load as never, skip as never)
+    const composer = useComposerCommands(value, setValue, [], load as never, skip as never)
+    useEffect(() => {
+      state.prompt = value
+      state.composer = composer
+    })
     return null
   }
   const host = document.createElement('div')
@@ -48,7 +49,7 @@ async function mount(ctx: ModelCommandContext) {
 }
 
 test('/effort in a one-agent chat opens on the reasoning levels of the model it runs', async () => {
-  const ui = await mount(context([member('solo', 'openai/gpt', 'high')]))
+  const ui = await mount(context(agentRow('solo', 'openai/gpt', 'high')))
   try {
     expect(ui.step()).toBe('reasoning')
     expect(ui.labels()).toEqual(['off', 'minimal', 'low', 'medium', 'high'])
@@ -56,24 +57,6 @@ test('/effort in a one-agent chat opens on the reasoning levels of the model it 
     // The first level is picked as a crumb; /model's provider and model steps never show.
     expect(ui.state.prompt).toBe('/effort off ')
     expect(ui.step()).toBeUndefined()
-  } finally {
-    await ui.unmount()
-  }
-})
-
-test('/effort in a group asks for the agent first, then that agent’s levels', async () => {
-  const ui = await mount(
-    context([member('lead', 'openai/gpt', 'high'), member('qa', 'anthropic/opus', 'medium')]),
-  )
-  try {
-    expect(ui.step()).toBe('agent')
-    expect(ui.labels()).toEqual(['@lead', '@qa'])
-    await ui.press('ArrowDown')
-    await ui.press('Enter')
-    expect(ui.state.prompt).toBe('/effort @qa ')
-    await ui.settle()
-    expect(ui.step()).toBe('reasoning')
-    expect(ui.labels()).toEqual(['low', 'medium', 'high', 'max'])
   } finally {
     await ui.unmount()
   }

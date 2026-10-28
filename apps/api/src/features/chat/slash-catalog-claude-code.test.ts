@@ -107,10 +107,6 @@ describe('Claude Code command spellings', () => {
     expect(listed).not.toContain('reload-plugins')
   })
 
-  test('a compact command stays absent: the runtime checkpoints on its own', () => {
-    expect(resolveCommandSpec('compact')).toBeUndefined()
-  })
-
   test('every new command sits in a known category', () => {
     for (const name of CLIENT_COMMANDS)
       expect(SLASH_COMMANDS.some((c) => c.name === name && c.category)).toBe(true)

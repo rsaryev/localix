@@ -12,6 +12,7 @@ import {
 } from './profile-limits'
 import { modelIdSchema } from '../catalog/model-identity'
 import { modelRoutingSchema } from './model-routing-schema'
+import { agentModelChoicesSchema } from './agent-model-choices-schema'
 
 type NullablePatchShape<T extends z.ZodRawShape> = {
   [K in keyof T]: z.ZodOptional<z.ZodNullable<T[K]>>
@@ -92,6 +93,8 @@ const agentSettingsShape = {
    * its record. Missing assignment fields mean the catalog fallback.
    */
   modelRouting: modelRoutingSchema.optional(),
+  /** The model and effort the person chose per agent for subagent runs; never from an agent file. */
+  agentModelChoices: agentModelChoicesSchema.optional(),
   /** Parameters remembered separately for every agent/provider/model, across chats. */
   agentModelSettings: z
     .array(
@@ -239,31 +242,6 @@ export function normalizeUiSettings(value: unknown): UiSettings | null {
 }
 
 /**
- * One-way compatibility bridge for settings written before the composite
- * `research` capability replaced the separate web tools. Provider/key choices
- * are intentionally discarded; the only policy with equivalent semantics is
- * the explicit private-network opt-in.
- */
-export function migrateLegacyResearchSettings(value: unknown): unknown {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return value
-  const settings = value as Record<string, unknown>
-  const legacyFetch =
-    settings.webFetch && typeof settings.webFetch === 'object' && !Array.isArray(settings.webFetch)
-      ? (settings.webFetch as Record<string, unknown>)
-      : undefined
-  const migratedResearch =
-    settings.research ??
-    (typeof legacyFetch?.allowPrivate === 'boolean'
-      ? { allowPrivate: legacyFetch.allowPrivate }
-      : undefined)
-  const { webFetch: _webFetch, webSearch: _webSearch, ...canonical } = settings
-  return {
-    ...canonical,
-    ...(migratedResearch !== undefined ? { research: migratedResearch } : {}),
-  }
-}
-
-/**
  * Validate and normalize a stored settings value instead of trusting raw JSON.
  *
  * Persisted settings may contain a key removed from the current workload catalog.
@@ -274,7 +252,7 @@ export function migrateLegacyResearchSettings(value: unknown): unknown {
  * retired route; the next settings write persists only the canonical catalog.
  */
 export function normalizeAgentSettings(value: unknown): AgentSettings | null {
-  let candidate = migrateLegacyResearchSettings(value)
+  let candidate = value
   if (candidate && typeof candidate === 'object' && !Array.isArray(candidate)) {
     const settings = candidate as Record<string, unknown>
     const routing = settings.modelRouting

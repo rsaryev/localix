@@ -6,10 +6,10 @@ second resolver and lets a surface choose a provider independently of the conver
 
 ## Routing and reasoning
 
-A participant's explicit conversation route wins. An unresolved model asks the server for the last
-choice for that agent, its authored default, the project default, then the primary participant's
-route. A provider connection travels with its model. The UI reads this result through the existing
-session and provider clients; no surface has an independent resolver.
+The conversation's explicit route wins. An unresolved model asks the server for the last choice for
+that agent, its authored default, the project default, then the session's route. A provider
+connection travels with its model. The UI reads this result through the existing session and
+provider clients; no surface has an independent resolver.
 
 Reasoning is settled at conversation birth and stays concrete for that task. Explicit reasoning
 selections have their own timestamp: later message activity, pinning and inherited worker routes
@@ -47,7 +47,7 @@ preference is already synchronized.
 
 | State                                                                     | Current owner                             | Decision                                                                      |
 | ------------------------------------------------------------------------- | ----------------------------------------- | ----------------------------------------------------------------------------- |
-| Models, provider connections, reasoning, participants                     | Conversation/provider APIs                | Reuse resolved session routes in every surface                                |
+| Models, provider connections, reasoning                                   | Conversation/provider APIs                | Reuse resolved session routes in every surface                                |
 | Account UI/agent settings                                                 | User profile API with optimistic cache    | Keep existing profile merge and invalidation                                  |
 | Unsent conversation text                                                  | User view-state API; local recovery cache | Shared `useComposerDraft` in every composer                                   |
 | Main workspace scope, selected chat, URL                                  | Workspace navigation and chat persistence | Keep independent per window; remote creation must not navigate another window |

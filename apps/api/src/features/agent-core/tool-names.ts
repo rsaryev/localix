@@ -3,11 +3,11 @@ import {
   CHAT_AND_CHILD,
   CHAT_DEFAULT,
   CHAT_ONLY,
-  CONVERSATION_TREE,
   EVERYWHERE,
   type BuiltinToolDefinition,
 } from './tool-exposure'
-import { HISTORICAL_TOOL_NAMES, RESERVED_NON_TOOL_NAMES } from './tool-names-reserved'
+import { ACTIVATE_TOOLS_TOOL_NAME, RESERVED_NON_TOOL_NAMES } from './tool-names-reserved'
+import { SUBAGENT_TOOL_CATALOG } from './tool-names-subagents'
 
 export type { BuiltinToolCategory, BuiltinToolDefinition } from './tool-exposure'
 
@@ -20,23 +20,23 @@ export type { BuiltinToolCategory, BuiltinToolDefinition } from './tool-exposure
  * of which built-ins exist.
  */
 export const BUILTIN_TOOL_CATALOG = {
-  ask: {
-    name: 'ask',
+  AskUserQuestion: {
+    name: 'AskUserQuestion',
     label: 'Ask user',
     description: 'Request a user decision with concrete options when human input is required.',
     category: 'core',
     exposure: CHAT_ONLY,
   },
-  context_budget: {
-    name: 'context_budget',
+  ContextBudget: {
+    name: 'ContextBudget',
     label: 'Context budget',
     description:
       'Report how much of the context window is used and what remains before the next context checkpoint.',
     category: 'core',
-    exposure: CHAT_AND_CHILD,
+    exposure: CHAT_DEFAULT,
   },
-  bash: {
-    name: 'bash',
+  Bash: {
+    name: 'Bash',
     label: 'Shell commands',
     description:
       'Run shell commands, compile, test, install packages, and inspect repository state.',
@@ -45,98 +45,85 @@ export const BUILTIN_TOOL_CATALOG = {
     // files delegation existed to keep out of its context.
     exposure: EVERYWHERE,
   },
-  read: {
-    name: 'read',
+  Read: {
+    name: 'Read',
     label: 'Read files',
     description: 'Read text files, images, PDF/office documents, notebooks and directories.',
     category: 'filesystem',
     exposure: EVERYWHERE,
   },
-  search: {
-    name: 'search',
+  Search: {
+    name: 'Search',
     label: 'Search code',
     description: 'Search file contents with ripgrep across the project.',
     category: 'filesystem',
     exposure: EVERYWHERE,
   },
-  write: {
-    name: 'write',
+  Write: {
+    name: 'Write',
     label: 'Write files',
     description: 'Write or overwrite a file when the full new content is known.',
     category: 'filesystem',
     exposure: EVERYWHERE,
   },
-  edit: {
-    name: 'edit',
+  Edit: {
+    name: 'Edit',
     label: 'Edit file',
     description: 'Replace one exact span of text in an existing file.',
     category: 'filesystem',
     exposure: EVERYWHERE,
   },
-  codemode: {
-    name: 'codemode',
-    label: 'Codemode',
-    description:
-      'Run JavaScript that calls read, bash, edit and write: chain dependent calls and cut large results down to the answer.',
-    category: 'core',
-    exposure: EVERYWHERE,
-  },
-  research: {
-    name: 'research',
+  Research: {
+    name: 'Research',
     label: 'Research',
     description: 'Search the web and read relevant sources.',
     category: 'knowledge',
     exposure: CHAT_AND_CHILD,
   },
-  memory: {
-    name: 'memory',
-    label: 'Memory',
-    description: 'Persist and recall notes across sessions.',
-    category: 'knowledge',
-    exposure: CHAT_DEFAULT,
-  },
-  global_search: {
-    name: 'global_search',
+  GlobalSearch: {
+    name: 'GlobalSearch',
     label: 'Global search',
     description:
       'Search chats, messages, files and every searchable resource; read past conversations.',
     category: 'knowledge',
     exposure: CHAT_DEFAULT,
   },
-  tool_output: {
-    name: 'tool_output',
+  ToolOutput: {
+    name: 'ToolOutput',
     label: 'Tool output',
     description: 'Search or recover stored tool outputs from the current session.',
     category: 'knowledge',
     // An elided result advertises this tool by name; without it the pointer is a dead end.
     exposure: EVERYWHERE,
   },
-  mcp_resources: {
-    name: 'mcp_resources',
+  McpResources: {
+    name: 'McpResources',
     label: 'MCP resources',
     description: 'List and read resources exposed by connected Model Context Protocol servers.',
     category: 'knowledge',
     exposure: CHAT_DEFAULT,
   },
-  vault: {
-    name: 'vault',
+  Vault: {
+    name: 'Vault',
+    deferred: true,
     label: 'Secret vault',
     description: 'Manage encrypted credential metadata without exposing secret values.',
     category: 'knowledge',
     // A child running `psql` needs the credential; the tool itself declines its
     // human-answered actions when no human can see the prompt (features/secrets).
-    exposure: CHAT_AND_CHILD,
+    exposure: CHAT_DEFAULT,
   },
-  external_agent_sessions: {
-    name: 'external_agent_sessions',
+  ExternalAgentSessions: {
+    name: 'ExternalAgentSessions',
+    deferred: true,
     label: 'External agent sessions',
     description:
-      'Inspect external CLI sessions: roster, transcript, context, state, wait, usage. To open a session for the user, resolve its native command with resume, then execute it with bash action:"open". Reading a transcript does not open a session.',
+      'Inspect external CLI sessions: roster, transcript, context, state, wait, usage. To open a session for the user, resolve its native command with resume, then execute it with `Bash` action:"open". Reading a transcript does not open a session.',
     category: 'knowledge',
-    exposure: CHAT_AND_CHILD,
+    exposure: CHAT_DEFAULT,
   },
-  skill: {
-    name: 'skill',
+  Skill: {
+    name: 'Skill',
     label: 'Skills',
     description: 'Save and retrieve reusable agent skills.',
     category: 'knowledge',
@@ -144,24 +131,24 @@ export const BUILTIN_TOOL_CATALOG = {
     // the host removes both the retrieval tool and its catalog from their prompt.
     exposure: CHAT_AND_CHILD,
   },
-  jobs: {
-    name: 'jobs',
+  Jobs: {
+    name: 'Jobs',
     label: 'Background jobs',
     description: 'Inspect and control background tool jobs.',
     category: 'automation',
     // Background bash is off for every unattended run, so a child has nothing to manage.
     exposure: CHAT_ONLY,
   },
-  browser: {
-    name: 'browser',
+  Browser: {
+    name: 'Browser',
     label: 'Browser',
     description: 'Open and drive Browser tabs: local previews and remote sites.',
     category: 'ui',
     // Children verify their own deliverables through their own session's preview port.
-    exposure: EVERYWHERE,
+    exposure: { chat: 'default', subagent: 'opt-in', automation: 'default' },
   },
-  store: {
-    name: 'store',
+  Store: {
+    name: 'Store',
     label: 'Store',
     description:
       'Find, install, update, switch and remove packages from the Store’s added sources, and create agents and skills.',
@@ -169,63 +156,37 @@ export const BUILTIN_TOOL_CATALOG = {
     // A person approves every change, and a delegated child has no one to ask.
     exposure: CHAT_ONLY,
   },
-  delegate: {
-    name: 'delegate',
-    label: 'Delegate',
-    description:
-      'Hand a task to yourself or another agent in a child session, and message, stop or close it.',
-    category: 'automation',
-    // Delegation is a root chat's: the child it creates may not delegate again.
-    exposure: CONVERSATION_TREE,
-  },
-  workflow: {
-    name: 'workflow',
+  ...SUBAGENT_TOOL_CATALOG,
+  Workflow: {
+    name: 'Workflow',
+    // Waits behind `ToolSearch`; a workflow command activates it for its session.
+    deferred: true,
     label: 'Workflow',
     description:
       'Run a plugin workflow: a script that runs many agents in child sessions and returns one result.',
     category: 'automation',
     // Its agents are children of the chat that runs it, and a child may not create children.
-    exposure: CONVERSATION_TREE,
+    exposure: CHAT_ONLY,
   },
-  loops: {
-    name: 'loops',
+  Loops: {
+    name: 'Loops',
     label: 'Loops',
     description: 'Create and manage the session loops: fixed-cadence and self-pacing jobs.',
     category: 'automation',
-    exposure: CHAT_DEFAULT,
+    // Claude Code removes `ScheduleWakeup` from every subagent, even one that lists it: a loop
+    // belongs to the conversation that schedules it.
+    exposure: { chat: 'default', subagent: 'never', automation: 'opt-in' },
   },
-  mini_app_guide: {
-    name: 'mini_app_guide',
+  MiniAppGuide: {
+    name: 'MiniAppGuide',
     label: 'Mini app guides',
     description: "Read an enabled mini app's guide before using its tools.",
     category: 'knowledge',
-    exposure: CHAT_AND_CHILD,
-  },
-  mini_app_build: {
-    name: 'mini_app_build',
-    label: 'Build mini apps',
-    description: "Create, build, test and reload the user's own mini apps.",
-    category: 'automation',
     exposure: CHAT_DEFAULT,
   },
-  skip_answer: {
-    name: 'skip_answer',
-    label: 'Skip answer',
-    description: 'Stay silent this turn when a colleague named you but asks nothing of you.',
-    category: 'ui',
-    exposure: { chat: 'default', subagent: 'never', automation: 'never' },
-    protocol: true,
-  },
-  set_topic: {
-    name: 'set_topic',
-    label: 'Session topic',
-    description: 'Start a new session topic and carry the previous one forward as a summary.',
-    category: 'ui',
-    exposure: { chat: 'default', subagent: 'never', automation: 'never' },
-    protocol: true,
-  },
-  configure: {
-    name: 'configure',
+  Configure: {
+    name: 'Configure',
+    deferred: true,
     label: 'Configure',
     // Proposes; never applies. The user's click on the `config_change` card is the authority.
     // Root chat only: a sub-session must never learn configuration is a thing it could rewrite.
@@ -233,8 +194,8 @@ export const BUILTIN_TOOL_CATALOG = {
     category: 'core',
     exposure: CHAT_ONLY,
   },
-  plan: {
-    name: 'plan',
+  Plan: {
+    name: 'Plan',
     label: 'Plan',
     // In every mode: `present` gates itself on plan mode, `complete` on an approved plan. Root
     // chat only — the person reviews the conversation's plan; a child reports to its delegator.
@@ -245,7 +206,7 @@ export const BUILTIN_TOOL_CATALOG = {
   },
 } as const satisfies Record<string, BuiltinToolDefinition>
 
-type BuiltinToolCatalog = typeof BUILTIN_TOOL_CATALOG
+export type BuiltinToolCatalog = typeof BUILTIN_TOOL_CATALOG
 type BuiltinToolNameMap = {
   readonly [K in keyof BuiltinToolCatalog]: BuiltinToolCatalog[K]['name']
 }
@@ -270,9 +231,6 @@ export type ToolName = BuiltinToolCatalog[keyof BuiltinToolCatalog]['name']
 
 export const BUILTIN_TOOL_NAMES: readonly string[] = Object.values(TOOL)
 
-export const isProtocolTool = (name: string): boolean =>
-  (BUILTIN_TOOL_CATALOG as Record<string, BuiltinToolDefinition>)[name]?.protocol === true
-
 /** The catalog's exposure for a built-in name — `undefined` for a plugin/MCP name. */
 export function builtinToolExposure(name: string): ToolExposure | undefined {
   const definition = (BUILTIN_TOOL_CATALOG as Record<string, BuiltinToolDefinition>)[name]
@@ -289,11 +247,26 @@ export { ACTIVATE_TOOLS_TOOL_NAME } from './tool-names-reserved'
  * shadow it), but MCP-provenance: it is only built when a connected server advertises
  * `resources`, and run assembly defers it along with the rest of the MCP surface.
  */
-export const MCP_RESOURCE_TOOL_NAMES: readonly string[] = [TOOL.mcp_resources]
+export const MCP_RESOURCE_TOOL_NAMES: readonly string[] = [TOOL.McpResources]
 
-/** Complete core-owned namespace reserved against plugin shadowing. */
+/**
+ * Core tools the model meets through `ToolSearch` instead of on the wire (`deferred` in the
+ * catalog): an open toolset offers them there, a list that names the tool keeps them on the wire.
+ */
+const DEFERRED_CORE_TOOLS: ReadonlySet<string> = new Set(
+  Object.values(BUILTIN_TOOL_CATALOG as Record<string, BuiltinToolDefinition>)
+    .filter((definition) => definition.deferred)
+    .map((definition) => definition.name),
+)
+
+export const isDeferredCoreTool = (name: string): boolean => DEFERRED_CORE_TOOLS.has(name)
+
+/**
+ * Complete core-owned namespace reserved against plugin shadowing: every tool's name, the
+ * activator's, and the names of core mechanisms that are not tools.
+ */
 export const CORE_RESERVED_TOOL_NAMES: readonly string[] = [
   ...BUILTIN_TOOL_NAMES,
+  ACTIVATE_TOOLS_TOOL_NAME,
   ...RESERVED_NON_TOOL_NAMES,
-  ...HISTORICAL_TOOL_NAMES,
 ]

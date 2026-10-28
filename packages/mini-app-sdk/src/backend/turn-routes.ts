@@ -1,6 +1,6 @@
 import type { Context } from 'hono'
 
-import type { Seat } from './agent-turn'
+import type { ChatRef } from './agent-turn'
 import { jsonError, type MiniAppRouteContext } from './http'
 
 /**
@@ -12,13 +12,13 @@ import { jsonError, type MiniAppRouteContext } from './http'
  * the rules refuse answers 409 with the rules' own sentence; anything else is a game that could
  * not be saved.
  */
-export function seatedAnswer<G, V = G>(options: {
+export function chatAnswer<G, V = G>(options: {
   missing: { code: string; message: string }
   refused: { error: abstract new (...args: never[]) => Error; code: string }
   view?: (game: G) => V
 }) {
   const view = options.view ?? ((game: G) => game as unknown as V)
-  return async (c: Context<MiniAppRouteContext>, action: (seat: Seat) => Promise<G>) => {
+  return async (c: Context<MiniAppRouteContext>, action: (chat: ChatRef) => Promise<G>) => {
     const sessionId = c.env.sessionId
     if (!sessionId) return jsonError(c, 404, options.missing.code, options.missing.message)
     try {

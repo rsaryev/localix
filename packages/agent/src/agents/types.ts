@@ -45,11 +45,9 @@ export type { BeforeToolCallResult } from './gate-verdict'
 
 export type { ToolAction, ToolActionDescriptor, AsyncToolRegistry } from './tool-actions'
 export type {
-  SpeakerRole,
   ToolSessionContext,
   ToolCommandReplyOutcome,
   AgentToolExecutionContext,
-  NestedToolCallOutcome,
 } from './tool-execution-context'
 
 export { DEFAULT_TOOL_EXPOSURE } from './tool-exposure'

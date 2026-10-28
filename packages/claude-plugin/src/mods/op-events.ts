@@ -41,7 +41,10 @@ function textOf(value: unknown): { text?: string; blocks?: Input[] } {
   if (typeof value === 'string') return { text: value }
   if (!Array.isArray(value)) return {}
   const blocks = value.map(record)
-  return { text: blocks.map((block) => String(block.text ?? '')).join(''), blocks }
+  return {
+    text: blocks.map((block) => (typeof block.text === 'string' ? block.text : '')).join(''),
+    blocks,
+  }
 }
 
 const NO_ARGS = [
@@ -93,7 +96,8 @@ export function namedEventInput(event: string, args: Args, plugin: string): unkn
   const first = args[0] ?? {}
   if (!['prompt.submit', 'prompt.fill', 'prompt.suggest', 'command.run'].includes(event))
     return first
-  const origin = { kind: 'plugin', name: plugin }
+  // The host runs a mod per project as `<plugin>~<hash>`; the model reads the plugin's name.
+  const origin = { kind: 'plugin', name: plugin.split('~')[0] }
   const input = typeof first === 'string' ? { text: first } : record(first)
   return event === 'prompt.submit' ? { ...input, wait: false, origin } : { ...input, origin }
 }

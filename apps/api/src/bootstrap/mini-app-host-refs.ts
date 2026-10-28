@@ -2,6 +2,7 @@ import type { WakeRequest } from '../features/chat/contracts'
 import type { createAgentsService } from '../features/agents/service'
 import type { createChatService } from '../features/chat/service'
 import type { WakeDelivery } from '../features/triggers/delivery'
+import type { LoadedPluginAgent } from '../features/plugins/loader-contract'
 import type { PluginMonitorHost } from '../features/plugins/monitor-host'
 
 /**
@@ -43,6 +44,11 @@ export interface MiniAppHostRefs {
       name: string
       description: string
       argumentHint?: string
+    }>
+    /** The agent types the loaded mods registered, by plugin, for the agent catalog. */
+    agentGroups?: () => ReadonlyArray<{
+      plugin: string
+      agents: readonly LoadedPluginAgent[]
     }>
     /** `session.receive`: a delivery's text as it is queued, or taken by a mod. */
     receive?: (delivery: {

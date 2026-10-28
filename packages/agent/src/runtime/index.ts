@@ -130,6 +130,12 @@ export interface ToolBatchVerdict {
 
 export interface AgentRuntimeRunInput {
   sessionId: string
+  /**
+   * What a provider that routes its prompt cache by key is sent in place of the session id. The
+   * host names it when requests of other sessions share a prefix with this one (the same agent,
+   * model and project, or a fork of this session's line); absent, the session id is the key.
+   */
+  promptCacheKey?: string
   messages: readonly AgentMessage[]
   systemPrompt: string
   model: RuntimeModelRef

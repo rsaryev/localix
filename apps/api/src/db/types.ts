@@ -49,7 +49,7 @@ export type AgentMessageRole = 'user' | 'assistant' | 'tool'
  *
  * `chat` is the user's own conversation; `subagent` one delegated, one-shot piece of work;
  * `job` work the engine dispatched against a board task; `system` a passive log that never
- * runs a model. Conversation membership lives in `conversation_participants`, not in child sessions.
+ * runs a model.
  */
 export type AgentSessionKind = 'chat' | 'subagent' | 'job' | 'system'
 
@@ -126,19 +126,29 @@ export interface AgentSessionsTable {
   pinned_skills: ColumnType<string, string | undefined, string | undefined>
   /** JSON array of deferred tool names this session has activated; see the 20260818 migration. */
   activated_tools: ColumnType<string | null, string | null | undefined, string | null | undefined>
-  /** Optional conversation description, independent of participant count. */
+  /** Optional conversation description. */
   description: string | null
-  /** A group's avatar (an opaque ref: media id or emoji). Null = generated from the title. */
-  avatar: string | null
-  /** 1 = the participants were fixed before the conversation started; see the 20260925 migration. */
+  /** The session's one agent (registry identity), fixed at creation. Null for a log that runs no model. */
+  agent_id: string | null
+  /** Handle captured when the session was created, retained for historical display. */
+  agent_name: string | null
+  /** The model route this session's agent runs on. */
+  provider_connection_id: string | null
+  model_id: ColumnType<string, string | undefined, string | undefined>
+  reasoning_effort: ColumnType<
+    ReasoningEffort,
+    ReasoningEffort | undefined,
+    ReasoningEffort | undefined
+  >
+  /** Set only when the user explicitly chooses the model; activity never changes it. */
+  model_selected_at: ColumnType<string | null, string | null | undefined, string | null>
+  reasoning_selected_at: ColumnType<string | null, string | null | undefined, string | null>
   /** When a delegated child was closed (`fork` action close): nothing wakes it after. Null = open. */
   closed_at: ColumnType<string | null, string | null | undefined, string | null | undefined>
   /** The session's permission mode (`capabilities/permission-modes.ts`); see the 20261003 migration. */
   permission_mode: ColumnType<string, string | undefined, string | undefined>
   /** The conversation's output style, `<plugin>:<name>`; null is the default. See the 20261104 migration. */
   output_style: ColumnType<string | null, string | null | undefined, string | null | undefined>
-  /** The session's model choices per agent and for all agents (`session-model-choices.ts`). */
-  model_choices: ColumnType<string | null, string | null | undefined, string | null | undefined>
   /** User-visible chat-message branch leaf (`agent_messages.id`). THE message tree's tip — the
    *  parallel `runtime_leaf_entry_id`, plus the `revision`/`next_entry_sequence` pair that versioned
    *  it, belonged to the write-only runtime tree and were dropped with it
@@ -158,19 +168,6 @@ export interface AgentSessionsTable {
   task_name: ColumnType<string | null, string | null | undefined, never>
 }
 
-/**
- * One participant of one session, and the route its turns run on.
- *
- * The party and its routing are the same table because they are the same fact. A session
- * used to carry a single {connection, model, effort} of its own, which can only describe a
- * conversation with ONE counterpart; a room with several agents needs one such triple each,
- * and a private chat is just the case where there is one row. Two tables — a member list
- * beside a routing table — could disagree, and the disagreements are both unrecoverable: a
- * route for someone who is not in the room, or a member with nowhere to run.
- *
- * The human is not a row. They are in every session by construction, and they do not run on
- * a model.
- */
 /**
  * WHAT EXISTS TO RUN — one row per installed plugin, registry agent, agent provider or
  * MCP server. The registry half of the pair `capability_rule` completes: this says what
@@ -201,25 +198,6 @@ export interface CapabilitySourceTable {
   source: ColumnType<string, string | undefined, string | undefined>
   created_at: string
   updated_at: string
-}
-
-export interface ConversationParticipantsTable {
-  session_id: string
-  agent_id: string
-  /** Display snapshot; not a registry lookup key. */
-  handle: string
-  /** Join order, which is also speaking order for a group's serial rounds. */
-  position: ColumnType<number, number | undefined, number | undefined>
-  provider_connection_id: string | null
-  model_id: string
-  /** Set only when the user explicitly chooses this model; activity never changes it. */
-  model_selected_at: ColumnType<string | null, string | null | undefined, string | null>
-  reasoning_selected_at: ColumnType<string | null, string | null | undefined, string | null>
-  reasoning_effort: ColumnType<
-    ReasoningEffort,
-    ReasoningEffort | undefined,
-    ReasoningEffort | undefined
-  >
 }
 
 export interface AgentMessagesTable {
@@ -263,7 +241,6 @@ export interface ToolOutputArtifactsTable {
   session_id: string
   tool_call_id: string
   tool_name: string
-  participant: string | null
   content: string
   /** 'plain': `content` is the text. 'zstd': `content` is '' and `content_z` holds it compressed. */
   encoding: 'plain' | 'zstd'
@@ -289,7 +266,7 @@ export type AgentRunStatus = 'running' | 'completed' | 'failed' | 'aborted' | 'i
 export interface AgentRunsTable {
   id: string
   session_id: string
-  /** The participant whose run this is — in a conversation, which agent was interrupted. */
+  /** The agent whose run this is — in a conversation, which agent was interrupted. */
   agent_id: string
   status: AgentRunStatus
   provider_id: string
@@ -349,17 +326,6 @@ export interface SqliteMasterTable {
   tbl_name: string
   rootpage: number
   sql: string | null
-}
-
-export interface AgentMemoryTable {
-  id: string
-  user_id: string
-  /** '' = global (every session); otherwise scoped to a project id. */
-  project_id: ColumnType<string, string | undefined, string | undefined>
-  key: string
-  value: string
-  created_at: ColumnType<string, string | undefined, never>
-  updated_at: ColumnType<string, string | undefined, string | undefined>
 }
 
 export interface UserViewStateTable {
@@ -424,7 +390,7 @@ export interface UsageEventsTable {
   key_id: ColumnType<string | null, string | null | undefined, string | null | undefined>
   key_label: ColumnType<string | null, string | null | undefined, string | null | undefined>
   key_masked: ColumnType<string | null, string | null | undefined, string | null | undefined>
-  /** The party member whose turn this was — a room's spend is per participant, not per session. */
+  /** The agent whose turn this was. */
   agent_id: ColumnType<string | null, string | null | undefined, string | null | undefined>
 }
 
@@ -448,7 +414,7 @@ export interface SkillUsageTable {
   last_used_at: ColumnType<string | null, string | null | undefined, string | null | undefined>
   pinned: ColumnType<number, number | undefined, number | undefined>
   archived_at: ColumnType<string | null, string | null | undefined, string | null | undefined>
-  /** 1 when the skill was created in Localix (Store, `skill` tool): only those age out. */
+  /** 1 when the skill was created in Localix (Store, `Skill` tool): only those age out. */
   localix_authored: ColumnType<number, number | undefined, number | undefined>
   created_at: ColumnType<string, string | undefined, never>
   updated_at: ColumnType<string, string | undefined, string | undefined>
@@ -495,14 +461,12 @@ export interface AppDatabase {
   vault_item_bindings: VaultItemBindingsTable
   vault_audit: VaultAuditTable
   agent_sessions: AgentSessionsTable
-  participant_lane_snapshots: {
+  session_prompt_snapshots: {
     user_id: string
     session_id: string
-    agent_id: string
     boundary_marker: string
     snapshot_json: string
   }
-  conversation_participants: ConversationParticipantsTable
   capability_rule: CapabilityRuleTable
   config_proposals: ConfigProposalsTable
   capability_policy_revision: { user_id: string; agent_id: string; revision: number }
@@ -517,7 +481,6 @@ export interface AppDatabase {
   wake_outbox: WakeOutboxTable
   mcp_channel_bindings: McpChannelBindingsTable
   mini_app_catalogs: MiniAppCatalogsTable
-  agent_memory: AgentMemoryTable
   user_view_state: UserViewStateTable
   semantic_settings: SemanticSettingsTable
   semantic_collections: SemanticCollectionsTable
@@ -561,7 +524,6 @@ export interface AgentTurnStartsTable {
   assistant_message_id: string
   user_id: string
   session_id: string
-  agent_id: string
   created_at: string
 }
 
@@ -599,7 +561,6 @@ export interface WorkRecordsTable {
   id: string
   user_id: string
   session_id: string
-  agent_id: Nullable<string>
   /** The id the agent and the user see (`bg-3`, `mon-1`); unique and never reused per session. */
   display_id: string
   kind: 'job' | 'monitor' | 'stream' | 'promoted' | 'subagent'

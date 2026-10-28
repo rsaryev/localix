@@ -3,7 +3,7 @@
  * or a fork), a delegated child, or a worker another session started.
  *
  * Lineage is what decides authority that must never come from an agent: only the original
- * conversation creates delegated work or authors registry agents, only the root owns the plan,
+ * conversation creates delegated work and authors registry agents, only the root owns the plan,
  * and only a delegated child reports its runs back. These used to be six predicates in six
  * modules, each spelling "the root" slightly differently.
  */
@@ -26,13 +26,13 @@ export interface LineageDecision {
   rootId: string
   /** 0 for a conversation, 1 for its delegated child. */
   depth: number
-  /** May create delegated child sessions (`delegate`). */
+  /** May create delegated child sessions (`Agent`). */
   mayDelegate: boolean
   /** May manage the Store's packages and author registry agents (`store`). */
   managesAgents: boolean
   /** Owns the conversation's plan: its approved version and its draft directory. */
   ownsPlan: boolean
-  /** Each of its runs is reported to the participant that delegated it. */
+  /** Each of its runs is reported to the agent that delegated it. */
   reportsToDelegator: boolean
 }
 

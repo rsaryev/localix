@@ -63,7 +63,7 @@ export function createBashTool(
   }
   // The WAIT rule (use `until`, never a sleep loop) is stated once, on the `until` field, which
   // is where the model is looking when it reaches for one. It used to be here, on the field,
-  // in the `jobs` description and in the prompt — four copies billed on every request.
+  // in the `Jobs` description and in the prompt — four copies billed on every request.
   const backgroundDescription = allowBackground
     ? [
         'Servers/watchers/long builds: background:true. Read launch output (URL or crash) before probing; a timed-out local foreground command may continue as a job.',
@@ -77,7 +77,7 @@ export function createBashTool(
   // runTerminalAction — and TS could only reconcile them as `{}`, so every typed
   // consumer saw a tool with no usable details at all. `action` is the discriminant.
   return defineAgentTool<BashToolInput, BashToolDetails | TerminalDetails>({
-    name: TOOL.bash,
+    name: TOOL.Bash,
     label: 'Bash',
     activeVerb: 'Running',
     // Which tool to use INSTEAD of the shell for file work is the prompt's routing rule

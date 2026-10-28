@@ -16,7 +16,7 @@ test('native commands follow board focus, use current actions, and leave text fi
     const root = useRef<HTMLDivElement>(null)
     useNativeEditTarget(root, (command) => calls.push(`${name}:${command}`))
     return (
-      <div ref={root} tabIndex={0}>
+      <div ref={root}>
         <button>Board tool</button>
         <textarea defaultValue="Draft text" />
       </div>

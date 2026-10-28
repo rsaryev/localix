@@ -1,6 +1,6 @@
 # Let the agent propose configuration changes
 
-The `configure` tool lets an agent see why a capability is unavailable and propose the change that
+The `Configure` tool lets an agent see why a capability is unavailable and propose the change that
 would restore it. Nothing is applied until you approve the card it raises.
 
 ## Terminology
@@ -16,11 +16,11 @@ would restore it. Nothing is applied until you approve the card it raises.
 
 | Action                           | Mechanism                                                                 | Availability and boundary                                                      |
 | -------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| Ask why a tool is missing        | The agent calls `configure` with `action: "inspect"`.                     | Read-only, needs no approval, and never re-reads policy mid-run.               |
+| Ask why a tool is missing        | The agent calls `Configure` with `action: "inspect"`.                     | Read-only, needs no approval, and never re-reads policy mid-run.               |
 | Approve a proposed change        | Press **Approve** on the card.                                            | The change is written as you, with the agent's session recorded as its origin. |
 | Refuse a proposed change         | Press **Deny**, close the card, or leave it for five minutes.             | All three mean no; the agent may not propose the same change again this run.   |
 | Review what an agent changed     | Inspect the proposal result in chat and the resulting switch in Settings. | Reverting is an ordinary edit; provenance storage differs by remedy.           |
-| Take the tool away from an agent | Turn `configure` off in that agent's rules.                               | Sub-agents and unattended runs never have it at all.                           |
+| Take the tool away from an agent | Turn `Configure` off in that agent's rules.                               | Sub-agents and unattended runs never have it at all.                           |
 
 ## How it works
 
@@ -43,7 +43,7 @@ nobody was looking would be the opposite of the boundary this tool exists to kee
 | `tool.enable` | One tool's switch. | The proposing agent. |
 
 Mini apps, plugins and MCP servers are switched on in the [Store](store.md), or by the agent's
-`store` tool with your approval.
+`Store` tool with your approval.
 
 Each change names its target and accepts optional `enabled`, defaulting to `true`. Setting it to
 `false` proposes disabling the same capability. Prompt/model editing, role creation and workload
@@ -63,14 +63,14 @@ agent's rules; review the named target before approving.
 
 ### Scope of the tool itself
 
-`configure` exists only in a chat. A sub-agent, a board worker and a scheduled job never receive its
+`Configure` exists only in a chat. A sub-agent, a board worker and a scheduled job never receive its
 schema and are never told it exists, so they cannot spend a turn discovering they may not use it.
 
 ## Configuration
 
 | Control                   | Effect                                                           | Boundary                                                                |
 | ------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| `configure` switch        | Removes the tool, and with it the `# Unavailable tools` section. | Per agent, on the agent's Store page (Access tab).                      |
+| `Configure` switch        | Removes the tool, and with it the `# Unavailable tools` section. | Per agent, on the agent's Store page (Access tab).                      |
 | Declines within a run     | Remembered until the run ends.                                   | A new run starts with a clean slate.                                    |
 | Five-minute card lifetime | An unanswered proposal becomes a refusal.                        | The same deadline every HITL card has, counted down on the card itself. |
 
@@ -98,7 +98,7 @@ schema and are never told it exists, so they cannot spend a turn discovering the
 
 ## Source of truth
 
-- [The `configure` tool](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/configure/configure.ts)
+- [The `Configure` tool](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/configure/configure.ts)
 - [Tool ledger and withhold reasons](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tool-ledger.ts)
 - [Remedy registry](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/config-proposals/registry.ts)
 - [Switch writes and rule provenance](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/config-proposals/remedies/toggles.ts)

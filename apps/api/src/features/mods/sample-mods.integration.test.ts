@@ -33,6 +33,8 @@ const present = Object.values(MODS).every((module) => existsSync(module))
 const scratch = tempDirPerTest('sample-mods', {})
 const vms = createScriptVms()
 
+const labelText = (label: unknown): string => (typeof label === 'string' ? label : '')
+
 /** Text anywhere in a drawing. */
 const textOf = (nodes: unknown): string =>
   Array.isArray(nodes)
@@ -41,7 +43,7 @@ const textOf = (nodes: unknown): string =>
       ? nodes
       : nodes && typeof nodes === 'object'
         ? [
-            String((nodes as { props?: { label?: unknown } }).props?.label ?? ''),
+            labelText((nodes as { props?: { label?: unknown } }).props?.label),
             textOf((nodes as { children?: unknown }).children),
           ].join('')
         : ''

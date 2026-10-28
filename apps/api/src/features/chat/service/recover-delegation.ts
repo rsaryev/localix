@@ -18,13 +18,24 @@
  */
 import type { Kysely } from 'kysely'
 import type { AppDatabase } from '../../../db/types'
-import { participantAgentId } from '../../../db/participant'
 import type { createChatService } from '../service'
-import { delegationReportWake } from '../runtime/delegation-report'
+import { delegationReportWake, readRunReplies } from '../runtime/delegation-report'
 import { pruneDeliveryReceipts } from '../runtime/delivery-receipts'
-import { delegationRecoveryQuery, recoveryUsersQuery } from '../repository-delegation-recovery'
+import {
+  delegationRecoveryQuery,
+  recoveryUsersQuery,
+  runRowReader,
+} from '../repository-delegation-recovery'
 
 type Wake = ReturnType<typeof createChatService>['wakeSession']
+
+/** The run's text and how it ended, read as the live seam reads them (`readRunReplies`). */
+async function recoveredRun(db: Kysely<AppDatabase>, child: { id: string; run_id: string | null }) {
+  const run = child.run_id
+    ? await readRunReplies(child.run_id, runRowReader(db, child.id, child.run_id))
+    : { text: null, waiting: false }
+  return { text: run.text, ...(run.waiting ? { waiting: true } : {}) }
+}
 
 async function recoverForUser(
   db: Kysely<AppDatabase>,
@@ -39,15 +50,13 @@ async function recoverForUser(
     try {
       const result = await wake(
         delegationReportWake({
+          ...(await recoveredRun(db, child)),
           userId,
           parent: { id: parentSessionId },
-          delegatingAgentId: child.recipient ? participantAgentId(child.recipient) : null,
-          handle: child.recipient_handle,
           label: child.title,
           childSessionId: child.id,
           runId: child.run_id ?? 'launch',
           status: child.runtime_status,
-          text: child.report,
         }),
       )
       if (result.delivered) delivered++

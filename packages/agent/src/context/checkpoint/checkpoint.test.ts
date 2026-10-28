@@ -35,7 +35,7 @@ function reply(k: number, options: { answerChars?: number } = {}): CheckpointEnt
       id: next('c'),
       type: 'command',
       toolCallId: next('call'),
-      name: 'bash',
+      name: 'Bash',
       input: { command: `bun test step-${k}` },
       command: `bun test step-${k}`,
       exitCode: k % 3 === 0 ? 1 : 0,
@@ -46,7 +46,7 @@ function reply(k: number, options: { answerChars?: number } = {}): CheckpointEnt
       id: next('t'),
       type: 'tool_call',
       toolCallId: next('call'),
-      name: 'read',
+      name: 'Read',
       activeVerb: 'Reading',
       input: { path: 'src/app.ts' },
       status: 'completed',
@@ -201,7 +201,7 @@ describe('planCheckpoint + projectCheckpoint', () => {
     expect(checkpoint.evictedThroughId).toBeUndefined()
     expect(answer && 'text' in answer ? answer.text : '').toContain(ELISION_MARKER)
     expect(answer && 'text' in answer ? answer.text : '').toContain(
-      `global_search(around_message_id="${entries[1]!.message.id}")`,
+      `GlobalSearch(around_message_id="${entries[1]!.message.id}")`,
     )
   })
 })

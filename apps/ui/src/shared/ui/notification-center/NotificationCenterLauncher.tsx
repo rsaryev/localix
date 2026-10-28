@@ -63,22 +63,21 @@ export function NotificationCenterLauncher({
   const entries = useNotificationsStore((state) => state.entries)
   const unread = useNotificationsStore(selectUnreadCount)
   const unreadSeverity = highestUnreadSeverity(entries)
-  const initialLatestSignal = useRef(eventSignalKey(entries[0]))
+  // A new unread entry lights the bell for a moment. Detected while rendering (state adjusted from
+  // the change itself) rather than in an effect, so the signal never costs a second commit.
+  const latest = entries[0]
+  const latestSignal = eventSignalKey(latest)
+  const [seenSignal, setSeenSignal] = useState(latestSignal)
+  if (latestSignal !== seenSignal) {
+    setSeenSignal(latestSignal)
+    if (latest && !latest.read) setSignal({ id: latest.id, severity: latest.severity })
+  }
 
   useEffect(() => {
-    const latest = entries[0]
-    if (!latest) {
-      initialLatestSignal.current = undefined
-      return
-    }
-    const nextSignal = eventSignalKey(latest)
-    if (nextSignal === initialLatestSignal.current) return
-    initialLatestSignal.current = nextSignal
-    if (latest.read) return
-    setSignal({ id: latest.id, severity: latest.severity })
+    if (!signal) return
     const timer = window.setTimeout(() => setSignal(null), 2_400)
     return () => window.clearTimeout(timer)
-  }, [entries])
+  }, [signal])
 
   // The entry a surface's "Details" button asked for. Cleared on close so the next plain open of
   // the bell is an ordinary list, not a re-focus on something already dealt with.

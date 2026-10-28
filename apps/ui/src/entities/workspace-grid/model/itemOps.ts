@@ -22,7 +22,7 @@ import {
   insertSplit,
   removeLeaf,
 } from './tree'
-import { roleForKind, resolveOpenTarget, existingLegacyGroup } from './placement'
+import { roleForKind, resolveOpenTarget } from './placement'
 import { recordTabHistory } from './tab-history'
 
 export { MAX_CLOSED, MAX_TAB_HISTORY, type ClosedTab } from './tab-history'
@@ -144,11 +144,6 @@ export function resolveRoleGroupState(
   kind: WorkItem['kind'],
   newId: () => string,
 ): { state: EditorState; groupId: string } {
-  // Legacy-layout override BEFORE the role tiers: a persisted preview COLUMN
-  // (old policy) keeps hosting the preview even though the default role is now
-  // `editor` — we never re-home a column the user already has.
-  const legacy = existingLegacyGroup(state.root, kind)
-  if (legacy) return { state, groupId: legacy }
   const role: GroupRole = roleForKind(kind)
   // Tier 0 — focus-aware: when the FOCUSED group already carries this kind's role
   // (e.g. a file opened while one of two editor groups is focused), open there so

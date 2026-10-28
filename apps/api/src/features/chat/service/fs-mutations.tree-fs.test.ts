@@ -125,8 +125,9 @@ describe('local tree port', () => {
       throw Object.assign(new Error('ENOSPC: no space left'), { code: 'ENOSPC' })
     }
     const tree = createLocalTreeFs(io)
-    expect(tree.move(path.join(dir, 'real'), path.join(dir, 'moved'))).rejects.toThrow('ENOSPC')
-    await new Promise((resolve) => setTimeout(resolve, 10))
+    await expect(tree.move(path.join(dir, 'real'), path.join(dir, 'moved'))).rejects.toThrow(
+      'ENOSPC',
+    )
     expect(existsSync(path.join(dir, 'moved'))).toBe(false)
     expect(readFileSync(path.join(dir, 'real', 'inside.txt'), 'utf8')).toBe('kept')
   })
@@ -140,8 +141,7 @@ describe('local tree port', () => {
     io.cp = async () => {
       copied = true
     }
-    expect(createLocalTreeFs(io).move('/a', '/b')).rejects.toThrow('EACCES')
-    await new Promise((resolve) => setTimeout(resolve, 10))
+    await expect(createLocalTreeFs(io).move('/a', '/b')).rejects.toThrow('EACCES')
     expect(copied).toBe(false)
   })
 

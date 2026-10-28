@@ -59,7 +59,7 @@ describe('createAskTool', () => {
     expect(humanInLoop.respond(response)).toBe(true)
 
     expect(resultPromise).resolves.toMatchObject({
-      content: 'User answers:\ndirection: careful',
+      content: 'User answers:\ndirection: careful\nContinue the task with these answers.',
       details: {
         answers: [
           {
@@ -228,6 +228,28 @@ describe('prepareAskArguments', () => {
     expect(prepareAskArguments({ ...canonical, loading_messages: 'Thinking' })).toEqual({
       ...canonical,
       loading_messages: ['Thinking'],
+    })
+  })
+})
+
+describe('AskUserQuestion as Claude Code calls it', () => {
+  test('header names the answer and multiSelect lets several be chosen', () => {
+    const input = askToolInputSchema.parse(
+      prepareAskArguments({
+        questions: [
+          {
+            question: 'Which approach?',
+            header: 'Approach',
+            options: [{ label: 'Fast', description: 'Ship today' }, { label: 'Careful' }],
+            multiSelect: true,
+          },
+        ],
+      }),
+    )
+    expect(input.questions[0]).toMatchObject({ id: 'Approach', multi: true })
+    expect(input.questions[0]!.options[0]).toMatchObject({
+      label: 'Fast',
+      description: 'Ship today',
     })
   })
 })

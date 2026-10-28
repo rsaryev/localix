@@ -15,13 +15,13 @@ import type { MiniAppHostRefs } from './mini-app-host-refs'
 export function bootAgentDirectory(hostRefs: MiniAppHostRefs): MiniAppAgentDirectory {
   return createMiniAppAgentDirectory({
     sessionProject: async (...args) => {
-      const seat = await hostRefs.chatService?.getSessionAgentRoute(...args)
-      return seat ? (seat.projectId ?? null) : undefined
+      const route = await hostRefs.chatService?.getSessionAgentRoute(...args)
+      return route ? (route.projectId ?? null) : undefined
     },
     listAgents: async (userId, projectId) =>
       ((await hostRefs.listAgents?.(userId, { projectId })) ?? []).map((agent) => ({
         id: agent.record.id,
-        handle: agent.record.handle,
+        name: agent.record.name,
         description: agent.record.description,
         enabled: agent.enabled,
       })),

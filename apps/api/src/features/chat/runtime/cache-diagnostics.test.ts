@@ -5,7 +5,7 @@ import { promptTexts } from '../../effective-config/prompt-texts'
 import type { PersistedMessage } from '../contracts'
 import type { SessionRecord } from '../repository'
 import { computeCacheDiagnostics } from './cache-diagnostics'
-import { routedParticipants } from '../../../testing/session-fixture'
+import { routedAgent } from '../../../testing/session-fixture'
 
 describe('computeCacheDiagnostics', () => {
   const msg = (id: string, content: string): PersistedMessage =>
@@ -19,14 +19,14 @@ describe('computeCacheDiagnostics', () => {
     }) as PersistedMessage
   const session = {
     id: 's',
-    agents: routedParticipants({ modelId: 'opus', reasoningEffort: 'high' }),
+    agent: routedAgent({ modelId: 'opus', reasoningEffort: 'high' }),
   } as unknown as SessionRecord
 
   it('maps session/history/tools straight into the snapshot', () => {
     const { snapshot } = computeCacheDiagnostics({
       createDiagnostics: createChatCacheDiagnostics,
       session,
-      agentId: session.agents[0]!.agentId,
+      agentId: session.agent!.agentId,
       historyMessages: [msg('a', 'hello'), msg('b', 'world')],
       systemPrompt: 'You are helpful.',
       providerId: 'anthropic',
@@ -40,15 +40,15 @@ describe('computeCacheDiagnostics', () => {
     expect(typeof snapshot.toolNamesHash).toBe('string')
   })
 
-  it('uses the addressed agent route without changing participant order', () => {
+  it('reads the model from the session agent route', () => {
     const second = {
-      ...session.agents[0]!,
+      ...session.agent!,
       agentId: 'agent-second',
-      handle: 'second',
+      name: 'second',
       modelId: 'sonnet',
       reasoningEffort: 'low' as const,
     }
-    const multi = { ...session, agents: [session.agents[0]!, second] }
+    const multi = { ...session, agent: second }
     const { snapshot } = computeCacheDiagnostics({
       createDiagnostics: createChatCacheDiagnostics,
       session: multi,
@@ -60,16 +60,12 @@ describe('computeCacheDiagnostics', () => {
     })
 
     expect(snapshot.modelId).toBe('sonnet')
-    expect(multi.agents.map((agent) => agent.agentId)).toEqual([
-      session.agents[0]!.agentId,
-      'agent-second',
-    ])
   })
 
   const args = (systemPrompt: string, history: PersistedMessage[] = [msg('a', 'hello')]) => ({
     createDiagnostics: createChatCacheDiagnostics,
     session,
-    agentId: session.agents[0]!.agentId,
+    agentId: session.agent!.agentId,
     historyMessages: history,
     systemPrompt,
     providerId: 'anthropic',
@@ -119,7 +115,7 @@ describe('the text retained behind each hash', () => {
     }) as PersistedMessage
   const session = {
     id: 's',
-    agents: routedParticipants({ modelId: 'opus', reasoningEffort: 'high' }),
+    agent: routedAgent({ modelId: 'opus', reasoningEffort: 'high' }),
   } as unknown as SessionRecord
 
   it('re-hashes to the hash it was stored under', () => {
@@ -137,7 +133,7 @@ describe('the text retained behind each hash', () => {
     const { snapshot } = computeCacheDiagnostics({
       createDiagnostics: createChatCacheDiagnostics,
       session,
-      agentId: session.agents[0]!.agentId,
+      agentId: session.agent!.agentId,
       historyMessages: [msg('a', 'hello')],
       systemPrompt,
       providerId: 'anthropic',
@@ -178,7 +174,7 @@ describe('the text retained behind each hash', () => {
     const { snapshot } = computeCacheDiagnostics({
       createDiagnostics: createChatCacheDiagnostics,
       session,
-      agentId: session.agents[0]!.agentId,
+      agentId: session.agent!.agentId,
       historyMessages: [msg('a', 'hi')],
       systemPrompt,
       providerId: 'anthropic',

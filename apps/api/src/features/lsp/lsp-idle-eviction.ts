@@ -5,11 +5,11 @@ interface IdleClient {
 
 interface IdleEvictionPorts<T extends IdleClient> {
   idleTimeoutMs: number
-  isDisposed(): boolean
-  isStarting(projectRoot: string, key: string): boolean | undefined
-  getClients(projectRoot: string): Map<string, T> | undefined
-  deleteProject(projectRoot: string): void
-  notifyUpdate(projectRoot: string): void
+  isDisposed: () => boolean
+  isStarting: (projectRoot: string, key: string) => boolean | undefined
+  getClients: (projectRoot: string) => Map<string, T> | undefined
+  deleteProject: (projectRoot: string) => void
+  notifyUpdate: (projectRoot: string) => void
 }
 
 /** Idle timers follow live document/startup state and release the original client only. */

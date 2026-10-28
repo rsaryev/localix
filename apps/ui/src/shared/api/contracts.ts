@@ -5,7 +5,7 @@ export * from './contracts/hitl'
 export * from './contracts/message'
 export * from './contracts/capabilities'
 
-// The store's session record and the room's floor mode live in their own module
+// The store's session record lives in its own module
 // (`ui-session.ts`): the largest shape in this contract, and the one that grows with every
 // strip above the composer. Re-exported so every existing import keeps resolving here.
 export type { UiSession } from './ui-session'

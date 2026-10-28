@@ -60,22 +60,23 @@ const registries = {
   full: createRuntimeToolRegistry({
     // One tool switched off by a rule, so the ledger has a remediable withhold and
     // `# Unavailable tools` renders (it needs `configure` live AND something to list).
-    policy: { disabledTools: [TOOL.loops] },
+    policy: { disabledTools: [TOOL.Loops] },
     optional: {
-      skill: stubTool(TOOL.skill),
-      jobs: stubTool(TOOL.jobs),
+      Skill: stubTool(TOOL.Skill),
+      Jobs: stubTool(TOOL.Jobs),
+      // `# Collaboration` and `# Agent directory` render only for a run that can start subagents.
+      Agent: {} as never,
       // The port is BUILT (the host wires it whenever the profile exposes it); only the rule
       // withholds it — which is what makes the withhold remediable.
-      loops: { userId: 'u', sessionId: 'sess', agentId: 'lead' },
-      set_topic: { save: async () => {} },
-      configure: {
+      Loops: { userId: 'u', sessionId: 'sess', agentId: 'lead' },
+      Configure: {
         sessionId: 'sess',
         host: { changeSchema: z.object({ kind: z.literal('noop') }) } as never,
         ledgerRef: {},
         declined: new Set(),
       },
       // The plan tool: `# Plan mode` renders only with it (and only in a plan-mode run).
-      plan: {
+      Plan: {
         inPlanMode: async () => true,
         present: async () => ({}) as never,
         overview: async () => ({}) as never,
@@ -103,7 +104,7 @@ function renderWith(
     sessionId: 'sess',
     now: () => '2026-08-20T00:00:00.000Z',
     workspaceRoot: '/repo',
-    memoryContext: 'remembered fact',
+    memory: { dir: '/mem', index: 'remembered fact', clipped: false },
     scratchDir: '/tmp/scratch',
     projectInstructions: 'follow the rules',
     contextFiles: [{ path: '/repo/AGENTS.md', content: 'rules' }],
@@ -121,17 +122,9 @@ function renderWith(
     ],
     ...delivery,
     sessionTopic: { title: 'Ship it', goal: 'Release is out' },
-    // A conversation with a colleague: the turn protocol (stable) and the roster (volatile).
-    conversation: { self: 'lead', participants: [{ handle: 'lead' }, { handle: 'qa' }] },
-    agentDirectory: [
-      {
-        id: 'agent-qa',
-        handle: 'qa',
-        leadershipPriority: 0,
-        inConversation: true,
-        available: true,
-      },
-    ],
+    // A conversation: the turn contract (stable) and the directory (volatile).
+    conversation: true,
+    agentDirectory: [{ id: 'agent-qa', name: 'qa' }],
     reactionContext: '# Reactions since your last turn\n- 👍 on your last message',
     projectStructure: 'src/\npackage.json',
     approvedPlan: { version: 2, title: 'Ship it', body: '# Goal\nShip it.' },

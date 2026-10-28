@@ -1,3 +1,4 @@
+import { TOOL } from '../../../agent-core/tool-names'
 import type { ForkLiveRun } from '../fork/fork-port'
 import { claudeCodeHome } from '../../../cc-settings/config-dir'
 import {
@@ -13,8 +14,8 @@ import type { loadUserSettingsContext } from '../../../user/runtime-settings'
 import type { SpawnTerminalJob } from '../../../agent-core/tools/terminal/terminal-job'
 import { announcePtyOpen } from './pty-announce'
 import { buildTerminalToolOptions } from './terminal-tool-options'
-import { buildJobsTool } from './jobs-tool'
-import { buildOptionalToolPorts, explainEmptyPorts } from './runtime-tool-ports'
+import { buildJobsTool, buildStopJob } from './jobs-tool'
+import { buildOptionalToolPorts, explainEmptyPorts, manageableJobs } from './runtime-tool-ports'
 import { ccSessionEnvScripts, type CcHooksRuntime } from '../../../cc-hooks'
 import { ccSessionEnvFilesOf } from './cc-hook-session-facts'
 import { settingsEnvScriptFor } from './settings-env-script'
@@ -28,22 +29,18 @@ import { announceSessionActive } from '../../../agent-core/session-activity'
 import { parseLspServersConfig, configuredLspServer, withoutBuiltinOverlap } from '../../../lsp'
 import type { RuntimeState } from '../agent-runner-state'
 import type { ChatRepository, SessionRecord } from '../../repository'
-import type { createMemoryRepository } from '../../../memory/repository'
 import type { ToolSurface } from '@localixai/agent/agents'
 import type { SkillOverrides } from '../../../agent-core/skill-overrides'
 import type { ToolDenial } from '../../../capabilities/resolve'
-import type { SetTopicPort } from '../../../agent-core/tools/set-topic'
-import type { MemoryScope } from '../../../agent-core/memory-scope-policy'
 import type { RunPolicy } from '../../policy/run-policy'
 import type { WorkflowEntry } from '../../../agent-core/tools/workflow/workflow'
-import type { ChatModel } from '../../../agent-core/agent-model-route'
+import type { AgentModelChoice } from '../../../agent-core/agent-model-route'
 import type { SkillCommandPolicyRef } from './skill-tool-ports'
 import type { LoadedMiniApps } from '../../../mini-apps/loader-contract'
 
 export interface RuntimeToolWiringContext {
   deps: RunnerDeps
   repo: ChatRepository
-  memoryRepo: ReturnType<typeof createMemoryRepository>
   work: RuntimeState['work']
   /** Where a detached sub-agent registers its Stop — the same owner-gated map as a job's kill. */
   actionRegistry: RuntimeState['actionRegistry']
@@ -64,10 +61,8 @@ export function buildRunToolRegistry(
   ctx: RuntimeToolWiringContext,
   params: {
     userId: string
-    /** The run's policy: which host it runs in, which seat it holds, who may be invited. */
+    /** The run's policy: which host it runs in, which route it holds, who may be invited. */
     policy: RunPolicy
-    /** Present for the leader or sole participant of a chat. */
-    setTopic?: SetTopicPort
     /** The run's live assistant row (a steering split re-points it). */
     currentMessageId?: () => string
     /** What a fork of this run is made from; empty until the request is built. */
@@ -100,7 +95,6 @@ export function buildRunToolRegistry(
     skillOverrides?: SkillOverrides
     /** The person's latest message, for the skill tool's `/name` permission. */
     latestUserText?: string
-    memoryScope?: MemoryScope
     /** Already-fetched model catalog, reused by delegated-child route resolution. */
     catalog: Awaited<ReturnType<RunnerDeps['catalogService']['getCatalog']>>
     /** What this run's model reads — the ledger's `model` layer (see ResolvedTurn.modelInput). */
@@ -109,12 +103,12 @@ export function buildRunToolRegistry(
     ccHooks?: CcHooksRuntime
     /** Session-scoped read/write bookkeeping for the file tools' guards. */
     fileMtimes?: FileMtimeStore
-    /** The host's live budget frame + last measurement for `context_budget`; read at call time. */
+    /** The host's live budget frame + last measurement for `ContextBudget`; read at call time. */
     readContextBudget?: () => ContextBudgetReading | undefined
     /** The enabled plugins' workflows, read when `workflow` runs one. */
     listWorkflows?: () => Promise<WorkflowEntry[]>
-    /** The chat's resolved model this turn: a workflow agent's `model` resolves against it. */
-    chatModel?: ChatModel
+    /** The model and effort the person chose per agent: a child's route, else its session's. */
+    agentModelChoices?: readonly AgentModelChoice[]
     /** Filled by the run's gate: the rules a skill's injected commands are checked against. */
     skillCommandPolicy?: SkillCommandPolicyRef
   },
@@ -153,26 +147,33 @@ export function buildRunToolRegistry(
       cwd: defaultCwd,
     })
 
-  const jobsTool = buildJobsTool({
+  const jobsHost = {
     deps,
     work,
     userId,
     sessionId: session.id,
-    terminalInput: deps.terminalControl != null && isToolLive(agentProfile, 'bash', disabledTools),
-    runAction: (toolCallId, action, payload) => ctx.executeToolAction(toolCallId, action, payload),
-  })
+    terminalInput:
+      deps.terminalControl != null && isToolLive(agentProfile, TOOL.Bash, disabledTools),
+    runAction: (toolCallId: string, action: string, payload?: unknown) =>
+      ctx.executeToolAction(toolCallId, action, payload),
+  }
+  const jobsTool = buildJobsTool(jobsHost)
 
   // Background bash spawns a long-running job the model can only inspect or kill
-  // through the `jobs` tool. So `background` is only safe to expose when `jobs`
+  // through the `Jobs` tool. So `background` is only safe to expose when `jobs`
   // will actually be in the final registry: the profile must expose it AND it
   // must survive `disabledTools` (a scope can switch `jobs` off). Without this the
   // model could launch a job it can't list, read, or stop — an orphaned,
   // unmanageable process. Pair the launcher with its manager.
   // (A job's own runs never get background regardless — no host is watching.)
-  const jobsManageable =
-    params.policy.host.supervisesJobs && isToolLive(agentProfile, 'jobs', disabledTools)
+  const jobsManageable = manageableJobs(params)
 
-  const { optional, ledgerRef } = buildOptionalToolPorts(ctx, params, jobsTool)
+  const { optional, ledgerRef } = buildOptionalToolPorts(
+    ctx,
+    params,
+    jobsTool,
+    buildStopJob(jobsHost),
+  )
   const toolDenials = new Map<string, PolicyDenial>(
     (params.toolDenials ?? []).map((denial) => [denial.name, { rule: denial.rule }]),
   )
@@ -189,11 +190,7 @@ export function buildRunToolRegistry(
       // Mini app backend tools (in-process). They flow through the same disabledTools
       // filtering as built-ins and are available from the first turn. Which SHAPES get
       // them is each tool's own `exposure` (default: chat only), read by the ledger.
-      extraTools: [
-        ...loadedMiniApps.tools,
-        ...(deps.externalAgents ? [deps.externalAgents.toolFor(session.id)] : []),
-        ...(deps.vaultToolFor ? [deps.vaultToolFor(userId)] : []),
-      ],
+      extraTools: loadedMiniApps.tools,
     },
     core: {
       env,

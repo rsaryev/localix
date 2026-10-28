@@ -1,4 +1,4 @@
-import { useEffect, useRef, type RefObject } from 'react'
+import { useEffect, type RefObject } from 'react'
 import type { Virtualizer } from '@tanstack/react-virtual'
 import { isToolBackedItem } from '@localixai/agent/agents/items'
 import type { MessageDisplayRow } from '../model/messageGroups'
@@ -18,14 +18,10 @@ export function useReplayFocusTracking(
 ): void {
   const replayActive = useMessageFocusStore((s) => s.active)
   const setReplayFocus = useMessageFocusStore((s) => s.setFocus)
-  const sessionIdRef = useRef(sessionId)
-  sessionIdRef.current = sessionId
-
   useEffect(() => {
     if (!replayActive || !scrollEl || !sessionId) return
     const push = createTrailingThrottle((messageId: string) => {
-      const sid = sessionIdRef.current
-      if (sid) setReplayFocus(sid, messageId)
+      setReplayFocus(sessionId, messageId)
     }, 150)
     const onScroll = () => {
       // Pinned: the tab is frozen on a chosen message — don't chase the scroll.

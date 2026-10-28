@@ -18,13 +18,9 @@ export const buttonVariants = cva(
         // like default/secondary) for design-system consistency. Migrate raw
         // monochrome buttons to <Button variant="mono">.
         mono: 'bg-foreground text-background hover:bg-foreground/90 active:bg-foreground/80',
-        // Compatibility name for quiet text actions. A resting outline makes every secondary
-        // action look like a raised control; only field buttons need a visible enclosure.
-        outline:
-          'hover:bg-surface-hover hover:text-foreground active:bg-surface-active aria-expanded:bg-surface-active aria-expanded:text-foreground',
         // A bordered button with a resting FILL that is a foreground veil (`--field-fill`), for a
         // button that sits on a tinted strip — a conflict or bisect band on `bg-status-*/10`.
-        // `outline` has no resting fill; `field` adds a hairline around the same quiet veil
+        // `ghost` has no resting fill; `field` adds a hairline around the same quiet veil
         // as `secondary`. The veil adds density to whatever colour is underneath.
         field:
           'border-control-border bg-field-fill text-text-soft hover:bg-surface-hover hover:text-foreground active:bg-surface-active aria-expanded:bg-surface-active aria-expanded:text-foreground',

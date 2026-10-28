@@ -1,7 +1,7 @@
 /**
  * Token-free research discovery adapters.
  *
- * This module owns provider wire formats only. The public `research` tool owns
+ * This module owns provider wire formats only. The public `Research` tool owns
  * query planning, adapter selection, consensus ranking, safe page reads and the
  * final evidence packet. Every adapter therefore normalizes into the same small
  * result shape and can fail without taking the other adapters down.
@@ -12,6 +12,7 @@
  * byte caps and DOM stack. Structured verticals are public endpoints that
  * require no API token.
  */
+import { sleep } from '@localixai/agent/backoff'
 import { DOMParser, parseHTML } from 'linkedom'
 
 import { decodeEntities, stripToText } from './html-text'
@@ -122,10 +123,6 @@ function retryAfterMs(response: Response, fallbackMs = 60_000): number {
   const reset = Number(response.headers.get('x-ratelimit-reset'))
   if (Number.isFinite(reset) && reset > 0) return Math.max(1_000, reset * 1_000 - Date.now())
   return fallbackMs
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 async function requestText(

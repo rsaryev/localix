@@ -123,8 +123,6 @@ export interface SemanticQuery {
 
 /** Where the index stands, for a mini app deciding whether to offer meaning-based features. */
 export interface SemanticIndexStatus {
-  /** Always true: semantic search has no off switch. Kept for mini apps that read it. */
-  enabled: boolean
   ready: boolean
   model: { id: string; label: string; dimensions: number } | null
 }

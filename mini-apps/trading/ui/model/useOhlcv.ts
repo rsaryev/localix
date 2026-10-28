@@ -52,6 +52,12 @@ function cacheWrite(target: string, candles: Candle[]): void {
   }
 }
 
+/** A target's first state: its cached series (the fetch revalidates behind it) or a loading pane. */
+function seedState(target: string): OhlcvData {
+  const candles = candleCache.get(target) ?? []
+  return { candles, loading: candles.length === 0, unreachable: false, error: null, live: false }
+}
+
 /** The buffered bars, but only when they belong to `target`. Bars held for another timeframe are
  *  measured in different units and merging them would silently corrupt the chart. */
 export function buffered(pending: { target: string; candles: Candle[] }, target: string): Candle[] {
@@ -82,16 +88,15 @@ export function useOhlcv(
   // `loadOlder` / `exhausted` are derived below, not stored — the state is only what a read returns.
   // Seeded from the session cache so a re-mounted chart paints its last-known series on the very
   // first render (the history effect then revalidates it).
-  const [state, setState] = useState<OhlcvData>(() => {
-    const cached = candleCache.get(target) ?? []
-    return {
-      candles: cached,
-      loading: cached.length === 0,
-      unreachable: false,
-      error: null,
-      live: false,
-    }
-  })
+  const [state, setState] = useState<OhlcvData>(() => seedState(target))
+  // A new target re-seeds the state while rendering — the same seed the first render used — so the
+  // chart never paints a frame of the previous market's series. The history effect below only
+  // resets the imperative buffers and fetches.
+  const [seededFor, setSeededFor] = useState<string | null>(enabled ? target : null)
+  if (enabled && seededFor !== target) {
+    setSeededFor(target)
+    setState(seedState(target))
+  }
   const candlesRef = useRef<Candle[]>(candleCache.get(target) ?? [])
   /**
    * The target whose history has SETTLED, or `null`. Until it matches, a pushed bar must not reach
@@ -153,7 +158,7 @@ export function useOhlcv(
     }))
   }, [])
 
-  // History load — resets and re-seeds whenever the target changes. A target the session cache
+  // History load — resets its buffers and re-fetches whenever the target changes. A target the session cache
   // knows paints its last-known series immediately (loading stays false) while the fetch
   // revalidates behind it; an unknown one shows the loading pane as before.
   useEffect(() => {
@@ -165,13 +170,6 @@ export function useOhlcv(
     settledTargetRef.current = null
     backfillingRef.current = null
     exhaustedRef.current = null
-    setState({
-      candles: cached,
-      loading: cached.length === 0,
-      unreachable: false,
-      error: null,
-      live: false,
-    })
     void (async () => {
       try {
         const candles = await tradingApi.ohlcv(connectionId, symbol, {

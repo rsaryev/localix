@@ -4,6 +4,8 @@ export {
   type LspServerState,
   type LspServerStatus,
 } from './lsp-manager'
+export type { LspServerUnavailable } from './lsp-manager-types'
+export { createLspInstaller, type LspInstaller } from './lsp-installer'
 export type {
   LspDiagnostic,
   LspRelatedInformation,

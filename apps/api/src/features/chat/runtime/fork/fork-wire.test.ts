@@ -2,19 +2,18 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 
 import { toModelMessages } from '@localixai/agent/agents/chat'
 
-import { DEFAULT_AGENT_PARTICIPANT, USER_PARTICIPANT } from '../../../../db'
+import { DEFAULT_AGENT_AUTHOR, USER_AUTHOR } from '../../../../db'
 import { createDatabase, destroyDatabase } from '../../../../db/connection'
 import { migrateToLatest } from '../../../../db/migrator'
-import { routedParticipants, sessionFixture } from '../../../../testing/session-fixture'
+import { routedAgent, sessionFixture } from '../../../../testing/session-fixture'
 import { captureForkSeed } from '../../../agent-core/fork-seed'
 import { resolveRunProfile } from '../../../agent-core/run-shape'
-import { FORK_CALL_RESULT } from '../../../agent-core/tools/delegate-fork'
+import { FORK_CALL_RESULT } from '../../../agent-core/tools/agent/agent-fork'
 import type { PersistedMessage } from '../../contracts'
 import { createModelContextRepository } from '../../model-context-repository'
 import { createChatRepository } from '../../repository'
 import { resolveContextBudgetFrame } from '../context-budget'
 import { createChatHistoryRun } from '../history/chat-strategy'
-import { participantAudienceFor } from '../history/stages/participant-audience'
 import { bareFrame, freshLane, TEST_IDENTITY } from '../history/testing/test-fixtures'
 import { checkpointAtTokens } from '../model-view/checkpoint-policy'
 import { loadModelView } from '../model-view/view'
@@ -44,9 +43,8 @@ afterEach(async () => {
 })
 
 const AT = '2026-07-31T00:00:00.000Z'
-const VIEWER = DEFAULT_AGENT_PARTICIPANT
-const REVIEWER = 'agent:reviewer'
-const TOOLS = ['read', 'bash', 'delegate']
+const VIEWER = DEFAULT_AGENT_AUTHOR
+const TOOLS = ['Read', 'Bash', 'delegate']
 const FRAME = resolveContextBudgetFrame({ contextWindow: 200_000, fixedOverheadTokens: 5_000 })
 
 const row = (id: string, sessionId: string, payload: Record<string, unknown>): PersistedMessage =>
@@ -60,13 +58,13 @@ const row = (id: string, sessionId: string, payload: Record<string, unknown>): P
   }) as never
 
 const userRow = (id: string, sessionId: string, content: string) =>
-  row(id, sessionId, { role: 'user', from: USER_PARTICIPANT, content })
+  row(id, sessionId, { role: 'user', from: USER_AUTHOR, content })
 
 const readCall = (id: string, turnIndex: number) => ({
   type: 'tool_call',
   id: `item-${id}`,
   toolCallId: id,
-  name: 'read',
+  name: 'Read',
   status: 'completed',
   turnIndex,
   input: { path: `/repo/${id}.ts` },
@@ -80,16 +78,11 @@ const bytesOf = (wire: readonly unknown[]) =>
 
 const SECTIONS = [{ key: 'env', scope: 'state' as const, text: 'Working in /repo.' }]
 
-async function setup(
-  group: boolean,
-  measured?: number,
-  checkpointAtCall = false,
-  checkpointEarlier = false,
-) {
+async function setup(measured?: number, checkpointAtCall = false, checkpointEarlier = false) {
   const session = sessionFixture({
     id: 'parent',
     userId: 'u',
-    agents: routedParticipants(),
+    agent: routedAgent(),
     rootSessionId: 'parent',
   })
   await repo.insertSession(session)
@@ -122,17 +115,6 @@ async function setup(
     turnContext: first.turnContext!,
     now: AT,
   })
-  if (group) {
-    await add(
-      row('c1', 'parent', {
-        role: 'assistant',
-        from: REVIEWER,
-        content: 'a colleague’s remark',
-        authorSnapshot: { handle: 'reviewer' },
-        items: [readCall('theirs', 0)],
-      }),
-    )
-  }
 
   // The turn that calls the fork: u2 starts it, a2 is in flight.
   await add(userRow('u2', 'parent', 'second question'))
@@ -200,11 +182,7 @@ async function materialize(
     sessionId,
     frame: FRAME,
     identity: TEST_IDENTITY,
-    participantAudience: participantAudienceFor(
-      sessionFixture({ agents: routedParticipants() }),
-      TOOLS,
-      'builtin:localix',
-    ),
+    availableTools: new Set(TOOLS),
     view,
     media: {},
     state: freshLane(),
@@ -248,7 +226,7 @@ async function fork(setupResult: Awaited<ReturnType<typeof setup>>) {
       sessionKind: 'subagent',
       parentSessionId: 'parent',
       rootSessionId: 'parent',
-      agents: routedParticipants(),
+      agent: routedAgent(),
       provenance: {
         kind: 'task-delegation',
         parentSessionId: 'parent',
@@ -276,12 +254,9 @@ const forkWire = async () => {
   })
 }
 
-describe.each([
-  ['a solo chat', false],
-  ['a group chat', true],
-])('the first request of a fork in %s', (_name, group) => {
+describe('the first request of a fork', () => {
   test('begins with the parent’s last request, byte for byte', async () => {
-    const parent = await setup(group)
+    const parent = await setup()
     await fork(parent)
     const child = await forkWire()
     const prefix = bytesOf(parent.parentWire)
@@ -290,7 +265,7 @@ describe.each([
   })
 
   test('then carries the call, every call of its step answered, and the directive, and nothing else', async () => {
-    const parent = await setup(group)
+    const parent = await setup()
     await fork(parent)
     const { wire } = await forkWire()
     const tail = wire.slice(parent.parentWire.length) as unknown as Array<Record<string, unknown>>
@@ -301,7 +276,7 @@ describe.each([
   })
 
   test('marks the cache anchor on the last message the parent had sent', async () => {
-    const parent = await setup(group)
+    const parent = await setup()
     await fork(parent)
     const { wire } = await forkWire()
     const anchored = wire.flatMap((message, index) => (message.cacheAnchor ? [index] : []))
@@ -309,7 +284,7 @@ describe.each([
   })
 
   test('is the same after the parent writes more, regenerates or answers its call', async () => {
-    const parent = await setup(group)
+    const parent = await setup()
     await fork(parent)
     const before = bytesOf((await forkWire()).wire)
 
@@ -339,7 +314,7 @@ describe('a fork of a long conversation', () => {
     )
     const ownMark = checkpointAtTokens(resolveContextBudgetFrame({ contextWindow: 200_000 }))
     expect(childMark).toBeLessThan(ownMark)
-    const parent = await setup(false, childMark + 1)
+    const parent = await setup(childMark + 1)
     await fork(parent)
     const child = await forkWire()
     expect(child.checkpoint).toBeUndefined()
@@ -351,7 +326,7 @@ describe('a fork of a long conversation', () => {
 
 describe('a fork of a conversation with a checkpoint in force', () => {
   test('reads the view the parent was sent when the checkpoint was taken by the turn that forks', async () => {
-    const parent = await setup(false, undefined, true)
+    const parent = await setup(undefined, true)
     await fork(parent)
     const child = await forkWire()
     expect(child.checkpoint).toBeUndefined()
@@ -361,7 +336,7 @@ describe('a fork of a conversation with a checkpoint in force', () => {
   })
 
   test('reads a checkpoint an earlier turn of the parent took, found under the parent’s session', async () => {
-    const parent = await setup(false, undefined, false, true)
+    const parent = await setup(undefined, false, true)
     await fork(parent)
     const child = await forkWire()
     expect(child.checkpoint).toBeUndefined()

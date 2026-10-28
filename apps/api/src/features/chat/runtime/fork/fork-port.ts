@@ -45,7 +45,7 @@ export interface ForkPortInput {
 }
 
 /**
- * The host side of `delegate` with `context: "fork"`: cut the parent's line where the call is
+ * The host side of `Agent` with `context: "fork"`: cut the parent's line where the call is
  * made, and carry what the child needs of it.
  *
  * Nothing of the parent's history is copied. The child reads the parent's rows up to the row

@@ -14,7 +14,7 @@
  * preset key is a real configurable command id and no preset collides with inherited commands on any supported OS — so an invented command or a self-clashing preset fails CI.
  */
 
-import { CMD, SHORTCUT_CATALOG, isConfigurable } from './catalog'
+import { SHORTCUT_CATALOG, isConfigurable } from './catalog'
 import { canonicalizeChord } from '@localixai/kit/keybindings'
 import type { BindingOverrides } from '@localixai/kit/keybindings'
 
@@ -40,28 +40,10 @@ export function presetOverrides(id: string, platform: OsFamily = OS_FAMILY): Bin
   return { ...preset?.overrides, ...preset?.platformOverrides?.[target] }
 }
 
-const LEGACY_OVERRIDES: Record<string, BindingOverrides> = {
-  jetbrains: {
-    [CMD.commandPalette]: 'mod+shift+a',
-    [CMD.goToFile]: 'mod+shift+n',
-    [CMD.goToSymbol]: 'mod+f12',
-    [CMD.goToSymbolWorkspace]: 'mod+alt+o',
-    [CMD.switchSession]: 'mod+e',
-  },
-  sublime: { [CMD.goToSymbol]: 'mod+r', [CMD.goToSymbolWorkspace]: 'mod+shift+r' },
-}
-
-function matchesPreset(
-  overrides: BindingOverrides | undefined,
-  id: string,
-  includeLegacy = false,
-): boolean {
+function matchesPreset(overrides: BindingOverrides | undefined, id: string): boolean {
   if (!PRESET_BY_ID.has(id)) return false
-  return (
-    KEYMAP_PLATFORMS.some((platform) => sameOverrides(overrides, presetOverrides(id, platform))) ||
-    (includeLegacy &&
-      LEGACY_OVERRIDES[id] !== undefined &&
-      sameOverrides(overrides, LEGACY_OVERRIDES[id]))
+  return KEYMAP_PLATFORMS.some((platform) =>
+    sameOverrides(overrides, presetOverrides(id, platform)),
   )
 }
 
@@ -76,19 +58,14 @@ export function detectActivePreset(
   preferredId?: string,
   platform: OsFamily = OS_FAMILY,
 ): string {
-  if (preferredId && matchesPreset(overrides, preferredId, true)) return preferredId
+  if (preferredId && matchesPreset(overrides, preferredId)) return preferredId
   for (const preset of KEYMAP_PRESETS) {
-    if (
-      sameOverrides(overrides, presetOverrides(preset.id, platform)) ||
-      (LEGACY_OVERRIDES[preset.id] !== undefined &&
-        sameOverrides(overrides, LEGACY_OVERRIDES[preset.id]))
-    )
-      return preset.id
+    if (sameOverrides(overrides, presetOverrides(preset.id, platform))) return preset.id
   }
   return CUSTOM_PRESET_ID
 }
 
-/** Adapt a current untouched preset to this OS. Older batches and custom edits stay exact. */
+/** Adapt a current untouched preset to this OS. Custom edits stay exact. */
 export function resolvePresetOverrides(
   overrides: BindingOverrides | undefined,
   preferredId?: string,

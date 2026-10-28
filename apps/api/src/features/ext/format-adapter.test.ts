@@ -1,12 +1,12 @@
 import { describe, expect, test } from 'bun:test'
-import { agentBlueprintSchema } from '@localixai/agent/agents'
+import { agentFileSchema } from '@localixai/agent/agents'
 import {
   createFormatAdapterRegistry,
   type FormatAdapter,
   type FormatDiagnostic,
 } from './format-adapter'
 
-const definition = { handle: 'reviewer', instructions: 'Review changes.', description: '' }
+const definition = { name: 'reviewer', instructions: 'Review changes.', description: '' }
 const input = { format: 'fixture.json', version: 1, source: 'installation/artifact', text: '{}' }
 const json: FormatAdapter = {
   format: input.format,
@@ -16,15 +16,15 @@ const json: FormatAdapter = {
 
 describe('format adapter boundary', () => {
   test('two independent formats produce the same strict native definition', () => {
-    const registry = createFormatAdapterRegistry(agentBlueprintSchema)
+    const registry = createFormatAdapterRegistry(agentFileSchema)
     registry.register(json)
     registry.register({
       format: 'fixture.lines',
       version: 2,
       decode(text) {
-        const [handle, instructions] = text.split('\n')
+        const [name, instructions] = text.split('\n')
         return {
-          value: { handle, instructions, description: '' },
+          value: { name, instructions, description: '' },
           diagnostics: [
             {
               field: 'line:2',
@@ -47,18 +47,13 @@ describe('format adapter boundary', () => {
     expect(b.status).toBe('accepted')
     if (a.status !== 'accepted' || b.status !== 'accepted') throw new Error('Expected acceptance')
     expect(a.value).toEqual(b.value)
-    expect(Object.keys(b.value).sort()).toEqual([
-      'description',
-      'handle',
-      'instructions',
-      'leadershipPriority',
-    ])
+    expect(Object.keys(b.value).sort()).toEqual(['description', 'instructions', 'name'])
     expect(b.source).toBe(input.source)
     expect(b.diagnostics[0]?.status).toBe('translated')
   })
 
-  test('foreign fields and adapter-issued identity cannot enter an authored blueprint', () => {
-    const registry = createFormatAdapterRegistry(agentBlueprintSchema)
+  test('foreign fields and adapter-issued identity cannot enter an authored agent file', () => {
+    const registry = createFormatAdapterRegistry(agentFileSchema)
     registry.register(json)
     for (const extra of [
       { permissionMode: 'bypassPermissions' },
@@ -76,7 +71,7 @@ describe('format adapter boundary', () => {
 
   test('unsupported authority and execution constraints reject otherwise valid output', () => {
     for (const impact of ['authority', 'execution'] as const) {
-      const registry = createFormatAdapterRegistry(agentBlueprintSchema)
+      const registry = createFormatAdapterRegistry(agentFileSchema)
       registry.register({
         ...json,
         decode: () => ({
@@ -92,7 +87,7 @@ describe('format adapter boundary', () => {
   })
 
   test('an unsupported presentation hint remains visible without contaminating the definition', () => {
-    const registry = createFormatAdapterRegistry(agentBlueprintSchema)
+    const registry = createFormatAdapterRegistry(agentFileSchema)
     const diagnostic: FormatDiagnostic = {
       field: 'color',
       status: 'unsupported',
@@ -108,7 +103,7 @@ describe('format adapter boundary', () => {
   })
 
   test('unknown formats and versions cannot try another registered decoder', () => {
-    const registry = createFormatAdapterRegistry(agentBlueprintSchema)
+    const registry = createFormatAdapterRegistry(agentFileSchema)
     let calls = 0
     registry.register({
       ...json,
@@ -123,7 +118,7 @@ describe('format adapter boundary', () => {
   })
 
   test('stale unload cannot remove a replacement registration', () => {
-    const registry = createFormatAdapterRegistry(agentBlueprintSchema)
+    const registry = createFormatAdapterRegistry(agentFileSchema)
     const dispose = registry.register(json)
     expect(() => registry.register(json)).toThrow('already registered')
     dispose()
@@ -134,7 +129,7 @@ describe('format adapter boundary', () => {
   })
 
   test('decoding limits count bytes and reject before executing adapter code', () => {
-    const registry = createFormatAdapterRegistry(agentBlueprintSchema, 3)
+    const registry = createFormatAdapterRegistry(agentFileSchema, 3)
     let called = false
     registry.register({
       ...json,

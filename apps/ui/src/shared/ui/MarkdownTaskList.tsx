@@ -2,7 +2,6 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
   type ComponentPropsWithoutRef,
@@ -100,8 +99,9 @@ export function MarkdownInput({
   const stored = key ? tasks?.states?.[key] : undefined
   // Painted at once, then the stored row (arriving on the stream) takes over: a tick that waits
   // a round-trip to show feels broken, and the row is the truth the moment it lands.
-  const [pending, setPending] = useState<boolean | null>(null)
-  useEffect(() => setPending(null), [stored])
+  // The tick is remembered with the stored row it was made against, so a new stored row ends it.
+  const [held, setPending] = useState<{ against: boolean | undefined; value: boolean } | null>(null)
+  const pending = held && held.against === stored ? held.value : null
   if (props.type !== 'checkbox') return <input {...props} />
   if (!tasks && editSource && taskKey !== undefined) {
     // The source is the state: the new text re-renders this box, so nothing is held here.
@@ -120,7 +120,7 @@ export function MarkdownInput({
     return <Checkbox checked={checked} disabled readOnly className="lx-task-box nodrag" />
   const toggle = () => {
     const next = !checked
-    setPending(next)
+    setPending({ against: stored, value: next })
     void backendClient.checkMessageTask(sessionId, tasks.messageId, key, next).catch(() => {
       setPending(null)
       toast.error('Could not save the checkmark')

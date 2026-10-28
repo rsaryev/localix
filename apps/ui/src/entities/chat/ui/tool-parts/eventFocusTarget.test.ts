@@ -13,7 +13,7 @@ const request: EventFocusRequest = {
 const item = {
   id: 'tool-1',
   type: 'tool_call',
-  name: 'bash',
+  name: 'Bash',
   toolCallId: 'call-7:invoke',
 } as AgentItem
 

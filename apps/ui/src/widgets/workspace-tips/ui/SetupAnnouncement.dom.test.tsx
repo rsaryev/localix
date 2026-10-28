@@ -2,7 +2,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, mock, test } from 'bu
 import { registerDom } from '@localixai/kit/testing/dom'
 
 // The real dialog draws the whole carousel; what is under test here is when it opens.
-mock.module('./SetupDialog', () => ({
+void mock.module('./SetupDialog', () => ({
   default: () => <div role="dialog">Set up Localix</div>,
 }))
 

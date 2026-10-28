@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { systemSnapshotSchema, type SystemSnapshot } from '../../shared/system'
 import { usePolledSnapshot } from '../usePolledSnapshot'
 
@@ -22,14 +22,16 @@ export function useSystem(active: boolean) {
       'Cannot read system information. Check that the mini app backend is running, then retry.',
   })
   const [history, setHistory] = useState<SystemSnapshot[]>([])
-  useEffect(() => {
-    const next = state.snapshot
-    if (!next) return
+  const [counted, setCounted] = useState<SystemSnapshot | null>(null)
+  const next = state.snapshot
+  if (next && next !== counted) {
+    // Each new snapshot joins the history as the render that received it, not in an effect after.
+    setCounted(next)
     // The backend caches reads for one second, so two polls can return the same
     // timestamped sample; keying on `capturedAt` keeps the chart from repeating a bar.
-    setHistory((current) =>
-      [...current.filter((item) => item.capturedAt !== next.capturedAt), next].slice(-HISTORY_SIZE),
+    setHistory(
+      [...history.filter((item) => item.capturedAt !== next.capturedAt), next].slice(-HISTORY_SIZE),
     )
-  }, [state.snapshot])
+  }
   return { ...state, history }
 }

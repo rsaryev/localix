@@ -15,9 +15,9 @@ const body = (label: string) =>
   Array.from({ length: 60 }, (_, i) => `${label} line ${i}`).join('\n')
 
 const readItem = (path: string, result: string) =>
-  namedTool('read', { path }, { resultText: result })
+  namedTool('Read', { path }, { resultText: result })
 const writeItem = (path: string) =>
-  namedTool('write', { path, content: 'x' }, { resultText: `Wrote ${path}` })
+  namedTool('Write', { path, content: 'x' }, { resultText: `Wrote ${path}` })
 const id = (it: ToolBackedItem) => it.toolCallId
 
 const session = (items: ToolBackedItem[]): ChatMessage[] => [
@@ -50,7 +50,7 @@ describe('liveReadItemIds', () => {
     // force a wasted re-read of a file that did not change.
     const read = readItem('src/a.ts', body('old'))
     const failed = namedTool(
-      'write',
+      'Write',
       { path: 'src/a.ts', content: 'x' },
       { status: 'failed', errorText: 'boom' },
     )
@@ -163,7 +163,7 @@ describe('read fates drive the elision pointer', () => {
     expect(fates.get(id(live))).toBe('live')
   })
 
-  it('a stale read is elided WITHOUT a tool_output replay of bytes that no longer exist', () => {
+  it('a stale read is elided WITHOUT a ToolOutput replay of bytes that no longer exist', () => {
     const stale = readItem('src/a.ts', body('old'))
     const msgs = session([stale, writeItem('src/a.ts')])
     const out = applyPlan(
@@ -172,7 +172,7 @@ describe('read fates drive the elision pointer', () => {
     )
     const text = (out[1].items![0] as { resultText: string }).resultText
     expect(text).toContain('the file has CHANGED since this read')
-    expect(text).not.toContain('tool_output')
+    expect(text).not.toContain('ToolOutput')
   })
 
   it('a refreshed read points at the newer read instead of a replay', () => {
@@ -185,10 +185,10 @@ describe('read fates drive the elision pointer', () => {
     )
     const text = (out[1].items![0] as { resultText: string }).resultText
     expect(text).toContain('a NEWER read of the same file appears later')
-    expect(text).not.toContain('tool_output')
+    expect(text).not.toContain('ToolOutput')
   })
 
-  it('an untouched read that lost the live-read budget still offers tool_output', () => {
+  it('an untouched read that lost the live-read budget still offers ToolOutput', () => {
     const msgs = session([readItem('src/a.ts', liveText)])
     const plan = planContextCompression(msgs, {
       budget: HUGE_BUDGET,
@@ -196,14 +196,14 @@ describe('read fates drive the elision pointer', () => {
       liveReads: { maxLiveReads: 0 },
     })
     expect((applyPlan(msgs, plan)[1].items![0] as { resultText: string }).resultText).toContain(
-      'tool_output',
+      'ToolOutput',
     )
   })
 })
 
 describe('batched reads', () => {
   const batch = (paths: string[]) =>
-    namedTool('read', { reads: paths.map((path) => ({ path })) }, { resultText: body('batch') })
+    namedTool('Read', { reads: paths.map((path) => ({ path })) }, { resultText: body('batch') })
 
   it('a later read of ONE of its files leaves the batch live — it is the only copy of the others', () => {
     const read = batch(['src/a.ts', 'src/b.ts'])

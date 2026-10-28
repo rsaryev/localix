@@ -50,7 +50,9 @@ describe('query parameter run gate', () => {
 
     function Harness() {
       const current = useSqlConsole('primary', { dialect: 'postgres' })
-      state = current
+      React.useEffect(() => {
+        state = current
+      })
       return <QueryParametersDialog console={current} />
     }
 

@@ -27,11 +27,25 @@ export interface DownloadProgress {
 export interface DownloadOptions {
   signal?: AbortSignal
   onProgress?(progress: DownloadProgress): void
+  /**
+   * Give up when no byte arrives for this long (connecting counts): a stalled connection would
+   * otherwise never settle. Default one minute.
+   */
+  stallTimeoutMs?: number
   /** Test seam. */
   fetchImpl?: typeof fetch
+  /** Test seam: schedule `fn` after `ms`; returns the cancel. */
+  setTimer?: (fn: () => void, ms: number) => () => void
 }
 
-export type DownloadFailure = 'http' | 'size' | 'checksum' | 'aborted' | 'network'
+export type DownloadFailure = 'http' | 'size' | 'checksum' | 'aborted' | 'network' | 'timeout'
+
+const DEFAULT_STALL_TIMEOUT_MS = 60_000
+
+const realTimer = (fn: () => void, ms: number) => {
+  const timer = setTimeout(fn, ms)
+  return () => clearTimeout(timer)
+}
 
 export class DownloadError extends Error {
   readonly code: DownloadFailure
@@ -94,71 +108,103 @@ export async function downloadPinned(
   const fetchImpl = options.fetchImpl ?? fetch
   let { hash, size: received } = await resumePoint(part, file.bytes)
 
-  let response: Response
+  // One controller for the caller's signal and the stall watchdog; the watchdog restarts on
+  // every chunk, so only a connection that goes quiet is cut.
+  const controller = new AbortController()
+  const abortFromCaller = () => controller.abort()
+  if (options.signal?.aborted) controller.abort()
+  else options.signal?.addEventListener('abort', abortFromCaller, { once: true })
+  const setTimer = options.setTimer ?? realTimer
+  const stallMs = options.stallTimeoutMs ?? DEFAULT_STALL_TIMEOUT_MS
+  let stalled = false
+  let cancelWatchdog = () => {}
+  const watch = () => {
+    cancelWatchdog()
+    cancelWatchdog = setTimer(() => {
+      stalled = true
+      controller.abort()
+    }, stallMs)
+  }
+  const interrupted = (message: string, code: DownloadFailure) =>
+    stalled && !options.signal?.aborted
+      ? new DownloadError(`${file.name}: no data for ${Math.round(stallMs / 1000)} s`, 'timeout')
+      : options.signal?.aborted
+        ? new DownloadError('Download cancelled', 'aborted')
+        : new DownloadError(message, code)
   try {
-    response = await fetchImpl(file.url, {
-      signal: options.signal,
-      redirect: 'follow',
-      ...(received > 0 ? { headers: { range: `bytes=${received}-` } } : {}),
-    })
-  } catch (err) {
-    if (options.signal?.aborted) throw new DownloadError('Download cancelled', 'aborted')
-    throw new DownloadError(
-      `Could not reach ${new URL(file.url).host}: ${err instanceof Error ? err.message : String(err)}`,
-      'network',
-    )
-  }
-  if (!response.ok || !response.body) {
-    throw new DownloadError(`${file.name}: the server answered ${response.status}`, 'http')
-  }
-  const resumed = received > 0 && response.status === 206
-  if (!resumed && received > 0) {
-    hash = new Bun.CryptoHasher('sha256')
-    received = 0
+    await transfer()
+  } finally {
+    cancelWatchdog()
+    options.signal?.removeEventListener('abort', abortFromCaller)
   }
 
-  const sink = openSink(part, resumed)
-  let reported = received
-  options.onProgress?.({ file: file.name, received, total: file.bytes })
-  try {
-    for await (const chunk of response.body as unknown as AsyncIterable<Uint8Array>) {
-      received += chunk.byteLength
-      if (received > file.bytes) {
-        throw new DownloadError(
-          `${file.name} is larger than the pinned ${file.bytes} bytes`,
-          'size',
-        )
-      }
-      hash.update(chunk)
-      await sink.write(chunk)
-      if (received - reported >= PROGRESS_STEP_BYTES) {
-        reported = received
-        options.onProgress?.({ file: file.name, received, total: file.bytes })
-      }
+  async function transfer() {
+    let response: Response
+    watch()
+    try {
+      response = await fetchImpl(file.url, {
+        signal: controller.signal,
+        redirect: 'follow',
+        ...(received > 0 ? { headers: { range: `bytes=${received}-` } } : {}),
+      })
+    } catch (err) {
+      throw interrupted(
+        `Could not reach ${new URL(file.url).host}: ${err instanceof Error ? err.message : String(err)}`,
+        'network',
+      )
     }
-    await sink.close()
-  } catch (err) {
-    await sink.close().catch(() => {})
-    if (err instanceof DownloadError) {
+    if (!response.ok || !response.body) {
+      throw new DownloadError(`${file.name}: the server answered ${response.status}`, 'http')
+    }
+    const resumed = received > 0 && response.status === 206
+    if (!resumed && received > 0) {
+      hash = new Bun.CryptoHasher('sha256')
+      received = 0
+    }
+
+    const sink = openSink(part, resumed)
+    let reported = received
+    options.onProgress?.({ file: file.name, received, total: file.bytes })
+    try {
+      for await (const chunk of response.body as unknown as AsyncIterable<Uint8Array>) {
+        received += chunk.byteLength
+        if (received > file.bytes) {
+          throw new DownloadError(
+            `${file.name} is larger than the pinned ${file.bytes} bytes`,
+            'size',
+          )
+        }
+        hash.update(chunk)
+        await sink.write(chunk)
+        watch()
+        if (received - reported >= PROGRESS_STEP_BYTES) {
+          reported = received
+          options.onProgress?.({ file: file.name, received, total: file.bytes })
+        }
+      }
+      await sink.close()
+    } catch (err) {
+      await sink.close().catch(() => {})
+      if (err instanceof DownloadError) {
+        await rm(part, { force: true })
+        throw err
+      }
+      throw interrupted(
+        `${file.name} download failed: ${err instanceof Error ? err.message : String(err)}`,
+        'network',
+      )
+    }
+
+    if (received !== file.bytes) {
+      // Short: the next attempt resumes from here. Long cannot happen past the check above.
+      throw new DownloadError(`${file.name} ended at ${received} of ${file.bytes} bytes`, 'network')
+    }
+    const digest = hash.digest('hex')
+    if (digest !== file.sha256) {
       await rm(part, { force: true })
-      throw err
+      throw new DownloadError(`${file.name} failed its checksum (got ${digest})`, 'checksum')
     }
-    if (options.signal?.aborted) throw new DownloadError('Download cancelled', 'aborted')
-    throw new DownloadError(
-      `${file.name} download failed: ${err instanceof Error ? err.message : String(err)}`,
-      'network',
-    )
+    options.onProgress?.({ file: file.name, received, total: file.bytes })
+    await rename(part, dest)
   }
-
-  if (received !== file.bytes) {
-    // Short: the next attempt resumes from here. Long cannot happen past the check above.
-    throw new DownloadError(`${file.name} ended at ${received} of ${file.bytes} bytes`, 'network')
-  }
-  const digest = hash.digest('hex')
-  if (digest !== file.sha256) {
-    await rm(part, { force: true })
-    throw new DownloadError(`${file.name} failed its checksum (got ${digest})`, 'checksum')
-  }
-  options.onProgress?.({ file: file.name, received, total: file.bytes })
-  await rename(part, dest)
 }

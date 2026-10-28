@@ -5,6 +5,7 @@ import type { LspDocumentSymbol } from '@/shared/api/contracts'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { WorkItemVisibilityProvider } from '@localixai/mini-app-sdk/ui/visibility'
 import { useSymbolBreadcrumb } from './useSymbolBreadcrumb'
+import { turns } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -17,6 +18,7 @@ afterAll(async () => {
 })
 
 test('refreshes unsaved symbol positions, discards stale replies, and suspends hidden tabs', async () => {
+  const { useEffect } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const host = document.createElement('div')
   const root = createRoot(host)
@@ -26,7 +28,10 @@ test('refreshes unsaved symbol positions, discards stale replies, and suspends h
   )
   let snapshot: ReturnType<typeof useSymbolBreadcrumb> | undefined
   function Harness({ buffer }: { buffer: string }) {
-    snapshot = useSymbolBreadcrumb('session', '/workspace/main.ts', 'same-saved-hash', buffer)
+    const value = useSymbolBreadcrumb('session', '/workspace/main.ts', 'same-saved-hash', buffer, 0)
+    useEffect(() => {
+      snapshot = value
+    })
     return null
   }
   const render = (buffer: string, visible = true) =>
@@ -39,7 +44,8 @@ test('refreshes unsaved symbol positions, discards stale replies, and suspends h
     )
   const settle = () =>
     act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 430))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      await turns()
     })
   const symbol = (line: number): LspDocumentSymbol => ({
     name: 'run',

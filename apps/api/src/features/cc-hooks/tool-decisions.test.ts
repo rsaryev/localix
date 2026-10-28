@@ -50,14 +50,14 @@ describe('PreToolUse decisions', () => {
       { b: ask, a: allow },
     ]) {
       const { rt } = answering('PreToolUse', answers)
-      const result = await rt.runPreToolUse('bash', { command: 'ls' })
+      const result = await rt.runPreToolUse('Bash', { command: 'ls' })
       expect(result).toMatchObject({ decision: 'ask', reason: 'check this' })
     }
   })
 
   it('an allow alone is reported as allow', async () => {
     const { rt } = answering('PreToolUse', { a: pre({ permissionDecision: 'allow' }) })
-    expect((await rt.runPreToolUse('bash', { command: 'ls' })).decision).toBe('allow')
+    expect((await rt.runPreToolUse('Bash', { command: 'ls' })).decision).toBe('allow')
   })
 
   it('collects every handler’s additionalContext for the model', async () => {
@@ -65,7 +65,7 @@ describe('PreToolUse decisions', () => {
       a: pre({ additionalContext: 'env: prod' }),
       b: pre({ permissionDecision: 'allow', additionalContext: 'be careful' }),
     })
-    const result = await rt.runPreToolUse('bash', { command: 'ls' })
+    const result = await rt.runPreToolUse('Bash', { command: 'ls' })
     expect(result.additionalContext).toBe('env: prod\n\nbe careful')
   })
 
@@ -73,7 +73,7 @@ describe('PreToolUse decisions', () => {
     const { rt, notices } = answering('PreToolUse', {
       a: { continue: false, stopReason: 'Build failed', ...pre({ permissionDecision: 'allow' }) },
     })
-    const result = await rt.runPreToolUse('bash', { command: 'ls' })
+    const result = await rt.runPreToolUse('Bash', { command: 'ls' })
     expect(result.decision).toBe('deny')
     expect(result.stop).toEqual({ reason: 'Build failed' })
     expect(notices).toEqual(['Build failed'])
@@ -85,7 +85,7 @@ describe('PreToolUse decisions', () => {
     const { rt, notices } = answering('PreToolUse', {
       a: pre({ permissionDecision: 'deny', permissionDecisionReason: 'no' }),
     })
-    const result = await rt.runPreToolUse('bash', { command: 'ls' })
+    const result = await rt.runPreToolUse('Bash', { command: 'ls' })
     expect(result).toMatchObject({ decision: 'deny', reason: 'no' })
     expect(result.stop).toBeUndefined()
     expect(notices).toEqual([])
@@ -122,13 +122,13 @@ describe('PostToolUse output replacement', () => {
   it('Bash: an object in Bash’s shape replaces the output with its stdout and stderr', async () => {
     const shape = { stdout: '[redacted]', stderr: 'warn', interrupted: false, isImage: false }
     const { rt } = answering('PostToolUse', { a: post({ updatedToolOutput: shape }) })
-    const result = await rt.runPostToolUse('bash', { command: 'cat .env' }, output)
+    const result = await rt.runPostToolUse('Bash', { command: 'cat .env' }, output)
     expect(result.updatedToolOutput).toBe('[redacted]\nwarn')
   })
 
   it('a built-in whose shape the value does not match keeps its own output', async () => {
     const { rt } = answering('PostToolUse', { a: post({ updatedToolOutput: { stdout: 'x' } }) })
-    const result = await rt.runPostToolUse('read', { path: 'a' }, output)
+    const result = await rt.runPostToolUse('Read', { path: 'a' }, output)
     expect(result.updatedToolOutput).toBeUndefined()
   })
 
@@ -142,7 +142,7 @@ describe('PostToolUse output replacement', () => {
 
   it('an empty replacement hides the output instead of letting it through', async () => {
     for (const [tool, fields] of [
-      ['bash', { updatedToolOutput: '' }],
+      ['Bash', { updatedToolOutput: '' }],
       ['mcp_echo_echo', { updatedMCPToolOutput: '' }],
       ['mcp_echo_echo', { updatedMCPToolOutput: { content: [] } }],
     ] as const) {
@@ -153,7 +153,7 @@ describe('PostToolUse output replacement', () => {
 
   it('updatedMCPToolOutput is ignored for a tool that is not an MCP tool', async () => {
     const { rt } = answering('PostToolUse', { a: post({ updatedMCPToolOutput: 'REDACTED' }) })
-    const result = await rt.runPostToolUse('bash', { command: 'ls' }, output)
+    const result = await rt.runPostToolUse('Bash', { command: 'ls' }, output)
     expect(result.updatedToolOutput).toBeUndefined()
   })
 })
@@ -164,11 +164,11 @@ describe('sessionTitle', () => {
     expect(foldHookOutput(text, true).sessionTitle).toBe('auth-refactor')
   })
 
-  it('SessionStart names the session on startup, not after a clear or a compaction', async () => {
+  it('SessionStart names the session on fork (an mcp_tool hook cannot run at launch), not after a clear or a compaction', async () => {
     const { rt } = answering('SessionStart', {
       a: { hookSpecificOutput: { hookEventName: 'SessionStart', sessionTitle: 'CCS-T' } },
     })
-    expect((await rt.runSessionStart('startup')).sessionTitle).toBe('CCS-T')
+    expect((await rt.runSessionStart('fork')).sessionTitle).toBe('CCS-T')
     expect((await rt.runSessionStart('clear')).sessionTitle).toBeUndefined()
   })
 

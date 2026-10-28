@@ -106,7 +106,7 @@ export function settingsEnvOf(
     for (const [name, raw] of Object.entries(layer.settings.env)) {
       if (!VALID_NAME.test(name) || NEVER.has(name)) continue
       if (raw === null || typeof raw === 'object' || raw === undefined) continue
-      const value = String(raw)
+      const value = String(raw as string | number | boolean)
       if (repository && !repositoryMaySet(name, value)) continue
       out[name] = value
     }

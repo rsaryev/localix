@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
+import { tap } from '@/testing/hookProbe'
 import { registerDom } from '@localixai/kit/testing/dom'
 
 let teardown: () => Promise<void>
@@ -91,26 +92,27 @@ describe('useLightboxPaging', () => {
       { src: 'blob:a', name: 'a.png' },
       { src: 'blob:b', name: 'b.png' },
     ]
-    let paging!: ReturnType<typeof useLightboxPaging<(typeof images)[number]>>
+    const latest = tap<ReturnType<typeof useLightboxPaging<(typeof images)[number]>>>()
+    const paging = () => latest.value!
     function Harness() {
-      paging = useLightboxPaging(images)
+      latest.put(useLightboxPaging(images))
       return null
     }
     const root = createRoot(document.createElement('div'))
     await act(async () => root.render(<Harness />))
-    expect(paging.lightbox.image).toBeNull()
-    expect(paging.lightbox).toMatchObject({ hasPrev: false, hasNext: false })
+    expect(paging().lightbox.image).toBeNull()
+    expect(paging().lightbox).toMatchObject({ hasPrev: false, hasNext: false })
 
-    await act(async () => paging.open(0))
-    expect(paging.lightbox.image?.name).toBe('a.png')
-    expect(paging.lightbox).toMatchObject({ hasPrev: false, hasNext: true, onPrev: undefined })
-    await act(async () => paging.lightbox.onNext?.())
-    expect(paging.lightbox.image?.name).toBe('b.png')
-    expect(paging.lightbox).toMatchObject({ hasPrev: true, hasNext: false, onNext: undefined })
-    await act(async () => paging.lightbox.onPrev?.())
-    expect(paging.lightbox.image?.name).toBe('a.png')
-    await act(async () => paging.lightbox.onClose())
-    expect(paging.lightbox.image).toBeNull()
+    await act(async () => paging().open(0))
+    expect(paging().lightbox.image?.name).toBe('a.png')
+    expect(paging().lightbox).toMatchObject({ hasPrev: false, hasNext: true, onPrev: undefined })
+    await act(async () => paging().lightbox.onNext?.())
+    expect(paging().lightbox.image?.name).toBe('b.png')
+    expect(paging().lightbox).toMatchObject({ hasPrev: true, hasNext: false, onNext: undefined })
+    await act(async () => paging().lightbox.onPrev?.())
+    expect(paging().lightbox.image?.name).toBe('a.png')
+    await act(async () => paging().lightbox.onClose())
+    expect(paging().lightbox.image).toBeNull()
     await act(async () => root.unmount())
   })
 })

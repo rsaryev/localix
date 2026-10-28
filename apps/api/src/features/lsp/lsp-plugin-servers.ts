@@ -1,4 +1,5 @@
-import { which, spawnServer } from './lsp-bin-resolve'
+import { managedNpmBin, spawnJsServer, spawnServer, which } from './lsp-bin-resolve'
+import { commandInstall } from './lsp-command-installs'
 import type { LspServerDef } from './lsp-servers'
 import { isRecord } from '../../lib/record'
 
@@ -172,7 +173,8 @@ function languageIdOf(config: LspServerConfig, filePath: string): string | undef
 /**
  * Build an {@link LspServerDef} from a validated CC config. The server handles the config's file
  * extensions, roots at its `workspaceFolder` or the project root, and spawns `command` (resolved
- * on PATH) over stdio with the plugin's path variables (`process.env`) beneath its own `env`. A
+ * on PATH, else installed on first use when Localix knows it) over stdio with the plugin's path
+ * variables (`process.env`) beneath its own `env`. A
  * server that exited on its own starts again only while `restartOnCrash` and `maxRestarts` allow.
  */
 export function configuredLspServer(
@@ -181,6 +183,8 @@ export function configuredLspServer(
   plugin: { env?: Record<string, string> } = {},
 ): LspServerDef {
   let crashes = 0
+  // Not on PATH: installed on first use when Localix knows the command (`lsp-command-installs.ts`).
+  const managed = commandInstall(config.command)
   const mayStart = () =>
     crashes === 0 ||
     (config.restartOnCrash !== false &&
@@ -192,11 +196,24 @@ export function configuredLspServer(
     resolveRoot(_filePath, projectRoot) {
       return config.workspaceFolder ?? projectRoot
     },
-    async spawn(rootDir) {
+    ...(managed ? { install: managed.package } : {}),
+    async spawn(rootDir, _projectRoot, installed) {
       if (!mayStart()) return undefined
-      const bin = which(config.command)
-      if (!bin) return undefined
-      const proc = spawnServer(bin, config.args ?? [], rootDir, { ...plugin.env, ...config.env })
+      const args = config.args ?? []
+      const env = { ...plugin.env, ...config.env }
+      const onPath = which(config.command)
+      let proc
+      if (managed?.npmBin) {
+        // An npm server runs with Localix's own Bun wherever it was found: its
+        // `#!/usr/bin/env node` would otherwise need a Node install.
+        const bin = onPath ?? (installed ? managedNpmBin(installed, managed.npmBin) : undefined)
+        if (!bin) return undefined
+        proc = spawnJsServer(bin, args, rootDir, env)
+      } else {
+        const bin = onPath ?? (installed ? managed?.executable?.(installed) : undefined)
+        if (!bin) return undefined
+        proc = spawnServer(bin, args, rootDir, env)
+      }
       if (!proc) return undefined
       // An exit with no signal is the server's own: a crash (`restartOnCrash` / `maxRestarts`).
       // Shutdown and idle eviction end it with a signal.

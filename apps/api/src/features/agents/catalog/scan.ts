@@ -79,7 +79,6 @@ export function pluginCatalogAgent(agent: LoadedPluginAgent, projectId = ''): Ca
     projectId,
     path: '',
     bodyHash: bodyHashOf(agent.prompt),
-    localix: agent.localix ?? { priority: 0 },
   }
 }
 

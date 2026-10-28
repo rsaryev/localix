@@ -7,9 +7,9 @@ import type { AgentTool, ToolSurface } from '@localixai/agent/agents'
 
 import { approvedInputFor, type CcHooksRuntime } from '../../../cc-hooks'
 import type { RunProfile } from '../../../agent-core/run-shape'
+import { isDeferredCoreTool } from '../../../agent-core/tool-names'
 import type { LoadedPlugins } from '../../../plugins/loader'
 import type { SessionRecord } from '../../repository'
-import { TOOL } from '../../../agent-core/tool-names'
 import { applyToolWrapperChain } from './tool-wrapper-chain'
 import { createChainGate, type ChainGate } from './chain-gate'
 import type { ModRunScope } from '../../../mods/run-scope'
@@ -27,6 +27,9 @@ import { withheldToolStubs } from '../../../agent-core/tools/withheld-stub'
 import type { buildRunToolRegistry } from './runtime-tools'
 import type { RunEnv } from './types'
 import type { LoadedMiniApps } from '../../../mini-apps/loader-contract'
+
+/** The catalog label of a built-in behind `ToolSearch`. */
+const BUILTIN_SOURCE = 'Localix'
 
 export interface AssembleRunToolsOptions {
   env: RunEnv
@@ -57,6 +60,13 @@ export interface AssembleRunToolsOptions {
   /** Shared set populated in place from each tool's declared `background` flag. */
   backgroundToolNames: Set<string>
   /**
+   * Tools a bare deny in Claude Code's settings takes out of the model's view (`WebFetch`,
+   * `mcp__github`): off the wire and out of `ToolSearch`'s catalog, as Claude Code removes them.
+   * They stay dispatchable, so a call that names one hears the gate's refusal. A promise: the
+   * settings load while the MCP servers are gathered.
+   */
+  hiddenBySettings?: Promise<(tool: AgentTool) => boolean>
+  /**
    * Filled from the declared `mutates` flag (no hardcoded names). Dispatching one forces a
    * durable write, so a crash mid-call leaves evidence — see `handleToolExecutionStart`.
    */
@@ -65,7 +75,7 @@ export interface AssembleRunToolsOptions {
 
 export interface AssembledRunTools {
   /**
-   * Model-visible tools: the core toolkit plus `activate_tools` when anything is deferred.
+   * Model-visible tools: the core toolkit plus `ToolSearch` when anything is deferred.
    * A STRICT SUBSET of `dispatchTools` — that split is the whole deferral mechanism.
    */
   tools: AgentTool[]
@@ -98,13 +108,9 @@ export interface AssembledRunTools {
 
 export { claimSecondaryTools, indexToolPresentation } from './tool-namespace'
 
-/**
- * The tools whose start is stored at once (`handleToolExecutionStart`): every declared writer, and
- * a tool that calls tools (`codemode`) — it declares no effect of its own, but the calls it makes
- * write files and run commands without events of their own, so its start is all it records.
- */
+/** The tools whose start is stored at once (`handleToolExecutionStart`): every declared writer. */
 export function recordMutatingTools(tools: readonly AgentTool[], into: Set<string>): void {
-  for (const t of tools) if (t.mutates || t.name === TOOL.codemode) into.add(t.name)
+  for (const t of tools) if (t.mutates) into.add(t.name)
 }
 
 export async function assembleRunTools(
@@ -163,14 +169,16 @@ export async function assembleRunTools(
   for (const t of allTools) if (t.background) backgroundToolNames.add(t.name)
   if (mutatingToolNames) recordMutatingTools(allTools, mutatingToolNames)
 
-  // ---- Deferral: only external mini app and MCP call tools go behind `activate_tools` -------
+  // ---- Deferral: mini app, MCP and mod tools, and the few built-ins marked `deferred` ----------
   //
   // Mini app and MCP call catalogues can grow without bound. Core tools are a bounded product
-  // contract and always stay visible, so an agent never spends a turn loading a capability the
-  // application itself owns.
+  // contract and stay visible, except the few a run seldom calls (`Configure`, `Vault`,
+  // `ExternalAgentSessions`): like Claude Code, an open toolset lists them in `ToolSearch`'s catalog.
+  // Their schemas cost every request; loading one costs a turn only in the run that needs it, and
+  // a call by name reaches it without loading, because the loop dispatches from `dispatchTools`.
   //
   // Deferred does NOT mean unavailable. Every implementation remains in `dispatchTools`;
-  // `activate_tools` tells the runtime which full schemas to append for the next model turn.
+  // `ToolSearch` tells the runtime which full schemas to append for the next model turn.
   // Wrapping happens BEFORE this split, so a deferred tool keeps its mini app hooks, its CC
   // hooks and its failure guard — deferral is a wire decision and nothing else.
   const sourceByTool = new Map<string, string>()
@@ -181,6 +189,19 @@ export async function assembleRunTools(
     if (!sourceByTool.has(tool.name)) sourceByTool.set(tool.name, 'mini-apps')
   for (const tool of claimedMods.tools)
     if (!sourceByTool.has(tool.name)) sourceByTool.set(tool.name, 'plugins')
+  // Where a deferred tool is catalogued from: its provenance, or `Localix` for a deferred built-in.
+  // Kept apart from `sourceByTool`, whose absent name means a core tool to every reader.
+  const deferralSource = new Map(sourceByTool)
+  // A role that names the tool in its `tools` list asked for it: it stays on the wire.
+  const declared = new Set(agentProfile.declaredTools ?? [])
+  if (agentProfile.openToolset)
+    for (const tool of allTools)
+      if (
+        !deferralSource.has(tool.name) &&
+        !declared.has(tool.name) &&
+        isDeferredCoreTool(tool.name)
+      )
+        deferralSource.set(tool.name, BUILTIN_SOURCE)
   const activatedForSession = session.activatedTools ?? []
   // Claude Code mods' `tool.describe`: a description rewritten, a tool moved behind the
   // activator (`isDeferred: true`) or onto the wire (`false`).
@@ -188,13 +209,17 @@ export async function assembleRunTools(
   const described = await (options.mods?.describeTools(chained, {
     sources: sourceByTool,
     deferred: (name) =>
-      sourceByTool.has(name) && !activatedForSession.includes(name) && !onSurface.includes(name),
+      deferralSource.has(name) && !activatedForSession.includes(name) && !onSurface.includes(name),
   }) ?? { tools: chained, placed: new Map<string, boolean>() })
   const wrapped = described.tools
   const placed = [...described.placed]
-  for (const [name] of placed.filter(([, deferred]) => deferred))
+  for (const [name] of placed.filter(([, deferred]) => deferred)) {
     sourceByTool.set(name, sourceByTool.get(name) ?? 'mods')
-  const split = splitDeferredTools(wrapped, sourceByTool, activatedForSession, [
+    deferralSource.set(name, deferralSource.get(name) ?? 'mods')
+  }
+  const hidden = options.hiddenBySettings ? await options.hiddenBySettings : undefined
+  const offered = hidden ? wrapped.filter((tool) => !hidden(tool)) : wrapped
+  const split = splitDeferredTools(offered, deferralSource, activatedForSession, [
     ...onSurface,
     ...placed.filter(([, deferred]) => !deferred).map(([name]) => name),
   ])
@@ -211,8 +236,12 @@ export async function assembleRunTools(
           onActivated: (names) => rememberActivatedTools(env, userId, session, names),
         })
       : undefined
-  const onWire = [...split.direct, ...split.promoted]
-  const tools = activator ? [...onWire, activator] : onWire
+  // The activator sits between the core tools and the activated ones, so an activation appends: the
+  // list a run sends after revealing a tool (the roster appends it) is the list the next run starts
+  // with, and the provider's cache keeps the prefix that run built instead of rewriting it.
+  const tools = activator
+    ? [...split.direct, activator, ...split.promoted]
+    : [...split.direct, ...split.promoted]
   // Withheld built-ins get a DISPATCH-ONLY stub (never a model schema): a model that names
   // one anyway is told why it is missing and what would bring it back, instead of the loop's
   // bare "Tool X not found". `validateToolRegistry` admits `modelTools ⊂ dispatchTools`.
@@ -223,7 +252,7 @@ export async function assembleRunTools(
     // never replace a descriptor already built by the primary registry.
     if (!primaryNames.has(name)) combinedLedger.set(name, verdict)
   const deferredSources = new Map(
-    split.deferredEntries.map((entry) => [entry.tool.name, sourceByTool.get(entry.tool.name)!]),
+    split.deferredEntries.map((entry) => [entry.tool.name, entry.source]),
   )
   const ledger = markDeferred(combinedLedger, deferredSources)
   runtimeTools.setLedger?.(ledger)

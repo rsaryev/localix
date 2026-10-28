@@ -5,28 +5,13 @@ import { Button } from '@localixai/kit/button'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@localixai/kit/hover-card'
 import { inspector } from '@/shared/lib/inspectorBus'
 import { UsageTotals } from './UsageTotals'
-import { ParticipantUsageRow } from './ParticipantUsageRow'
-import { findSessionInState } from '../../model/findSession'
-import { useChatStore } from '../../model/store'
-import type { SessionAgentRoute } from '@/shared/api/contracts'
 
-const NO_AGENTS: readonly SessionAgentRoute[] = []
-
-/**
- * Session-wide totals belong to the conversation actions, outside the participant roster. In a
- * group the card also breaks them down per participant — the one place usage is shown.
- */
+/** Session-wide totals, shown in the hover card of the conversation's usage icon. */
 export const SessionUsageIndicator = memo(function SessionUsageIndicator({
   usage,
-  sessionId,
 }: {
   usage?: ChatUsagePayload
-  sessionId?: string | null
 }) {
-  const agents = useChatStore((state) => findSessionInState(state, sessionId)?.agents) ?? NO_AGENTS
-  const participantUsage = useChatStore(
-    (state) => findSessionInState(state, sessionId)?.participantUsage,
-  )
   if (!usage) return null
   return (
     <HoverCard openDelay={200} closeDelay={100}>
@@ -48,28 +33,7 @@ export const SessionUsageIndicator = memo(function SessionUsageIndicator({
       >
         <p className="text-2xs font-medium text-text-strong">Session total</p>
         <UsageTotals usage={usage} />
-        {sessionId && agents.length > 1 ? (
-          <section
-            aria-label="Usage by participant"
-            className="space-y-2 border-t border-border-soft pt-3"
-          >
-            <p className="text-2xs font-medium text-text-strong">By participant</p>
-            <ul className="space-y-2.5">
-              {agents.map((agent) => (
-                <ParticipantUsageRow
-                  key={agent.agentId}
-                  sessionId={sessionId}
-                  agentId={agent.agentId}
-                  handle={agent.handle}
-                  usage={participantUsage?.[agent.agentId]}
-                />
-              ))}
-            </ul>
-          </section>
-        ) : null}
-        <p className="text-2xs text-text-faint">
-          All participants, including those removed, and session services.
-        </p>
+        <p className="text-2xs text-text-faint">Includes session services.</p>
       </HoverCardContent>
     </HoverCard>
   )

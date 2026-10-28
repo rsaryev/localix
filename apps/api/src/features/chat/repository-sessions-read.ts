@@ -3,11 +3,7 @@ import { sql, type Kysely } from 'kysely'
 
 import type { AppDatabase } from '../../db'
 import { mapSession } from './repository-mappers'
-import {
-  participantsJsonColumn,
-  participantsJsonFor,
-  routeFromJoin,
-} from './repository-conversation-participants'
+import { routeFromRow } from './repository-session-agent'
 import { createChatProjectionQueries } from './repository-chat-projections'
 import { lastMessagesByUser } from './repository-last-message'
 import type { SessionRecord } from './repository-types'
@@ -23,7 +19,6 @@ export function createSessionReadQueries(db: Kysely<AppDatabase>) {
       const rows = await db
         .selectFrom('agent_sessions')
         .selectAll()
-        .select(participantsJsonColumn.as('agents_json'))
         .where('user_id', '=', userId)
         .orderBy('is_pinned', 'desc')
         .orderBy('updated_at', 'desc')
@@ -125,8 +120,7 @@ export function createSessionReadQueries(db: Kysely<AppDatabase>) {
           'session_kind',
           'runtime_status',
           'title',
-          // WHO created it, not just which session did. A room's members share one session, so
-          // the parent id alone cannot tell a member its own children from a colleague's.
+          // WHO created it, not just which session did.
           'invocation_json',
         ])
         .where('user_id', '=', userId)
@@ -154,7 +148,6 @@ export function createSessionReadQueries(db: Kysely<AppDatabase>) {
       const row = await db
         .selectFrom('agent_sessions')
         .selectAll()
-        .select(participantsJsonColumn.as('agents_json'))
         .where('user_id', '=', userId)
         .where('id', '=', id)
         .executeTakeFirst()
@@ -170,14 +163,11 @@ export function createSessionReadQueries(db: Kysely<AppDatabase>) {
     async getSessionAgentRoute(userId: string, id: string) {
       const row = await db
         .selectFrom('agent_sessions')
-        .leftJoin('conversation_participants as route', (join) =>
-          join.onRef('route.session_id', '=', 'agent_sessions.id').on('route.position', '=', 0),
-        )
         .select([
-          'route.provider_connection_id',
-          'route.model_id',
-          'route.reasoning_effort',
-          'route.agent_id',
+          'agent_sessions.provider_connection_id',
+          'agent_sessions.model_id',
+          'agent_sessions.reasoning_effort',
+          'agent_sessions.agent_id',
           'agent_sessions.project_id',
           'agent_sessions.id',
         ])
@@ -187,7 +177,7 @@ export function createSessionReadQueries(db: Kysely<AppDatabase>) {
 
       return row
         ? {
-            ...routeFromJoin(row),
+            ...routeFromRow(row),
             projectId: row.project_id ?? null,
             agentId: row.agent_id ?? null,
           }
@@ -267,10 +257,6 @@ export function createSessionReadQueries(db: Kysely<AppDatabase>) {
         .selectFrom('agent_external_session_keys as identity')
         .innerJoin('agent_sessions as session', 'session.id', 'identity.session_id')
         .selectAll('session')
-        // The party, like every other session read. Without it this projection handed back a
-        // conversation with NOBODY in it: harmless while the caller only wanted the id, and a
-        // conversation with no model the moment anyone asked what it runs on.
-        .select(participantsJsonFor('session.id').as('agents_json'))
         .where('identity.user_id', '=', userId)
         .where('identity.external_key', '=', externalKey)
         .where('session.user_id', '=', userId)

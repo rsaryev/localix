@@ -81,10 +81,10 @@ export function ConflictCompareBar({
       actionsLabel="Conflict resolution actions"
       actions={
         <>
-          <Button size="xs" variant="outline" disabled={busy} onClick={() => void keepMine()}>
+          <Button size="xs" variant="ghost" disabled={busy} onClick={() => void keepMine()}>
             Keep my edits (overwrite disk)
           </Button>
-          <Button size="xs" variant="outline" disabled={busy} onClick={takeDisk}>
+          <Button size="xs" variant="ghost" disabled={busy} onClick={takeDisk}>
             Take disk version (discard mine)
           </Button>
         </>

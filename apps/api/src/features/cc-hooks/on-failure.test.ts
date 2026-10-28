@@ -2,7 +2,7 @@
  * `onFailure: "block"` (hooks.md, "Block the action when a hook fails"): a command or http hook
  * that cannot start, exits with a code other than 0 or 2, times out or prints invalid output does
  * what exit 2 does on its event (a PermissionRequest is denied); without it the action goes ahead.
- * Stop, SubagentStop, TaskCompleted, TeammateIdle and background hooks are unaffected.
+ * Stop, SubagentStop, TaskCompleted and background hooks are unaffected.
  */
 import { describe, expect, it } from 'bun:test'
 import { join } from 'node:path'

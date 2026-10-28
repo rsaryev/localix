@@ -78,7 +78,7 @@ export interface TerminalControl {
     userId: string
     /** The run's session — a pane always belongs to one; there is no unbound terminal. */
     sessionId: string
-    /** The participant whose run opens it — the owner its work record names. */
+    /** The agent whose run opens it — the owner its work record names. */
     agentId?: string
     cwd?: string
     command: string

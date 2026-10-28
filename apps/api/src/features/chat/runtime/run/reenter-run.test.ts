@@ -9,7 +9,6 @@ const session = { id: 's1', sessionKind: 'chat' } as SessionRecord
 const params = dispatchParams(
   { userId: 'u1', session, historyMessages: [], assistantMessageId: 'a1' },
   {
-    speakerAgentId: 'agent-1',
     executionContext: { invocation: { kind: 'root' } } as unknown as RunScope['executionContext'],
     maxTurns: 3,
   },
@@ -26,7 +25,7 @@ function envWith(run: (p: RunParams) => Promise<unknown>, holder?: AbortControll
   return { env, activeRuns, activeRunSessions }
 }
 
-const settle = () => new Promise((resolve) => setTimeout(resolve, 5))
+const settle = () => new Promise((resolve) => setTimeout(resolve, 0))
 
 describe('reenterRun', () => {
   test('releases the lease it holds and re-enters with the scope carried whole', async () => {

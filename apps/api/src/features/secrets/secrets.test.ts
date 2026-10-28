@@ -11,7 +11,7 @@ import { migrateToLatest } from '../../db/migrator'
 import type { AppDatabase } from '../../db'
 import { isSecretHandle, toSecretHandle, type CreateSecretRequest } from './contracts'
 import { createAesCipher, plaintextCipher } from './cipher'
-import { createSecretsStore, migrateLegacySecrets } from './store'
+import { createSecretsStore } from './store'
 import { VaultPayloadError } from './store-internals'
 import { createSecretsService } from './service'
 import { hasSecretTokens, resolveSecretTokens } from '@localixai/mini-app-sdk/backend'
@@ -142,84 +142,6 @@ describe('typed Vault store', () => {
       }),
     ])
     expect(JSON.stringify(await store.list('u'))).not.toContain('sentinel')
-  })
-
-  it('imports and archives legacy encrypted files, including renamed provider aliases', async () => {
-    const legacyDir = await mkdtemp(path.join(tmpdir(), 'localix-legacy-vault-'))
-    const legacyCipher = createAesCipher(randomBytes(32))
-    const createdAt = Date.parse('2026-07-24T07:22:38.000Z')
-    await writeFile(
-      path.join(legacyDir, 'local-user.json'),
-      JSON.stringify({
-        API_KEY: {
-          v: legacyCipher.encrypt('legacy-user-secret'),
-          createdAt,
-          updatedAt: createdAt,
-        },
-        'provider-credential:key-1': {
-          v: legacyCipher.encrypt(
-            JSON.stringify({
-              type: 'oauth',
-              accessToken: 'legacy-access',
-              refreshToken: 'legacy-refresh',
-              expiresAt: Number.MAX_SAFE_INTEGER,
-            }),
-          ),
-          createdAt,
-          updatedAt: createdAt,
-        },
-      }),
-    )
-    const { db, store } = await newStore()
-    await db
-      .insertInto('provider_connections')
-      .values({
-        id: 'connection-1',
-        user_id: 'local-user',
-        provider_id: 'openai-codex',
-        provider_name: 'OpenAI Codex',
-        label: 'OpenAI Codex',
-        auth_type: 'oauth-pkce',
-        status: 'active',
-        created_at: '2026-07-24T07:22:38.000Z',
-        updated_at: '2026-07-24T07:22:38.000Z',
-      })
-      .execute()
-    await db
-      .insertInto('provider_connection_keys')
-      .values({
-        id: 'key-1',
-        connection_id: 'connection-1',
-        user_id: 'local-user',
-        label: 'default',
-        credential_type: 'oauth',
-        priority: 0,
-        enabled: 1,
-        created_at: '2026-07-24T07:22:38.000Z',
-        updated_at: '2026-07-24T07:22:38.000Z',
-        vault_item_id: null,
-      })
-      .execute()
-
-    expect(await migrateLegacySecrets({ db, store, legacyDir, cipher: legacyCipher })).toBe(2)
-    expect(await store.resolve('local-user', 'API_KEY')).toBe('legacy-user-secret')
-    expect(await store.resolve('local-user', 'provider.key-1')).toContain('legacy-access')
-    expect(await store.listBindings('local-user', 'provider.key-1')).toEqual([
-      expect.objectContaining({ consumerType: 'provider', consumerId: 'key-1' }),
-    ])
-    expect(
-      await db
-        .selectFrom('provider_connection_keys')
-        .select('vault_item_id')
-        .where('id', '=', 'key-1')
-        .executeTakeFirstOrThrow(),
-    ).toEqual({ vault_item_id: expect.any(String) })
-    expect(await readFile(path.join(legacyDir, 'local-user.json.migrated'), 'utf8')).toContain(
-      'provider-credential:key-1',
-    )
-    expect(await migrateLegacySecrets({ db, store, legacyDir, cipher: legacyCipher })).toBe(0)
-
-    await rm(legacyDir, { recursive: true, force: true })
   })
 
   it('scopes items and aliases per user', async () => {

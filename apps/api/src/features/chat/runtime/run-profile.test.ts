@@ -3,16 +3,16 @@ import { isToolDirect, resolveRunProfile } from '../../agent-core/run-shape'
 import { resolveExecutionProfile } from './run-profile'
 
 const session = { sessionKind: 'job' } as const
-const legacy = resolveRunProfile(session, { prompt: 'Stale instructions', tools: ['write'] })
+const legacy = resolveRunProfile(session, { prompt: 'Stale instructions', tools: ['Write'] })
 
 test('native host tools and registry instructions take precedence over a compatibility profile', () => {
   const profile = resolveExecutionProfile(session, 'Current instructions', {
-    hostTools: ['read'],
+    hostTools: ['Read'],
     profileOverride: legacy,
   })
   expect(profile.prompt.identity).toBe('Current instructions')
-  expect(isToolDirect(profile, 'read')).toBe(true)
-  expect(isToolDirect(profile, 'write')).toBe(false)
+  expect(isToolDirect(profile, 'Read')).toBe(true)
+  expect(isToolDirect(profile, 'Write')).toBe(false)
   expect(legacy.prompt.identity).toBe('Stale instructions')
 })
 
@@ -21,8 +21,8 @@ test('an empty native roster cannot be bypassed by a compatibility profile', () 
     hostTools: [],
     profileOverride: legacy,
   })
-  expect(isToolDirect(profile, 'write')).toBe(false)
-  expect(isToolDirect(profile, 'bash')).toBe(false)
+  expect(isToolDirect(profile, 'Write')).toBe(false)
+  expect(isToolDirect(profile, 'Bash')).toBe(false)
   expect(profile.prompt.identity).toBe('Current instructions')
 })
 
@@ -51,16 +51,16 @@ test('a child run as a plugin agent type without a tools list inherits the conve
 })
 
 test('a plugin agent type’s tools list is the exact allowlist, narrowed by a host roster', () => {
-  const profile = resolveExecutionProfile(child, 'Plugin body', {}, { tools: ['read'] })
-  expect(Object.keys(profile.toolExposure).sort()).toEqual(['read', 'tool_output'])
+  const profile = resolveExecutionProfile(child, 'Plugin body', {}, { tools: ['Read'] })
+  expect(Object.keys(profile.toolExposure).sort()).toEqual(['Read', 'ToolOutput'])
   expect(profile.openToolset).toBe(false)
-  for (const name of ['browser', 'codemode', 'vault', 'context_budget'] as const)
+  for (const name of ['Browser', 'Vault', 'ContextBudget'] as const)
     expect(isToolDirect(profile, name)).toBe(false)
   const narrowed = resolveExecutionProfile(
     child,
     'Plugin body',
-    { hostTools: ['read'] },
-    { tools: ['read', 'bash'] },
+    { hostTools: ['Read'] },
+    { tools: ['Read', 'Bash'] },
   )
-  expect(narrowed.declaredTools).toEqual(['read'])
+  expect(narrowed.declaredTools).toEqual(['Read'])
 })

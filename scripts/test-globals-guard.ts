@@ -40,21 +40,6 @@ const BASELINE: ReadonlySet<string> = new Set([
   // carried tslib, so the helpers never reach globalThis. Deleted per this file's own rule that
   // the list may only shrink — if an eager import brings them back, the guard fails and they
   // must be re-added WITH the reason, not restored silently.
-  // ── Ours: test scaffolding that outlives its file ───────────────────────────────────
-  '__board',
-  'toggleTheme',
-  '__boom',
-  '__vfEvalX',
-  '__channelTestReply',
-  '__channelTestStopped',
-  '__TEST_SUB_STOP__',
-  '__TEST_SUB_SHUTDOWN__',
-  // ── Ours, and the dangerous kind: these SHADOW real host APIs ───────────────────────
-  // A later file that probes for one of these sees a stub instead of "absent", which is
-  // exactly how the `window` defect above went unnoticed. Shrink these first.
-  'requestAnimationFrame',
-  'FileReader',
-  'MediaRecorder',
 ])
 
 let baselineKeys = new Set<string>()

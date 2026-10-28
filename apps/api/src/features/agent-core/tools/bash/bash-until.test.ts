@@ -24,14 +24,14 @@ describe('bash until → wait spec', () => {
     const result = await runUntilWait(
       { host },
       'call-1',
-      { command: 'curl -sf localhost:3000', until: 5, timeout: 120, description: 'port 3000' },
+      { command: 'curl -sf localhost:3000', until: 5, timeout: 120 },
       '/cwd',
       120,
       undefined,
       undefined,
     )
     expect(calls[0]).toMatchObject({
-      description: 'port 3000',
+      description: 'curl -sf localhost:3000',
       cwd: '/cwd',
       timeoutMs: 120_000,
       until: {

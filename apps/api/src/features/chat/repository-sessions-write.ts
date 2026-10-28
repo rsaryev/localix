@@ -7,12 +7,7 @@ import { deleteSessionChunks } from '../context-store/repository-maintenance'
 import { claimSessionIdentity, type SessionIdentityClaim } from './repository-session-identity'
 import { sessionRef } from './contracts'
 import { createExternalSessionWriter } from './repository-external-session-write'
-import {
-  writeAgentRoute,
-  writeMembership,
-  writeParticipants,
-} from './repository-conversation-participants'
-import { writeModelChoices } from './repository-model-choices'
+import { agentColumns, assertResolvedAgent, writeAgentRoute } from './repository-session-agent'
 import type { ModelRoute, SessionRecord } from './repository-types'
 import { serializeSessionProvenance } from './session-provenance'
 import { sessionRowPatch } from './repository-session-patch'
@@ -31,6 +26,7 @@ export function createSessionWriteQueries(db: Kysely<AppDatabase>) {
     // convention a future call site can forget.
     identity: SessionIdentityClaim,
   ): Promise<void> => {
+    assertResolvedAgent(record.agent)
     await exec
       .insertInto('agent_sessions')
       .values({
@@ -56,7 +52,7 @@ export function createSessionWriteQueries(db: Kysely<AppDatabase>) {
         invocation_json: serializeSessionProvenance(record.provenance),
         pinned_skills: JSON.stringify(record.pinnedSkills ?? []),
         description: record.description,
-        avatar: record.avatar,
+        ...agentColumns(record.agent),
         ...(record.permissionMode ? { permission_mode: record.permissionMode } : {}),
         activated_tools: record.activatedTools?.length
           ? JSON.stringify(record.activatedTools)
@@ -68,9 +64,6 @@ export function createSessionWriteQueries(db: Kysely<AppDatabase>) {
         last_message_at: record.lastMessageAt,
       })
       .execute()
-    // The participants are a second statement inside the same transaction, so a session and the
-    // people in it commit together: a reader can never see a conversation with nobody in it.
-    await writeParticipants(exec, record.id, record.agents)
     await recordSessionChanges(exec, record.userId, [record.id])
   }
   return {
@@ -125,13 +118,7 @@ export function createSessionWriteQueries(db: Kysely<AppDatabase>) {
               .where('user_id', '=', userId)
               .where('id', '=', id)
               .execute()
-          // The party is its own table, so it is its own statement. Passing it states WHO is in
-          // the conversation; omitting it leaves the party alone, like every other absent patch
-          // field. What the people who stay run on is NEVER written here — the record being
-          // patched was read with its routes already resolved, so re-stating them would launder
-          // an inherited model into an explicit choice (see `writeMembership`). A deliberate
-          // re-route is its own verb: `updateSessionAgentRoute`.
-          if (patch.agents !== undefined) await writeMembership(trx, id, patch.agents)
+          // The agent is fixed at creation; only its route changes, through `updateSessionAgentRoute`.
           // A mode is the TREE's: a child run reads its own row, so a root that changed mode while
           // its children kept the old one would leave a delegated worker writing in plan mode.
           if (patch.permissionMode !== undefined)
@@ -146,61 +133,18 @@ export function createSessionWriteQueries(db: Kysely<AppDatabase>) {
     },
 
     /**
-     * Change WHO is in a conversation — only if nobody changed the session since it was read.
+     * Re-route the session's agent: what it runs on, never who it is.
      *
-     * Two editors used to race silently: the composer sent a whole participant list read seconds
-     * earlier, an agent's reply tagged someone in between, and the later write
-     * erased the invitation. The check and the write share one transaction, so a stale list is
-     * refused (`false`) instead of applied. `expectedUpdatedAt` absent means the caller read the
-     * session inside the same request and accepts any revision.
-     */
-    async updateMembership(
-      userId: string,
-      id: string,
-      agents: SessionRecord['agents'],
-      stamp: { updatedAt: string; expectedUpdatedAt?: string },
-    ): Promise<boolean> {
-      return retrySqliteBusy(() =>
-        db.transaction().execute(async (trx) => {
-          const row = await trx
-            .selectFrom('agent_sessions')
-            .select('updated_at')
-            .where('user_id', '=', userId)
-            .where('id', '=', id)
-            .executeTakeFirst()
-          if (!row) return false
-          if (stamp.expectedUpdatedAt !== undefined && row.updated_at !== stamp.expectedUpdatedAt)
-            return false
-          await trx
-            .updateTable('agent_sessions')
-            .set({ updated_at: stamp.updatedAt })
-            .where('user_id', '=', userId)
-            .where('id', '=', id)
-            .execute()
-          await writeMembership(trx, id, agents)
-          return true
-        }),
-      )
-    },
-
-    /**
-     * Re-route ONE participant of one session.
-     *
-     * Separate from `updateSession` because it is a different act: that one replaces the whole
-     * party, which is what adding or removing a member means, while this changes what a member
-     * already in the room runs on. Sending a whole-party replacement for a model change would
-     * make the picker able to silently drop a participant.
+     * Separate from `updateSession` because the record being patched was read with its route
+     * already resolved, so re-stating it there would launder an inherited model into an
+     * explicit choice.
      */
     async updateSessionAgentRoute(
       userId: string,
       id: string,
-      agentId: string,
       route: Partial<ModelRoute>,
       opts?: { seeded?: boolean },
     ): Promise<void> {
-      // Ownership is checked here rather than inside the participant writer: `conversation_participants` has no
-      // user column of its own — it is owned through its session, and this is the seam that
-      // knows that.
       const owned = await db
         .selectFrom('agent_sessions')
         .select('id')
@@ -208,18 +152,8 @@ export function createSessionWriteQueries(db: Kysely<AppDatabase>) {
         .where('id', '=', id)
         .executeTakeFirst()
       if (!owned) return
-      await writeAgentRoute(db, id, agentId, route, opts)
+      await writeAgentRoute(db, id, route, opts)
     },
-
-    /**
-     * The person's model choice for the named agents, seated or not — seats and choice map in
-     * ONE transaction (`repository-model-choices.ts`).
-     */
-    updateSessionAgentRoutes: (
-      userId: string,
-      id: string,
-      routes: readonly ({ agentId: string } & Partial<ModelRoute>)[],
-    ): Promise<void> => writeModelChoices(db, userId, id, routes),
 
     /**
      * Replace the generated fallback title only while it is still current.

@@ -3,21 +3,14 @@ import type { ToolSurface } from '@localixai/agent/agents'
 import type { QueueItem } from '../../../../lib/priority-queue'
 import { leaseHolder, type WakeQueueSharedState } from './leases'
 import { sameSurface, type PendingTurn } from './entry'
-import { batchRule, joinPoint } from './kinds'
-
-export interface SubagentSteeringAddress {
-  participant: string
-  allowUnaddressed: boolean
-}
+import { batchRule, childMessage, joinPoint } from './kinds'
 
 /** What a RUNNING turn may take from its session's queue at a boundary. */
 export interface JoinFilter {
-  /** The person's messages this speaker may take (`addressedToSpeaker`). */
-  accepts?: (content: string) => boolean
   /** The running turn's client surface: a message sent from another one opens its own turn. */
   surface?: ToolSurface
-  /** Whose children's reports may join — offered only once a tool turn has completed. */
-  reports?: SubagentSteeringAddress
+  /** Children's reports may join — offered only once a tool turn has completed. */
+  reports?: boolean
 }
 
 /** Selection of what a running model may take at its next boundary (`kinds.ts`, `joins`). */
@@ -47,17 +40,15 @@ export const createSteerableSelection = (shared: WakeQueueSharedState) => {
     const candidates = q.list().filter((item) => {
       if (!free(sessionId, item)) return false
       const point = joinPoint(item.value)
-      return point === 'boundary' || (point === 'tool-turn' && reports !== undefined)
+      return point === 'boundary' || (point === 'tool-turn' && reports === true)
     })
     const first = candidates[0]
     if (!first) return undefined
     const turn = first.value
-    // A turn the running participant is not the one for is not taken — and nothing after it is
-    // either: skipping ahead would answer a later message before the earlier one, which then
-    // runs as its own turn once this run ends.
+    // A turn that cannot join is not taken, and nothing after it is either: skipping ahead
+    // would answer a later message before the earlier one, which then runs as its own turn
+    // once this run ends.
     if (turn.entry === 'report') {
-      const recipient = turn.to?.participant
-      if (recipient ? recipient !== reports!.participant : !reports!.allowUnaddressed) return
       if (turn.batch) return candidates.filter((item) => item.value.batch === turn.batch)
       const key = batchRule(turn)!.key
       return candidates.filter(
@@ -65,7 +56,7 @@ export const createSteerableSelection = (shared: WakeQueueSharedState) => {
           item.value.entry === 'report' && !item.value.batch && batchRule(item.value)?.key === key,
       )
     }
-    if (filter.accepts && !filter.accepts(turn.content)) return undefined
+    if (childMessage(turn)) return [first]
     if (turn.entry === 'person' && !sameSurface(turn.toolSurface, filter.surface)) return undefined
     // A batch a drain claimed before replays through the drain, under its own transcript ids
     // (`selection.ts`); taking one of its lines here would deliver it twice or not at all.

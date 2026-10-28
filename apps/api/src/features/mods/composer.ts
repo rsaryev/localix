@@ -31,6 +31,8 @@ export function createModComposer(changed: () => void) {
   const sessions = new Map<string, ComposerView>()
   /** Rows a mod appended (`$.session.append`), for the model with the next prompt. */
   const notes = new Map<string, string[]>()
+  /** Prompts a mod submitted (`$.prompt.submit`), which hooks already heard as `prompt.submit`. */
+  const submitted = new Map<string, string[]>()
   const viewOf = (sessionId: string) => {
     let view = sessions.get(sessionId)
     if (!view) sessions.set(sessionId, (view = { fills: [], suggestion: null, statuses: {} }))
@@ -68,6 +70,21 @@ export function createModComposer(changed: () => void) {
       const taken = notes.get(sessionId) ?? []
       notes.delete(sessionId)
       return taken
+    },
+    /** A prompt a mod submitted: its turn does not raise `prompt.submit` a second time. */
+    submitted(sessionId: string, content: string) {
+      submitted.set(sessionId, [...(submitted.get(sessionId) ?? []), content])
+    },
+    /** The turn's prompt is one a mod submitted and its hooks heard: true once, then forgotten. */
+    takeSubmitted(sessionId: string, content: string): boolean {
+      const kept = submitted.get(sessionId) ?? []
+      const at = kept.indexOf(content)
+      if (at < 0) return false
+      submitted.set(
+        sessionId,
+        kept.filter((_, index) => index !== at),
+      )
+      return true
     },
     view: (sessionId: string): ComposerView =>
       sessions.get(sessionId) ?? { fills: [], suggestion: null, statuses: {} },

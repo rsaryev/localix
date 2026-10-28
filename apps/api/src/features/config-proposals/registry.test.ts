@@ -56,7 +56,7 @@ describe('the remedy registry', () => {
 
   test('every remedy resolves its own change, and an unknown kind is refused', () => {
     const registry = createRemedyRegistry()
-    expect(registry.remedyIdOf({ kind: 'tool.enable', name: 'loops' })).toBe('tool.enable')
+    expect(registry.remedyIdOf({ kind: 'tool.enable', name: 'Loops' })).toBe('tool.enable')
     expect(() => registry.remedyIdOf({ kind: 'nope' })).toThrow()
   })
 

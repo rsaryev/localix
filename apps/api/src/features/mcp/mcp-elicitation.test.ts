@@ -44,7 +44,7 @@ const record: McpServerRecord = {
 }
 
 /** A HITL controller whose person answers with `answer` (or throws it). */
-function person(answer: unknown | Error) {
+function person(answer: unknown) {
   const cards: McpElicitationRequest[] = []
   const controller = {
     async request(request: McpElicitationRequest) {

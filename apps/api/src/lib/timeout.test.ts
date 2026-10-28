@@ -74,6 +74,6 @@ describe('withTimeout', () => {
     })
     expect(withTimeout(late, 5)).rejects.toBeInstanceOf(DeadlineExceededError)
     rejectLate(new Error('late failure')) // must not crash the process
-    await new Promise((r) => setTimeout(r, 10))
+    await new Promise((r) => setTimeout(r, 0))
   })
 })

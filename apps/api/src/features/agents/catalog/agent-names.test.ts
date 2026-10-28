@@ -2,7 +2,6 @@ import { describe, expect, test } from 'bun:test'
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
-import { AGENT_HANDLE_PATTERN } from '@localixai/agent/agents'
 import { parseAgentFile } from '../../plugins/discovery-cc-files'
 import { recordOf } from '../projection'
 import { agentFolders, scanAgents } from './scan'
@@ -31,7 +30,7 @@ describe('agent names and fields as Claude Code reads them', () => {
       plugins: [],
     })
 
-  test('a user agent with spaces, dots or capitals loads under a handle a mention can type', async () => {
+  test('a user agent with spaces, dots or capitals loads under the name it declares', async () => {
     const dir = join(base(), 'home', '.claude', 'agents')
     await file(join(dir, 'a.md'), agent('Code Reviewer'))
     await file(join(dir, 'b.md'), agent('reviewer.v2'))
@@ -39,27 +38,22 @@ describe('agent names and fields as Claude Code reads them', () => {
     const catalog = await scan()
     const loaded = catalog.active.filter((a) => a.source === 'user')
     expect(loaded.map((a) => a.fullName).sort()).toEqual([
-      'code-reviewer',
-      'reviewer-v2',
-      'unicode-tester',
+      'Code Reviewer',
+      'reviewer.v2',
+      'Ünïcode Tëster',
     ])
-    for (const a of loaded) expect(a.fullName).toMatch(AGENT_HANDLE_PATTERN)
-    // The name the file declares still reaches it (a skill's `agent:`, an `Agent(...)` rule).
-    expect(catalog.resolve('Code Reviewer')).toMatchObject({ agent: { fullName: 'code-reviewer' } })
-    expect(catalog.resolve('reviewer.v2')).toMatchObject({ agent: { fullName: 'reviewer-v2' } })
+    // The name the file declares reaches it (a skill's `agent:`, an `Agent(...)` rule).
+    expect(catalog.resolve('Code Reviewer')).toMatchObject({ agent: { fullName: 'Code Reviewer' } })
+    expect(catalog.resolve('reviewer.v2')).toMatchObject({ agent: { fullName: 'reviewer.v2' } })
   })
 
-  test('a name with no letters or digits, or a very long one, still gets a safe handle', async () => {
+  test('a name with no letters or digits, or the longest allowed, is kept as written', async () => {
     const dir = join(base(), 'home', '.claude', 'agents')
     await file(join(dir, 'a.md'), agent('日本語'))
     await file(join(dir, 'b.md'), agent('x'.repeat(256)))
     const loaded = (await scan()).active.filter((a) => a.source === 'user')
     expect(loaded).toHaveLength(2)
-    for (const a of loaded) {
-      expect(a.fullName).toMatch(AGENT_HANDLE_PATTERN)
-      expect(a.fullName.length).toBeLessThanOrEqual(100)
-    }
-    expect(new Set(loaded.map((a) => a.fullName)).size).toBe(2)
+    expect(loaded.map((a) => a.fullName).sort()).toEqual(['x'.repeat(256), '日本語'].sort())
   })
 
   test('only a leading hyphen, a colon or more than 256 characters skips the file', async () => {
@@ -77,7 +71,7 @@ describe('agent names and fields as Claude Code reads them', () => {
     const bad = await file(join(dir, 'helper.md'), agent('-bad'))
     const spaced = await file(join(dir, 'my agent.md'), '---\ndescription: x\n---\nBody')
     expect((await parseAgentFile(bad))?.name).toBe('helper')
-    expect((await parseAgentFile(spaced))?.name).toBe('my-agent')
+    expect((await parseAgentFile(spaced))?.name).toBe('my agent')
   })
 
   test('an agent has no when_to_use: its description is the description alone', async () => {
@@ -108,6 +102,6 @@ describe('agent names and fields as Claude Code reads them', () => {
     await file(join(dir, 'a.md'), agent('many', `skills: [${[...names, 's0'].join(', ')}]\n`))
     const found = (await scan()).active.find((a) => a.fullName === 'many')!
     const record = recordOf(found, 'id-1')
-    expect(record.context?.preloadSkills).toHaveLength(32)
+    expect(record.skills).toHaveLength(32)
   })
 })

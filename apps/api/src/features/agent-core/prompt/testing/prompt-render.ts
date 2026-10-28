@@ -5,9 +5,8 @@
  * Everything here is pure and side-effect-free: tool deps are faked (the builders never
  * execute), `now` is fixed, and ids are constant — so a render is byte-stable.
  */
-import type { ScriptSandbox } from '@localixai/agent/runtime'
 import { resolveRunProfile, type RunProfile } from '../../run-shape'
-import { DEFAULT_AGENT_HANDLE } from '../../../../db/participant'
+import { DEFAULT_AGENT_NAME } from '../../../../db/author'
 import { BUILTIN_AGENT_TYPES } from '../../../agents/catalog/builtin-types'
 import {
   createRuntimeToolRegistry,
@@ -15,11 +14,8 @@ import {
   type RuntimeToolRegistry,
 } from '../../tool-registry'
 import { buildAgentSystemPrompt, type BuildAgentSystemPromptParams } from '../assemble'
-import {
-  productionCoreDeps,
-  productionExtraTools,
-  productionOptionalPorts,
-} from '../../testing/production-ports'
+import { productionCoreDeps, productionOptionalPorts } from '../../testing/production-ports'
+import { runKeepsMemory } from '../sections/memory'
 
 const FIXED_NOW = () => '2026-06-01T12:00:00.000Z'
 
@@ -28,23 +24,19 @@ const FIXED_NOW = () => '2026-06-01T12:00:00.000Z'
  * every tool, so the prompt, the roster and the schema budget are all measured on what a run
  * actually carries (see `production-ports.ts` for why stubs were not enough).
  *
- * `withoutPorts` drops host ports a seat is not given: `skip_answer` exists only beside a
- * colleague and `set_topic` only for the topic owner, whatever the rules allow.
+ * `withoutPorts` drops host ports a run is not given, whatever the rules allow.
  */
 export function richRegistry(
   profile: RunProfile,
   disabledTools?: readonly string[],
   withoutPorts: readonly (keyof OptionalToolPorts)[] = [],
   withheldByHost?: Readonly<Record<string, string>>,
-  /** The engine's sandbox, for a measure of `codemode`'s real schema; inert by default. */
-  scripts?: ScriptSandbox,
 ): RuntimeToolRegistry {
-  const optional = productionOptionalPorts({ save: async () => {} }, scripts)
+  const optional = productionOptionalPorts()
   for (const port of withoutPorts) delete optional[port]
   return createRuntimeToolRegistry({
     policy: {
       agentProfile: profile,
-      extraTools: productionExtraTools(),
       ...(disabledTools ? { disabledTools } : {}),
       ...(withheldByHost ? { withheldByHost } : {}),
     },
@@ -57,12 +49,17 @@ export function richRegistry(
 const SAMPLE_CONTEXT: Partial<BuildAgentSystemPromptParams> = {
   workspaceRoot: '/repo',
   contextFiles: [{ path: '/repo/AGENTS.md', content: 'project rules' }],
-  memoryContext: 'user_role: staff engineer',
-  memoryUsage: { chars: 582, limit: 2200, pct: 26 },
   skillsContext: 'demo-skill — does the demo thing',
   pinnedSkills: [{ name: 'house-style', content: 'Follow the house style.' }],
   pluginsContext: '',
   scratchDir: '/home/u/.localix/tmp/sessions/s1',
+}
+
+/** A memory folder with a short index, as a repository Claude Code already worked in has. */
+const SAMPLE_MEMORY = {
+  dir: '/home/u/.claude/projects/-repo/memory',
+  index: '- [Role](user-role.md) — staff engineer, reviews the API',
+  clipped: false,
 }
 
 /**
@@ -78,6 +75,16 @@ export const SHAPE_SESSION_KIND = {
 /** The golden/matrix names for the three shapes (`orchestrator` is the chat shape's
  *  model-facing word — see `ROLE_WORD` in `sections/role.ts`). */
 export type PromptShapeKey = keyof typeof SHAPE_SESSION_KIND
+
+/**
+ * The tools each rendered prompt was built for. The prompt no longer lists its tools (their
+ * definitions are what the model receives), so the capability lint asks here which tools a run
+ * with this text really held.
+ */
+const TOOLS_BY_PROMPT = new Map<string, Set<string>[]>()
+
+export const toolSetsOfPrompt = (prompt: string): readonly Set<string>[] =>
+  TOOLS_BY_PROMPT.get(prompt) ?? []
 
 /** A representative end-to-end prompt for a shape (locks section ORDER). */
 export function fullPrompt(
@@ -99,7 +106,7 @@ export function fullPrompt(
   // One shipped record answers for every shape now that the task agents are retired: the
   // goldens lock the SHAPE's default surface, and the identity behind them only has to be a
   // real record with real instructions.
-  const agent = BUILTIN_AGENT_TYPES.find((type) => type.fullName === DEFAULT_AGENT_HANDLE)
+  const agent = BUILTIN_AGENT_TYPES.find((type) => type.fullName === DEFAULT_AGENT_NAME)
   const profile = resolveRunProfile(
     { sessionKind: SHAPE_SESSION_KIND[profileKey] },
     agent ? { prompt: agent.prompt } : undefined,
@@ -107,7 +114,9 @@ export function fullPrompt(
   // Production parity (runtime-tools.ts): a session with active loops keeps `loops`
   // direct — the loops section instructs dynamic loops to call `loops.reschedule`.
   const registry = richRegistry(profile, disabledTools, withoutPorts, withheldByHost)
-  return buildAgentSystemPrompt({
+  // The run's memory as production gates it (`system-prompt-build.ts`): a subagent has none.
+  const has = (name: string) => registry.toolNames.includes(name)
+  const prompt = buildAgentSystemPrompt({
     sessionId: 'session-1',
     modelId: 'openrouter/anthropic/claude-sonnet-4.5',
     providerId: 'openrouter',
@@ -115,6 +124,9 @@ export function fullPrompt(
     agentProfile: profile,
     toolRegistry: registry,
     ...SAMPLE_CONTEXT,
+    ...(runKeepsMemory(profile, has) ? { memory: SAMPLE_MEMORY } : {}),
     ...extra,
   })
+  TOOLS_BY_PROMPT.set(prompt, [...(TOOLS_BY_PROMPT.get(prompt) ?? []), new Set(registry.toolNames)])
+  return prompt
 }

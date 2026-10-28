@@ -4,7 +4,7 @@
  * autocomplete against the active environment.
  */
 
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { CodeEditor, type CompletionSource } from '@localixai/kit/code-editor'
 import type { EnvVariable } from '../../backend/contracts'
 import { editorLanguage, offsetAt, variableCompletions } from '../model/bodyEditor'
@@ -31,9 +31,11 @@ export function BodyEditor({
   // The live text, mirrored into a ref so the completion source reads the CURRENT document
   // without being re-created (and re-registered on the editor) on every keystroke.
   const textRef = useRef(value)
-  textRef.current = value
   const varsRef = useRef(variables)
-  varsRef.current = variables
+  useEffect(() => {
+    textRef.current = value
+    varsRef.current = variables
+  })
 
   const completionSource = useMemo<CompletionSource>(
     () => async (pos) => {

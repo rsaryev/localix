@@ -1,8 +1,8 @@
 import { InvalidRequestError } from '../../../lib/domain-errors'
 import { randomUUID } from 'node:crypto'
 
-import { USER_PARTICIPANT, type StoredMessagePayload } from '../../../db'
-import { agentParticipant } from '../../../db/participant'
+import { USER_AUTHOR, type StoredMessagePayload } from '../../../db'
+import { agentAuthor } from '../../../db/author'
 import type { createChatRepository, SessionRecord } from '../repository'
 import type { MessageBinding, MessageMutationResponse, PersistedMessage } from '../contracts'
 import type { SessionStreamRegistry } from '../runtime/session-stream-registry'
@@ -13,7 +13,6 @@ import type { RunProfile } from '../../agent-core/run-shape'
 import {
   persistAndPublishMessage,
   emptyAssistantPayload,
-  sessionAgent,
   bumpSessionForTurn,
 } from './message-builders'
 import { logRunStartFailure } from './run-dispatch'
@@ -22,13 +21,8 @@ import {
   rootExecutionContext,
   type RunExecutionContext,
 } from '../runtime/execution-context'
-import {
-  enqueueTurnTickets,
-  resolveTurnRecipients,
-  supersedeColleagueChains,
-} from '../runtime/conversation-dispatch'
-import { createPendingTurn } from '../runtime/wake-queue/entry'
-import { personSpeaks, routeEvent } from '../runtime/wake-queue/kinds'
+import { enqueueTurnTicket } from '../runtime/conversation-dispatch'
+import { turnRecipient } from '../runtime/conversation-strategy'
 import { createRunCompletion } from '../runtime/run-outcome'
 import type { ScopedCcHooks } from '../runtime/run-contract'
 
@@ -134,9 +128,9 @@ export function createRunAgent(deps: RunAgentDeps): RunAgentFn {
     bindings,
     opts,
   ): Promise<MessageMutationResponse> => {
-    if (!session.agents.length)
+    if (!session.agent)
       throw new InvalidRequestError(
-        'session_party_empty',
+        'session_agent_missing',
         'Choose an agent before sending a message',
       )
     const executionContext = opts?.executionContext ?? rootExecutionContext(opts?.toolSurface)
@@ -144,7 +138,7 @@ export function createRunAgent(deps: RunAgentDeps): RunAgentFn {
     const userPayload: StoredMessagePayload = {
       id: randomUUID(),
       role: 'user',
-      from: USER_PARTICIPANT,
+      from: USER_AUTHOR,
       content: prompt,
       ...(bindings && bindings.length > 0 ? { bindings } : {}),
       ...(opts?.commandOrigin ? { commandOrigin: opts.commandOrigin } : {}),
@@ -164,32 +158,12 @@ export function createRunAgent(deps: RunAgentDeps): RunAgentFn {
       timestamp,
     )
 
-    // Authorship is fixed at insert and never patched, so resolve the strategy before creating
-    // the first assistant placeholder. With no explicit address, the leader answers.
+    // Authorship is fixed at insert and never patched, so resolve the recipient before creating
+    // the first assistant placeholder. The conversation's one agent answers.
     const existing = await resolveExistingMessages(existingMessages, [userPayload.id])
-    // The person's words, read by the rule the queue applies to them when the session is busy
-    // (`wake-queue/kinds.ts`): routed by their text; when they are visible, the agents they tag
-    // join first, so the address can reach them, and colleague chains in flight are dropped.
-    const words = createPendingTurn(
-      { userId, session, content: prompt, internal: Boolean(opts?.isInternal), person: true },
-      timestamp,
-    )
-    const speaks = personSpeaks(words)
-    if (speaks) session = await runner.inviteAddressed(userId, session, prompt)
-    const recipients = await resolveTurnRecipients(
-      session,
-      existing,
-      routeEvent(words, prompt, undefined),
-      runner.leadership(userId, session.projectId),
-      // Only the person's own words are advised on: a hidden prompt is a client's, not theirs.
-      speaks ? runner.floorAdvisor({ userId, sessionId, projectId: session.projectId }) : undefined,
-    )
-    if (speaks) await supersedeColleagueChains(runner.cancelAgentTurns, userId, sessionId)
-    const firstSlot = recipients[0]?.agentId
-    const asstPayload = emptyAssistantPayload(
-      randomUUID(),
-      firstSlot ? agentParticipant(firstSlot) : sessionAgent(session),
-    )
+    const recipient = turnRecipient(session, { kind: 'user-message', text: prompt })
+    if (!recipient) throw new Error('Session has no agent assignment')
+    const asstPayload = emptyAssistantPayload(randomUUID(), agentAuthor(recipient.agentId))
     await persistAndPublishMessage(repo, streamRegistry, userId, sessionId, asstPayload, timestamp)
 
     const updatedSession = await bumpSessionForTurn(
@@ -202,14 +176,14 @@ export function createRunAgent(deps: RunAgentDeps): RunAgentFn {
       timestamp,
     )
 
-    // Each recipient becomes one addressed queue ticket. The session event loop serializes them.
+    // The recipient becomes one addressed queue ticket.
     const completion = opts?.wait ? createRunCompletion() : undefined
-    const runPromise = enqueueTurnTickets(runner.enqueueRun, {
+    const runPromise = enqueueTurnTicket(runner.enqueueRun, {
       userId,
       session: updatedSession,
       triggerMessageIds: [userPersisted.id],
       firstSlotId: asstPayload.id,
-      recipients,
+      recipient,
       completion,
       scope: {
         conversationId: userPayload.id,

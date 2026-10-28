@@ -3,6 +3,7 @@ import { backendClient } from '@/shared/api/client'
 import type { FileContentSearchResult } from '@/shared/api/contracts'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { useContentSearch } from './useContentSearch'
+import { turns } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -41,13 +42,16 @@ type SearchSnapshot = ReturnType<typeof useContentSearch>
 
 async function mountSearch(initialQuery: string) {
   const React = await import('react')
-  const { act } = React
+  const { act, useEffect } = React
   const { createRoot } = await import('react-dom/client')
   const root = createRoot(document.createElement('div'))
   let current: SearchSnapshot | null = null
 
   function Harness({ query }: { query: string }) {
-    current = useContentSearch({ sessionId: 'session-a', query, enabled: true })
+    const value = useContentSearch({ sessionId: 'session-a', query, enabled: true, debounceMs: 0 })
+    useEffect(() => {
+      current = value
+    })
     return null
   }
 
@@ -67,7 +71,8 @@ async function mountSearch(initialQuery: string) {
     },
     waitForDebounce: () =>
       act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 320))
+        await new Promise((resolve) => setTimeout(resolve, 0))
+        await turns()
       }),
     unmount: () => act(async () => root.unmount()),
   }

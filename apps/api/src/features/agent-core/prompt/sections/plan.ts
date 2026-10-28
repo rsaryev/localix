@@ -36,11 +36,13 @@ export function buildPlanModeSection(
   planMode: { draftPath?: string } | undefined,
 ): string | undefined {
   if (!planMode) return undefined
-  const clarify = hasTool(TOOL.ask) ? ' Ask clarifying questions with `ask` when needed.' : ''
+  const clarify = hasTool(TOOL.AskUserQuestion)
+    ? ' Ask clarifying questions with `AskUserQuestion` when needed.'
+    : ''
   // A delegated run is born into its conversation's plan mode but never holds `plan` (chat-only).
   // Rendering nothing left it to learn the mode from its first refused write — whose text then
   // pointed it at a tool it did not have. It is told what it is for instead: read and report.
-  if (!hasTool(TOOL.plan)) {
+  if (!hasTool(TOOL.Plan)) {
     return [
       PLAN_MODE_HEADER,
       'This conversation is in plan mode: investigate read-only and report what you find to the ' +
@@ -51,7 +53,7 @@ export function buildPlanModeSection(
   const draft = planMode.draftPath
     ? [
         `Write the plan to ${planMode.draftPath} — the only file you may change in this mode. ` +
-          `Revise it with ${editTools(hasTool)} rather than rewriting it whole, then call \`plan\` ` +
+          `Revise it with ${editTools(hasTool)} rather than rewriting it whole, then call \`Plan\` ` +
           'action `present` without a body. To show an unchanged plan again, just present it: ' +
           'the same text re-shows the same version.',
       ]
@@ -59,7 +61,7 @@ export function buildPlanModeSection(
   return [
     PLAN_MODE_HEADER,
     `This conversation is in plan mode: investigate read-only.${clarify} Then present the plan ` +
-      'with `plan` action `present`; do not implement anything until the user approves it. ' +
+      'with `Plan` action "present"; do not implement anything until the user approves it. ' +
       'Changes to files, the host or anything outside this conversation are refused in this mode.',
     ...draft,
   ].join('\n')
@@ -67,7 +69,7 @@ export function buildPlanModeSection(
 
 /** The edit tools the run holds, named — the section never names a tool the run lacks. */
 const editTools = (hasTool: (name: string) => boolean): string => {
-  const held = [TOOL.edit].filter((name) => hasTool(name))
+  const held = [TOOL.Edit].filter((name) => hasTool(name))
   return held.length ? held.map((name) => `\`${name}\``).join(' or ') : 'small edits'
 }
 
@@ -83,8 +85,8 @@ export function buildApprovedPlanSection(
   hasTool: (name: string) => boolean,
 ): string | undefined {
   if (!plan?.body.trim()) return undefined
-  const complete = hasTool(TOOL.plan)
-    ? ' When the approved work is done, call `plan` with action `complete` and a short summary. ' +
+  const complete = hasTool(TOOL.Plan)
+    ? ' When the approved work is done, call `Plan` with action "complete" and a short summary. ' +
       '`complete` is for done: if only part is done, say so plainly instead of completing it.'
     : ''
   return [

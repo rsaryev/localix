@@ -258,9 +258,9 @@ Walkthrough — theory material stays inline, with at least two stages:
 
 ## Source of truth
 
-- [Bundle schemas and path guards](../../../backend/course-bundle.ts)
-- [Import file selection](../../../backend/course-import.ts)
-- [Module generation](../../../backend/module-generation.ts)
-- [Assessed-task revision fields](../../../shared/task-content.ts)
-- [Progress reconciliation](../../../backend/materialize-course.ts)
-- [Tool actions and canonical paths](../../../backend/tool.ts)
+- [Bundle schemas and path guards](../backend/course-bundle.ts)
+- [Import file selection](../backend/course-import.ts)
+- [Module generation](../backend/module-generation.ts)
+- [Assessed-task revision fields](../shared/task-content.ts)
+- [Progress reconciliation](../backend/materialize-course.ts)
+- [Tool actions and canonical paths](../backend/tool.ts)

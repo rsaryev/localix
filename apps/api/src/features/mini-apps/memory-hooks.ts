@@ -16,9 +16,9 @@ import type { LoadedMiniApps } from './loader-contract'
  */
 
 /**
- * Ask the active memory provider for this run's "# Memory context". Returns the
- * effective context string (provider replaced/appended onto the built-in notes),
- * or the built-in notes unchanged when there is no provider / it returns
+ * Ask the active memory provider for this run's "# Memory" index. Returns the
+ * effective context string (provider replaced/appended onto the built-in MEMORY.md index),
+ * or the built-in index unchanged when there is no provider / it returns
  * nothing / it fails or times out. Provider output is capped at
  * {@link MEMORY_CONTEXT_CAP_CHARS}.
  */

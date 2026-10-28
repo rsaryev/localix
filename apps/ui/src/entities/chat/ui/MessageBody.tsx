@@ -30,14 +30,11 @@ export function MessageBody({
   isUser,
   isStreaming,
   isLast,
-  mentionHandles,
 }: {
   message: Message
   isUser: boolean
   isStreaming?: boolean
   isLast?: boolean
-  /** The conversation's members, for clickable `@handle` mentions. Absent in a one-to-one. */
-  mentionHandles?: readonly string[]
 }): ReactNode {
   const segments = inlineNoticeSegments(message, isStreaming)
   const lastBodyIndex = segments.findLastIndex((segment) => segment.kind === 'body')
@@ -64,7 +61,6 @@ export function MessageBody({
           isUser,
           isStreaming: isStreaming && index === lastBodyIndex,
           isLast: isLast && index === lastBodyIndex,
-          mentionHandles,
           activity: segment.activity,
         })}
       </Fragment>
@@ -77,7 +73,6 @@ function renderMessageBody({
   isUser,
   isStreaming,
   isLast,
-  mentionHandles,
   activity = [],
 }: Parameters<typeof MessageBody>[0] & { activity?: readonly Message[] }): ReactNode {
   const messageId = message.id
@@ -194,7 +189,6 @@ function renderMessageBody({
               content={text}
               isUser={isUser}
               isStreaming={isStreaming && index === lastIndex}
-              mentionHandles={mentionHandles}
             />,
           ),
         )
@@ -239,12 +233,7 @@ function renderMessageBody({
   const body = content
     ? withTasks(
         'content',
-        <TextBubble
-          content={content}
-          isUser={isUser}
-          isStreaming={isStreaming}
-          mentionHandles={mentionHandles}
-        />,
+        <TextBubble content={content} isUser={isUser} isStreaming={isStreaming} />,
       )
     : null
   return activity.length ? (

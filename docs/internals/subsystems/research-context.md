@@ -1,6 +1,6 @@
 # Research context
 
-Research context is the `research` tool's search, safe-read, ranking, provenance, and transcript
+Research context is the `Research` tool's search, safe-read, ranking, provenance, and transcript
 path. Use this page when changing how web evidence enters a model turn or appears beside an answer.
 
 ## Terminology

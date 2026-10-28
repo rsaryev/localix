@@ -33,6 +33,7 @@ export function ResourceDragRow({
   const pointerStartedOnControlRef = useRef(false)
   const draggedRef = useRef(false)
   return (
+    // oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- the click on the row's spare surface and the HTML5 drag are mouse shortcuts; the name button and the action buttons inside are the keyboard path
     <div
       {...props}
       role={props.role ?? 'listitem'}

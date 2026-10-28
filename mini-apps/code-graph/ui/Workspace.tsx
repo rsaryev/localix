@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useEffectEvent, useMemo, useState } from 'react'
 import { MessageSquareOff, Network, Sparkles } from 'lucide-react'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import type { PublishMessageContext } from '@localixai/mini-app-sdk/ui'
@@ -152,6 +152,22 @@ export function Workspace({
     [graph.sessionId, snapshot?.root],
   )
 
+  // Escape clears the search and the selection from anywhere inside the map. The root is a group
+  // landmark, not a control, so the listener is attached to the element rather than as a JSX
+  // handler. The element mounts only once the map is ready, hence state instead of a plain ref.
+  const [rootElement, setRootElement] = useState<HTMLDivElement | null>(null)
+  const onEscape = useEffectEvent((event: KeyboardEvent) => {
+    if (event.key !== 'Escape') return
+    graph.setQuery('')
+    graph.setSelected(null)
+  })
+  useEffect(() => {
+    if (!rootElement) return
+    const listener = (event: KeyboardEvent) => onEscape(event)
+    rootElement.addEventListener('keydown', listener)
+    return () => rootElement.removeEventListener('keydown', listener)
+  }, [rootElement])
+
   if (!graph.sessionId) {
     return (
       <StateNotice
@@ -185,15 +201,11 @@ export function Workspace({
   const showInspector = inspectorOpen && selection
   return (
     <div
+      ref={setRootElement}
       data-code-graph-root
       role="group"
       aria-label="Code Graph"
       className="@container flex h-full min-h-0 flex-col"
-      onKeyDown={(event) => {
-        if (event.key !== 'Escape') return
-        graph.setQuery('')
-        graph.setSelected(null)
-      }}
     >
       <Toolbar
         graph={graph}

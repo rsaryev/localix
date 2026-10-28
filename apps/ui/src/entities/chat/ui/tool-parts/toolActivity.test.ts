@@ -8,7 +8,7 @@ const tool = (id: string): AgentItem => ({
   type: 'tool_call',
   status: 'completed',
   toolCallId: id,
-  name: 'bash',
+  name: 'Bash',
   activeVerb: 'Running',
 })
 const event = (id: string, itemId?: string): Message => ({

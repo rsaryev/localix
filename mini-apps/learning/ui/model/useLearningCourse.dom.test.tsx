@@ -90,7 +90,7 @@ function deferred<T>() {
 }
 
 async function harness() {
-  const { act } = await import('react')
+  const { act, useEffect } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const host = document.createElement('div')
   const root = createRoot(host)
@@ -106,7 +106,10 @@ async function harness() {
     clear.mockRestore()
   })
   function Probe({ sessionId }: { sessionId: string }) {
-    current = useLearningCourse(sessionId, 'course', true)
+    const value = useLearningCourse(sessionId, 'course', true)
+    useEffect(() => {
+      current = value
+    })
     return null
   }
   const render = async (sessionId = 'S') => {

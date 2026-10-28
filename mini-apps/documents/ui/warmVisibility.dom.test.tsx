@@ -2,6 +2,10 @@ import { afterAll, beforeAll, describe, expect, spyOn, test } from 'bun:test'
 import '@localixai/kit/testing/host-runtime'
 import { backendClient, registerDom } from '@localixai/kit/testing'
 
+const turns = async (n = 10) => {
+  for (let i = 0; i < n; i++) await new Promise((r) => setImmediate(r))
+}
+
 let teardown: () => Promise<void>
 beforeAll(() => {
   teardown = registerDom()
@@ -12,7 +16,7 @@ afterAll(async () => {
   await teardown()
 })
 
-const settle = () => new Promise((resolve) => setTimeout(resolve, 20))
+const settle = () => turns()
 
 describe('warm-hidden Documents data sources', () => {
   test('extraction, file reads, ingestion, and table paging wait for selection', async () => {

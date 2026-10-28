@@ -9,7 +9,7 @@
  * the wrong question (a delegator message can join a run a person started, and then the delegator
  * IS waiting on it); whether the delegator still owes itself an answer is the right one:
  *
- *   delegate, or `delegate` message → it waits                                 (`expectReport`)
+ *   an `Agent` start or a `SendMessage` to it → it waits                    (`expectReport`)
  *   a run ends completed or failed → if it waits, report once; it stops waiting (`takeExpectedReport`)
  *   a run ends STOPPED             → no report: the delegator stopped it and its own tool result
  *                                     said so, or a person stopped it and the child is theirs now;
@@ -17,14 +17,14 @@
  *                                     hears once when the child next finishes or fails
  *   the delegator stops or closes  → it stops waiting                           (`dropExpectedReport`)
  *
- * A delegator that called `delegate` with `wait: true` is waiting IN ITS TURN, not for a later
+ * A delegator that called `Agent` with `wait: true` is waiting IN ITS TURN, not for a later
  * message: the report goes to its open call (`holdReport`) and no wake is sent. When the wait's
  * deadline passes first, the hold goes and the report travels the usual way. A Stop of the
  * delegator's run aborts the call and, through the stop cascade, the child: no report follows.
  *
  * In-process, like the lanes: a restart stops every child, and the recovery path reports those.
  *
- * WHO WAITS, as well as whether: the delegator — its session and its participant — is recorded
+ * WHO WAITS, as well as whether: the delegator session is recorded
  * with the wait, because a delegator that handed out several tasks is answered ONCE, when the last
  * of them reports. The wake queue holds the earlier reports until then (`chat/runtime/wake-queue/
  * holds.ts`) and asks this ledger whether anyone is still owed (`awaitsReports`). A report stays
@@ -32,10 +32,9 @@
  * (`settleReport`) — or a sibling's report would be released alone in that gap, just before it.
  */
 
-/** Who a child reports to: the session it was delegated from, and the participant who did it. */
+/** Who a child reports to: the session it was delegated from (its agent is fixed for life). */
 export interface Delegator {
   sessionId: string
-  participant?: string
 }
 
 interface Wait {
@@ -91,18 +90,13 @@ export function dropExpectedReport(childId: string): void {
 }
 
 /**
- * Is `participant` of `sessionId` still owed a report by any child — other than `except`, the
+ * Is `sessionId` still owed a report by any child — other than `except`, the
  * children whose reports are already queued?
  */
-export function awaitsReports(
-  sessionId: string,
-  participant: string | undefined,
-  except: ReadonlySet<string> = new Set(),
-): boolean {
+export function awaitsReports(sessionId: string, except: ReadonlySet<string> = new Set()): boolean {
   for (const [childId, wait] of expecting) {
     if (except.has(childId) || !wait.delegator) continue
-    if (wait.delegator.sessionId === sessionId && wait.delegator.participant === participant)
-      return true
+    if (wait.delegator.sessionId === sessionId) return true
   }
   return false
 }
@@ -125,6 +119,8 @@ export interface HeldReport {
   text: string | null
   /** The run stopped at its turn limit (CC `maxTurns`): the text is partial output. */
   partial?: boolean
+  /** The run ended right after the child messaged its delegator: it waits for the answer. */
+  waiting?: boolean
 }
 
 const held = new Map<string, (report: HeldReport) => void>()

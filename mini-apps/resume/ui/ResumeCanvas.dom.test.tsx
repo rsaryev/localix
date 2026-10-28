@@ -5,6 +5,10 @@ import { registerDom } from '@localixai/kit/testing'
 import type { Editor } from '@tiptap/react'
 import { createTemplateDocument } from '../shared/templates'
 
+const turns = async (n = 10) => {
+  for (let i = 0; i < n; i++) await new Promise((r) => setImmediate(r))
+}
+
 let teardown: () => Promise<void>
 const environment = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 const prior = environment.IS_REACT_ACT_ENVIRONMENT
@@ -39,7 +43,10 @@ test('pane resizing and view switching preserve the rich editor, draft and scrol
     disconnect() {}
   }
   globalThis.ResizeObserver = Observer as unknown as typeof ResizeObserver
-  const originalRect = HTMLElement.prototype.getBoundingClientRect
+  // Read through the descriptor: the test restores this very function, which a plain method
+  // reference would hand over unbound.
+  const originalRect = Object.getOwnPropertyDescriptor(Element.prototype, 'getBoundingClientRect')!
+    .value as HTMLElement['getBoundingClientRect']
   HTMLElement.prototype.getBoundingClientRect = function () {
     return { ...originalRect.call(this).toJSON(), width: paneWidth } as DOMRect
   }
@@ -70,11 +77,11 @@ test('pane resizing and view switching preserve the rich editor, draft and scrol
   try {
     await act(async () => {
       root.render(<Harness />)
-      await new Promise((resolve) => setTimeout(resolve, 20))
+      await turns()
     })
-    for (let attempt = 0; !host.querySelector('[role="textbox"]') && attempt < 15; attempt++)
+    for (let attempt = 0; !host.querySelector('[role="textbox"]') && attempt < 300; attempt++)
       await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 10))
+        await turns()
       })
     const textbox = host.querySelector('[role="textbox"]') as HTMLElement & { editor: Editor }
     expect(textbox).not.toBeNull()

@@ -28,28 +28,34 @@ export function TradingOverview({
   onOpen: (area: TradingArea) => void
   active?: boolean
 }) {
-  const [snapshot, setSnapshot] = useState<OverviewSnapshot>(EMPTY_SNAPSHOT)
-  const [loading, setLoading] = useState(true)
-  const [failure, setFailure] = useState<TradingFailure | null>(null)
+  // The outcome of the last read, tagged with the reload it answered: a read still in flight (the
+  // nonce moved on) is `loading` over what was shown, with no state write when it starts.
+  const [outcome, setOutcome] = useState<{
+    nonce: number
+    snapshot: OverviewSnapshot
+    failure: TradingFailure | null
+  } | null>(null)
   const [reloadNonce, setReloadNonce] = useState(0)
+  const snapshot = outcome?.snapshot ?? EMPTY_SNAPSHOT
+  const failure = outcome?.failure ?? null
+  const loading = outcome?.nonce !== reloadNonce
 
   useEffect(() => {
     if (!active) return
     let cancelled = false
-    setLoading(true)
     void tradingApi.exchanges().then(
       (catalog) => {
         if (cancelled) return
-        setSnapshot({ venues: catalog.length })
-        setFailure(null)
-        setLoading(false)
+        setOutcome({ nonce: reloadNonce, snapshot: { venues: catalog.length }, failure: null })
       },
       (error: unknown) => {
         if (cancelled) return
-        setSnapshot(EMPTY_SNAPSHOT)
         // Kept, not swallowed: the count used to fall back to "—" with no word about why.
-        setFailure({ message: errorMessage(error, 'Could not read the data sources.') })
-        setLoading(false)
+        setOutcome({
+          nonce: reloadNonce,
+          snapshot: EMPTY_SNAPSHOT,
+          failure: { message: errorMessage(error, 'Could not read the data sources.') },
+        })
       },
     )
     return () => {

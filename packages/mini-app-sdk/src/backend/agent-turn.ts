@@ -10,24 +10,24 @@ export type Wake = (request: MiniAppWakeRequest) => Promise<MiniAppWakeOutcome>
  * `c.env`, where the host puts a session only after checking the user owns it; in a tool, the
  * session is the run's own (`context.session.id`).
  */
-export interface Seat {
+export interface ChatRef {
   userId: string
   sessionId: string
 }
 
 /**
- * Wake the seat's chat for the agent's turn and say what the view should show: `thinking` when
+ * Wake the chat for the agent's turn and say what the view should show: `thinking` when
  * the chat will take it, else `unreachable` with the reason — including when this load has no
  * `wake` at all. Never throws for an undelivered wake; the caller records the answer.
  */
 export async function askAgentForTurn(
   wake: Wake | undefined,
-  seat: Seat,
+  chat: ChatRef,
   turn: { message: string; tools: string[]; key: string },
   now: string,
 ): Promise<AgentWait> {
   if (!wake) return { since: now, status: 'unreachable', reason: 'This app cannot wake a chat.' }
-  const outcome = await wake({ userId: seat.userId, sessionId: seat.sessionId, ...turn })
+  const outcome = await wake({ userId: chat.userId, sessionId: chat.sessionId, ...turn })
   if (outcome.status === 'delivered') return { since: now, status: 'thinking' }
   return { since: now, status: 'unreachable', reason: outcome.reason }
 }
@@ -55,7 +55,7 @@ const DECISION_MISSED: Record<Exclude<DecisionOutcome['status'], 'answered'>, st
  */
 export async function askDecisionForTurn(
   decisions: DecisionHost | undefined,
-  seat: Seat,
+  chat: ChatRef,
   turn: { ask: DecisionAsk; question: string; purpose: string },
   now: string,
 ): Promise<{ answer: DecisionChoiceAnswer } | { waiting: AgentWait }> {
@@ -63,9 +63,9 @@ export async function askDecisionForTurn(
     waiting: { since: now, status: 'unreachable' as const, reason },
   })
   if (!decisions) return missed('This app cannot reach a decision model.')
-  const outcome = await decisions.decide(seat.userId, turn.ask, {
+  const outcome = await decisions.decide(chat.userId, turn.ask, {
     purpose: turn.purpose,
-    sessionId: seat.sessionId,
+    sessionId: chat.sessionId,
   })
   if (outcome.status !== 'answered') return missed(DECISION_MISSED[outcome.status])
   const answer = outcome.answers[turn.question]
@@ -88,8 +88,8 @@ export async function askDecisionForTurn(
 export function decisionTurns(miniApp: string) {
   const runs = new Map<string, Promise<void>>()
   return {
-    start(seat: Seat, run: () => Promise<void>): void {
-      const key = `${seat.userId}:${seat.sessionId}`
+    start(chat: ChatRef, run: () => Promise<void>): void {
+      const key = `${chat.userId}:${chat.sessionId}`
       const turn = (runs.get(key) ?? Promise.resolve())
         .then(run)
         .catch((error) => console.warn(`[${miniApp}] the decision model's turn failed`, error))

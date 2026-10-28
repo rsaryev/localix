@@ -2,6 +2,7 @@ import { afterEach, expect, test } from 'bun:test'
 import { spawnSync } from 'node:child_process'
 import {
   copyFileSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -71,69 +72,36 @@ test('refuses partial staging instead of checking different contents', () => {
   expect(result.stderr).toContain('Restage:')
 })
 
+/** Commits the index without hooks, as the fixture's baseline. */
+const commit = (root: string) =>
+  run(root, 'git', [
+    '-c',
+    'core.hooksPath=/dev/null',
+    '-c',
+    'user.name=Test',
+    '-c',
+    'user.email=test@example.com',
+    'commit',
+    '--quiet',
+    '-m',
+    'fixture',
+  ]).status
+
 test('handles a staged deletion without trying to format the missing file', () => {
   const root = fixture('deleted.json', '{"bad":true}')
-  expect(
-    run(root, 'git', [
-      '-c',
-      'core.hooksPath=/dev/null',
-      '-c',
-      'user.name=Test',
-      '-c',
-      'user.email=test@example.com',
-      'commit',
-      '--quiet',
-      '-m',
-      'fixture',
-    ]).status,
-  ).toBe(0)
+  expect(commit(root)).toBe(0)
   expect(run(root, 'git', ['rm', '--', 'deleted.json']).status).toBe(0)
   expect(run(root, 'bun', [script]).status).toBe(0)
 })
 
-const workspaces = [
-  { path: 'packages/shared', name: 'shared', dependencies: [], scripts: { 'type-check': 'tsc' } },
-  {
-    path: 'apps/api',
-    name: 'api',
-    dependencies: ['shared'],
-    scripts: { 'type-check': 'tsc', 'type-check:tests': 'tsc' },
-  },
-  { path: 'apps/ui', name: 'ui', dependencies: ['api'], scripts: { 'type-check': 'tsc' } },
-  {
-    path: 'mini-apps/example',
-    name: 'example',
-    dependencies: [],
-    scripts: { 'type-check': 'tsc' },
-  },
-]
-
-test('checks deleted sources and every transitive consumer of a shared contract', () => {
-  const plan = planChecks(['packages/shared/src/removed.ts'], workspaces, () => false)
-  expect(plan.typed.map((workspace) => workspace.name)).toEqual(['shared', 'api', 'ui'])
-  const api = planChecks(['apps/api/src/changed.ts'], workspaces, () => false)
-  expect(api.typed.map((workspace) => workspace.name)).toEqual(['api', 'ui'])
-  expect(api.affected.map((workspace) => workspace.name)).toEqual(['shared', 'api', 'ui'])
-})
-
-test('includes API consumers for mini app backends and all packages for shared compiler changes', () => {
-  expect(
-    planChecks(['mini-apps/example/backend/index.ts'], workspaces, () => false).typed.map(
-      (workspace) => workspace.name,
-    ),
-  ).toEqual(['api', 'ui', 'example'])
-  expect(planChecks(['tsconfig.base.json'], workspaces, () => false).typed).toEqual(workspaces)
-  expect(planChecks(['docs/guide.md'], workspaces, () => false).typed).toEqual([])
-})
-
 test('selects existing sibling tests and Rust source or dependency changes', () => {
   const existing = new Set(['apps/api/src/topic.test.ts', 'apps/api/src/topic.dom.test.tsx'])
-  const plan = planChecks(['apps/api/src/topic.ts'], workspaces, (path) => existing.has(path))
+  const plan = planChecks(['apps/api/src/topic.ts'], (path) => existing.has(path))
   expect(plan.tests).toEqual([...existing])
   for (const file of ['lib.rs', 'Cargo.toml', 'Cargo.lock', 'tauri.conf.json']) {
-    expect(planChecks([`apps/desktop-tauri/src-tauri/${file}`], [], () => false).rust).toBe(true)
+    expect(planChecks([`apps/desktop-tauri/src-tauri/${file}`], () => false).rust).toBe(true)
   }
-  expect(planChecks(['docs/rust.md'], [], () => false).rust).toBe(false)
+  expect(planChecks(['docs/rust.md'], () => false).rust).toBe(false)
 })
 
 function typedFixture(content: string) {
@@ -178,43 +146,24 @@ process.exit(result.status ?? 1)
   return root
 }
 
-test('blocks test fixture type errors even when formatting and lint pass', () => {
+test('a commit leaves type checks to the push: a type error alone does not block it', () => {
   const root = typedFixture("type Item = { status: 'completed' }\nexport const item: Item = {}\n")
   const result = run(root, 'bun', [script])
-  expect(result.status).toBe(1)
-  expect(result.stdout + result.stderr).toContain("Property 'status' is missing")
-  expect(JSON.parse(readFileSync(join(root, 'turbo-args.json'), 'utf8'))).toEqual([
-    'type-check',
-    'type-check:tests',
-    '--concurrency=2',
-    '--filter=api',
-  ])
+  expect(result.stdout + result.stderr).not.toContain('type-check')
+  expect(existsSync(join(root, 'turbo-args.json'))).toBe(false)
 })
 
-test('blocks an unstaged repair in a package whose types are being checked', () => {
+test('an unstaged edit in a file the commit does not check does not block it', () => {
   const root = typedFixture("export const value: string = 'ok'\n")
-  writeFileSync(join(root, 'apps/api/src/other.ts'), 'export const value: string = 1\n')
+  writeFileSync(join(root, 'apps/api/src/other.ts'), "export const value: string = 'ok'\n")
   expect(run(root, 'git', ['add', 'apps/api/src/other.ts']).status).toBe(0)
-  expect(
-    run(root, 'git', [
-      '-c',
-      'core.hooksPath=/dev/null',
-      '-c',
-      'user.name=Test',
-      '-c',
-      'user.email=test@example.com',
-      'commit',
-      '--quiet',
-      '-m',
-      'baseline',
-    ]).status,
-  ).toBe(0)
+  expect(commit(root)).toBe(0)
   writeFileSync(join(root, 'apps/api/src/bad.test.ts'), "export const value: string = 'changed'\n")
   expect(run(root, 'git', ['add', 'apps/api/src/bad.test.ts']).status).toBe(0)
-  writeFileSync(join(root, 'apps/api/src/other.ts'), "export const value: string = 'fixed'\n")
+  // Being edited, not staged: its package is the one the commit touches.
+  writeFileSync(join(root, 'apps/api/src/other.ts'), 'export const value: string = 1\n')
   const result = run(root, 'bun', [script])
-  expect(result.status).toBe(1)
-  expect(result.stderr).toContain('Restage:')
+  expect(result.stderr).not.toContain('Restage:')
 })
 
 test('blocks a failing staged test even when formatting and lint pass', () => {

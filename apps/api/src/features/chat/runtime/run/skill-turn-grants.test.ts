@@ -18,7 +18,7 @@ const policy = (): SkillCommandPolicyRef => ({
   current: {
     rules: [...ASK],
     preapprovedRules: [],
-    toolsByName: new Map(['bash', 'write', 'read'].map((n) => [n, tool(n)])),
+    toolsByName: new Map(['Bash', 'Write', 'Read'].map((n) => [n, tool(n)])),
     root: '/w',
   },
 })
@@ -28,12 +28,12 @@ describe('a skill the model loads applies its tool lists to the turn', () => {
     const commandPolicy = policy()
     const ports = skillToolPorts({
       userId: 'u',
-      session: { id: 's', agents: [] } as unknown as SessionRecord,
+      session: { id: 's', agent: null } as unknown as SessionRecord,
       defaultCwd: '/w',
       commandPolicy,
     })
     const check = () => verdictOf(commandPolicy.current!)
-    expect(check()('bash', { command: 'git push origin' }).decision).toBe('ask')
+    expect(check()('Bash', { command: 'git push origin' }).decision).toBe('ask')
     ports.onSkillLoaded({
       name: 'ship',
       description: 'd',
@@ -44,16 +44,16 @@ describe('a skill the model loads applies its tool lists to the turn', () => {
       allowedTools: ['Bash(git push *)'],
       disallowedTools: ['Write'],
     } as DiscoveredSkill)
-    expect(check()('bash', { command: 'git push origin' }).decision).toBe('allow')
-    expect(check()('bash', { command: 'rm -rf x' }).decision).toBe('ask')
-    expect(check()('write', { path: 'a.txt', content: 'x' }).decision).toBe('deny')
+    expect(check()('Bash', { command: 'git push origin' }).decision).toBe('allow')
+    expect(check()('Bash', { command: 'rm -rf x' }).decision).toBe('ask')
+    expect(check()('Write', { path: 'a.txt', content: 'x' }).decision).toBe('deny')
   })
 
   test('a disallowed-tools entry with a specifier refuses only what it matches', () => {
     const commandPolicy = policy()
     applySkillTurnGrants(commandPolicy, { name: 'safe', disallowedTools: ['Bash(rm *)'] }, '/w')
     const check = verdictOf(commandPolicy.current!)
-    expect(check('bash', { command: 'rm x' }).decision).toBe('deny')
-    expect(check('bash', { command: 'ls' }).decision).toBe('ask')
+    expect(check('Bash', { command: 'rm x' }).decision).toBe('deny')
+    expect(check('Bash', { command: 'ls' }).decision).toBe('ask')
   })
 })

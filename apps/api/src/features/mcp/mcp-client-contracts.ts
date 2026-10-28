@@ -3,6 +3,7 @@ import type {
   ResourceContents,
   ResourceTemplate,
   ToolAnnotations,
+  PromptListChangedNotificationSchema,
   ToolListChangedNotificationSchema,
 } from '@modelcontextprotocol/sdk/types.js'
 import type { AgentTool, McpJsonSchema } from '@localixai/agent/agents'
@@ -86,11 +87,11 @@ export interface McpClientLike {
   getInstructions?(): string | undefined
   /** Best-effort notification hook, used for `notifications/tools/list_changed`. */
   setNotificationHandler?(
-    schema: typeof ToolListChangedNotificationSchema,
+    schema: typeof ToolListChangedNotificationSchema | typeof PromptListChangedNotificationSchema,
     handler: () => void,
   ): void
   // Optional resource capability (present on the real SDK client) — used by the
-  // consolidated mcp_resources tool for servers that advertise it.
+  // consolidated McpResources tool for servers that advertise it.
   getServerCapabilities?():
     | { resources?: unknown; prompts?: unknown; experimental?: Record<string, unknown> }
     | undefined
@@ -104,6 +105,23 @@ export interface McpClientLike {
     method: string
     params?: { [key: string]: unknown }
   }): Promise<void>
+  /** Optional prompts capability: the server's prompts, offered as `/mcp__<server>__<prompt>`. */
+  listPrompts?(
+    params?: { cursor?: string },
+    options?: { timeout?: number },
+  ): Promise<{
+    prompts?: Array<{
+      name: string
+      title?: string
+      description?: string
+      arguments?: Array<{ name: string; description?: string; required?: boolean }>
+    }>
+    nextCursor?: string
+  }>
+  getPrompt?(
+    params: { name: string; arguments?: Record<string, string> },
+    options?: { timeout?: number },
+  ): Promise<{ description?: string; messages: Array<{ role: string; content: unknown }> }>
   listResources?(
     params?: { cursor?: string },
     options?: { timeout?: number },

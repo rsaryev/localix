@@ -22,7 +22,7 @@ test('copies source without the gutter and leaves the code outside canvas drag g
     node: {
       id: 'sym:reading.ts#read',
       kind: 'function',
-      name: 'read',
+      name: 'Read',
       path: 'reading.ts',
       parent: 'file:reading.ts',
       line: 3,

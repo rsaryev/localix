@@ -71,10 +71,12 @@ export function LiveLogViewport({
 
   return (
     <>
+      {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- the scroll and pointer handlers only track how the person reads the log; the log itself stays a log */}
       <div
         ref={setViewportElement}
         role="log"
         aria-label={ariaLabel}
+        // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a scrollable region must take focus so the keyboard can scroll it
         tabIndex={0}
         data-scrollable
         className="scrollbar-thin virtual-scroller min-h-0 flex-1 overflow-auto font-mono text-2xs/relaxed"
@@ -152,7 +154,7 @@ export function LiveLogViewport({
 
       <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center px-3">
         <Button
-          variant="outline"
+          variant="ghost"
           size="icon-sm"
           className="pointer-events-auto rounded-full bg-surface-raised/95"
           onClick={live ? pause : resume}

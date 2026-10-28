@@ -1,8 +1,8 @@
 # Carry context into later work
 
-Localix stores explicit memory notes, agent definitions, reusable skills, and searchable session
-transcripts for later work. Use them to preserve durable facts, repeat procedures, or retrieve
-evidence from an earlier session.
+Localix keeps a memory folder per repository, agent definitions, reusable skills, and searchable
+session transcripts for later work. Use them to preserve durable facts, repeat procedures, or
+retrieve evidence from an earlier session.
 
 **Boundary:** Localix loads stored context, but it does not extract every durable fact or workflow
 automatically.
@@ -13,79 +13,65 @@ automatically.
 
 | Surface             | Mechanism                                                                              | Boundary                                                                                                 |
 | ------------------- | -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| Memory              | Store keyed Markdown notes at session, project, or global scope                        | Use `/memory`, the `memory` tool, or deliberate file edits; tool writes enforce the note budget          |
-| Skills              | Reuse project or global procedures stored as `SKILL.md` files                          | Saving is explicit or depends on the model choosing the `skill` tool; see [Skills](skills.md)            |
-| Session recall      | Discover sessions by full-text query, browse recent sessions, or page around a message | Recall requires `global_search`; transcripts are not injected on every turn                              |
+| Memory              | Keep facts in Claude Code's auto memory folder, one file each, indexed in `MEMORY.md`  | The agent saves with `Write` and `Edit`; `/memory` shows the folder or saves a fact                      |
+| Skills              | Reuse project or global procedures stored as `SKILL.md` files                          | Saving is explicit or depends on the model choosing the `Skill` tool; see [Skills](skills.md)            |
+| Session recall      | Discover sessions by full-text query, browse recent sessions, or page around a message | Recall requires `GlobalSearch`; transcripts are not injected on every turn                               |
 | Learning Studio     | Build, import, export, and study file-authored courses                                 | The bundled `learning` mini app is enabled by default but can be disabled; courses belong to one session |
 | Memory-provider API | Let one enabled mini app backend replace or append built-in prompt memory              | Provider calls are bounded and best-effort; a disabled app contributes nothing                           |
 
 ## How it works
 
-### Memory scopes
+### Memory
 
-The table below describes **All available scopes**. An agent’s selected **Memory scope** restricts
-prompt recall and `memory` reads/writes to that one scope. If it is unavailable, a write fails
-rather than falling back. `/memory` is a direct user command with the separate behavior shown below.
+Memory is Claude Code's auto memory, in Claude Code's own folder, so a repository has the same
+memory in both apps:
 
-| Operation                           | Scope behavior                                                                                        |
-| ----------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `memory.set` without `scope`        | Writes to the project, or the root session without a project; a selected agent scope takes precedence |
-| `memory.set` with `scope: "global"` | Writes a value visible across sessions                                                                |
-| `memory.get`                        | Checks visible session, project, then global entries and returns the narrowest duplicate key          |
-| Prompt loading and `memory.list`    | Include entries from every visible scope; duplicate keys are not collapsed                            |
-| `memory.delete`                     | Removes the key from every visible scope; the call’s `scope` field does not narrow deletion           |
-| `/memory <fact>`                    | Saves project memory when a project exists, otherwise global memory; no agent run starts              |
-| Bare `/memory`                      | Lists project and global memory; session memory is not included                                       |
-
-Memory files use `## <key>` headings and optional `<!-- updated: ... -->` comments. A write that
-would exceed one file’s budget is rejected without changing that file. The budget counts UTF-16 code
-units in serialized headings, separators, and trimmed values; timestamp comments are excluded.
-Reserve level-two headings for keys: a `##` heading inside a note starts another entry when read.
-Direct file edits bypass the repository’s write-budget guard.
-
-### Save and verify a note
-
-With **All available scopes**, these are inputs to the `memory` tool. Save a project fact with an
-explicit scope so moving the conversation to a different project does not change your intent:
-
-```json
-{
-  "action": "set",
-  "key": "project.test_runner",
-  "value": "Use Bun Test for this project's tests.",
-  "scope": "project"
-}
+```text
+~/.claude/projects/<project>/memory/
+├── MEMORY.md          # the index: one line per memory
+├── user-role.md       # one fact per file
+└── deploy-days.md
 ```
 
-Then inspect the visible entries and their scope labels:
+`<project>` is the repository's main checkout with every character but letters and digits turned
+into `-`, so every worktree and subfolder of a repository shares one folder; outside a repository it
+is the working folder. `CLAUDE_CONFIG_DIR` moves the whole tree, and `autoMemoryDirectory` in your
+own Claude Code settings names another folder (a repository's committed settings cannot).
+`autoMemoryEnabled: false` or `CLAUDE_CODE_DISABLE_AUTO_MEMORY=1` turns memory off.
 
-```json
-{ "action": "list" }
-```
+| Who                      | What it gets                                                                             |
+| ------------------------ | ---------------------------------------------------------------------------------------- |
+| A chat, a scheduled run  | The folder's path, how to save into it, and the first 200 lines or 25 KB of `MEMORY.md`  |
+| A fork                   | Its parent's prompt, memory included                                                     |
+| A subagent               | No project memory; an agent file's own `memory: user \| project \| local` folder instead |
+| A run over SSH or Docker | No memory: its file tools cannot reach the folder                                        |
 
-`get` returns the narrowest visible value for a key, so a conversation note can shadow the project
-note you just saved. Passing `scope` to `get` or `list` does not narrow the read; select the agent's
-**Memory scope** to restrict it. The same field does not narrow `delete`: deletion removes every
-visible copy of the key. Check the listed scopes before deleting a duplicated key.
+The agent saves a memory with the ordinary file tools: one fact per file, starting with frontmatter
+(`name`, `description`, and `type: user | feedback | project | reference` under `metadata`), then a
+one-line pointer in `MEMORY.md`. Writes into the run's own memory folder raise no permission card;
+another project's folder still asks. Topic files are not loaded on their own: the agent reads one
+with `Read` when the index says it matters.
+
+| Command          | What it does                                                                     |
+| ---------------- | -------------------------------------------------------------------------------- |
+| `/memory`        | Shows the session's memory folder and its `MEMORY.md`                            |
+| `/memory <fact>` | Saves the fact as a file of its own and appends its pointer; no agent run starts |
 
 ### Prompt snapshots
 
-Each chat participant has a stored prompt snapshot for its context boundary. Memory and project
-instructions normally stay frozen across later runs, including API restarts. A topic change, a
-context checkpoint, or a new session creates a fresh boundary. Non-chat runs build fresh context
-rather than using the chat snapshot.
+Each session has a stored prompt snapshot for its context boundary. `MEMORY.md` and project
+instructions normally stay frozen across later runs, including API restarts, as Claude Code loads
+`MEMORY.md` once per session. A context checkpoint or a new session creates a fresh boundary; so
+does a run in another repository, whose memory folder differs. Non-chat runs build fresh context
+rather than using the chat snapshot. The bounded skill catalog also refreshes when its discovered
+content or overrides change.
 
-Changing an agent’s memory scope refreshes its memory context on the next run without requiring a
-checkpoint. The bounded skill catalog also refreshes when its discovered content or overrides
-change. These exceptions do not make ordinary memory-note edits immediately visible in the frozen
-prompt.
-
-Writes update storage immediately and can be read with `memory` even while the prompt snapshot
-remains frozen. Set `LOCALIX_FREEZE_CONTEXT=0` to rebuild the snapshot on each run.
+A memory saved mid-session is on disk at once, and the agent can `Read` it, while the frozen prompt
+keeps the index it started with. Set `LOCALIX_FREEZE_CONTEXT=0` to rebuild the snapshot on each run.
 
 ### Recall and courses
 
-`global_search` recalls past work. A `query` runs the search palette's own search — words, and
+`GlobalSearch` recalls past work. A `query` runs the search palette's own search — words, and
 meaning when [semantic search](semantic-search.md) is on — with `domains` narrowing it to categories
 such as messages or chats; `around_message_id` or `session_id` reads a bounded window of a
 conversation; no arguments browse recent sessions. The tool returns previews and message identifiers
@@ -93,7 +79,7 @@ rather than replaying a full transcript.
 
 Learning Studio validates course bundles authored under `.localix/learning-drafts/`, imports valid
 content into the owning session's mini app data, and exposes the course hierarchy as session-scoped
-resources. The agent reads the app's guide with `mini_app_guide`; the bundle format and quality
+resources. The agent reads the app's guide with `MiniAppGuide`; the bundle format and quality
 checklist are its `course-bundle` page. Course creation, adaptation, import, export, and study
 progress are explicit actions.
 
@@ -112,46 +98,35 @@ complete the step for you. It is tied to the submitted attempt; repeated reviews
 result, and an outdated submission cannot overwrite a newer one. Course prose and code fences use
 the same Markdown renderer as conversation messages.
 
-With **All available scopes**, an external memory provider can run `loadContext` when a fresh prompt
-snapshot is built. `loadContext` may append to built-in notes or replace their prompt
-representation; it does not remove the built-in memory store or tool. A selected native memory scope
-disables this unscoped provider’s prompt recall. The 8,000-code-unit cap applies to provider output;
-append mode can produce a larger combined context with built-in notes.
-
-An enabled provider’s `onRunEnd` hook can still receive the completed turn’s user and assistant text
-when a native memory scope is selected. Scope selection disables provider recall, not the provider
-or its completion hook.
+An external memory provider can run `loadContext` when a fresh chat prompt snapshot is built, for a
+run that keeps memory. It may append to the `MEMORY.md` index or replace it in the prompt; the
+folder and its files stay. The 8,000-code-unit cap applies to provider output; append mode can
+produce a larger combined context with the index. Its `onRunEnd` hook receives each completed turn's
+user and assistant text.
 
 ## Configuration
 
-| Store or control         | Current boundary                                                                       |
-| ------------------------ | -------------------------------------------------------------------------------------- |
-| Global memory            | `~/.localix/memories/MEMORY.md`; 2,200-code-unit write budget                          |
-| Project memory           | `~/.localix/memories/projects/<projectId>.md`; 2,200-code-unit write budget            |
-| Session memory           | `~/.localix/memories/sessions/<rootSessionId>.md`; 1,500-code-unit write budget        |
-| Project skills           | `<workspace>/.claude/skills/<name>/SKILL.md`                                           |
-| Global skills            | `~/.claude/skills/<name>/SKILL.md`                                                     |
-| Prompt snapshots         | `LOCALIX_FREEZE_CONTEXT=0` disables the default freeze                                 |
-| External memory provider | First enabled provider only; 8,000-code-unit provider-output cap and 10-second timeout |
-
-The listed memory paths are for the default local user. Other users have a separate
-`~/.localix/memories/users/<encoded-user-key>/` root; project and session filenames also use safe
-encoded keys.
+| Store or control         | Current boundary                                                                                 |
+| ------------------------ | ------------------------------------------------------------------------------------------------ |
+| Memory                   | `~/.claude/projects/<project>/memory/`, or `autoMemoryDirectory`; index loads 200 lines or 25 KB |
+| Memory off               | `autoMemoryEnabled: false` in Claude Code settings, or `CLAUDE_CODE_DISABLE_AUTO_MEMORY=1`       |
+| Project skills           | `<workspace>/.claude/skills/<name>/SKILL.md`                                                     |
+| Global skills            | `~/.claude/skills/<name>/SKILL.md`                                                               |
+| Prompt snapshots         | `LOCALIX_FREEZE_CONTEXT=0` disables the default freeze                                           |
+| External memory provider | First enabled provider only; 8,000-code-unit provider-output cap and 10-second timeout           |
 
 ## Limits
 
-- A model may decide not to call `memory` or `skill`. Use `/memory`, agent instructions, or an
-  explicit skill save when persistence is required.
-- `memory.delete` is classified as a host change and irreversible, even for a selected session
-  scope. Session-scoped `set` is a session effect; project/global `set` is a host effect.
-- Memory scope filters recall and tool access; it is not a filesystem sandbox for other tools.
+- A model may decide not to save a memory or a skill. Use `/memory <fact>`, agent instructions, or
+  an explicit skill save when persistence is required.
+- Memory folders are shared with Claude Code: what either app saves, the other loads.
 - Memory Markdown is plaintext on disk. It is readable by processes with access to the same OS
   account and home directory.
-- `global_search` must survive the active role and tool policy. Discovery also requires SQLite FTS5;
+- `GlobalSearch` must survive the active role and tool policy. Discovery also requires SQLite FTS5;
   an unavailable FTS table returns an error instead of falling back to transcript injection.
-- A whole-tool denial without later argument exceptions removes `memory`, `global_search`, or
-  `skill` from the roster. Conditional rules can retain a tool while refusing individual calls.
-  Built-in memory remains a separate prompt input.
+- A whole-tool denial without later argument exceptions removes `GlobalSearch` or `Skill` from the
+  roster. Conditional rules can retain a tool while refusing individual calls. A run without `Write`
+  and `Edit` keeps no memory.
 - A memory provider's `onRunEnd` hook is fire-and-forget. Failure or timeout does not roll back the
   completed chat turn. A hook timeout stops waiting; its work can continue because the hook port has
   no abort signal.
@@ -167,13 +142,12 @@ encoded keys.
 
 ## Source of truth
 
-- [Shared memory scope policy](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/memory-scope-policy.ts)
+- [Memory folder, index loading and `/memory <fact>`](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/memory/auto-memory.ts)
+- [Memory section](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/prompt/sections/memory.ts)
+  and
+  [the folders a run writes without a card](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/memory-roots.ts)
 - [Persisted prompt snapshot and refresh exceptions](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/prompt-snapshot.ts)
 - [Agent prompt and provider admission](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/prompt-agent-context.ts)
-- [Memory tool](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/memory/memory.ts),
-  [repository](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/memory/repository.ts),
-  and
-  [file format](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/memory/file-store.ts)
 - [Prompt loading](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/prompt-context.ts)
   and
   [snapshot cache](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/session-snapshot.ts)

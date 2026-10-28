@@ -48,7 +48,7 @@ export const SERVER_FIELDS: ConfigField[] = [
   {
     key: 'headers',
     label: 'Headers',
-    help: 'A web address: sent with every request, such as Authorization. Kept in the vault.',
+    help: 'A web address or socket: sent with every request, such as Authorization. Kept in the vault.',
     type: 'map',
     required: false,
     secret: true,

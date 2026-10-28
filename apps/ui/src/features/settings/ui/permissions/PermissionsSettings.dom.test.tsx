@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, expect, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { stubElementWidth } from '@/testing/elementWidth'
+import { turns as settle } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -8,8 +9,6 @@ beforeAll(() => {
   ;(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 })
 afterAll(async () => teardown())
-
-const settle = () => new Promise((resolve) => setTimeout(resolve, 30))
 
 const SNAPSHOT = {
   revision: 1,
@@ -50,7 +49,7 @@ test('an old link to the permission rules opens Settings → Permissions with it
     spyOn(backendClient, 'fetchCapabilityRules').mockResolvedValue({
       scope: 'agent:localix',
       revision: 1,
-      rules: [{ action: 'tool:bash', resource: 'git push*', effect: 'ask' }],
+      rules: [{ action: 'tool:Bash', resource: 'git push*', effect: 'ask' }],
     } as never),
     spyOn(backendClient, 'fetchClaudeCodePermissions').mockResolvedValue({
       defaultMode: 'plan',
@@ -72,14 +71,16 @@ test('an old link to the permission rules opens Settings → Permissions with it
       await settle()
     })
     await act(async () => {
-      navigateSettings('rules')
+      navigateSettings('permissions')
       await settle()
     })
     expect(container.querySelector('h1, h2')?.textContent).toBe('Permissions')
     expect(container.querySelector('[aria-label^="Agent whose rules to edit"]')).not.toBeNull()
     expect(container.querySelector('[aria-label="Permission rule 1"]')).not.toBeNull()
     expect(container.textContent).toContain('Bash(rm *)')
-    expect(container.querySelector('[aria-current="page"]')?.textContent).toBe('Permissions')
+    expect(container.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe(
+      'Permissions',
+    )
   } finally {
     await act(async () => root.unmount())
     unstub()

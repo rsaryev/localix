@@ -52,13 +52,12 @@ export function useJobTerminal() {
   }, [])
 
   /**
-   * If `sessionId` is a job session with a live terminal, reveal it and return
-   * true; otherwise return false so the caller can fall back to its normal
-   * navigation (e.g. open the chat for a sub-agent, or for a job with no PTY).
+   * `openIfJobSession(sessionId)`: if `sessionId` is a job session with a live terminal, reveal it
+   * and return true; otherwise return false so the caller can fall back to its normal
+   * navigation (e.g. open the chat for a sub-agent, or for a job with no PTY). A module function,
+   * so its identity is already stable.
    */
-  const openIfJobSession = useCallback(revealJobSession, [])
-
-  return { openJobTerminal, openIfJobSession }
+  return { openJobTerminal, openIfJobSession: revealJobSession }
 }
 
 /** Imperative counterpart used by the app-level mini app runtime adapter. */

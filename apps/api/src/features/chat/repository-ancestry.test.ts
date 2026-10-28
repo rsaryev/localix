@@ -1,3 +1,4 @@
+import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -8,10 +9,10 @@ import { migrateToLatest } from '../../db/migrator'
 import { createProjectsRepository } from '../projects/repository'
 import type { PersistedMessage } from './contracts'
 import { createChatRepository, type SessionRecord } from './repository'
-import { routedParticipants, sessionFixture } from '../../testing/session-fixture'
-import { DEFAULT_AGENT_PARTICIPANT, USER_PARTICIPANT } from '../../db'
+import { routedAgent, sessionFixture } from '../../testing/session-fixture'
+import { DEFAULT_AGENT_AUTHOR, USER_AUTHOR } from '../../db'
 
-const tempDir = join(process.cwd(), 'tmp', 'chat-repository-ancestry-tests')
+const tempDir = join(tmpdir(), `localix-chat-repository-ancestry-tests-${process.pid}`)
 
 function session(
   id: string,
@@ -26,7 +27,7 @@ function session(
     userId,
     seq,
     title: id,
-    agents: routedParticipants({ modelId: '', reasoningEffort: 'low' }),
+    agent: routedAgent({ modelId: '', reasoningEffort: 'low' }),
     createdAt: timestamp,
     updatedAt: timestamp,
     lastMessageAt: timestamp,
@@ -65,8 +66,7 @@ function message(
     payload: {
       id,
       role: options.role ?? 'assistant',
-      from:
-        options.from ?? (options.role === 'user' ? USER_PARTICIPANT : DEFAULT_AGENT_PARTICIPANT),
+      from: options.from ?? (options.role === 'user' ? USER_AUTHOR : DEFAULT_AGENT_AUTHOR),
       content,
       isInternal: options.isInternal,
       uiOnly: options.uiOnly,
@@ -226,8 +226,8 @@ describe('repository session ancestry', () => {
       id: 'project-new',
       title: 'project-new',
       projectId: 'project-a',
-      // Identity travels with the route: a blank seat is resolved through the model chain by
-      // `withResolvedRoutes`, which needs to know whose seat it is and where it lives.
+      // Identity travels with the route: a blank route is resolved through the model chain by
+      // `withResolvedRoutes`, which needs to know whose route it is and where it lives.
       agentId: 'builtin:localix',
       runtimeStatus: 'idle',
       modelId: '',
@@ -377,7 +377,7 @@ describe('repository session ancestry', () => {
 
     await repo.insertSession(
       session('routing', 1, null, 'user-a', {
-        agents: routedParticipants({ modelId: 'model-a', reasoningEffort: 'high' }),
+        agent: routedAgent({ modelId: 'model-a', reasoningEffort: 'high' }),
       }),
     )
     expect(await repo.getSessionAgentRoute('user-a', 'routing')).toEqual({
@@ -413,8 +413,6 @@ describe('repository session ancestry', () => {
         sessionKind: 'chat',
         runtimeStatus: 'running',
         title: 'Root',
-        // Carried so a room can tell a member its OWN delegated children from a colleague's:
-        // the parent session id is shared by every member, the provenance is not.
         provenance: { kind: 'root' },
       },
     ])
@@ -511,7 +509,7 @@ describe('repository session ancestry', () => {
           {
             id: 'call-1',
             type: 'tool_call',
-            name: 'bash',
+            name: 'Bash',
             activeVerb: 'Running',
             toolCallId: 'call-1',
             status: 'completed',
@@ -527,7 +525,7 @@ describe('repository session ancestry', () => {
           {
             id: 'call-1',
             type: 'tool_call',
-            name: 'bash',
+            name: 'Bash',
             activeVerb: 'Running',
             toolCallId: 'call-1',
             status: 'completed',
@@ -540,7 +538,7 @@ describe('repository session ancestry', () => {
           {
             id: 'call-1',
             type: 'tool_call',
-            name: 'bash',
+            name: 'Bash',
             activeVerb: 'Running',
             toolCallId: 'call-1',
             status: 'running',

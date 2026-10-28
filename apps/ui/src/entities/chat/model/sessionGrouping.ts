@@ -1,9 +1,5 @@
 import type { UiSession } from '@/shared/api/contracts'
 
-export type SessionGroupingMode = 'activity' | 'agent'
-
-export const DEFAULT_SESSION_GROUPING_MODE: SessionGroupingMode = 'activity'
-
 export interface ActivitySessionGroup<T = UiSession> {
   id: 'today' | 'yesterday' | 'previous-7-days' | 'previous-30-days' | 'older'
   label: string

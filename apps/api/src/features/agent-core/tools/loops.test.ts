@@ -127,6 +127,41 @@ describe('loops tool', () => {
     expect(res.content).toContain('Loop updated')
   })
 
+  test('update without id changes the conversation’s only loop', async () => {
+    // Seen live: the model called update with only the new prompt, and was refused.
+    const patched: string[] = []
+    setLoopEngine(
+      stubEngine({
+        list: () => [makeLoop({ id: 'loop-7' })],
+        update: async (id: string) => {
+          patched.push(id)
+          return makeLoop({ id })
+        },
+      }),
+    )
+    const res = await run({ action: 'update', prompt: 'new task' })
+    expect(res.isError).toBeUndefined()
+    expect(patched).toEqual(['loop-7'])
+  })
+
+  test('update without id among several loops names them and changes none', async () => {
+    const patched: string[] = []
+    setLoopEngine(
+      stubEngine({
+        list: () => [makeLoop({ id: 'loop-a1' }), makeLoop({ id: 'loop-b2' })],
+        update: async (id: string) => {
+          patched.push(id)
+          return makeLoop({ id })
+        },
+      }),
+    )
+    const res = await run({ action: 'update', prompt: 'new task' })
+    expect(res.isError).toBe(true)
+    expect(res.content).toContain('loop-a1')
+    expect(res.content).toContain('loop-b2')
+    expect(patched).toEqual([])
+  })
+
   test('remove: requires id, reports success and not-found', async () => {
     setLoopEngine(stubEngine())
     expect((await run({ action: 'remove' })).isError).toBe(true)

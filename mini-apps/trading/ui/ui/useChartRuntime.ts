@@ -7,7 +7,7 @@
  * handed to every hook. The ORDER of the hooks in `ChartCanvas` is the order their effects run in:
  * chart before series, series before data, data before the handlers that read it.
  */
-import { useRef, type RefObject } from 'react'
+import { useLayoutEffect, useState, type RefObject } from 'react'
 import type { IChartApi, ISeriesApi, ISeriesMarkersPluginApi, Time } from 'lightweight-charts'
 import type { Candle } from '../../backend/contracts'
 import type { ChartDrawing } from '../../backend/chart-drawing'
@@ -66,7 +66,20 @@ export interface ChartRuntime {
   activeSpecs: Box<IndicatorSpec[]>
   /** Patch this canvas's live state into the snapshot store (nowhere without a key + chat). */
   publish: (partial: Partial<ChartTabState>) => void
+  /**
+   * Store into one of the boxes. The runtime is a deliberately mutable, imperative object shared by
+   * every chart hook; writing through this method (rather than a property store at each call
+   * site) keeps that mutation inside the runtime, where React is not asked to track it.
+   */
+  /** Ref callback for the canvas host element. */
+  setContainer: (element: HTMLDivElement | null) => void
+  write: <K extends BoxName>(name: K, value: BoxValue<K>) => void
 }
+
+type BoxName = {
+  [K in keyof ChartRuntime]: ChartRuntime[K] extends Box<unknown> ? K : never
+}[keyof ChartRuntime]
+type BoxValue<K extends BoxName> = ChartRuntime[K] extends Box<infer T> ? T : never
 
 const box = <T>(current: T): Box<T> => ({ current })
 
@@ -96,6 +109,12 @@ function createRuntime(props: ChartRuntimeProps): ChartRuntime {
       if (controlKey && controlSessionId)
         chartStateStore.patch(controlSessionId, controlKey, partial)
     },
+    setContainer: (element) => {
+      runtime.container.current = element
+    },
+    write: (name, value) => {
+      ;(runtime[name] as Box<unknown>).current = value
+    },
   }
   return runtime
 }
@@ -111,11 +130,16 @@ export function releaseChart(rt: ChartRuntime): void {
   rt.renderedCandles.current = []
 }
 
-/** One runtime per canvas; the prop mirrors are refreshed on every render. */
+/**
+ * One runtime per canvas; the prop mirrors are refreshed on every commit. They are written in a
+ * layout effect, not during render, and this hook is the first in `ChartCanvas`, so its mirrors are
+ * current before any other hook's effect (layout or passive) reads them.
+ */
 export function useChartRuntime(candles: Candle[], props: ChartRuntimeProps): ChartRuntime {
-  const ref = useRef<ChartRuntime | null>(null)
-  ref.current ??= createRuntime(props)
-  ref.current.candles.current = candles
-  ref.current.props.current = props
-  return ref.current
+  const [runtime] = useState(() => createRuntime(props))
+  useLayoutEffect(() => {
+    runtime.write('candles', candles)
+    runtime.write('props', props)
+  })
+  return runtime
 }

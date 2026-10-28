@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'bun:test'
-import { createSetTopicTool } from '../../agent-core/tools/set-topic'
 import { indexToolPresentation } from './run/tool-assembly'
 import { isTranscriptItemHidden } from '../item-format'
 
@@ -41,7 +40,12 @@ describe('textItem / reasoningItem', () => {
 
 describe('createItemAccumulator content order', () => {
   test('descriptor visibility survives streaming, completion and persisted JSON', () => {
-    const tool = createSetTopicTool({ save: async () => {} })
+    // A protocol tool the transcript hides: its descriptor says so, not its name.
+    const tool = {
+      name: 'protocol_fixture',
+      activeVerb: 'Updating',
+      presentation: { transcript: 'hidden' },
+    } as unknown as Parameters<typeof indexToolPresentation>[0][number]
     const descriptors = indexToolPresentation([tool])
     const acc = createItemAccumulator(() => 'Updating', {
       presentationFor: (name) => descriptors.get(name)?.presentation,
@@ -49,18 +53,18 @@ describe('createItemAccumulator content order', () => {
     acc.streamTool(0, {
       id: 'finish',
       name: tool.name,
-      arguments: { title: 'T' },
+      arguments: {},
     })
     expect(isTranscriptItemHidden(acc.list()[0]!)).toBe(true)
-    acc.startTool(0, 'finish', tool.name, { title: 'T' })
+    acc.startTool(0, 'finish', tool.name, {})
     expect(isTranscriptItemHidden(acc.list()[0]!)).toBe(true)
     acc.endTool('finish', tool.name, {
       status: 'completed',
-      resultText: 'Topic saved: T.',
+      resultText: 'Done.',
     })
     const restored = JSON.parse(JSON.stringify(acc.list()[0])) as ToolCallItem
     expect(restored.presentation).toEqual({ transcript: 'hidden' })
-    expect(restored.resultText).toBe('Topic saved: T.')
+    expect(restored.resultText).toBe('Done.')
     expect(isTranscriptItemHidden(restored)).toBe(true)
   })
 
@@ -69,7 +73,7 @@ describe('createItemAccumulator content order', () => {
     acc.text(0, 'A', 0, { textSignature: 'text-sig' })
     acc.streamTool(0, {
       id: 'c1',
-      name: 'read',
+      name: 'Read',
       arguments: {},
       contentIndex: 1,
       thoughtSignature: 'sig',
@@ -97,12 +101,12 @@ const spec = (over: Partial<ToolItemSpec> & Pick<ToolItemSpec, 'name'>): ToolIte
 
 describe('classifyTool', () => {
   test('maps known tools to specialized types, rest to tool_call/mcp_call', () => {
-    expect(classifyTool('bash')).toBe('command')
-    expect(classifyTool('write')).toBe('file_change')
-    expect(classifyTool('edit')).toBe('file_change')
+    expect(classifyTool('Bash')).toBe('command')
+    expect(classifyTool('Write')).toBe('file_change')
+    expect(classifyTool('Edit')).toBe('file_change')
     // The removed patch tool is no longer callable, so its name is not a file mutation.
     expect(classifyTool('apply_patch')).toBe('tool_call')
-    expect(classifyTool('read')).toBe('tool_call')
+    expect(classifyTool('Read')).toBe('tool_call')
     expect(classifyTool('agents')).toBe('tool_call')
     expect(classifyTool('database_lookup')).toBe('tool_call')
     expect(classifyTool('mcp__github__create_issue')).toBe('mcp_call')
@@ -115,7 +119,7 @@ describe('buildToolItem', () => {
   test('bash → command item with exitCode/duration/output from details', () => {
     const item = buildToolItem(
       spec({
-        name: 'bash',
+        name: 'Bash',
         input: { command: 'ls -la' },
         details: {
           command: 'ls -la',
@@ -136,13 +140,13 @@ describe('buildToolItem', () => {
       exitCode: 0,
       durationMs: 42,
       toolCallId: 'tc1',
-      name: 'bash',
+      name: 'Bash',
     })
   })
 
   test('bash streaming (no details) still shows command from input', () => {
     const item = buildToolItem(
-      spec({ name: 'bash', status: 'running', input: { command: 'npm test' } }),
+      spec({ name: 'Bash', status: 'running', input: { command: 'npm test' } }),
     ) as CommandItem
     expect(item).toMatchObject({
       type: 'command',
@@ -154,7 +158,7 @@ describe('buildToolItem', () => {
   test('write → file_change (add when created) with diff', () => {
     const item = buildToolItem(
       spec({
-        name: 'write',
+        name: 'Write',
         input: { path: 'a.ts' },
         details: { path: 'a.ts', created: true, diff: '+x' },
       }),
@@ -166,7 +170,7 @@ describe('buildToolItem', () => {
   test('write → file_change (modify when not created)', () => {
     const item = buildToolItem(
       spec({
-        name: 'write',
+        name: 'Write',
         details: { path: 'b.ts', created: false, diff: '-x\n+y' },
       }),
     ) as FileChangeItem
@@ -176,7 +180,7 @@ describe('buildToolItem', () => {
   test('a batched edit → one change per file, the failed file included with its reason', () => {
     const item = buildToolItem(
       spec({
-        name: 'edit',
+        name: 'Edit',
         details: {
           cwd: '/w',
           files: [
@@ -200,7 +204,7 @@ describe('buildToolItem', () => {
   test('a batched write → add for a created file, modify for a replaced one', () => {
     const item = buildToolItem(
       spec({
-        name: 'write',
+        name: 'Write',
         details: {
           cwd: '/w',
           files: [
@@ -219,7 +223,7 @@ describe('buildToolItem', () => {
   test('a streaming batch (no details yet) → every path the input names', () => {
     const item = buildToolItem(
       spec({
-        name: 'edit',
+        name: 'Edit',
         status: 'pending',
         input: {
           edits: [
@@ -238,7 +242,7 @@ describe('buildToolItem', () => {
 
   test('edit streaming (no details yet) → path from input', () => {
     const item = buildToolItem(
-      spec({ name: 'edit', status: 'pending', input: { path: 'src/a.ts' } }),
+      spec({ name: 'Edit', status: 'pending', input: { path: 'src/a.ts' } }),
     ) as FileChangeItem
     expect(item.changes).toEqual([{ path: 'src/a.ts', kind: 'modify' }])
   })
@@ -344,7 +348,7 @@ describe('buildToolItem', () => {
     ]
     const item = buildToolItem({
       toolCallId: 't-source',
-      name: 'research',
+      name: 'Research',
       status: 'completed',
       activeVerb: 'Researching',
       sources,
@@ -356,7 +360,7 @@ describe('buildToolItem', () => {
   test('error is carried through and isError derivable from status', () => {
     const item = buildToolItem(
       spec({
-        name: 'read',
+        name: 'Read',
         status: 'failed',
         errorText: 'ENOENT',
         error: {
@@ -383,7 +387,7 @@ describe('createItemAccumulator', () => {
     const acc = createItemAccumulator(verb)
     acc.reasoning(0, 'thinking')
     acc.text(0, 'let me run it')
-    acc.startTool(0, 'c1', 'bash', { command: 'ls' })
+    acc.startTool(0, 'c1', 'Bash', { command: 'ls' })
     acc.text(0, 'let me run it') // upsert, no dup
     expect(acc.list().map((i) => i.type)).toEqual(['reasoning', 'text', 'command'])
   })
@@ -415,12 +419,12 @@ describe('createItemAccumulator', () => {
 
   test('tool lifecycle pending → running → completed never downgrades, accumulates result', () => {
     const acc = createItemAccumulator(verb)
-    acc.streamTool(0, { id: 'c1', name: 'bash', arguments: { command: 'ls' } })
+    acc.streamTool(0, { id: 'c1', name: 'Bash', arguments: { command: 'ls' } })
     expect(acc.list()[0].status).toBe('pending')
-    acc.startTool(0, 'c1', 'bash', { command: 'ls' })
-    acc.updateToolDetails('c1', 'bash', { command: 'ls', output: 'partial' })
+    acc.startTool(0, 'c1', 'Bash', { command: 'ls' })
+    acc.updateToolDetails('c1', 'Bash', { command: 'ls', output: 'partial' })
     expect(acc.list()[0].status).toBe('running')
-    acc.endTool('c1', 'bash', {
+    acc.endTool('c1', 'Bash', {
       status: 'completed',
       details: { command: 'ls', output: 'a\nb', exitCode: 0 },
       resultText: 'a\nb',
@@ -505,9 +509,9 @@ describe('createItemAccumulator', () => {
 
   test('reconcile drops stale pending tool items not in final ids', () => {
     const acc = createItemAccumulator(verb)
-    acc.streamTool(0, { id: 'stale', name: 'edit' })
-    acc.streamTool(0, { id: 'real', name: 'edit' })
-    acc.startTool(0, 'real', 'edit', {})
+    acc.streamTool(0, { id: 'stale', name: 'Edit' })
+    acc.streamTool(0, { id: 'real', name: 'Edit' })
+    acc.startTool(0, 'real', 'Edit', {})
     acc.reconcile(new Set(['real']))
     expect(acc.list().map((i) => (i as ToolBackedItem).toolCallId)).toEqual(['real'])
   })

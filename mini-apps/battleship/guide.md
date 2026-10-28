@@ -44,11 +44,11 @@ is water. If a shot is refused, the result shows your side as it is now; act on 
 ## When a game ends
 
 Tell the user the result in one line and offer another game. If the game showed you something about
-how this user plays that you did not know, such as how they hunt, keep it with your memory tool, in
-one note on Battleship that you update rather than add to. Save only observations the game actually
-exposed; both fleets are randomly placed, so do not infer user placement preferences. Memory
-availability and retention depend on the agent's rules and memory scope. The board is session-owned
-and is removed when the chat is deleted.
+how this user plays that you did not know, such as how they hunt, keep it in your memory, in one
+note on Battleship that you update rather than add to. Save only observations the game actually
+exposed; both fleets are randomly placed, so do not infer user placement preferences. Use memory
+only when you have it and may write there. The board is session-owned and is removed when the chat
+is deleted.
 
 ## When the user asks to play
 

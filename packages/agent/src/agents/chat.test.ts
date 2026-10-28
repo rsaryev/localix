@@ -54,7 +54,7 @@ describe('createBrowserCacheSnapshot', () => {
           turnIndex: 0,
           contentIndex: 1,
           toolCallId: 'c0',
-          name: 'read',
+          name: 'Read',
           input: { path: 'a' },
           resultText: 'ok',
           thoughtSignature: 'tool-sig',
@@ -101,7 +101,7 @@ describe('createBrowserCacheSnapshot', () => {
       {
         type: 'tool_call',
         id: 'c0',
-        name: 'read',
+        name: 'Read',
         arguments: { path: 'a' },
         thoughtSignature: 'tool-sig',
       },
@@ -424,7 +424,7 @@ describe('toModelMessages — item model', () => {
           status: 'completed',
           turnIndex: 0,
           toolCallId: 'c0',
-          name: 'bash',
+          name: 'Bash',
           input: { command: 'ls' },
           command: 'ls',
           resultText: 'file1\nfile2',
@@ -440,7 +440,7 @@ describe('toModelMessages — item model', () => {
     expect(a0.content.find((c) => c.type === 'text')).toMatchObject({ text: 'Let me read it.' })
     expect(a0.content.find((c) => c.type === 'tool_call')).toMatchObject({
       id: 'c0',
-      name: 'bash',
+      name: 'Bash',
       arguments: { command: 'ls' },
     })
     // reasoning is NOT re-sent
@@ -448,7 +448,7 @@ describe('toModelMessages — item model', () => {
     const tool = wire[1] as unknown as { results: Array<Record<string, unknown>> }
     expect(tool.results[0]).toMatchObject({
       toolCallId: 'c0',
-      toolName: 'bash',
+      toolName: 'Bash',
       content: 'file1\nfile2',
       isError: false,
     })
@@ -464,7 +464,7 @@ describe('toModelMessages — item model', () => {
           type: 'tool_call',
           status: 'failed',
           toolCallId: 'x',
-          name: 'read',
+          name: 'Read',
           activeVerb: 'Reading',
           input: { path: '/nope' },
           errorText: 'ENOENT',
@@ -500,7 +500,7 @@ describe('toModelMessages — item model', () => {
           type: 'tool_call',
           status: 'completed',
           toolCallId: 'p',
-          name: 'browser',
+          name: 'Browser',
           activeVerb: 'Controlling browser',
           input: { action: 'snapshot' },
           resultText: 'Page …',
@@ -802,7 +802,7 @@ describe('images a tool returned, on later turns', () => {
           type: 'tool_call',
           status: 'completed',
           toolCallId: id,
-          name: 'browser',
+          name: 'Browser',
           activeVerb: 'Controlling browser',
           resultText: `Screenshot ${id} (4×4).`,
           supersedeKey: 'browser:screenshot',

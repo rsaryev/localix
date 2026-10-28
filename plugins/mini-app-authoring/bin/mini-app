@@ -1,0 +1,21 @@
+#!/bin/sh
+# mini-app: the Localix mini app toolchain. Claude Code and Localix put this plugin's bin/ on the
+# Bash tool's PATH; anyone else can run it by its path. It needs Bun, and finds one in this order:
+# MINI_APP_BUN, bun on PATH, ~/.bun/bin/bun, then the Bun inside an installed Localix app.
+set -e
+here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+entry="$here/../src/cli/main.ts"
+
+for candidate in \
+  "${MINI_APP_BUN:-}" \
+  "$(command -v bun 2>/dev/null || true)" \
+  "$HOME/.bun/bin/bun" \
+  "/Applications/Localix.app/Contents/MacOS/bun" \
+  "$HOME/Applications/Localix.app/Contents/MacOS/bun"; do
+  if [ -n "$candidate" ] && [ -x "$candidate" ]; then
+    exec "$candidate" "$entry" "$@"
+  fi
+done
+
+echo "mini-app needs Bun: install it from https://bun.sh, or install Localix (it carries one)." >&2
+exit 127

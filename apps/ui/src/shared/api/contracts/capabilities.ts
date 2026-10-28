@@ -61,19 +61,12 @@ export type RuleGrammar = CapabilitySnapshot['grammar']
 
 export type { CapabilitySnapshot, CapabilityRuleChange, CapabilityToolSurface }
 
-// One participant of a conversation plus the model it runs on, and the two functions that read
-// it. Imported from the server's leaf rather than restated here: the shape crosses the wire
+// The conversation's agent plus the model it runs on, and the functions that read it. Imported from the server's leaf rather than restated here: the shape crosses the wire
 // unchanged, so a second declaration on this side could only ever drift from it.
-import type {
-  SessionAgentRoute,
-  CapabilityRules,
-  ModelChoiceView,
-  JoinRoutesView,
-  SessionModelChoicesView,
-} from '@localixai/api/client'
+import type { SessionAgentRoute, CapabilityRules } from '@localixai/api/client'
 
 /**
- * One capability rule. A switch and a permission are the same statement: `tool:bash` over
+ * One capability rule. A switch and a permission are the same statement: `tool:Bash` over
  * resource `*` turns the tool off, the same action over `git push*` leaves it on and prompts.
  */
 export interface CapabilityRule {
@@ -95,13 +88,8 @@ export interface CapabilityScope {
   projectId?: string | null
   agentId?: string | null
 }
-export type { SessionAgentRoute, ModelChoiceView, JoinRoutesView, SessionModelChoicesView }
-export {
-  agentRoute,
-  isMultiParticipant,
-  sessionRoute,
-  withRoute,
-} from '@localixai/api/session-route'
+export type { SessionAgentRoute }
+export { agentRoute, sessionRoute, withRoute } from '@localixai/api/session-route'
 
 /**
  * A sandboxed UI view declared by an enabled mini app; HTML fetched on open. It always opens as a

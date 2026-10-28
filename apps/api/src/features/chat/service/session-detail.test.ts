@@ -3,7 +3,7 @@ import { createHitlRegistry } from '../runtime/hitl-registry'
 import { getSessionDetail, type SessionDetailContext } from './session-detail'
 import type { PersistedMessage } from '../contracts'
 import type { SessionRecord } from '../repository'
-import { DEFAULT_AGENT_PARTICIPANT } from '../../../db'
+import { DEFAULT_AGENT_AUTHOR } from '../../../db'
 
 const session = {
   id: 's1',
@@ -40,7 +40,7 @@ function message(index: number): PersistedMessage {
     payload: {
       id: `m${index}`,
       role: 'assistant',
-      from: DEFAULT_AGENT_PARTICIPANT,
+      from: DEFAULT_AGENT_AUTHOR,
       content: `turn ${index}`,
       usage: {
         totalTokens: 10,
@@ -71,7 +71,6 @@ describe('getSessionDetail long-history accounting', () => {
       requireSession: async () => session,
       runner: {
         isRunning: () => false,
-        activeAgentId: () => undefined,
         listWork: () => [],
         listQueued: () => [],
       },
@@ -94,7 +93,6 @@ describe('getSessionDetail long-history accounting', () => {
       isSummary: true,
     })
     expect(detail.sessionUsage?.totalCost).toBeCloseTo(0.175, 10)
-    expect(detail.participantUsage?.['builtin:localix']).toMatchObject({ totalTokens: 1_750 })
   })
 
   test('a fork shows and counts only its own rows, not the parent line it reads', async () => {
@@ -110,7 +108,6 @@ describe('getSessionDetail long-history accounting', () => {
       requireSession: async () => fork,
       runner: {
         isRunning: () => false,
-        activeAgentId: () => undefined,
         listWork: () => [],
         listQueued: () => [],
       },
@@ -134,7 +131,6 @@ describe('getSessionDetail long-history accounting', () => {
         requireSession: async () => record,
         runner: {
           isRunning: () => false,
-          activeAgentId: () => undefined,
           listWork: () => [],
           listQueued: () => [],
         },
@@ -172,7 +168,7 @@ describe('getSessionDetail long-history accounting', () => {
       payload: {
         id: 'source-message',
         role: 'assistant',
-        from: DEFAULT_AGENT_PARTICIPANT,
+        from: DEFAULT_AGENT_AUTHOR,
         items: [
           {
             id: 'call-1',
@@ -211,7 +207,6 @@ describe('getSessionDetail long-history accounting', () => {
       requireSession: async () => child,
       runner: {
         isRunning: () => false,
-        activeAgentId: () => undefined,
         listWork: () => [],
         listQueued: () => [],
       },
@@ -272,7 +267,6 @@ describe('getSessionDetail long-history accounting', () => {
       requireSession: async () => session,
       runner: {
         isRunning: () => false,
-        activeAgentId: () => undefined,
         listWork: () => [],
         listQueued: () => [],
       },
@@ -302,7 +296,6 @@ describe('getSessionDetail long-history accounting', () => {
       requireSession: async () => session,
       runner: {
         isRunning: () => true,
-        activeAgentId: () => 'qa',
         listWork: () => [
           {
             id: 'bg-1',
@@ -321,8 +314,6 @@ describe('getSessionDetail long-history accounting', () => {
 
     const detail = await getSessionDetail(ctx, 'u1', 's1')
     expect(detail.terminalWaits).toEqual([{ terminalId: 'pty-1', label: 'waiting for prompt' }])
-    // A client that opens the session mid-turn learns who is speaking, not only that someone is.
-    expect(detail.activeAgentId).toBe('qa')
     // …and what is running in the background, before the next work push arrives.
     expect(detail.work.map((item) => item.id)).toEqual(['bg-1'])
   })
@@ -343,7 +334,6 @@ describe('getSessionDetail long-history accounting', () => {
         requireSession: async () => session,
         runner: {
           isRunning: () => false,
-          activeAgentId: () => undefined,
           listWork: () => [],
           listQueued: () => [],
         },
@@ -375,7 +365,6 @@ describe('getSessionDetail model view', () => {
       requireSession: async () => session,
       runner: {
         isRunning: () => false,
-        activeAgentId: () => undefined,
         listWork: () => [],
         listQueued: () => [],
       },
@@ -399,7 +388,6 @@ describe('getSessionDetail model view', () => {
       requireSession: async () => session,
       runner: {
         isRunning: () => false,
-        activeAgentId: () => undefined,
         listWork: () => [],
         listQueued: () => [],
       },

@@ -7,7 +7,7 @@ import type { ForkRoute } from '../../../agent-core/tools/task-delegation-contra
 import type { ForkLiveRun } from './fork-port'
 
 /**
- * What a run offers a fork of itself: the request it is sending, read when `delegate` forks.
+ * What a run offers a fork of itself: the request it is sending, read when `Agent` forks.
  *
  * Every field is read at the call, not at the run's start, because the row in flight and its id
  * move with the run; the seed is built only then, since it copies every tool's schema.
@@ -22,7 +22,7 @@ export function createForkLiveRun(input: {
   tools: readonly AgentTool[]
   toolNames: readonly string[]
   profile: RunProfile
-  /** What the provider keys its cache on: the session the request is sent as. */
+  /** The prompt cache key the request is sent with (a fork is sent with this one, too). */
   cacheSessionId: string
   retention?: 'short' | 'long'
 }): ForkLiveRun {
@@ -47,7 +47,7 @@ export function createForkLiveRun(input: {
  * Which tool calls the run's event handler has written into the row in flight.
  *
  * The loop announces `tool_execution_start` and goes on to execute the tool; the host's handler
- * consumes the same events from a buffer, a little behind. `delegate` can therefore run before the
+ * consumes the same events from a buffer, a little behind. `Agent` can therefore run before the
  * handler has stored the assistant message that carries the call, and a fork made then would copy a
  * row without it. The handler notes each start once it is done with it, and a fork waits for its
  * own call.

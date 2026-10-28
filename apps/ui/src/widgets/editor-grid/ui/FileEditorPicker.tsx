@@ -162,7 +162,7 @@ export function ContributedFileBody({
       <div className="flex h-full min-h-0 flex-col">
         <WorkbenchToolbar density="slim" aria-label="Editor choice">
           <WorkbenchToolbarSection align="end">
-            <Button variant="outline" size="xs" onClick={() => setPicked(null)}>
+            <Button variant="ghost" size="xs" onClick={() => setPicked(null)}>
               Open with…
             </Button>
           </WorkbenchToolbarSection>

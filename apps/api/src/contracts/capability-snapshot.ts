@@ -71,6 +71,18 @@ export const capabilityToolSurfaceSchema = toolSurfaceSchema.extend({
 })
 export type CapabilityToolSurface = z.infer<typeof capabilityToolSurfaceSchema>
 
+/** One MCP prompt as the composer offers it: its command name and the arguments it declares. */
+export const mcpPromptSpecSchema = z.object({
+  server: z.string(),
+  /** The server's own name for the prompt. */
+  name: z.string(),
+  /** The command typed after `/`: `mcp__<server>__<prompt>`, names normalized. */
+  fullName: z.string(),
+  description: z.string(),
+  args: z.array(z.object({ name: z.string(), description: z.string(), required: z.boolean() })),
+})
+export type McpPromptSpec = z.infer<typeof mcpPromptSpecSchema>
+
 export const capabilitySnapshotSchema = z.object({
   /**
    * The process-wide capability revision this snapshot was computed at (see
@@ -100,6 +112,12 @@ export const capabilitySnapshotSchema = z.object({
   miniAppCommands: z.array(miniAppCommandSpecSchema),
   /** MCP servers visible to the scope, with their enable state. */
   mcp: z.array(mcpServerSchema),
+  /**
+   * Prompts of the scope's CONNECTED MCP servers, each the slash command that runs it
+   * (`/mcp__<server>__<prompt>`). Read from live connections only, so a server not yet connected
+   * lists none. Optional on the wire so an older document still parses.
+   */
+  mcpPrompts: z.array(mcpPromptSpecSchema).optional(),
   /**
    * Skills visible to the scope, as CATALOG summaries — no bodies. The editor reads
    * a skill's content when it opens one; see `skillSummarySchema`.

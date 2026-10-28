@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 
+import { DELEGATION_SLOT_CAP } from './delegation-budget'
 import {
   __resetDelegationLanes,
   cancelLane,
@@ -10,16 +11,20 @@ import {
 } from './delegation-lanes'
 
 /**
- * A parent's children run at most three at once and the rest WAIT, first come first served.
+ * A parent's children run at most `DELEGATION_SLOT_CAP` at once and the rest WAIT, first come first served.
  * The cap used to be a refusal, which handed the scheduling back to the model — and the model
  * mostly forgot the work instead of asking again.
  */
 
 afterEach(() => __resetDelegationLanes())
 
+/** The behaviour is the same at any cap: these tests pin it at three lanes to stay small. */
+const THREE = { cap: 3 }
+
 function recorder() {
   const started: string[] = []
-  const ask = (child: string, parent = 'p') => requestLane(parent, child, () => started.push(child))
+  const ask = (child: string, parent = 'p') =>
+    requestLane(parent, child, () => started.push(child), 'normal', THREE)
   return { started, ask }
 }
 
@@ -44,6 +49,15 @@ describe('delegation lanes', () => {
     expect(laneOf('e')).toEqual({ state: 'queued', position: 1 })
     releaseLane('a')
     expect(started).toEqual(['a', 'b', 'c', 'd', 'e'])
+  })
+
+  test('the default pool is as wide as the delegation cap', () => {
+    const started: string[] = []
+    const answers = Array.from({ length: DELEGATION_SLOT_CAP + 2 }, (_, i) =>
+      requestLane('p', `c${i}`, () => started.push(`c${i}`)),
+    )
+    expect(started).toHaveLength(DELEGATION_SLOT_CAP)
+    expect(answers.filter((answer) => answer.state === 'queued')).toHaveLength(2)
   })
 
   test('the decision is synchronous, so a burst in one step cannot pass the cap', () => {
@@ -91,7 +105,7 @@ describe('delegation lanes', () => {
   test('a higher priority waits ahead of a lower one; within a priority, first come first served', () => {
     const started: string[] = []
     const ask = (child: string, priority: 'high' | 'normal' | 'low') =>
-      requestLane('p', child, () => started.push(child), priority)
+      requestLane('p', child, () => started.push(child), priority, THREE)
     for (const child of ['a', 'b', 'c']) ask(child, 'normal')
     ask('low-1', 'low')
     ask('normal-1', 'normal')
@@ -106,8 +120,9 @@ describe('delegation lanes', () => {
 
   test('a running child is never pre-empted: a high priority takes the next free lane', () => {
     const started: string[] = []
-    for (const child of ['a', 'b', 'c']) requestLane('p', child, () => started.push(child), 'low')
-    requestLane('p', 'urgent', () => started.push('urgent'), 'high')
+    for (const child of ['a', 'b', 'c'])
+      requestLane('p', child, () => started.push(child), 'low', THREE)
+    requestLane('p', 'urgent', () => started.push('urgent'), 'high', THREE)
     expect(started).toEqual(['a', 'b', 'c'])
     releaseLane('b')
     expect(started).toEqual(['a', 'b', 'c', 'urgent'])
@@ -116,31 +131,41 @@ describe('delegation lanes', () => {
   test('raising a waiting child priority moves it up the queue', () => {
     // A message that restates a task as urgent must reorder it, not leave it where it was.
     const started: string[] = []
-    for (const child of ['a', 'b', 'c']) requestLane('p', child, () => started.push(child))
-    requestLane('p', 'first', () => started.push('first'), 'normal')
-    requestLane('p', 'second', () => started.push('second'), 'normal')
-    expect(requestLane('p', 'second', () => {}, 'high')).toEqual({ state: 'queued', position: 1 })
+    for (const child of ['a', 'b', 'c'])
+      requestLane('p', child, () => started.push(child), 'normal', THREE)
+    requestLane('p', 'first', () => started.push('first'), 'normal', THREE)
+    requestLane('p', 'second', () => started.push('second'), 'normal', THREE)
+    expect(requestLane('p', 'second', () => {}, 'high', THREE)).toEqual({
+      state: 'queued',
+      position: 1,
+    })
     releaseLane('a')
     expect(started.at(-1)).toBe('second')
   })
 
   test('a start that throws gives its lane straight to the next', () => {
     const started: string[] = []
-    requestLane('p', 'a', () => started.push('a'))
-    requestLane('p', 'b', () => started.push('b'))
-    requestLane('p', 'c', () => started.push('c'))
-    requestLane('p', 'boom', () => {
-      throw new Error('no provider')
-    })
-    requestLane('p', 'd', () => started.push('d'))
+    requestLane('p', 'a', () => started.push('a'), 'normal', THREE)
+    requestLane('p', 'b', () => started.push('b'), 'normal', THREE)
+    requestLane('p', 'c', () => started.push('c'), 'normal', THREE)
+    requestLane(
+      'p',
+      'boom',
+      () => {
+        throw new Error('no provider')
+      },
+      'normal',
+      THREE,
+    )
+    requestLane('p', 'd', () => started.push('d'), 'normal', THREE)
     releaseLane('a')
     // `boom` got the lane, threw, and released it — `d` must not wait behind a dead start.
     expect(started).toEqual(['a', 'b', 'c', 'd'])
   })
 
-  test('a workflow run has a pool of its own at its own cap, beside the chat’s three lanes', () => {
-    // Claude Code runs up to 16 workflow agents at once; in the chat's pool they would run three
-    // at a time and keep the chat's own delegations queued behind the fan-out.
+  test('a workflow run has a pool of its own at its own cap, beside the chat’s own lanes', () => {
+    // Claude Code runs up to 16 workflow agents at once; in the chat's pool they would run
+    // at the chat's cap and keep the chat's own delegations queued behind the fan-out.
     const started: string[] = []
     const lane = { key: 'workflow:run-1', cap: 16 }
     const agents = Array.from({ length: 20 }, (_, i) => `w${i}`)

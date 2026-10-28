@@ -47,7 +47,7 @@ type ModeStrategy = (rules: readonly Rule[]) => ModePolicy
 
 const PLAN_REFUSAL =
   'Plan mode is read-only: this call would change files, the host or something outside it. ' +
-  'Investigate with reads instead. Then present the plan with the `plan` tool (action ' +
+  'Investigate with reads instead. Then present the plan with `Plan` (action ' +
   '`present`) for the user to approve — or, in a delegated session without that tool, report ' +
   'your findings to the agent that delegated the work.'
 
@@ -94,7 +94,7 @@ const UNATTENDED_DENIAL: Rule = {
  *
  * So a question is rewritten by what it is about, the same line `resolve.ts` draws for removal:
  *
- *   a NAMED thing (`tool:bash git push* ask`, `tool:bash * ask`) — a door the agent left ajar,
+ *   a NAMED thing (`tool:Bash git push* ask`, `tool:Bash * ask`) — a door the agent left ajar,
  *     often as the exception to a denial before it. Stopping asking walks through it: `allow`,
  *     in place, because position is strength and moving it would change what it overrides;
  *   a CLASS of call (`outside-workspace`, `dangerous`, `effect:files`, …) — the MANNER of a call

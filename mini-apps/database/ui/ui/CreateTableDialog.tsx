@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import { Plus, TableProperties, Trash2 } from 'lucide-react'
 
 import { Button } from '@localixai/kit/button'
@@ -20,6 +20,7 @@ import { Select } from '@localixai/kit/select'
 import { DATABASE_DRIVER_CATALOG } from '../../shared/driver-catalog'
 import type { DbConnectionInfo } from '../dbClient'
 import { buildCreateTableSql, type CreateTableColumn } from '../model/createTable'
+import { focusOnMount } from './focusOnMount'
 
 interface DraftColumn extends CreateTableColumn {
   /** Stable React identity while names/types are edited or a preceding row is removed. */
@@ -65,15 +66,21 @@ export function CreateTableDialog({
   const [schema, setSchema] = useState<string>(initialSchema ?? manifest.defaultSchema)
   const [columns, setColumns] = useState<DraftColumn[]>(initialColumns)
   const schemaLabelId = useId()
+  const tableId = useId()
 
   // This dialog stays mounted while the selected connection/schema changes. A fresh open
-  // must never generate the new dialect's SQL from the prior database's type/schema draft.
-  useEffect(() => {
-    if (!open) return
-    setTable('')
-    setSchema(initialSchema ?? manifest.defaultSchema)
-    setColumns(initialColumns)
-  }, [connection.id, initialColumns, initialSchema, manifest.defaultSchema, open])
+  // must never generate the new dialect's SQL from the prior database's type/schema draft, so
+  // the draft restarts during render (not in an effect) whenever its inputs change while open.
+  const draftInputs = [connection.id, initialColumns, initialSchema, manifest.defaultSchema, open]
+  const [seenInputs, setSeenInputs] = useState(draftInputs)
+  if (draftInputs.some((input, index) => !Object.is(input, seenInputs[index]))) {
+    setSeenInputs(draftInputs)
+    if (open) {
+      setTable('')
+      setSchema(initialSchema ?? manifest.defaultSchema)
+      setColumns(initialColumns)
+    }
+  }
 
   const sql = useMemo(() => {
     try {
@@ -124,11 +131,12 @@ export function CreateTableDialog({
                 />
               </div>
             )}
-            <label className="space-y-1">
+            <label htmlFor={tableId} className="space-y-1">
               <span className="text-2xs font-medium text-text-soft">Table name</span>
               <Input
+                id={tableId}
                 value={table}
-                autoFocus
+                ref={focusOnMount}
                 onChange={(event) => setTable(event.target.value)}
                 placeholder="customers"
                 size="lg"

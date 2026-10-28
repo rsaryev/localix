@@ -1,4 +1,10 @@
-import { isActiveJob, type Listing, type StoreActor, type StoreProvider } from '@localixai/store'
+import {
+  isActiveJob,
+  type Listing,
+  type StoreActor,
+  type StoreProblem,
+  type StoreProvider,
+} from '@localixai/store'
 
 import type { StoreIndexRepository } from './index-repository'
 import { createProviderSync, type SyncOutcome } from './store-sync'
@@ -29,7 +35,7 @@ export function createStoreSync(deps: {
   let lastSources: string | null = null
   const people = new Map<
     string,
-    { actor: StoreActor; running: Promise<void> | null; dirty: boolean; problems: string[] }
+    { actor: StoreActor; running: Promise<void> | null; dirty: boolean; problems: StoreProblem[] }
   >()
   /** Whether the index file held listings when this process first read it. */
   let hasIndexed: Promise<boolean> | null = null
@@ -59,11 +65,15 @@ export function createStoreSync(deps: {
     const outcomes = await Promise.all(
       deps.providers.map((provider) => sync(provider, person.actor)),
     )
-    person.problems = outcomes.flatMap((outcome) => outcome.problems)
+    const problems = outcomes.flatMap((outcome) => outcome.problems)
+    // What could not be read is on the lists too: a source that is read again, or removed, moves
+    // nothing in the index (it had no listings), yet the line saying it must go.
+    const problemsMoved = JSON.stringify(problems) !== JSON.stringify(person.problems)
+    person.problems = problems
     const merged: SyncOutcome = {
       cardsChanged: outcomes.some((outcome) => outcome.cardsChanged),
-      changed: outcomes.some((outcome) => outcome.changed),
-      problems: person.problems,
+      changed: problemsMoved || outcomes.some((outcome) => outcome.changed),
+      problems,
     }
     deps.onSynced?.(merged)
     if (merged.changed) for (const listener of listeners) listener()

@@ -25,7 +25,7 @@ const dir = tempDirPerTest('skill-tool-ports-')
 
 // The shell tool's own verdict on a call: `git status` only reads, anything else reaches out.
 const bash = {
-  name: 'bash',
+  name: 'Bash',
   classify: (input: { command?: string }) => ({
     effect: input.command?.startsWith('git status') ? 'read' : 'external',
   }),
@@ -39,7 +39,7 @@ const PLAN: PermissionRule[] = [
     message: 'Plan mode is read-only',
   },
 ]
-const ASK_SHELL: PermissionRule[] = [{ permission: 'bash', pattern: '*', action: 'ask' }]
+const ASK_SHELL: PermissionRule[] = [{ permission: 'Bash', pattern: '*', action: 'ask' }]
 
 const policy = (rules: PermissionRule[], tools = [bash]): SkillCommandPolicyRef => ({
   current: { rules, toolsByName: new Map(tools.map((t) => [t.name, t])), root: '/w' },
@@ -93,7 +93,7 @@ describe('a skill’s injected commands meet the run’s rules', () => {
     } as DiscoveredSkill
     const ports = skillToolPorts({
       userId: 'u',
-      session: { id: 's', agents: [] } as unknown as SessionRecord,
+      session: { id: 's', agent: null } as unknown as SessionRecord,
       defaultCwd: dir(),
       renderSkill: renderSkillBody,
       commandPolicy: policy(PLAN),
@@ -125,7 +125,7 @@ describe('a model-loaded skill’s frontmatter command hooks meet the run’s ru
     const ccHookSessions = createCcHookSessions()
     const ports = skillToolPorts({
       userId: 'u',
-      session: { id: 's1', agents: [] } as unknown as SessionRecord,
+      session: { id: 's1', agent: null } as unknown as SessionRecord,
       defaultCwd: dir(),
       ccHookSessions,
       commandPolicy,

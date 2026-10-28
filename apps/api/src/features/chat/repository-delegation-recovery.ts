@@ -3,6 +3,7 @@ import { sql, type Kysely } from 'kysely'
 import type { AppDatabase } from '../../db/types'
 import { DELEGATION_REPORT_KEY_PREFIX } from './runtime/delegation-report'
 import { receiptHorizon } from './runtime/delivery-receipts'
+import type { RunRow } from './runtime/delegation-report'
 
 /** A child this young may still be reporting live; the sweep leaves it to that path. */
 const LIVE_GRACE_MS = 30_000
@@ -55,24 +56,6 @@ export function delegationRecoveryQuery(db: Kysely<AppDatabase>, userId: string,
       )
       .select(['s.id', 's.title', 's.parent_session_id', 's.runtime_status'])
       .select(sql<string | null>`${LATEST_RUN_ID}`.as('run_id'))
-      .select(
-        sql<string | null>`json_extract(s.invocation_json, '$.parentParticipant')`.as('recipient'),
-      )
-      // The delegating participant's handle in the session the report lands in — the delegator's
-      // own (`delegationReportSession`) — so a recovered report routes exactly like a live one.
-      .select(
-        sql<string | null>`(SELECT sa.handle FROM conversation_participants sa
-      WHERE sa.session_id = parent.id
-        AND 'agent:' || sa.agent_id = json_extract(s.invocation_json, '$.parentParticipant'))`.as(
-          'recipient_handle',
-        ),
-      )
-      .select(
-        sql<string | null>`(SELECT json_extract(m.payload_json, '$.content') FROM agent_messages m
-      WHERE m.session_id = s.id AND m.role = 'assistant' ORDER BY m.sequence DESC LIMIT 1)`.as(
-          'report',
-        ),
-      )
       .where('s.user_id', '=', userId)
       .where('s.session_kind', '=', 'subagent')
       .where(sql<string>`json_extract(s.invocation_json, '$.kind')`, '=', 'task-delegation')
@@ -83,4 +66,56 @@ export function delegationRecoveryQuery(db: Kysely<AppDatabase>, userId: string,
       .orderBy('s.updated_at', 'asc')
       .limit(100)
   )
+}
+
+/**
+ * One stored assistant row of a child, for the report of the run it ends (`readRunReplies`).
+ * The run's earlier rows are found by the link each row keeps to the one before it.
+ */
+export function runRowReader(db: Kysely<AppDatabase>, sessionId: string, runId: string) {
+  return async (messageId: string): Promise<RunRow | null> => {
+    const row = await db
+      .selectFrom('agent_messages')
+      .select([
+        sql<string | null>`json_extract(payload_json, '$.content')`.as('content'),
+        sql<string | null>`json_extract(payload_json, '$.continuedFromMessageId')`.as('continued'),
+        // Only the run's last row says how it ended; the earlier rows' items stay unread.
+        sql<
+          string | null
+        >`CASE WHEN id = ${runId} THEN json_extract(payload_json, '$.items') END`.as('items'),
+      ])
+      .where('session_id', '=', sessionId)
+      .where('id', '=', messageId)
+      .executeTakeFirst()
+    return row
+      ? {
+          content: row.content,
+          continuedFromMessageId: row.continued,
+          items: row.items ? JSON.parse(row.items) : null,
+        }
+      : null
+  }
+}
+
+/**
+ * The key a report of this child's latest run is recorded under — the same one the sweep joins
+ * receipts on — and the delegator's session it would have woken; `null` for a session that is
+ * no delegated child.
+ */
+export async function latestReportKeyParts(
+  db: Kysely<AppDatabase>,
+  userId: string,
+  childId: string,
+): Promise<{ runId: string; parentSessionId: string } | null> {
+  const row = await db
+    .selectFrom('agent_sessions as s')
+    .select(['s.parent_session_id'])
+    .select(sql<string | null>`${LATEST_RUN_ID}`.as('run_id'))
+    .where('s.id', '=', childId)
+    .where('s.user_id', '=', userId)
+    .where('s.session_kind', '=', 'subagent')
+    .executeTakeFirst()
+  return row?.parent_session_id
+    ? { runId: row.run_id ?? 'launch', parentSessionId: row.parent_session_id }
+    : null
 }

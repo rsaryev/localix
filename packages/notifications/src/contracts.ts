@@ -40,23 +40,14 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: Readonly<NotificationPreferences>
 const CONDITIONS: readonly NotificationCondition[] = ['always', 'unfocused', 'off']
 const TERMINAL_METHODS: readonly TerminalNotificationMethod[] = ['auto', 'osc9', 'osc777', 'bel']
 
-/**
- * Validate current preferences and migrate the former web `osNotifications`
- * boolean. Invalid/partial external config falls back field-by-field.
- */
-export function migrateNotificationPreferences(raw: unknown): NotificationPreferences {
+/** Validate preferences. Invalid/partial external config falls back field-by-field. */
+export function parseNotificationPreferences(raw: unknown): NotificationPreferences {
   if (!raw || typeof raw !== 'object') return { ...DEFAULT_NOTIFICATION_PREFERENCES }
   const value = raw as Record<string, unknown>
-  const legacyCondition =
-    typeof value.osNotifications === 'boolean'
-      ? value.osNotifications
-        ? 'unfocused'
-        : 'off'
-      : DEFAULT_NOTIFICATION_PREFERENCES.condition
   return {
     condition: CONDITIONS.includes(value.condition as NotificationCondition)
       ? (value.condition as NotificationCondition)
-      : legacyCondition,
+      : DEFAULT_NOTIFICATION_PREFERENCES.condition,
     terminalMethod: TERMINAL_METHODS.includes(value.terminalMethod as TerminalNotificationMethod)
       ? (value.terminalMethod as TerminalNotificationMethod)
       : DEFAULT_NOTIFICATION_PREFERENCES.terminalMethod,

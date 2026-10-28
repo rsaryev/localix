@@ -119,14 +119,12 @@ test('Unified history shows owned Localix and external sessions together within 
       id,
       title: id,
       projectId,
-      modelChoices: { agents: {} },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       seq: 1,
       closedAt: null,
       permissionMode: 'default',
       description: null,
-      avatar: null,
       sessionTiming: null,
       loops: [],
       work: [],
@@ -140,15 +138,13 @@ test('Unified history shows owned Localix and external sessions together within 
       runtimeStatus: 'idle',
       sourceToolCallId: null,
       pinnedSkills: [],
-      agents: [
-        {
-          agentId: 'builtin:localix',
-          handle: 'localix',
-          modelId: '',
-          providerConnectionId: null,
-          reasoningEffort: 'low',
-        },
-      ],
+      agent: {
+        agentId: 'builtin:localix',
+        name: 'localix',
+        modelId: '',
+        providerConnectionId: null,
+        reasoningEffort: 'low',
+      },
       ...(external
         ? { externalAgentProvider: 'codex', externalAgentSessionKey: `codex:${id}` }
         : {}),
@@ -244,7 +240,6 @@ test('Unified history shows owned Localix and external sessions together within 
             onDelete={() => {}}
             onTogglePin={() => {}}
             onOpenScopeSwitcher={() => {}}
-            onNewChat={() => {}}
           />
         </MemoryRouter>,
       ),

@@ -62,7 +62,7 @@ export interface SecretExposureShield {
    * It is NOT, however, "presentation only", as this said before a review corrected it. The
    * persisted item is the source the next run's wire messages are built from
    * (`itemsToWireMessages` emits `arguments: item.input`), so the model sees the redacted form of
-   * its OWN earlier call, and a background job's label — read back by the `jobs` tool — comes from
+   * its OWN earlier call, and a background job's label — read back by the `Jobs` tool — comes from
    * the shielded copy too. Nothing re-EXECUTES from it, so this cannot break a command; but it is
    * why {@link MIN_REDACTABLE_LENGTH} matters, and why the traversal bounds in
    * {@link redactUnknown} are set to be unreachable for real payloads — every one of them

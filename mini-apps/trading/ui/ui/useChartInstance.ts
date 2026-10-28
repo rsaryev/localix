@@ -165,10 +165,10 @@ export function useChartInstance(
     sessionPrim.setEnabled(sessionHighlightRef.current)
     sessionPrim.setTimes(rt.candles.current.map((c) => c.time))
     volumeSeries.attachPrimitive(sessionPrim)
-    rt.sessionPrim.current = sessionPrim
+    rt.write('sessionPrim', sessionPrim)
 
-    rt.chart.current = chart
-    rt.volumeSeries.current = volumeSeries
+    rt.write('chart', chart)
+    rt.write('volumeSeries', volumeSeries)
 
     // Seed the size SYNCHRONOUSLY from the box createChart was handed: the observer's first
     // callback can lag or arrive at 0 height in a static embed, leaving the overlays wrong.

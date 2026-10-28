@@ -32,7 +32,7 @@ async function hosted(version = '1.0.0') {
     }
   }
   const fetchImpl = (async (input: string | URL | Request) => {
-    const url = String(input)
+    const url = String(input instanceof Request ? input.url : input)
     if (url === CATALOG) return Response.json({ schema: 1, apps: [await listing()] })
     const bytes = archives.get(url.split('/').pop() ?? '')
     return bytes

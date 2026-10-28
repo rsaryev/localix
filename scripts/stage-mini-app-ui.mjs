@@ -13,9 +13,9 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { MINI_APP_KIT_DIR_NAME } from '@localixai/api/mini-app-kit-layout'
-import { miniAppUiEntry } from '@localixai/api/mini-app-ui-build'
 import { MINI_APP_UI_ARTIFACT_DIR } from '@localixai/mini-app-sdk/ui-artifact'
 
+import { miniAppUiEntry } from '../plugins/mini-app-authoring/src/build/ui-build.ts'
 import { miniAppsRoot } from './lib/bundled-roots.mjs'
 
 const BUILDER_CLI = fileURLToPath(new URL('./build-mini-app-ui.mjs', import.meta.url))

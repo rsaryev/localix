@@ -16,7 +16,11 @@ test('a new flight, a hand gesture and unmount each release frames and timers im
   let director: ReturnType<typeof useCameraDirector> | undefined
   function Probe() {
     const board = React.useRef<HTMLDivElement>(null)
-    director = useCameraDirector(board)
+    const value = useCameraDirector(board)
+    // The test reads the latest director once the commit is done, not while rendering.
+    React.useEffect(() => {
+      director = value
+    })
     return (
       <div ref={board}>
         <div className="react-flow__node" data-id="note" />

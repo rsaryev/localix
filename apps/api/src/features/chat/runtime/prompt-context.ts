@@ -25,7 +25,8 @@ import type { SessionRecord } from '../repository'
 import { resolveBaseSessionCwd } from '../session-cwd'
 import type { PersistedMessage } from '../contracts'
 import { loadProjectStructureSnapshot } from '../../agent-core/project-structure'
-import { memoryScopePolicy } from '../../agent-core/memory-scope-policy'
+import { autoMemoryDir, readMemoryIndex } from '../../memory/auto-memory'
+import { claudeCodeHome } from '../../cc-settings/config-dir'
 import type { PromptContextDeps, PreparedRunContext } from './prompt-context-contracts'
 
 type UserSettingsContext = Awaited<ReturnType<typeof loadUserSettingsContext>>
@@ -44,30 +45,19 @@ export async function prepareRunContext(
     userId: string
     agent: ResolvedRunAgent
     session: SessionRecord
-    speakerAgentId: string
+    agentId: string
     historyMessages: PersistedMessage[]
     /** The model view's epoch; the prompt snapshot is frozen per epoch. */
     viewEpoch: string
     globalAgentSettings: UserSettingsContext['agentSettings']
   },
 ): Promise<PreparedRunContext> {
-  const { memoryRepo, projectsRepo, contextSnapshots } = ctx
-  const { userId, session, speakerAgentId, historyMessages, viewEpoch, globalAgentSettings } =
-    params
-  const speakerRoute = agentRoute(session, speakerAgentId)
-  if (!speakerRoute) throw new Error(`Agent is unavailable: ${speakerAgentId}`)
-
-  const memorySelection = params.agent.definition.context?.memory?.scope
-  const memoryPolicy = memoryScopePolicy(
-    session.projectId,
-    session.rootSessionId ?? session.id,
-    memorySelection,
-  )
+  const { projectsRepo, contextSnapshots } = ctx
+  const { userId, session, agentId, historyMessages, viewEpoch, globalAgentSettings } = params
+  const route = agentRoute(session)
+  if (!route) throw new Error(`Agent is unavailable: ${agentId}`)
 
   // Independent loads — fetch concurrently to cut time-to-first-token.
-  // Memory ordering is stable ('key') on purpose: 'recent' reorders the
-  // "# Memory context" system-prompt section whenever any note is touched,
-  // busting the prompt cache.
   // (user profile + agent settings were already loaded by the caller, before
   // provider resolution — the fallback chain needs them.)
   const projectPromise = session.projectId
@@ -86,22 +76,18 @@ export async function prepareRunContext(
     userId,
     session,
   )
-  const [memory, project, defaultCwd] = await Promise.all([
-    // Notes + usage in a single scope-file load (was two separate reads/parses).
-    memoryRepo.listWithUsage(userId, memoryPolicy.scopes, 'key'),
-    projectPromise,
-    defaultCwdPromise,
-  ])
+  const [project, defaultCwd] = await Promise.all([projectPromise, defaultCwdPromise])
+  // Claude Code's auto memory folder for the run's repository, shared with Claude Code itself. A
+  // run on another machine or in a container has no such folder its file tools can reach.
+  const memoryDir =
+    (session.executionBackend ?? 'local') === 'local'
+      ? autoMemoryDir({ cwd: defaultCwd, homeDir: ctx.claudeHome ?? claudeCodeHome() })
+      : null
+  const memory = memoryDir ? { dir: memoryDir, ...(await readMemoryIndex(memoryDir)) } : null
   const resolvedAgent = params.agent
-  if (resolvedAgent.definition.id !== speakerRoute.agentId) {
-    throw new Error(`Agent is unavailable: ${speakerRoute.agentId}`)
+  if (resolvedAgent.definition.id !== route.agentId) {
+    throw new Error(`Agent is unavailable: ${route.agentId}`)
   }
-  const memoryNotes = memory.notes
-  const memoryUsage = memory.usage
-
-  const memoryContext =
-    memoryNotes.length > 0 ? memoryNotes.map((n) => `${n.key}: ${n.value}`).join('\n') : undefined
-
   const execConfig: ExecutionEnvironmentConfig =
     session.executionBackend === 'ssh'
       ? {
@@ -225,20 +211,18 @@ export async function prepareRunContext(
   const { frozenContext, pinnedSkills, triggeredSkills } = await resolveAgentPromptContext({
     userId,
     session,
-    speakerAgentId,
-    context: resolvedAgent.definition.context,
+    agentId,
+    skills: resolvedAgent.definition.skills,
     historyMessages,
     viewEpoch,
-    memoryPolicy,
-    memoryContext,
-    memoryUsage,
+    memory,
     skillsContext,
     projectInstructions: boundedProjectInstructions,
     allSkills,
     skillOverrides,
     loadedMiniApps,
     contextSnapshots,
-    laneSnapshots: ctx.laneSnapshots,
+    promptSnapshots: ctx.promptSnapshots,
   })
 
   return {

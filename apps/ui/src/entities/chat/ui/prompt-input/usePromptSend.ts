@@ -4,6 +4,7 @@ import type { MessageBinding } from '@/shared/api/contracts'
 import { toast } from '@/shared/lib/notify'
 import { forgetReviewComments } from '@/shared/lib/reviewCommentBinding'
 
+import { hasAuthoredInput } from '../../model/authoredMessage'
 import type { useContextRefs } from '../../model/useContextRefs'
 
 /**
@@ -24,6 +25,8 @@ export function usePromptSend(input: {
   submitOpenResource: () => void
   /** A command the composer completes itself (`/model`'s steps); true when it handled the send. */
   submitClientCommand?: () => boolean
+  /** Files staged in the composer: they make an empty-text send a real one. */
+  attachmentCount?: number
 }) {
   const { prompt, ctxRefs, onSend, isEditing, onSubmitEdit } = input
   const [preparingSend, setPreparingSend] = useState(false)
@@ -45,6 +48,9 @@ export function usePromptSend(input: {
         return
       }
     }
+    // Enter on an empty composer is not a send: the active tab's automatic context would
+    // otherwise make it one (an empty message queued behind the run).
+    if (!hasAuthoredInput(prompt, (input.attachmentCount ?? 0) + ctxRefs.pinnedRefs.length)) return
     if (preparingSendRef.current) return
     preparingSendRef.current = true
     setPreparingSend(true)

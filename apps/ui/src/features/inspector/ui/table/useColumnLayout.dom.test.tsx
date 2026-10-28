@@ -33,7 +33,7 @@ const COLUMNS = [
 /** Minimal host: the hook's root plus the one handle a header cell would render. */
 async function mountHarness() {
   const React = await import('react')
-  const { act } = React
+  const { act, useEffect } = React
   const { createRoot } = await import('react-dom/client')
   const { useColumnLayout } = await import('./useColumnLayout')
 
@@ -46,8 +46,10 @@ async function mountHarness() {
       2,
       2,
     )
-    renders += 1
-    template = gridTemplate
+    useEffect(() => {
+      renders += 1
+      template = gridTemplate
+    })
     return (
       <div
         ref={rootRef}
@@ -55,7 +57,9 @@ async function mountHarness() {
         style={{ [GRID_TEMPLATE_VAR]: gridTemplate } as React.CSSProperties}
       >
         <div data-testid="width">{widths.name ?? 'unset'}</div>
-        <div
+        <button
+          type="button"
+          aria-label="Resize name column"
           data-testid="handle"
           onMouseDown={(event) => startResize('name', event)}
           // The hook reads the column's rendered width off the handle's PARENT on grab.

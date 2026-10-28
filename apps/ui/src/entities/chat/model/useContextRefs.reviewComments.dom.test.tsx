@@ -18,7 +18,7 @@ beforeAll(() => {
 afterAll(async () => teardown())
 
 test('removing a review comment chip withdraws the comment', async () => {
-  const { act } = await import('react')
+  const { act, useEffect } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { useContextRefs } = await import('./useContextRefs')
   const id = useComments
@@ -29,7 +29,10 @@ test('removing a review comment chip withdraws the comment', async () => {
     .add('preview:s:http://localhost', { kind: 'element', targetId: '#b', label: 'B' }, 'Keep')
   let refs: UseContextRefsResult | undefined
   function Harness() {
-    refs = useContextRefs('', { projectId: null, sessionId: null }, undefined)
+    const current = useContextRefs('', { projectId: null, sessionId: null }, undefined)
+    useEffect(() => {
+      refs = current
+    })
     return null
   }
   const host = document.createElement('div')

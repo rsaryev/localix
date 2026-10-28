@@ -15,15 +15,15 @@ export function assertRunToolRequirements(
   interactive = false,
 ): void {
   assertRequiredToolsAvailable(
-    [{ name: TOOL.tool_output, resources: ['get'] }, ...(hostRequirements ?? [])],
+    [{ name: TOOL.ToolOutput, resources: ['get'] }, ...(hostRequirements ?? [])],
     tools,
     rules,
     interactive,
   )
   // A compatibility restriction can leave the descriptor registered with search only.
   // Validate the recovery call's shape without reading storage or executing the tool.
-  const recovery = tools.find((tool) => tool.name === TOOL.tool_output)!
+  const recovery = tools.find((tool) => tool.name === TOOL.ToolOutput)!
   if (!recovery.inputSchema.safeParse({ action: 'get', tool_call_id: 'preflight' }).success) {
-    throw new Error('Required run operation tool_output(get) is unavailable')
+    throw new Error('Required run operation ToolOutput(get) is unavailable')
   }
 }

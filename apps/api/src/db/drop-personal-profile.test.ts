@@ -20,20 +20,15 @@ test('removes personal fields and frozen copies while preserving settings and me
     // Insert against the historical schema, before newer session columns exist.
     await sql`INSERT INTO agent_sessions (id, user_id, title, project_id)
       VALUES ('room', 'profile-test', 'Room', 'project')`.execute(db)
-    await db
-      .insertInto('participant_lane_snapshots')
-      .values({
-        user_id: 'profile-test',
-        session_id: 'room',
-        agent_id: 'assistant',
-        boundary_marker: '',
-        snapshot_json: JSON.stringify({
-          userProfile: 'Name',
-          responseDefaults: 'Concise',
-          memoryContext: 'Remember this',
-        }),
-      })
-      .execute()
+    await sql`INSERT INTO conversation_participants (session_id, agent_id, handle, model_id)
+      VALUES ('room', 'assistant', 'assistant', '')`.execute(db)
+    await sql`INSERT INTO participant_lane_snapshots
+      (user_id, session_id, agent_id, boundary_marker, snapshot_json)
+      VALUES ('profile-test', 'room', 'assistant', '', ${JSON.stringify({
+        userProfile: 'Name',
+        responseDefaults: 'Concise',
+        memoryContext: 'Remember this',
+      })})`.execute(db)
 
     await migrateToLatest(db)
     const columns = await sql<{ name: string }>`PRAGMA table_info(user_profiles)`.execute(db)
@@ -48,7 +43,7 @@ test('removes personal fields and frozen copies while preserving settings and me
     expect(row.ui_settings).toBe('{"fontSize":"lg"}')
     expect(row.agent_settings).toBe('{"maxTurns":25}')
     const snapshot = await db
-      .selectFrom('participant_lane_snapshots')
+      .selectFrom('session_prompt_snapshots')
       .select('snapshot_json')
       .executeTakeFirstOrThrow()
     expect(JSON.parse(snapshot.snapshot_json)).toEqual({ memoryContext: 'Remember this' })

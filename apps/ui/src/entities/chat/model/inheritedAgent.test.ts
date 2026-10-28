@@ -12,7 +12,7 @@ const session = (over: Record<string, unknown> = {}) =>
     id: 's1',
     projectId: 'PRJ-1',
     sessionKind: 'chat',
-    agents: [{ agentId: 'builtin:qa', handle: 'qa' }],
+    agent: { agentId: 'builtin:qa', handle: 'qa' },
     ...over,
   }) as never
 
@@ -50,6 +50,6 @@ describe('whom a new chat is with when nobody said', () => {
   })
 
   test('nothing when the open chat has no party to inherit from', () => {
-    expect(inheritedAgentId(store(session({ agents: [] })), 'PRJ-1')).toBeUndefined()
+    expect(inheritedAgentId(store(session({ agent: null })), 'PRJ-1')).toBeUndefined()
   })
 })

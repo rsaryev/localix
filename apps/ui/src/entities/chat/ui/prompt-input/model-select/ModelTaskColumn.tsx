@@ -3,20 +3,27 @@ import { MODEL_ROUTING_TASKS } from '@localixai/api/model-task-catalog'
 import type { ModelRoutingTask, ModelRoutingTaskKey } from '@localixai/api/client'
 import { agentTarget, type PickerTarget } from './pickerTarget'
 import type { ReasoningEffort } from '../../../model/reasoning'
+import { PanelHeader } from '@localixai/kit/panel-header'
+import { SectionLabel } from '@localixai/kit/section-label'
+import { SELECTED_ROW } from '@localixai/kit/selected-row'
+import { Switch } from '@localixai/kit/switch'
+import {
+  pickerColumnFrame,
+  PICKER_LIST,
+  PICKER_SECTION_LABEL_INSET,
+  type PickerColumnLayout,
+} from './pickerRow'
 
 /**
- * A rendered row: either a participant of the conversation or a global workload.
+ * A rendered row: either the conversation's agent or a global workload.
  *
  * `section` is what the row is filed under. Every row carries one, so the heading logic is a
- * single "did it change?" check rather than arithmetic over where the party happens to end —
- * which is also why adding a group later needs no new branch here.
+ * single "did it change?" check.
  */
 type TaskRow = Omit<ModelRoutingTask, 'key' | 'group'> & {
   key: PickerTarget
   section: string
-  origin?: ParticipantRow['modelOrigin']
-  /** An agent not in the conversation yet: its model is the one it will join on. */
-  uninvited?: boolean
+  origin?: ConversationAgentRow['modelOrigin']
 }
 
 /**
@@ -26,7 +33,7 @@ type TaskRow = Omit<ModelRoutingTask, 'key' | 'group'> & {
  * a word on every row and so distinguish nothing. The others are worth a word precisely because
  * they will change under the reader when that level changes.
  */
-const ORIGIN_NOTE: Partial<Record<NonNullable<ParticipantRow['modelOrigin']>, string>> = {
+const ORIGIN_NOTE: Partial<Record<NonNullable<ConversationAgentRow['modelOrigin']>, string>> = {
   project: 'from the project',
   agent: "the agent's own",
   recent: 'last used',
@@ -34,28 +41,13 @@ const ORIGIN_NOTE: Partial<Record<NonNullable<ParticipantRow['modelOrigin']>, st
 }
 
 /**
- * The party first: it is the conversation, and the rest is what runs behind it.
+ * The conversation's agent first, and the rest is what runs behind it.
  *
- * Named by SCOPE, because that is what actually differs: these rows write to this one
- * conversation, the others to global settings. There used to be a third group here for
- * delegated workers — one route per shipped agent — but an agent's model belongs to its RECORD,
- * so a dispatched run carries its own and needs no route of its own.
+ * Named by SCOPE, because that is what actually differs: this row writes to this one
+ * conversation, the others to global settings.
  */
-const PARTY_SECTION = 'Agents'
+const AGENT_SECTION = 'This chat'
 const WORKLOAD_SECTION = 'Background workloads'
-import { PanelHeader } from '@localixai/kit/panel-header'
-import { SectionLabel } from '@localixai/kit/section-label'
-import { SELECTED_ROW } from '@localixai/kit/selected-row'
-import { Switch } from '@localixai/kit/switch'
-import { PartyRouteRow } from './PartyRouteRow'
-import { PARTY_TARGET } from './partyRoute'
-import {
-  pickerColumnFrame,
-  PICKER_LIST,
-  PICKER_SECTION_LABEL_INSET,
-  type PickerColumnLayout,
-} from './pickerRow'
-
 interface ModelTaskColumnProps {
   activeTask: PickerTarget
   onSelectTask: (key: PickerTarget) => void
@@ -64,55 +56,32 @@ interface ModelTaskColumnProps {
   enabledFor: (key: PickerTarget) => boolean
   onEnabledChange: (key: ModelRoutingTaskKey, enabled: boolean) => void
   /**
-   * WHO the open conversation is with, in join order. Each participant gets a row, in place of
-   * the single "Chat sessions" row a conversation with one counterpart used to need.
+   * The open conversation's agent, which gets a row in place of the single "Chat sessions" row.
    *
-   * REQUIRED, though empty is a perfectly ordinary value — the onboarding step and the agent
-   * editor have no conversation. Optional, it was silently forgotten at the one call site that
-   * has a party, and nothing failed: the column rendered the old catalog while the breadcrumb
-   * above it named a participant. A required prop makes that a compile error instead.
+   * Absent where there is no conversation (the onboarding step, the agent editor): the column
+   * then shows the workload catalog alone.
    */
-  participants: readonly ParticipantRow[]
+  agent?: ConversationAgentRow
   /** `column` in the wide drawer; `sheet` inside the narrow layout's workload popover. */
   layout?: PickerColumnLayout
-  /** The "All agents" row (`partyRoute.ts`); absent hides it. `mixed` = "All" is not the choice. */
-  party?: { status: string; mixed: boolean; chosen: boolean }
 }
 
-/** One row of the party: who, and what they run on here. */
-export interface ParticipantRow {
+/** The conversation's agent, and what it runs on here. */
+export interface ConversationAgentRow {
   maxTurnsLimit?: number
   agentId: string
-  handle: string
-  /** Display name from the registry; falls back to the handle when the agent is unknown. */
-  label?: string
+  /** The agent's Claude Code name. */
+  name: string
   /** The agent's own model, shown as the fallback when this conversation sets none. */
   inheritedLabel?: string
-  /**
-   * THIS participant's resolved route. Required, because the column used to show the whole
-   * party the model of whoever the picker had selected — every row read the same single pair —
-   * and a room of three then displayed one model three times whatever each member was on.
-   */
+  /** The agent's resolved route, already settled through the model chain by the server. */
   route?: {
     providerConnectionId: string | null
     modelId: string
-    /**
-     * This participant's own reasoning level.
-     *
-     * Carried for the same reason the model is: without it the picker fell back to the
-     * conversation's level for whoever was selected, so opening another member showed the level
-     * that had just been set for the previous one — and picking a model there would have
-     * written it in.
-     */
     reasoningEffort?: ReasoningEffort
   }
   /** Which level answered, so the row can say "from the project" instead of implying a choice. */
   modelOrigin?: 'session' | 'project' | 'agent' | 'recent' | 'primary' | 'unset'
-  /**
-   * `false` for an agent that is not in the conversation yet: listed so its model can be chosen
-   * before it is invited, and `route` is the session's choice it will join on.
-   */
-  invited?: false
 }
 
 /**
@@ -127,36 +96,33 @@ export function ModelTaskColumn({
   modelLabelFor,
   enabledFor,
   onEnabledChange,
-  participants,
+  agent,
   layout = 'column',
-  party,
 }: ModelTaskColumnProps) {
-  // The party replaces the single session row; every other workload keeps its place. Built as
+  // The agent replaces the single session row; every other workload keeps its place. Built as
   // one list so the rendering below stays a single loop with no "is this an agent" branch.
   const rows: TaskRow[] = [
-    ...participants.map((member) => ({
-      key: agentTarget(member.agentId),
-      label: member.label || member.handle,
-      hint:
-        member.invited === false
-          ? `Model @${member.handle} joins this conversation on`
-          : `Model for @${member.handle} in this conversation`,
-      ...(member.invited === false ? { uninvited: true } : {}),
-      // Where the model came from, said in the row itself: a model with no such word cannot be
-      // told apart from one chosen here, and the two differ in what changing it will affect.
-      origin: member.modelOrigin,
-      fallbackLabel: member.inheritedLabel ?? `Use @${member.handle}'s model`,
-      required: false,
-      toggleable: false,
-      section: PARTY_SECTION,
-    })),
-    ...MODEL_ROUTING_TASKS.filter(
-      (task) => task.key !== 'session' || participants.length === 0,
-    ).map((task) => ({
+    ...(agent
+      ? [
+          {
+            key: agentTarget(agent.agentId),
+            label: agent.name,
+            hint: `Model for ${agent.name} in this conversation`,
+            // Where the model came from, said in the row itself: a model with no such word
+            // cannot be told apart from one chosen here.
+            origin: agent.modelOrigin,
+            fallbackLabel: agent.inheritedLabel ?? `Use ${agent.name}'s model`,
+            required: false,
+            toggleable: false,
+            section: AGENT_SECTION,
+          },
+        ]
+      : []),
+    ...MODEL_ROUTING_TASKS.filter((task) => task.key !== 'session' || !agent).map((task) => ({
       ...task,
-      // `session` is the party's stand-in where there is no conversation, so it files under
-      // the same heading the participants would have: both answer "who does this chat run as".
-      section: task.key === 'session' ? PARTY_SECTION : WORKLOAD_SECTION,
+      // `session` is the agent's stand-in where there is no conversation, so it files under
+      // the same heading the agent would have.
+      section: task.key === 'session' ? AGENT_SECTION : WORKLOAD_SECTION,
     })),
   ]
   return (
@@ -180,16 +146,6 @@ export function ModelTaskColumn({
                 >
                   {t.section}
                 </SectionLabel>
-              )}
-              {/* One gesture for the whole room, first in the Agents group it acts on. */}
-              {index === 0 && party && participants.length > 0 && (
-                <PartyRouteRow
-                  active={activeTask === PARTY_TARGET}
-                  status={party.status}
-                  mixed={party.mixed}
-                  chosen={party.chosen}
-                  onSelect={() => onSelectTask(PARTY_TARGET)}
-                />
               )}
               <div
                 title={t.hint}
@@ -232,8 +188,7 @@ export function ModelTaskColumn({
                       onChange={(event) => {
                         event.stopPropagation()
                         onSelectTask(t.key)
-                        // Reachable only from a workload row: `toggleable` is never set on a
-                        // participant, because you cannot switch off someone who is in the room.
+                        // Reachable only from a workload row: `toggleable` is never set on the agent.
                         onEnabledChange(t.key as ModelRoutingTaskKey, event.currentTarget.checked)
                       }}
                       className="pointer-events-auto"
@@ -246,19 +201,17 @@ export function ModelTaskColumn({
                     label && enabled ? 'text-text-soft' : 'text-text-faint',
                   )}
                 >
-                  {t.uninvited
-                    ? `${label ?? t.fallbackLabel ?? 'Not set'} · not invited`
-                    : !enabled
-                      ? label
-                        ? `${label} · saved`
-                        : 'No model selected'
-                      : label
-                        ? t.origin && ORIGIN_NOTE[t.origin]
-                          ? `${label} · ${ORIGIN_NOTE[t.origin]}`
-                          : label
-                        : t.required
-                          ? 'Not set'
-                          : (t.fallbackLabel ?? 'Use session model')}
+                  {!enabled
+                    ? label
+                      ? `${label} · saved`
+                      : 'No model selected'
+                    : label
+                      ? t.origin && ORIGIN_NOTE[t.origin]
+                        ? `${label} · ${ORIGIN_NOTE[t.origin]}`
+                        : label
+                      : t.required
+                        ? 'Not set'
+                        : (t.fallbackLabel ?? 'Use session model')}
                 </span>
               </div>
             </div>

@@ -1,4 +1,14 @@
-import { afterAll, afterEach, beforeAll, describe, expect, mock, spyOn, test } from 'bun:test'
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  mock,
+  spyOn,
+  test,
+} from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import type { CapabilitySnapshot, MiniAppRecord } from '@/shared/api/contracts'
 import { miniAppUiHostFor } from '@/shared/contrib/host'
@@ -60,15 +70,21 @@ const snapshotFor = (projectId: string, enabled: boolean, revision: number) =>
     grammar: { kinds: [], effects: [], classes: [], examples: [] },
   }) as unknown as CapabilitySnapshot
 
-const realFetch = globalThis.fetch
-afterEach(async () => {
-  globalThis.fetch = realFetch
+// The stores are module-level and shared with every file that ran before this one, so they are
+// reset before each test as well as after it: "unknown until the first answer" must not depend on
+// what an earlier file left behind.
+let restoreFetch: (() => void) | null = null
+async function resetStores() {
+  restoreFetch?.()
+  restoreFetch = null
   const { __resetMiniAppContrib } = await import('@/shared/contrib/enabledMiniApps')
   const { useGridStore } = await import('@/entities/workspace-grid/model')
   __resetMiniAppContrib()
   useGridStore.getState().resetLayout()
   document.body.innerHTML = ''
-})
+}
+beforeEach(resetStores)
+afterEach(resetStores)
 
 /** The chat page on project `p1`, with the board's tab and a file open beside it. */
 async function mountChatPage(
@@ -91,10 +107,14 @@ async function mountChatPage(
   })
   // The agent's catalog of places on screen, published for the route's project.
   const published: Array<{ projectId: string | null }> = []
+  const previousFetch = globalThis.fetch
+  restoreFetch = () => {
+    globalThis.fetch = previousFetch
+  }
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
-    if (url.includes('/rpc/ui-locations/catalog') && init?.body)
-      published.push(JSON.parse(String(init.body)))
+    if (url.includes('/rpc/ui-locations/catalog') && typeof init?.body === 'string')
+      published.push(JSON.parse(init.body))
     return new Response('{}', { headers: { 'content-type': 'application/json' } })
   }) as typeof fetch
 

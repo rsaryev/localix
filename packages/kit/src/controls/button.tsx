@@ -19,9 +19,9 @@ type ButtonProps = React.ComponentPropsWithoutRef<'button'> &
 /**
  * THE NEXT STEP IS MARKED WITH THE EFFECT THE PRODUCT ALREADY USES FOR "LOOK HERE" — not a second
  * animation. A plan waiting for approval sat among four quiet buttons and nothing said which one
- * the person was expected to press, while the participants strip already draws the eye with the
- * travelling accent. So the same `LocalixBorderBeam`, `focus` variant at intensity 2: above a queued
- * participant (1, "waiting, further away"), well below the speaker (4, "working, costing now") and
+ * the person was expected to press, while a running agent already draws the eye with the travelling
+ * accent. So the same `LocalixBorderBeam`, `focus` variant at intensity 2: above a waiting state
+ * (1, "waiting, further away"), well below a running agent (4, "working, costing now") and
  * without the glow step that 3 adds — it must read as suggested, not as busy. Reduced motion
  * freezes the beam into a static rim (`effects.css`). The intensity is shared with a recommended
  * menu row (`RECOMMENDED_BEAM_INTENSITY`), so a trigger and the row it opens onto read as one cue.
@@ -150,8 +150,8 @@ const WorkbenchSash = React.forwardRef<HTMLDivElement, WorkbenchSashProps>(
         aria-label={label}
         // `aria-description` is GLOBAL in ARIA 1.3, so it applies here despite what
         // `jsx-a11y/role-supports-aria-props` believes — its table predates that, and the attribute
-        // is supported in the Chromium webview this ships in. Pinned by six tests on purpose; the
-        // lint rule is the thing that is out of date, which is why it is a warning and not an error.
+        // is supported in the Chromium webview this ships in. Pinned by six tests on purpose.
+        // oxlint-disable-next-line jsx-a11y/role-supports-aria-props -- ARIA 1.3 made aria-description global; the rule's table is stale
         aria-description={hint}
         aria-orientation={orientation}
         aria-valuemin={valueMin}

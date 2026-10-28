@@ -44,6 +44,10 @@ export interface CcHookHandler {
    * accepted; the runtime normalizes before matching a gathered tool.
    */
   mcpTool?: string
+  /** CC `input` of a `kind:"mcp_tool"` handler: the tool's arguments, `${path}` still unresolved. */
+  mcpInput?: Record<string, unknown>
+  /** CC `continueOnBlock` of a `kind:"prompt"` handler: an `ok:false` reason goes back to Claude. */
+  continueOnBlock?: boolean
   /** Plugin name when `source === 'plugin'`. */
   pluginName?: string
   /** Plugin install dir → `CLAUDE_PLUGIN_ROOT` env for the spawned child. */

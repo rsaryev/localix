@@ -78,7 +78,7 @@ function publishCoalescedActivity(childSessionId: string, publish: () => void): 
  * card + the runtime-sessions panel can show a "doing now" line and coarse
  * turn/tool counts. Covers BOTH our-agentLoop child kinds that run their OWN loop
  * rather than streaming through the parent:
- *   - `subagent` — a synchronous `delegate` child (created via createSession,
+ *   - `subagent` — a synchronous `Agent` child (created via createSession,
  *     not the registerExternalSession/childSessionsByToolCall path), so the
  *     parent never emits a tool_execution_update for it.
  *   - `job` — a delegated task run (also createSession, parentSessionId = the owning
@@ -202,7 +202,7 @@ export async function handleToolExecutionEnd(
   state.pendingTools.delete(event.toolCallId)
   const toolName = pending?.name ?? event.toolName
   if (
-    toolName === 'configure' &&
+    toolName === 'Configure' &&
     !event.result.isError &&
     event.result.details &&
     typeof event.result.details === 'object'

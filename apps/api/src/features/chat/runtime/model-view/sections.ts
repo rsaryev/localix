@@ -47,7 +47,7 @@ export function modelViewSections(input: {
   const record: ContextCheckpoint | undefined = view.checkpoint?.record
   const sections = [
     view.checkpointNear ? checkpointNearSection() : undefined,
-    view.due ? undefined : pinnedOutOfViewSection(rows, record, view.viewer),
+    view.due ? undefined : pinnedOutOfViewSection(rows, record),
   ]
   return sections.filter((section): section is RuntimeSection => section !== undefined)
 }

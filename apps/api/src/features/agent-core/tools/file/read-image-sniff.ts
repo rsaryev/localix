@@ -33,7 +33,7 @@ const startsWith = (buf: Uint8Array, bytes: readonly number[], at = 0) =>
 const ascii = (buf: Uint8Array, at: number, text: string) =>
   startsWith(
     buf,
-    [...text].map((c) => c.charCodeAt(0)),
+    Array.from({ length: text.length }, (_, i) => text.charCodeAt(i)),
     at,
   )
 

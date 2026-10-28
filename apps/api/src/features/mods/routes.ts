@@ -30,7 +30,7 @@ const faultBody = z.object({
 })
 
 const actionBody = z.object({
-  kind: z.enum(['press', 'input', 'submit', 'select']),
+  kind: z.enum(['press', 'change', 'submit', 'select']),
   element: z.string().min(1).max(200),
   value: z.string().max(100_000).optional(),
 })

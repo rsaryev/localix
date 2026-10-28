@@ -2,7 +2,6 @@
  * Queue entries for tests, built the way admission builds them (`createPendingTurn`), so a test
  * exercises the same shapes the queue holds in production.
  */
-import type { ParticipantRef } from '../../../../../db'
 import type { QueueItem } from '../../../../../lib/priority-queue'
 import { sessionFixture } from '../../../../../testing/session-fixture'
 import type { EnqueueParams } from '../../wake-queue-contracts'
@@ -31,11 +30,10 @@ export function entry(
 export const person = (id: string, content = id, extra: Partial<EnqueueParams> = {}) =>
   entry(id, { content, internal: false, source: 'user-busy', ...extra }, 0)
 
-/** A child's report to `participant` (`delegationReportWake`). */
-export const report = (id: string, participant: string, childSessionId = id) =>
+/** A child's report to its delegator (`delegationReportWake`). */
+export const report = (id: string, childSessionId = id) =>
   entry(id, {
     source: 'subagent',
-    to: { participant: participant as ParticipantRef },
     report: { label: id, childSessionId, runId: `${id}-run`, status: 'completed', text: id },
   })
 

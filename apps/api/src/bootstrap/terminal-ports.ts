@@ -61,7 +61,7 @@ export function createTerminalPorts(
     // terminal service. open()/screen() spin the VT emulator up lazily, so non-interactive
     // bash and jobs panes never pay for it.
     terminalControl: {
-      open: async ({ userId, sessionId, agentId, cwd, command }) => {
+      open: async ({ userId, sessionId, cwd, command }) => {
         if (!serviceRefs.terminalService) throw new Error('terminal service unavailable')
         const session = await serviceRefs.terminalService.spawnCommand(userId, {
           sessionId,
@@ -70,7 +70,6 @@ export function createTerminalPorts(
         })
         recordTerminalWork(work, {
           owner: { userId, sessionId },
-          agentId: agentId ?? null,
           label: command,
           terminal: session,
         })

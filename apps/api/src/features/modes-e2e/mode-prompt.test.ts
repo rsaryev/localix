@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { DEFAULT_AGENT_HANDLE } from '../../db/participant'
+import { DEFAULT_AGENT_NAME } from '../../db/author'
 import { resolveRunProfile, type AgentSessionKind } from '../agent-core/run-shape'
 import { buildAgentSystemPrompt } from '../agent-core/prompt/assemble'
 import {
@@ -24,7 +24,7 @@ import { modeSurface, PLAN_DRAFT, runRegistry } from './testing/run-surface'
 const APPROVED: ApprovedPlanPrompt = { version: 2, title: 'Cache layer', body: '## Goal\nFast' }
 
 function render(mode: PermissionMode, kind: AgentSessionKind, approvedPlan?: ApprovedPlanPrompt) {
-  const denied = modeSurface(builtinAgentPreset(DEFAULT_AGENT_HANDLE), mode, []).denied
+  const denied = modeSurface(builtinAgentPreset(DEFAULT_AGENT_NAME), mode, []).denied
   const registry = runRegistry(kind, mode, denied)
   const prompt = buildAgentSystemPrompt({
     sessionId: 'session-1',
@@ -45,7 +45,7 @@ function render(mode: PermissionMode, kind: AgentSessionKind, approvedPlan?: App
 const names = (prose: string, tool: string) =>
   new RegExp('`' + tool + '`').test(prose) ||
   new RegExp(`\\b${tool}\\.[a-z]`).test(prose) ||
-  (tool.includes('_') && new RegExp(`\\b${tool}\\b`).test(prose))
+  (/[a-z][A-Z]/.test(tool) && new RegExp(`\\b${tool}\\b`).test(prose))
 
 /** The prompt without its roster and its catalog of absences — the two lists that name tools. */
 function prose(prompt: string): string {
@@ -67,13 +67,13 @@ describe('# Plan mode', () => {
     expect(render(mode, 'chat').prompt.includes(PLAN_MODE_HEADER)).toBe(mode === 'plan')
   })
 
-  test('it tells the run to present with `plan` and names `ask` only beside it', () => {
+  test('it tells the run to present with `Plan` and names `ask` only beside it', () => {
     const { prompt } = render('plan', 'chat')
-    expect(prompt).toContain('`plan` action `present`')
+    expect(prompt).toContain('`Plan` action "present"')
     // It names the plan file, and the edit tools the run holds to revise it.
     expect(prompt).toContain(`Write the plan to ${PLAN_DRAFT}`)
-    expect(prompt).toContain('`edit`')
-    expect(prompt).toContain('`ask`')
+    expect(prompt).toContain('`Edit`')
+    expect(prompt).toContain('`AskUserQuestion`')
   })
 })
 
@@ -83,7 +83,7 @@ describe('# Approved plan', () => {
     (mode) => {
       const { prompt } = render(mode, 'chat', APPROVED)
       expect(prompt).toContain(APPROVED_PLAN_HEADER)
-      expect(prompt).toContain('call `plan` with action `complete`')
+      expect(prompt).toContain('call `Plan` with action "complete"')
     },
   )
 
@@ -91,17 +91,17 @@ describe('# Approved plan', () => {
     expect(render(mode, 'chat').prompt).not.toContain(APPROVED_PLAN_HEADER)
   })
 
-  test('a child holds no `plan`, so a section reaching it would not tell it to complete', () => {
+  test('a child holds no `Plan`, so a section reaching it would not tell it to complete', () => {
     const { prompt, roster } = render('default', 'subagent', APPROVED)
-    expect(roster.has('plan')).toBe(false)
+    expect(roster.has('Plan')).toBe(false)
     expect(prompt).not.toContain('action `complete`')
   })
 })
 
 describe('no prompt names a tool its run lacks', () => {
   test('the detector sees a backticked name, an action call and a bare compound name', () => {
-    expect(phantoms('call `plan` now', new Set())).toContain('plan')
-    expect(phantoms('use global_search', new Set())).toContain('global_search')
+    expect(phantoms('call `Plan` now', new Set())).toContain('Plan')
+    expect(phantoms('use GlobalSearch', new Set())).toContain('GlobalSearch')
     expect(phantoms('# Available tools\n- plan\n\nnothing', new Set())).toEqual([])
   })
 

@@ -35,12 +35,12 @@ describe('createActivateToolsTool', () => {
   test('advertises the compact catalog and marks itself as a model-schema activator', () => {
     const activate = createActivateToolsTool({ entries: ENTRIES })
     const schema = zodToJsonSchema(activate.inputSchema) as {
-      properties?: { names?: { items?: { type?: string; enum?: unknown } } }
+      properties?: { query?: { type?: string; enum?: unknown } }
     }
-    expect(activate.name).toBe('activate_tools')
+    expect(activate.name).toBe('ToolSearch')
     expect(activate.activatesTools).toBe(true)
-    expect(schema.properties?.names?.items?.type).toBe('string')
-    expect(schema.properties?.names?.items?.enum).toBeUndefined()
+    expect(schema.properties?.query?.type).toBe('string')
+    expect(schema.properties?.query?.enum).toBeUndefined()
     expect(activate.description).toContain('- catalog_query [catalog]: Execute a SQL query.')
     expect(activate.description).toContain(
       '- quote_lookup [finance]: Retrieve current market quotes.',
@@ -49,8 +49,8 @@ describe('createActivateToolsTool', () => {
 
   test('activates exact names and treats repeat requests idempotently', async () => {
     const activate = createActivateToolsTool({ entries: ENTRIES })
-    const first = await activate.execute('c1', { names: ['quote_lookup'] })
-    const second = await activate.execute('c2', { names: ['quote_lookup'] })
+    const first = await activate.execute('c1', { query: 'select:quote_lookup' })
+    const second = await activate.execute('c2', { query: 'select:quote_lookup' })
 
     expect(first.details).toMatchObject({ activated: ['quote_lookup'], alreadyActive: [] })
     expect(second.details).toMatchObject({ activated: [], alreadyActive: ['quote_lookup'] })
@@ -58,7 +58,7 @@ describe('createActivateToolsTool', () => {
 
   test('returns the full current catalog when the model sends an unknown name', async () => {
     const activate = createActivateToolsTool({ entries: ENTRIES })
-    const result = await activate.execute('c1', { names: ['catalog_qurey'] })
+    const result = await activate.execute('c1', { query: 'select:catalog_qurey' })
 
     expect(result.details).toMatchObject({ activated: [], unknown: ['catalog_qurey'] })
     expect(result.content).toContain('Unknown tool names: catalog_qurey.')
@@ -69,7 +69,7 @@ describe('createActivateToolsTool', () => {
 
   test('activates valid names while still returning the catalog for invalid siblings', async () => {
     const activate = createActivateToolsTool({ entries: ENTRIES })
-    const result = await activate.execute('c1', { names: ['catalog_query', 'missing'] })
+    const result = await activate.execute('c1', { query: 'select:catalog_query,missing' })
 
     expect(result.details).toMatchObject({ activated: ['catalog_query'], unknown: ['missing'] })
     expect(result.content).toContain('Activated: catalog_query.')
@@ -81,27 +81,23 @@ describe('createActivateToolsTool', () => {
 })
 
 describe('activation lasts for the session', () => {
-  test('the description advertises only tools the session does not already carry', () => {
+  test('the description is the same whatever the session has activated, so the tool list stays put', () => {
+    const fresh = createActivateToolsTool({ entries: ENTRIES })
     const after = createActivateToolsTool({ entries: ENTRIES, sessionActive: ['catalog_query'] })
-    expect(after.description).not.toContain('- catalog_query [catalog]')
-    expect(after.description).toContain('- quote_lookup [finance]')
-    expect(after.description).toContain('already in your tool list is active')
-  })
-
-  test('an empty catalog tells the model to call its tools directly', () => {
-    const activate = createActivateToolsTool({
+    const all = createActivateToolsTool({
       entries: ENTRIES,
       sessionActive: ['catalog_query', 'quote_lookup'],
     })
-    expect(activate.description).toContain('No tools remain to activate.')
-    expect(activate.description).not.toContain('- catalog_query')
-    expect(activate.description).not.toContain('- quote_lookup')
+    expect(after.description).toBe(fresh.description)
+    expect(all.description).toBe(fresh.description)
+    expect(after.description).toContain('- catalog_query [catalog]')
+    expect(after.description).toContain('already in your tool list is active')
   })
 
   test('unknown-name recovery excludes tools activated earlier in the run', async () => {
     const activate = createActivateToolsTool({ entries: ENTRIES })
-    await activate.execute('call-1', { names: ['catalog_query'] })
-    const result = await activate.execute('call-2', { names: ['missing'] })
+    await activate.execute('call-1', { query: 'select:catalog_query' })
+    const result = await activate.execute('call-2', { query: 'select:missing' })
     expect(result.content).not.toContain('- catalog_query [catalog]')
     expect(result.content).toContain('- quote_lookup [finance]')
     expect(result.details?.available).toEqual(['quote_lookup'])
@@ -109,7 +105,7 @@ describe('activation lasts for the session', () => {
 
   test('asking for one anyway is answered with "already active", not with "unknown"', async () => {
     const activate = createActivateToolsTool({ entries: ENTRIES, sessionActive: ['catalog_query'] })
-    const result = await activate.execute('call-1', { names: ['catalog_query'] }, {} as never)
+    const result = await activate.execute('call-1', { query: 'select:catalog_query' }, {} as never)
 
     expect(result.content).toContain('Already active in this session: catalog_query')
     expect(result.content).not.toContain('Unknown tool names')
@@ -127,10 +123,10 @@ describe('activation lasts for the session', () => {
       },
     })
 
-    const first = await activate.execute('call-1', { names: ['quote_lookup'] }, {} as never)
+    const first = await activate.execute('call-1', { query: 'select:quote_lookup' }, {} as never)
     expect(first.content).toContain('stay available for the rest of this session')
     // The same call twice must not report twice: the host would otherwise write on every repetition.
-    await activate.execute('call-2', { names: ['quote_lookup'] }, {} as never)
+    await activate.execute('call-2', { query: 'select:quote_lookup' }, {} as never)
 
     expect(remembered).toEqual([['quote_lookup']])
   })
@@ -144,7 +140,7 @@ describe('giving a tool back', () => {
       onActivated: () => ['catalog_query'],
     })
 
-    const first = await activate.execute('call-1', { names: ['quote_lookup'] }, {} as never)
+    const first = await activate.execute('call-1', { query: 'select:quote_lookup' }, {} as never)
     expect(first.content).toContain(
       "Released to stay within this session's tool budget: catalog_query",
     )
@@ -152,13 +148,13 @@ describe('giving a tool back', () => {
 
     // It left the wire, so asking for it again has to be a real activation rather than
     // "already active" — otherwise the model is told it has a tool it does not have.
-    const second = await activate.execute('call-2', { names: ['catalog_query'] }, {} as never)
+    const second = await activate.execute('call-2', { query: 'select:catalog_query' }, {} as never)
     expect(second.details).toMatchObject({ activated: ['catalog_query'], alreadyActive: [] })
   })
 
   test('nothing is said when nothing was given back', async () => {
     const activate = createActivateToolsTool({ entries: ENTRIES, onActivated: () => [] })
-    const result = await activate.execute('call-1', { names: ['quote_lookup'] }, {} as never)
+    const result = await activate.execute('call-1', { query: 'select:quote_lookup' }, {} as never)
 
     expect(result.content).not.toContain('Released')
   })
@@ -176,7 +172,7 @@ describe('a tool requested by its Claude Code name', () => {
     const activate = createActivateToolsTool({ entries })
     const result = await activate.execute(
       'call-1',
-      { names: ['mcp__plugin_namekit_db__echo'] },
+      { query: 'select:mcp__plugin_namekit_db__echo' },
       {} as never,
     )
     expect(result.details?.activated).toEqual(['mcp_namekit_db_echo'])
@@ -188,7 +184,7 @@ describe('a tool requested by its Claude Code name', () => {
     const activate = createActivateToolsTool({ entries })
     const result = await activate.execute(
       'call-1',
-      { names: ['mcp__plugin_namekit_db__echo', 'mcp_namekit_db_echo'] },
+      { query: 'select:mcp__plugin_namekit_db__echo,mcp_namekit_db_echo' },
       {} as never,
     )
     expect(result.details?.activated).toEqual(['mcp_namekit_db_echo'])
@@ -215,7 +211,7 @@ describe('a tool offered under a model name', () => {
     const activate = createActivateToolsTool({ entries })
     const result = await activate.execute(
       'call-1',
-      { names: ['mcp__plugin_namekit_db__echo'] },
+      { query: 'select:mcp__plugin_namekit_db__echo' },
       {} as never,
     )
     expect(result.details?.activated).toEqual(['mcp_namekit_db_echo'])
@@ -226,7 +222,11 @@ describe('a tool offered under a model name', () => {
 
   test('a request by the own name is told the model name to call', async () => {
     const activate = createActivateToolsTool({ entries })
-    const result = await activate.execute('call-1', { names: ['mcp_namekit_db_echo'] }, {} as never)
+    const result = await activate.execute(
+      'call-1',
+      { query: 'select:mcp_namekit_db_echo' },
+      {} as never,
+    )
     expect(result.details?.activated).toEqual(['mcp_namekit_db_echo'])
     expect(result.content).toContain('mcp_namekit_db_echo is mcp__plugin_namekit_db__echo')
   })
@@ -235,7 +235,7 @@ describe('a tool offered under a model name', () => {
     const activate = createActivateToolsTool({ entries, sessionActive: ['mcp_namekit_db_echo'] })
     const result = await activate.execute(
       'call-1',
-      { names: ['mcp__plugin_namekit_db__echo'] },
+      { query: 'select:mcp__plugin_namekit_db__echo' },
       {} as never,
     )
     expect(result.details?.alreadyActive).toEqual(['mcp_namekit_db_echo'])
@@ -254,7 +254,7 @@ describe('the Claude Code MCP address in prompt text', () => {
     const activate = createActivateToolsTool({ entries })
     const result = await activate.execute(
       'c',
-      { names: ['mcp__github__create_issue'] },
+      { query: 'select:mcp__github__create_issue' },
       {} as never,
     )
     expect(result.details?.activated).toEqual(['mcp_github_create_issue'])
@@ -273,7 +273,35 @@ describe('the Claude Code MCP address in prompt text', () => {
 
   test('an address that names no tool is unknown, never a near match', async () => {
     const activate = createActivateToolsTool({ entries })
-    const result = await activate.execute('c', { names: ['mcp__github__delete_repo'] }, {} as never)
+    const result = await activate.execute(
+      'c',
+      { query: 'select:mcp__github__delete_repo' },
+      {} as never,
+    )
     expect(result.details?.unknown).toEqual(['mcp__github__delete_repo'])
+  })
+})
+
+describe('ToolSearch as Claude Code calls it', () => {
+  const run = (input: Record<string, unknown>) => {
+    const activate = createActivateToolsTool({ entries: ENTRIES })
+    const parsed = activate.inputSchema.parse(input)
+    return activate.execute('c1', parsed as never)
+  }
+
+  test('select: loads the tools it names', async () => {
+    const out = await run({ query: 'select:quote_lookup,catalog_query' })
+    expect(out.details).toMatchObject({ activated: ['quote_lookup', 'catalog_query'] })
+  })
+
+  test('keywords load the best matches, at most max_results', async () => {
+    const out = await run({ query: 'sql rows', max_results: 1 })
+    expect(out.details).toMatchObject({ activated: ['catalog_query'] })
+  })
+
+  test('keywords that match nothing load nothing and show the catalog', async () => {
+    const out = await run({ query: 'weather forecast' })
+    expect(out.details).toMatchObject({ activated: [] })
+    expect(out.content).toContain('quote_lookup')
   })
 })

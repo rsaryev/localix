@@ -50,6 +50,9 @@ export function ActionFeedback({ store, className }: ActionFeedbackProps) {
   const feedback = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot)
   const Icon = feedback ? TONE_ICON[feedback.tone] : null
   return (
+    // The handlers only pause the dismissal timer while the answer is being read; they trigger no
+    // action, so there is no interactive role to give this live region.
+    // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- hover/focus holds the message on screen and does nothing else
     <span
       role="status"
       aria-live="polite"

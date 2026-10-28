@@ -87,28 +87,28 @@ describe('tool meta ↔ card registry (client-internal contract)', () => {
     // MUTATION: set `stackable: false` on FALLBACK_META → red.
     //
     // Foreign transcripts are what made this matter. Folding keys on this table, so a repeated
-    // foreign tool folded nowhere. Mounting a foreign-agent run of 1,169 consecutive `Bash` calls:
+    // foreign tool folded nowhere. Mounting a foreign-agent run of 1,169 consecutive `TodoWrite` calls:
     // 1,169 groups / 12,875 DOM nodes / 96 ms before, 1 group / 30 nodes
     // / 1 ms after. `readOnly` stays absent on purpose — read-only runs fold at TWO, and claiming
     // that for a tool we cannot classify would fold a run of writes on a guess.
-    expect(toolMeta('Bash').stackable).toBe(true)
+    expect(toolMeta('TodoWrite').stackable).toBe(true)
     expect(toolMeta('some_mini_app_tool').stackable).toBe(true)
-    expect(toolMeta('Bash').readOnly).toBeUndefined()
+    expect(toolMeta('TodoWrite').readOnly).toBeUndefined()
   })
 
   test('an unregistered tool is shown by its own name, not by the fallback word', () => {
     // MUTATION: return `FALLBACK_META.label` for an unknown name → red.
     //
-    // Folding unknown runs (the change above) made this matter: a folded group of 200 `Bash` calls
+    // Folding unknown runs (the change above) made this matter: a folded group of 200 `TodoWrite` calls
     // rendered as "Tool 200 calls · Tool, Tool +198" — the name gone from both the summary and the
     // preview, where before the fold each of the 200 cards carried it.
-    expect(toolDisplayLabel('Bash')).toBe('Bash')
+    expect(toolDisplayLabel('TodoWrite')).toBe('TodoWrite')
     expect(toolDisplayLabel('grep_search')).toBe('grep_search')
-    // A registered tool keeps its curated label, and MCP keeps its family label.
-    expect(toolDisplayLabel('read')).toBe(toolMeta('read').label)
-    expect(toolDisplayLabel('mcp_linear_issue')).toBe(MCP_META.label)
+    // A registered tool is shown by its name too, never by its past tense; MCP by its family word.
+    expect(toolDisplayLabel('ContextBudget')).toBe('ContextBudget')
+    expect(toolDisplayLabel('mcp_linear_issue')).toBe('MCP')
     // And the identity guard the registry test depends on is untouched: this is a separate question.
-    expect(toolMeta('Bash')).toBe(FALLBACK_META)
+    expect(toolMeta('TodoWrite')).toBe(FALLBACK_META)
   })
 
   test('a standalone tool never stacks', () => {
@@ -121,14 +121,16 @@ describe('tool meta ↔ card registry (client-internal contract)', () => {
     expect(STANDALONE_TOOL_NAMES.length).toBeGreaterThan(0)
   })
 
-  test('every meta entry is fully populated', () => {
-    // MUTATION: blank any label/noun/verb → red.
-    for (const name of allToolMetaNames()) {
-      const meta = toolMeta(name)
-      expect(meta.label.length, `"${name}" label`).toBeGreaterThan(0)
-      expect(meta.noun.length, `"${name}" noun`).toBeGreaterThan(0)
-      expect(meta.verb.length, `"${name}" verb`).toBeGreaterThan(0)
-      expect(meta.icon, `"${name}" icon`).toBeDefined()
+  test('every entry reads as one summary sentence: one past tense, one participle, a plural', () => {
+    // "Agent 2 agents" and "Running a workflow 2 workflows" shipped because the table mixed names,
+    // phrases and verbs; the summary puts label/verb, a count and the noun side by side.
+    // MUTATION: set any label to a name ("Store") or any verb to a phrase → red.
+    for (const meta of [...allToolMetaNames().map(toolMeta), FALLBACK_META, MCP_META]) {
+      const row = `${meta.label}/${meta.verb}/${meta.noun}`
+      expect(meta.label, row).toMatch(/^(?:[A-Z][a-z]+ed|Ran|Read|Wrote|Sent)$/)
+      expect(meta.verb, row).toMatch(/^[A-Z][a-z]+ing$/)
+      expect(meta.noun, row).toMatch(/s$/)
+      expect(meta.icon, row).toBeDefined()
     }
   })
 })
@@ -146,8 +148,8 @@ describe('toolMeta resolution order', () => {
 
   test('an exact match wins over the mcp_ prefix rule', () => {
     // The consolidated core resource tool is an exact mcp_-prefixed entry; it must beat fallback.
-    expect(allToolMetaNames()).toContain('mcp_resources')
-    expect(toolMeta('mcp_resources')).not.toBe(MCP_META)
+    expect(allToolMetaNames()).toContain('McpResources')
+    expect(toolMeta('McpResources')).not.toBe(MCP_META)
     expect(toolMeta('mcp_x')).toBe(MCP_META)
   })
 })

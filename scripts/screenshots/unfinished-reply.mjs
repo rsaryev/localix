@@ -1,6 +1,6 @@
 import { promises as fs } from 'node:fs'
 import { expect } from '@playwright/test'
-import { openConversation } from './codemode-card.mjs'
+import { openConversation } from './fixture-chat.mjs'
 import { fixtureFile, uiOrigin } from './runtime.mjs'
 import { seedTranscript } from './transcript-fixture.mjs'
 
@@ -11,7 +11,7 @@ const NOTICE =
   'Backend restarted while bash was still running — this reply is incomplete, and that call may or may not have taken effect. Check before retrying.'
 
 /**
- * A reply a restart cut off while its `bash` call was running: the transcript marks where it
+ * A reply a restart cut off while its `Bash` call was running: the transcript marks where it
  * stopped, and the composer offers Continue. Illustrative fixture state, written the way the boot
  * sweep writes it (`chat/runtime/interrupted-runs.ts`).
  */
@@ -33,7 +33,7 @@ const rows = [
         // Settled by the boot sweep: nothing will end it, so it no longer spins.
         status: 'aborted',
         toolCallId: 'tc-unfinished-capture-1',
-        name: 'bash',
+        name: 'Bash',
         activeVerb: 'Running',
         input: { command: 'bun run db:migrate' },
         errorText: CUT_OFF,

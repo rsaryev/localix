@@ -17,7 +17,7 @@ function open(store: LiveStore, terminalId: string, command: string): void {
   observeToolCall(
     { live: store, onOpened: () => {}, log: () => {} },
     {
-      toolName: 'bash',
+      toolName: 'Bash',
       input: {},
       result: { content: '', details: { action: 'open', terminalId, command, screen: '' } },
       sessionId: 'lx1',

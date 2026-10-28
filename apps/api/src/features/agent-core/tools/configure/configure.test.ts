@@ -15,7 +15,7 @@ const card: ProposalCard = {
   remedyId: 'tool.enable',
   title: 'Enable the `loops` tool',
   detail: 'Writes a switch.',
-  diff: ['+ tool:loops · * · allow'],
+  diff: ['+ tool:Loops · * · allow'],
   agentId: 'builtin:localix',
   reload: 'next-run',
 }
@@ -43,7 +43,7 @@ function harness(over: Partial<ConfigureHost> = {}) {
   const propose = () =>
     tool.execute(
       'call-1',
-      { action: 'propose', change: { kind: 'tool.enable', name: 'loops' } },
+      { action: 'propose', change: { kind: 'tool.enable', name: 'Loops' } },
       undefined,
       undefined,
       context,
@@ -96,7 +96,7 @@ describe('configure', () => {
     expect(result.isError).toBeUndefined()
     expect(result.content).toContain('done')
     expect(result.details).toMatchObject({ outcome: 'applied', reload: 'next-run' })
-    expect(applied).toEqual([{ change: { kind: 'tool.enable', name: 'loops' } }])
+    expect(applied).toEqual([{ change: { kind: 'tool.enable', name: 'Loops' } }])
     expect(decisions.map((d) => d.status)).toEqual(['approved', 'applied'])
   })
 
@@ -151,7 +151,7 @@ describe('configure', () => {
     const { tool } = harness()
     const result = await tool.execute(
       'c',
-      { action: 'propose', change: { kind: 'tool.enable', name: 'loops' } },
+      { action: 'propose', change: { kind: 'tool.enable', name: 'Loops' } },
       undefined,
       undefined,
       { interactive: false },
@@ -168,7 +168,7 @@ describe('configure', () => {
     })
     const result = await tool.execute(
       'c',
-      { action: 'propose', change: { kind: 'tool.enable', name: 'loops' } },
+      { action: 'propose', change: { kind: 'tool.enable', name: 'Loops' } },
       undefined,
       undefined,
       { humanInLoop: createHumanInLoopController(), interactive: true },
@@ -192,14 +192,14 @@ describe('configure is structurally out of reach of an unattended run', () => {
       policy: {
         agentProfile: resolveRunProfile(
           { sessionKind: 'subagent' },
-          { tools: ['read', TOOL.configure] },
+          { tools: ['read', TOOL.Configure] },
         ),
       },
-      optional: { configure: options },
+      optional: { Configure: options },
     })
-    expect(child.toolNames).not.toContain(TOOL.configure)
+    expect(child.toolNames).not.toContain(TOOL.Configure)
     // `never`, not `not-declared`: the role DID declare it, and the catalog still refuses.
-    expect(child.ledger.get(TOOL.configure)).toEqual({
+    expect(child.ledger.get(TOOL.Configure)).toEqual({
       state: 'withheld',
       reason: { layer: 'shape', kind: 'never', shape: 'subagent' },
     })
@@ -210,13 +210,13 @@ describe('configure is structurally out of reach of an unattended run', () => {
 
   test('a chat gets it, and the withheld section points at it', () => {
     const chat = createRuntimeToolRegistry({
-      policy: { disabledTools: [TOOL.loops] },
-      optional: { configure: options, loops: { userId: 'u', sessionId: 'S', agentId: 'lead' } },
+      policy: { disabledTools: [TOOL.Loops] },
+      optional: { Configure: options, Loops: { userId: 'u', sessionId: 'S', agentId: 'lead' } },
     })
-    expect(chat.toolNames).toContain(TOOL.configure)
+    expect(chat.toolNames).toContain(TOOL.Configure)
     const prompt = buildAgentSystemPrompt({ toolRegistry: chat } as never)
     expect(prompt).toContain('# Unavailable tools')
-    expect(prompt).toContain('- loops —')
+    expect(prompt).toContain('- Loops —')
   })
 })
 

@@ -33,9 +33,14 @@ export function Button({
   variant = 'primary',
   size = 'md',
   className,
+  children,
   ...props
 }: CommonProps & ComponentProps<'button'>) {
-  return <button className={cn(base, variants[variant], sizes[size], className)} {...props} />
+  return (
+    <button className={cn(base, variants[variant], sizes[size], className)} {...props}>
+      {children}
+    </button>
+  )
 }
 
 export function ButtonLink({
@@ -44,11 +49,20 @@ export function ButtonLink({
   className,
   external,
   to,
+  children,
   ...props
 }: CommonProps & { to: string; external?: boolean } & Omit<ComponentProps<'a'>, 'href'>) {
   const cls = cn(base, variants[variant], sizes[size], className)
   if (external) {
-    return <a href={to} className={cls} target="_blank" rel="noreferrer" {...props} />
+    return (
+      <a href={to} className={cls} target="_blank" rel="noreferrer" {...props}>
+        {children}
+      </a>
+    )
   }
-  return <Link to={to} className={cls} {...(props as object)} />
+  return (
+    <Link to={to} className={cls} {...(props as object)}>
+      {children}
+    </Link>
+  )
 }

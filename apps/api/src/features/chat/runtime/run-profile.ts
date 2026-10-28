@@ -4,7 +4,7 @@ import type { RunIdentity } from './run-contract'
 /**
  * Native host rosters cannot be bypassed by a remembered compatibility profile.
  *
- * A child run as a Claude Code plugin agent type (`run/speaker-agent.ts`) takes that agent's
+ * A child run as a Claude Code plugin agent type (`run/catalog-agent.ts`) takes that agent's
  * surface, as Claude Code gives it: a `tools` list is the exact allowlist (still narrowed by a host
  * roster), and no list inherits the tools the main conversation has, MCP tools included. Every
  * other child, a job and an automation run keep the closed surface their shape gives them.

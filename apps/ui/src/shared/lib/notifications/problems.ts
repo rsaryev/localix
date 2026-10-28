@@ -211,7 +211,7 @@ export function publishProblemReport(
     sourceVisible: options.sourceVisible ?? false,
     // Only a surface that produced NOTHING is worth an OS-level interruption. A stale-but-working
     // surface stays inside the app.
-    ...(report.consequence === 'blocked' ? { nativeKind: 'run' as const } : {}),
+    ...(report.consequence === 'blocked' ? { native: true } : {}),
   })
   resolveNotificationCondition(prefix, key)
   // The key is the surface's link into the centre: "Details" must land on this row, not a list.

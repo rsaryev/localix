@@ -30,7 +30,7 @@ export interface ToolCompositionEntry {
   origin: ToolOrigin
   /**
    * `wire` — the model sees its schema this turn. `deferred` — it exists and is callable,
-   * but its schema is behind `activate_tools`. The distinction matters because "the model
+   * but its schema is behind `ToolSearch`. The distinction matters because "the model
    * cannot see it" and "it is not loaded" are different problems with different fixes.
    */
   visibility: 'wire' | 'deferred'

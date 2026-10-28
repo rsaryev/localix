@@ -1,4 +1,4 @@
-import { DEFAULT_AGENT_PARTICIPANT, USER_PARTICIPANT } from '../../db'
+import { DEFAULT_AGENT_AUTHOR, USER_AUTHOR } from '../../db'
 import { createChatFeaturePorts } from '../../bootstrap/chat-feature-ports'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm } from 'node:fs/promises'
@@ -45,7 +45,7 @@ describe('chatService.searchHistory', () => {
     const payload: StoredMessagePayload = {
       id: 'msg_hs_1',
       role: 'user',
-      from: USER_PARTICIPANT,
+      from: USER_AUTHOR,
       content: "Let's set up docker for the build pipeline",
     }
     await repo.insertMessage({
@@ -71,7 +71,7 @@ describe('chatService.searchHistory', () => {
     const boundPayload: StoredMessagePayload = {
       id: 'msg_hs_2',
       role: 'user',
-      from: USER_PARTICIPANT,
+      from: USER_AUTHOR,
       content: 'Review the linked schema',
       bindings: [
         {
@@ -128,7 +128,7 @@ describe('chatService.searchHistory', () => {
         id,
         sessionId: session.id,
         userId,
-        payload: { id, role: 'assistant', from: DEFAULT_AGENT_PARTICIPANT, content },
+        payload: { id, role: 'assistant', from: DEFAULT_AGENT_AUTHOR, content },
         createdAt: ts,
         updatedAt: ts,
       })

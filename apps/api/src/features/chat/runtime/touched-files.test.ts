@@ -16,16 +16,16 @@ const message = (items: unknown[]): PersistedMessage =>
 test('the files a session read, wrote or edited, resolved against its folder', () => {
   const history = [
     message([
-      { type: 'tool_call', toolCallId: '1', name: 'read', input: { path: 'apps/web/src/a.tsx' } },
-      { type: 'tool_call', toolCallId: '2', name: 'read', input: { paths: ['b.md', '/abs/c.ts'] } },
-      { type: 'tool_call', toolCallId: '3', name: 'search', input: { path: 'ignored' } },
+      { type: 'tool_call', toolCallId: '1', name: 'Read', input: { path: 'apps/web/src/a.tsx' } },
+      { type: 'tool_call', toolCallId: '2', name: 'Read', input: { paths: ['b.md', '/abs/c.ts'] } },
+      { type: 'tool_call', toolCallId: '3', name: 'Search', input: { path: 'ignored' } },
       {
         type: 'file_change',
         toolCallId: '4',
-        name: 'edit',
+        name: 'Edit',
         changes: [{ path: 'lib/d.ts', kind: 'modify' }],
       },
-      { type: 'tool_call', toolCallId: '5', name: 'write', input: { files: [{ path: 'e.txt' }] } },
+      { type: 'tool_call', toolCallId: '5', name: 'Write', input: { files: [{ path: 'e.txt' }] } },
     ]),
   ]
   expect(touchedFilesOf(history, '/repo')).toEqual([

@@ -100,7 +100,7 @@ export function createAppPhase({
     inlineCompletionService,
     nextEditService,
     // UI-initiated preview open (background-jobs strip) — same core the agent's
-    // `browser` tool uses, bound here to the publish-capable stream registry.
+    // `Browser` tool uses, bound here to the publish-capable stream registry.
     openPreview: (userId, { sessionId, url, root }) =>
       openPreviewCore(
         { userId, sessionId, streamRegistry: chatService.streamRegistry },

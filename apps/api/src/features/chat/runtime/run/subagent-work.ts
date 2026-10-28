@@ -14,7 +14,6 @@
  * children one step launches.
  */
 import { errorMessage } from '../../../../lib/errors'
-import { participantAgentId } from '../../../../db/participant'
 import { workStatusOfChild, type WorkOwner } from '../../../work/contracts'
 import type { WorkRegistry } from '../../../work/registry'
 import type { SessionRecord } from '../../repository'
@@ -29,7 +28,6 @@ export interface SubagentWorkDeps {
 
 export interface TrackSubagent {
   owner: WorkOwner
-  agentId: string | null
   childSessionId: string
   label: string
   /** Stop the child's run; its continuation then ends the record with `stopped`. */
@@ -42,7 +40,6 @@ export function trackSubagent(deps: SubagentWorkDeps, input: TrackSubagent) {
   const toolCallId = subagentWorkKey(input.childSessionId)
   deps.work.start({
     owner: input.owner,
-    agentId: input.agentId,
     kind: 'subagent',
     label: input.label,
     toolCallId,
@@ -93,11 +90,10 @@ export function trackChildRun(deps: SubagentWorkDeps, userId: string, session: S
   if (session.closedAt || deps.work.get(subagentWorkKey(session.id))) return
   trackSubagent(deps, {
     owner: { userId, sessionId: provenance.parentSessionId },
-    agentId: provenance.parentParticipant ? participantAgentId(provenance.parentParticipant) : null,
     childSessionId: session.id,
-    // The priority beside the handle only when it says something: `normal` is the default.
+    // The priority beside the name only when it says something: `normal` is the default.
     label: [
-      session.agents[0]?.handle ?? session.title,
+      session.agent?.name ?? session.title,
       provenance.priority && provenance.priority !== 'normal' ? provenance.priority : null,
     ]
       .filter(Boolean)

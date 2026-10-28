@@ -115,6 +115,83 @@ describe('store tool: reading', () => {
   })
 })
 
+describe('store tool: several searches in one call', () => {
+  const kanban = makeListing({ id: 'kanban', displayName: 'Kanban' })
+  const chess = makeListing({ id: 'chess', displayName: 'Chess' })
+  const found: Record<string, Listing[]> = { board: [kanban], game: [chess, kanban] }
+  const searching = (calls: unknown[][]) => async (query: { query?: string }) => {
+    calls.push(['search', query])
+    if (query.query === 'broken') throw new Error('The index is unreachable')
+    return found[query.query ?? ''] ?? []
+  }
+  const groups = (content: unknown) =>
+    JSON.parse(String(content)).groups as Array<{
+      query: string
+      results?: Array<{ ref: unknown; name?: string; shownFor?: string }>
+      error?: string
+    }>
+
+  test('queries are answered in one call, grouped in the order asked, a few results each', async () => {
+    const calls: unknown[][] = []
+    const { run } = harness({ search: searching(calls) })
+
+    const result = await run({ action: 'search', queries: ['board', 'game'], kind: 'mini-app' })
+
+    expect(calls).toEqual([
+      ['search', { query: 'board', kind: 'mini-app', limit: 5 }],
+      ['search', { query: 'game', kind: 'mini-app', limit: 5 }],
+    ])
+    expect(groups(result.content).map((group) => group.query)).toEqual(['board', 'game'])
+    expect(groups(result.content)[0]!.results!.map((card) => card.name)).toEqual(['Kanban'])
+  })
+
+  test('a package two queries find is shown once, then named by the query that showed it', async () => {
+    const { run } = harness({ search: searching([]) })
+
+    const [, game] = groups((await run({ action: 'search', queries: ['board', 'game'] })).content)
+
+    expect(game!.results).toEqual([
+      expect.objectContaining({ name: 'Chess' }),
+      { ref: { kind: 'mini-app', id: 'kanban' }, shownFor: 'board' },
+    ])
+  })
+
+  test('a query that fails says so in its group; the others still answer', async () => {
+    const { run } = harness({ search: searching([]) })
+
+    const result = await run({ action: 'search', queries: ['broken', 'board'] })
+
+    expect(result.isError).toBeFalsy()
+    const [broken, board] = groups(result.content)
+    expect(broken).toEqual({ query: 'broken', error: 'The index is unreachable' })
+    expect(board!.results!.map((card) => card.name)).toEqual(['Kanban'])
+  })
+
+  test('the queries run together, not one after another', async () => {
+    let second!: () => void
+    const secondAsked = new Promise<void>((resolve) => (second = resolve))
+    const { run } = harness({
+      search: async (query) => {
+        // The first query answers only once the second was asked: run in turn, this never ends.
+        if (query.query === 'board') await secondAsked
+        else second()
+        return []
+      },
+    })
+
+    const result = await run({ action: 'search', queries: ['board', 'game'] })
+
+    expect(groups(result.content)).toHaveLength(2)
+  })
+
+  test('the batch is bounded', () => {
+    const { tool } = harness()
+    const nine = Array.from({ length: 9 }, (_, at) => `q${at}`)
+    expect(tool.inputSchema.safeParse({ action: 'search', queries: nine }).success).toBe(false)
+    expect(tool.inputSchema.safeParse({ action: 'search', queries: [] }).success).toBe(false)
+  })
+})
+
 describe('store tool: install asks, and installs only after approval', () => {
   test('the person sees the plan; consent goes to the Store only once they approve', async () => {
     const { run, calls, card, answer } = harness()
@@ -240,19 +317,19 @@ describe('store tool: the permission gate', () => {
   test('a rule can allow reads and deny changes, or deny one package', () => {
     const { tool } = harness()
     const rules = [
-      { permission: 'store', pattern: '*', action: 'deny' as const },
-      { permission: 'store', pattern: 'search', action: 'allow' as const },
+      { permission: 'Store', pattern: '*', action: 'deny' as const },
+      { permission: 'Store', pattern: 'search', action: 'allow' as const },
     ]
     const verdict = (input: { action: string }) =>
       evaluate(
         rules,
-        { name: 'store', ...classifyStoreCall(input) },
-        extractCallFacts('store', input, undefined, tool),
+        { name: 'Store', ...classifyStoreCall(input) },
+        extractCallFacts('Store', input, undefined, tool),
       ).action
     expect(verdict({ action: 'search' })).toBe('allow')
     expect(verdict({ action: 'install', ref: review, scope: 'user' } as never)).toBe('deny')
     const facts = extractCallFacts(
-      'store',
+      'Store',
       { action: 'install', ref: review, scope: 'user' },
       undefined,
       tool,

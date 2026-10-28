@@ -8,7 +8,7 @@
  * one log record without the state. It never throws: a caller always gets an outcome and keeps its
  * own fallback.
  *
- * Consumers: group routing (`chat/runtime/floor-decision.ts`) and plugins (`host.decisions`).
+ * Consumers: games, the browser goal check and mini apps (`host.decisions`).
  */
 import type { DecisionResult } from '@localixai/agent/runtime'
 import {
@@ -21,8 +21,8 @@ import {
 } from '@localixai/mini-app-sdk/backend'
 import type { DecisionBackend } from './models'
 
-/** The ledger row a decision's spend lands in: core routing, or any other consumer. */
-export type DecisionUsageKind = 'routing' | 'decision'
+/** The ledger row a decision's spend lands in. */
+export type DecisionUsageKind = 'decision'
 
 export interface DecisionCallOptions extends DecisionOptions {
   /** Default `decision`. */

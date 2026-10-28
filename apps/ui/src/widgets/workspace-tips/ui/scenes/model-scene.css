@@ -17,24 +17,6 @@
   /* The drawer is opaque in the app; the composer is simply covered while it is up. */
   animation: wt-m-covered var(--loop) var(--ease-soft) infinite both;
 }
-.wt-composer-party {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-size: 0.5625rem;
-  color: var(--text-soft);
-}
-.wt-avatar {
-  display: grid;
-  place-items: center;
-  width: 0.875rem;
-  height: 0.875rem;
-  border-radius: 999px;
-  background: color-mix(in oklch, var(--status-success) 28%, var(--card));
-  color: color-mix(in oklch, var(--status-success) 80%, var(--foreground));
-  font-size: 0.375rem;
-  font-weight: 600;
-}
 .wt-composer-text {
   color: var(--text-faint);
 }

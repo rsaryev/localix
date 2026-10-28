@@ -19,20 +19,17 @@ import { TOOL } from './tool-names'
  *
  * - `read` / `write` / `edit` / `search` / `bash` — the edit-and-verify loop itself.
  * - `ask` — the way to reach the human. An agent that cannot ask cannot unblock.
- * - `tool_output` — elided and indexed tool results ADVERTISE it by name
+ * - `ToolOutput` — elided and indexed tool results ADVERTISE it by name
  *   (`run-shape.ts` `withElisionRecovery` adds it back to any custom role for exactly this
  *   reason: "a pointer to a hidden tool is a dead end"). Disabling it turns every recovery
  *   pointer in a long session into a wasted turn.
- * - `set_topic` — the chat's context-saving topic boundary.
- *
  */
 export const TOOL_GC_PROTECTED: readonly string[] = [
-  TOOL.ask,
-  TOOL.bash,
-  TOOL.read,
-  TOOL.search,
-  TOOL.write,
-  TOOL.edit,
-  TOOL.tool_output,
-  TOOL.set_topic,
+  TOOL.AskUserQuestion,
+  TOOL.Bash,
+  TOOL.Read,
+  TOOL.Search,
+  TOOL.Write,
+  TOOL.Edit,
+  TOOL.ToolOutput,
 ]

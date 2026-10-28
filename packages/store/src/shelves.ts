@@ -34,6 +34,18 @@ export const BROWSABLE_COMPONENT_KINDS = [
 ] as const satisfies readonly ComponentKind[]
 export type BrowsableComponentKind = (typeof BROWSABLE_COMPONENT_KINDS)[number]
 
+/**
+ * What a package of each kind can give that a person browses by: a plugin any of it, a mini app its
+ * commands, a standalone skill, agent or MCP server itself.
+ */
+const GIVES: Record<PackageKind, readonly BrowsableComponentKind[]> = {
+  plugin: BROWSABLE_COMPONENT_KINDS,
+  'mini-app': ['command'],
+  skill: ['skill'],
+  agent: ['agent'],
+  'mcp-server': ['mcp-server'],
+}
+
 export type ShelfId =
   | 'discover'
   | 'installed'
@@ -63,6 +75,18 @@ const KNOWN = new Set<string>([...SHELVES, ...PACKAGE_KINDS.map(packageShelf)])
 /** A shelf id from a query or a tab payload, or null when it names no shelf. */
 export function parseShelf(raw: unknown): ShelfId | null {
   return typeof raw === 'string' && KNOWN.has(raw) ? (raw as ShelfId) : null
+}
+
+/**
+ * The package kinds whose listings a shelf lists: its own kind for a package shelf, the kinds that
+ * can give its component for a capability shelf, none for Discover and the library, which span
+ * every kind.
+ */
+export function shelfKinds(shelf: ShelfId): readonly PackageKind[] {
+  if (shelf.startsWith('package:')) return [shelf.slice(8) as PackageKind]
+  if (!shelf.startsWith('capability:')) return []
+  const component = shelf.slice(11) as BrowsableComponentKind
+  return PACKAGE_KINDS.filter((kind) => GIVES[kind].includes(component))
 }
 
 /** An install or update in flight. */

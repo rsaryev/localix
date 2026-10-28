@@ -1,22 +1,24 @@
 import { cloneElement, lazy, Suspense, useCallback, useId, useState } from 'react'
 
 import { ChipRow } from './ChipRow'
+import { SessionSurface } from '@/shared/contrib/sessionSurfaces'
 import { isModelRoutingTaskEnabled } from '@localixai/api/model-task-catalog'
 import { useUserSettings } from '@/shared/lib/user-settings/useUserSettings'
 import { composerShellClassName } from './composerShell'
 import { LocalixBorderBeam } from '@localixai/kit/localix-border-beam'
 
 import { reasoningBeamIntensity } from '../../model/reasoning'
+import { hasAuthoredInput } from '../../model/authoredMessage'
 import { refFromToken } from '../../model/sendRefs'
 import { composerAccessory } from './ComposerAccessory'
 import { ComposerDropHint } from './ComposerDropHint'
 import { composerPlaceholder } from './composerPlaceholder'
-import { useComposerModels } from './useComposerModels'
+import { useComposerModel } from './useComposerModel'
 import { useComposerStreamTip } from './useComposerStreamTip'
 import { DraftSyncNotice } from './DraftSyncNotice'
 import { ActionButtons } from './ActionButtons'
 import { nextCaretInText, type CaretInText } from './caretInText'
-import { ComposerSessionStrips } from './ComposerSessionStrips'
+import { ComposerHeaderStrips } from './ComposerHeaderStrips'
 import { ComposerTextField } from './ComposerTextField'
 import { ComposerContextManifest } from './ContextRefChips'
 import { EditingBanner } from './EditingBanner'
@@ -41,7 +43,6 @@ import { usePromptSend } from './usePromptSend'
 import { usePromptSessionView } from './usePromptSessionView'
 import { useComposerFileInput } from './useComposerFileInput'
 import { useDynamicSlashCommands } from './useDynamicSlashCommands'
-import { useShownParticipant } from './useShownParticipant'
 
 import { useSlashArgOptions } from './useSlashArgOptions'
 import { useModelCommand } from './model-command/useModelCommand'
@@ -66,7 +67,6 @@ export function PromptInput(props: PromptInputProps) {
   const { hasConnection, model, models, reasoningEffort, serverQueue, attachments } = props
   const { onAddFiles, onRemoveAttachment, attachmentGate, readOnlyReason, onSend } = props
   const { hasInteraction = false, editingOriginalText, onCancelEdit, connectionsState } = props
-  const embedded = props.layout === 'embedded'
   const isEditing = editingOriginalText != null
   const completionMenuId = useId()
   const [focused, setFocused] = useState(false)
@@ -78,8 +78,8 @@ export function PromptInput(props: PromptInputProps) {
   }, [])
 
   const dynamicCommands = useDynamicSlashCommands(activeSessionId, isFocused)
-  const sessionView = usePromptSessionView(activeSessionId, serverQueue)
-  const { activeProjectId, participants } = sessionView
+  const sessionView = usePromptSessionView(activeSessionId)
+  const { activeProjectId, agent } = sessionView
   const modelCommand = useModelCommand(activeSessionId, activeProjectId, activeConnectionId)
   const loadDynamicOptions = useSlashArgOptions(
     activeSessionId,
@@ -101,22 +101,14 @@ export function PromptInput(props: PromptInputProps) {
     openCommandActive ? (slash.detected?.text ?? '') : '',
     setPrompt,
   )
-  const { selectedModel, rosterParticipants } = useComposerModels(
+  const selectedModel = useComposerModel(
     models,
     connectionsState.connections,
     activeConnectionId,
     model,
-    participants,
   )
-  // The roster participant whose model the composer shows (the first seat unless picked).
-  const { shownAgentId, select: setSelectedAgentId } = useShownParticipant(
-    activeSessionId,
-    participants,
-  )
-  // The context gauge measures against the shown participant's window, not the first seat's.
-  const contextWindow =
-    rosterParticipants.find((member) => member.agentId === shownAgentId)?.contextWindow ??
-    selectedModel?.contextLength
+  // The context gauge measures against the model's window.
+  const contextWindow = selectedModel?.contextLength
   const ctxRefs = useComposerContextRefs(
     prompt,
     activeSessionId,
@@ -137,7 +129,8 @@ export function PromptInput(props: PromptInputProps) {
   const { tip: streamTip, dismiss: dismissTip } = useComposerStreamTip({
     activeSessionId,
     isFocused,
-    running: isGenerating && isFocused && !sessionView.awaitingAnswer,
+    active: isFocused && !sessionView.awaitingAnswer,
+    running: isGenerating,
     idleDraft: prompt.trim().length === 0 && !readOnlyReason && !isEditing,
     usage: props.usage,
     contextDiagnostics: props.contextDiagnostics,
@@ -230,15 +223,16 @@ export function PromptInput(props: PromptInputProps) {
     isEditing,
     onSubmitEdit: props.onSubmitEdit,
     openCommandActive,
+    attachmentCount: attachments?.length ?? 0,
     submitOpenResource: openResource.submit,
     submitClientCommand: () =>
       modelCommand.submit(slash.detected, () => setPrompt('')) ||
       clientCommands.submit(slash.detected),
   })
-  const hasPrompt = Boolean(prompt.trim())
   const attachmentItems = attachments ?? []
-  // A message is sendable with text, attachments, OR pinned (drag-added) refs alone.
-  const hasContent = hasPrompt || attachmentItems.length > 0 || ctxRefs.pinnedRefs.length > 0
+  // A message is sendable with text, attachments, OR pinned (drag-added) refs alone: the same
+  // rule Enter and the send pipeline apply.
+  const hasContent = hasAuthoredInput(prompt, attachmentItems.length + ctxRefs.pinnedRefs.length)
   const attachEnabled = Boolean(onAddFiles && hasConnection && model && !readOnly)
   const voice = useComposerVoice({
     isFocused,
@@ -267,8 +261,8 @@ export function PromptInput(props: PromptInputProps) {
   const dropzone = props.dropzone ?? ownDropzone
   const { dragKind, handleFiles } = dropzone
   const filePicker = useComposerFileInput(handleFiles, attachmentGate)
-  // Mention pills in each member's colour, and the ghost suggestion after the caret.
-  const composerHighlight = useComposerMirror({ prompt, suggestionGhost, participants })
+  // Pills under file references, and the ghost suggestion after the caret.
+  const composerHighlight = useComposerMirror({ prompt, suggestionGhost })
 
   const placeholder = composerPlaceholder({
     hasConnection,
@@ -297,18 +291,13 @@ export function PromptInput(props: PromptInputProps) {
   return (
     <div
       data-focus-part="chat"
-      className={
-        embedded
-          ? 'shrink-0'
-          : 'shrink-0 px-6 pb-6 pt-3 max-sm:px-4 max-sm:pb-[max(1rem,env(safe-area-inset-bottom))] max-sm:pt-2'
-      }
+      className="shrink-0 px-6 pb-6 pt-3 max-sm:px-4 max-sm:pb-[max(1rem,env(safe-area-inset-bottom))] max-sm:pt-2"
     >
-      {props.showContextBar !== false &&
-        (contextBar ? (
-          cloneElement(contextBar, { children: contextControls })
-        ) : (
-          <ChipRow className="pb-2">{contextControls}</ChipRow>
-        ))}
+      {contextBar ? (
+        cloneElement(contextBar, { children: contextControls })
+      ) : (
+        <ChipRow className="pb-2">{contextControls}</ChipRow>
+      )}
       {isEditing && onCancelEdit && (
         <EditingBanner originalText={editingOriginalText ?? ''} onCancel={onCancelEdit} />
       )}
@@ -336,19 +325,14 @@ export function PromptInput(props: PromptInputProps) {
         />
         {/* Hidden file input driven by the paperclip button */}
         {filePicker.fileInput}
-        <ComposerSessionStrips
-          sessionView={sessionView}
-          tip={props.showTips === false ? null : streamTip}
+        <ComposerHeaderStrips
+          tip={streamTip}
           onDismissTip={dismissTip}
           runtimePanel={props.runtimePanel}
           activeSessionId={activeSessionId}
           isFocused={isFocused}
-          isGenerating={isGenerating}
           sessionUsage={props.sessionUsage}
           loops={props.loops}
-          participants={rosterParticipants}
-          selectedParticipantId={shownAgentId}
-          onSelectParticipant={setSelectedAgentId}
         />
         {hasInteraction ? (
           props.interactionOverlay
@@ -382,28 +366,22 @@ export function PromptInput(props: PromptInputProps) {
               </Suspense>
             )}
             <ActionButtons
-              compact={embedded}
-              idleAction={props.idleAction}
               showAttach
               accessory={composerAccessory(serverQueue, activeSessionId, props.accessory)}
               leading={
-                props.showModelPicker !== false && (
-                  <ModelSearchSelect
-                    models={models}
-                    value={model}
-                    onSelectionChange={props.setModel}
-                    connectionsState={connectionsState}
-                    disabled={isGenerating || readOnly}
-                    reasoningEffort={reasoningEffort}
-                    onReasoningEffortChange={props.setReasoningEffort}
-                    participants={participants}
-                    participantScope={activeProjectId ?? ''}
-                    sessionId={activeSessionId}
-                    focused={isFocused}
-                    selectedAgentId={shownAgentId}
-                    onSelectAgent={setSelectedAgentId}
-                  />
-                )
+                <ModelSearchSelect
+                  models={models}
+                  value={model}
+                  onSelectionChange={props.setModel}
+                  connectionsState={connectionsState}
+                  disabled={isGenerating || readOnly}
+                  reasoningEffort={reasoningEffort}
+                  onReasoningEffortChange={props.setReasoningEffort}
+                  agent={agent}
+                  agentScope={activeProjectId ?? ''}
+                  sessionId={activeSessionId}
+                  focused={isFocused}
+                />
               }
               hasPrompt={hasContent}
               canSend={canSend}
@@ -422,6 +400,15 @@ export function PromptInput(props: PromptInputProps) {
           </>
         )}
       </div>
+      {/* Contributed status lines under the box (a status bar, as the prompt's footer row). Outside
+          the shell and the interaction branch: it stays mounted while a question is open, and
+          is told so it can hide its rows meanwhile. */}
+      <SessionSurface
+        key={activeSessionId ?? 'none'}
+        surface="composer.footer"
+        sessionId={activeSessionId}
+        context={{ isFocused, hasInteraction }}
+      />
       {clientCommands.confirmation}
     </div>
   )

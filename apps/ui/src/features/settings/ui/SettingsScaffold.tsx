@@ -3,11 +3,6 @@ import { DIVIDED_LIST } from '@localixai/kit/divided-list'
 import { SectionHeading } from '@localixai/kit/section-heading'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
-/**
- * The one container a settings group lives in: a hairline outline and a quiet foreground veil, so the
- * rows of a group read as one object and two groups read as two. It replaces the open rules the
- * groups used to be drawn with, which left a page as one undifferentiated column.
- */
 const SCOPE_LABELS = {
   device: 'This device',
   workspace: 'All projects',
@@ -17,8 +12,12 @@ const SCOPE_LABELS = {
 
 const SettingsSectionContext = createContext(false)
 
-export const SETTINGS_CARD =
-  'overflow-hidden rounded-md border border-border-faint bg-foreground/[0.02]'
+/**
+ * The one container a settings group lives in: a hairline outline and a quiet foreground veil, so the
+ * rows of a group read as one object and two groups read as two. It replaces the open rules the
+ * groups used to be drawn with, which left a page as one undifferentiated column.
+ */
+const SETTINGS_CARD = 'overflow-hidden rounded-md border border-border-faint bg-foreground/[0.02]'
 
 /**
  * Every settings page: its header, an optional tab strip, then its sections. One geometry for all

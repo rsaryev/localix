@@ -59,9 +59,9 @@ test('the board polls only while its stream is not live', async () => {
   let fileChanged: (paths: string[] | null) => void = () => {}
   let fileLive: (live: boolean) => void = () => {}
   const filesSpy = spyOn(miniAppFiles, 'watchWorkspace').mockImplementation(
-    (_sessionId, listener, options = {}) => {
+    (_sessionId, listener, options?: { onLive?: (live: boolean) => void }) => {
       fileChanged = (paths) => listener({ sessionId, paths })
-      fileLive = (next) => options.onLive?.(next)
+      fileLive = (next) => options?.onLive?.(next)
       fileLive(true)
       return () => {}
     },

@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { Play, Hammer, ArrowUpCircle, ArrowDownCircle, ListTree, ScrollText } from 'lucide-react'
 import { FileTab } from '@localixai/mini-app-sdk/ui/components'
 import { Button } from '@localixai/kit/button'
+import { Field } from '@localixai/kit/field'
 import { Input } from '@localixai/kit/input'
 import {
   Dialog,
@@ -21,6 +22,7 @@ import {
   type ComposeAction,
   type DockerManifestKind,
 } from './model/dockerManifestCommands'
+import { focusOnMount } from '../../ui/focusOnMount'
 import { spawnInTerminal } from './model/terminalSpawn'
 
 /**
@@ -103,10 +105,9 @@ function DockerfileBar({
             <DialogTitle>Build image</DialogTitle>
           </DialogHeader>
           <DialogBody>
-            <label className="flex flex-col gap-1.5 text-xs text-text-soft">
-              Image tag
+            <Field label="Image tag">
               <Input
-                autoFocus
+                ref={focusOnMount}
                 value={tag}
                 onChange={(e) => setTag(e.target.value)}
                 onKeyDown={(e) => {
@@ -114,7 +115,7 @@ function DockerfileBar({
                 }}
                 placeholder="my-image:latest"
               />
-            </label>
+            </Field>
           </DialogBody>
           <DialogFooter>
             <Button size="sm" variant="ghost" onClick={() => setTagOpen(false)}>

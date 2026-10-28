@@ -103,17 +103,17 @@ describe('resolving a class', () => {
   })
 
   test('the live matcher resolves each class against real call facts', () => {
-    const danger = extractCallFacts('bash', { command: 'rm -rf /tmp/x' }, '/repo')
+    const danger = extractCallFacts('Bash', { command: 'rm -rf /tmp/x' }, '/repo')
     expect(matchesCapabilityCall('dangerous', 'ask', danger)).toBe(true)
     expect(
-      matchesCapabilityCall('dangerous', 'ask', extractCallFacts('bash', { command: 'ls' })),
+      matchesCapabilityCall('dangerous', 'ask', extractCallFacts('Bash', { command: 'ls' })),
     ).toBe(false)
 
-    const outside = extractCallFacts('read', { path: '/etc/hosts' }, '/repo')
+    const outside = extractCallFacts('Read', { path: '/etc/hosts' }, '/repo')
     expect(matchesCapabilityCall('outside-workspace', 'ask', outside)).toBe(true)
 
     // The class is the tool's answer, not the call's, so it arrives as the extra argument.
-    const write = extractCallFacts('write', { path: '/repo/a.txt' }, '/repo')
+    const write = extractCallFacts('Write', { path: '/repo/a.txt' }, '/repo')
     expect(matchesCapabilityCall('mutates', 'ask', write, { effect: 'files' })).toBe(true)
     expect(matchesCapabilityCall('mutates', 'ask', write, { effect: 'read' })).toBe(false)
     // Absent is a caller with no tool in hand — a rule preview — judged as a read.
@@ -168,12 +168,12 @@ describe('resolving a class', () => {
     expect(matchesCapabilityCall('inside-workspace', 'allow', noPaths)).toBe(false)
 
     // A shell call DOES name one — the directory it runs in — so it is inside when that is.
-    const shell = extractCallFacts('bash', { command: 'echo hi' }, '/repo')
+    const shell = extractCallFacts('Bash', { command: 'echo hi' }, '/repo')
     expect(matchesCapabilityCall('inside-workspace', 'allow', shell)).toBe(true)
 
-    const within = extractCallFacts('write', { path: '/repo/src/a.ts' }, '/repo')
+    const within = extractCallFacts('Write', { path: '/repo/src/a.ts' }, '/repo')
     expect(matchesCapabilityCall('inside-workspace', 'allow', within)).toBe(true)
-    const beyond = extractCallFacts('write', { path: '/etc/hosts' }, '/repo')
+    const beyond = extractCallFacts('Write', { path: '/etc/hosts' }, '/repo')
     expect(matchesCapabilityCall('inside-workspace', 'allow', beyond)).toBe(false)
   })
 
@@ -182,7 +182,7 @@ describe('resolving a class', () => {
     // `catastrophic` one does, so naming the narrower class can never be an escape hatch.
     const irreversible = ['rm -rf /', 'rm -rf ~', 'mkfs.ext4 /dev/sda1', 'dd if=x of=/dev/sda']
     for (const command of irreversible) {
-      const call = extractCallFacts('bash', { command }, '/repo')
+      const call = extractCallFacts('Bash', { command }, '/repo')
       expect({ command, catastrophic: call.catastrophic, dangerous: call.dangerous }).toEqual({
         command,
         catastrophic: true,
@@ -191,39 +191,39 @@ describe('resolving a class', () => {
     }
     // Destructive but recoverable stays out: this is the line between "confirm" and "never".
     for (const command of ['rm -rf /repo/node_modules', 'git push --force', 'docker rm x']) {
-      const call = extractCallFacts('bash', { command }, '/repo')
+      const call = extractCallFacts('Bash', { command }, '/repo')
       expect({ command, catastrophic: call.catastrophic }).toEqual({ command, catastrophic: false })
     }
   })
 
   test('read-only answers about the whole line, and says no when there is nothing to judge', () => {
     expect(
-      matchesCapabilityCall('read-only', 'allow', extractCallFacts('bash', { command: 'ls -la' })),
+      matchesCapabilityCall('read-only', 'allow', extractCallFacts('Bash', { command: 'ls -la' })),
     ).toBe(true)
     // One writing segment is enough to lose it — the class is about the CALL, not its first command.
     expect(
       matchesCapabilityCall(
         'read-only',
         'allow',
-        extractCallFacts('bash', { command: 'ls && rm x' }),
+        extractCallFacts('Bash', { command: 'ls && rm x' }),
       ),
     ).toBe(false)
     // No command at all is not proof of safety.
     expect(
-      matchesCapabilityCall('read-only', 'allow', extractCallFacts('write', { path: 'a' })),
+      matchesCapabilityCall('read-only', 'allow', extractCallFacts('Write', { path: 'a' })),
     ).toBe(false)
   })
 
   test('secrets matches by path, wherever the credential lives', () => {
     const hits = ['/repo/.env', '/repo/.env.production', '/home/u/.ssh/id_rsa', '/repo/key.pem']
     for (const path of hits) {
-      expect({ path, hit: extractCallFacts('read', { path }, '/repo').touchesSecret }).toEqual({
+      expect({ path, hit: extractCallFacts('Read', { path }, '/repo').touchesSecret }).toEqual({
         path,
         hit: true,
       })
     }
     for (const path of ['/repo/src/environment.ts', '/repo/README.md']) {
-      expect({ path, hit: extractCallFacts('read', { path }, '/repo').touchesSecret }).toEqual({
+      expect({ path, hit: extractCallFacts('Read', { path }, '/repo').touchesSecret }).toEqual({
         path,
         hit: false,
       })

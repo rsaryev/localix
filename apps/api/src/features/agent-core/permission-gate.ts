@@ -54,18 +54,19 @@ export interface RequestConfirmArgs {
 }
 
 /**
- * Result of surfacing an `ask` to the user. A bare boolean is the legacy shape
- * (approved yes/no); the object form additionally says HOW it was approved so
- * the gate can attribute the decision (`session-grant` = auto-approved by an
- * earlier session-wide "Always allow", without showing a card).
+ * Result of surfacing an `ask` to the user: whether it was approved, and HOW, so the gate can
+ * attribute the decision (`session-grant` = auto-approved by an earlier session-wide
+ * "Always allow", without showing a card).
  *
  * `message` is what the person wrote back on the card. A refusal used to reach the agent as
  * the four words "User declined read." — so a sub-agent that had picked the wrong file had no
  * way to learn which one was right, and simply tried the next one, or gave up.
  */
-export type ConfirmOutcome =
-  | boolean
-  | { approved: boolean; via?: 'user' | 'session-grant' | 'timeout' | 'hook'; message?: string }
+export interface ConfirmOutcome {
+  approved: boolean
+  via?: 'user' | 'session-grant' | 'timeout' | 'hook'
+  message?: string
+}
 
 /** The person's own words, quoted on their own line so the model cannot mistake whose they are. */
 const withReply = (sentence: string, reply: string | undefined): string =>
@@ -190,10 +191,8 @@ export function createPermissionGate(opts: PermissionGateOptions): PermissionGat
       },
       { input: ctx.input },
     )
-    const approved = typeof outcome === 'boolean' ? outcome : outcome.approved
-    const reply = typeof outcome === 'object' ? outcome.message : undefined
-    if (typeof outcome === 'object' && outcome.via === 'hook')
-      return hookConfirmVerdict(ctx.toolName, approved, reply)
+    const { approved, message: reply } = outcome
+    if (outcome.via === 'hook') return hookConfirmVerdict(ctx.toolName, approved, reply)
     // The one refusal a person made. Tagged so the refusal breaker does not count a human
     // steering their own run — see permission-gate-breaker.ts. An expired card carries the
     // same tag for the same reason (the model did nothing wrong) and a different sentence:

@@ -25,7 +25,7 @@ describe('continuation item ownership', () => {
       type: 'tool_call',
       status: 'running',
       toolCallId: 'call',
-      name: 'bash',
+      name: 'Bash',
       activeVerb: 'Running',
       input: {},
     }

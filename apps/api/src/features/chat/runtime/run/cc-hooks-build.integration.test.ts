@@ -40,8 +40,8 @@ function input(hooks: Record<string, unknown>, extra: Partial<BuildRunCcHooksInp
       state,
     } as never,
     userId: 'u1',
-    session: { id: 's1', projectId: null, agents: [] } as never,
-    speakerAgentId: 'a1',
+    session: { id: 's1', projectId: null, agent: null } as never,
+    agentId: 'a1',
     params: { scope: {} } as never,
     catalog: {} as never,
     effectiveModelId: 'm',
@@ -128,7 +128,7 @@ describe('a delegated agent’s frontmatter hooks', () => {
     session: {
       id: 's1',
       projectId: null,
-      agents: [],
+      agent: null,
       provenance: {
         kind: 'task-delegation',
         parentSessionId: 'p',

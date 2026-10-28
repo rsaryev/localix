@@ -11,15 +11,14 @@
  *   person   the person's words, sent while the session was busy
  *   command  a slash command sent while busy, kept whole until its turn (`QueuedCommand`)
  *   event    a machine wake: a loop, a job, a hook, a mini app, a delegator's message, …
- *   report   a delegated child's report to the participant who delegated
- *   ticket   execution intent: one participant answers (`AgentTurnTicket`)
+ *   report   a delegated child's report to the agent who delegated
+ *   ticket   execution intent: one agent answers (`AgentTurnTicket`)
  *
  * What every kind shares is the envelope. The delivery attributes (bindings, surface, mini apps, …)
  * are shared too: the delivery stage reads them alike, whoever produced them.
  */
 import type { ToolSurface } from '@localixai/agent/agents'
 
-import type { ParticipantRef } from '../../../../db'
 import type { DelegatedReport, MessageBinding, WakeSource } from '../../contracts'
 import type { AgentTurnTicket } from '../agent-turn-ticket'
 import type { RunExecutionContext } from '../execution-context'
@@ -46,17 +45,6 @@ interface Envelope {
   toolSurface?: ToolSurface
   /** Trusted authority inherited from the run that scheduled this wake. */
   executionContext?: RunExecutionContext
-  /**
-   * WHICH participant this routed turn concerns, when it concerns one.
-   *
-   * The participant projection shows a routed report in full to its recipient and as one line
-   * to everyone else (`history/stages/participant-view.ts`). Without it a board outcome about one
-   * participant's card is delivered whole to every participant — in one live room that was 13.9k
-   * characters of board traffic, paid for four times.
-   */
-  to?: { participant: ParticipantRef; handle?: string }
-  /** The person's words this wake is addressed by (`WakeRequest.addressedAs`); durable with it. */
-  addressedAs?: string
   /**
    * The band this entry was claimed in, when it was claimed together with others. Sticky until
    * the band is acknowledged, and durable in its own column (not this payload), so a delivery
@@ -119,7 +107,6 @@ export const fixesExecution = (turn: PendingTurn): boolean =>
   turn.entry === 'ticket' ||
   turn.entry === 'command' ||
   turn.executionContext != null ||
-  turn.addressedAs !== undefined ||
   Boolean(turn.extraDisabledTools?.length)
 
 /** A client surface as a comparable key: its capabilities and catalogs, in a fixed order. */
@@ -171,8 +158,6 @@ export function createPendingTurn(params: EnqueueParams, queuedAt: string): Pend
     ...(params.bindings ? { bindings: params.bindings } : {}),
     ...(params.toolSurface ? { toolSurface: params.toolSurface } : {}),
     ...(params.executionContext ? { executionContext: params.executionContext } : {}),
-    ...(params.to ? { to: params.to } : {}),
-    ...(params.addressedAs !== undefined ? { addressedAs: params.addressedAs } : {}),
   }
   switch (entryKindOf(params)) {
     case 'ticket':

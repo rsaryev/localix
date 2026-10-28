@@ -88,7 +88,7 @@ export const CONTENT: readonly KitCatalogEntry[] = [
     exports: ['MonogramAvatar', 'AvatarStack', 'avatarHue', 'monogramIcon'],
     summary:
       'A stable monogram avatar derived from a name, a stack of them, and the same tile as a menu row icon.',
-    use: 'People and agents in rows, headers and participant lists; `monogramIcon` for an agent in a MenuEntries row.',
+    use: 'People and agents in rows, headers and pickers; `monogramIcon` for an agent in a MenuEntries row.',
   },
   {
     specifier: k('inline-completion-ghost'),

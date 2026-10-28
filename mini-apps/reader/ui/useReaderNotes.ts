@@ -129,13 +129,21 @@ export function useReaderNotes({
     // The chips landing in the composer are the confirmation.
   }
 
+  // Another chapter or book has no note open: closed in the render that shows it, and any
+  // preview still being fetched for the old one is dropped.
+  const popoverScope = `${sourceKey}:${loadedChapterIndex}`
+  const [shownScope, setShownScope] = useState(popoverScope)
+  if (shownScope !== popoverScope) {
+    setShownScope(popoverScope)
+    setNotePopover(null)
+  }
   useEffect(() => {
     noteRequestRef.current += 1
-    setNotePopover((current) => {
-      current?.origin.setAttribute('aria-expanded', 'false')
-      return null
-    })
-  }, [loadedChapterIndex, sourceKey])
+  }, [popoverScope])
+
+  // Whichever way a note's link stops being the open one, it no longer says it is expanded.
+  const openOrigin = notePopover?.origin
+  useEffect(() => () => openOrigin?.setAttribute('aria-expanded', 'false'), [openOrigin])
 
   useEffect(() => {
     if (chapter?.kind !== 'html') return

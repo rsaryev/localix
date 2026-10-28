@@ -71,6 +71,12 @@ export interface ChatUsagePayload extends ChatUsageTotals {
    * per-request figure, the anchor for the next turn's context estimate and checkpoint decision.
    */
   contextTokens?: number
+  /**
+   * The LAST completed model request of the run, by kind: `inputTokens` is the whole input of
+   * that request (uncached, cache reads and cache writes together), as the provider measured it.
+   * What a Claude Code status line reads as `context_window.current_usage`.
+   */
+  lastRequest?: ChatLastRequestUsage
   /** Static request identity that makes `contextTokens` safe to reuse next run. */
   contextIdentity?: ChatContextAnchorIdentity
   isSummary?: boolean
@@ -78,6 +84,13 @@ export interface ChatUsagePayload extends ChatUsageTotals {
   // price catalog; 'subscription' = OAuth plan (API-equivalent estimate, not
   // metered spend). Drives the trust badge in the usage UI/dashboard.
   costSource?: 'actual' | 'estimated' | 'subscription'
+}
+
+export interface ChatLastRequestUsage {
+  inputTokens: number
+  outputTokens: number
+  cacheReadTokens: number
+  cacheWriteTokens: number
 }
 
 export interface ChatContextAnchorIdentity {

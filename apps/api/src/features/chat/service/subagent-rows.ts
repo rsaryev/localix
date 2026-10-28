@@ -1,7 +1,7 @@
 import { claudeCodeHome } from '../../cc-settings/config-dir'
 import { agentRoute } from '../../../contracts/session-route'
 import { userHome } from '../../../lib/env'
-import type { DelegatedRunSummary } from '../../agent-core/tools/delegate-control'
+import type { ChildRunSummary } from '../../agent-core/tools/agent/agent-control'
 import { settingsCommandLine } from '../../cc-settings/settings-commands'
 import { readSettingsFileLayers } from '../../cc-settings/settings-files'
 import type { PluginCatalog } from '../../plugins/catalog'
@@ -44,7 +44,7 @@ export interface SubagentRowsDeps {
   getSession: (userId: string, id: string) => Promise<SessionRecord | null>
   buildSessionPluginCatalog: (userId: string, session: SessionRecord) => Promise<PluginCatalog>
   resolveSessionWorkingDir: (userId: string, session: SessionRecord) => Promise<string>
-  listDelegatedRuns: (userId: string, sessionId: string) => Promise<DelegatedRunSummary[]>
+  listDelegatedRuns: (userId: string, sessionId: string) => Promise<ChildRunSummary[]>
   streamRegistry: Pick<SessionStreamRegistry, 'hasWatchers' | 'publish'>
   homeDir?: string
   run?: Parameters<typeof runSubagentStatusLine>[0]['run']
@@ -80,7 +80,7 @@ export function createSubagentRows(deps: SubagentRowsDeps) {
     for (const run of runs.filter((entry) => entry.status !== 'closed').slice(0, MAX_TASKS)) {
       const child = await deps.getSession(userId, run.sessionId)
       if (!child) continue
-      const model = run.agentId ? agentRoute(child, run.agentId)?.modelId : undefined
+      const model = run.agentId ? agentRoute(child)?.modelId : undefined
       const tokenCount = run.usage?.tokens ?? 0
       tasks.push({
         id: run.sessionId,

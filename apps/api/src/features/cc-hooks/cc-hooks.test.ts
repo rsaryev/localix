@@ -32,10 +32,10 @@ describe('matcher', () => {
 
   it('an exact matcher is case-sensitive, as in Claude Code ("Bash matches only the Bash tool")', () => {
     expect(matchesField('Startup', 'startup')).toBe(false)
-    expect(matchesToolName('BASH', 'bash')).toBe(false)
-    expect(matchesToolName('grep', 'search')).toBe(false)
+    expect(matchesToolName('BASH', 'Bash')).toBe(false)
+    expect(matchesToolName('grep', 'Search')).toBe(false)
     expect(matchesToolName('edit|write', 'write')).toBe(true) // `write` is the engine's own name
-    expect(matchesToolName('Grep', 'search')).toBe(true)
+    expect(matchesToolName('Grep', 'Search')).toBe(true)
   })
 
   it('regex path for matchers with special chars', () => {
@@ -45,29 +45,29 @@ describe('matcher', () => {
 
   it('maps CC tool names onto engine tool names', () => {
     // "Bash" matcher matches our engine `bash` tool.
-    expect(matchesToolName('Bash', 'bash')).toBe(true)
+    expect(matchesToolName('Bash', 'Bash')).toBe(true)
     // "Grep"/"Glob" both map to engine `search`.
-    expect(matchesToolName('Grep', 'search')).toBe(true)
-    expect(matchesToolName('Glob', 'search')).toBe(true)
+    expect(matchesToolName('Grep', 'Search')).toBe(true)
+    expect(matchesToolName('Glob', 'Search')).toBe(true)
     // "Edit|Write" matches edit (Edit→edit) and write.
-    expect(matchesToolName('Edit|Write', 'edit')).toBe(true)
-    expect(matchesToolName('Edit|Write', 'write')).toBe(true)
+    expect(matchesToolName('Edit|Write', 'Edit')).toBe(true)
+    expect(matchesToolName('Edit|Write', 'Write')).toBe(true)
     // Raw engine name also works.
-    expect(matchesToolName('bash', 'bash')).toBe(true)
+    expect(matchesToolName('Bash', 'Bash')).toBe(true)
     // Non-matching.
-    expect(matchesToolName('Bash', 'search')).toBe(false)
+    expect(matchesToolName('Bash', 'Search')).toBe(false)
   })
 
   it("a regex matcher sees Claude Code's cased name (`^Bash$`, `Edit.*`)", () => {
-    expect(matchesToolName('^Bash$', 'bash')).toBe(true)
-    expect(matchesToolName('Edit.*', 'edit')).toBe(true)
-    expect(matchesToolName('^(Edit|Write)$', 'write')).toBe(true)
-    expect(matchesToolName('^Bash$', 'search')).toBe(false)
+    expect(matchesToolName('^Bash$', 'Bash')).toBe(true)
+    expect(matchesToolName('Edit.*', 'Edit')).toBe(true)
+    expect(matchesToolName('^(Edit|Write)$', 'Write')).toBe(true)
+    expect(matchesToolName('^Bash$', 'Search')).toBe(false)
   })
 
   it('candidate set includes engine + CC aliases as Claude Code writes them', () => {
-    const c = toolNameCandidates('search')
-    expect(c).toContain('search')
+    const c = toolNameCandidates('Search')
+    expect(c).toContain('Search')
     expect(c).toContain('Grep')
     expect(c).toContain('Glob')
   })
@@ -539,7 +539,7 @@ describe('runtime protocol', () => {
         ],
       }),
     )
-    const r = await rt.runPreToolUse('bash', { command: 'rm -rf /' })
+    const r = await rt.runPreToolUse('Bash', { command: 'rm -rf /' })
     expect(r.decision).toBe('deny')
     expect(r.reason).toBe('blocked rm')
   })
@@ -554,7 +554,7 @@ describe('runtime protocol', () => {
         ],
       }),
     )
-    const r = await rt.runPreToolUse('bash', { command: 'rm -rf /' })
+    const r = await rt.runPreToolUse('Bash', { command: 'rm -rf /' })
     expect(r.decision).toBe('proceed')
     expect(r.didRewrite).toBe(true)
     expect(r.updatedInput).toEqual({ command: 'ls' })
@@ -573,7 +573,7 @@ describe('runtime protocol', () => {
         },
       ],
     })
-    expect((await rt.runPreToolUse('bash', {})).decision).toBe('deny')
+    expect((await rt.runPreToolUse('Bash', {})).decision).toBe('deny')
     expect((await rt.runPreToolUse('read', {})).decision).toBe('proceed') // matcher Bash doesn't match read
   })
 
@@ -587,7 +587,7 @@ describe('runtime protocol', () => {
         ],
       }),
     )
-    const r = await rt.runPostToolUse('write', { file_path: '/x' }, { content: 'done' })
+    const r = await rt.runPostToolUse('Write', { file_path: '/x' }, { content: 'done' })
     expect(r.additionalContext).toBe('file is generated')
   })
 
@@ -619,7 +619,7 @@ describe('runtime protocol', () => {
         ],
       }),
     )
-    const r = await rt.runPostToolUse('bash', { command: 'cat secrets' }, { content: 'hunter2' })
+    const r = await rt.runPostToolUse('Bash', { command: 'cat secrets' }, { content: 'hunter2' })
     expect(r.updatedToolOutput).toBe('[REDACTED]')
   })
 
@@ -637,7 +637,7 @@ describe('runtime protocol', () => {
         ],
       }),
     )
-    const r = await rt.runPostToolUse('bash', { command: 'x' }, { content: 'orig' })
+    const r = await rt.runPostToolUse('Bash', { command: 'x' }, { content: 'orig' })
     expect(r.updatedToolOutput).toBe('second')
   })
 
@@ -674,7 +674,7 @@ describe('systemMessage notices', () => {
       reg({ PostToolUse: [cmd(`cat >/dev/null; echo '{"systemMessage":"heads up: prod db"}'`)] }),
       (m, e) => notices.push([m, e]),
     )
-    await rt.runPostToolUse('write', { file_path: '/x' }, { content: 'done' })
+    await rt.runPostToolUse('Write', { file_path: '/x' }, { content: 'done' })
     expect(notices).toEqual([['heads up: prod db', 'PostToolUse']])
   })
 
@@ -690,7 +690,7 @@ describe('systemMessage notices', () => {
       }),
       (m) => notices.push(m),
     )
-    const r = await rt.runPreToolUse('bash', { command: 'ls' })
+    const r = await rt.runPreToolUse('Bash', { command: 'ls' })
     expect(r.decision).toBe('allow')
     expect(notices).toEqual(['careful'])
   })
@@ -701,9 +701,9 @@ describe('systemMessage notices', () => {
       reg({ PreToolUse: [cmd(`cat >/dev/null; echo '{"systemMessage":"same warning"}'`)] }),
       (m) => notices.push(m),
     )
-    await rt.runPreToolUse('bash', { command: 'a' })
-    await rt.runPreToolUse('bash', { command: 'b' })
-    await rt.runPreToolUse('bash', { command: 'c' })
+    await rt.runPreToolUse('Bash', { command: 'a' })
+    await rt.runPreToolUse('Bash', { command: 'b' })
+    await rt.runPreToolUse('Bash', { command: 'c' })
     expect(notices).toEqual(['same warning']) // fired once, then deduped
   })
 
@@ -719,7 +719,7 @@ describe('systemMessage notices', () => {
       }),
       (m) => notices.push(m),
     )
-    await rt.runPostToolUse('write', { file_path: '/x' }, { content: 'done' })
+    await rt.runPostToolUse('Write', { file_path: '/x' }, { content: 'done' })
     expect(notices).toEqual([])
   })
 })

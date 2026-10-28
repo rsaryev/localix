@@ -39,8 +39,8 @@ GB Mac, Balanced picks Gemma 4 12B and Smartest the 26B-A4B mixture of experts a
 The model picker lists a local chat model for agents once one is installed.
 
 EmbeddingGemma 2 is built in: Localix downloads it quietly on first start and keeps it — its row
-says **Built in**, and it can be paused but not cancelled or removed. Semantic search, group routing
-and mini apps use it from the list of installed models; none of them owns its download.
+says **Built in**, and it can be paused but not cancelled or removed. Semantic search and mini apps
+use it from the list of installed models; none of them owns its download.
 
 Every model is pinned to the Hugging Face commit it was listed at, and each file is checked against
 its published SHA-256 before it counts as installed. An interrupted download is never mistaken for a
@@ -51,6 +51,12 @@ release. One server process serves every local model: it starts on the first req
 model a request names, keeps at most two loaded (a chat model beside the embedding model), and stops
 after 15 idle minutes. It listens on this computer's loopback address only and accepts requests only
 with a key generated for each start.
+
+Localix processes that share one models folder share that server too. When the desktop app and a
+development server run side by side, the second uses the server the first started rather than
+starting another, and the server stops only after both have left it idle. If the Localix process
+that started it quits or is killed, the server stops with it within about two seconds. The other
+process starts its own on its next request.
 
 Each model is planned for this computer: the context it is started with (up to 64K tokens), and the
 attention cache's type — f16, or q8_0 when only that fits. Models whose template can think offer
@@ -63,6 +69,7 @@ reasoning levels. Models with a published draft model (Gemma 4) download it too 
 | Models         | `~/.localix/models/models/<model>`          |
 | Runtime        | `~/.localix/models/runtime/<llama.cpp tag>` |
 | Server presets | `~/.localix/models/router/presets.ini`      |
+| Server claim   | `~/.localix/models/router/router.json`      |
 | Runtime build  | llama.cpp b11600 (CPU and Metal builds)     |
 | `HF_TOKEN`     | Optional: higher Hugging Face rate limits   |
 

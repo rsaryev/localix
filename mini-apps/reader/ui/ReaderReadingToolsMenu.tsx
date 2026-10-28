@@ -59,7 +59,7 @@ function readingToolsEntries({
   onStopAutoScroll,
   onStartSpeedReading,
   onToggleParallel,
-}: ReaderReadingToolsMenuProps): MenuEntry[] {
+}: Omit<ReaderReadingToolsMenuProps, 'triggerRef'>): MenuEntry[] {
   // A fixed-page document (a comic) has no reflowable text to lay out, focus or play back.
   const readingModes: MenuEntry[] = fixedPageDocument
     ? []
@@ -127,14 +127,14 @@ function readingToolsEntries({
  * component presentation-only prevents the Reader toolbar from knowing how any
  * mode stores progress, drives playback, or opens a second pane.
  */
-export function ReaderReadingToolsMenu(props: ReaderReadingToolsMenuProps) {
-  const active = props.autoScrollActive || props.focusMode !== 'off' || props.parallelActive
+export function ReaderReadingToolsMenu({ triggerRef, ...menu }: ReaderReadingToolsMenuProps) {
+  const active = menu.autoScrollActive || menu.focusMode !== 'off' || menu.parallelActive
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <IconButton
-          ref={props.triggerRef}
+          ref={triggerRef}
           aria-label="Reading tools"
           tooltip="Reading tools"
           // A running mode keeps the trigger engaged — the same step IconButton gives an open menu.
@@ -144,7 +144,7 @@ export function ReaderReadingToolsMenu(props: ReaderReadingToolsMenuProps) {
         </IconButton>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        <MenuEntries entries={readingToolsEntries(props)} family="dropdown" />
+        <MenuEntries entries={readingToolsEntries(menu)} family="dropdown" />
       </DropdownMenuContent>
     </DropdownMenu>
   )

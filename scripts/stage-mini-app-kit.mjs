@@ -1,6 +1,6 @@
 // Stage the MINI APP KIT beside the staged mini apps: everything the running app needs to scaffold,
 // build and test a user mini app without a source tree (layout: apps/api/src/features/mini-apps/
-// authoring/kit-layout.ts).
+// kit-layout.ts). The mini-app-authoring plugin reads it; Localix serves it at `/rpc/mini-apps/kit`.
 //
 // Why at staging: an installed app has no `node_modules`, no host sources and no scanner binaries,
 // so whatever a user mini app build needs from the host is resolved HERE, once, where it all exists
@@ -36,15 +36,24 @@ import {
   MINI_APP_KIT_STYLES_DIR,
   MINI_APP_KIT_TEMPLATE_DIR,
   MINI_APP_KIT_TEST_PRELOAD,
+  MINI_APP_KIT_TYPECHECK,
   MINI_APP_KIT_UI_VENDOR_DIR,
   MINI_APP_TEST_EXTRA_MODULES,
+  MINI_APP_UI_PREBUILT_MODULES,
   MINI_APP_UI_VENDOR_PACKAGES,
   TAILWIND_UTILITIES,
   TEMPLATE_SCAFFOLD_FILE,
 } from '@localixai/api/mini-app-kit-layout'
+import { MINI_APP_API_VERSION } from '@localixai/mini-app-sdk/manifest-primitives'
 import { MINI_APP_UI_KIT_PREFIX } from '@localixai/mini-app-sdk/ui-artifact'
 
 import { stageHostStylesheets } from './stage-mini-app-kit-styles.mjs'
+import {
+  buildKitTools,
+  KIT_AUTHORING_VERSION,
+  KIT_TOOLS_INPUTS,
+  localixVersion,
+} from './stage-mini-app-kit-tools.mjs'
 import { stageMiniAppKitTypes } from './stage-mini-app-kit-types.mjs'
 
 /** The host's design-system stylesheet: its theme, variants and utilities. */
@@ -72,7 +81,8 @@ export const MINI_APP_KIT_INPUTS = [
   'scripts/stage-mini-app-kit.mjs',
   'scripts/stage-mini-app-kit-styles.mjs',
   'scripts/stage-mini-app-kit-types.mjs',
-  'apps/api/src/features/mini-apps/authoring/kit-layout.ts',
+  'apps/api/src/features/mini-apps/kit-layout.ts',
+  ...KIT_TOOLS_INPUTS,
   'apps/ui/src/app',
   // The kit's component declarations are read from its primitives, its tokens from its styles.
   'packages/kit/src',
@@ -322,6 +332,23 @@ export async function stageMiniAppKit({ repoRoot, outKit, log = () => {} }) {
     hostStylesheet: join(MINI_APP_KIT_STYLES_DIR, hostStylesheet).split(sep).join('/'),
     backendModules: await buildBackendModules(repoRoot, join(outKit, MINI_APP_KIT_BACKEND_DIR)),
     uiVendorModules: stageVendorPackages(repoRoot, join(outKit, MINI_APP_KIT_UI_VENDOR_DIR)),
+  }
+  // What the mini-app-authoring plugin reads (`stage-mini-app-kit-tools.mjs`): every path
+  // kit-relative, so the kit works wherever it is unpacked.
+  manifest.apiVersion = MINI_APP_API_VERSION
+  manifest.localixVersion = localixVersion(repoRoot)
+  manifest.authoring = {
+    version: KIT_AUTHORING_VERSION,
+    template: MINI_APP_KIT_TEMPLATE_DIR,
+    catalog: manifest.kitCatalog,
+    styles: MINI_APP_KIT_STYLES_DIR,
+    tailwindUtilities: join(MINI_APP_KIT_STYLES_DIR, TAILWIND_UTILITIES).split(sep).join('/'),
+    typecheck: MINI_APP_KIT_TYPECHECK,
+    typeRoots: 'types/node_modules/@types',
+    testPreload: MINI_APP_KIT_TEST_PRELOAD,
+    backendSharedModules: [...MINI_APP_BACKEND_SHARED_MODULES],
+    uiPrebuiltModules: [...MINI_APP_UI_PREBUILT_MODULES],
+    tools: await buildKitTools(repoRoot, outKit),
   }
   writeFileSync(join(outKit, MINI_APP_KIT_MANIFEST), `${JSON.stringify(manifest, null, 2)}\n`)
   if (types.kitRejected.length) {

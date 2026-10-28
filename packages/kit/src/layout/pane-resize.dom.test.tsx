@@ -271,11 +271,15 @@ describe('usePaneResize — the divider must stay reachable', () => {
     const seen: PaneResize[] = []
     function Harness() {
       const pane = usePaneResize({ axis: 'x', initial: 400, min: 100, max: 900 })
-      renders += 1
+      // Every commit is one render here, so counting in an effect needs no write during render.
+      React.useEffect(() => {
+        renders += 1
+      })
       seen.push(pane)
       return (
         <div
           role="separator"
+          aria-label="Pane size"
           onPointerDown={pane.onResizeStart}
           style={{ width: `${pane.size}px` }}
         />

@@ -12,7 +12,6 @@
   "devDependencies": {
     "@localixai/agent": "workspace:*",
     "@localixai/api": "workspace:*",
-    "@localixai/change-feed": "workspace:*",
     "@localixai/engine-scripts": "workspace:*",
     "@localixai/kit": "workspace:*",
     "@localixai/mini-app-kit-compiler": "workspace:*",

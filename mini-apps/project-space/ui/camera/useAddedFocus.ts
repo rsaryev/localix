@@ -1,4 +1,4 @@
-import { useEffect, useRef, type RefObject } from 'react'
+import { useEffect, useEffectEvent, useState, type RefObject } from 'react'
 import type { SpaceDocument, SpaceElement } from '../../shared/format/document'
 import { subjectOf } from '../../shared/camera-target'
 import { boundsOfBoxes } from '../../shared/ops/layout'
@@ -56,9 +56,9 @@ export function useAddedFocus(
   select: (ids: Iterable<string>) => void,
   root: RefObject<HTMLElement | null>,
 ) {
-  const mounted = useRef(Date.now())
-  const board = useRef({ space, director, select })
-  board.current = { space, director, select }
+  const [mounted] = useState(() => Date.now())
+  // The request is taken against the board as it is by then, without restarting the watch.
+  const latest = useEffectEvent(() => ({ space, director, select }))
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined
@@ -69,11 +69,11 @@ export function useAddedFocus(
         pending.delete(sessionId)
         return
       }
-      const { space: now, director: guide, select: pick } = board.current
+      const { space: now, director: guide, select: pick } = latest()
       const ids = request.ids.filter((id) => now.elements[id])
       // Not in this document yet: the poll that brings it re-renders the board, and takes it then.
       if (ids.length === 0 || !guide.size()) return
-      const settling = PLACEMENT_MS - (Date.now() - mounted.current)
+      const settling = PLACEMENT_MS - (Date.now() - mounted)
       if (settling > 0) {
         clearTimeout(timer)
         timer = setTimeout(take, settling)
@@ -98,5 +98,5 @@ export function useAddedFocus(
       clearTimeout(timer)
     }
     // `space` re-runs it: the element arriving in the document is what it waits for.
-  }, [sessionId, space, root])
+  }, [sessionId, space, root, mounted])
 }

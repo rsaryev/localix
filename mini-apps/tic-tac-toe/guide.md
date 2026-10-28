@@ -39,10 +39,8 @@ corner. If the move is refused, the result shows the board as it is now — the 
 
 Tell the user the result in one line and offer another game. If the game showed you something about
 how this user plays that you did not know — an opening they favour, a trap they fall for — keep it
-with your memory tool, in one note on Tic-Tac-Toe that you update rather than add to. Use memory
-only when the tool is available and permitted. Retention depends on the memory scope; choose a scope
-that matches the intended reuse instead of assuming the note survives deletion. The board is
-session-owned and is removed with its chat.
+in your memory, in one note on Tic-Tac-Toe that you update rather than add to. Use memory only when
+you have it and may write there. The board is session-owned and is removed with its chat.
 
 ## When the user asks to play
 

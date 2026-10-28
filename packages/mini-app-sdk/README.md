@@ -54,7 +54,7 @@ Use the same source-to-read protocol as core:
 - `bounded-cache`: `createBoundedCache`, the LRU cache bounded by entries and weight that the API
   and the kit re-export.
 - `ui/now`: `useNow`, a visibility-gated clock for values derived from a stored timestamp.
-- Chat-table games: `createTurnTable` and `seatedAnswer` (`backend`) keep one game per chat and ask
+- Chat-table games: `createTurnTable` and `chatAnswer` (`backend`) keep one game per chat and ask
   the agent or the decision model for the turn it owes; `useTableGame` (`ui/game-table`) reads and
   acts on the board's own chat; `sessionGameUi` (`ui/session-game`) registers the board, its
   launcher and its anchor; `opponent` and `agent-wait` carry the opponent's name and wait clock.

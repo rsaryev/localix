@@ -24,7 +24,7 @@ export function recordLine(record: GameRecord): string | null {
   return `Score at this table: you ${record.lost}, the user ${record.won}, draws ${record.draw}.`
 }
 
-/** A revealed round from the agent's seat: "Round 2: the user played rock, you played paper — you won." */
+/** A revealed round from the agent's side: "Round 2: the user played rock, you played paper — you won." */
 export function resultLine(round: RoundView): string | null {
   const theirs = theirMove(round)
   if (round.outcome === null || !round.mine || !theirs) return null
@@ -33,7 +33,7 @@ export function resultLine(round: RoundView): string | null {
   return `Round ${round.number}: the user played ${theirs}, you played ${round.mine} — ${verdict}.`
 }
 
-/** Where the current round stands, from the agent's seat. Never names a sealed move. */
+/** Where the current round stands, from the agent's side. Never names a sealed move. */
 export function roundLine(view: PlayerView): string {
   const round = view.round
   if (round.outcome !== null) return resultLine(round) ?? `Round ${round.number} is over.`
@@ -47,7 +47,7 @@ export function roundLine(view: PlayerView): string {
   return `Round ${round.number}: the user opens. The board wakes you after they have chosen.`
 }
 
-/** Who fills the other seat, in the third person: "the agent", "the decision model". */
+/** Who fills the other side, in the third person: "the agent", "the decision model". */
 const opponentOf = (view: Pick<PlayerView, 'opponent'>) =>
   view.opponent === 'decision' ? 'the decision model' : 'the agent'
 
@@ -59,7 +59,7 @@ function neutralScore(view: PlayerView, them: string): string | null {
 }
 
 /**
- * Everything the agent needs to act. While the decision model holds the seat, the agent does not
+ * Everything the agent needs to act. While the decision model holds the side, the agent does not
  * play: it is told so, with the score, and nothing about the round in play.
  */
 export function describeForAgent(view: PlayerView): string {

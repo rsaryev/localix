@@ -12,7 +12,7 @@ import { hostPolicy } from '../../policy/session-policy'
 export function handleHitlRequest(ctx: TurnEventContext, event: EventOf<'human_in_loop_request'>) {
   const { env, state, session } = ctx
   // Keep routing kind-agnostic: the built-in `ask`/`quiz` tools, the `request_secret`
-  // kind the `vault` tool raises, and provider or plugin HITL kinds all carry the same
+  // kind the `Vault` tool raises, and provider or plugin HITL kinds all carry the same
   // base envelope.
   const request = event.request as HumanInLoopRequestBase
   const targetSessionId = ctx.hitlTargetSessionId

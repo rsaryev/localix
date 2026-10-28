@@ -1,3 +1,4 @@
+import { listFolderWorkflows } from './folder-workflows'
 import { scalarConfig } from '../capabilities/source-repository'
 import { dataDirOfPlugin, pluginIdOf } from './plugin-data-id'
 import {
@@ -204,5 +205,17 @@ export async function listCatalogCommandSpecs(
         bySkill.has(`${spec.pluginName}:${spec.name}`.toLowerCase())
       ),
   )
-  return [...commands, ...mods, ...skills]
+  const saved: PluginCommandSpec[] = (
+    await listFolderWorkflows({ cwd: opts.projectDir, homeDir: opts.homeDir })
+  )
+    .filter((entry) => !bySkill.has(entry.fullName.toLowerCase()))
+    .map((entry) => ({
+      pluginName: entry.fullName,
+      name: entry.fullName,
+      fullName: entry.fullName,
+      description: entry.description,
+      args: [],
+      argumentHint: '[input]',
+    }))
+  return [...commands, ...mods, ...saved, ...skills]
 }

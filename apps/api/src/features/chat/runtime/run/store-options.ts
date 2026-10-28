@@ -4,7 +4,7 @@ import { TOOL } from '../../../agent-core/tool-names'
 import type { RuntimeToolWiringContext, buildRunToolRegistry } from './runtime-tools'
 
 /**
- * Host wiring for the `store` tool: the Store service, bound to this run's person and open
+ * Host wiring for the `Store` tool: the Store service, bound to this run's person and open
  * project. Root chat only (`policy.lineage`), like the agent management it replaces; a model never
  * names the user, the project or a source. The tool reads only what the person's added sources
  * list: the port has no way to add, remove or refresh one.
@@ -15,7 +15,7 @@ export function buildStoreOptions(
 ): StoreToolPort | undefined {
   const { userId, session, agentProfile } = params
   const service = ctx.deps.store
-  if (!service || !params.policy.lineage.managesAgents || !isToolDirect(agentProfile, TOOL.store))
+  if (!service || !params.policy.lineage.managesAgents || !isToolDirect(agentProfile, TOOL.Store))
     return undefined
   const actor = { userId, projectId: session.projectId ?? null }
   return {

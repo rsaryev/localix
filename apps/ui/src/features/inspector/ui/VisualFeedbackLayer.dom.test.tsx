@@ -180,9 +180,11 @@ async function mountLayer(bridge: VisualFeedbackBridge, sessionId: string) {
     act,
     async type(text: string) {
       const field = host.querySelector('textarea')!
-      const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!
       await act(async () => {
-        setter.call(field, text)
+        Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set?.call(
+          field,
+          text,
+        )
         field.dispatchEvent(new Event('input', { bubbles: true }))
       })
     },

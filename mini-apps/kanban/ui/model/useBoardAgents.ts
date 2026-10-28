@@ -13,7 +13,7 @@ export interface BoardAgents {
 /**
  * The agents a card on this chat's board may be assigned to, read from the host's directory.
  *
- * Asked for, not typed: a free-text handle was the old picker, and a handle nobody answers to
+ * Asked for, not typed: a free-text name was the old picker, and a name nobody answers to
  * was refused only at submit, after the whole form had been filled in. The list is the one the
  * server resolves `agent` against, so anything picked here is an assignment it accepts.
  */

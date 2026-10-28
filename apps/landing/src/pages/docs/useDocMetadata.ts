@@ -3,7 +3,7 @@ import type { DocPage } from '@/generated/docs'
 import { SITE_ORIGIN } from '@/lib/site'
 import { HOME_DESCRIPTION, HOME_STRUCTURED_DATA } from '@/lib/structuredData'
 
-const HOME_TITLE = 'Localix — One workspace for you and a team of agents'
+const HOME_TITLE = 'Localix — One workspace for you and your agents'
 const HOME_URL = `${SITE_ORIGIN}/`
 
 /**

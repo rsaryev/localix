@@ -33,7 +33,7 @@ export function ChatHeaderActions({
       aria-label="Conversation actions"
       className="flex h-full shrink-0 items-center"
     >
-      <SessionUsageIndicator usage={sessionUsage} sessionId={activeSessionId} />
+      <SessionUsageIndicator usage={sessionUsage} />
       <IconButton
         size="md"
         onClick={() => openSearch(true)}

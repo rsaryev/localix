@@ -11,7 +11,7 @@ describe('assistantText', () => {
     const content = [
       { type: 'text', text: 'Build ' },
       { type: 'thinking', text: 'hmm, let me think' },
-      { type: 'tool_call', id: 't1', name: 'read', arguments: '{}' },
+      { type: 'tool_call', id: 't1', name: 'Read', arguments: '{}' },
       { type: 'text', text: 'the parser' },
     ]
     expect(assistantText(content)).toBe('Build the parser')

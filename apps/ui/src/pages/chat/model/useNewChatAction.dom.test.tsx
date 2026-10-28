@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, mock, test } from 'bun:test'
+import { tap } from '@/testing/hookProbe'
 import { registerDom } from '@localixai/kit/testing/dom'
 
 await mock.module('./useChatPagePalette', () => ({
@@ -54,7 +55,7 @@ describe('useNewChatAction DOM boundary', () => {
       expect(createSession).toHaveBeenCalledTimes(1)
       expect(createSession.mock.calls[0]?.[1]).toEqual({
         scope: { kind: 'scope', projectId: 'project-route' },
-        participant: { kind: 'inherit' },
+        agent: { kind: 'inherit' },
       })
       expect(goToSession).toHaveBeenCalledWith('session-new', { project: 'project-route' })
     } finally {
@@ -73,31 +74,33 @@ describe('useNewChatAction DOM boundary', () => {
     const host = document.createElement('div')
     document.body.append(host)
     const root = createRoot(host)
-    let start: () => void = () => {}
+    const start = tap<() => void>()
 
     function Harness({ app }: { app: boolean }) {
       const startNewChatRef = useRef<() => void>(() => {})
-      start = useNewChatAction({
-        isMobile: false,
-        setSidebarOpen: () => {},
-        routeProjectId: null,
-        createSession: createSession as never,
-        nav: { goToSession: () => {} } as never,
-        startNewChatRef,
-        setProjectSwitcher: () => {},
-        setSessionSwitcher: () => {},
-        replaceNewChat: app ? appConversation : null,
-      } as never).startNewChat
+      start.put(
+        useNewChatAction({
+          isMobile: false,
+          setSidebarOpen: () => {},
+          routeProjectId: null,
+          createSession: createSession as never,
+          nav: { goToSession: () => {} } as never,
+          startNewChatRef,
+          setProjectSwitcher: () => {},
+          setSessionSwitcher: () => {},
+          replaceNewChat: app ? appConversation : null,
+        } as never).startNewChat,
+      )
       return null
     }
 
     try {
       await act(async () => root.render(<Harness app={false} />))
-      await act(async () => start())
+      await act(async () => start.value?.())
       expect(createSession).toHaveBeenCalledTimes(1)
 
       await act(async () => root.render(<Harness app />))
-      await act(async () => start())
+      await act(async () => start.value?.())
       expect(appConversation).toHaveBeenCalledTimes(1)
       expect(createSession).toHaveBeenCalledTimes(1)
     } finally {

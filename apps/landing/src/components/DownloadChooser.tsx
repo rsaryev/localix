@@ -1,6 +1,6 @@
 import { Button } from '@localixai/kit/button'
 import { Download, Hammer } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { Link } from 'react-router'
 import { cn } from '../lib/cn'
 import { DOWNLOADS, resolveDownloads, type DownloadOption } from './downloadOptions'
@@ -9,27 +9,43 @@ import {
   readMacChipSignals,
   readPlatformSignals,
   type DownloadGuess,
+  type PlatformId,
 } from './downloadPlatform'
 
 export { resolveDownloads }
 
-/** SSR and the first client render use the same source-build action. */
+const noSubscription = () => () => {}
+/** The synchronous guess as a string, so the snapshot compares by value and never loops. */
+const readFirstGuess = () => {
+  const guess = detectDownload(readPlatformSignals())
+  return `${guess.id}:${guess.certain}`
+}
+const SERVER_GUESS = 'unknown:false'
+
+/**
+ * SSR and the hydrating client render use the same source-build action; the browser's own
+ * signals take over right after, and an uncertain Mac is refined once its chip is read.
+ */
 function useDownloadGuess(): DownloadGuess {
-  const [guess, setGuess] = useState<DownloadGuess>({ id: 'unknown', certain: false })
+  const first = useSyncExternalStore(noSubscription, readFirstGuess, () => SERVER_GUESS)
+  const [refined, setRefined] = useState<DownloadGuess | null>(null)
   useEffect(() => {
     const base = readPlatformSignals()
-    const first = detectDownload(base)
-    setGuess(first)
-    if (first.certain || first.id !== 'mac-arm64') return
+    const guess = detectDownload(base)
+    if (guess.certain || guess.id !== 'mac-arm64') return
     let cancelled = false
     void readMacChipSignals().then((chip) => {
-      if (!cancelled) setGuess(detectDownload({ ...base, ...chip }))
+      if (!cancelled) setRefined(detectDownload({ ...base, ...chip }))
     })
     return () => {
       cancelled = true
     }
   }, [])
-  return guess
+  return useMemo(() => {
+    if (refined) return refined
+    const [id, certain] = first.split(':')
+    return { id: id as PlatformId, certain: certain === 'true' }
+  }, [first, refined])
 }
 
 const SOURCE_DOCS = '/docs/getting-started--installation#how-it-works'

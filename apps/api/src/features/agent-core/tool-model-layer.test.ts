@@ -10,37 +10,33 @@ import { CHAT_RUN_PROFILE } from './run-shape'
 import { createRuntimeToolRegistry } from './tool-registry'
 import { TOOL } from './tool-names'
 import { describeWithholdReason, verdictFor } from './tool-ledger'
-import {
-  productionCoreDeps,
-  productionExtraTools,
-  productionOptionalPorts,
-} from './testing/production-ports'
+import { productionCoreDeps, productionOptionalPorts } from './testing/production-ports'
 
 const registryFor = (modelInput: readonly string[] | undefined) =>
   createRuntimeToolRegistry({
-    policy: { agentProfile: CHAT_RUN_PROFILE, extraTools: productionExtraTools(), modelInput },
+    policy: { agentProfile: CHAT_RUN_PROFILE, modelInput },
     core: productionCoreDeps(),
-    optional: productionOptionalPorts({ save: async () => {} }),
+    optional: productionOptionalPorts(),
   })
 
 const acceptsScreenshot = (registry: ReturnType<typeof registryFor>) =>
   registry.tools
-    .find((tool) => tool.name === TOOL.browser)!
+    .find((tool) => tool.name === TOOL.Browser)!
     .inputSchema.safeParse({ action: 'take_screenshot' }).success
 
 describe('the model layer', () => {
   test('a text-only model gets browser without take_screenshot, and keeps read', () => {
     const registry = registryFor(['text'])
-    expect(registry.toolNames).toContain(TOOL.browser) // snapshot, steps, evaluate still work
+    expect(registry.toolNames).toContain(TOOL.Browser) // snapshot, steps, evaluate still work
     expect(acceptsScreenshot(registry)).toBe(false)
-    expect(registry.toolNames).toContain(TOOL.read)
+    expect(registry.toolNames).toContain(TOOL.Read)
     expect(registry.toolNames).not.toContain('view_image')
   })
 
   test('a model that reads images gets the screenshot action', () => {
     const registry = registryFor(['text', 'image'])
     expect(acceptsScreenshot(registry)).toBe(true)
-    expect(registry.toolNames).toContain(TOOL.read)
+    expect(registry.toolNames).toContain(TOOL.Read)
   })
 
   test('an unknown model is not judged, the way authority is not without a surface', () => {

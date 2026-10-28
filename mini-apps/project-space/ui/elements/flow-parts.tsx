@@ -23,7 +23,8 @@ function outline(node: FlowNode, w: number, h: number): string {
     case 'parallelogram':
     case 'cylinder':
       return shapePath(node.shape, w, h, 0.5)
-    default:
+    case 'rect':
+    case 'subroutine':
       return rounded(w, h, 6)
   }
 }

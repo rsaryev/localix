@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import type { AgentToolCategory } from '@localixai/agent/agents'
-import { BUILTIN_TOOL_CATALOG, isProtocolTool } from '../agent-core/tool-names'
+import { BUILTIN_TOOL_CATALOG } from '../agent-core/tool-names'
 import { miniAppLabel } from '@localixai/mini-app-sdk/manifest'
 
 export const CATEGORY_LABELS = {
@@ -28,8 +28,6 @@ export const toolMetaSchema = z.object({
   label: z.string(),
   description: z.string(),
   category: z.enum(TOOL_CATEGORIES),
-  /** Required by the conversation protocol; it has no off switch. */
-  required: z.boolean().optional(),
   /** Present only for a tool contributed by a mini app's backend. */
   provider: z.object({ kind: z.literal('mini-app'), id: z.string(), label: z.string() }).optional(),
 })
@@ -76,7 +74,6 @@ export function builtinToolManifest(): ToolMeta[] {
     label,
     description,
     category,
-    ...(isProtocolTool(name) ? { required: true } : {}),
   }))
 }
 

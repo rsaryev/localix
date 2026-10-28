@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from 'react'
+import { useCallback, useLayoutEffect, useMemo, useRef } from 'react'
 import { sortProvidersByPopularity } from '@localixai/agent/catalog'
 import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { useUserSettings } from '@/shared/lib/user-settings/useUserSettings'
@@ -7,12 +7,10 @@ import { useModelsCatalog } from '@/shared/hooks/useModelsCatalog'
 import { toast } from '@/shared/lib/notify'
 import { findSessionInState } from '../../../model/findSession'
 import { useChatStore } from '../../../model/store'
-import type { AgentSummary, JoinRoutesView } from '@/shared/api/contracts'
-import { participantRows, type ParticipantRecord } from '../model-select/participantRows'
+import { conversationAgentRow, type AgentRecord } from '../model-select/agentRow'
 import { recordRecentModel } from '../model-select/recentModels'
 import { rememberAgentModelSettings } from '../model-select/rememberModelReasoning'
 import { agentSettingsIo } from '../model-select/useAgentModelTurns'
-import { notifyPartyRouteFailure } from '../model-select/partyRouteFailure'
 import type { SkipArgFor } from '../SlashArgSpec'
 import type { SlashCommand } from '../SlashCommandMenu'
 import { effortStepOptions, resolveEffortCommand, skipEffortStep } from './modelCommandEffort'
@@ -38,12 +36,11 @@ export function useModelCommand(
 ) {
   const { models, oauthProviderIds } = useModelsCatalog()
   const catalog = useRef({ models, oauthProviderIds })
-  catalog.current = { models, oauthProviderIds }
-  const records = useRef(new Map<string, ParticipantRecord>())
-  /** The registry as the picker lists it: the agents not invited yet are rows too. */
-  const directory = useRef<readonly AgentSummary[]>([])
-  /** What each agent not invited yet would join on, as the picker shows it. */
-  const joinRoutes = useRef<JoinRoutesView | null>(null)
+  // Mirrored before any other effect or event of this commit: the loaders below read it later.
+  useLayoutEffect(() => {
+    catalog.current = { models, oauthProviderIds }
+  })
+  const records = useRef(new Map<string, AgentRecord>())
 
   /** The picker's inputs as they are right now — a loader runs after the render it came from. */
   const context = useCallback((): ModelCommandContext => {
@@ -51,16 +48,9 @@ export function useModelCommand(
     const session = findSessionInState(state, sessionId)
     const agentSettings = useUserSettings.getState().settings.agentSettings
     return {
-      participants: participantRows(
-        session?.agents,
-        (id) => records.current.get(id),
-        session
-          ? {
-              agents: directory.current,
-              choices: session.modelChoices,
-              joinRoutes: joinRoutes.current,
-            }
-          : undefined,
+      agent: conversationAgentRow(
+        session?.agent,
+        session ? records.current.get(session.agent?.agentId ?? '') : undefined,
       ),
       connections: sortProvidersByPopularity(state.connections, (row) => row.providerId),
       models: catalog.current.models,
@@ -77,28 +67,25 @@ export function useModelCommand(
       committed: Readonly<Record<string, string>>,
       commandId = 'model',
     ) => {
-      // Registry names and turn ceilings, as the picker's Agents column shows them.
-      if (argName === 'agent' || argName === 'turns') {
-        const [snapshot, join] = await Promise.all([
-          backendClient.fetchCapabilitySnapshot({ projectId: projectId ?? '' }).catch(() => null),
-          sessionId ? backendClient.getJoinRoutes(sessionId).catch(() => null) : null,
-        ])
-        joinRoutes.current = join
+      // The registry name and turn ceiling, as the picker's workload column shows them.
+      if (argName === 'turns') {
+        const snapshot = await backendClient
+          .fetchCapabilitySnapshot({ projectId: projectId ?? '' })
+          .catch(() => null)
         for (const agent of snapshot?.agents ?? [])
           records.current.set(agent.record.id, agent.record)
-        if (snapshot) directory.current = snapshot.agents
       }
       return commandId === 'effort'
-        ? effortStepOptions(context(), argName, query, committed)
+        ? effortStepOptions(context(), argName, query)
         : modelStepOptions(context(), argName, query, committed)
     },
-    [context, projectId, sessionId],
+    [context, projectId],
   )
 
   const skipArg = useCallback<SkipArgFor>(
     (command, name, committed) =>
       isEffortCommand(command)
-        ? skipEffortStep(context(), name, committed)
+        ? skipEffortStep(context(), name)
         : isModelCommand(command) && skipModelStep(context(), name, committed),
     [context],
   )
@@ -107,40 +94,24 @@ export function useModelCommand(
     async (plan: ModelCommandPlan) => {
       if (!sessionId) return
       const store = useChatStore.getState()
-      if (plan.kind === 'party') {
-        await store.applyPartyRoute(
-          sessionId,
-          {
-            providerConnectionId: plan.connectionId,
-            modelId: plan.modelId,
-            reasoningEffort: plan.reasoningEffort,
-          },
-          context().participants.map((row) => row.agentId),
-        )
-      } else {
-        await store.setModelSelection(
-          sessionId,
-          plan.connectionId,
-          plan.modelId,
-          plan.reasoningEffort,
-          plan.agentId,
-        )
-        const { maxTurns, contextLimit } = plan.settings
-        const triple = { agentId: plan.agentId, providerId: plan.providerId, modelId: plan.modelId }
-        if (maxTurns !== undefined)
-          rememberAgentModelSettings(agentSettingsIo, {
-            ...triple,
-            maxTurns: maxTurns ?? undefined,
-          })
-        if (contextLimit !== undefined)
-          rememberAgentModelSettings(agentSettingsIo, {
-            ...triple,
-            contextLimit: contextLimit ?? undefined,
-          })
-      }
+      await store.setModelSelection(
+        sessionId,
+        plan.connectionId,
+        plan.modelId,
+        plan.reasoningEffort,
+      )
+      const { maxTurns, contextLimit } = plan.settings
+      const triple = { agentId: plan.agentId, providerId: plan.providerId, modelId: plan.modelId }
+      if (maxTurns !== undefined)
+        rememberAgentModelSettings(agentSettingsIo, { ...triple, maxTurns: maxTurns ?? undefined })
+      if (contextLimit !== undefined)
+        rememberAgentModelSettings(agentSettingsIo, {
+          ...triple,
+          contextLimit: contextLimit ?? undefined,
+        })
       recordRecentModel({ connectionId: plan.connectionId, modelId: plan.modelId })
     },
-    [context, sessionId],
+    [sessionId],
   )
 
   /** Run a completed `/model` selection here and clear the draft; false hands it to the server. */
@@ -161,13 +132,10 @@ export function useModelCommand(
       }
       if (!plan) return false
       clear()
-      void apply(plan).catch(
-        plan.kind === 'party'
-          ? notifyPartyRouteFailure
-          : (error: unknown) =>
-              toast.error('Could not switch the model', {
-                description: errorMessage(error, 'Try again.'),
-              }),
+      void apply(plan).catch((error: unknown) =>
+        toast.error('Could not switch the model', {
+          description: errorMessage(error, 'Try again.'),
+        }),
       )
       return true
     },

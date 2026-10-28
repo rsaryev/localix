@@ -32,7 +32,7 @@ test('pen saves only a completed stroke, cancels drafts and restores board keybo
       root.render(
         <CanvasProvider>
           <div>
-            <div className="localix-canvas" tabIndex={0} />
+            <button type="button" className="localix-canvas" aria-label="Board" />
             <PenLayer
               type="pen"
               space={emptySpace()}
@@ -127,7 +127,7 @@ test('a stroke is saved in the look its preview drew, the one last given to a st
       root.render(
         <CanvasProvider>
           <div>
-            <div className="localix-canvas" tabIndex={0} />
+            <button type="button" className="localix-canvas" aria-label="Board" />
             <PenLayer
               type="pen"
               space={emptySpace()}
@@ -205,7 +205,7 @@ test('the eraser deletes the strokes its path crosses, in one write, and never a
       root.render(
         <CanvasProvider>
           <div>
-            <div className="localix-canvas" tabIndex={0} />
+            <button type="button" className="localix-canvas" aria-label="Board" />
             <PenLayer
               type="pen"
               space={space}

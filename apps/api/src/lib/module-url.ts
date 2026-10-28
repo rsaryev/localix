@@ -36,14 +36,11 @@ export function freshModuleUrl(absPath: string): string {
  * relative path and they must still resolve. Only an edit after a first load pays for a copy; an
  * unchanged file — every file of a packaged app — keeps importing its own path.
  */
-const hotCopies = new Set<string>()
-
 function hotCopyUrl(absPath: string, baseUrl: string): string {
   const ext = extname(absPath)
   const stamp = createHash('sha256').update(baseUrl).digest('hex').slice(0, 12)
   const copy = join(dirname(absPath), `${basename(absPath, ext)}.hot-${stamp}${ext || '.mjs'}`)
   copyFileSync(absPath, copy)
-  hotCopies.add(copy)
   // By its canonical path: Bun's resolver cannot see a file created after it cached a directory
   // reached through a symlink (macOS's `/var` → `/private/var` is enough), and then reports the
   // copy it was just handed as missing.
@@ -61,15 +58,6 @@ interface ModuleImportGeneration {
 
 const moduleImportGenerations = new Map<string, ModuleImportGeneration>()
 const retryArtifacts = new Set<string>()
-
-/**
- * Whether this process imported `absPath` through {@link importFreshModule}. A file the runtime
- * imported must never be deleted or replaced while the process lives: the development runtime
- * (`bun --watch`) restarts the whole API when one changes. Build output pruning asks this first.
- */
-export function wasImportedByThisProcess(absPath: string): boolean {
-  return moduleImportGenerations.has(absPath) || hotCopies.has(absPath)
-}
 
 function isStaleBunSyntaxBuildMessage(
   error: unknown,

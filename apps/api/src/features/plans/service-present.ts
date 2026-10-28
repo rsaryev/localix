@@ -33,8 +33,8 @@ export function createPresentOps(core: PlanServiceCore) {
   const { deps, now } = core
   const lifecycle = deps.lifecycle
 
-  const handleOf = async (owner: PlanOwner, agentId: string): Promise<string | null> =>
-    lifecycle ? lifecycle.authorHandle(owner, agentId).catch(() => null) : null
+  const nameOf = async (owner: PlanOwner): Promise<string | null> =>
+    lifecycle ? lifecycle.authorName(owner).catch(() => null) : null
 
   /**
    * The snapshot is re-written from the stored body whenever the host touches a version, so the
@@ -56,13 +56,13 @@ export function createPresentOps(core: PlanServiceCore) {
   const announce = async (
     owner: PlanOwner,
     plan: SessionPlan,
-    line: (handle: string | null) => StoredSystemNotice,
+    line: (name: string | null) => StoredSystemNotice,
   ): Promise<void> => {
     await core.publish(owner)
     deps.presented?.(owner, plan)
-    const handle = await handleOf(owner, plan.authorAgentId)
-    await core.notice(owner, line(handle))
-    lifecycle?.awaiting(owner, plan, handle)
+    const name = await nameOf(owner)
+    await core.notice(owner, line(name))
+    lifecycle?.awaiting(owner, plan, name)
   }
 
   /** Bring a dismissed or superseded version back to review. Null when it was decided meanwhile. */
@@ -76,11 +76,7 @@ export function createPresentOps(core: PlanServiceCore) {
   }
 
   /** The draft — written from `input.body` first when one is given — as the next version. */
-  async function present(
-    owner: PlanOwner,
-    authorAgentId: string,
-    input: PresentInput,
-  ): Promise<PlanPresentation> {
+  async function present(owner: PlanOwner, input: PresentInput): Promise<PlanPresentation> {
     const dir = await deps.files.dir(owner)
     const draftPath = planDraftPath(dir)
     if (input.body !== undefined) await deps.files.writeDraft(owner, input.body)
@@ -113,10 +109,10 @@ export function createPresentOps(core: PlanServiceCore) {
     }
 
     const title = versionTitle(input.title, draft, latest)
-    const record = await deps.repo.present(owner, authorAgentId, { title, body: draft }, now())
+    const record = await deps.repo.present(owner, { title, body: draft }, now())
     await snapshot(owner, record)
     const plan = toSessionPlan(record, dir)
-    await announce(owner, plan, (handle) => planNotice.presented(plan, handle))
+    await announce(owner, plan, (name) => planNotice.presented(plan, name))
     return { outcome: 'presented', plan }
   }
 

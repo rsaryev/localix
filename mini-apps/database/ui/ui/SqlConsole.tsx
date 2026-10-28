@@ -197,7 +197,7 @@ export function SqlConsole({
           nextEditSource={nextEditSource}
           nextEdit={editor.nextEdits}
           onNextEdit={editor.setNextEdits}
-          onEditorReady={(api) => (editor.editorApiRef.current = api)}
+          onEditorReady={editor.onEditorReady}
           extensions={editor.editorExtensions}
           className="min-h-0 flex-1"
         />

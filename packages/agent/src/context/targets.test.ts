@@ -4,27 +4,27 @@ import { namedTool } from './_test-helpers'
 
 describe('defaultResolveTarget — class mapping', () => {
   test('read/lsp/search/grep map to "read"', () => {
-    for (const name of ['read', 'lsp', 'search', 'grep']) {
+    for (const name of ['Read', 'lsp', 'Search', 'grep']) {
       const t = defaultResolveTarget(namedTool(name, { path: 'src/x.ts' }))
       expect(t?.class).toBe('read')
     }
   })
 
   test('edit/write map to "mutate" keyed on the changed path', () => {
-    const edit = defaultResolveTarget(namedTool('edit', { path: 'src/Mutated.ts' }))
-    const write = defaultResolveTarget(namedTool('write', { path: 'src/Other.ts' }))
+    const edit = defaultResolveTarget(namedTool('Edit', { path: 'src/Mutated.ts' }))
+    const write = defaultResolveTarget(namedTool('Write', { path: 'src/Other.ts' }))
     expect(edit).toMatchObject({ class: 'mutate', keys: ['src/mutated.ts'] })
     expect(write).toMatchObject({ class: 'mutate', keys: ['src/other.ts'] })
   })
 
   test('a batched edit/write is keyed on every file it names', () => {
     const edit = defaultResolveTarget(
-      namedTool('edit', {
+      namedTool('Edit', {
         edits: [{ path: 'src/A.ts' }, { path: 'src/B.ts' }, { path: 'src/A.ts' }],
       }),
     )
     const write = defaultResolveTarget(
-      namedTool('write', {
+      namedTool('Write', {
         files: [
           { path: 'x.md', content: '' },
           { path: 'y.md', content: '' },
@@ -36,7 +36,7 @@ describe('defaultResolveTarget — class mapping', () => {
   })
 
   test('bash maps to "nonidempotent" with no keys', () => {
-    const t = defaultResolveTarget(namedTool('bash', { command: 'ls' }))
+    const t = defaultResolveTarget(namedTool('Bash', { command: 'ls' }))
     expect(t).toMatchObject({ class: 'nonidempotent', keys: [] })
   })
 
@@ -71,14 +71,14 @@ describe('defaultResolveTarget — apply_patch', () => {
 
 describe('defaultResolveTarget — read with query', () => {
   test('read without a path but with a query keys on q:<lowercased>', () => {
-    const t = defaultResolveTarget(namedTool('search', { query: 'Find ME' }))
+    const t = defaultResolveTarget(namedTool('Search', { query: 'Find ME' }))
     expect(t).toMatchObject({ class: 'read', keys: ['q:find me'] })
   })
 })
 
 describe('defaultResolveTarget — key normalization', () => {
   test('lowercases and strips leading ./ from paths', () => {
-    const t = defaultResolveTarget(namedTool('read', { path: './SRC/Foo.TS' }))
+    const t = defaultResolveTarget(namedTool('Read', { path: './SRC/Foo.TS' }))
     expect(t?.keys).toEqual(['src/foo.ts'])
   })
 })
@@ -86,20 +86,20 @@ describe('defaultResolveTarget — key normalization', () => {
 describe('defaultResolveTarget — non-terminal items', () => {
   test('pending (non-terminal) items return undefined', () => {
     const t = defaultResolveTarget(
-      namedTool('read', { path: 'src/x.ts' }, { state: 'input-available' }),
+      namedTool('Read', { path: 'src/x.ts' }, { state: 'input-available' }),
     )
     expect(t).toBeUndefined()
   })
 
   test('failed items still resolve a target', () => {
     const t = defaultResolveTarget(
-      namedTool('edit', { path: 'src/x.ts' }, { state: 'output-error' }),
+      namedTool('Edit', { path: 'src/x.ts' }, { state: 'output-error' }),
     )
     expect(t).toMatchObject({ class: 'mutate', keys: ['src/x.ts'] })
   })
 
   test('edit without a path returns undefined', () => {
-    const t = defaultResolveTarget(namedTool('edit', { content: 'no path' }))
+    const t = defaultResolveTarget(namedTool('Edit', { content: 'no path' }))
     expect(t).toBeUndefined()
   })
 })
@@ -107,13 +107,13 @@ describe('defaultResolveTarget — non-terminal items', () => {
 describe('resolveTarget — override', () => {
   test('prefers an app-supplied override resolver', () => {
     const override = () => ({ class: 'read' as const, keys: ['custom'] })
-    const t = resolveTarget(namedTool('bash', { command: 'ls' }), override)
+    const t = resolveTarget(namedTool('Bash', { command: 'ls' }), override)
     expect(t).toMatchObject({ class: 'read', keys: ['custom'] })
   })
 
   test('falls back to default when override returns undefined', () => {
     const override = () => undefined
-    const t = resolveTarget(namedTool('read', { path: 'src/x.ts' }), override)
+    const t = resolveTarget(namedTool('Read', { path: 'src/x.ts' }), override)
     expect(t?.class).toBe('read')
   })
 })
@@ -121,13 +121,13 @@ describe('resolveTarget — override', () => {
 describe('defaultResolveTarget — batched reads and searches', () => {
   test('a batched read observes every file it names', () => {
     const t = defaultResolveTarget(
-      namedTool('read', { path: 'src/A.ts', reads: [{ path: './src/b.ts' }, 'src/c.ts'] }),
+      namedTool('Read', { path: 'src/A.ts', reads: [{ path: './src/b.ts' }, 'src/c.ts'] }),
     )
     expect(t).toEqual({ class: 'read', keys: ['src/a.ts', 'src/b.ts', 'src/c.ts'] })
   })
 
   test('a batched search observes every pattern', () => {
-    const t = defaultResolveTarget(namedTool('search', { query: 'Foo', queries: ['bar', 'foo'] }))
+    const t = defaultResolveTarget(namedTool('Search', { query: 'Foo', queries: ['bar', 'foo'] }))
     expect(t).toEqual({ class: 'read', keys: ['q:foo', 'q:bar'] })
   })
 })

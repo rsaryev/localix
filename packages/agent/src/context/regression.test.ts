@@ -20,8 +20,8 @@ import { applyPlan, POINTER_PLACEHOLDER } from './apply'
 import { estimateMessagesTokens } from './tokens'
 import { HUGE_BUDGET } from './_test-helpers'
 
-const MUTATE = new Set(['write', 'edit', 'apply_patch', 'patch'])
-const COMMAND = new Set(['bash', 'shell', 'terminal'])
+const MUTATE = new Set(['Write', 'Edit', 'apply_patch', 'patch'])
+const COMMAND = new Set(['Bash', 'shell', 'terminal'])
 
 let seq = 0
 const part = (name: string, input: unknown, resultText: string): ToolBackedItem => {
@@ -74,11 +74,11 @@ function buildLargeSession(turns: number): ChatMessage[] {
     const c = comps[t % comps.length]
     const c2 = comps[(t + 3) % comps.length]
     const parts: AgentItem[] = [
-      part('write', { path: `src/${c}.tsx`, content: big(`${c}.tsx`, 80) }, `Wrote ${c}.tsx`),
-      part('read', { path: `src/${c2}.tsx` }, big(`${c2}.tsx read`, 80)),
-      part('bash', { command: `npm run build ${c}` }, big(`build ${c} output`, 40)),
+      part('Write', { path: `src/${c}.tsx`, content: big(`${c}.tsx`, 80) }, `Wrote ${c}.tsx`),
+      part('Read', { path: `src/${c2}.tsx` }, big(`${c2}.tsx read`, 80)),
+      part('Bash', { command: `npm run build ${c}` }, big(`build ${c} output`, 40)),
       part(
-        'edit',
+        'Edit',
         {
           path: `src/${c2}.tsx`,
           edits: [
@@ -128,7 +128,7 @@ describe('VBC quality regression (large session)', () => {
     for (let i = 0; i < messages.length; i++) {
       for (let j = 0; j < (messages[i].items ?? []).length; j++) {
         const orig = messages[i].items![j]
-        if (isCommandItem(orig) && toolName(orig) === 'bash') {
+        if (isCommandItem(orig) && toolName(orig) === 'Bash') {
           expect((compressed[i].items![j] as CommandItem).resultText).toBe(orig.resultText)
         }
       }
@@ -183,8 +183,8 @@ describe('VBC composed menu (mixed recoverable + bash message)', () => {
         role: 'assistant',
         content: 'Running.',
         items: [
-          part('read', { path: `src/f${t}.ts` }, big(`f${t}`, 60)),
-          part('bash', { command: 'bun test' }, big(`test run ${t}`, 60)),
+          part('Read', { path: `src/f${t}.ts` }, big(`f${t}`, 60)),
+          part('Bash', { command: 'bun test' }, big(`test run ${t}`, 60)),
         ],
       })
     }
@@ -224,7 +224,7 @@ describe('VBC boundary quantization (prompt-cache friendly)', () => {
         id: `a${t}`,
         role: 'assistant',
         content: `Reading f${t}.`,
-        items: [part('read', { path: `src/f${t}.ts` }, big(`f${t}`, 40))],
+        items: [part('Read', { path: `src/f${t}.ts` }, big(`f${t}`, 40))],
       })
     }
     return msgs
@@ -311,7 +311,7 @@ describe('VBC lossy ops preserve the most diagnostic content', () => {
         id: 'a0',
         role: 'assistant',
         content: 'ran',
-        items: [part('bash', { command: 'bun test' }, text)],
+        items: [part('Bash', { command: 'bun test' }, text)],
       },
       ...Array.from({ length: 9 }, (_, i) => ({
         id: `u${i}`,
@@ -343,7 +343,7 @@ describe('VBC lossy ops preserve the most diagnostic content', () => {
   it('oneline keeps the first and last lines', () => {
     seq = 0
     const p = part(
-      'bash',
+      'Bash',
       { command: 'x' },
       `first line marker\n${'mid\n'.repeat(50)}last line verdict`,
     )
@@ -383,7 +383,7 @@ describe('VBC lossy ops preserve the most diagnostic content', () => {
         content: '',
         items: [
           part(
-            'edit',
+            'Edit',
             { path: 'src/a.ts', old_string: oldStr, new_string: newStr },
             'Applied 1 edit',
           ),

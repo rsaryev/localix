@@ -406,9 +406,9 @@ function StatusRow({ row }: { row: Extract<FileTreeRow, { kind: 'status' }> }) {
   }
   const count = row.count ?? 0
   return (
-    <div
+    <button
+      type="button"
       style={{ paddingLeft: row.depth * 12 + 30 }}
-      role="button"
       tabIndex={-1}
       title="This folder has too many items to list — showing the first 1000"
       onClick={() =>
@@ -417,10 +417,10 @@ function StatusRow({ row }: { row: Extract<FileTreeRow, { kind: 'status' }> }) {
             'Large folders are capped at 1000 entries to keep the tree responsive. Search the workspace to reach the rest.',
         })
       }
-      className="flex h-6 cursor-default select-none items-center pr-2 text-xs italic text-text-faint transition-colors hover:text-text-soft"
+      className="flex h-6 w-full cursor-default text-left select-none items-center pr-2 text-xs italic text-text-faint transition-colors hover:text-text-soft"
     >
       … {count.toLocaleString()} more item{count === 1 ? '' : 's'}
-    </div>
+    </button>
   )
 }
 

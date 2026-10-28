@@ -20,7 +20,7 @@ const message = (id: string, sources: AgentSource[][]): SourceBearingMessage => 
       ({
         id: `${id}-tool-${index}`,
         type: 'tool_call',
-        name: 'read',
+        name: 'Read',
         status: 'completed',
         sources: list,
       }) as unknown as AgentItem,

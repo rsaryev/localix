@@ -48,7 +48,7 @@ for one short line. `state` is classified `read`; the other actions are `session
 
 | Location                  | Responsibility                                                    |
 | ------------------------- | ----------------------------------------------------------------- |
-| `shared/game.ts`          | Rounds, sealed moves, the rules and `viewFor`, the per-seat view. |
+| `shared/game.ts`          | Rounds, sealed moves, the rules and `viewFor`, the per-side view. |
 | `shared/describe.ts`      | The table as text for the agent, built from a view only.          |
 | `backend/game-service.ts` | Every change to a chat's table; seals each move as it arrives.    |
 | `backend/ask-agent.ts`    | The wake request: the agent's view, the answering tool, the key.  |

@@ -104,7 +104,7 @@ export function CommentsManager({
                 actions.map((action) => (
                   <Button
                     key={action.id}
-                    variant="outline"
+                    variant="ghost"
                     size="xs"
                     onClick={() => onAction(action)}
                     disabled={runningAction !== null}

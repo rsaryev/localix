@@ -19,16 +19,7 @@ export interface AtRefSuggestion {
   /** True for directories (accepting keeps the menu open). */
   isDir?: boolean
   /** Kind of action accepting performs — drives how `accept` rewrites the draft. */
-  kind:
-    | 'type'
-    | 'ref-path'
-    | 'mention'
-    | 'agent'
-    | 'session'
-    | 'project'
-    | 'terminal'
-    | 'call'
-    | 'resource'
+  kind: 'type' | 'ref-path' | 'mention' | 'session' | 'project' | 'terminal' | 'call' | 'resource'
   /** For mention/ref-path picks: the path to insert. */
   path?: string
   /** For session picks: the linked session id (e.g. `LOCALIX-42`). */
@@ -37,8 +28,6 @@ export interface AtRefSuggestion {
   projectId?: string
   /** For terminal/call picks: the exact token text to insert (id pre-shortened). */
   insertToken?: string
-  /** For agent picks: the participant's handle — the menu draws its monogram from it. */
-  handle?: string
   /** For resource picks: the node URI. `hasChildren` keeps the menu open (drill);
    *  `resourceIcon` is the provider's glyph hint the menu maps to a lucide icon. */
   uri?: string

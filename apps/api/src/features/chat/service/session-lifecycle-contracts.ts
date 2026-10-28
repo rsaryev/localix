@@ -3,7 +3,7 @@ import type { AgentSessionKind, ReasoningEffort } from '../../../db/types'
 import type { PermissionMode } from '../../../contracts/permission-modes'
 import type { LastMessagePreview, ModelRoute } from '../repository-types'
 import type { SessionDeletionContext } from './session-deletion'
-import type { SeatRouteFor } from './session-route-defaults'
+import type { StartingRouteFor } from './session-route-defaults'
 import type { SessionRecord } from '../repository'
 import type { AgentStreamEvent, PersistedMessage, SessionDetail } from '../contracts'
 import type { SessionProvenance } from '../session-provenance'
@@ -26,8 +26,6 @@ export interface SessionLifecycleCtx extends Omit<SessionDeletionContext, 'repo'
   claudeCodeModes?: (
     cwd: string,
   ) => Promise<{ defaultMode?: PermissionMode; bypassDisabled: boolean }>
-  activeAgentId?: (sessionId: string) => string | undefined
-  cancelAgentTurn?: (userId: string, sessionId: string, agentId: string) => Promise<void>
   resolveSessionAgent?: ResolveSessionAgent
   repo: SessionDeletionContext['repo'] & {
     listSessions: (userId: string) => Promise<SessionRecord[]>
@@ -35,7 +33,7 @@ export interface SessionLifecycleCtx extends Omit<SessionDeletionContext, 'repo'
     lastMessagesByUser: (userId: string) => Promise<Map<string, LastMessagePreview>>
     allocateSessionRef: (userId: string) => Promise<{ seq: number; id: string }>
     insertSession: (session: SessionRecord) => Promise<void>
-    /** The newest untouched chat in a project with exactly this participant (see repository-empty-draft). */
+    /** The newest untouched chat in a project with exactly this agent (see repository-empty-draft). */
     findEmptyDraft?: (
       userId: string,
       projectId: string,
@@ -45,43 +43,21 @@ export interface SessionLifecycleCtx extends Omit<SessionDeletionContext, 'repo'
     getSession: (userId: string, id: string) => Promise<SessionRecord | null>
     /** The session's own fields; only the keys present are written. */
     updateSession: (userId: string, id: string, patch: Partial<SessionRecord>) => Promise<void>
-    /** WHO is in the conversation, compare-and-set (see `changeParticipants`). */
-    updateMembership: (
-      userId: string,
-      id: string,
-      agents: SessionRecord['agents'],
-      stamp: { updatedAt: string; expectedUpdatedAt?: string },
-    ) => Promise<boolean>
-    /** A deliberate re-route of ONE participant — the only write that touches a seat's route. */
+    /** A deliberate re-route of the session's agent — the only write that touches its route. */
     updateSessionAgentRoute: (
       userId: string,
       id: string,
-      agentId: string,
       route: Partial<ModelRoute>,
     ) => Promise<void>
-    /**
-     * The person's model choice — the named agents, seated or not — in one transaction (`repository-model-choices.ts`). Required: a per-member
-     * fallback would let a failure halfway leave the room half-moved.
-     */
-    updateSessionAgentRoutes: (
-      userId: string,
-      id: string,
-      routes: readonly ({ agentId: string } & Partial<ModelRoute>)[],
-    ) => Promise<void>
-    /** For the membership line a party edit writes into the conversation. */
+    /** For the notice a route edit writes into the conversation. */
     insertMessage: (message: PersistedMessage) => Promise<void>
   }
   streamRegistry: {
     publish: (userId: string, sessionId: string, event: AgentStreamEvent) => void
   }
   now: () => string
-  /**
-   * The reasoning effort a new seat is born with, decided by the model chain. Only the EFFORT:
-   * a seat's model is left blank so the chain answers for it on every read
-   * (`session-route-defaults.ts`). Absent — an isolated host — means the flat default.
-   */
-  /** The one decision of a new seat's route — see `agent-route-resolution.ts`. */
-  seatRoute?: SeatRouteFor
+  /** The one decision of a new session's route — see `agent-route-resolution.ts`. */
+  startingRoute?: StartingRouteFor
   /**
    * The project a session with no explicit one belongs to (see `projects/default-project.ts`).
    *
@@ -106,7 +82,7 @@ export interface SessionLifecycleCtx extends Omit<SessionDeletionContext, 'repo'
   /**
    * Does this user hold this project? Same shape as {@link connectionExists}: a UI holding a
    * project id from a recreated database used to have its New chat refused as
-   * `agent_unavailable` (the seat resolver cannot see agents in a project that is not there),
+   * `agent_unavailable` (the route resolver cannot see agents in a project that is not there),
    * a message about the wrong thing. Optional for the same reason.
    */
   projectExists?: (userId: string, projectId: string) => Promise<boolean>
@@ -161,21 +137,18 @@ export interface CreateSessionInput {
   /** Skills to preload into context (CC agent `skills:` frontmatter). */
   pinnedSkills?: string[]
   /**
-   * Who this conversation is with, in join order. Omitted = the default agent, which is what
-   * an ordinary chat gets: a session is never with no one. Several make it a group.
+   * The one agent this conversation is with, fixed for its life. Omitted = the default agent.
    *
-   * Each entry may carry its own route. A caller that has resolved an agent's registry record
-   * passes its preferred model here; one that has not passes the handle alone and every
-   * participant is seeded from the same session-level fallback.
+   * It may carry its own route. A caller that has resolved an agent's registry record passes its
+   * preferred model here; one that has not passes the handle alone and the route is seeded from
+   * the session-level fallback.
    */
-  agents?: Array<SessionAgentSelection & Partial<ModelRoute>>
-  /** A group's own description. Ignored for a private chat, which describes its agent. */
+  agent?: SessionAgentSelection & Partial<ModelRoute>
+  /** The conversation's description. */
   description?: string | null
-  /** A group's avatar ref; omitted = generated from the title. */
-  avatar?: string | null
   /**
    * A landing, not a "New chat": reopen the project's newest untouched chat with the same
-   * participant instead of minting another one (see session-draft-reuse.ts).
+   * agent instead of minting another one (see session-draft-reuse.ts).
    */
   reuseEmptyDraft?: boolean
 }
@@ -188,31 +161,11 @@ export interface UpdateSessionPatch {
   previousTopicSummary?: string | null
   /** The conversation's permission mode — a root's only; written to its whole tree. */
   permissionMode?: PermissionMode
-  /**
-   * Re-route ONE participant — a model belongs to an agent inside a conversation, not to the
-   * conversation. Omitting the id means the session's own participant: the only one in a private
-   * chat, the first in a group.
-   */
-  route?: { agentId?: string } & Partial<ModelRoute>
-  /**
-   * Choose models for several named agents at once — seated, or not yet invited (their choice
-   * waits for them). All must be able to take part, or nothing is written.
-   */
-  routes?: Array<{ agentId: string } & Partial<ModelRoute>>
+  /** Re-route the conversation's agent: what it runs on, never who it is. */
+  route?: Partial<ModelRoute>
   isPinned?: boolean
   isArchived?: boolean
   /** Move the session to another project. Never null — a session always belongs to one. */
   projectId?: string
   runtimeStatus?: RuntimeStatus
-  /** Adding or removing participants. Never empty — a session is always with someone. */
-  agents?: Array<SessionAgentSelection & Partial<ModelRoute>>
-  /**
-   * The session's `updatedAt` the editor was looking at. With `agents`, a newer session refuses
-   * the change (409) instead of erasing whatever changed in between.
-   */
-  expectedUpdatedAt?: string
-  /** Only a group carries these; a private chat renders its agent instead. The kind itself is
-   *  not patchable: it follows the party (see `updateSession`). */
-  description?: string | null
-  avatar?: string | null
 }

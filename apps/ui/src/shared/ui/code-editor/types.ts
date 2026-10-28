@@ -70,7 +70,7 @@ export interface EditorCompletionItem {
   /** LSP CompletionItemKind (1–25). */
   kind?: number
   insertText?: string
-  /** How `insertText` is interpreted. Omitted keeps legacy `$0` snippet detection. */
+  /** How `insertText` is interpreted. Omitted treats text containing `$0` as a snippet. */
   insertTextFormat?: 'plainText' | 'snippet'
   /** Explicit text span replaced on accept; defaults to the word at the cursor. */
   range?: { start: EditorPosition; end: EditorPosition }

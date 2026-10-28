@@ -26,7 +26,7 @@ export interface SkillRenderContext {
   dynamic: boolean
   /**
    * Asked about each injected command before any runs (`SkillCommandPermissionError` on a
-   * refusal). The model's `skill` tool sets it; a person typing `/name` invoked it themselves.
+   * refusal). The model's `Skill` tool sets it; a person typing `/name` invoked it themselves.
    */
   authorize?: AuthorizeSkillCommand
   /** `disableSkillShellExecution` applies to this skill: its commands show a placeholder. */
@@ -44,7 +44,7 @@ export interface SkillShellQuery {
 export type SkillShellPolicy = (query: SkillShellQuery) => Promise<boolean>
 
 /**
- * A renderer that asks the policy before it renders: the model's `skill` tool renders through it,
+ * A renderer that asks the policy before it renders: the model's `Skill` tool renders through it,
  * a skill's folder and the session's working directory deciding the answer.
  */
 export function withSkillShellPolicy<

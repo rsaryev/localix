@@ -52,13 +52,7 @@ export const bashToolInputSchema = z.object({
     ),
 })
 
-/**
- * The model no longer generates a description label. Keep the optional legacy field only
- * for in-process callers and older transcripts; it is absent from the model-facing schema.
- */
-export type BashToolInput = z.infer<typeof bashToolInputSchema> & {
-  description?: string
-}
+export type BashToolInput = z.infer<typeof bashToolInputSchema>
 
 export const foregroundBashToolInputSchema = bashToolInputSchema
   .omit({ background: true, notify: true, until: true })

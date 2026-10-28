@@ -24,6 +24,8 @@ export function fakeClient(fake: StoreFake): StoreClient {
     },
     detail: async (ref) => {
       if (fake.failing?.detail) throw new ApiError('Could not read it', 503, 'unavailable')
+      if (!fake.listings.some((l) => l.ref.id === ref.id))
+        throw new ApiError(`"${ref.id}" not found`, 404, 'not_found')
       return makeListingDetail(find(ref.id), {
         facts: [
           { label: 'Version', value: find(ref.id).version ?? '1.0.0' },
@@ -88,6 +90,17 @@ export function fakeClient(fake: StoreFake): StoreClient {
       return { ok: true, message: 'Done' }
     },
     sources: async () => ({ sources: fake.sources ?? SOURCES, addable: ['mini-app', 'plugin'] }),
+    reportWorkingSet: async (request) => {
+      fake.recommendAsked?.push(
+        `${request.references.map((reference) => reference.label).join(',')}${where(request.sessionId)}`,
+      )
+    },
+    recommendations: async () => {
+      if (fake.recommendPending)
+        return { listings: [], matched: 0, strategy: { mode: 'hybrid' }, pending: true }
+      const listings = (fake.recommended ?? []).map(find)
+      return { listings, matched: listings.length, strategy: { mode: 'hybrid' }, pending: false }
+    },
     discover: async () => {
       if (fake.failing?.discover) throw new ApiError('Could not read it', 503, 'unavailable')
       return {

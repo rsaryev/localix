@@ -20,14 +20,6 @@ export function createMessageWriteQueries(
       throw new Error('insertMessages requires one session')
     }
     await db.transaction().execute(async (trx) => {
-      // Capture display data from the persisted assignment in the same transaction as the
-      // message. Registry deletion or later membership changes cannot rewrite authorship.
-      const participants = await trx
-        .selectFrom('conversation_participants as participant')
-        .innerJoin('agent_sessions as session', 'session.id', 'participant.session_id')
-        .select(['participant.agent_id', 'participant.handle', 'session.user_id'])
-        .where('participant.session_id', '=', sessionId)
-        .execute()
       const row = await trx
         .selectFrom('agent_messages')
         .select(trx.fn.max('sequence').as('max_seq'))
@@ -36,18 +28,7 @@ export function createMessageWriteQueries(
       let sequence = (row?.max_seq ?? -1) + 1
       let parentId = await currentLeaf(sessionId, trx)
       for (const input of inputs) {
-        const participant = participants.find(
-          (member) =>
-            member.user_id === input.userId && input.payload.from === `agent:${member.agent_id}`,
-        )
-        const payloadJson = serializeMessagePayload({
-          ...input.payload,
-          ...(input.payload.authorSnapshot
-            ? {}
-            : participant
-              ? { authorSnapshot: { handle: participant.handle } }
-              : {}),
-        })
+        const payloadJson = serializeMessagePayload(input.payload)
         // Inserts are already complete records (the streaming assistant slot is
         // inserted empty). Seed the ordinary search projection in the same write;
         // later streaming checkpoints update payload_json without touching it.

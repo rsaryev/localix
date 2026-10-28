@@ -168,7 +168,7 @@ describe('AgentConfigurationService.getEffective', () => {
     // Session model wins for the main consumer.
     expect(report.consumers.find((c) => c.id === 'session')?.modelId).toBe('anthropic/sonnet')
     // Child management follows the user toggle; the tools beside it stay available.
-    expect(report.tools.enabled).toContain('jobs')
+    expect(report.tools.enabled).toContain('Jobs')
     expect(report.tools.enabled).not.toContain('agents')
   })
 
@@ -188,7 +188,7 @@ describe('AgentConfigurationService.getEffective', () => {
     const svc = createAgentConfigurationService(
       makePorts({
         loadCapabilities: async () => ({
-          permissions: [{ permission: 'bash', pattern: 'git push*', action: 'ask' }],
+          permissions: [{ permission: 'Bash', pattern: 'git push*', action: 'ask' }],
           skillOverrides: {},
           disabledTools: [],
         }),
@@ -196,7 +196,7 @@ describe('AgentConfigurationService.getEffective', () => {
     )
     const report = await svc.getEffective({ userId: 'u1' })
     expect(report.permissions).toEqual([
-      { permission: 'bash', pattern: 'git push*', action: 'ask', scope: 'effective' },
+      { permission: 'Bash', pattern: 'git push*', action: 'ask', scope: 'effective' },
     ])
   })
 })

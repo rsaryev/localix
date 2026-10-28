@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test'
 
 import { backendClient } from '@/shared/api/client'
 import type { UiSession } from '@/shared/api/contracts'
+import { composerBus } from '@/shared/lib/composerBus'
 import { resetNotificationsForTests, useNotificationsStore } from '@/shared/lib/notifications/store'
 import { useChatStore } from './store'
 
@@ -40,7 +41,7 @@ afterEach(() => {
 
 describe('optimistic stop rollback', () => {
   test('a truthful no-op stays idle', async () => {
-    const stopSpy = spyOn(backendClient, 'stop').mockResolvedValue(false)
+    const stopSpy = spyOn(backendClient, 'stop').mockResolvedValue({ stopped: false, returned: [] })
     restoreStop = () => stopSpy.mockRestore()
 
     useChatStore.getState().stopGeneration('s1')
@@ -111,5 +112,34 @@ describe('optimistic stop rollback', () => {
 
     expect(useChatStore.getState().sessions[0]).toBe(terminalGeneration)
     expect(useChatStore.getState().sessions[0]?.isRunning).toBe(false)
+  })
+
+  // The stop reached the server and worked. A failure putting the queue back is a different
+  // problem and must not roll the agent back to "running" or offer to stop it again.
+  test('a stop that worked is not reported as failed when putting the queue back throws', async () => {
+    resetNotificationsForTests()
+    const stopSpy = spyOn(backendClient, 'stop').mockResolvedValue({
+      stopped: true,
+      returned: [{ content: 'queued', clientMessageId: 'c1' }],
+    })
+    restoreStop = () => stopSpy.mockRestore()
+    useChatStore.setState({
+      _discardReturnedQueue: () => {
+        throw new Error('store broke')
+      },
+    })
+
+    useChatStore.getState().stopGeneration('s1')
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(useChatStore.getState().sessions[0]?.isRunning).toBe(false)
+    const titles = useNotificationsStore.getState().entries.map((entry) => entry.title)
+    expect(titles).not.toContain('Could not stop the agent')
+    expect(titles).toContain('Could not put your queued messages back')
+    resetNotificationsForTests()
+    // The returned line is held for a composer of s1; take it so it cannot reach another test's.
+    const off = composerBus.subscribe(() => true)
+    await Promise.resolve()
+    off()
   })
 })

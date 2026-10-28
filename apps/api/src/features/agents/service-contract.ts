@@ -1,6 +1,5 @@
 import type { CapabilityStores } from '../capabilities/store-factory'
 import type { Kysely } from 'kysely'
-import type { AgentAuthoredBlueprint } from '@localixai/agent/agents'
 
 import type { AppDatabase } from '../../db'
 import type { AgentRecord, AgentRecordInput, AgentSummary } from './contracts'
@@ -85,17 +84,6 @@ export interface AgentsService extends AgentDelegation {
    * policy in place first. Refuses a name the scope already holds; changing one is `updateAgent`.
    */
   createAgent(userId: string, input: AgentRecordInput): Promise<AgentSummary>
-  /** Author behavior in the caller's catalog, inheriting its saved policy once. */
-  createAgentFromAgent(
-    userId: string,
-    input: AgentAuthoredBlueprint,
-    origin: AgentCreationOrigin,
-  ): Promise<AgentSummary>
-  createAgentsFromAgent(
-    userId: string,
-    inputs: AgentAuthoredBlueprint[],
-    origin: AgentCreationOrigin,
-  ): Promise<AgentCreationBatchResult>
   /**
    * Replace behavior in the agent's own file, keeping its id and access. A rename moves the file
    * and keeps the id. Only a file the person owns (`editable`) can be changed.
@@ -129,7 +117,7 @@ export interface AgentsService extends AgentDelegation {
     projectId?: string | null,
   ): Promise<AgentSummary>
   /**
-   * Resolve a persisted identity in its exact scope. Never falls back to a matching handle.
+   * Resolve a persisted identity in its exact scope. Never falls back to a matching name.
    */
   resolveEnabledAgent(
     userId: string,
@@ -143,24 +131,12 @@ export interface AgentsService extends AgentDelegation {
     host: string,
     projectId?: string | null,
   ): Promise<AgentRecord | null>
-  /** Resolve a handle only while choosing a NEW assignment; persist the returned ID. */
+  /** Resolve a name only while choosing a NEW assignment; persist the returned ID. */
   selectEnabledAgent(
     userId: string,
-    handle: string,
+    name: string,
     projectId?: string | null,
   ): Promise<AgentRecord | null>
-}
-
-export interface AgentCreationOrigin {
-  projectId: string | null
-  agentId: string
-  sessionId: string
-  operationId: string
-}
-
-export interface AgentCreationBatchResult {
-  created: AgentSummary[]
-  errors: { index: number; handle: string; code: string; message: string }[]
 }
 
 /** The management seam supplied to chat; policy changes stay in the existing user editor. */
@@ -169,8 +145,6 @@ export type AgentManagementPort = Pick<
   | 'listAgents'
   | 'getAgent'
   | 'createAgent'
-  | 'createAgentFromAgent'
-  | 'createAgentsFromAgent'
   | 'updateAgent'
   | 'duplicateAgent'
   | 'setAgentEnabled'

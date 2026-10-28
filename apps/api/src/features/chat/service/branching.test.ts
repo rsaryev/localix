@@ -9,7 +9,7 @@ const toolItem = () => ({
   id: 't',
   status: 'complete',
   type: 'tool_call',
-  name: 'bash',
+  name: 'Bash',
   toolCallId: 't',
   activeVerb: 'x',
 })

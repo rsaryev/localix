@@ -18,7 +18,7 @@ afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true })
 })
 
-const SEAT = { userId: 'u1', sessionId: 's1' }
+const CHAT = { userId: 'u1', sessionId: 's1' }
 const AT = '2026-10-20T10:00:00.000Z'
 
 /** A decision host that answers each ask with `pick`, or with an outcome when it misses. */
@@ -100,9 +100,9 @@ describe('when the decision model plays', () => {
     let left = 5
     const model = decisions((ask) => (left-- > 0 ? safest(ask) : { status: 'failed', ms: 1 }))
     const { games } = setup(model.host)
-    await games.mode(SEAT, 'model')
+    await games.mode(CHAT, 'model')
     await games.idle()
-    const game = await games.read(SEAT)
+    const game = await games.read(CHAT)
     expect(game.tick).toBe(5)
     expect(game.waiting).toMatchObject({
       status: 'unreachable',
@@ -113,9 +113,9 @@ describe('when the decision model plays', () => {
 
   test('without a decision model the board says why, and there is no other player', async () => {
     const { games } = setup()
-    await games.mode(SEAT, 'model')
+    await games.mode(CHAT, 'model')
     await games.idle()
-    expect((await games.read(SEAT)).waiting?.reason).toContain('cannot reach a decision model')
+    expect((await games.read(CHAT)).waiting?.reason).toContain('cannot reach a decision model')
   })
 
   test('Stop drops the answer on its way, and Continue goes on from the same board', async () => {
@@ -138,22 +138,22 @@ describe('when the decision model plays', () => {
       },
     }
     const { games } = setup(host)
-    await games.mode(SEAT, 'model')
-    expect((await games.stop(SEAT)).waiting).toMatchObject({ reason: STOPPED_REASON })
+    await games.mode(CHAT, 'model')
+    expect((await games.stop(CHAT)).waiting).toMatchObject({ reason: STOPPED_REASON })
     release()
     await games.idle()
-    expect((await games.read(SEAT)).tick).toBe(0)
-    await games.remind(SEAT)
+    expect((await games.read(CHAT)).tick).toBe(0)
+    await games.remind(CHAT)
     await games.idle()
-    expect((await games.read(SEAT)).tick).toBeGreaterThan(0)
+    expect((await games.read(CHAT)).tick).toBeGreaterThan(0)
   })
 
   test('taking the board back stops the model, and the person’s turns are refused while it steers', async () => {
     const { games } = setup(decisions(() => ({ status: 'failed', ms: 1 })).host)
-    await games.mode(SEAT, 'model')
+    await games.mode(CHAT, 'model')
     await games.idle()
-    await expect(games.personTurns(SEAT, 0, ['right'])).rejects.toThrow('decision model steers')
-    expect((await games.mode(SEAT, 'user')).waiting).toBeNull()
-    expect((await games.personTurns(SEAT, 0, ['right', 'right'])).tick).toBe(2)
+    await expect(games.personTurns(CHAT, 0, ['right'])).rejects.toThrow('decision model steers')
+    expect((await games.mode(CHAT, 'user')).waiting).toBeNull()
+    expect((await games.personTurns(CHAT, 0, ['right', 'right'])).tick).toBe(2)
   })
 })

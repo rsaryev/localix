@@ -22,7 +22,7 @@ import './game/table.css'
 
 /**
  * This chat's table, top to bottom: the control row every game shares (what the round waits for,
- * and who plays the other seat), the score, the two hands facing each other, and the person's three
+ * and who plays the other side), the score, the two hands facing each other, and the person's three
  * choices — or, once revealed, why the round went as it did. Nothing in the column changes height
  * with the state: what stopped the round floats over the hands ({@link TurnProblem}).
  *

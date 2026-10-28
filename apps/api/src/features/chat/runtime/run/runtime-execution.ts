@@ -13,12 +13,10 @@ export function buildRuntimeToolContext(input: {
   deps: RunnerDeps
   userId: string
   sessionId: string
-  /** The participant this run speaks as — what a tool records as the actor. */
-  speaker?: {
+  /** The agent this run belongs to — what a tool records as the actor. */
+  agent?: {
     agentId: string
-    handle: string
-    role: 'leader' | 'member' | 'solo'
-    leader?: string
+    name: string
   }
   asyncRegistry: AsyncToolRegistry
   scratchDir: string
@@ -43,7 +41,7 @@ export function buildRuntimeToolContext(input: {
     session: {
       id: sessionId,
       scratchDir: input.scratchDir,
-      ...(input.speaker ? { speaker: input.speaker } : {}),
+      ...(input.agent ? { agent: input.agent } : {}),
       emitCommand: (miniApp, channel, payload) =>
         deps.streamRegistry.publish(userId, sessionId, {
           type: 'mini-app.command',

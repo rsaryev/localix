@@ -20,7 +20,7 @@ describe('mini app tool-name policy', () => {
   test('rejects names that collide with a built-in (no shadowing)', () => {
     expect(isReservedToolName(aBuiltin)).toBe(true)
     expect(isAcceptableToolName(aBuiltin)).toBe(false)
-    for (const name of ['bash', 'read', 'write']) {
+    for (const name of ['Bash', 'Read', 'Write']) {
       // these are built-ins; even with a valid shape they must be unacceptable
       expect(builtins.has(name)).toBe(true)
       expect(isAcceptableToolName(name)).toBe(false)
@@ -34,7 +34,7 @@ describe('mini app tool-name policy', () => {
     // `vault` is implemented by the secrets feature and injected only when that
     // dependency exists, but its model-visible identity belongs to the canonical
     // built-in catalog so /rpc/tools, settings, profiles, and reservation agree.
-    expect(BUILTIN_TOOL_NAMES).toContain('vault')
+    expect(BUILTIN_TOOL_NAMES).toContain('Vault')
     expect(isReservedToolName('vault')).toBe(true)
     expect(isAcceptableToolName('vault')).toBe(false)
   })

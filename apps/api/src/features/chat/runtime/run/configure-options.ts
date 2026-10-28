@@ -1,5 +1,5 @@
 /**
- * Host wiring for the `configure` tool.
+ * Host wiring for the `Configure` tool.
  *
  * The only policy here is structural and lives in the catalog: `configure` is `never` for a
  * sub-agent or an automation run, so `isToolDirect` is false there and the port is not built.
@@ -26,9 +26,9 @@ export function buildConfigureOptions(input: {
   ledgerRef: { current?: ToolLedger }
   /** Claude Code ConfigChange hooks see an approved change before it is written. */
   ccHooks?: CcHooksRuntime
-}): OptionalToolPorts['configure'] {
+}): OptionalToolPorts[typeof TOOL.Configure] {
   const { deps, userId, session, agentProfile, ledgerRef } = input
-  if (!isToolDirect(agentProfile, TOOL.configure)) return undefined
+  if (!isToolDirect(agentProfile, TOOL.Configure)) return undefined
   if (!deps.configProposals) return undefined
   return {
     sessionId: session.id,

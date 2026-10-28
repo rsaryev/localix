@@ -46,7 +46,10 @@ describe('SQL console connection scope', () => {
     let state: SqlConsoleState | null = null
 
     function Harness({ connectionId }: { connectionId: string }) {
-      state = useSqlConsole(connectionId, { dialect: 'sqlite', dbLabel: connectionId })
+      const latest = useSqlConsole(connectionId, { dialect: 'sqlite', dbLabel: connectionId })
+      React.useEffect(() => {
+        state = latest
+      })
       return null
     }
 
@@ -118,7 +121,13 @@ describe('SQL console last failure', () => {
       // A connection id no other test uses: `transactionStore` is module-global, and another
       // file in the same `bun test` process that leaves `c1` in manual mode makes this run open a
       // real transaction (a network call) before the statement, so the failure never records.
-      state = useSqlConsole('last-failure-conn', { dialect: 'sqlite', dbLabel: 'last-failure' })
+      const latest = useSqlConsole('last-failure-conn', {
+        dialect: 'sqlite',
+        dbLabel: 'last-failure',
+      })
+      React.useEffect(() => {
+        state = latest
+      })
       return null
     }
     try {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { acknowledgeInline } from '@localixai/mini-app-sdk/ui'
 import { BookOpen, FolderPlus, Pencil, RotateCcw, Trash2 } from 'lucide-react'
 
@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from '@localixai/kit/dialog'
 import { Input } from '@localixai/kit/input'
+import { focusOnMount } from './focusOnMount'
 
 import type {
   ReaderBookMetadataPatch,
@@ -32,20 +33,23 @@ export function ReaderMetadataDialog({
   onClose: () => void
   onSave: (patch: ReaderBookMetadataPatch) => Promise<void>
 }) {
-  const [title, setTitle] = useState('')
-  const [author, setAuthor] = useState('')
+  const [title, setTitle] = useState(book?.title ?? '')
+  const [author, setAuthor] = useState(book?.author ?? '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const sourceTitle = book?.sourceTitle ?? book?.title ?? ''
   const sourceAuthor = book?.sourceAuthor ?? book?.author ?? ''
 
-  useEffect(() => {
+  // Another book (or none) starts the form over, in the render that shows it.
+  const [formBook, setFormBook] = useState(book)
+  if (formBook !== book) {
+    setFormBook(book)
     setTitle(book?.title ?? '')
     setAuthor(book?.author ?? '')
     setSaving(false)
     setError(null)
-  }, [book])
+  }
 
   const cleanTitle = title.replace(/\s+/gu, ' ').trim()
   const cleanAuthor = author.replace(/\s+/gu, ' ').trim()
@@ -108,7 +112,7 @@ export function ReaderMetadataDialog({
                 required
                 aria-invalid={!cleanTitle || undefined}
                 aria-describedby={`reader-book-title-source${!cleanTitle ? ' reader-book-title-error' : ''}`}
-                autoFocus
+                ref={focusOnMount}
               />
               <IconButton
                 size="sm"
@@ -168,7 +172,7 @@ export function ReaderMetadataDialog({
           )}
         </DialogBody>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={saving}>
+          <Button variant="ghost" onClick={onClose} disabled={saving}>
             Cancel
           </Button>
           <Button
@@ -215,16 +219,22 @@ export function ReaderCollectionsDialog({
   const [working, setWorking] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!open) return
-    setDecisions({})
-    setNewName('')
-    setEditingId(null)
-    setEditingName('')
-    setPendingDelete(null)
-    setWorking(false)
-    setError(null)
-  }, [books, open])
+  // Each time the dialog opens (or is opened for other books) it starts clean, in the render that
+  // shows it.
+  const session = open ? books : null
+  const [formSession, setFormSession] = useState(session)
+  if (formSession !== session) {
+    setFormSession(session)
+    if (open) {
+      setDecisions({})
+      setNewName('')
+      setEditingId(null)
+      setEditingName('')
+      setPendingDelete(null)
+      setWorking(false)
+      setError(null)
+    }
+  }
 
   const initialMembership = useMemo(() => {
     const result = new Map<string, Membership>()
@@ -348,7 +358,7 @@ export function ReaderCollectionsDialog({
                 aria-label="New collection name"
               />
               <Button
-                variant="outline"
+                variant="ghost"
                 onClick={() => void create()}
                 disabled={!newName.trim() || working}
               >
@@ -380,7 +390,7 @@ export function ReaderCollectionsDialog({
                               if (event.key === 'Escape') setEditingId(null)
                             }}
                             maxLength={80}
-                            autoFocus
+                            ref={focusOnMount}
                             aria-label="Collection name"
                           />
                           <Button
@@ -456,7 +466,7 @@ export function ReaderCollectionsDialog({
             )}
           </DialogBody>
           <DialogFooter>
-            <Button variant="outline" onClick={onClose} disabled={working}>
+            <Button variant="ghost" onClick={onClose} disabled={working}>
               Cancel
             </Button>
             {books.length > 0 && (

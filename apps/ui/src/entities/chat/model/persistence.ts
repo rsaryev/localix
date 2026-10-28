@@ -28,7 +28,6 @@ import { loadJSON, loadString, saveJSON, saveString } from '@localixai/mini-app-
  * `forgetLastWorkspace` drops it when it is confirmed dead.
  */
 const ACTIVE_SESSION_KEY = workspaceStorageKey('localix_active_session_id')
-const ACTIVE_PROJECT_KEY = workspaceStorageKey('localix_active_project_id')
 const LAST_WORKSPACE_KEY = workspaceStorageKey('localix_last_workspace')
 const PROMPT_HISTORY_KEY = 'localix_prompt_history'
 const PROMPT_HISTORY_LIMIT = 150
@@ -37,13 +36,11 @@ const activeSessionKey = (projectId?: string | null) =>
   projectId ? `${ACTIVE_SESSION_KEY}_${projectId}` : ACTIVE_SESSION_KEY
 
 /**
- * Record the open chat: the project's remembered chat, the active project and the launch-restore
- * pair, together. Called ONLY by the location ledger (`locationLedger.ts`), which follows the URL
+ * Record the open chat: the project's remembered chat and the launch-restore pair, together. Called ONLY by the location ledger (`locationLedger.ts`), which follows the URL
  * — the store never writes where the person is, so these records cannot drift from what they see.
  */
 export function recordChatLocation(projectId: string, sessionId: string) {
   saveString(activeSessionKey(projectId), sessionId)
-  saveString(ACTIVE_PROJECT_KEY, projectId)
   // One JSON value, so two windows racing each write a whole pair and never a torn one.
   rememberLastWorkspace(projectId, sessionId)
 }
@@ -81,24 +78,12 @@ export function appendPromptHistory(prompt: string): void {
   saveJSON(PROMPT_HISTORY_KEY, next)
 }
 
-/** The active project is gone (deleted): stop pointing at it. Written otherwise by the ledger. */
-export function forgetActiveProjectId() {
-  saveString(ACTIVE_PROJECT_KEY, null)
-}
-
-export function loadActiveProjectId(): string | null {
-  return loadString(ACTIVE_PROJECT_KEY)
-}
-
 /**
  * The scope + chat the user was last actually in — the record a cold launch reopens from.
  *
- * WHY A SECOND RECORD. `localix_active_project_id` and the per-scope
- * `localix_active_session_id_*` keys already hold both halves, and the launch restore used
- * to read them back separately. That is a torn read waiting to happen across windows, and
- * it also loses the one fact the restore needs most: WHICH scope the pair describes. One
- * atomic value answers both. The old keys stay — they serve scope round-trips inside a
- * running window (`selectProject`), a different job.
+ * WHY A SECOND RECORD. The per-scope `localix_active_session_id_*` keys remember each scope's
+ * chat for round-trips inside a running window (`selectProject`); they do not say WHICH scope a
+ * cold launch reopens. One atomic value does, and cannot be torn across windows.
  */
 export interface LastWorkspace {
   /** The scope — always a project; there is no project-less one. */
@@ -139,13 +124,11 @@ export function rememberLastWorkspace(projectId: string | null, sessionId: strin
 /**
  * The launch-restore pair, or `null` when there is nothing to restore.
  *
- * Falls back to the two legacy keys when the record is absent (an install that predates
- * it, so the first launch after an update still reopens the right workspace) and tolerates
- * a corrupt value by treating every unusable field as absent.
+ * Tolerates a corrupt value by treating every unusable field as absent.
  */
 export function loadLastWorkspace(): LastWorkspace | null {
   const raw = loadJSON<unknown>(LAST_WORKSPACE_KEY)
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return legacyLastWorkspace()
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
   const record = raw as Record<string, unknown>
   const projectId =
     typeof record.projectId === 'string' && record.projectId ? record.projectId : null
@@ -160,12 +143,4 @@ export function loadLastWorkspace(): LastWorkspace | null {
 /** Drop a pair that has been CONFIRMED dead (its project or chat is gone). */
 export function forgetLastWorkspace(): void {
   saveJSON(LAST_WORKSPACE_KEY, null)
-  // The legacy fallback below reads this key; left behind, it revives the dead pair.
-  saveString(ACTIVE_PROJECT_KEY, null)
-}
-
-function legacyLastWorkspace(): LastWorkspace | null {
-  const projectId = loadActiveProjectId()
-  if (!projectId) return null
-  return { projectId, sessionId: loadRememberedActiveSession(projectId) }
 }

@@ -1,18 +1,16 @@
 import { describe, expect, test } from 'bun:test'
 import { runnableConnectionId, selectSessionConnectionId } from './connectionScope'
 
-/** A connection belongs to a participant, so a fixture session states a party of one. */
+/** A connection belongs to the session's agent. */
 const on = (id: string, providerConnectionId: string) => ({
   id,
-  agents: [
-    {
-      agentId: 'builtin:localix',
-      handle: 'localix',
-      providerConnectionId,
-      modelId: 'm',
-      reasoningEffort: 'low' as const,
-    },
-  ],
+  agent: {
+    agentId: 'builtin:localix',
+    name: 'localix',
+    providerConnectionId,
+    modelId: 'm',
+    reasoningEffort: 'low' as const,
+  },
 })
 
 const sessions = [on('focused', 'connection-a')]

@@ -1,6 +1,5 @@
-import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from 'bun:test'
+import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test'
 import type { Project, UiSession } from '@/shared/api/contracts'
-import { backendClient } from '@/shared/api/client'
 import { scopePath } from '@/shared/routing/routes'
 import {
   installTestLocalStorage,
@@ -24,75 +23,6 @@ beforeAll(() => {
 afterAll(async () => {
   await new Promise((resolve) => setTimeout(resolve, 0))
   await teardown()
-})
-
-describe('legacy chat route synchronization', () => {
-  test('redirects from hydrated summary metadata without downloading the transcript', async () => {
-    const React = await import('react')
-    const { act } = React
-    const { createRoot } = await import('react-dom/client')
-    const summary = {
-      id: 'legacy-session',
-      projectId: 'project-a',
-      messages: [],
-      bodyLoaded: false,
-    } as unknown as UiSession
-    const previous = useChatStore.getState()
-    useChatStore.setState({
-      _hasHydrated: true,
-      sessions: [],
-      allSessions: [summary],
-      activeProjectId: null,
-      activeSessionId: null,
-    })
-    const detail = spyOn(backendClient, 'getSession').mockResolvedValue(summary)
-    const redirects: string[] = []
-    const host = document.createElement('div')
-    const root = createRoot(host)
-
-    function LegacyRoute() {
-      useUrlStoreSync({
-        hasHydrated: true,
-        nav: { goReplace: (path: string) => redirects.push(path) } as never,
-        routeSessionId: summary.id,
-        sectionId: null,
-        routeProjectId: null,
-        isLegacyRoute: true,
-        isHomeRoute: false,
-        isColdIndex: false,
-        activeSessionId: null,
-        isMobile: true,
-        sidebarOpen: false,
-        setSidebarOpen: () => {},
-        promptDeepLink: null,
-        createHomeDraft: (async () => null) as never,
-        selectProject: (async () => {}) as never,
-        selectSession: (async () => {}) as never,
-        createSession: (async () => summary) as never,
-      })
-      return null
-    }
-
-    try {
-      await act(async () => {
-        root.render(<LegacyRoute />)
-        await Promise.resolve()
-      })
-
-      expect(detail).not.toHaveBeenCalled()
-      expect(redirects).toEqual([scopePath('project-a', summary.id)])
-    } finally {
-      await act(async () => root.unmount())
-      detail.mockRestore()
-      useChatStore.setState({
-        _hasHydrated: previous._hasHydrated,
-        sessions: previous.sessions,
-        allSessions: previous.allSessions,
-        activeProjectId: previous.activeProjectId,
-        activeSessionId: previous.activeSessionId,
-      })
-    }
-  })
 })
 
 // ── Launch-time workspace restore ────────────────────────────────────────────────
@@ -157,7 +87,6 @@ async function mountColdIndex(options: {
       routeSessionId: null,
       sectionId: null,
       routeProjectId: null,
-      isLegacyRoute: false,
       isHomeRoute: true,
       isColdIndex: true,
       activeSessionId: null,
@@ -357,7 +286,6 @@ describe('home landing', () => {
         routeSessionId: home ? null : 's2',
         sectionId: null,
         routeProjectId: home ? null : 'p2',
-        isLegacyRoute: false,
         isHomeRoute: home,
         isColdIndex: false,
         activeSessionId: home ? null : 's2',

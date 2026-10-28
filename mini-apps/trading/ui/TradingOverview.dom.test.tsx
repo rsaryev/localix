@@ -3,6 +3,10 @@ import { registerDom } from '@localixai/kit/testing'
 import { bindMiniAppUiTestDoubles } from '@localixai/mini-app-sdk/ui/testing'
 import { tradingApi } from './api/tradingApi'
 
+const turns = async (n = 10) => {
+  for (let i = 0; i < n; i++) await new Promise((r) => setImmediate(r))
+}
+
 let teardown: () => Promise<void>
 let unbindDoubles: () => void
 
@@ -32,7 +36,7 @@ test('a failed data-source read is reported with a retry, not hidden behind a da
   try {
     await act(async () => {
       root.render(<TradingOverview onOpen={() => {}} />)
-      await new Promise((resolve) => setTimeout(resolve, 5))
+      await turns()
     })
     const alert = host.querySelector('[role="alert"]')
     expect(alert).not.toBeNull()

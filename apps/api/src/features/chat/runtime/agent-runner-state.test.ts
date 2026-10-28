@@ -14,7 +14,6 @@ const startJob = (
 ) =>
   state.work.start({
     owner: { userId: 'u', sessionId },
-    agentId: null,
     kind: 'job',
     label: 'sleep 99',
     toolCallId,

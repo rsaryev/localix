@@ -65,7 +65,7 @@ function Probe({ active }: { active: boolean }) {
     focused: true,
     caretAtEnd: true,
     // Fixed so the request leaves on a known tick rather than an adaptive delay.
-    debounceMs: 1,
+    debounceMs: 0,
   })
   return null
 }
@@ -73,7 +73,7 @@ function Probe({ active }: { active: boolean }) {
 /** Let the debounce fire and the request reach the transport. */
 const flush = async () => {
   await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 10))
+    for (let i = 0; i < 6; i++) await new Promise((resolve) => setTimeout(resolve, 0))
   })
 }
 

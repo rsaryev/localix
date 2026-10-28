@@ -9,7 +9,7 @@ const command = (id: string, output: string | undefined, extra: Record<string, u
     toolCallId: id,
     type: 'command',
     status: 'running',
-    name: 'bash',
+    name: 'Bash',
     command: 'bun test',
     ...(output === undefined ? {} : { output }),
     ...extra,
@@ -21,7 +21,7 @@ const toolCall = (id: string, extra: Record<string, unknown> = {}) =>
     toolCallId: id,
     type: 'tool_call',
     status: 'pending',
-    name: 'write',
+    name: 'Write',
     activeVerb: 'Writing',
     ...extra,
   }) as unknown as AgentItem

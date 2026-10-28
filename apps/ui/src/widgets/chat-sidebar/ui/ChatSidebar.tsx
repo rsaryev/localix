@@ -1,14 +1,10 @@
-import { useState, useCallback, useMemo, useRef } from 'react'
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import type { UiSession } from '@/shared/api/contracts'
-import { canJoinConversation } from '@localixai/api/agent-policy'
 import { useChatStore } from '@/entities/chat/model/store'
-import { useSessionRoster } from '@/entities/chat/model/useSessionRoster'
-import type { ConversationStartStrategy } from '@/entities/chat/model/conversationStartStrategy'
-import { useSidebarNewChat } from '@/entities/chat/model/useSidebarNewChat'
+import { useAllSessions } from '@/entities/chat/model/useAllSessions'
 import { ChatSidebarHeader, HistorySearchField } from '@/entities/chat/ui/ChatSidebarHeader'
-import { SessionRoster } from '@/entities/chat/ui/SessionRoster'
-import { useAgents } from '@/shared/contrib/useAgents'
+import { ActivitySessionList } from '@/entities/chat/ui/ActivitySessionList'
 import { useSidebarSessions, type SortMode } from '@/entities/chat/model/useSidebarSessions'
 import { useSidebarDisclosure } from '@/entities/chat/model/useSidebarDisclosure'
 import { useSessionSelection, stepId } from '@/entities/chat/model/useSessionSelection'
@@ -26,12 +22,8 @@ import { NativeSessionRow } from '@/features/external-agents/ui/NativeSessionRow
 import { NativeHistoryStatus } from '@/features/external-agents/ui/NativeHistoryStatus'
 import { useHistorySource } from './useHistorySource'
 import { ExternalHistoryEmpty, HistorySourceTabs } from './HistorySourceTabs'
+import { SelectionGestures } from './SelectionGestures'
 import { isPrimaryModifier } from '@/shared/lib/keybindings'
-import { useLatestRef } from '@/shared/lib/useLatestRef'
-import {
-  DEFAULT_SESSION_GROUPING_MODE,
-  type SessionGroupingMode,
-} from '@/entities/chat/model/sessionGrouping'
 
 interface ChatSidebarProps {
   activeSessionId: string | null
@@ -41,7 +33,6 @@ interface ChatSidebarProps {
   /** Opens the workspace (project-scope) switcher. */
   onOpenScopeSwitcher: () => void
   /** The page-owned creation pipeline shared by rail, shortcuts, breadcrumb and this sidebar. */
-  onNewChat: (strategy: ConversationStartStrategy) => void
 }
 
 export function ChatSidebar({
@@ -50,10 +41,9 @@ export function ChatSidebar({
   onDelete,
   onTogglePin,
   onOpenScopeSwitcher,
-  onNewChat,
 }: ChatSidebarProps) {
   // The roster, not the conversations: a streamed token does not re-walk the sidebar's tree.
-  const allSessions = useSessionRoster()
+  const allSessions = useAllSessions()
   const {
     projects,
     activeProjectId,
@@ -82,9 +72,6 @@ export function ChatSidebar({
     setSearchOpen(false)
   }, [setSearch])
   const [sortMode, setSortMode] = useState<SortMode>('recent')
-  const [groupingMode, setGroupingMode] = useState<SessionGroupingMode>(
-    DEFAULT_SESSION_GROUPING_MODE,
-  )
   const [showArchived, setShowArchived] = useState(false)
   const { collapsedParents, expandedBranches, toggleParent, toggleBranchAll, revealPath } =
     useSidebarDisclosure()
@@ -195,7 +182,10 @@ export function ChatSidebar({
   // commit — measured at 44 commits/s re-rendering all ~112 visible rows with their context and
   // dropdown menus (200k Radix menu renders in a 9s turn), the largest UI cost of a run. The
   // handlers run on a click or a key, after effects, so they read the latest deps at call time.
-  const rosterDeps = useLatestRef({ onSelect, onTogglePin, orderedRootIds, selection })
+  const rosterDeps = useRef({ onSelect, onTogglePin, orderedRootIds, selection })
+  useEffect(() => {
+    rosterDeps.current = { onSelect, onTogglePin, orderedRootIds, selection }
+  })
   // The page passes an inline arrow, so it too is read at call time.
   const handleTogglePin = useCallback(
     (id: string) => rosterDeps.current.onTogglePin(id),
@@ -263,17 +253,6 @@ export function ChatSidebar({
     [activeSessionId, search, handleSelectSession],
   )
 
-  // Who a chat can be with, in registry order. Read from the capability document the
-  // workbench already holds for this scope, so the roster costs no request of its own.
-  const { agents } = useAgents(activeProjectId ?? '')
-  const chatRoster = useMemo(
-    () => agents.filter(canJoinConversation).map((a) => a.record.handle),
-    [agents],
-  )
-  const handleNewChat = useSidebarNewChat(activeProjectId, agents, onNewChat)
-
-  const showRoster = !isExternal && !search && groupingMode === 'agent' && chatRoster.length > 0
-
   const renderSessionTree = useSessionTreeRenderer({
     activeSessionId,
     sortMode,
@@ -298,156 +277,144 @@ export function ChatSidebar({
   // that ground, and under the macOS glass theme the token carries alpha — a second coat here
   // compounds into an opaque slab. The foreground token still comes from the sidebar palette.
   return (
-    <aside
-      data-context-menu-boundary
-      className="flex h-full w-full flex-col overflow-hidden text-sidebar-foreground"
-      onKeyDown={(e) => {
-        if (e.key === 'Escape' && selection.isSelectionActive) {
-          e.stopPropagation()
-          selection.clear()
-        }
-      }}
+    <SelectionGestures
+      active={selection.isSelectionActive}
+      onClear={selection.clear}
+      emptySpaceRef={rosterRef}
     >
-      {/* Single header row: the scope switcher IS the panel title (no redundant
-          static "Chats" label), with the scope-aware actions on the right. */}
-      <ChatSidebarHeader
-        scopeName={scopeName}
-        isGlobal={activeProject?.isDefault ?? false}
-        onOpenScopeSwitcher={onOpenScopeSwitcher}
-        onAddProjectFolder={() => {
-          void handleOpenProject()
-        }}
-        searchVisible={searchVisible}
-        onToggleSearch={() => (searchVisible ? closeSearch() : setSearchOpen(true))}
-        viewMenu={{
-          groupingMode,
-          onGroupingModeChange: setGroupingMode,
-          sortMode,
-          onSortModeChange: setSortMode,
-          showArchived,
-          onShowArchivedChange: setShowArchived,
-          archivedCount,
-        }}
-      />
-
-      <HistorySearchField
-        visible={searchVisible}
-        value={search}
-        onChange={setSearch}
-        onClose={closeSearch}
-      />
-
-      <HistorySourceTabs
-        source={history.source}
-        onChange={history.setSource}
-        externalAvailable={history.externalAvailable}
+      <aside
+        data-context-menu-boundary
+        className="flex h-full w-full flex-col overflow-hidden text-sidebar-foreground"
       >
-        <div
-          ref={rosterRef}
-          role="region"
-          aria-label="Session history"
-          className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto px-2 py-2 scrollbar-thin"
-          onClick={(e) => {
-            if (e.target === e.currentTarget && selection.isSelectionActive) selection.clear()
+        {/* Single header row: the scope switcher IS the panel title (no redundant
+          static "Chats" label), with the scope-aware actions on the right. */}
+        <ChatSidebarHeader
+          scopeName={scopeName}
+          isGlobal={activeProject?.isDefault ?? false}
+          onOpenScopeSwitcher={onOpenScopeSwitcher}
+          onAddProjectFolder={() => {
+            void handleOpenProject()
           }}
+          searchVisible={searchVisible}
+          onToggleSearch={() => (searchVisible ? closeSearch() : setSearchOpen(true))}
+          viewMenu={{
+            sortMode,
+            onSortModeChange: setSortMode,
+            showArchived,
+            onShowArchivedChange: setShowArchived,
+            archivedCount,
+          }}
+        />
+
+        <HistorySearchField
+          visible={searchVisible}
+          value={search}
+          onChange={setSearch}
+          onClose={closeSearch}
+        />
+
+        <HistorySourceTabs
+          source={history.source}
+          onChange={history.setSource}
+          externalAvailable={history.externalAvailable}
         >
-          {/* The roster stands even with no chats under it: it lists who you can talk to, not
-            what you have said, and hiding it left a new workspace with no way to start. It
-            steps aside while SEARCHING — agents with nothing under them answer no query. */}
-          {(visibleSessions.length > 0 || showRoster) && (
-            <div className="flex flex-col gap-0.5">
-              <SessionRoster
-                sessions={visibleSessions}
-                roster={isExternal ? [] : chatRoster}
-                groupingMode={isExternal ? 'activity' : groupingMode}
-                renderSession={(session) => {
-                  const source = nativeRows.sources.get(session.id)
-                  return source
-                    ? [
-                        <NativeSessionRow
-                          key={session.id}
-                          session={session}
-                          source={source}
-                          onSelect={onSelect}
-                        />,
-                      ]
-                    : renderSessionTree(session)
-                }}
-                onNewChatWith={handleNewChat}
-              />
-            </div>
-          )}
-
-          {isExternal && <NativeHistoryStatus history={nativeHistory} />}
-
-          {search && !isExternal && (
-            <HistorySearchResults
-              hits={historyHits}
-              sessionsById={sessionsById}
-              onSelect={handleSelectHistoryHit}
-            />
-          )}
-
-          {search && !isExternal && historyLoading && historyHits.length === 0 && (
-            <p className="px-3 py-3 text-2xs text-sidebar-foreground/40">Searching messages…</p>
-          )}
-
-          {/* Only when the pane would otherwise be blank — the roster above is content too. */}
-          {isExternal && visibleSessions.length === 0 && (
-            <ExternalHistoryEmpty history={nativeHistory} search={Boolean(search)} />
-          )}
-          {!isExternal &&
-            !hasResults &&
-            visibleSessions.length === 0 &&
-            !showRoster &&
-            historyHits.length === 0 &&
-            !historyLoading && (
-              <div className="flex min-h-0 flex-1 select-none items-center justify-center px-4 text-center text-xs text-sidebar-foreground/40">
-                {search
-                  ? 'No matching chats in this workspace.'
-                  : 'No conversations in this workspace yet.'}
+          <div
+            ref={rosterRef}
+            role="region"
+            aria-label="Session history"
+            className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto px-2 py-2 scrollbar-thin"
+          >
+            {visibleSessions.length > 0 && (
+              <div className="flex flex-col gap-0.5">
+                <ActivitySessionList
+                  sessions={visibleSessions}
+                  renderSession={(session) => {
+                    const source = nativeRows.sources.get(session.id)
+                    return source
+                      ? [
+                          <NativeSessionRow
+                            key={session.id}
+                            session={session}
+                            source={source}
+                            onSelect={onSelect}
+                          />,
+                        ]
+                      : renderSessionTree(session)
+                  }}
+                />
               </div>
             )}
-        </div>
-      </HistorySourceTabs>
 
-      {selectedSessions.length > 0 && (
-        <SessionBatchBar
-          sessions={selectedSessions}
-          projects={projects}
-          onArchive={batch.archive}
-          onPin={batch.pin}
-          onMarkUnread={batch.unread}
-          onMoveToProject={batch.moveToProject}
-          onDelete={() => setPendingBatchDelete(true)}
-          onClear={selection.clear}
+            {isExternal && <NativeHistoryStatus history={nativeHistory} />}
+
+            {search && !isExternal && (
+              <HistorySearchResults
+                hits={historyHits}
+                sessionsById={sessionsById}
+                onSelect={handleSelectHistoryHit}
+              />
+            )}
+
+            {search && !isExternal && historyLoading && historyHits.length === 0 && (
+              <p className="px-3 py-3 text-2xs text-sidebar-foreground/40">Searching messages…</p>
+            )}
+
+            {/* Only when the pane would otherwise be blank — the roster above is content too. */}
+            {isExternal && visibleSessions.length === 0 && (
+              <ExternalHistoryEmpty history={nativeHistory} search={Boolean(search)} />
+            )}
+            {!isExternal &&
+              !hasResults &&
+              visibleSessions.length === 0 &&
+              historyHits.length === 0 &&
+              !historyLoading && (
+                <div className="flex min-h-0 flex-1 select-none items-center justify-center px-4 text-center text-xs text-sidebar-foreground/40">
+                  {search
+                    ? 'No matching chats in this workspace.'
+                    : 'No conversations in this workspace yet.'}
+                </div>
+              )}
+          </div>
+        </HistorySourceTabs>
+
+        {selectedSessions.length > 0 && (
+          <SessionBatchBar
+            sessions={selectedSessions}
+            projects={projects}
+            onArchive={batch.archive}
+            onPin={batch.pin}
+            onMarkUnread={batch.unread}
+            onMoveToProject={batch.moveToProject}
+            onDelete={() => setPendingBatchDelete(true)}
+            onClear={selection.clear}
+          />
+        )}
+
+        <ConfirmDialog
+          open={pendingDelete !== null}
+          title={
+            pendingSession ? `Delete ${sessionTitle(pendingSession)}?` : 'Delete this conversation?'
+          }
+          description="This permanently removes the conversation and its messages. This can't be undone."
+          confirmLabel="Delete"
+          variant="destructive"
+          onConfirm={() => {
+            if (pendingDelete) onDelete(pendingDelete)
+            setPendingDelete(null)
+          }}
+          onClose={() => setPendingDelete(null)}
         />
-      )}
 
-      <ConfirmDialog
-        open={pendingDelete !== null}
-        title={
-          pendingSession ? `Delete ${sessionTitle(pendingSession)}?` : 'Delete this conversation?'
-        }
-        description="This permanently removes the conversation and its messages. This can't be undone."
-        confirmLabel="Delete"
-        variant="destructive"
-        onConfirm={() => {
-          if (pendingDelete) onDelete(pendingDelete)
-          setPendingDelete(null)
-        }}
-        onClose={() => setPendingDelete(null)}
-      />
-
-      <ConfirmDialog
-        open={pendingBatchDelete}
-        title={`Delete ${selectedSessions.length} conversation${selectedSessions.length === 1 ? '' : 's'}?`}
-        description="This permanently removes the selected conversations and their messages. This can't be undone."
-        confirmLabel="Delete"
-        variant="destructive"
-        onConfirm={runBatchDelete}
-        onClose={() => setPendingBatchDelete(false)}
-      />
-    </aside>
+        <ConfirmDialog
+          open={pendingBatchDelete}
+          title={`Delete ${selectedSessions.length} conversation${selectedSessions.length === 1 ? '' : 's'}?`}
+          description="This permanently removes the selected conversations and their messages. This can't be undone."
+          confirmLabel="Delete"
+          variant="destructive"
+          onConfirm={runBatchDelete}
+          onClose={() => setPendingBatchDelete(false)}
+        />
+      </aside>
+    </SelectionGestures>
   )
 }

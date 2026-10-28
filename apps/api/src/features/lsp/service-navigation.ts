@@ -89,9 +89,9 @@ async function toReferences(
 }
 
 interface NavigationPorts {
-  getManager(): LspManager
-  resolveProjectRoot(userId: string, sessionId: string): Promise<string>
-  projectRootAfterSync(userId: string, sessionId: string, file: string): Promise<string>
+  getManager: () => LspManager
+  resolveProjectRoot: (userId: string, sessionId: string) => Promise<string>
+  projectRootAfterSync: (userId: string, sessionId: string, file: string) => Promise<string>
 }
 
 /** Project navigation waits for the service's buffer barrier before querying a file. */

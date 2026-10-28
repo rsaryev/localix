@@ -20,6 +20,8 @@ export interface CcTranscript {
    * subagent's own. Never throws; a file that could not be written keeps its last state.
    */
   refresh(input: CcHookInput): Promise<void>
+  /** Bring the session's own file up to date, for a reader that is not a hook. */
+  refreshSession(): Promise<void>
 }
 
 /** Handlers that run outside the process and so can open the file the path names. */

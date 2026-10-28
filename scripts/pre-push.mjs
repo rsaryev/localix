@@ -1,18 +1,15 @@
 #!/usr/bin/env bun
-// The CI gates, run before every push.
-//
-// A commit only checks what it stages (pre-commit.mjs) and stays a few seconds; a push checks the
-// packages it changes, and CI the whole tree. The gates run on the working tree, so it must
-// hold exactly what is pushed: uncommitted tracked changes are refused.
-//
-// Affected-package selection missed failures that only the whole tree shows: a docs edit breaking a
-// landing test, a repository guard in scripts/, a test in a package nothing imports. CI caught them
-// one push at a time. Turbo caches each task by its inputs, so an unchanged package replays instantly
-// and the full run stays short. Rust is still checked only on the host platform (see pre-commit.mjs).
+// The checks a push runs (see pre-push-plan.mjs): types of what the pushed commits change. The
+// gates run on the working tree, so it must hold exactly what is pushed: uncommitted tracked
+// changes are refused.
+import { spawnSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import { runOrExit } from './lib/run.mjs'
+import { pushChecks } from './pre-push-plan.mjs'
 import { scrubGitEnv } from './scratch-git-env.mjs'
 
-const GATES = ['type-check', 'check:tests', 'test', 'test:integration']
+const checks = pushChecks(readFileSync(0, 'utf8'))
+if (!checks) process.exit(0)
 
 const uncommitted = runOrExit('git', ['status', '--porcelain', '-z', '--untracked-files=no'], {
   cwd: process.cwd(),
@@ -29,19 +26,19 @@ if (uncommitted.length) {
   process.exit(1)
 }
 
-// Git exports GIT_DIR and friends to its hooks; nothing the gates start may inherit them.
-// Only what this push changes is checked: Turbo's `--affected` selects the packages that differ from
-// the remote main and every package that depends on them (all of them when a global input changed).
-// CI checks the whole tree before anything reaches main. Three tasks at a time leave the machine
-// usable; set TURBO_FILTER= (empty) to check everything, or TURBO_CONCURRENCY to change the width.
+// A remote commit this clone has not fetched cannot be diffed against; main still can.
+const known =
+  spawnSync('git', ['cat-file', '-e', `${checks.base}^{commit}`], { timeout: 10_000 }).status === 0
+// Git exports GIT_DIR and friends to its hooks; nothing the gates start may inherit them. Two tasks
+// at a time leave the machine usable; set TURBO_FILTER= (empty) to check everything.
 const env = scrubGitEnv({
   TURBO_FILTER: '--affected',
-  TURBO_SCM_BASE: 'origin/main',
-  TURBO_CONCURRENCY: '3',
+  TURBO_SCM_BASE: known ? checks.base : 'origin/main',
+  TURBO_CONCURRENCY: '2',
   ...process.env,
 })
 
-for (const gate of GATES) {
+for (const gate of checks.gates) {
   console.log(`[pre-push] bun run ${gate}`)
   runOrExit('bun', ['run', gate], {
     cwd: process.cwd(),
@@ -51,4 +48,4 @@ for (const gate of GATES) {
     killSignal: 'SIGKILL',
   })
 }
-console.log('[pre-push] Full suite passed.')
+console.log('[pre-push] Types checked; CI runs the tests.')

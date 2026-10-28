@@ -131,7 +131,7 @@ describe('the pointers carry the hints without disturbing what they said before'
 
   test('a LIVE read pointer gains the terms, and keeps the handle', () => {
     const text = readPointer('live', DUMP.length, 'tc1', DUMP)
-    expect(text).toContain('tool_output(action="get", tool_call_id="tc1")')
+    expect(text).toContain('ToolOutput(action="get", tool_call_id="tc1")')
     expect(text).toContain('; terms found in it: ')
   })
 

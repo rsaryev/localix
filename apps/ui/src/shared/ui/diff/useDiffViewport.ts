@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 
 /**
  * Root font size relative to the 14px design root. Diff rows are px-exact for the
@@ -21,7 +21,6 @@ export function useRootScale(): number {
  */
 export function useDiffViewport(el: HTMLElement | null): { scrollTop: number; width: number } {
   const [scrollTop, setScrollTop] = useState(0)
-  const [width, setWidth] = useState(0)
   const frame = useRef<number | null>(null)
 
   useEffect(() => {
@@ -34,19 +33,28 @@ export function useDiffViewport(el: HTMLElement | null): { scrollTop: number; wi
       })
     }
     el.addEventListener('scroll', onScroll, { passive: true })
-    const observer =
-      typeof ResizeObserver === 'undefined'
-        ? null
-        : new ResizeObserver(() => setWidth(el.clientWidth))
-    observer?.observe(el)
-    setWidth(el.clientWidth)
     return () => {
       el.removeEventListener('scroll', onScroll)
-      observer?.disconnect()
       if (frame.current !== null) cancelAnimationFrame(frame.current)
       frame.current = null
     }
   }, [el])
+
+  // The element's width is an external value: read it as one, and let the observer announce changes.
+  const subscribeWidth = useCallback(
+    (onChange: () => void) => {
+      if (!el || typeof ResizeObserver === 'undefined') return () => {}
+      const observer = new ResizeObserver(onChange)
+      observer.observe(el)
+      return () => observer.disconnect()
+    },
+    [el],
+  )
+  const width = useSyncExternalStore(
+    subscribeWidth,
+    () => el?.clientWidth ?? 0,
+    () => 0,
+  )
 
   return { scrollTop, width }
 }

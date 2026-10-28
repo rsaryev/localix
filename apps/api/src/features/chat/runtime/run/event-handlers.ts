@@ -13,6 +13,7 @@ import type { AgentEvent } from '@localixai/agent/agents'
 import type { LiveItemResolver } from '../agent-runner-state'
 
 import { calcUsageWithCost, classifyCostSource } from '../run-accounting'
+import { noteChildStreaming } from '../../../agent-core/delegation-first-sign'
 import { normalizeUsage } from '../usage-normalize'
 import { publishSessionUsageSnapshot } from '../session-usage'
 import type { createItemAccumulator } from '../items'
@@ -120,6 +121,8 @@ export function captureCompletedTurnCheckpoint(
 
 async function handleMessageUpdate(ctx: TurnEventContext, event: EventOf<'message_update'>) {
   const { state } = ctx
+  // A delegating call watching this child as it starts is done once it streams (a no-op otherwise).
+  noteChildStreaming(ctx.session.id)
   const changed = applyAssistantDelta(ctx, event.delta)
   // Record per-turn wall markers (fallback when the provider stream does
   // not expose genTimings; accumulation happens at message_end).
@@ -173,6 +176,7 @@ async function handleMessageEnd(ctx: TurnEventContext, event: EventOf<'message_e
   if (state.lastTurnContextTokens) {
     runUsage.contextTokens = state.lastTurnContextTokens
     runUsage.contextIdentity = ctx.contextAnchorIdentity
+    if (state.lastTurnUsage) runUsage.lastRequest = state.lastTurnUsage
   }
   // Reconcile progressively-streamed tool items: a retried turn re-issues
   // NEW tool call ids, so `pending` items whose id is absent from the
@@ -186,7 +190,7 @@ async function handleMessageEnd(ctx: TurnEventContext, event: EventOf<'message_e
   if (runUsage.costSource !== 'actual') {
     runUsage.costSource = classifyCostSource(usedKey?.authType, runUsage.costSource)
   }
-  const route = message.usage ? agentRoute(ctx.session, ctx.agentId) : undefined
+  const route = message.usage ? agentRoute(ctx.session) : undefined
   state.payload = {
     ...state.payload,
     content: text.trim() ? text : state.payload.content,

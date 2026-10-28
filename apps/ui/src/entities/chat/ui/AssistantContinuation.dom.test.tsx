@@ -27,7 +27,7 @@ describe('assistant continuation card', () => {
         type: 'tool_call',
         status: 'completed',
         toolCallId: id,
-        name: 'read',
+        name: 'Read',
         input: { path: `${id}.ts` },
         sources: [
           {
@@ -109,7 +109,7 @@ describe('assistant continuation card', () => {
           type: 'tool_call',
           status: 'completed',
           toolCallId: 'call-first',
-          name: 'read',
+          name: 'Read',
           activeVerb: 'Reading',
           input: { path: 'first.ts' },
           sources: [
@@ -154,7 +154,7 @@ describe('assistant continuation card', () => {
       )
       expect(host.querySelectorAll('article')).toHaveLength(1)
       expect(host.querySelectorAll('.lx-message-footer')).toHaveLength(1)
-      expect(host.querySelectorAll('[title^="Open @"]')).toHaveLength(1)
+      expect(host.querySelectorAll('[title$="’s profile"]')).toHaveLength(1)
       expect(host.querySelector('[data-message-id="first"]')?.textContent).toContain(
         'Before the report',
       )

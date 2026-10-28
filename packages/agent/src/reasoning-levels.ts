@@ -56,8 +56,8 @@ export function clampModelReasoning(
 }
 
 /**
- * The level a seat on `model` stores for a requested level. A model that does not reason is asked
- * for none, and the seat says so (`off`) — the picker and the server store the same answer.
+ * The level an agent on `model` stores for a requested level. A model that does not reason is asked
+ * for none, and the agent says so (`off`) — the picker and the server store the same answer.
  */
 export function reasoningForModel(effort: ReasoningEffort, model: ReasoningModel): ReasoningEffort {
   if (model.supportsReasoning === false) return OFF
@@ -98,7 +98,7 @@ export function reasoningOnModel(
     : initialModelReasoning(model, saved)
 }
 
-/** The level a seat holds after its model changes (`/model` on the server). */
+/** The level an agent holds after its model changes (`/model` on the server). */
 export function effortForModelSwitch(args: {
   previous: { modelId: string; reasoningEffort: ReasoningEffort }
   next: { id: string } & ReasoningModel

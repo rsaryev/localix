@@ -85,7 +85,7 @@ describe('agent bindings', () => {
     await put(join(user(), 'a.md'), file('a'))
     await bindings().snapshot('u', '')
     const rules = await capabilityStores.rules(db).read('u', 'cc:test-1')
-    expect(rules.some((rule) => rule.action === 'tool:bash')).toBe(true)
+    expect(rules.some((rule) => rule.action === 'tool:Bash')).toBe(true)
   })
 
   test('edit, rename by path, move and rename by body keep one identity', async () => {

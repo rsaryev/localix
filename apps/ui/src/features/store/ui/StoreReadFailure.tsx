@@ -1,8 +1,9 @@
-import { CircleAlert } from 'lucide-react'
+import { CircleAlert, PackageX } from 'lucide-react'
 import { Button } from '@localixai/kit/button'
 import { StateNotice } from '@localixai/kit/state-notice'
 import { TextAction } from '@localixai/kit/text-action'
 import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
+import { ApiError } from '@/shared/api/internal'
 
 /**
  * A read that failed, said as a failure: what could not be read, why in the server's words, and
@@ -46,5 +47,21 @@ export function StoreReadFailure({
       actionsLabel="Recover"
       className="flex-none py-10"
     />
+  )
+}
+
+/** The owner answered that the item does not exist: a read that found nothing, not a failure. */
+export const isGone = (error: unknown) => error instanceof ApiError && error.status === 404
+
+/** An item removed while its page was open — here, in Settings or by an agent. */
+export function StoreGone({ name }: { name: string }) {
+  return (
+    <div role="status" aria-label="Not in the Store">
+      <StateNotice
+        icon={PackageX}
+        title={`${name} is no longer installed or offered by any source`}
+        className="flex-none py-10"
+      />
+    </div>
   )
 }

@@ -43,6 +43,8 @@ export function createGuestConsole(input: {
     input.print(level, args.map(formatted).join(' '))
   const counts = new Map<string, number>()
   const timers = new Map<string, number>()
+  // A console label is stringified the way the web console does it, whatever it is.
+  // oxlint-disable-next-line typescript/no-base-to-string -- ToString semantics are the contract
   const label = (name: unknown) => (name === undefined ? 'default' : String(name))
   const elapsed = (name: unknown) => {
     const started = timers.get(label(name))

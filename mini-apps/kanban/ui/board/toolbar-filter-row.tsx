@@ -208,7 +208,7 @@ export function KanbanFilterRow({
           {chips.map((chip) => (
             <Button
               key={chip.key}
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={chip.onClear}
               // Foreground veil, not `bg-surface-raised`: raised mixes from a darker ground than

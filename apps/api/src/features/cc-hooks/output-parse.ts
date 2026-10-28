@@ -63,7 +63,8 @@ export function foldHookOutput(text: string, allowPlainTextContext: boolean): Cc
     if (hso.suppressOriginalPrompt === true) outcome.suppressOriginalPrompt = true
     if (hso.reloadSkills === true) outcome.reloadSkills = true
     const pd = hso.permissionDecision
-    if (pd === 'allow' || pd === 'deny' || pd === 'ask') outcome.permissionDecision = pd
+    if (pd === 'allow' || pd === 'deny' || pd === 'ask' || pd === 'defer')
+      outcome.permissionDecision = pd
     if (typeof hso.permissionDecisionReason === 'string') {
       outcome.permissionDecisionReason = hso.permissionDecisionReason
     }

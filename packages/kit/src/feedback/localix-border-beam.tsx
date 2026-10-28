@@ -5,7 +5,7 @@ export type LocalixBeamIntensity = 0 | 1 | 2 | 3 | 4 | 5
 /**
  * "The next step is suggested" — one intensity for every carrier of the mark (a `Button`, a menu
  * row), so a recommended trigger and the recommended row in the menu it opens read as one cue.
- * Above a queued participant (1), well below the speaker (4), without the glow step 3 adds.
+ * Above a waiting state (1), well below a running agent (4), without the glow step 3 adds.
  */
 export const RECOMMENDED_BEAM_INTENSITY: LocalixBeamIntensity = 2
 

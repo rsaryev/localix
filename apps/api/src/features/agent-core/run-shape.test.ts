@@ -35,17 +35,17 @@ describe('toolExposure', () => {
     (sessionKind) => {
       const empty = resolveRunProfile({ sessionKind }, { tools: [] })
       for (const name of BUILTIN_TOOLS) {
-        expect(isToolDirect(empty, name)).toBe(name === TOOL.tool_output)
+        expect(isToolDirect(empty, name)).toBe(name === TOOL.ToolOutput)
       }
       const inherited = resolveRunProfile({ sessionKind })
-      expect(isToolDirect(inherited, TOOL.bash)).toBe(true)
-      expect(isToolDirect(inherited, TOOL.read)).toBe(true)
+      expect(isToolDirect(inherited, TOOL.Bash)).toBe(true)
+      expect(isToolDirect(inherited, TOOL.Read)).toBe(true)
     },
   )
 
   test('defaults to "hidden" for a tool not in the profile map', () => {
-    const p = child(['read'])
-    expect(toolExposure(p, 'read')).toBe('direct')
+    const p = child(['Read'])
+    expect(toolExposure(p, 'Read')).toBe('direct')
     expect(toolExposure(p, 'definitely_not_a_tool')).toBe('hidden')
   })
 })
@@ -63,22 +63,22 @@ describe('runShapeOf', () => {
 
 describe('an agent dispatched into a run', () => {
   test("its declared tools are the unattended run's surface, closed, with no background bash", () => {
-    const p = child(['read', 'write'])
+    const p = child(['Read', 'Write'])
     expect(p.shape).toBe('subagent')
     // A declared list CLOSES the toolset: plugin/MCP tools must not leak into a scoped
     // agent (they bloat its per-turn prefill and dilute focus).
     expect(p.openToolset).toBe(false)
-    expect(isToolDirect(p, 'read')).toBe(true)
-    expect(isToolDirect(p, 'write')).toBe(true)
-    expect(hasToolFeature(p, 'bash', 'background')).toBe(false)
-    expect(hasToolFeature(p, 'bash', 'notify')).toBe(false)
+    expect(isToolDirect(p, 'Read')).toBe(true)
+    expect(isToolDirect(p, 'Write')).toBe(true)
+    expect(hasToolFeature(p, 'Bash', 'background')).toBe(false)
+    expect(hasToolFeature(p, 'Bash', 'notify')).toBe(false)
   })
 
   test("its prompt is the run's identity, whichever host dispatched it", () => {
-    expect(child(['read'], 'You are a linter.').prompt.identity).toBe('You are a linter.')
+    expect(child(['Read'], 'You are a linter.').prompt.identity).toBe('You are a linter.')
     // The SAME record, dispatched as an unattended job instead of a delegation, introduces itself
     // identically — the two used to run through separate builders with separate identities.
-    expect(job(['read'], 'You are a linter.').prompt.identity).toBe('You are a linter.')
+    expect(job(['Read'], 'You are a linter.').prompt.identity).toBe('You are a linter.')
   })
 
   test('an agent that declares nothing gets its shape floor', () => {
@@ -86,24 +86,24 @@ describe('an agent dispatched into a run', () => {
     expect(Object.keys(p.toolExposure).length).toBeGreaterThan(0)
     // The default child cannot spawn children: the absence of the tool is what bounds
     // the session tree, so this is the assertion standing in for a depth limit.
-    expect(isToolDirect(p, 'ask')).toBe(false)
+    expect(isToolDirect(p, 'AskUserQuestion')).toBe(false)
     // No declaration → still CLOSED: an unattended worker's schema payload must not scale
     // with the user's connected MCP servers.
     expect(p.openToolset).toBe(false)
   })
 
   test('it cannot re-introduce user-blocking question tools in an unattended run', () => {
-    for (const p of [child(['read', 'ask']), job(['read', 'ask'])]) {
-      expect(isToolDirect(p, 'read')).toBe(true)
-      expect(isToolDirect(p, 'ask')).toBe(false)
+    for (const p of [child(['Read', 'AskUserQuestion']), job(['Read', 'AskUserQuestion'])]) {
+      expect(isToolDirect(p, 'Read')).toBe(true)
+      expect(isToolDirect(p, 'AskUserQuestion')).toBe(false)
     }
   })
 
   test('a chat keeps its full surface — the record narrows a chat through its capability scope', () => {
     // Enforcing the declared list from the run surface too would silently overrule the
     // Capabilities screen, whose rows the user owns after the one-time preset seed.
-    const p = resolveRunProfile({ sessionKind: 'chat' }, { tools: ['read'], prompt: 'You lead.' })
-    expect(isToolDirect(p, 'write')).toBe(true)
+    const p = resolveRunProfile({ sessionKind: 'chat' }, { tools: ['Read'], prompt: 'You lead.' })
+    expect(isToolDirect(p, 'Write')).toBe(true)
     expect(p.openToolset).toBe(true)
     // The identity still comes from the record.
     expect(p.prompt.identity).toBe('You lead.')
@@ -118,47 +118,62 @@ describe('a child that inherits the conversation’s tools', () => {
     const p = inheriting('subagent')
     expect(p.openToolset).toBe(true)
     expect(p.inheritsConversation).toBe(true)
-    expect(isToolDirect(p, 'read')).toBe(true)
-    expect(isToolDirect(p, 'mcp_resources')).toBe(true)
+    expect(isToolDirect(p, 'Read')).toBe(true)
+    expect(isToolDirect(p, 'McpResources')).toBe(true)
     // Still a child: it cannot ask the person or delegate again.
-    for (const name of ['ask', 'delegate', 'configure'] as const)
+    for (const name of ['AskUserQuestion', 'Agent', 'Configure'] as const)
       expect(isToolDirect(p, name)).toBe(false)
     expect(gathersMcpTools(p)).toBe(true)
   })
 
   test('only a subagent without a tools list inherits; a list or another shape stays closed', () => {
-    for (const p of [inheriting('subagent', ['read']), inheriting('job')]) {
+    for (const p of [inheriting('subagent', ['Read']), inheriting('job')]) {
       expect(p.openToolset).toBe(false)
       expect(p.inheritsConversation).toBeUndefined()
     }
-    expect(isToolDirect(child(), 'mcp_resources')).toBe(false)
+    expect(isToolDirect(child(), 'McpResources')).toBe(false)
   })
 
   test('a closed list gathers MCP servers only when it names an MCP tool', () => {
-    expect(gathersMcpTools(child(['read']))).toBe(false)
-    expect(gathersMcpTools(child(['read', 'mcp_p_ctl_echo']))).toBe(true)
-    expect(gathersMcpTools(child(['read', 'mcp__srv__*']))).toBe(true)
+    expect(gathersMcpTools(child(['Read']))).toBe(false)
+    expect(gathersMcpTools(child(['Read', 'mcp_p_ctl_echo']))).toBe(true)
+    expect(gathersMcpTools(child(['Read', 'mcp__srv__*']))).toBe(true)
   })
 })
 
 describe('run shapes', () => {
   test('uses tool exposure instead of per-capability booleans', () => {
-    expect(isToolDirect(CHAT_RUN_PROFILE, 'delegate')).toBe(true)
-    expect(isToolDirect(CHAT_RUN_PROFILE, 'jobs')).toBe(true)
-    expect(isToolDirect(CHAT_RUN_PROFILE, 'browser')).toBe(true)
+    expect(isToolDirect(CHAT_RUN_PROFILE, 'Agent')).toBe(true)
+    expect(isToolDirect(CHAT_RUN_PROFILE, 'Jobs')).toBe(true)
+    expect(isToolDirect(CHAT_RUN_PROFILE, 'Browser')).toBe(true)
 
     const sub = profileOf('subagent')
     // Subsessions cannot fork even through an explicit agent tool list.
-    expect(isToolDirect(sub, 'delegate')).toBe(false)
-    expect(isToolDirect(child(['delegate']), 'delegate')).toBe(false)
-    expect(isToolDirect(profileOf('automation'), 'delegate')).toBe(false)
+    expect(isToolDirect(sub, 'Agent')).toBe(false)
+    expect(isToolDirect(child(['Agent']), 'Agent')).toBe(false)
+    expect(isToolDirect(profileOf('automation'), 'Agent')).toBe(false)
     // The Store belongs to a chat, where a person approves; a child never changes it.
-    expect(isToolDirect(CHAT_RUN_PROFILE, 'store')).toBe(true)
-    expect(isToolDirect(sub, 'store')).toBe(false)
-    expect(isToolDirect(profileOf('automation'), 'store')).toBe(false)
-    expect(isToolDirect(sub, 'jobs')).toBe(false)
-    expect(isToolDirect(sub, 'browser')).toBe(true)
-    expect(isToolDirect(sub, 'ask')).toBe(false)
+    expect(isToolDirect(CHAT_RUN_PROFILE, 'Store')).toBe(true)
+    expect(isToolDirect(sub, 'Store')).toBe(false)
+    expect(isToolDirect(profileOf('automation'), 'Store')).toBe(false)
+    expect(isToolDirect(sub, 'Jobs')).toBe(false)
+    // Claude Code's filters: a subagent's inherited tools leave out what has no counterpart there
+    // (and SendMessage, ScheduleWakeup, Workflow, AskUserQuestion); an agent file that lists one has it.
+    for (const name of [
+      'AskUserQuestion',
+      'Workflow',
+      'Loops',
+      'Plan',
+      'Agent',
+      'TaskStop',
+      'SendMessage',
+      'Browser',
+      'Vault',
+      'ContextBudget',
+    ])
+      expect(isToolDirect(sub, name as never)).toBe(false)
+    expect(isToolDirect(child(['Browser']), 'Browser')).toBe(true)
+    expect(isToolDirect(sub, 'AskUserQuestion')).toBe(false)
     // `bash` IS exposed (see the shell test below) but `jobs` is not: the child cannot
     // start a background process, so it has nothing to manage.
   })
@@ -179,40 +194,40 @@ describe('run shapes', () => {
   })
 
   test('keeps background bash in a chat, denies it to synchronous children', () => {
-    expect(hasToolFeature(CHAT_RUN_PROFILE, 'bash', 'background')).toBe(true)
-    expect(hasToolFeature(profileOf('subagent'), 'bash', 'background')).toBe(false)
-    expect(hasToolFeature(profileOf('subagent'), 'bash', 'notify')).toBe(false)
+    expect(hasToolFeature(CHAT_RUN_PROFILE, 'Bash', 'background')).toBe(true)
+    expect(hasToolFeature(profileOf('subagent'), 'Bash', 'background')).toBe(false)
+    expect(hasToolFeature(profileOf('subagent'), 'Bash', 'notify')).toBe(false)
   })
 
   test('a sub-agent has a shell — it must be able to verify what it changed', () => {
     // Without bash the child edits code it cannot type-check or test, and the parent
     // re-reads the files delegation was supposed to keep out of its context.
-    expect(isToolDirect(profileOf('subagent'), 'bash')).toBe(true)
+    expect(isToolDirect(profileOf('subagent'), 'Bash')).toBe(true)
     // …but a synchronous child must not leave a background job behind it.
-    expect(hasToolFeature(profileOf('subagent'), 'bash', 'background')).toBe(false)
+    expect(hasToolFeature(profileOf('subagent'), 'Bash', 'background')).toBe(false)
   })
 })
 
 describe('elision recovery is reachable from every compressed run', () => {
   // Every run's wire goes through the same context compression, and an elided tool
-  // result advertises `tool_output(action="get", tool_call_id="…")`. A run that receives
+  // result advertises `ToolOutput(action="get", tool_call_id="…")`. A run that receives
   // those pointers without the tool has a dead recovery path: it can only re-read the
   // whole file (re-billing it) or waste a turn on a not_found error. Measured across
   // 30 recent sessions: 48% of all `read` calls were redundant re-reads and
-  // `tool_output` was called exactly once in 1638 tool calls.
+  // `ToolOutput` was called exactly once in 1638 tool calls.
   for (const shape of SHAPES) {
-    test(`${shape} exposes tool_output`, () => {
-      expect(isToolDirect(profileOf(shape), 'tool_output')).toBe(true)
+    test(`${shape} exposes ToolOutput`, () => {
+      expect(isToolDirect(profileOf(shape), 'ToolOutput')).toBe(true)
     })
   }
 
-  test('a dispatched agent keeps tool_output — with a default OR a declared tool list', () => {
-    expect(isToolDirect(child(), 'tool_output')).toBe(true)
+  test('a dispatched agent keeps ToolOutput — with a default OR a declared tool list', () => {
+    expect(isToolDirect(child(), 'ToolOutput')).toBe(true)
     // The bug: an agent that declares its own tools replaced the defaults wholesale and
     // lost the recovery tool while still receiving its pointers.
-    for (const custom of [child(['read', 'search']), job(['read', 'search'])]) {
-      expect(isToolDirect(custom, 'tool_output')).toBe(true)
-      expect(isToolDirect(custom, 'write')).toBe(false) // no authority was widened
+    for (const custom of [child(['Read', 'Search']), job(['Read', 'Search'])]) {
+      expect(isToolDirect(custom, 'ToolOutput')).toBe(true)
+      expect(isToolDirect(custom, 'Write')).toBe(false) // no authority was widened
     }
   })
 })
@@ -277,10 +292,10 @@ describe('roleGuidance never names a tool', () => {
   test('the detector still fires — positive control', () => {
     // The sample names catalogued tools: a name outside BUILTIN_TOOL_NAMES would match nothing
     // and leave this control passing on an empty result.
-    expect(namesToolIn('Use the `memory` tool, then `browser` to verify.')).toEqual(
-      NAMES.filter((n) => n === 'memory' || n === 'browser'),
+    expect(namesToolIn('Use the `Skill` tool, then `Browser` to verify.')).toEqual(
+      NAMES.filter((n) => n === 'Skill' || n === 'Browser'),
     )
-    expect(NAMES.filter((n) => n === 'memory' || n === 'browser')).toHaveLength(2)
+    expect(NAMES.filter((n) => n === 'Skill' || n === 'Browser')).toHaveLength(2)
     expect(namesToolIn('Use bash and read directly for the work.')).toEqual([])
   })
 

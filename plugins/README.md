@@ -6,10 +6,10 @@ The Claude Code plugins built into Localix. Each folder here is one plugin in Cl
 [`mini-apps/`](../mini-apps/README.md); see
 [plugins and mini apps](../docs/internals/plugins-and-mini-apps.md).
 
-| Plugin                                    | What it adds                                                                  |
-| ----------------------------------------- | ----------------------------------------------------------------------------- |
-| [`localix-mini-apps`](localix-mini-apps/) | A skill and commands that teach an agent to build, pack and publish mini apps |
-| [`team`](team/)                           | A starter team of agents: architect, backend, frontend, design and devops     |
+| Plugin                                      | What it adds                                                                            |
+| ------------------------------------------- | --------------------------------------------------------------------------------------- |
+| [`mini-app-authoring`](mini-app-authoring/) | Skills, a reviewer agent and an edit hook to create, check, install and share mini apps |
+| [`team`](team/)                             | Starter specialist agents: architect, backend, frontend, design and devops              |
 
 ## How they ship
 
@@ -25,7 +25,7 @@ The Claude Code plugins built into Localix. Each folder here is one plugin in Cl
 
   ```bash
   claude plugin marketplace add rsaryev/localix
-  claude plugin install localix-mini-apps@localix
+  claude plugin install mini-app-authoring@localix
   ```
 
 ## Add one

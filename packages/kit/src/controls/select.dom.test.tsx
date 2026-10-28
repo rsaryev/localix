@@ -1,6 +1,10 @@
 import { afterAll, beforeAll, describe, expect, mock, test } from 'bun:test'
 import { registerDom } from '../testing/dom'
 
+const turns = async (n = 10) => {
+  for (let i = 0; i < n; i++) await new Promise((r) => setImmediate(r))
+}
+
 let teardown: () => Promise<void>
 
 beforeAll(() => {
@@ -13,7 +17,7 @@ afterAll(async () => {
   await teardown()
 })
 
-const settle = () => new Promise((resolve) => setTimeout(resolve, 20))
+const settle = () => turns()
 
 describe('Select DOM runtime', () => {
   test('exposes a labelled, portalled listbox and commits a selection', async () => {

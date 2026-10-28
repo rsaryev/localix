@@ -8,13 +8,13 @@
  * varies with is the TOOLS the run ended up holding, which is what every section here
  * gates on, so the axes are the run shape and the switches that change the tool set.
  *
- * One render is `prompt-render.ts`; the production seats are `prompt-scenarios.ts`.
+ * One render is `prompt-render.ts`; the production runs are `prompt-scenarios.ts`.
  */
 import { TOOL } from '../../tool-names'
 import type { BuildAgentSystemPromptParams } from '../assemble'
 import type { OptionalToolPorts } from '../../tool-registry'
 import { fullPrompt, SHAPE_SESSION_KIND, type PromptShapeKey } from './prompt-render'
-import { renderSeatMatrix } from './prompt-scenarios'
+import { renderHostMatrix } from './prompt-scenarios'
 
 /**
  * A NARROWED roster, standing in for what an agent's own capability rules produce.
@@ -24,38 +24,17 @@ import { renderSeatMatrix } from './prompt-scenarios'
  * every section that names one disappears with it.
  */
 const LEAN_ROSTER_DISABLED: readonly string[] = [
-  TOOL.memory,
-  TOOL.global_search,
-  TOOL.vault,
-  TOOL.skill,
-  TOOL.jobs,
-  TOOL.browser,
+  TOOL.GlobalSearch,
+  TOOL.Vault,
+  TOOL.Skill,
+  TOOL.Jobs,
+  TOOL.Browser,
 ]
 
-/**
- * A run that does not own the session topic. `set_topic` is a protocol tool no rule can switch
- * off, so the cell drops the PORT, as a host does for a member's seat; disabling it by name left
- * this cell byte-identical to the base one.
- */
-const NO_TOPIC_PORTS: readonly (keyof OptionalToolPorts)[] = ['set_topic']
-
-/** A conversation with one colleague, from the leader's seat, with the registry beside it. */
+/** A conversation with the person, with the agents `Agent` can start beside it. */
 const CONVERSATION_CONTEXT: Partial<BuildAgentSystemPromptParams> = {
-  conversation: {
-    self: 'localix',
-    participants: [{ handle: 'localix' }, { handle: 'qa', description: 'Verifies releases' }],
-    isLeader: true,
-  },
-  agentDirectory: [
-    {
-      id: 'agent-qa',
-      handle: 'qa',
-      description: 'Verifies releases',
-      leadershipPriority: 10,
-      inConversation: true,
-      available: true,
-    },
-  ],
+  conversation: true,
+  agentDirectory: [{ id: 'agent-qa', name: 'qa', description: 'Verifies releases' }],
 }
 
 /**
@@ -81,8 +60,8 @@ export function renderGoldenMatrix(): Record<string, string> {
     // NOTE: background jobs are intentionally NOT rendered here — their section
     // stamps a live age (Date.now()) and would make the golden non-deterministic.
     // Their text is locked by a dedicated section test that passes a fixed `now`.
-    // A conversation with a colleague, from the leader's seat: the full turn protocol in the
-    // cached prefix, the roster and the directory in the volatile tail.
+    // A conversation with the person: the turn contract in the cached prefix, the directory in
+    // the volatile tail.
     'orchestrator-conversation': fullPrompt('orchestrator', CONVERSATION_CONTEXT),
     'orchestrator-volatile-tail': fullPrompt('orchestrator', {
       activeSubAgents: [{ title: 'child-agent', task: 'do thing' }],
@@ -90,9 +69,9 @@ export function renderGoldenMatrix(): Record<string, string> {
         loops: [{ id: 'loop-1', kind: 'fixed', cadence: '*/10 * * * *', prompt: 'tick' }],
       },
     }),
-    // The seats a host actually builds (`prompt-scenarios.ts`): every production run carries
+    // The runs a host actually builds (`prompt-scenarios.ts`): every production run carries
     // its conversation, which the shape goldens above leave out.
-    ...renderSeatMatrix(),
+    ...renderHostMatrix(),
   }
 }
 
@@ -119,13 +98,12 @@ export function renderCapabilityMatrix(): Record<string, string> {
   > = {
     '': {},
     '-lean': { disabled: LEAN_ROSTER_DISABLED },
-    '-no-topic': { withoutPorts: NO_TOPIC_PORTS },
   }
   for (const profileKey of Object.keys(SHAPE_SESSION_KIND) as PromptShapeKey[]) {
     for (const [suffix, { disabled, withoutPorts }] of Object.entries(rosters)) {
       out[`${profileKey}${suffix}`] = fullPrompt(profileKey, {}, disabled, withoutPorts)
-      // The same cell inside a conversation with a colleague: the sections that name the
-      // collaboration tools (turn control, roster, directory) render only here.
+      // The same cell inside a conversation: the sections that name the collaboration tools
+      // (turn control, directory) render only here.
       out[`${profileKey}${suffix}-conversation`] = fullPrompt(
         profileKey,
         CONVERSATION_CONTEXT,

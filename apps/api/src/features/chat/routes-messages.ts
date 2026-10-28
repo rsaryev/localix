@@ -180,8 +180,8 @@ export function createChatMessagesRoutes(service: ChatRoutesService) {
       },
     )
     .post('/sessions/:id/stop', zValidator('param', sessionParamsSchema), async (c) => {
-      const stopped = await service.stop(c.req.valid('param').id, c.get('userId'))
-      return c.json({ stopped }, 200)
+      const result = await service.stopAndReturnQueued(c.req.valid('param').id, c.get('userId'))
+      return c.json(result, 200)
     })
     .post(
       '/sessions/:id/monitors/stop',

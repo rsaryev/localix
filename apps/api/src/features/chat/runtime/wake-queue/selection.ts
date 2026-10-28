@@ -51,19 +51,3 @@ export function selectDrainBand(
   }
   return band
 }
-
-/**
- * WHO a delivered band is for, when its entries agree.
- *
- * A routed report names the participant it concerns, and a room shows it whole to that member
- * and as one line to the rest. Two reports about two different members merge into a turn that
- * is for NEITHER: narrowing it for one would hide the other's from the member it belongs to,
- * so a mixed band is addressed to nobody and everyone reads it in full.
- */
-export function bandRecipient<T extends { participant: string; handle?: string }>(
-  turns: readonly { to?: T }[],
-): T | undefined {
-  const named = turns.map((turn) => turn.to).filter((to) => to !== undefined)
-  if (named.length === 0) return undefined
-  return named.every((to) => to.participant === named[0]!.participant) ? named[0] : undefined
-}

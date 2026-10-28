@@ -1,16 +1,16 @@
 /**
  * SCRIPTS: model-written JavaScript whose only capability is calling the tools it is handed.
  *
- * The port an engine offers so the `codemode` tool can let the model chain, parallelise and filter
- * tool calls in one model turn. What the sandbox is (an engine detail) stays behind this port; a
- * script reaches exactly the `tools` of its request — no file system, network, timers or modules.
+ * The port an engine offers so a `Workflow` script can chain, parallelise and filter tool calls. What
+ * the sandbox is (an engine detail) stays behind this port; a script reaches exactly the `tools` of
+ * its request — no file system, network, timers or modules.
  */
 
 /** One tool a script may call, as `tools.<name>(input)`. */
 export interface ScriptTool {
   name: string
   description: string
-  /** JSON Schema of the input, rendered for the script's declarations; not validated here. */
+  /** JSON Schema of the input; not validated here. */
   inputSchema: Record<string, unknown>
   /**
    * The call. Resolves to what the script receives; rejects with an Error whose message the script
@@ -40,9 +40,4 @@ export type ScriptRunResult =
 export interface ScriptSandbox {
   /** Never rejects for the script's own failure; that is `ok: false`. */
   run(request: ScriptRunRequest): Promise<ScriptRunResult>
-  /**
-   * The tools as TypeScript the model reads before it writes a script: one `tools.<name>(input)`
-   * signature each, its description as a doc comment. Deterministic for the same input.
-   */
-  declare(tools: readonly Pick<ScriptTool, 'name' | 'description' | 'inputSchema'>[]): string
 }

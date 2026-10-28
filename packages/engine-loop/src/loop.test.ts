@@ -166,14 +166,23 @@ describe('a run of the loop', () => {
   })
 
   test('stopping the run cancels the response in flight and settles as aborted', async () => {
-    const { run } = start([{ text: 'slow', delayMs: 5_000 }])
-    setTimeout(() => run.abort('stop'), 20)
+    let inFlight!: () => void
+    const reached = new Promise<void>((resolve) => (inFlight = resolve))
+    const { run } = start([
+      () => {
+        inFlight()
+        return { hold: true }
+      },
+    ])
+    void reached.then(() => run.abort('stop'))
     const { result } = await collect(run)
     expect(result).toMatchObject({ terminal: 'aborted' })
   })
 
   test('stopping during a tool cancels the call, closes it with a result, and ends without sampling again', async () => {
     let toolSignal: AbortSignal | undefined
+    let inTool!: () => void
+    const toolStarted = new Promise<void>((resolve) => (inTool = resolve))
     const slow = defineAgentTool({
       name: 'slow',
       description: 'Takes its time.',
@@ -182,13 +191,14 @@ describe('a run of the loop', () => {
       execute: (_id, _input, signal) =>
         new Promise((resolve) => {
           toolSignal = signal
+          inTool()
           signal?.addEventListener('abort', () => resolve({ content: 'killed', isError: true }), {
             once: true,
           })
         }),
     }) as AgentTool
     const { run, requests } = start([call('slow', {}, 'c1'), say('never')], { tools: [slow] })
-    setTimeout(() => run.abort('stop'), 30)
+    void toolStarted.then(() => run.abort('stop'))
     const { events, result } = await collect(run)
     expect(toolSignal?.aborted).toBe(true)
     expect(result).toMatchObject({ terminal: 'aborted' })
@@ -207,18 +217,23 @@ describe('a run of the loop', () => {
   })
 
   test('a tool that ignores the stop still leaves no call open', async () => {
+    let inTool!: () => void
+    const toolStarted = new Promise<void>((resolve) => (inTool = resolve))
     const stubborn = defineAgentTool({
       name: 'stubborn',
       description: 'Never returns.',
       activeVerb: 'Hanging',
       inputSchema: z.object({}),
-      execute: () => new Promise(() => {}),
+      execute: () => {
+        inTool()
+        return new Promise(() => {})
+      },
     }) as AgentTool
     const { run } = start([call('stubborn', {}, 'c1')], {
       tools: [stubborn],
       stopGraceMs: 20,
     })
-    setTimeout(() => run.abort('stop'), 30)
+    void toolStarted.then(() => run.abort('stop'))
     const { events, result } = await collect(run)
     expect(result).toMatchObject({ terminal: 'aborted' })
     expect(events.filter((event) => event.type === 'tool_execution_end')).toEqual([

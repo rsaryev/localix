@@ -135,9 +135,11 @@ function PopoverHeader({
   )
 }
 
-function PopoverTitle({ className, ...props }: React.ComponentPropsWithoutRef<'h2'>) {
+function PopoverTitle({ className, children, ...props }: React.ComponentPropsWithoutRef<'h2'>) {
   return (
-    <h2 data-slot="popover-title" className={cn('text-xs font-medium', className)} {...props} />
+    <h2 data-slot="popover-title" className={cn('text-xs font-medium', className)} {...props}>
+      {children}
+    </h2>
   )
 }
 

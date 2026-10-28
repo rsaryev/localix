@@ -108,13 +108,13 @@ export function classifyConfigureCall(input: unknown): CallClass {
 export function createConfigureTool(options: ConfigureToolOptions) {
   const { host, sessionId, ledgerRef, declined } = options
   return defineAgentTool<ConfigureInput, ConfigureToolDetails>({
-    name: TOOL.configure,
+    name: TOOL.Configure,
     label: 'Configure',
     activeVerb: 'Proposing a change',
     // The change kinds are the remedy registry's (`change` below), never spelled here: this
     // line once listed seven kinds after four of them were deleted, and the model proposed them.
     description:
-      'Inspect why a tool or agent is unavailable, and PROPOSE switching a tool on for this agent. Plugins, mini apps and MCP servers are managed with `store`. ' +
+      'Inspect why a tool or agent is unavailable, and PROPOSE switching a tool on for this agent. Plugins, mini apps and MCP servers are managed with `Store`. ' +
       'Use it when "# Unavailable tools" or a tool error names a remedy. Nothing applies until the user approves; it usually takes effect next turn. Never propose the same change twice.',
     inputSchema: inputSchemaFor(host.changeSchema),
     executionMode: 'sequential',

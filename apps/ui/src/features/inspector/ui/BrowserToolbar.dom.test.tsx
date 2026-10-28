@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
+import { turns as settle } from '@/testing/settle'
 import {
   PREVIEW_VIEWPORT_FILL,
   PREVIEW_VIEWPORT_PRESETS,
@@ -16,8 +17,6 @@ afterAll(async () => {
   await new Promise((resolve) => setTimeout(resolve, 0))
   await teardown()
 })
-
-const settle = () => new Promise((resolve) => setTimeout(resolve, 30))
 
 const preset = (label: string) => PREVIEW_VIEWPORT_PRESETS.find((item) => item.label === label)!
 

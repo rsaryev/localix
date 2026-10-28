@@ -100,7 +100,7 @@ session. Containers are navigation destinations; individual sessions are attacha
 a session link returns to its native transcript.
 
 When you send a linked session, the agent receives a compact digest of recent turns, the original
-session key and a pointer to `external_agent_sessions`. It can read additional transcript windows,
+session key and a pointer to `ExternalAgentSessions`. It can read additional transcript windows,
 inspect recorded tool calls and results, and collect context from several sessions. The digest
 states what it omitted; it does not pretend to contain the full history. The digest targets about
 3,000 UTF-16 code units and includes at most six recent event summaries from a tail window; tool
@@ -132,7 +132,7 @@ Read the range and truncation notices, then use `transcript` for a specific omit
 
 Reading a transcript supplies context to the agent; it does not open a terminal for you. To open or
 continue a native session, the agent uses `resume` with its session key, then runs the returned
-command with `bash` action `open`. The lookup itself does not execute commands.
+command with `Bash` action `open`. The lookup itself does not execute commands.
 
 For agents with shell access, the runtime prompt includes a short list of installed external agents
 and their basic launch commands. Starting or driving a CLI still goes through ordinary terminal

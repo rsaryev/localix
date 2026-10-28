@@ -45,7 +45,10 @@ describe('useReaderLibraryBooks', () => {
 
     function Probe({ source }: { source: string }) {
       const snapshot = useReaderLibraryBooks(source, loadLibrary)
-      refresh = snapshot.refresh
+      // Read by the test once the commit is done, not written while rendering.
+      React.useEffect(() => {
+        refresh = snapshot.refresh
+      })
       return <output>{snapshot.books.map((item) => item.title).join(',')}</output>
     }
 

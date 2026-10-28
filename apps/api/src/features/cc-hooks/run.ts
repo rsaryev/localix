@@ -9,11 +9,11 @@
  * When the feature is disabled (kill switch) or no handler matches, every method
  * is a cheap no-op.
  *
- * `Notification` fires when the agent needs the user (a HITL ask/quiz/confirm
- * surfaces) — CC's "agent needs input / permission prompt" notification. It is
+ * `Notification` fires when the agent needs the user: a HITL ask/quiz/confirm
+ * (`agent_needs_input`), a tool approval card (`permission_prompt`), or a session left
+ * waiting for a while (`idle_prompt`, `chat/runtime/cc-hook-sessions.ts`). It is
  * observer-only (no output / no decision control, per the CC spec) and matches on
- * `notification_type`. Idle-notifications are intentionally NOT wired: the server
- * has no idle concept (a run either streams or ends).
+ * `notification_type`.
  *
  * Layer: api feature module. No chat/UI imports.
  */

@@ -1,7 +1,6 @@
 import type { DiscoveredPlugin } from './discovery'
 import type { PluginValidation } from './contracts'
 import { isUnsafeRelPath, isKebabCase } from '../ext/manifest-validate'
-import { CC_HOOK_EVENTS, CC_INERT_HOOK_EVENTS } from '../cc-hooks/contracts'
 import { lspServerConfigProblems, pluginLspNotes, summarizePluginLspServers } from '../lsp'
 
 /**
@@ -25,18 +24,9 @@ export function validateCompatibility(plugin: DiscoveredPlugin): PluginValidatio
   const raw = plugin.rawManifest
   if (!raw) return { errors: [], warnings }
 
-  // Declarative hooks: the manifest `hooks` field (a path string, array of paths,
-  // or an inline object) IS honored — resolved into the same cc-hooks pipeline the
-  // settings-file hooks + `hooks/hooks.json` use. All five handler types run
-  // (command, http, mcp_tool, prompt, agent — each on the events the CC matrix
-  // allows; see features/cc-hooks/contracts.ts). Only advisory: the few Claude Code
-  // events with no Localix lifecycle point never fire. Both lists are imported from
-  // cc-hooks so they can't drift.
-  if (raw.hooks !== undefined) {
-    warnings.push(
-      `Claude Code "hooks" are loaded: all handler types (command, http, mcp_tool, prompt, agent) run on the dispatched events — ${CC_HOOK_EVENTS.join(', ')}. Hooks on ${Object.keys(CC_INERT_HOOK_EVENTS).join(', ')} are accepted but never fire: Localix has no lifecycle point for them.`,
-    )
-  }
+  // Declarative hooks (the manifest `hooks` field) are honored; an event with no Localix lifecycle
+  // point is reported where the manifest is loaded (`manifest-load.ts`), so a clean `hooks` key
+  // raises nothing here — `--strict` promotes warnings to errors.
 
   // Path traversal + absolute path checks for string path fields (security + portability nudge).
   for (const field of ['commands', 'agents', 'skills', 'mcpServers'] as const) {

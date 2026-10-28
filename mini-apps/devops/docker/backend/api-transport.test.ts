@@ -153,8 +153,7 @@ describe('connectDockerApi', () => {
   test('a hung daemon is aborted rather than hanging the workbench', async () => {
     const environment = fakeDaemon(async (request) => {
       if (new URL(request.url).pathname === '/version') return json(VERSION)
-      await Bun.sleep(5_000)
-      return json({})
+      return new Promise<Response>(() => {}) // never answers; only the abort ends it
     })
     const client = (await connectDockerApi(environment)).client!
     const started = performance.now()

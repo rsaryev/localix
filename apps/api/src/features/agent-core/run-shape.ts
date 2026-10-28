@@ -129,7 +129,7 @@ export function shapeDefaultTools(shape: RunShape): string[] {
 
 /**
  * Every run's wire is compressed by the same pipeline, and an elided tool result advertises
- * `tool_output(action="get", tool_call_id="…")`. A surface built from a CUSTOM tool list
+ * `ToolOutput(action="get", tool_call_id="…")`. A surface built from a CUSTOM tool list
  * would otherwise receive those pointers without the tool — a dead recovery path that leaves
  * the agent re-reading whole files or burning a turn on a not_found error. The tool is
  * read-only and scoped to the agent's own session. This adds a candidate only: effective
@@ -137,7 +137,7 @@ export function shapeDefaultTools(shape: RunShape): string[] {
  */
 function withElisionRecovery(names: readonly string[]): string[] {
   const out = [...names]
-  if (!out.includes(TOOL.tool_output)) out.push(TOOL.tool_output)
+  if (!out.includes(TOOL.ToolOutput)) out.push(TOOL.ToolOutput)
   return out
 }
 
@@ -209,7 +209,7 @@ export function resolveRunProfile(
       ? {}
       : {
           disabledToolFeatures: {
-            bash: NON_INTERACTIVE_BASH_FEATURES,
+            [TOOL.Bash]: NON_INTERACTIVE_BASH_FEATURES,
           },
         }),
     prompt: { identity: agent?.prompt?.trim() ?? '', roleGuidance: guidance },
@@ -261,7 +261,7 @@ export function isToolDirect(profile: RunProfile, toolName: ToolName): boolean {
  * runtime `disabledTools` filter (a scope's own switches feed that list). Mirrors the
  * two-stage gating the registry applies, so callers that need to know if a tool is *live* —
  * not merely declared — don't re-derive it. (Used to pair a launcher tool with its manager,
- * e.g. background bash requires a live `jobs` tool.)
+ * e.g. background bash requires a live `Jobs` tool.)
  */
 export function isToolLive(
   profile: RunProfile,

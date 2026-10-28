@@ -10,7 +10,8 @@
  * `docs/internals/visual-system.md` says which token answers each question.
  *
  * Two readers, so one owner: the repository guard (`scripts/ui-token-drift-guard.test.ts`) scans
- * the app and the bundled mini apps, and `mini_app_build` scans a user's mini app, which lives in
+ * the app and the bundled mini apps, and the mini-app-authoring plugin scans a person's mini app
+ * (through the mini app kit's tools), which lives in
  * `~/.localix/mini-apps` where no repository guard can see it (a generated mini app once shipped
  * `text-red-500`, `bg-emerald-500` and a bare `rounded` through every build step). A second copy of
  * this list would drift from the first exactly the way the literals it forbids did.

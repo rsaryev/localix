@@ -4,17 +4,16 @@ import { MemoryRouter } from 'react-router'
 import { MessageSkeleton } from './MessageSkeleton'
 import { avatarHue } from '@localixai/kit/avatar'
 
-const author = { handle: 'researcher', name: 'Researcher', scope: '' }
+const author = { name: 'researcher', scope: '' }
 
 const render = (node: React.ReactElement) =>
   renderToStaticMarkup(<MemoryRouter>{node}</MemoryRouter>)
 
 describe('MessageSkeleton', () => {
   test('names the agent before its first character arrives', () => {
-    // The whole reason the author line is here and not only on settled rows: while a party
-    // is in the session, "someone is thinking" tells the reader nothing they can act on.
+    // The whole reason the author line is here and not only on settled rows.
     const html = render(<MessageSkeleton label="Working" author={author} />)
-    expect(html).toContain('Researcher')
+    expect(html).toContain('researcher')
     expect(html).toContain(`--avatar-hue:${avatarHue('researcher')}`)
   })
 

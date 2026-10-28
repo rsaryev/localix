@@ -34,7 +34,7 @@ export function useGame(active: boolean) {
     play: (move: Move) => act('play', { move }),
     nextRound: (first?: Player) => act('next', first ? { first } : {}),
     remind: () => act('remind', {}),
-    /** Who fills the other seat; the route answers with its move when the new opponent owes one. */
+    /** Who fills the other side; the route answers with its move when the new opponent owes one. */
     setOpponent: (opponent: Opponent) => act('opponent', { opponent }),
   }
 }

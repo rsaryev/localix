@@ -9,6 +9,9 @@ import { AttachmentTray } from '@/shared/ui/attachments/AttachmentTray'
 import { acceptAttribute } from '@/shared/lib/attachment-policy'
 import type { CommentDraft } from './useCommentDraft'
 
+/** Ref for a field that takes the keyboard when it appears (the one thing `autoFocus` did). */
+export const focusOnMount = (element: HTMLTextAreaElement | null) => element?.focus()
+
 /**
  * Writing one review comment: what it points at, what it carries, what it says, and the two
  * actions that end it. The same window on every surface.
@@ -86,7 +89,7 @@ export function CommentDraftCard({
         </div>
       )}
       <Textarea
-        autoFocus
+        ref={focusOnMount}
         aria-label="Comment"
         aria-keyshortcuts="Control+Enter Meta+Enter"
         value={draft.note}

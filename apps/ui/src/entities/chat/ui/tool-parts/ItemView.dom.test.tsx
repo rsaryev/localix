@@ -64,8 +64,8 @@ async function mount(item: ToolCallItem, isForeign: boolean) {
 }
 
 describe('ItemView in a foreign transcript', () => {
-  test('a `read` call from our own agent still resolves the rich file card', async () => {
-    const item = call('read', { input: { path: '/repo/src/notes.ts' } })
+  test('a `Read` call from our own agent still resolves the rich file card', async () => {
+    const item = call('Read', { input: { path: '/repo/src/notes.ts' } })
     const view = await mount(item, false)
     try {
       expect(view.title()).toBe('notes.ts')
@@ -75,13 +75,13 @@ describe('ItemView in a foreign transcript', () => {
     }
   })
 
-  test('an identically named `read` call from a foreign agent falls to IN/OUT', async () => {
+  test('an identically named `Read` call from a foreign agent falls to IN/OUT', async () => {
     // Same name, a payload our ReadCard would silently mis-read: no `path`, so
     // the rich card would render a file row naming nothing.
-    const item = call('read', { input: { file: '/elsewhere/other.ts', limit: 40 } })
+    const item = call('Read', { input: { file: '/elsewhere/other.ts', limit: 40 } })
     const view = await mount(item, true)
     try {
-      expect(view.title()).toBe('read')
+      expect(view.title()).toBe('Read')
       expect(view.host.querySelector('button[aria-label="Open"]')).toBeNull()
       await view.expand()
       expect(view.host.textContent).toContain('"file": "/elsewhere/other.ts"')
@@ -90,8 +90,8 @@ describe('ItemView in a foreign transcript', () => {
     }
   })
 
-  test('a foreign `ask` never opens our HITL card', async () => {
-    const item = call('ask', {
+  test('a foreign `AskUserQuestion` never opens our HITL card', async () => {
+    const item = call('AskUserQuestion', {
       input: { questions: [{ id: 'q1', question: 'Which branch?', options: [] }] },
     })
     const ours = await mount(item, false)
@@ -103,7 +103,7 @@ describe('ItemView in a foreign transcript', () => {
 
     const foreign = await mount(item, true)
     try {
-      expect(foreign.title()).toBe('ask')
+      expect(foreign.title()).toBe('AskUserQuestion')
       expect(foreign.host.textContent).not.toContain('Which branch?')
     } finally {
       await foreign.dispose()
@@ -170,6 +170,69 @@ describe('tool actions', () => {
       expect(disclosure?.getAttribute('aria-expanded')).toBe('false')
     } finally {
       await view.dispose()
+    }
+  })
+})
+
+describe('subagent cards', () => {
+  const subtitle = (host: HTMLElement) =>
+    host.querySelector('[data-slot="tool-line-subtitle"]')?.textContent ?? ''
+
+  test('an Agent call is titled by what it was asked, its subagent type beneath', async () => {
+    const item = call('Agent', {
+      input: {
+        description: 'Find endpoints',
+        prompt: 'List every route.',
+        subagent_type: 'Explore',
+      },
+      resultText: 'started "Find endpoints" in the background.',
+    })
+    const view = await mount(item, false)
+    try {
+      expect(view.title()).toBe('Find endpoints')
+      expect(subtitle(view.host)).toBe('Explore')
+      await view.expand()
+      expect(view.host.textContent).toContain('List every route.')
+      expect(view.host.textContent).toContain('started "Find endpoints" in the background.')
+    } finally {
+      await view.dispose()
+    }
+  })
+
+  test('an Agent call without a type, and a fork, say which they are', async () => {
+    for (const [type, title] of [
+      [undefined, 'Agent'],
+      ['fork', 'Fork'],
+    ] as const) {
+      const view = await mount(
+        call('Agent', { input: { description: 'Audit', prompt: 'x', subagent_type: type } }),
+        false,
+      )
+      try {
+        expect(view.title()).toBe('Audit')
+        expect(subtitle(view.host)).toBe(title)
+      } finally {
+        await view.dispose()
+      }
+    }
+  })
+
+  test('SendMessage and TaskStop name the subagent they reached', async () => {
+    const message = await mount(
+      call('SendMessage', { input: { to: 'reviewer', message: 'Also check logout.' } }),
+      false,
+    )
+    try {
+      expect(message.title()).toBe('Message to reviewer')
+      expect(subtitle(message.host)).toBe('Also check logout.')
+    } finally {
+      await message.dispose()
+    }
+    const stop = await mount(call('TaskStop', { input: { task_id: 'bg-2' } }), false)
+    try {
+      expect(stop.title()).toBe('Stop bg-2')
+    } finally {
+      await stop.dispose()
     }
   })
 })

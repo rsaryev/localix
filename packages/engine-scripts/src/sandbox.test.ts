@@ -16,7 +16,7 @@ const read: ScriptTool = {
   description: 'Read a file',
   inputSchema: { type: 'object', properties: { path: { type: 'string' } }, required: ['path'] },
   execute: async (input) => {
-    await sleep(150)
+    await sleep(0)
     return `contents of ${(input as { path: string }).path}`
   },
 }
@@ -121,7 +121,7 @@ describe('the script sandbox', () => {
       execute: async (_input, signal) => {
         callSignal = signal
         called()
-        await sleep(5_000)
+        await new Promise<void>(() => {}) // only the abort ends it
       },
     }
     const pending = run(

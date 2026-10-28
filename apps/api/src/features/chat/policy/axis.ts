@@ -1,8 +1,8 @@
 /**
  * ONE AXIS OF A RUN'S POLICY: the variants a run can be on one dimension, first match wins.
  *
- * A run varies along independent dimensions — which host runs it, whether the conversation has
- * colleagues, whether a person can answer, why this turn started. Each dimension used to be
+ * A run varies along independent dimensions — which host runs it, whether the conversation is
+ * a chat or isolated, whether a person can answer, why this turn started. Each dimension used to be
  * answered inline wherever a stage happened to need it, and the same question ended up with
  * five spellings that disagreed at the edges. An axis answers it once: its variants are tried
  * in order, the first whose `applies` holds decides, and the decision is a typed value every

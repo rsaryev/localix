@@ -2,19 +2,19 @@
 
 A wait is a background watch the agent starts and the session is woken by. Use it when work cannot
 continue until something outside the session happens: a pipeline finishes, a deploy settles, a
-service starts answering. The agent starts one with the `bash` tool — the check as `command`, plus
+service starts answering. The agent starts one with the `Bash` tool — the check as `command`, plus
 `until: <seconds>` — and ends its turn; the engine behind it (`features/monitors`) polls the command
 on that interval and wakes the session when it exits 0.
 
 Use a wait when a condition should resume the conversation. Localix runs the checks outside the
-agent turn and delivers the matching output or ending reason to the owning participant.
+agent turn and delivers the matching output or ending reason to the owning agent.
 
 ## Terminology
 
 | Term       | Meaning                                                                        | Boundary                                                                                   |
 | ---------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
 | Monitor    | One background watch owned by one session, addressed as `mon-1`, `mon-2`.      | A trigger plus a work record, both durable; a polled wait survives an API restart.         |
-| Wait       | The agent-facing shape: `bash` with `until`, polled until the command exits 0. | One predicate on purpose; richer logic (grep, jq, `--exit-status`) belongs in the command. |
+| Wait       | The agent-facing shape: `Bash` with `until`, polled until the command exits 0. | One predicate on purpose; richer logic (grep, jq, `--exit-status`) belongs in the command. |
 | Watch mode | A long-running command whose output lines become events.                       | Engine capability; not exposed as a tool field. Its process ends with the server.          |
 | Event      | One thing worth a turn: lines within 200 ms arrive as a single wake.           | Several events can share one turn through batching and wake-queue coalescing.              |
 | Ending     | Condition met, command exited, timeout, stopped, rate-limited, or error.       | A monitor ends exactly once, and the reason travels with the last events.                  |
@@ -23,11 +23,11 @@ agent turn and delivers the matching output or ending reason to the owning parti
 
 | Need                            | Mechanism                                                                           | Boundary                                                                                     |
 | ------------------------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Wait for a condition            | `bash` with `command` and `until: <seconds>`; the agent ends its turn.              | The interval floor is 5 s; 30 s or more is appropriate for remote APIs.                      |
+| Wait for a condition            | `Bash` with `command` and `until: <seconds>`; the agent ends its turn.              | The interval floor is 5 s; 30 s or more is appropriate for remote APIs.                      |
 | Bound the wait                  | `timeout` sets the deadline; the agent is woken when it passes too.                 | Default 300 s; explicit deadlines 60–600 s. A timed-out wait reports as a failure.           |
 | See what is being watched       | The composer's background-work strip lists it with its event count and last event.  | It lists running work; an ended monitor leaves the strip.                                    |
-| Stop one                        | The row's Stop button, or the agent's `jobs` tool with `action="stop"`.             | An explicit stop by the user or agent does not start a turn; other endings notify the owner. |
-| Inspect recent events           | `jobs` with `action="read"` returns the monitor's bounded event log.                | The log is capped and kept in memory; a restart starts it empty.                             |
+| Stop one                        | The row's Stop button, or the agent's `TaskStop`.                                   | An explicit stop by the user or agent does not start a turn; other endings notify the owner. |
+| Inspect recent events           | `Jobs` with `action="read"` returns the monitor's bounded event log.                | The log is capped and kept in memory; a restart starts it empty.                             |
 | Watch an authenticated endpoint | `${secret:KEY}` in the command; the value is injected into the process environment. | Resolved at start and resume; the displayed command retains the reference.                   |
 
 ## How it works
@@ -57,7 +57,7 @@ last output for `on_change` — never holds the check's output itself, since tha
 credential.
 
 The engine's predicates are `exit_zero`, `contains`, `not_contains`, `regex`, and a numeric bound
-with an optional JSON path; the `bash until` wait uses `exit_zero` and leaves the rest of the logic
+with an optional JSON path; the `Bash until` wait uses `exit_zero` and leaves the rest of the logic
 to the shell (`test`, `grep -q`, `jq -e`). The check's own output becomes the event text, so a wake
 carries what the command printed rather than "condition met".
 
@@ -96,14 +96,14 @@ turn, and stops a monitor that exceeds 60 events per minute — a flood is a mis
 and stopping says so rather than hiding it. (A plugin's watch drops the excess instead and keeps
 running; see `features/plugins/monitor-stream.ts` for why the two policies differ.) The fire then
 wakes the session through the triggers' one delivery path (`features/triggers/delivery.ts`) with the
-wake source `bg-monitor`, addressed to the participant that started it and keyed by the fire
+wake source `bg-monitor`, addressed to the agent that started it and keyed by the fire
 (`trg:<id>:<seq>`). A busy session does not lose the event: the wake queue holds it, and the fires
 that wait together are one turn.
 
 ### Where a monitor is visible
 
-A wait is running work in the session's work registry, so `jobs` lists, reads and stops it exactly
-like a background bash job, and its events stream into the same `bash` card in the transcript. Its
+A wait is running work in the session's work registry, so `Jobs` lists, reads and stops it exactly
+like a background bash job, and its events stream into the same `Bash` card in the transcript. Its
 event count and latest event are fields of the work record, so the `session_work.updated` push the
 composer's background-work strip renders carries them — there is no second strip or opcode for
 monitors. Stop goes through the monitor service rather than an action the tool registered: a wait
@@ -135,23 +135,23 @@ Monitor events and ending details pass through the exposure shield before reachi
 | Every event, log line and ending detail passes the exposure shield. | An authenticated check echoes its own header often enough (`curl -v`, a reflecting error body) that a watch's OUTPUT is an exposure path — and a wake is persisted as a message. |
 | The resolve is recorded against the monitor.                        | The Vault's activity log answers "which watch used this key", not just "the agent".                                                                                              |
 
-The agent names a Vault key in the command. The `vault` tool returns metadata, and the monitor
+The agent names a Vault key in the command. The `Vault` tool returns metadata, and the monitor
 resolves the value server-side instead of returning it to the model. This does not isolate Vault
 storage from other processes running under the same OS account.
 
 ### Permissions
 
-The wait is an ordinary `bash` call. The run's permission gate evaluates its command and paths
+The wait is an ordinary `Bash` call. The run's permission gate evaluates its command and paths
 against the agent rules after the conversation mode rewrite, including host-root protection and any
-matching dangerous-command or outside-workspace rule. Without a live `jobs` tool `bash` carries no
+matching dangerous-command or outside-workspace rule. Without a live `Jobs` tool `Bash` carries no
 background fields, so no wait can be started.
 
 ### Plugin monitors are not agent waits
 
-A plugin manifest's `monitors` field and the agent's `bash until` wait have different owners and
+A plugin manifest's `monitors` field and the agent's `Bash until` wait have different owners and
 lifecycles, although they share output-line splitting infrastructure.
 
-|               | Manifest `monitors`                                                      | Agent `bash until` wait                                     |
+|               | Manifest `monitors`                                                      | Agent `Bash until` wait                                     |
 | ------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------- |
 | Started by    | The plugin, for every enabled install                                    | The agent, inside one session                               |
 | Scope         | Process-wide; lines wake only the sessions armed via `ctx.host.monitors` | One session, listed in its background-work strip            |
@@ -161,7 +161,7 @@ lifecycles, although they share output-line splitting infrastructure.
 
 ## Configuration
 
-`bash` fields that shape a wait:
+`Bash` fields that shape a wait:
 
 | Field         | Required | Default      | Meaning                                                                                    |
 | ------------- | -------- | ------------ | ------------------------------------------------------------------------------------------ |
@@ -189,9 +189,9 @@ ends that watch. A wake shows at most 20 event entries and reports how many were
 - An explicit stop by the user or agent produces no new turn.
 - Stopping a polled wait prevents future reports and checks. A check already running is not
   immediately cancelled; its result is discarded when it finishes within its execution timeout.
-- An ended monitor is no longer running work: it leaves the composer strip at once, and `jobs` can
+- An ended monitor is no longer running work: it leaves the composer strip at once, and `Jobs` can
   no longer read it. Its ending wake carries up to 20 pending event entries. Omitted entries cannot
-  be recovered with `jobs read` after the monitor ends.
+  be recovered with `Jobs read` after the monitor ends.
 
 ## Related guides
 
@@ -214,7 +214,7 @@ ends that watch. A wake shows at most 20 event entries and reports how many were
 - [Coalescing and rate limit](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/monitors/batch.ts)
 - [Poll and stream trigger kinds](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/triggers/kinds/poll.ts)
 - [Command source](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/monitors/sources/command.ts)
-- [`bash until` → wait spec](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/bash/bash-until.ts)
+- [`Bash until` → wait spec](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/bash/bash-until.ts)
 - [Accepted bash fields and timeout range](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/bash/bash-types.ts)
 - [Background deadline normalization](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/bash/bash.ts)
 - [Individual check deadline and result suppression](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/monitors/action.ts)

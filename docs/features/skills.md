@@ -18,7 +18,7 @@ ones. Your skills are Claude Code's own files: Localix writes `~/.claude/skills`
 | Let the agent run it       | Write `/name` as its own word later in a message (`go ahead and /deploy to staging`).                | Permission for that message, a user-only skill included; the agent decides whether to.   |
 | Keep a skill active        | Pin it to the session through the session-skills API.                                                | The full skill body is added to that session's runtime prompt.                           |
 | Create or revise a skill   | Use Add skill on Store → Library → Yours (or Project), then edit it on its page.                     | Plugin-bundled skills are read-only; they follow their plugin.                           |
-| Let the agent load a skill | The runtime lists names and descriptions; the agent can fetch a matching body with the `skill` tool. | Bodies are loaded on demand rather than placing every skill in the prompt.               |
+| Let the agent load a skill | The runtime lists names and descriptions; the agent can fetch a matching body with the `Skill` tool. | Bodies are loaded on demand rather than placing every skill in the prompt.               |
 | Archive stale skills       | Press **Archive unused** on Yours or Project, check the preview, confirm; or Archive one skill.      | Archived directories are excluded from discovery until restored.                         |
 | Deny one agent a skill     | Switch it off on the agent's Store page, **Access** tab.                                             | The switch writes one `skill:<name>` rule; the file and every other agent are untouched. |
 | Control availability       | Switch the skill on or off in Store → Installed, or per agent on its **Access** tab.                 | Disabling removes access by name, including pins and keyword triggers; files remain.     |
@@ -63,7 +63,7 @@ that shadows the portable procedure.
 
 The runtime initially gives the model a bounded roster of skill names and descriptions. The roster
 lists each description up to 1,536 characters, as Claude Code does, within an 8,000-code-unit
-budget: descriptions shorten to bare names before any name is omitted with a notice. The `skill`
+budget: descriptions shorten to bare names before any name is omitted with a notice. The `Skill`
 tool can load one body or save a skill; plugin skills can be read but not saved through the tool.
 Listing and removing skills belong to the Store. Default delegated workers can also retrieve skills.
 An agent's explicit tool list and capability denials still control availability; pinning a skill
@@ -72,8 +72,9 @@ supplies its body even without the retrieval tool.
 One-shot `/name` invocation expands supported arguments before submitting the prompt. Filesystem
 skills can also opt into bounded local command expansion and confined file-reference expansion. A
 skill with `context: fork` runs in a child session, typed or loaded by the agent, as the subagent
-type its `agent:` names (`Explore`, `Plan`, a plugin agent; the invoking agent by default). Other
-skills run in the current session. Child sessions cannot fork skills into more child sessions.
+type its `agent:` names (`Explore`, `Plan`, a plugin agent, or an agent file from `.claude/agents`
+or `~/.claude/agents`; the invoking agent by default). Other skills run in the current session.
+Child sessions cannot fork skills into more child sessions.
 
 Session pins persist with the session record. The runtime injects each resolvable pinned body under
 an active-skills prompt section on subsequent turns, within a shared 32,000-code-unit budget.
@@ -86,7 +87,7 @@ disable its keyword trigger; agent availability rules do.
 
 Slash invocation resolves filesystem skills and enabled plugins' skills (`/<plugin>:<skill>`, or the
 bare name when only one plugin has it); a plugin's command files are skills too. The model-facing
-`skill` tool and agent preloads reach the same skills; session pins resolve filesystem skills.
+`Skill` tool and agent preloads reach the same skills; session pins resolve filesystem skills.
 
 The supported frontmatter, substitution tokens, tool policy, and command-expansion limits belong to
 the [skill authoring guide](../extending/skills-authoring.md).
@@ -112,7 +113,7 @@ agent's Store page (Access tab) keeps the switches.
 
 `.claude/skills` is shared with Claude Code, whose use of a skill Localix cannot see. So the
 scheduled pass and **Archive unused** consider only skills created in Localix (the Store's **Add
-skill**, the agent's `skill` tool, or skills moved from the old `.localix/skills`). A skill Claude
+skill**, the agent's `Skill` tool, or skills moved from the old `.localix/skills`). A skill Claude
 Code or you created by hand there never shows an "archived on" notice and is never archived by
 itself; it can still be pinned, archived from its page and restored.
 
@@ -140,11 +141,7 @@ Claude Code reads, so an archived skill never loads there; restoring moves it ba
 a folder of that name exists) and records a use. Archiving can replace an archived skill of the same
 name.
 
-Earlier versions kept skills in `.localix/skills`. At the first start after the update they move
-once into the matching `.claude/skills` (home and every known project), the curator's archived ones
-into the archive folder, and the old folders are removed. When `.claude/skills` already holds a
-skill of that name, that one wins and the old copy is dropped; the start log names each one. Curator
-pins protect automatic passes, but manual archive remains available.
+Curator pins protect automatic passes, but manual archive remains available.
 
 ## Configuration
 

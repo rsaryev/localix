@@ -112,7 +112,7 @@ export async function completeRun(
     outcome,
     invocation: params.scope.executionContext.invocation.kind,
     hasQueuedTurns: () => env.hasPendingQueue(session.id),
-    connectionId: frame.speakerRoute.providerConnectionId,
+    connectionId: frame.route.providerConnectionId,
     cascaded: env.state.cascadeStoppedSessionIds.has(session.id),
   })
   return completedRun()

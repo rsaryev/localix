@@ -25,13 +25,29 @@ export type CompletionWorkingSetProvider = (
 ) => readonly CompletionReference[]
 
 let provider: CompletionWorkingSetProvider | null = null
+let watch: ((listener: () => void) => () => void) | null = null
 
-/** Install the provider; returns the uninstall function. */
-export function registerCompletionWorkingSet(next: CompletionWorkingSetProvider): () => void {
+/**
+ * Install the provider, and how to hear that what it answers may have moved (the grid's store);
+ * returns the uninstall function.
+ */
+export function registerCompletionWorkingSet(
+  next: CompletionWorkingSetProvider,
+  subscribe?: (listener: () => void) => () => void,
+): () => void {
   provider = next
+  watch = subscribe ?? null
   return () => {
-    if (provider === next) provider = null
+    if (provider === next) {
+      provider = null
+      watch = null
+    }
   }
+}
+
+/** Hear that the working set may have moved; nothing to hear without a provider that says. */
+export function subscribeCompletionWorkingSet(listener: () => void): () => void {
+  return watch?.(listener) ?? (() => {})
 }
 
 const MAX_ATTRIBUTES = 16

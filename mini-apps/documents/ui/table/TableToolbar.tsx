@@ -98,7 +98,7 @@ export function TableToolbar({
       {/* Export */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="default">
+          <Button variant="ghost" size="default">
             <Download className="size-3.5" />
             <span>Export</span>
             <ChevronDown className="size-3 text-text-faint" />
@@ -126,7 +126,7 @@ export function TableToolbar({
       {openTargets.length > 0 && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="default">
+            <Button variant="ghost" size="default">
               <ExternalLink className="size-3.5" />
               <span>Open in</span>
               <ChevronDown className="size-3 text-text-faint" />

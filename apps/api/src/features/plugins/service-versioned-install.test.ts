@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { makeTempDir, removeDir, writeTree } from '@localixai/testing'
+import { makeTempDir, removeDir } from '@localixai/testing'
 
 import { createDatabase, destroyDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
@@ -116,18 +116,5 @@ describe('versioned marketplace installs', () => {
     expect((await readInstallRecords(home))['tool@shop']).toBeUndefined()
     expect(existsSync(join(dir, '.orphaned_at'))).toBe(true)
     expect(await listedTool()).toBeUndefined()
-  })
-
-  test('a copy an earlier Localix kept in the plugins folder is replaced by the cached one', async () => {
-    writeTree(home, {
-      '.localix/plugins/tool/.claude-plugin/plugin.json': JSON.stringify({
-        name: 'tool',
-        version: '0.9.0',
-      }),
-    })
-    await capabilityStores.sources(db, 'plugin').upsert('u1', '', 'tool', { source: 'tool@shop' })
-    const updated = await service.update('u1', { name: 'tool' })
-    expect(updated.dir).toBe(cachedVersionDir(home, 'shop', 'tool', '2.0.0'))
-    expect(existsSync(join(home, '.localix', 'plugins', 'tool'))).toBe(false)
   })
 })

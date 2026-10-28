@@ -15,7 +15,7 @@ describe('the conversation’s events between turns', () => {
     )
     expect(await skillPrompt(host, scene, 'review', 'Review it.')).toBe('Review it.')
     const skill = defineAgentTool({
-      name: 'skill',
+      name: 'Skill',
       description: 'skill',
       activeVerb: 'Loading',
       inputSchema: z.object({}).passthrough(),

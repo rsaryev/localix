@@ -29,11 +29,7 @@ export const SELF_CAUSED_WAKES: ReadonlySet<WakeSource> = new Set<WakeSource>([
 ])
 export const MAX_CONSECUTIVE_SELF_WAKES = 12
 
-const USER_TICKET_SOURCES: ReadonlySet<AgentTurnSource> = new Set<AgentTurnSource>([
-  'user-address',
-  'user-default',
-  'user-broadcast',
-])
+const USER_TICKET_SOURCES: ReadonlySet<AgentTurnSource> = new Set<AgentTurnSource>(['user-default'])
 
 export interface BudgetedItem {
   internal: boolean

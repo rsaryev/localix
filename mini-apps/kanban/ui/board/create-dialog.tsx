@@ -1,3 +1,4 @@
+import { useId } from 'react'
 import { Boxes } from 'lucide-react'
 import {
   SegmentedControl,
@@ -24,6 +25,7 @@ import { PRIORITY_PRESENTATION, type PriorityBucket } from '../model/priorityPre
 import { useBoardAgents } from '../model/useBoardAgents'
 import { AttachmentField, DependencyField, FIELD_LABEL } from './create-dialog-fields'
 import { useCreateTaskForm, type PriorityValue } from './useCreateTaskForm'
+import { focusOnMount } from './focusOnMount'
 
 /** The form's three values, drawn by the board's one priority presentation. */
 const PRIORITIES: Array<{ value: PriorityValue; bucket: PriorityBucket }> = [
@@ -50,12 +52,13 @@ export function CreateTaskDialog({
   tasks: KanbanTask[]
 }) {
   const form = useCreateTaskForm({ sessionId, tasks, onClose })
+  const readyId = useId()
   const directory = useBoardAgents(sessionId)
   const agentOptions = [
     { value: '', label: directory.loading ? 'Loading agents…' : 'Unassigned' },
     // The directory lists agents only; a card can still wait on the person.
     { value: HUMAN_ASSIGNEE_ID, label: 'You' },
-    ...directory.agents.map((a) => ({ value: a.id, label: `@${a.handle}` })),
+    ...directory.agents.map((a) => ({ value: a.id, label: a.name })),
   ]
 
   return (
@@ -75,7 +78,7 @@ export function CreateTaskDialog({
             value={form.title}
             onChange={(e) => form.setTitle(e.target.value)}
             placeholder="Title"
-            autoFocus
+            ref={focusOnMount}
             onKeyDown={(e) => {
               if (matchesChord(e, 'mod+enter')) void form.submit()
             }}
@@ -184,8 +187,15 @@ export function CreateTaskDialog({
         <DialogFooter
           aside={
             form.kind === 'task' ? (
-              <label className="flex cursor-pointer items-center gap-1.5 text-xs text-text-soft">
-                <Checkbox checked={form.ready} onChange={(e) => form.setReady(e.target.checked)} />
+              <label
+                htmlFor={readyId}
+                className="flex cursor-pointer items-center gap-1.5 text-xs text-text-soft"
+              >
+                <Checkbox
+                  id={readyId}
+                  checked={form.ready}
+                  onChange={(e) => form.setReady(e.target.checked)}
+                />
                 Put in Ready
               </label>
             ) : undefined

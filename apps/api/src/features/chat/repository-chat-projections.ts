@@ -1,29 +1,26 @@
 import type { Kysely, Selectable } from 'kysely'
 import type { AppDatabase } from '../../db'
-import { routeFromJoin } from './repository-conversation-participants'
+import { routeFromRow } from './repository-session-agent'
 
 type ChatProjectionRow = Pick<
   Selectable<AppDatabase['agent_sessions']>,
   'id' | 'title' | 'project_id' | 'runtime_status' | 'updated_at'
 > &
-  Parameters<typeof routeFromJoin>[0] & { agent_id: string | null }
+  Parameters<typeof routeFromRow>[0] & { agent_id: string | null }
 
 function chatProjectionQuery(db: Kysely<AppDatabase>) {
   return db
     .selectFrom('agent_sessions')
-    .leftJoin('conversation_participants as route', (join) =>
-      join.onRef('route.session_id', '=', 'agent_sessions.id').on('route.position', '=', 0),
-    )
     .select([
       'agent_sessions.id',
       'agent_sessions.title',
       'agent_sessions.project_id',
       'agent_sessions.runtime_status',
-      'route.agent_id',
-      'route.model_id',
-      'route.reasoning_effort',
+      'agent_sessions.agent_id',
+      'agent_sessions.model_id',
+      'agent_sessions.reasoning_effort',
       'agent_sessions.updated_at',
-      'route.provider_connection_id',
+      'agent_sessions.provider_connection_id',
     ])
 }
 
@@ -34,7 +31,7 @@ function mapChatProjection(row: ChatProjectionRow) {
     projectId: row.project_id ?? null,
     agentId: row.agent_id ?? null,
     runtimeStatus: row.runtime_status ?? 'idle',
-    ...routeFromJoin(row),
+    ...routeFromRow(row),
     updatedAt: row.updated_at,
     sessionKind: 'chat' as const,
   }

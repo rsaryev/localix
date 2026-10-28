@@ -10,8 +10,8 @@
     "dev": "bun run prepare:sdk && bun preview/serve.ts",
     "build": "bun run prepare:sdk && bun run type-check && vite build && bun build backend/index.ts --target=bun --outfile=dist/backend/index.js",
     "preview": "bun preview/serve.ts --preview",
-    "type-check": "tsc --noEmit -p tsconfig.json",
-    "type-check:tests": "tsc --noEmit -p tsconfig.tests.json",
+    "type-check": "node ../../scripts/tsc.mjs --noEmit -p tsconfig.json",
+    "type-check:tests": "node ../../scripts/tsc.mjs --noEmit -p tsconfig.tests.json",
     "test": "bun test ui backend shared"
   },
   "dependencies": {

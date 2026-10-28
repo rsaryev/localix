@@ -88,7 +88,6 @@ async function setup(local: SemanticServiceDeps['localModels']) {
 
 const settle = async (service: Awaited<ReturnType<typeof setup>>['service']) => {
   for (let i = 0; i < 3; i++) {
-    await Bun.sleep(10)
     await service.settle()
   }
 }

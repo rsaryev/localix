@@ -30,7 +30,7 @@ export function LocalModelFacts({ modelId, label }: { modelId: string; label: st
   const installed = !!status?.installed.some((s) => s.id === modelId)
   const plan = entry?.plan
   const spec = entry?.spec
-  const run = (action: Promise<unknown>) => void action.finally(() => refresh())
+  const run = (action: Promise<unknown>) => void action.finally(() => void refresh())
 
   return (
     <section data-slot="local-model-facts" className="flex flex-col gap-0.5">
@@ -53,7 +53,7 @@ export function LocalModelFacts({ modelId, label }: { modelId: string; label: st
       {spec?.draft && <Fact label="Faster replies" value="Draft model included" />}
       <div className="flex flex-wrap items-center gap-1.5 pt-1.5">
         {installed && entry?.upgradeBytes ? (
-          <Button size="xs" variant="outline" onClick={() => run(localModelsApi.install(modelId))}>
+          <Button size="xs" variant="ghost" onClick={() => run(localModelsApi.install(modelId))}>
             Add draft model · {formatBytes(entry.upgradeBytes)}
           </Button>
         ) : null}

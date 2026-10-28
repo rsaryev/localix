@@ -13,7 +13,7 @@ afterEach(() => {
 })
 
 type Result = { content: string; isError?: boolean }
-const LEADER = { agentId: 'a:lead', handle: 'lead', role: 'leader' }
+const AGENT = { agentId: 'a:localix', name: 'localix' }
 
 function board() {
   const root = mkdtempSync(join(tmpdir(), 'kanban-human-'))
@@ -25,7 +25,7 @@ function board() {
     sessionStorage: { resolveDataDir: async (_u: string, s: string) => join(root, s) },
     agents: {
       // The directory lists agents only; the person is not one of them.
-      list: async () => [{ id: 'a:lead', handle: 'lead' }],
+      list: async () => [{ id: 'a:localix', name: 'localix' }],
       notifyHuman: async (_u: string, sessionId: string, notice: { key: string; text: string }) => {
         told.push({ sessionId, ...notice })
       },
@@ -36,7 +36,7 @@ function board() {
   const kanban = (register(ctx).tools ?? []).find((candidate) => candidate.name === 'kanban')!
   const act = (input: object) =>
     kanban.execute('call-1', input as never, undefined, undefined, {
-      session: { id: 's1', speaker: LEADER },
+      session: { id: 's1', agent: AGENT },
     } as never) as Promise<Result>
   return { act, told }
 }
@@ -64,7 +64,7 @@ test('a card assigned to the person tells the person and cannot be taken or comp
 
 test('reassigning a card to the person tells the person once', async () => {
   const { act, told } = board()
-  await act({ action: 'create', creates: [{ title: 'Pick the copy', agent: 'lead' }] })
+  await act({ action: 'create', creates: [{ title: 'Pick the copy', agent: 'localix' }] })
   await act({ action: 'update', task_id: 'LX-1', agent: 'user' })
   await act({ action: 'update', task_id: 'LX-1', agent: 'user' })
   await new Promise((resolve) => setTimeout(resolve, 0))

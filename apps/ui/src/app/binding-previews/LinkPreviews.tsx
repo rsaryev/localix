@@ -68,10 +68,10 @@ export function SessionPreview({ binding, className }: PreviewProps) {
         <span className="font-mono">LOCALIX-{session.seq}</span>
         <span>·</span>
         <span>{status.label}</span>
-        {session.agents[0] && (
+        {session.agent && (
           <>
             <span>·</span>
-            <span className="truncate">{session.agents[0].modelId}</span>
+            <span className="truncate">{session.agent.modelId}</span>
           </>
         )}
         <span>·</span>
@@ -95,7 +95,7 @@ export function MessagePreview({ binding, className }: PreviewProps) {
     linked.state === 'ready' ? linked.session.messages.find((row) => row.id === messageId) : null
   if (!message || linked.state !== 'ready')
     return <Gone what="This message is not on this machine." />
-  const author = message.authorSnapshot?.handle ?? (message.role === 'user' ? 'You' : 'Assistant')
+  const author = message.role === 'user' ? 'You' : (linked.session.agent?.name ?? 'Assistant')
   return (
     <div className={cn('flex min-h-0 flex-col gap-1 px-3 py-2.5', className)}>
       <div className="flex gap-1.5 text-3xs text-text-faint">

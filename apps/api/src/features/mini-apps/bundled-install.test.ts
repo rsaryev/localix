@@ -187,29 +187,6 @@ describe('bundled mini app installation', () => {
     ).toMatchObject({ description: 'user' })
   })
 
-  test('a copy marked before the rename is still ours: the next sync refreshes and re-marks it', async () => {
-    const { source, home } = await fixture()
-    await writeMiniApp(source, 'weather', 'v1')
-    await installShipped(source, home)
-    await syncBundledMiniApps(source, home)
-    const installDir = join(home, '.localix/mini-apps/weather')
-    const markerPath = join(installDir, '.localix-managed.json')
-    const marker = JSON.parse(await fs.readFile(markerPath, 'utf8')) as Record<string, unknown>
-    await fs.writeFile(markerPath, JSON.stringify({ ...marker, kind: 'localix-bundled-plugin' }))
-    await writeMiniApp(source, 'weather', 'v2')
-    __resetBundledSyncCache()
-
-    const managed = await syncBundledMiniApps(source, home)
-
-    expect(managed.has('weather')).toBe(true)
-    expect(JSON.parse(await fs.readFile(join(installDir, 'mini-app.json'), 'utf8'))).toMatchObject({
-      description: 'v2',
-    })
-    expect(JSON.parse(await fs.readFile(markerPath, 'utf8'))).toMatchObject({
-      kind: 'localix-bundled-mini-app',
-    })
-  })
-
   test('restores the previous managed copy when activating an update fails', async () => {
     const { source, home } = await fixture()
     await writeMiniApp(source, 'weather', 'v1')

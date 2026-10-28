@@ -23,7 +23,7 @@ export interface HostDecision {
   remembersRunIdentity: boolean
   /** A worker reports `runtimeStatus`; a chat's state is its transcript. */
   persistsRuntimeStatus: boolean
-  /** Memory and skills are frozen per participant lane only in a chat (prefix cache). */
+  /** Memory and skills are frozen per agent lane only in a chat (prefix cache). */
   freezesPromptContext: boolean
   /** Queued input may join a running turn; a passive system thread never runs one. */
   steers: boolean

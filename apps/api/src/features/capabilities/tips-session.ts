@@ -50,7 +50,7 @@ export const SESSION_TIPS: readonly CuratedTip[] = [
   {
     id: 'session:long-run-background',
     text: 'Work that outlives a turn belongs in the background — ask, and the run stops waiting on it.',
-    requiresAnyTool: ['bash'],
+    requiresAnyTool: ['Bash'],
     when: { signals: ['run-long'] },
   },
   // ── Someone's first sessions ──────────────────────────────────────────────

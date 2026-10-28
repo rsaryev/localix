@@ -18,9 +18,9 @@ afterEach(async () => {
 
 async function seeded() {
   const boards = createBoardService({ resolveDir: async (_user, session) => join(root, session) })
-  const seat = { userId: 'u1', sessionId: 's1' }
-  await boards.create(seat, { title: 'Release', kind: 'epic' }, 'agent')
-  await boards.create(seat, { title: 'Write changelog', parentTaskId: 'LX-1' }, 'agent')
+  const chat = { userId: 'u1', sessionId: 's1' }
+  await boards.create(chat, { title: 'Release', kind: 'epic' }, 'agent')
+  await boards.create(chat, { title: 'Write changelog', parentTaskId: 'LX-1' }, 'agent')
   return boards
 }
 

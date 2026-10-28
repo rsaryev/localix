@@ -61,9 +61,7 @@ export async function composeKanban(page, scenario) {
   )
   if (scenario === 'kanban-conversation') {
     await button(page, 'Restore layout').click()
-    await expect(
-      page.getByRole('group', { name: 'Conversation participants', exact: true }),
-    ).toBeVisible()
+    await expect(page.getByRole('combobox', { name: 'Message', exact: true }).last()).toBeVisible()
   }
 }
 
@@ -94,7 +92,5 @@ export async function verifyKanban(page, scenario) {
   expect(board.tasks.find((task) => task.title === 'Write release notes')?.status).toBe('ready')
   expect(board.tasks).toHaveLength(4)
   if (scenario === 'kanban-conversation')
-    await expect(
-      page.getByRole('group', { name: 'Conversation participants', exact: true }),
-    ).toBeVisible()
+    await expect(page.getByRole('combobox', { name: 'Message', exact: true }).last()).toBeVisible()
 }

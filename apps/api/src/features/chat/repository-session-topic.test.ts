@@ -5,14 +5,11 @@ import { sessionFixture } from '../../testing/session-fixture'
 import { createChatRepository, toSessionSummary } from './repository'
 import { bumpSessionForTurn } from './service/message-builders'
 import type { PersistedMessage } from './contracts'
-import { agentParticipant } from '../../db/participant'
-import { serializeMessagePayload } from '../../db'
 
 describe('shared session topic persistence', () => {
   let db: ReturnType<typeof createDatabase>
   let repo: ReturnType<typeof createChatRepository>
   const original = sessionFixture({ title: 'New Chat' })
-  const boundary = { messageId: 'topic-host', agentId: original.agents[0]!.agentId }
   const topic = {
     title: 'Release parser',
     goal: 'Ship the verified parser.',
@@ -24,19 +21,6 @@ describe('shared session topic persistence', () => {
     await migrateToLatest(db)
     repo = createChatRepository(db)
     await repo.insertSession(original)
-    await repo.insertMessage({
-      id: boundary.messageId,
-      sessionId: original.id,
-      userId: original.userId,
-      payload: {
-        id: boundary.messageId,
-        role: 'assistant',
-        from: agentParticipant(boundary.agentId),
-        content: 'Public reply remains in the transcript.',
-      },
-      createdAt: original.createdAt,
-      updatedAt: original.updatedAt,
-    })
   })
 
   afterEach(async () => {
@@ -46,60 +30,11 @@ describe('shared session topic persistence', () => {
   test('legacy sessions read null fields and topic writes round-trip through the read model', async () => {
     const before = (await repo.getSession(original.userId, original.id))!
     expect(before).toMatchObject({ goal: null, previousTopicSummary: null })
-    expect(
-      await repo.updateSessionTopic(
-        original.userId,
-        original.id,
-        before,
-        topic,
-        '2026-10-08',
-        boundary,
-      ),
-    ).toBe(true)
+    await repo.updateSession(original.userId, original.id, topic)
     const after = (await repo.getSession(original.userId, original.id))!
     expect(after).toMatchObject(topic)
     expect(toSessionSummary(after)).toMatchObject(topic)
-    expect(after.agents).toEqual(before.agents)
-    expect(
-      (await repo.getMessage(original.userId, original.id, boundary.messageId))?.payload,
-    ).toMatchObject({
-      contextBoundary: true,
-      content: 'Public reply remains in the transcript.',
-    })
-  })
-
-  test('a stale or foreign author cannot replace any part of a newer topic', async () => {
-    expect(
-      await repo.updateSessionTopic(
-        'other-user',
-        original.id,
-        original,
-        topic,
-        '2026-10-08',
-        boundary,
-      ),
-    ).toBe(false)
-    expect(
-      await repo.updateSessionTopic(
-        original.userId,
-        original.id,
-        original,
-        topic,
-        '2026-10-08',
-        boundary,
-      ),
-    ).toBe(true)
-    expect(
-      await repo.updateSessionTopic(
-        original.userId,
-        original.id,
-        original,
-        { ...topic, title: 'Stale' },
-        '2026-10-09',
-        boundary,
-      ),
-    ).toBe(false)
-    expect(await repo.getSession(original.userId, original.id)).toMatchObject(topic)
+    expect(after.agent).toEqual(before.agent)
   })
 
   test('a late automatic title and objective cannot erase an agent topic change', async () => {
@@ -121,14 +56,7 @@ describe('shared session topic persistence', () => {
       goal: 'Review parser.',
       previousTopicSummary: null,
     })
-    await repo.updateSessionTopic(
-      original.userId,
-      original.id,
-      generated,
-      { ...topic, title: before.title },
-      '2026-10-08',
-      boundary,
-    )
+    await repo.updateSession(original.userId, original.id, { ...topic, title: before.title })
     // Same title as the fallback: the objective/summary guard still rejects the old generation.
     expect(
       await repo.updateTitleIfCurrent(
@@ -174,14 +102,7 @@ describe('shared session topic persistence', () => {
     )
     expect(updated.goal).toBe('Fix parser while keeping Bun.')
     expect(published).toHaveLength(1)
-    await repo.updateSessionTopic(
-      original.userId,
-      original.id,
-      updated,
-      topic,
-      '2026-10-09',
-      boundary,
-    )
+    await repo.updateSession(original.userId, original.id, topic)
     // Deliberately supply the stale session: a new turn must keep the topic saved in the row.
     const next = await bumpSessionForTurn(
       repo,
@@ -206,59 +127,6 @@ describe('shared session topic persistence', () => {
       title: 'Chosen name',
       goal: 'Chosen goal',
       previousTopicSummary: 'Prior decisions.',
-    })
-  })
-
-  test('a missing boundary row changes neither goal nor history', async () => {
-    for (const marker of [{ ...boundary, messageId: 'missing' }]) {
-      expect(
-        await repo.updateSessionTopic(
-          original.userId,
-          original.id,
-          original,
-          topic,
-          '2026-10-08',
-          marker,
-        ),
-      ).toBe(false)
-      expect(await repo.getSession(original.userId, original.id)).toMatchObject({
-        title: original.title,
-        goal: null,
-        previousTopicSummary: null,
-      })
-      expect(
-        (await repo.getMessage(original.userId, original.id, boundary.messageId))?.payload
-          .contextBoundary,
-      ).toBeUndefined()
-    }
-  })
-
-  test('finishing the streaming reply cannot erase the committed topic boundary', async () => {
-    const before = (await repo.getMessage(original.userId, original.id, boundary.messageId))!
-    const known = { payload: before.payload, payloadJson: serializeMessagePayload(before.payload) }
-    expect(
-      await repo.updateSessionTopic(
-        original.userId,
-        original.id,
-        original,
-        topic,
-        '2026-10-08',
-        boundary,
-      ),
-    ).toBe(true)
-    await repo.updateMessage(
-      original.userId,
-      original.id,
-      boundary.messageId,
-      { content: 'Final public reply.' },
-      '2026-10-09',
-      known,
-    )
-    expect(
-      (await repo.getMessage(original.userId, original.id, boundary.messageId))?.payload,
-    ).toMatchObject({
-      contextBoundary: true,
-      content: 'Final public reply.',
     })
   })
 })

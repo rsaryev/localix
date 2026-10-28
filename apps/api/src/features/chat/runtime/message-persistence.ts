@@ -2,8 +2,8 @@ import { randomUUID } from 'node:crypto'
 
 import type { MessageBinding } from '@localixai/agent'
 
-import type { ParticipantRef, StoredMessagePayload } from '../../../db'
-import { SYSTEM_PARTICIPANT, USER_PARTICIPANT } from '../../../db'
+import type { AuthorRef, StoredMessagePayload } from '../../../db'
+import { SYSTEM_AUTHOR, USER_AUTHOR } from '../../../db'
 import type { PersistedMessage } from '../contracts'
 import type { ChatRepository } from '../repository'
 import type { SessionStreamRegistry } from './session-stream-registry'
@@ -80,7 +80,6 @@ export async function persistAndPublish(params: {
     id: _id,
     role: _role,
     from: _from,
-    authorSnapshot: _snapshot,
     continuedFromMessageId: _continuation,
     ...patch
   } = params.payload
@@ -121,18 +120,12 @@ export async function insertInternalTurn(params: {
   userId: string
   sessionId: string
   /** Who answers this turn — the session's agent. Stated by the caller, which has the session. */
-  agent: ParticipantRef
+  agent: AuthorRef
   content: string
   /** Default true. False = a genuine user turn (queued while busy). */
   internal?: boolean
   /** Opaque provenance tag (the domain `WakeSource`), persisted on the user row. */
   origin?: string
-  /**
-   * Which participant this routed turn concerns, with its handle frozen for display.
-   * The conversation shows it whole to that participant and as one line to the rest
-   * (`participant-view`).
-   */
-  to?: { participant: ParticipantRef; handle?: string }
   bindings?: MessageBinding[]
   /** Mini apps whose tools the answering turn carries — the mini app that woke it. */
   miniApps?: string[]
@@ -161,13 +154,11 @@ export async function insertInternalTurn(params: {
     role: 'user',
     // A visible queued turn is something the PERSON sent while the session was busy; only a
     // hidden one is the system speaking. The row used to say `system` for both.
-    from: internal ? SYSTEM_PARTICIPANT : USER_PARTICIPANT,
+    from: internal ? SYSTEM_AUTHOR : USER_AUTHOR,
     content: params.content,
     ...(internal ? { isInternal: true } : {}),
     ...(params.commandOrigin ? { commandOrigin: params.commandOrigin } : {}),
     ...(params.origin ? { origin: params.origin } : {}),
-    ...(params.to ? { to: params.to.participant } : {}),
-    ...(params.to?.handle ? { toSnapshot: { handle: params.to.handle } } : {}),
     ...(params.bindings && params.bindings.length > 0 ? { bindings: params.bindings } : {}),
     ...(params.miniApps?.length ? { miniApps: params.miniApps } : {}),
     ...(params.clientMessageIds?.length ? { clientMessageIds: params.clientMessageIds } : {}),

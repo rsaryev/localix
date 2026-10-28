@@ -15,6 +15,7 @@
  * - `mcp__server` / `mcp__server__*` / `mcp__server__tool`: the engine's MCP names.
  * - A `Tool(param:value)` rule applies to deny and ask only, so it grants nothing.
  */
+import { TOOL } from '../agent-core/tool-names'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
@@ -22,13 +23,14 @@ import type { PermissionRule } from '../agent-core/permission-engine'
 import { normalizeCcToolName } from '../ext/cc-tool-names'
 import { nativeCommandPatterns } from './native-command-patterns'
 import { parseRuleString, specifierIsAll } from './permission-rules'
+import { isHomePath } from '../../lib/home-path'
 
 const PATH_TOOLS: Readonly<Record<string, readonly string[]>> = {
-  read: ['read', 'search'],
-  edit: ['edit', 'write'],
+  read: [TOOL.Read, TOOL.Search],
+  edit: [TOOL.Edit, TOOL.Write],
 }
 /** Tools whose path rules Claude Code accepts but never matches. */
-const UNMATCHED_PATH_TOOLS = new Set(['write', 'notebookedit', 'glob', 'multiedit', 'grep'])
+const UNMATCHED_PATH_TOOLS = new Set<string>(['write', 'notebookedit', 'glob', 'multiedit', 'grep'])
 
 /** `a{b,c}d` → `abd`, `acd`; nested braces expand from the inside out. */
 export function expandBraces(pattern: string): string[] {
@@ -49,7 +51,7 @@ export function absolutePathPatterns(specifier: string, cwd: string, projectDir 
   let base: string
   let rel: string
   if (spec.startsWith('//')) [base, rel] = ['/', spec.slice(2)]
-  else if (spec === '~' || spec.startsWith('~/')) [base, rel] = [homedir(), spec.slice(2)]
+  else if (isHomePath(spec)) [base, rel] = [homedir(), spec.slice(2)]
   else if (spec.startsWith('/')) [base, rel] = [projectDir, spec.slice(1)]
   else [base, rel] = [cwd, spec.replace(/^\.\//, '')]
   const anyDepth =
@@ -127,8 +129,8 @@ function claudeCodeRules(
   if (!parsed) return []
   const ccTool = parsed.tool.trim()
   const lower = ccTool.toLowerCase()
-  // `Agent` (formerly `Task`) is `delegate` here; a frontmatter `tools` list leaves it unmapped.
-  const tool = lower === 'agent' || lower === 'task' ? 'delegate' : normalizeCcToolName(ccTool)
+  // `Task` is `Agent`'s former name; a frontmatter `tools` list leaves it unmapped.
+  const tool = lower === 'agent' || lower === 'task' ? 'Agent' : normalizeCcToolName(ccTool)
   // A bare deny takes away the one tool the name resolves to; a bare allow covers what `Read`
   // and `Edit` rules cover ("all built-in tools that read / edit files").
   const covered = effect === 'allow' ? (PATH_TOOLS[lower] ?? [tool]) : [tool]
@@ -141,8 +143,8 @@ function claudeCodeRules(
       : (PATH_TOOLS[lower] ?? [tool])
   // permissions.md: Claude Code "skips any `mcp__` rule that has parentheses".
   if (ccTool.startsWith('mcp__')) return []
-  if (tool === 'bash')
-    return nativeCommandPatterns(specifier).map((pattern) => allow('bash', pattern))
+  if (tool === 'Bash')
+    return nativeCommandPatterns(specifier).map((pattern) => allow(TOOL.Bash, pattern))
   if (PATH_TOOLS[lower]) {
     if (!cwd) return pathTools.map((name) => allow(name, specifier))
     const patterns = absolutePathPatterns(specifier, cwd, projectDir)
@@ -151,7 +153,7 @@ function claudeCodeRules(
   if (UNMATCHED_PATH_TOOLS.has(lower)) return []
   if (lower === 'webfetch') {
     const pattern = specifier.startsWith('domain:') ? domainPattern(specifier) : undefined
-    return pattern ? [allow('research', pattern)] : []
+    return pattern ? [allow(TOOL.Research, pattern)] : []
   }
   // `Tool(param:value)`: deny and ask only ("allow rules continue to use each tool's own
   // specifier syntax"). `Skill(name:*)` is the prefix form, not a parameter.

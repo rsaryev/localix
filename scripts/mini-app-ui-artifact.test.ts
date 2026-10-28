@@ -13,12 +13,9 @@ import {
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 
-import { loadMiniAppKit, type MiniAppKit } from '../apps/api/src/features/mini-apps/authoring/kit'
-import {
-  buildMiniAppUiArtifact,
-  publishMiniAppUiArtifact,
-} from '../apps/api/src/features/mini-apps/authoring/ui-build'
-import { sharedShim } from '../apps/api/src/features/mini-apps/authoring/ui-shared-modules'
+import { sharedShim } from '../plugins/mini-app-authoring/src/build/ui-shared-modules'
+import { type Kit as MiniAppKit, loadKit } from '../plugins/mini-app-authoring/src/kit/kit'
+import { buildAndPublishMiniAppUi, publishMiniAppUi } from './build-mini-app-ui.mjs'
 import { NO_SOURCE_MAPS_FLAG, stageMiniAppUi, takeStagedUiArtifact } from './stage-mini-app-ui.mjs'
 import { kitCacheRoot } from './mini-app-kit-cache.mjs'
 
@@ -42,7 +39,7 @@ beforeAll(async () => {
     ],
     { stdio: 'pipe', timeout: 60_000, killSignal: 'SIGKILL' },
   )
-  kit = await loadMiniAppKit(join(root, 'kit'))
+  kit = await loadKit(join(root, 'kit'))
 }, 30_000)
 afterAll(() => rmSync(root, { recursive: true, force: true }))
 
@@ -87,7 +84,7 @@ function fixtureMiniApp(extra: Record<string, string> = {}): string {
 const read = (dir: string, file: string) => readFileSync(join(dir, file), 'utf8')
 const chunks = (dir: string) => readdirSync(join(dir, 'chunks')).filter((f) => f.endsWith('.js'))
 const build = (miniAppDir: string, outDir = join(tempDir(), 'out')) =>
-  buildMiniAppUiArtifact({ kit, miniAppDir, outDir })
+  buildAndPublishMiniAppUi({ kit, miniAppDir, outDir })
 
 test('relocated media encoding vendor retains its browser exclusions without node_modules', async () => {
   const miniApp = fixtureMiniApp({
@@ -145,7 +142,7 @@ describe('mini app UI artifact', () => {
     expect(read(withMaps, 'entry.js')).toContain('sourceMappingURL=entry.js.map')
 
     const withoutMaps = join(tempDir(), 'out')
-    await buildMiniAppUiArtifact({
+    await buildAndPublishMiniAppUi({
       kit,
       miniAppDir: fixtureMiniApp(),
       outDir: withoutMaps,
@@ -228,7 +225,7 @@ describe('mini app UI artifact', () => {
       manifest: { ...kit.manifest, hostStylesheet: 'ui/styles/missing.css' },
     }
     await expect(
-      buildMiniAppUiArtifact({ kit: kitWithMissingTheme, miniAppDir: miniApp, outDir: out }),
+      buildAndPublishMiniAppUi({ kit: kitWithMissingTheme, miniAppDir: miniApp, outDir: out }),
     ).rejects.toThrow()
     expect(read(out, 'manifest.json')).toBe(before)
     expect(existsSync(join(out, 'entry.js'))).toBe(true)
@@ -237,9 +234,7 @@ describe('mini app UI artifact', () => {
   test('a failed publication restores the previous artifact', async () => {
     const out = join(tempDir(), 'out')
     write(join(out, 'manifest.json'), '{"revision":"previous"}')
-    await expect(
-      publishMiniAppUiArtifact(join(dirname(out), 'missing-candidate'), out),
-    ).rejects.toThrow()
+    await expect(publishMiniAppUi(join(dirname(out), 'missing-candidate'), out)).rejects.toThrow()
     expect(read(out, 'manifest.json')).toBe('{"revision":"previous"}')
     expect(readdirSync(dirname(out)).some((file) => file.startsWith('.out-previous-'))).toBe(false)
   })
@@ -348,13 +343,15 @@ describe('mini app UI artifact', () => {
   })
 
   test('a shim re-exports exactly the given names; only preloaded modules are read synchronously', () => {
-    expect(sharedShim('react', ['useState', 'default', 'not-an-identifier', 'useState'])).toBe(
+    expect(
+      sharedShim(kit.tools.ui, 'react', ['useState', 'default', 'not-an-identifier', 'useState']),
+    ).toBe(
       [
         'const m = globalThis["__LOCALIX_MINI_APP_UI_SHARED__"].require("react")',
         'module.exports = { __esModule: true, default: m.default, useState: m.useState }',
       ].join('\n'),
     )
-    expect(sharedShim('@localixai/kit/button', ['Button'])).toStartWith(
+    expect(sharedShim(kit.tools.ui, '@localixai/kit/button', ['Button'])).toStartWith(
       'const m = await globalThis["__LOCALIX_MINI_APP_UI_SHARED__"].load("@localixai/kit/button")',
     )
   })

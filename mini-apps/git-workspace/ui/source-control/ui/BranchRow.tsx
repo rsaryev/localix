@@ -17,6 +17,7 @@ import { MatchedText } from '@localixai/kit/matched-text'
 import { Spinner } from '@localixai/kit/spinner'
 import { BulkAction } from './sourceControlParts'
 import { WorkbenchListRow } from '@localixai/kit/workbench-list-row'
+import { focusOnMount } from './focusOnMount'
 
 export interface BranchListItem {
   name: string
@@ -226,7 +227,7 @@ export function BranchDraft({
   return (
     <div className="px-2 py-1">
       <Input
-        autoFocus
+        ref={focusOnMount}
         value={value}
         placeholder={placeholder}
         disabled={busy}

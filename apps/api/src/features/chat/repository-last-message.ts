@@ -26,9 +26,8 @@ function previewText(raw: string): string {
  * The last thing said in each of the user's sessions — one row per session.
  *
  * A dialog list without this can only show a title and a time, which is the same information
- * for every row. The preview is what makes the list scannable, and its AUTHOR is what a party
- * of several agents needs: the row says who spoke last, which a transport role cannot — an
- * agent's own line is `assistant` to itself and input to everyone else.
+ * for every row. The preview is what makes the list scannable, and its AUTHOR says who spoke
+ * last (the person or the agent), which a transport role cannot.
  *
  * `search_text` rather than re-reading `payload_json`: the FTS triggers already keep it as the
  * message's plain content, so the preview costs no JSON parse per row and cannot drift from
@@ -55,11 +54,6 @@ export function lastMessagesQuery(db: Kysely<AppDatabase>, userId: string) {
     )
     .select(['m.session_id', 'm.role', 'm.search_text', 'm.created_at'])
     .select(sql<string | null>`json_extract(m.payload_json, '$.from')`.as('from_ref'))
-    .select(
-      sql<string | null>`json_extract(m.payload_json, '$.authorSnapshot.handle')`.as(
-        'author_handle',
-      ),
-    )
     .where('s.user_id', '=', userId)
 }
 
@@ -82,7 +76,6 @@ export async function lastMessagesByUser(
             from,
             text,
             at: new Date(row.created_at).getTime(),
-            ...(row.author_handle ? { authorSnapshot: { handle: row.author_handle } } : {}),
           },
         ] as const,
       ]

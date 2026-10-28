@@ -141,15 +141,11 @@ describe('a workflow in the background', () => {
     expect(ran).toEqual([])
   })
 
-  test('budget becomes the script’s budget.total', async () => {
+  test('there is no budget input: the script’s budget.total is null, as in Claude Code', async () => {
     const { fake } = port(() => 'x')
     fake.read = async () =>
       `export const meta = { name: 'audit', description: 'd' }\nreturn budget.total`
-    const result = await createWorkflowTool(fake).execute(
-      'c',
-      { name: 'acme:audit', budget: 500_000 },
-      signal,
-    )
-    expect(result.content).toContain('Result:\n500000')
+    const result = await createWorkflowTool(fake).execute('c', { name: 'acme:audit' }, signal)
+    expect(result.content).toContain('Result:\nnull')
   })
 })

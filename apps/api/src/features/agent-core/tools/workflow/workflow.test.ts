@@ -15,6 +15,8 @@ phase('Find')
 const found = await agent('list files', { label: 'lister' })
 return pipeline(args.files, (file) => agent('audit ' + file, { label: file }))`,
   '/p/broken.js': 'const meta = 1',
+  '/p/saved.js': `export const meta = { name: 'saved', description: 'Saved' }
+return args`,
 }
 
 function port(): { port: WorkflowToolPort; started: string[] } {
@@ -37,6 +39,58 @@ function port(): { port: WorkflowToolPort; started: string[] } {
 }
 
 const signal = new AbortController().signal
+
+describe('workflow tool input, as in Claude Code', () => {
+  test('an inline script runs under the name of its meta', async () => {
+    const result = await createWorkflowTool(port().port).execute(
+      'c',
+      {
+        script: `export const meta = { name: 'inline', description: 'Inline' }\nreturn args.n + 1`,
+        args: { n: 1 },
+      },
+      signal,
+    )
+    expect(result.isError).toBeUndefined()
+    expect(result.content).toContain('Workflow inline finished')
+    expect(result.content).toContain('Result:\n2')
+  })
+
+  test('scriptPath wins over script and name', async () => {
+    const result = await createWorkflowTool(port().port).execute(
+      'c',
+      { scriptPath: '/p/saved.js', script: 'ignored', name: 'acme:audit', args: [1] },
+      signal,
+    )
+    expect(result.content).toContain('Workflow saved finished')
+  })
+
+  test('one of script, name or scriptPath is required, and title and description are ignored', async () => {
+    const none = await createWorkflowTool(port().port).execute('c', {}, signal)
+    expect(none.isError).toBe(true)
+    expect(none.content).toContain('At least one of script, name or scriptPath')
+    const ignored = await createWorkflowTool(port().port).execute(
+      'c',
+      { scriptPath: '/p/saved.js', title: 'x', description: 'y' },
+      signal,
+    )
+    expect(ignored.content).toContain('Workflow saved finished')
+  })
+
+  test('has no budget input', () => {
+    const schema = createWorkflowTool(port().port).inputSchema as unknown as {
+      shape: Record<string, unknown>
+    }
+    expect(Object.keys(schema.shape)).toEqual([
+      'script',
+      'name',
+      'scriptPath',
+      'args',
+      'resumeFromRunId',
+      'title',
+      'description',
+    ])
+  })
+})
 
 describe('workflow tool', () => {
   test('runs the named workflow; its agents go through the port with the call id', async () => {

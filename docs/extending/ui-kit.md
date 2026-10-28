@@ -29,7 +29,7 @@ for a job, learn the shared size and tone vocabulary, and add to the kit without
 | Colour anything                       | A token utility (`text-text-soft`, `bg-surface-hover`, `--chart-N`)             | No palette class, no hex; see [Visual system][visual].                |
 | Add a primitive                       | Follow `packages/kit/AGENTS.md`: file, door, catalog entry, test                | A door without a catalog entry fails the kit's tests.                 |
 | Use a host feature in a mini app view | A lent module: `@localixai/kit/code-editor`, `markdown`, `diff`, `tool-card`    | Lent modules keep the host feature's behaviour and state.             |
-| Check a view like the build does      | `bun test scripts/ui-token-drift-guard.test.ts` in the repository               | User mini apps get the same rules from `mini_app_build`'s style step. |
+| Check a view like the build does      | `bun test scripts/ui-token-drift-guard.test.ts` in the repository               | User mini apps get the same rules from `mini-app check`'s style step. |
 
 ### Choose by job
 
@@ -149,9 +149,9 @@ label is the heading of the group under it.
 A list of exports and props does not say which module a job needs. The mini app authoring agent was
 once given the props of sixteen controls and nothing else, and it hand-rolled tabs, a checkbox and a
 progress bar the kit already had. The catalog states each module's job and what not to confuse it
-with. The mini app kit renders it into `KIT.md`, every `mini_app_build` writes that file into the
-mini app's folder the way it writes `tsconfig.json`, and the `/mini-app create` instruction tells
-the agent to choose there before writing a control.
+with. The mini app kit renders it into `KIT.md`, every `mini-app check` writes that file into the
+mini app's folder the way it writes `tsconfig.json`, and the `mini-app create` instruction tells the
+agent to choose there before writing a control.
 
 ## Configuration
 
@@ -177,7 +177,8 @@ the agent to choose there before writing a control.
 
 ## Related guides
 
-- [Build workbench UI](mini-app-ui.md) — the artifact, `/mini-app create` and `mini_app_build`.
+- [Build workbench UI](mini-app-ui.md) — the artifact, `/mini-app-authoring:create` and
+  `mini-app check`.
 - [Visual system][visual] — the paint contract and the checks behind it.
 
 ## Source of truth

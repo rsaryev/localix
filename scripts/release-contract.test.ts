@@ -43,6 +43,27 @@ describe('release workflow contract', () => {
     expect(workflow.jobs['publish-desktop']!.needs).toContain('mini-app-catalog')
   })
 
+  // The mini-app-authoring plugin builds against the latest release's kit when no Localix is
+  // installed, and refuses an archive `SHA256SUMS.txt` does not name: a release without either
+  // leaves Claude Code users unable to create a mini app at all.
+  test('publishes the mini app kit with the release, named in its checksums', () => {
+    const workflow = Bun.YAML.parse(release) as {
+      jobs: Record<string, { steps: { name?: string; run?: string }[] }>
+    }
+    const runs = workflow.jobs['mini-app-catalog']!.steps.map((step) => step.run ?? '').join('\n')
+    expect(runs).toContain('bun scripts/stage-mini-app-kit.mjs')
+    expect(runs).toMatch(/gh release upload [^\n]*mini-app-kit\.tar\.gz/u)
+    const checksums = workflow.jobs['publish-desktop']!.steps.find(
+      (step) => step.name === 'Write checksums and release notes',
+    )!.run!
+    const pattern = /test\("([^"]+)"\)/u.exec(checksums)![1]!.replaceAll('\\\\', '\\')
+    const named = (asset: string) => new RegExp(pattern, 'u').test(asset)
+    expect(named('mini-app-kit.tar.gz')).toBe(true)
+    expect(named('Localix-macos-arm64.dmg')).toBe(true)
+    expect(named('Localix.app.tar.gz')).toBe(true)
+    expect(named('notes-1.2.0-0a1b2c3d.tar.gz')).toBe(false)
+  })
+
   test('accepts release secrets only behind the protected release environment', () => {
     expect(release).not.toMatch(/^\s*push:/mu)
     expect(release).toContain('Require the protected main workflow')

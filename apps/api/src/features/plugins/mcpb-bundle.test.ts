@@ -7,7 +7,8 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { runSync, tempDirPerTest } from '@localixai/testing'
+import { tempDirPerTest } from '@localixai/testing'
+import { makeZip } from '../../testing/zip-fixture'
 
 import { loadManifest } from './manifest-load'
 import { buildMcpRecords } from './mcp'
@@ -44,13 +45,15 @@ const BUNDLE_MANIFEST = {
 
 /** A `.mcpb` zip holding the bundle manifest and its server, at `out`. */
 function makeBundle(out: string) {
-  const src = join(dir(), 'bundle-src')
-  mkdirSync(join(src, 'server'), { recursive: true })
-  writeFileSync(join(src, 'manifest.json'), JSON.stringify(BUNDLE_MANIFEST))
-  writeFileSync(join(src, 'server', 'index.js'), 'console.log("hi")')
+  // Built in-process: a `zip` binary is not on every machine that runs the tests.
   mkdirSync(dirname(out), { recursive: true })
-  const zipped = runSync('zip', ['-qr', out, '.'], { cwd: src })
-  expect(zipped.code).toBe(0)
+  writeFileSync(
+    out,
+    makeZip([
+      { name: 'manifest.json', data: JSON.stringify(BUNDLE_MANIFEST) },
+      { name: 'server/index.js', data: 'console.log("hi")' },
+    ]),
+  )
 }
 
 function plugin(mcpServers: unknown) {

@@ -36,7 +36,7 @@ function card() {
   return { ask, answer: (v: string) => answer(v), withdrawn: () => withdrawn }
 }
 
-const call = { toolName: 'bash', input: { command: 'npm run lint' } }
+const call = { toolName: 'Bash', input: { command: 'npm run lint' } }
 
 describe('PermissionRequest beside the approval card', () => {
   test('a hook that decides first withdraws the card and its decision applies', async () => {

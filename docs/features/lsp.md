@@ -4,8 +4,10 @@ Localix routes editor intelligence and agent refactors through an API-managed La
 Protocol (LSP) layer. Use it for diagnostics, semantic navigation, rename, code actions, and
 formatting without leaving the workspace.
 
-**Availability:** Each result depends on a matching server executable and the response it returns.
-Plain editing and text search continue without one.
+**Availability:** Each result depends on a matching server and the response it returns. Localix does
+not ship its language servers: the first time you open a file of a language it supports, it installs
+that language's server and starts it. Plain editing and text search work while it installs, and
+without one.
 
 ## What you can do
 
@@ -14,7 +16,7 @@ Plain editing and text search continue without one.
 | Diagnostics                                                    | Editor markers, Problems, and feedback appended after agent file edits | Agent feedback contains errors only; the editor receives every severity      |
 | Completion, hover, signature help, and inlay hints             | Editor                                                                 | An unsupported or failed request returns an empty or neutral result          |
 | Definitions, references, implementations, and type definitions | Editor                                                                 | The server must return a resolvable file URI                                 |
-| Document and workspace symbols                                 | Editor breadcrumbs, workspace symbol search, and `read` outline mode   | Workspace search queries servers already running for the project             |
+| Document and workspace symbols                                 | Editor breadcrumbs, workspace symbol search, and `Read` outline mode   | Workspace search queries servers already running for the project             |
 | Rename                                                         | Editor                                                                 | Files outside the requesting session's open buffers use separate disk writes |
 | Quick fixes and source actions                                 | Editor and the Problems panel                                          | Command-only actions are not executed                                        |
 | Document formatting                                            | Editor format and save flows                                           | The server must advertise document formatting                                |
@@ -72,15 +74,15 @@ imports, parameters, unreachable code). Diagnostics tagged deprecated are struck
 
 ### How the agent sees it
 
-The agent has no language-server tools. Their schemas cost more tokens on every request than `read`,
-`write`, `edit`, and `search` combined, and `search` + `read` already navigate. The language server
+The agent has no language-server tools. Their schemas cost more tokens on every request than `Read`,
+`Write`, `Edit`, and `Search` combined, and `Search` + `Read` already navigate. The language server
 reaches the agent by annotating the file tools' results:
 
 | Annotation          | Where                           | What it says                                                                           |
 | ------------------- | ------------------------------- | -------------------------------------------------------------------------------------- |
-| `<lsp_diagnostics>` | `write`, `edit` results         | Current reported errors; no report is not proof that a build or test passes            |
-| `<editor_buffer>`   | `read`, `write`, `edit` results | The file is open in the editor with unsaved edits the disk text lacks, shown as a diff |
-| Outline             | `read` with `mode:'outline'`    | The file's document symbols                                                            |
+| `<lsp_diagnostics>` | `Write`, `Edit` results         | Current reported errors; no report is not proof that a build or test passes            |
+| `<editor_buffer>`   | `Read`, `Write`, `Edit` results | The file is open in the editor with unsaved edits the disk text lacks, shown as a diff |
+| Outline             | `Read` with `mode:'outline'`    | The file's document symbols                                                            |
 
 The diagnostics block is a current snapshot, not a comparison with the file before the edit.
 Pre-existing errors can appear. Identical message/code pairs are grouped, with at most 15 distinct
@@ -115,27 +117,57 @@ does not install or select a language server.
 
 ### Built-in server definitions
 
-“Built-in” means Localix knows how to find a root and launch the server. Some executables are API
-dependencies; others must exist in the project or on `PATH`.
+“Built-in” means Localix knows how to find a root and launch the server. Where nothing local
+provides the executable, Localix installs it the first time a matching file opens, at the version
+that Localix release names.
 
-| Definition | Matching files                                                      | Executable source                                |
-| ---------- | ------------------------------------------------------------------- | ------------------------------------------------ |
-| Deno       | TypeScript and JavaScript inside a `deno.json` or `deno.jsonc` root | `deno` on `PATH`                                 |
-| TypeScript | TypeScript and JavaScript outside a Deno root                       | Bundled `vtsls`; project TypeScript is preferred |
-| Vue        | `.vue`                                                              | Project `vue-language-server`                    |
-| Python     | `.py`                                                               | `pylsp`, then `pyright-langserver`, on `PATH`    |
-| Go         | `.go`                                                               | `gopls` on `PATH`                                |
-| Rust       | `.rs`                                                               | `rust-analyzer` on `PATH`                        |
-| HTML       | `.html`, `.htm`                                                     | Project or `PATH` `html-languageserver`          |
-| JSON       | `.json`, `.jsonc`                                                   | Bundled `vscode-json-language-server`            |
-| CSS        | `.css`, `.scss`, `.less`                                            | Bundled `vscode-css-language-server`             |
-| Dockerfile | Dockerfile names and `.dockerfile`                                  | Bundled `docker-langserver`                      |
-| YAML       | `.yaml`, `.yml`                                                     | Bundled `yaml-language-server`                   |
+| Definition | Matching files                                                      | Executable source                                                      |
+| ---------- | ------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Deno       | TypeScript and JavaScript inside a `deno.json` or `deno.jsonc` root | `deno` on `PATH`                                                       |
+| TypeScript | TypeScript and JavaScript outside a Deno root                       | Installed `vtsls`; project TypeScript is preferred                     |
+| Vue        | `.vue`                                                              | Project `vue-language-server`                                          |
+| Python     | `.py`                                                               | `pylsp`, then `pyright-langserver`, on `PATH`; else installed Pyright  |
+| Go         | `.go`                                                               | `gopls` on `PATH`; else `gopls` built with your Go toolchain           |
+| Rust       | `.rs`                                                               | `rust-analyzer` on `PATH`; else the installed release                  |
+| HTML       | `.html`, `.htm`                                                     | Installed `vscode-html-language-server` (vscode-langservers-extracted) |
+| JSON       | `.json`, `.jsonc`                                                   | Installed `vscode-json-language-server` (same package)                 |
+| CSS        | `.css`, `.scss`, `.less`                                            | Installed `vscode-css-language-server` (same package)                  |
+| Dockerfile | Dockerfile names and `.dockerfile`                                  | Installed `docker-langserver`                                          |
+| YAML       | `.yaml`, `.yml`                                                     | Installed `yaml-language-server`                                       |
+
+### Installing on first use
+
+Opening a file whose server is not available starts its install in the background:
+
+- **Status bar.** The bottom bar shows `Installing <language>` with a spinner, and a percentage for
+  downloads that report one, beside the **LSP** segment. When the server is ready, the segment goes
+  away. Hover, completion and the other editor features answer with nothing until then; the buffers
+  you opened or edited meanwhile are sent to the server as soon as it starts.
+- **Where.** Installs live in `~/.localix/language-servers/<server>/<version>`. Each is installed
+  once per version, and files that share a server share one install: JSON, CSS and HTML come from
+  one package. When a Localix update moves a server to a newer version, the newer one installs the
+  next time it is needed. The older folder is removed only once nothing can be running from it:
+  never while a server in this Localix started from it, and not until no Localix sharing
+  `~/.localix` (a dev build beside a packaged one) has launched it for 30 days.
+- **Checked.** Every server is installed at an exact version. npm servers install with the Bun that
+  runs Localix, so no Node or npm is needed. Each ships with a lockfile that pins its whole
+  dependency tree, transitive packages included, with the registry's integrity hash of every
+  package; the install is frozen to it and fails rather than float to newer versions. No install
+  scripts run, and no package published in the last seven days is taken. The Rust release is checked
+  against its size and SHA-256 before it is unpacked. Go builds `gopls` itself, checked by the Go
+  checksum database.
+- **When it cannot.** The segment turns into a warning that says why: `<language> offline` when the
+  download could not connect, `Go needs Go` when the toolchain that builds the server is missing,
+  and `<language> not installed` for any other failure; hover it for the details. Editing a file of
+  that language tries again after 30 seconds offline, a minute for a missing toolchain, and five
+  minutes after another failure.
 
 ## Configuration
 
-There is no general LSP settings page or per-language enable switch. Install the executable named
-above, or enable a plugin that contributes an `lspServers` map.
+There is no general LSP settings page or per-language enable switch. Built-in servers install
+themselves on first use; an executable of your own on `PATH` (or, for Vue, in the project) is used
+instead where the table above says so. For other languages, enable a plugin that contributes an
+`lspServers` map.
 
 ```json
 {
@@ -153,7 +185,7 @@ above, or enable a plugin that contributes an `lspServers` map.
 
 | Plugin field            | Runtime effect                                                                        |
 | ----------------------- | ------------------------------------------------------------------------------------- |
-| `command`               | Resolves the executable on `PATH`                                                     |
+| `command`               | Resolves the executable on `PATH`, else installs a known server on first use          |
 | `args`                  | Adds command arguments                                                                |
 | `extensionToLanguage`   | Selects the server by extension and opens each file with the mapped `languageId`      |
 | `initializationOptions` | Sends the object in the server initialize request                                     |
@@ -165,7 +197,7 @@ above, or enable a plugin that contributes an `lspServers` map.
 | `shutdownTimeout`       | How long a graceful shutdown may take before the process is ended                     |
 | `restartOnCrash`        | `false` leaves a server that exited on its own stopped                                |
 | `maxRestarts`           | How many times a server that exited on its own starts again                           |
-| `diagnostics`           | `false` keeps the server's diagnostics out of `edit` and `write` results              |
+| `diagnostics`           | `false` keeps the server's diagnostics out of `Edit` and `Write` results              |
 | `transport`             | `stdio` or `socket`; both run over stdio, as in Claude Code                           |
 
 The server process also receives `CLAUDE_PLUGIN_ROOT`, `CLAUDE_PLUGIN_DATA` and
@@ -177,18 +209,42 @@ Store (Plugins) and `/plugin details`) and in the agent's `# Plugins` prompt sec
 
 - Extensions a built-in server already handles. The built-in server is kept for those files, and the
   plugin server registers only the remaining extensions.
-- A `command` that is not on `PATH`, with an install hint for common servers, for example
-  `typescript-language-server not found on PATH — npm i -g typescript-language-server typescript`.
+- A `command` that is not on `PATH`. When Localix knows the command, the note says it installs on
+  first use instead (see below). Otherwise it names what the server needs, for example
+  `csharp-ls not found on PATH — needs the .NET SDK (dotnet tool install -g csharp-ls)`.
 
-There is no LSP tool. The agent receives diagnostics inside `edit` and `write` results, and the
+### Plugin servers without Node or npm
+
+Claude Code's LSP plugins name a server and assume it is installed, often with `npm i -g`. Localix
+assumes neither Node nor npm. A plugin server whose `command` is not on `PATH` is installed the
+first time a matching file opens, with the same installer and status-bar states as the built-in
+servers, when the command is one of these:
+
+| `command`                                                                                                                                        | Installed                                              |
+| ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
+| `typescript-language-server`                                                                                                                     | typescript-language-server 6.0.2 with TypeScript 5.9.3 |
+| `pyright-langserver`                                                                                                                             | Pyright 1.1.414                                        |
+| `intelephense`                                                                                                                                   | Intelephense 1.18.5                                    |
+| `vtsls`, `vscode-json-language-server`, `vscode-css-language-server`, `vscode-html-language-server`, `yaml-language-server`, `docker-langserver` | The package the built-in server of that name uses      |
+| `rust-analyzer`                                                                                                                                  | The pinned rust-analyzer release                       |
+| `gopls`                                                                                                                                          | gopls v0.24.0, built with your Go toolchain            |
+
+The plugin's `args`, `env`, `initializationOptions` and other fields apply as written. A server that
+is an npm package always runs with Localix's own Bun, also when it is found on `PATH`, so its
+`#!/usr/bin/env node` line never needs a Node install. A `command` given as a path is the plugin's
+own and is never replaced. Other servers name the toolchain they need: clangd (LLVM), jdtls (Java),
+kotlin-language-server (a JDK), lua-language-server, sourcekit-lsp (Xcode or the Swift toolchain),
+csharp-ls (the .NET SDK) and ruby-lsp (Ruby).
+
+There is no LSP tool. The agent receives diagnostics inside `Edit` and `Write` results, and the
 prompt line for a plugin server says so.
 
-Executable lookup uses the API host's login-shell environment. Servers Localix bundles (TypeScript,
-JSON, CSS, YAML, Dockerfile) run from the API installation first and use the project's
-`node_modules/.bin` only when the installation lacks them. Other npm-based servers look in the
-project's `node_modules/.bin` first, then the API installation and `PATH`. Project lookup never goes
-above the project root. A missing `PATH` executable is cached for 60 seconds, so installing it may
-require another attempt after that interval. A found `PATH` location is cached until the API
+Executable lookup uses the API host's login-shell environment. The npm servers Localix installs
+(TypeScript, JSON, CSS, HTML, YAML, Dockerfile) run from their install first and use the project's
+`node_modules/.bin` only while that install is missing; they are never taken from `PATH`. Other
+npm-based servers look in the project's `node_modules/.bin` first, then `PATH`. Project lookup never
+goes above the project root. A missing `PATH` executable is cached for 60 seconds, so installing it
+may require another attempt after that interval. A found `PATH` location is cached until the API
 restarts; restart after moving an executable or changing the launch environment.
 
 ## Changes made outside Localix
@@ -213,7 +269,10 @@ buffer is what the server checks, and the editor reloads it from disk itself.
   for file tools does not start an LSP server there. Remote editing can work while language services
   remain unavailable; the server needs a usable local root and dependencies on the API host.
 - Built-in definitions win over plugin definitions. A plugin server never registers an extension a
-  built-in definition handles, even when the built-in executable is missing.
+  built-in definition handles, even when the built-in executable is missing or still installing.
+- The first file of a language needs a network connection (and Go, for Go files without `gopls`).
+  Vue and Deno are not installed: they need `vue-language-server` in the project and `deno` on
+  `PATH`.
 - Rename and code actions apply text edits only. Workspace file-create, file-rename, and file-delete
   operations are skipped. Attached commands are not executed, even when an action also has edits.
 - Disk writes for a multi-file rename or code action are independent. A write failure does not undo

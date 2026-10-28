@@ -33,7 +33,7 @@ import type { McpElicitationHookCarrier } from '../agent-core/tools/hitl/mcp-eli
  */
 function withHookAnswers(toolName: string, input: unknown, updated: unknown): unknown {
   const answers = (updated as { answers?: unknown } | null)?.answers
-  if (toolName !== 'ask' || !answers || typeof answers !== 'object') return input
+  if (toolName !== 'AskUserQuestion' || !answers || typeof answers !== 'object') return input
   return { ...(input as Record<string, unknown>), answers }
 }
 

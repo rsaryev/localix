@@ -81,9 +81,11 @@ export function PenLayer({
   const preview = recipe && element ? { ...recipe, size: { w: element.w, h: element.h } } : null
   return (
     <>
+      {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- `role="application"` is the interactive widget role the rule does not know: the pen surface owns its pointer and keys */}
       <div
         ref={root}
         className="absolute inset-0 z-(--z-raised) cursor-crosshair touch-none outline-none"
+        // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- the surface is one focus stop, taken when the pen is chosen
         tabIndex={0}
         role="application"
         aria-label={

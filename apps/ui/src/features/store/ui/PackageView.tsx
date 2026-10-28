@@ -8,7 +8,7 @@ import { MediaCarousel } from '@localixai/kit/media-carousel'
 import { ImageLightbox, useLightboxPaging } from '@/shared/ui/image-lightbox'
 import { MarkdownRenderer } from '@/shared/ui/MarkdownRenderer'
 import { storeMediaSrc } from '@/shared/ui/MiniAppIcon'
-import { tilesPerView, useStoreFrame } from '../model/layout'
+import { tileColumns, useStoreFrame } from '../model/layout'
 import { useStoreScope } from '../model/storeContext'
 import { keyOf } from '../model/useExtrasAfterInstall'
 import { useListingDetail } from '../model/useStoreData'
@@ -17,7 +17,7 @@ import { PackageFacts, packageFacts } from './PackageFacts'
 import { PackageHeader } from './PackageHeader'
 import { PackageNotice } from './PackageNotice'
 import { PackageSections } from './PackageSections'
-import { StoreReadFailure } from './StoreReadFailure'
+import { StoreGone, StoreReadFailure, isGone } from './StoreReadFailure'
 import { StoreBackButton } from './StoreBackButton'
 
 /** The package's pictures, each opening full-window, paged the same way. */
@@ -47,12 +47,14 @@ function Related({
   refs?: ListingRef[]
   linked: Listing[]
 }) {
-  const { layout, width } = useStoreFrame()
+  const { width } = useStoreFrame()
   const byKey = useMemo(() => new Map(linked.map((l) => [keyOf(l.ref), l])), [linked])
   const listings = (refs ?? []).flatMap((ref) => byKey.get(keyOf(ref)) ?? [])
   if (listings.length === 0) return null
+  const columns = tileColumns(width)
+  // No "See all" here: the row wraps to show every tile.
   return (
-    <ShelfRow title={title} perView={tilesPerView(layout, width)}>
+    <ShelfRow title={title} columns={columns} rows={Math.ceil(listings.length / columns)}>
       {listings.map((listing) => (
         <ListingTileCard key={keyOf(listing.ref)} listing={listing} />
       ))}
@@ -129,6 +131,14 @@ export function PackageView({
   const heading = useRef<HTMLHeadingElement>(null)
   // The page replaces the list: focus its heading, so a screen reader starts here.
   useEffect(() => heading.current?.focus(), [reference.kind, reference.id])
+  // The owner says it no longer exists (removed here or elsewhere): the last copy is not shown.
+  if (isGone(error))
+    return (
+      <div className="flex flex-col gap-3">
+        <StoreBackButton label={backLabel} onBack={onBack} />
+        <StoreGone name={listing?.displayName ?? reference.id} />
+      </div>
+    )
   if (!listing && error)
     return (
       <div className="flex flex-col gap-3">

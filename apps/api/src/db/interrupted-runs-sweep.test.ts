@@ -1,3 +1,4 @@
+import { tmpdir } from 'node:os'
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm } from 'node:fs/promises'
@@ -20,7 +21,7 @@ import { markInterruptedRunAnnounced, migrateToLatest, takeInterruptedRuns } fro
  */
 describe('the boot sweep reports the sessions whose runs were interrupted', () => {
   let db: ReturnType<typeof createDatabase>
-  const dir = join(process.cwd(), 'tmp', 'interrupted-sweep-tests')
+  const dir = join(tmpdir(), `localix-interrupted-sweep-tests-${process.pid}`)
 
   const seedSession = async (id: string, kind: 'chat' | 'job' | 'subagent') => {
     await db
@@ -30,7 +31,7 @@ describe('the boot sweep reports the sessions whose runs were interrupted', () =
         id,
         user_id: 'u1',
         title: id,
-        // The route lives in `conversation_participants`; this row does not need one to exist.
+        // The route columns are optional: this row does not need an agent to exist.
         session_kind: kind,
         // Exactly what production does: a chat session is created idle and STAYS idle.
         runtime_status: kind === 'chat' ? 'idle' : 'running',

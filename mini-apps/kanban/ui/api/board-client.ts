@@ -29,7 +29,7 @@ import { ROUTE_PATH } from '../../shared/resource'
 /** An agent a card may be assigned to, as the host's agent directory lists it. */
 export interface BoardAgent {
   id: string
-  handle: string
+  name: string
   description?: string
 }
 

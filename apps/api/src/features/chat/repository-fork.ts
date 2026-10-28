@@ -3,9 +3,8 @@ import type { Kysely } from 'kysely'
 import type { AppDatabase } from '../../db'
 import { forkSeedSchema, type ForkSeed } from '../agent-core/fork-seed'
 
-/** A fork's seed has one row per fork: the lane table's shape, under its own boundary. */
+/** A fork's seed has one row per fork: the snapshot table's shape, under its own boundary. */
 const SEED_BOUNDARY = 'fork-seed'
-const SEED_AGENT = 'fork'
 
 /**
  * What a fork needs from the store beyond its own rows: where its parent's line was cut, and the
@@ -32,11 +31,10 @@ export function createForkQueries(db: Kysely<AppDatabase>) {
 
     async getForkSeed(userId: string, sessionId: string): Promise<ForkSeed | undefined> {
       const row = await db
-        .selectFrom('participant_lane_snapshots')
+        .selectFrom('session_prompt_snapshots')
         .select('snapshot_json')
         .where('user_id', '=', userId)
         .where('session_id', '=', sessionId)
-        .where('agent_id', '=', SEED_AGENT)
         .where('boundary_marker', '=', SEED_BOUNDARY)
         .executeTakeFirst()
       // A seed this build cannot read fails the run: another prompt would be another prefix.
@@ -46,17 +44,16 @@ export function createForkQueries(db: Kysely<AppDatabase>) {
     async setForkSeed(userId: string, sessionId: string, seed: ForkSeed): Promise<void> {
       const snapshotJson = JSON.stringify(forkSeedSchema.parse(seed))
       await db
-        .insertInto('participant_lane_snapshots')
+        .insertInto('session_prompt_snapshots')
         .values({
           user_id: userId,
           session_id: sessionId,
-          agent_id: SEED_AGENT,
           boundary_marker: SEED_BOUNDARY,
           snapshot_json: snapshotJson,
         })
         .onConflict((oc) =>
           oc
-            .columns(['user_id', 'session_id', 'agent_id', 'boundary_marker'])
+            .columns(['user_id', 'session_id', 'boundary_marker'])
             .doUpdateSet({ snapshot_json: snapshotJson }),
         )
         .execute()

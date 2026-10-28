@@ -114,6 +114,7 @@ export function ConnectionsTree({ s }: { s: ExplorerState }) {
             onValueChange={setFilter}
             placeholder="Filter connections…"
             aria-label="Search saved connections"
+            // oxlint-disable-next-line jsx-a11y/no-autofocus -- SearchInput's own prop: it focuses the field by hand on mount, no DOM autofocus attribute is set
             autoFocus
             size="md"
             inset

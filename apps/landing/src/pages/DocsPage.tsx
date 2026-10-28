@@ -23,6 +23,8 @@ export function DocsPage({ initialDoc }: { initialDoc?: DocBootstrap }) {
   const seed = initialDoc?.slug === slug ? initialDoc : undefined
   const [loaded, setLoaded] = useState<{ slug: string; content: string } | undefined>(seed)
   const [failed, setFailed] = useState<string>()
+  // A failure belongs to the page that failed: moving to another one clears it.
+  if (failed !== undefined && failed !== slug) setFailed(undefined)
   const [retry, setRetry] = useState(0)
   const [outline, setOutline] = useState<{ slug: string; headings: DocHeading[] } | undefined>(seed)
   const articleRef = useRef<HTMLElement>(null)
@@ -34,7 +36,6 @@ export function DocsPage({ initialDoc }: { initialDoc?: DocBootstrap }) {
   useEffect(() => {
     if (!active || loaded?.slug === active.slug) return
     let current = true
-    setFailed(undefined)
     void loadDocContent(active.slug).then(
       (content) => {
         if (current) setLoaded({ slug: active.slug, content })
@@ -106,7 +107,14 @@ export function DocsPage({ initialDoc }: { initialDoc?: DocBootstrap }) {
       {failed === slug ? (
         <div className="py-12" role="alert">
           <p>Could not load this page.</p>
-          <Button variant="ghost" className="mt-3" onClick={() => setRetry((value) => value + 1)}>
+          <Button
+            variant="ghost"
+            className="mt-3"
+            onClick={() => {
+              setFailed(undefined)
+              setRetry((value) => value + 1)
+            }}
+          >
             Try again
           </Button>
         </div>

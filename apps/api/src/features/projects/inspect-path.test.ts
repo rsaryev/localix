@@ -1,3 +1,4 @@
+import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -12,7 +13,7 @@ import { inspectPath } from './inspect-path'
 import { createProjectsRoutes } from './routes'
 import { createProjectsService } from './service'
 
-const tempDir = join(process.cwd(), 'tmp', 'inspect-path-tests')
+const tempDir = join(tmpdir(), `localix-inspect-path-tests-${process.pid}`)
 const USER = 'user_inspect_route'
 
 afterAll(() => rm(tempDir, { recursive: true, force: true }))

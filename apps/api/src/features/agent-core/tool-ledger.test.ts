@@ -37,14 +37,14 @@ const child = (tools: string[] | null, over: Partial<RunFacts> = {}): RunFacts =
 
 describe('the ledger — one verdict, one reason, in layer order', () => {
   test('a live tool is live', () => {
-    expect(verdictFor(chat(), { name: TOOL.read, tool: tool(TOOL.read) })).toEqual({
+    expect(verdictFor(chat(), { name: TOOL.Read, tool: tool(TOOL.Read) })).toEqual({
       state: 'live',
     })
   })
 
   test('shape: a `never` tool is withheld for a child even when its role declared it', () => {
-    const facts = child(['read', TOOL.ask, TOOL.configure])
-    for (const name of [TOOL.ask, TOOL.configure]) {
+    const facts = child(['read', TOOL.AskUserQuestion, TOOL.Configure])
+    for (const name of [TOOL.AskUserQuestion, TOOL.Configure]) {
       expect(verdictFor(facts, { name, tool: tool(name) })).toEqual({
         state: 'withheld',
         reason: { layer: 'shape', kind: 'never', shape: 'subagent' },
@@ -74,13 +74,13 @@ describe('the ledger — one verdict, one reason, in layer order', () => {
   })
 
   test('authority: an empty port is a row with the capability the host named', () => {
-    expect(verdictFor(chat(), { name: TOOL.jobs, missingCapability: 'jobs.available' })).toEqual({
+    expect(verdictFor(chat(), { name: TOOL.Jobs, missingCapability: 'jobs.available' })).toEqual({
       state: 'withheld',
       reason: { layer: 'authority', kind: 'missing', capability: 'jobs.available' },
     })
-    expect(verdictFor(chat(), { name: TOOL.jobs })).toEqual({
+    expect(verdictFor(chat(), { name: TOOL.Jobs })).toEqual({
       state: 'withheld',
-      reason: { layer: 'authority', kind: 'missing', capability: `host:${TOOL.jobs}` },
+      reason: { layer: 'authority', kind: 'missing', capability: `host:${TOOL.Jobs}` },
     })
   })
 
@@ -99,75 +99,68 @@ describe('the ledger — one verdict, one reason, in layer order', () => {
   test('policy: a rule-withheld tool carries its denial and the one remedy that lifts it', () => {
     // No scope on either side: a rule belongs to the agent taking the turn, so "where do I
     // change this" has one answer and the remedy does not have to carry it.
-    const denial = { rule: { action: 'tool:loops', resource: '*', effect: 'deny' } }
+    const denial = { rule: { action: 'tool:Loops', resource: '*', effect: 'deny' } }
     const facts = chat({
-      disabledTools: new Set([TOOL.loops]),
-      toolDenials: new Map([[TOOL.loops, denial]]),
+      disabledTools: new Set([TOOL.Loops]),
+      toolDenials: new Map([[TOOL.Loops, denial]]),
     })
-    expect(verdictFor(facts, { name: TOOL.loops, tool: tool(TOOL.loops) })).toEqual({
+    expect(verdictFor(facts, { name: TOOL.Loops, tool: tool(TOOL.Loops) })).toEqual({
       state: 'withheld',
       reason: { layer: 'policy', kind: 'rule', denial },
-      remedy: { remedyId: 'tool.enable', target: TOOL.loops },
+      remedy: { remedyId: 'tool.enable', target: TOOL.Loops },
     })
     // Without a resolved denial the reason is still policy.
     expect(
-      verdictFor(chat({ disabledTools: new Set([TOOL.loops]) }), {
-        name: TOOL.loops,
-        tool: tool(TOOL.loops),
+      verdictFor(chat({ disabledTools: new Set([TOOL.Loops]) }), {
+        name: TOOL.Loops,
+        tool: tool(TOOL.Loops),
       }),
     ).toEqual({
       state: 'withheld',
       reason: { layer: 'policy', kind: 'rule', denial: null },
-      remedy: { remedyId: 'tool.enable', target: TOOL.loops },
+      remedy: { remedyId: 'tool.enable', target: TOOL.Loops },
     })
-  })
-
-  test('the topic boundary remains live in chats even when a stale agent rule denies it', () => {
-    const facts = chat({ disabledTools: new Set([TOOL.set_topic]) })
-    expect(
-      verdictFor(facts, {
-        name: TOOL.set_topic,
-        tool: tool(TOOL.set_topic),
-      }),
-    ).toEqual({ state: 'live' })
   })
 
   test('monotone: an upper layer decides before a lower one can offer a remedy', () => {
     // Disabled by rule AND structurally impossible → the shape reason, no remedy.
-    const facts = child(['read'], { disabledTools: new Set([TOOL.ask]) })
-    const verdict = verdictFor(facts, { name: TOOL.ask, tool: tool(TOOL.ask) })
+    const facts = child(['read'], { disabledTools: new Set([TOOL.AskUserQuestion]) })
+    const verdict = verdictFor(facts, {
+      name: TOOL.AskUserQuestion,
+      tool: tool(TOOL.AskUserQuestion),
+    })
     expect(verdict.state).toBe('withheld')
     expect(verdict.state === 'withheld' && verdict.reason.layer).toBe('shape')
     expect(verdict.state === 'withheld' && verdict.remedy).toBeUndefined()
     // Disabled by rule AND the host has no port → authority first, again no remedy.
-    const gap = verdictFor(chat({ disabledTools: new Set([TOOL.jobs]) }), { name: TOOL.jobs })
+    const gap = verdictFor(chat({ disabledTools: new Set([TOOL.Jobs]) }), { name: TOOL.Jobs })
     expect(gap.state === 'withheld' && gap.reason.layer).toBe('authority')
   })
 
   test('remediable withholds are exactly the policy rows; the rest stay private to the host', () => {
-    const facts = chat({ disabledTools: new Set([TOOL.loops]) })
+    const facts = chat({ disabledTools: new Set([TOOL.Loops]) })
     const ledger = resolveToolSurface(facts, [
-      { name: TOOL.loops, tool: tool(TOOL.loops) },
-      { name: TOOL.jobs },
-      { name: TOOL.read, tool: tool(TOOL.read) },
+      { name: TOOL.Loops, tool: tool(TOOL.Loops) },
+      { name: TOOL.Jobs },
+      { name: TOOL.Read, tool: tool(TOOL.Read) },
     ])
-    expect(remediableWithholds(ledger).map((row) => row.name)).toEqual([TOOL.loops])
+    expect(remediableWithholds(ledger).map((row) => row.name)).toEqual([TOOL.Loops])
   })
 
   test('economy: only a live verdict can become deferred', () => {
-    const ledger = resolveToolSurface(chat({ disabledTools: new Set([TOOL.loops]) }), [
-      { name: TOOL.loops, tool: tool(TOOL.loops) },
-      { name: TOOL.skill, tool: tool(TOOL.skill) },
+    const ledger = resolveToolSurface(chat({ disabledTools: new Set([TOOL.Loops]) }), [
+      { name: TOOL.Loops, tool: tool(TOOL.Loops) },
+      { name: TOOL.Skill, tool: tool(TOOL.Skill) },
     ])
     const deferred = markDeferred(
       ledger,
       new Map([
-        [TOOL.skill, 'core'],
-        [TOOL.loops, 'core'],
+        [TOOL.Skill, 'core'],
+        [TOOL.Loops, 'core'],
       ]),
     )
-    expect(deferred.get(TOOL.skill)).toEqual({ state: 'deferred', source: 'core' })
-    expect(deferred.get(TOOL.loops)?.state).toBe('withheld')
+    expect(deferred.get(TOOL.Skill)).toEqual({ state: 'deferred', source: 'core' })
+    expect(deferred.get(TOOL.Loops)?.state).toBe('withheld')
   })
 
   test('one sentence per reason, in words the model can act on', () => {
@@ -237,9 +230,9 @@ describe('a plugin agent type’s lists', () => {
     expect(verdictFor(facts, { name: 'lookup', tool: plugin })).toEqual({ state: 'live' })
     expect(verdictFor(facts, { name: 'canvas', tool: chatOnly })).toMatchObject(notDeclared)
     // Built-ins stay the subagent shape's: a chat-only default is not inherited.
-    expect(verdictFor(facts, { name: TOOL.memory, tool: tool(TOOL.memory) })).toMatchObject(
-      notDeclared,
-    )
+    expect(
+      verdictFor(facts, { name: TOOL.GlobalSearch, tool: tool(TOOL.GlobalSearch) }),
+    ).toMatchObject(notDeclared)
     // A child that did not inherit takes none of them.
     expect(verdictFor(child(null), { name: echo.name, tool: echo })).toMatchObject(notDeclared)
   })

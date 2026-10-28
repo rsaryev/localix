@@ -35,7 +35,7 @@ mini app data directory.
 | Markdown              | Verbatim UTF-8 text                   | It remains on the text path.                       |
 
 Successful extractions update the mini app's bounded recents index. The resource provider expands
-the same cached result that core `read` receives through `document.extract`, so model and UI views
+the same cached result that core `Read` receives through `document.extract`, so model and UI views
 do not derive separate content.
 
 ## Generation and viewers

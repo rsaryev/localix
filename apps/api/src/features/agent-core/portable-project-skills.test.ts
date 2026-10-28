@@ -63,9 +63,9 @@ describe('portable project skills', () => {
 
   test('a default child can retrieve a procedure with its reference directory', async () => {
     const path = await writeSkill(root, '.agents', 'Inspect the rendered result.')
-    expect(isToolDirect(resolveRunProfile({ sessionKind: 'subagent' }), TOOL.skill)).toBe(true)
+    expect(isToolDirect(resolveRunProfile({ sessionKind: 'subagent' }), TOOL.Skill)).toBe(true)
     expect(
-      isToolDirect(resolveRunProfile({ sessionKind: 'subagent' }, { tools: [] }), TOOL.skill),
+      isToolDirect(resolveRunProfile({ sessionKind: 'subagent' }, { tools: [] }), TOOL.Skill),
     ).toBe(false)
     const result = await createSkillTool(root).execute('get-procedure', {
       action: 'get',

@@ -5,11 +5,8 @@ import { ModelPickerShell } from './model-select/ModelPickerShell'
 import type { useConnections } from './useConnections'
 import { useMemo } from 'react'
 import { useAgents } from '@/shared/contrib/useAgents'
-import type { ParticipantRow } from './model-select/ModelTaskColumn'
-import { participantRows } from './model-select/participantRows'
-import { useJoinRoutes } from './model-select/useJoinRoutes'
-import type { SessionAgentRoute, SessionModelChoicesView } from '@/shared/api/contracts'
-import type { ApplyPartyRoute } from '../../model/sessionPartyRoute'
+import { conversationAgentRow } from './model-select/agentRow'
+import type { SessionAgentRoute } from '@/shared/api/contracts'
 
 interface ModelPickerDrawerProps {
   open: boolean
@@ -25,23 +22,12 @@ interface ModelPickerDrawerProps {
     reasoningEffort?: ReasoningEffort,
     agentId?: string,
   ) => void | Promise<void>
-  /** The conversation's party, routes resolved by the server, in join order. */
-  participants?: readonly SessionAgentRoute[]
-  /**
-   * The session's model choices. With them the Agents column also lists every agent that could
-   * join, on the choice it would join on; absent (no conversation yet), only the party.
-   */
-  modelChoices?: SessionModelChoicesView
-  /** The conversation the choices belong to: an agent not invited yet shows what it would join on. */
-  sessionId?: string
-  /** Scope for resolving participant display names ('' = global). */
-  participantScope?: string
+  /** The conversation's agent, its route resolved by the server. */
+  agent?: SessionAgentRoute | null
+  /** Scope for resolving the agent's display name ('' = global). */
+  agentScope?: string
   reasoningEffort: ReasoningEffort
   onReasoningEffortChange: (effort: ReasoningEffort, agentId?: string) => void
-  initialAgentId?: string | null
-  onAgentTargetChange?: (agentId: string) => void
-  /** "All": one model and level for every listed agent and agents invited later. */
-  onApplyPartyRoute?: ApplyPartyRoute
 }
 
 /**
@@ -60,27 +46,19 @@ export function ModelPickerDrawer({
   onPickSessionModel,
   reasoningEffort,
   onReasoningEffortChange,
-  participants,
-  modelChoices,
-  sessionId,
-  participantScope = '',
-  initialAgentId,
-  onAgentTargetChange,
-  onApplyPartyRoute,
+  agent,
+  agentScope = '',
 }: ModelPickerDrawerProps) {
-  // Registry names live behind the lazy drawer on purpose: the composer shows a party without
-  // them, and a chat that never opens the picker should not pay for a roster fetch.
-  const { agents } = useAgents(participantScope)
-  const joinRoutes = useJoinRoutes(sessionId, open)
-  const byId = useMemo(() => new Map(agents.map((agent) => [agent.record.id, agent])), [agents])
-  const named = useMemo<ParticipantRow[]>(
+  // Registry names live behind the lazy drawer on purpose: a chat that never opens the picker
+  // should not pay for a roster fetch.
+  const { agents } = useAgents(agentScope)
+  const row = useMemo(
     () =>
-      participantRows(
-        participants,
-        (agentId) => byId.get(agentId)?.record,
-        modelChoices ? { agents, choices: modelChoices, joinRoutes } : undefined,
+      conversationAgentRow(
+        agent,
+        agents.find((candidate) => candidate.record.id === agent?.agentId)?.record,
       ),
-    [agents, byId, joinRoutes, modelChoices, participants],
+    [agent, agents],
   )
 
   return (
@@ -93,11 +71,10 @@ export function ModelPickerDrawer({
       connectionsState={connectionsState}
       sessionModelId={sessionModelId}
       sessionConnectionId={sessionConnectionId}
-      participants={named}
-      // Picking does NOT close the picker. Choosing a model is rarely one decision: a room has
-      // a row per participant and the background workloads sit in the same column, so closing
-      // on each pick made configuring four members four open-navigate-pick-close rounds. The
-      // choice takes effect immediately either way; closing is the reader's own gesture.
+      agent={row}
+      // Picking does NOT close the picker. Choosing a model is rarely one decision: the agent and
+      // the background workloads sit in the same column. The choice takes effect immediately
+      // either way; closing is the reader's own gesture.
       onPickSessionModel={onPickSessionModel}
       reasoningEffort={reasoningEffort}
       onReasoningEffortChange={onReasoningEffortChange}
@@ -105,9 +82,6 @@ export function ModelPickerDrawer({
       initialProviderId={seed?.providerId}
       initialConnectionId={seed?.connectionId}
       initialWorkload={seed?.workload}
-      initialAgentId={initialAgentId}
-      onAgentTargetChange={onAgentTargetChange}
-      onApplyPartyRoute={onApplyPartyRoute}
     />
   )
 }

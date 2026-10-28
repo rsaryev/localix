@@ -7,11 +7,11 @@ const req = (id: string) => ({ id, kind: 'confirm', title: 'Proceed?', payload: 
 describe('createHitlRegistry', () => {
   test('tracks and clears request metadata', () => {
     const r = createHitlRegistry()
-    r.trackRequest('root', 'm1', 'tc1', 'bash', req('q1'), 'alice', 'child')
+    r.trackRequest('root', 'm1', 'tc1', 'Bash', req('q1'), 'alice', 'child')
     expect(r.getRequestMeta('q1')).toMatchObject({
       sessionId: 'root',
       sourceSessionId: 'child',
-      toolName: 'bash',
+      toolName: 'Bash',
       userId: 'alice',
     })
     r.clearRequest('q1')
@@ -72,8 +72,8 @@ describe('createHitlRegistry', () => {
     const other = r.controller.request(req('ask-2'))
     mine.catch(() => {})
     other.catch(() => {})
-    r.trackRequest('s1', 'm', 'ask-1', 'ask', req('ask-1'), 'alice')
-    r.trackRequest('s2', 'm', 'ask-2', 'ask', req('ask-2'), 'alice')
+    r.trackRequest('s1', 'm', 'ask-1', 'AskUserQuestion', req('ask-1'), 'alice')
+    r.trackRequest('s2', 'm', 'ask-2', 'AskUserQuestion', req('ask-2'), 'alice')
     r.clearSource('s1')
     expect(ended.map((ending) => [ending.requestId, ending.reason])).toEqual([
       ['ask-1', 'cancelled'],
@@ -174,7 +174,7 @@ describe('the shown copy of a request is shielded, the tracked one is not', () =
   test('trackRequest returns the shielded copy and leaves the caller‘s object alone', () => {
     const r = withShield()
     const raw = cardFor(`PGPASSWORD=${SECRET} psql -h db`)
-    const shown = r.trackRequest('s', 'm', 'tc', 'bash', raw, 'alice')
+    const shown = r.trackRequest('s', 'm', 'tc', 'Bash', raw, 'alice')
 
     expect(JSON.stringify(shown.payload)).not.toContain(SECRET)
     expect(JSON.stringify(shown.payload)).toContain('psql -h db')
@@ -188,7 +188,7 @@ describe('the shown copy of a request is shielded, the tracked one is not', () =
     const raw = cardFor(`curl -H "X-Api-Key: ${SECRET}"`)
     const pending = r.controller.request(raw)
     pending.catch(() => {})
-    r.trackRequest('s', 'm', 'tc', 'bash', raw, 'alice')
+    r.trackRequest('s', 'm', 'tc', 'Bash', raw, 'alice')
 
     const list = r.listPendingInteractions('s')
     expect(list).toHaveLength(1)
@@ -207,7 +207,7 @@ describe('the shown copy of a request is shielded, the tracked one is not', () =
     const raw = cardFor(`echo ${SECRET}`)
     const pending = r.controller.request(raw)
     pending.catch(() => {})
-    r.trackRequest('s', 'm', 'tc', 'bash', raw, 'alice')
+    r.trackRequest('s', 'm', 'tc', 'Bash', raw, 'alice')
     expect(r.listPendingInteractions('s')).toHaveLength(1)
 
     r.clearRequest('q-card')
@@ -235,7 +235,7 @@ describe('the shown copy of a request is shielded, the tracked one is not', () =
         ],
       },
     } as never
-    const shown = r.trackRequest('s', 'm', 'tc', 'ask', ask, 'alice')
+    const shown = r.trackRequest('s', 'm', 'tc', 'AskUserQuestion', ask, 'alice')
     // Verbatim, because the value has to survive the round trip.
     expect(JSON.stringify(shown.payload)).toContain(SECRET)
     expect(JSON.stringify(r.listPendingInteractions('s'))).not.toContain('[vault-secret]')
@@ -249,13 +249,13 @@ describe('the shown copy of a request is shielded, the tracked one is not', () =
       title: 'Need a key',
       payload: { key: 'STRIPE_KEY', reason: 'call the API' },
     } as never
-    expect(r.trackRequest('s', 'm', 'tc', 'vault', req, 'alice')).toBe(req)
+    expect(r.trackRequest('s', 'm', 'tc', 'Vault', req, 'alice')).toBe(req)
   })
 
   test('with no sanitizer the payload is returned unchanged — no accidental copying', () => {
     const r = createHitlRegistry()
     const raw = cardFor('ls -la')
-    expect(r.trackRequest('s', 'm', 'tc', 'bash', raw, 'alice')).toBe(raw)
+    expect(r.trackRequest('s', 'm', 'tc', 'Bash', raw, 'alice')).toBe(raw)
   })
 })
 
@@ -284,7 +284,7 @@ describe('a surfaced confirm frame carries when it was asked', () => {
       sessionId: 's1',
       messageId: 'm1',
       toolCallId: 'call-1',
-      toolName: 'bash',
+      toolName: 'Bash',
       title: 'Run a destructive command?',
       payload: { command: 'rm -rf build' } as never,
     })

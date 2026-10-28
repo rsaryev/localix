@@ -170,7 +170,7 @@ export async function composeDeveloper(page, scenario) {
     await page
       .getByRole('treeitem', { name: 'Review changes in review-image.png', exact: true })
       .click()
-    const image = page.getByRole('img', { name: 'Zoom image in', exact: true })
+    const image = page.getByRole('button', { name: 'Zoom image in', exact: true }).locator('img')
     await expect(image).toBeVisible()
     await expect.poll(() => image.evaluate((element) => element.naturalWidth)).toBe(1)
     await expect(

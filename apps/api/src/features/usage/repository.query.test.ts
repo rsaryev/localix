@@ -1,3 +1,4 @@
+import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -8,7 +9,7 @@ import { migrateToLatest } from '../../db/migrator'
 import { createUsageRepository } from './repository'
 import { recordTitleGenUsage } from '../chat/runtime/usage-normalize'
 
-const tempDir = join(process.cwd(), 'tmp', 'usage-query-tests')
+const tempDir = join(tmpdir(), `localix-usage-query-tests-${process.pid}`)
 
 // Exercises queryStats groupBy:'kind' against a real SQLite ledger — the CASE
 // over finish_reason must fold visible turns vs auxiliary calls (title, …) into

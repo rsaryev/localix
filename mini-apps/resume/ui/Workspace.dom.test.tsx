@@ -4,12 +4,17 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { Hono } from 'hono'
 import type { Editor } from '@tiptap/react'
+import { isPrimaryModifier } from '@localixai/kit/keybindings'
 import { registerDom } from '@localixai/kit/testing'
 import { bindMiniAppUiTransport } from '@localixai/mini-app-sdk/ui/transport'
 import type { PublishedMessageContext } from '@localixai/mini-app-sdk/ui'
 import { createResumeRoutes } from '../backend/routes'
 import { createResumeService } from '../backend/service'
 import { createTemplateDocument } from '../shared/templates'
+
+const turns = async (n = 10) => {
+  for (let i = 0; i < n; i++) await new Promise((r) => setImmediate(r))
+}
 
 let teardown: () => Promise<void>
 const environment = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -47,7 +52,10 @@ test('workspace publishes saved section, labels rich drafts and clears inactive/
   const publish = (context: PublishedMessageContext | null) => {
     publications.push(context)
   }
-  const originalRect = HTMLElement.prototype.getBoundingClientRect
+  // Read through the descriptor: the test restores this very function, which a plain method
+  // reference would hand over unbound.
+  const originalRect = Object.getOwnPropertyDescriptor(Element.prototype, 'getBoundingClientRect')!
+    .value as HTMLElement['getBoundingClientRect']
   const originalObserver = globalThis.ResizeObserver
   const callbacks: ResizeObserverCallback[] = []
   let paneWidth = 1600
@@ -77,15 +85,19 @@ test('workspace publishes saved section, labels rich drafts and clears inactive/
   try {
     await act(async () => {
       root.render(render(true))
-      await new Promise((resolve) => setTimeout(resolve, 20))
+      await turns()
     })
-    for (let attempt = 0; !host.querySelector('[role="textbox"]') && attempt < 15; attempt++)
+    // The editor and its toolbar load separately: wait for what is asserted, not its neighbour.
+    const toggle = () => host.querySelector<HTMLButtonElement>('button[aria-label="PDF preview"]')
+    for (
+      let attempt = 0;
+      (!host.querySelector('[role="textbox"]') || !toggle()) && attempt < 300;
+      attempt++
+    )
       await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 10))
+        await turns()
       })
-    const previewToggle = host.querySelector(
-      'button[aria-label="PDF preview"]',
-    ) as HTMLButtonElement
+    const previewToggle = toggle()!
     expect(previewToggle.getAttribute('aria-pressed')).toBe('true')
     await act(async () => {
       paneWidth = 320
@@ -124,6 +136,22 @@ test('workspace publishes saved section, labels rich drafts and clears inactive/
     await act(async () => root.render(render(true)))
     expect(JSON.stringify(publications.at(-1))).toContain('Draft achievement')
     expect(host.querySelector('[role="textbox"] strong')?.textContent).toBe('Draft achievement')
+
+    // The undo chord, pressed on the workspace itself rather than in a field, steps the draft back.
+    const group = host.querySelector('[aria-label="Resume workspace"]')!
+    const chord = (key: string, target: Element = group) =>
+      act(async () => {
+        const primary = isPrimaryModifier({ metaKey: true, ctrlKey: false })
+          ? { metaKey: true }
+          : { ctrlKey: true }
+        target.dispatchEvent(
+          new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...primary }),
+        )
+      })
+    await chord('x')
+    expect(JSON.stringify(publications.at(-1))).toContain('Draft achievement')
+    await chord('z')
+    expect(JSON.stringify(publications.at(-1))).not.toContain('Draft achievement')
   } finally {
     await act(async () => root.unmount())
     HTMLElement.prototype.getBoundingClientRect = originalRect

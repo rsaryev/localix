@@ -30,7 +30,6 @@ export function toUiMessage(message: PersistedMessage): Message {
     id: message.id,
     role: systemOwned ? 'system' : message.payload.role,
     from: message.payload.from,
-    authorSnapshot: message.payload.authorSnapshot,
     // Beside the author, because it is the same kind of fact about the row: who put what on it.
     reactions: (message.payload as { reactions?: Message['reactions'] }).reactions,
     pinned: (message.payload as { pinned?: true }).pinned === true ? true : undefined,
@@ -134,7 +133,6 @@ export function toUiSessionSummary(summary: SessionSummary): UiSession {
     isArchived: summary.isArchived ?? false,
     createdAt: Date.parse(summary.createdAt),
     updatedAt: Date.parse(summary.updatedAt),
-    revision: summary.updatedAt,
     pendingInteraction: null,
     pendingInteractionQueue: [],
     isRunning: summary.runtimeStatus === 'running',
@@ -142,12 +140,10 @@ export function toUiSessionSummary(summary: SessionSummary): UiSession {
     parentSessionId: summary.parentSessionId,
     rootSessionId: summary.rootSessionId,
     sessionKind: summary.sessionKind,
-    agents: summary.agents,
-    modelChoices: summary.modelChoices,
+    agent: summary.agent,
     permissionMode: summary.permissionMode,
     closedAt: summary.closedAt ?? null,
     description: summary.description,
-    avatar: summary.avatar,
     runtimeStatus: summary.runtimeStatus,
     ...(summary.externalAgentProvider
       ? { externalAgentProvider: summary.externalAgentProvider }
@@ -216,12 +212,10 @@ export function toUiSession(detail: SessionDetail): UiSession {
     messages,
     bodyLoaded: true,
     sessionUsage: detail.sessionUsage,
-    participantUsage: detail.participantUsage,
     isPinned: detail.isPinned,
     isArchived: detail.isArchived ?? false,
     createdAt: Date.parse(detail.createdAt),
     updatedAt: Date.parse(detail.updatedAt),
-    revision: detail.updatedAt,
     pendingInteraction: toUiPendingInteraction(detail.pendingInteraction),
     // The waiters BEHIND the head. This was `[]` on the premise that "the server hands
     // back only the ONE live request it tracks; anything queued is re-delivered by the
@@ -235,16 +229,14 @@ export function toUiSession(detail: SessionDetail): UiSession {
       .map(toUiPendingInteraction)
       .filter((i): i is UiPendingHitlInteraction => i !== null),
     isRunning: detail.isRunning ?? false,
-    activeAgentId: detail.activeAgentId ?? null,
     projectId: detail.projectId,
     parentSessionId: detail.parentSessionId,
     rootSessionId: detail.rootSessionId,
     sessionKind: detail.sessionKind,
-    agents: detail.agents,
+    agent: detail.agent,
     permissionMode: detail.permissionMode,
     closedAt: detail.closedAt ?? null,
     description: detail.description,
-    avatar: detail.avatar,
     runtimeStatus: detail.runtimeStatus,
     ...(detail.externalAgentProvider
       ? { externalAgentProvider: detail.externalAgentProvider }

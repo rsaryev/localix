@@ -99,7 +99,7 @@ export interface ModBandDrawing {
 }
 
 export type ModAction = {
-  kind: 'press' | 'input' | 'submit' | 'select'
+  kind: 'press' | 'change' | 'submit' | 'select'
   element: string
   value?: string
 }

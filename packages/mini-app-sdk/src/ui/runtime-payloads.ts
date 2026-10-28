@@ -173,17 +173,14 @@ export interface MiniAppSession {
   projectId: string | null
   parentSessionId: string | null
   rootSessionId: string | null
-  sessionKind: 'chat' | 'subagent' | 'job' | 'system' | 'member'
-  /**
-   * Who the conversation is with and what each runs on. A mini app sees the party because a
-   * session's model is a property of its participants, not of the session.
-   */
-  agents: ReadonlyArray<{
-    handle: string
+  sessionKind: 'chat' | 'subagent' | 'job' | 'system'
+  /** The session's one agent and the model route it runs on. */
+  agent: {
+    name: string
     providerConnectionId: string | null
     modelId: string
     reasoningEffort: string
-  }>
+  }
   runtimeStatus: 'idle' | 'running' | 'completed' | 'failed' | 'stopped'
   sourceToolCallId: string | null
   isRunning: boolean

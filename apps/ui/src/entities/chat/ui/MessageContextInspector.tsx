@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { createElement, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { Check, ChevronRight, Copy, Layers, TriangleAlert } from 'lucide-react'
 import type { MessageContextBinding } from '@/shared/api/contracts'
@@ -54,7 +54,7 @@ export function MessageContextInspector({
   const workspace = bindings.filter((binding) => binding.source === 'system')
   const lead = attached[0]
   if (bindings.length === 0) return null
-  const LeadIcon = lead ? refIcon(refFromContextBinding(lead)) : Layers
+  const leadIcon = lead ? refIcon(refFromContextBinding(lead)) : Layers
   const attention = anyContextNeedsAttention(bindings)
   const rest = attached.length - 1
   const label = `Context sent with this message: ${bindings.length}${attention ? ', some not included' : ''}`
@@ -68,7 +68,7 @@ export function MessageContextInspector({
           data-slot="message-context-summary"
           className="inline-flex h-(--chrome-control-xs) max-w-full min-w-0 items-center gap-1 rounded-md px-1.5 text-2xs text-text-faint outline-none transition-colors hover:bg-surface-hover hover:text-text-soft focus-ring aria-expanded:bg-surface-active aria-expanded:text-text-soft"
         >
-          <LeadIcon className="size-3 shrink-0" />
+          {createElement(leadIcon, { className: 'size-3 shrink-0' })}
           <span className="min-w-0 max-w-48 truncate">
             {lead ? bindingLabel(lead) : 'Workspace context'}
           </span>

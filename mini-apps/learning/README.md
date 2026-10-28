@@ -21,7 +21,7 @@ sequence. Only a valid bundle is atomically imported into the host-owned session
 tool returns its canonical manifest path.
 
 This means a malformed lesson never forces the agent to resend a giant JSON payload: it reads the
-reported file, repairs it with `edit`, and activates the same root manifest again. Stable ids
+reported file, repairs it with `Edit`, and activates the same root manifest again. Stable ids
 preserve compatible learner progress when a course is adapted.
 
 Ready lessons use a learner-paced sequence shown across the top of the reader. Only the current step

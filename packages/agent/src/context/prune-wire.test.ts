@@ -22,7 +22,7 @@ function buildWire(reads: number): Message[] {
   const calls = Array.from({ length: reads }, (_, i) => ({
     type: 'tool_call' as const,
     id: `r${i}`,
-    name: 'read',
+    name: 'Read',
     arguments: { path: `src/f${i}.ts` },
   }))
   msgs.push({
@@ -36,7 +36,7 @@ function buildWire(reads: number): Message[] {
     msgs.push({
       role: 'tool',
       results: [
-        { type: 'tool_result', toolCallId: `r${i}`, toolName: 'read', content: big(`f${i}`) },
+        { type: 'tool_result', toolCallId: `r${i}`, toolName: 'Read', content: big(`f${i}`) },
       ],
       timestamp: 0,
     })
@@ -45,11 +45,11 @@ function buildWire(reads: number): Message[] {
   msgs.push({
     role: 'assistant',
     content: [
-      { type: 'tool_call', id: 'b1', name: 'bash', arguments: { command: 'npm test' } },
+      { type: 'tool_call', id: 'b1', name: 'Bash', arguments: { command: 'npm test' } },
       {
         type: 'tool_call',
         id: 'w1',
-        name: 'write',
+        name: 'Write',
         arguments: { path: 'src/x.ts', content: big('xfile') },
       },
     ],
@@ -58,13 +58,13 @@ function buildWire(reads: number): Message[] {
   })
   msgs.push({
     role: 'tool',
-    results: [{ type: 'tool_result', toolCallId: 'b1', toolName: 'bash', content: big('bashout') }],
+    results: [{ type: 'tool_result', toolCallId: 'b1', toolName: 'Bash', content: big('bashout') }],
     timestamp: 0,
   })
   msgs.push({
     role: 'tool',
     results: [
-      { type: 'tool_result', toolCallId: 'w1', toolName: 'write', content: 'Wrote src/x.ts' },
+      { type: 'tool_result', toolCallId: 'w1', toolName: 'Write', content: 'Wrote src/x.ts' },
     ],
     timestamp: 0,
   })
@@ -95,7 +95,7 @@ describe('pruneWireMessages (per-request in-turn bound)', () => {
     const bashResult = out
       .filter((m): m is Extract<Message, { role: 'tool' }> => m.role === 'tool')
       .flatMap((m) => m.results)
-      .find((r) => r.toolName === 'bash')
+      .find((r) => r.toolName === 'Bash')
     expect(bashResult?.content).toBe(big('bashout'))
   })
 
@@ -145,7 +145,7 @@ describe('pruneWireMessages — quality guards', () => {
           {
             type: 'tool_call',
             id: 'e1',
-            name: 'edit',
+            name: 'Edit',
             arguments: { path: 'src/a.ts', old_string: big('old'), new_string: big('new') },
           },
         ],
@@ -155,7 +155,7 @@ describe('pruneWireMessages — quality guards', () => {
       {
         role: 'tool',
         results: [
-          { type: 'tool_result', toolCallId: 'e1', toolName: 'edit', content: 'Applied 1 edit' },
+          { type: 'tool_result', toolCallId: 'e1', toolName: 'Edit', content: 'Applied 1 edit' },
         ],
         timestamp: 0,
       },
@@ -180,7 +180,7 @@ describe('pruneWireMessages — quality guards', () => {
           {
             type: 'tool_call',
             id: 'b1',
-            name: 'bash',
+            name: 'Bash',
             arguments: { command: heredoc, description: 'write test' },
           },
         ],
@@ -189,7 +189,7 @@ describe('pruneWireMessages — quality guards', () => {
       },
       {
         role: 'tool',
-        results: [{ type: 'tool_result', toolCallId: 'b1', toolName: 'bash', content: 'ok' }],
+        results: [{ type: 'tool_result', toolCallId: 'b1', toolName: 'Bash', content: 'ok' }],
         timestamp: 0,
       },
       ...filler,
@@ -212,14 +212,14 @@ describe('pruneWireMessages — quality guards', () => {
       {
         role: 'assistant',
         content: [
-          { type: 'tool_call', id: 'b1', name: 'bash', arguments: { command: 'npm run build' } },
+          { type: 'tool_call', id: 'b1', name: 'Bash', arguments: { command: 'npm run build' } },
         ],
         model: 'm',
         timestamp: 0,
       },
       {
         role: 'tool',
-        results: [{ type: 'tool_result', toolCallId: 'b1', toolName: 'bash', content: 'ok' }],
+        results: [{ type: 'tool_result', toolCallId: 'b1', toolName: 'Bash', content: 'ok' }],
         timestamp: 0,
       },
       ...filler,
@@ -240,7 +240,7 @@ describe('pruneWireMessages — quality guards', () => {
           {
             type: 'tool_result',
             toolCallId: 'r1',
-            toolName: 'read',
+            toolName: 'Read',
             content: big('err'),
             isError: true,
           },
@@ -266,13 +266,13 @@ describe('pruneWireMessages — large OLD non-recoverable output is head+tail bo
     { role: 'user', content: 'go', timestamp: 0 },
     {
       role: 'assistant',
-      content: [{ type: 'tool_call', id: 'b1', name: 'bash', arguments: { command: 'bun test' } }],
+      content: [{ type: 'tool_call', id: 'b1', name: 'Bash', arguments: { command: 'bun test' } }],
       model: 'm',
       timestamp: 0,
     },
     {
       role: 'tool',
-      results: [{ type: 'tool_result', toolCallId: 'b1', toolName: 'bash', content: huge }],
+      results: [{ type: 'tool_result', toolCallId: 'b1', toolName: 'Bash', content: huge }],
       timestamp: 0,
     },
     ...filler,
@@ -293,13 +293,13 @@ describe('pruneWireMessages — large OLD non-recoverable output is head+tail bo
       { role: 'user', content: 'go', timestamp: 0 },
       {
         role: 'assistant',
-        content: [{ type: 'tool_call', id: 'b2', name: 'bash', arguments: { command: 'ls' } }],
+        content: [{ type: 'tool_call', id: 'b2', name: 'Bash', arguments: { command: 'ls' } }],
         model: 'm',
         timestamp: 0,
       },
       {
         role: 'tool',
-        results: [{ type: 'tool_result', toolCallId: 'b2', toolName: 'bash', content: tiny }],
+        results: [{ type: 'tool_result', toolCallId: 'b2', toolName: 'Bash', content: tiny }],
         timestamp: 0,
       },
       ...filler,
@@ -313,14 +313,14 @@ describe('pruneWireMessages — large OLD non-recoverable output is head+tail bo
       { role: 'user', content: 'go', timestamp: 0 },
       {
         role: 'assistant',
-        content: [{ type: 'tool_call', id: 'b3', name: 'bash', arguments: { command: 'log' } }],
+        content: [{ type: 'tool_call', id: 'b3', name: 'Bash', arguments: { command: 'log' } }],
         model: 'm',
         timestamp: 0,
       },
       {
         role: 'tool',
         results: [
-          { type: 'tool_result', toolCallId: 'b3', toolName: 'bash', content: big('noise') },
+          { type: 'tool_result', toolCallId: 'b3', toolName: 'Bash', content: big('noise') },
         ],
         timestamp: 0,
       },
@@ -329,7 +329,7 @@ describe('pruneWireMessages — large OLD non-recoverable output is head+tail bo
     const o = pruneWireMessages(mid, { keepRecentTokens: 1000, minKeepRecent: 2 })
     const content = (o[2] as Extract<Message, { role: 'tool' }>).results[0].content
     expect(content).toContain('crushed to save context')
-    expect(content).toContain('tool_output(action="get", tool_call_id="b3")') // reversibility locator
+    expect(content).toContain('ToolOutput(action="get", tool_call_id="b3")') // reversibility locator
     expect(content.length).toBeLessThan(big('noise').length)
   })
 
@@ -347,7 +347,7 @@ describe('pruneWireMessages — boundary quantization (prompt-cache friendly)', 
   const toolMsg = (i: number): Message => ({
     role: 'tool',
     results: [
-      { type: 'tool_result', toolCallId: `r${i}`, toolName: 'read', content: big(`f${i}`) },
+      { type: 'tool_result', toolCallId: `r${i}`, toolName: 'Read', content: big(`f${i}`) },
     ],
     timestamp: 0,
   })
@@ -415,13 +415,13 @@ describe('pruneWireMessages failed-mutation args', () => {
           {
             type: 'tool_call',
             id: 'wfail',
-            name: 'write',
+            name: 'Write',
             arguments: { path: 'src/a.ts', content: failedContent },
           },
           {
             type: 'tool_call',
             id: 'wok',
-            name: 'write',
+            name: 'Write',
             arguments: { path: 'src/b.ts', content: okContent },
           },
         ],
@@ -434,7 +434,7 @@ describe('pruneWireMessages failed-mutation args', () => {
           {
             type: 'tool_result',
             toolCallId: 'wfail',
-            toolName: 'write',
+            toolName: 'Write',
             content: 'EACCES: permission denied',
             isError: true,
           },
@@ -444,7 +444,7 @@ describe('pruneWireMessages failed-mutation args', () => {
       {
         role: 'tool',
         results: [
-          { type: 'tool_result', toolCallId: 'wok', toolName: 'write', content: 'Wrote src/b.ts' },
+          { type: 'tool_result', toolCallId: 'wok', toolName: 'Write', content: 'Wrote src/b.ts' },
         ],
         timestamp: 0,
       },
@@ -452,7 +452,7 @@ describe('pruneWireMessages failed-mutation args', () => {
       ...Array.from({ length: 12 }, (_, i): Message => ({
         role: 'tool',
         results: [
-          { type: 'tool_result', toolCallId: `p${i}`, toolName: 'read', content: big(`pad${i}`) },
+          { type: 'tool_result', toolCallId: `p${i}`, toolName: 'Read', content: big(`pad${i}`) },
         ],
         timestamp: 0,
       })),
@@ -474,18 +474,18 @@ describe('pruneWireMessages failed-mutation args', () => {
 })
 
 describe('pruneWireMessages — recovery pointer + pressure floor (endless-review fix)', () => {
-  it('elided read points at tool_output action="get" — NOT a bare "re-read" (the loop)', () => {
+  it('elided read points at ToolOutput action="get" — NOT a bare "re-read" (the loop)', () => {
     const wire = buildWire(30)
     const out = pruneWireMessages(wire, { keepRecentTokens: 8000 })
     const firstRead = out
       .filter((m): m is Extract<Message, { role: 'tool' }> => m.role === 'tool')
       .flatMap((m) => m.results)
-      .find((r) => r.toolName === 'read' && contentText(r.content).includes('elided'))
+      .find((r) => r.toolName === 'Read' && contentText(r.content).includes('elided'))
     // Must carry a WORKING recovery handle (cheap one-turn replay), not just "re-read".
-    expect(firstRead?.content).toContain('tool_output(action="get", tool_call_id="r0")')
+    expect(firstRead?.content).toContain('ToolOutput(action="get", tool_call_id="r0")')
   })
 
-  it('elided write/edit arg also carries a tool_output handle', () => {
+  it('elided write/edit arg also carries a ToolOutput handle', () => {
     const filler: Message[] = Array.from({ length: 8 }, (_, i) => ({
       role: 'user',
       content: `f ${big(`pad${i}`)}`,
@@ -499,7 +499,7 @@ describe('pruneWireMessages — recovery pointer + pressure floor (endless-revie
           {
             type: 'tool_call',
             id: 'w7',
-            name: 'write',
+            name: 'Write',
             arguments: { path: 'src/a.ts', content: big('body') },
           },
         ],
@@ -509,7 +509,7 @@ describe('pruneWireMessages — recovery pointer + pressure floor (endless-revie
       {
         role: 'tool',
         results: [
-          { type: 'tool_result', toolCallId: 'w7', toolName: 'write', content: 'Wrote src/a.ts' },
+          { type: 'tool_result', toolCallId: 'w7', toolName: 'Write', content: 'Wrote src/a.ts' },
         ],
         timestamp: 0,
       },
@@ -519,17 +519,17 @@ describe('pruneWireMessages — recovery pointer + pressure floor (endless-revie
     const call = (out[1] as Extract<Message, { role: 'assistant' }>).content[0] as {
       arguments: Record<string, string>
     }
-    expect(call.arguments.content).toContain('tool_output(action="get", tool_call_id="w7")')
+    expect(call.arguments.content).toContain('ToolOutput(action="get", tool_call_id="w7")')
   })
 
-  it('keeps compression truthful when tool_output is disabled', () => {
+  it('keeps compression truthful when ToolOutput is disabled', () => {
     const out = pruneWireMessages(buildWire(30), {
       keepRecentTokens: 8000,
       recoveryToolAvailable: false,
     })
     const serialized = JSON.stringify(out)
     expect(serialized).toContain('elided to save context')
-    expect(serialized).not.toContain('tool_output')
+    expect(serialized).not.toContain('ToolOutput')
     expect(serialized).toContain('re-read the file/source if needed')
   })
 
@@ -614,7 +614,7 @@ describe('collectElidedToolCallIds', () => {
         results: [
           {
             toolCallId: 'v1',
-            toolName: 'read',
+            toolName: 'Read',
             content: '[output elided to save context — 900 chars]',
           },
         ],
@@ -670,12 +670,12 @@ describe('pruneWireMessages — live-read protection', () => {
   it('keeps the last read of a file and elides an earlier read of the same file', () => {
     const msgs = wire(
       [
-        { id: 'a', name: 'read', args: { path: 'src/a.ts' } },
-        { id: 'b', name: 'read', args: { path: 'src/a.ts' } },
+        { id: 'a', name: 'Read', args: { path: 'src/a.ts' } },
+        { id: 'b', name: 'Read', args: { path: 'src/a.ts' } },
       ],
       [
-        { id: 'a', name: 'read', content: body('old') },
-        { id: 'b', name: 'read', content: body('new') },
+        { id: 'a', name: 'Read', content: body('old') },
+        { id: 'b', name: 'Read', content: body('new') },
       ],
     )
     const elided = elidedIds(msgs)
@@ -687,12 +687,12 @@ describe('pruneWireMessages — live-read protection', () => {
     // Its bytes are stale; apply_patch's post-edit echo carries the current state.
     const msgs = wire(
       [
-        { id: 'a', name: 'read', args: { path: 'src/a.ts' } },
-        { id: 'w', name: 'write', args: { path: 'src/a.ts', content: 'x' } },
+        { id: 'a', name: 'Read', args: { path: 'src/a.ts' } },
+        { id: 'w', name: 'Write', args: { path: 'src/a.ts', content: 'x' } },
       ],
       [
-        { id: 'a', name: 'read', content: body('old') },
-        { id: 'w', name: 'write', content: 'Wrote src/a.ts' },
+        { id: 'a', name: 'Read', content: body('old') },
+        { id: 'w', name: 'Write', content: 'Wrote src/a.ts' },
       ],
     )
     expect(elidedIds(msgs).has('a')).toBe(true)
@@ -704,10 +704,10 @@ describe('pruneWireMessages — live-read protection', () => {
     // replay") would be factually false and force a wasted re-read on retry.
     const msgs = wire(
       [
-        { id: 'a', name: 'read', args: { path: 'src/a.ts' } },
-        { id: 'w', name: 'write', args: { path: 'src/a.ts', content: 'x' } },
+        { id: 'a', name: 'Read', args: { path: 'src/a.ts' } },
+        { id: 'w', name: 'Write', args: { path: 'src/a.ts', content: 'x' } },
       ],
-      [{ id: 'a', name: 'read', content: body('old') }],
+      [{ id: 'a', name: 'Read', content: body('old') }],
     )
     // attach the FAILED result for the write
     msgs.splice(
@@ -721,7 +721,7 @@ describe('pruneWireMessages — live-read protection', () => {
           {
             type: 'tool_result',
             toolCallId: 'w',
-            toolName: 'write',
+            toolName: 'Write',
             content: 'EACCES: permission denied',
             isError: true,
           },
@@ -740,7 +740,7 @@ describe('pruneWireMessages — live-read protection', () => {
   it('an apply_patch of the file supersedes the read, via the patch body headers', () => {
     const msgs = wire(
       [
-        { id: 'a', name: 'read', args: { path: 'src/a.ts' } },
+        { id: 'a', name: 'Read', args: { path: 'src/a.ts' } },
         {
           id: 'p',
           name: 'apply_patch',
@@ -748,7 +748,7 @@ describe('pruneWireMessages — live-read protection', () => {
         },
       ],
       [
-        { id: 'a', name: 'read', content: body('old') },
+        { id: 'a', name: 'Read', content: body('old') },
         { id: 'p', name: 'apply_patch', content: 'Applied 1 of 1 files' },
       ],
     )
@@ -760,12 +760,12 @@ describe('pruneWireMessages — live-read protection', () => {
     // would elide the only full copy the model is working from.
     const msgs = wire(
       [
-        { id: 'a', name: 'read', args: { path: 'src/a.ts' } },
-        { id: 'lines', name: 'read', args: { path: 'src/a.ts', start_line: 12, end_line: 13 } },
+        { id: 'a', name: 'Read', args: { path: 'src/a.ts' } },
+        { id: 'lines', name: 'Read', args: { path: 'src/a.ts', start_line: 12, end_line: 13 } },
       ],
       [
-        { id: 'a', name: 'read', content: body('full') },
-        { id: 'lines', name: 'read', content: '12: const a = 1\n13: const b = 2' },
+        { id: 'a', name: 'Read', content: body('full') },
+        { id: 'lines', name: 'Read', content: '12: const a = 1\n13: const b = 2' },
       ],
     )
     expect(elidedIds(msgs).has('a')).toBe(false)
@@ -774,8 +774,8 @@ describe('pruneWireMessages — live-read protection', () => {
   it('protects only the most recent maxLiveReads files', () => {
     const paths = ['a', 'b', 'c']
     const msgs = wire(
-      paths.map((p) => ({ id: p, name: 'read', args: { path: `src/${p}.ts` } })),
-      paths.map((p) => ({ id: p, name: 'read', content: body(p) })),
+      paths.map((p) => ({ id: p, name: 'Read', args: { path: `src/${p}.ts` } })),
+      paths.map((p) => ({ id: p, name: 'Read', content: body(p) })),
     )
     const elided = new Set(
       collectElidedToolCallIds(
@@ -789,8 +789,8 @@ describe('pruneWireMessages — live-read protection', () => {
 
   it('a live read too large for the budget is elided anyway', () => {
     const msgs = wire(
-      [{ id: 'a', name: 'read', args: { path: 'src/a.ts' } }],
-      [{ id: 'a', name: 'read', content: body('huge') }],
+      [{ id: 'a', name: 'Read', args: { path: 'src/a.ts' } }],
+      [{ id: 'a', name: 'Read', content: body('huge') }],
     )
     expect(
       new Set(
@@ -801,8 +801,8 @@ describe('pruneWireMessages — live-read protection', () => {
 
   it('maxLiveReads: 0 restores blind positional eliding', () => {
     const msgs = wire(
-      [{ id: 'a', name: 'read', args: { path: 'src/a.ts' } }],
-      [{ id: 'a', name: 'read', content: body('only') }],
+      [{ id: 'a', name: 'Read', args: { path: 'src/a.ts' } }],
+      [{ id: 'a', name: 'Read', content: body('only') }],
     )
     expect(
       new Set(collectElidedToolCallIds(pruneWireMessages(msgs, { ...OPTS, maxLiveReads: 0 }))).has(
@@ -814,12 +814,12 @@ describe('pruneWireMessages — live-read protection', () => {
   it('stays idempotent: a second pass changes nothing', () => {
     const msgs = wire(
       [
-        { id: 'a', name: 'read', args: { path: 'src/a.ts' } },
-        { id: 'b', name: 'read', args: { path: 'src/b.ts' } },
+        { id: 'a', name: 'Read', args: { path: 'src/a.ts' } },
+        { id: 'b', name: 'Read', args: { path: 'src/b.ts' } },
       ],
       [
-        { id: 'a', name: 'read', content: body('a') },
-        { id: 'b', name: 'read', content: body('b') },
+        { id: 'a', name: 'Read', content: body('a') },
+        { id: 'b', name: 'Read', content: body('b') },
       ],
     )
     const once = pruneWireMessages(msgs, { ...OPTS, maxLiveReads: 1 })
@@ -830,7 +830,7 @@ describe('pruneWireMessages — live-read protection', () => {
 
 /**
  * An elided read must advertise the recovery that is actually TRUE for it.
- * `tool_output` replays the bytes verbatim — correct for a read nothing has
+ * `ToolOutput` replays the bytes verbatim — correct for a read nothing has
  * touched, wrong for one whose file has since changed (it would hand the model
  * content that no longer exists on disk), and pointless for one the model already
  * re-read further down the conversation.
@@ -871,46 +871,46 @@ describe('pruneWireMessages — an elided read gets the pointer that is true for
 
   it('a read whose file was later WRITTEN must not offer a verbatim replay', () => {
     const msgs = wire([
-      { id: 'a', name: 'read', args: { path: 'src/a.ts' }, content: body('old') },
+      { id: 'a', name: 'Read', args: { path: 'src/a.ts' }, content: body('old') },
       {
         id: 'w',
-        name: 'write',
+        name: 'Write',
         args: { path: 'src/a.ts', content: 'x' },
         content: 'Wrote src/a.ts',
       },
     ])
     const out = contentOf(msgs, 'a')
     expect(out).toContain('the file has CHANGED since this read')
-    expect(out).not.toContain('tool_output')
+    expect(out).not.toContain('ToolOutput')
   })
 
   it('a read the model later re-read points at the newer result, not at a replay', () => {
     const msgs = wire([
-      { id: 'a', name: 'read', args: { path: 'src/a.ts' }, content: body('old') },
-      { id: 'b', name: 'read', args: { path: 'src/a.ts' }, content: body('new') },
+      { id: 'a', name: 'Read', args: { path: 'src/a.ts' }, content: body('old') },
+      { id: 'b', name: 'Read', args: { path: 'src/a.ts' }, content: body('new') },
     ])
     const out = contentOf(msgs, 'a')
     expect(out).toContain('a NEWER read of the same file appears later')
-    expect(out).not.toContain('tool_output')
+    expect(out).not.toContain('ToolOutput')
   })
 
-  it('an untouched read that only lost the live-read budget still offers tool_output', () => {
+  it('an untouched read that only lost the live-read budget still offers ToolOutput', () => {
     const msgs = wire([
-      { id: 'a', name: 'read', args: { path: 'src/a.ts' }, content: body('only') },
+      { id: 'a', name: 'Read', args: { path: 'src/a.ts' }, content: body('only') },
     ])
     const out = contentText(
       pruneWireMessages(msgs, { ...OPTS, maxLiveReads: 0 }).find((m) => m.role === 'tool')
         ?.results[0].content,
     )
-    expect(out).toContain('tool_output(action="get", tool_call_id="a")')
+    expect(out).toContain('ToolOutput(action="get", tool_call_id="a")')
   })
 
   it('every fate still marks the result as elided, so the pass stays idempotent', () => {
     const msgs = wire([
-      { id: 'a', name: 'read', args: { path: 'src/a.ts' }, content: body('old') },
+      { id: 'a', name: 'Read', args: { path: 'src/a.ts' }, content: body('old') },
       {
         id: 'w',
-        name: 'write',
+        name: 'Write',
         args: { path: 'src/a.ts', content: 'x' },
         content: 'Wrote src/a.ts',
       },
@@ -929,7 +929,7 @@ describe('pruneWireMessages — an elided read gets the pointer that is true for
 describe('pressure gate counts the fixed request overhead', () => {
   const messages = Array.from({ length: 20 }, (_, i) => ({
     role: 'tool' as const,
-    results: [{ toolCallId: `t${i}`, toolName: 'read', content: 'x'.repeat(2000) }],
+    results: [{ toolCallId: `t${i}`, toolName: 'Read', content: 'x'.repeat(2000) }],
   })) as never as Message[]
 
   it('stays verbatim when messages alone are below the gate', () => {

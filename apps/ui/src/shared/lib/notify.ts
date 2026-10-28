@@ -137,7 +137,7 @@ function publish(
     originLabel: opts?.source,
     actions: actionsOf(opts),
     // Worth a banner only when something went wrong; the shared policy still decides whether now.
-    ...(severity === 'warning' || severity === 'error' ? { nativeKind: 'run' as const } : {}),
+    ...(severity === 'warning' || severity === 'error' ? { native: true } : {}),
   })
   return opts?.id ?? key
 }

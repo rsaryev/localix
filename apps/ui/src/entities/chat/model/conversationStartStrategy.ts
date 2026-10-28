@@ -8,7 +8,7 @@ export type ConversationScopeStrategy =
   | { kind: 'default' }
   | { kind: 'scope'; projectId: string }
 
-export type ConversationParticipantStrategy =
+export type ConversationAgentStrategy =
   | { kind: 'inherit' }
   | { kind: 'default' }
   | { kind: 'agent'; agentId: string }
@@ -16,19 +16,19 @@ export type ConversationParticipantStrategy =
 /**
  * Everything that can differ between ways of starting a one-agent conversation.
  *
- * UI locations choose a strategy; the store resolves it. Keeping scope and participant
+ * UI locations choose a strategy; the store resolves it. Keeping scope and agent
  * independent is what lets a rail button, an agent-group plus and an implicit first send
  * share one creation pipeline without smuggling location-specific booleans into it.
  *
  * Every entry point shares one creation lane. Only a fresh untouched draft created by this
- * workspace is eligible for reuse, with the same project and exactly one matching participant.
+ * workspace is eligible for reuse, with the same project and the same agent.
  * Saved history and drafts created by another workspace never substitute for a new chat. A
  * `landing` is not a new chat: it only needs one to show, so the server may hand back any
  * untouched chat of that project.
  */
 export interface ConversationStartStrategy {
   scope: ConversationScopeStrategy
-  participant: ConversationParticipantStrategy
+  agent: ConversationAgentStrategy
   /**
    * A landing (home, launch, a project opened with no chat), not the New chat gesture: any
    * window may reopen the project's newest untouched chat, which the server finds or creates
@@ -39,20 +39,20 @@ export interface ConversationStartStrategy {
 
 export const activeConversationDraft = (): ConversationStartStrategy => ({
   scope: { kind: 'active' },
-  participant: { kind: 'inherit' },
+  agent: { kind: 'inherit' },
 })
 
 /** The ordinary New-chat gesture in a known URL scope. */
 export const scopedNewConversation = (
   projectId: string | null,
-  participant: ConversationParticipantStrategy = { kind: 'inherit' },
+  agent: ConversationAgentStrategy = { kind: 'inherit' },
   landing = false,
 ): ConversationStartStrategy => ({
   ...(landing ? { landing } : {}),
   // `null` is the unresolved neutral route, not a project-less workspace. Keep that intent
   // explicit so it cannot accidentally inherit whichever project is still active in Zustand.
   scope: projectId === null ? { kind: 'default' } : { kind: 'scope', projectId },
-  participant,
+  agent,
 })
 
 export interface ResolvedConversationStart {
@@ -96,18 +96,17 @@ export function resolveConversationStart(
         ? (state.projects.find((project) => project.isDefault)?.id ?? null)
         : (state.activeProjectId ?? null)
   const inherited =
-    strategy.participant.kind === 'inherit' ? inheritedAgentId(state, projectId) : undefined
+    strategy.agent.kind === 'inherit' ? inheritedAgentId(state, projectId) : undefined
   const agentId =
-    strategy.participant.kind === 'agent'
-      ? strategy.participant.agentId
-      : strategy.participant.kind === 'default'
+    strategy.agent.kind === 'agent'
+      ? strategy.agent.agentId
+      : strategy.agent.kind === 'default'
         ? DEFAULT_AGENT_ID
         : (inherited ?? DEFAULT_AGENT_ID)
 
   return {
     projectId,
     agentId,
-    fallbackWhenAgentUnavailable:
-      strategy.participant.kind === 'inherit' && inherited !== undefined,
+    fallbackWhenAgentUnavailable: strategy.agent.kind === 'inherit' && inherited !== undefined,
   }
 }

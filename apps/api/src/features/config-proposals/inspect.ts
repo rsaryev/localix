@@ -36,12 +36,14 @@ export async function renderInspection(
   }
 }
 
-function renderTool(name: string, ledger: ToolLedger | undefined): string {
+/** A tool asked for by its name. */
+function renderTool(asked: string, ledger: ToolLedger | undefined): string {
+  const name = asked
   const verdict = ledger?.get(name)
-  if (!verdict) return `\`${name}\` is not a tool this installation knows.`
+  if (!verdict) return `\`${asked}\` is not a tool this installation knows.`
   if (verdict.state === 'live') return `\`${name}\` is available in this run.`
   if (verdict.state === 'deferred')
-    return `\`${name}\` is available behind \`activate_tools\` (source: ${verdict.source}).`
+    return `\`${name}\` is available behind \`ToolSearch\` (source: ${verdict.source}).`
   const remedy = verdict.remedy
     ? ` Remedy: propose {kind:"${verdict.remedy.remedyId}", name:"${verdict.remedy.target}"}.`
     : ' No remedy: this cannot be changed from a conversation.'
@@ -64,12 +66,12 @@ async function renderRoster(ctx: RemedyContext): Promise<string> {
   const agents = await ctx.ports.agents.listAgents(ctx.userId, { projectId: ctx.projectId })
   if (agents.length === 0) return 'Agents: none.'
   return [
-    'Agents (handle · enabled · hosts allowed):',
+    'Agents (name · enabled · hosts allowed):',
     ...agents.map((agent) => {
       const hosts = Object.entries(agent.invocations)
         .filter(([, effect]) => effect === 'allow')
         .map(([host]) => host)
-      return `- @${agent.record.handle} · ${agent.enabled ? 'on' : 'off'} · ${hosts.join(', ') || 'none'}${agent.source === 'builtin' ? ' · shipped' : ''}`
+      return `- @${agent.record.name} · ${agent.enabled ? 'on' : 'off'} · ${hosts.join(', ') || 'none'}${agent.source === 'builtin' ? ' · shipped' : ''}`
     }),
     'Read-only here: agents are files; edit them on their Store page.',
   ].join('\n')
@@ -86,10 +88,9 @@ async function renderAgent(ctx: RemedyContext, name: string): Promise<string> {
     .map((rule) => rule.action.slice('tool:'.length))
   const hosts = Object.entries(agent.invocations).map(([host, effect]) => `${host}=${effect}`)
   return [
-    `@${agent.record.handle} (${agent.record.id})${agent.source === 'builtin' ? ' · shipped' : ''} · ${agent.enabled ? 'enabled' : 'disabled'}`,
+    `@${agent.record.name} (${agent.record.id})${agent.source === 'builtin' ? ' · shipped' : ''} · ${agent.enabled ? 'enabled' : 'disabled'}`,
     `description: ${agent.record.description || '—'}`,
-    `model: ${agent.record.modelPreference ? JSON.stringify(agent.record.modelPreference) : 'session model'}`,
-    `maxTurns: ${agent.record.limits?.maxTurns ?? 'default'}`,
+    `maxTurns: ${agent.record.maxTurns ?? 'default'}`,
     `tools: ${tools.length ? tools.join(', ') : 'inherits the scope (no closed list)'}`,
     `hosts: ${hosts.join(', ')}`,
     `instructions: ${agent.record.instructions.slice(0, 300)}${agent.record.instructions.length > 300 ? '…' : ''}`,

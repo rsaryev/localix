@@ -16,14 +16,17 @@ import { buildToolError } from './tool-errors'
  * withheld, and a name it never saw really is unknown.
  */
 export function withheldToolStubs(ledger: ToolLedger, present: ReadonlySet<string>): AgentTool[] {
-  const canPropose = ledger.get(TOOL.configure)?.state === 'live'
+  // `Configure` behind `ToolSearch` still proposes: a call by its name reaches it.
+  const configure = ledger.get(TOOL.Configure)?.state
+  const canPropose = configure === 'live' || configure === 'deferred'
   const stubs: AgentTool[] = []
   for (const [name, verdict] of ledger) {
     if (verdict.state !== 'withheld' || present.has(name)) continue
     const reason = describeWithholdReason(verdict.reason)
+    const shown = name
     const remedy =
       verdict.remedy && canPropose
-        ? ` Propose it with \`configure\`: {action:"propose", change:{kind:"${verdict.remedy.remedyId}", name:"${verdict.remedy.target}"}}.`
+        ? ` Propose it with \`Configure\`: {action:"propose", change:{kind:"${verdict.remedy.remedyId}", name:"${verdict.remedy.target}"}}.`
         : ' It cannot be enabled from this conversation; continue with the tools you have.'
     stubs.push(
       defineAgentTool({
@@ -38,7 +41,7 @@ export function withheldToolStubs(ledger: ToolLedger, present: ReadonlySet<strin
         async execute() {
           return buildToolError({
             kind: 'not_found',
-            message: `\`${name}\` is unavailable in this run — ${reason}.${remedy}`,
+            message: `\`${shown}\` is unavailable in this run — ${reason}.${remedy}`,
           })
         },
       }) as AgentTool,

@@ -116,7 +116,7 @@ export const RESOURCE_CLASSES = [
     value: 'inside-workspace',
     // The positive form is NOT redundant with the negative one. Silence already allows, so
     // `ask`/`deny` on it says nothing new — but it is the only way to write the exception in
-    // `tool:write * deny` followed by `tool:write inside-workspace allow`, which otherwise
+    // `tool:Write * deny` followed by `tool:Write inside-workspace allow`, which otherwise
     // has to be spelled as a list of paths that goes stale the day a directory is added.
     // "Names paths" includes the directory a shell call runs in, which is the honest reading:
     // a command executing inside the workspace is inside it. What it excludes is a call that

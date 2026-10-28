@@ -52,7 +52,7 @@ describe('the Store’s library', () => {
     }
   })
 
-  test('chips filter the installs by kind, and a project install says which project', async () => {
+  test('kind tabs filter the installs, and a project install says which project', async () => {
     const view = await renderStore({
       listings: LISTINGS,
       target: { shelf: 'installed' },
@@ -64,7 +64,7 @@ describe('the Store’s library', () => {
       await view.click(view.button('Plugins', view.host.querySelector('[aria-label="Kinds"]')!))
       expect(row(view.host, 'lint')).not.toBeNull()
       expect(row(view.host, 'kanban')).toBeNull()
-      await view.click(view.button('Everything'))
+      await view.click(view.button('All', view.host.querySelector('[aria-label="Kinds"]')!))
       expect(row(view.host, 'kanban')).not.toBeNull()
     } finally {
       await view.done()

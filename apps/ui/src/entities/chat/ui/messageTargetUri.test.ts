@@ -34,7 +34,7 @@ describe('messageTargetUri', () => {
 
 describe('eventFocusMessageId', () => {
   const messages = [
-    { id: 'assistant-1', items: [{ type: 'tool_call', toolCallId: 'call-123', name: 'bash' }] },
+    { id: 'assistant-1', items: [{ type: 'tool_call', toolCallId: 'call-123', name: 'Bash' }] },
     { id: 'assistant-2', items: [] },
   ] as unknown as Message[]
   const request = {

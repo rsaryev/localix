@@ -2,7 +2,7 @@
  * Drawings (hline / trendline / vline / markers), persisted PER TAB, and the ephemeral overlay
  * another surface lays on top of them. The drawing layer owns the chart-side objects.
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import type { ChartDrawing } from '../../backend/chart-drawing'
 import { loadDrawings, saveDrawings, seriesMarkersOf } from '../model/chartDrawings'
 import type { ChartRuntime } from './useChartRuntime'
@@ -17,7 +17,10 @@ export function syncDrawingLayer(rt: ChartRuntime, list: readonly ChartDrawing[]
 /** The drawing list's state, mirrored into the runtime for the chart-type swap. */
 export function useChartDrawingState(rt: ChartRuntime, controlKey: string | undefined) {
   const state = useState<ChartDrawing[]>(() => (controlKey ? loadDrawings(controlKey) : []))
-  rt.drawings.current = state[0]
+  const [list] = state
+  useLayoutEffect(() => {
+    rt.write('drawings', list)
+  }, [rt, list])
   return state
 }
 

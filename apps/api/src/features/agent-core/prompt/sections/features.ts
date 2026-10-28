@@ -82,14 +82,14 @@ export function buildPluginsSection(pluginsContext: string): string | null {
   if (!clean) return null
   return [
     '# Plugins',
-    'These user-enabled Claude Code plugins add skills you load with the skill tool, and language servers:',
+    'These user-enabled Claude Code plugins add skills you load with `Skill`, and language servers:',
     clean,
   ].join('\n')
 }
 
 export function buildMiniAppsSection(
   miniAppsContext: string,
-  /** `activate_tools` is on the wire: some mini app tools wait behind it. */
+  /** `ToolSearch` is on the wire: some mini app tools wait behind it. */
   canActivate = false,
 ): string | null {
   const clean = capAggregatePromptContext(
@@ -103,7 +103,7 @@ export function buildMiniAppsSection(
   return [
     '# Mini apps',
     canActivate
-      ? 'These user-enabled mini apps are Localix apps with screens the person sees; their tools act on them. Direct tools are under "# Available tools"; the rest wait behind `activate_tools`, activated by exact name when the task matches:'
+      ? 'These user-enabled mini apps are Localix apps with screens the person sees; their tools act on them. Direct tools are under "# Available tools"; the rest wait behind `ToolSearch`, loaded by exact name when the task matches:'
       : 'These user-enabled mini apps are Localix apps with screens the person sees; their tools act on them and are under "# Available tools". Use an app when the task matches:',
     clean,
   ].join('\n')
@@ -158,7 +158,7 @@ export function buildMcpInventorySection(
   )
   return [
     '# MCP servers',
-    'Connected servers are listed for provenance and readiness. Loaded MCP tool schemas are deferred; use `activate_tools` with exact names from its catalog before calling them. Activation lasts for the whole session — a tool you activated on an earlier turn is already in your tool list.',
+    'Connected servers are listed for provenance and readiness. Loaded MCP tool schemas are deferred; load them with `ToolSearch` ("select:<name>") from its catalog before calling them. Activation lasts for the whole session — a tool you activated on an earlier turn is already in your tool list.',
     roster,
   ].join('\n')
 }
@@ -174,26 +174,26 @@ export function buildScratchSection(scratchDir: string): string {
 
 export function buildActiveSubAgentsSection(
   activeSubAgents: { title: string; task?: string }[],
-  capabilities: { canInspectHistory: boolean; canListRuns: boolean },
+  capabilities: { canInspectHistory: boolean; canMessage: boolean },
 ): string {
-  const recoveryNotice = capabilities.canListRuns
-    ? '[Additional active sub-agents omitted: aggregate prompt budget reached. Use `delegate` action:"list" for your children.]'
+  const recoveryNotice = capabilities.canMessage
+    ? '[Additional active sub-agents omitted: aggregate prompt budget reached. Wait for their replies before overlapping their work.]'
     : capabilities.canInspectHistory
-      ? '[Additional active sub-agents omitted: aggregate prompt budget reached. Use `global_search` for the full roster.]'
+      ? '[Additional active sub-agents omitted: aggregate prompt budget reached. Use `GlobalSearch` for the full roster.]'
       : '[Additional active sub-agents omitted: aggregate prompt budget reached. Wait for their completion messages before overlapping their work.]'
   const roster = capAggregatePromptContext(
     activeSubAgents.map((a) => `- «${a.title}»${a.task ? ` — ${a.task}` : ''}`).join('\n'),
     ACTIVE_SUBAGENTS_TOTAL_MAX_CHARS,
     recoveryNotice,
   )
-  const inspection = capabilities.canListRuns
-    ? 'Use `delegate` action:"list" only when a report went missing or ownership is unclear; do not poll for completion. `delegate` action:"message" amends a child\'s task (a finished child runs again and reports again), action:"stop" ends its current run, and action:"close" ends a child you are done with for good.'
+  const inspection = capabilities.canMessage
+    ? '`SendMessage` amends one by its id or description (a finished one runs again and replies again); `TaskStop` ends its current run. Do not poll for completion.'
     : capabilities.canInspectHistory
-      ? 'Use `global_search` only to recover a missed report or coordinate ownership; do not poll for completion.'
+      ? 'Use `GlobalSearch` only to recover a missed report or coordinate ownership; do not poll for completion.'
       : 'Wait for its completion message.'
   return [
     '# Active sub-agents',
-    'These sub-agents are STILL RUNNING. Their results arrive automatically as new messages; continue independent work or end your turn instead of checking their status repeatedly.',
+    "These subagents are STILL RUNNING. You will be notified with each one's reply as a new message: keep working or end your turn; never poll them or guess their results.",
     '- Do NOT edit files inside their task scope, run conflicting commands, or fork overlapping work until they finish.',
     `- Do NOT fork the same task again. ${inspection}`,
     roster,
@@ -212,7 +212,7 @@ export function buildLoopsSection(
   capabilities: { canManage: boolean },
 ): string {
   const overflowNotice = capabilities.canManage
-    ? '[Additional scheduled loops omitted: aggregate prompt budget reached. Use `loops` action="list" for the full roster.]'
+    ? '[Additional scheduled loops omitted: aggregate prompt budget reached. Use `Loops` action="list" for the full roster.]'
     : '[Additional scheduled loops omitted: aggregate prompt budget reached.]'
   const loopRoster = capAggregatePromptContext(
     loops
@@ -232,12 +232,12 @@ export function buildLoopsSection(
     '- The loop already IS the scheduler — never build your own recurrence to satisfy it (the anti-daemon rule in "# Execution discipline" applies), and do NOT remove or replace a loop unless the USER explicitly asks.',
     '- The loop does not produce output on its own — it is normal for nothing to have run yet and for files to be absent. Do not investigate whether the loop "is working"; just perform the task when its run arrives.',
   ]
-  // WHEN to pace, not HOW: the `loops` schema owns the call semantics (reschedule by id,
+  // WHEN to pace, not HOW: the `Loops` schema owns the call semantics (reschedule by id,
   // `delay_seconds`, no second job for one task). This line used to restate them, and the dedup
   // lint carried the overlap as four known duplicates.
   guidance.push(
     capabilities.canManage
-      ? '- A **dynamic** loop (cadence "dynamic") paces itself: when its task is done, set its next run with `loops` action="reschedule" (or "remove" to stop it).'
+      ? '- A **dynamic** loop (cadence "dynamic") paces itself: when its task is done, set its next run with `Loops` action="reschedule" (or "remove" to stop it).'
       : '- Loop-management controls are not available in this run. Do not claim that you listed, rescheduled, removed, or otherwise changed a loop.',
   )
   return guidance.join('\n')

@@ -14,13 +14,8 @@ const AVATAR_SIZE = 26
 export const AUTHOR_BODY_INDENT = 'pl-[2.125rem]'
 
 /**
- * Who is speaking, above their reply: tile, name, time.
- *
- * A transcript with one agent never needed this, which is why it never had it. With a party
- * it does: two replies in a row are two different voices, and the only thing that tells them
- * apart is the line above them. Rendering it in a private chat too is deliberate — the same
- * shape in both means nothing shifts when a second agent joins, and it gives the wall clock
- * a home the footer never gave it.
+ * Who is speaking, above their reply: tile, name, time. It gives the wall clock a home the footer
+ * never had.
  *
  * The name carries the agent's own hue, the same one its tile is built from. That pairing is
  * what lets a reader find one speaker while scrolling past everyone else.
@@ -46,13 +41,13 @@ export function MessageAuthorLine({
       <button
         type="button"
         onClick={() => navigateUi(agentProfileUri(author), navigation)}
-        title={`Open @${author.handle}’s profile`}
+        title={`Open ${author.name}’s profile`}
         className="group/author focus-ring flex min-w-0 items-center gap-2 rounded-md transition-opacity hover:opacity-90"
       >
-        <MonogramAvatar identity={author.handle} label={author.name} size={AVATAR_SIZE} />
+        <MonogramAvatar identity={author.name} label={author.name} size={AVATAR_SIZE} />
         <span
           className="min-w-0 truncate text-xs font-semibold group-hover/author:underline"
-          style={monogramInkStyle(author.handle)}
+          style={monogramInkStyle(author.name)}
         >
           {author.name}
         </span>

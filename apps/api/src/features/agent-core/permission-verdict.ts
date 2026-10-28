@@ -13,8 +13,8 @@ import { isPathBelow } from '../../lib/path-containment'
 import { extractCallFacts, writeTargets } from './permission-facts'
 import { hostRootDenial } from './host-root-guard'
 import { scopeToOwnPlan } from './tools/file/file-call-class'
-import { RESERVED_NON_TOOL_NAMES } from './tool-names-reserved'
-import { isProtocolTool } from './tool-names'
+import { ACTIVATE_TOOLS_TOOL_NAME, RESERVED_NON_TOOL_NAMES } from './tool-names-reserved'
+import { TOOL } from './tool-names'
 import { describeRule, evaluate, type PermissionRule, type ToolFacts } from './permission-engine'
 
 export interface VerdictOptions {
@@ -91,7 +91,7 @@ export type CallJudgement =
     }
 
 /** The tools whose `session` class rests on a plan-file path test (`file-call-class.ts`). */
-const PLAN_FILE_WRITERS: ReadonlySet<string> = new Set(['write', 'edit'])
+const PLAN_FILE_WRITERS: ReadonlySet<string> = new Set([TOOL.Write, TOOL.Edit])
 
 export function judgeCall(
   opts: VerdictOptions,
@@ -121,19 +121,19 @@ export function judgeCall(
   // after assembly. The roster never offers them, so the projection can never deny them —
   // yet evaluating them HERE answered anyway, from a blanket `tool:*` deny that was written
   // about capabilities. Observed live: a member holding a deferred core tool called the
-  // activator to reach it and was told "Blocked: activate_tools is not permitted here", which
+  // activator to reach it and was told "Blocked: ToolSearch is not permitted here", which
   // made an allowed tool unreachable. It grants nothing either way — every name it can reveal
   // is already in this run's registry, past the rules, and each revealed call is checked here
   // on its own.
   //
   // A set, not a name, and owned by the module that owns tool-name policy: the gate holds no
   // list of specific tools.
-  if (RESERVED_NON_TOOL_NAMES.includes(ctx.toolName) || isProtocolTool(ctx.toolName))
+  if (ctx.toolName === ACTIVATE_TOOLS_TOOL_NAME || RESERVED_NON_TOOL_NAMES.includes(ctx.toolName))
     return { kind: 'exempt' }
 
   // The host application is not a permission question: no rule, preset or mode reaches
   // past this line into Localix's own source or install tree (`host-root-guard.ts`).
-  const hostDenial = hostRootDenial(ctx.input, call, opts.root, opts.hostRoots)
+  const hostDenial = hostRootDenial(ctx.toolName, ctx.input, call, opts.root, opts.hostRoots)
   if (hostDenial) return { kind: 'host', message: hostDenial }
 
   // ONE evaluation, because there is one list. A session mode that stops asking does it by
@@ -165,7 +165,7 @@ export function judgeCall(
   // ask the membership question — "is this target a FILE the agent owns inside its state dir" —
   // not the containment question, which also answers yes to the directory itself.
   const targets =
-    ctx.toolName === 'write' || ctx.toolName === 'edit'
+    ctx.toolName === 'Write' || ctx.toolName === 'Edit'
       ? writeTargets(ctx.toolName, ctx.input, opts.root)
       : []
   const ownTree = targets.length > 0 && targets.every((t) => isPathBelow(localixHome(), t))

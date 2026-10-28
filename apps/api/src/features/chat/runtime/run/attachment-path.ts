@@ -40,7 +40,7 @@ export async function materializePathAttachment(
   // lives on disk. The outside-workspace rule below exists to stop the AGENT
   // reaching into arbitrary paths on its own; it was never meant to cover a file
   // the HUMAN explicitly handed over, and applying it here is why a screenshot
-  // dropped from ~/Desktop reached the model as the sentence "use the read tool"
+  // dropped from ~/Desktop reached the model as the sentence "use the Read tool"
   // instead of as a picture. Dragging the file IS the per-file grant — the same
   // reading every other chat app takes of a dropped image.
   //

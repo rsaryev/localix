@@ -46,14 +46,20 @@ const EXTERNAL_FORMAT_LITERALS = new Map([
 const CLAUDE_CODE_ISOLATION = [
   'apps/api/src/features/agent-core/tools/workflow/',
   // The Agent tool's own `isolation: 'worktree'` parameter, as Claude Code declares it, in every
-  // delegate module (start, fork, agent type) and its tests.
-  'apps/api/src/features/agent-core/tools/delegate',
+  // module of it (start, fork, agent type) and its tests.
+  'apps/api/src/features/agent-core/tools/agent/agent-',
+  // Claude Code's auto memory is shared by every worktree of a repository (memory.md).
+  'apps/api/src/features/memory/auto-memory',
+  // A mod's `$.agent.register` spec spells isolation as an agent file does: `isolation: 'worktree'`.
+  'apps/api/src/features/mods/agent-definition',
   // Claude Code's `EnterWorktree`/`ExitWorktree` tool names, mapped to what Localix has.
   'apps/api/src/features/ext/cc-tool-names.ts',
   'apps/api/src/features/cc-hooks/',
+  // The status line's `workspace.git_worktree`, a field of Claude Code's stdin document.
+  'apps/api/src/features/chat/service/status-line',
   'apps/api/src/features/chat/session-cwd',
   'apps/api/src/features/chat/session-provenance',
-  'apps/api/src/features/chat/runtime/run/speaker-agent',
+  'apps/api/src/features/chat/runtime/run/catalog-agent',
   'apps/api/src/features/chat/runtime/run/workflow-options',
 ]
 const WORKTREE_WORD = /\bworktrees?\b/giu

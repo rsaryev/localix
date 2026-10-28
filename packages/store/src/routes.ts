@@ -55,11 +55,18 @@ export const listingsQuerySchema = z.object({
 })
 export type ListingsQuery = z.infer<typeof listingsQuerySchema>
 
+/**
+ * A source of one package kind that could not be read this time, said in a sentence. The listings
+ * it would have given are missing only from the shelves that list that kind.
+ */
+export const storeProblemSchema = z.object({ kind: packageKindSchema, message: z.string() })
+export type StoreProblem = z.infer<typeof storeProblemSchema>
+
 export const listingsResponseSchema = z.object({
   listings: z.array(listingSchema),
   facets: storeFacetsSchema,
-  /** Sources that could not be read this time, each said in a sentence. */
-  problems: z.array(z.string()),
+  /** The unread sources whose kind this page lists; none on a page across every kind. */
+  problems: z.array(storeProblemSchema),
   /** Where the next page starts; absent on the last page. */
   nextCursor: z.string().optional(),
   /**
@@ -173,3 +180,58 @@ export const discoverResponseSchema = z.object({
   listings: z.array(listingSchema),
 })
 export type DiscoverResponse = z.infer<typeof discoverResponseSchema>
+
+/**
+ * What the person is working with, as every completion request carries it: the open tabs and
+ * linked chips, each a binding target. The API resolves them through Context Fabric; the Store
+ * never reads them itself.
+ */
+export const workingReferenceSchema = z.object({
+  kind: z.string().min(1).max(64),
+  token: z.string().max(2_048),
+  label: z.string().max(512),
+  uri: z.string().max(2_048).optional(),
+  attributes: z
+    .record(z.string(), z.union([z.string().max(2_048), z.number(), z.boolean()]))
+    .optional(),
+  origin: z.enum(['linked', 'ambient']).optional(),
+})
+export type WorkingReference = z.infer<typeof workingReferenceSchema>
+
+/** `POST /rpc/store/recommendations/working-set`: the working set the recommendations are for. */
+export const recommendRequestSchema = z.object({
+  projectId: projectIdSchema,
+  sessionId: z.string().min(1).max(256).optional(),
+  references: z.array(workingReferenceSchema).max(32),
+})
+export type RecommendRequest = z.infer<typeof recommendRequestSchema>
+
+/**
+ * What suits the working set, best first, none installed, never empty while anything is left to
+ * install. Nothing is `matched` while the meaning model is not ready (`strategy.mode` is
+ * `lexical`): shared words are no reason to call a package suited.
+ */
+export const recommendResponseSchema = z.object({
+  listings: z.array(listingSchema),
+  /**
+   * How many of the first listings meaning found for the working set; the rest are trusted
+   * packages by score that fill the row. Only these are news worth telling the person about.
+   */
+  matched: z.number().int().nonnegative(),
+  strategy: z.object({ mode: z.enum(['lexical', 'hybrid']), reason: z.string().optional() }),
+})
+export type RecommendResponse = z.infer<typeof recommendResponseSchema>
+
+/** `GET /rpc/store/recommendations`: the project and chat a working set was reported for. */
+export const recommendQuerySchema = z.object({
+  projectId: projectIdSchema,
+  sessionId: z.string().min(1).max(256).optional(),
+})
+
+/**
+ * What the background worked out for that working set (`recommend-board.ts`). `pending` while a
+ * newer working set is being worked out: the listings are then the previous answer, or the
+ * first answer is on its way and the `store-recommendations` poke says when it lands.
+ */
+export const recommendReadSchema = recommendResponseSchema.extend({ pending: z.boolean() })
+export type RecommendRead = z.infer<typeof recommendReadSchema>

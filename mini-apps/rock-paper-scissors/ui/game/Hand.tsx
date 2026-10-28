@@ -40,7 +40,7 @@ export function Hand({
   /** The browser's own check of a revealed digest; `null` when there is nothing to check. */
   verified?: boolean | null
   result?: 'winner' | 'loser' | 'draw'
-  /** Who a sealed own move is hidden from: the other seat, in the person's words. */
+  /** Who a sealed own move is hidden from: the other side, in the person's words. */
   hiddenFrom?: string
 }) {
   const faceDown = !move && digest !== undefined

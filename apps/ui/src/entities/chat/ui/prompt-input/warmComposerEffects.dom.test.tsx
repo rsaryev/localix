@@ -15,6 +15,9 @@ beforeAll(() => {
 afterAll(async () => {
   await new Promise((resolve) => setTimeout(resolve, 0))
   await teardown()
+  // The tests put a fake recorder back by assignment, which keeps the key after the original (no
+  // recorder at all) is "restored".
+  Reflect.deleteProperty(globalThis, 'MediaRecorder')
 })
 
 /** Advance the faked clock in small steps, draining the promise chains each fired timer starts,
@@ -48,7 +51,14 @@ function ComposerDataHarness({ active }: { active: boolean }) {
     NO_AUTOS,
     active,
   )
-  useAtRefAutocomplete('@resource:', () => {}, 'session-1', null, undefined, active)
+  useAtRefAutocomplete(
+    '@resource:',
+    () => {},
+    'session-1',
+    null,
+    () => false,
+    active,
+  )
   return null
 }
 

@@ -10,6 +10,7 @@ import {
 } from '@localixai/kit/dialog'
 import { Input } from '@localixai/kit/input'
 import type { SqlConsoleState } from '../model/useSqlConsole'
+import { focusOnMount } from './focusOnMount'
 
 /**
  * Pre-run bind-value confirmation: a compact query-parameter flow that
@@ -46,7 +47,7 @@ export function QueryParametersDialog({ console: state }: { console: SqlConsoleS
                   {field.label}
                 </span>
                 <Input
-                  autoFocus={index === 0}
+                  ref={index === 0 ? focusOnMount : undefined}
                   value={state.paramValues[field.key] ?? ''}
                   onChange={(event) => state.setParam(field.key, event.target.value)}
                   aria-label={`Value for ${field.label}`}

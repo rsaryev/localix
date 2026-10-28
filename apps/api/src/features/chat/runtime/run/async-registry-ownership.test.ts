@@ -8,14 +8,14 @@ import { createRunAsyncRegistry } from './async-registry'
 import { createRunTurnState } from './turn-state'
 import { emptyAssistantPayload } from '../message-envelope'
 import { emptySessionTiming } from '../../session-timing'
-import { DEFAULT_AGENT_PARTICIPANT } from '../../../../db'
+import { DEFAULT_AGENT_AUTHOR } from '../../../../db'
 import type { RunEnv } from './types'
 
 function setup() {
   const acc = createItemAccumulator(() => 'Running')
   acc.startTool(0, 'old', 'bash', { command: 'build' })
   const payload = {
-    ...emptyAssistantPayload('first', DEFAULT_AGENT_PARTICIPANT),
+    ...emptyAssistantPayload('first', DEFAULT_AGENT_AUTHOR),
     items: acc.list(),
   }
   const state = createRunTurnState({
@@ -23,7 +23,7 @@ function setup() {
     assistantCreatedAt: '2026-01-01T00:00:00Z',
     baseSessionTiming: emptySessionTiming(),
   })
-  state.pendingTools.set('old', { name: 'bash', input: { command: 'build' } } as never)
+  state.pendingTools.set('old', { name: 'Bash', input: { command: 'build' } } as never)
   const runtime = createRuntimeState(createWorkRegistry({ repo: createMemoryWorkRepository() }))
   const stored = new Map<string, StoredMessagePayload>([['first', payload]])
   const writes: string[] = []
@@ -66,7 +66,7 @@ function setup() {
   const split = () => {
     acc.reset()
     const next = {
-      ...emptyAssistantPayload('second', DEFAULT_AGENT_PARTICIPANT),
+      ...emptyAssistantPayload('second', DEFAULT_AGENT_AUTHOR),
       content: 'New work',
     }
     state.currentPayload = next
@@ -108,7 +108,7 @@ describe('background item row ownership', () => {
     try {
       await admitted
       h.dispose()
-      await Bun.sleep(0)
+      await new Promise((resolve) => setTimeout(resolve, 0))
       expect(writes).toBe(1)
     } finally {
       release()
@@ -127,7 +127,7 @@ describe('background item row ownership', () => {
     h.split()
     const current = h.state.currentPayload
     h.registry.emitBackground('old', 'Finished build', { done: true, exitCode: 0 })
-    await Bun.sleep(0)
+    await new Promise((resolve) => setTimeout(resolve, 0))
     expect(h.state.currentPayload).toBe(current)
     expect(h.acc.list()).toEqual([])
     expect(h.stored.get('first')?.items?.[0]).toMatchObject({
@@ -144,7 +144,7 @@ describe('background item row ownership', () => {
     h.split()
     h.acc.startTool(1, 'new', 'bash', { command: 'test' })
     h.state.currentPayload = { ...h.state.currentPayload, items: h.acc.list() }
-    h.state.pendingTools.set('new', { name: 'bash', input: { command: 'test' } } as never)
+    h.state.pendingTools.set('new', { name: 'Bash', input: { command: 'test' } } as never)
     h.registry.registerActions('new', h.actions)
     expect(h.runtime.work.get('new')?.messageId).toBe('second')
     h.registry.emitBackground('new', 'Done', { done: true, exitCode: 0 })
@@ -160,7 +160,7 @@ describe('background item row ownership', () => {
     h.stored.delete('first')
     const writes = h.writes.length
     h.registry.emitBackground('old', 'Late output', { done: true, exitCode: 0 })
-    await Bun.sleep(0)
+    await new Promise((resolve) => setTimeout(resolve, 0))
     expect(h.writes).toHaveLength(writes)
     expect(h.stored.has('first')).toBe(false)
     expect(h.state.currentPayload.content).toBe('New work')

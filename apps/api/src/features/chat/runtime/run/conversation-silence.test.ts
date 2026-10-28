@@ -1,15 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import type { AgentItem, ToolCallItem } from '@localixai/agent/agents'
 import type { StoredMessagePayload } from '../../../../db'
-import { routedParticipants, sessionFixture } from '../../../../testing/session-fixture'
-import { isPass, isSilentConversationTurn, settleConversationTurn } from './conversation-silence'
-import { conversationPolicy } from '../../policy/session-policy'
-
-const room = sessionFixture({
-  agents: [...routedParticipants({ handle: 'localix' }), ...routedParticipants({ handle: 'lead' })],
-})
-const CONVERSATION = conversationPolicy(room)
-const PRIVATE = conversationPolicy({ ...room, agents: room.agents.slice(0, 1) })
+import { isSilentConversationTurn, settleConversationTurn } from './conversation-silence'
 
 const ack: ToolCallItem = {
   id: 'call_1',
@@ -33,32 +25,23 @@ const task: ToolCallItem = {
 
 describe('isSilentConversationTurn — text wins over the tool', () => {
   test('a turn that wrote something and also made a hidden protocol call is NOT silent', () => {
-    // Seen live: the host set the word, addressed @lead, then made a hidden protocol call. Hiding
-    // the row lost the message for the person AND the address for the floor.
-    const payload = {
-      content: 'I picked a word. @lead, ask the first question?',
-      items: [ack],
-    }
-    expect(isSilentConversationTurn(CONVERSATION, payload)).toBe(false)
-    expect(isSilentConversationTurn(PRIVATE, payload)).toBe(false)
+    // Hiding the row would lose the message for the person.
+    const payload = { content: 'I picked a word. Ready for the first question?', items: [ack] }
+    expect(isSilentConversationTurn(payload)).toBe(false)
   })
 
-  test('a hidden protocol call with nothing written is silence in any chat', () => {
-    const payload = { content: '', items: [ack] }
-    expect(isSilentConversationTurn(CONVERSATION, payload)).toBe(true)
-    expect(isSilentConversationTurn(PRIVATE, payload)).toBe(true)
+  test('a hidden protocol call with nothing written is silence', () => {
+    expect(isSilentConversationTurn({ content: '', items: [ack] })).toBe(true)
   })
 
-  test('nothing written and no tool call: silence in a conversation, a failure in a private chat', () => {
-    const payload = { content: '   ', items: [] }
-    expect(isSilentConversationTurn(CONVERSATION, payload)).toBe(true)
-    expect(isSilentConversationTurn(PRIVATE, payload)).toBe(false)
+  test('nothing written and no tool call is a failure, not silence', () => {
+    expect(isSilentConversationTurn({ content: '   ', items: [] })).toBe(false)
   })
 
-  test('declining to answer a reaction is silence even in a private chat', () => {
+  test('declining to answer a reaction is silence', () => {
     const payload = { content: '', items: [] }
-    expect(isSilentConversationTurn(PRIVATE, payload, true)).toBe(true)
-    expect(isSilentConversationTurn(PRIVATE, { content: 'Fixed it.', items: [] }, true)).toBe(false)
+    expect(isSilentConversationTurn(payload, true)).toBe(true)
+    expect(isSilentConversationTurn({ content: 'Fixed it.', items: [] }, true)).toBe(false)
   })
 
   const activities: AgentItem[] = [
@@ -68,7 +51,7 @@ describe('isSilentConversationTurn — text wins over the tool', () => {
       id: 'shell',
       toolCallId: 'shell',
       type: 'command',
-      name: 'bash',
+      name: 'Bash',
       status: 'completed',
       command: 'pwd',
     },
@@ -76,7 +59,7 @@ describe('isSilentConversationTurn — text wins over the tool', () => {
       id: 'file',
       toolCallId: 'file',
       type: 'file_change',
-      name: 'write',
+      name: 'Write',
       status: 'completed',
       changes: [{ path: 'index.html', kind: 'add' }],
     },
@@ -91,14 +74,12 @@ describe('isSilentConversationTurn — text wins over the tool', () => {
     },
     { ...ack, status: 'failed' },
     { ...ack, status: 'aborted' },
-    { ...ack, errorText: 'Routing unavailable' },
+    { ...ack, errorText: 'Tool unavailable' },
   ]
 
   test.each(activities)('retains activity with no flattened text: %j', (activity) => {
-    for (const session of [CONVERSATION, PRIVATE]) {
-      for (const items of [[activity], [activity, ack]]) {
-        expect(isSilentConversationTurn(session, { content: '', items })).toBe(false)
-      }
+    for (const items of [[activity], [activity, ack]]) {
+      expect(isSilentConversationTurn({ content: '', items })).toBe(false)
     }
   })
 
@@ -107,8 +88,7 @@ describe('isSilentConversationTurn — text wins over the tool', () => {
       content: '',
       items: [{ id: 'r', type: 'reasoning', status: 'completed', text: 'Internal' }, ack],
     } satisfies Pick<StoredMessagePayload, 'content' | 'items'>
-    expect(isSilentConversationTurn(CONVERSATION, payload)).toBe(true)
-    expect(isSilentConversationTurn(PRIVATE, payload)).toBe(true)
+    expect(isSilentConversationTurn(payload)).toBe(true)
   })
 
   test('task-creation turn is persisted without withdrawing its streamed message', async () => {
@@ -133,7 +113,7 @@ describe('isSilentConversationTurn — text wins over the tool', () => {
         },
       },
       {
-        silent: isSilentConversationTurn(CONVERSATION, payload),
+        silent: isSilentConversationTurn(payload),
         userId: 'u',
         sessionId: 's',
         payload,
@@ -165,18 +145,11 @@ describe('isSilentConversationTurn — text wins over the tool', () => {
           },
         },
       },
-      { silent: isSilentConversationTurn(PRIVATE, payload), userId: 'u', sessionId: 's', payload },
+      { silent: isSilentConversationTurn(payload), userId: 'u', sessionId: 's', payload },
     )
     expect(saved).toEqual([{ ...payload, isInternal: true }])
     expect(events).toEqual([
       ['u', 's', { type: 'message.removed', sessionId: 's', messageId: 'reply' }],
     ])
   })
-})
-
-test('a pass is a silent turn that completed skip_answer, not one that only tried it', () => {
-  const item = (status: string) => ({ id: 'c', name: 'skip_answer', status }) as never
-  expect(isPass({ items: [item('completed')] })).toBe(true)
-  expect(isPass({ items: [item('failed')] })).toBe(false)
-  expect(isPass({ items: [] })).toBe(false)
 })

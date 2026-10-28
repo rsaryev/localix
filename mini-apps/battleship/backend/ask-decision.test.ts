@@ -19,7 +19,7 @@ afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true })
 })
 
-const SEAT = { userId: 'u1', sessionId: 's1' }
+const CHAT = { userId: 'u1', sessionId: 's1' }
 const AT = '2026-10-20T10:00:00.000Z'
 
 /** A seeded die, so every run places the same fleets. */
@@ -141,15 +141,15 @@ describe('against the decision model', () => {
       return cellName(cell)
     })
     const { games, woke } = setup(model.host)
-    await games.setOpponent(SEAT, 'decision')
-    game = await games.read(SEAT)
+    await games.setOpponent(CHAT, 'decision')
+    game = await games.read(CHAT)
     // The request does not wait for the model: the person's shot is back with the model thinking.
-    const shot = await games.personShot(SEAT, missFor(game))
+    const shot = await games.personShot(CHAT, missFor(game))
     expect(shot.shots.filter((at) => at.by === 'you')).toHaveLength(1)
     expect(shot.shots.filter((at) => at.by === 'agent')).toEqual([])
     expect(shot.waiting).toMatchObject({ status: 'thinking' })
     await games.settled()
-    const after = await games.read(SEAT)
+    const after = await games.read(CHAT)
     const theirs = after.shots.filter((at) => at.by === 'agent')
     expect(theirs.map((shot) => shot.result === 'miss')).toEqual([false, true])
     expect(after.turn).toBe('you')
@@ -161,56 +161,56 @@ describe('against the decision model', () => {
   test('a miss of the model leaves the shot owed with the reason, and Ask again retries', async () => {
     let answer: string | DecisionOutcome = { status: 'unavailable', ms: 1 }
     const { games } = setup(decisions(() => answer).host)
-    await games.setOpponent(SEAT, 'decision')
-    const game = await games.read(SEAT)
-    await games.personShot(SEAT, missFor(game))
+    await games.setOpponent(CHAT, 'decision')
+    const game = await games.read(CHAT)
+    await games.personShot(CHAT, missFor(game))
     await games.settled()
-    const missed = await games.read(SEAT)
+    const missed = await games.read(CHAT)
     expect(missed.turn).toBe('agent')
     expect(missed.waiting).toMatchObject({
       status: 'unreachable',
       reason: expect.stringContaining('No decision model is connected'),
     })
     answer = cellName(water(missed))
-    await games.remind(SEAT)
+    await games.remind(CHAT)
     await games.settled()
-    expect((await games.read(SEAT)).turn).toBe('you')
+    expect((await games.read(CHAT)).turn).toBe('you')
   })
 
   test('switching while the agent side owes a shot asks the new opponent at once', async () => {
     let game: Game | null = null
     const { games, woke } = setup(decisions(() => cellName(water(game!))).host)
-    await games.setOpponent(SEAT, 'agent')
-    game = await games.read(SEAT)
-    await games.personShot(SEAT, missFor(game))
+    await games.setOpponent(CHAT, 'agent')
+    game = await games.read(CHAT)
+    await games.personShot(CHAT, missFor(game))
     expect(woke).toHaveLength(1)
-    await games.setOpponent(SEAT, 'decision')
+    await games.setOpponent(CHAT, 'decision')
     await games.settled()
-    const after = await games.read(SEAT)
+    const after = await games.read(CHAT)
     expect(after.opponent).toBe('decision')
     expect(after.turn).toBe('you')
   })
 
   test('a new table plays the decision model when one can answer, else the agent', async () => {
-    expect((await setup(decisions(() => 'A1').host).games.read(SEAT)).opponent).toBe('decision')
+    expect((await setup(decisions(() => 'A1').host).games.read(CHAT)).opponent).toBe('decision')
     const none: DecisionHost = {
       available: async () => null,
       decide: async () => ({ status: 'unavailable', ms: 0 }),
     }
-    expect((await setup(none).games.read(SEAT)).opponent).toBe('agent')
-    expect((await setup().games.read(SEAT)).opponent).toBeNull()
+    expect((await setup(none).games.read(CHAT)).opponent).toBe('agent')
+    expect((await setup().games.read(CHAT)).opponent).toBeNull()
   })
 
   test('a chosen opponent stays chosen, and carries to the next game', async () => {
     const { games } = setup(decisions(() => 'A1').host)
-    await games.setOpponent(SEAT, 'agent')
-    expect((await games.newGame(SEAT, 'you')).opponent).toBe('agent')
+    await games.setOpponent(CHAT, 'agent')
+    expect((await games.newGame(CHAT, 'you')).opponent).toBe('agent')
   })
 
   test('the agent cannot fire for the model, and a game it opens lets the user fire first', async () => {
     const { games } = setup(decisions(() => 'A1').host)
-    await games.setOpponent(SEAT, 'decision')
-    await expect(games.agentShot(SEAT, 0)).rejects.toThrow('The decision model plays your side')
-    expect((await games.agentNewGame(SEAT, 'agent')).turn).toBe('you')
+    await games.setOpponent(CHAT, 'decision')
+    await expect(games.agentShot(CHAT, 0)).rejects.toThrow('The decision model plays your side')
+    expect((await games.agentNewGame(CHAT, 'agent')).turn).toBe('you')
   })
 })

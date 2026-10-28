@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 
 import type { SlashCommand } from './SlashCommandMenu'
 import { mergeDynamicSlashCommands } from './slashCommands'
+import { useMcpPromptCommands } from './useMcpPromptCommands'
 import { useMiniAppCommands } from './useMiniAppCommands'
 import { usePluginCommands } from './usePluginCommands'
 import { useSkillCommands } from './useSkillCommands'
@@ -17,8 +18,13 @@ export function useDynamicSlashCommands(
   const skillCommands = useSkillCommands(sessionId, enabled)
   const pluginCommands = usePluginCommands(sessionId, enabled)
   const miniAppCommands = useMiniAppCommands(sessionId, enabled)
+  const mcpPromptCommands = useMcpPromptCommands(sessionId, enabled)
   return useMemo(
-    () => mergeDynamicSlashCommands([...pluginCommands, ...miniAppCommands], skillCommands),
-    [skillCommands, pluginCommands, miniAppCommands],
+    () =>
+      mergeDynamicSlashCommands(
+        [...pluginCommands, ...miniAppCommands, ...mcpPromptCommands],
+        skillCommands,
+      ),
+    [skillCommands, pluginCommands, miniAppCommands, mcpPromptCommands],
   )
 }

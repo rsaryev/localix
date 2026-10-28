@@ -9,7 +9,8 @@ import {
   type StoreComponent,
   type StoreFacets,
 } from '@localixai/store'
-import type { SidebarNavGroup } from '@localixai/kit/sidebar-nav'
+import type { LucideIcon } from 'lucide-react'
+import type { TabItem } from '@localixai/kit/tabs'
 import type { StorePageQuery } from '@/shared/api/store-client'
 import { capabilityLabel, COMPONENT_LABELS, KIND_LABELS, LIBRARY_LABELS } from './presentation'
 
@@ -29,6 +30,8 @@ export type StoreView =
       tab?: string
     }
   | { type: 'list'; title: string; subtitle?: string; query?: StorePageQuery; refs?: ListingRef[] }
+  /** Every recommendation for the work, ranked (`RecommendedView`). */
+  | { type: 'recommended' }
 
 /**
  * A section from a link or a restored tab. A skill, an agent or an MCP server no longer has a shelf
@@ -43,40 +46,48 @@ export function parseSection(raw: unknown): StoreSection | null {
     : shelf
 }
 
+/** The kinds of what packages give that are tabs of their own; the rest wait under More. */
+const LEADING_KINDS: readonly string[] = ['skill', 'agent', 'mcp-server']
+
+/** The Store's sections, as its bar draws them (`StoreNav`). */
+export interface StoreNavSections {
+  /** The catalog's tabs: Discover, the package kinds, skills, agents and MCP servers. */
+  catalog: TabItem[]
+  /** The other kinds packages give (commands, hooks, mods…), in a More menu. */
+  more: TabItem[]
+  /** The person's library beside the search: Installed, Updates, Yours, Project, Sources. */
+  library: TabItem[]
+}
+
 /**
  * The Store's sections from the facets (`docs/internals/store.md`, "Hierarchy"): Discover, one
  * shelf for each package kind that is only a package (mini apps, plugins) and per component kind
  * some listing has, the library and Sources. A skill, an agent and an MCP server have ONE shelf,
- * under what packages give, listing the ones a person has and those inside plugins; its count is
- * how many it lists. A shelf no listing is on is left out, unless its kind can make a new item:
- * that shelf is where Add is.
+ * under what packages give, listing the ones a person has and those inside plugins. A shelf no
+ * listing is on is left out, unless its kind can make a new item: that shelf is where Add is.
+ * Only Updates carries a count: it is the one that asks for something.
  */
-export function navGroups(
+export function storeNav(
   facets: StoreFacets | undefined,
   creatable: readonly PackageKind[] = [],
-): SidebarNavGroup[] {
+): StoreNavSections {
   const count = (id: string) => facets?.shelves[id]
-  const shelf = (
-    id: string,
-    label: string,
-    icon: SidebarNavGroup['items'][number]['icon'],
-    always = false,
-  ) => (count(id) || always ? [{ id, label, icon, count: count(id) ?? 0 }] : [])
-  return [
-    {
-      id: 'discover',
-      items: [
-        {
-          id: 'discover',
-          label: LIBRARY_LABELS.discover.label,
-          icon: LIBRARY_LABELS.discover.icon,
-        },
-      ],
-    },
-    {
-      id: 'packages',
-      label: 'Packages',
-      items: PACKAGE_SHELF_KINDS.flatMap((kind) =>
+  const shelf = (id: string, label: string, icon: LucideIcon, always = false): TabItem[] =>
+    count(id) || always ? [{ id, label, icon }] : []
+  const given = BROWSABLE_COMPONENT_KINDS.flatMap((kind) =>
+    shelf(
+      capabilityShelf(kind),
+      capabilityLabel(kind),
+      COMPONENT_LABELS[kind].icon,
+      creatable.includes(kind as PackageKind),
+    ),
+  )
+  const leads = (tab: TabItem) => LEADING_KINDS.includes(tab.id.slice('capability:'.length))
+  const updates = count('updates')
+  return {
+    catalog: [
+      { id: 'discover', label: LIBRARY_LABELS.discover.label, icon: LIBRARY_LABELS.discover.icon },
+      ...PACKAGE_SHELF_KINDS.flatMap((kind) =>
         shelf(
           packageShelf(kind),
           KIND_LABELS[kind].many,
@@ -84,36 +95,30 @@ export function navGroups(
           creatable.includes(kind),
         ),
       ),
-    },
-    {
-      id: 'gives',
-      label: 'What packages give',
-      items: BROWSABLE_COMPONENT_KINDS.flatMap((kind) =>
-        shelf(
-          capabilityShelf(kind),
-          capabilityLabel(kind),
-          COMPONENT_LABELS[kind].icon,
-          creatable.includes(kind as PackageKind),
-        ),
-      ),
-    },
-    {
-      id: 'library',
-      label: 'Library',
-      items: [
-        {
-          id: 'installed',
-          label: LIBRARY_LABELS.installed.label,
-          icon: LIBRARY_LABELS.installed.icon,
-          count: facets?.installed ?? 0,
-        },
-        ...shelf('updates', LIBRARY_LABELS.updates.label, LIBRARY_LABELS.updates.icon),
-        ...shelf('yours', LIBRARY_LABELS.yours.label, LIBRARY_LABELS.yours.icon),
-        ...shelf('project', LIBRARY_LABELS.project.label, LIBRARY_LABELS.project.icon),
-        { id: 'sources', label: LIBRARY_LABELS.sources.label, icon: LIBRARY_LABELS.sources.icon },
-      ],
-    },
-  ]
+      ...given.filter(leads),
+    ],
+    more: given.filter((tab) => !leads(tab)),
+    library: [
+      {
+        id: 'installed',
+        label: LIBRARY_LABELS.installed.label,
+        icon: LIBRARY_LABELS.installed.icon,
+      },
+      ...(updates
+        ? [
+            {
+              id: 'updates',
+              label: LIBRARY_LABELS.updates.label,
+              icon: LIBRARY_LABELS.updates.icon,
+              badge: updates,
+            },
+          ]
+        : []),
+      ...shelf('yours', LIBRARY_LABELS.yours.label, LIBRARY_LABELS.yours.icon),
+      ...shelf('project', LIBRARY_LABELS.project.label, LIBRARY_LABELS.project.icon),
+      { id: 'sources', label: LIBRARY_LABELS.sources.label, icon: LIBRARY_LABELS.sources.icon },
+    ],
+  }
 }
 
 /** The label of a section, for its heading and the Back button. */

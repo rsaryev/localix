@@ -43,7 +43,7 @@ function terminal(initial = 'READY>') {
     deps,
     writes,
     state,
-    exit(final = 'DONE') {
+    exit: (final = 'DONE') => {
       text = final
       live = false
       listener('exit')
@@ -58,7 +58,7 @@ describe('terminal round-trip efficiency', () => {
     deps.onWait = (event) => lifecycle.push(event)
     deps.write = (_id, data) => {
       writes.push(data)
-      if (data === '\r') setTimeout(() => exit(), 120)
+      if (data === '\r') setTimeout(() => exit(), 0)
       return true
     }
     const tool = createBashTool(undefined, undefined, { terminalControl: deps })
@@ -105,7 +105,7 @@ describe('terminal round-trip efficiency', () => {
   test('cancelling an exit wait unsubscribes and preserves live state', async () => {
     const { deps, state } = terminal()
     const controller = new AbortController()
-    setTimeout(() => controller.abort(), 10)
+    setTimeout(() => controller.abort(), 0)
     const result = await waitForScreen(
       deps,
       { terminalId: 't1', wait_for_exit: true },

@@ -3,12 +3,12 @@
   "extends": ["//"],
   "tasks": {
     "type-check": {
-      "dependsOn": ["^build", "docs:gen"],
+      "dependsOn": ["^type-check"],
       "outputs": [],
       "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/mini-apps/**", "$TURBO_ROOT$/plugins/**"]
     },
     "type-check:tests": {
-      "dependsOn": ["^build", "docs:gen"],
+      "dependsOn": ["^type-check"],
       "outputs": [],
       "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/mini-apps/**", "$TURBO_ROOT$/plugins/**"]
     },

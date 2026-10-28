@@ -58,11 +58,11 @@ export function wireGrants(grants: readonly GrantOption[]): ConfirmGrantOption[]
 
 /** The verb a core file tool performs on a path; any other tool is "used on" it. */
 const PATH_VERBS: Record<string, string> = {
-  read: 'Read',
-  write: 'Write',
-  edit: 'Edit',
-  search: 'Search',
-  skill: 'Change',
+  Read: 'Read',
+  Write: 'Write',
+  Edit: 'Edit',
+  Search: 'Search',
+  Skill: 'Change',
 }
 
 /**
@@ -79,7 +79,7 @@ export function confirmTitle(input: {
   targets?: readonly string[]
 }): string {
   const { toolName, subject = 'command', targets = [] } = input
-  if (subject === 'command') return toolName === 'bash' ? 'Run a command' : `Run ${toolName}`
+  if (subject === 'command') return toolName === 'Bash' ? 'Run a command' : `Run ${toolName}`
   if (subject === 'path') {
     const object =
       targets.length === 1 ? path.basename(targets[0]!) || targets[0]! : `${targets.length} paths`

@@ -65,7 +65,7 @@ describe('one write path for every capability kind', () => {
     const snapshot = await svc.apply('u1', {
       projectId: 'PRJ-1',
       changes: [
-        change('tool:bash', 'deny'),
+        change('tool:Bash', 'deny'),
         change('skill:deploy', 'deny'),
         change('mcp:github', 'allow'),
         change('plugin:first-fixture', 'default'),
@@ -79,7 +79,7 @@ describe('one write path for every capability kind', () => {
     // a listing or a boot-time load would have asked. Nothing resolves to "nobody".
     expect(writes[0]!.scope).toBe(DEFAULT_AGENT_ID)
     expect(writes[0]!.changes.map((c) => `${c.action}=${c.effect}`)).toEqual([
-      'tool:bash=deny',
+      'tool:Bash=deny',
       'skill:deploy=deny',
       'mcp:github=allow',
       'plugin:first-fixture=default',
@@ -96,7 +96,7 @@ describe('one write path for every capability kind', () => {
     await svc.apply('u1', {
       projectId: 'PRJ-1',
       agentId: 'builtin:qa',
-      changes: [change('tool:bash', 'deny')],
+      changes: [change('tool:Bash', 'deny')],
     })
 
     expect(writes[0]!.scope).toBe('builtin:qa')
@@ -132,7 +132,7 @@ describe('one write path for every capability kind', () => {
 
     await expect(
       svc.apply('u1', {
-        changes: [change('tool:bash', 'deny'), change('agent:builtin:localix', 'deny')],
+        changes: [change('tool:Bash', 'deny'), change('agent:builtin:localix', 'deny')],
       }),
     ).rejects.toThrow('cannot be switched off')
     expect(writes).toEqual([])
@@ -181,7 +181,7 @@ describe('one write path for every capability kind', () => {
 
 describe('reading a capability action', () => {
   test('names its kind, and answers null for one this installation has no prefix for', () => {
-    expect(kindOfAction('tool:bash')).toBe('tool')
+    expect(kindOfAction('tool:Bash')).toBe('tool')
     expect(kindOfAction('mcp:github/create_pr')).toBe('mcp')
     expect(kindOfAction('invocation:chat')).toBeNull()
   })
@@ -191,8 +191,8 @@ describe('reading a capability action', () => {
    * reaction must not treat it as one — re-wiring a host over an edit to a command pattern.
    */
   test('only changes about the capability itself name it', () => {
-    const changes = [change('tool:bash', 'ask', 'git *'), change('tool:read', 'deny')]
+    const changes = [change('tool:Bash', 'ask', 'git *'), change('tool:Read', 'deny')]
 
-    expect(namesOf(changes, 'tool')).toEqual(['read'])
+    expect(namesOf(changes, 'tool')).toEqual(['Read'])
   })
 })

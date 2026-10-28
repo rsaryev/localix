@@ -32,6 +32,7 @@ export function createWakeQueue(ctx: WakeQueueContext) {
     store,
     scheduleDrain: (sessionId) => scheduleDrain(sessionId),
     ...(ctx.leaseMs ? { leaseMs: ctx.leaseMs } : {}),
+    ...(ctx.armDrainRetry ? { armDrainRetry: ctx.armDrainRetry } : {}),
   })
   const continuations = createContinuationOperations(shared)
 
@@ -51,9 +52,7 @@ export function createWakeQueue(ctx: WakeQueueContext) {
       ...(turn.clientMessageId ? { clientMessageId: turn.clientMessageId } : {}),
       kind: turn.kind,
       priority: item.priority,
-      ...(agentTurn
-        ? { agentId: agentTurn.speakerAgentId, agentWeight: Math.max(0, -item.priority) }
-        : {}),
+      ...(agentTurn ? { agentWeight: Math.max(0, -item.priority) } : {}),
       preview: turn.content.slice(0, 140),
       queuedAt: turn.queuedAt,
       ...(turn.source ? { source: turn.source } : {}),
@@ -124,13 +123,9 @@ export function createWakeQueue(ctx: WakeQueueContext) {
     leases,
     continuations,
     publishQueue,
-    ageWaitingAgentTurns: agentTurns.ageWaiting,
     cancelAgentTurns: agentTurns.cancel,
     holdsOf,
     holdUntil,
-    ...(ctx.leadership ? { leadership: ctx.leadership } : {}),
-    ...(ctx.floorAdvisor ? { floorAdvisor: ctx.floorAdvisor } : {}),
-    ...(ctx.inviteAddressed ? { inviteAddressed: ctx.inviteAddressed } : {}),
   })
   scheduleDrain = drain.scheduleDrain
   // A report that settled may release the reports held for it; re-reading is the drain's own
@@ -258,9 +253,8 @@ export function createWakeQueue(ctx: WakeQueueContext) {
       {
         userId: turn.userId,
         session: turn.session,
-        content: `Turn for ${turn.scope.speakerAgentId}`,
+        content: 'Agent turn',
         agentTurn: {
-          speakerAgentId: turn.scope.speakerAgentId,
           assistantMessageId: turn.assistantMessageId,
           triggerMessageIds: turn.triggerMessageIds,
           source,
@@ -274,15 +268,13 @@ export function createWakeQueue(ctx: WakeQueueContext) {
   return {
     enqueueRun,
     cancelAgentTurns: agentTurns.cancel,
-    cancelAgentTurn: (userId: string, sessionId: string, agentId: string) =>
-      agentTurns.cancel(userId, sessionId, { agentId }),
-    boostReferencedAgentTurns: agentTurns.boostReferences,
     drainPendingAndRun: drain.drainPendingAndRun,
     scheduleDrain: drain.scheduleDrain,
     wake,
     remove: removal.remove,
     interruptAndPromote,
     clear: removal.clear,
+    takeForReturn: removal.takeForReturn,
     list: steering.list,
     hasPending: steering.hasPending,
     forget,

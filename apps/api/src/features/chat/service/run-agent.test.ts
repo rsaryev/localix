@@ -6,17 +6,8 @@ import type { SessionRecord } from '../repository'
 import { childExecutionContext } from '../runtime/execution-context'
 import { ORCHESTRATION_DELEGATE_TASK } from '../../agent-core/execution-capabilities'
 import type { AgentTurnAdmission } from '../runtime/agent-turn-ticket'
-import { noLeadership } from '../runtime/conversation-strategy'
 
-function harness(
-  initialSession: SessionRecord = session,
-  inviteAddressed: (
-    userId: string,
-    session: SessionRecord,
-    text: string,
-  ) => Promise<SessionRecord> = async (_userId, current) => current,
-  advised: string[] = [],
-) {
+function harness(initialSession: SessionRecord = session) {
   let currentSession: SessionRecord = initialSession
   const inserted: PersistedMessage[] = []
   const events: Array<{ type: string; message?: PersistedMessage }> = []
@@ -43,16 +34,6 @@ function harness(
     maybeGenerateTitle: () => {},
     runner: {
       cancelAgentTurns: async () => {},
-      leadership: () => noLeadership,
-      floorAdvisor: () => async (question: { text: string }) => {
-        advised.push(question.text)
-        return null
-      },
-      // An invitation persists the roster, so the repository sees it from then on.
-      inviteAddressed: async (userId: string, current: SessionRecord, text: string) => {
-        currentSession = await inviteAddressed(userId, current, text)
-        return currentSession
-      },
       enqueueRun: async (args: AgentTurnAdmission) => {
         runArgs = args
       },
@@ -90,7 +71,7 @@ describe('runAgent history loader', () => {
     const h = harness()
     // Records the interleaving of the two things that race for the critical path: the user's
     // own echo, and the transcript read. The echo must not wait for the read; the assistant
-    // slot MUST, because its author is the explicitly addressed speaker and that decision reads
+    // slot MUST, because its author is the explicitly addressed agent and that decision reads
     // the transcript (`floor/transcript.ts`).
     const order: string[] = []
     let resolveLoad: (() => void) | undefined
@@ -198,50 +179,5 @@ describe('runAgent history loader', () => {
     }
     expect(context.invocation.kind).toBe('root')
     expect(context.authority.capabilities).toContain(ORCHESTRATION_DELEGATE_TASK)
-  })
-})
-
-describe('a tag in the person’s message', () => {
-  test('brings an available agent in before the message is routed to it', async () => {
-    const qa = {
-      agentId: 'native:global:qa',
-      handle: 'qa',
-      providerConnectionId: null,
-      modelId: '',
-      reasoningEffort: 'medium',
-    } as SessionRecord['agents'][number]
-    const seen: string[] = []
-    const h = harness(session, async (_userId, current, text) => {
-      seen.push(text)
-      return { ...current, agents: [...current.agents, qa] }
-    })
-    await h.runAgent('u', 's', session, [], '@qa, check the login flow', '2026-01-01')
-    expect(seen).toEqual(['@qa, check the login flow'])
-    expect(h.runArgs?.scope.speakerAgentId).toBe('native:global:qa')
-  })
-})
-
-describe('group routing on the send path', () => {
-  const member = (agentId: string, handle: string) =>
-    ({
-      agentId,
-      handle,
-      providerConnectionId: null,
-      modelId: '',
-      reasoningEffort: 'medium',
-    }) as SessionRecord['agents'][number]
-  const room = {
-    ...session,
-    agents: [member('builtin:localix', 'localix'), member('native:global:qa', 'qa')],
-  } as SessionRecord
-
-  test("the person's own words are put to the decision model; a hidden prompt is not", async () => {
-    const advised: string[] = []
-    const h = harness(room, undefined, advised)
-    await h.runAgent('u', 's', room, [], 'Check the login flow', '2026-01-01')
-    await h.runAgent('u', 's', room, [], 'wake: nightly digest', '2026-01-01', undefined, {
-      isInternal: true,
-    })
-    expect(advised).toEqual(['Check the login flow'])
   })
 })

@@ -25,8 +25,8 @@ export function registerUi(host: MiniAppUiHost): void {
     agentContext: {
       description:
         'A linked external coding-agent transcript. Use its resource session key to investigate further.',
-      tools: ['external_agent_sessions'],
-      nextSteps: ['Read the linked session and its tool results with external_agent_sessions.'],
+      tools: ['ExternalAgentSessions'],
+      nextSteps: ['Read the linked session and its tool results with ExternalAgentSessions.'],
     },
   })
   host.workItems.register({

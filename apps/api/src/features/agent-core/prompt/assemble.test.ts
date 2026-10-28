@@ -4,7 +4,6 @@ import { buildAgentSystemPrompt, buildAgentSystemPromptParts } from './assemble'
 import { createRuntimeToolRegistry } from '../tool-registry'
 import { createSkillTool } from '../tools/skill'
 import { resolveRunProfile } from '../run-shape'
-import { CONVERSATION_TURN_CONTROL, SOLO_TURN_CONTROL } from './sections/team-contract'
 
 /** The run shapes, derived — there is no profile table to reach for. `job` is a surface
  *  that declares nothing, which is how a toolless run is spelled now. */
@@ -23,69 +22,46 @@ function partsOf(params: Parameters<typeof buildAgentSystemPromptParts>[0]) {
 }
 
 describe('buildAgentSystemPrompt', () => {
-  test('session objective and historical summary stay in every system prompt without tools or colleagues', () => {
+  test('session objective and historical summary ride every runtime context without tools', () => {
     const toolRegistry = createRuntimeToolRegistry({ policy: { agentProfile: SHAPE.job } })
     const topic = {
       title: 'Release',
       goal: 'Ship the parser.',
       previousTopicSummary: 'Keep Bun; parser tests passed.',
     }
-    for (const conversation of [
-      undefined,
-      { self: 'lead', participants: [{ handle: 'lead' }, { handle: 'qa' }] },
-    ]) {
+    for (const conversation of [undefined, true]) {
       const parts = partsOf({ toolRegistry, sessionTopic: topic, conversation })
-      expect(parts.stablePrompt).toContain('# Session objective')
-      expect(parts.stablePrompt).toContain(topic.goal)
-      expect(parts.stablePrompt).toContain(topic.previousTopicSummary)
-      expect(parts.runtimeTail).not.toContain('# Session objective')
+      expect(parts.runtimeTail).toContain('# Session objective')
+      expect(parts.runtimeTail).toContain(topic.goal)
+      expect(parts.runtimeTail).toContain(topic.previousTopicSummary)
+      expect(parts.stablePrompt).not.toContain('# Session objective')
     }
     const changed = partsOf({
       toolRegistry,
       sessionTopic: { ...topic, goal: 'Deploy the parser.' },
     })
-    expect(changed.stablePrompt).toContain('Deploy the parser.')
-    expect(changed.stablePrompt).not.toContain(topic.goal)
-    expect(changed.stablePrompt).toContain(topic.previousTopicSummary)
+    expect(changed.runtimeTail).toContain('Deploy the parser.')
+    expect(changed.runtimeTail).not.toContain(topic.goal)
+    expect(changed.stablePrompt).toBe(partsOf({ toolRegistry, sessionTopic: topic }).stablePrompt)
     const legacy = partsOf({ toolRegistry, sessionTopic: { title: 'Legacy' } })
-    expect(legacy.stablePrompt).toContain('follow the current user request')
-    expect(legacy.stablePrompt).not.toContain('## Previous topic summary')
+    expect(legacy.runtimeTail).toContain('follow the current user request')
+    expect(legacy.runtimeTail).not.toContain('## Previous topic summary')
   })
-  test('the turn protocol follows the membership the run started with, once', () => {
-    // A solo chat agent can tag a colleague in, but the full protocol binds only once colleagues
-    // are present — the same snapshot the host routes the reply against.
+  test('the turn contract renders for a run in a conversation, in the runtime context', () => {
     const toolRegistry = richRegistry(SHAPE.orchestrator)
-    expect(toolRegistry.toolNames).not.toContain('conversation_control')
-    const full = CONVERSATION_TURN_CONTROL
-    const solo = buildAgentSystemPrompt({
-      toolRegistry,
-      conversation: { self: 'lead', participants: [{ handle: 'lead' }] },
-    })
-    expect(solo.split(SOLO_TURN_CONTROL)).toHaveLength(2)
-    expect(solo).not.toContain(full)
-    // The person is not a participant: there is no `@human` entry, and the chat stays solo.
-    expect(solo).toContain('# Conversation participants')
-    expect(solo).not.toContain('@human')
-    // No conversation, nobody to tag: no turn protocol at all.
+    const chat = buildAgentSystemPrompt({ toolRegistry, conversation: true })
+    expect(chat.split('# Conversation turn control')).toHaveLength(2)
+    expect(chat.indexOf('# Conversation turn control')).toBeGreaterThan(
+      chat.indexOf('# Runtime context'),
+    )
+    expect(partsOf({ toolRegistry, conversation: true }).stablePrompt).not.toContain(
+      '# Conversation turn control',
+    )
+    // The person is reached through `ask`: there is no `@human` entry, and no other agent.
+    expect(chat).not.toContain('@human')
+    expect(chat).not.toContain('# Conversation participants')
+    // No conversation: no turn contract at all.
     expect(buildAgentSystemPrompt({ toolRegistry })).not.toContain('# Conversation turn control')
-    const multi = buildAgentSystemPrompt({
-      toolRegistry,
-      conversation: {
-        self: 'lead',
-        participants: [{ handle: 'lead' }, { handle: 'qa' }],
-        isLeader: true,
-      },
-    })
-    expect(multi.split(full)).toHaveLength(2)
-    expect(multi).not.toContain(SOLO_TURN_CONTROL)
-    expect(multi).toContain('@mention one ready owner at a time')
-    // The roster is volatile: it renders after the cache boundary, the protocol before it.
-    expect(multi.indexOf('# Conversation participants')).toBeGreaterThan(
-      multi.indexOf('# Runtime context'),
-    )
-    expect(multi.indexOf('# Conversation turn control')).toBeLessThan(
-      multi.indexOf('# Runtime context'),
-    )
     const childPrompt = buildAgentSystemPrompt({
       agentProfile: SHAPE.subagent,
       toolRegistry: richRegistry(SHAPE.subagent),
@@ -96,7 +72,7 @@ describe('buildAgentSystemPrompt', () => {
   test('active-subagent guidance follows the final runtime tool roster', () => {
     // A fork cannot fork again: the host withholds `fork` (`delegation-hierarchy.ts`), and a
     // child carries no history tool.
-    const subagentRegistry = richRegistry(SHAPE.subagent, ['delegate'])
+    const subagentRegistry = richRegistry(SHAPE.subagent, ['Agent'])
     const subagentPrompt = buildAgentSystemPrompt({
       agentProfile: SHAPE.subagent,
       toolRegistry: subagentRegistry,
@@ -106,10 +82,10 @@ describe('buildAgentSystemPrompt', () => {
     // The property under test is that the guidance tracks the FINAL roster, so the
     // strongest case is the negative one: a child with neither fork nor history
     // controls is told only to wait rather than inventing lifecycle operations.
-    expect(subagentRegistry.toolNames).not.toContain('global_search')
-    expect(subagentRegistry.toolNames).not.toContain('delegate')
+    expect(subagentRegistry.toolNames).not.toContain('GlobalSearch')
+    expect(subagentRegistry.toolNames).not.toContain('Agent')
     expect(subagentPrompt).toContain('Wait for its completion message')
-    expect(subagentPrompt).not.toContain('`global_search`')
+    expect(subagentPrompt).not.toContain('`GlobalSearch`')
 
     // The positive half of the same property: a roster that DOES carry the tool gets the
     // guidance. Without this the assertions above would pass on a prompt that simply
@@ -118,17 +94,17 @@ describe('buildAgentSystemPrompt', () => {
     const orchestratorPrompt = buildAgentSystemPrompt({
       agentProfile: SHAPE.orchestrator,
       toolRegistry: orchestratorRegistry,
-      conversation: { self: 'lead', participants: [{ handle: 'lead' }] },
+      conversation: true,
       activeSubAgents: [{ title: 'nested worker', task: 'child-session' }],
     })
-    expect(orchestratorRegistry.toolNames).toContain('store')
-    expect(orchestratorRegistry.toolNames).toContain('delegate')
-    expect(orchestratorPrompt).toContain('`delegate` action:"list"')
-    expect(orchestratorPrompt).toContain('do not poll for completion')
-    expect(orchestratorPrompt).toContain('results arrive automatically as new messages')
+    expect(orchestratorRegistry.toolNames).toContain('Store')
+    expect(orchestratorRegistry.toolNames).toContain('Agent')
+    expect(orchestratorPrompt).toContain('`TaskStop` ends its current run')
+    expect(orchestratorPrompt).toContain('Do not poll for completion')
+    expect(orchestratorPrompt).toContain('You will be notified with each one')
     // A child is reachable after its report: the prompt must say so, not call it one-shot.
-    expect(orchestratorPrompt).toContain('`delegate` action:"message"')
-    expect(orchestratorPrompt).toContain('`store`')
+    expect(orchestratorPrompt).toContain('SendMessage')
+    expect(orchestratorPrompt).toContain('`Store`')
     expect(orchestratorPrompt).not.toContain('cannot receive follow-up instructions')
 
     const lockedPrompt = buildAgentSystemPrompt({
@@ -137,7 +113,7 @@ describe('buildAgentSystemPrompt', () => {
       activeSubAgents: [{ title: 'orphaned worker', task: 'child-session' }],
     })
     expect(lockedPrompt).not.toContain('`fork`')
-    expect(lockedPrompt).not.toContain('`global_search`')
+    expect(lockedPrompt).not.toContain('`GlobalSearch`')
     expect(lockedPrompt).toContain('Wait for its completion message')
   })
 
@@ -150,20 +126,20 @@ describe('buildAgentSystemPrompt', () => {
       toolRegistry: enabledRegistry,
       backgroundJobs,
     })
-    expect(enabledRegistry.toolNames).toContain('jobs')
-    expect(enabledPrompt).toContain('`jobs` action `stop`')
+    expect(enabledRegistry.toolNames).toContain('Jobs')
+    expect(enabledPrompt).toContain('`TaskStop`')
     // ONE stop policy, decided by whom the job serves.
     expect(enabledPrompt).toContain('yours to stop')
     expect(enabledPrompt).toContain('never stop it unasked')
 
-    const disabledRegistry = richRegistry(SHAPE.orchestrator, ['jobs'])
+    const disabledRegistry = richRegistry(SHAPE.orchestrator, ['Jobs'])
     const disabledPrompt = buildAgentSystemPrompt({
       toolRegistry: disabledRegistry,
       backgroundJobs,
     })
-    expect(disabledRegistry.toolNames).not.toContain('jobs')
+    expect(disabledRegistry.toolNames).not.toContain('Jobs')
     expect(disabledPrompt).toContain('Job-management controls are not available in this run')
-    expect(disabledPrompt).not.toContain('`jobs`')
+    expect(disabledPrompt).not.toContain('`Jobs`')
     expect(disabledPrompt).not.toContain('action `stop`')
   })
 
@@ -177,11 +153,9 @@ describe('buildAgentSystemPrompt', () => {
   test('keeps every profile × tool-surface prompt below its fixed text budget', () => {
     // Tool descriptions live in provider schemas. The whole production matrix is
     // bounded so a verbose tool-gated section cannot escape a default-only test.
-    // A conversation cell carries the multi-agent turn protocol, the roster and the directory,
-    // which no solo prompt has; they were unmeasured until the matrix rendered conversations,
-    // so they get an explicit allowance rather than a silently higher ceiling for everyone.
-    // 11.5k, not 11k: the leader's team rules (mockup before implementation, a colleague's
-    // part is theirs, change requests go to the owner) are behaviour a live session lacked.
+    // A conversation cell carries the turn protocol and the agent directory, which no solo prompt
+    // has; they were unmeasured until the matrix rendered conversations, so they get an explicit
+    // allowance rather than a silently higher ceiling for everyone.
     // 12.5k, not 11.5k: every cell now carries `# Context protocol` (~480 chars), which says how
     // to read `<runtime-context>` updates and checkpoint cards, and the jobs section says not
     // to duplicate or poll a job (~110); the conversation cells were already near the ceiling.
@@ -210,7 +184,13 @@ describe('buildAgentSystemPrompt', () => {
       // 17.8k, not 17.4k: the `codemode` line (~325 chars) says when a script beats a turn per
       // call; without it models read the tool as a second way to batch and almost never chose it.
       // The conversation cell sat at 17,396 before it.
-      const ceiling = variant.endsWith('-conversation') ? 17_800 : 14_500
+      // 17.9k, not 17.8k: `Agent` became `Agent`, and the subagent rule now says its reply
+      // arrives as a message, never to poll for it or predict it (LOCALIX-180 and LOCALIX-349
+      // polled with `list` and invented a waiting call); the cell measured 17,859.
+      // 18.5k, not 17.9k: `# Memory` is Claude Code's auto memory now — the folder, what is worth
+      // saving and the file format to save it in (~1.2k chars, cached), where `# Memory context`
+      // was a bare list of notes; the `codemode` line (~325 chars) left with its tool. 18,462.
+      const ceiling = variant.endsWith('-conversation') ? 18_500 : 14_500
       expect(prompt.length, variant).toBeLessThan(ceiling)
     }
   })
@@ -229,8 +209,7 @@ describe('buildAgentSystemPrompt', () => {
     expect(prompt.startsWith('# Core principles')).toBe(true)
     expect(prompt).toContain('# Execution discipline')
     expect(prompt).toContain('Use tools whenever they materially improve correctness')
-    expect(prompt).toContain('# Available tools')
-    expect(prompt).toContain(toolRegistry.promptSection)
+    expect(prompt).not.toContain('# Available tools')
     expect(prompt).toContain('Conversation date: 2026-06-01')
     expect(prompt).toContain('Session ID: session-1')
     expect(prompt).toContain('Model: openrouter/anthropic/claude-sonnet-4.5')
@@ -252,7 +231,6 @@ describe('buildAgentSystemPrompt', () => {
       ({
         tools: [],
         toolNames,
-        promptSection: `# Available tools\n${toolNames.map((name) => `- ${name}`).join('\n')}`,
       }) as unknown as ReturnType<typeof createRuntimeToolRegistry>
 
     const minimal = buildAgentSystemPrompt({
@@ -260,41 +238,40 @@ describe('buildAgentSystemPrompt', () => {
       toolRegistry: registry(['weather']),
     })
     expect(minimal).toContain('# Workspace')
-    expect(minimal).toContain('- weather')
     expect(minimal).not.toContain('Create and edit files')
-    for (const absent of ['read', 'search', 'write', 'edit', 'bash']) {
+    for (const absent of ['Read', 'Search', 'Write', 'Edit', 'Bash']) {
       expect(minimal).not.toContain(`\`${absent}\``)
     }
 
     const readOnly = buildAgentSystemPrompt({
       workspaceRoot: '/repo',
-      toolRegistry: registry(['read', 'search']),
+      toolRegistry: registry(['Read', 'Search']),
     })
-    expect(readOnly).toContain('`read`')
-    expect(readOnly).toContain('`search`')
+    expect(readOnly).toContain('`Read`')
+    expect(readOnly).toContain('`Search`')
     expect(readOnly).not.toContain('Create and edit files')
     expect(readOnly).not.toContain('apply edits and run commands')
-    for (const absent of ['write', 'edit', 'bash']) {
+    for (const absent of ['Write', 'Edit', 'Bash']) {
       expect(readOnly).not.toContain(`\`${absent}\``)
     }
 
     const bashOnly = buildAgentSystemPrompt({
       workspaceRoot: '/repo',
-      toolRegistry: registry(['bash']),
+      toolRegistry: registry(['Bash']),
     })
-    expect(bashOnly).toContain('`bash`')
+    expect(bashOnly).toContain('`Bash`')
     expect(bashOnly).toContain('Create and edit files')
-    for (const absent of ['read', 'search', 'write', 'edit']) {
+    for (const absent of ['Read', 'Search', 'Write', 'Edit']) {
       expect(bashOnly).not.toContain(`\`${absent}\``)
     }
 
     const editOnly = buildAgentSystemPrompt({
       workspaceRoot: '/repo',
-      toolRegistry: registry(['edit']),
+      toolRegistry: registry(['Edit']),
     })
-    expect(editOnly).toContain('`edit`')
+    expect(editOnly).toContain('`Edit`')
     expect(editOnly).toContain('Modify files only through the capabilities available')
-    for (const absent of ['read', 'search', 'write', 'bash']) {
+    for (const absent of ['Read', 'Search', 'Write', 'Bash']) {
       expect(editOnly).not.toContain(`\`${absent}\``)
     }
   })
@@ -333,30 +310,37 @@ describe('buildAgentSystemPrompt', () => {
     }
   })
 
-  test('memory context renders the usage header inside the wrapper', () => {
-    const prompt = buildAgentSystemPrompt({
-      now: () => '2026-06-01T12:00:00.000Z',
-      memoryContext: 'user_role: QA Engineer',
-      memoryUsage: { chars: 582, limit: 2200, pct: 26 },
-    })
+  // Claude Code's auto memory: a folder per repository, its MEMORY.md index in the prompt, kept
+  // with the ordinary file tools.
+  test('memory shows the folder, how to save into it, and its MEMORY.md index', () => {
+    const memory = { dir: '/home/u/.claude/projects/-repo/memory', index: '', clipped: false }
+    const index = '- [Role](user-role.md) — staff engineer'
+    const prompt = (over: Partial<typeof memory>) =>
+      buildAgentSystemPrompt({
+        now: () => '2026-06-01T12:00:00.000Z',
+        memory: { ...memory, ...over },
+      })
 
-    expect(prompt).toContain('# Memory context')
-    expect(prompt).toContain('<memory-context>')
-    expect(prompt).toContain('MEMORY (persistent notes) [26% — 582/2,200 chars]')
-    expect(prompt).toContain('user_role: QA Engineer')
-    expect(prompt).toContain('</memory-context>')
+    const empty = prompt({})
+    expect(empty).toContain('# Memory')
+    expect(empty).toContain(memory.dir)
+    expect(empty).toContain('MEMORY.md is empty')
+    expect(empty).toContain('type: user | feedback | project | reference')
+
+    const kept = prompt({ index })
+    expect(kept).toContain(index)
+    expect(kept).not.toContain('MEMORY.md is empty')
+    expect(kept).not.toContain('first 200 lines')
+    expect(prompt({ index, clipped: true })).toContain('first 200 lines')
   })
 
-  test('lists all core tool names without duplicating their schema descriptions', () => {
+  test('does not list the tools, nor duplicate their schema descriptions', () => {
     const prompt = buildAgentSystemPrompt({
       now: () => '2026-06-01T12:00:00.000Z',
     })
 
-    expect(prompt).toContain('\n- bash\n')
-    expect(prompt).toContain('\n- read\n')
-    expect(prompt).toContain('\n- search\n')
-    expect(prompt).toContain('\n- write\n')
-    expect(prompt).toContain('\n- edit\n')
+    // The tools are not listed: their definitions are what the model receives.
+    expect(prompt).not.toContain('\n- Bash\n')
     expect(prompt).not.toContain('apply_patch')
     expect(prompt).not.toContain('bash: run shell commands')
     expect(prompt).not.toContain('webSearch')
@@ -373,114 +357,37 @@ describe('buildAgentSystemPrompt', () => {
     expect(prompt).toContain('never asks for approval')
   })
 
-  test('renders the complete agent directory with priority and conversation availability', () => {
+  test('the agent directory names the agents `Agent` can start', () => {
+    const toolRegistry = richRegistry(SHAPE.orchestrator)
+    expect(toolRegistry.toolNames).toContain('Agent')
     const agentDirectory = [
       {
-        id: 'agent-lead',
-        handle: 'lead',
-        leadershipPriority: 100,
-        inConversation: true,
-        available: true,
+        id: 'b',
+        name: 'Explore',
+        description: 'Read-only search | files',
+        tools: ['Read', 'Search'],
       },
+      { id: 'c', name: 'general-purpose', self: true },
     ]
-    // The host passes a directory only where a tag can bring an agent in; nothing passed, no
-    // section.
-    expect(buildAgentSystemPrompt({})).not.toContain('# Agent directory')
-    expect(buildAgentSystemPrompt({ agentDirectory })).toContain('# Agent directory')
-    const prompt = buildAgentSystemPrompt({
-      toolRegistry: richRegistry(SHAPE.orchestrator),
-      agentDirectory: [
-        {
-          id: 'agent-lead',
-          handle: 'lead',
-          description: 'Coordinates | delivery',
-          leadershipPriority: 100,
-          inConversation: true,
-          available: true,
-        },
-        {
-          id: 'agent-design',
-          handle: 'designer',
-          description: 'Design specialist',
-          leadershipPriority: 30,
-          inConversation: false,
-          available: true,
-        },
-        {
-          id: 'agent-disabled',
-          handle: 'retired',
-          description: 'Disabled specialist',
-          leadershipPriority: 10,
-          inConversation: false,
-          available: false,
-        },
-      ],
-    })
-
+    // Nothing passed, no section.
+    expect(buildAgentSystemPrompt({ toolRegistry })).not.toContain('# Agent directory')
+    const prompt = buildAgentSystemPrompt({ toolRegistry, agentDirectory })
     expect(prompt).toContain('# Agent directory')
-    expect(prompt).toContain('Tag an available agent with @handle')
-    expect(prompt).toContain('- @lead (participant, priority 100): Coordinates | delivery')
-    expect(prompt).toContain('- @designer (available, priority 30): Design specialist')
-    expect(prompt).toContain('- retired (unavailable, priority 10): Disabled specialist')
-    // Handles address agents now; registry IDs are not repeated on every request.
-    expect(prompt).not.toContain('`agent-lead`')
+    expect(prompt).toContain('as `subagent_type: "<name>"`')
+    expect(prompt).toContain('- Explore (subagent): Read-only search | files (tools: Read, Search)')
+    expect(prompt).toContain('- general-purpose (subagent, yourself)')
+    // Handles name agents; registry ids are not repeated on every request, and nothing tags.
+    expect(prompt).not.toContain('Tag an available agent')
+    expect(prompt).not.toMatch(/priority \d/)
+    // Without the tool there is nothing to delegate with: no directory.
+    expect(buildAgentSystemPrompt({ agentDirectory })).not.toContain('# Agent directory')
   })
 
-  test('the one agent directory also names who `delegate` can hand a task to', () => {
-    const toolRegistry = richRegistry(SHAPE.orchestrator)
-    expect(toolRegistry.toolNames).toContain('delegate')
-    const prompt = buildAgentSystemPrompt({
-      toolRegistry,
-      agentDirectory: [
-        { id: 'a', handle: 'lead', leadershipPriority: 0, inConversation: true, available: true },
-        {
-          id: 'b',
-          handle: 'Explore',
-          description: 'Read-only search',
-          leadershipPriority: 0,
-          inConversation: false,
-          available: false,
-          delegable: true,
-          tools: ['read', 'search'],
-        },
-        {
-          id: 'c',
-          handle: 'general-purpose',
-          leadershipPriority: 0,
-          inConversation: false,
-          available: false,
-          delegable: true,
-          self: true,
-        },
-      ],
-    })
-    expect(prompt).toContain('as `agent: "<name>"`')
-    expect(prompt).toContain(
-      '- Explore (unavailable, delegable, priority 0): Read-only search (tools: read, search)',
-    )
-    expect(prompt).toContain('- general-purpose (unavailable, delegable, yourself, priority 0)')
-    // Without the tool there is nothing to delegate with: the rows stay, the marks do not.
-    const without = buildAgentSystemPrompt({
-      agentDirectory: [
-        { id: 'a', handle: 'lead', leadershipPriority: 0, inConversation: true, available: true },
-        {
-          id: 'b',
-          handle: 'Explore',
-          leadershipPriority: 0,
-          inConversation: false,
-          available: false,
-          delegable: true,
-        },
-      ],
-    })
-    expect(without).not.toContain('delegable')
-  })
-
-  test('# Available skills section appears only when the `skill` tool is present', () => {
+  test('# Available skills section appears only when the `Skill` tool is present', () => {
     const skillsContext = 'demo-skill — does the demo thing'
     // Orchestrator-style registry WITH the skill tool → section present.
-    const withSkill = createRuntimeToolRegistry({ optional: { skill: createSkillTool() } })
-    expect(withSkill.toolNames).toContain('skill')
+    const withSkill = createRuntimeToolRegistry({ optional: { Skill: createSkillTool() } })
+    expect(withSkill.toolNames).toContain('Skill')
     const p1 = buildAgentSystemPrompt({ now: () => 'x', toolRegistry: withSkill, skillsContext })
     expect(p1).toContain('# Available skills')
     expect(p1).toContain('demo-skill')
@@ -488,7 +395,7 @@ describe('buildAgentSystemPrompt', () => {
     // Worker/subagent registry WITHOUT the skill tool → section omitted despite
     // skillsContext (no `skill.get` to retrieve them — would be bloat + a desync).
     const noSkill = createRuntimeToolRegistry({ policy: { agentProfile: SHAPE.subagent } })
-    expect(noSkill.toolNames).not.toContain('skill')
+    expect(noSkill.toolNames).not.toContain('Skill')
     const p2 = buildAgentSystemPrompt({
       now: () => 'x',
       agentProfile: SHAPE.subagent,
@@ -521,7 +428,7 @@ describe('buildAgentSystemPrompt', () => {
     expect(prompt).not.toContain('running servers')
   })
 
-  test('project context section renders after # Workspace and before # Runtime context', () => {
+  test('project context section renders in the runtime context, after # Workspace', () => {
     const prompt = buildAgentSystemPrompt({
       sessionId: 'session-ctx',
       now: () => '2026-06-01T12:00:00.000Z',
@@ -537,7 +444,7 @@ describe('buildAgentSystemPrompt', () => {
     const runtimeIdx = prompt.indexOf(RUNTIME_CONTEXT_MARKER)
     expect(workspaceIdx).toBeGreaterThan(-1)
     expect(ctxIdx).toBeGreaterThan(workspaceIdx)
-    expect(runtimeIdx).toBeGreaterThan(ctxIdx)
+    expect(ctxIdx).toBeGreaterThan(runtimeIdx)
     expect(prompt).toContain(
       'Project-provided instructions (from files in the workspace). Follow them; if they conflict with user instructions, the user wins.',
     )
@@ -550,20 +457,20 @@ describe('buildAgentSystemPrompt', () => {
     expect(prompt).not.toContain('# Project context')
   })
 
-  test('project Settings instructions enter the cache-stable prompt after workspace context', () => {
-    const { stablePrompt, runtimeTail } = partsOf({
+  test('project Settings instructions ride the runtime context after workspace context', () => {
+    const { stablePrompt: cached, runtimeTail } = partsOf({
       workspaceRoot: '/repo',
       contextFiles: [{ path: '/repo/AGENTS.md', content: 'Repository instructions.' }],
       projectInstructions: 'Prefer small, independently testable changes.',
     })
 
-    const contextIndex = stablePrompt.indexOf('# Project context')
-    const settingsIndex = stablePrompt.indexOf('# Project instructions')
+    const contextIndex = runtimeTail.indexOf('# Project context')
+    const settingsIndex = runtimeTail.indexOf('# Project instructions')
     expect(settingsIndex).toBeGreaterThan(contextIndex)
-    expect(stablePrompt).toContain(
+    expect(runtimeTail).toContain(
       '# Project instructions\nPrefer small, independently testable changes.',
     )
-    expect(runtimeTail).not.toContain('Prefer small, independently testable changes.')
+    expect(cached).not.toContain('Prefer small, independently testable changes.')
   })
 
   test('deliveryContext renders a channel-agnostic # Channel section', () => {
@@ -604,7 +511,7 @@ describe('buildAgentSystemPrompt', () => {
 
     expect(prompt).toContain('# Loops')
     expect(prompt).toContain('Loop-management controls are not available in this run')
-    expect(prompt).not.toContain('`loops`')
+    expect(prompt).not.toContain('`Loops`')
   })
 
   test('loopContext advertises management only when loops is in the final registry', () => {
@@ -616,8 +523,8 @@ describe('buildAgentSystemPrompt', () => {
       },
     })
 
-    expect(toolRegistry.toolNames).toContain('loops')
-    expect(prompt).toContain('`loops` action="reschedule"')
+    expect(toolRegistry.toolNames).toContain('Loops')
+    expect(prompt).toContain('`Loops` action="reschedule"')
     expect(prompt).not.toContain('Loop-management controls are not available in this run')
   })
 
@@ -658,7 +565,7 @@ describe('buildAgentSystemPrompt', () => {
     const common = {
       now: () => '2026-06-17T00:00:00.000Z',
       workspaceRoot: '/repo',
-      memoryContext: 'remembered fact',
+      memory: { dir: '/mem', index: 'remembered fact', clipped: false },
       contextFiles: [{ path: '/repo/AGENTS.md', content: 'rules' }],
     } as const
     const stableOf = (sessionId: string, modelId: string) => {
@@ -687,7 +594,7 @@ describe('buildAgentSystemPrompt', () => {
       sessionId: 'S',
       now: () => '2026-06-17T00:00:00.000Z',
       workspaceRoot: '/repo',
-      memoryContext: 'remembered fact',
+      memory: { dir: '/mem', index: 'remembered fact', clipped: false },
     } as const
     const stableOf = (extra: Parameters<typeof buildAgentSystemPrompt>[0]) => {
       return buildAgentSystemPromptParts({ ...base, ...extra }).stablePrompt
@@ -732,15 +639,15 @@ describe('buildAgentSystemPrompt', () => {
       sessionId: 'session-split',
       now: () => '2026-06-17T00:00:00.000Z',
       workspaceRoot: '/repo',
-      memoryContext: 'remembered fact',
+      memory: { dir: '/mem', index: 'remembered fact', clipped: false },
       loopContext: {
         loops: [{ id: 'loop-1', kind: 'fixed', cadence: '*/10 * * * *', prompt: 'tick' }],
       },
     } as const
     const { stablePrompt: stableBase, runtimeTail: tail } = partsOf(params)
-    // Stable, cacheable prefix:
+    // Stable, cacheable prefix: the same for every run, so it holds no memory either.
     expect(stableBase).not.toContain('# User profile')
-    expect(stableBase).toContain('# Memory')
+    expect(stableBase).not.toContain('# Memory')
     // The volatile date VALUE (rendered as "Conversation date: <ts>") must stay out of
     // the cached prefix. The Core-principles prose references the term `Conversation date`
     // in backticks (no colon), so assert on the colon-terminated value line specifically.
@@ -750,6 +657,7 @@ describe('buildAgentSystemPrompt', () => {
     expect(tail.startsWith(RUNTIME_CONTEXT_MARKER)).toBe(true)
     expect(tail).toContain('Conversation date: 2026-06-17')
     expect(tail).toContain('# Loops')
+    expect(tail).toContain('# Memory')
     // Lossless: the split reconstructs the original prompt.
     expect(`${stableBase}\n\n${tail}`).toBe(buildAgentSystemPrompt(params))
   })

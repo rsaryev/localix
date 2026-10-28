@@ -1,3 +1,4 @@
+import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -8,7 +9,7 @@ import { createDatabase, destroyDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import { createSkillUsageRepository } from './repository'
 
-const tempDir = join(process.cwd(), 'tmp', 'skill-usage-repo-tests')
+const tempDir = join(tmpdir(), `localix-skill-usage-repo-tests-${process.pid}`)
 
 async function makeDb() {
   const db = createDatabase({ filename: join(tempDir, `${randomUUID()}.sqlite`) })

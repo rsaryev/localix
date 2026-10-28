@@ -71,9 +71,24 @@ async function agent(prompt, options) {
   __track(reply);
   return reply.value ?? null;
 }
+// A promise where a thunk belongs means the agent is already running. The slot stays null, as in
+// Claude Code, but the run waits for it so it does not settle under a live agent, and the author
+// gets a hint instead of a silent null.
+const __misused = async (value) => {
+  try {
+    if (value && typeof value.then === "function") await value;
+  } catch {}
+  return null;
+};
 async function parallel(thunks) {
+  const list = __items("parallel", thunks);
+  const first = list.findIndex((thunk) => typeof thunk !== "function");
+  if (first !== -1) {
+    log("parallel(): item " + first + " is not a function \u2014 pass () => agent(...), not agent(...)");
+  }
   return Promise.all(
-    __items("parallel", thunks).map(async (thunk) => {
+    list.map(async (thunk) => {
+      if (typeof thunk !== "function") return __misused(thunk);
       try {
         return await thunk();
       } catch {
@@ -83,10 +98,16 @@ async function parallel(thunks) {
   );
 }
 async function pipeline(items, ...stages) {
+  const list = __items("pipeline", items);
+  const first = stages.findIndex((stage) => typeof stage !== "function");
+  if (first !== -1) {
+    log("pipeline(): stage " + first + " is not a function \u2014 pass (item) => agent(...), not agent(...)");
+  }
   return Promise.all(
-    __items("pipeline", items).map(async (item, index) => {
+    list.map(async (item, index) => {
       let value = item;
       for (const stage of stages) {
+        if (typeof stage !== "function") return __misused(stage);
         try {
           value = await stage(value, item, index);
         } catch {

@@ -70,11 +70,11 @@ invalidation channel.
 
 Every one-agent entry point uses the same creation lane. Concurrent requests within a window join
 one in-flight creation, including the unresolved-to-canonical default-project transition. Reuse is
-restricted to chats created by that window within the last 24 hours: a matching project and agent,
-exactly one participant, a known persisted count of zero, no user messages or unsent input, and no
-custom title, archive or pin. Saved history and another window's drafts never stand in for New chat.
-The server event and the creating window's RPC response upsert the same ID, preventing duplicate
-roster rows. Unsent text remains attached to its original chat.
+restricted to chats created by that window within the last 24 hours: a matching project and agent, a
+known persisted count of zero, no user messages or unsent input, and no custom title, archive or
+pin. Saved history and another window's drafts never stand in for New chat. The server event and the
+creating window's RPC response upsert the same ID, preventing duplicate roster rows. Unsent text
+remains attached to its original chat.
 
 ## Event and read ordering
 

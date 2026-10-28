@@ -8,6 +8,8 @@ import { createDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import { createCapabilityRuleRepository } from '../capabilities/rule-repository'
 import type { LoadedPluginAgent } from '../plugins/loader-contract'
+import { withModAgents } from '../../bootstrap/agent-catalog-sources'
+import { modAgentDefinition } from '../mods/agent-definition'
 import { createAgentsService } from './service'
 
 const cleanup: Array<() => Promise<void>> = []
@@ -24,7 +26,10 @@ const pluginAgent = (plugin: string, name: string): LoadedPluginAgent => ({
   prompt: `You are ${name}.`,
 })
 
-async function fixture(plugins: Record<string, readonly string[]> = {}) {
+async function fixture(
+  plugins: Record<string, readonly string[]> = {},
+  modAgents: readonly LoadedPluginAgent[] = [],
+) {
   const root = await mkdtemp(join(tmpdir(), 'localix-agent-delegation-'))
   cleanup.push(() => rm(root, { recursive: true, force: true }))
   const db = createDatabase({ filename: join(root, 'test.sqlite') })
@@ -43,12 +48,18 @@ async function fixture(plugins: Record<string, readonly string[]> = {}) {
       project: project === 'p' ? [projectClaude] : project ? null : [],
     }),
     plugins: async () =>
-      Object.entries(plugins).map(([plugin, names]) => ({
-        plugin,
-        projectId: '',
-        enabled: true,
-        agents: names.map((name) => pluginAgent(plugin, name)),
-      })),
+      withModAgents(
+        Object.entries(plugins).map(([plugin, names]) => ({
+          plugin,
+          projectId: '',
+          enabled: true,
+          agents: names.map((name) => pluginAgent(plugin, name)),
+        })),
+        [...new Set(modAgents.map((agent) => agent.pluginName))].map((plugin) => ({
+          plugin,
+          agents: modAgents.filter((agent) => agent.pluginName === plugin),
+        })),
+      ),
   })
   const file = (dir: string, name: string, front = '', body = `Body of ${name}.`) =>
     writeFile(
@@ -64,23 +75,55 @@ async function fixture(plugins: Record<string, readonly string[]> = {}) {
 }
 
 describe('resolving who a task goes to', () => {
+  test('an agent a mod registered runs as its definition: tools, turn limit, model', async () => {
+    const { agent } = modAgentDefinition('lab', {
+      name: 'runner',
+      description: 'Runs a spec',
+      prompt: 'You run specs.',
+      tools: ['Read'],
+      maxTurns: 4,
+      model: 'haiku',
+    })
+    const t = await fixture({}, [agent])
+    const target = await t.service.resolveDelegation('u', 'lab:runner')
+    expect(target).toMatchObject({
+      kind: 'agent',
+      definition: { fullName: 'lab:runner', tools: ['Read'], maxTurns: 4 },
+    })
+  })
+
   test('a built-in type is a catalog agent with its read-only ceiling', async () => {
     const t = await fixture()
     const target = await t.service.resolveDelegation('u', 'Explore')
     expect(target).toMatchObject({
       kind: 'agent',
-      agent: { id: 'builtin:Explore', handle: 'Explore' },
-      definition: { omitClaudeMd: true, disallowedTools: ['write', 'edit'] },
+      agent: { id: 'builtin:Explore', name: 'Explore' },
+      definition: { omitClaudeMd: true, disallowedTools: ['Write', 'Edit'] },
     })
   })
 
-  test('general-purpose, its alias and a mention of either run as the delegator', async () => {
+  test('general-purpose, claude and a mention of either run as the delegator', async () => {
     const t = await fixture()
-    for (const reference of ['general-purpose', 'claude', '@General-Purpose'])
-      expect(await t.service.resolveDelegation('u', reference)).toEqual({
-        kind: 'self',
-        type: 'general-purpose',
-      })
+    const typeOf = async (reference: string) => {
+      const found = await t.service.resolveDelegation('u', reference)
+      return found.kind === 'self' ? found.type : found.kind
+    }
+    expect(await typeOf('general-purpose')).toBe('general-purpose')
+    expect(await typeOf('@agent-general-purpose')).toBe('general-purpose')
+    expect(await typeOf('General-Purpose')).toBe('general-purpose')
+    expect(await typeOf('claude')).toBe('claude')
+  })
+
+  test('the other built-in types are catalog agents with Claude Code’s tool lists', async () => {
+    const t = await fixture()
+    expect(await t.service.resolveDelegation('u', 'statusline-setup')).toMatchObject({
+      kind: 'agent',
+      definition: { tools: ['Read', 'Edit'] },
+    })
+    expect(await t.service.resolveDelegation('u', 'claude-code-guide')).toMatchObject({
+      kind: 'agent',
+      definition: { tools: ['Bash', 'Read', 'Research'] },
+    })
   })
 
   test('the name fork is reserved: a catalog agent called fork is no one a task goes to', async () => {
@@ -99,7 +142,7 @@ describe('resolving who a task goes to', () => {
     const t = await fixture()
     await t.userFile('general-purpose', 'tools: Read\n')
     const target = await t.service.resolveDelegation('u', 'general-purpose')
-    expect(target).toMatchObject({ kind: 'agent', definition: { tools: ['read'], source: 'user' } })
+    expect(target).toMatchObject({ kind: 'agent', definition: { tools: ['Read'], source: 'user' } })
     await t.projectFile('Explore')
     // A file that came with the repository waits to be allowed.
     expect(await t.service.resolveDelegation('u', 'Explore', 'p')).toEqual({ kind: 'unavailable' })
@@ -117,11 +160,11 @@ describe('resolving who a task goes to', () => {
     const t = await fixture({ acme: ['reviewer', 'writer'], docs: ['writer'] })
     expect(await t.service.resolveDelegation('u', 'acme:reviewer')).toMatchObject({
       kind: 'agent',
-      agent: { handle: 'acme:reviewer' },
+      agent: { name: 'acme:reviewer' },
     })
     expect(await t.service.resolveDelegation('u', 'reviewer')).toMatchObject({
       kind: 'agent',
-      agent: { handle: 'acme:reviewer' },
+      agent: { name: 'acme:reviewer' },
     })
     expect(await t.service.resolveDelegation('u', 'writer')).toEqual({
       kind: 'ambiguous',
@@ -136,7 +179,7 @@ describe('resolving who a task goes to', () => {
     if (found.kind !== 'agent') throw new Error('expected an agent')
     expect(await t.service.resolveDelegation('u', found.agent.id)).toMatchObject({
       kind: 'agent',
-      agent: { handle: 'scribe' },
+      agent: { name: 'scribe' },
     })
   })
 
@@ -170,17 +213,17 @@ describe('resolving who a task goes to', () => {
 })
 
 describe('the definition a run is admitted with', () => {
-  test('a seat on a shipped type or a file carries the ceiling its file states', async () => {
+  test('a session on a shipped type or a file carries the ceiling its file states', async () => {
     const t = await fixture()
     await t.userFile('scribe', 'tools: Read, Grep\nmaxTurns: 4\n')
     const explore = await t.service.resolveRunAgent('u', 'builtin:Explore', 'delegation')
     expect(explore).toMatchObject({
       status: 'allowed',
-      agent: { spec: { omitClaudeMd: true, disallowedTools: ['write', 'edit'] } },
+      agent: { spec: { omitClaudeMd: true, disallowedTools: ['Write', 'Edit'] } },
     })
     const id = (await t.service.getAgent('u', 'scribe'))!.record.id
     expect(await t.service.resolveRunAgent('u', id, 'delegation')).toMatchObject({
-      agent: { spec: { tools: ['read', 'search'], maxTurns: 4 } },
+      agent: { spec: { tools: ['Read', 'Search'], maxTurns: 4 } },
     })
     await t.projectFile('Explore')
     await t.service.setAgentEnabled('u', 'Explore', true, 'p')
@@ -204,11 +247,10 @@ describe('the directory a run reads', () => {
     const rows = await t.service.directory('u')
     const row = (name: string) => rows.find((entry) => entry.name === name)
     expect(row('scribe')).toMatchObject({
-      canJoinConversation: true,
       delegable: true,
-      tools: ['read'],
+      tools: ['Read'],
     })
-    expect(row('critic')).toMatchObject({ canJoinConversation: true, delegable: false })
+    expect(row('critic')).toMatchObject({ delegable: false })
     expect(row('acme:reviewer')).toMatchObject({ delegable: true })
     expect(row('Explore')).toMatchObject({ delegable: true })
     expect(row('general-purpose')).toMatchObject({ delegable: true, self: true })

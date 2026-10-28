@@ -29,7 +29,6 @@ const ROOT_READERS = [
   'scripts/check-public-repo.mjs',
   'scripts/dev-api.mjs',
   'scripts/dev-mini-app-watch.mjs',
-  'scripts/pre-commit-plan.mjs',
   'scripts/screenshots/workbench-coverage.mjs',
   'scripts/stage-dropins.mjs',
   'scripts/stage-mini-app-kit.mjs',
@@ -91,7 +90,7 @@ describe('bundled roots', () => {
     'mini-apps/chess/ui/register.tsx': '',
     'plugins/workflows/.claude-plugin/plugin.json': '{"name":"workflows"}',
     'plugins/workflows/commands/workflows.md': '',
-    'plugins/legacy/plugin.json': '{"name":"legacy"}',
+    'plugins/pluginsdir/mini-app.json': '{"name":"pluginsdir"}',
     // What a move leaves behind in a checkout: ignored build caches, no manifest.
     'plugins/chess/.turbo/turbo-build.log': '',
     'plugins/stale/node_modules/.keep': '',
@@ -99,7 +98,9 @@ describe('bundled roots', () => {
 
   test('an extension is found in whichever bundled folder holds it', () => {
     expect(bundledFolderOf(checkout(), 'chess')).toBe(join(checkout(), MINI_APPS_DIR, 'chess'))
-    expect(bundledFolderOf(checkout(), 'legacy')).toBe(join(checkout(), PLUGINS_DIR, 'legacy'))
+    expect(bundledFolderOf(checkout(), 'pluginsdir')).toBe(
+      join(checkout(), PLUGINS_DIR, 'pluginsdir'),
+    )
     expect(bundledFolderOf(checkout(), 'missing')).toBeNull()
   })
 

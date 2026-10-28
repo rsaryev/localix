@@ -206,7 +206,7 @@ describe('single-flight', () => {
       return new Promise<NextEditResult>((resolve) => {
         // A realistic provider: it notices the abort, but only on a later tick.
         signal.addEventListener('abort', () => {
-          setTimeout(() => resolve({ outcome: 'cancelled', edits: null }), 5)
+          setTimeout(() => resolve({ outcome: 'cancelled', edits: null }), 0)
         })
       })
     }

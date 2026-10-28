@@ -4,7 +4,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { link, mkdir, open, readFile, realpath, rename, unlink, writeFile } from 'node:fs/promises'
 import { basename, dirname, join, resolve } from 'node:path'
 
-import { defaultDbFile, localixHome, resolveDbFile } from './env'
+import { resolveDbFile } from './env'
 import {
   LOCALIX_API_PRODUCT_ID,
   type LocalixRuntimeInfo,
@@ -401,10 +401,6 @@ export async function acquireRuntimeOwnership(
   }
 }
 
-export function legacyRuntimeEndpointFile(): string {
-  return join(localixHome(), 'api-runtime.json')
-}
-
 function runtimeEndpointFile(databaseFile = resolveDbFile()): string {
   return `${resolve(databaseFile)}.api-runtime.json`
 }
@@ -470,28 +466,13 @@ export async function discoverRuntimeEndpoint(
   options: DiscoverRuntimeEndpointOptions = {},
 ): Promise<RuntimeEndpoint | null> {
   const identity = await resolveRuntimeIdentity(options.databaseFile)
-  let candidates: string[]
-  if (options.file) {
-    candidates = [options.file]
-  } else {
-    candidates = [identity.endpointFile]
-    const defaultIdentity = await resolveRuntimeIdentity(defaultDbFile())
-    if (defaultIdentity.databaseId === identity.databaseId) {
-      candidates.push(legacyRuntimeEndpointFile())
-    }
+  const endpoint = await readRuntimeEndpoint(options.file ?? identity.endpointFile)
+  if (!endpoint) return null
+  if (!options.file && endpoint.databaseId && endpoint.databaseId !== identity.databaseId) {
+    return null
   }
-
-  for (const file of new Set(candidates)) {
-    const endpoint = await readRuntimeEndpoint(file)
-    if (!endpoint) continue
-    // Legacy descriptors have no databaseId and are candidates only for the
-    // canonical default database (enforced while building candidates above).
-    if (!options.file && endpoint.databaseId && endpoint.databaseId !== identity.databaseId)
-      continue
-    if (!processIsAlive(endpoint.pid)) continue
-    if (await isRuntimeEndpointLive(endpoint)) return endpoint
-  }
-  return null
+  if (!processIsAlive(endpoint.pid)) return null
+  return (await isRuntimeEndpointLive(endpoint)) ? endpoint : null
 }
 
 export interface WaitForRuntimeEndpointOptions extends DiscoverRuntimeEndpointOptions {

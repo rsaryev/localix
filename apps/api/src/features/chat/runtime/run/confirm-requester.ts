@@ -47,7 +47,7 @@ export function createConfirmRequester(
       sessionId: session.id,
       hitlTargetSessionId: args.hitlTargetSessionId,
     })
-    if (!targetSessionId) return false
+    if (!targetSessionId) return { approved: false }
     // "Always allow" short-circuit: if the user already approved this tool for
     // the whole session, auto-approve without surfacing another card. The
     // `session-grant` provenance lets the gate mark the tool item so the UI can
@@ -61,9 +61,8 @@ export function createConfirmRequester(
       confirmArgs.subject !== 'resource' &&
       !!confirmArgs.command &&
       isDangerous(confirmArgs.command)
-    // The requester is THIS run — its own session and agent — so a grant one participant or one
-    // sub-agent was given never approves another (see `session-grants.ts`).
-    const requester = { sessionId: session.id, agentId: args.agentId }
+    // The requester is THIS run's session, so a grant one sub-agent was given never approves another (see `session-grants.ts`).
+    const requester = session.id
     const granted = grantedScopes(env.state.sessionAutoApprovedTools, targetSessionId, requester)
     if (!dangerousCall && [...granted].some((scope) => grantCoversCall(scope, confirmArgs))) {
       return { approved: true, via: 'session-grant' }
@@ -186,8 +185,7 @@ export function createConfirmRequester(
     // CLOSES before the tool runs, so it is booked as a settled span the tool-end handler adds
     // to HITL time and subtracts from the tool's own duration.
     const waitStartedAt = Date.now()
-    // The card lives as long as both the run and the call that raised it: a script's nested call
-    // ends with its script, while the run goes on.
+    // The card lives as long as both the run and the call that raised it.
     const signal = confirmArgs.signal
       ? AbortSignal.any([args.abortSignal, confirmArgs.signal])
       : args.abortSignal

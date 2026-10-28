@@ -40,16 +40,19 @@ export function DiagramPending() {
 // re-reading the tokens per mounted row would repeat the probe work on every scroll pass.
 let lastLook: { theme: ResolvedTheme; look: MermaidLook } | null = null
 
+/** The theme's look, resolved once and kept: an idempotent cache, not render state. */
+function lookFor(theme: ResolvedTheme): MermaidLook {
+  if (lastLook?.theme !== theme) lastLook = { theme, look: resolveMermaidLook(theme) }
+  return lastLook.look
+}
+
 function useMermaidLook(): MermaidLook | null {
   const { resolvedTheme } = useTheme()
   // Tokens are read from the live document; a server render has none, and waits as pending.
-  return useMemo(() => {
-    if (typeof document === 'undefined') return null
-    if (lastLook?.theme !== resolvedTheme) {
-      lastLook = { theme: resolvedTheme, look: resolveMermaidLook(resolvedTheme) }
-    }
-    return lastLook.look
-  }, [resolvedTheme])
+  return useMemo(
+    () => (typeof document === 'undefined' ? null : lookFor(resolvedTheme)),
+    [resolvedTheme],
+  )
 }
 
 /**
@@ -84,13 +87,17 @@ export function MermaidDiagram({
   }
   const { copied, copy } = useCopied(COPIED_FEEDBACK_LONG_MS)
 
+  // A drawn diagram is read straight from the renderer's cache while rendering: the state follows
+  // it here, so a cache hit never costs the extra commit an effect would.
+  const cached = look ? renderer.peek(source, look) : undefined
+  if (
+    cached !== undefined &&
+    (state?.source !== source || !('svg' in state) || state.svg !== cached)
+  )
+    setState({ source, svg: cached })
+
   useEffect(() => {
-    if (!look) return
-    const cached = renderer.peek(source, look)
-    if (cached !== undefined) {
-      setState({ source, svg: cached })
-      return
-    }
+    if (!look || renderer.peek(source, look) !== undefined) return
     const controller = new AbortController()
     renderer.render(source, look, controller.signal).then(
       (svg) => !controller.signal.aborted && setState({ source, svg }),

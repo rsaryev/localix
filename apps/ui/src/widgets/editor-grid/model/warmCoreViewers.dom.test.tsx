@@ -1,6 +1,7 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { consumeSettingsNav } from '@/shared/lib/settingsNavBus'
+import { turns as settle } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -13,8 +14,6 @@ afterAll(async () => {
 })
 beforeEach(() => consumeSettingsNav())
 afterEach(() => consumeSettingsNav())
-
-const settle = () => new Promise((resolve) => setTimeout(resolve, 10))
 
 describe('warm-hidden core viewers', () => {
   test('Snapshot enables its global scroll tracker only while selected', async () => {

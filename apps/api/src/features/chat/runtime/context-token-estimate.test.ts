@@ -2,13 +2,11 @@ import { describe, expect, test } from 'bun:test'
 import type { ChatMessage } from '@localixai/agent'
 import { describeFixedContext } from '@localixai/agent/agents'
 import { z } from 'zod'
-import type { PersistedMessage } from '../contracts'
 
 import {
   contextAnchorIdentityMatches,
   createContextAnchorIdentity,
   estimateModelContextTokens,
-  lastTurnContextAnchor,
   type ContextAnchorIdentity,
 } from './context-token-estimate'
 
@@ -96,7 +94,7 @@ describe('estimateModelContextTokens', () => {
 
   test('fingerprints schema shape, model, boundary, and fixed overhead', () => {
     const baseFixed = describeFixedContext('system', [
-      { name: 'read', description: 'Read', inputSchema: z.object({ path: z.string() }) },
+      { name: 'Read', description: 'Read', inputSchema: z.object({ path: z.string() }) },
     ])
     const base = createContextAnchorIdentity({
       providerId: 'openai',
@@ -107,7 +105,7 @@ describe('estimateModelContextTokens', () => {
       fixedOverheadTokens: 1_000,
     })
     const changedFixed = describeFixedContext('system', [
-      { name: 'read', description: 'Read', inputSchema: z.object({ uri: z.string() }) },
+      { name: 'Read', description: 'Read', inputSchema: z.object({ uri: z.string() }) },
     ])
     const changedSchema = createContextAnchorIdentity({
       providerId: 'openai',
@@ -129,51 +127,5 @@ describe('estimateModelContextTokens', () => {
     ]) {
       expect(contextAnchorIdentityMatches(base, changed)).toBe(false)
     }
-  })
-
-  test('legacy persisted provider/model survives restart with a conservative full-overhead charge', () => {
-    const persisted = (message: ChatMessage, extra: object = {}): PersistedMessage =>
-      ({
-        id: message.id,
-        sessionId: 's',
-        userId: 'u',
-        createdAt: '',
-        updatedAt: '',
-        payload: { ...message, ...extra },
-      }) as unknown as PersistedMessage
-    const history = [
-      persisted(messages[0]),
-      persisted(messages[1], {
-        usage: { contextTokens: 143_663 },
-        providerMeta: { providerId: 'openai', modelId: 'gpt' },
-      }),
-      persisted(messages[2]),
-    ]
-    const anchor = lastTurnContextAnchor(history)
-    const current = identity()
-    const estimate = estimateModelContextTokens(
-      messages,
-      anchor,
-      current.fixedOverheadTokens,
-      current,
-    )
-
-    expect(anchor).toMatchObject({
-      messageId: 'anchor',
-      legacyProvider: { providerId: 'openai', modelId: 'gpt' },
-    })
-    expect(estimate).toMatchObject({
-      source: 'provider_anchor',
-      tokens: 167_163,
-      trailingTokens: 13_500,
-    })
-    expect(
-      estimateModelContextTokens(
-        messages,
-        anchor,
-        current.fixedOverheadTokens,
-        identity({ modelId: 'other' }),
-      ).source,
-    ).toBe('heuristic')
   })
 })

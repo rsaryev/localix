@@ -8,7 +8,7 @@ import { movesNow, type AgentWait, type Game } from '../shared/game'
 import { moveName, squareName, squaresOf } from '../shared/notation'
 import { countPieces, other, type Play } from '../shared/rules'
 import { drawBoard } from '../shared/describe'
-import type { Seat } from './ask-agent'
+import type { ChatRef } from './ask-agent'
 
 /**
  * HOW THE BOARD ASKS THE DECISION MODEL FOR ITS MOVE — when the table's opponent is `decision`.
@@ -38,7 +38,7 @@ function describePlay(play: Play): string {
   return `${moveName(play)}: ${what}${play.crowned ? ', and crowns a king' : ''}`
 }
 
-/** The position from the decision model's seat, and the one question: which legal move. */
+/** The position from the decision model's side, and the one question: which legal move. */
 export function moveAsk(game: Game): DecisionAsk {
   const side = other(game.you)
   const legal = movesNow(game)
@@ -74,12 +74,12 @@ export function moveAsk(game: Game): DecisionAsk {
 /** The decision model's move: the squares it visits, or the wait that says why there is none. */
 export async function askDecision(
   decisions: DecisionHost | undefined,
-  seat: Seat,
+  chat: ChatRef,
   game: Game,
   now: string,
 ): Promise<{ squares: number[] } | { waiting: AgentWait }> {
   const turn = { ask: moveAsk(game), question: 'move', purpose: DECISION_PURPOSE }
-  const answered = await askDecisionForTurn(decisions, seat, turn, now)
+  const answered = await askDecisionForTurn(decisions, chat, turn, now)
   if (!('answer' in answered)) return answered
   const play = movesNow(game).find((candidate) => moveName(candidate) === answered.answer.choice)
   return play

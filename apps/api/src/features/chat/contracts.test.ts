@@ -173,3 +173,31 @@ describe('the two reasoning-effort vocabularies must not drift', () => {
     expect(declared.length).toBeGreaterThan(0)
   })
 })
+
+// Session LOCALIX-346: Enter on an empty composer sent a turn that carried only the active tab's
+// automatic context, stored an empty user row and started a run on it.
+describe('a message needs something the person put there', () => {
+  const ambient = {
+    kind: 'context',
+    id: 'tab',
+    source: 'active-tab',
+    target: { kind: 'snippet', token: '@snippet:tab', label: 'Tab', attributes: { content: 'x' } },
+    resolution: { status: 'pending', contributions: [] },
+  }
+  const dragged = { ...ambient, id: 'drag', source: 'drag' }
+
+  it('rejects empty text carrying only the automatic active-tab context', () => {
+    expect(sendMessageRequestSchema.safeParse({ prompt: '  ', bindings: [ambient] }).success).toBe(
+      false,
+    )
+  })
+
+  it('accepts empty text with a context the person added, and text with the ambient one', () => {
+    expect(
+      sendMessageRequestSchema.safeParse({ prompt: '', bindings: [ambient, dragged] }).success,
+    ).toBe(true)
+    expect(sendMessageRequestSchema.safeParse({ prompt: 'hi', bindings: [ambient] }).success).toBe(
+      true,
+    )
+  })
+})

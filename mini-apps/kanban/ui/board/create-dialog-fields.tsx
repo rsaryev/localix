@@ -95,7 +95,7 @@ export function AttachmentField({ form }: { form: CreateTaskForm }) {
         />
         <Button
           type="button"
-          variant="outline"
+          variant="ghost"
           size="lg"
           onClick={form.addPath}
           disabled={!form.pathDraft.trim()}
@@ -104,7 +104,7 @@ export function AttachmentField({ form }: { form: CreateTaskForm }) {
         </Button>
         <Button
           type="button"
-          variant="outline"
+          variant="ghost"
           size="lg"
           title="Choose files with the native picker"
           onClick={() => void form.browsePaths()}

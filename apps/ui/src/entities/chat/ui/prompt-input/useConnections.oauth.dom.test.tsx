@@ -15,7 +15,7 @@ afterEach(() => {
 })
 
 test('retrying an abandoned browser sign-in returns once to the exact connection', async () => {
-  const { act } = await import('react')
+  const { act, useEffect } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { useConnections } = await import('./useConnections')
   const { useChatStore } = await import('@/entities/chat/model/store')
@@ -65,7 +65,10 @@ test('retrying an abandoned browser sign-in returns once to the exact connection
   const unsubscribe = subscribeModelPicker((request) => events.push(request))
   let state!: ReturnType<typeof useConnections>
   function Harness() {
-    state = useConnections('session-1')
+    const connections = useConnections('session-1')
+    useEffect(() => {
+      state = connections
+    })
     return null
   }
   try {
@@ -91,15 +94,13 @@ test('retrying an abandoned browser sign-in returns once to the exact connection
       events.push({ sessionId, patch })
       return {
         id: sessionId,
-        agents: [
-          {
-            agentId: 'builtin:localix',
-            handle: 'localix',
-            providerConnectionId: connection.id,
-            modelId: '',
-            reasoningEffort: 'low',
-          },
-        ],
+        agent: {
+          agentId: 'builtin:localix',
+          name: 'localix',
+          providerConnectionId: connection.id,
+          modelId: '',
+          reasoningEffort: 'low',
+        },
         isRunning: false,
       } as Awaited<ReturnType<typeof backendClient.updateSession>>
     }

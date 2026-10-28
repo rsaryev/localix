@@ -1,4 +1,4 @@
-import type { RefObject } from 'react'
+import { useLayoutEffect, type RefObject } from 'react'
 import { Filter, Text } from 'lucide-react'
 import { SearchInput } from '@localixai/kit/search-input'
 import { WorkbenchToolbar, WorkbenchToolbarSection } from '@localixai/kit/workbench-toolbar'
@@ -23,6 +23,10 @@ export function FileTreeSearchBar({
   setQuery,
   onClose,
 }: FileTreeSearchBarProps) {
+  // The field is opened by a person asking to search: focus it once, before paint.
+  useLayoutEffect(() => {
+    rowRef.current?.querySelector('input')?.focus()
+  }, [rowRef])
   return (
     <WorkbenchToolbar
       ref={rowRef}
@@ -36,7 +40,6 @@ export function FileTreeSearchBar({
         onValueChange={setQuery}
         inset
         size="md"
-        autoFocus
         placeholder={mode === 'names' ? 'Filter files by name' : 'Search in files'}
         aria-label={mode === 'names' ? 'Filter files by name' : 'Search in files'}
         className="min-w-0 flex-1"

@@ -69,7 +69,10 @@ export function frameInterjection(content: string): string {
  *
  * One wording for both ways it arrives — mid-step into a running child, or as the prompt of a new
  * run in an idle one — because it is framed once, where it is queued. The last line is the part
- * the child must not miss in either case: whatever it answers is sent back as a report.
+ * the child must not miss in either case: what it writes in this run is sent back as a report.
+ * ALL of it, as one report (`readRunReplies`), and it has not been read yet: told only that "your
+ * final reply is sent back", a child that had already written its answer before the amendment
+ * answered the amendment with "see my earlier report" (LOCALIX-430).
  */
 export function frameDelegatorMessage(content: string): string {
   const { text, truncated } = truncateOnCodePointBoundary(content, MAX_INTERJECTION_CHARS)
@@ -79,6 +82,6 @@ export function frameDelegatorMessage(content: string): string {
   return [
     'The agent that delegated your task sent you a message:',
     `<delegator_message>${body}</delegator_message>`,
-    'Treat it as an update to your assignment from whoever wrote your brief. It supersedes conflicting earlier directions; keep requirements it does not change. End with a report: your final reply is sent back to that agent.',
+    'Treat it as an update to your assignment from whoever wrote your brief. It supersedes conflicting earlier directions; keep requirements it does not change. Everything you write in this run, not only your last reply, is sent back to that agent as one report when you finish; it has read none of it yet.',
   ].join('\n')
 }

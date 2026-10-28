@@ -2,7 +2,7 @@ import type { DbColumnCatalog, DbSchemas, DbTableSchema } from '../dbClient'
 import type { ColumnSource } from './schemaEntry'
 import { defineRecordValue, ownRecordValue } from '../../shared/safe-record'
 
-/** Stable cache identity for an object. A bare name remains backwards-compatible
+/** Stable cache identity for an object. A bare name is the key
  * for engines/connections that expose only one namespace. */
 export function schemaTableKey(table: string, schema?: string): string {
   return schema === undefined ? table : JSON.stringify([schema, table])

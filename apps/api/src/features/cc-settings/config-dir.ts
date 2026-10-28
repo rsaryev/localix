@@ -1,5 +1,6 @@
 import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
+import { expandHome } from '../../lib/home-path'
 
 /**
  * Where Claude Code keeps a person's own configuration: `CLAUDE_CONFIG_DIR` when it is set, else
@@ -15,8 +16,7 @@ export function claudeConfigDir(
   const configured = env.CLAUDE_CONFIG_DIR?.trim()
   if (!configured) return join(homeDir, '.claude')
   // A `~` the shell did not expand (a settings `env` block copies values as written).
-  if (configured === '~' || configured.startsWith('~/')) return join(homeDir, configured.slice(1))
-  return resolve(configured)
+  return resolve(expandHome(configured, homeDir))
 }
 
 /**

@@ -6,7 +6,7 @@ import type { ChatRepository, SessionRecord } from '../repository'
 import type { SessionStreamRegistry } from './session-stream-registry'
 import type { LiveItemResolver } from './agent-runner-state'
 import { markRuntimeSessionStatus, publishChildSummary } from './session-status'
-import { routedParticipants, sessionFixture } from '../../../testing/session-fixture'
+import { routedAgent, sessionFixture } from '../../../testing/session-fixture'
 
 const NOW = '2026-06-16T15:30:00.000Z'
 
@@ -26,7 +26,7 @@ function session(over: Partial<SessionRecord> = {}): SessionRecord {
     id: 'child-1',
     userId: 'u',
     title: 'sub',
-    agents: routedParticipants({ modelId: 'm', reasoningEffort: 'off' }),
+    agent: routedAgent({ modelId: 'm', reasoningEffort: 'off' }),
     // This fixture used to carry an `agentMode: 'code'` — a value no mode union ever held,
     // which type-checked only because of an `as SessionRecord` cast. Modes are gone; the
     // named accessor below is what keeps a fixture from drifting out of the record type again.

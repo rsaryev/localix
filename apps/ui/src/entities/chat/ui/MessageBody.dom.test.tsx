@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import type { Message } from '../model/types'
+import { turns } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -17,6 +18,15 @@ test('defers routine events at the anchored block without remounting text or del
   const host = document.createElement('div')
   document.body.appendChild(host)
   const root = createRoot(host)
+  // The animated text reveal paces itself on animation frames, which is real time; reduced motion
+  // shows the text at once and leaves the zero-delay parse timer as the only cadence.
+  const realMatchMedia = window.matchMedia
+  window.matchMedia = ((query: string) => ({
+    matches: query.includes('prefers-reduced-motion'),
+    media: query,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  })) as unknown as typeof window.matchMedia
   const item = {
     id: 'text',
     type: 'text' as const,
@@ -50,10 +60,12 @@ test('defers routine events at the anchored block without remounting text or del
   }
   try {
     await render(message, true)
-    // Streaming Markdown commits on its own cadence; wait for the initial body before
-    // testing whether an arriving notice preserves it. Warnings below still have no wait.
+    // Streaming Markdown commits on its own cadence (a zero-delay timer for the first parse);
+    // wait for the initial body before testing whether an arriving notice preserves it. Warnings
+    // below still have no wait.
     await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 60))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      await turns()
     })
     const body = host.querySelector('[data-author="agent"]')!
     expect(body).not.toBeNull()
@@ -98,6 +110,7 @@ test('defers routine events at the anchored block without remounting text or del
       host.textContent!.indexOf('Terminal finished'),
     )
   } finally {
+    window.matchMedia = realMatchMedia
     await act(async () => root.unmount())
     host.remove()
   }

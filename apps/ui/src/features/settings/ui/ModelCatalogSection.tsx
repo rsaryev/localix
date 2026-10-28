@@ -67,7 +67,7 @@ export function ModelCatalogSection() {
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <Button
-              variant="outline"
+              variant="ghost"
               size="xl"
               aria-busy={checking || undefined}
               disabled={checking}

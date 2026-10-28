@@ -7,6 +7,10 @@ import type { DbDriver } from './drivers/port'
 import { createDatabaseService } from './service'
 import { createConnectionStore, type ConnectionStore } from './store'
 
+const turns = async (n = 10) => {
+  for (let i = 0; i < n; i++) await new Promise((r) => setImmediate(r))
+}
+
 /**
  * Concurrency pin for the establish/live-map swap. The single-run-while-live leak was fixed
  * (close-before-replace); this covers the CONCURRENT case: two `reconnect`/`connect`/
@@ -215,7 +219,7 @@ describe('establish single-flight (concurrent connect/reconnect/updateConfig)', 
     const update = svc.updateConfig('u1', info.id, { config: otherConfig })
     // Give an incorrectly unbarriered edit enough time to read the still-present saved row,
     // establish a replacement, and persist it while remove() is paused in the store.
-    await new Promise((resolve) => setTimeout(resolve, 20))
+    await turns()
     releaseRemove()
 
     expect(await removal).toBe(true)

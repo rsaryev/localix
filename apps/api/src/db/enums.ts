@@ -23,21 +23,8 @@ export const REASONING_EFFORTS = [
 ] as const
 export type ReasoningEffort = (typeof REASONING_EFFORTS)[number]
 
-/**
- * Legacy spellings a manifest / frontmatter may still carry, mapped to the level they meant.
- *
- * Empty right now, and that is the point: `xhigh` used to live here because the column could not
- * hold it, which up-shifted every `effort: xhigh` declaration one rung (on Claude 4.7+ `xhigh`
- * sits BELOW `max`, so authors quietly paid for more thinking than they asked for). It is a real
- * level now, so the alias is gone rather than kept as a no-op.
- */
-const REASONING_EFFORT_ALIASES: Record<string, ReasoningEffort> = {}
-
 /** Every value a declaration may carry, for the message that lists them. */
-export const DECLARABLE_REASONING_EFFORTS: readonly string[] = [
-  ...REASONING_EFFORTS,
-  ...Object.keys(REASONING_EFFORT_ALIASES),
-]
+export const DECLARABLE_REASONING_EFFORTS: readonly string[] = REASONING_EFFORTS
 
 /**
  * Resolve a declared effort string to a value this column can hold — or undefined when it is
@@ -64,8 +51,7 @@ export function resolveDeclaredReasoningEffort(
 ): ReasoningEffort | undefined {
   const v = value?.trim()
   if (!v) return undefined
-  if ((REASONING_EFFORTS as readonly string[]).includes(v)) return v as ReasoningEffort
-  return REASONING_EFFORT_ALIASES[v]
+  return (REASONING_EFFORTS as readonly string[]).includes(v) ? (v as ReasoningEffort) : undefined
 }
 
 // A session used to carry an `AgentMode` — ask / edit / plan / auto / yolo / … — and it

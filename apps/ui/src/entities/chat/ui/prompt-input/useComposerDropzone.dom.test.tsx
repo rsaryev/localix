@@ -24,7 +24,10 @@ async function mountDropzone() {
   const { createRoot } = await import('react-dom/client')
   const state: { current?: ComposerDropzone } = {}
   function Host() {
-    state.current = useComposerDropzone({ attachEnabled: true, onAddFiles: () => {} })
+    const dropzone = useComposerDropzone({ attachEnabled: true, onAddFiles: () => {} })
+    React.useEffect(() => {
+      state.current = dropzone
+    })
     return null
   }
   const host = document.createElement('div')

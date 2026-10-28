@@ -3,7 +3,7 @@ import { classifyByAction, type MiniAppContext } from '@localixai/mini-app-sdk/b
 import { describeGame, drawBoard, lastMoveLine, recordLine, statusLine } from '../shared/describe'
 import { MoveRefused, owesAgentMove, type Game } from '../shared/game'
 import { gameUri } from '../shared/resource'
-import type { Seat } from './ask-agent'
+import type { ChatRef } from './ask-agent'
 import type { GameService } from './game-service'
 
 /**
@@ -40,7 +40,7 @@ export const classifyTicTacToeCall = classifyByAction({
  * should outlive it. One note per game, updated — a note per game played would bury the rest.
  */
 export const GAME_OVER_ASK =
-  'The game is over. Tell the user in one short line, and offer another game. If this game showed you something about how this user plays that you did not know, keep it with your memory tool — update your one note on Tic-Tac-Toe rather than adding another.'
+  'The game is over. Tell the user in one short line, and offer another game. If this game showed you something about how this user plays that you did not know, keep it in your memory — update your one note on Tic-Tac-Toe rather than adding another.'
 
 type Result = { content: string; isError?: boolean; terminate?: boolean; details?: unknown }
 
@@ -55,7 +55,7 @@ function afterMove(game: Game, ends: boolean): string {
 }
 
 /** The table a tool call acts on: the chat the call runs in. */
-function seatOf(ctx: MiniAppContext, context: { session?: { id: string } } | undefined): Seat {
+function chatOf(ctx: MiniAppContext, context: { session?: { id: string } } | undefined): ChatRef {
   const sessionId = context?.session?.id
   if (!sessionId) throw new MoveRefused('Tic-Tac-Toe is played in a chat; this call has none.')
   return { userId: ctx.userId, sessionId }
@@ -68,17 +68,17 @@ export function createGameTools(ctx: MiniAppContext, games: GameService) {
     first: ctx.z.enum(['user', 'agent']).optional(),
   })
   const actions = {
-    async move(seat: Seat, cell: number | undefined): Promise<Result> {
+    async move(chat: ChatRef, cell: number | undefined): Promise<Result> {
       if (cell === undefined) throw new MoveRefused('Name the cell: `cell`, one of the free 1–9.')
-      const { game, answered } = await games.agentMove(seat, cell - 1)
+      const { game, answered } = await games.agentMove(chat, cell - 1)
       const ends = answered && game.status === 'playing'
       return { content: afterMove(game, ends), ...(ends ? { terminate: true } : {}) }
     },
-    async state(seat: Seat): Promise<Result> {
-      return { content: describeGame(await games.read(seat)) }
+    async state(chat: ChatRef): Promise<Result> {
+      return { content: describeGame(await games.read(chat)) }
     },
-    async new_game(seat: Seat, first: 'user' | 'agent'): Promise<Result> {
-      const game = await games.agentNewGame(seat, first === 'agent' ? 'O' : 'X')
+    async new_game(chat: ChatRef, first: 'user' | 'agent'): Promise<Result> {
+      const game = await games.agentNewGame(chat, first === 'agent' ? 'O' : 'X')
       return {
         content: [
           'A new game is on this chat’s board.',
@@ -94,7 +94,7 @@ export function createGameTools(ctx: MiniAppContext, games: GameService) {
           .filter((line) => line !== null)
           .join('\n'),
         details: ctx.ui.offer({
-          uri: gameUri(seat.sessionId),
+          uri: gameUri(chat.sessionId),
           label: 'Open Tic-Tac-Toe',
           description: 'This chat’s board',
         }),
@@ -134,9 +134,9 @@ export function createGameTools(ctx: MiniAppContext, games: GameService) {
       classify: classifyTicTacToeCall,
       permissionPaths: () => [],
       async execute(_toolCallId, input, _signal, _onUpdate, context) {
-        let seat: Seat | null = null
+        let chat: ChatRef | null = null
         try {
-          seat = seatOf(ctx, context)
+          chat = chatOf(ctx, context)
           if (input.actions && input.action)
             throw new MoveRefused('Use either action or actions, not both.')
           if (!input.actions && !input.action)
@@ -152,13 +152,13 @@ export function createGameTools(ctx: MiniAppContext, games: GameService) {
             try {
               switch (step.action) {
                 case 'move':
-                  result = await actions.move(seat, step.cell)
+                  result = await actions.move(chat, step.cell)
                   break
                 case 'state':
-                  result = await actions.state(seat)
+                  result = await actions.state(chat)
                   break
                 case 'new_game':
-                  result = await actions.new_game(seat, step.first ?? 'user')
+                  result = await actions.new_game(chat, step.first ?? 'user')
                   break
               }
             } catch (error) {
@@ -176,7 +176,7 @@ export function createGameTools(ctx: MiniAppContext, games: GameService) {
             // A new game the user opens hands the turn over as surely as a move does.
             if (
               result.terminate ||
-              (input.actions && step.action !== 'state' && !owesAgentMove(await games.read(seat)))
+              (input.actions && step.action !== 'state' && !owesAgentMove(await games.read(chat)))
             )
               break
           }
@@ -187,7 +187,7 @@ export function createGameTools(ctx: MiniAppContext, games: GameService) {
           }
         } catch (error) {
           if (!(error instanceof MoveRefused)) throw error
-          const board = seat ? `\n\n${describeGame(await games.read(seat))}` : ''
+          const board = chat ? `\n\n${describeGame(await games.read(chat))}` : ''
           return { content: `${error.message}${board}`, isError: true }
         }
       },

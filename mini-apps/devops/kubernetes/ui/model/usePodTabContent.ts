@@ -56,8 +56,12 @@ export function usePodTabContent(options: PodTabContentOptions) {
   const [previousLogs, setPreviousLogs] = useState(false)
   const viewSeq = useRef(0)
   const logStreamKey = useRef('')
+  // The pod the next read names its default container after; read when a read runs, so a pod
+  // update does not re-create `refreshView` and restart the poll.
   const podRef = useRef(pod)
-  podRef.current = pod
+  useEffect(() => {
+    podRef.current = pod
+  }, [pod])
 
   const refreshView = useCallback(async () => {
     const seq = ++viewSeq.current

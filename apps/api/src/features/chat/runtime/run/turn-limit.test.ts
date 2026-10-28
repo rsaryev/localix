@@ -5,10 +5,10 @@ import { runTurnLimit } from './turn-limit'
 const agent = (maxTurns?: number) =>
   agentDefinitionSchema.parse({
     id: 'native:global:worker',
-    handle: 'worker',
+    name: 'worker',
     description: '',
     instructions: 'Work',
-    ...(maxTurns ? { limits: { maxTurns } } : {}),
+    ...(maxTurns ? { maxTurns } : {}),
   })
 
 test('native maxTurns limits every host without raising a smaller host budget', () => {

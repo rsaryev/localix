@@ -12,10 +12,10 @@ import { composeCapabilities, NO_ROSTERS, projectCapabilities } from './resolve'
 import type { Rule } from '../agent-core/capability-rule'
 
 // One literal serves as both the registered tool and the facts `evaluate` reads off it.
-const tool = { name: 'bash', mutates: true, effect: 'external' } as AgentTool & ToolFacts
-const call = extractCallFacts('bash', { command: 'git status' }, '/tmp/workspace')
+const tool = { name: 'Bash', mutates: true, effect: 'external' } as AgentTool & ToolFacts
+const call = extractCallFacts('Bash', { command: 'git status' }, '/tmp/workspace')
 const project = (rules: Rule[]) =>
-  projectCapabilities(composeCapabilities(rules), { ...NO_ROSTERS, tool: ['bash'] }).permissions
+  projectCapabilities(composeCapabilities(rules), { ...NO_ROSTERS, tool: ['Bash'] }).permissions
 
 describe('capability policy at the runtime boundary', () => {
   // Both effects count here because both rules NAME `bash`: an allow opens the door and an ask
@@ -27,14 +27,14 @@ describe('capability policy at the runtime boundary', () => {
       const projection = projectCapabilities(
         composeCapabilities([
           { action: 'tool:*', resource: '*', effect: 'deny' },
-          { action: 'tool:bash', resource: 'git *', effect },
+          { action: 'tool:Bash', resource: 'git *', effect },
         ]),
-        { ...NO_ROSTERS, tool: ['bash', 'write'] },
+        { ...NO_ROSTERS, tool: ['Bash', 'Write'] },
       )
-      expect(projection.denied.tool).toEqual(['write'])
+      expect(projection.denied.tool).toEqual(['Write'])
       expect(evaluate(projection.permissions, tool, call).action).toBe(effect)
       expect(
-        evaluate(projection.permissions, tool, extractCallFacts('bash', { command: 'npm publish' }))
+        evaluate(projection.permissions, tool, extractCallFacts('Bash', { command: 'npm publish' }))
           .action,
       ).toBe('deny')
     },
@@ -43,61 +43,61 @@ describe('capability policy at the runtime boundary', () => {
   test('a final whole-tool deny revokes earlier exceptions at registration too', () => {
     const projection = projectCapabilities(
       composeCapabilities([
-        { action: 'tool:bash', resource: 'git *', effect: 'allow' },
-        { action: 'tool:bash', resource: '*', effect: 'deny' },
+        { action: 'tool:Bash', resource: 'git *', effect: 'allow' },
+        { action: 'tool:Bash', resource: '*', effect: 'deny' },
       ]),
-      { ...NO_ROSTERS, tool: ['bash'] },
+      { ...NO_ROSTERS, tool: ['Bash'] },
     )
-    expect(projection.denied.tool).toEqual(['bash'])
+    expect(projection.denied.tool).toEqual(['Bash'])
   })
 
   test('a skill allow-list can lift an ask for exactly what it declared', () => {
-    const rules = project([{ action: 'tool:bash', resource: '*', effect: 'ask' }])
+    const rules = project([{ action: 'tool:Bash', resource: '*', effect: 'ask' }])
     const grants = skillPermissionRules(['Bash(git *)'])
     expect(evaluate(rules, tool, call, grants).action).toBe('allow')
     expect(
-      evaluate(rules, tool, extractCallFacts('bash', { command: 'npm publish' }), grants).action,
+      evaluate(rules, tool, extractCallFacts('Bash', { command: 'npm publish' }), grants).action,
     ).toBe('ask')
   })
 
   test('last match permits an explicit exception', () => {
     const rules = project([
-      { action: 'tool:bash', resource: '*', effect: 'deny' },
-      { action: 'tool:bash', resource: 'git *', effect: 'allow' },
+      { action: 'tool:Bash', resource: '*', effect: 'deny' },
+      { action: 'tool:Bash', resource: 'git *', effect: 'allow' },
     ])
     expect(evaluate(rules, tool, call).action).toBe('allow')
-    expect(evaluate(rules, tool, extractCallFacts('bash', { command: 'npm publish' })).action).toBe(
+    expect(evaluate(rules, tool, extractCallFacts('Bash', { command: 'npm publish' })).action).toBe(
       'deny',
     )
   })
 
   test('wildcards are anchored and tool-name families survive projection', () => {
-    const rules = project([{ action: 'tool:ba*', resource: 'git * --force', effect: 'deny' }])
+    const rules = project([{ action: 'tool:Ba*', resource: 'git * --force', effect: 'deny' }])
     expect(
-      evaluate(rules, tool, extractCallFacts('bash', { command: 'git push --force' })).action,
+      evaluate(rules, tool, extractCallFacts('Bash', { command: 'git push --force' })).action,
     ).toBe('deny')
     expect(
-      evaluate(rules, tool, extractCallFacts('bash', { command: 'echo git push --force' })).action,
+      evaluate(rules, tool, extractCallFacts('Bash', { command: 'echo git push --force' })).action,
     ).toBe('allow')
   })
 
   test('an allow exception must cover the entire command batch', () => {
     const rules = project([
       { action: '*', resource: '*', effect: 'ask' },
-      { action: 'tool:bash', resource: 'git *', effect: 'allow' },
+      { action: 'tool:Bash', resource: 'git *', effect: 'allow' },
     ])
     for (const command of ['git status && npm publish', 'git status $(npm publish)']) {
-      expect(evaluate(rules, tool, extractCallFacts('bash', { command })).action).toBe('ask')
+      expect(evaluate(rules, tool, extractCallFacts('Bash', { command })).action).toBe('ask')
     }
   })
 
   test('the agent state-dir carve-out cannot skip a denial', async () => {
     const gate = createPermissionGate({
-      rules: project([{ action: 'tool:bash', resource: '*', effect: 'deny' }]),
-      toolsByName: new Map([['bash', tool]]),
+      rules: project([{ action: 'tool:Bash', resource: '*', effect: 'deny' }]),
+      toolsByName: new Map([['Bash', tool]]),
     })
     expect(
-      await gate({ toolCallId: 'call', toolName: 'bash', input: { command: 'git status' } }),
+      await gate({ toolCallId: 'call', toolName: 'Bash', input: { command: 'git status' } }),
     ).toMatchObject({ block: true })
   })
 
@@ -108,20 +108,20 @@ describe('capability policy at the runtime boundary', () => {
     const stopAsking = (rules: ReturnType<typeof project>) =>
       rules.map((rule) => (rule.action === 'ask' ? { ...rule, action: 'allow' as const } : rule))
     const denied = createPermissionGate({
-      rules: stopAsking(project([{ action: 'tool:bash', resource: 'git *', effect: 'deny' }])),
-      toolsByName: new Map([['bash', tool]]),
+      rules: stopAsking(project([{ action: 'tool:Bash', resource: 'git *', effect: 'deny' }])),
+      toolsByName: new Map([['Bash', tool]]),
     })
     expect(
-      await denied({ toolCallId: 'call', toolName: 'bash', input: { command: 'git status' } }),
+      await denied({ toolCallId: 'call', toolName: 'Bash', input: { command: 'git status' } }),
     ).toMatchObject({ block: true })
 
     const asked = createPermissionGate({
-      rules: stopAsking(project([{ action: 'tool:bash', resource: '*', effect: 'ask' }])),
-      toolsByName: new Map([['bash', tool]]),
+      rules: stopAsking(project([{ action: 'tool:Bash', resource: '*', effect: 'ask' }])),
+      toolsByName: new Map([['Bash', tool]]),
     })
     const verdict = await asked({
       toolCallId: 'call',
-      toolName: 'bash',
+      toolName: 'Bash',
       input: { command: 'git status' },
     })
     expect(verdict?.block).toBeFalsy()
@@ -129,11 +129,11 @@ describe('capability policy at the runtime boundary', () => {
 
   test('an unattended ask cannot become an implicit approval', async () => {
     const gate = createPermissionGate({
-      rules: project([{ action: 'tool:bash', resource: '*', effect: 'ask' }]),
-      toolsByName: new Map([['bash', tool]]),
+      rules: project([{ action: 'tool:Bash', resource: '*', effect: 'ask' }]),
+      toolsByName: new Map([['Bash', tool]]),
     })
     expect(
-      await gate({ toolCallId: 'call', toolName: 'bash', input: { command: 'git status' } }),
+      await gate({ toolCallId: 'call', toolName: 'Bash', input: { command: 'git status' } }),
     ).toMatchObject({ block: true })
   })
 })
@@ -148,34 +148,34 @@ describe('capability policy at the runtime boundary', () => {
  * the two match different things.
  */
 describe('the baseline rows in a shipped preset', () => {
-  const bash = { name: 'bash', effect: 'external' as const }
-  const dangerous = extractCallFacts('bash', { command: 'rm -rf /tmp/x' }, '/repo')
+  const bash = { name: 'Bash', effect: 'external' as const }
+  const dangerous = extractCallFacts('Bash', { command: 'rm -rf /tmp/x' }, '/repo')
   const preset = () => project(builtinAgentPreset('localix'))
 
   test('a destructive command still asks, under the role that allows bash outright', () => {
-    // Every shipped role carries `tool:bash * allow`. If that answered for this call, all of
+    // Every shipped role carries `tool:Bash * allow`. If that answered for this call, all of
     // them would run `rm -rf /` unprompted.
     expect(evaluate(preset(), bash, dangerous).action).toBe('ask')
   })
 
   test("a session grant's rule does not silence it", () => {
-    // What "Always" writes is `tool:bash` over the program it showed. It lands after the
+    // What "Always" writes is `tool:Bash` over the program it showed. It lands after the
     // preset and still cannot answer for `dangerous`: different resource, different rule.
-    const granted = [...preset(), { permission: 'bash', pattern: 'rm *', action: 'allow' as const }]
+    const granted = [...preset(), { permission: 'Bash', pattern: 'rm *', action: 'allow' as const }]
     expect(evaluate(granted, bash, dangerous).action).toBe('allow')
     // …and the grant is what the user asked for, so it DOES answer for the thing they named.
     // The property being pinned is that it takes a deliberate rule naming this class to lift
     // the confirmation, not a click on an unrelated command.
     const unrelated = [
       ...preset(),
-      { permission: 'bash', pattern: 'git *', action: 'allow' as const },
+      { permission: 'Bash', pattern: 'git *', action: 'allow' as const },
     ]
     expect(evaluate(unrelated, bash, dangerous).action).toBe('ask')
   })
 
   test('a reader outside the workspace asks, whatever the roster said', () => {
-    const outside = extractCallFacts('read', { path: '/etc/hosts' }, '/repo')
-    expect(evaluate(preset(), { name: 'read', effect: 'read' }, outside).action).toBe('ask')
+    const outside = extractCallFacts('Read', { path: '/etc/hosts' }, '/repo')
+    expect(evaluate(preset(), { name: 'Read', effect: 'read' }, outside).action).toBe('ask')
   })
 
   test('the user can lift it, deliberately, by naming the class', () => {
@@ -183,7 +183,7 @@ describe('the baseline rows in a shipped preset', () => {
     // they can see — never by a click on a card about something else.
     const lifted = [
       ...preset(),
-      { permission: 'bash', pattern: 'dangerous', action: 'allow' as const },
+      { permission: 'Bash', pattern: 'dangerous', action: 'allow' as const },
     ]
     expect(evaluate(lifted, bash, dangerous).action).toBe('allow')
   })

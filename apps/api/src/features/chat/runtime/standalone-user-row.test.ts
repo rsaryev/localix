@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { SYSTEM_PARTICIPANT, USER_PARTICIPANT } from '../../../db'
+import { SYSTEM_AUTHOR, USER_AUTHOR } from '../../../db'
 import type { PersistedMessage } from '../contracts'
 import type { ChatRepository } from '../repository'
 import type { SessionStreamRegistry } from './session-stream-registry'
@@ -48,7 +48,7 @@ test('replayed standalone delivery returns its committed row without inserting o
   const replayed = await insertSteeredUserMessage(params)
   expect(replayed).toBe(first)
   expect(calls).toEqual(['now', 'get', 'insert', 'publish', 'now', 'get'])
-  expect(first.payload.from).toEqual(USER_PARTICIPANT)
+  expect(first.payload.from).toEqual(USER_AUTHOR)
   expect(first.payload.origin).toBe('user-steer')
 })
 
@@ -97,10 +97,10 @@ test('replay after a publication failure keeps the already-inserted standalone r
 test('UI notes and internal steering retain their distinct authorship and visibility', async () => {
   const { params } = fixture()
   const note = await insertUiNote(params)
-  expect(note.payload.from).toEqual(SYSTEM_PARTICIPANT)
+  expect(note.payload.from).toEqual(SYSTEM_AUTHOR)
   expect(note.payload.uiOnly).toBe(true)
   const internal = createSteeredUserMessage({ ...params, internal: true, source: 'plugin' })
-  expect(internal.payload.from).toEqual(USER_PARTICIPANT)
+  expect(internal.payload.from).toEqual(USER_AUTHOR)
   expect(internal.payload.isInternal).toBe(true)
   expect(internal.payload.origin).toBe('plugin')
 })

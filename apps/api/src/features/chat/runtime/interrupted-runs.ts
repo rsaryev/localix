@@ -136,19 +136,12 @@ export interface AnnounceInterruptedRunsDeps {
  * button for exactly `subagent`/`job` sessions. A line that duplicates an existing indicator is
  * a far smaller harm than silence.
  */
-/**
- * What the interrupted participant left: the still-running tool calls in ITS last reply, and its
- * handle when the conversation has other speakers — or nothing on any failure.
- *
- * It used to read the session's last assistant reply, whoever wrote it, so in a conversation the
- * notice could name another participant's tools and say nothing about whose reply was cut off.
- */
+/** What the interrupted agent left: the still-running tool calls in its last reply — or nothing on any failure. */
 async function interruptedReplyOf(
   deps: AnnounceInterruptedRunsDeps,
   run: { userId: string; sessionId: string; agentId: string },
 ): Promise<{
   pending: string[]
-  handle?: string
   reply?: { id: string; payload: { items?: unknown } }
 }> {
   try {
@@ -156,11 +149,8 @@ async function interruptedReplyOf(
     const messages = await deps.repo.listMessages(run.userId, run.sessionId)
     const replies = messages.filter((message) => message.payload.role === 'assistant')
     const own = [...replies].reverse().find((message) => message.payload.from === author)
-    const shared = replies.some((message) => message.payload.from !== author)
-    const handle = own?.payload.authorSnapshot?.handle
     return {
       pending: own ? pendingToolNames(own.payload) : [],
-      ...(shared && handle ? { handle } : {}),
       ...(own ? { reply: { id: own.id, payload: own.payload } } : {}),
     }
   } catch {
@@ -178,17 +168,15 @@ export async function announceInterruptedRuns(
       // Was a side-effecting call in flight? The answer changes the advice, so it is read
       // rather than assumed. A failure to read it degrades to the plain notice: an
       // interruption must always be announced, and a less specific warning beats silence.
-      const { pending, handle, reply } = await interruptedReplyOf(deps, {
+      const { pending, reply } = await interruptedReplyOf(deps, {
         userId,
         sessionId,
         agentId,
       })
       // Best effort: the announcement matters more than the card's spinner.
       await settleCutOffCalls(deps, { userId, sessionId }, reply).catch(() => undefined)
-      const base =
+      const notice =
         pending.length > 0 ? interruptedWithPendingToolNotice(pending) : RUN_INTERRUPTED_NOTICE
-      // Named when others spoke too: "this reply" has to say whose.
-      const notice = handle ? `${handle}: ${base}` : base
       await insertUiNote({
         repo: deps.repo,
         streamRegistry: deps.streamRegistry,

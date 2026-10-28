@@ -11,16 +11,16 @@ all.
 
 ## What you can do
 
-| Action                                | Surface                                                           | Boundary                                                                              |
-| ------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| Add a server                          | Store → Library → Yours (or Project) → **Add MCP server**         | A program (stdio), a web address (HTTP) or a web socket; the name is chosen once      |
-| Change a server's settings            | Its Store page → Settings tab                                     | Command, URL, environment, headers, OAuth client, tool call timeout; saved explicitly |
-| Test a connection                     | Its Settings tab → **Test connection**                            | A test uses the same process-lifetime connection cache as chat                        |
-| Enable or disable a server            | the Store (MCP servers), or its Store page                        | A rule for the selected agent; a server that is off is never connected                |
-| Enable or disable one advertised tool | Its Settings tab, **Tools**, after a successful test              | Filters apply on the next run; the server keeps its complete cached inventory         |
-| Sign in with OAuth                    | Its Settings tab → **Sign in**, on an HTTP server                 | Opens the provider's page in your browser; **Sign out** forgets the stored tokens     |
-| Remove a server                       | Its Store page                                                    | Removes its record and the secrets kept for it                                        |
-| List and read resources               | `mcp_resources` with `list`, `list_templates`, and `read` actions | The tool appears only after a live server advertises the `resources` capability       |
+| Action                                | Surface                                                          | Boundary                                                                              |
+| ------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Add a server                          | Store → Library → Yours (or Project) → **Add MCP server**        | A program (stdio), a web address (HTTP) or a web socket; the name is chosen once      |
+| Change a server's settings            | Its Store page → Settings tab                                    | Command, URL, environment, headers, OAuth client, tool call timeout; saved explicitly |
+| Test a connection                     | Its Settings tab → **Test connection**                           | A test uses the same process-lifetime connection cache as chat                        |
+| Enable or disable a server            | the Store (MCP servers), or its Store page                       | A rule for the selected agent; a server that is off is never connected                |
+| Enable or disable one advertised tool | Its Settings tab, **Tools**, after a successful test             | Filters apply on the next run; the server keeps its complete cached inventory         |
+| Sign in with OAuth                    | Its Settings tab → **Sign in**, on an HTTP server                | Opens the provider's page in your browser; **Sign out** forgets the stored tokens     |
+| Remove a server                       | Its Store page                                                   | Removes its record and the secrets kept for it                                        |
+| List and read resources               | `McpResources` with `list`, `list_templates`, and `read` actions | The tool appears only after a live server advertises the `resources` capability       |
 
 A tool is named `mcp_<server>_<tool>`. Unsupported characters become underscores, names stop at 64
 characters, and collisions receive a numeric suffix. Permission rules, tool switches, approvals,
@@ -70,7 +70,7 @@ the plugin and follows the plugin's switch.
 | --------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
 | `stdio`   | Spawns the configured command in the session working directory and uses stdin/stdout | Inherits the API process environment plus configured variables; no OAuth |
 | `http`    | Tries Streamable HTTP, then legacy SSE against the same URL                          | Supports configured headers and OAuth 2.0                                |
-| `ws`      | Uses the SDK WebSocket transport                                                     | URL only; configured headers and OAuth are not applied                   |
+| `ws`      | Opens a WebSocket with the `mcp` subprotocol                                         | Supports configured headers on the upgrade request; no OAuth             |
 
 At connection time, `${VAR}` expands to an environment value, while `${VAR:-default}` uses its
 default when the variable is unset or empty. A `${VAR}` that is unset and has no default stays as
@@ -83,6 +83,37 @@ A credential-like name (one containing `TOKEN`, `SECRET`, `PASSWORD`, `API_KEY`,
 default ignored, so an imported configuration cannot send `ANTHROPIC_API_KEY` or `GITHUB_TOKEN` to
 the server it names. Copy the value into a variable with a name of your own to send it on purpose. A
 stdio server still receives such names in its command, arguments and environment.
+
+### The `/mcp` command
+
+`/mcp` lists the servers a run of the chat would connect, grouped by where each comes from: Localix
+(your own, and those of the project), User and Local (`~/.claude.json`), Project (`.mcp.json`, once
+approved), Managed (the organization's) and Plugin (`plugin:<plugin>:<server>`). Each row shows its
+transport, its latest connection outcome and whether it is switched off. Listing never connects.
+
+| Command                 | Effect                                                                                  |
+| ----------------------- | --------------------------------------------------------------------------------------- |
+| `/mcp reconnect <name>` | Closes the server's live connection, connects again now and shows the outcome           |
+| `/mcp enable <name>`    | Switches the server on; `all` switches every server on. Takes effect on the next turn   |
+| `/mcp disable <name>`   | Switches the server off; `all` switches every server off. Takes effect on the next turn |
+
+The switch is the same rule as the Store's, so both agree. It never edits Claude Code's files. A
+disabled server is not reconnected until it is enabled.
+
+### MCP prompts as slash commands
+
+A server that advertises the `prompts` capability offers named prompts. Each runs as
+`/mcp__<server>__<prompt>`, with any character of either name other than a letter, digit, `_` or `-`
+written as `_`. Type the arguments after the command in the order the prompt declares them, with
+quotes around a phrase; a missing required argument answers with the usage line. The prompt's
+messages become the turn.
+
+The composer menu lists the prompts of servers that are already connected, because a menu never
+starts a server; typing the command connects it. A server announcing `prompts/list_changed` updates
+the menu. Prompts of a plugin's bundled servers are not in the menu, but typing their command works.
+A disabled server's prompts do not run.
+
+![Typing /mcp__release lists the connected server's two prompts in the slash menu](../assets/screenshots/composer/mcp-prompts--2026-10-27.png)
 
 ### Connection and discovery
 
@@ -109,8 +140,8 @@ prompt instructions.
 ### Tools, resources, and output
 
 Accepted MCP tools join the runtime registry and the shared tool-loading policy. Deferred tools
-appear in the compact inventory; `activate_tools` adds their full schemas to later model requests.
-Their schemas do not all accompany every request. One server can contribute at most 256 tools; each
+appear in the compact inventory; `ToolSearch` adds their full schemas to later model requests. Their
+schemas do not all accompany every request. One server can contribute at most 256 tools; each
 accepted input schema is at most 128 KiB and each description is at most 600 characters.
 
 The [Tool budget](tool-budget.md) owns the count and estimate behavior. It uses the same cached
@@ -210,8 +241,8 @@ OAuth tokens, dynamic client data, and the pending PKCE verifier are AES-256-GCM
 
 - MCP registry scope is exact. Add a server in every project that needs it, or contribute it through
   an enabled plugin.
-- A web socket server cannot send configured headers, run a `headersHelper` or use the HTTP OAuth
-  flow.
+- A web socket server sends its configured headers, but cannot run a `headersHelper` or use the HTTP
+  OAuth flow.
 - The seeded `grep` record belongs to the empty-project registry. Ordinary chats, including Default
   chats, have a project ID and do not gather that record automatically. A test of the record or a
   copy added to an active project can still contact `mcp.grep.app`.

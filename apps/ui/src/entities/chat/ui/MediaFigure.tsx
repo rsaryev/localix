@@ -186,6 +186,7 @@ export function VideoFigure({ att }: { att: MessageAttachment & { kind: 'video' 
   const meta = formatFileSize(att.size)
   return (
     <figure className="group relative w-fit overflow-hidden rounded-xl border border-control-border bg-surface-raised">
+      {/* oxlint-disable-next-line jsx-a11y/media-has-caption -- an attached video has no caption file to offer */}
       <video
         src={src}
         controls

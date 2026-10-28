@@ -1,5 +1,5 @@
 /**
- * `global_search` — the search palette for the agent, and its conversation-history reader.
+ * `GlobalSearch` — the search palette for the agent, and its conversation-history reader.
  *
  * QUERY runs the SAME `SearchService` the palette and the search tab call: the same providers
  * (chats, messages, projects, the session's files, skills, plugins, MCP servers, agents, models
@@ -134,7 +134,7 @@ export function createGlobalSearchTool(options: GlobalSearchToolOptions) {
   }
 
   return defineAgentTool({
-    name: TOOL.global_search,
+    name: TOOL.GlobalSearch,
     label: 'Search',
     activeVerb: 'Searching',
     description:

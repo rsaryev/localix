@@ -14,8 +14,8 @@ function mayAutoplay() {
 }
 
 /**
- * The product demo, where llx.sh replays its terminal: a silent recording of one workflows run,
- * cropped to the app window. It loads and plays once it scrolls into view and pauses while it is
+ * The product demo, where llx.sh replays its terminal: a silent recording of the app at work,
+ * the window with a little of the desktop around it. It loads and plays once it scrolls into view and pauses while it is
  * away. A click on the frame pauses or resumes it, and a pause by hand holds until the next click.
  * With reduced motion or Save-Data it waits on its poster until asked.
  */
@@ -28,9 +28,9 @@ export function DemoFilm({ autoplay }: { autoplay?: boolean }) {
   const visible = useOnScreen(frame, { margin: '120px', fallback: false })
 
   // Once on screen the film loads itself, unless the reader paused it or asked for less motion.
-  useEffect(() => {
-    if (visible && !held && (autoplay ?? mayAutoplay())) setStarted(true)
-  }, [visible, held, autoplay])
+  // `visible` is only ever true in the browser, so the media query is never read while the page
+  // renders on the server.
+  if (!started && visible && !held && (autoplay ?? mayAutoplay())) setStarted(true)
 
   // Playback follows the state, after the source is committed: on screen and not held, it plays.
   useEffect(() => {
@@ -60,9 +60,9 @@ export function DemoFilm({ autoplay }: { autoplay?: boolean }) {
         className="demo-video"
         src={started ? DEMO_SRC : undefined}
         poster={DEMO_POSTER}
-        aria-label="A /workflows prompt puts three cards on the board, agents build and test a dark 2048 game in the browser, and a Visual Feedback comment adds a light theme"
+        aria-label="The Store, installing and playing the 2048 mini app, then one prompt: the agent builds a phone shop landing page and tests it in the browser, and a Visual Feedback comment removes a label"
         width={1680}
-        height={946}
+        height={982}
         muted
         loop
         playsInline

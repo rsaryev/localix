@@ -68,7 +68,7 @@ export const pluginCommandSchema = z.object({
   featured: z.boolean().optional(),
   /**
    * Deferred tools the command's work needs for the rest of the chat, activated when it runs, as
-   * if the agent had called `activate_tools` (e.g. a board tool for a command that plans on it).
+   * if the agent had called `ToolSearch` (e.g. a board tool for a command that plans on it).
    */
   activateTools: z.array(z.string().min(1)).max(8).optional(),
   /**

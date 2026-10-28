@@ -1,4 +1,5 @@
 import type { Listing, SourceView } from '@localixai/store'
+import { tap } from './hookProbe'
 import type { StoreInstallExtra } from '@/shared/lib/storeInstallExtra'
 import type { StoreTarget } from '@/shared/lib/openStore'
 import type { StoreProject } from '@/features/store/model/storeContext'
@@ -27,6 +28,8 @@ export interface RenderStoreOptions extends Omit<StoreFake, 'calls'> {
   target?: StoreTarget
   extras?: StoreInstallExtra[]
   project?: StoreProject | null
+  /** The chat open beside the Store. */
+  sessionId?: string
   /** The Store pane's width in px: 1400 (wide) unless a test asks for another. */
   width?: number
 }
@@ -37,8 +40,13 @@ const turns = (act: (run: () => Promise<void>) => Promise<void>, n = 12) =>
     for (let i = 0; i < n; i++) await new Promise<void>((resolve) => setImmediate(resolve))
   })
 
+/** Zero-delay timer turns: the resource sync schedules its reads with `setTimeout(..., 0)`. */
+async function timerTurns(): Promise<void> {
+  for (let i = 0; i < 6; i++) await new Promise<void>((resolve) => setTimeout(resolve, 0))
+}
+
 export async function renderStore(options: RenderStoreOptions) {
-  const { target, extras, project, width = 1400, ...rest } = options
+  const { target, extras, project, sessionId, width = 1400, ...rest } = options
   const fake: StoreFake = { calls: [], reads: [], ...rest }
   const React = await import('react')
   const { createRoot } = await import('react-dom/client')
@@ -48,10 +56,11 @@ export async function renderStore(options: RenderStoreOptions) {
   const host = document.createElement('div')
   document.body.append(host)
   const root = createRoot(host)
-  let revalidate: () => Promise<unknown> = async () => {}
+  const revalidator = tap<() => Promise<unknown>>()
+  const revalidate = () => revalidator.value?.() ?? Promise.resolve()
   function Probe() {
     const { mutate } = useSWRConfig()
-    revalidate = () => mutate(() => true)
+    revalidator.put(() => mutate(() => true))
     return null
   }
   const client = fakeClient(fake)
@@ -63,6 +72,7 @@ export async function renderStore(options: RenderStoreOptions) {
         target={at}
         extras={extras ?? []}
         project={project ?? null}
+        sessionId={sessionId ?? null}
         searchDelay={0}
         onNavigate={(uri) => fake.calls.push(`navigate ${uri}`)}
       />
@@ -124,7 +134,7 @@ export async function renderStore(options: RenderStoreOptions) {
     act(async () => {
       fake.listings = listings
       resourceSync.invalidate(['store'])
-      await new Promise<void>((resolve) => setTimeout(resolve, 1))
+      await timerTurns()
       await revalidate()
     })
   /** The server's sources changed and it poked the Store's sources. */
@@ -132,15 +142,33 @@ export async function renderStore(options: RenderStoreOptions) {
     act(async () => {
       fake.sources = sources
       resourceSync.invalidate(['store-sources'])
-      await new Promise<void>((resolve) => setTimeout(resolve, 1))
+      await timerTurns()
       await revalidate()
+    })
+  /** The background worked the recommendations out and poked their topic; nothing else is read. */
+  const recommendationsReady = () =>
+    act(async () => {
+      fake.recommendPending = false
+      resourceSync.invalidate(['store-recommendations'])
+      await timerTurns()
     })
   /** The tab was opened again at another target. */
   const retarget = (at: StoreTarget) => act(() => root.render(tree(at)))
+  const sections = () =>
+    host.querySelector<HTMLElement>('[role="tablist"][aria-label="Store sections"]')
+  const library = () => host.querySelector<HTMLElement>('[aria-label="Your library"]')
+  /** A section's control by its text: a catalog tab, or a button of the library. */
   const shelf = (label: string) =>
-    buttons(host.querySelector('nav[aria-label="Store sections"]') ?? host).find((b) =>
-      b.textContent?.startsWith(label),
-    )
+    [
+      ...(sections()?.querySelectorAll<HTMLElement>('[role="tab"]') ?? []),
+      ...(library()?.querySelectorAll<HTMLElement>('button') ?? []),
+    ].find((control) => control.textContent?.startsWith(label))
+  /** The section on screen, by the text of the control that marks it. */
+  const activeSection = () =>
+    (
+      sections()?.querySelector('[role="tab"][aria-selected="true"]') ??
+      host.querySelector('[data-store-nav] [aria-current="page"]')
+    )?.textContent ?? undefined
   const done = async () => {
     await React.act(async () => root.unmount())
     restoreLayout()
@@ -161,12 +189,14 @@ export async function renderStore(options: RenderStoreOptions) {
     press,
     change,
     changeSources,
+    recommendationsReady,
     retarget,
     /** The failing reads answer again, and the Store is poked to read. */
     recover: () => {
       fake.failing = {}
     },
     shelf,
+    activeSection,
     act,
     done,
   }

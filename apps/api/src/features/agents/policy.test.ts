@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
-import { agentPolicy, canEditField, canJoinConversation } from './policy'
+import { agentPolicy, canEditField } from './policy'
 
-const record = (id: string) => ({ id, handle: 'x', description: '', instructions: 'x' }) as never
+const record = (id: string) => ({ id, name: 'x', description: '', instructions: 'x' }) as never
 
 describe('agent policy', () => {
   test('a file the person owns is edited, deleted and copied; the rest is copied only', () => {
@@ -16,11 +16,5 @@ describe('agent policy', () => {
 
   test('the main loop cannot be switched off', () => {
     expect(agentPolicy({ record: record(DEFAULT_AGENT_ID), editable: false }).disable).toBe(false)
-  })
-
-  test('joining a conversation needs the agent on and its chat invocation allowed', () => {
-    expect(canJoinConversation({ enabled: true, invocations: { chat: 'allow' } })).toBe(true)
-    expect(canJoinConversation({ enabled: true, invocations: { chat: 'ask' } })).toBe(false)
-    expect(canJoinConversation({ enabled: false, invocations: { chat: 'allow' } })).toBe(false)
   })
 })

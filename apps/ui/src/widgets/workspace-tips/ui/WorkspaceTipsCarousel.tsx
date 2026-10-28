@@ -1,19 +1,15 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 import { Button } from '@localixai/kit/button'
-import { loadString, saveString } from '@localixai/mini-app-sdk/ui/storage'
 import { useFeaturedCommand } from '@/shared/contrib/useFeaturedCommand'
-import { useIslandEnabled } from '@/shared/lib/islandSetting'
 // Shared scene styles first: each scene's own stylesheet overrides `.wt-pane` after it.
 import './tips.css'
 import { visibleTips, WORKSPACE_TIPS, type WorkspaceTip } from './workspaceTips'
 
-const LAST_TIP_KEY = 'localix.workspaceTips.last'
-
 /**
  * Where `id` sits among the slides shown now. A hidden slide (its requirement unmet, or
- * gone since it was remembered) resolves to the next shown one, so the tour neither jumps
- * back to the start nor shifts when a slide appears later.
+ * hidden after it was chosen) resolves to the next shown one, so the tour neither jumps
+ * back to the start nor shifts when a slide appears later. Each opening starts at the first slide.
  */
 function indexOf(tips: WorkspaceTip[], id: string | null): number {
   const shown = tips.findIndex((tip) => tip.id === id)
@@ -46,23 +42,26 @@ function loopMs(stage: HTMLElement | null): number {
  */
 export function WorkspaceTipsCarousel({ onFinish }: { onFinish: () => void }) {
   const featuredCommand = useFeaturedCommand() !== null
-  // Null outside the macOS desktop app, and until the shell reports the switch.
-  const island = useIslandEnabled() !== null
-  const tips = visibleTips({ featuredCommand, island })
+  const tips = visibleTips({ featuredCommand })
   // The current slide is held by id, not position: a slide that appears once plugins load
   // must not move the person to a different tip.
   const [{ id, leaving }, setState] = useState<{
     id: string | null
     leaving: WorkspaceTip | null
-  }>(() => ({ id: loadString(LAST_TIP_KEY), leaving: null }))
+  }>({ id: null, leaving: null })
   const [engaged, setEngaged] = useState(false)
   const [firstPass, setFirstPass] = useState(true)
   const stageRef = useRef<HTMLDivElement>(null)
   const index = indexOf(tips, id)
   const tip = tips[index] ?? tips[0]
 
-  useEffect(() => {
+  // A new slide starts a new first pass: reset while rendering, so no frame shows the old state.
+  const [passTipId, setPassTipId] = useState(tip?.id)
+  if (passTipId !== tip?.id) {
+    setPassTipId(tip?.id)
     setFirstPass(true)
+  }
+  useEffect(() => {
     const timer = window.setTimeout(() => setFirstPass(false), loopMs(stageRef.current))
     return () => window.clearTimeout(timer)
   }, [tip?.id])
@@ -75,7 +74,6 @@ export function WorkspaceTipsCarousel({ onFinish }: { onFinish: () => void }) {
     const target = tips[next]
     if (!target || next === index) return
     setState({ id: target.id, leaving: tip })
-    saveString(LAST_TIP_KEY, target.id)
   }
 
   // Arrow keys on the progress bar page and carry focus along, like a tab list.

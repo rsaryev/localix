@@ -6,7 +6,7 @@
  * prefix plus keyed runtime sections that become the turn's context inside the conversation,
  * and the prefix is scanned for volatile tokens here. The prefix and the tool schemas are the part of each request the
  * history does not carry; both compression budgets subtract them, so the budget frame is
- * resolved from them in this stage and published on the frame for `context_budget`.
+ * resolved from them in this stage and published on the frame for `ContextBudget`.
  */
 import { createChatCacheDiagnostics } from '@localixai/agent'
 import { describeFixedContext } from '@localixai/agent/agents'
@@ -22,7 +22,6 @@ import { budgetDepth } from '../../fork/fork-run'
 import { buildRunSystemPrompt } from '../system-prompt-build'
 import { otherWorkspaceSessionsSection } from '../other-workspace-sessions'
 import { TOOL } from '../../../../agent-core/tool-names'
-import { buildTurnTriggerContext } from '../turn-trigger-context'
 import { dumpFixedContext, wireDumpEnabled } from '../wire-dump'
 import type { RunInputs } from './context'
 import type { RunFrame } from './frame'
@@ -42,7 +41,7 @@ export async function buildRunPrompt(
   inputs: RunInputs,
   toolset: RunToolset,
 ) {
-  const { env, params, userId, session, speakerAgentId } = frame
+  const { env, params, userId, session, agentId } = frame
   const { deps } = env
   const { providerId } = turn.model
   const historyMessages = params.historyMessages
@@ -52,13 +51,13 @@ export async function buildRunPrompt(
   const built = await buildRunSystemPrompt({
     userId,
     session,
-    speakerAgentId,
+    agentId,
     policy: turn.policy,
     providerId,
     agentProfile: toolset.agentProfile,
     runtimeTools: toolset.runtimeTools,
-    // The roster names each tool as the model is offered it (an MCP tool's `modelName`).
-    wireToolNames: toolset.tools.map((tool) => tool.modelName ?? tool.name),
+    // The roster names each tool as the model is offered it (`Read`, an MCP tool's `modelName`).
+    wireTools: toolset.tools,
     loadedPlugins: inputs.loadedPlugins,
     loadedMiniApps: inputs.loadedMiniApps,
     frozenContext: inputs.frozenContext,
@@ -104,10 +103,9 @@ export async function buildRunPrompt(
       outputStyle: built.outputStyle,
     })) ??
     built.systemPrompt
-  const triggerContext = buildTurnTriggerContext(params.scope, session, historyMessages)
   const installedAgents = (await deps.externalAgents?.installed().catch(() => [])) ?? []
   const externalAgentsText = installedAgentsPrompt(installedAgents)
-  if (externalAgentsText && toolset.tools.some((tool) => tool.name === TOOL.bash)) {
+  if (externalAgentsText && toolset.tools.some((tool) => tool.name === TOOL.Bash)) {
     baseSections.push({
       key: 'external-agents:installed',
       scope: 'state',
@@ -129,15 +127,12 @@ export async function buildRunPrompt(
     session,
     inputs.defaultCwd,
     otherChats,
-    toolset.runtimeTools.toolNames.includes(TOOL.global_search),
+    toolset.runtimeTools.toolNames.includes(TOOL.GlobalSearch),
   )
-  const runtimeSections: RuntimeSection[] = triggerContext
-    ? [
-        ...baseSections,
-        ...(otherSessions ? [otherSessions] : []),
-        { key: 'current-turn', scope: 'turn', text: triggerContext },
-      ]
-    : [...baseSections, ...(otherSessions ? [otherSessions] : [])]
+  const runtimeSections: RuntimeSection[] = [
+    ...baseSections,
+    ...(otherSessions ? [otherSessions] : []),
+  ]
   // The only default-on detector for a volatile leak into the cacheable prefix; it scans once
   // per prefix change.
   warnOnVolatileCachePrefix(session.id, systemPrompt)
@@ -147,7 +142,7 @@ export async function buildRunPrompt(
     ? computeCacheDiagnostics({
         createDiagnostics: createChatCacheDiagnostics,
         session,
-        agentId: speakerAgentId,
+        agentId,
         historyMessages,
         systemPrompt,
         providerId,

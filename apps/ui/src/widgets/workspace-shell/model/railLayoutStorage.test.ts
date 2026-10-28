@@ -4,14 +4,13 @@ import { parseRailLayout, resolveRailAreas, serializeRailLayout } from './railLa
 test('recovered entries retain the first placement and resolve against the current catalog', () => {
   const recovered = parseRailLayout(
     JSON.stringify({
-      v: 4,
+      v: 6,
       entries: [
         null,
         { id: '', area: 'top' },
         { id: 7, area: 'bar' },
         { id: 'panel', area: 'unknown' },
         { id: 'panel', area: 'overflow' },
-        { id: 'utility:reset', area: 'bottom' },
         { id: 'removed', area: 'top' },
       ],
     }),
@@ -19,7 +18,6 @@ test('recovered entries retain the first placement and resolve against the curre
   expect(recovered).toEqual({
     entries: [
       { id: 'panel', area: 'bar' },
-      { id: 'utility:reset', area: 'status' },
       { id: 'removed', area: 'top' },
     ],
   })
@@ -28,7 +26,6 @@ test('recovered entries retain the first placement and resolve against the curre
     resolveRailAreas(
       [
         { id: 'panel', defaultArea: 'bottom', placeable: false },
-        { id: 'utility:reset', defaultArea: 'bar' },
         { id: 'new-panel', defaultArea: 'top' },
       ],
       recovered,
@@ -37,7 +34,7 @@ test('recovered entries retain the first placement and resolve against the curre
     top: ['new-panel'],
     bar: [],
     bottom: [],
-    status: ['utility:reset'],
+    status: [],
     overflow: ['panel'],
   })
 })

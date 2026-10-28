@@ -130,7 +130,7 @@ export function PodTabHeader({
         {running && (
           <>
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               aria-label="Exec into pod"
               title="Exec into pod"
@@ -140,7 +140,7 @@ export function PodTabHeader({
               <span className="@max-sm:sr-only">Exec</span>
             </Button>
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               aria-label="Forward a pod port"
               title="Forward a port"

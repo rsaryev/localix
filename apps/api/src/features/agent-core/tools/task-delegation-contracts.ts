@@ -5,10 +5,54 @@ import type { DelegationPosition } from '../delegation-hierarchy'
 
 export type ChildRuntimeStatus = AgentRuntimeStatus
 
+/**
+ * What one child's entry in an `Agent` result says of it. It is the child's state at the moment
+ * the call RETURNS, not at its launch:
+ *
+ *   running   — started in the background (or a wait that ended before the child did);
+ *   queued    — waiting for one of its parent's lanes (`queuePosition` says its place);
+ *   completed — a synchronous call that got its reply (also an early finish);
+ *   failed    — it failed, in a synchronous call or inside the launch window;
+ *   stopped   — it was stopped before it finished.
+ *
+ * The transcript card reads it to show the child without a second lookup.
+ */
+export type TaskDelegationStatus = ChildRuntimeStatus | 'queued'
+
+/**
+ * What one `Agent` call returns about its child besides the text, as Claude Code's result does:
+ * how it ended, which agent ran, the model it resolved to, what it used, and the worktree of an
+ * isolated one. `async_launched` is a child that runs on and reports later.
+ */
+export interface AgentCallResult {
+  status: 'completed' | 'async_launched' | 'failed' | 'stopped' | 'queued'
+  agentId: string
+  agentType: string
+  name?: string
+  resolvedModel?: string
+  usage?: { tokens: number; outputTokens: number; costUsd: number | null }
+  worktreePath?: string
+  worktreeBranch?: string
+  /** What its tool calls amount to, once it has finished. */
+  toolStats?: AgentToolStats
+}
+
+export interface AgentToolStats {
+  readCount: number
+  searchCount: number
+  bashCount: number
+  editFileCount: number
+  linesAdded: number
+  linesRemoved: number
+  otherToolCount: number
+}
+
 export interface TaskDelegationDetails {
   sessionId: string
   title: string
-  status: ChildRuntimeStatus
+  status: TaskDelegationStatus
+  /** 1-based place in the parent's queue; set only while `status` is `queued`. */
+  queuePosition?: number
   taskName?: string
 }
 
@@ -25,22 +69,18 @@ export interface QueuedDelegation {
 }
 
 /** The agent a task goes to as the registry resolves it, with the defaults its child run takes. */
-export interface DelegateAgent {
+export interface TaskAgent {
   agentId: string
-  handle: string
+  name: string
   maxTurns?: number
   pinnedSkills?: readonly string[]
 }
 
 /** One catalog agent's definition, as delegation needs it (`CatalogAgent` is one). */
-export interface DelegateAgentType {
+export interface TaskAgentType {
   fullName: string
   name: string
   description: string
-  preferredModel?: string
-  preferredEffort?: string
-  /** `localix.model`: a `<provider>/<model>` route Claude Code has no place for. */
-  localix?: { model?: string }
   pinnedSkills?: readonly string[]
   maxTurns?: number
   background?: boolean
@@ -55,8 +95,8 @@ export interface DelegateAgentType {
 
 /** Who a task goes to, as the catalog resolves it and Access admits it. */
 export type DelegateResolution =
-  /** Seat this agent in the child: it runs on its own definition. */
-  | { kind: 'agent'; agent: DelegateAgent; type: DelegateAgentType }
+  /** Start this agent as the child: it runs on its own definition. */
+  | { kind: 'agent'; agent: TaskAgent; type: TaskAgentType }
   /** `general-purpose`: the delegating agent itself. */
   | { kind: 'self' }
   | { kind: 'ambiguous'; names: string[] }
@@ -76,10 +116,7 @@ export interface TaskDelegationOptions {
     scope: { projectId?: string },
   ) => MaybePromise<DelegateResolution>
   /** The delegating agent itself, by id; null when it is not enabled here. */
-  resolveAgent: (
-    reference: string,
-    scope: { projectId?: string },
-  ) => MaybePromise<DelegateAgent | null>
+  resolveAgent: (reference: string, scope: { projectId?: string }) => MaybePromise<TaskAgent | null>
   /** Children created since the person last wrote (`delegation-budget.ts`). */
   delegationsSinceHuman?: () => MaybePromise<number>
   createSession: (
@@ -115,7 +152,13 @@ export interface TaskDelegationOptions {
       modelId?: string
       reasoningEffort?: ReasoningEffort
     },
-  ) => Promise<{ id: string; taskName?: string | null }>
+  ) => Promise<{ id: string; taskName?: string | null; agent?: { modelId: string } | null }>
+  /** What one session has spent: the usage an `Agent` result reports for its child. */
+  spend?: (
+    sessionId: string,
+  ) => Promise<{ tokens: number; outputTokens: number; costUsd: number | null }>
+  /** What its tool calls amount to: the `toolStats` of an `Agent` result. */
+  toolStats?: (sessionId: string) => Promise<AgentToolStats>
   startSubagentTask: (
     userId: string,
     sessionId: string,
@@ -136,7 +179,7 @@ export interface TaskDelegationOptions {
    */
   onSubagentStart?: (agentType: string, agentId: string) => Promise<string | undefined>
   /**
-   * Lend the delegating run's own line to a fork (`delegate-fork.ts`): `capture` freezes, at the
+   * Lend the delegating run's own line to a fork (`agent-fork.ts`): `capture` freezes, at the
    * call, what the run was sent and where it stands; `persist` writes it for the child once its
    * session exists. Absent where the run cannot lend it, and a fork is then refused.
    */

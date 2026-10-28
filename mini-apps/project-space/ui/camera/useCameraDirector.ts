@@ -4,6 +4,7 @@ import { prefersReducedMotion } from '@localixai/kit/platform'
 import type { Box } from '../../shared/ops/geometry'
 import { easeInOut, flight } from './flight'
 import { frameViewport, type Subject } from './framing'
+import { createSpotlights } from './spotlights'
 
 /**
  * Every deliberate move of the board's camera — to an element, to the selection, to where the
@@ -17,7 +18,6 @@ import { frameViewport, type Subject } from './framing'
  * the agent pointed at instead of a region that merely contains it.
  */
 const HISTORY = 30
-const SPOTLIGHT_MS = 1_600
 
 export interface CameraDirector {
   /** Frame a board rectangle by the board's framing policy. */
@@ -44,7 +44,6 @@ export function useCameraDirector(root: RefObject<HTMLElement | null>): CameraDi
   const camera = useCanvasCamera()
   const past = useRef<CameraViewport[]>([])
   const future = useRef<CameraViewport[]>([])
-  const spotlights = useRef(new Map<HTMLElement, number>())
   const [history, setHistory] = useState({ canBack: false, canForward: false, jumpedAt: 0 })
 
   const publish = useCallback(
@@ -60,32 +59,9 @@ export function useCameraDirector(root: RefObject<HTMLElement | null>): CameraDi
   // The view's size is the camera's own answer (the library's store), not a measure of the DOM.
   const size = useCallback(() => camera.size(), [camera])
 
-  const spotlight = useCallback(
-    (ids: readonly string[]) => {
-      const board = root.current
-      if (!board || ids.length === 0) return
-      for (const id of ids) {
-        const node = board.querySelector<HTMLElement>(
-          `.react-flow__node[data-id="${CSS.escape(id)}"]`,
-        )
-        if (!node) continue
-        // Off and on again, with a reflow between, so a second spotlight restarts the glow.
-        node.classList.remove('space-spotlight')
-        void node.offsetWidth
-        node.classList.add('space-spotlight')
-        const previous = spotlights.current.get(node)
-        if (previous !== undefined) window.clearTimeout(previous)
-        spotlights.current.set(
-          node,
-          window.setTimeout(() => {
-            spotlights.current.delete(node)
-            node.classList.remove('space-spotlight')
-          }, SPOTLIGHT_MS),
-        )
-      }
-    },
-    [root],
-  )
+  // The glow's timers belong to this board; unmounting clears them (see the effect below).
+  const [lights] = useState(() => createSpotlights(root))
+  const spotlight = lights.light
 
   // One flight at a time: a new jump takes over from wherever the last one had got to, and the
   // person's own hand — a wheel, a pinch, a press on the board — ends a flight where it is.
@@ -105,16 +81,12 @@ export function useCameraDirector(root: RefObject<HTMLElement | null>): CameraDi
       // A closed board used to keep its frame chain and landing timer alive. End both and
       // settle the awaiting camera request before the detached tree can be retained.
       takeOver()
-      for (const [node, timer] of spotlights.current) {
-        window.clearTimeout(timer)
-        node.classList.remove('space-spotlight')
-      }
-      spotlights.current.clear()
+      lights.clear()
       element.removeEventListener('wheel', takeOver)
       element.removeEventListener('gesturestart', takeOver)
       element.removeEventListener('pointerdown', takeOver)
     }
-  }, [root])
+  }, [root, lights])
   const travel = useCallback(
     async (viewport: CameraViewport) => {
       stopFlight.current?.()

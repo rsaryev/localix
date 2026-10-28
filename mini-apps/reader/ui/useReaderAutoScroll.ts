@@ -44,22 +44,33 @@ export function useReaderAutoScroll({
   const autoScrollRemainderRef = useRef(0)
   const autoScrollStallRef = useRef<number | null>(null)
 
-  const stopAutoScroll = useCallback(() => {
+  const clearAutoScrollFrame = useCallback(() => {
     cancelAnimationFrame(autoScrollFrameRef.current)
     autoScrollRemainderRef.current = 0
     autoScrollStallRef.current = null
+  }, [])
+
+  const stopAutoScroll = useCallback(() => {
+    clearAutoScrollFrame()
     setAutoScrollActive(false)
     setAutoScrollPaused(false)
-  }, [])
+  }, [clearAutoScrollFrame])
 
   const startAutoScroll = useCallback(() => {
     setAutoScrollActive(true)
     setAutoScrollPaused(false)
   }, [])
 
+  // Scrolling by itself needs the scrolled view on screen: leaving either ends it, in the render
+  // that left, and what the frames kept is cleared once that is committed.
+  const unavailable = viewMode !== 'scroll' || !visible
+  if (unavailable && (autoScrollActive || autoScrollPaused)) {
+    setAutoScrollActive(false)
+    setAutoScrollPaused(false)
+  }
   useEffect(() => {
-    if (viewMode !== 'scroll' || !visible) stopAutoScroll()
-  }, [viewMode, stopAutoScroll, visible])
+    if (unavailable) clearAutoScrollFrame()
+  }, [unavailable, clearAutoScrollFrame])
 
   useEffect(() => {
     if (

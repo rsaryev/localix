@@ -7,12 +7,12 @@
 import { describe, expect, test } from 'bun:test'
 
 import type { PersistedMessage } from '../../contracts'
-import { agentParticipant, USER_PARTICIPANT, type StoredMessagePayload } from '../../../../db'
+import { agentAuthor, USER_AUTHOR, type StoredMessagePayload } from '../../../../db'
 import { INERT_CC_HOOKS, type CcHooksRuntime } from '../../../cc-hooks'
 import { intakeTurn, markPromptBlocked } from './intake'
 
 function message(id: string, content: string, role: 'user' | 'assistant' = 'user') {
-  const from = role === 'user' ? USER_PARTICIPANT : agentParticipant('agent-1')
+  const from = role === 'user' ? USER_AUTHOR : agentAuthor('agent-1')
   return {
     id,
     sessionId: 'session-1',

@@ -2,6 +2,9 @@
   "$schema": "https://turbo.build/schema.json",
   "extends": ["//"],
   "tasks": {
+    "type-check": {
+      "dependsOn": ["^type-check", "@localixai/ui#type-check", "docs:gen"]
+    },
     "docs:gen": {
       "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/docs/**"],
       "outputs": ["src/generated/**", "public/sitemap.xml"]

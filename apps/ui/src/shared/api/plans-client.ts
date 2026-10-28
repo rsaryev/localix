@@ -119,20 +119,17 @@ export const plansApi = {
   },
 
   /**
-   * Approve a version and hand the conversation to `mode`. `to` is who starts — a participant's
-   * handle or `all`; without it the conversation's default answerer does. The server answers 400
-   * for a handle that is not in the conversation.
+   * Approve a version and hand the conversation to `mode`; the conversation's agent starts.
    */
   async approvePlan(
     rootSessionId: string,
     planId: string,
     mode: ImplementationMode,
-    to?: string,
   ): Promise<PlanAnswer<{ plan: SessionPlan; wake: PlanWakeStatus }>> {
     return planAnswer(
       await client.rpc.sessions[':id'].plans[':planId'].approve.$post({
         param: { id: rootSessionId, planId },
-        json: to ? { mode, to } : { mode },
+        json: { mode },
       }),
     )
   },

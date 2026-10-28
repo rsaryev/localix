@@ -16,7 +16,7 @@ export const sessionTopicSchema = z
       .describe(
         'Carry forward important decisions, user constraints, verified results, references and ' +
           'unfinished work from the previous topic and its inherited summary. Publish only ' +
-          'context colleagues should share; do not copy private reasoning or raw tool output.',
+          'context worth keeping in the topic; do not copy private reasoning or raw tool output.',
       ),
   })
   .strict()

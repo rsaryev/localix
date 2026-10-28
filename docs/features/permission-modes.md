@@ -30,7 +30,14 @@ Restrictions that modes preserve:
 A new conversation starts in the mode `permissions.defaultMode` names in the Claude Code settings
 files for its folder: `default` (or `manual`) is Default, `plan` is Plan and `bypassPermissions` is
 Bypass. `acceptEdits`, `auto` and `dontAsk` have no Localix mode of the same meaning, so such a
-conversation starts in Default. A delegated child always runs in its conversation's mode.
+conversation starts in Default. A delegated child runs in its conversation's mode, except that in a
+Default conversation an agent file's `permissionMode: plan` makes that child read-only (see below).
+
+As in Claude Code, `bypassPermissions` and `auto` count only from the user and managed settings. A
+project's `.claude/settings.json` or the local `.claude/settings.local.json` cannot start a
+conversation in either, so a folder you open cannot switch the permission prompts off for you. When
+the file that wins names one of them, the conversation starts in Default rather than in a mode a
+lower file names. The other values apply from any file.
 
 `permissions.disableBypassPermissionsMode: "disable"` in any of those files, managed settings
 included, keeps the folder's conversations out of Bypass and Autonomous: choosing one is refused,
@@ -58,16 +65,17 @@ Assuming the agent's other rules permit the tool, Plan treats these calls differ
 | Bash `git status` in the foreground                  | `read`     | May run; path rules can still ask.                  |
 | Bash `npm run dev`                                   | `external` | Refused.                                            |
 | Bash typing `git status` into an existing terminal   | `external` | Refused; the terminal's current program is unknown. |
-| Memory `set` with `scope: "session"`                 | `session`  | May run when that scope is available to the agent.  |
-| Memory `set` with `scope: "project"` or `"global"`   | `host`     | Refused.                                            |
 | File edit confined to this root chat's plan Markdown | `session`  | May run; ordinary file targets are refused.         |
 
 Plan permits some state changes, including board edits and delegated tasks. It does not make the
 whole application read-only; use the call's classification and permission rules to trace a refusal.
 
 A mode belongs to the whole conversation tree: a child the conversation delegates to runs under the
-same mode, and changing the mode reaches every child session on its next run. A child session's own
-button shows the mode but cannot change it.
+same mode, and changing the mode reaches every child session on its next run. The one exception is a
+conversation in Default, where the child's own agent file (yours, the project's or a managed one,
+never a plugin's) may name `permissionMode: plan` and run read-only; a conversation in Plan, Bypass
+or Autonomous keeps its mode in every child. A child session's own button shows the mode but cannot
+change it.
 
 A change takes effect on the next run. A run already in progress finishes under the mode it started
 with; stop it if it must not continue. Plan presentation also checks the root conversation’s current
@@ -118,13 +126,13 @@ the strip updates to what happened and a short note says so ("Plan v2 was alread
 error is recorded. Repeating a decision that already stands, such as approving again in the same
 mode, changes nothing and wakes no one a second time.
 
-| Action              | Where                                                  | What happens                                                                                                                                                                                                  |
-| ------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Comment**         | Select text in the plan tab                            | The comment is saved at once and marks the sentence. Edit or delete it from the mark or the comment count.                                                                                                    |
-| **Request changes** | Strip, or the comment count in the tab                 | Sends your open comments to the agent, which can revise the draft and present a new version. Needs at least one open comment.                                                                                 |
-| **Approve ▾**       | Strip, plan tab header, the attention dialog           | Pick the mode — Default, Bypass or Autonomous — and, in a chat with several agents, who starts: any agent (the default), one participant, or everyone. The conversation switches to that mode and wakes them. |
-| **Dismiss**         | Strip                                                  | Puts the plan aside. The agent is not woken.                                                                                                                                                                  |
-| **Back to review**  | Plan tab header, once the newest version was set aside | Brings that same version back for review and returns the conversation to Plan mode. Only the newest version.                                                                                                  |
+| Action              | Where                                                  | What happens                                                                                                                  |
+| ------------------- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| **Comment**         | Select text in the plan tab                            | The comment is saved at once and marks the sentence. Edit or delete it from the mark or the comment count.                    |
+| **Request changes** | Strip, or the comment count in the tab                 | Sends your open comments to the agent, which can revise the draft and present a new version. Needs at least one open comment. |
+| **Approve ▾**       | Strip, plan tab header, the attention dialog           | Pick the mode — Default, Bypass or Autonomous. The conversation switches to that mode and wakes the agent.                    |
+| **Dismiss**         | Strip                                                  | Puts the plan aside. The agent is not woken.                                                                                  |
+| **Back to review**  | Plan tab header, once the newest version was set aside | Brings that same version back for review and returns the conversation to Plan mode. Only the newest version.                  |
 
 Every version is kept. The tab's version menu switches between them, and **Changes** shows what the
 selected version changed against the one before it. A version that is superseded or dismissed is
@@ -186,31 +194,13 @@ Background bash jobs and monitors do not block this idle check, so Continue does
 all processes have stopped. Continue is shared infrastructure for features that register resume
 points; it does not automatically recover every interrupted task.
 
-### Who takes the approved plan
+### Approving the plan
 
-The plan belongs to the conversation, so approving it is something you say to the conversation, and
-it is routed the way a message is. **Approve ▾** opens a menu like the composer's mode menu, with
-two rows that each show their current choice:
-
-- **Mode** (Default to start) opens the three modes, each with its icon and what it does.
-- **Agent** (Any agent to start) opens **Any agent**, each participant with its avatar in its colour
-  (the plan's author first, marked "Wrote the plan"), then **Everyone**. It appears only when the
-  conversation has two or more participants; a one-agent chat has nobody to choose between.
-
-Picking a choice updates its row and keeps the menu open; the **Approve** row at the bottom approves
-with what the rows show.
-
-| Agent                   | Who answers                                                                  |
-| ----------------------- | ---------------------------------------------------------------------------- |
-| Any agent (the default) | The agent a message with no `@mention` would go to. In a one-agent chat, it. |
-| A participant           | That participant.                                                            |
-| Everyone                | Every participant, each in turn.                                             |
-
-When you name a participant or Everyone in a conversation with more than one, the approval line says
-who starts — "Plan v2 approved — Bypass mode. @backend starts." — so every participant reads whose
-turn the work is. Otherwise the line names only the mode. Approve does not add anyone to the
-conversation: use **Add participant** in the composer first. The composer's mode menu approves with
-the defaults: Any agent.
+The plan belongs to the conversation, so approving it is something you say to the conversation.
+**Approve ▾** opens a menu like the composer's mode menu, with a **Mode** row (Default to start)
+that opens the three modes, each with its icon and what it does. Picking a mode updates the row and
+keeps the menu open; the **Approve** row at the bottom approves with the mode shown. The composer's
+mode menu approves with the default mode.
 
 ### Plan limits
 
@@ -252,7 +242,6 @@ classes are available to your own rules as resources — `effect:files`, `effect
 - [Per-run mode rewrite](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/capabilities/permission-mode-policy.ts)
 - [Classification fallback](https://github.com/rsaryev/localix/blob/main/packages/agent/src/agents/call-class.ts)
 - [Bash call classification](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/bash/bash-call-class.ts)
-- [Memory scope classification](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/memory/memory.ts)
 - [Plan paths and file exception](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/plan-paths.ts)
 - [Plan-file call classification](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/file/file-call-class.ts)
 - [Plan presentation and snapshots](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plans/service-present.ts)

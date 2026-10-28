@@ -1,11 +1,10 @@
-import { describe, expect, test } from 'bun:test'
+import { afterEach, describe, expect, jest, test } from 'bun:test'
 import { promises as fsp } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { makeHelpers } from './native-helpers'
 
 const h = makeHelpers()
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 describe('configNumber', () => {
   test('accepts finite numbers including 0 (no `|| default` trap)', () => {
@@ -77,6 +76,7 @@ describe('errorResult', () => {
 })
 
 describe('withTimeoutSignal', () => {
+  afterEach(() => jest.useRealTimers())
   test('aborts when the parent signal aborts — didTimeout stays false', () => {
     const parent = new AbortController()
     const t = h.withTimeoutSignal(parent.signal, 10_000)
@@ -87,17 +87,19 @@ describe('withTimeoutSignal', () => {
     t.dispose()
   })
   test('aborts on timeout — didTimeout becomes true', async () => {
+    jest.useFakeTimers()
     const t = h.withTimeoutSignal(undefined, 5)
-    await sleep(25)
+    jest.advanceTimersByTime(25)
     expect(t.signal.aborted).toBe(true)
     expect(t.didTimeout()).toBe(true)
     t.dispose()
   })
   test('dispose clears the timer so no late abort fires', async () => {
+    jest.useFakeTimers()
     const parent = new AbortController()
     const t = h.withTimeoutSignal(parent.signal, 10)
     t.dispose()
-    await sleep(30)
+    jest.advanceTimersByTime(30)
     expect(t.signal.aborted).toBe(false)
     expect(t.didTimeout()).toBe(false)
   })

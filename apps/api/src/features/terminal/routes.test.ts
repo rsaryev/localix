@@ -48,7 +48,7 @@ describe('a server started from the preview is the session’s work', () => {
     )
     expect(res.status).toBe(201)
     expect(work.list({ userId: 'u1', sessionId: 's1' })).toMatchObject([
-      { kind: 'job', label: 'bun dev', terminalId: 'pty-1', agentId: null },
+      { kind: 'job', label: 'bun dev', terminalId: 'pty-1' },
     ])
 
     terminals.exit(0)

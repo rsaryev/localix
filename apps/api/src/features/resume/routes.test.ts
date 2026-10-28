@@ -42,7 +42,6 @@ async function harness() {
     publish: () => {},
     setMode: async () => {},
     wake,
-    participants: async () => ['lead'],
   })
   const resume = createResumeRegistry({
     producers: () => [planResumeProducer(plans)],
@@ -57,7 +56,7 @@ async function harness() {
     })
     .route('/rpc', createResumeRoutes(resume))
   const owner = { userId: 'u1', sessionId: 'root' }
-  const { plan } = await plans.present(owner, 'lead', { title: 'Cache', body: '## Goal' })
+  const { plan } = await plans.present(owner, { title: 'Cache', body: '## Goal' })
   return { app, plan, plans, owner, wakes }
 }
 

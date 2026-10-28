@@ -9,9 +9,8 @@ interface MessageSkeletonProps {
    */
   label: string
   /**
-   * Who is about to speak. Present from the moment the row exists, which is the point:
-   * with a party in the session, "someone is thinking" is not an answer — the reader has
-   * to know WHICH agent before the first character lands, not after.
+   * Who is about to speak. Present from the moment the row exists, which is the point: the
+   * reader sees the agent's name before the first character lands, not after.
    */
   author?: AgentIdentity | null
   triggerLabel?: string

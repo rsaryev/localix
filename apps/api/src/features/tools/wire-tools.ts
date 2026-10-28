@@ -32,7 +32,7 @@ export interface WireToolFacts {
  * `if (args.resourceServers.length === 0) return []`, and `resourceServers` collects only servers
  * whose connected client reports `getServerCapabilities().resources`.
  */
-const MCP_RESOURCE_TOOLS: readonly string[] = [TOOL.mcp_resources]
+const MCP_RESOURCE_TOOLS: readonly string[] = [TOOL.McpResources]
 
 export function phantomToolNames(facts: WireToolFacts): ReadonlySet<string> {
   const phantom = new Set<string>()

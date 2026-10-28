@@ -92,7 +92,8 @@ Every mini app starts from this one. To make your own:
 
 1. Copy this folder to `mini-apps/<name>`. In `mini-app.json`, set `name`, `displayName`,
    `description`, `category` and `author`, and start `version` at `0.1.0`. Rename the domain files
-   and tools that `scaffold.json` lists. `/mini-app create` does the same renames for you.
+   and tools that `scaffold.json` lists. The mini-app-authoring plugin's `mini-app create` does the
+   same renames for you.
 2. Replace the system domain with yours, keeping the shapes: a store under `ctx.dataDir`, routes
    that answer with the new state, tools for the agent, and a `guide.md` that tells the agent how to
    read what the app shows.
@@ -121,6 +122,6 @@ hosting, updates and trust.
 
 `mini-app.json` names the app's `icon`, `screenshots` and `tags`. A copy keeps `icon.svg`, so it
 always has an icon; draw your own on the same tile, and take screenshots of your app at full
-resolution. `mini_app_build` and `/mini-app reload` report problems with them in the **store media**
+resolution. The mini-app-authoring plugin's check reports problems with them in the **store media**
 step, and packing refuses an app without a valid icon. See
 [Publish a mini app](../../docs/extending/mini-app-publishing.md).

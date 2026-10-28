@@ -54,12 +54,7 @@ export const isDesktop: boolean = isDesktopRuntime()
 /** The embedded API port chosen by the desktop shell, if any. */
 export function getDesktopApiPort(): number | undefined {
   if (typeof window === 'undefined') return undefined
-  if (typeof window.__LOCALIX_API_PORT === 'number') return window.__LOCALIX_API_PORT
-  // Legacy fallback: port passed as a query parameter. Guard against a
-  // non-numeric value so a malformed URL can't yield a NaN port downstream.
-  const fromQuery = new URLSearchParams(window.location.search).get('__api_port')
-  const parsed = fromQuery ? Number(fromQuery) : Number.NaN
-  return Number.isFinite(parsed) ? parsed : undefined
+  return typeof window.__LOCALIX_API_PORT === 'number' ? window.__LOCALIX_API_PORT : undefined
 }
 
 /**

@@ -117,13 +117,19 @@ export function createSystemApi(input: {
           stderr: 'pipe',
         })
         const ms = Math.min(init.timeoutMs ?? PROCESS_MS, PROCESS_MAX_MS)
-        const timer = setTimeout(() => proc.kill(), ms)
+        let timer: ReturnType<typeof setTimeout> | undefined
+        // Still running at its time: SIGKILLed, and the call rejects as Claude Code's does. It
+        // rejects without waiting for the exit or the pipes: a descendant may hold them open.
+        const expired = new Promise<never>((_, reject) => {
+          timer = setTimeout(() => {
+            proc.kill('SIGKILL')
+            reject(new Error(`process.run: ${argv[0]} was still running after ${ms} ms`))
+          }, ms)
+        })
         try {
-          const [stdout, stderr, exitCode] = await Promise.all([
-            capped(proc.stdout),
-            capped(proc.stderr),
-            proc.exited,
-          ])
+          const finished = Promise.all([capped(proc.stdout), capped(proc.stderr), proc.exited])
+          finished.catch(() => {})
+          const [stdout, stderr, exitCode] = await Promise.race([finished, expired])
           return {
             exitCode,
             stdout: stdout.text,

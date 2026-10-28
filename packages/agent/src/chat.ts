@@ -56,8 +56,7 @@ export interface ToolErrorPayload {
  * Bytes are carried EITHER inline as base64 (`data`) OR by reference to a stored
  * file (`mediaId`). The SDK stays storage-agnostic: it never reads `mediaId` — a
  * host that uses file-backed attachments must rehydrate `data` from `mediaId`
- * before calling `toModelMessages` (parts with neither field are skipped). Old
- * messages predating file storage still carry inline `data` (back-compat).
+ * before calling `toModelMessages` (parts with neither field are skipped).
  *
  * Persisted on the message and converted to model content parts by
  * `toModelMessages` — see the agents/chat module.

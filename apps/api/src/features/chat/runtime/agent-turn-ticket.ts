@@ -5,7 +5,6 @@ import type { AgentTurnSource } from './conversation-strategy'
 
 /** Serializable execution intent. History is read when dispatched, never copied into tickets. */
 export interface AgentTurnTicket {
-  speakerAgentId: string
   assistantMessageId: string
   /** All events merged into this one pending address, oldest first. */
   triggerMessageIds: readonly string[]

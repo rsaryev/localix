@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { ArrowUpRight, Copy, Check, TriangleAlert } from 'lucide-react'
+import { useLatest } from '@localixai/mini-app-sdk/ui/runtime-hooks'
 import { Button } from '@localixai/kit/button'
 import { copyText } from '@localixai/mini-app-sdk/ui/interactions'
 import { acknowledgeInline } from '@localixai/mini-app-sdk/ui'
@@ -70,8 +71,7 @@ export function SqlPreviewDialog({
     () => onRetryLoad?.(),
     { detail: loadErrorDetail },
   )
-  const context = useRef({ open })
-  context.current = { open }
+  const openLatest = useLatest(open)
 
   // The editor remounts per open; `sql` is deliberately NOT a dependency. This dialog is
   // modal and read-only, so the previewed script only changes because the CALLER's plan
@@ -81,10 +81,12 @@ export function SqlPreviewDialog({
   //
   // Reset on CLOSE too, not only on open: a failed apply the person then closed away from used to
   // keep asserting itself in the Event Center until the dialog happened to be opened again.
-  useEffect(() => {
+  const [seenOpen, setSeenOpen] = useState(open)
+  if (seenOpen !== open) {
+    setSeenOpen(open)
     setEditorReady(false)
     setApplyError(null)
-  }, [open])
+  }
 
   const copy = () => {
     // The tick is this control's own success state (the helper posts no success row) — and a
@@ -109,7 +111,7 @@ export function SqlPreviewDialog({
       // UNCHANGED, which silently swallowed the error whenever a failed apply made the caller
       // refresh its plan. `applyActive` already makes a second apply impossible while one runs,
       // so there is no other attempt whose error this could be confused with.
-      if (context.current.open) {
+      if (openLatest.current) {
         acknowledgeInline(cause)
         setApplyError(cause instanceof Error ? cause.message : 'Could not apply these changes.')
       }

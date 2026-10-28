@@ -1,4 +1,10 @@
-import { useEffect, useRef, type Dispatch, type RefObject, type SetStateAction } from 'react'
+import {
+  useEffect,
+  useEffectEvent,
+  type Dispatch,
+  type RefObject,
+  type SetStateAction,
+} from 'react'
 
 import {
   composerBus,
@@ -11,8 +17,11 @@ import type { MessageAttachment } from '@/shared/api/contracts'
 export function isStageableAttachment(
   binding: NonNullable<Parameters<typeof composerBus.insert>[0]['bindings']>[number],
 ): binding is MessageAttachment {
+  // Context links are pinned as chips by `useMessageBindingDrop`, and an invocation is carried by
+  // the text it was typed as: neither is a file to stage. A `path` attachment is: it re-enters the
+  // pipeline untouched, still a by-path reference to the file the person dropped.
   if (binding.kind === 'context' || binding.kind === 'invocation') return false
-  if (binding.kind === 'path') return false
+  if (binding.kind === 'path') return true
   // `messageAttachmentToFile` retains a mediaId-only asset in a WeakMap, so the
   // normal attachment pipeline can re-stage it without fabricating or re-uploading bytes.
   return binding.kind === 'text' || Boolean(binding.data || binding.mediaId)
@@ -34,12 +43,12 @@ export interface ComposerPrefillDeps {
  * The draft with `text` added to it.
  *
  * TWO KINDS OF INSERT, and they need different seams. A quoted passage or a staged command is
- * its own paragraph, so it arrives after a blank line. A handle is a WORD in the sentence the
- * person is writing: three of them separated by blank lines made a column instead of the
- * address line the person was building. `inline` says which, and the caller knows — the text
+ * its own paragraph, so it arrives after a blank line. A mod's fill is a WORD or phrase in the
+ * sentence the person is writing: several of them separated by blank lines made a column instead
+ * of one line. `inline` says which, and the caller knows — the text
  * itself cannot be asked.
  *
- * Whitespace is never doubled at the seam: the handles carry a trailing space so the sentence
+ * Whitespace is never doubled at the seam: fills may carry a trailing space so the sentence
  * continues, and a second click must not add another.
  */
 export function appendToDraft(
@@ -77,13 +86,12 @@ export function useComposerPrefill({
   send,
 }: ComposerPrefillDeps): void {
   // The send handler closes over the live prompt/bindings and changes every render — read it
-  // through a ref so the bus subscription itself stays put.
-  const sendRef = useRef(send)
-  sendRef.current = send
+  // through an effect event so the bus subscription itself stays put.
+  const latestSend = useEffectEvent(() => send)
   useEffect(
     () =>
       composerBus.subscribe((req) => {
-        const send = sendRef.current
+        const send = latestSend()
         if (!composerInsertMatchesSession(req.sessionId, sessionId)) return false
         if (needsContextBoundSubmit(req)) return false
         if (req.submit && req.text && send) {

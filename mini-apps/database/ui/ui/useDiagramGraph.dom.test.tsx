@@ -77,13 +77,16 @@ describe('useDiagramGraph', () => {
     const layout = spyOn(dagre, 'layout')
     let nodeCount = -1
     function Probe({ getTable }: { getTable: (name: string) => DbTableSchema | undefined }) {
-      nodeCount = useDiagramGraph({
+      const graph = useDiagramGraph({
         objects,
         getTable,
         focusedId: null,
         query: '',
         direction: 'LR',
-      }).nodes.length
+      })
+      React.useEffect(() => {
+        nodeCount = graph.nodes.length
+      })
       return null
     }
     const container = document.createElement('div')

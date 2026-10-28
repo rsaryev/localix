@@ -38,7 +38,7 @@ full-text terms together, not a substring, regular expression, or semantic simil
 Punctuation-only input has no searchable terms. An unavailable index or a search failure can appear
 as no results.
 
-An agent with `global_search` can recover earlier text when you refer to past work, follow a
+An agent with `GlobalSearch` can recover earlier text when you refer to past work, follow a
 checkpoint pointer, or inspect another session in your workspace:
 
 | Request             | Result                                           | Boundary                                                |
@@ -58,7 +58,7 @@ The search index covers message text, not tool inputs/results or attachment and 
 bodies. Agent previews are clipped to 200 characters in discovery and 500 in scroll mode, with an
 8,192-character total JSON budget. Large discovery replies drop bookends, then nearby messages, then
 trailing sessions with an omission notice. An oversized single result returns a truncation notice.
-Use narrower queries or `tool_output` for an original tool artifact; these previews are not an exact
+Use narrower queries or `ToolOutput` for an original tool artifact; these previews are not an exact
 replay of a complete turn.
 
 ## Model context
@@ -69,8 +69,8 @@ prevents those same calls and results from appearing twice in the model context 
 terminal observations keep their normal checkpoint and output-size policies.
 
 See [Context checkpoints](context-checkpoints.md),
-[Sessions and projects](sessions-and-projects.md), [Conversations](conversations.md),
-[Background work](background-work.md) and [Interactive terminals](interactive-terminals.md).
+[Sessions and projects](sessions-and-projects.md), [Background work](background-work.md) and
+[Interactive terminals](interactive-terminals.md).
 
 ## Session recap
 

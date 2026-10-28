@@ -26,7 +26,7 @@ grouping and pagination.
 | Open a result                | Resolve its canonical resource or UI URI through `invokeUi`                            | Write commands require a user-selected `commands` hit              |
 | Contribute a mini app domain | Register a backend provider plus matching UI scope, icon, and activation anchor        | The enabled mini app owns its lifecycle and must namespace its id  |
 | Search by meaning            | Always on once its model is here; providers with a collection receive `query.semantic` | Chats and messages today; see [semantic index](semantic-index.md)  |
-| Search from the agent        | `global_search` calls the same service with the run's session and project              | Hits inside the agent's own conversation are left out              |
+| Search from the agent        | `GlobalSearch` calls the same service with the run's session and project               | Hits inside the agent's own conversation are left out              |
 
 The [UI anchors](ui-anchors.md) page owns activation grammar. The
 [workbench contribution](workbench-contributions.md) page owns mini app registration rules.
@@ -147,7 +147,7 @@ composition changes.
 - Aggregate totals are totals after provider caps, not counts of every possible source record.
 - The offset cursor is opaque at the API boundary but currently encodes a numeric offset. Changing
   sort order between pages can move or repeat results.
-- The agent's `global_search` tool and the UI share this service and its ranking; the tool adds only
+- The agent's `GlobalSearch` tool and the UI share this service and its ranking; the tool adds only
   its own-conversation filter, the history reads (`around_message_id`, `session_id`, browse) and a
   model-sized output budget.
 - `strategy: 'lexical'` on a request forces words-only matching; `allProjects` lifts the project

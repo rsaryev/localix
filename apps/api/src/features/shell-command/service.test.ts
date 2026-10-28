@@ -1,3 +1,4 @@
+import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { readFile, rm, stat } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -5,7 +6,7 @@ import { afterAll, describe, expect, test } from 'bun:test'
 
 import { createShellCommandService } from './service'
 
-const tmpHome = join(process.cwd(), 'tmp', `shellcmd-${randomUUID()}`)
+const tmpHome = join(tmpdir(), `localix-shellcmd-${randomUUID()}`)
 
 const svc = (over?: Partial<Parameters<typeof createShellCommandService>[0]>) =>
   createShellCommandService({

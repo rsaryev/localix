@@ -1,4 +1,4 @@
-import { useCallback, useState, type ReactNode } from 'react'
+import { useCallback, useId, useState, type ReactNode } from 'react'
 import { Flame } from 'lucide-react'
 import type { RepoStash } from '../../../backend/source-control/contracts'
 import { ConfirmDialog } from '@localixai/kit/confirm-dialog'
@@ -39,6 +39,7 @@ export function useSourceControlConfirms(
   const [pendingStashDrop, setPendingStashDrop] = useState<RepoStash | null>(null)
   const [nukeOpen, setNukeOpen] = useState(false)
   const [nukeUntracked, setNukeUntracked] = useState(false)
+  const nukeUntrackedId = useId()
   const store = useSourceControlStore.getState()
 
   const confirmDiscard = () => {
@@ -113,8 +114,12 @@ export function useSourceControlConfirms(
               Discard ALL uncommitted changes — tracked files are restored to the last commit. This
               cannot be undone.
             </p>
-            <label className="flex items-center gap-2 text-xs text-text-soft">
+            <label
+              htmlFor={nukeUntrackedId}
+              className="flex items-center gap-2 text-xs text-text-soft"
+            >
               <Checkbox
+                id={nukeUntrackedId}
                 checked={nukeUntracked}
                 onChange={(e) => setNukeUntracked(e.target.checked)}
               />
@@ -123,7 +128,7 @@ export function useSourceControlConfirms(
           </DialogBody>
           <DialogFooter>
             <Button
-              variant="outline"
+              variant="ghost"
               size="xl"
               className="rounded-lg text-text-soft"
               onClick={() => setNukeOpen(false)}

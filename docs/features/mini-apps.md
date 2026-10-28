@@ -28,8 +28,8 @@ add yourself waits for your yes before its code runs; one the agent builds for y
 | Turn one on or off           | `/mini-app enable <name>`, `/mini-app disable <name>`, or the row's switch       | A per-agent switch is on the agent's **Access** tab.               |
 | Change a mini app's settings | **Settings** on its row in the Store (Mini apps)                                 | Secret settings are kept in the [vault](secrets.md).               |
 | Remove one                   | `/mini-app remove <name>`, or **Remove** on its card or in Store → **Installed** | Its data folder stays, so a reinstall finds it.                    |
-| Have the agent build one     | `/mini-app create <what it should do>`                                           | See [Build with the agent](../extending/build-with-the-agent.md).  |
-| Pick up edits to its files   | `/mini-app reload`                                                               | Rebuilds your own mini apps, then reloads every mini app.          |
+| Have the agent build one     | `/mini-app-authoring:create <what it should do>`                                 | See [Build with the agent](../extending/build-with-the-agent.md).  |
+| Pick up edits to its files   | `/mini-app reload`                                                               | Reloads every mini app and its tools, screens and commands.        |
 | Open the list from the rail  | **Manage mini apps…** in the rail's tools menu                                   | Opens the Store (Mini apps).                                       |
 | Run one as its own Mac app   | **Install _Name_ as App** on its tab; see [Mac apps](mini-app-mac-apps.md)       | macOS only, for a mini app with a screen of its own.               |
 
@@ -126,8 +126,6 @@ that opens the app's row in the Store (Mini apps). The entry clears once the app
 - Which apps were already offered is remembered in `~/.localix/mini-app-recommended.json`. Deleting
   that file does not reinstall anything while you have other mini apps.
 - Apps from a catalog you added are always shown as unverified.
-- Earlier versions kept mini apps under `~/.localix/plugins`. Those copies are removed at startup,
-  and settings saved under the old names are not carried over.
 
 ## Related guides
 

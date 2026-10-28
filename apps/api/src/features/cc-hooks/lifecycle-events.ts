@@ -22,7 +22,6 @@ const EVENT_NAMES = {
   SubagentStop: 'delegation.finish',
   TaskCreated: 'task.create',
   TaskCompleted: 'task.complete',
-  TeammateIdle: 'member.idle',
   PreCompact: 'context.checkpoint.before',
   PostCompact: 'context.checkpoint.after',
   Notification: 'attention.request',
@@ -42,7 +41,7 @@ const events = createLifecycleEventRegistry()
 
 /**
  * The host's own control points beyond the builtins. A gate says what a rejection DOES here:
- * a task write is refused like a tool call, a member asked to keep going continues its run, and
+ * a task write is refused like a tool call, and
  * a rejected tool batch keeps its results from reaching the model (the run halts). An approval
  * card, a denial already made, a model switch or a checkpoint are observed: a prompt verdict
  * cannot decide them (CC discards it on the first two; the others take no prompt hooks).
@@ -55,7 +54,6 @@ for (const event of [
   { id: 'run.failed', gate: 'observe' },
   { id: 'task.create', gate: 'tool' },
   { id: 'task.complete', gate: 'tool' },
-  { id: 'member.idle', gate: 'completion' },
   { id: 'context.checkpoint.after', gate: 'observe' },
   { id: 'instructions.load', gate: 'observe' },
   { id: 'config.change', gate: 'observe' },

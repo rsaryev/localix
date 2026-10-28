@@ -3,7 +3,7 @@ import { resolveFileTarget, statIfExists, type FileMtimeStore } from './file-uti
 import { buildToolError } from '../tool-errors'
 
 /**
- * The blind-overwrite refusal for the `write` tool, as its pre-execute guard: it runs before
+ * The blind-overwrite refusal for the `Write` tool, as its pre-execute guard: it runs before
  * the permission gate and before any file of the call is written.
  *
  * Overwriting an existing file the agent never read this run silently destroys content, so the
@@ -54,7 +54,7 @@ export async function evaluateBlindOverwriteGuard(
       ? `${names} already exists but has not been read this run.`
       : `${names} already exist but have not been read this run; nothing in this call was written.`
   const them = blind.length === 1 ? 'it' : 'them'
-  const hint = ` Use read on ${them} first to confirm you want to replace the contents, then re-issue the write (or use edit for targeted changes).`
+  const hint = ` Use \`Read\` on ${them} first to confirm you want to replace the contents, then re-issue the write (or use \`Edit\` for targeted changes).`
   return {
     block: true,
     result: buildToolError({

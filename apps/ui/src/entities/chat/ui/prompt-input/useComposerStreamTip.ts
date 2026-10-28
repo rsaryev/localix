@@ -11,7 +11,9 @@ import type { PromptInputProps } from './promptInputProps'
 interface ComposerStreamTipOptions {
   activeSessionId: string | null
   isFocused: boolean
-  /** Whether the tip strip may rotate at all (generating, focused, not awaiting an answer). */
+  /** Whether the tip strip is up at all (focused, not awaiting an answer). */
+  active: boolean
+  /** Whether a turn is streaming: times `run-long` and brings a hidden strip back. */
   running: boolean
   /** Whether the empty composer may surface the one-shot inline-completion hint. */
   idleDraft: boolean
@@ -21,10 +23,11 @@ interface ComposerStreamTipOptions {
   tipContext: PromptInputProps['tipContext']
 }
 
-/** The rotating tip shown above the composer while a turn streams. */
+/** The rotating tip shown above the focused composer, between turns and while one streams. */
 export function useComposerStreamTip({
   activeSessionId,
   isFocused,
+  active,
   running,
   idleDraft,
   usage,
@@ -53,5 +56,5 @@ export function useComposerStreamTip({
     }),
     [tipContext, tipSignals],
   )
-  return useStreamTip(running, fullTipContext, composerTips)
+  return useStreamTip(active, fullTipContext, composerTips, running)
 }

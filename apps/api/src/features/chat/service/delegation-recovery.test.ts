@@ -5,6 +5,7 @@ import { migrateToLatest } from '../../../db/migrator'
 import { createDatabaseWakeQueueStore } from '../runtime/wake-queue-repository'
 import { recordDecidedDelivery } from '../runtime/delivery-receipts'
 import { recoverDelegationReports } from './recover-delegation'
+import { recordChildStopped } from './delegation-stop'
 import { listDelegatedRuns } from './delegated-runs'
 import { createUsageRepository } from '../../usage/repository'
 import { readSessionUsageRows, summarizeSessionUsageFromTurns } from '../../usage/session-summary'
@@ -34,7 +35,6 @@ async function fixture() {
     const invocation = JSON.stringify({
       kind: 'task-delegation',
       parentSessionId: 'parent',
-      parentParticipant: 'agent:builtin:lead',
     })
     await sql`INSERT INTO agent_sessions (id, user_id, title, project_id, parent_session_id, root_session_id, session_kind, runtime_status, invocation_json, updated_at)
       VALUES (${id}, 'u', ${id}, 'p', 'parent', 'parent', 'subagent', ${status}, ${invocation}, ${updatedAt})`.execute(
@@ -47,7 +47,7 @@ async function fixture() {
       content,
       items: [
         { type: 'reasoning', text: 'PRIVATE REASONING' },
-        { type: 'tool_call', name: 'browser', result: 'PRIVATE TOOL OUTPUT' },
+        { type: 'tool_call', name: 'Browser', result: 'PRIVATE TOOL OUTPUT' },
       ],
     })
     await sql`INSERT INTO agent_messages (id, user_id, session_id, sequence, role, payload_json, created_at, updated_at)
@@ -139,9 +139,9 @@ test('the receipt is the producer flag, not the spelling of the key', async () =
   expect(Date.parse(receipts[0]!.created_at)).not.toBeNaN()
 })
 
-test('recovery delivers one bounded report to its parent participant without rerunning the child', async () => {
+test('recovery delivers one bounded report to its parent agent without rerunning the child', async () => {
   const { db, addChild, queue } = await fixture()
-  await sql`INSERT INTO conversation_participants (session_id, agent_id, handle, model_id) VALUES ('parent', 'builtin:lead', 'lead', 'm')`.execute(
+  await sql`UPDATE agent_sessions SET agent_id = 'builtin:lead', agent_name = 'lead', model_id = 'm' WHERE id = 'parent'`.execute(
     db,
   )
   await addChild('child', 'completed', 'Result.\n'.repeat(3000))
@@ -156,11 +156,9 @@ test('recovery delivers one bounded report to its parent participant without rer
     receipt: true,
     source: 'subagent',
   })
-  // The same address a live report carries: participant AND handle.
-  expect(sent[0]!.to).toEqual({ participant: 'agent:builtin:lead', handle: 'lead' })
   expect(sent[0]!.content.length).toBeLessThan(13000)
   // The same truncation marker as a live report: it names where the rest of the report lives.
-  expect(sent[0]!.content).toContain('global_search session_id:"child"')
+  expect(sent[0]!.content).toContain('`GlobalSearch` session_id:"child"')
   expect(sent[0]!.content).not.toContain('PRIVATE')
   expect(
     (
@@ -190,6 +188,69 @@ test("a follow-up run's lost report is recovered even though the first run's was
   expect(sent[0]!.content).toContain('Second answer.')
   // And once that one is admitted too, there is nothing left to send.
   expect(await recoverDelegationReports(db, wake, SWEEP_AT)).toBe(0)
+})
+
+test('a run a steer split into rows is recovered whole, every reply since the run began', async () => {
+  // LOCALIX-430: the review sat in an earlier row of the run and the report was the last row only.
+  const { db, addChild, queue } = await fixture()
+  await addChild('child', 'completed', 'The full review.')
+  const tail = JSON.stringify({
+    id: 'tail',
+    role: 'assistant',
+    content: 'Anything else?',
+    continuedFromMessageId: 'message-child',
+  })
+  await sql`INSERT INTO agent_messages (id, user_id, session_id, sequence, role, payload_json, created_at, updated_at)
+    VALUES ('tail', 'u', 'child', 3, 'assistant', ${tail}, ${SETTLED_AT}, ${SETTLED_AT})`.execute(
+    db,
+  )
+  const { sent, wake } = admittingWake(queue)
+  expect(await recoverDelegationReports(db, wake, SWEEP_AT)).toBe(1)
+  expect(sent[0]).toMatchObject({ deliveryKey: 'child-terminal:child:tail' })
+  expect(sent[0]!.content).toContain('The full review.')
+  expect(sent[0]!.content).toContain('Anything else?')
+})
+
+test('a recovered report of a child that is waiting for its delegator says so, as a live one does', async () => {
+  const { db, queue } = await fixture()
+  const invocation = JSON.stringify({ kind: 'task-delegation', parentSessionId: 'parent' })
+  await sql`INSERT INTO agent_sessions (id, user_id, title, project_id, parent_session_id, root_session_id, session_kind, runtime_status, invocation_json, updated_at)
+    VALUES ('asker', 'u', 'asker', 'p', 'parent', 'parent', 'subagent', 'completed', ${invocation}, ${SETTLED_AT})`.execute(
+    db,
+  )
+  const row = JSON.stringify({
+    id: 'ask-1',
+    role: 'assistant',
+    content: 'Which branch?',
+    items: [{ type: 'tool_call', name: 'SendMessage', status: 'completed' }],
+  })
+  await sql`INSERT INTO agent_messages (id, user_id, session_id, sequence, role, payload_json, created_at, updated_at)
+    VALUES ('ask-1', 'u', 'asker', 1, 'assistant', ${row}, ${SETTLED_AT}, ${SETTLED_AT})`.execute(
+    db,
+  )
+  const { sent, wake } = admittingWake(queue)
+  expect(await recoverDelegationReports(db, wake, SWEEP_AT)).toBe(1)
+  expect(sent[0]!.content.startsWith('[Subagent is waiting for your answer]')).toBe(true)
+})
+
+test('a subagent stopped before it ever ran is not reported by the sweep afterwards', async () => {
+  // LOCALIX-430: the agent withdrew a queued child ("No reply follows"); ninety seconds later the
+  // sweep read the missing receipt as a lost report and woke the agent with "STOPPED".
+  const { db, queue } = await fixture()
+  const invocation = JSON.stringify({ kind: 'task-delegation', parentSessionId: 'parent' })
+  await sql`INSERT INTO agent_sessions (id, user_id, title, project_id, parent_session_id, root_session_id, session_kind, runtime_status, invocation_json, updated_at)
+    VALUES ('queued', 'u', 'queued', 'p', 'parent', 'parent', 'subagent', 'stopped', ${invocation}, ${SETTLED_AT})`.execute(
+    db,
+  )
+  await recordChildStopped(db, 'u', 'queued')
+  // Positive control: a twin whose stop nobody recorded (the process died) is still recovered.
+  await sql`INSERT INTO agent_sessions (id, user_id, title, project_id, parent_session_id, root_session_id, session_kind, runtime_status, invocation_json, updated_at)
+    VALUES ('lost', 'u', 'lost', 'p', 'parent', 'parent', 'subagent', 'stopped', ${invocation}, ${SETTLED_AT})`.execute(
+    db,
+  )
+  const { sent, wake } = admittingWake(queue)
+  expect(await recoverDelegationReports(db, wake, SWEEP_AT)).toBe(1)
+  expect(sent.map((request) => request.deliveryKey)).toEqual(['child-terminal:lost:launch'])
 })
 
 test('a run whose report the live seam DECIDED against is never sent by the sweep', async () => {
@@ -284,9 +345,9 @@ test('a recovered report reads exactly like a live one', async () => {
   await addChild('review', 'completed', 'Delegated result.')
   const { sent, wake } = admittingWake(queue)
   expect(await recoverDelegationReports(db, wake, SWEEP_AT)).toBe(1)
-  expect(sent[0]!.content.startsWith('[Delegated task finished] ')).toBe(true)
+  expect(sent[0]!.content.startsWith('[Subagent finished] ')).toBe(true)
   expect(sent[0]!.content).toContain('Its final report:\nDelegated result.')
-  expect(sent[0]!.content).toContain('`delegate` action:"message"')
+  expect(sent[0]!.content).toContain('SendMessage')
 })
 
 test('a run summary carries what the child consumed across all its runs, and its priority', async () => {
@@ -297,6 +358,8 @@ test('a run summary carries what the child consumed across all its runs, and its
   await addChild('fresh')
   const rows = await listDelegatedRuns(db, createUsageRepository(db), 'u', 'parent')
   expect(rows.find((row) => row.sessionId === 'spender')).toMatchObject({
+    // The description it was started with, which the agent addresses it by.
+    title: 'spender',
     usage: { tokens: 1500, costUsd: 0.25 },
     // Delegated before priorities were stored: it queues, and reads, as normal.
     priority: 'normal',
@@ -346,7 +409,7 @@ test('progress exposes public text or tool name, never reasoning or tool payload
   })
   expect(rows.find((row) => row.sessionId === 'working')).toMatchObject({
     reportAvailable: false,
-    progress: 'Last observed tool: browser',
+    progress: 'Last observed tool: Browser',
   })
   expect(JSON.stringify(rows)).not.toContain('PRIVATE')
   expect(await listDelegatedRuns(db, createUsageRepository(db), 'other-user', 'parent')).toEqual([])
@@ -362,17 +425,18 @@ test('reopening the current schema does not falsely acknowledge undelivered repo
 test('progress reads only the latest assistant and emits one row per child', async () => {
   const { db, addChild } = await fixture()
   await addChild('child', 'running', '')
-  await sql`INSERT INTO conversation_participants (session_id, agent_id, handle, position, model_id)
-    VALUES ('child','first','first',0,'model'),('child','second','second',1,'model')`.execute(db)
+  await sql`UPDATE agent_sessions SET agent_id = 'first', agent_name = 'first', model_id = 'model' WHERE id = 'child'`.execute(
+    db,
+  )
   const latest = JSON.stringify({
     content: '',
-    items: [{ type: 'command', name: 'bash', output: 'PRIVATE' }],
+    items: [{ type: 'command', name: 'Bash', output: 'PRIVATE' }],
   })
   await sql`INSERT INTO agent_messages (id,user_id,session_id,sequence,role,payload_json)
     VALUES ('latest','u','child',2,'assistant',${latest})`.execute(db)
   const rows = await listDelegatedRuns(db, createUsageRepository(db), 'u', 'parent')
   expect(rows).toHaveLength(1)
-  expect(rows[0]).toMatchObject({ agentId: 'first', progress: 'Last observed tool: bash' })
+  expect(rows[0]).toMatchObject({ agentId: 'first', progress: 'Last observed tool: Bash' })
   await sql`UPDATE agent_messages SET payload_json='{"content":"","items":[]}' WHERE id='latest'`.execute(
     db,
   )

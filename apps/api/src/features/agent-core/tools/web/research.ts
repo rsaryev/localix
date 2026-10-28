@@ -522,7 +522,7 @@ export { researchPermissionResources }
 
 export function createResearchTool(deps: ResearchDeps = {}) {
   return defineAgentTool<ResearchInput, ResearchDetails>({
-    name: TOOL.research,
+    name: TOOL.Research,
     label: 'Research',
     activeVerb: 'Researching',
     description:

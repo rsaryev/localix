@@ -51,7 +51,7 @@ const ctx = (
   over: Partial<Parameters<ReturnType<typeof buildExternalizeAfterToolCall>>[0]> = {},
 ) => ({
   toolCallId: 'call_1',
-  toolName: 'bash',
+  toolName: 'Bash',
   input: {},
   result: { content: 'x'.repeat(EXTERNALIZE_THRESHOLD_BYTES + 1) },
   messages: [],
@@ -63,13 +63,13 @@ function modelFacingResult(content: string): string {
     { role: 'user', content: 'run it', timestamp: 0 },
     {
       role: 'assistant',
-      content: [{ type: 'tool_call', id: 'call_1', name: 'bash', arguments: {} }],
+      content: [{ type: 'tool_call', id: 'call_1', name: 'Bash', arguments: {} }],
       model: 'test',
       timestamp: 0,
     },
     {
       role: 'tool',
-      results: [{ type: 'tool_result', toolCallId: 'call_1', toolName: 'bash', content }],
+      results: [{ type: 'tool_result', toolCallId: 'call_1', toolName: 'Bash', content }],
       timestamp: 0,
     },
   ]
@@ -94,12 +94,12 @@ describe('buildExternalizeAfterToolCall', () => {
     expect(persisted).toHaveLength(1)
     expect(indexed).toHaveLength(1)
     expect(after?.content).toContain(
-      'tool_output(action="search", queries=[…], tool_call_id="call_1")',
+      'ToolOutput(action="search", queries=[…], tool_call_id="call_1")',
     )
     expect(after?.content?.startsWith('x'.repeat(100))).toBe(true)
   })
 
-  test('indexes for later but does not advertise disabled tool_output', async () => {
+  test('indexes for later but does not advertise disabled ToolOutput', async () => {
     const { store, indexed, persisted } = fakeStore()
     const after = await buildExternalizeAfterToolCall(store, {
       ...opts,
@@ -142,7 +142,7 @@ describe('buildExternalizeAfterToolCall', () => {
 
     await hook(
       ctx({
-        toolName: 'write',
+        toolName: 'Write',
         input: {
           path: 'src/answer.ts',
           content: `${safeContent}// credential=${secret}\n`,
@@ -179,8 +179,8 @@ describe('buildExternalizeAfterToolCall', () => {
     expect(
       await hook(ctx({ result: { content: 'x'.repeat(30_000), supersedeKey: 'preview' } }), signal),
     ).toBeUndefined()
-    expect(await hook(ctx({ toolName: 'tool_output' }), signal)).toBeUndefined()
-    expect(await hook(ctx({ toolName: 'tool_output' }), signal)).toBeUndefined()
+    expect(await hook(ctx({ toolName: 'ToolOutput' }), signal)).toBeUndefined()
+    expect(await hook(ctx({ toolName: 'ToolOutput' }), signal)).toBeUndefined()
     expect(indexed).toHaveLength(0)
     expect(persisted).toHaveLength(5)
   })
@@ -195,7 +195,7 @@ describe('buildExternalizeAfterToolCall', () => {
     // is the cap, so the pointer has to name the prefix and where the rest lives.
     expect(after?.content).toContain('the first 400 sections')
     expect(after?.content).toContain('its tail is not')
-    expect(after?.content).toContain('tool_output action="get" has the whole text')
+    expect(after?.content).toContain('ToolOutput action="get" has the whole text')
   })
 
   test('promises nothing about a tail when the whole output was indexed', async () => {
@@ -223,8 +223,8 @@ describe('buildExternalizeAfterToolCall', () => {
     expect(persisted[0].text).toBe(original)
     expect(after).toBeUndefined()
     const wire = modelFacingResult(original)
-    expect(wire).toContain('tool_output(action="get", tool_call_id="call_1")')
-    expect(wire).not.toContain('tool_output(action="search"')
+    expect(wire).toContain('ToolOutput(action="get", tool_call_id="call_1")')
+    expect(wire).not.toContain('ToolOutput(action="search"')
     expect(textEncoderByteLength(wire)).toBeLessThanOrEqual(DEFAULT_MAX_BYTES)
   })
 
@@ -256,10 +256,10 @@ describe('buildExternalizeAfterToolCall', () => {
     release()
     const after = await pending
     expect(after?.content).toContain(
-      'tool_output(action="search", queries=[…], tool_call_id="call_1")',
+      'ToolOutput(action="search", queries=[…], tool_call_id="call_1")',
     )
     const wire = modelFacingResult(after?.content ?? '')
-    expect(wire).toContain('tool_output(action="get", tool_call_id="call_1")')
+    expect(wire).toContain('ToolOutput(action="get", tool_call_id="call_1")')
     expect(wire).toContain('TAIL_DIAGNOSTIC')
     expect(textEncoderByteLength(wire)).toBeLessThanOrEqual(DEFAULT_MAX_BYTES)
 

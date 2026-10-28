@@ -47,6 +47,15 @@ export function createAgentWatcher(deps: AgentWatcherDeps) {
   let running = false
   let again = false
   let stopped = true
+  // Work started without anyone awaiting it; `idle` lets a test wait for it instead of guessing.
+  const background = new Set<Promise<unknown>>()
+  const track = (work: Promise<unknown>): void => {
+    background.add(work)
+    void work.then(
+      () => background.delete(work),
+      () => background.delete(work),
+    )
+  }
 
   const claudeDirs = async (): Promise<string[]> => {
     const dirs = new Set<string>()
@@ -61,15 +70,15 @@ export function createAgentWatcher(deps: AgentWatcherDeps) {
 
   const settle = () => {
     cancelSettle?.()
-    cancelSettle = deps.after(settleMs, () => void reconcileAll())
+    cancelSettle = deps.after(settleMs, () => track(reconcileAll()))
   }
 
   const onError = () => {
     // A watcher that failed may have missed events: start over and let every consumer re-read.
     for (const stop of stops.values()) stop()
     stops.clear()
-    void deps.resync()
-    void arm().then(settle)
+    track(deps.resync())
+    track(arm().then(settle))
   }
 
   async function arm(): Promise<void> {
@@ -96,7 +105,7 @@ export function createAgentWatcher(deps: AgentWatcherDeps) {
           (name) => {
             if (recursive) return settle()
             // Only `agents` itself matters in the parent: it may appear or go.
-            if (name === null || name === 'agents') void arm().then(settle)
+            if (name === null || name === 'agents') track(arm().then(settle))
           },
           onError,
         ),
@@ -121,7 +130,7 @@ export function createAgentWatcher(deps: AgentWatcherDeps) {
       cancelPurge = null
       if (due !== null)
         cancelPurge = deps.after(Math.max(0, due - (deps.now ?? Date.now)()), () => {
-          void reconcileAll()
+          track(reconcileAll())
         })
     } finally {
       running = false
@@ -134,7 +143,7 @@ export function createAgentWatcher(deps: AgentWatcherDeps) {
 
   const tick = () => {
     cancelEvery = deps.after(deps.everyMs ?? EVERY_MS, () => {
-      void arm().then(reconcileAll)
+      track(arm().then(reconcileAll))
       tick()
     })
   }
@@ -150,7 +159,11 @@ export function createAgentWatcher(deps: AgentWatcherDeps) {
     },
     /** A project or a plugin changed: watch what is now read and reconcile. */
     refresh(): void {
-      void arm().then(settle)
+      track(arm().then(settle))
+    },
+    /** Resolves once the work started by events and timers has finished. */
+    async idle(): Promise<void> {
+      while (background.size > 0) await Promise.allSettled(background)
     },
     reconcileAll,
     stop(): void {

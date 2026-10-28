@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
+import { turns as settle } from '@/testing/settle'
 
 /** An empty but STRUCTURALLY COMPLETE snapshot: these tests assert when it is fetched, never what it holds. */
 const EMPTY_CAPABILITY_SNAPSHOT = {
@@ -30,8 +31,6 @@ afterAll(async () => {
   await new Promise((resolve) => setTimeout(resolve, 0))
   await teardown()
 })
-
-const settle = () => new Promise((resolve) => setTimeout(resolve, 20))
 
 describe('warm-hidden Settings data sources', () => {
   // Both stores that can answer a capability read are process-global on purpose — that

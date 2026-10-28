@@ -126,9 +126,9 @@ export function registerUi(host: MiniAppUiHost): void {
   host.toolCards.register({
     tool: KANBAN_TOOL,
     presentation: {
-      label: 'Board',
-      noun: 'tasks',
-      verb: 'Updating board',
+      label: 'Updated',
+      noun: 'board tasks',
+      verb: 'Updating',
       Icon: SquareKanban,
       stackable: true,
     },

@@ -5,7 +5,7 @@
  * the complete active branch a second time at every run start.
  */
 import { deriveSessionTiming, emptySessionTiming } from '../../session-timing'
-import type { ParticipantRef } from '../../../../db'
+import type { AuthorRef } from '../../../../db'
 import type { ChatRepository } from '../../repository'
 import type { PersistedMessage } from '../../contracts'
 import { createRunTurnState, type RunTurnState } from './turn-state'
@@ -22,7 +22,7 @@ export async function prepareTurnState(args: {
   userId: string
   sessionId: string
   /** Who authors the response row when it has to be seeded here — the session's agent. */
-  agent: ParticipantRef
+  agent: AuthorRef
   assistantMessageId: string
   historyMessages: PersistedMessage[]
   now: () => string

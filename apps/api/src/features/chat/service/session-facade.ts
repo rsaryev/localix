@@ -1,10 +1,5 @@
 import type { z } from 'zod'
-import type {
-  importSessionRequestSchema,
-  JoinRoutesView,
-  MessageToolDetails,
-  SessionDetail,
-} from '../contracts'
+import type { importSessionRequestSchema, MessageToolDetails, SessionDetail } from '../contracts'
 import { importSession, type ImportSessionInput } from './import-session'
 import type { ChatServiceGraph } from './service-graph'
 import type { SessionCore } from './session-core'
@@ -22,10 +17,7 @@ import { recordSessionNotice } from '../runtime/session-notice'
  * spelled out at the call: the in-memory watches and loops of a session go only after its row
  * really is gone.
  */
-export interface ChatSessionFacadeDeps extends Pick<
-  ChatServiceGraph,
-  'repo' | 'now' | 'routeDefaults'
-> {
+export interface ChatSessionFacadeDeps extends Pick<ChatServiceGraph, 'repo' | 'now'> {
   sessionLifecycleCtx: SessionCore['sessionLifecycleCtx']
   sessionDetailCtx: SessionCore['sessionDetailCtx']
   getSessionDetail: SessionCore['getSessionDetail']
@@ -34,7 +26,6 @@ export interface ChatSessionFacadeDeps extends Pick<
 export function createChatSessionFacade({
   repo,
   now,
-  routeDefaults,
   sessionLifecycleCtx,
   sessionDetailCtx,
   getSessionDetail,
@@ -78,12 +69,6 @@ export function createChatSessionFacade({
       return getSessionDetail(userId, id, opts)
     },
 
-    /** What an agent not invited yet would join on (`JoinRoutesView`). */
-    async getJoinRoutes(userId: string, id: string): Promise<JoinRoutesView> {
-      const session = await sessionLifecycleCtx.requireSession(userId, id)
-      return routeDefaults.joinRoutes(userId, session.projectId ?? null)
-    },
-
     getMessageToolDetails(
       userId: string,
       sessionId: string,
@@ -110,16 +95,10 @@ export function createChatSessionFacade({
       return repo.listMessages(userId, sessionId)
     },
 
-    /** A participant's handle in the conversation, or null when it is not (or no longer) in it. */
-    async participantHandle(userId: string, sessionId: string, agentId: string) {
+    /** The name of the conversation's agent; null when it has none. */
+    async agentName(userId: string, sessionId: string) {
       const session = await sessionLifecycleCtx.requireSession(userId, sessionId)
-      return session.agents.find((member) => member.agentId === agentId)?.handle ?? null
-    },
-
-    /** Every participant's handle in the conversation, in roster order. */
-    async participantHandles(userId: string, sessionId: string) {
-      const session = await sessionLifecycleCtx.requireSession(userId, sessionId)
-      return session.agents.map((member) => member.handle)
+      return session.agent?.name ?? null
     },
 
     updateSession(

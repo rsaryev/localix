@@ -86,7 +86,7 @@ export function ChordRecorder({
           <span className="max-w-40 truncate">In use by {owners}</span>
         </span>
         <Button
-          variant="outline"
+          variant="ghost"
           size="lg"
           onClick={() => {
             onRecord(pending.chord)
@@ -111,7 +111,7 @@ export function ChordRecorder({
   return (
     <div className="flex flex-wrap items-center justify-end gap-1.5">
       <Button
-        variant="outline"
+        variant="ghost"
         size="lg"
         onClick={() => setRecording((v) => !v)}
         className={cn(

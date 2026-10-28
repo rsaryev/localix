@@ -6,7 +6,7 @@ import {
 
 import { positionOfGame, type AgentWait, type Game } from '../shared/game'
 import { other, type Play } from '../shared/position'
-import type { Seat } from './ask-agent'
+import type { ChatRef } from './ask-agent'
 
 /**
  * HOW THE BOARD ASKS THE DECISION MODEL FOR ITS MOVE — when the table's opponent is `decision`.
@@ -81,11 +81,11 @@ export function moveAsk(game: Game): DecisionAsk {
 /** The decision model's move in SAN, or the wait that says why there is none. */
 export async function askDecision(
   decisions: DecisionHost | undefined,
-  seat: Seat,
+  chat: ChatRef,
   game: Game,
   now: string,
 ): Promise<{ move: string } | { waiting: AgentWait }> {
   const turn = { ask: moveAsk(game), question: 'move', purpose: DECISION_PURPOSE }
-  const answered = await askDecisionForTurn(decisions, seat, turn, now)
+  const answered = await askDecisionForTurn(decisions, chat, turn, now)
   return 'answer' in answered ? { move: answered.answer.choice } : answered
 }

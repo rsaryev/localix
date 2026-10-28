@@ -26,7 +26,7 @@ export function LocalModelsEmpty({
       No models on this computer yet.
       <span className="mt-3 block">
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
           onClick={() => {
             onNavigate?.()

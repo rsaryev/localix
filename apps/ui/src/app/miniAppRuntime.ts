@@ -1,4 +1,5 @@
-import type { MiniAppWorkspaceSnapshot } from '@localixai/mini-app-sdk/ui'
+import type { MiniAppSession, MiniAppWorkspaceSnapshot } from '@localixai/mini-app-sdk/ui'
+import type { UiSession } from '@/shared/api/ui-session'
 import { createMiniAppFilesRuntime } from './miniAppRuntimeFiles'
 import { miniAppUiComponents } from './miniAppUiComponents'
 import { terminal as terminalBus } from '@/shared/lib/terminalBus'
@@ -30,6 +31,7 @@ import { useChatStore } from '@/entities/chat/model/store'
 import { revealPreview } from '@/features/inspector/model/revealPreview'
 import { revealJobSession } from '@/entities/chat/model/useJobTerminal'
 import { openTranscript } from '@/entities/chat/model/openTranscript'
+import { restoreStoppedQueue } from '@/entities/chat/model/restoreStoppedQueue'
 import { focusedVisibleTabId, useGridStore } from '@/entities/workspace-grid/model'
 import { isSectionId, resolveNavScope, scopePath } from '@/shared/routing/routes'
 import { useSettingsStore } from '@/shared/lib/user-settings/settingsStore'
@@ -66,6 +68,27 @@ bindMiniAppUiTransport({
  * in it: a mini app acts for the chat it belongs to, never for the one on screen.
  */
 let cachedSnapshot: MiniAppWorkspaceSnapshot | null = null
+const NO_AGENT: MiniAppSession['agent'] = {
+  name: '',
+  providerConnectionId: null,
+  modelId: '',
+  reasoningEffort: 'low',
+}
+let sessionsIn: readonly UiSession[] | null = null
+let sessionsOut: readonly MiniAppSession[] = []
+
+/** The store's sessions in the mini app shape; the same array while the store's does not change. */
+function miniAppSessions(sessions: readonly UiSession[]): readonly MiniAppSession[] {
+  if (sessions !== sessionsIn) {
+    sessionsIn = sessions
+    sessionsOut = sessions.map((session) => ({
+      ...session,
+      agent: session.agent ?? NO_AGENT,
+    })) as MiniAppSession[]
+  }
+  return sessionsOut
+}
+
 function workspaceSnapshot(): MiniAppWorkspaceSnapshot {
   const state = useGridStore.getState()
   const focusedId = focusedVisibleTabId(state)
@@ -167,10 +190,13 @@ bindMiniAppUiRuntime({
     request: (payload, options) => eventSocket.request(payload, options),
   },
   sessions: {
-    list: () => useChatStore.getState().allSessions,
+    list: () => miniAppSessions(useChatStore.getState().allSessions),
     subscribe: (listener) => useChatStore.subscribe(listener),
     stop: async (sessionId) => {
-      await backendClient.stop(sessionId)
+      // A stop takes the person's queued messages off the server and returns them: they go back
+      // to that chat's composer, not into the void.
+      const result = await backendClient.stop(sessionId)
+      restoreStoppedQueue(useChatStore.getState, sessionId, result.returned)
     },
     interact: async (requestId, action, payload) => {
       await backendClient.interact(requestId, action, payload)

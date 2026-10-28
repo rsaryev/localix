@@ -3,7 +3,7 @@
  * paths that deliver it.
  *
  * EVERY RUN REPORTS. A child is not one-shot any more: the agent that delegated to it can message
- * it (`delegate` action message) and the person can write into its chat, and each of those starts a
+ * it (`SendMessage`) and the person can write into its chat, and each of those starts a
  * run whose result the parent must see — delegated, worked, reported; messaged, worked, reported. A report
  * sent only for the first run left every later answer in a transcript nobody was reading.
  *
@@ -15,17 +15,85 @@
  * lives, dropped the recipient's handle, and woke the child's direct parent where the live path
  * wakes the ROOT chat. Every rule of the report is therefore here once:
  *
- *   bound the text → word the message → address it (session, participant, key).
+ *   bound the text → word the message → address it (session, agent, key).
  */
 import { reportBody } from '../../agent-core/tools/child-report'
-import { agentParticipant } from '../../../db/participant'
+import { TOOL } from '../../agent-core/tool-names'
 import type { DelegatedReport, WakeRequest } from '../contracts'
+
+/** How far back one run's rows are followed: a backstop against a stored cycle, never a limit in use. */
+const MAX_RUN_ROWS = 200
+
+/** One stored assistant row of a child, as far as its report needs it. */
+export interface RunRow {
+  content: string | null | undefined
+  /** The row's items, as stored: what the run's last tool call was says how it ended. */
+  items?: readonly { type?: string; name?: string; status?: string }[] | null
+  /** The row this one continues: a steer ended that row and started this one, in the same run. */
+  continuedFromMessageId: string | null | undefined
+}
+
+/** Every reply of one run, in the order it was written, as one text (empty replies are dropped). */
+export function joinRunReplies(replies: readonly (string | null | undefined)[]): string | null {
+  const text = replies
+    .map((reply) => reply?.trim())
+    .filter(Boolean)
+    .join('\n\n')
+  return text || null
+}
+
+/**
+ * Did the run end right after the child messaged the agent that started it? `SendMessage` is a
+ * subagent's line to its delegator and nothing else, so a completed one as the run's last tool
+ * call is a child that said what it needed and ended its turn to wait for the answer — the
+ * instruction it was given for exactly that case (`PARENT_LINE`). Read from the stored row, not
+ * from what the child wrote.
+ */
+function endedAwaitingParent(items: RunRow['items']): boolean {
+  const last = [...(items ?? [])].reverse().find((item) => item.type === 'tool_call')
+  return last?.name === TOOL.SendMessage && last.status === 'completed'
+}
+
+/** The text of a run and how it ended (`readRunReplies`). */
+export interface RunReplies {
+  text: string | null
+  /** It ended after the child messaged its delegator (`endedAwaitingParent`). */
+  waiting: boolean
+}
+
+/**
+ * The text of the RUN that ended with `runId`: a message that arrives mid-run splits the
+ * assistant row (`run/steer-split.ts`), so a run is the chain of rows from its end back through
+ * `continuedFromMessageId`. The report used to be the last row alone — and a child that finished
+ * its review in the row before a late amendment reported only what it said after it
+ * (LOCALIX-430: a 15,000 character review lost, a 244 character "see my previous report" sent).
+ * Both the live seam and the recovery sweep read it through this, so the two cannot disagree.
+ */
+export async function readRunReplies(
+  runId: string,
+  read: (messageId: string) => Promise<RunRow | null>,
+): Promise<RunReplies> {
+  const replies: (string | null | undefined)[] = []
+  let waiting = false
+  const seen = new Set<string>()
+  for (let id: string | null | undefined = runId; id && !seen.has(id);) {
+    seen.add(id)
+    if (seen.size > MAX_RUN_ROWS) break
+    // oxlint-disable-next-line react-doctor/async-await-in-loop -- each row names the one before it
+    const row = await read(id)
+    if (!row) break
+    if (replies.length === 0) waiting = endedAwaitingParent(row.items)
+    replies.unshift(row.content)
+    id = row.continuedFromMessageId
+  }
+  return { text: joinRunReplies(replies), waiting }
+}
 
 /** One run of a child, as its report states it (`DelegatedReport` on the wake). */
 export type DelegationReportInput = DelegatedReport
 
 const REPORT_FOLLOW_UP =
-  'To change or extend this work, send the child `delegate` action:"message".'
+  'To change or extend this work, SendMessage to the child by its name or id: it keeps everything it learned. Check its conclusion against its evidence before relaying it.'
 
 /** One child's part of a report: how its run ended, and its bounded final text. */
 function reportSection(input: DelegationReportInput): string {
@@ -38,9 +106,17 @@ function reportSection(input: DelegationReportInput): string {
         ? 'was STOPPED before finishing'
         : partial
           ? 'reached its turn limit'
-          : 'finished'
+          : input.waiting
+            ? 'is waiting for your answer'
+            : 'finished'
+  // A child that asked and ended its turn is not done: say what it needs, not that it finished.
+  const waitingNote =
+    input.waiting && outcome === 'is waiting for your answer'
+      ? 'It messaged you and ended its turn to wait. SendMessage to it to answer: its next run reports again.\n\n'
+      : ''
   return (
-    `[Delegated task ${outcome}] ${input.label} (id: ${input.childSessionId}) ${outcome}.\n\n` +
+    `[Subagent ${outcome}] ${input.label} (id: ${input.childSessionId}) ${outcome}.\n\n` +
+    waitingNote +
     reportBody(input.text, input.childSessionId, { partial })
   )
 }
@@ -60,7 +136,7 @@ export function delegationReportsMessage(reports: readonly DelegationReportInput
   if (reports.length === 1) return delegationReportMessage(reports[0]!)
   const sections = reports.map((report, index) => `${index + 1}. ${reportSection(report)}`)
   return [
-    `[${reports.length} delegated task reports] Each child's report follows; answer them together.`,
+    `[${reports.length} subagent replies] Each subagent's reply follows; answer them together.`,
     ...sections,
     REPORT_FOLLOW_UP,
   ].join('\n\n')
@@ -77,18 +153,6 @@ export function delegationReportsMessage(reports: readonly DelegationReportInput
  */
 export function delegationReportSession(parent: { id: string }): string {
   return parent.id
-}
-
-/** The participant who delegated, so a multi-participant conversation routes the report back. */
-export function delegationReportRecipient(
-  delegatingAgentId: string | null | undefined,
-  handle: string | null | undefined,
-) {
-  if (!delegatingAgentId) return undefined
-  return {
-    participant: agentParticipant(delegatingAgentId),
-    ...(handle ? { handle } : {}),
-  }
 }
 
 /** The prefix every report key starts with; recovery joins receipts on it. */
@@ -121,12 +185,9 @@ export function delegationReportWake(
   input: DelegationReportInput & {
     userId: string
     parent: { id: string }
-    delegatingAgentId: string | null | undefined
-    handle: string | null | undefined
   },
 ): WakeRequest {
-  const to = delegationReportRecipient(input.delegatingAgentId, input.handle)
-  const { label, childSessionId, runId, status, text, partial } = input
+  const { label, childSessionId, runId, status, text, partial, waiting } = input
   return {
     userId: input.userId,
     sessionId: delegationReportSession(input.parent),
@@ -134,7 +195,41 @@ export function delegationReportWake(
     source: 'subagent',
     deliveryKey: delegationReportKey(input.childSessionId, input.runId),
     receipt: true,
-    report: { label, childSessionId, runId, status, text, ...(partial ? { partial } : {}) },
-    ...(to ? { to } : {}),
+    report: {
+      label,
+      childSessionId,
+      runId,
+      status,
+      text,
+      ...(partial ? { partial } : {}),
+      ...(waiting ? { waiting } : {}),
+    },
+  }
+}
+
+/**
+ * A subagent's message to the agent that started it, sent while it works (`SendMessage` to
+ * "main"): a question only the parent can answer, a finding it needs now. It is not a report —
+ * no hold waits for the other subagents, no receipt makes it once-ever — and it joins the
+ * delegator's running turn at its next completed tool step (`wake-queue/kinds.ts`), or opens a
+ * turn when the delegator is idle. Each call is its own delivery.
+ */
+export function childMessageWake(input: {
+  userId: string
+  parentSessionId: string
+  label: string
+  childSessionId: string
+  toolCallId: string
+  text: string
+}): WakeRequest {
+  return {
+    userId: input.userId,
+    sessionId: input.parentSessionId,
+    content:
+      `[Message from subagent] ${input.label} (id: ${input.childSessionId}) is still working and sent:\n\n` +
+      `${input.text}\n\n` +
+      'Answer with SendMessage to its id if it asks something; its final reply arrives on its own.',
+    source: 'subagent',
+    deliveryKey: `child-message:${input.childSessionId}:${input.toolCallId}`,
   }
 }

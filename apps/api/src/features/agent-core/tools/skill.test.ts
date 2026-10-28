@@ -328,7 +328,7 @@ describe('skill tool — filesystem', () => {
  * `skill get` returned the body whole. The only ceiling on it is `MAX_SKILL_MARKDOWN_BYTES` (1 MiB) at
  * LOAD time, so one call could inject roughly a quarter of a million tokens into context — with no notice
  * that anything was large and no way to page it — while `read`, `search`, and
- * `tool_output` all cap at 64 KB with a numbered marker.
+ * `ToolOutput` all cap at 64 KB with a numbered marker.
  */
 describe('skill get is bounded and says so', () => {
   let dir = ''

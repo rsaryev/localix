@@ -1,13 +1,13 @@
 // Stage everything the packaged Tauri app needs to resolve/start the shared API
 // daemon through a one-shot sidecar launcher (a real `bun.exe` running a
-// bundled `server.js`, NOT `bun build --compile`: the app also runs Bun itself, to build and
-// run the user's own mini apps, so the runtime ships as a real binary either way).
+// bundled `server.js`, NOT `bun build --compile`: the app also runs Bun itself, to run the user's
+// own mini apps and the mini-app-authoring plugin's toolchain, so the runtime ships as a real binary either way).
 //
 // Produces (under src-tauri/):
 //   binaries/bun-<triple>.exe   the native Bun runtime (Tauri sidecar)
 //   resources/server.js         the API bundled to one JS file, migrations and `kysely` included
-//   resources/mini-app-kit/     what the app needs to create, build and test USER mini apps
-//                               (template, shared-module exports, theme stylesheets)
+//   resources/mini-app-kit/     what the mini-app-authoring plugin builds USER mini apps against
+//                               (template, shared-module exports, theme, validation tools)
 //   resources/builtin-plugins/  the Claude Code plugins built into Localix (`plugins/`)
 //
 // Pass --ui to ALSO build apps/ui into apps/ui/dist (the prod frontendDist).
@@ -211,7 +211,7 @@ if (!runtimeReady) {
     for (const message of bundled.logs) console.error(message)
     throw new Error('bundling the API failed')
   }
-  // ── 1b. the script sandbox (`codemode`, and the VM each mod runs in): its VM starts in a worker
+  // ── 1b. the script sandbox (`Workflow` scripts, and the VM each mod runs in): its VM starts in a worker
   //        thread from a file beside the module that creates it, and reads the QuickJS binary and
   //        its extensions from disk. server.js has none of them beside it, so they are staged here,
   //        where `bundledScriptSandboxOptions` finds them.
@@ -251,8 +251,8 @@ if (!runtimeReady) {
 
   // ── 3. the mini app kit ────────────────────────────────────────────────────────
   // The app ships no mini app (rule X5): the store installs them from the hosted catalog the
-  // release publishes (`scripts/pack-mini-apps.mjs`). It ships the kit, which the installed app
-  // needs to create and build the person's own mini apps without a source tree.
+  // release publishes (`scripts/pack-mini-apps.mjs`). It ships the kit, which the
+  // mini-app-authoring plugin builds the person's own mini apps against (`GET /rpc/mini-apps/kit`).
   stageMiniAppKitBeside({ repoRoot: repo, outMiniApps: join(resources, STAGED_APPS_DIR) })
 
   // ── 3a. the built-in plugins ─────────────────────────────────────────────────────

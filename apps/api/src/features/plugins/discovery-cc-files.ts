@@ -3,7 +3,7 @@ import { basename } from 'node:path'
 import { schemaIssue } from './contracts-base'
 
 import { mapCcRuleList } from '../ext/cc-tool-names'
-import { coerceFrontmatterBool, trimmedFrontmatterField } from '../ext/frontmatter'
+import { trimmedFrontmatterField } from '../ext/frontmatter'
 import { argumentHintField } from '../agent-core/skill-frontmatter'
 import {
   parseMarkdownFrontmatter,
@@ -15,10 +15,10 @@ import {
   readSkillMarkdownFile,
   skillFileErrorDetail,
 } from '../agent-core/skill-file'
-import { parseYamlFrontmatterBlock } from '../agent-core/frontmatter-yaml'
+import { parseYamlFrontmatterBlock, splitFrontmatter } from '../agent-core/frontmatter-yaml'
+import { frontmatterBool } from '../agent-core/frontmatter-values'
 import {
   PLUGIN_QUALIFIED_NAME_RE,
-  localixKeySchema,
   pluginAgentSchema,
   pluginCommandSchema,
   type PluginAgent,
@@ -26,7 +26,7 @@ import {
 } from './contracts'
 import type { PluginArtifactDiagnostic } from './discovery-entrypoints'
 import { delegableAgentTypes, isPlainRecord, mapOptionalCcTools } from './discovery-cc-tools'
-import { agentHandleSegment, isValidCcAgentName, preloadedSkills } from './agent-names'
+import { isValidCcAgentName, preloadedSkills } from './agent-names'
 
 /**
  * Claude Code flat-file (`commands/*.md`, `agents/*.md`) discovery + parsing,
@@ -123,7 +123,7 @@ export async function parseCommandFile(
 
 /** Coerce a YAML frontmatter scalar to a boolean (`true`/`yes`/`1` → true; unset/unknown → false). */
 function parseBooleanField(value: string | string[] | undefined): boolean {
-  return coerceFrontmatterBool(scalarField(value)) === true
+  return frontmatterBool(scalarField(value)) === true
 }
 
 /**
@@ -154,7 +154,7 @@ export async function parseAgentFile(
   const { body } = parsedMarkdown
   // CC: frontmatter that does not parse leaves the agent loading with every field ignored.
   const yaml = parseYamlFrontmatterBlock(raw)
-  const unparsable = /^---\r?\n/.test(raw) && yaml === undefined
+  const unparsable = splitFrontmatter(raw) !== null && yaml === undefined
   const fields: typeof parsedMarkdown.fields = unparsable ? {} : parsedMarkdown.fields
   // Namespacing: a nested `agents/nested/security.md` scans as `nested:security`. A
   // frontmatter `name` overrides the LEAF segment but keeps the subdir prefix, so
@@ -162,15 +162,13 @@ export async function parseAgentFile(
   const scanName = nameOverride ?? basename(file).replace(/\.md$/i, '')
   const prefix = scanName.split(':').slice(0, -1)
   // CC ignores a `name` it cannot use (over 256 characters, a leading `-`) and names the agent
-  // after its file; any other name is valid there and reaches Localix as a safe handle. A `:` in
+  // after its file; any other name is valid there and is kept as written. A `:` in
   // a plugin's name keeps reading as namespacing, so `validatePlugin` can say it repeats the prefix
   // (a user's or project's file with a `:` never gets here: `readAgentFile` skips it, as CC does).
   const named = scalarField(fields.name)?.trim()
   const leaf = named && isValidCcAgentName(named, { namespaced: true }) ? named : undefined
-  const name = [...prefix, ...(leaf ?? scanName.split(':').pop() ?? scanName).split(':')]
-    .map(agentHandleSegment)
-    .join(':')
-  if (!PLUGIN_QUALIFIED_NAME_RE.test(name)) {
+  const name = [...prefix, ...(leaf ?? scanName.split(':').pop() ?? scanName).split(':')].join(':')
+  if (!isValidCcAgentName(name, { namespaced: true })) {
     diagnostics?.push({ kind: 'agent', path: file, message: `Invalid agent name "${name}"` })
     return null
   }
@@ -179,19 +177,23 @@ export async function parseAgentFile(
     return null
   }
   const tools = mapOptionalCcTools(fields.tools)
-  // A deny list that names nothing known here denies nothing. An entry with a specifier
-  // (`Bash(rm *)`) keeps it: the run denies those calls and leaves the tool.
+  // A deny list that names nothing known here denies nothing. As in Claude Code, an entry with a
+  // specifier (`Bash(git push *)`) removes the WHOLE tool from the agent, not only the matching
+  // calls; blocking commands while keeping the tool is a permission rule (Settings -> Access).
   const deniedTools = fields.disallowedTools
-    ? mapCcRuleList(splitTokenList(fields.disallowedTools) ?? [])
+    ? [
+        ...new Set(
+          mapCcRuleList(splitTokenList(fields.disallowedTools) ?? []).map((entry) =>
+            entry.replace(/\(.*\)$/s, ''),
+          ),
+        ),
+      ]
     : undefined
   const disallowedTools = deniedTools?.length ? deniedTools : undefined
   const agentTypes = delegableAgentTypes(fields.tools)
-  const preferredModel = trimmedFrontmatterField(fields.model)
   // CC `skills:` — skill names to preload when this agent runs.
   const pinnedSkillsRaw = preloadedSkills(splitTokenList(fields.skills))
   const pinnedSkills = pinnedSkillsRaw.length ? pinnedSkillsRaw : undefined
-  // CC `effort:` — preferred reasoning effort (advisory).
-  const preferredEffort = trimmedFrontmatterField(fields.effort)
   // CC `maxTurns:` — cap the agent's turn count (enforced by the delegate runtime).
   const maxTurnsRaw = trimmedFrontmatterField(fields.maxTurns ?? fields.max_turns)
   const maxTurns =
@@ -200,7 +202,7 @@ export async function parseAgentFile(
       : undefined
   // CC `background:` — forces detached execution when the delegate host can safely
   // deliver the child's final result back to its parent session.
-  const background = coerceFrontmatterBool(scalarField(fields.background))
+  const background = frontmatterBool(scalarField(fields.background))
   // CC `memory:` — persistent-memory scope (RECORDED only; see the contract field).
   const memoryRaw = trimmedFrontmatterField(fields.memory)
   const memory =
@@ -212,7 +214,7 @@ export async function parseAgentFile(
   const isolation =
     trimmedFrontmatterField(fields.isolation) === 'worktree' ? ('isolated' as const) : undefined
   // CC `omitClaudeMd:` — run without the workspace instruction files.
-  const omitClaudeMd = coerceFrontmatterBool(scalarField(fields.omitClaudeMd)) === true
+  const omitClaudeMd = frontmatterBool(scalarField(fields.omitClaudeMd)) === true
   // CC `autoCompactWindow:` — the window its runs compact against, 100000–1000000 tokens.
   const windowRaw = Number(trimmedFrontmatterField(fields.autoCompactWindow) ?? Number.NaN)
   const autoCompactWindow =
@@ -221,7 +223,8 @@ export async function parseAgentFile(
       : undefined
   // CC `color:` — display color (persisted + surfaced to the runtime panel via delegate details).
   const color = trimmedFrontmatterField(fields.color)
-  // CC `initialPrompt:` — main-session auto-first-turn (RECORDED only; no `--agent` mode here).
+  // CC `initialPrompt:` — leads the first turn when the agent runs as a chat's main session agent
+  // (`chat/runtime/run/initial-prompt.ts`).
   const initialPrompt = trimmedFrontmatterField(fields.initialPrompt ?? fields.initial_prompt)
   // CC `hooks:` — sub-agent-scoped lifecycle hooks. Nested `{ Event: [{matcher?, hooks:[…]}] }`
   // maps are reached with a real YAML parse (the line-based .md parser skips nested blocks);
@@ -230,8 +233,6 @@ export async function parseAgentFile(
   const hooks = isPlainRecord(yaml?.hooks) ? yaml!.hooks : undefined
   // CC `mcpServers:` — a list of server names and/or `{ name: definition }` maps.
   const mcpServers = Array.isArray(yaml?.mcpServers) ? yaml!.mcpServers : undefined
-  // `localix:` — what Claude Code has no place for; Claude Code ignores the key.
-  const localix = isPlainRecord(yaml?.localix) ? localixKeySchema.safeParse(yaml!.localix) : null
   // CC `experimental.cacheTtl:` — `5m` or `1h`; any other value is ignored.
   const ttl = isPlainRecord(yaml?.experimental) ? yaml!.experimental.cacheTtl : undefined
   const cacheTtl = ttl === '5m' || ttl === '1h' ? ttl : undefined
@@ -246,9 +247,7 @@ export async function parseAgentFile(
     ...(tools !== undefined ? { tools } : {}),
     ...(disallowedTools?.length ? { disallowedTools } : {}),
     ...(agentTypes ? { agentTypes } : {}),
-    ...(preferredModel ? { preferredModel } : {}),
     ...(pinnedSkills ? { pinnedSkills } : {}),
-    ...(preferredEffort ? { preferredEffort } : {}),
     ...(maxTurns !== undefined ? { maxTurns } : {}),
     ...(background !== undefined ? { background } : {}),
     ...(memory ? { memory } : {}),
@@ -260,7 +259,6 @@ export async function parseAgentFile(
     ...(initialPrompt ? { initialPrompt } : {}),
     ...(hooks !== undefined ? { hooks } : {}),
     ...(mcpServers !== undefined ? { mcpServers } : {}),
-    ...(localix?.success ? { localix: localix.data } : {}),
   })
   if (parsed.success) return parsed.data
   diagnostics?.push({

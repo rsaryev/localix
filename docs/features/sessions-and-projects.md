@@ -58,14 +58,12 @@ trail.
 ### Who said it, and when
 
 Every reply is headed by its author: a generated monogram tile, the agent's name in that agent's own
-colour, and the wall-clock time. The colour is derived from the agent's handle, so it is the same
-tile everywhere the agent appears and it survives a rename of the display label. Your own messages
-carry their time in the row below them and no tile.
+colour, and the wall-clock time. The colour is derived from the agent's name, so it is the same tile
+everywhere the agent appears. Your own messages carry their time in the row below them and no tile.
 
-Consecutive replies from the same speaker are one run: the header appears on the first of them and
-the rest carry only their content, with tighter spacing to say the voice has not changed. A run ends
-on a different speaker, a pause of more than ten minutes, a new day, or any system notice between
-them.
+Consecutive replies from the same agent are one run: the header appears on the first of them and the
+rest carry only their content, with tighter spacing to say the voice has not changed. A run ends on
+a different agent, a pause of more than ten minutes, a new day, or any system notice between them.
 
 Each day starts with a divider naming it — Today, Yesterday, or the date. That is why a message's
 own time is a bare clock: the day is stated once, above.
@@ -89,10 +87,10 @@ check before retrying: a command that was dispatched and never reported back may
 already.
 
 The tile and name are one link: selecting them opens that agent's **profile** as a workspace tab —
-the same page a mention chip, a chat group's heading and the row in the Store (Agents) open, in the
-scope the record lives in. The profile is where the agent is read and edited, so it can sit beside
-the conversation it is about. The header appears as soon as the reply starts, before its first
-character, so a session with several agents says who is thinking.
+the same page a mention chip and the row in the Store (Agents) open, in the scope the record lives
+in. The profile is where the agent is read and edited, so it can sit beside the conversation it is
+about. The header appears as soon as the reply starts, before its first character, so you see who is
+thinking before the first word.
 
 ### Reading the session list
 
@@ -113,10 +111,10 @@ visible while its menu is open. On touch devices it is always visible. You can a
 row to open the same actions. The button replaces the timestamp in the same slot, giving the title
 more room without shifting it when actions appear. The status mark stays visible.
 
-Sub-sessions appear beneath their actual parents, including nested delegations from older
-conversations. The active chat's branch opens by default; other root chats start folded. Each parent
-has its own disclosure arrow, and a folded row shows its direct child count. Branches initially show
-five children, with **Show all** for the rest. Opening a nested session reveals its full path, even
+Sub-sessions appear beneath their actual parents, including nested delegations conversations. The
+active chat's branch opens by default; other root chats start folded. Each parent has its own
+disclosure arrow, and a folded row shows its direct child count. Branches initially show five
+children, with **Show all** for the rest. Opening a nested session reveals its full path, even
 beyond that preview. Title search includes workers, threads and forks and temporarily expands
 matching paths; clearing the search restores your folds.
 
@@ -136,10 +134,10 @@ one. Editing a user message creates another sibling branch with the prior active
 continues from the edit.
 
 `/fork` creates a child session and copies the selected active message path in chronological order.
-The child inherits the project, participants, explicit provider/model choices, participant lock, and
-pinned skills. Inherited model settings stay inherited rather than becoming a fixed choice. The
-copied messages receive new IDs; later transcript edits are independent, while files remain shared
-through the root conversation's working directory.
+The child inherits the project, explicit provider/model choices, and pinned skills. Inherited model
+settings stay inherited rather than becoming a fixed choice. The copied messages receive new IDs;
+later transcript edits are independent, while files remain shared through the root conversation's
+working directory.
 
 Generated fork titles use one suffix with the new conversation number, such as **Greeting
 (fork 42)**. Forking that conversation replaces the suffix with the next fork's number. Legacy
@@ -152,9 +150,81 @@ a flush on normal quit or page hide. Storage retains the 50 most recently edited
 32,000 characters each; larger drafts remain in memory only. Staged attachments are cleared when the
 active session changes so they cannot be sent to the wrong chat.
 
-Messages sent while an agent is busy enter a durable SQLite queue. Plain text without attachments
-may steer the running turn at a safe tool or model boundary; structured input and attachments wait
-for a normal queued turn.
+### The shared queue
+
+All execution requests use the same durable queue. User messages, agent requests, jobs, timers and
+subagent results carry a typed source and an execution address; the producer does not choose a
+numeric priority. Pending rows and their order survive a restart.
+
+The queue runs work in bands, lowest first:
+
+| Band                   | What                                      |
+| ---------------------- | ----------------------------------------- |
+| The answer owed to you | The turn that answers your message        |
+| Your next message      | A message sent while the session was busy |
+| Machine wakes          | Loops, background jobs, reports, hooks    |
+
+Execution is serial inside one session and may run concurrently across different sessions. An empty
+queue parks its session dispatcher; it never completes, archives or closes the session. Duplicate
+pending turns for the same agent merge: the stronger request's settings win and the reply lands
+after the newest message it answers.
+
+Plain text without attachments may steer the running turn at a safe tool or model boundary;
+structured input and attachments wait for a normal queued turn. Lines that wait for a turn and carry
+no attachments are answered together in one turn. A parent's `SendMessage` can also amend its
+running subagent's task at a step boundary, and a subagent can `SendMessage` its parent
+(`to: "main"`) while it works.
+
+Your steering message outranks the tool calls the agent chose before it could read it. A call that
+is already running finishes, but the calls of the same response that have not started yet are
+returned unrun, with a note to re-issue them if they still apply. Calls waiting on an approval
+prompt are not deferred, because your message may be the answer to it.
+
+Subagent reports join the agent's next model request after a fully completed tool turn. Other
+reports, webhooks and loops wait for a separate turn. The host waits for tool-checkpoint settlement
+before splitting the assistant row; see [Subagents](delegation.md#progress-and-report-delivery).
+Disabling `LOCALIX_MID_RUN_INTERJECT` keeps queued messages and reports for later turns.
+
+A slash command sent while the session is busy waits in the queue as a whole command, with its
+badge, model and tool grants, and runs as its own turn.
+
+### Interruptions
+
+Editing a message or regenerating a reply cancels the session's pending agent turns, because the
+branch changes. Neither operation clears queued user messages or machine wakes, and turns already
+claimed for execution are not removed.
+
+**Stop** aborts the live run and, when a live run is registered, cancels the session's unclaimed
+agent turns. It does not clear queued user messages or machine wakes. Use **Clear queue** to remove
+all cancellable queued items; items already claimed stay visible and are reported as retained. Stop
+waits up to five seconds for the live run to relinquish its slot and reports an error if it is still
+shutting down.
+
+An operator Stop also stops spawned child sessions recursively after the parent settles. A failure
+to enumerate or stop a child does not fail the parent's stop, so the parent's acknowledgement alone
+does not prove every child ended. Replacing a run with a new message does not cascade to children.
+To end future [loop](loops.md) runs, cancel the loop separately.
+
+### What the agent sees
+
+The agent reads the whole transcript, plus its own reasoning, tool activity, runtime events and
+checkpointed view. A subagent has its own session and sees only its task and what it is sent; the
+parent sees the subagent's final report, not its reasoning or tool calls.
+
+Files in a shared workspace stay visible to every process that can access it. Context isolation is
+not a filesystem security boundary.
+
+### Session objective and previous topic summary
+
+Each session stores two fields alongside its title: `goal`, the current objective, and
+`previousTopicSummary`, the important context carried forward from earlier topics. Both are included
+in the runtime context when a run starts and again whenever they change; they are not part of the
+system prompt, so a new session shares the cached prompt of the sessions before it. They belong to
+the session and remain available when history is checkpointed or the app restarts.
+
+The first user message supplies a fallback objective. When automatic title generation is configured,
+the same model call generates the title and objective together. A late response cannot replace a
+topic that has already changed. No agent tool changes the objective.
 
 ### Retention actions
 
@@ -169,7 +239,7 @@ Export fetches the conversation before writing it, including messages not curren
 sidebar. Standard export omits tool-only turns, reasoning, internal messages, system notices, and
 structured attachments. Redacted export keeps tool names/statuses and binding types as placeholders;
 it also omits reasoning. Both retain authored prose and code blocks, use generic **You** and
-**Assistant** headings, and omit participant identities and message timestamps. They are readable
+**Assistant** headings, and omit agent identities and message timestamps. They are readable
 conversation copies rather than a complete backup or round-trip import format.
 
 [Conversation activity and history search](conversation-history.md#find-and-recover-earlier-messages)

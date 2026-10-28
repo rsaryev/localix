@@ -1,9 +1,9 @@
 # Working on the reference mini app
 
-This is System Overview, the mini app every user mini app is forked from: `/mini-app create` copies
-it into `~/.localix/mini-apps/<name>` under a new identity, and the agent replaces its domain. Read
-the repository root guidelines first. This directory is a Bun workspace package, not a separate Git
-repository; use the parent's dependency installation and lockfile.
+This is System Overview, the mini app every user mini app is forked from: the mini-app-authoring
+plugin's `mini-app create` copies it into a new folder under a new identity, and the agent replaces
+its domain. Read the repository root guidelines first. This directory is a Bun workspace package,
+not a separate Git repository; use the parent's dependency installation and lockfile.
 
 What a copy is made of is declared in `scaffold.json`, and every part of it is load-bearing:
 
@@ -11,7 +11,7 @@ What a copy is made of is declared in `scaffold.json`, and every part of it is l
   `guide.md` (what the agent reads before it first uses the app), `ui/register.tsx`,
   `ui/Workspace.tsx`, `backend/index.ts`, `backend/routes.ts`.
 - **Domain** — System Overview itself, deleted or rewritten by each copy. Its identifiers are the
-  residue the `mini_app_build` check reports, so a new one goes on `domainTokens`.
+  residue the plugin's check reports, so a new one goes on `domainTokens`.
 - **Frame** — everything else, kept byte for byte: `ui/usePolledSnapshot.ts` (polling and `send`),
   `ui/useStoreSnapshot.ts` (the same, re-read when the store feed nudges), `ui/useNow.ts` (the SDK's
   `ui/now` clock for derived values), `backend/store.ts` (durable state under `ctx.dataDir`),
@@ -35,8 +35,8 @@ House rules the copies inherit from here:
   while the signal is unavailable. Gauges with no write behind them — CPU, memory — use their own
   cadence.
 - Build every control from the host kit, `@localixai/kit/<id>`, and colour with host tokens; the
-  `mini_app_build` style step and `scripts/ui-token-drift-guard.test.ts` apply the same rules. Never
-  import `@/…`: the UI is built into its own artifact, and that build refuses host internals.
+  plugin's style step and `scripts/ui-token-drift-guard.test.ts` apply the same rules. Never import
+  `@/…`: the UI is built into its own artifact, and that build refuses host internals.
 - Keep what the user creates in `openJsonStore` under `ctx.dataDir`, and anything that runs while
   the pane is hidden as timestamps in the backend, where the tools reach it.
 - Publish the visible snapshot as message context and clear it when the view is inactive.

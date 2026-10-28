@@ -6,7 +6,7 @@
  * window left one empty "New Chat" each — twelve windows, twelve drafts within 130 ms, and one
  * more per window on every launch.
  *
- * Here the landing reuses the project's newest untouched chat with the same participant. The
+ * Here the landing reuses the project's newest untouched chat with the same agent. The
  * look-up and the creation run as one step per user: concurrent landings queue behind each
  * other, so the first one creates and every later one finds that chat. The API is the single
  * writer of its database, which is what makes an in-process queue a sufficient serialization.
@@ -52,8 +52,8 @@ export function createDraftReuse(ctx: SessionLifecycleCtx) {
 }
 
 /**
- * The one participant a reusable draft must have, or null when the request is not a plain
- * landing (a title, a group, a stated route, a child or an external CLI is a specific chat).
+ * The one agent a reusable draft must have, or null when the request is not a plain
+ * landing (a title, a stated route, a child or an external CLI is a specific chat).
  */
 function reusableParticipant(input: CreateSessionInput): string | null {
   if (
@@ -66,12 +66,11 @@ function reusableParticipant(input: CreateSessionInput): string | null {
     input.modelId ||
     input.reasoningEffort ||
     input.goal ||
-    input.previousTopicSummary ||
-    (input.agents?.length ?? 0) > 1
+    input.previousTopicSummary
   ) {
     return null
   }
-  const [agent] = input.agents ?? []
+  const agent = input.agent
   if (agent && (!agent.agentId || agent.modelId || agent.providerConnectionId)) return null
   return agent?.agentId ?? DEFAULT_AGENT_ID
 }

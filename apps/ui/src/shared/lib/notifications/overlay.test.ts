@@ -59,9 +59,20 @@ describe('callbacks beside the journal', () => {
   })
 
   test('leave the row when they expire', async () => {
-    push([undo(Date.now() + 5)])
+    // Capture the expiry timer instead of waiting for it, then fire it at the point of expiry.
+    const realSetTimeout = globalThis.setTimeout
+    const expiries: Array<() => void> = []
+    globalThis.setTimeout = ((fn: () => void) => {
+      expiries.push(fn)
+      return 0
+    }) as unknown as typeof setTimeout
+    try {
+      push([undo(Date.now() + 5)])
+    } finally {
+      globalThis.setTimeout = realSetTimeout
+    }
     expect(entries()[0]!.actions).toHaveLength(1)
-    await new Promise((resolve) => setTimeout(resolve, 20))
+    for (const expire of expiries) expire()
     expect(entries()[0]!.actions ?? []).toEqual([])
   })
 

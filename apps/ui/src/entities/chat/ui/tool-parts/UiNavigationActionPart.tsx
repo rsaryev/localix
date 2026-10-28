@@ -39,7 +39,7 @@ function NavigationActionButton({
     : presentation.label
   const button = (
     <Button
-      variant="outline"
+      variant="ghost"
       size="sm"
       className={className}
       disabled={!available}

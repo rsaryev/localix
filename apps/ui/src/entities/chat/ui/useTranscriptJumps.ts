@@ -1,4 +1,4 @@
-import { useEffect, useRef, type RefObject } from 'react'
+import { useEffect, useEffectEvent, useRef, type RefObject } from 'react'
 import type { Virtualizer } from '@tanstack/react-virtual'
 import { localixResourceUri } from '@localixai/mini-app-sdk/navigation'
 import type { Message } from '../model/types'
@@ -37,10 +37,12 @@ export function useTranscriptJumps({
   workItemVisible,
   navActive,
 }: TranscriptJumpOptions): void {
-  const visibleRef = useRef(visible)
-  visibleRef.current = visible
-  const rowByIdRef = useRef(rowById)
-  rowByIdRef.current = rowById
+  // Read at call time by the effects below, which must not re-run when the rows change: a
+  // streaming message update would otherwise re-trigger every scroll.
+  const rowIndexOf = useEffectEvent((messageId: string) => rowById.get(messageId) ?? -1)
+  const eventFocusTarget = useEffectEvent((request: Parameters<typeof eventFocusMessageId>[1]) =>
+    eventFocusMessageId(visible, request),
+  )
 
   const eventFocusSequence = useEventFocusStore((state) => state.sequence)
   useEffect(() => {
@@ -51,9 +53,9 @@ export function useTranscriptJumps({
     // cannot perform an observable scroll/reveal, and consuming here used to
     // make cross-session Event Center jumps silently lose their highlight.
     if (!request) return
-    const messageId = eventFocusMessageId(visibleRef.current, request)
+    const messageId = eventFocusTarget(request)
     if (!messageId) return
-    const index = rowByIdRef.current.get(messageId) ?? -1
+    const index = rowIndexOf(messageId)
     if (index < 0) return
     virtualizer.scrollToIndex(index, { align: 'center' })
     focusState.consume(request.token)
@@ -82,7 +84,7 @@ export function useTranscriptJumps({
     seenRevealRef.current = revealSignal
     const focus = useMessageFocusStore.getState()
     if (focus.sessionId !== sessionId) return
-    const idx = focus.messageId ? (rowByIdRef.current.get(focus.messageId) ?? -1) : -1
+    const idx = focus.messageId ? rowIndexOf(focus.messageId) : -1
     if (idx >= 0) virtualizer.scrollToIndex(idx, { align: 'center' })
   }, [revealSignal, sessionId, virtualizer])
 
@@ -91,7 +93,7 @@ export function useTranscriptJumps({
   const searchActiveId = useMessageSearchStore((s) => s.activeId)
   useEffect(() => {
     if (!searchActiveId) return
-    const idx = rowByIdRef.current.get(searchActiveId) ?? -1
+    const idx = rowIndexOf(searchActiveId)
     if (idx >= 0) virtualizer.scrollToIndex(idx, { align: 'center' })
   }, [searchActiveId, virtualizer])
 
@@ -112,7 +114,7 @@ export function useTranscriptJumps({
         } catch {
           // Preserve the raw id: malformed external URIs simply will not match.
         }
-        const index = rowByIdRef.current.get(messageId) ?? -1
+        const index = rowIndexOf(messageId)
         if (index >= 0) virtualizer.scrollToIndex(index, { align: 'center' })
       },
     })

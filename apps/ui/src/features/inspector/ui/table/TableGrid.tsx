@@ -235,9 +235,20 @@ export function TableGrid({
                       role="row"
                       aria-rowindex={vi.index + 2 + draftRowOffset}
                       onClick={rowClickActivates ? () => onRowActivate!(vi.index) : undefined}
+                      tabIndex={rowClickActivates ? 0 : undefined}
+                      onKeyDown={
+                        rowClickActivates
+                          ? (e) => {
+                              if (e.target !== e.currentTarget) return
+                              if (e.key !== 'Enter' && e.key !== ' ') return
+                              e.preventDefault()
+                              onRowActivate!(vi.index)
+                            }
+                          : undefined
+                      }
                       className={cn(
                         'group/row absolute left-0 grid w-full border-b border-border-soft hover:bg-surface-hover',
-                        rowClickActivates && 'cursor-pointer',
+                        rowClickActivates && 'cursor-pointer outline-none focus-ring',
                         markedDelete && 'bg-status-error/5 opacity-60',
                       )}
                       style={{
@@ -249,6 +260,7 @@ export function TableGrid({
                     >
                       <div
                         role="rowheader"
+                        tabIndex={-1}
                         aria-colindex={1}
                         onContextMenu={() => {
                           ctxCol.current = null
@@ -280,7 +292,9 @@ export function TableGrid({
                           isLinkColumn={!!linkColumns?.has(col.id)}
                           showCellActions={showCellActions}
                           allowNullValues={allowNullValues}
-                          ctxCol={ctxCol}
+                          onContextColumn={(columnId) => {
+                            ctxCol.current = columnId
+                          }}
                           onStartEdit={startEdit}
                           onCommitEdit={commitEdit}
                           onCancelEdit={cancelEdit}

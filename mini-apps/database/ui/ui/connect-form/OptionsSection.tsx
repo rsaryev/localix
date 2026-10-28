@@ -1,5 +1,6 @@
 /** The store-password-as-secret checkbox/hint + the collapsed Options block
  *  (read-only guard-rail + connection color). */
+import { useId } from 'react'
 import { Ban, ChevronRight, Lock } from 'lucide-react'
 import { Checkbox } from '@localixai/kit/checkbox'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
@@ -18,16 +19,22 @@ export function OptionsSection({
   f: ConnectFormState
   expanded?: boolean
 }) {
+  const id = useId()
   const capabilities = DATABASE_DRIVER_CATALOG[f.dialect].capabilities
   const showOptions = expanded || f.showOptions
   return (
     <>
       {f.canStoreSecret && (
         <label
+          htmlFor={`${id}-store-secret`}
           className="mt-2 flex cursor-pointer items-center gap-1.5 text-2xs text-text-soft"
           title="The saved config keeps only a ${secret:…} token, never the raw password."
         >
-          <Checkbox checked={f.storeSecret} onChange={(e) => f.setStoreSecret(e.target.checked)} />
+          <Checkbox
+            id={`${id}-store-secret`}
+            checked={f.storeSecret}
+            onChange={(e) => f.setStoreSecret(e.target.checked)}
+          />
           <span>Store the password as a secret</span>
         </label>
       )}
@@ -62,17 +69,24 @@ export function OptionsSection({
           <div className="mt-2 space-y-2.5 border-l border-border pl-3">
             {capabilities.rowEditing && (
               <label
+                htmlFor={`${id}-readonly`}
                 className="flex cursor-pointer items-center gap-1.5 text-2xs text-text-soft"
                 title="Block writes (INSERT/UPDATE/DELETE/DDL) — a safety guard-rail, not a database permission."
               >
-                <Checkbox checked={f.readonly} onChange={(e) => f.setReadonly(e.target.checked)} />
+                <Checkbox
+                  id={`${id}-readonly`}
+                  checked={f.readonly}
+                  onChange={(e) => f.setReadonly(e.target.checked)}
+                />
                 <Lock className="size-2.5 text-text-faint" />
                 <span className="font-medium text-foreground">Read-only</span>
                 <span className="text-text-faint">— block writes on this connection</span>
               </label>
             )}
-            <div className="flex items-center gap-2">
-              <label className="text-2xs text-text-soft">Color</label>
+            <div role="group" aria-labelledby={`${id}-color`} className="flex items-center gap-2">
+              <span id={`${id}-color`} className="text-2xs text-text-soft">
+                Color
+              </span>
               <div className="flex flex-wrap items-center gap-1">
                 <button
                   type="button"

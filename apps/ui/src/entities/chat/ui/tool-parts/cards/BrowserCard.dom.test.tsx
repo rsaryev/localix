@@ -16,7 +16,7 @@ const item = (status: ToolCallItem['status'], resultText?: string): ToolCallItem
   type: 'tool_call',
   status,
   toolCallId: 'tc-preview-1',
-  name: 'browser',
+  name: 'Browser',
   input: { action: 'evaluate', expression: 'window.board' },
   activeVerb: 'evaluating',
   resultText,

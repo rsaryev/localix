@@ -2,7 +2,7 @@ import type { SessionWork } from '../contracts'
 import type { RuntimeState } from './agent-runner-state'
 import { sessionWork } from './work-view'
 import type { RoutableSession } from '../../../contracts/session-route'
-import { addressedCooldownUntil } from './addressed-route-cooldown'
+import { sessionCooldownUntil } from './session-route-cooldown'
 
 /**
  * What the runner can SAY about sessions right now — who is speaking, what is running, what is
@@ -17,22 +17,17 @@ export function createRunnerStatus(state: RuntimeState) {
   const { activeRuns, work, drainingSessions } = state
 
   return {
-    activeAgentId: (sessionId: string) => state.activeRunSessions.get(sessionId)?.agentId,
-
     isRunning: (sessionId: string) => {
       return activeRuns.has(sessionId)
     },
 
     /**
-     * Epoch-ms until which a fire addressed to `agentId` in this conversation would land on an
-     * exhausted provider route (set by a failed run's classifier — see run/finalize.ts), or
-     * null. Per route, not per session: see addressed-route-cooldown.ts for whose route.
+     * Epoch-ms until which a fire in this conversation would land on an exhausted provider route
+     * (set by a failed run's classifier — see run/finalize.ts), or null.
      */
-    rateLimitedUntilMs: (session: RoutableSession, agentId?: string): number | null => {
+    rateLimitedUntilMs: (session: RoutableSession): number | null => {
       const now = Date.now()
-      return addressedCooldownUntil(session, agentId, (route) =>
-        state.routeCooldowns.until(route, now),
-      )
+      return sessionCooldownUntil(session, (route) => state.routeCooldowns.until(route, now))
     },
 
     /** Distinct (userId, sessionId) pairs owning at least one live background job. */

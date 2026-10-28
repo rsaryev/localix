@@ -129,9 +129,9 @@ uncompressed content. Documents retain at most 400 chapters; PDFs above 400 page
 Oversized chapter text is truncated, and oversized markup falls back to bounded text. Books that
 exceed those limits may be rejected or only partly available for reading and agent context.
 
-The research tool reads up to 32,000 characters per call and returns a continuation offset. Resource
-expansion is capped at 48,000 characters, so attaching a book does not promise that the agent
-receives its complete text in one turn.
+The `Research` tool reads up to 32,000 characters per call and returns a continuation offset.
+Resource expansion is capped at 48,000 characters, so attaching a book does not promise that the
+agent receives its complete text in one turn.
 
 Reading insights show active time, sessions, positions, progress, and streaks. The activity trail
 contains the latest 14 active dates. Events are deduplicated by ID, capped at two minutes each, and

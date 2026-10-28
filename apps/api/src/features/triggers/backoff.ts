@@ -16,7 +16,7 @@
  * changing something, so re-arming at full cadence is the right bias, and a durable counter would
  * keep throttling a trigger whose cause was fixed during the downtime.
  */
-import { backoffMs } from '../../lib/backoff'
+import { backoffMs } from '@localixai/agent/backoff'
 
 const FIRE_BACKOFF = { baseMs: 60_000, maxMs: 60 * 60_000 }
 

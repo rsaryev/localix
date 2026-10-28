@@ -28,6 +28,8 @@ export interface WireProfile {
   cacheBreakpoints: boolean
   /** Options every request carries (store, cache key, reasoning summaries, …). */
   requestOptions?: (request: RequestContext) => Record<string, unknown> | undefined
+  /** Headers every request carries: the session identity a provider routes its prompt cache by. */
+  requestHeaders?: (request: RequestContext) => Record<string, string> | undefined
   /** The model takes a sampling temperature; models.dev says which do not (reasoning models mostly). */
   temperature: boolean
   /** The provider refuses a requested output limit (the ChatGPT backend). */
@@ -47,6 +49,8 @@ export interface WireProfile {
 
 export interface RequestContext {
   sessionId: string
+  /** What keys the provider's prompt cache instead of the session, when the host named one. */
+  promptCacheKey?: string
   reasoningEffort: ReasoningEffort | undefined
   /** How long the session sat idle before this run, when the host measured it. */
   idleMs: number | undefined
@@ -81,12 +85,12 @@ function assistantMessage(
 ): LanguageModelV4Message | undefined {
   const failed = message.stopReason === 'error' || message.stopReason === 'aborted'
   const keepState = sameOrigin(message, origin) && !failed
-  const state = (signature: string | undefined, part: 'text' | 'reasoning' | 'tool-call') =>
-    keepState ? decodeProviderState(signature, part, message.api) : undefined
+  const state = (signature: string | undefined) =>
+    keepState ? decodeProviderState(signature) : undefined
   const content: Extract<LanguageModelV4Message, { role: 'assistant' }>['content'] = []
   for (const part of message.content) {
     if (part.type === 'text') {
-      const providerOptions = state(part.textSignature, 'text')
+      const providerOptions = state(part.textSignature)
       if (part.text || providerOptions)
         content.push({
           type: 'text',
@@ -95,20 +99,13 @@ function assistantMessage(
         })
     } else if (part.type === 'thinking') {
       if (!keepState) continue
-      const providerOptions = decodeProviderState(
-        part.thinkingSignature,
-        'reasoning',
-        message.api,
-        {
-          redacted: part.redacted === true,
-        },
-      )
+      const providerOptions = decodeProviderState(part.thinkingSignature)
       if (providerOptions && Object.keys(providerOptions).length > 0)
         content.push({ type: 'reasoning', text: part.thinking, providerOptions })
       else if (profile.compatible && part.thinking.trim())
         content.push({ type: 'reasoning', text: part.thinking })
     } else {
-      const providerOptions = state(part.thoughtSignature, 'tool-call')
+      const providerOptions = state(part.thoughtSignature)
       content.push({
         type: 'tool-call',
         toolCallId: callId(part.id),
@@ -201,6 +198,7 @@ export function buildCallOptions(
   origin?: AgentMessageOrigin,
 ): LanguageModelV4CallOptions {
   const extra = profile.requestOptions?.(context)
+  const headers = profile.requestHeaders?.(context)
   const providerOptions: SharedV4ProviderOptions | undefined = extra
     ? ({ [profile.namespace]: extra } as SharedV4ProviderOptions)
     : undefined
@@ -230,6 +228,7 @@ export function buildCallOptions(
         }
       : {}),
     ...(providerOptions ? { providerOptions } : {}),
+    ...(headers ? { headers } : {}),
     abortSignal: request.signal,
   }
 }

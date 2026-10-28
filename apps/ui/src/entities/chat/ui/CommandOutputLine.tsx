@@ -4,7 +4,6 @@ import { CircleCheck, Info } from 'lucide-react'
 import type { CommandOutput } from '@/shared/api/contracts'
 import { PROBLEM_SEVERITY, type SeverityPresentation } from '@/shared/ui/problem-report'
 import { ActivitySignal } from '@localixai/kit/activity-orb'
-import { cleanSystemMessageText } from '../model/systemMessageText'
 import { MessageText } from './MessageText'
 import { systemMessageLabel } from './coalesceSystemMessages'
 
@@ -60,7 +59,7 @@ export const CommandOutputLine = memo(function CommandOutputLine({
   }
 
   const { Icon, label, iconClass } = TONE[output.tone]
-  const text = systemMessageLabel(cleanSystemMessageText(output.text), repeatCount)
+  const text = systemMessageLabel(output.text, repeatCount)
 
   return (
     <div className="flex w-full justify-center py-1" data-command-output={output.command}>

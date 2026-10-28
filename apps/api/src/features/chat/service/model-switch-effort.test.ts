@@ -14,7 +14,7 @@ describe('effortForModelSwitch (/model)', () => {
     ).toBe('low')
   })
 
-  test('the same model keeps the seat level', () => {
+  test('the same model keeps the route level', () => {
     expect(effortForModelSwitch({ previous, next: { id: 'openai/strong' } })).toBe('xhigh')
   })
 

@@ -8,6 +8,7 @@ import {
   syncBundledMiniApps,
 } from '../features/mini-apps/bundled-install'
 import { watchStagedMiniAppsRoot } from '../features/mini-apps/bundled-watch'
+import { backoffMs } from '@localixai/agent/backoff'
 import type { DomainServicesPhase } from './domain-services'
 import type { MiniAppHostsPhase } from './mini-app-hosts'
 
@@ -77,7 +78,8 @@ export function armMiniAppTimers(deps: {
   // The apps the Localix catalog recommends, installed once on a new installation
   // (`features/mini-apps/recommended.ts`). Offline or failed, it tries again: after five
   // minutes, then twice as long each time, at most every six hours.
-  let recommendedRetryMs = 5 * 60_000
+  const recommendedRetry = { baseMs: 5 * 60_000, maxMs: 6 * 60 * 60 * 1000 }
+  let recommendedAttempt = 0
   const installRecommended = (): Promise<void> =>
     miniAppService
       .installRecommended(deps.userId)
@@ -87,8 +89,10 @@ export function armMiniAppTimers(deps: {
       })
       .then((outcome) => {
         if (outcome === 'done' || signal.aborted) return
-        setTimeout(() => void installRecommended(), recommendedRetryMs).unref?.()
-        recommendedRetryMs = Math.min(recommendedRetryMs * 2, 6 * 60 * 60 * 1000)
+        setTimeout(
+          () => void installRecommended(),
+          backoffMs(recommendedAttempt++, recommendedRetry),
+        ).unref?.()
       })
 
   return {

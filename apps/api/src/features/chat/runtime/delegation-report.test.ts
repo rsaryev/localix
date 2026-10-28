@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 import {
+  childMessageWake,
   delegationReportKey,
   delegationReportMessage,
-  delegationReportRecipient,
   delegationReportSession,
   delegationReportWake,
 } from './delegation-report'
@@ -32,7 +32,7 @@ describe('child report bounding', () => {
     // Actionable, not just truncated: the transcript is still reachable, and the parent
     // needs the session id to reach it. Without this the cap would DESTROY information
     // instead of relocating it.
-    expect(out).toContain('global_search')
+    expect(out).toContain('GlobalSearch')
     expect(out).toContain('LOCALIX-9')
   })
 
@@ -59,14 +59,6 @@ describe('child report bounding', () => {
 })
 
 describe('child report routing', () => {
-  test('returns the detached result to the participant who delegated it', () => {
-    expect(delegationReportRecipient('builtin:localix', 'localix')).toEqual({
-      participant: 'agent:builtin:localix',
-      handle: 'localix',
-    })
-    expect(delegationReportRecipient(undefined, 'localix')).toBeUndefined()
-  })
-
   test('a report wakes the session that DELEGATED — a grandchild answers its child, not the root', () => {
     // Sending it to the root skipped the agent that asked for the work.
     expect(delegationReportSession({ id: 'mid' })).toBe('mid')
@@ -84,7 +76,7 @@ describe('child report wording', () => {
       text: '  ',
     })
     expect(message).toContain('no final text')
-    expect(message).toContain('global_search')
+    expect(message).toContain('GlobalSearch')
   })
 
   test('the status and the child are named in the headline', () => {
@@ -96,7 +88,7 @@ describe('child report wording', () => {
       text: 'partial',
     })
     expect(message.split('\n')[0]).toBe(
-      '[Delegated task was STOPPED before finishing] Audit (id: c1) was STOPPED before finishing.',
+      '[Subagent was STOPPED before finishing] Audit (id: c1) was STOPPED before finishing.',
     )
   })
 
@@ -109,9 +101,9 @@ describe('child report wording', () => {
       status: 'completed',
       text: 'done',
     })
-    expect(message.startsWith('[Delegated task finished]')).toBe(true)
+    expect(message.startsWith('[Subagent finished]')).toBe(true)
     expect(message).toContain('Its final report:\ndone')
-    expect(message).toContain('`delegate` action:"message"')
+    expect(message).toContain('SendMessage')
   })
 })
 
@@ -123,8 +115,6 @@ describe('one report per run', () => {
       delegationReportWake({
         userId: 'u',
         parent: { id: 'root' },
-        delegatingAgentId: null,
-        handle: null,
         label: 'Audit',
         childSessionId: 'c1',
         runId,
@@ -134,5 +124,44 @@ describe('one report per run', () => {
     expect(wake('m1').deliveryKey).toBe(delegationReportKey('c1', 'm1'))
     expect(wake('m2').deliveryKey).not.toBe(wake('m1').deliveryKey)
     expect(wake('m1')).toMatchObject({ receipt: true, source: 'subagent', sessionId: 'root' })
+  })
+})
+
+describe('a subagent’s message to the agent that started it', () => {
+  const wake = childMessageWake({
+    userId: 'u1',
+    parentSessionId: 'root',
+    label: 'Audit auth',
+    childSessionId: 'child-1',
+    toolCallId: 'call-7',
+    text: 'Which branch should I use?',
+  })
+
+  test('wakes the delegator in its own session, addressed to it', () => {
+    expect(wake).toMatchObject({
+      userId: 'u1',
+      sessionId: 'root',
+      source: 'subagent',
+    })
+    expect(wake.content).toContain('Which branch should I use?')
+    // The parent answers by the id it can name the child with.
+    expect(wake.content).toContain('child-1')
+  })
+
+  test('is not a report: nothing holds it for the other subagents', () => {
+    expect(wake.report).toBeUndefined()
+    expect(wake.receipt).toBeUndefined()
+  })
+
+  test('each call is its own delivery', () => {
+    const again = childMessageWake({
+      userId: 'u1',
+      parentSessionId: 'root',
+      label: 'Audit auth',
+      childSessionId: 'child-1',
+      toolCallId: 'call-8',
+      text: 'And the tests?',
+    })
+    expect(again.deliveryKey).not.toBe(wake.deliveryKey)
   })
 })

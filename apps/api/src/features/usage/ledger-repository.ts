@@ -53,12 +53,6 @@ export function selectLedgerSources(
     db
       .selectFrom('agent_messages as message')
       .innerJoin('agent_sessions as session', 'session.id', 'message.session_id')
-      // A message recorded with no routing of its own falls back to the route of the session's
-      // FIRST participant: a message with no model recorded is one this build cannot attribute
-      // precisely, and the first participant is the answer the row had before rooms existed.
-      .leftJoin('conversation_participants as route', (join) =>
-        join.onRef('route.session_id', '=', 'session.id').on('route.position', '=', 0),
-      )
       .leftJoin('usage_events as event', 'event.message_id', 'message.id')
       .select([
         'message.id as message_id',
@@ -67,9 +61,10 @@ export function selectLedgerSources(
         'message.payload_json',
         'message.created_at',
         'session.root_session_id',
-        'route.model_id',
-        'route.agent_id',
-        'route.provider_connection_id',
+        // A message recorded with no routing of its own falls back to the session's route.
+        'session.model_id',
+        'session.agent_id',
+        'session.provider_connection_id',
         'event.finish_reason',
       ])
       .where('message.role', '=', 'assistant')

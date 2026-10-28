@@ -39,9 +39,10 @@ export function useComposerCommands(
   skillCommands: SlashCommand[] = [],
   loadDynamicOptions?: LoadDynamicOptions,
   skipArg?: SkipArgFor,
+  debounceMs?: number,
 ): ComposerCommands {
   const slash = useSlashCommands(prompt, setPrompt, skillCommands)
-  const slashArgs = useSlashArgs(slash.detected, setPrompt, loadDynamicOptions, skipArg)
+  const slashArgs = useSlashArgs(slash.detected, setPrompt, loadDynamicOptions, skipArg, debounceMs)
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent): boolean => slashArgs.handleKeyDown(e) || slash.handleKeyDown(e),

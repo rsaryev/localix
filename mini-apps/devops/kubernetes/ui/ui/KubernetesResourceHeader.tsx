@@ -62,7 +62,7 @@ export function KubernetesResourceHeader({
         </SegmentedControl>
         {resourceKind === 'deployment' && (
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             aria-label="Scale deployment"
             title="Scale deployment"

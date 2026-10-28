@@ -3,7 +3,7 @@
  *
  * A stored model route is the pair (provider, model); its connection id is only the account it
  * last ran on (P10). When that account is deleted, re-added under a new id or loses its key, every
- * place that stored the id keeps pointing at nothing: seats, the session choice maps, a project's
+ * place that stored the id keeps pointing at nothing: routes, the session choice maps, a project's
  * model and the per-workload routing. Run resolution already looks past a dead hint; this reactor
  * writes the live account back, so the UI shows and sends on what a run would use.
  *
@@ -18,7 +18,7 @@ import type { ConsumerHandlers } from '@localixai/change-feed'
 
 import type { CoreCascades, CoreRefs } from '../../changes/core-entities'
 import type { RealtimeResource } from '../../realtime/resources'
-import type { RouteSeatsRepository } from './seats-repository'
+import type { RouteRepairRepository } from './routes-repository'
 
 export interface StoredRouteHint {
   modelId?: string | null
@@ -26,7 +26,7 @@ export interface StoredRouteHint {
 }
 
 export interface RouteRepairPorts {
-  seats: RouteSeatsRepository
+  routes: RouteRepairRepository
   connections(userId: string): Promise<readonly RouteConnection[]>
   catalog(): Promise<readonly Pick<CatalogModel, 'id' | 'providerId'>[]>
   projects: {
@@ -40,7 +40,7 @@ export interface RouteRepairPorts {
   /** Every user whose routes a full reconcile visits. */
   users(): Promise<string[]>
   /**
-   * The chats left with a seat no live account can serve after the repair: a scheduled loop in
+   * The chats left with a route no live account can serve after the repair: a scheduled loop in
    * one would fail on every fire, so it is surfaced instead of failing silently.
    */
   stranded?(userId: string, sessionIds: ReadonlySet<string>): Promise<void> | void
@@ -74,16 +74,12 @@ export function createRouteRepair(ports: RouteRepairPorts) {
 
     const changed = new Set<RealtimeResource>()
     const stranded = new Set<string>()
-    for (const seat of await ports.seats.seats(userId)) {
-      const need = assess(seat)
-      if (need.to && (await ports.seats.rebindSeat(seat, need.to))) changed.add('sessions')
-      else if (need.stranded) stranded.add(seat.sessionId)
+    for (const route of await ports.routes.routes(userId)) {
+      const need = assess(route)
+      if (need.to && (await ports.routes.rebindRoute(route, need.to))) changed.add('sessions')
+      else if (need.stranded) stranded.add(route.sessionId)
     }
     await ports.stranded?.(userId, stranded)
-    for (const choice of await ports.seats.choices(userId)) {
-      const to = rebindTo(choice)
-      if (to && (await ports.seats.rebindChoice(choice, to))) changed.add('sessions')
-    }
     for (const project of await ports.projects.routes(userId)) {
       if (!project.providerConnectionId) continue
       const to = rebindTo(project)

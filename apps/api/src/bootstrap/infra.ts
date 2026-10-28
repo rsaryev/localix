@@ -1,4 +1,5 @@
 import { buildAgentEngine } from './agent-engine'
+import { capabilitiesChanged } from '../features/capabilities/revision'
 import { recoverBootState, type BootRecovery } from './boot-recovery'
 import { createChangeFeeds, type ChangeFeeds } from './change-feed'
 import { dirname, join } from 'node:path'
@@ -18,12 +19,7 @@ import { createMcpConditions } from '../features/notifications/conditions/mcp'
 import { createProviderConditions } from '../features/notifications/conditions/providers'
 import { catalogSettingNames } from '../features/provider-connections/connection-settings'
 import { removedSignInsReporter } from '../features/provider-connections/removed-sign-ins'
-import {
-  createSecretsStore,
-  defaultLegacySecretsDir,
-  defaultSecretsDir,
-  migrateLegacySecrets,
-} from '../features/secrets/store'
+import { createSecretsStore, defaultSecretsDir } from '../features/secrets/store'
 import { createSecretsService } from '../features/secrets/service'
 import { createSecretExposureShield } from '../features/secrets/exposure-shield'
 import { createNotificationJournal, type NotificationJournal } from '../features/notifications'
@@ -190,11 +186,6 @@ export async function createInfraPhase(
   } = digests
 
   const secretsStore = createSecretsStore({ db, keyDir: defaultSecretsDir() })
-  await migrateLegacySecrets({
-    db,
-    store: secretsStore,
-    legacyDir: defaultLegacySecretsDir(),
-  })
   const secretsService = createSecretsService(secretsStore)
   // MCP OAuth material lives in its own AES store, not the vault, so it never reached the shield's
   // other three feeders. A server that echoes its bearer token in a tool result or an error was
@@ -210,6 +201,9 @@ export async function createInfraPhase(
   // An MCP server that does not connect is a standing Event Center row, not a log line per turn.
   // The same process-lifetime singleton reason as above.
   mcpClientManager.observeConnections(createMcpConditions(notifications))
+  // A server's prompts are commands in the composer's menu, which reads the capability snapshot:
+  // when they appear or change, that snapshot is out of date.
+  mcpClientManager.observePrompts(() => capabilitiesChanged())
   // The engine's model catalog plus its last refresh; the ops timers fetch newer lists (`ops-timers.ts`).
   const catalogService = createCatalogService({
     source: {

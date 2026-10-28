@@ -16,7 +16,7 @@ import { useScopeActionVocabulary } from './scopeActionVocabulary'
  * This is the general form of the four registry tabs. A switch there writes one row here:
  * `skill:deploy` over `*` with effect `deny` is what hiding a skill stores, and the same is
  * true of a tool, a plugin, an MCP server and one of its tools. What only this screen can
- * say is the rest of the grammar — an argument pattern (`tool:bash` over `git push*`), the
+ * say is the rest of the grammar — an argument pattern (`tool:Bash` over `git push*`), the
  * middle effect `ask`, a family (`mcp:github/*`), and the ORDER, which decides which of two
  * overlapping rules wins.
  *

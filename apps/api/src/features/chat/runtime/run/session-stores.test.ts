@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'bun:test'
-import { agentLaneKey } from '../../../agent-core/execution-address'
 import {
   createRuntimeState,
   evictSessionStateOverCap,
@@ -8,82 +7,48 @@ import {
 import { testWork } from '../../../../testing/work-fixture'
 import { ensureSessionStores } from './session-stores'
 
-const a = { sessionId: 'conversation', agentId: 'a' }
-const b = { sessionId: 'conversation', agentId: 'b' }
-
-describe('AgentLane runtime stores', () => {
-  test('a colleague cannot consume a prior read, its wire evidence or its checkpoint request', () => {
+describe('session runtime stores', () => {
+  test('another session cannot consume a prior read, its wire evidence or its checkpoint request', () => {
     const state = createRuntimeState(testWork())
-    const own = ensureSessionStores(state, a)
+    const own = ensureSessionStores(state, 'a')
     own.fileMtimes.record('shared-file', 1)
-    const colleague = ensureSessionStores(state, b)
-    expect(colleague.fileMtimes.has('shared-file')).toBe(false)
-    colleague.fileMtimes.record('shared-file', 2)
-    colleague.context.elidedToolCallIds.add('read-a')
-    // A checkpoint the colleague's request policy asked for is that colleague's view only.
-    colleague.context.checkpointDue = 'ceiling'
-    const resumed = ensureSessionStores(state, a)
+    const other = ensureSessionStores(state, 'b')
+    expect(other.fileMtimes.has('shared-file')).toBe(false)
+    other.fileMtimes.record('shared-file', 2)
+    other.context.elidedToolCallIds.add('read-a')
+    other.context.checkpointDue = 'ceiling'
+    const resumed = ensureSessionStores(state, 'a')
     expect(resumed.context).toBe(own.context)
     expect(resumed.fileMtimes).toBe(own.fileMtimes)
-    expect(resumed.fileMtimes).not.toBe(colleague.fileMtimes)
     expect(resumed.fileMtimes.isStale('shared-file', 2)).toBe(true)
-    expect(colleague.fileMtimes.isStale('shared-file', 2)).toBe(false)
+    expect(other.fileMtimes.isStale('shared-file', 2)).toBe(false)
     expect(resumed.context.elidedToolCallIds.has('read-a')).toBe(false)
     expect(resumed.context.checkpointDue).toBeUndefined()
-    expect(ensureSessionStores(state, b).context.checkpointDue).toBe('ceiling')
+    expect(ensureSessionStores(state, 'b').context.checkpointDue).toBe('ceiling')
   })
 
-  test('the same agent in another conversation has independent state', () => {
+  test('deletion disposes the session’s stores, including one missing from the context map', () => {
     const state = createRuntimeState(testWork())
-    const first = ensureSessionStores(state, a)
-    const other = ensureSessionStores(state, { ...a, sessionId: 'other' })
-    expect(first.context).not.toBe(other.context)
-    expect(first.fileMtimes).not.toBe(other.fileMtimes)
-  })
-
-  test('deletion disposes every lane, including one missing from the context map', () => {
-    const state = createRuntimeState(testWork())
-    const first = ensureSessionStores(state, a)
-    const second = ensureSessionStores(state, b)
-    const survivorAddress = { ...a, sessionId: 'conversation-extra' }
-    const survivor = ensureSessionStores(state, survivorAddress)
-    for (const stores of [first, second, survivor]) stores.fileMtimes.record('file', 1)
-    state.contextLanes.delete(agentLaneKey(b))
-    forgetSessionRuntimeState(state, a.sessionId)
+    const first = ensureSessionStores(state, 'conversation')
+    const survivor = ensureSessionStores(state, 'conversation-extra')
+    for (const stores of [first, survivor]) stores.fileMtimes.record('file', 1)
+    state.contextLanes.delete('conversation')
+    forgetSessionRuntimeState(state, 'conversation')
     expect(first.fileMtimes.has('file')).toBe(false)
-    expect(second.fileMtimes.has('file')).toBe(false)
     expect(survivor.fileMtimes.has('file')).toBe(true)
     for (const map of [state.contextLanes, state.sessionFileMtimes]) {
-      expect([...map.keys()]).toEqual([agentLaneKey(survivorAddress)])
+      expect([...map.keys()]).toEqual(['conversation-extra'])
     }
   })
 
-  test('eviction removes both stores for one lane, preserving its colleague', () => {
+  test('eviction removes both stores for one session, preserving the other', () => {
     const state = createRuntimeState(testWork())
-    const first = ensureSessionStores(state, a)
-    const second = ensureSessionStores(state, b)
+    const first = ensureSessionStores(state, 'a')
+    const second = ensureSessionStores(state, 'b')
     first.fileMtimes.record('file', 1)
     evictSessionStateOverCap(state, 1)
     expect(first.fileMtimes.has('file')).toBe(false)
-    expect(state.contextLanes.get(agentLaneKey(b))).toBe(second.context)
-    expect(ensureSessionStores(state, a).context).not.toBe(first.context)
-  })
-
-  test('address keys survive serialization and cannot collide at identifier delimiters', () => {
-    expect(agentLaneKey(JSON.parse(JSON.stringify(a)))).toBe(agentLaneKey(a))
-    expect(agentLaneKey({ sessionId: 'x,y', agentId: 'z' })).not.toBe(
-      agentLaneKey({ sessionId: 'x', agentId: 'y,z' }),
-    )
-    expect(() => agentLaneKey({ sessionId: 's', agentId: '' })).toThrow('incomplete')
-  })
-
-  test('a session named like another lane key cannot delete that lane', () => {
-    const state = createRuntimeState(testWork())
-    const own = ensureSessionStores(state, a)
-    const unusual = { sessionId: agentLaneKey(a), agentId: 'other' }
-    ensureSessionStores(state, unusual)
-    forgetSessionRuntimeState(state, unusual.sessionId)
-    expect(state.contextLanes.get(agentLaneKey(a))).toBe(own.context)
-    expect(state.contextLanes.has(agentLaneKey(unusual))).toBe(false)
+    expect(state.contextLanes.get('b')).toBe(second.context)
+    expect(ensureSessionStores(state, 'a').context).not.toBe(first.context)
   })
 })

@@ -8,7 +8,7 @@
  */
 import { stopNotice } from './stop-notice'
 import { announceEmptyReply, announceRunStopped } from './finalize-notices'
-import { isPass, isSilentConversationTurn, settleConversationTurn } from './conversation-silence'
+import { isSilentConversationTurn, settleConversationTurn } from './conversation-silence'
 import { runStopHooks } from './finalize-stop-hooks'
 import { sealFinalPayload } from './finalize-payload'
 
@@ -25,9 +25,6 @@ import { consoleWarnLogger } from '../plugin-hook-logger'
 import { maybeStartContinuation } from './run-continuations'
 import type { RunParams } from './types'
 import type { RunPolicy } from '../../policy/run-policy'
-import { routeConversationReply } from './conversation-routing'
-import { runTeammateIdle, type TeammateIdleOutcome } from './teammate-idle'
-import { publishedText } from '../spoken-text'
 import { applyDisplayTexts } from './message-display'
 import type { LoadedMiniApps } from '../../../mini-apps/loader-contract'
 export { finalizeFailedRun, rateLimitBackoffMs } from './finalize-failure'
@@ -61,7 +58,6 @@ export async function finalizeSuccessfulRun(args: {
 
   // A mark asks for a turn the agent may decline: an empty answer to it is silence, not failure.
   const silentInConversation = isSilentConversationTurn(
-    args.policy.conversation,
     state.currentPayload,
     args.policy.trigger.answersReaction,
   )
@@ -145,7 +141,7 @@ export async function finalizeSuccessfulRun(args: {
 
   // CC MessageDisplay: what the person is shown in place of each text block, in the same write.
   if (!silentInConversation) await applyDisplayTexts(args.ccHooks, ctx, args.promptMessage?.id)
-  // Fill the assistant row — or hide it, when this participant stayed out of the conversation.
+  // Fill the assistant row — or hide it, when the agent stayed out of the conversation.
   await settleConversationTurn(
     {
       streamRegistry: env.deps.streamRegistry,
@@ -165,45 +161,16 @@ export async function finalizeSuccessfulRun(args: {
       payload: state.currentPayload,
     },
   )
-  // The reply itself hands the floor on: whoever it addresses answers next, or the colleague who
-  // asked for this turn hears back. Queued turns of colleagues it merely names move up. Everything
-  // the turn said counts, not only its last model call: an address written before a tool call is
-  // still an address (`spoken-text.ts`).
-  const reply = silentInConversation ? '' : publishedText(state.currentPayload)
   // A PreToolUse `continue:false` or a PostToolBatch block ended the run: Claude Code "stops
-  // processing entirely", so no TeammateIdle, Stop or SubagentStop hook and no continuation may
-  // send the agent back to work.
+  // processing entirely", so no Stop or SubagentStop hook and no continuation may send the agent
+  // back to work.
   const hookStopped = args.ccHooks.stoppedBy() !== undefined
-  // CC TeammateIdle, before the floor moves on: a member sent back to work keeps it.
-  const idle: TeammateIdleOutcome = hookStopped
-    ? {}
-    : await runTeammateIdle(
-        args.ccHooks,
-        args.policy,
-        session,
-        params.scope.speakerAgentId,
-        (message) =>
-          env.deps.streamRegistry.publish(userId, session.id, {
-            type: 'hook.notice',
-            sessionId: session.id,
-            message,
-            hookEvent: 'TeammateIdle',
-          }),
-      )
-  if (!idle.keepWorking) {
-    await routeConversationReply(env, params, {
-      content: reply,
-      passed: silentInConversation && isPass(state.currentPayload),
-    })
-    if (reply.trim())
-      await env.boostReferencedAgentTurns(userId, session, params.scope.speakerAgentId, reply)
-  }
   publishSessionTiming(ctx)
 
   // Claude Code Stop hooks — SubagentStop for a delegated child (`finalize-stop-hooks.ts`). A
   // block keeps the agent working through the continuation seam below (gated + hard-capped).
-  let hookStopReason = idle.keepWorking
-  if (args.ccHooks.active && !idle.stopped && !idle.keepWorking) {
+  let hookStopReason: string | undefined
+  if (args.ccHooks.active) {
     hookStopReason = await runStopHooks({
       ccHooks: args.ccHooks,
       session,

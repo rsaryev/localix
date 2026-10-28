@@ -18,9 +18,8 @@ import {
 } from './mid-run-reminders'
 
 const newState = (): MidRunReminderState => ({ midRunReminders: new Map() })
-const A = { sessionId: 's1', agentId: 'lead' }
-const COLLEAGUE = { sessionId: 's1', agentId: 'qa' }
-const ELSEWHERE = { sessionId: 's2', agentId: 'lead' }
+const A = 's1'
+const ELSEWHERE = 's2'
 
 describe('recordMidRunReminder / drainMidRunReminders', () => {
   test('a drained reminder never comes back', () => {
@@ -58,14 +57,6 @@ describe('recordMidRunReminder / drainMidRunReminders', () => {
     expect(drainMidRunReminders(state, A)).toContain('mine')
   })
 
-  test("a colleague's run never reads the note about a job someone else started", () => {
-    // Keyed by session alone, @lead's finished job was announced inside @qa's run.
-    const state = newState()
-    recordMidRunReminder(state, A, 'your build finished')
-    expect(drainMidRunReminders(state, COLLEAGUE)).toBeNull()
-    expect(drainMidRunReminders(state, A)).toContain('your build finished')
-  })
-
   test('a blank body is dropped rather than queued as an empty line', () => {
     const state = newState()
     recordMidRunReminder(state, A, '   ')
@@ -81,14 +72,12 @@ describe('recordMidRunReminder / drainMidRunReminders', () => {
     expect(body).toContain(`job ${MID_RUN_REMINDER_MAX + 2}`)
   })
 
-  test('forget drops every participant queue when the session dies mid-turn', () => {
+  test('forget drops the queue when the session dies mid-turn', () => {
     const state = newState()
     recordMidRunReminder(state, A, 'job finished')
-    recordMidRunReminder(state, COLLEAGUE, 'job finished')
     recordMidRunReminder(state, ELSEWHERE, 'unrelated')
     forgetMidRunReminders(state, 's1')
     expect(drainMidRunReminders(state, A)).toBeNull()
-    expect(drainMidRunReminders(state, COLLEAGUE)).toBeNull()
     expect(drainMidRunReminders(state, ELSEWHERE)).toContain('unrelated')
   })
 })
@@ -145,15 +134,15 @@ describe('backgroundJobFinishedReminder', () => {
     // `backgroundJobs` entry, which the async registry's disposer deletes on exit —
     // so a read of the very job this reminder announces always misses, and says the
     // output "was returned when it finished", which on this branch it was not.
-    // `tool_output` reads the durable item `emitBackground` persisted on done.
+    // `ToolOutput` reads the durable item `emitBackground` persisted on done.
     const body = backgroundJobFinishedReminder('bun run build', 1, 'call_abc')
-    expect(body).toContain('tool_output(action="get", tool_call_id="call_abc")')
+    expect(body).toContain('ToolOutput(action="get", tool_call_id="call_abc")')
     expect(body).not.toContain('action="read"')
   })
 
-  test('does not advertise tool_output when the user disabled it', () => {
+  test('does not advertise ToolOutput when the user disabled it', () => {
     const body = backgroundJobFinishedReminder('bun run build', 1, 'call_abc', false)
-    expect(body).not.toContain('tool_output')
+    expect(body).not.toContain('ToolOutput')
     expect(body).toContain('not stored in this run')
   })
 

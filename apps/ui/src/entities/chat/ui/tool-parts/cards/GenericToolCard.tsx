@@ -47,12 +47,12 @@ export function GenericToolCard({ item }: { item: ToolCallItem }) {
     >
       <ToolBody>
         {item.input !== undefined && (
-          <IORow label="IN">
+          <IORow label="In">
             <OutputBlock linkify>{pretty(item.input)}</OutputBlock>
           </IORow>
         )}
         {item.resultText && (
-          <IORow label="OUT">
+          <IORow label="Out">
             <OutputBlock linkify>{item.resultText}</OutputBlock>
           </IORow>
         )}

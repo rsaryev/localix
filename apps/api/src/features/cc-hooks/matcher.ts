@@ -8,11 +8,10 @@
  *   - anything else → a JavaScript regular expression (unanchored, `RegExp.test`)
  *
  * For tool events (`PreToolUse`/`PostToolUse`) the matcher tests the CC tool
- * NAME. Our engine tools carry lowercase names (`bash`, `search`, `edit`),
- * while CC matchers use CC names (`Bash`, `Grep`, `Edit`). We therefore match a
- * matcher against the FULL candidate set for a tool — the engine name plus every
- * CC name that maps to it (via the shared CC↔engine map) — so a `"Bash"` matcher
- * matches our `bash` tool and a raw `"bash"` matcher works too.
+ * NAME. Our built-in tools carry Claude Code's capitalized names (`Bash`, `Search`, `Edit`),
+ * while CC also names some of their calls otherwise (`Grep`, `Glob`). We therefore match a
+ * matcher against the FULL candidate set for a tool — its name plus every CC name that maps to
+ * it (via the shared CC↔engine map).
  *
  * MCP tools: a matcher written in a CC name form is aliased to the engine form via
  * `ccMcpMatcherVariants` — `mcp__server__tool` matches our `mcp_server_tool`, and the
@@ -24,6 +23,7 @@
  * Pure module — no chat/UI imports.
  */
 import { CC_LEGACY_TOOL_NAMES } from '../ext/cc-tool-names'
+import { TOOL } from '../agent-core/tool-names'
 import { claudeCodeNames, claudeCodeToolName } from '../ext/cc-tool-shapes'
 import { ccMcpMatcherVariants } from './mcp-names'
 
@@ -66,7 +66,12 @@ function variantsFor(candidates: readonly string[]): (token: string) => string[]
  * a matcher whose source is a CC MCP name form is also tried with its engine-form
  * source rewrites (`mcp__…` → `mcp_…`), so CC-written regexes match live tools.
  */
-function matchAny(matcher: string, candidates: readonly string[]): boolean {
+function matchAny(
+  matcher: string,
+  candidates: readonly string[],
+  /** What a regex matcher is tried against, where it is not every candidate. */
+  regexCandidates: readonly string[] = candidates,
+): boolean {
   if (isMatchAll(matcher)) return true
   const variants = variantsFor(candidates)
   if (EXACT_ONLY.test(matcher)) {
@@ -82,7 +87,7 @@ function matchAny(matcher: string, candidates: readonly string[]): boolean {
       // A malformed regex matcher never matches (fail closed for that variant).
       continue
     }
-    if (candidates.some((c) => re.test(c))) return true
+    if (regexCandidates.some((c) => re.test(c))) return true
   }
   return false
 }
@@ -149,10 +154,15 @@ const CC_CASED_NAMES: ReadonlyMap<string, string> = new Map(
     'WebFetch',
     'WebSearch',
     'AskUserQuestion',
+    'Task',
+    'KillShell',
   ].map((name) => [name.toLowerCase(), name]),
 )
 
-/** Reverse index: engine tool name → every lowercased CC name that maps to it. */
+/** The tools Claude Code itself names, which a regex sees by that name alone. */
+const CC_NATIVE: ReadonlySet<string> = new Set([TOOL.Agent, TOOL.SendMessage, TOOL.TaskStop])
+
+/** Reverse index: tool name → every lowercased CC name that maps to it. */
 const ENGINE_TO_CC: Readonly<Record<string, string[]>> = (() => {
   const out: Record<string, string[]> = {}
   for (const [cc, engine] of Object.entries(CC_LEGACY_TOOL_NAMES)) {
@@ -162,31 +172,27 @@ const ENGINE_TO_CC: Readonly<Record<string, string[]>> = (() => {
 })()
 
 /**
- * The full set of names a matcher may use to refer to an engine tool: its own
- * (lowercased) engine name plus every CC alias that maps to it, as Claude Code writes it.
- * E.g. engine `research` → `['research','WebFetch','WebSearch']`.
- * The cased names are what a regex matcher sees as Claude Code does (`RegExp.test` on `Bash`).
+ * The full set of names a matcher may use to refer to a tool: its own name plus every Claude Code
+ * alias that maps to it, as Claude Code writes it. E.g. `Research` → `['Research','WebFetch',
+ * 'WebSearch']`. The cased names are what a regex matcher sees as Claude Code does (`RegExp.test`
+ * on `Bash`).
  */
 export function toolNameCandidates(
-  engineToolName: string,
+  toolName: string,
   /** The tool's own other names (an MCP tool's `mcp__<server>__<tool>`), kept as written. */
   aliases: readonly string[] = [],
 ): string[] {
-  const lower = engineToolName.toLowerCase()
-  const set = new Set<string>([lower])
-  for (const cc of ENGINE_TO_CC[lower] ?? []) set.add(CC_CASED_NAMES.get(cc) ?? cc)
-  // The names the tool's calls carry as `tool_name` (`delegate` is `Agent`, `SendMessage` …).
-  for (const cc of claudeCodeNames(lower)) set.add(cc)
-  // MCP + plugin tools have no CC alias — the engine name is the only candidate,
-  // preserved in its original casing too so a case-sensitive regex still matches.
-  if (engineToolName !== lower) set.add(engineToolName)
+  const set = new Set<string>([toolName])
+  for (const cc of ENGINE_TO_CC[toolName] ?? []) set.add(CC_CASED_NAMES.get(cc) ?? cc)
+  // The names the tool's calls carry as `tool_name` (`Search` is `Grep` or `Glob` …).
+  for (const cc of claudeCodeNames(toolName)) set.add(cc)
   for (const alias of aliases) set.add(alias)
   return [...set]
 }
 
 /** Claude Code's names that stand for one kind of this tool's calls only. */
 const PER_CALL_NAMES = new Set(['grep', 'glob', 'ls', 'webfetch', 'websearch', 'agent', 'task'])
-const PER_CALL_MORE = new Set(['sendmessage', 'taskstop', 'exitplanmode', 'multiedit'])
+const PER_CALL_MORE = new Set(['exitplanmode', 'multiedit'])
 const NOTEBOOK_NAMES = new Set(['notebookedit', 'notebookread'])
 
 /**
@@ -204,9 +210,9 @@ export function callNameCandidates(
   const edits = Array.isArray(input.edits) ? input.edits : []
   const paths = [input.path, input.file_path, ...edits.map((e) => (e as { path?: unknown })?.path)]
   const notebook = paths.some((p) => typeof p === 'string' && p.endsWith('.ipynb'))
-  const notebookName = engineToolName === 'read' ? 'notebookread' : 'notebookedit'
+  const notebookName = engineToolName === TOOL.Read ? 'notebookread' : 'notebookedit'
   // Every other Claude Code name of this tool stands for a different kind of call.
-  const otherCalls = new Set(claudeCodeNames(engineToolName.toLowerCase()))
+  const otherCalls = new Set(claudeCodeNames(engineToolName))
   const legacy = (cc: string) =>
     (cc === 'multiedit' && edits.length > 1) ||
     (cc === 'task' && own === 'Agent') ||
@@ -215,7 +221,10 @@ export function callNameCandidates(
     .filter((name) => {
       const lower = name.toLowerCase()
       if (name === own) return true
-      if (otherCalls.has(name) && name !== engineToolName.toLowerCase()) return legacy(lower)
+      // The tool's own name is also Claude Code's (`Bash`, `Skill`): where this call carries another
+      // one of Claude Code's (`Monitor` is a `Bash` wait), the first is not this call's name.
+      if (name === engineToolName && CC_CASED_NAMES.has(lower)) return false
+      if (otherCalls.has(name) && name !== engineToolName) return legacy(lower)
       if (lower === engineToolName.toLowerCase() || lower === own.toLowerCase()) return true
       if (aliases.includes(name)) return true
       if (PER_CALL_NAMES.has(lower) || PER_CALL_MORE.has(lower) || NOTEBOOK_NAMES.has(lower))
@@ -241,5 +250,8 @@ export function matchesToolName(
     input && typeof input === 'object' && !Array.isArray(input)
       ? callNameCandidates(engineToolName, input as Record<string, unknown>, aliases)
       : toolNameCandidates(engineToolName, aliases)
-  return matchAny(matcher!, candidates)
+  // A tool Claude Code itself names (`Agent`) is seen by that name alone, not through its former
+  // one (`Task`).
+  const seen = CC_NATIVE.has(engineToolName) ? [engineToolName, ...(aliases ?? [])] : candidates
+  return matchAny(matcher!, candidates, seen)
 }

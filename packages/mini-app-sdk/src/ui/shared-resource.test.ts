@@ -2,6 +2,10 @@ import { describe, expect, test } from 'bun:test'
 
 import { createSharedResource, GLOBAL_RESOURCE_KEY } from './shared-resource'
 
+const turns = async (n = 10) => {
+  for (let i = 0; i < n; i++) await new Promise((r) => setTimeout(r, 0))
+}
+
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0))
 
 /**
@@ -165,7 +169,7 @@ test('invalidation during the first read queues a fresh snapshot instead of cach
   await settle()
   resource.refresh('a')
   releases[0]!('old')
-  await new Promise((resolve) => setTimeout(resolve, 10))
+  await turns()
   expect(resource.peek('a')).toBeUndefined()
   releases[1]!('new')
   await settle()

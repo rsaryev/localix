@@ -137,7 +137,7 @@ describe('rehydrateMediaAttachments', () => {
     store.getBase64 = async (id) => {
       active += 1
       peak = Math.max(peak, active)
-      await Bun.sleep(2)
+      await new Promise((resolve) => setTimeout(resolve, 0))
       active -= 1
       return `data:${id}`
     }

@@ -175,19 +175,25 @@ const ask: Shaper = (_result, details, input) => {
 const skill: Shaper = (_result, _details, input) =>
   input.action === 'get' ? { success: true, commandName: input.name } : undefined
 
-const delegate: Shaper = (result, details, input) => {
-  if (input.action !== undefined) return undefined
+/** `Agent`'s result as Claude Code's: its reply when the call waited, else its launch. */
+const agent: Shaper = (result, details, input) => {
   const task = Array.isArray(details.tasks) ? details.tasks.find(isRecord) : undefined
-  const done = task?.status === 'completed' || task?.status === 'done' || input.wait === true
+  const done =
+    task?.status === 'completed' || task?.status === 'done' || input.run_in_background === false
   const id = str(task?.sessionId) ?? ''
   return done
     ? {
         status: 'completed',
         agentId: id,
         content: [{ type: 'text', text: result.content }],
-        prompt: input.task,
+        prompt: input.prompt,
       }
-    : { status: 'async_launched', agentId: id, description: input.title, prompt: input.task }
+    : {
+        status: 'async_launched',
+        agentId: id,
+        description: input.description,
+        prompt: input.prompt,
+      }
 }
 
 const plan: Shaper = (_result, _details, input) => {
@@ -196,16 +202,16 @@ const plan: Shaper = (_result, _details, input) => {
 }
 
 const SHAPERS: Record<string, Shaper> = {
-  plan,
-  bash,
-  read,
-  edit,
-  write,
-  search,
-  research,
-  ask,
-  skill,
-  delegate,
+  Plan: plan,
+  Bash: bash,
+  Read: read,
+  Edit: edit,
+  Write: write,
+  Search: search,
+  Research: research,
+  AskUserQuestion: ask,
+  Skill: skill,
+  Agent: agent,
 }
 
 /** The result in Claude Code's shape, or undefined when this tool or call has none. */

@@ -11,7 +11,7 @@ import {
   type Side,
 } from '../shared/game'
 import { other } from '../shared/rules'
-import { ANSWER_TOOLS, askForMove, positionKey, type Seat } from './ask-agent'
+import { ANSWER_TOOLS, askForMove, positionKey, type ChatRef } from './ask-agent'
 import { askDecision } from './ask-decision'
 import { createTurnTable, type TurnTableHosts } from '@localixai/mini-app-sdk/backend'
 
@@ -68,11 +68,11 @@ export function createGameService(
 
     // ── What a person does in the view ─────────────────────────────────────────────────────
     /** Play the move visiting `squares` (0–63, start first). */
-    personMove: (seat: Seat, squares: number[]) =>
-      table.personTurn(seat, (game, at) => applyMove(game, squares, 'you', at)),
+    personMove: (chat: ChatRef, squares: number[]) =>
+      table.personTurn(chat, (game, at) => applyMove(game, squares, 'you', at)),
     /** The next game at this table, the person on `you` — else on the other colour. */
-    newGame: (seat: Seat, you?: Side) =>
-      table.personTurn(seat, (game, at) => nextGame(game, at, you)),
+    newGame: (chat: ChatRef, you?: Side) =>
+      table.personTurn(chat, (game, at) => nextGame(game, at, you)),
     /** Ask the agent again for the move it owes. */
     remind: table.remind,
     /** Who plays the other colour from now on; a move it owes is asked of the new opponent at once. */
@@ -83,18 +83,18 @@ export function createGameService(
      * Play the move visiting `squares`. `answered` says whether the move answered the board's own
      * question — a wake was waiting on it — rather than a request typed in the chat.
      */
-    agentMove: (seat: Seat, squares: number[]) =>
-      table.agentTurn(seat, (game, at) => applyMove(game, squares, 'agent', at)),
+    agentMove: (chat: ChatRef, squares: number[]) =>
+      table.agentTurn(chat, (game, at) => applyMove(game, squares, 'agent', at)),
     /**
      * The next game at this table, the user on `you`. Against the decision model the user takes
      * white and opens: only a person's action asks that model, and a tool call is never one.
      */
-    agentNewGame: (seat: Seat, you: Side) =>
-      table.update(seat, (game, at) =>
+    agentNewGame: (chat: ChatRef, you: Side) =>
+      table.update(chat, (game, at) =>
         nextGame(game, at, game.opponent === 'decision' ? 'white' : you),
       ),
-    /** Resign the game at this table: the user wins. Not while the decision model holds the seat. */
-    agentResign: (seat: Seat) => table.agentUpdate(seat, (game) => resign(game)),
+    /** Resign the game at this table: the user wins. Not while the decision model holds the side. */
+    agentResign: (chat: ChatRef) => table.agentUpdate(chat, (game) => resign(game)),
   }
 }
 

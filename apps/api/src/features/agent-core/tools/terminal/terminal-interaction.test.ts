@@ -60,7 +60,7 @@ describe('interactive input and observation in one bash call', () => {
     deps.onWait = (event) => lifecycle.push(event)
     deps.write = (_id, data) => {
       writes.push(data)
-      if (data === '\r') setTimeout(() => emit('Model picker ready'), 20)
+      if (data === '\r') setTimeout(() => emit('Model picker ready'), 0)
       return true
     }
     const tool = createBashTool(undefined, undefined, { terminalControl: deps })
@@ -125,7 +125,7 @@ describe('interactive input and observation in one bash call', () => {
 
   test('open can await a prompt in the same call', async () => {
     const { deps, emit } = terminal('starting')
-    setTimeout(() => emit('READY>'), 30)
+    setTimeout(() => emit('READY>'), 0)
     const result = await runTerminalAction(deps, {
       action: 'open',
       command: 'repl',

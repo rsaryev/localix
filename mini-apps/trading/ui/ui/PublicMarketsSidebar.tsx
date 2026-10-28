@@ -95,9 +95,11 @@ export function PublicMarketsSidebar({
   const sourceId = publicConnectionId(exchangeId)
   const markets = useMarkets(sourceId, active, filter, reloadNonce, REQUEST_LIMIT)
   // Re-read localStorage only when the venue changes; a toggle below sets the new set directly.
-  useEffect(() => {
+  const [favouritesSource, setFavouritesSource] = useState(sourceId)
+  if (favouritesSource !== sourceId) {
+    setFavouritesSource(sourceId)
     setFavourites(loadFavourites(sourceId))
-  }, [sourceId])
+  }
 
   // The same category tabs as the chart picker; a venue switch resets them (`useMarketTabs`).
   const { tab, setTab, tabs } = useMarketTabs({
@@ -113,9 +115,12 @@ export function PublicMarketsSidebar({
 
   // Reveal resets to the first slice on a tab switch or a new search — but NOT on a favourite toggle
   // (that keeps your scroll position). `total`/`capped` change with the query, not the reveal.
-  useEffect(() => {
+  const revealKey = `${tab}\n${filter}\n${sourceId}`
+  const [revealFor, setRevealFor] = useState(revealKey)
+  if (revealFor !== revealKey) {
+    setRevealFor(revealKey)
     setRevealCount(REVEAL_STEP)
-  }, [tab, filter, sourceId])
+  }
 
   const shown = useMemo(() => rows.slice(0, revealCount), [rows, revealCount])
   const hasMore = revealCount < rows.length
@@ -234,7 +239,7 @@ export function PublicMarketsSidebar({
           // but it is disconnected from the message.
           <div className="flex flex-col items-center gap-1 p-4">
             <EmptyHint className="p-0">The venue is unreachable — try again shortly.</EmptyHint>
-            <Button variant="outline" size="sm" onClick={() => setReloadNonce((v) => v + 1)}>
+            <Button variant="ghost" size="sm" onClick={() => setReloadNonce((v) => v + 1)}>
               Retry
             </Button>
           </div>

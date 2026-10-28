@@ -9,7 +9,7 @@
  * both harder to follow than either is alone.
  *
  * The order below is the argument: validate what the caller stated (the parent's lineage, the
- * connection it named), then decide what the caller left open (project, party, efforts), then
+ * connection it named), then decide what the caller left open (project, agent, efforts), then
  * allocate, then write. Nothing is allocated before every refusal has had its chance — a
  * session ref spent on a request that then fails leaves a hole in a sequence the user reads.
  */
@@ -21,7 +21,7 @@ import { resolveSessionRoot, sessionRootResolutionError } from '../session-ances
 import { normalizeSessionTitle } from '../session-limits'
 import type { SessionProvenance } from '../session-provenance'
 import { DEFAULT_TITLE } from './context'
-import { bornParticipants } from './participant-routes'
+import { bornAgent } from './session-agent-birth'
 import { isDelegationParent } from '../../agent-core/delegation-policy'
 import type { CreateSessionInput, SessionLifecycleCtx } from './session-lifecycle-contracts'
 
@@ -68,19 +68,17 @@ export async function createSession(
       'Only a root chat may delegate. Subsessions cannot create delegated work.',
     )
   }
-  // The ONE place a conversation's participants are decided at birth, routes and all. A session
-  // is never with no one, and saying so here — rather than at the writer, or again at each
-  // caller — keeps "who is in this conversation, on what" a birth property instead of a rule
-  // three layers each half-enforce.
-  const agents = await bornParticipants({
+  // The ONE place a conversation's agent is decided at birth, route and all. It is fixed for the
+  // session's life; only its route changes afterwards.
+  const agent = await bornAgent({
     userId,
     projectId,
-    requested: input.agents,
+    requested: input.agent,
     explicit: input,
     parent,
     resolve: ctx.resolveSessionAgent,
-    seat: ctx.seatRoute,
-    // Only a conversation seats conversational participants. An engine's own worker session is
+    startingRoute: ctx.startingRoute,
+    // Only a conversation requires a conversational agent. An engine's own worker session is
     // created for an agent whose chat invocation is often denied on purpose, and that is fine:
     // it is not being asked to chat.
     ...(sessionKind === 'chat' ? { host: 'chat' } : {}),
@@ -116,13 +114,12 @@ export async function createSession(
     lastMessageAt: updatedAt,
     executionBackend: 'local',
     executionTarget: null,
-    agents,
+    agent,
     // A delegated child is born into its tree's mode (the parent carries it — a mode change is
     // written to the whole tree): a worker delegated from a plan session must not be the one
     // call in that session able to write.
     ...(parent?.permissionMode ? { permissionMode: parent.permissionMode } : {}),
     description: input.description ?? null,
-    avatar: input.avatar ?? null,
     pinnedSkills: input.pinnedSkills ?? [],
     activatedTools: [],
     archivedAt: null,
@@ -142,7 +139,7 @@ export async function createSession(
   const detail = await ctx.getSessionDetail(userId, session.id)
   const resolved = {
     ...session,
-    agents: detail.agents ?? session.agents,
+    agent: detail.agent ?? session.agent,
     messageCount: detail.messageCount ?? 0,
   }
   // Publish the resolved record to EVERY workspace, including ordinary root chats.

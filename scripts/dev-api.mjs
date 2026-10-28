@@ -72,7 +72,7 @@ stageDropins({
 // `plugins/` loads after the next `bun run dev`.
 stageBuiltinPlugins({ repoRoot: repo, out: stagedBuiltinPlugins })
 // Boot staging is a snapshot; a mini app created or whose backend changed while the API runs
-// is re-staged on its own, so `/mini-app create` and a backend edit no longer need a restart.
+// is re-staged on its own, so a new mini app and a backend edit no longer need a restart.
 const miniAppWatcher = watchMiniAppsForRestage({
   repoRoot: repo,
   outMiniApps: stagedMiniApps,

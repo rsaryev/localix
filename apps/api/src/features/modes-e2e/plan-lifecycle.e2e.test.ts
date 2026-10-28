@@ -42,13 +42,13 @@ describe('the happy path', () => {
     expect([await life.modeOf(ROOT), await life.modeOf(CHILD)]).toEqual(['plan', 'plan'])
 
     // 2. The agent presents v1: one line, one attention item, one open journal row.
-    const v1 = await life.plans.present(life.owner, 'agent-lead', draft(1))
+    const v1 = await life.plans.present(life.owner, draft(1))
     expect(life.drain()).toEqual([`notice@${ROOT} plan_presented`])
     expect(life.attention()).toEqual(['plan Plan v1: Cache v1'])
     expect(await row(`plan:${ROOT}:${v1.id}`)).toEqual({
       state: 'open',
       reason: null,
-      title: '@lead presented a plan',
+      title: 'lead presented a plan',
     })
 
     // 3. Two comments and a note go back: the agent is woken, THEN the line; nothing waits on the
@@ -67,7 +67,7 @@ describe('the happy path', () => {
 
     // 4. v2 supersedes v1. v1's journal row keeps the reason it settled with — "answered", not
     //    rewritten to "superseded" by the prefix settle v2's raise sends.
-    const v2 = await life.plans.present(life.owner, 'agent-lead', draft(2))
+    const v2 = await life.plans.present(life.owner, draft(2))
     expect(life.drain()).toEqual([`notice@${ROOT} plan_presented`])
     expect((await life.plans.list(life.owner)).map((p) => [p.version, p.status])).toEqual([
       [2, 'presented'],
@@ -140,70 +140,30 @@ describe('the happy path', () => {
 })
 
 describe('who an approval reaches — the conversation’s addressing, not a plan rule', () => {
-  const approveWith = async (target: PlanLifecycle, to?: string) => {
+  const approveWith = async (target: PlanLifecycle) => {
     await target.setMode('plan')
-    const v1 = await target.plans.present(target.owner, 'agent-lead', draft(1))
-    await target.plans.approve(target.owner, v1.id, 'default', to)
+    const v1 = await target.plans.present(target.owner, draft(1))
+    await target.plans.approve(target.owner, v1.id, 'default')
     const wake = target.wakes.at(-1)!
     return { wake, reached: await target.addressees(wake), lines: await target.noticeLines() }
   }
 
   test('a one-agent chat: that agent is reached, and the line names only the mode', async () => {
-    for (const to of [undefined, 'localix']) {
-      const solo = await createPlanLifecycle()
-      try {
-        const { wake, reached, lines } = await approveWith(solo, to)
-        expect(wake.to).toBeUndefined()
-        expect(reached).toEqual(['localix'])
-        expect(lines.at(-1)).toBe('plan_approved: Plan v1 approved — Default mode.')
-      } finally {
-        await solo.dispose()
-      }
-    }
-  })
-
-  describe('a room of three', () => {
-    let room: PlanLifecycle
-    beforeEach(async () => {
-      room = await createPlanLifecycle(['lead', 'backend', 'qa'])
-    })
-    afterEach(() => room.dispose())
-
-    test('no addressee: the strategy’s default answerer (the fresh room’s lead)', async () => {
-      const { reached, lines } = await approveWith(room)
-      expect(reached).toEqual(['lead'])
+    const solo = await createPlanLifecycle()
+    try {
+      const { reached, lines } = await approveWith(solo)
+      expect(reached).toEqual(['localix'])
       expect(lines.at(-1)).toBe('plan_approved: Plan v1 approved — Default mode.')
-    })
-
-    test('to @backend reaches @backend, and the line says who starts', async () => {
-      const { wake, reached, lines } = await approveWith(room, 'backend')
-      expect(reached).toEqual(['backend'])
-      expect(wake.to).toBeUndefined()
-      expect(lines.at(-1)).toBe('plan_approved: Plan v1 approved — Default mode. backend starts.')
-    })
-
-    test('to all reaches every participant, as @all does for a message', async () => {
-      const { reached, lines } = await approveWith(room, 'all')
-      expect(reached).toEqual(['lead', 'backend', 'qa'])
-      expect(lines.at(-1)).toBe('plan_approved: Plan v1 approved — Default mode. Everyone starts.')
-    })
-
-    test('a handle not in the room is refused before anything is decided', async () => {
-      await room.setMode('plan')
-      const v1 = await room.plans.present(room.owner, 'agent-lead', draft(1))
-      await expect(room.plans.approve(room.owner, v1.id, 'bypass', 'ghost')).rejects.toMatchObject({
-        status: 400,
-      })
-      expect(await room.modeOf(ROOT)).toBe('plan')
-      expect(room.wakes.map((wake) => wake.source)).toEqual([])
-    })
+    } finally {
+      await solo.dispose()
+    }
   })
 })
 
 describe('setting a plan aside', () => {
   test('leaving plan mode while a version waits dismisses it, after the mode line', async () => {
     await life.setMode('plan')
-    const v1 = await life.plans.present(life.owner, 'agent-lead', draft(1))
+    const v1 = await life.plans.present(life.owner, draft(1))
     life.drain()
     await life.setMode('default')
     expect(life.drain()).toEqual([
@@ -222,7 +182,7 @@ describe('setting a plan aside', () => {
 
   test('the person dismisses a presented version: one line, no wake, the mode untouched', async () => {
     await life.setMode('plan')
-    const v1 = await life.plans.present(life.owner, 'agent-lead', draft(1))
+    const v1 = await life.plans.present(life.owner, draft(1))
     life.drain()
     await life.plans.dismiss(life.owner, v1.id)
     expect(life.drain()).toEqual([`notice@${ROOT} plan_dismissed`])
@@ -236,10 +196,10 @@ describe('the plan as a file, through a mode round-trip', () => {
   test('v1, v2, leave Plan → v2 set aside; return → v2 back with Approve, and no v3', async () => {
     await life.setMode('plan')
     life.planFiles.writeDraft('# Cache layer\n\n## Goal\nStep 1')
-    const v1 = await life.service.present(life.owner, 'agent-lead', {})
+    const v1 = await life.service.present(life.owner, {})
     expect(v1).toMatchObject({ outcome: 'presented', plan: { version: 1, title: 'Cache layer' } })
     life.planFiles.writeDraft('# Cache layer\n\n## Goal\nStep 1\nStep 2')
-    const v2 = await life.service.present(life.owner, 'agent-lead', {})
+    const v2 = await life.service.present(life.owner, {})
     expect(v2).toMatchObject({ outcome: 'presented', plan: { version: 2 } })
     life.drain()
 
@@ -267,7 +227,7 @@ describe('the plan as a file, through a mode round-trip', () => {
     expect(life.attention()).toEqual(['plan Plan v2: Cache layer'])
 
     // The agent presenting the unchanged file again stores nothing new.
-    const again = await life.service.present(life.owner, 'agent-lead', {})
+    const again = await life.service.present(life.owner, {})
     expect(again).toMatchObject({ outcome: 'unchanged', plan: { version: 2 } })
     expect(await life.plans.list(life.owner)).toHaveLength(2)
 
@@ -279,7 +239,7 @@ describe('the plan as a file, through a mode round-trip', () => {
 
   test("the person's own dismissal is not undone by a mode round-trip", async () => {
     await life.setMode('plan')
-    const v1 = await life.plans.present(life.owner, 'agent-lead', draft(1))
+    const v1 = await life.plans.present(life.owner, draft(1))
     await life.plans.dismiss(life.owner, v1.id)
     await life.setMode('default')
     await life.setMode('plan')
@@ -308,7 +268,7 @@ describe('a delegated child in a plan conversation', () => {
     expect(kind).toBe('subagent')
     const registry = runRegistry(kind, 'plan', [])
     expect(registry.toolNames).not.toContain('plan')
-    const write = registry.tools.find((tool) => tool.name === 'write')!
+    const write = registry.tools.find((tool) => tool.name === 'Write')!
     const surface = modeSurface(builtinAgentPreset('localix'), 'plan', [])
     expect(await surface.decide(write, { path: `${WORKSPACE}/a.ts`, content: 'x' })).toBe('deny')
   })

@@ -1,4 +1,5 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
+import { tap } from '@/testing/hookProbe'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { resetDesktopInvokeEventsForTests } from '@/shared/lib/tauri'
 
@@ -45,14 +46,14 @@ async function captureApplyUpdate() {
   const { renderToStaticMarkup } = await import('react-dom/server')
   const { useDesktopUpdate } = await import('./useDesktopUpdate')
 
-  let apply: (() => Promise<unknown>) | undefined
+  const apply = tap<() => Promise<unknown>>()
   function Probe() {
-    apply = useDesktopUpdate().applyUpdate
+    apply.put(useDesktopUpdate().applyUpdate)
     return null
   }
   renderToStaticMarkup(createElement(Probe))
-  if (!apply) throw new Error('useDesktopUpdate did not expose applyUpdate')
-  return apply
+  if (!apply.value) throw new Error('useDesktopUpdate did not expose applyUpdate')
+  return apply.value
 }
 
 function installBridge(invoke: (cmd: string) => Promise<unknown>) {
@@ -131,21 +132,21 @@ describe('desktop update check', () => {
     ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
     // A reader that does NOT poll, mounted before the check — the Settings row's position.
-    let seen: { currentVersion: string } | null = null
+    const seen = tap<ReturnType<typeof useDesktopUpdate>['state']>()
     function Probe() {
-      seen = useDesktopUpdate({ poll: false }).state
+      seen.put(useDesktopUpdate({ poll: false }).state)
       return null
     }
     const host = document.createElement('div')
     const root = createRoot(host)
     await act(async () => root.render(createElement(Probe)))
-    expect(seen).toMatchObject({ currentVersion: '0.0.0', available: false })
+    expect(seen.value).toMatchObject({ currentVersion: '0.0.0', available: false })
 
     let result: Awaited<ReturnType<typeof checkDesktopUpdate>> | undefined
     await act(async () => {
       result = await checkDesktopUpdate()
     })
-    expect(seen).toMatchObject({ currentVersion: '1.2.3' })
+    expect(seen.value).toMatchObject({ currentVersion: '1.2.3' })
     await act(async () => root.unmount())
     expect(result).toEqual({
       ok: true,

@@ -541,6 +541,7 @@ describe('memory provider invocation', () => {
   it('runMemoryProviderRunEnd fires the extraction pass and isolates throws', async () => {
     const seen: string[] = []
     const { warnings, logger } = warnCollector()
+    const thrown = Promise.withResolvers<void>()
     runMemoryProviderRunEnd(
       mem({
         loadContext: () => {},
@@ -555,17 +556,17 @@ describe('memory provider invocation', () => {
       mem({
         loadContext: () => {},
         onRunEnd: () => {
+          thrown.resolve()
           throw new Error('extract failed')
         },
       }),
       { sessionId: 's1', projectId: null, userText: 'q', assistantText: 'final' },
       { logger },
     )
-    // Poll for the fire-and-forget onRunEnd callbacks rather than a fixed 10ms
-    // sleep — that flakes under CPU load when the async callback is slow.
-    for (let i = 0; i < 200 && (seen.length < 1 || warnings.length < 1); i++) {
-      await new Promise((r) => setTimeout(r, 15))
-    }
+    // The callbacks are fire-and-forget: wait for the throwing one to run, then one event-loop
+    // turn for its rejection to be logged.
+    await thrown.promise
+    await new Promise((resolve) => setTimeout(resolve, 0))
     expect(seen).toEqual(['final'])
     expect(warnings.some((w) => w.includes('extract failed'))).toBe(true)
   })
@@ -676,7 +677,7 @@ describe('lifecycle event hooks', () => {
         sessionId: 's1',
         requestId: 'r1',
         kind: 'confirm',
-        toolName: 'bash',
+        toolName: 'Bash',
         title: 'Approve bash?',
         payload: { command: 'ls' },
       },
@@ -688,7 +689,7 @@ describe('lifecycle event hooks', () => {
         sessionId: 's1',
         requestId: 'r1',
         kind: 'confirm',
-        toolName: 'bash',
+        toolName: 'Bash',
         response: { confirmed: true },
       },
       OPTS,
@@ -699,7 +700,7 @@ describe('lifecycle event hooks', () => {
         sessionId: 's1',
         requestId: 'r1',
         kind: 'confirm',
-        toolName: 'bash',
+        toolName: 'Bash',
         response: { confirmed: true },
       },
     ])

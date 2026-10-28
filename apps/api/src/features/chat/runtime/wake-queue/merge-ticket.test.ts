@@ -8,11 +8,10 @@ import { createWakeQueue } from '../wake-queue'
 import { mergeAgentTicket } from './merge-ticket'
 
 const ticket = (slot: string, extra: Partial<AgentTurnTicket> = {}): AgentTurnTicket => ({
-  speakerAgentId: 'builtin:localix',
   assistantMessageId: slot,
   triggerMessageIds: [`trigger-${slot}`],
   source: 'user-default',
-  scope: { speakerAgentId: 'builtin:localix', executionContext: rootExecutionContext() },
+  scope: { executionContext: rootExecutionContext() },
   ...extra,
 })
 
@@ -66,6 +65,7 @@ describe('mergeAgentTicket — in the queue', () => {
       opts.busy ? [[session.id, new AbortController()]] : [],
     )
     const dispatched: string[] = []
+    const dispatchWaiters: Array<{ count: number; resolve: () => void }> = []
     const removed: string[] = []
     const queue = createWakeQueue({
       repo: {
@@ -85,6 +85,8 @@ describe('mergeAgentTicket — in the queue', () => {
       state: { activeRuns, drainingSessions: new Set(), sessionRunIdentity: new Map() },
       run: async (params: RunParams) => {
         dispatched.push(params.assistantMessageId)
+        for (const waiter of dispatchWaiters)
+          if (dispatched.length >= waiter.count) waiter.resolve()
         return { status: 'completed' as const }
       },
     })
@@ -96,11 +98,13 @@ describe('mergeAgentTicket — in the queue', () => {
         content: '',
         agentTurn: ticket(slot),
       })
-    return { session, queue, wake, dispatched, removed }
-  }
-
-  const settle = async (done: () => boolean) => {
-    for (let i = 0; i < 200 && !done(); i++) await new Promise((r) => setTimeout(r, 5))
+    /** Resolves once `count` runs have been dispatched. */
+    const dispatchedCount = (count: number) =>
+      new Promise<void>((resolve) => {
+        if (dispatched.length >= count) resolve()
+        else dispatchWaiters.push({ count, resolve })
+      })
+    return { session, queue, wake, dispatched, removed, dispatchedCount }
   }
 
   test('a request arriving while the waiting ticket is already being dispatched is not lost', async () => {
@@ -109,15 +113,20 @@ describe('mergeAgentTicket — in the queue', () => {
     const gate = new Promise<void>((resolve) => {
       release = resolve
     })
+    let reading!: () => void
+    const readingHistory = new Promise<void>((resolve) => {
+      reading = resolve
+    })
     const h = harness(async () => {
+      reading()
       await gate
       return []
     })
     await h.wake('a1')
-    await new Promise((r) => setTimeout(r, 20))
+    await readingHistory
     await h.wake('a2')
     release()
-    await settle(() => h.dispatched.length === 2)
+    await h.dispatchedCount(2)
     expect(h.dispatched).toEqual(['a1', 'a2'])
   })
 

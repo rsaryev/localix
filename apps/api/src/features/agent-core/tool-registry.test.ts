@@ -10,7 +10,6 @@ const childProfile = (tools: string[]) =>
   resolveRunProfile({ sessionKind: 'subagent' }, tools.length ? { tools } : null)
 /** An unattended job run. */
 const automationProfile = () => resolveRunProfile({ sessionKind: 'job' })
-import { createSkipAnswerTool } from './tools/skip-answer'
 import { zodToJsonSchema } from '@localixai/agent'
 
 function inertTool(name: string): AgentTool {
@@ -30,45 +29,35 @@ function inertTool(name: string): AgentTool {
  */
 const maximalRegistryOptions = {
   policy: {
-    extraTools: [
-      inertTool('mcp_resources'),
-      inertTool('vault'),
-      inertTool('external_agent_sessions'),
-    ],
+    extraTools: [inertTool('McpResources'), inertTool('Vault'), inertTool('ExternalAgentSessions')],
   },
   optional: {
-    memory: inertTool('memory'),
-    global_search: inertTool('global_search'),
-    tool_output: inertTool('tool_output'),
-    context_budget: inertTool('context_budget'),
-    skill: inertTool('skill'),
-    mini_app_guide: inertTool('mini_app_guide'),
-    jobs: inertTool('jobs'),
-    browser: {} as never,
-    delegate: {} as never,
-    store: {} as never,
-    loops: {} as never,
-    mini_app_build: { run: async () => ({ text: '', ok: true }) },
-    set_topic: { save: async () => {} },
-    skip_answer: createSkipAnswerTool(),
-    codemode: {
-      run: async () => ({ ok: true, value: undefined, output: [] }),
-      declare: () => '',
-    },
-    configure: {
+    GlobalSearch: inertTool('GlobalSearch'),
+    ToolOutput: inertTool('ToolOutput'),
+    ContextBudget: inertTool('ContextBudget'),
+    Skill: inertTool('Skill'),
+    MiniAppGuide: inertTool('MiniAppGuide'),
+    Jobs: inertTool('Jobs'),
+    Browser: {} as never,
+    Agent: {} as never,
+    SendMessage: {} as never,
+    TaskStop: {} as never,
+    Store: {} as never,
+    Loops: {} as never,
+    Configure: {
       sessionId: 'sess',
       host: { changeSchema: z.object({ kind: z.literal('noop') }) } as never,
       ledgerRef: {},
       declined: new Set<string>(),
     },
-    plan: {
+    Plan: {
       inPlanMode: async () => true,
       present: async () => ({}) as never,
       overview: async () => ({}) as never,
       complete: async () => ({}) as never,
     },
-    workflow: {
-      scripts: { run: async () => ({ ok: true, value: undefined, output: [] }), declare: () => '' },
+    Workflow: {
+      scripts: { run: async () => ({ ok: true, value: undefined, output: [] }) },
       list: async () => [],
       read: async () => null,
       runAgent: async () => null,
@@ -83,24 +72,21 @@ describe('createRuntimeToolRegistry', () => {
     // Image/PDF handling is part of read, so there is no second attachment schema.
     // research is the one built-in network tool: keyless search + safe source reads.
     expect(registry.toolNames).toEqual([
-      'ask',
-      'bash',
-      'read',
-      'search',
-      'write',
-      'edit',
-      'research',
+      'AskUserQuestion',
+      'Bash',
+      'Read',
+      'Search',
+      'Write',
+      'Edit',
+      'Research',
     ])
     expect(registry.tools.map((tool) => tool.name)).toEqual([...registry.toolNames])
     // Files change through edit/write only, and images are read by read: the removed
     // patch and image tools must never come back into the built set.
     expect(registry.toolNames).not.toContain('apply_patch')
     expect(registry.toolNames).not.toContain('view_image')
-    expect(registry.promptSection).toContain('# Available tools')
-    expect(registry.promptSection).toContain('bash')
-    expect(registry.promptSection).toContain('read')
-    expect(registry.promptSection).not.toContain('attach_file')
-    expect(registry.promptSection).toContain('search')
+    expect(registry.toolNames).toEqual(expect.arrayContaining(['Bash', 'Read', 'Search']))
+    expect(registry.toolNames).not.toContain('attach_file')
     expect(registry.toolNames).not.toContain('quiz')
   })
 
@@ -152,15 +138,15 @@ describe('createRuntimeToolRegistry', () => {
     // gated on a LIVE `jobs` tool: exposed by the profile AND not in disabledTools.
     const orch = CHAT_RUN_PROFILE
     // Normal chat: jobs is direct + nothing disabled → live (background allowed).
-    expect(isToolLive(orch, 'jobs', [])).toBe(true)
+    expect(isToolLive(orch, 'Jobs', [])).toBe(true)
     // Denied `jobs` → not live, so background bash is withheld too.
-    expect(isToolLive(orch, 'jobs', ['jobs'])).toBe(false)
+    expect(isToolLive(orch, 'Jobs', ['Jobs'])).toBe(false)
     // A profile that never exposes `jobs` (subagent) → not live regardless.
-    expect(isToolLive(childProfile([]), 'jobs', [])).toBe(false)
+    expect(isToolLive(childProfile([]), 'Jobs', [])).toBe(false)
   })
 
   test('disabledTools removes every named tool from the runtime through one rule', () => {
-    const disabled = ['bash', 'search', 'ask']
+    const disabled = ['Bash', 'Search', 'AskUserQuestion']
     const registry = createRuntimeToolRegistry({ policy: { disabledTools: disabled } })
     const names = registry.tools.map((tool) => tool.name)
 
@@ -170,13 +156,13 @@ describe('createRuntimeToolRegistry', () => {
     }
   })
 
-  test('disabling the canonical inventory retains the protocol tools', () => {
+  test('disabling the canonical inventory leaves no tool', () => {
     const registry = createRuntimeToolRegistry({
       ...maximalRegistryOptions,
       policy: { ...maximalRegistryOptions.policy, disabledTools: BUILTIN_TOOL_NAMES },
     })
-    expect([...registry.toolNames].sort()).toEqual(['set_topic', 'skip_answer'])
-    expect(registry.tools.map((tool) => tool.name).sort()).toEqual(['set_topic', 'skip_answer'])
+    expect([...registry.toolNames]).toEqual([])
+    expect(registry.tools).toEqual([])
   })
 
   test('background bash is offered only when its `jobs` manager survives', () => {
@@ -187,46 +173,46 @@ describe('createRuntimeToolRegistry', () => {
       ...maximalRegistryOptions,
       policy: { ...maximalRegistryOptions.policy, disabledTools: [] },
     })
-    const bash = withJobs.tools.find((t) => t.name === 'bash')!
+    const bash = withJobs.tools.find((t) => t.name === 'Bash')!
     expect(JSON.stringify(zodToJsonSchema(bash.inputSchema))).toContain('background')
 
     const withoutJobs = createRuntimeToolRegistry({
       ...maximalRegistryOptions,
-      policy: { ...maximalRegistryOptions.policy, disabledTools: ['jobs'] },
+      policy: { ...maximalRegistryOptions.policy, disabledTools: ['Jobs'] },
     })
-    const lean = withoutJobs.tools.find((t) => t.name === 'bash')!
+    const lean = withoutJobs.tools.find((t) => t.name === 'Bash')!
     expect(JSON.stringify(zodToJsonSchema(lean.inputSchema))).not.toContain('background')
   })
 
   test('disabledTools removes optional recovery tools too', () => {
     const toolOutputTool = {
-      name: 'tool_output',
+      name: 'ToolOutput',
       description: 'replay',
       inputSchema: {} as never,
       activeVerb: 'Retrieving',
       execute: async () => ({ content: '' }),
     }
     const registry = createRuntimeToolRegistry({
-      optional: { tool_output: toolOutputTool },
-      policy: { disabledTools: ['tool_output'] },
+      optional: { ToolOutput: toolOutputTool },
+      policy: { disabledTools: ['ToolOutput'] },
     })
-    expect(registry.toolNames).not.toContain('tool_output')
+    expect(registry.toolNames).not.toContain('ToolOutput')
   })
 
   test('disabledTools removes the dependency-injected vault tool too', () => {
     const vaultTool = {
-      name: 'vault',
+      name: 'Vault',
       description: 'metadata-only credential manager',
       inputSchema: {} as never,
       activeVerb: 'Managing Vault',
       execute: async () => ({ content: '' }),
     }
     const registry = createRuntimeToolRegistry({
-      policy: { extraTools: [vaultTool], disabledTools: ['vault'] },
+      policy: { extraTools: [vaultTool], disabledTools: ['Vault'] },
     })
 
-    expect(BUILTIN_TOOL_NAMES).toContain('vault')
-    expect(registry.toolNames).not.toContain('vault')
+    expect(BUILTIN_TOOL_NAMES).toContain('Vault')
+    expect(registry.toolNames).not.toContain('Vault')
   })
 
   test('extraTools (plugin native tools) bypass the profile allow-list on an OPEN profile', () => {
@@ -243,7 +229,6 @@ describe('createRuntimeToolRegistry', () => {
     }
     const registry = createRuntimeToolRegistry({ policy: { extraTools: [pluginTool] } })
     expect(registry.toolNames).toContain('echo_greeting')
-    expect(registry.promptSection).toContain('echo_greeting')
 
     // disabledTools still removes it.
     const disabled = createRuntimeToolRegistry({
@@ -323,7 +308,7 @@ describe('createRuntimeToolRegistry', () => {
     })
     // Not declared at all → the ledger says so, with no remedy: a role edit is not a switch.
     const bare = createRuntimeToolRegistry({
-      policy: { extraTools: [dataTool], agentProfile: childProfile(['read']) },
+      policy: { extraTools: [dataTool], agentProfile: childProfile(['Read']) },
     })
     expect(bare.ledger.get('sample_data_tool')).toEqual({
       state: 'withheld',
@@ -332,32 +317,32 @@ describe('createRuntimeToolRegistry', () => {
   })
 
   test('the ledger names the denying rule and a remedy for a rule-withheld tool', () => {
-    const denial = { rule: { action: 'tool:loops', resource: '*', effect: 'deny' } }
+    const denial = { rule: { action: 'tool:Loops', resource: '*', effect: 'deny' } }
     const registry = createRuntimeToolRegistry({
       ...maximalRegistryOptions,
       policy: {
         ...maximalRegistryOptions.policy,
-        disabledTools: ['loops'],
-        toolDenials: new Map([['loops', denial]]),
+        disabledTools: ['Loops'],
+        toolDenials: new Map([['Loops', denial]]),
       },
     })
-    expect(registry.toolNames).not.toContain('loops')
-    expect(registry.ledger.get('loops')).toEqual({
+    expect(registry.toolNames).not.toContain('Loops')
+    expect(registry.ledger.get('Loops')).toEqual({
       state: 'withheld',
       reason: { layer: 'policy', kind: 'rule', denial },
-      remedy: { remedyId: 'tool.enable', target: 'loops' },
+      remedy: { remedyId: 'tool.enable', target: 'Loops' },
     })
   })
 
   test('a port the host left empty is a ledger row, never a silent absence', () => {
     const registry = createRuntimeToolRegistry({})
-    expect(registry.ledger.get('delegate')).toEqual({
+    expect(registry.ledger.get('Agent')).toEqual({
       state: 'withheld',
-      reason: { layer: 'authority', kind: 'missing', capability: 'host:delegate' },
+      reason: { layer: 'authority', kind: 'missing', capability: 'host:Agent' },
     })
-    expect(registry.ledger.get('store')).toEqual({
+    expect(registry.ledger.get('Store')).toEqual({
       state: 'withheld',
-      reason: { layer: 'authority', kind: 'missing', capability: 'host:store' },
+      reason: { layer: 'authority', kind: 'missing', capability: 'host:Store' },
     })
   })
 
@@ -391,8 +376,8 @@ describe('createRuntimeToolRegistry', () => {
     const registry = createRuntimeToolRegistry({
       policy: { agentProfile: childProfile([]) },
       optional: {
-        jobs: {
-          name: 'jobs',
+        Jobs: {
+          name: 'Jobs',
           description: '',
           inputSchema: {} as never,
           activeVerb: 'Managing jobs',
@@ -403,18 +388,18 @@ describe('createRuntimeToolRegistry', () => {
 
     expect(registry.toolNames).toEqual([
       // A shell, so the child can verify its own work instead of returning it unverified.
-      'bash',
-      'read',
-      'search',
-      'write',
-      'edit',
+      'Bash',
+      'Read',
+      'Search',
+      'Write',
+      'Edit',
       // One composite keyless research tool.
-      'research',
+      'Research',
     ])
-    expect(registry.toolNames).not.toContain('ask')
+    expect(registry.toolNames).not.toContain('AskUserQuestion')
     // Host wiring/authority is deliberately absent in this profile-only fixture.
-    expect(registry.toolNames).not.toContain('store')
-    expect(registry.toolNames).not.toContain('jobs')
+    expect(registry.toolNames).not.toContain('Store')
+    expect(registry.toolNames).not.toContain('Jobs')
     expect(registry.toolNames).not.toContain('render_surface')
     expect(registry.toolNames).not.toContain('stream_surface')
     expect(registry.toolNames).not.toContain('schedule')
@@ -429,7 +414,6 @@ describe('createRuntimeToolRegistry', () => {
     })
 
     expect(registry.toolNames).toEqual([])
-    expect(registry.promptSection).toBe('# Available tools')
   })
 
   test('subagent gets bash, but never the background/jobs half of it', () => {
@@ -442,10 +426,10 @@ describe('createRuntimeToolRegistry', () => {
     })
     const defaultRegistry = createRuntimeToolRegistry()
 
-    expect(registry.toolNames).toContain('bash')
-    expect(registry.toolNames).not.toContain('jobs')
-    expect(defaultRegistry.toolNames).toContain('bash')
-    const bash = registry.tools.find((tool) => tool.name === 'bash')!
+    expect(registry.toolNames).toContain('Bash')
+    expect(registry.toolNames).not.toContain('Jobs')
+    expect(defaultRegistry.toolNames).toContain('Bash')
+    const bash = registry.tools.find((tool) => tool.name === 'Bash')!
     expect(JSON.stringify(zodToJsonSchema(bash.inputSchema))).not.toContain('background')
   })
 
@@ -459,7 +443,7 @@ describe('createRuntimeToolRegistry', () => {
       policy: { extraTools: [inertTool('task_board')] },
     })
     expect(orchestrated.toolNames).toContain('task_board')
-    for (const kept of ['write', 'edit', 'bash', 'read', 'search']) {
+    for (const kept of ['Write', 'Edit', 'Bash', 'Read', 'Search']) {
       expect(orchestrated.toolNames).toContain(kept)
     }
   })
@@ -467,10 +451,10 @@ describe('createRuntimeToolRegistry', () => {
 
 test('a tool the host withholds is neither built into the roster nor silent', () => {
   const registry = createRuntimeToolRegistry({
-    policy: { withheldByHost: { ask: 'human.answer' } },
+    policy: { withheldByHost: { AskUserQuestion: 'human.answer' } },
   })
-  expect(registry.toolNames).not.toContain('ask')
-  expect(registry.ledger.get('ask')).toEqual({
+  expect(registry.toolNames).not.toContain('AskUserQuestion')
+  expect(registry.ledger.get('AskUserQuestion')).toEqual({
     state: 'withheld',
     reason: { layer: 'authority', kind: 'missing', capability: 'human.answer' },
   })

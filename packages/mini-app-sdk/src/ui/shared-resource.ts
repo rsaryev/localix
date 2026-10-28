@@ -1,4 +1,4 @@
-import { useEffect, useRef, useSyncExternalStore } from 'react'
+import { useEffect, useEffectEvent, useSyncExternalStore } from 'react'
 
 import { createResourceSync } from './resource-sync'
 import { runAsBackgroundWork } from './visibility'
@@ -171,14 +171,13 @@ export function useResourceTopic(
   onChange: () => void,
   key?: string | null,
 ): void {
-  // A ref, so a caller may pass an inline closure without re-subscribing on every render — the
-  // shape every one of these call sites actually has.
-  const handler = useRef(onChange)
-  handler.current = onChange
+  // An effect event, so a caller may pass an inline closure without re-subscribing on every
+  // render — the shape every one of these call sites actually has.
+  const handler = useEffectEvent(onChange)
   useEffect(
     () =>
       topic.subscribe((changed) => {
-        if (resourceKeyAffected(key, changed)) handler.current()
+        if (resourceKeyAffected(key, changed)) handler()
       }),
     [topic, key],
   )

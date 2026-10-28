@@ -6,8 +6,7 @@ import { requestInvocationApproval } from './invocation-approval'
 
 const agent = agentDefinitionSchema.parse({
   id: 'builtin:localix',
-  handle: 'localix',
-  label: 'Localix',
+  name: 'localix',
   description: '',
   instructions: 'Work',
 })
@@ -31,7 +30,7 @@ test('invocation approval is shown in the verified chat and covers one attempt',
     signal,
   })
   const shown = hitlRegistry.getPendingInteraction('root')
-  expect(shown?.title).toBe('Start Localix')
+  expect(shown?.title).toBe('Start localix')
   expect(hitlRegistry.getPendingInteraction('child')).toBeNull()
   expect(hitlRegistry.getRequestMeta(shown!.requestId)?.sourceSessionId).toBe('child')
   expect(frames).toHaveLength(1)

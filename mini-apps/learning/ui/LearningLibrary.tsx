@@ -71,10 +71,15 @@ export function LearningLibrary({
       })
   }, [sessionId])
 
-  useEffect(() => {
-    request.current += 1
+  // Another chat starts from an empty library: reset while rendering, not in an effect afterwards.
+  const [listedSession, setListedSession] = useState(sessionId)
+  if (listedSession !== sessionId) {
+    setListedSession(sessionId)
     setCourses(null)
     setError(null)
+  }
+  useEffect(() => {
+    request.current += 1
     void refresh()
   }, [refresh])
 

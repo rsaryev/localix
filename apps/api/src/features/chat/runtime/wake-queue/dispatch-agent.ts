@@ -1,4 +1,4 @@
-import { agentParticipant } from '../../../../db/participant'
+import { agentAuthor } from '../../../../db/author'
 import type { SessionRecord } from '../../repository'
 import { emptyAssistantPayload, toPersistedMessage } from '../message-envelope'
 import { dispatchParams } from '../run-params'
@@ -8,7 +8,7 @@ import type { AgentTurnTicket } from '../agent-turn-ticket'
 import type { TurnStart } from '../wake-queue-store-contracts'
 import { withRoute } from '../../../../contracts/session-route'
 
-/** Execution consumer: every participant uses this path, irrespective of its producer. */
+/** Execution consumer: every turn of the conversation's agent uses this path, whoever produced it. */
 export async function dispatchAgentTicket(
   input: {
     userId: string
@@ -21,13 +21,13 @@ export async function dispatchAgentTicket(
   deps: Pick<WakeQueueContext, 'repo' | 'run' | 'streamRegistry' | 'now' | 'store'>,
 ): Promise<RunExecutionOutcome> {
   const { userId, session, ticket } = input
-  const member = session.agents.find((entry) => entry.agentId === ticket.speakerAgentId)
-  if (!member) {
+  const agent = session.agent
+  if (!agent) {
     await input.consume()
     return {
       status: 'failed',
       kind: 'dismissed',
-      message: 'The addressed participant has left.',
+      message: 'The session has no agent to answer this turn.',
       retryable: false,
       rateLimited: false,
     }
@@ -50,10 +50,7 @@ export async function dispatchAgentTicket(
     const message = toPersistedMessage(
       userId,
       session.id,
-      {
-        ...emptyAssistantPayload(ticket.assistantMessageId, agentParticipant(member.agentId)),
-        authorSnapshot: { handle: member.handle },
-      },
+      emptyAssistantPayload(ticket.assistantMessageId, agentAuthor(agent.agentId)),
       deps.now(),
     )
     await deps.repo.insertMessage(message)
@@ -67,20 +64,15 @@ export async function dispatchAgentTicket(
   // boot recovery (`turn-starts.ts`), so the placeholder is never left empty forever.
   await input.consume({
     assistantMessageId: ticket.assistantMessageId,
-    agentId: member.agentId,
     at: deps.now(),
   })
   const { modelOverride, effortOverride } = ticket.scope
   const runSession =
     modelOverride || effortOverride
-      ? withRoute(
-          session,
-          {
-            ...(modelOverride ? { modelId: modelOverride } : {}),
-            ...(effortOverride ? { reasoningEffort: effortOverride } : {}),
-          },
-          member.agentId,
-        )
+      ? withRoute(session, {
+          ...(modelOverride ? { modelId: modelOverride } : {}),
+          ...(effortOverride ? { reasoningEffort: effortOverride } : {}),
+        })
       : session
   try {
     return await deps.run(
@@ -91,19 +83,7 @@ export async function dispatchAgentTicket(
           assistantMessageId: ticket.assistantMessageId,
           historyMessages: history.filter((message) => message.id !== ticket.assistantMessageId),
         },
-        {
-          ...ticket.scope,
-          speakerAgentId: member.agentId,
-          ...(ticket.source === 'agent-request'
-            ? {
-                turnTrigger: {
-                  kind: 'colleague-request' as const,
-                  messageIds: ticket.triggerMessageIds,
-                  ...(ticket.scope.turnTrigger?.report ? { report: true } : {}),
-                },
-              }
-            : {}),
-        },
+        ticket.scope,
         input.completion,
       ),
     )

@@ -1,22 +1,21 @@
 import { describe, expect, test } from 'bun:test'
 
 import type { StoredMessagePayload } from '../../../db/payload'
-import { colleagueLine } from './history/stages/participant-audience'
 import { appendSpokenText, publishedText } from './spoken-text'
 
 type Items = NonNullable<StoredMessagePayload['items']>
 
-/** LOCALIX-136: the leader addressed two colleagues, called `ask`, then wrote a closing line. */
+/** LOCALIX-136: the agent asked other agents, called `ask`, then wrote a closing line. */
 const leaderTurn: Pick<StoredMessagePayload, 'content' | 'items'> = {
   content: 'I asked the person a few questions.',
   items: [
-    { id: 'r0', type: 'reasoning', status: 'completed', text: 'Inviting team members' },
+    { id: 'r0', type: 'reasoning', status: 'completed', text: 'Asking for input' },
     { id: 't0', type: 'text', status: 'completed', text: '@design Draft the concept.' },
     {
       id: 'c1',
       type: 'tool_call',
       status: 'completed',
-      name: 'ask',
+      name: 'AskUserQuestion',
       toolCallId: 'c1',
       input: {},
     },
@@ -34,16 +33,6 @@ describe('publishedText', () => {
 
   test('falls back to content for a row without text items', () => {
     expect(publishedText({ content: ' Done. ', items: [] })).toBe('Done.')
-  })
-
-  test('colleagues read the whole turn, not only its last model call', () => {
-    const payload = {
-      id: 'a1',
-      role: 'assistant',
-      from: 'agent:builtin:localix',
-      ...leaderTurn,
-    } as StoredMessagePayload
-    expect(colleagueLine(payload)).toContain('@design Draft the concept.')
   })
 })
 

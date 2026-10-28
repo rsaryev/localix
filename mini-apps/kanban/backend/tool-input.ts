@@ -68,7 +68,7 @@ export function refuseUnreadFields(
  * The columns `update` may NOT move a card to, and the action that does it instead.
  *
  * The workflow's bookkeeping lives in those actions: `take` checks dependencies and assigns the
- * speaker, `complete` names the cards finishing releases, `block` records the obstacle. A status
+ * acting agent, `complete` names the cards finishing releases, `block` records the obstacle. A status
  * written through `update` skipped all three — a card with an open dependency went to
  * in_progress unassigned, and nothing checked it.
  */
@@ -76,7 +76,7 @@ const MOVED_BY: Partial<Record<KanbanStatus, string>> = {
   in_progress: 'take (it checks dependencies and assigns you)',
   done: 'complete (it names the cards finishing releases)',
   blocked: 'block with note (the obstacle is what the column records)',
-  review: 'complete (a member’s complete sends its card to review)',
+  review: 'complete (an agent finishes a card with complete; review is a column for people)',
 }
 
 export function refuseOwnedMove(status: KanbanStatus | undefined): void {

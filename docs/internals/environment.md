@@ -52,6 +52,16 @@ data root; a test database cannot remove the default database's mini app state.
 [`session-storage.ts`](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/session-storage.ts)
 owns this path selection.
 
+Detached children the API tracks (the local model servers, background jobs, terminals) are reaped
+even when the API is killed with SIGKILL, which runs no exit handler. While the orphan guard is
+installed, each API process records the process groups it tracks in `~/.localix/run/api.<pid>.pids`
+(with each leader's start time, so a recycled pid is never killed). A one-second `sh` watchdog in
+its own process group SIGKILLs those groups and removes the file once the API pid is gone; the next
+API start does the same for any file whose API is dead, which is also how Windows (no watchdog)
+recovers. A clean exit removes the file.
+[`orphan-guard.ts`](https://github.com/rsaryev/localix/blob/main/apps/api/src/lib/orphan-guard.ts)
+owns this.
+
 The login-shell resolver captures the user's interactive shell environment for GUI launches.
 Child-process helpers pass that repaired environment explicitly to Git, language servers, MCP
 servers, and agent commands.

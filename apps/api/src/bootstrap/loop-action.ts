@@ -7,7 +7,6 @@
  * (`wakeSessionAndWait`), not on the wake being admitted.
  */
 import { errorMessage } from '../lib/errors'
-import { agentParticipant } from '../db/participant'
 import { createChatRepository } from '../features/chat/repository'
 import type { createChatService } from '../features/chat/service'
 import { agentRoute, sessionRoute } from '../contracts/session-route'
@@ -30,7 +29,7 @@ export function buildLoopAction({ db, logger, chatService, finalAssistantText }:
         .getSession(userId, sessionId)
         .catch(() => null)
       if (!s) return null
-      const route = agentId ? agentRoute(s, agentId) : sessionRoute(s)
+      const route = agentId ? agentRoute(s) : sessionRoute(s)
       if (!route) return null
       return {
         providerConnectionId: route.providerConnectionId ?? null,
@@ -61,10 +60,6 @@ export function buildLoopAction({ db, logger, chatService, finalAssistantText }:
           deliveryKey: wake.deliveryKey,
           ...(wake.extraDisabledTools.length
             ? { extraDisabledTools: wake.extraDisabledTools }
-            : {}),
-          // The participant that armed it answers; if it has left, the conversation chooses.
-          ...(loop.ownerAgentId
-            ? { to: { participant: agentParticipant(loop.ownerAgentId) } }
             : {}),
         })
         .then((outcome): LoopFireOutcome => {

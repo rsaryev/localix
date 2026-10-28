@@ -23,13 +23,13 @@ describe('picker targets', () => {
 
   test('only a workload writes to global settings', () => {
     expect(workloadKey('titleGeneration')).toBe('titleGeneration')
-    // A participant writes to the conversation, so it has no settings key at all…
+    // An agent writes to the conversation, so it has no settings key at all…
     expect(workloadKey(agentTarget('localix'))).toBeNull()
     // …and neither does `session`, which is the reasoning-memory bucket rather than a route.
     expect(workloadKey('session')).toBeNull()
   })
 
-  test('participants share one bucket of per-model reasoning memory', () => {
+  test('agents share one bucket of per-model reasoning memory', () => {
     // "I like this model on high" is a preference about the model, not about who runs it, so a
     // second agent picking the same model inherits the choice instead of starting from default.
     expect(reasoningMemoryKey(agentTarget('localix'))).toBe('session')
@@ -51,15 +51,8 @@ describe('picker targets', () => {
 })
 
 describe('initialPickerTarget', () => {
-  const party = [{ agentId: 'builtin:localix' }, { agentId: 'builtin:qa' }]
-
-  test('opens on the participant the composer shows', () => {
-    expect(initialPickerTarget(party, 'builtin:qa')).toBe(agentTarget('builtin:qa'))
-  })
-
-  test('falls back to the first seat, then to the conversation', () => {
-    expect(initialPickerTarget(party, 'builtin:gone')).toBe(agentTarget('builtin:localix'))
-    expect(initialPickerTarget(party)).toBe(agentTarget('builtin:localix'))
-    expect(initialPickerTarget([], 'builtin:qa')).toBe('session')
+  test("opens on the conversation's agent, else on the conversation itself", () => {
+    expect(initialPickerTarget({ agentId: 'builtin:localix' })).toBe(agentTarget('builtin:localix'))
+    expect(initialPickerTarget(undefined)).toBe('session')
   })
 })

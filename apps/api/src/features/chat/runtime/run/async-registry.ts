@@ -15,7 +15,7 @@ import { describeToolActions } from './tool-action-descriptors'
 export { describeToolActions } from './tool-action-descriptors'
 
 export function createRunAsyncRegistry(args: RunAsyncRegistryArgs): AsyncToolRegistry {
-  const { env, state, abort, userId, session, agentId, assistantMessageId } = args
+  const { env, state, abort, userId, session, assistantMessageId } = args
   const { actionRegistry, work } = env.state
   const owner = { userId, sessionId: session.id }
   const itemOwners = new Map<string, string>()
@@ -29,7 +29,7 @@ export function createRunAsyncRegistry(args: RunAsyncRegistryArgs): AsyncToolReg
     if (!port) return
     exitNotices.set(
       toolCallId,
-      port.arm({ userId, sessionId: session.id, agentId, source: 'bg-job' }).catch(() => null),
+      port.arm({ userId, sessionId: session.id, source: 'bg-job' }).catch(() => null),
     )
   }
 
@@ -83,7 +83,7 @@ export function createRunAsyncRegistry(args: RunAsyncRegistryArgs): AsyncToolReg
       })
       publishActionSnapshot(toolCallId, actions)
       // Record manageable background jobs so the model can list + stop them
-      // across turns via the `jobs` tool. Two kinds qualify:
+      // across turns via the `Jobs` tool. Two kinds qualify:
       //   - background bash: registers kill + send_input
       //   - declared background tools (e.g. a live data stream): register kill only
       // Sub-agents (delegate) also register kill only, but they are managed
@@ -109,7 +109,6 @@ export function createRunAsyncRegistry(args: RunAsyncRegistryArgs): AsyncToolReg
             : (pendingInput?.command ?? `${pendingName ?? 'tool'} job`))
         const record = work.start({
           owner,
-          agentId,
           kind: options?.kind ?? (isBackgroundStream ? 'stream' : 'job'),
           label,
           toolCallId,

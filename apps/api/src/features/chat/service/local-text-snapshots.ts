@@ -3,9 +3,19 @@ import { createBoundedCache } from '../../../lib/bounded-cache'
 
 const LOCAL_TEXT_SNAPSHOT_LIMIT = 256
 
+/**
+ * How long after its last change a file's metadata cannot vouch for its content. A filesystem
+ * clock ticks coarsely (a few milliseconds on Linux, a second on HFS+, two on FAT), so two
+ * same-size writes inside one tick leave identical metadata. Like git's "racily clean" entries, a
+ * file changed this close to its snapshot is read and hashed again instead.
+ */
+const RACY_WINDOW_NS = 2_000_000_000n
+
 interface LocalFileIdentity {
   fingerprint: string
   bytes: number
+  /** The later of the file's mtime and ctime, in nanoseconds since the epoch. */
+  changedNs: bigint
 }
 
 interface LocalTextSnapshot extends LocalFileIdentity {
@@ -44,6 +54,7 @@ export async function localFileIdentity(
         value.ctimeNs,
       ].join(':'),
       bytes: Number(value.size),
+      changedNs: value.mtimeNs > value.ctimeNs ? value.mtimeNs : value.ctimeNs,
     }
   } catch (error) {
     if (signal?.aborted) throw error
@@ -55,7 +66,12 @@ export function rememberLocalTextSnapshot(
   resolved: string,
   identity: LocalFileIdentity,
   hash: string,
+  now: () => number = Date.now,
 ): void {
+  if (BigInt(now()) * 1_000_000n - identity.changedNs < RACY_WINDOW_NS) {
+    localTextSnapshots.delete(resolved)
+    return
+  }
   localTextSnapshots.set(resolved, { ...identity, hash })
 }
 

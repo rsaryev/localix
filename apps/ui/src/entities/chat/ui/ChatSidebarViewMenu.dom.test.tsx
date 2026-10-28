@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, mock, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
+import { turns as settle } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 
@@ -13,15 +14,12 @@ afterAll(async () => {
   await teardown()
 })
 
-const settle = () => new Promise((resolve) => setTimeout(resolve, 20))
-
 describe('ChatSidebarViewMenu', () => {
   test('one sidebar button opens grouping, order and archived visibility as one menu', async () => {
     const React = await import('react')
     const { act } = React
     const { createRoot } = await import('react-dom/client')
     const { ChatSidebarViewMenu } = await import('./ChatSidebarViewMenu')
-    const onGroupingModeChange = mock(() => {})
     const onSortModeChange = mock(() => {})
     const onShowArchivedChange = mock(() => {})
     const host = document.createElement('div')
@@ -32,8 +30,6 @@ describe('ChatSidebarViewMenu', () => {
       await act(async () => {
         root.render(
           <ChatSidebarViewMenu
-            groupingMode="activity"
-            onGroupingModeChange={onGroupingModeChange}
             sortMode="recent"
             onSortModeChange={onSortModeChange}
             showArchived={false}
@@ -61,7 +57,6 @@ describe('ChatSidebarViewMenu', () => {
       const row = (text: string) => rows.find((item) => item.textContent?.includes(text))!
 
       // Each axis is a submenu row whose trailing hint is the current pick.
-      expect(row('Group by').textContent).toContain('Activity')
       expect(row('Sort by').textContent).toContain('Recent')
 
       // Archived visibility is a real toggle; its count is a hint, not part of the label.
@@ -78,19 +73,6 @@ describe('ChatSidebarViewMenu', () => {
       // keepOpen: the menu that shows the toggle stays on screen.
       expect(trigger.getAttribute('aria-expanded')).toBe('true')
 
-      await act(async () => {
-        row('Group by').click()
-        await settle()
-      })
-      const agent = Array.from(
-        document.body.querySelectorAll<HTMLElement>('[role="menuitemradio"]'),
-      ).find((item) => item.textContent?.includes('Agent'))!
-      expect(agent.getAttribute('aria-checked')).toBe('false')
-      await act(async () => {
-        agent.click()
-        await settle()
-      })
-      expect(onGroupingModeChange).toHaveBeenCalledWith('agent')
       expect(onSortModeChange).not.toHaveBeenCalled()
     } finally {
       await act(async () => root.unmount())

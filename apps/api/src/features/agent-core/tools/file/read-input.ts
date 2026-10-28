@@ -61,7 +61,7 @@ export const readToolInputSchema = z.object({
     .describe('Byte position to continue a truncated read (use the suggested value).'),
   start_line: lineNumber
     .optional()
-    .describe('1-based first line of a range, e.g. from `search`. Ignores `byte_offset`.'),
+    .describe('1-based first line of a range, e.g. from `Search`. Ignores `byte_offset`.'),
   end_line: lineNumber.optional().describe('Inclusive last line (default: end of file).'),
   limit: z
     .preprocess(stringToInteger, z.number().int().min(1))

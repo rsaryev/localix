@@ -11,7 +11,7 @@ import { claudeCodeToolName } from './tool-shapes'
 
 /**
  * `tool.describe`: each tool of a run as the model will read it — its description, and whether it
- * waits behind `activate_tools` (Localix's ToolSearch) or rides the request's list. Asked once per
+ * waits behind `ToolSearch` (Localix's ToolSearch) or rides the request's list. Asked once per
  * tool and conversation and kept until `$.ui.invalidate('tool.describe')`, so the tool schemas
  * the provider caches stay the same from request to request.
  */

@@ -66,31 +66,31 @@ const EFFECT_HINTS: Record<Effect, string> = {
  */
 const EXAMPLES: RuleGrammar['examples'] = [
   {
-    action: 'tool:bash',
+    action: 'tool:Bash',
     resource: '*',
     effect: 'allow',
     note: 'Shell runs without asking…',
   },
   {
-    action: 'tool:bash',
+    action: 'tool:Bash',
     resource: 'rm *',
     effect: 'deny',
     note: '…except rm — a later rule is the exception, because the last match wins',
   },
   {
-    action: 'tool:bash',
+    action: 'tool:Bash',
     resource: 'dangerous',
     effect: 'ask',
     note: 'Confirm destructive commands, however they are spelled — a class, not a pattern',
   },
   {
-    action: 'tool:read',
+    action: 'tool:Read',
     resource: 'secrets',
     effect: 'ask',
     note: 'Confirm before reading anything that looks like a credential',
   },
   {
-    action: 'tool:write',
+    action: 'tool:Write',
     resource: 'inside-workspace',
     effect: 'allow',
     note: 'Writing is fine within the project, wherever a denial above it applies',

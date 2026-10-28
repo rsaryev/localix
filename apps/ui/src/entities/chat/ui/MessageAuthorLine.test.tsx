@@ -5,7 +5,7 @@ import { AUTHOR_BODY_INDENT, MessageAuthorLine } from './MessageAuthorLine'
 import { agentProfileUri } from '@/shared/contrib/useAgentIdentity'
 import { avatarHue } from '@localixai/kit/avatar'
 
-const author = { handle: 'code-reviewer', name: 'Code Reviewer', scope: '' }
+const author = { name: 'code-reviewer', scope: '' }
 
 const render = (clock: string, triggerLabel?: string) =>
   renderToStaticMarkup(
@@ -26,7 +26,7 @@ describe('MessageAuthorLine', () => {
     expect(html.match(new RegExp(`--avatar-hue:${avatarHue('code-reviewer')}`, 'g'))).toHaveLength(
       2,
     )
-    expect(html).toContain('Code Reviewer')
+    expect(html).toContain('code-reviewer')
     expect(html).toContain('10:36')
   })
 

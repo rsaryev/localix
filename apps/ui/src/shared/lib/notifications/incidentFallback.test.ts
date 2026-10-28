@@ -6,6 +6,11 @@ import {
   startUnreportedFailurePublisher,
 } from './incidentFallback'
 
+// Zero-delay timer turns: the code under test schedules with `setTimeout(..., 0)`.
+const flush = async () => {
+  for (let i = 0; i < 6; i++) await new Promise((resolve) => setTimeout(resolve, 0))
+}
+
 afterEach(resetUnreportedFailuresForTests)
 
 const failure = {
@@ -15,8 +20,6 @@ const failure = {
   origin: { kind: 'session' as const, sessionId: 'LOCALIX-18', projectId: null },
   ts: 1_000,
 }
-
-const flush = () => new Promise((resolve) => setTimeout(resolve, 5))
 
 describe('unreported incident fallback', () => {
   it('publishes a mutation failure when its call site stays silent', async () => {

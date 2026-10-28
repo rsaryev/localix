@@ -82,7 +82,7 @@ const inputSchema = z
       .optional()
       .describe(
         'present: a FIRST draft in markdown, written to the plan file for you. Omit it to present ' +
-          'the file as it is — change the file with edit, never by retyping it here.',
+          'the file as it is — change the file with `Edit`, never by retyping it here.',
       ),
     summary: z
       .string()
@@ -134,7 +134,7 @@ function describeOverview({ plans, draft }: PlanOverview): string {
     ...(current ? [`In play: v${current.version} (${current.status}) — ${current.filePath}`] : []),
     plans.length ? 'Versions, newest first:' : 'No version has been presented yet.',
     ...plans.map((plan) => `- v${plan.version} ${plan.status}: ${plan.title} — ${plan.filePath}`),
-    plans.length ? "Read a version's text with `read` on its path." : '',
+    plans.length ? "Read a version's text with `Read` on its path." : '',
   ]
     .filter(Boolean)
     .join('\n')
@@ -185,15 +185,15 @@ export function createPlanTool(options: PlanToolOptions) {
   }
 
   return defineAgentTool<Input, PlanToolDetails>({
-    name: TOOL.plan,
+    name: TOOL.Plan,
     label: 'Plan',
     activeVerb: 'Working on plan',
     description: [
       "The conversation's plan. In plan mode, write the plan (goal, approach, steps, risks, open",
-      'questions) to the plan file named in your instructions, then `present` it for the user to',
+      'questions) to the plan file named in your instructions, then "present" it for the user to',
       'comment on, revise or approve — it ends your turn. Revise the file, then present again;',
-      'presenting unchanged text re-shows the same version instead of a new one. `read` lists',
-      'the plan files and versions. Once the approved work is done, `complete` closes the plan',
+      'presenting unchanged text re-shows the same version instead of a new one. "read" lists',
+      'the plan files and versions. Once the approved work is done, "complete" closes the plan',
       'with a short summary. Not a progress tracker.',
     ].join(' '),
     inputSchema,

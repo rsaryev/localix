@@ -91,13 +91,13 @@ describe('capability cleanup', () => {
     async function agents() {
       const t = await setup()
       await t.rules.replace('u1', 'cc:gone', [
-        { action: 'tool:bash', resource: '*', effect: 'allow' },
+        { action: 'tool:Bash', resource: '*', effect: 'allow' },
       ])
       await t.rules.replace('u1', 'cc:kept', [
         { action: 'agent:cc:gone', resource: '*', effect: 'allow' },
         { action: 'invocation:delegation', resource: 'cc:gone', effect: 'allow' },
         { action: 'invocation:delegation', resource: 'cc:other', effect: 'allow' },
-        { action: 'tool:bash', resource: '*', effect: 'ask' },
+        { action: 'tool:Bash', resource: '*', effect: 'ask' },
       ])
       const feed = createCoreChangeFeed(t.db)
       await feed.subscribe('capability-cleanup', t.cleanup.handlers, { kind: 'reactor' })
@@ -114,7 +114,7 @@ describe('capability cleanup', () => {
       await recordCoreChanges(t.db, purge)
       await feed.settle()
       expect(await actions(t, 'cc:gone')).toEqual([])
-      expect(await actions(t, 'cc:kept')).toEqual(['invocation:delegation cc:other', 'tool:bash *'])
+      expect(await actions(t, 'cc:kept')).toEqual(['invocation:delegation cc:other', 'tool:Bash *'])
       expect(
         await t.db
           .selectFrom('capability_policy_revision')
@@ -130,7 +130,7 @@ describe('capability cleanup', () => {
       await bind(t, 'cc:gone')
       await recordCoreChanges(t.db, [{ entity: 'agent', op: 'deleted', ref: ref('cc:gone') }])
       await feed.settle()
-      expect(await actions(t, 'cc:gone')).toEqual(['tool:bash *'])
+      expect(await actions(t, 'cc:gone')).toEqual(['tool:Bash *'])
       expect((await actions(t, 'cc:kept')).length).toBe(4)
       await feed.close()
     })
@@ -139,18 +139,18 @@ describe('capability cleanup', () => {
       const { t, feed } = await agents()
       await bind(t, 'cc:kept')
       await t.rules.replace('u1', 'builtin:localix', [
-        { action: 'tool:bash', resource: '*', effect: 'allow' },
+        { action: 'tool:Bash', resource: '*', effect: 'allow' },
       ])
       await t.rules.replace('u1', 'native:old', [
-        { action: 'tool:bash', resource: '*', effect: 'allow' },
+        { action: 'tool:Bash', resource: '*', effect: 'allow' },
       ])
       await recordCoreChanges(t.db, [{ entity: 'agent', op: 'resync' }])
       await feed.settle()
       expect(await actions(t, 'cc:gone')).toEqual([])
       expect(await actions(t, 'native:old')).toEqual([])
-      expect(await actions(t, 'builtin:localix')).toEqual(['tool:bash *'])
+      expect(await actions(t, 'builtin:localix')).toEqual(['tool:Bash *'])
       // The survivor loses what it said about the id that is gone.
-      expect(await actions(t, 'cc:kept')).toEqual(['invocation:delegation cc:other', 'tool:bash *'])
+      expect(await actions(t, 'cc:kept')).toEqual(['invocation:delegation cc:other', 'tool:Bash *'])
       await feed.close()
     })
   })

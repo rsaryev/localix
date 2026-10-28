@@ -10,9 +10,9 @@ import type { ChatServiceDeps } from './context'
 import type { SkillRecord } from './skills'
 import type { SkillShellPolicy } from './skill-render'
 import type { createChatRepository, SessionRecord } from '../repository'
-import type { createMemoryRepository } from '../../memory/repository'
+import type { AvailabilityWriter } from '../../capabilities/availability'
 import type { createUsageRepository } from '../../usage/repository'
-import type { createMcpRepository } from '../../mcp/repository'
+import type { createMcpRepository, McpServerRecord } from '../../mcp/repository'
 import type { createPluginService } from '../../plugins/service'
 import type { MiniAppService } from '../../mini-apps/service'
 import type { PluginCommand } from '../../plugins/contracts'
@@ -30,7 +30,6 @@ import type { StoredCommandOutput, StoredSystemNotice } from '../../../db'
 import type { ExistingMessages, RunAgentOptions } from './run-agent'
 import type { SpawnForkSkillFn } from './fork-skill'
 import type { RecapService } from '../recap/service'
-import type { ConversationMembershipChange } from '../runtime/run/conversation-membership'
 
 /**
  * Issues a direct (non-agent) reply, bound to the current turn by the caller
@@ -51,16 +50,11 @@ export const BUSY_STOP_FIRST = 'Session is busy — stop the current run first'
  * (withSessionMutationLock) stays in sendMessage; handlers run inside it.
  */
 export interface CommandHandlerContext {
-  changeAgentMembership: (
-    userId: string,
-    sessionId: string,
-    change: { invite?: string[]; remove?: string[] },
-  ) => Promise<ConversationMembershipChange>
   deps: ChatServiceDeps
   repo: ReturnType<typeof createChatRepository>
   usageRepo: ReturnType<typeof createUsageRepository>
-  memoryRepo: ReturnType<typeof createMemoryRepository>
   mcpRepo: ReturnType<typeof createMcpRepository>
+  availabilityWriter: AvailabilityWriter
   pluginService: ReturnType<typeof createPluginService>
   miniAppService: MiniAppService
   runner: AgentRunner
@@ -147,4 +141,9 @@ export interface CommandHandlerContext {
    */
   spawnForkSkill?: SpawnForkSkillFn
   buildSessionPluginCatalog: (userId: string, session: SessionRecord) => Promise<PluginCatalog>
+  /** The MCP servers the session's enabled plugins bundle (`/mcp` lists and reconnects them). */
+  loadSessionPluginMcpServers: (
+    userId: string,
+    session: SessionRecord,
+  ) => Promise<McpServerRecord[]>
 }

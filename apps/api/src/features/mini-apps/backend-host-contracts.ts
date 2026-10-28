@@ -26,12 +26,28 @@ export interface MiniAppBackendHostDeps {
   wsFrameRegistry: WsFrameRegistry
   resourceRefsRegistry: ResourceProviderRegistry
   contextProviderRegistry: ContextProviderRegistry
+  /**
+   * A mini app that is no longer wanted (disabled, removed, or its backend failing to load): release
+   * what its backend registered in host services (semantic sources, change subscriptions). Not
+   * called for a rebuild that keeps it: `settleHostServices` picks which load answers.
+   */
+  releaseHostServices?: (app: string) => Promise<void> | void
+  /**
+   * A reconcile loads every enabled backend again, and a load registers its semantic sources and
+   * change subscriptions as it runs. Once the host knows which load it wired, it says so: `kept`
+   * when the wired backend stays and the fresh duplicate was discarded, `replaced` when the fresh
+   * load is the one now wired (first wire or a new revision). Absent in a leaner host: the newest
+   * load then answers.
+   */
+  settleHostServices?: (app: string, outcome: 'kept' | 'replaced') => void
   /** Mini app text fields with ghost-text completion, side by side (absent in a leaner host). */
   textInputSurfaceRegistry?: TextInputSurfaceRegistry
   /** Called after a reconcile settles (state actually changed on toggle paths) —
    *  bootstrap publishes the `resources.changed` stream event through it, so the UI
    *  never refetches a state whose routes are still half-wired. */
   onSettled?: () => void
+  /** How long `refresh()` waits for further toggles before reconciling. Default 300 ms. */
+  refreshDebounceMs?: number
   /**
    * WHERE a mini app route call is happening — resolved per request, never captured at load.
    *

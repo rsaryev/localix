@@ -49,3 +49,37 @@ test('each server keeps its latest outcome for /mcp, without connecting to read 
   expect(connects).toBe(before)
   await manager.disposeAll()
 })
+
+test('a reconnect closes the live client, connects again and updates the outcome /mcp shows', async () => {
+  const clients: Array<McpClientLike & { closed: boolean }> = []
+  let failNext = false
+  const manager = createMcpClientManager({
+    connect: async () => {
+      if (failNext) throw new Error('refused')
+      const client = {
+        ...working,
+        closed: false,
+        async close() {
+          client.closed = true
+        },
+      }
+      clients.push(client)
+      return client
+    },
+  })
+  const echo = server({})
+  await manager.gather([echo], { cwd: '/tmp', scope: 'user-1::/tmp' })
+  expect(clients).toHaveLength(1)
+
+  const outcome = await manager.reconnect(echo, '/tmp')
+  expect(outcome).toMatchObject({ ok: true, toolCount: 1 })
+  expect(clients[0]?.closed).toBe(true)
+  expect(clients).toHaveLength(2)
+  expect(manager.size()).toBe(1)
+
+  failNext = true
+  const failed = await manager.reconnect(echo, '/tmp')
+  expect(failed).toMatchObject({ ok: false, error: 'refused' })
+  expect(manager.serverStatus(echo)).toMatchObject({ ok: false, error: 'refused' })
+  await manager.disposeAll()
+})

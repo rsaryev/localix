@@ -37,7 +37,16 @@ export function usePodPortForwards(active: boolean, owner: string) {
   // One read when the tab shows (a reopened tab finds the forwards it started before), then a
   // re-read per announced change; the poll only while the stream is down and a forward could die.
   useEffect(() => {
-    if (active) void refresh()
+    if (!active) return
+    let cancelled = false
+    // Started from a microtask: the read's results are set from its own callback, not while this
+    // effect runs.
+    queueMicrotask(() => {
+      if (!cancelled) void refresh()
+    })
+    return () => {
+      cancelled = true
+    }
   }, [active, refresh])
   const streamLive = usePortForwardsFeed(active, () => void refresh())
   useVisiblePolling({

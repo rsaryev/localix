@@ -116,7 +116,7 @@ export function FileReadonlyView({ path, content, truncated, line }: FileReadonl
             <MarkdownRenderer>{content}</MarkdownRenderer>
           </div>
         ) : (
-          <div ref={wrapperRef} className="file-line-numbers relative">
+          <div ref={wrapperRef} className="code-line-numbers relative">
             <CodeBlock code={codeContent} language={languageFromPath(path)} bare wrap={wrapLines} />
             {highlight && (
               <div

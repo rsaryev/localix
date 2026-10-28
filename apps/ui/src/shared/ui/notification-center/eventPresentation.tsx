@@ -5,6 +5,7 @@ import type {
   NotificationSeverity,
 } from '@/shared/lib/notifications/types'
 import { MetadataTooltip } from '@localixai/kit/tooltip'
+import { formatTimeAgo } from '@localixai/mini-app-sdk/ui/utilities'
 
 /**
  * How one event looks, wherever the journal draws it. The row, its detail and the filters all read
@@ -52,16 +53,6 @@ const EXACT_TIME_FORMATTER = new Intl.DateTimeFormat(undefined, {
   timeStyle: 'short',
 })
 
-export function relativeTime(ts: number, now = Date.now()): string {
-  const seconds = Math.max(0, Math.floor((now - ts) / 1000))
-  if (seconds < 60) return 'just now'
-  const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `${minutes}m ago`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}h ago`
-  return `${Math.floor(hours / 24)}d ago`
-}
-
 export function exactTime(ts: number): string {
   return EXACT_TIME_FORMATTER.format(ts)
 }
@@ -87,11 +78,11 @@ export function EventTimestamp({
               {label}
             </span>
             <span aria-hidden="true" className="sm:hidden">
-              {relativeTime(ts)}
+              {formatTimeAgo(ts)}
             </span>
           </>
         ) : (
-          <span aria-hidden="true">{relativeTime(ts)}</span>
+          <span aria-hidden="true">{formatTimeAgo(ts)}</span>
         )}
       </time>
     </MetadataTooltip>

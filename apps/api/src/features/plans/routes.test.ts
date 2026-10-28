@@ -45,7 +45,6 @@ async function harness() {
       wakes.push(request.source)
       return { status: 'delivered' }
     },
-    participants: async () => ['lead', 'backend'],
   })
   const app = new Hono<AppContext>()
     .use(async (c, next) => {
@@ -55,7 +54,7 @@ async function harness() {
     .route('/rpc', createPlanRoutes(plans))
     .route('/rpc/comments', createCommentRoutes(comments))
   const owner = { userId: 'u1', sessionId: 'root' }
-  const { plan } = await plans.present(owner, 'lead', { title: 'Cache', body: '## Goal' })
+  const { plan } = await plans.present(owner, { title: 'Cache', body: '## Goal' })
   return { app, plan, wakes, modes, plans, owner, planFiles }
 }
 
@@ -89,17 +88,6 @@ describe('plan routes', () => {
     const approved = await app.request(url, json({ mode: 'default' }))
     expect(approved.status).toBe(200)
     expect(wakes).toEqual(['plan-approved'])
-  })
-
-  test('approve takes an optional addressee from the roster; an empty one is a 400', async () => {
-    const { app, plan, wakes } = await harness()
-    const url = `/rpc/sessions/root/plans/${plan.id}/approve`
-    expect((await app.request(url, json({ mode: 'default', to: '' }))).status).toBe(400)
-    expect(wakes).toEqual([])
-    const approved = await app.request(url, json({ mode: 'default', to: 'backend' }))
-    expect(approved.status).toBe(200)
-    expect(wakes).toEqual(['plan-approved'])
-    expect((await app.request('/rpc/sessions/root/plans/executors')).status).toBe(404)
   })
 
   test('request-changes with nothing to send is a 400; dismiss of a wrong session is a 404', async () => {
@@ -144,7 +132,7 @@ describe('plan routes', () => {
     expect(modes).toEqual(['plan'])
     // A newer version makes v1 no longer the latest: it cannot be reopened any more.
     await plans.dismiss(owner, plan.id)
-    await plans.present(owner, 'lead', { body: '## Goal\nRevised' })
+    await plans.present(owner, { body: '## Goal\nRevised' })
     expect((await reopen(plan.id)).status).toBe(409)
   })
 

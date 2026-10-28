@@ -12,21 +12,19 @@
 import type { OptionalToolPorts } from '../../../agent-core/tool-registry'
 import type { ToolLedger } from '../../../agent-core/tool-ledger'
 import { createContextBudgetTool } from '../../../agent-core/tools/context-budget'
-import { isToolDirect } from '../../../agent-core/run-shape'
+import { isToolDirect, isToolLive } from '../../../agent-core/run-shape'
 import { TOOL } from '../../../agent-core/tool-names'
-import { runMiniAppBuild } from '../../../mini-apps/authoring/build-port'
 import { buildDirectToolInstances } from './runtime-tool-instances'
 import { buildBrowserOptions } from './browser-options'
 import { buildTaskDelegationOptions } from './task-delegation-options'
-import { buildDelegateOptions } from './delegate-options'
-import { delegateAgentPorts } from './speaker-agent'
+import { buildAgentOptions } from './agent-options'
+import { agentLaunchPorts } from './catalog-agent'
 import { buildWorkflowOptions } from './workflow-options'
 import { buildStoreOptions } from './store-options'
 import { buildConfigureOptions } from './configure-options'
 import { buildPlanOptions } from './plan-options'
 import type { RuntimeToolWiringContext } from './runtime-tools'
 import type { buildRunToolRegistry } from './runtime-tools'
-import { createSkipAnswerTool } from '../../../agent-core/tools/skip-answer'
 
 type RegistryParams = Parameters<typeof buildRunToolRegistry>[1]
 
@@ -36,20 +34,19 @@ type RegistryParams = Parameters<typeof buildRunToolRegistry>[1]
  * port builder's own check, and the ledger's shape layer has already said so.
  */
 const EMPTY_PORT_CAPABILITY: Readonly<Record<string, string>> = {
-  [TOOL.context_budget]: 'context.budget',
-  [TOOL.delegate]: 'agents.delegate',
-  [TOOL.store]: 'store.service',
-  [TOOL.browser]: 'preview.control',
-  [TOOL.configure]: 'config.proposals',
-  [TOOL.tool_output]: 'context.store',
-  [TOOL.mini_app_build]: 'mini-apps.authoring',
-  [TOOL.plan]: 'plans',
-  [TOOL.codemode]: 'scripts',
-  // Children and a workflow command that activated it (`workflow-options.ts`).
-  [TOOL.workflow]: 'plugins.workflows',
-  // Seat-bound protocol ports (`chat/policy`): a pass needs a colleague, a topic needs its owner.
-  [TOOL.skip_answer]: 'conversation.colleagues',
-  [TOOL.set_topic]: 'conversation.topic-owner',
+  [TOOL.ContextBudget]: 'context.budget',
+  [TOOL.Agent]: 'agents.delegate',
+  [TOOL.SendMessage]: 'agents.delegate',
+  [TOOL.TaskStop]: 'agents.delegate',
+  [TOOL.Store]: 'store.service',
+  [TOOL.Browser]: 'preview.control',
+  [TOOL.Configure]: 'config.proposals',
+  [TOOL.Vault]: 'secrets.vault',
+  [TOOL.ExternalAgentSessions]: 'external.agents',
+  [TOOL.ToolOutput]: 'context.store',
+  [TOOL.Plan]: 'plans',
+  // A chat that can create children (`workflow-options.ts`).
+  [TOOL.Workflow]: 'plugins.workflows',
 }
 
 export function explainEmptyPorts(optional: OptionalToolPorts): Record<string, string> {
@@ -60,12 +57,27 @@ export function explainEmptyPorts(optional: OptionalToolPorts): Record<string, s
   return out
 }
 
+/**
+ * Whether this run can manage background jobs: `jobs` survives the profile and `disabledTools`, on
+ * a host that supervises jobs. Background `Bash` launches one only then, and `TaskStop` stops one
+ * only then; a launcher without its manager would leave a process nobody can list or stop.
+ */
+export function manageableJobs(
+  params: Pick<RegistryParams, 'agentProfile' | 'disabledTools' | 'policy'>,
+): boolean {
+  return (
+    params.policy.host.supervisesJobs &&
+    isToolLive(params.agentProfile, TOOL.Jobs, params.disabledTools)
+  )
+}
+
 export function buildOptionalToolPorts(
   ctx: RuntimeToolWiringContext,
   params: RegistryParams,
-  jobsTool: NonNullable<OptionalToolPorts['jobs']>,
+  jobsTool: NonNullable<OptionalToolPorts[typeof TOOL.Jobs]>,
+  stopJob: NonNullable<OptionalToolPorts['TaskStop']>['stopJob'],
 ): { optional: OptionalToolPorts; ledgerRef: { current?: ToolLedger } } {
-  const { deps, repo, memoryRepo } = ctx
+  const { deps, repo } = ctx
   const {
     userId,
     session,
@@ -94,8 +106,7 @@ export function buildOptionalToolPorts(
     ...(params.forkLive ? { forkLive: params.forkLive } : {}),
   })
 
-  // browser: OPEN + drive the Browser tabs through the injected probe — and a mini app's own view,
-  // which is why `mini_app_build` is told whether this run can look.
+  // browser: OPEN + drive the Browser tabs through the injected probe — and a mini app's own view.
   const browser = buildBrowserOptions({
     deps,
     userId,
@@ -109,31 +120,37 @@ export function buildOptionalToolPorts(
   const worktreeHook = ccHooks?.hasHooks('WorktreeCreate')
     ? (name: string) => ccHooks.runWorktreeCreate(name)
     : undefined
-  // How `delegate` and a workflow's `agent()` create a child: its route and its worktree.
-  const pluginAgents = delegateAgentPorts({
-    ...(params.chatModel ? { chatModel: params.chatModel } : {}),
-    catalog: params.catalog?.models ?? [],
+  // How `Agent` and a workflow's `agent()` create a child: its route and its worktree.
+  const pluginAgents = agentLaunchPorts({
+    ...(params.agentModelChoices ? { choices: params.agentModelChoices } : {}),
     defaultCwd,
     rootSessionId: session.rootSessionId ?? session.id,
     ...(params.allowedAgentTypes ? { allowedAgentTypes: params.allowedAgentTypes } : {}),
     ...(worktreeHook ? { worktreeHook } : {}),
   })
 
-  const delegate = buildDelegateOptions({
+  const agentPorts = buildAgentOptions({
     userId,
     session,
+    reportsToDelegator: params.policy.lineage.reportsToDelegator,
     agentProfile,
+    repo,
     taskDelegation,
     plugins: pluginAgents,
+    // Background jobs exist only where `jobs` manages them; elsewhere TaskStop is for subagents.
+    ...(manageableJobs(params) ? { stopJob } : {}),
   })
+  const startAgent = agentPorts.Agent
   const optional: OptionalToolPorts = {
     // A budget the model can read before it overflows.
-    context_budget: params.readContextBudget
+    ContextBudget: params.readContextBudget
       ? createContextBudgetTool(params.readContextBudget)
       : undefined,
-    set_topic: params.setTopic,
-    // Only a colleague can name this participant without asking it anything.
-    skip_answer: params.policy.conversation.canPass ? createSkipAnswerTool() : undefined,
+    // Built by their features in bootstrap and bound here, like every other host port.
+    Vault: isToolDirect(agentProfile, TOOL.Vault) ? deps.vaultToolFor?.(userId) : undefined,
+    ExternalAgentSessions: isToolDirect(agentProfile, TOOL.ExternalAgentSessions)
+      ? deps.externalAgents?.toolFor(session.id)
+      : undefined,
     ...buildDirectToolInstances({
       agentProfile,
       disabledTools,
@@ -141,47 +158,33 @@ export function buildOptionalToolPorts(
       loadedPlugins,
       loadedMiniApps,
       repo,
-      memoryRepo,
       contextStore,
       session,
       userId,
       agentId: params.agentId,
       skillOverrides: params.skillOverrides,
-      memoryScope: params.memoryScope,
       announceCapabilityChange: deps.announceCapabilityChange,
       globalSearch: deps.globalSearch,
       renderSkill: deps.renderSkill,
       ccHookSessions: ctx.ccHookSessions,
       skillCommandPolicy: params.skillCommandPolicy,
       ...(params.latestUserText ? { latestUserText: params.latestUserText } : {}),
-      // A `context: fork` skill the agent loads starts a subagent, as `delegate` does.
-      ...(delegate
+      // A `context: fork` skill the agent loads starts a subagent, as `Agent` does.
+      ...(startAgent
         ? {
             forkSkill: (toolCallId, request) =>
-              delegate.delegate(`skill-fork-${toolCallId}`, { ...request, context: 'none' }),
+              startAgent.start(`skill-fork-${toolCallId}`, { ...request, context: 'none' }),
           }
         : {}),
     }),
-    jobs: isToolDirect(agentProfile, TOOL.jobs) ? jobsTool : undefined,
-    delegate,
-    store: buildStoreOptions(ctx, params),
-    loops: isToolDirect(agentProfile, TOOL.loops)
+    Jobs: isToolDirect(agentProfile, TOOL.Jobs) ? jobsTool : undefined,
+    ...agentPorts,
+    Store: buildStoreOptions(ctx, params),
+    Loops: isToolDirect(agentProfile, TOOL.Loops)
       ? { userId, sessionId: session.id, agentId: params.agentId }
       : undefined,
-    mini_app_build:
-      deps.miniAppAuthoring && isToolDirect(agentProfile, TOOL.mini_app_build)
-        ? {
-            run: (input) =>
-              runMiniAppBuild(deps.miniAppAuthoring!, userId, input, {
-                // The host port can exist while policy or the model still withholds the tool.
-                // Read the final registry verdict when the build is called.
-                canLook:
-                  browser !== undefined && ledgerRef.current?.get(TOOL.browser)?.state === 'live',
-              }),
-          }
-        : undefined,
-    browser,
-    configure: buildConfigureOptions({
+    Browser: browser,
+    Configure: buildConfigureOptions({
       deps,
       userId,
       session,
@@ -192,25 +195,21 @@ export function buildOptionalToolPorts(
     }),
     // The conversation's plan lives on its ROOT, whose mode an approval changes. Absent in a host
     // that did not compose plans; the ledger then names `plans` as what the run lacked.
-    plan:
-      deps.plans && isToolDirect(agentProfile, TOOL.plan)
+    Plan:
+      deps.plans && isToolDirect(agentProfile, TOOL.Plan)
         ? buildPlanOptions(deps.plans, repo, {
             userId,
             rootSessionId: session.rootSessionId ?? session.id,
             agentId: params.agentId,
           })
         : undefined,
-    // Scripts run in the engine's sandbox; an engine without one has no `codemode`.
-    codemode: deps.scripts,
-    workflow: buildWorkflowOptions({
+    Workflow: buildWorkflowOptions({
       userId,
       session,
       agentProfile,
       taskDelegation,
       scripts: deps.scripts,
       listWorkflows: params.listWorkflows,
-      ...(params.chatModel ? { chatModel: params.chatModel } : {}),
-      catalog: params.catalog?.models ?? [],
       defaultCwd,
       ...(worktreeHook ? { worktreeHook } : {}),
       pluginAgents,

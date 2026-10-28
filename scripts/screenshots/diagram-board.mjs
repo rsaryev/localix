@@ -178,7 +178,7 @@ export async function seedDiagramBoard(fixture) {
     const session = await api('/sessions', {
       title: 'Draw the release flow',
       projectId: project.id,
-      agentIds: ['builtin:localix'],
+      agentId: 'builtin:localix',
     })
     fixture.diagramSessionId = session.id
   }

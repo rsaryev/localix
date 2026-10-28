@@ -15,6 +15,7 @@ import { CODEX_PROVIDER_ID } from '../catalog/normalize'
 import { fillTemplate } from '../catalog/settings'
 import type { WireProfile } from '../wire/prompt'
 import { CLOUD_FAMILIES, cloudModelFor, cloudProfile } from './clouds'
+import { cacheKeyOf, openaiAffinity } from './openai-affinity'
 
 /** How a request reaches the provider for this run: credential, address, headers. */
 export interface ProviderAccess {
@@ -71,9 +72,9 @@ export function addressOf(entry: CatalogEntry, access: ProviderAccess): string |
  * reasoning as encrypted items so the next request can continue it. The session id keys the cache.
  */
 function openaiOptions(entry: CatalogEntry): WireProfile['requestOptions'] {
-  return ({ sessionId, reasoningEffort }) => ({
+  return ({ sessionId, promptCacheKey, reasoningEffort }) => ({
     store: false,
-    promptCacheKey: sessionId,
+    promptCacheKey: cacheKeyOf(promptCacheKey ?? sessionId),
     ...(reasons(entry) && reasoningEffort !== 'off'
       ? { include: ['reasoning.encrypted_content'], reasoningSummary: 'auto' }
       : {}),
@@ -81,7 +82,10 @@ function openaiOptions(entry: CatalogEntry): WireProfile['requestOptions'] {
 }
 
 /** How requests to one provider family are shaped. */
-export function profileFor(entry: CatalogEntry): WireProfile {
+export function profileFor(
+  entry: CatalogEntry,
+  access?: Pick<ProviderAccess, 'baseURL'>,
+): WireProfile {
   const temperature = entry.model.temperature
   if (CLOUD_FAMILIES.has(entry.route.family)) return cloudProfile(entry, openaiOptions(entry))
   switch (entry.route.family) {
@@ -91,6 +95,7 @@ export function profileFor(entry: CatalogEntry): WireProfile {
         cacheBreakpoints: false,
         temperature,
         requestOptions: openaiOptions(entry),
+        requestHeaders: openaiAffinity(entry, access),
         // The ChatGPT backend refuses a requested output limit.
         ...(entry.provider.id === CODEX_PROVIDER_ID ? { refusesOutputLimit: true } : {}),
       }

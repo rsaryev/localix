@@ -7,7 +7,8 @@ import { rmrf } from '../ext/install-tree'
 /** Compressed tarball ceiling; extraction has separate manifest/install validation. */
 export const MAX_NPM_TARBALL_BYTES = 50 * 1024 * 1024
 
-/** Verify tarball bytes against `dist.integrity` (SRI) or the legacy sha1 `shasum`. */
+/** Verify tarball bytes against `dist.integrity` (SRI) or the sha1 `shasum`, which the npm registry still publishes for every version
+ * (the only digest packages published before SRI carry). */
 export function verifyNpmIntegrity(
   pkg: string,
   data: Uint8Array,

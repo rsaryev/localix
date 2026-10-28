@@ -108,7 +108,7 @@ export async function prepareSecrets(input: {
   if (!resolved.ok) {
     return {
       ok: false,
-      error: `Not in the vault: ${resolved.missing.join(', ')}. Create it (vault action:"create") or fix the \${secret:KEY} reference — the monitor was not started.`,
+      error: `Not in the vault: ${resolved.missing.join(', ')}. Create it (\`Vault\` action:"create") or fix the \${secret:KEY} reference — the monitor was not started.`,
     }
   }
   return { ok: true, executable, keys, env: resolved.env }

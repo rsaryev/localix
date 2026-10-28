@@ -1,7 +1,11 @@
 import { expect, test } from 'bun:test'
 import { createResourceSync } from './resource-sync'
 
-const tick = () => new Promise((resolve) => setTimeout(resolve, 10))
+const turns = async (n = 10) => {
+  for (let i = 0; i < n; i++) await new Promise((r) => setTimeout(r, 0))
+}
+
+const tick = () => turns()
 
 test('refresh waits for the superseding read and discards an older response', async () => {
   const sync = createResourceSync()

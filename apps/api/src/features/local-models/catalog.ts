@@ -242,6 +242,6 @@ export function createLocalCatalog(deps: {
     flush: () => Promise.all([listings.flush(), exact.flush()]),
 
     /** Test seam: store one repository's exact specs. */
-    seed: exact.seed,
+    seed: (...args: Parameters<typeof exact.seed>) => exact.seed(...args),
   }
 }

@@ -1,13 +1,6 @@
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-  type RefObject,
-} from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState, type RefObject } from 'react'
 import type { SpaceDocument } from '../../shared/format/document'
+import { useLatest } from '@localixai/mini-app-sdk/ui/runtime-hooks'
 import { createFlagStore, type BoardActions } from './context'
 
 /** Publish stable board selection; the flow library's callback-dependent event can render-loop. */
@@ -59,10 +52,8 @@ export function useElementActions({
   selected: ReadonlySet<string>
   space: SpaceDocument
 }): { actions: BoardActions; selectedElements: string[]; selectedEdge: string | undefined } {
-  const growRef = useRef(grow)
-  growRef.current = grow
-  const focusRef = useRef(focus)
-  focusRef.current = focus
+  const growRef = useLatest(grow)
+  const focusRef = useLatest(focus)
   const [flags] = useState(createFlagStore)
   const elements = [...selected].filter((id) => space.elements[id])
   const selectedEdge = [...selected].find((id) => space.edges[id])
@@ -78,7 +69,7 @@ export function useElementActions({
       focus: (id) => focusRef.current(id),
       flags,
     }),
-    [sessionId, apply, setEditing, flags],
+    [sessionId, apply, setEditing, flags, growRef, focusRef],
   )
   return { actions, selectedElements: elements, selectedEdge }
 }

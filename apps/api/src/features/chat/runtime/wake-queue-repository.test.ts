@@ -8,7 +8,7 @@ import { createWakeQueue } from './wake-queue'
 import { insertInternalTurn } from './message-persistence'
 import type { SessionRecord } from '../repository'
 import { createRunCompletion } from './run-outcome'
-import { DEFAULT_AGENT_PARTICIPANT } from '../../../db'
+import { DEFAULT_AGENT_AUTHOR } from '../../../db'
 import { rootExecutionContext } from './execution-context'
 
 const dbs: Array<ReturnType<typeof createDatabase>> = []
@@ -43,7 +43,6 @@ async function store() {
     .addColumn('assistant_message_id', 'text', (c) => c.primaryKey())
     .addColumn('user_id', 'text', (c) => c.notNull())
     .addColumn('session_id', 'text', (c) => c.notNull())
-    .addColumn('agent_id', 'text', (c) => c.notNull())
     .addColumn('created_at', 'text', (c) => c.notNull())
     .execute()
   await db.schema
@@ -72,6 +71,8 @@ const queued = (id: string, kind: 'user' | 'wake', priority = 0) => ({
   deliveryKey: `delivery-${id}`,
   queuedAt: '2026-07-22T10:00:00.000Z',
 })
+
+const NEVER_MS = 2_147_483_647
 
 describe('database wake queue store', () => {
   test('a band claimed together keeps its name through a release and an expired lease', async () => {
@@ -232,7 +233,7 @@ describe('database wake queue store', () => {
       now: () => '2026-07-22T10:00:00.000Z',
       userId: 'u',
       sessionId: 's',
-      agent: DEFAULT_AGENT_PARTICIPANT,
+      agent: DEFAULT_AGENT_AUTHOR,
       content: 'once',
       internal: false,
       messageIds: ids,
@@ -352,6 +353,9 @@ describe('database wake queue store', () => {
     const messages = new Map<string, never>()
     const runs: string[] = []
     const errors: unknown[] = []
+    const retries: Array<() => void> = []
+    let armed: () => void = () => {}
+    const retryArmed = new Promise<void>((resolve) => (armed = resolve))
     const queue = trackWakeQueue(
       createWakeQueue({
         repo: {
@@ -379,6 +383,12 @@ describe('database wake queue store', () => {
         },
         store: flaky,
         onError: (error) => errors.push(error),
+        // The retry waits for the test, not for a clock.
+        armDrainRetry: (fire) => {
+          retries.push(fire)
+          armed()
+          return setTimeout(() => {}, NEVER_MS)
+        },
       }),
     )
     let waiterSettled = false
@@ -397,12 +407,13 @@ describe('database wake queue store', () => {
         return outcome
       })
 
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    await retryArmed
     expect(errors).toHaveLength(1)
     expect(waiterSettled).toBe(false)
     expect((await queue.list('s')).map((item) => item.preview)).toEqual(['retry durable claim'])
 
-    await new Promise((resolve) => setTimeout(resolve, 75))
+    retries.forEach((fire) => fire())
+    await waiter
     expect(waiterSettled).toBe(true)
     expect(await waiter).toEqual({ status: 'completed' })
     // The first delivery claim is retried, then the resulting addressed agent ticket is
@@ -662,17 +673,15 @@ describe('database wake queue store', () => {
       }),
     )
 
-    const agentId = session.agents[0]!.agentId
     await queue.wake({
       userId: 'u',
       session,
       content: 'agent ticket',
       agentTurn: {
-        speakerAgentId: agentId,
         assistantMessageId: 'initial-slot',
         triggerMessageIds: [],
         source: 'user-default',
-        scope: { speakerAgentId: agentId, executionContext: rootExecutionContext() },
+        scope: { executionContext: rootExecutionContext() },
       },
     })
     await firstRun.promise

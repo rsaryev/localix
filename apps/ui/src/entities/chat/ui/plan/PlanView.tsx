@@ -221,13 +221,11 @@ function PlanVersionView({
             {editable && (
               <ApprovePlanPopover
                 size="xs"
-                ownerId={ownerId}
-                author={{ agentId: plan.authorAgentId }}
                 version={plan.version}
                 busy={busy === 'approve'}
                 disabled={busy !== null}
                 recommended={next === 'approve'}
-                onApprove={(mode, to) => approve(plan, mode, to)}
+                onApprove={(mode) => approve(plan, mode)}
               />
             )}
             <PlanVersionMenu

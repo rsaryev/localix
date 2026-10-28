@@ -2,17 +2,11 @@ import { describe, expect, it } from 'bun:test'
 import { originSession, routeEventOrigin } from './origin'
 
 describe('event origin', () => {
-  it('parses scoped and legacy routes into typed session provenance', () => {
+  it('parses scoped routes into typed session provenance', () => {
     expect(routeEventOrigin('/project/p-1/LOCALIX-14/files')).toEqual({
       kind: 'session',
       sessionId: 'LOCALIX-14',
       projectId: 'p-1',
-    })
-    // A legacy `/chat/:id` link carries no scope until its redirect resolves one.
-    expect(routeEventOrigin('/chat/LOCALIX-18')).toEqual({
-      kind: 'session',
-      sessionId: 'LOCALIX-18',
-      projectId: null,
     })
     expect(routeEventOrigin('/settings')).toEqual({ kind: 'application' })
   })

@@ -68,4 +68,39 @@ describe('ShelfRow', () => {
     await React.act(async () => root.unmount())
     host.remove()
   })
+
+  test('as a grid, whole tiles wrap into its columns, as many rows as it allows, with no sideways scroll', async () => {
+    const React = await import('react')
+    const { createRoot } = await import('react-dom/client')
+    const { ShelfRow } = await import('./shelf-row')
+    const host = document.createElement('div')
+    document.body.append(host)
+    const root = createRoot(host)
+    await React.act(async () =>
+      root.render(
+        <ShelfRow title="Mini apps" columns={3} rows={2} onSeeAll={() => {}}>
+          {['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map((id) => (
+            <span key={id}>{id}</span>
+          ))}
+        </ShelfRow>,
+      ),
+    )
+    const section = host.querySelector('section')!
+    const grid = section.querySelector<HTMLElement>('ul')!
+    expect([...grid.querySelectorAll('li')].map((li) => li.textContent)).toEqual([
+      'a',
+      'b',
+      'c',
+      'd',
+      'e',
+      'f',
+    ])
+    expect(grid.style.gridTemplateColumns).toBe('repeat(3, minmax(0, 1fr))')
+    expect(grid.className).not.toContain('overflow-x-auto')
+    expect(section.querySelector('[aria-label^="Scroll"]')).toBeNull()
+    expect(section.querySelector('button[aria-label="See all Mini apps"]')).not.toBeNull()
+
+    await React.act(async () => root.unmount())
+    host.remove()
+  })
 })

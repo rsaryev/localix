@@ -29,7 +29,9 @@ test('a subfolder’s skills load once a file there is worked with, a clash qual
     [join(web, 'src', 'App.tsx')],
     new Set(['deploy']),
   )
-  expect(skills.map((s) => [s.name, s.description]).sort()).toEqual([
+  expect(
+    skills.map((s) => [s.name, s.description]).sort((a, b) => String(a).localeCompare(String(b))),
+  ).toEqual([
     ['apps/web:deploy', 'web deploy (for files in apps/web)'],
     ['storybook', 'stories'],
   ])

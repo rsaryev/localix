@@ -1,16 +1,15 @@
-import type { SetTopicPort } from './tools/set-topic'
 import type { AgentTool, ToolSurface } from '@localixai/agent/agents'
-import type { ScriptSandbox } from '@localixai/agent/runtime'
 import type { BrowserToolDeps } from './tools/browser/browser'
 import type { FileMtimeStore } from './tools/file/file-utils'
 import type { DocumentTextExtractor } from './tools/file/document-ports'
 import type { ResearchConfig } from './tools/web/research'
 import type { DiagnosticsReporter, EditorBufferProbe } from './tools/file/file-utils'
 import type { OutlineProvider } from './tools/file/outline'
-import type { DelegateToolPort } from './tools/delegate'
+import type { AgentToolPort } from './tools/agent/agent-tool'
+import type { SendMessagePorts } from './tools/agent/send-message'
+import type { TaskStopPorts } from './tools/agent/task-stop'
 import type { StoreToolPort } from './tools/store'
 import type { LoopsToolOptions } from './tools/loops'
-import type { MiniAppBuildToolOptions } from './tools/mini-app-build'
 import type { ConfigureToolOptions } from './tools/configure/configure'
 import type { PlanToolOptions } from './tools/plan/plan'
 import type { BashWaitHost } from './tools/bash/bash-until'
@@ -18,8 +17,7 @@ import type { TerminalToolDeps } from './tools/terminal/terminal'
 import type { ExecutionEnvironment } from './tools/environment'
 import type { SpawnTerminalJob } from './tools/terminal/terminal-job'
 import type { RunProfile } from './run-shape'
-import { BUILTIN_TOOL_NAMES, TOOL } from './tool-names'
-import { createCodemodeTool } from './tools/codemode/codemode'
+import { BUILTIN_TOOL_NAMES } from './tool-names'
 import type { WorkflowToolPort } from './tools/workflow/workflow'
 import { buildCoreTools, buildRegistryContext, type RegistryEntry } from './tool-registry-core'
 import { buildNamedOptionals } from './tool-registry-optionals'
@@ -124,34 +122,31 @@ export interface CoreToolDeps {
  */
 export interface OptionalToolPorts {
   /** Read-only budget report over the host's frame + last measurement; absent when no frame. */
-  context_budget?: AgentTool
-  memory?: AgentTool
+  ContextBudget?: AgentTool
   /** The search palette's service, bound to the run's session and project. */
-  global_search?: AgentTool
-  tool_output?: AgentTool
-  skill?: AgentTool
+  GlobalSearch?: AgentTool
+  ToolOutput?: AgentTool
+  Skill?: AgentTool
   /** Enabled mini apps' guides, read on demand (`tools/mini-app-guide.ts`). */
-  mini_app_guide?: AgentTool
-  jobs?: AgentTool
-  /** Tasks handed to child sessions, and the line to each child (`tools/delegate.ts`). */
-  delegate?: DelegateToolPort
-  store?: StoreToolPort
-  loops?: LoopsToolOptions
-  /** The host's mini app authoring: build, test and reload (or create) one user mini app. */
-  mini_app_build?: MiniAppBuildToolOptions
-  browser?: BrowserToolDeps
-  /** The chat's topic boundary, built for the leader or sole participant of a chat. */
-  set_topic?: SetTopicPort
-  /** The participant's pass, built for a chat with more than one participant. */
-  skip_answer?: AgentTool
+  MiniAppGuide?: AgentTool
+  Jobs?: AgentTool
+  /** The user's secret vault (`features/secrets`), bound to the run's user. */
+  Vault?: AgentTool
+  /** Other agents' CLI sessions (`features/external-agents`), bound to the run's session. */
+  ExternalAgentSessions?: AgentTool
+  /** Subagents in child sessions (`tools/agent/`): starting one, the line both ways, stopping. */
+  Agent?: AgentToolPort
+  SendMessage?: SendMessagePorts
+  TaskStop?: TaskStopPorts
+  Store?: StoreToolPort
+  Loops?: LoopsToolOptions
+  Browser?: BrowserToolDeps
   /** Inspect the ledger and propose configuration changes through a HITL request. */
-  configure?: ConfigureToolOptions
+  Configure?: ConfigureToolOptions
   /** The conversation's plan — present / read / complete, stored by the host's plans. */
-  plan?: PlanToolOptions
-  /** The engine's script sandbox (`AgentEngine.scripts`), which `codemode` runs scripts in. */
-  codemode?: ScriptSandbox
+  Plan?: PlanToolOptions
   /** Plugin workflows: their sandbox and the chat's children (`tools/workflow/workflow.ts`). */
-  workflow?: WorkflowToolPort
+  Workflow?: WorkflowToolPort
 }
 
 /**
@@ -169,32 +164,26 @@ export interface RuntimeToolRegistry {
   /** Enabled tool descriptors used by both the model schema and runtime dispatch. */
   tools: readonly AgentTool[]
   toolNames: readonly string[]
-  promptSection: string
   /** One verdict per candidate, including every tool this run does NOT get and why. */
   ledger: ToolLedger
 }
 
-// The model already receives every tool's name, description and input schema through
-// the provider tool channel. Repeating descriptions here double-bills the most verbose
-// schemas (especially plugin tools) before the user sends a single token. Keep only an
-// exhaustive name roster for capability linting and at-a-glance discovery; the schema
-// remains the single source of truth for semantics and usage.
-export function formatToolRoster(names: readonly string[]): string {
-  return ['# Available tools', ...names.map((name) => `- ${name}`)].join('\n')
-}
-
 /**
  * The registry as the MODEL sees it once deferral has run: only the tools on the wire, in wire
- * order, the activator included. The registry itself lists every plugin tool it built, and a
- * roster taken from it named deferred tools the model held no schema for — beside a "# Plugins"
- * line calling them direct and an `activate_tools` catalog listing them again.
+ * order, the activator included. The registry itself lists every plugin tool it built; the
+ * prompt sections that ask what the run holds read the wire's names, never the deferred ones.
  */
 export function onTheWire(
   registry: RuntimeToolRegistry,
-  wireToolNames: readonly string[] | undefined,
+  wireTools: readonly { name: string; modelName?: string }[] | undefined,
 ): RuntimeToolRegistry {
-  if (!wireToolNames) return registry
-  return { ...registry, toolNames: wireToolNames, promptSection: formatToolRoster(wireToolNames) }
+  if (!wireTools) return registry
+  // The roster names each tool as the model calls it (`Read`, an MCP tool's `mcp__…`); the
+  // sections ask whether the run has a tool by its own name (`read`).
+  return {
+    ...registry,
+    toolNames: wireTools.map((tool) => tool.name),
+  }
 }
 
 export function createRuntimeToolRegistry(
@@ -210,7 +199,7 @@ export function createRuntimeToolRegistry(
   // Every built-in is a CANDIDATE, built or not: a port the host left empty still gets a row,
   // so "the tool is simply not there" is no longer a state the ledger can express.
   // extraTools are an EXPLICIT injection (mini app native tools, and the core-NAMED tools a
-  // host owns — `vault`, `external_agent_sessions`). On an OPEN profile the caller decided to expose
+  // host owns — `vault`, `ExternalAgentSessions`). On an OPEN profile the caller decided to expose
   // every enabled plugin tool; on a CLOSED profile (an unattended worker) a plugin tool
   // survives only when the role declared it — the ledger's shape layer applies exactly that
   // rule, reading each tool's own `exposure`.
@@ -257,17 +246,10 @@ export function createRuntimeToolRegistry(
         : entry,
     )
 
-  // `codemode` declares the tools its scripts call, so it is built from the live ones: a tool this
-  // run does not have is never declared.
-  const live = entries.map((e) => e.tool)
-  const scripts = options.optional?.codemode
-  const tools = scripts
-    ? live.map((tool) => (tool.name === TOOL.codemode ? createCodemodeTool(scripts, live) : tool))
-    : live
+  const tools = entries.map((e) => e.tool)
   return {
     tools,
     toolNames: tools.map((tool) => tool.name),
-    promptSection: formatToolRoster(tools.map((tool) => tool.name)),
     ledger,
   }
 }

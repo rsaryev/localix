@@ -4,7 +4,7 @@
  * Data lives in commandList.tsx; icons in commandIcons.tsx.
  * This file contains only the hook logic and the command detection helper.
  */
-import { useState, useCallback, useEffect, useMemo } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import type { SlashCommand } from './SlashCommandMenu'
 import { ALL_SLASH_COMMANDS } from './commandList'
 import { filterAndRankSlashCommands } from './slashCommandMatch'
@@ -36,6 +36,7 @@ export function detectActiveCommand(
   commands: SlashCommand[],
 ): { command: SlashCommand; text: string } | null {
   for (const cmd of commands) {
+    if (cmd.onChoose) continue
     const prefix = cmd.prefix ?? `/${cmd.trigger} `
     // Argless commands have no trailing separator in their insertion prefix. Do
     // not mistake `/helpful` for `/help`; an exact token or whitespace boundary
@@ -96,13 +97,21 @@ export function useSlashCommands(
   )
   const clampedIndex = Math.min(activeIndex, Math.max(0, filtered.length - 1))
 
-  // A filtered list is a new navigation context. Reset eagerly after the query
-  // changes, and still use the clamped value below so the event between render
-  // and effect can never select a row different from the highlighted one.
-  useEffect(() => setActiveIndex(0), [query])
+  // A filtered list is a new navigation context. Reset the highlight while rendering, so no
+  // frame (and no event between frames) can select a row different from the highlighted one.
+  const [indexQuery, setIndexQuery] = useState(query)
+  if (indexQuery !== query) {
+    setIndexQuery(query)
+    setActiveIndex(0)
+  }
 
   const handleSelect = useCallback(
     (cmd: SlashCommand) => {
+      if (cmd.onChoose) {
+        cmd.onChoose()
+        setPrompt('')
+        return
+      }
       setPrompt(selectedCommandPrompt(cmd))
     },
     [setPrompt],

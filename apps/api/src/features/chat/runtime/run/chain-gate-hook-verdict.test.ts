@@ -18,12 +18,12 @@ import { applyToolWrapperChain } from './tool-wrapper-chain'
  */
 const ROOT = path.join(os.homedir(), 'proj')
 const logger = { warn: () => {}, info: () => {} }
-const DANGEROUS: PermissionRule = { permission: 'bash', pattern: 'dangerous', action: 'ask' }
+const DANGEROUS: PermissionRule = { permission: 'Bash', pattern: 'dangerous', action: 'ask' }
 
 async function run(command: string, pre: Omit<PreToolUseResult, 'didRewrite'>) {
   const log: string[] = []
   const bash = {
-    name: 'bash',
+    name: 'Bash',
     description: 'run a command',
     activeVerb: 'Running',
     inputSchema: z.object({ command: z.string() }),
@@ -55,7 +55,7 @@ async function run(command: string, pre: Omit<PreToolUseResult, 'didRewrite'>) {
       root: ROOT,
       requestConfirm: async (args) => {
         cards.push(args.message)
-        return true
+        return { approved: true }
       },
     }),
   )

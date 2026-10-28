@@ -20,7 +20,7 @@ export async function resolveRunModel(args: {
 }) {
   const { env, session, catalog, state } = args
   const { deps } = env
-  const route = agentRoute(session, args.agentId)
+  const route = agentRoute(session)
   if (!route) {
     throw new AgentRunError(
       'AGENT_UNAVAILABLE',
@@ -78,15 +78,14 @@ export type ResolvedRunModel = Awaited<ReturnType<typeof resolveRunModel>>
 /**
  * Project a provider-agnostic resolution back onto durable session state.
  *
- * Rebinds the route of the participant the run is FOR, not the whole party: in a room, a
- * recovered connection belongs to the member whose turn just resolved, and rewriting everyone
- * to it would silently move the other members onto a provider nobody chose for them.
+ * Rebinds the route of the session's agent: the recovered connection belongs to the model
+ * that just resolved.
  */
 /**
  * Record a recovered connection — but only when this conversation owns the model it serves.
  *
- * The run used to write the whole party back, which froze every member's INHERITED route into
- * their seats on the first turn: a model that had come from the project or the agent's card
+ * The run used to write the whole resolved route back, which froze an INHERITED route into
+ * the session on the first turn: a model that had come from the project or the agent's card
  * became an explicit choice, and the chain never spoke for that session again
  * (`agent-route-resolution.ts`). A model that came from a level above has nothing durable to
  * record here — the connection belongs to the model that won, and the next run binds a live one
@@ -97,30 +96,25 @@ export async function persistReboundConnection(
     updateSessionAgentRoute: (
       userId: string,
       id: string,
-      agentId: string,
       route: { providerConnectionId: string },
     ) => Promise<void>
   },
   userId: string,
   session: SessionRecord,
   providerConnectionId: string,
-  agentId: string,
 ): Promise<void> {
-  const speaker = agentRoute(session, agentId)
-  if (!speaker)
-    throw new AgentRunError('AGENT_UNAVAILABLE', `Agent is no longer in the session: ${agentId}`)
-  await repo.updateSessionAgentRoute(userId, session.id, speaker.agentId, { providerConnectionId })
+  const agent = agentRoute(session)
+  if (!agent) throw new AgentRunError('AGENT_UNAVAILABLE', 'The session has no agent.')
+  await repo.updateSessionAgentRoute(userId, session.id, { providerConnectionId })
 }
 
 export function rebindResolvedProvider(
   session: SessionRecord,
   providerConnectionId: string,
-  agentId: string,
 ): SessionRecord {
-  const current = agentRoute(session, agentId)
-  if (!current)
-    throw new AgentRunError('AGENT_UNAVAILABLE', `Agent is no longer in the session: ${agentId}`)
+  const current = agentRoute(session)
+  if (!current) throw new AgentRunError('AGENT_UNAVAILABLE', 'The session has no agent.')
   return current.providerConnectionId === providerConnectionId
     ? session
-    : withRoute(session, { providerConnectionId }, current.agentId)
+    : withRoute(session, { providerConnectionId })
 }

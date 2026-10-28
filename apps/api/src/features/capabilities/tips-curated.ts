@@ -25,7 +25,7 @@ export interface CuratedTip extends ComposerTip {
 }
 
 /** The tools that write to files — what "review every diff" is about. */
-const EDIT_TOOLS = ['write', 'edit'] as const
+const EDIT_TOOLS = ['Write', 'Edit'] as const
 
 /**
  * Which BUILT-IN slash commands are worth teaching during a wait.
@@ -54,8 +54,8 @@ export const CURATED_TIPS: readonly CuratedTip[] = [
   {
     id: 'bash-background',
     text: 'A long command can run in the background — it keeps streaming in the runtime panel.',
-    requiresAnyTool: ['bash'],
-    when: { tools: ['bash'] },
+    requiresAnyTool: ['Bash'],
+    when: { tools: ['Bash'] },
     actions: [insertAction('Run that in the background and keep going.', 'Ask for background')],
   },
   {
@@ -73,45 +73,45 @@ export const CURATED_TIPS: readonly CuratedTip[] = [
   {
     id: 'jobs-panel',
     text: 'Background jobs keep running between turns — ask for their status at any time.',
-    requiresAnyTool: ['jobs'],
-    when: { tools: ['bash', 'jobs'] },
+    requiresAnyTool: ['Jobs'],
+    when: { tools: ['Bash', 'Jobs'] },
   },
   {
     id: 'search-scope',
     text: 'Point the agent at a directory and its search narrows to it — fewer files, better answers.',
-    requiresAnyTool: ['search'],
-    when: { tools: ['search'] },
+    requiresAnyTool: ['Search'],
+    when: { tools: ['Search'] },
   },
   {
     id: 'research-sources',
     text: 'Research answers carry their sources — open one to check what the agent read.',
-    requiresAnyTool: ['research'],
-    when: { tools: ['research'] },
+    requiresAnyTool: ['Research'],
+    when: { tools: ['Research'] },
   },
   // ── About what the user asked for ─────────────────────────────────────────
   {
     id: 'live-preview',
     text: 'The agent can open a live preview and click through the app to check its own work.',
-    requiresAnyTool: ['browser'],
+    requiresAnyTool: ['Browser'],
     when: { textPattern: '\\b(html|css|tailwind|frontend|landing|layout|page|button|form)\\w*' },
     actions: [insertAction('Open a preview and verify it yourself.', 'Ask to verify')],
   },
   {
     id: 'research-current',
     text: 'Ask the agent to research a library before it writes — it reads current sources, not memory.',
-    requiresAnyTool: ['research'],
+    requiresAnyTool: ['Research'],
     when: { textPattern: '\\b(library|framework|sdk|docs|documentation|version|upgrade)\\w*' },
   },
   {
     id: 'test-the-fix',
     text: 'Ask for the test that would have caught it — a fix with no test is a fix you re-make.',
-    requiresAnyTool: ['bash'],
+    requiresAnyTool: ['Bash'],
     when: { textPattern: '\\b(bug|broken|crash|fails?|failing|regression|error)\\w*' },
   },
   {
     id: 'secrets-stay-out',
     text: 'Keep tokens in the vault instead of the chat — the agent uses them without reading them.',
-    requiresAnyTool: ['vault'],
+    requiresAnyTool: ['Vault'],
     when: { textPattern: '\\b(token|secret|password|api[_-]?key|credential)\\w*' },
     actions: [vaultAction('Open Vault')],
   },
@@ -135,18 +135,18 @@ export const CURATED_TIPS: readonly CuratedTip[] = [
   {
     id: 'memory-remember',
     text: 'Tell the agent to remember a preference — it persists into later sessions.',
-    requiresAnyTool: ['memory'],
+    requiresAnyTool: ['Write'],
     actions: [insertAction('Remember this for next time: ', 'Teach it something')],
   },
   {
     id: 'recurring-runs',
     text: 'Anything you repeat can be put on a schedule — ask for it to run every morning.',
-    requiresAnyTool: ['loops'],
+    requiresAnyTool: ['Loops'],
   },
   {
     id: 'vault-secrets',
     text: 'Keep tokens in the vault — the agent uses them without ever reading the value.',
-    requiresAnyTool: ['vault'],
+    requiresAnyTool: ['Vault'],
     actions: [vaultAction('Open Vault')],
   },
   {

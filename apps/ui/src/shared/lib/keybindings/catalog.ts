@@ -38,14 +38,6 @@ export const CATEGORY_ORDER: ShortcutCategory[] = [
 
 export const SHORTCUT_CATALOG: ShortcutCommand[] = [
   ...NAVIGATION_SHORTCUTS,
-  {
-    id: CMD.toggleAgentIsland,
-    label: 'Toggle agent island',
-    description: 'Desktop global shortcut. Expand or collapse the agent island from any app.',
-    category: 'navigation',
-    defaultChord: 'mod+shift+j',
-    configurable: false,
-  },
 
   // Layout & panels
   {

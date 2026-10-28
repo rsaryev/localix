@@ -1,7 +1,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, mock, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import type { ImplementationMode } from '@localixai/api/client'
-import type { UiSession } from '@/shared/api/contracts'
+import { turns as settle } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 const cleanups: Array<() => unknown> = []
@@ -20,37 +20,17 @@ afterAll(async () => {
   await teardown()
 })
 
-const settle = () => new Promise((resolve) => setTimeout(resolve, 20))
-
-const member = (handle: string) => ({ agentId: `builtin:${handle}`, handle })
-
-/** The Approve menu over a conversation with these participants; the plan's author is `@lead`. */
-async function render(handles: readonly string[], recommended = false) {
+/** The Approve menu over the plan of a conversation. */
+async function render(recommended = false) {
   const React = await import('react')
   const { createRoot } = await import('react-dom/client')
-  const { useChatStore } = await import('../../model/store')
-  await React.act(async () => {
-    useChatStore.setState({
-      allSessions: [
-        { id: 's1', agents: handles.map(member), rootSessionId: null } as unknown as UiSession,
-      ],
-    })
-  })
   const { ApprovePlanPopover } = await import('./ApprovePlanPopover')
-  const onApprove = mock(async (_mode: ImplementationMode, _to?: string) => true)
+  const onApprove = mock(async (_mode: ImplementationMode) => true)
   const host = document.createElement('div')
   document.body.append(host)
   const root = createRoot(host)
   await React.act(async () => {
-    root.render(
-      <ApprovePlanPopover
-        ownerId="s1"
-        author={{ agentId: 'builtin:lead' }}
-        version={3}
-        onApprove={onApprove}
-        recommended={recommended}
-      />,
-    )
+    root.render(<ApprovePlanPopover version={3} onApprove={onApprove} recommended={recommended} />)
     await settle()
   })
   cleanups.push(async () => {
@@ -108,21 +88,21 @@ const description = (element: Element) =>
   element.querySelector('.flex-col > :last-child')?.textContent ?? null
 
 describe('the approve menu', () => {
-  test('opens on Default and Any agent and approves naming nobody', async () => {
-    const view = await render(['qa', 'lead', 'backend'])
+  test('opens on Default and approves', async () => {
+    const view = await render()
     await view.open()
     expect(view.menu()!.textContent).toContain('Approve plan v3')
     expect(view.value('Mode')).toBe('Default')
-    expect(view.value('Agent')).toBe('Any agent')
+    // The conversation has one agent: nobody to choose between.
+    expect(view.row('Agent')).toBeUndefined()
     await view.approve()
-    // No `to`: the conversation's strategy picks who answers, as for a message with no @.
-    expect(view.onApprove).toHaveBeenCalledWith('default', undefined)
+    expect(view.onApprove).toHaveBeenCalledWith('default')
     // A recorded approval closes it.
     expect(view.menu()).toBeNull()
   })
 
   test('a recommended Approve carries the accent on its trigger AND on the Approve row', async () => {
-    const view = await render(['lead'], true)
+    const view = await render(true)
     const trigger = document.body.querySelector('button[aria-label="Approve plan"]')!
     expect(trigger.querySelector('.lx-border-beam[data-surface="fill"]')).not.toBeNull()
     await view.open()
@@ -131,13 +111,13 @@ describe('the approve menu', () => {
   })
 
   test('without the recommendation, neither the trigger nor the row is marked', async () => {
-    const view = await render(['lead'])
+    const view = await render()
     await view.open()
     expect(document.body.querySelector('.lx-border-beam')).toBeNull()
   })
 
   test('the modes list like the composer menu: icon in its tone, what it means, a check', async () => {
-    const view = await render(['lead'])
+    const view = await render()
     await view.open()
     await view.click(view.row('Mode'))
     const modes = view.choices()
@@ -158,49 +138,14 @@ describe('the approve menu', () => {
   })
 
   test('a pick keeps the menu open, steps back and shows on its row', async () => {
-    const view = await render(['lead', 'backend', 'qa'])
+    const view = await render()
     await view.open()
     await view.pick('Mode', 'Bypass')
     // Back on the main level: the submenu is gone, the menu is not, the row says Bypass.
     expect(view.choices()).toHaveLength(0)
     expect(view.menu()).not.toBeNull()
     expect(view.value('Mode')).toBe('Bypass')
-    await view.pick('Agent', 'Backend')
-    expect(view.value('Agent')).toBe('Backend')
     await view.approve()
-    expect(view.onApprove).toHaveBeenCalledWith('bypass', 'backend')
-  })
-
-  test('the agents: Any first, then the author and the others as monograms, then Everyone', async () => {
-    const view = await render(['qa', 'lead', 'backend'])
-    await view.open()
-    await view.click(view.row('Agent'))
-    const agents = view.choices()
-    expect(agents.map(label)).toEqual(['Any agent', 'Lead', 'Qa', 'Backend', 'Everyone'])
-    expect(description(agents[1]!)).toBe('Wrote the plan')
-    expect(
-      agents.map((element) => element.querySelectorAll('[data-slot="monogram-avatar"]').length),
-    ).toEqual([0, 1, 1, 1, 0])
-    await view.click(agents[4])
-    await view.approve()
-    expect(view.onApprove).toHaveBeenCalledWith('default', 'all')
-  })
-
-  test('picking an agent and then Any again sends no addressee', async () => {
-    const view = await render(['lead', 'backend'])
-    await view.open()
-    await view.pick('Agent', 'Backend')
-    await view.pick('Agent', 'Any agent')
-    await view.approve()
-    expect(view.onApprove).toHaveBeenCalledWith('default', undefined)
-  })
-
-  test('a one-agent chat has no Agent row and names nobody', async () => {
-    const view = await render(['lead'])
-    await view.open()
-    expect(view.row('Agent')).toBeUndefined()
-    expect(view.row('Mode')).toBeDefined()
-    await view.approve()
-    expect(view.onApprove).toHaveBeenCalledWith('default', undefined)
+    expect(view.onApprove).toHaveBeenCalledWith('bypass')
   })
 })

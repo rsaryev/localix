@@ -14,8 +14,8 @@ export function classifyOsFamily(platformText: string): OsFamily {
 
 function detectOsFamily(): OsFamily {
   if (typeof navigator === 'undefined') return 'unknown'
-  // userAgentData.platform is the modern, UA-freeze-safe source; fall back to the
-  // legacy strings. The classifier owns normalization and platform precedence.
+  // userAgentData.platform is the modern, UA-freeze-safe source; fall back to
+  // `navigator.platform` and the user agent. The classifier owns normalization and platform precedence.
   const uaPlatform = (navigator as unknown as { userAgentData?: { platform?: string } })
     .userAgentData?.platform
   return classifyOsFamily(

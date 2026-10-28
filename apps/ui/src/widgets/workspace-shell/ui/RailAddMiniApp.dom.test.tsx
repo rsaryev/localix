@@ -10,7 +10,7 @@ beforeAll(() => {
 })
 afterAll(async () => teardown())
 
-test('the rail’s add button opens the Store on its Mini apps shelf, in its own tab', async () => {
+test('the rail’s add button opens the Store on Discover, in its own tab', async () => {
   const opened: InspectorRequest[] = []
   const unregister = registerInspectorHandler((request) => void opened.push(request))
   const { act } = await import('react')
@@ -30,7 +30,7 @@ test('the rail’s add button opens the Store on its Mini apps shelf, in its own
         workKind: 'store',
         id: 'store',
         scope: null,
-        payload: { shelf: 'package:mini-app' },
+        payload: { shelf: 'discover' },
       }),
     ])
     expect(document.querySelector('[role="dialog"]')).toBeNull()

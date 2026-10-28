@@ -236,7 +236,7 @@ describe('custom worker roles (plugin agents)', () => {
         label: 'doc-writer',
         description: 'writes docs',
         prompt: 'You write documentation.',
-        tools: ['read', 'search', 'write'],
+        tools: ['Read', 'Search', 'Write'],
       },
     ])
   })
@@ -251,7 +251,7 @@ describe('custom worker roles (plugin agents)', () => {
     const agent = loaded.agents.find((a) => a.name === 'norm-agent')
     expect(agent).toBeDefined()
     // CC names normalized to engine names
-    expect(agent!.tools?.sort()).toEqual(['bash', 'read', 'search'])
+    expect(agent!.tools?.sort()).toEqual(['Bash', 'Read', 'Search'])
     // pinnedSkills propagated
     expect(agent!.pinnedSkills).toEqual(['deploy-guide'])
   })

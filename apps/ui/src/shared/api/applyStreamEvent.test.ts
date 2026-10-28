@@ -365,7 +365,7 @@ describe('applyStreamEventToSession — message.delta (incremental append)', () 
       id: `tool-${index}`,
       type: 'command',
       status: 'running',
-      name: 'bash',
+      name: 'Bash',
       output: '',
     }))
     const session = makeSession({
@@ -707,11 +707,11 @@ describe('applyStreamEventToSession — message + session mutations', () => {
         role: 'user',
         from: 'system',
         uiOnly: true,
-        content: 'qa joined the conversation.',
+        content: 'Model changed.',
         systemNotice: {
-          kind: 'participants_change',
+          kind: 'model_change',
           tone: 'neutral',
-          text: 'qa joined the conversation.',
+          text: 'Model changed.',
         },
       },
     }
@@ -744,7 +744,7 @@ describe('applyStreamEventToSession — message + session mutations', () => {
       type: 'tool_call',
       status: 'completed',
       toolCallId: 'call-a',
-      name: 'read',
+      name: 'Read',
       activeVerb: 'Reading',
     }
     const session = makeSession({
@@ -782,7 +782,7 @@ describe('applyStreamEventToSession — message + session mutations', () => {
       type: 'tool_call',
       status: 'completed',
       toolCallId: 'call-a',
-      name: 'read',
+      name: 'Read',
       activeVerb: 'Reading',
       resultText: 'old output',
     } as const
@@ -885,18 +885,6 @@ describe('applyStreamEventToSession — message + session mutations', () => {
     )
     expect(r.title).toBe('New')
     expect((r as unknown as { isPinned: boolean }).isPinned).toBe(true)
-  })
-
-  // A level change for All moved the seat and every saved choice on the server, but the store
-  // kept the old choices beside the new seat, so the picker read two levels and showed "Mixed".
-  test('session.updated moves the session model choices together with the seats', () => {
-    const choice = { modelId: 'm', providerConnectionId: 'c', reasoningEffort: 'low' }
-    const modelChoices = { agents: { a: choice, b: choice } }
-    const r = applyStreamEventToSession(
-      makeSession(),
-      ev({ type: 'session.updated', session: { id: 'sess-1', title: 't', modelChoices } }),
-    )
-    expect((r as unknown as { modelChoices: unknown }).modelChoices).toEqual(modelChoices)
   })
 
   // ORDERING defense: session.updated is promote-only for isRunning. Title generation

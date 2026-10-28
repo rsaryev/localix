@@ -18,7 +18,7 @@ const GRAMMAR: RuleGrammar = {
   ],
   examples: [
     {
-      action: 'tool:bash',
+      action: 'tool:Bash',
       resource: 'dangerous',
       effect: 'ask',
       note: 'Confirm destructive shell',
@@ -32,7 +32,7 @@ describe('Permission editor presentation', () => {
       <>
         <PermissionEditor
           rules={[{ action: 'tool:shell', resource: 'git *', effect: 'ask' }]}
-          actionNames={['tool:shell', 'tool:read', 'skill:deploy', 'mcp:github/create_pr']}
+          actionNames={['tool:shell', 'tool:Read', 'skill:deploy', 'mcp:github/create_pr']}
           grammar={GRAMMAR}
           onChange={() => {}}
         />

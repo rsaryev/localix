@@ -65,7 +65,7 @@ const noop = () => {}
 describe('the task panel keeps stable subtrees memoized', () => {
   test('an unrelated panel update re-renders neither the header nor the body', async () => {
     const React = await import('react')
-    const { act, useState } = React
+    const { act, useEffect, useState } = React
     const { createRoot } = await import('react-dom/client')
     const { TaskDetailHeader } = await import('./TaskDetailHeader')
     const { TaskDetailBody } = await import('./task-detail-body')
@@ -76,7 +76,9 @@ describe('the task panel keeps stable subtrees memoized', () => {
     let pushFrame: (n: number) => void = () => {}
     function Panel() {
       const [frames, setFrames] = useState(0)
-      pushFrame = setFrames
+      useEffect(() => {
+        pushFrame = setFrames
+      }, [setFrames])
       return (
         <>
           <TaskDetailHeader
@@ -129,7 +131,7 @@ describe('the task panel keeps stable subtrees memoized', () => {
   test('a change to the card itself still reaches the body', async () => {
     // The boundary must preserve real card updates, not freeze the panel.
     const React = await import('react')
-    const { act, useState } = React
+    const { act, useEffect, useState } = React
     const { createRoot } = await import('react-dom/client')
     const { TaskDetailBody } = await import('./task-detail-body')
 
@@ -139,7 +141,9 @@ describe('the task panel keeps stable subtrees memoized', () => {
     let replace: (d: KanbanTask) => void = () => {}
     function Panel() {
       const [current, setCurrent] = useState(first.detail)
-      replace = setCurrent
+      useEffect(() => {
+        replace = setCurrent
+      }, [setCurrent])
       return (
         <TaskDetailBody
           detail={current}

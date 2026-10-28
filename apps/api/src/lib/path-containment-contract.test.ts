@@ -99,13 +99,9 @@ const EXEMPTIONS: Exemptions = {
     reason:
       'Matches an already-RELATIVE path against a user-supplied EXCLUSION PREFIX (`src/secrets`), which is a glob-ish pattern, not a filesystem root — resolving it against a root would change what an empty/odd prefix means. The real root-containment check in this file DOES go through the owner.',
   },
-  [exemptionKey('src/features/mini-apps/backend-host.ts', 'sep-template')]: {
+  [exemptionKey('src/features/mini-apps/backend-host-dispatch.ts', 'sep-template')]: {
     reason:
       'Matches an incoming HTTP REQUEST PATH (`c.req.path`) against a plugin backend MOUNT PREFIX to route it to the right sub-app. A URL route, not a filesystem path — there is no root, and nothing on disk to contain.',
-  },
-  [exemptionKey('src/features/agent-core/tools/workspace.ts', 'sep-prefix')]: {
-    reason:
-      'Its root-containment check ADOPTED the owner (`isPathWithin`). What remains is a SAFE_SYSTEM_PREFIXES scan: an allow-list of system dirs a token may name (`/usr`, `/etc`, …) with no root to be contained in. Blessed for `sep-prefix` ONLY — a new idiom in this file would arrive unblessed.',
   },
 
   // NOTE. Four `debt` entries used to live here (agent-core preview-static + lsp-nav,

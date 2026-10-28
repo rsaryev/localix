@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'n
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { z } from 'zod'
-import type { MiniAppContext } from '@localixai/mini-app-sdk/backend'
+import type { CallClass, MiniAppContext } from '@localixai/mini-app-sdk/backend'
 import { SYSTEM_MARKS_LIMIT, systemMarksSchema } from '../shared/system-marks'
 import { register } from './index'
 import { createTemplateRoutes } from './routes'
@@ -87,7 +87,9 @@ test('the routes validate a note, answer with the new state, and delete by id', 
   expect(systemMarksSchema.parse(await removed.json()).marks).toEqual([])
 })
 
-test.each([
+// Typed as `CallClass`, so `{ effect: 'read' }` keeps its literal: an untyped table widens it to
+// `string`, which no longer matches `classify`'s return once the comparison is written directly.
+test.each<[string, CallClass]>([
   ['system_overview', { effect: 'read' }],
   ['system_processes', { effect: 'read' }],
   ['system_mark', { effect: 'host' }],
@@ -99,7 +101,7 @@ test.each([
   } as unknown as MiniAppContext
   const tool = register(ctx).tools!.find((candidate) => candidate.name === name)!
   // The host gate's rule: the tool's own class, else its static flag read fail-closed.
-  const actual = tool.classify
+  const actual: CallClass = tool.classify
     ? tool.classify({})
     : { effect: tool.mutates === false ? 'read' : 'external' }
   expect(actual).toEqual(expected)

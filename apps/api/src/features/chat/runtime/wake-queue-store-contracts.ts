@@ -36,7 +36,6 @@ export type QueueAdmission<TPayload = unknown> = Omit<
 /** A reply slot about to be filled by an acknowledged agent turn ticket. */
 export interface TurnStart {
   assistantMessageId: string
-  agentId: string
   at: string
 }
 
@@ -103,11 +102,6 @@ export interface WakeQueueStore<TPayload = unknown> {
     id: string,
     priority: number,
     payload: TPayload,
-  ): Promise<boolean>
-  setPriorities?(
-    userId: string,
-    sessionId: string,
-    updates: readonly { id: string; priority: number }[],
   ): Promise<boolean>
   recoverExpired(now: string): Promise<number>
   forgetSession(userId: string, sessionId: string): Promise<void>

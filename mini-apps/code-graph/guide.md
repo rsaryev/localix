@@ -74,4 +74,5 @@ This graph is derived from source files. Change source with file tools and let t
 not treat nodes or edges as editable Project Space elements. Missing graph edges alone do not prove
 that a declaration is unused.
 
-See the [Code Graph guide](../../../../docs/features/code-graph.md) for indexing and refresh limits.
+See the [Code Graph guide](https://github.com/rsaryev/localix/blob/main/docs/features/code-graph.md)
+for indexing and refresh limits.

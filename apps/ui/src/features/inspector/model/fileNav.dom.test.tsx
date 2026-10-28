@@ -17,7 +17,7 @@ afterAll(async () => {
 describe('recent file ownership', () => {
   test('quick-open recents are isolated by session scope', async () => {
     const React = await import('react')
-    const { act } = React
+    const { act, useEffect } = React
     const { createRoot } = await import('react-dom/client')
     const root = createRoot(document.createElement('div'))
     const originalScope = useGridStore.getState().activeScope
@@ -25,7 +25,10 @@ describe('recent file ownership', () => {
     let current: string[] = []
 
     function Harness({ sessionId }: { sessionId: string }) {
-      current = useRecentFiles(sessionId)
+      const value = useRecentFiles(sessionId)
+      useEffect(() => {
+        current = value
+      })
       return null
     }
 

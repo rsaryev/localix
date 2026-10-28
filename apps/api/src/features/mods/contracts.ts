@@ -154,6 +154,13 @@ export interface ModsPorts {
   report: (plugin: string, message: string) => void
 }
 
+/**
+ * What the model reads of a prompt a mod submits: Claude names the sender unless it is the
+ * person's own words (`asUser`).
+ */
+export const submittedContent = (input: { text: string; asUser: boolean; plugin: string }) =>
+  input.asUser ? input.text : `[${input.plugin}] ${input.text}`
+
 const scenes = new AsyncLocalStorage<ModScene>()
 
 /** Run `work` with `scene` as the place every mods API call in it acts. */

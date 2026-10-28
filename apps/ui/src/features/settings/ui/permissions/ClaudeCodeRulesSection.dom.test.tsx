@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, expect, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
+import { turns as settle } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -7,8 +8,6 @@ beforeAll(() => {
   ;(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 })
 afterAll(async () => teardown())
-
-const settle = () => new Promise((resolve) => setTimeout(resolve, 20))
 
 async function render(answer: object | Error) {
   const { act } = await import('react')

@@ -4,6 +4,8 @@ import {
   type ListingRef,
   type ListingsResponse,
   type PackageKind,
+  type RecommendRequest,
+  type RecommendResponse,
   type Scope,
   type SourceView,
   type StoreActivity,
@@ -16,8 +18,11 @@ import { activityOf } from './activity'
 import { configService } from './config'
 import { itemService } from './items'
 import { discoverOf, relatedOf } from './discover'
+import { recommendOf } from './recommend'
+import { createRecommendationBoard, type RecommendationWhere } from './recommend-board'
 import type { StoreIndexRepository } from './index-repository'
 import { refKey } from './index-rows'
+import { pageProblems } from './page-problems'
 import { matching, projectAuthored, withProjectCount } from './project-authored'
 import { withProjectInstalls } from './project-installs'
 import { staticScore } from './ranking'
@@ -26,8 +31,8 @@ import { createStoreSearchProvider, refOfStoreHit, STORE_SEARCH_DOMAIN } from '.
 import { sourcesOf } from './sources'
 import { createStoreSync, watchProviders } from './store-runs'
 
-export type { ListingQuery, StoreSearchPort } from './service-types'
-import type { ListingQuery, StoreSearchPort } from './service-types'
+export type { ListingQuery, StoreContextPort, StoreSearchPort } from './service-types'
+import type { ListingQuery, StoreContextPort, StoreSearchPort } from './service-types'
 import { applyUpdates, sourceActions } from './service-updates'
 
 /**
@@ -49,6 +54,10 @@ export function createStoreService(deps: {
   meaningChanged?: (keys: string[]) => void
   /** The open project's words, for the boost (`project-signals.ts`). */
   projectWords?: (userId: string, projectId: string | null | undefined) => Promise<Set<string>>
+  /** What the working set says, admitted for `recommendation` (`recommend.ts`). */
+  workingContext?: StoreContextPort
+  /** When background recommendations run (`recommend-board.ts`); tests run them by hand. */
+  scheduleRecommendation?: (work: () => void) => () => void
   now?: () => number
 }) {
   const now = deps.now ?? Date.now
@@ -64,6 +73,26 @@ export function createStoreService(deps: {
     },
   })
   watchProviders(deps.providers, runs.invalidate)
+
+  async function recommend(actor: StoreActor, request: RecommendRequest) {
+    await runs.ready(actor)
+    return recommendOf(
+      {
+        index: deps.index,
+        search: deps.search,
+        ...(deps.workingContext ? { context: deps.workingContext } : {}),
+        ...(deps.projectWords ? { projectWords: deps.projectWords } : {}),
+      },
+      actor,
+      request,
+    )
+  }
+  const recommendations = createRecommendationBoard({
+    compute: recommend,
+    ...(deps.scheduleRecommendation ? { schedule: deps.scheduleRecommendation } : {}),
+  })
+  // What the Store lists moved (an install, a sync): every remembered working set again.
+  runs.subscribe(() => recommendations.refresh())
 
   const providerOf = (kind: PackageKind): StoreProvider => {
     const provider = providers.get(kind)
@@ -137,7 +166,7 @@ export function createStoreService(deps: {
         return {
           listings: matching(authored, query.q),
           facets: withProjectCount(await deps.index.facets(actor.userId, {}), authored.length),
-          problems: runs.problems(actor),
+          problems: pageProblems(runs.problems(actor), query),
         }
       }
       const [page, facets] = await Promise.all([
@@ -163,7 +192,7 @@ export function createStoreService(deps: {
       return {
         ...shown,
         facets: withProjectCount(facets, (await asked).length),
-        problems: runs.problems(actor),
+        problems: pageProblems(runs.problems(actor), query),
       }
     },
 
@@ -196,6 +225,20 @@ export function createStoreService(deps: {
         now: now(),
       })
     },
+
+    /** What suits the working set, worked out now (`recommend.ts`). */
+    recommend: (actor: StoreActor, request: RecommendRequest): Promise<RecommendResponse> =>
+      recommend(actor, request),
+    /** The working set moved: worked out in the background (`recommend-board.ts`). */
+    reportWorkingSet: (actor: StoreActor, request: RecommendRequest) =>
+      recommendations.report(actor, request),
+    readRecommendations: (actor: StoreActor, where: RecommendationWhere) =>
+      recommendations.read(actor, where),
+    /** How the Store searches changed (the meaning model is ready): worked out again. */
+    refreshRecommendations: () => recommendations.refresh(),
+    /** Hear every recommendation answer that moved; returns the unsubscribe. */
+    subscribeRecommendations: recommendations.subscribe,
+    recommendationsSettled: recommendations.settled,
 
     async plan(ref: ListingRef, scope: Scope, actor: StoreActor) {
       const provider = providerOf(ref.kind)

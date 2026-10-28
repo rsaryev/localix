@@ -137,7 +137,7 @@ export function formatMonitorWake(input: {
     // A monitor that ended is no longer running work, so `jobs` cannot read it any more.
     ...(hidden > 0
       ? [
-          `… ${hidden} more event${hidden === 1 ? '' : 's'}${input.ended ? '' : ` (read them with jobs action="read" job_id="${input.monitorId}")`}`,
+          `… ${hidden} more event${hidden === 1 ? '' : 's'}${input.ended ? '' : ` (read them with \`Jobs\` action="read" job_id="${input.monitorId}")`}`,
         ]
       : []),
   ]
@@ -155,6 +155,6 @@ export function formatMonitorWake(input: {
   return [
     `[Monitor ${input.monitorId}: ${input.description}] ${count} new event${count === 1 ? '' : 's'}`,
     ...body,
-    `Still watching. Act on this, then END your turn — the next event wakes you again. Stop it with jobs action="stop" job_id="${input.monitorId}" once it is no longer useful.`,
+    `Still watching. Act on this, then END your turn — the next event wakes you again. Stop it with TaskStop task_id="${input.monitorId}" once it is no longer useful.`,
   ].join('\n')
 }

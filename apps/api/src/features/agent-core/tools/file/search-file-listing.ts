@@ -44,7 +44,7 @@ export function presentFileListing({
   }
   if (res.exitCode === 127 || /not found|no such file|ENOENT/i.test(res.stderr)) {
     return {
-      content: 'ripgrep (rg) is not available here — use `bash` with find for this.',
+      content: 'ripgrep (rg) is not available here — use `Bash` with find for this.',
       isError: true,
     }
   }

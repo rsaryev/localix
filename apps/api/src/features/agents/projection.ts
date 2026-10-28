@@ -1,5 +1,3 @@
-import { isReasoningEffort } from '@localixai/agent'
-import { isModelAliasFamily } from '../agent-core/model-alias'
 import type { TrustClass } from '../ext/trust'
 import type { BoundAgent } from './bindings/bindings'
 import type { CatalogAgent } from './catalog/agent-file'
@@ -7,52 +5,21 @@ import type { AgentRecord, AgentSummary } from './contracts'
 import { preloadedSkills } from '../plugins/agent-names'
 
 /**
- * A catalog definition as the record the rest of the app reads: the file's name is the handle, its
- * body the instructions, the `localix:` key the hierarchy priority and memory scope. Only a
- * concrete model reaches `modelPreference`: an alias (`opus`) needs the provider's catalog to mean
- * anything and is resolved where a run is routed (`agentModelRoute`), never guessed here.
+ * A catalog definition as the record the rest of the app reads: the file's name is its name, its
+ * body the instructions. Its `model` and `effort` are not read: the model an agent runs on is the
+ * person's choice in Localix's settings (`agent-core/agent-model-route.ts`).
  */
 export function recordOf(agent: CatalogAgent, id: string): AgentRecord {
-  const route = agent.localix.model?.split('/')
-  const provider = route && route.length > 1 ? route[0] : undefined
-  const model =
-    provider && route
-      ? route.slice(1).join('/')
-      : agent.preferredModel &&
-          agent.preferredModel.toLowerCase() !== 'inherit' &&
-          !isModelAliasFamily(agent.preferredModel)
-        ? agent.preferredModel
-        : (agent.localix.model ?? undefined)
-  const asked = agent.localix.effort ?? agent.preferredEffort
-  const effort = asked && isReasoningEffort(asked) ? asked : undefined
-  const memory = agent.localix.memoryScope
   // Claude Code preloads the first 32 distinct skills of the list.
   const preload = preloadedSkills(agent.pinnedSkills)
   return {
     id,
-    handle: agent.fullName,
+    name: agent.fullName,
     description: agent.description,
     // A type with no prompt of its own (`general-purpose` runs as the delegator) reads as its description.
     instructions: agent.prompt.trim() || agent.description,
-    leadershipPriority: agent.localix.priority,
-    ...(model || effort
-      ? {
-          modelPreference: {
-            ...(provider ? { provider } : {}),
-            ...(model ? { model } : {}),
-            ...(effort ? { effort } : {}),
-          },
-        }
-      : {}),
-    ...(agent.maxTurns ? { limits: { maxTurns: agent.maxTurns } } : {}),
-    ...(preload.length || memory
-      ? {
-          context: {
-            ...(preload.length ? { preloadSkills: preload } : {}),
-            ...(memory ? { memory: { scope: memory } } : {}),
-          },
-        }
-      : {}),
+    ...(agent.maxTurns ? { maxTurns: agent.maxTurns } : {}),
+    ...(preload.length ? { skills: preload } : {}),
   }
 }
 

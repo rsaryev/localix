@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { createDatabase, destroyDatabase } from '../../../../db/connection'
 import { migrateToLatest } from '../../../../db/migrator'
-import { agentParticipant } from '../../../../db/participant'
+import { agentAuthor } from '../../../../db/author'
 import { sessionFixture } from '../../../../testing/session-fixture'
 import { testWork } from '../../../../testing/work-fixture'
 import { createChatRepository } from '../../repository'
@@ -23,13 +23,13 @@ describe('topic change starts a fresh model context', () => {
   let db: ReturnType<typeof createDatabase>
   let repo: ReturnType<typeof createChatRepository>
   const session = sessionFixture({
-    agents: ['lead', 'qa'].map((agentId) => ({
-      agentId,
-      handle: agentId,
+    agent: {
+      agentId: 'lead',
+      name: 'lead',
       modelId: '',
       providerConnectionId: null,
       reasoningEffort: 'medium',
-    })),
+    },
   })
   const boundary = { messageId: 'topic-host', agentId: 'lead' }
   const topic = {
@@ -60,13 +60,13 @@ describe('topic change starts a fresh model context', () => {
         pinned: true,
       }),
     )
-    for (const agent of session.agents) {
+    for (const agent of [session.agent!]) {
       const id = `old-${agent.agentId}`
       await repo.insertMessage(
         row(id, {
           id,
           role: 'assistant',
-          from: agentParticipant(agent.agentId),
+          from: agentAuthor(agent.agentId),
           content: 'OLD_PUBLIC_REPLY',
           usage: { contextTokens: 100_000 },
           items: [
@@ -75,7 +75,7 @@ describe('topic change starts a fresh model context', () => {
               type: 'tool_call',
               id: 'read',
               toolCallId: `read-${agent.agentId}`,
-              name: 'read',
+              name: 'Read',
               activeVerb: 'Reading',
               status: 'completed',
               input: { path: '/tmp/old' },
@@ -111,7 +111,7 @@ describe('topic change starts a fresh model context', () => {
       row(boundary.messageId, {
         id: boundary.messageId,
         role: 'assistant',
-        from: agentParticipant('lead'),
+        from: agentAuthor('lead'),
         content: 'OLD_TOPIC_HANDOFF',
         items: [
           {
@@ -126,23 +126,22 @@ describe('topic change starts a fresh model context', () => {
         ],
       }),
     )
-    expect(
-      await repo.updateSessionTopic(
-        session.userId,
-        session.id,
-        session,
-        topic,
-        session.updatedAt,
-        boundary,
-      ),
-    ).toBe(true)
+    // A topic committed by an earlier version: the saved summary and a marker on its last row.
+    await repo.updateSession(session.userId, session.id, topic)
+    await repo.updateMessage(
+      session.userId,
+      session.id,
+      boundary.messageId,
+      { contextBoundary: true },
+      session.updatedAt,
+    )
   })
 
   afterEach(async () => {
     await destroyDatabase(db)
   })
 
-  test('solo and group participants receive only new history and the saved summary, even after restart', async () => {
+  test('every agent receive only new history and the saved summary, even after restart', async () => {
     await repo.insertMessage(
       row('new-user', { id: 'new-user', role: 'user', from: 'user', content: 'NEW_TOPIC_CONTEXT' }),
     )
@@ -158,11 +157,11 @@ describe('topic change starts a fresh model context', () => {
     const system = buildSessionTopicSection(shared)
     expect(system).toContain(topic.goal)
     expect(system).toContain(topic.previousTopicSummary)
-    for (const agents of [session.agents, [session.agents[0]!]]) {
+    for (const agents of [[session.agent!]]) {
       for (const agent of agents) {
         const view = await loadModelView(createModelContextRepository(db), {
           sessionId: session.id,
-          viewer: agentParticipant(agent.agentId),
+          viewer: agentAuthor(agent.agentId),
           historyMessages: raw,
           currentMessageId: `next-${agent.agentId}`,
           contextWindow: 32_000,
@@ -179,10 +178,7 @@ describe('topic change starts a fresh model context', () => {
           state: freshLane(),
           media: {},
           frame: resolveContextBudgetFrame({ contextWindow: 32_000 }),
-          participantAudience: {
-            viewer: agentParticipant(agent.agentId),
-            tools: new Set(['read', 'conversation_control']),
-          },
+          availableTools: new Set(['read', 'conversation_control']),
         })
         const output = await run.materialize(
           bareFrame(raw, 'new-user'),
@@ -225,9 +221,7 @@ describe('topic change starts a fresh model context', () => {
         assistantMessageId: 'next',
       },
       {
-        speakerAgentId: 'lead',
         executionContext: sessionExecutionContext(session),
-        turnTrigger: { kind: 'colleague-request', messageIds: [boundary.messageId] },
       },
     )
     const frame = await admitRun(env, params, () => {})
@@ -237,7 +231,7 @@ describe('topic change starts a fresh model context', () => {
     const retry = reenterParams(frame.params, {}, { transientRetryCount: 1 })
     const view = await loadModelView(createModelContextRepository(db), {
       sessionId: session.id,
-      viewer: agentParticipant('lead'),
+      viewer: agentAuthor('lead'),
       historyMessages: retry.historyMessages,
       currentMessageId: 'retry',
       contextBoundaryId: retry.contextBoundaryId,

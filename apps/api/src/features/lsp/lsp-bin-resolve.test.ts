@@ -78,7 +78,7 @@ describe('npm language server lookup', () => {
   const dir = tempDirPerTest('lsp-bin')
   const shim = '#!/usr/bin/env node\nprocess.exit(0)\n'
 
-  test('a bundled server comes from the installation, not a node_modules the opened repo ships', () => {
+  test('a managed server comes from its install, not a node_modules the opened repo ships', () => {
     const install = path.join(dir(), 'install')
     const project = path.join(dir(), 'repo')
     writeTree(dir(), {
@@ -90,7 +90,7 @@ describe('npm language server lookup', () => {
     )
   })
 
-  test('a bundled server falls back to the project only when the installation lacks it', () => {
+  test('a managed server falls back to the project only while its install is missing', () => {
     const install = path.join(dir(), 'install')
     const project = path.join(dir(), 'repo')
     writeTree(dir(), { 'repo/node_modules/.bin/yaml-language-server': shim })

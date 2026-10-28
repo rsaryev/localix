@@ -76,9 +76,7 @@ pub(crate) fn installed() -> Vec<InstalledApp> {
 fn read_bundle(path: &Path) -> Option<InstalledApp> {
     let plist = std::fs::read_to_string(path.join("Contents/Info.plist")).ok()?;
     let read = |key: &str| plist_string(&plist, key);
-    let mini_app = read(keys::MINI_APP)
-        .or_else(|| read(keys::LEGACY_MINI_APP))
-        .filter(|mini_app| valid_mini_app(mini_app))?;
+    let mini_app = read(keys::MINI_APP).filter(|mini_app| valid_mini_app(mini_app))?;
     Some(InstalledApp {
         name: read("CFBundleName").unwrap_or_else(|| mini_app.clone()),
         bundle_id: read("CFBundleIdentifier")?,
@@ -271,13 +269,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn a_bundle_made_before_the_rename_is_still_found() {
-        let app = std::env::temp_dir().join(format!("localix-legacy-{}.app", std::process::id()));
+    fn a_bundle_is_found_by_its_mini_app_key() {
+        let app = std::env::temp_dir().join(format!("localix-bundle-{}.app", std::process::id()));
         std::fs::create_dir_all(app.join("Contents")).unwrap();
         std::fs::write(
             app.join("Contents/Info.plist"),
             "<plist><dict><key>CFBundleIdentifier</key><string>ai.localix.tauri.app.board</string>\
-             <key>LocalixPlugin</key><string>board</string></dict></plist>",
+             <key>LocalixMiniApp</key><string>board</string></dict></plist>",
         )
         .unwrap();
         let found = read_bundle(&app).map(|entry| entry.mini_app);

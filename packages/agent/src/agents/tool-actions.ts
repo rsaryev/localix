@@ -48,7 +48,7 @@ export interface AsyncToolRegistry {
     options?: {
       /**
        * How the job should be NAMED wherever jobs are listed — the prompt's background-job
-       * section, the `jobs` tool, the status strip.
+       * section, the `Jobs` tool, the status strip.
        *
        * Supplied by the registrant because only it knows: the host can guess a shell
        * command from the call's `command` argument, and for anything else it guessed
@@ -61,7 +61,7 @@ export interface AsyncToolRegistry {
        * about. Normally the host allocates it (`bg-1`, `bg-2`), which is right for a process
        * whose only identity is this call. A monitor is the other case: the wake that reaches
        * the agent names it (`mon-1`) before `jobs` is ever consulted, so the host adopting a
-       * different id would print an id in the wake that `jobs action="stop"` cannot resolve.
+       * different id would print an id in the wake that `TaskStop` cannot resolve.
        * Such an id comes from the host's own allocator, so it is always one the host issued.
        */
       jobId?: string

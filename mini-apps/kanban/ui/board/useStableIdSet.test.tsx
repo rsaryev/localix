@@ -32,7 +32,9 @@ describe('useStableIdSet', () => {
     let setIds: (ids: string[]) => void = () => {}
     function Probe({ initial }: { initial: string[] }) {
       const [ids, set] = React.useState(initial)
-      setIds = set
+      React.useEffect(() => {
+        setIds = set
+      }, [set])
       seen.push(useStableIdSet(ids))
       return null
     }

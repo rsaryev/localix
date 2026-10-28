@@ -71,10 +71,13 @@ export function useContentSearch({
   sessionId,
   query,
   enabled,
+  debounceMs = 300,
 }: {
   sessionId: string | null
   query: string
   enabled: boolean
+  /** Quiet time after typing before the search runs; a test passes 0. */
+  debounceMs?: number
 }): ContentSearch {
   const [caseSensitive, setCaseSensitive] = useState(false)
   const [wholeWord, setWholeWord] = useState(false)
@@ -142,7 +145,7 @@ export function useContentSearch({
       includeIgnored,
       refreshKey,
     ],
-    300,
+    debounceMs,
     {
       run:
         sessionId && active

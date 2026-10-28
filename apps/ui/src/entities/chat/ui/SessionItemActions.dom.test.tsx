@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
+import { turns } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -46,7 +47,7 @@ test('the quiet action slot remains keyboard reachable and keeps its open menu v
     await React.act(async () => {
       button.focus()
       button.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 30))
+      await turns()
     })
     expect(button.dataset.state).toBe('open')
     expect(document.querySelector('[role="menu"]')).not.toBeNull()

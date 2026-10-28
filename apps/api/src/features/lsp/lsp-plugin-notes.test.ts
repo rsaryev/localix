@@ -25,13 +25,6 @@ describe('plugin LSP notes', () => {
     expect(notes[1]).toContain('not found on PATH')
   })
 
-  test('the known install hint for typescript-language-server', () => {
-    const [summary] = summarizePluginLspServers({
-      ts: { command: 'typescript-language-server', extensionToLanguage: { '.zzz': 'x' } },
-    })
-    expect(summary?.installHint).toBe('npm i -g typescript-language-server typescript')
-  })
-
   test('withoutBuiltinOverlap drops a server whose every extension is built in', () => {
     expect(withoutBuiltinOverlap({ command: 'x', extensionToLanguage: { '.ts': 't' } })).toBeNull()
     expect(

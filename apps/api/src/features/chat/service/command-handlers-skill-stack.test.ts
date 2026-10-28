@@ -3,8 +3,7 @@ import { tmpdir } from 'node:os'
 import { handleSkillCommand } from './command-handlers'
 import type { CommandHandlerContext } from './command-handlers-context'
 import type { SkillRecord } from './skills'
-import { routedParticipants, sessionFixture } from '../../../testing/session-fixture'
-import { noLeadership } from '../runtime/conversation-strategy'
+import { routedAgent, sessionFixture } from '../../../testing/session-fixture'
 
 // skills.md, "Stack several skills in one message": "typing `/write-tests /fix-issue 123` loads
 // both skills and passes the trailing text `123` as `$ARGUMENTS` to each of them"; up to five more
@@ -12,7 +11,7 @@ import { noLeadership } from '../runtime/conversation-strategy'
 const session = sessionFixture({
   id: 's1',
   userId: 'u1',
-  agents: routedParticipants({ providerConnectionId: 'p1', modelId: 'gpt-4o' }),
+  agent: routedAgent({ providerConnectionId: 'p1', modelId: 'gpt-4o' }),
 })
 const skill = (name: string, content: string, extra: Partial<SkillRecord> = {}): SkillRecord => ({
   id: `file:${name}`,
@@ -32,7 +31,7 @@ function context(skills: SkillRecord[]) {
   const runs: Array<{ instruction: string; opts: Record<string, unknown> }> = []
   const ctx = {
     repo: { listMessages: async () => [] },
-    runner: { isBusy: () => false, isRunning: () => false, leadership: () => noLeadership },
+    runner: { isBusy: () => false, isRunning: () => false },
     now: () => 'now',
     gatherSessionSkills: async () => skills,
     gatherEnabledPluginSkills: async () => [],

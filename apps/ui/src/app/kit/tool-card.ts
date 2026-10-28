@@ -5,6 +5,7 @@ export {
   OutputBlock,
   ToolBody,
   ToolHeaderAction,
+  type ToolSectionLabel,
 } from '@/entities/chat/ui/tool-parts/ToolIO'
 export {
   hasItemError,

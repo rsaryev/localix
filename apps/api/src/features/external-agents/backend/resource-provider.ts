@@ -13,7 +13,7 @@
  *   localix://resource/external-agent/<provider>/<nativeSessionId>  → one session (leaf, expands)
  *
  * `<provider>` is the ADAPTER id — the same half
- * of the `<provider>:<nativeSessionId>` key the `external_agent_sessions` tool takes, so a URI and a tool
+ * of the `<provider>:<nativeSessionId>` key the `ExternalAgentSessions` tool takes, so a URI and a tool
  * call name one session without a translation table in between.
  *
  * Segments are minted by `buildResourceUri`, which percent-encodes each one, and read back with
@@ -265,7 +265,7 @@ export function createExternalAgentResourceProvider(
       if (!slice) {
         return {
           ok: false,
-          error: `no transcript on disk for "${key}" — the session may have been deleted since it was linked. List what is here with external_agent_sessions { action: "roster", providers: ["${provider}"] }.`,
+          error: `no transcript on disk for "${key}" — the session may have been deleted since it was linked. List what is here with ExternalAgentSessions { action: "roster", providers: ["${provider}"] }.`,
         }
       }
       return { ok: true, language: 'markdown', content: digest(slice) }

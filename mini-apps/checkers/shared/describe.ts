@@ -6,7 +6,7 @@ import { countPieces, other } from './rules'
  * The game as TEXT for the agent — tool results, the wake that asks for its move, and the context
  * the view publishes. One module, so every one of them describes the same position.
  *
- * Written from the agent's seat: it plays the user's opposite colour — unless the table's opponent is
+ * Written from the agent's side: it plays the user's opposite colour — unless the table's opponent is
  * the decision model, which then plays that colour and the agent only watches. The board is always drawn
  * from White's side with files and ranks, the way the notation reads, whichever colour the user
  * plays.
@@ -14,8 +14,8 @@ import { countPieces, other } from './rules'
 
 const SYMBOL = { white: ['w', 'W'], black: ['b', 'B'] } as const
 
-/** Who plays the other colour, from the agent's seat: itself, or the decision model. */
-const theirSeat = (game: Pick<Game, 'opponent'>) =>
+/** Who plays the other colour, from the agent's side: itself, or the decision model. */
+const theirSide = (game: Pick<Game, 'opponent'>) =>
   game.opponent === 'decision'
     ? { who: 'The decision model', whose: 'The decision model’s', was: 'was' }
     : { who: 'You', whose: 'Your', was: 'were' }
@@ -38,13 +38,13 @@ export function drawBoard(game: Pick<Game, 'board'>): string {
 export function statusLine(game: Game): string {
   const them = other(game.you)
   if (game.ending === 'resign')
-    return `The user won — ${theirSeat(game).who.toLowerCase()} resigned.`
+    return `The user won — ${theirSide(game).who.toLowerCase()} resigned.`
   if (game.status === 'won') return `The user won — ${them} has no move left.`
-  if (game.status === 'lost') return `${theirSeat(game).who} won — ${game.you} has no move left.`
+  if (game.status === 'lost') return `${theirSide(game).who} won — ${game.you} has no move left.`
   if (game.status === 'draw')
     return `Draw — ${QUIET_DRAW_PLIES / 2} moves each without a capture or a man moved.`
   if (game.turn === game.you) return `The user’s turn (${game.you}).`
-  return `${theirSeat(game).whose} turn (${them}).`
+  return `${theirSide(game).whose} turn (${them}).`
 }
 
 /**
@@ -58,12 +58,12 @@ export function recordLine(record: GameRecord): string | null {
 
 /** "The user played c3-d4." / "You captured d6:f4:d2, taking 2 pieces, and were crowned." */
 export function moveLine(move: Move, game: Pick<Game, 'opponent'> = { opponent: null }): string {
-  const seat = theirSeat(game)
-  const who = move.by === 'you' ? 'The user' : seat.who
+  const chat = theirSide(game)
+  const who = move.by === 'you' ? 'The user' : chat.who
   const taken = move.captured.length
   const verb = taken > 0 ? 'captured' : 'played'
   const count = taken > 0 ? `, taking ${taken === 1 ? 'a piece' : `${taken} pieces`}` : ''
-  const crowned = move.crowned ? `, and ${move.by === 'agent' ? seat.was : 'was'} crowned` : ''
+  const crowned = move.crowned ? `, and ${move.by === 'agent' ? chat.was : 'was'} crowned` : ''
   return `${who} ${verb} ${moveName(move)}${count}${crowned}.`
 }
 

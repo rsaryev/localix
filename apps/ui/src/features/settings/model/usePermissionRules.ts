@@ -32,7 +32,7 @@ export interface PermissionRulesData {
  * One scope's own permission rules: read, edit, apply.
  *
  * WHY EXPLICIT APPLY. This used to save 300 ms after every keystroke, and a rule field is
- * typed one character at a time — so `tool:ba` was persisted on the way to `tool:bash`, and
+ * typed one character at a time — so `tool:ba` was persisted on the way to `tool:Bash`, and
  * for a moment the stored policy said something nobody meant. The debounce then needed a
  * save chain, an edit epoch, a dirty ref and a rule that a reload must not clobber an
  * in-flight write, all to make a half-typed rule land safely. An Apply button is the same
@@ -45,7 +45,9 @@ export function usePermissionRules(scope: string, active: boolean): PermissionRu
   const [rules, setRules] = useState<CapabilityRule[]>([])
   const [stored, setStored] = useState<CapabilityRule[]>([])
   const [defaults, setDefaults] = useState<CapabilityRule[] | null>(null)
-  const [loading, setLoading] = useState(false)
+  // `loading` is derived: a read is in flight from the moment the effect starts it until it
+  // settles, and its cleanup clears the mark, so a restarted read shows as loading again.
+  const [settled, setSettled] = useState(false)
   const [saving, setSaving] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -57,7 +59,6 @@ export function usePermissionRules(scope: string, active: boolean): PermissionRu
     // surface on the wire every time the panel is built.
     if (!active) return
     let cancelled = false
-    setLoading(true)
     void backendClient
       .fetchCapabilityRules(parseCapabilityScope(scope))
       .then((loaded) => {
@@ -75,12 +76,14 @@ export function usePermissionRules(scope: string, active: boolean): PermissionRu
         if (!cancelled) setLoadError(inlineFailure(error, 'Could not load the rules.'))
       })
       .finally(() => {
-        if (!cancelled) setLoading(false)
+        if (!cancelled) setSettled(true)
       })
     return () => {
       cancelled = true
+      setSettled(false)
     }
   }, [scope, active, reload])
+  const loading = active && !settled
 
   const edit = useCallback((next: CapabilityRule[]) => {
     setRules(next)

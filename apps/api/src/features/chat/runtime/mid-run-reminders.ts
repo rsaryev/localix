@@ -22,19 +22,13 @@
  * leaves the entry queued, and it surfaces on the next turn instead — never lost, just
  * later. The buffer itself is process-lifetime and bounded.
  *
- * Ownership: entries are keyed by EXECUTION ADDRESS — session and participant — in a
- * process-wide map. Keyed by session alone, a job one participant started announced its end
- * inside a colleague's run, which then acted on work it never did. A sessionId is globally
- * unique and its owner is fixed, so the key cannot collide across users. It is NOT the
+ * Ownership: entries are keyed by session in a process-wide map. A sub-agent runs in its own
+ * session, so a job started by one run cannot announce its end inside another run's turn. A
+ * sessionId is globally unique and its owner is fixed, so the key cannot collide across users. It is NOT the
  * pattern the sibling `actionRegistry` uses (owner tagged onto the entry): that one is keyed
  * by toolCallId and reachable from an RPC carrying only that id, so it has to prove
- * ownership at the map. This queue is only ever read by the loop for the address it runs.
+ * ownership at the map. This queue is only ever read by the loop for the session it runs.
  */
-import {
-  agentLaneKey,
-  agentLaneSessionPrefix,
-  type ExecutionAddress,
-} from '../../agent-core/execution-address'
 import type { AgentRuntimeRunInput } from '@localixai/agent/runtime'
 
 /** Max entries buffered per session. Far above any real burst; a backstop, not a policy. */
@@ -42,7 +36,7 @@ export const MID_RUN_REMINDER_MAX = 8
 
 /** The RuntimeState map this module owns (kept on RuntimeState, reaped there). */
 export interface MidRunReminderState {
-  /** Execution-address key → queued reminder bodies (no tags), drained at the loop's tool seam. */
+  /** Session id → queued reminder bodies (no tags), drained at the loop's tool seam. */
   midRunReminders: Map<string, string[]>
 }
 
@@ -54,17 +48,16 @@ export interface MidRunReminderState {
  */
 export function recordMidRunReminder(
   state: MidRunReminderState,
-  address: ExecutionAddress,
+  sessionId: string,
   body: string,
   cap: number = MID_RUN_REMINDER_MAX,
 ): void {
   const trimmed = body.trim()
   if (!trimmed) return
-  const key = agentLaneKey(address)
-  const queue = state.midRunReminders.get(key) ?? []
+  const queue = state.midRunReminders.get(sessionId) ?? []
   queue.push(trimmed)
   while (queue.length > cap) queue.shift()
-  state.midRunReminders.set(key, queue)
+  state.midRunReminders.set(sessionId, queue)
 }
 
 /**
@@ -75,13 +68,9 @@ export function recordMidRunReminder(
  * One envelope for the whole batch (not one per entry) keeps two facts arriving
  * in the same turn from reading as two separate interruptions.
  */
-export function drainMidRunReminders(
-  state: MidRunReminderState,
-  address: ExecutionAddress,
-): string | null {
-  const key = agentLaneKey(address)
-  const queue = state.midRunReminders.get(key)
-  state.midRunReminders.delete(key)
+export function drainMidRunReminders(state: MidRunReminderState, sessionId: string): string | null {
+  const queue = state.midRunReminders.get(sessionId)
+  state.midRunReminders.delete(sessionId)
   if (!queue || queue.length === 0) return null
   return [
     '<system-reminder>',
@@ -108,7 +97,7 @@ export function drainMidRunReminders(
  * failed, sent to a tool that denies the output exists, and forbidden to re-run,
  * has been handed a dead end.
  *
- * `tool_output` is the real handle: `emitBackground` writes the full output to
+ * `ToolOutput` is the real handle: `emitBackground` writes the full output to
  * the job's tool item (`details.output` + `resultText`) and persists it on `done`,
  * and that tool serves any earlier call's stored output back by tool_call_id. When
  * the user disables it, the reminder omits the dead call and permits a safe rerun.
@@ -123,7 +112,7 @@ export function backgroundJobFinishedReminder(
 ): string {
   const status = backgroundJobOutcome(exitCode, jobStatus, stop)
   const recovery = recoveryToolAvailable
-    ? `Its full output is stored: \`tool_output(action="get", tool_call_id="${toolCallId}")\`.`
+    ? `Its full output is stored: \`ToolOutput(action="get", tool_call_id="${toolCallId}")\`.`
     : 'Its output is not stored in this run.'
   return `A background job you started ${status} while you were working: \`${command}\`. ${recovery}`
 }
@@ -179,8 +168,5 @@ export function withMidRunReminders(
 
 /** Reap a deleted session's queued reminders. */
 export function forgetMidRunReminders(state: MidRunReminderState, sessionId: string): void {
-  const prefix = agentLaneSessionPrefix(sessionId)
-  for (const key of state.midRunReminders.keys()) {
-    if (key.startsWith(prefix)) state.midRunReminders.delete(key)
-  }
+  state.midRunReminders.delete(sessionId)
 }

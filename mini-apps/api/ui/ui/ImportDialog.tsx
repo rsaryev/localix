@@ -8,6 +8,7 @@ import { useRef, useState } from 'react'
 import { FileUp } from 'lucide-react'
 import { acknowledgeInline } from '@localixai/mini-app-sdk/ui'
 import { Button } from '@localixai/kit/button'
+import { Field } from '@localixai/kit/field'
 import { Input } from '@localixai/kit/input'
 import { Textarea } from '@localixai/kit/textarea'
 import {
@@ -22,6 +23,7 @@ import {
 import type { ImportResponse } from '../../backend/contracts'
 import { useApiProblem } from '../problems'
 import { restApi } from '../restApi'
+import { focusOnMount } from './focusOnMount'
 
 export function ImportDialog({
   sessionId,
@@ -115,7 +117,7 @@ export function ImportDialog({
           {!importResult && (
             <>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => importFile.current?.click()}>
+                <Button variant="ghost" size="sm" onClick={() => importFile.current?.click()}>
                   <FileUp className="size-3.5" />
                   Choose file
                 </Button>
@@ -134,15 +136,14 @@ export function ImportDialog({
                 />
               </div>
               <Textarea
-                autoFocus
+                ref={focusOnMount}
                 value={importText}
                 onChange={(e) => changeImportSource(e.target.value)}
                 placeholder="curl https://api.example.com/users"
                 aria-label="Import source"
                 className="min-h-36 font-mono"
               />
-              <label className="grid gap-1">
-                <span className="text-2xs font-medium text-text-soft">Base URL (optional)</span>
+              <Field label="Base URL (optional)">
                 <Input
                   value={importBaseUrl}
                   onChange={(event) => {
@@ -152,7 +153,7 @@ export function ImportDialog({
                   placeholder="https://api.example.com"
                   className="font-mono text-xs"
                 />
-              </label>
+              </Field>
             </>
           )}
           {(importResult ?? importPreview) && (
@@ -169,7 +170,7 @@ export function ImportDialog({
             </Button>
           ) : (
             <>
-              <Button variant="outline" onClick={closeImport}>
+              <Button variant="ghost" onClick={closeImport}>
                 Cancel
               </Button>
               {importPreview ? (

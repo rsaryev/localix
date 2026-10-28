@@ -76,28 +76,28 @@ export function useResourceDrill(input: ResourceDrillInput): ResourceDrill {
     () => new Map(),
   )
 
-  // Provider trees are live (connections and mini app enablement can change). Do
-  // not carry a successful or failed page across closing/reopening the picker.
-  useEffect(() => {
-    if (resourceMode) return
-    resourceCache.current.clear()
-    resourceShownParent.current = null
+  // Provider trees are live (connections and mini app enablement can change). Do not carry a
+  // successful or failed page across closing/reopening the picker. Resource visibility may also be
+  // session-owned (for example, one resource set per chat), so a picker that stays open while the
+  // active chat changes must not reuse the previous session's page. Both are a change of `scope`
+  // (null while the picker is closed): reset while rendering, so no frame shows the old pages.
+  const scope = resourceMode ? (input.sessionId ?? '@no-session') : null
+  const [prevScope, setPrevScope] = useState(scope)
+  if (prevScope !== scope) {
+    setPrevScope(scope)
     setResourceNodes([])
     setResourceNotices([])
     setResourceNodeByUri(new Map())
-    setResourcePending(false)
-    setResourceRetry(0)
-  }, [resourceMode])
-
-  // Resource visibility may be session-owned (for example, one resource set per chat). A picker that
-  // remains open while the active chat changes must not reuse the previous session's page.
+    if (scope === null) {
+      setResourcePending(false)
+      setResourceRetry(0)
+    }
+  }
+  // Declared before the fetch effect, so the cache is already empty when the new scope's fetch runs.
   useEffect(() => {
     resourceCache.current.clear()
     resourceShownParent.current = null
-    setResourceNodes([])
-    setResourceNotices([])
-    setResourceNodeByUri(new Map())
-  }, [input.sessionId])
+  }, [scope])
 
   useEffect(() => {
     if (!resourceMode) return

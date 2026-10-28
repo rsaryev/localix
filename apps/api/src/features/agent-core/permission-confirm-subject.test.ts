@@ -58,7 +58,7 @@ describe('what a card shows and how far it may reach', () => {
     expect(shown.targets).toEqual([outside, inside])
     expect(shown.command).toBe(`${outside}\n${inside}`)
     const grant = `read(${path.dirname(outside)}${path.sep}*)`
-    expect(grantCoversCall(grant, { toolName: 'read', ...shown })).toBe(false)
+    expect(grantCoversCall(grant, { toolName: 'Read', ...shown })).toBe(false)
   })
 
   test('a call that names nothing shows the tool and offers it for the session only', () => {

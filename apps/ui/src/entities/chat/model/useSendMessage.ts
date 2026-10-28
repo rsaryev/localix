@@ -4,6 +4,7 @@ import { toast } from '@/shared/lib/notify'
 import { runThemeCommand, themeCommandArgument } from '@/shared/theme/themeChoice'
 import { composerBus } from '@/shared/lib/composerBus'
 import { sendFailure } from '@/entities/chat/model/sendFailure'
+import { carriesAuthoredContent } from '@/entities/chat/model/authoredMessage'
 import { sendChatMessage } from '@/entities/chat/model/sendChatMessage'
 import { useChatStore } from '@/entities/chat/model/store'
 import { activeConversationDraft } from '@/entities/chat/model/conversationStartStrategy'
@@ -139,7 +140,7 @@ export function useSendMessage({
       // binding-only send arrives with an EMPTY composer prompt but a non-empty
       // override (the refs' raw tokens), so the guard checks the effective text.
       const text = textOverride ?? prompt
-      if (!text.trim() && messageBindings.length === 0) return
+      if (!carriesAuthoredContent(text, messageBindings)) return
 
       // Client-side control command: /fork duplicates the session and navigates
       // to the copy — it never goes through the agent send pipeline.

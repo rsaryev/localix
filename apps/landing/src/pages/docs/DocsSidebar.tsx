@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router'
 import { ChevronRight } from 'lucide-react'
 import { Button } from '@localixai/kit/button'
@@ -41,17 +41,17 @@ export function DocsSidebar({ active }: { active: DocPage }) {
   const sections = groupBySection(docPages)
   const activeCategory = active.section === 'features' ? featureCategoryFor(active) : null
 
-  const [openBranches, setOpenBranches] = useState<Record<string, boolean>>(() => ({
+  const activeBranches = {
     [active.sectionTitle]: true,
     ...(activeCategory ? { [`${active.sectionTitle}::${activeCategory}`]: true } : {}),
-  }))
-  useEffect(() => {
-    setOpenBranches((open) => ({
-      ...open,
-      [active.sectionTitle]: true,
-      ...(activeCategory ? { [`${active.sectionTitle}::${activeCategory}`]: true } : {}),
-    }))
-  }, [active, activeCategory])
+  }
+  const [openBranches, setOpenBranches] = useState<Record<string, boolean>>(() => activeBranches)
+  // Arriving on another page opens its branch, adjusted while rendering rather than in an effect.
+  const [shownActive, setShownActive] = useState(active)
+  if (shownActive !== active) {
+    setShownActive(active)
+    setOpenBranches((open) => ({ ...open, ...activeBranches }))
+  }
 
   const isOpen = (key: string) => openBranches[key] ?? false
   const toggle = (key: string) =>

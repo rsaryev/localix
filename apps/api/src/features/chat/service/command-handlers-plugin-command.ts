@@ -1,5 +1,4 @@
 import { sessionRoute } from '../../../contracts/session-route'
-import { commandTarget } from './command-participant'
 import {
   skillToolPathVars,
   substituteToolPathVars,
@@ -78,16 +77,8 @@ export async function handlePluginCommand(
   if (sameNameSkill && sameNameSkill.userInvocable !== false) return null
   if (match) {
     // No busy refusal: a command sent while the session works waits in the queue whole
-    // (`run-macro.ts`). The participant the person is talking to answers it.
-    const speaker = (
-      await commandTarget(
-        session,
-        () => repo.listMessages(userId, sessionId),
-        '',
-        ctx.runner.leadership(userId, session.projectId),
-      )
-    )?.participant
-    const speakerRoute = speaker ?? sessionRoute(session)
+    // (`run-macro.ts`). The session's agent answers it.
+    const route = sessionRoute(session)
     const parsed = parsePluginCommandArgs(match.command, argString, match.plugin)
     if ('usage' in parsed) {
       return insertDirectReply(userId, sessionId, prompt, parsed.usage, ts, 'warning')
@@ -99,12 +90,12 @@ export async function handlePluginCommand(
       pluginDataDir: pluginDataDir(match.plugin, userHome()),
     })
     // The agent's rules, which every injected command meets first (`skill-command-authorize.ts`).
-    const rules = await ctx.loadSkillCommandRules?.(userId, speakerRoute.agentId)
+    const rules = await ctx.loadSkillCommandRules?.(userId, route.agentId)
     let instruction: string
     try {
       instruction = await renderPluginPrompt(match.command.prompt, parsed.values, argString, {
         sessionId,
-        effort: speakerRoute.reasoningEffort ?? undefined,
+        effort: route.reasoningEffort ?? undefined,
         pluginDir: match.pluginDir,
         pluginName: match.plugin,
         ...(match.dataDir ? { dataDir: match.dataDir } : {}),
@@ -176,7 +167,7 @@ export async function handlePluginCommand(
         // which runMacroCommand treats as "no override".
         ...(match.command.model
           ? {
-              modelId: resolveModelAlias(match.command.model, speakerRoute.modelId ?? undefined),
+              modelId: resolveModelAlias(match.command.model, route.modelId ?? undefined),
             }
           : {}),
       },

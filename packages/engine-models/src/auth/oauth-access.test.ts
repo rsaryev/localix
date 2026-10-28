@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from 'bun:test'
+import { afterEach, describe, expect, setSystemTime, test } from 'bun:test'
 
 import type {
   RuntimeCredential,
@@ -82,8 +82,12 @@ describe('an OAuth credential kept fresh for the whole run', () => {
     // Fresh when the run binds its model, inside the refresh margin a moment later.
     const access = refreshingAccess('copilot', oauth('T1', 60_300), flow, undefined, {})
     await request(access, 'T1')
-    await Bun.sleep(400)
-    await request(access, 'T1')
+    setSystemTime(new Date(Date.now() + 400)) // the clock moves on; no waiting
+    try {
+      await request(access, 'T1')
+    } finally {
+      setSystemTime()
+    }
     expect(sent).toEqual(['T1', 'T2'])
   })
 

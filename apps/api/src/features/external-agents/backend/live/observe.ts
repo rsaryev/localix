@@ -2,7 +2,7 @@
  * Turn the host's tool-call hooks into live delegation state.
  *
  * Wiring: `onPostToolCall` fires for EVERY tool the model runs, with the tool's full input and
- * result. For the built-in `bash` tool's interactive terminal actions the result carries
+ * result. For the built-in `Bash` tool's interactive terminal actions the result carries
  * `details = { action, terminalId, command, screen }`, where `screen` is the rendered
  * `ScreenSnapshot` the host already produced for the model. We read it and classify it.
  *
@@ -15,6 +15,7 @@
  * synchronous, allocation-light, and total.
  */
 
+import { TOOL } from '../../../agent-core/tool-names'
 import type { LiveStore } from './store'
 import { detectLaunchCwd, detectLaunchKind } from './launch-kinds'
 
@@ -78,7 +79,7 @@ export function observeToolCall(
     sessionId: string
   },
 ): void {
-  if (event.toolName !== 'bash') return
+  if (event.toolName !== TOOL.Bash) return
   const details = (event.result.details ?? {}) as TerminalDetails
   const action = str(details.action)
   const terminalId = str(details.terminalId)

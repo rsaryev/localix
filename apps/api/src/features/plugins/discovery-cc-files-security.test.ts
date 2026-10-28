@@ -98,10 +98,10 @@ describe('bounded plugin command/agent markdown discovery', () => {
 
 describe('agent tools lists', () => {
   test.each([
-    ['Agent(worker, researcher), Read', ['delegate', 'read'], ['worker', 'researcher']],
-    ['[Task(worker), Read]', ['delegate', 'read'], ['worker']],
-    ['Agent, Read', ['delegate', 'read'], undefined],
-    ['Read', ['read'], undefined],
+    ['Agent(worker, researcher), Read', ['Agent', 'Read'], ['worker', 'researcher']],
+    ['[Task(worker), Read]', ['Agent', 'Read'], ['worker']],
+    ['Agent, Read', ['Agent', 'Read'], undefined],
+    ['Read', ['Read'], undefined],
   ])('tools: %s names the types it may delegate to', async (tools, mapped, types) => {
     const root = await fs.mkdtemp(join(tmpdir(), 'plugin-agent-types-'))
     try {
@@ -116,7 +116,7 @@ describe('agent tools lists', () => {
     }
   })
 
-  test('a disallowedTools entry with a specifier survives to the loaded agent as a pattern', async () => {
+  test('a disallowedTools entry with a specifier removes the whole tool, as in Claude Code', async () => {
     const root = await fs.mkdtemp(join(tmpdir(), 'plugin-agent-deny-'))
     try {
       const agent = join(root, 'safe.md')
@@ -125,10 +125,10 @@ describe('agent tools lists', () => {
         '---\nname: safe\ndescription: d\ndisallowedTools: Bash(rm *), Write\n---\nBe safe.\n',
       )
       const parsed = await parseAgentFile(agent)
-      expect(parsed?.disallowedTools).toEqual(['bash(rm *)', 'write'])
+      expect(parsed?.disallowedTools).toEqual(['Bash', 'Write'])
       expect(buildLoadedAgent('p', parsed!, (text) => text).disallowedTools).toEqual([
-        'bash(rm *)',
-        'write',
+        'Bash',
+        'Write',
       ])
     } finally {
       await fs.rm(root, { recursive: true, force: true })

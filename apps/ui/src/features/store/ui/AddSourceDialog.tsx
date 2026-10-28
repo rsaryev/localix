@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useEffectEvent, useRef, useState, type FormEvent } from 'react'
 import type { PackageKind, SourcePreview } from '@localixai/store'
 import { Button } from '@localixai/kit/button'
 import {
@@ -97,11 +97,12 @@ export function AddSourceDialog({
     setChosen(previews[0]!.kind)
   }
 
+  // `readSource` is new each render; the address is what the read follows.
+  const readInitial = useEffectEvent((input: string) => readSource(input))
   useEffect(() => {
     if (!initial?.input || readFor.current === initial.input) return
     readFor.current = initial.input
-    void readSource(initial.input)
-    // `readSource` is new each render; the address is what this follows.
+    void readInitial(initial.input)
   }, [initial?.input])
 
   const picked = found?.find((preview) => preview.kind === chosen)

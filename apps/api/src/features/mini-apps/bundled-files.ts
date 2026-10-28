@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { promises as fs } from 'node:fs'
 import { join, relative } from 'node:path'
 
-import { MARKER_FILE, isManagedMarkerKind, type MARKER_KIND } from './managed-copy'
+import { MARKER_FILE, MARKER_KIND } from './managed-copy'
 
 /**
  * The files the bundled mini app sync reads (`bundled-install.ts`): a source tree's content
@@ -72,7 +72,7 @@ export async function readMarker(dir: string): Promise<ManagedMarker | null> {
     const parsed = JSON.parse(
       await fs.readFile(join(dir, MARKER_FILE), 'utf8'),
     ) as Partial<ManagedMarker>
-    return isManagedMarkerKind(parsed.kind) && typeof parsed.fingerprint === 'string'
+    return parsed.kind === MARKER_KIND && typeof parsed.fingerprint === 'string'
       ? (parsed as ManagedMarker)
       : null
   } catch {

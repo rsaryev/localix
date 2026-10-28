@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { defineAgentTool, type AgentTool } from '@localixai/agent/agents'
 import { z } from 'zod'
 
-import { DEFAULT_AGENT_HANDLE } from '../../db/participant'
+import { DEFAULT_AGENT_NAME } from '../../db/author'
 import { builtinAgentPreset } from '../capabilities/builtin-agent-presets'
 import { PERMISSION_MODES } from '../../contracts/permission-modes'
 import { loadBundledMiniAppTools, type LoadedBundledTools } from './testing/bundled-mini-app-tools'
@@ -42,9 +42,9 @@ afterAll(async () => {
  * The shipped presets. Only `localix` ships in code now: other roles are ordinary agents the user
  * owns, so the matrix pins the one preset whose roster is every tool a chat run builds.
  */
-const PRESETS: PresetUnderTest[] = [DEFAULT_AGENT_HANDLE].map((handle) => ({
-  handle,
-  rules: builtinAgentPreset(handle),
+const PRESETS: PresetUnderTest[] = [DEFAULT_AGENT_NAME].map((name) => ({
+  name,
+  rules: builtinAgentPreset(name),
   onRoster: () => true,
   expected: () => undefined,
 }))
@@ -67,7 +67,7 @@ describe('the roster under test', () => {
   })
 
   test('every shipped agent has a preset, and localix is among them', () => {
-    expect(PRESETS.map((preset) => preset.handle)).toContain('localix')
+    expect(PRESETS.map((preset) => preset.name)).toContain('localix')
     for (const preset of PRESETS) expect(preset.rules.length).toBeGreaterThan(0)
   })
 })
@@ -88,7 +88,7 @@ describe('the matrix', () => {
       classify: () => ({ effect: 'read' }),
       execute: async () => ({ content: 'wrote' }),
     }) as unknown as AgentTool
-    const localix = PRESETS.filter((preset) => preset.handle === 'localix')
+    const localix = PRESETS.filter((preset) => preset.name === 'localix')
     const findings = await matrixMismatches(
       localix,
       [
@@ -129,13 +129,13 @@ describe('what each mode tells the run', () => {
       const baseline = modeSurface(preset.rules, 'default', pluginNames).denied
       // Every shipped preset is `localix`, whose roster is every tool a chat run builds.
       const expected: string[] = []
-      expect({ [preset.handle]: [...baseline].sort() }).toEqual({
-        [preset.handle]: [...expected].sort(),
+      expect({ [preset.name]: [...baseline].sort() }).toEqual({
+        [preset.name]: [...expected].sort(),
       })
       for (const mode of PERMISSION_MODES)
         expect({
-          [`${preset.handle}/${mode}`]: modeSurface(preset.rules, mode, pluginNames).denied,
-        }).toEqual({ [`${preset.handle}/${mode}`]: baseline })
+          [`${preset.name}/${mode}`]: modeSurface(preset.rules, mode, pluginNames).denied,
+        }).toEqual({ [`${preset.name}/${mode}`]: baseline })
     }
   })
 })

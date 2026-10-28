@@ -3,7 +3,7 @@ import type { LspServerState } from './lsp-manager-types'
 
 interface DiagnosticClientState extends Pick<
   LspServerState,
-  'serverId' | 'serverName' | 'rootDir' | 'status'
+  'serverId' | 'serverName' | 'rootDir' | 'status' | 'progress' | 'unavailable'
 > {
   diagnostics: Record<string, LspDiagnostic[]>
   reportsDiagnostics?: false
@@ -32,6 +32,8 @@ export function createProjectDiagnostics(
         status: mc.status,
         errorCount,
         warningCount,
+        ...(mc.progress !== undefined ? { progress: mc.progress } : {}),
+        ...(mc.unavailable ? { unavailable: mc.unavailable } : {}),
       }
     })
   }

@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
+import { turns as settle } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -10,8 +11,6 @@ afterAll(async () => {
   await new Promise((resolve) => setTimeout(resolve, 0))
   await teardown()
 })
-
-const settle = () => new Promise((resolve) => setTimeout(resolve, 20))
 
 async function renderToolbar(initialSearch = '') {
   const React = await import('react')
@@ -31,7 +30,7 @@ async function renderToolbar(initialSearch = '') {
     const [search, setSearch] = useState(initialSearch)
     const results = ['alpha', 'bravo'].filter((name) => name.includes(search))
     return (
-      <div onKeyDown={(event) => bubbled.push(event.key)}>
+      <div role="presentation" onKeyDown={(event) => bubbled.push(event.key)}>
         <Command shouldFilter={false} label="Search models and providers">
           <div data-slot="model-browser-main-panel">
             <ModelBrowserSearchToolbar

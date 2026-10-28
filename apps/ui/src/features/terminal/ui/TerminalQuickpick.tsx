@@ -66,9 +66,10 @@ export function TerminalQuickpick<T>({
       ?.querySelector<HTMLElement>('[data-active="true"]')
       ?.scrollIntoView({ block: 'nearest' })
   }, [active, filtered.length])
-  useEffect(() => {
-    setActive((current) => Math.min(current, Math.max(filtered.length - 1, 0)))
-  }, [filtered.length])
+  // The list can narrow under the highlight (items change, not only typing): pull it back in range
+  // while rendering, so no frame shows an option that is not there.
+  const lastIndex = Math.max(filtered.length - 1, 0)
+  if (active > lastIndex) setActive(lastIndex)
 
   const choose = (i: number) => {
     const item = filtered[i]

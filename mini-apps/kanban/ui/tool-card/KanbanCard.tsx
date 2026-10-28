@@ -193,12 +193,12 @@ export function KanbanCard({ item }: { item: ToolCallItem }) {
           </div>
         )}
         {note && (
-          <IORow label="NOTE">
+          <IORow label="In">
             <OutputBlock>{note}</OutputBlock>
           </IORow>
         )}
         {task?.error && (
-          <IORow label="WHY">
+          <IORow label="Error">
             <OutputBlock linkify>{task.error}</OutputBlock>
           </IORow>
         )}

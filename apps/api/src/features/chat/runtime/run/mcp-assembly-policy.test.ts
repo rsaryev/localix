@@ -6,8 +6,8 @@ import { composeCapabilities } from '../../../capabilities/resolve'
 import { UNDECIDED } from '../../../capabilities/availability'
 const specialistRules = [
   { action: 'tool:*', resource: '*', effect: 'deny' as const },
-  { action: 'tool:read', resource: '*', effect: 'allow' as const },
-  { action: 'tool:mcp_resources', resource: '*', effect: 'allow' as const },
+  { action: 'tool:Read', resource: '*', effect: 'allow' as const },
+  { action: 'tool:McpResources', resource: '*', effect: 'allow' as const },
 ]
 import { resolveRunProfile, type RunProfile } from '../../../agent-core/run-shape'
 import type { ToolLedger } from '../../../agent-core/tool-ledger'
@@ -50,7 +50,7 @@ async function assemble(
   restore = () => mocked.mockRestore()
   gatherCalls = mocked.mock.calls
   let visibleLedger: ToolLedger | undefined
-  const primary = input.primary ?? [tool('read')]
+  const primary = input.primary ?? [tool('Read')]
   const result = await assembleRunTools({
     env: { mcpRepo: { listForScope: async () => [{ name: 'records', config: {} }] } },
     userId: 'u',
@@ -115,17 +115,17 @@ test('a resource provider fills an empty optional core port in the canonical led
     gathered: { ...gather, tools: [], serverByTool: {}, resourceServers: ['records'] },
     ledger: new Map([
       [
-        'mcp_resources',
+        'McpResources',
         {
           state: 'withheld',
-          reason: { layer: 'authority', kind: 'missing', capability: 'mcp_resources' },
+          reason: { layer: 'authority', kind: 'missing', capability: 'McpResources' },
         },
       ],
     ]),
   })
-  expect(result.tools.map((entry) => entry.name)).toContain('mcp_resources')
-  expect(result.preflightTools.map((entry) => entry.name)).toContain('mcp_resources')
-  expect(result.ledger.get('mcp_resources')).toEqual({ state: 'live' })
+  expect(result.tools.map((entry) => entry.name)).toContain('McpResources')
+  expect(result.preflightTools.map((entry) => entry.name)).toContain('McpResources')
+  expect(result.ledger.get('McpResources')).toEqual({ state: 'live' })
   expect(result.visibleLedger).toEqual(result.ledger)
 })
 
@@ -136,18 +136,18 @@ const gatheredFor = () => gatherCalls[0]?.[1] as { channelTarget?: unknown } | u
 test('a child that inherits the conversation’s tools gathers MCP behind the activator, without its channels', async () => {
   const result = await assemble({ profile: subagent({ inheritsConversationTools: true }) })
   expect(result.ledger.get(candidate.name)).toMatchObject({ state: 'deferred' })
-  expect(result.tools.map((entry) => entry.name)).toEqual(['read', 'activate_tools'])
+  expect(result.tools.map((entry) => entry.name)).toEqual(['Read', 'ToolSearch'])
   // A channel among the chat's servers keeps speaking into the chat, not into its child.
   expect(gatheredFor()?.channelTarget).toBeUndefined()
 })
 
 test('a closed child gathers MCP only for a tools list that names an MCP tool, then on the wire', async () => {
-  const closed = await assemble({ profile: subagent({ tools: ['read'] }) })
+  const closed = await assemble({ profile: subagent({ tools: ['Read'] }) })
   expect(gatherCalls).toHaveLength(0)
-  expect(closed.tools.map((entry) => entry.name)).toEqual(['read'])
+  expect(closed.tools.map((entry) => entry.name)).toEqual(['Read'])
   restore?.()
-  const named = await assemble({ profile: subagent({ tools: ['read', candidate.name] }) })
-  expect(named.tools.map((entry) => entry.name)).toEqual(['read', candidate.name])
+  const named = await assemble({ profile: subagent({ tools: ['Read', candidate.name] }) })
+  expect(named.tools.map((entry) => entry.name)).toEqual(['Read', candidate.name])
   expect(named.ledger.get(candidate.name)).toEqual({ state: 'live' })
   expect(gatheredFor()?.channelTarget).toBeUndefined()
 })

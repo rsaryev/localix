@@ -102,7 +102,7 @@ export function DocsSearch() {
                   onClick={() => {
                     selected.current = true
                     setOpen(false)
-                    navigate(`/docs/${page.slug}`)
+                    void navigate(`/docs/${page.slug}`)
                   }}
                 >
                   <span className="text-xs text-text-faint">{page.sectionTitle}</span>

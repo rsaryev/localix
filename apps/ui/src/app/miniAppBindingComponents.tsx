@@ -23,6 +23,7 @@ export function MiniAppContextBindingIcon({ binding, className }: MiniAppContext
     return <Icon className={[className, color].filter(Boolean).join(' ')} />
   }
   const Icon = refIcon({ kind: binding.target.kind, uri: binding.target.uri })
+  // oxlint-disable-next-line react/static-components -- `refIcon` looks the icon up in a static table; its identity never changes between renders
   return <Icon className={className} />
 }
 
@@ -41,6 +42,7 @@ type BindingPreviewState =
 export function MiniAppContextBindingPreview(props: MiniAppContextBindingPreviewProps) {
   'use no memo'
   const Conversation = conversationPreview(props.binding.target.kind)
+  // oxlint-disable-next-line react/static-components -- `conversationPreview` returns one module-level component per link kind
   if (Conversation) return <Conversation binding={props.binding} className={props.className} />
   return <FileBindingPreview {...props} />
 }
@@ -59,21 +61,28 @@ function FileBindingPreview({
   const mediaId = contextBindingMediaId(binding)
   const previewKind = contextBindingPreviewKind(binding)
   const fallbackMimeType = contextBindingImageMimeType(binding)
-  const key = mediaId ? `media\0${mediaId}` : `${resolvedSessionId ?? ''}\0${path ?? ''}`
-  const [state, setState] = useState<BindingPreviewState>({ key: '', kind: 'unavailable' })
+  // What a stored state answers: a new target, kind or fallback type is a new question, so an
+  // old answer stops matching without any state being reset from an effect.
+  const target = mediaId ? `media\0${mediaId}` : `${resolvedSessionId ?? ''}\0${path ?? ''}`
+  const key = `${target}\0${previewKind ?? ''}\0${fallbackMimeType ?? ''}`
+  const [stored, setState] = useState<BindingPreviewState>({ key: '', kind: 'unavailable' })
+  // A stored media image needs no request: its address is known while rendering. Only a failed
+  // load (recorded under the same key) takes it back.
+  const mediaImage =
+    mediaId && previewKind === 'image'
+      ? {
+          key,
+          kind: 'image' as const,
+          src: mediaSrc({ mediaType: fallbackMimeType ?? '', mediaId }),
+        }
+      : null
+  const state: BindingPreviewState =
+    mediaImage && !(stored.key === key && stored.kind === 'unavailable') ? mediaImage : stored
 
   useEffect(() => {
     if (!previewKind || (!mediaId && (!path || !resolvedSessionId))) return
+    if (mediaId && previewKind === 'image') return
     const controller = new AbortController()
-    if (mediaId && previewKind === 'image') {
-      setState({
-        key,
-        kind: 'image',
-        src: mediaSrc({ mediaType: fallbackMimeType ?? '', mediaId }),
-      })
-      return () => controller.abort()
-    }
-    setState({ key, kind: 'loading' })
     const content = mediaId
       ? apiFetch(mediaSrc({ mediaType: fallbackMimeType ?? '', mediaId }), {
           signal: controller.signal,

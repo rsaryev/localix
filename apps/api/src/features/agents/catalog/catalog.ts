@@ -12,7 +12,7 @@ export interface AgentCatalog {
   shadowedBy(agent: CatalogAgent): CatalogAgent | undefined
   /**
    * THE one lookup of an agent by what a person or model typed: its name (`reviewer`,
-   * `@reviewer`, `@agent-reviewer`, a plugin's `acme:reviewer`), case-insensitive only when that
+   * `@agent-reviewer`, a plugin's `acme:reviewer`), case-insensitive only when that
    * is unambiguous, and a plugin's bare name only when one plugin alone has it. Chat, delegation,
    * loops, mentions and `/skill` call this; none of them matches names itself.
    */
@@ -32,15 +32,9 @@ export function composeCatalog(ordered: readonly CatalogAgent[]): AgentCatalog {
   const active = [...winners.values()]
 
   const named = (wanted: string): ResolvedAgent => {
-    const exact = active.find(
-      (agent) => agent.fullName === wanted || agent.aliases?.includes(wanted),
-    )
+    const exact = active.find((agent) => agent.fullName === wanted)
     if (exact) return { agent: exact }
-    const folded = active.filter(
-      (agent) =>
-        lower(agent.fullName) === lower(wanted) ||
-        agent.aliases?.some((alias) => lower(alias) === lower(wanted)),
-    )
+    const folded = active.filter((agent) => lower(agent.fullName) === lower(wanted))
     if (folded.length === 1) return { agent: folded[0]! }
     if (folded.length > 1) return { ambiguous: folded.map((agent) => agent.fullName) }
     const bare = active.filter(
@@ -58,7 +52,8 @@ export function composeCatalog(ordered: readonly CatalogAgent[]): AgentCatalog {
       return winner && winner !== agent ? winner : undefined
     },
     resolve(reference) {
-      const wanted = reference.trim().replace(/^@/, '').trim()
+      // Claude Code's `@agent-<name>` form is the only `@` spelling; a bare `@name` is not a name.
+      const wanted = reference.trim().replace(/^@(?=agent-)/, '')
       if (!wanted) return null
       return named(wanted) ?? (wanted.startsWith('agent-') ? named(wanted.slice(6)) : null)
     },

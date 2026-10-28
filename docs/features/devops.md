@@ -21,7 +21,7 @@ Docker-compatible daemon, while Kubernetes requires a usable kubeconfig and clus
 
 ### Agent access
 
-The workbench contributes no agent tools. Agents can run `docker` and `kubectl` through `bash` when
+The workbench contributes no agent tools. Agents can run `docker` and `kubectl` through `Bash` when
 those CLIs are installed and their permission rules allow the commands.
 
 `kubectl delete` and `kubectl drain` match bash's dangerous command patterns. The agent's permission
@@ -71,7 +71,7 @@ the workbench does not change kubeconfig's current context.
 ## Limits
 
 - Disabling `devops` removes both workbench areas and their resource providers. Docker and
-  Kubernetes cannot be enabled independently. The separate `bash` tool remains governed by the
+  Kubernetes cannot be enabled independently. The separate `Bash` tool remains governed by the
   agent's rules.
 - Docker requires a reachable daemon. CLI fallback, Compose actions, Dockerfile or Compose run bars,
   and interactive container exec require the `docker` executable.

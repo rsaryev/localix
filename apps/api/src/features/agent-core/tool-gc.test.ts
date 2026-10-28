@@ -35,13 +35,13 @@ const used = (name: string, over: Partial<ToolGcUsage> = {}): ToolGcUsage => ({
  * subject under test would let the subject's own numbers move the gate.
  */
 const ballast = () =>
-  used('bash', { calls: TOOL_GC_MIN_TOTAL_CALLS, lastUsedAt: daysAgo(1), firstSeenAt: daysAgo(60) })
+  used('Bash', { calls: TOOL_GC_MIN_TOTAL_CALLS, lastUsedAt: daysAgo(1), firstSeenAt: daysAgo(60) })
 
 describe('tool GC — evidence gate', () => {
   test('says nothing at all below the call threshold', () => {
     const report = resolveToolGc({
-      surfaced: [surfaced('loops')],
-      usage: [used('loops'), used('bash', { calls: TOOL_GC_MIN_TOTAL_CALLS - 1 })],
+      surfaced: [surfaced('Loops')],
+      usage: [used('Loops'), used('Bash', { calls: TOOL_GC_MIN_TOTAL_CALLS - 1 })],
       now: NOW,
     })
 
@@ -53,10 +53,10 @@ describe('tool GC — evidence gate', () => {
 
   test('says nothing when the calls are all from the last few days', () => {
     const report = resolveToolGc({
-      surfaced: [surfaced('loops')],
+      surfaced: [surfaced('Loops')],
       usage: [
-        used('loops', { firstSeenAt: daysAgo(3) }),
-        used('bash', { calls: 5_000, firstSeenAt: daysAgo(3), lastUsedAt: daysAgo(1) }),
+        used('Loops', { firstSeenAt: daysAgo(3) }),
+        used('Bash', { calls: 5_000, firstSeenAt: daysAgo(3), lastUsedAt: daysAgo(1) }),
       ],
       now: NOW,
     })
@@ -66,7 +66,7 @@ describe('tool GC — evidence gate', () => {
   })
 
   test('an empty scope reports no observation window rather than a zero one', () => {
-    const report = resolveToolGc({ surfaced: [surfaced('loops')], usage: [], now: NOW })
+    const report = resolveToolGc({ surfaced: [surfaced('Loops')], usage: [], now: NOW })
 
     expect(report.evidence).toEqual({ totalCalls: 0, observedSince: null, sufficient: false })
   })
@@ -74,8 +74,8 @@ describe('tool GC — evidence gate', () => {
   test('the denominator counts tools no longer surfaced', () => {
     // A tool disabled last week still proves the user was working in this scope.
     const report = resolveToolGc({
-      surfaced: [surfaced('loops')],
-      usage: [used('loops'), ballast()],
+      surfaced: [surfaced('Loops')],
+      usage: [used('Loops'), ballast()],
       now: NOW,
     })
 
@@ -87,14 +87,14 @@ describe('tool GC — evidence gate', () => {
 describe('tool GC — classification', () => {
   test('flags a tool that has been available for weeks and never called', () => {
     const report = resolveToolGc({
-      surfaced: [surfaced('loops')],
-      usage: [used('loops', { firstSeenAt: daysAgo(30) }), ballast()],
+      surfaced: [surfaced('Loops')],
+      usage: [used('Loops', { firstSeenAt: daysAgo(30) }), ballast()],
       now: NOW,
     })
 
     expect(report.suggestions).toHaveLength(1)
     expect(report.suggestions[0]).toMatchObject({
-      name: 'loops',
+      name: 'Loops',
       reason: 'never-used',
       calls: 0,
       target: { kind: 'settings' },
@@ -106,8 +106,8 @@ describe('tool GC — classification', () => {
     // The failure this exists to prevent: enable a plugin, and the GC offers to disable it
     // before it has had any chance to be used.
     const report = resolveToolGc({
-      surfaced: [surfaced('loops')],
-      usage: [used('loops', { firstSeenAt: NOW }), ballast()],
+      surfaced: [surfaced('Loops')],
+      usage: [used('Loops', { firstSeenAt: NOW }), ballast()],
       now: NOW,
     })
 
@@ -141,18 +141,18 @@ describe('tool GC — classification', () => {
 
   test('flags a tool whose every call failed', () => {
     const report = resolveToolGc({
-      surfaced: [surfaced('research')],
-      usage: [used('research', { calls: 6, errors: 6, lastUsedAt: daysAgo(1) }), ballast()],
+      surfaced: [surfaced('Research')],
+      usage: [used('Research', { calls: 6, errors: 6, lastUsedAt: daysAgo(1) }), ballast()],
       now: NOW,
     })
 
-    expect(report.suggestions[0]).toMatchObject({ name: 'research', reason: 'always-errors' })
+    expect(report.suggestions[0]).toMatchObject({ name: 'Research', reason: 'always-errors' })
   })
 
   test('four failures are noise, not an all-error verdict', () => {
     const report = resolveToolGc({
-      surfaced: [surfaced('research')],
-      usage: [used('research', { calls: 4, errors: 4, lastUsedAt: daysAgo(1) }), ballast()],
+      surfaced: [surfaced('Research')],
+      usage: [used('Research', { calls: 4, errors: 4, lastUsedAt: daysAgo(1) }), ballast()],
       now: NOW,
     })
 
@@ -161,8 +161,8 @@ describe('tool GC — classification', () => {
 
   test('a tool with one success among its failures is left alone', () => {
     const report = resolveToolGc({
-      surfaced: [surfaced('research')],
-      usage: [used('research', { calls: 9, errors: 8, lastUsedAt: daysAgo(1) }), ballast()],
+      surfaced: [surfaced('Research')],
+      usage: [used('Research', { calls: 9, errors: 8, lastUsedAt: daysAgo(1) }), ballast()],
       now: NOW,
     })
 
@@ -171,8 +171,8 @@ describe('tool GC — classification', () => {
 
   test('one tool yields at most one row, even when two rules match', () => {
     const report = resolveToolGc({
-      surfaced: [surfaced('research')],
-      usage: [used('research', { calls: 9, errors: 9, lastUsedAt: daysAgo(90) }), ballast()],
+      surfaced: [surfaced('Research')],
+      usage: [used('Research', { calls: 9, errors: 9, lastUsedAt: daysAgo(90) }), ballast()],
       now: NOW,
     })
 
@@ -182,8 +182,8 @@ describe('tool GC — classification', () => {
 
   test('an unparseable first_seen_at fails closed', () => {
     const report = resolveToolGc({
-      surfaced: [surfaced('loops')],
-      usage: [used('loops', { firstSeenAt: 'not a date' }), ballast()],
+      surfaced: [surfaced('Loops')],
+      usage: [used('Loops', { firstSeenAt: 'not a date' }), ballast()],
       now: NOW,
     })
 
@@ -192,7 +192,7 @@ describe('tool GC — classification', () => {
 
   test('a surfaced tool with no usage row at all is not judged', () => {
     // No row means the roster write has not covered it yet. Absent evidence is not evidence.
-    const report = resolveToolGc({ surfaced: [surfaced('loops')], usage: [ballast()], now: NOW })
+    const report = resolveToolGc({ surfaced: [surfaced('Loops')], usage: [ballast()], now: NOW })
 
     expect(report.suggestions).toEqual([])
   })
@@ -200,7 +200,7 @@ describe('tool GC — classification', () => {
   test('a tool that is not surfaced is never suggested', () => {
     const report = resolveToolGc({
       surfaced: [],
-      usage: [used('loops', { firstSeenAt: daysAgo(90) }), ballast()],
+      usage: [used('Loops', { firstSeenAt: daysAgo(90) }), ballast()],
       now: NOW,
     })
 
@@ -234,9 +234,16 @@ describe('tool GC — protected floor', () => {
     // difference so neither half drifts silently.
     const coreMinimum = new Set(createRuntimeToolRegistry().toolNames)
     const protectedCore = [...coreMinimum].filter((name) => TOOL_GC_PROTECTED.includes(name))
-    expect(protectedCore.sort()).toEqual(['ask', 'bash', 'edit', 'read', 'search', 'write'])
+    expect(protectedCore.sort()).toEqual([
+      'AskUserQuestion',
+      'Bash',
+      'Edit',
+      'Read',
+      'Search',
+      'Write',
+    ])
     expect([...coreMinimum].filter((n) => !TOOL_GC_PROTECTED.includes(n)).sort()).toEqual([
-      'research',
+      'Research',
     ])
   })
 
@@ -244,7 +251,7 @@ describe('tool GC — protected floor', () => {
     // `run-shape.ts` `withElisionRecovery` adds it back to EVERY custom role for one
     // stated reason: an elided result advertises it, and "a pointer to a hidden tool is a dead
     // end". A GC that could take them away would manufacture exactly that dead end.
-    expect(TOOL_GC_PROTECTED).toContain('tool_output')
+    expect(TOOL_GC_PROTECTED).toContain('ToolOutput')
   })
 
   test('the floor leaves most of the surface eligible', () => {

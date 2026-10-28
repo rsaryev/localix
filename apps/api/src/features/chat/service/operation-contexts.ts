@@ -22,7 +22,6 @@ import { createSyntheticMessages } from './synthetic-messages'
 import type { ThreadOpsContext } from './thread-ops'
 import { createTitleGenerator } from './title-generation'
 import * as turnEntry from './turn-entry'
-import { updateConversationMembership } from '../runtime/run/conversation-membership'
 
 /**
  * The context each group of chat operations is handed — command handlers, branching, file ops,
@@ -45,9 +44,9 @@ export function createOperationContexts(
     repo,
     routeDefaults,
     usageRepo,
-    memoryRepo,
     projectsRepo,
     mcpRepo,
+    availabilityWriter,
     pluginService,
     miniAppService,
     streamRegistry,
@@ -62,6 +61,7 @@ export function createOperationContexts(
     gatherEnabledPluginCommands,
     gatherEnabledPluginSkills,
     buildSessionPluginCatalog,
+    loadSessionPluginMcpServers,
     getSessionDetail,
     publishSession,
     sessionLifecycleCtx,
@@ -164,21 +164,11 @@ export function createOperationContexts(
   const commandCtx: CommandHandlerContext = {
     ...(deps.loadSkillCommandRules ? { loadSkillCommandRules: deps.loadSkillCommandRules } : {}),
     ...(deps.skillShellDisabled ? { skillShellDisabled: deps.skillShellDisabled } : {}),
-    changeAgentMembership: (userId, sessionId, change) =>
-      updateConversationMembership(
-        {
-          repo,
-          deps: { streamRegistry, listInvocableRegistryAgents: deps.listInvocableRegistryAgents },
-          activeAgentId: sessionLifecycleCtx.activeAgentId,
-          cancelAgentTurn: sessionLifecycleCtx.cancelAgentTurn,
-        },
-        { userId, sessionId, ...change },
-      ),
     deps,
     repo,
     usageRepo,
-    memoryRepo,
     mcpRepo,
+    availabilityWriter,
     pluginService,
     miniAppService,
     runner,
@@ -195,6 +185,7 @@ export function createOperationContexts(
     gatherEnabledPluginSkills,
     resolveSessionWorkingDir,
     buildSessionPluginCatalog,
+    loadSessionPluginMcpServers,
     // CC `context: fork` — run the skill in a child session, as the invoking agent.
     spawnForkSkill: createSpawnForkSkill({
       repo,
@@ -202,9 +193,9 @@ export function createOperationContexts(
       requireSession,
       runAgent,
       sessionLifecycleCtx,
-      // Only consulted when a declared `model:` is a bare family alias — without it the alias
-      // resolved to the parent's model, i.e. did nothing.
-      listModelIds: async () => (await deps.catalogService.getCatalog()).models.map((m) => m.id),
+      // The model and effort the person chose for the agent; the skill's own are not read.
+      chosenRoute: async (userId, agentId) =>
+        (await deps.loadAgentModelDefaults?.(userId, null))?.get(agentId) ?? {},
     }),
   }
 
@@ -236,7 +227,7 @@ export function createOperationContexts(
     resolveDefaultProjectId: async (owner) =>
       (await resolveDefaultProject(projectsRepo, owner, now)).id,
     resolveSessionAgent: deps.resolveSessionAgent,
-    seatRoute: routeDefaults.seatRoute,
+    startingRoute: routeDefaults.startingRoute,
   }
 
   const threadOpsCtx: ThreadOpsContext = {

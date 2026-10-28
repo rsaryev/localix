@@ -5,13 +5,13 @@ import { join } from 'node:path'
 /**
  * THE RUNNER READS SESSIONS THROUGH THE REPOSITORY IT IS HANDED, NEVER ONE OF ITS OWN.
  *
- * A seat stores a model only when someone chose one for that participant in that conversation;
- * every other seat is blank and the service graph's repository answers for it on read through
+ * A route stores a model only when someone chose one for that agent in that conversation;
+ * every other route is blank and the service graph's repository answers for it on read through
  * the model chain (`withResolvedRoutes`). The runner used to build a raw repository from `db`
  * beside that one, and every turn it started from its own read — a reaction, a loop tick, a
  * board wake — saw the blank and failed with `NO_MODEL`, while the typed turns next to them,
- * which arrive carrying the service's resolved record, ran fine. Three "No model selected" rows
- * in one live room, under members whose models were in plain view.
+ * which arrive carrying the service's resolved record, ran fine. A "No model selected" row
+ * in a live chat, under an agent whose model was in plain view.
  *
  * A type on `RunnerDeps` makes the repository REQUIRED; this reads the source so the runner
  * cannot quietly grow a second one back, which a required parameter alone does not prevent.

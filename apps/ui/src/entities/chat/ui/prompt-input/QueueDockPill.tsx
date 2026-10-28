@@ -4,7 +4,7 @@ import { Button } from '@localixai/kit/button'
 import { QueueItemGlyph, type QueuePanelItem } from './QueueRow'
 
 /**
- * THE QUEUE, DOCKED BESIDE SEND. One pill says who and what waits: the participants' faces, one
+ * THE QUEUE, DOCKED BESIDE SEND. One pill says who and what waits: the answering agents' faces, one
  * glyph per other kind of work (the person's message, a job, a loop), and how many in all. It sits
  * in the composer's own toolbar, so the queue coming and going never moves the input. Clicking it
  * opens the full list (`ComposerQueuePanel`).
@@ -38,7 +38,7 @@ export const QueueDockPill = forwardRef<
     >
       {agents.length ? (
         <AvatarStack
-          identities={agents.map((agent) => agent.handle)}
+          identities={agents.map((agent) => agent.name)}
           labels={agents.map((agent) => agent.name)}
           size={16}
           max={3}

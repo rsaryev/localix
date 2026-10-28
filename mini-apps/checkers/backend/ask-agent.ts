@@ -1,4 +1,4 @@
-import type { Seat, Wake } from '@localixai/mini-app-sdk/backend'
+import type { ChatRef, Wake } from '@localixai/mini-app-sdk/backend'
 
 import { drawBoard, lastMoveLine, legalLine, recordLine } from '../shared/describe'
 import type { Game } from '../shared/game'
@@ -15,7 +15,7 @@ import { other } from '../shared/rules'
  * asked for.
  */
 
-export type { Seat, Wake }
+export type { ChatRef, Wake }
 
 /** The one tool a woken turn answers with — the host puts it on the wire before it starts. */
 export const ANSWER_TOOLS = ['checkers']

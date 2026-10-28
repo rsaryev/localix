@@ -14,7 +14,9 @@ import {
 } from '../model/presentation'
 import type { StoreSection, StoreView } from '../model/navigation'
 import { useStoreScope } from '../model/storeContext'
+import { useStoreRecommendations } from '@/shared/hooks/useStoreRecommendations'
 import { useDiscover } from '../model/useStoreData'
+import { RecommendedView } from './RecommendedView'
 import { CreateBar } from './CreateDialog'
 import { ShelfActionButtons } from './ShelfActions'
 import { Discover, DiscoverSkeleton } from './Discover'
@@ -41,6 +43,11 @@ const AUTHORED_NOTES = {
 function DiscoverSection() {
   const store = useStoreScope()
   const discover = useDiscover(store.client, store.project?.id ?? null)
+  const recommended = useStoreRecommendations(
+    store.client,
+    store.project?.id ?? null,
+    store.sessionId,
+  )
   if (!discover.data)
     return discover.error ? (
       <StoreReadFailure
@@ -51,7 +58,7 @@ function DiscoverSection() {
     ) : (
       <DiscoverSkeleton />
     )
-  return <Discover data={discover.data} />
+  return <Discover data={discover.data} recommended={recommended.data?.listings ?? []} />
 }
 
 /** What the Store shows for where it is: a search, a page over the section, or the section. */
@@ -81,6 +88,13 @@ export function StoreBody({
         backLabel={backLabel}
         onBack={onBack}
       />
+    )
+  if (view?.type === 'recommended')
+    return (
+      <div className="flex flex-col gap-3">
+        <StoreBackButton label={backLabel} onBack={onBack} />
+        <RecommendedView />
+      </div>
     )
   if (view?.type === 'list')
     return (
@@ -112,47 +126,41 @@ export function StoreBody({
     )
   if (section === 'yours' || section === 'project')
     return (
-      <>
-        <CreateBar
-          kinds="all"
-          initial={section === 'project' ? 'project' : 'user'}
-          before={<ShelfActionButtons scope={section === 'project' ? 'project' : 'user'} />}
-        />
-        <ListingsView
-          title={LIBRARY_LABELS[section].label}
-          subtitle={AUTHORED_NOTES[section]}
-          query={{ shelf: section }}
-        />
-      </>
+      <ListingsView
+        title={LIBRARY_LABELS[section].label}
+        subtitle={AUTHORED_NOTES[section]}
+        query={{ shelf: section }}
+        actions={
+          <CreateBar
+            kinds="all"
+            initial={section === 'project' ? 'project' : 'user'}
+            before={<ShelfActionButtons scope={section === 'project' ? 'project' : 'user'} />}
+          />
+        }
+      />
     )
   if (section.startsWith('capability:')) {
     const kind = section.slice(11) as BrowsableComponentKind
     return (
-      <>
-        <CreateBar kinds={[kind as PackageKind]} />
-        <div className="flex flex-col gap-6">
-          <SectionHeading
-            title={capabilityLabel(kind)}
-            description={`${
-              (PACKAGE_KINDS as readonly string[]).includes(kind)
-                ? 'Yours, your project’s and '
-                : ''
-            }every ${inSentence(COMPONENT_LABELS[kind].one)} a package adds. Getting one from a package gets the whole package.`}
-          />
-          <StoreComponents kind={kind} />
-        </div>
-      </>
+      <div className="flex flex-col gap-6">
+        <SectionHeading
+          actions={<CreateBar kinds={[kind as PackageKind]} />}
+          title={capabilityLabel(kind)}
+          description={`${
+            (PACKAGE_KINDS as readonly string[]).includes(kind) ? 'Yours, your project’s and ' : ''
+          }every ${inSentence(COMPONENT_LABELS[kind].one)} a package adds. Getting one from a package gets the whole package.`}
+        />
+        <StoreComponents kind={kind} />
+      </div>
     )
   }
   const kind = section.slice(8) as PackageKind
   return (
-    <>
-      <CreateBar kinds={[kind]} />
-      <ListingsView
-        title={KIND_LABELS[kind].many}
-        subtitle={KIND_NOTES[kind]}
-        query={{ shelf: section }}
-      />
-    </>
+    <ListingsView
+      title={KIND_LABELS[kind].many}
+      subtitle={KIND_NOTES[kind]}
+      query={{ shelf: section }}
+      actions={<CreateBar kinds={[kind]} />}
+    />
   )
 }

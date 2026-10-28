@@ -88,6 +88,7 @@ export function ReaderNotePopover({
               {value.error ?? 'This note could not be opened.'}
             </div>
           ) : (
+            // oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- delegated link clicks: the links inside the note are native anchors, so Enter reaches this handler as a click
             <div
               className="reader-note-popover-content select-text text-sm/6 text-foreground"
               onClick={(event) => {

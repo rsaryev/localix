@@ -13,15 +13,20 @@
  */
 import type { CheckpointReason, ContextCheckpoint, ContextLimit } from '@localixai/agent'
 
-import { participantAgentId } from '../../../../db/participant'
+import { authorAgentId } from '../../../../db/author'
 import type { PersistedMessage, SessionModelView } from '../../contracts'
 import type { ModelContextRepository } from '../../model-context-repository'
 import { resolveContextBudgetFrame } from '../context-budget'
 import { checkpointPressure } from './checkpoint-policy'
 import { turnContextState, type StoredTurnContext, type TurnContextState } from './turn-context'
 
+/** What `/compact` asked for: Claude Code's hooks hear it as trigger `manual` with these words. */
+export interface ManualCompaction {
+  instructions: string
+}
+
 export interface ModelView {
-  /** The participant whose view this is (`agent:<id>`). */
+  /** The agent whose view this is (`agent:<id>`). */
   viewer: string
   /** The viewer's own past turn contexts, by the assistant row that sent them. */
   turnContexts: ReadonlyMap<string, StoredTurnContext>
@@ -31,6 +36,8 @@ export interface ModelView {
   previous?: { state: TurnContextState; bindingIds: ReadonlySet<string> }
   /** Why this turn takes a checkpoint, when it must. */
   due?: CheckpointReason
+  /** The person asked for this checkpoint with `/compact`, with these instructions (maybe none). */
+  manual?: ManualCompaction
   /** Claude Code's PreCompact hooks already allowed this turn's checkpoint (`run/stages/view.ts`). */
   preCompactRan?: true
   /** The view is past the warning mark: the next checkpoint is a turn or two away. */
@@ -96,8 +103,7 @@ function measuredPressure(
 
 /**
  * Where the newest checkpoint on this branch cut the model's view — what the transcript shows as
- * its divider. Newest across participants: in a group, the latest speaker's view is the one the
- * conversation is being read through now.
+ * its divider. Newest first: the latest checkpoint is the one the conversation is read through.
  */
 export async function loadModelViewBoundary(
   repo: ModelContextRepository,
@@ -113,7 +119,7 @@ export async function loadModelViewBoundary(
   for (let i = assistants.length - 1; i >= 0; i--) {
     const row = assistants[i]!
     if (!stored.get(row.id)?.hasCheckpoint) continue
-    const agentId = participantAgentId(row.payload.from)
+    const agentId = authorAgentId(row.payload.from)
     const record = await repo.getCheckpoint(sessionId, row.id)
     return record?.evictedThroughId && agentId
       ? { agentId, evictedThroughId: record.evictedThroughId }
@@ -154,6 +160,8 @@ export async function loadModelView(
     contextLimit?: ContextLimit
     /** A recovery re-entry, or a signal the previous run left, that forces a checkpoint. */
     forced?: CheckpointReason
+    /** `/compact`: take a checkpoint now, whatever was measured. */
+    manual?: ManualCompaction
   },
 ): Promise<ModelView> {
   const { rows, clearId } = rowsAfterClear(input.historyMessages)
@@ -200,13 +208,14 @@ export async function loadModelView(
     input.depth,
     input.contextLimit,
   )
-  const due = input.forced ?? (pressure === 'due' ? 'threshold' : undefined)
+  const due = input.forced ?? (input.manual || pressure === 'due' ? 'threshold' : undefined)
   return {
     viewer: input.viewer,
     turnContexts,
     ...(hostId && record ? { checkpoint: { hostId, record } } : {}),
     ...(previous ? { previous } : {}),
     ...(due ? { due } : {}),
+    ...(input.manual ? { manual: input.manual } : {}),
     ...(!due && pressure === 'near' ? { checkpointNear: true } : {}),
     epochId: due ? input.currentMessageId : (hostId ?? clearId ?? input.contextBoundaryId ?? ''),
   }

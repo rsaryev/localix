@@ -75,6 +75,7 @@ export interface OpenSessionInput {
   credential: RuntimeCredential
   credentialStore?: RuntimeCredentialStore
   sessionId: string
+  promptCacheKey?: string
   idleMs?: number
   cacheRetention?: 'short' | 'long'
   signal: AbortSignal
@@ -133,13 +134,13 @@ export async function bindModel(
       }
     : await accessFor(entry, input.credential, {
         signal: input.signal,
-        sessionId: input.sessionId,
+        sessionId: input.promptCacheKey ?? input.sessionId,
         ...(input.credentialStore ? { store: input.credentialStore } : {}),
       })
   return {
     ref: input.model,
     model: await languageModelFor(entry, access),
-    profile: { ...profileFor(entry), ...wireTraits(entry) },
+    profile: { ...profileFor(entry, access), ...wireTraits(entry) },
     origin: { api: entry.model.api, provider: entry.provider.id, model: entry.model.id },
     ...(entry.model.cost ? { cost: entry.model.cost } : {}),
     subscription,
@@ -163,6 +164,7 @@ export async function openSession(
   assertServable(entry, input.model, input.messages)
   const session = createModelSession(await bindModel(options, input, entry), {
     sessionId: input.sessionId,
+    ...(input.promptCacheKey ? { promptCacheKey: input.promptCacheKey } : {}),
     ...(input.idleMs !== undefined ? { idleMs: input.idleMs } : {}),
     ...(input.cacheRetention ? { cacheRetention: input.cacheRetention } : {}),
     ...(options.retry ? { retry: options.retry } : {}),

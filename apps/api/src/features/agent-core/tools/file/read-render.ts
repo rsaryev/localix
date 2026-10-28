@@ -59,7 +59,7 @@ export function renderLineRange(
   }
   const truncated = last < end
   output = truncated
-    ? `${output}[…showed lines ${start}-${last} of the requested ${start}-${end}; ${end - last} more remain. Continue with start_line=${last + 1}, or use \`search\` to jump straight to a symbol/line.]`
+    ? `${output}[…showed lines ${start}-${last} of the requested ${start}-${end}; ${end - last} more remain. Continue with start_line=${last + 1}, or use \`Search\` to jump straight to a symbol/line.]`
     : output.replace(/\n$/, '')
   return { output, truncated, bytes: Buffer.byteLength(fileContent) }
 }

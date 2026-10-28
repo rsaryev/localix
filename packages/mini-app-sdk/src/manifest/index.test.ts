@@ -91,11 +91,10 @@ describe('mini app manifest core contract', () => {
     })
   })
 
-  test('owns declarative config defaults and preserves compatibility hints', () => {
+  test('owns declarative config defaults and preserves display hints', () => {
     expect(MINI_APP_CONFIG_TYPES).toEqual(['string', 'number', 'boolean', 'directory', 'file'])
     const authored = {
       title: 'Tags',
-      multiple: true,
       min: 1,
       max: 3,
     } satisfies MiniAppConfigOptionInput
@@ -105,7 +104,6 @@ describe('mini app manifest core contract', () => {
       required: false,
       secret: false,
       title: 'Tags',
-      multiple: true,
       min: 1,
       max: 3,
     })

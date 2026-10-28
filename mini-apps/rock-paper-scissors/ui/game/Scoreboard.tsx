@@ -6,7 +6,7 @@ export function Scoreboard({
   opponent = 'Agent',
 }: {
   record: GameRecord
-  /** The other seat's short name. */
+  /** The other side's short name. */
   opponent?: string
 }) {
   return (

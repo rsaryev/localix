@@ -1,22 +1,23 @@
 import { expect, test } from 'bun:test'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { agentDefinitionSchema } from '@localixai/agent/agents'
+import { autoMemoryDir } from '../../memory/auto-memory'
 import { composeCapabilities } from '../../capabilities/resolve'
 import { emptyLoadedPlugins } from '../../plugins/loader-contract'
 import { emptyLoadedMiniApps } from '../../mini-apps/loader-contract'
 import type { AgentsService } from '../../agents/service-contract'
 import { requireRunAgent } from './run/require-run-agent'
 import { runTurnLimit } from './run/turn-limit'
-import { routedParticipants, sessionFixture } from '../../../testing/session-fixture'
+import { routedAgent, sessionFixture } from '../../../testing/session-fixture'
 import { createSessionSnapshotCache } from './session-snapshot'
 import type { FrozenSessionContext } from './agent-runner-types'
 import { prepareRunContext, type PromptContextDeps } from './prompt-context'
 import type { PersistedMessage } from '../contracts'
-import type { ParticipantLaneSnapshotRepository } from '../participant-lane-snapshot-repository'
+import type { SessionPromptSnapshotRepository } from '../session-prompt-snapshot-repository'
 
-function snapshotStore(): ParticipantLaneSnapshotRepository {
+function snapshotStore(): SessionPromptSnapshotRepository {
   const values = new Map<string, FrozenSessionContext>()
   return {
     get: async (user, address, boundary) => values.get(JSON.stringify([user, address, boundary])),
@@ -32,21 +33,19 @@ test('each turn resolves current native behavior and policy while retaining froz
     let agentId = 'native:project:worker'
     const session = sessionFixture({
       projectId: 'project',
-      agents: routedParticipants({ agentId, handle: 'worker' }),
+      agent: routedAgent({ agentId, name: 'worker' }),
     })
     let version = 1
     const calls: unknown[] = []
+    // The working folder doubles as the home, so its Claude Code memory folder is the test's own.
+    const memoryDir = autoMemoryDir({ cwd, homeDir: cwd })!
+    await mkdir(memoryDir, { recursive: true })
     const deps = {
-      memoryRepo: {
-        listWithUsage: async () => ({
-          notes: [{ key: 'note', value: `memory-${version}` }],
-          usage: { chars: 1, limit: 100, pct: 1 },
-        }),
-      },
+      claudeHome: cwd,
       projectsRepo: { getProject: async () => ({ workingDir: cwd, settings: null }) },
       pluginRepo: {},
       contextSnapshots: createSessionSnapshotCache<FrozenSessionContext>(),
-      laneSnapshots: snapshotStore(),
+      promptSnapshots: snapshotStore(),
       runScopes: {
         resolve: async () => [[], emptyLoadedPlugins(), emptyLoadedMiniApps(), []],
       },
@@ -61,13 +60,13 @@ test('each turn resolves current native behavior and policy while retaining froz
           approval: 'policy',
           definition: agentDefinitionSchema.parse({
             id: version === 4 ? 'native:project:other' : agentId,
-            handle: 'worker',
+            name: 'worker',
             description: '',
             instructions: `instructions-${version}`,
-            limits: { maxTurns: version === 1 ? 12 : 3 },
+            maxTurns: version === 1 ? 12 : 3,
           }),
           capabilities: composeCapabilities(
-            version === 2 ? [{ action: 'tool:write', resource: '*', effect: 'deny' }] : [],
+            version === 2 ? [{ action: 'tool:Write', resource: '*', effect: 'deny' }] : [],
           ),
         },
       }
@@ -81,36 +80,30 @@ test('each turn resolves current native behavior and policy while retaining froz
       globalAgentSettings: null,
     }
     const prepare = async () => {
+      await writeFile(join(memoryDir, 'MEMORY.md'), `memory-${version}`)
       const agent = await requireRunAgent(resolveRunAgent, 'user', agentId, 'chat', 'project')
-      return prepareRunContext(deps, { ...params, speakerAgentId: agentId, agent })
+      return prepareRunContext(deps, { ...params, agentId, agent })
     }
     const first = await prepare()
     expect(first.agent.instructions).toBe('instructions-1')
     expect(runTurnLimit(first.agent)).toBe(12)
-    expect(first.disabledTools).not.toContain('write')
-    expect(first.frozenContext.memoryContext).toBe('note: memory-1')
+    expect(first.disabledTools).not.toContain('Write')
+    expect(first.frozenContext.memoryContext).toBe('memory-1')
 
     version = 2
     const next = await prepare()
     expect(next.agent.instructions).toBe('instructions-2')
     expect(runTurnLimit(next.agent)).toBe(3)
-    expect(next.disabledTools).toContain('write')
-    expect(next.frozenContext.memoryContext).toBe('note: memory-1')
+    expect(next.disabledTools).toContain('Write')
+    expect(next.frozenContext.memoryContext).toBe('memory-1')
     expect(calls).toEqual(Array.from({ length: 2 }, () => ['user', agentId, 'chat', 'project']))
     deps.contextSnapshots = createSessionSnapshotCache<FrozenSessionContext>()
     expect((await prepare()).frozenContext).toEqual(next.frozenContext)
 
-    agentId = 'native:project:colleague'
-    session.agents = routedParticipants({ agentId, handle: 'colleague' })
-    expect((await prepare()).frozenContext.memoryContext).toBe('note: memory-2')
-    // Back in the worker's lane, in the same view epoch: its frozen snapshot still holds.
-    agentId = 'native:project:worker'
-    session.agents = routedParticipants({ agentId, handle: 'worker' })
-    expect((await prepare()).frozenContext.memoryContext).toBe('note: memory-1')
     // A checkpoint (or `/clear`) starts a new view epoch, and the prefix is rewritten anyway,
     // so that is when memory refreshes.
     params.viewEpoch = 'checkpoint-host'
-    expect((await prepare()).frozenContext.memoryContext).toBe('note: memory-2')
+    expect((await prepare()).frozenContext.memoryContext).toBe('memory-2')
 
     version = 3
     await expect(prepare()).rejects.toThrow(`Agent is unavailable: ${agentId} (policy_denied)`)
@@ -136,14 +129,14 @@ test('a denied skill, mini app tool, mini app and plugin are absent from the tur
     const agentId = 'native:project:worker'
     const session = sessionFixture({
       projectId: 'project',
-      agents: routedParticipants({ agentId, handle: 'worker' }),
+      agent: routedAgent({ agentId, name: 'worker' }),
     })
     const deps = {
       memoryRepo: { listWithUsage: async () => ({ notes: [], usage: null }) },
       projectsRepo: { getProject: async () => ({ workingDir: cwd, settings: null }) },
       pluginRepo: {},
       contextSnapshots: createSessionSnapshotCache<FrozenSessionContext>(),
-      laneSnapshots: snapshotStore(),
+      promptSnapshots: snapshotStore(),
       runScopes: {
         resolve: async () => [
           [
@@ -220,7 +213,7 @@ test('a denied skill, mini app tool, mini app and plugin are absent from the tur
         approval: 'policy',
         definition: agentDefinitionSchema.parse({
           id: agentId,
-          handle: 'worker',
+          name: 'worker',
           description: '',
           instructions: 'x',
         }),
@@ -237,7 +230,7 @@ test('a denied skill, mini app tool, mini app and plugin are absent from the tur
     const context = await prepareRunContext(deps, {
       userId: 'user',
       session,
-      speakerAgentId: agentId,
+      agentId,
       historyMessages: [],
       viewEpoch: '',
       globalAgentSettings: null,

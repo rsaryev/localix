@@ -16,9 +16,9 @@ const tool = (name: string): AgentTool =>
   ({
     name,
     classify:
-      name === 'bash'
+      name === 'Bash'
         ? classifyBashCall
-        : name === 'browser'
+        : name === 'Browser'
           ? classifyBrowserCall
           : () => ({ effect: 'files' }),
   }) as AgentTool
@@ -33,7 +33,7 @@ const artifactPolicy = (handle: string): Rule[] => {
   }
   return [
     ...builtinAgentPreset('localix'),
-    ...['write', 'edit'].flatMap((tool): Rule[] => [
+    ...['Write', 'Edit'].flatMap((tool): Rule[] => [
       { action: `tool:${tool}`, resource: 'effect:files', effect: 'deny' },
       ...classes[handle]!.map((resource): Rule => ({
         action: `tool:${tool}`,
@@ -44,9 +44,9 @@ const artifactPolicy = (handle: string): Rule[] => {
     { action: 'tool:*', resource: 'outside-workspace', effect: 'deny' },
     ...(handle === 'pm'
       ? [
-          { action: 'tool:bash', resource: 'effect:external', effect: 'deny' as const },
-          { action: 'tool:browser', resource: 'effect:external', effect: 'deny' as const },
-          { action: 'tool:browser', resource: 'effect:host', effect: 'deny' as const },
+          { action: 'tool:Bash', resource: 'effect:external', effect: 'deny' as const },
+          { action: 'tool:Browser', resource: 'effect:external', effect: 'deny' as const },
+          { action: 'tool:Browser', resource: 'effect:host', effect: 'deny' as const },
         ]
       : []),
   ]
@@ -73,15 +73,15 @@ async function blocked(
 
 test('a custom documentation policy can maintain documentation, but cannot implement through file, shell, or browser actions', async () => {
   for (const mode of ['default', 'bypass'] as const) {
-    expect(await blocked('pm', 'write', { path: 'docs/plan.md' }, mode)).toBe(false)
-    expect(await blocked('pm', 'edit', { path: 'README.md' }, mode)).toBe(false)
-    expect(await blocked('pm', 'write', { path: 'src/app.ts' }, mode)).toBe(true)
-    expect(await blocked('pm', 'bash', { command: 'git status' }, mode)).toBe(false)
-    expect(await blocked('pm', 'bash', { command: 'echo code > src/app.ts' }, mode)).toBe(true)
-    expect(await blocked('pm', 'bash', { command: 'git push --force' }, mode)).toBe(true)
-    expect(await blocked('pm', 'browser', { action: 'snapshot' }, mode)).toBe(false)
+    expect(await blocked('pm', 'Write', { path: 'docs/plan.md' }, mode)).toBe(false)
+    expect(await blocked('pm', 'Edit', { path: 'README.md' }, mode)).toBe(false)
+    expect(await blocked('pm', 'Write', { path: 'src/app.ts' }, mode)).toBe(true)
+    expect(await blocked('pm', 'Bash', { command: 'git status' }, mode)).toBe(false)
+    expect(await blocked('pm', 'Bash', { command: 'echo code > src/app.ts' }, mode)).toBe(true)
+    expect(await blocked('pm', 'Bash', { command: 'git push --force' }, mode)).toBe(true)
+    expect(await blocked('pm', 'Browser', { action: 'snapshot' }, mode)).toBe(false)
     expect(
-      await blocked('pm', 'browser', { action: 'evaluate', expression: 'fetch("/write")' }, mode),
+      await blocked('pm', 'Browser', { action: 'evaluate', expression: 'fetch("/write")' }, mode),
     ).toBe(true)
   }
 })
@@ -93,8 +93,8 @@ test('artifact grants cannot write product source through a documentation or tes
     await writeFile(source, 'original')
     await symlink(source, join(workspace, 'notes.md'))
     await symlink(source, join(workspace, 'app.test.ts'))
-    expect(await blocked('pm', 'write', { path: 'notes.md' }, 'default', workspace)).toBe(true)
-    expect(await blocked('qa', 'edit', { path: 'app.test.ts' }, 'default', workspace)).toBe(true)
+    expect(await blocked('pm', 'Write', { path: 'notes.md' }, 'default', workspace)).toBe(true)
+    expect(await blocked('qa', 'Edit', { path: 'app.test.ts' }, 'default', workspace)).toBe(true)
   } finally {
     await rm(workspace, { recursive: true, force: true })
   }
@@ -107,11 +107,11 @@ test.each([
 ] as const)(
   'a custom %s policy has its artifact surface, without silently editing product implementation',
   async (handle, permitted, refused) => {
-    expect(await blocked(handle, 'write', { path: permitted })).toBe(false)
-    expect(await blocked(handle, 'write', { path: refused })).toBe(true)
-    expect(await blocked(handle, 'edit', { path: refused, old_string: 'a', new_string: 'b' })).toBe(
+    expect(await blocked(handle, 'Write', { path: permitted })).toBe(false)
+    expect(await blocked(handle, 'Write', { path: refused })).toBe(true)
+    expect(await blocked(handle, 'Edit', { path: refused, old_string: 'a', new_string: 'b' })).toBe(
       true,
     )
-    expect(await blocked(handle, 'write', { path: '../outside/docs/plan.md' })).toBe(true)
+    expect(await blocked(handle, 'Write', { path: '../outside/docs/plan.md' })).toBe(true)
   },
 )

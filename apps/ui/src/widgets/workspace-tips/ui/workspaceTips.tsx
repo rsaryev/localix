@@ -3,14 +3,12 @@ import { ApprovalScene } from './scenes/ApprovalScene'
 import { DecisionAction, DecisionScene } from './scenes/DecisionScene'
 import { AppearanceAction, AppearanceScene } from './scenes/AppearanceScene'
 import { GoalAction, GoalScene } from './scenes/GoalScene'
-import { IslandAction, IslandScene } from './scenes/IslandScene'
 import { KeymapAction, KeymapScene } from './scenes/KeymapScene'
 import { MentionScene } from './scenes/MentionScene'
 import { MiniAppsAction, MiniAppsScene } from './scenes/MiniAppsScene'
 import { ModelAction, ModelScene } from './scenes/ModelScene'
 import { PaletteScene } from './scenes/PaletteScene'
 import { ProjectAction, ProjectScene } from './scenes/ProjectScene'
-import { TeamScene } from './scenes/TeamScene'
 
 /**
  * One slide: a looping miniature of a real surface and a two-tone sentence (the lead in full
@@ -25,20 +23,17 @@ export interface WorkspaceTip {
   Action?: ComponentType
   /** Shown only when an enabled mini app or plugin features a command for this slide to teach. */
   needsFeaturedCommand?: boolean
-  /** Shown only where the agent island exists (the macOS desktop app). */
-  needsIsland?: boolean
 }
 
 /**
- * Ranked by what a new user sets up first: how the app looks and whether the agent island
- * is on, then the model nothing sends without and the OpenRouter sign-in that turns on decision
+ * Ranked by what a new user sets up first: how the app looks, then the model nothing sends without and the OpenRouter sign-in that turns on decision
  * models; what the agent may do on its own and where
  * it works come next; then how to point it at things, how to move fast and what else it
  * can do. Choices alternate with how-it-works
  * slides so the carousel never reads as a settings form. Every scene draws a surface
  * that exists today — no split groups, no rail theme button. Ids are stable: the
  * last-seen tip is remembered. A slide that needs a featured command is left out while
- * no enabled plugin features one; the island slide only shows in the macOS desktop app.
+ * no enabled plugin features one.
  */
 export const WORKSPACE_TIPS: WorkspaceTip[] = [
   {
@@ -47,14 +42,6 @@ export const WORKSPACE_TIPS: WorkspaceTip[] = [
     rest: 'Fonts and code style live in Preferences; one click sets the theme —',
     Scene: AppearanceScene,
     Action: AppearanceAction,
-  },
-  {
-    id: 'island',
-    lead: 'An agent at the notch.',
-    rest: 'Ask from any app and answer the agent without switching windows —',
-    Scene: IslandScene,
-    Action: IslandAction,
-    needsIsland: true,
   },
   {
     id: 'model',
@@ -66,7 +53,7 @@ export const WORKSPACE_TIPS: WorkspaceTip[] = [
   {
     id: 'decisions',
     lead: 'Connect OpenRouter for decisions.',
-    rest: 'Small decision models, a fraction of a cent each, route group chats, drive the Browser and play games in mini apps —',
+    rest: 'Small decision models, a fraction of a cent each, play games, drive the Browser and run mini apps —',
     Scene: DecisionScene,
     Action: DecisionAction,
   },
@@ -110,15 +97,9 @@ export const WORKSPACE_TIPS: WorkspaceTip[] = [
     Scene: PaletteScene,
   },
   {
-    id: 'team',
-    lead: 'A team in one chat.',
-    rest: 'Add agents to the conversation and hand one the turn with its @handle.',
-    Scene: TeamScene,
-  },
-  {
     id: 'goal',
     lead: 'Hand over a whole goal.',
-    rest: 'Type it after the command; the leader breaks it into cards, brings in specialists and coordinates them —',
+    rest: 'Type it after the command; the agent breaks it into cards, starts subagents for them and coordinates the work —',
     Scene: GoalScene,
     Action: GoalAction,
     needsFeaturedCommand: true,
@@ -128,12 +109,9 @@ export const WORKSPACE_TIPS: WorkspaceTip[] = [
 /** What the optional slides need, as known now. */
 export interface TipRequirements {
   featuredCommand: boolean
-  island: boolean
 }
 
 /** The slides to show now: the full list minus those whose requirement is unmet. */
 export function visibleTips(met: TipRequirements): WorkspaceTip[] {
-  return WORKSPACE_TIPS.filter(
-    (tip) => (!tip.needsFeaturedCommand || met.featuredCommand) && (!tip.needsIsland || met.island),
-  )
+  return WORKSPACE_TIPS.filter((tip) => !tip.needsFeaturedCommand || met.featuredCommand)
 }

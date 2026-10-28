@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 
-import type { ParticipantLaneSnapshotRepository } from '../participant-lane-snapshot-repository'
+import type { SessionPromptSnapshotRepository } from '../session-prompt-snapshot-repository'
 import type { FrozenSessionContext } from './frozen-session-context'
 import { resolvePromptSnapshot } from './prompt-snapshot'
 import { createSessionSnapshotCache } from './session-snapshot'
@@ -9,7 +9,7 @@ test('catalog changes reach an existing lane while unchanged prefixes and frozen
   let stored: FrozenSessionContext | undefined
   let writes = 0
   let initialized = 0
-  const store: ParticipantLaneSnapshotRepository = {
+  const store: SessionPromptSnapshotRepository = {
     get: async () => stored,
     set: async (_user, _address, _boundary, snapshot) => {
       stored = snapshot
@@ -20,11 +20,11 @@ test('catalog changes reach an existing lane while unchanged prefixes and frozen
     cache: createSessionSnapshotCache<FrozenSessionContext>(),
     store,
     userId: 'user',
-    address: { sessionId: 'session', agentId: 'agent' },
+    sessionId: 'session',
     boundary: '',
     fresh: {
+      memoryDir: '/home/u/.claude/projects/-repo/memory',
       memoryContext: 'frozen note',
-      memoryScopesRevision: 'memory-v1',
     } as FrozenSessionContext,
     initialize: async () => {
       initialized += 1
@@ -49,4 +49,10 @@ test('catalog changes reach an existing lane while unchanged prefixes and frozen
   expect(removed.skillsContext).toBeUndefined()
   expect(removed.memoryContext).toBe(original.memoryContext)
   expect(writes).toBe(3)
+
+  // A run in another repository has another memory folder: its MEMORY.md loads at once.
+  input.fresh = { ...input.fresh, memoryDir: '/home/u/.claude/projects/-other/memory' }
+  const moved = await resolvePromptSnapshot(input)
+  expect(moved.memoryContext).toBe('later note')
+  expect(initialized).toBe(2)
 })

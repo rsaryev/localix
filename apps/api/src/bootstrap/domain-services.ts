@@ -1,3 +1,4 @@
+import path from 'node:path'
 import { capabilityStores } from './capability-stores'
 import { createChatResourceProvider } from '../features/chat/resource-provider'
 import { createResourceContextResolver } from '../features/context-fabric/resource-resolver'
@@ -10,7 +11,8 @@ import { createMiniAppService } from '../features/mini-apps/service'
 import { createAgentFoldersPort, createPluginAgentGroups } from './agent-catalog-sources'
 import { createAgentsService } from '../features/agents/service'
 import { createInvocationRegistry } from '../features/capabilities/invocation'
-import { createLspManager } from '../features/lsp'
+import { createLspInstaller, createLspManager } from '../features/lsp'
+import { localixHome } from '../lib/env'
 import { createLspConditions } from '../features/notifications/conditions/lsp'
 import { createMiniAppInstallFacts } from '../features/notifications/producers/mini-app-installs'
 import { createSkillArchiveFacts } from '../features/notifications/producers/skills-curator'
@@ -96,7 +98,7 @@ export function createDomainServicesPhase({
   // callers excerpt from it to their own prompt budget instead of having it dropped here.
   contextProviderRegistry.register({
     provider: createResourceContextResolver(resourceRefsRegistry),
-    destinations: ['chat', 'subagent', 'edit-prediction', 'inline-completion'],
+    destinations: ['chat', 'subagent', 'edit-prediction', 'inline-completion', 'recommendation'],
     activation: 'explicit',
     defaultEnabled: true,
     fallback: true,
@@ -140,7 +142,7 @@ export function createDomainServicesPhase({
   // ghost-text surface all read a linked file through ONE admission policy.
   contextProviderRegistry.register({
     provider: createHostRefResolver(projectsService.expandRefsWithin),
-    destinations: ['chat', 'subagent', 'edit-prediction', 'inline-completion'],
+    destinations: ['chat', 'subagent', 'edit-prediction', 'inline-completion', 'recommendation'],
     activation: 'explicit',
     defaultEnabled: true,
     // The expanders bound a file at 4,000 lines / 1.5 MB; this ceiling only has to admit that.
@@ -226,13 +228,19 @@ export function createDomainServicesPhase({
     db,
     capabilityStores,
     folders: createAgentFoldersPort(resolveProjectCwd),
-    plugins: createPluginAgentGroups(db, resolveProjectCwd),
+    plugins: createPluginAgentGroups(
+      db,
+      resolveProjectCwd,
+      () => hostRefs.mods?.agentGroups?.() ?? [],
+    ),
     invocations,
   })
   hostRefs.listAgents = (...args) => agentsService.listAgents(...args)
-  // A crashed language server is a low-severity Event Center row until it is ready again.
+  // A crashed language server is a low-severity Event Center row until it is ready again. Built-in
+  // servers are not shipped: each is installed the first time a file of its language opens.
   const lspManager = createLspManager({
     health: createLspConditions(notifications, env.LOCALIX_DEFAULT_USER_ID),
+    installer: createLspInstaller({ root: path.join(localixHome(), 'language-servers') }),
   })
 
   // Skills curator: usage telemetry + periodic archival of long-unused skills.

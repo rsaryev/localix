@@ -14,8 +14,12 @@ export function SshSection({ f, fid }: { f: ConnectFormState; fid: string }) {
   const s = f.sshState
   return (
     <div className="mt-2.5">
-      <label className="flex cursor-pointer items-center gap-1.5 text-2xs text-text-soft">
+      <label
+        htmlFor={`${fid}-ssh-enabled`}
+        className="flex cursor-pointer items-center gap-1.5 text-2xs text-text-soft"
+      >
         <Checkbox
+          id={`${fid}-ssh-enabled`}
           checked={s.sshEnabled}
           onChange={(e) => {
             s.setSshEnabled(e.target.checked)

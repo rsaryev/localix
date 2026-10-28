@@ -31,6 +31,7 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "@localixai/source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     }
@@ -43,7 +44,7 @@
     "prepack": "bun run build",
     "dev": "tsc --project tsconfig.build.json --watch --preserveWatchOutput",
     "test": "bun test src",
-    "type-check": "tsc --noEmit",
+    "type-check": "node ../../scripts/tsc.mjs --noEmit",
     "clean": "shx rm -rf dist .turbo"
   },
   "devDependencies": {

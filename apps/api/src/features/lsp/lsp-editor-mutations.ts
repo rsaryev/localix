@@ -21,21 +21,21 @@ import type {
 import type { LspClientInfo, ServerCapabilities } from './lsp-client-contract'
 
 interface EditorMutationPorts {
-  getCapabilities(): ServerCapabilities | undefined
-  featureRequest<T>(
+  getCapabilities: () => ServerCapabilities | undefined
+  featureRequest: <T>(
     method: string,
     params: Record<string, unknown>,
     normalize: (response: unknown) => T,
     onError: T,
-  ): Promise<T>
-  atPosition<T>(
+  ) => Promise<T>
+  atPosition: <T>(
     method: string,
     filePath: string,
     position: LspPosition,
     normalize: (response: unknown) => T,
     onError: T,
     extraParams?: Record<string, unknown>,
-  ): Promise<T>
+  ) => Promise<T>
 }
 
 /** Prepare editor changes through the shared request transport. */

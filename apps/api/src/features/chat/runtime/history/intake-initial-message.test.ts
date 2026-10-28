@@ -6,13 +6,13 @@ import { expect, test } from 'bun:test'
 
 import type { PersistedMessage } from '../../contracts'
 import { intakeTurn } from './intake'
-import { USER_PARTICIPANT } from '../../../../db'
+import { USER_AUTHOR } from '../../../../db'
 
 const message = (id: string, content: string): PersistedMessage => ({
   id,
   sessionId: 'session-1',
   userId: 'user-1',
-  payload: { id, role: 'user', from: USER_PARTICIPANT, content },
+  payload: { id, role: 'user', from: USER_AUTHOR, content },
   createdAt: '2026-07-22T00:00:00.000Z',
   updatedAt: '2026-07-22T00:00:00.000Z',
 })

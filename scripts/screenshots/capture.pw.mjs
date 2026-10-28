@@ -20,8 +20,7 @@ for (const [key, spec] of Object.entries(capturePlan)) {
       `Enable ${spec.requires} with its isolated dependency first.`,
     )
     const fixture = JSON.parse(await fs.readFile(fixtureFile, 'utf8'))
-    // `/model` needs the same placeholder connection for its Provider step.
-    if (['agent-command', 'model-command'].includes(spec.scenario))
+    if (spec.scenario === 'agent-command')
       await (await import('./agent-command.mjs')).seedAgentCommand(fixture)
     if (['kanban-board', 'kanban-conversation'].includes(spec.scenario))
       await (await import('./kanban-workbenches.mjs')).seedKanban(fixture)
@@ -63,12 +62,7 @@ for (const [key, spec] of Object.entries(capturePlan)) {
     // launch, and the open dialog covered every surface a scenario reached for.
     if (!spec.firstRun)
       await page.addInitScript(() => localStorage.setItem('localix.setup.done', '1'))
-    const island = spec.scenario.startsWith('island-')
-    if (island) {
-      await (
-        await import('./agent-island.mjs')
-      ).openIsland(page, uiOrigin, spec.notch, spec.scenario)
-    } else if (spec.firstRun) {
+    if (spec.firstRun) {
       // No saved UI state, cleared once so a reload inside the scenario keeps what it wrote.
       await page.addInitScript(() => {
         if (sessionStorage.getItem('capture_first_run')) return
@@ -83,19 +77,27 @@ for (const [key, spec] of Object.entries(capturePlan)) {
       await expect(page.getByRole('button', { name: 'Settings', exact: true })).toBeVisible()
     } else {
       await page.goto(route)
-      await expect(page.getByRole('button', { name: 'Add participant', exact: true })).toBeVisible()
+      await expect(
+        page.getByRole('combobox', { name: 'Message', exact: true }).last(),
+      ).toBeVisible()
     }
     await compose(page, spec.scenario)
     await verifyEvidence(page, spec.scenario)
-    if (spec.notch) await (await import('./agent-island.mjs')).verifyNotchLayout(page, spec)
     await page.evaluate(async () => {
       await document.fonts.ready
     })
     if (!spec.preservePointer) await page.mouse.move(10, 10)
     await page.waitForTimeout(650)
+    // The composer's Store recommendations follow what the catalog offered that day; only the
+    // Store and recommendation scenarios are about them, so any other capture hides the strip.
+    if (!/^(store|for-your-work)/.test(spec.scenario)) {
+      const hide = page.getByRole('button', { name: 'Hide until there are new recommendations' })
+      if (await hide.isVisible()) {
+        await hide.click()
+        await expect(hide).toBeHidden()
+      }
+    }
     expect(errors).toEqual([])
-    // Validate the state we actually capture after pointer movement and settled transitions.
-    if (island) await verifyEvidence(page, spec.scenario)
     const date = new Intl.DateTimeFormat('en-CA', {
       year: 'numeric',
       month: '2-digit',

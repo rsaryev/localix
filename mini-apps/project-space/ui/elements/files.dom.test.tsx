@@ -5,6 +5,10 @@ import { CanvasProvider } from '@localixai/kit/canvas'
 import { registerDom } from '@localixai/kit/testing'
 import { viewOf } from './index'
 
+const turns = async (n = 10) => {
+  for (let i = 0; i < n; i++) await new Promise((r) => setImmediate(r))
+}
+
 let teardown: () => Promise<void>
 const actEnvironment = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 beforeAll(() => {
@@ -61,7 +65,7 @@ test('a file card shows the text the route answers with', async () => {
       </CanvasProvider>,
     )
   })
-  await act(async () => new Promise((resolve) => setTimeout(resolve, 30)))
+  await act(async () => turns())
   expect(requested[0]).toContain('/rpc/project-space/text?sessionId=s1&path=src%2Fa.ts')
   expect(host.textContent).toContain('const b = 2')
   await act(async () => root.unmount())

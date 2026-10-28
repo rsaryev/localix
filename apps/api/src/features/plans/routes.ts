@@ -1,7 +1,7 @@
 /**
  * The person's side of a plan, under `/rpc/sessions/:id/plans`: list the versions with the
  * draft's state, and decide on one — approve (with the mode to implement in and, optionally, the
- * participant or `all` who starts), request changes, dismiss, or reopen the latest one after it
+ * agent or `all` who starts), request changes, dismiss, or reopen the latest one after it
  * was set aside.
  *
  * Every decision answers the conversation's full `plans` list — on success, and beside the error
@@ -39,8 +39,8 @@ export function createPlanRoutes(plans: PlanService) {
       async (c) => {
         const { id, planId } = c.req.valid('param')
         const owner = { userId: c.get('userId'), sessionId: id }
-        const { mode, to } = c.req.valid('json')
-        return c.json(await plans.approve(owner, planId, mode, to), 200)
+        const { mode } = c.req.valid('json')
+        return c.json(await plans.approve(owner, planId, mode), 200)
       },
     )
     .post(

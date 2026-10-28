@@ -21,7 +21,7 @@ export type Player = (typeof PLAYERS)[number]
 
 /**
  * Who plays O at this table (`@localixai/mini-app-sdk/opponent`): the agent in the chat, or the
- * host's decision model. The seat is the same either way — a move by O is the `agent` player's —
+ * host's decision model. The side is the same either way — a move by O is the `agent` player's —
  * only who fills it differs.
  */
 export { OPPONENTS, type Opponent }

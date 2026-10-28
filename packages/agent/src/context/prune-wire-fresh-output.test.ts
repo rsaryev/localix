@@ -51,8 +51,8 @@ describe('pruneWireMessages — fresh tool-result hard bound', () => {
     const huge = `HEAD\n${'x'.repeat(DEFAULT_MAX_BYTES + 8_000)}\nTAIL_DIAGNOSTIC`
     const messages: Message[] = [
       { role: 'user', content: 'run it', timestamp: 0 },
-      call('bash-1', 'bash', { command: 'run' }),
-      result('bash-1', 'bash', huge),
+      call('bash-1', 'Bash', { command: 'run' }),
+      result('bash-1', 'Bash', huge),
     ]
 
     const pruned = pruneWireMessages(messages, {
@@ -65,7 +65,7 @@ describe('pruneWireMessages — fresh tool-result hard bound', () => {
     expect(output).toContain(ELISION_MARKER)
     expect(output).toContain('TAIL_DIAGNOSTIC')
     expect(output).not.toContain('HEAD\n')
-    expect(output).toContain('tool_output(action="get", tool_call_id="bash-1")')
+    expect(output).toContain('ToolOutput(action="get", tool_call_id="bash-1")')
     expect(textEncoderByteLength(output)).toBeLessThanOrEqual(DEFAULT_MAX_BYTES)
     expect(collectElidedToolCallIds(pruned)).toContain('bash-1')
     // Wire-only: neither the caller's message nor its durable result is mutated.
@@ -95,8 +95,8 @@ describe('pruneWireMessages — fresh tool-result hard bound', () => {
   it('preserves identity and the exact threshold when no hard bound is needed', () => {
     const messages: Message[] = [
       { role: 'user', content: 'run it', timestamp: 0 },
-      call('bash-1', 'bash', { command: 'run' }),
-      result('bash-1', 'bash', 'x'.repeat(DEFAULT_MAX_BYTES)),
+      call('bash-1', 'Bash', { command: 'run' }),
+      result('bash-1', 'Bash', 'x'.repeat(DEFAULT_MAX_BYTES)),
     ]
 
     expect(
@@ -166,13 +166,13 @@ describe('pruneWireMessages — fresh tool-result hard bound', () => {
     expect(bounded).toContain('FIRST_RECORD')
     expect(bounded).not.toContain('LAST_RECORD')
     expect(bounded).toContain('showing beginning')
-    expect(bounded).toContain('tool_output(action="get", tool_call_id="catalog-1")')
+    expect(bounded).toContain('ToolOutput(action="get", tool_call_id="catalog-1")')
     expect(textEncoderByteLength(bounded)).toBeLessThanOrEqual(DEFAULT_MAX_BYTES)
 
     const coreMessages: Message[] = [
       { role: 'user', content: 'file', timestamp: 0 },
-      call('read-1', 'read', { path: 'large.txt' }),
-      result('read-1', 'read', huge),
+      call('read-1', 'Read', { path: 'large.txt' }),
+      result('read-1', 'Read', huge),
     ]
     expect(
       pruneWireMessages(coreMessages, {
@@ -200,8 +200,8 @@ describe('pruneWireMessages — fresh successful mutation-argument hard bound', 
     const original = `BEGIN\n${'x'.repeat(DEFAULT_MAX_BYTES + 8_000)}\nEND`
     const messages: Message[] = [
       { role: 'user', content: 'write it', timestamp: 0 },
-      call('write-1', 'write', { path: 'large.ts', content: original }),
-      result('write-1', 'write', 'Wrote large.ts'),
+      call('write-1', 'Write', { path: 'large.ts', content: original }),
+      result('write-1', 'Write', 'Wrote large.ts'),
     ]
 
     const pruned = pruneWireMessages(messages, {
@@ -212,7 +212,7 @@ describe('pruneWireMessages — fresh successful mutation-argument hard bound', 
     const args = argsOf(pruned, 'write-1')
 
     expect(args.content).toContain(ELISION_MARKER)
-    expect(args.content).toContain('tool_output(action="get", tool_call_id="write-1")')
+    expect(args.content).toContain('ToolOutput(action="get", tool_call_id="write-1")')
     expect(textEncoderByteLength(JSON.stringify(args))).toBeLessThanOrEqual(DEFAULT_MAX_BYTES)
     expect(collectElidedArgToolCallIds(pruned)).toContain('write-1')
     expect(argsOf(messages, 'write-1').content).toBe(original)
@@ -223,8 +223,8 @@ describe('pruneWireMessages — fresh successful mutation-argument hard bound', 
     const newString = 'n'.repeat(30_000)
     const messages: Message[] = [
       { role: 'user', content: 'edit it', timestamp: 0 },
-      call('edit-1', 'edit', { path: 'large.ts', old_string: oldString, new_string: newString }),
-      result('edit-1', 'edit', 'Edited large.ts'),
+      call('edit-1', 'Edit', { path: 'large.ts', old_string: oldString, new_string: newString }),
+      result('edit-1', 'Edit', 'Edited large.ts'),
     ]
 
     const args = argsOf(pruneWireMessages(messages), 'edit-1')
@@ -237,14 +237,14 @@ describe('pruneWireMessages — fresh successful mutation-argument hard bound', 
     const original = 'x'.repeat(DEFAULT_MAX_BYTES + 8_000)
     const failed: Message[] = [
       { role: 'user', content: 'write it', timestamp: 0 },
-      call('failed-1', 'write', { path: 'large.ts', content: original }),
+      call('failed-1', 'Write', { path: 'large.ts', content: original }),
       {
         role: 'tool',
         results: [
           {
             type: 'tool_result',
             toolCallId: 'failed-1',
-            toolName: 'write',
+            toolName: 'Write',
             content: 'EACCES',
             isError: true,
           },
@@ -262,15 +262,15 @@ describe('pruneWireMessages — fresh successful mutation-argument hard bound', 
     const original = 'x'.repeat(DEFAULT_MAX_BYTES + 8_000)
     const messages: Message[] = [
       { role: 'user', content: 'write it', timestamp: 0 },
-      call('mixed-1', 'write', { path: 'large.ts', content: original }),
-      result('mixed-1', 'write', 'Wrote large.ts'),
+      call('mixed-1', 'Write', { path: 'large.ts', content: original }),
+      result('mixed-1', 'Write', 'Wrote large.ts'),
       {
         role: 'tool',
         results: [
           {
             type: 'tool_result',
             toolCallId: 'mixed-1',
-            toolName: 'write',
+            toolName: 'Write',
             content: 'later repair says failed',
             isError: true,
           },

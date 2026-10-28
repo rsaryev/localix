@@ -38,7 +38,7 @@ export const CONTROLS: readonly KitCatalogEntry[] = [
     provider: 'kit',
     exports: ['Button', 'WorkbenchSash'],
     summary: 'The labelled command button, on the control ladder; also the one resize sash.',
-    use: 'Any clickable command with a text label. `variant` is the look (`default`, `field` on a tinted band, `ghost`, `outline`, `danger`); `size` is a rung (`xs`…`xl`). `recommended` marks the one safe, expected next step on a surface (never a permission grant or a destructive action).',
+    use: 'Any clickable command with a text label. `variant` is the look (`default`, `field` on a tinted band, `ghost`, `danger`); `size` is a rung (`xs`…`xl`). `recommended` marks the one safe, expected next step on a surface (never a permission grant or a destructive action).',
     not: 'Never a native <button>. An icon-only action is IconButton; a text link in prose is TextAction.',
   },
   {

@@ -54,11 +54,9 @@ not resign a game that is merely difficult: a draw or a comeback is still worth 
 ## When a game ends
 
 Tell the user the result in one line and offer another game. If the game showed you something about
-how this user plays that you did not know — an opening they favour, a trade they avoid — keep it
-with your memory tool, in one note on Checkers that you update rather than add to. Use memory only
-when the tool is available and permitted. Retention depends on its scope; choose a scope that
-matches the intended reuse instead of assuming the note survives deletion. The board is
-session-owned and is removed with its chat.
+how this user plays that you did not know — an opening they favour, a trade they avoid — keep it in
+your memory, in one note on Checkers that you update rather than add to. Use memory only when you
+have it and may write there. The board is session-owned and is removed with its chat.
 
 ## When the user asks to play
 

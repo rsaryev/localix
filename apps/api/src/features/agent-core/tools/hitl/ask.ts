@@ -46,6 +46,21 @@ export type AskToolInput = z.infer<typeof askToolInputSchema> & {
 const QUESTION_KEYS = ['id', 'question', 'options', 'multi', 'recommended'] as const
 
 /**
+ * Claude Code's question: `header` is the short label it shows, and the key its answer comes back
+ * under here; `multiSelect` is `multi`.
+ */
+function claudeCodeQuestion(question: unknown, index: number): unknown {
+  if (!question || typeof question !== 'object' || Array.isArray(question)) return question
+  const { header, multiSelect, ...rest } = question as Record<string, unknown>
+  if (header === undefined && multiSelect === undefined && rest.id !== undefined) return question
+  return {
+    ...rest,
+    id: rest.id ?? (typeof header === 'string' && header ? header : `q${index + 1}`),
+    ...(rest.multi === undefined && typeof multiSelect === 'boolean' ? { multi: multiSelect } : {}),
+  }
+}
+
+/**
  * The runtime's pre-validation hook: it never runs the zod `preprocess`, so a bare
  * `loading_messages` string becomes its list here. One question written at the top level,
  * without the `questions` list around it, has one reading too: LOCALIX-189 lost a turn to it.
@@ -56,6 +71,12 @@ export function prepareAskArguments(raw: unknown): unknown {
   if (input.loading_messages !== undefined) {
     const messages = stringToArray(input.loading_messages)
     if (messages !== input.loading_messages) input = { ...input, loading_messages: messages }
+  }
+  const asked = input.questions
+  if (Array.isArray(asked)) {
+    const questions = asked.map(claudeCodeQuestion)
+    const changed = questions.some((question, index) => question !== asked[index])
+    return changed ? { ...input, questions } : input
   }
   if (input.questions !== undefined || input.question === undefined) return input
   const question: Record<string, unknown> = {}
@@ -162,6 +183,11 @@ export function classifyAsk(_input: unknown): CallClass {
 export const NO_WATCHER_TEXT =
   'Nobody can answer here. Proceed with your best assumption and state it in your report.'
 
+/**
+ * The answers, then the cue to go on. Handed the bare answers, a model treated the answer as the
+ * end of its turn (LOCALIX-348: it asked one question mid-task, got the answer and stopped with the
+ * work undone), so the person had to tell it to continue.
+ */
 function formatAnswers(answers: AskToolAnswer[]): string {
   if (answers.length === 0) return 'User did not provide an answer.'
   return [
@@ -172,6 +198,7 @@ function formatAnswers(answers: AskToolAnswer[]): string {
         return `${answer.id}: ${answer.selectedOptions.join(', ')}`
       return `${answer.id}: ${answer.selectedOptions[0] ?? '(no selection)'}`
     }),
+    'Continue the task with these answers.',
   ].join('\n')
 }
 
@@ -201,7 +228,7 @@ const optionValueOf = (q: AskToolQuestion, label: string) =>
 
 export function createAskTool(): AgentTool<AskToolInput, AskToolDetails> {
   return {
-    name: TOOL.ask,
+    name: TOOL.AskUserQuestion,
     label: 'Ask',
     activeVerb: 'Awaiting user input',
     description:

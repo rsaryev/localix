@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
+import { tap } from '@/testing/hookProbe'
 import { act } from 'react'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { useDebouncedQuery } from './useDebouncedQuery'
@@ -24,21 +25,23 @@ test('debounces, keeps the last write, goes idle without a query, and supersedes
   const pending = new Map<string, (value: string) => void>()
   const started: string[] = []
   const events: string[] = []
-  let supersede: () => void = () => {}
+  const supersede = tap<() => void>()
   function Harness({ query, unrelated }: { query: string; unrelated: number }) {
     void unrelated
-    supersede = useDebouncedQuery([query], 20, {
-      run: query
-        ? () => {
-            started.push(query)
-            return new Promise<string>((resolve) => pending.set(query, resolve))
-          }
-        : null,
-      onIdle: () => events.push('idle'),
-      onStart: () => events.push(`start:${query}`),
-      onResult: (value) => events.push(`result:${value}`),
-      onSettled: () => events.push('settled'),
-    })
+    supersede.put(
+      useDebouncedQuery([query], 20, {
+        run: query
+          ? () => {
+              started.push(query)
+              return new Promise<string>((resolve) => pending.set(query, resolve))
+            }
+          : null,
+        onIdle: () => events.push('idle'),
+        onStart: () => events.push(`start:${query}`),
+        onResult: (value) => events.push(`result:${value}`),
+        onSettled: () => events.push('settled'),
+      }),
+    )
     return null
   }
   const render = (query: string, unrelated = 0) =>
@@ -67,7 +70,7 @@ test('debounces, keeps the last write, goes idle without a query, and supersedes
     events.length = 0
     await render('x')
     await wait(40)
-    supersede()
+    supersede.value!()
     await act(async () => pending.get('x')!('X'))
     await render('')
     expect(events).toEqual(['start:x', 'idle'])

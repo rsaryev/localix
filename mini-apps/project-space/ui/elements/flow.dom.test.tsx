@@ -56,8 +56,10 @@ test('a step of a selected flowchart is renamed where it stands, and the ground 
     const field = host.querySelector('textarea')!
     expect(field.value).toBe('Plan')
     await act(async () => {
-      const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!
-      setter.call(field, 'Scope')
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set?.call(
+        field,
+        'Scope',
+      )
       field.dispatchEvent(new Event('input', { bubbles: true }))
     })
     await act(async () => {

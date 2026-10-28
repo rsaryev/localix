@@ -1,4 +1,5 @@
 import type { SessionStreamRegistry } from '../chat/runtime/session-stream-registry'
+import { backoffMs } from '@localixai/agent/backoff'
 import { createDirWatcher, type DirWatcherHandle, type FsChange } from './watcher'
 
 /**
@@ -143,7 +144,7 @@ export function createFileWatchService(deps: FileWatchDeps) {
    */
   const failRoot = (root: string) => {
     const previous = failures.get(root)?.count ?? 0
-    const delay = Math.min(RETRY_MAX_MS, RETRY_BASE_MS * 2 ** previous)
+    const delay = backoffMs(previous, { baseMs: RETRY_BASE_MS, maxMs: RETRY_MAX_MS })
     failures.set(root, { count: previous + 1, retryAt: now() + delay })
     const entry = byRoot.get(root)
     if (!entry) return

@@ -75,8 +75,10 @@ describe('searching the Store', () => {
     })
     try {
       await view.type(field(view.host), 'ch')
-      await view.click(view.button('Installed', view.host))
-      const pill = () => view.button('Installed', view.host)!
+      // The filter under the search, not the Installed section's tab.
+      const results = view.host.querySelector<HTMLElement>('[data-store-scroller]')!
+      await view.click(view.button('Installed', results))
+      const pill = () => view.button('Installed', results)!
       expect(pill().getAttribute('aria-pressed')).toBe('true')
       await view.type(field(view.host), 'che')
       expect(pill().getAttribute('aria-pressed')).toBe('true')
@@ -89,7 +91,9 @@ describe('searching the Store', () => {
     const view = await renderStore({ listings: LISTINGS })
     try {
       await view.type(field(view.host), 'chess')
-      await view.click(view.button('Installed', view.host))
+      // The filter under the search, not the Installed section's tab.
+      const results = view.host.querySelector<HTMLElement>('[data-store-scroller]')!
+      await view.click(view.button('Installed', results))
       expect(view.host.textContent).toContain('Nothing matches')
       await view.click(view.button('Clear filters', view.host))
       expect(view.card('chess')).not.toBeNull()

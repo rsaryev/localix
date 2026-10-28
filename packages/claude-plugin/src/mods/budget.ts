@@ -5,7 +5,7 @@
  */
 
 export interface BudgetClock {
-  now(): number
+  now: () => number
   setTimer(fire: () => void, ms: number): () => void
 }
 

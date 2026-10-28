@@ -41,15 +41,6 @@ export interface CcTask {
   id: string
   subject: string
   description?: string
-  teammateName?: string
-}
-
-export interface TeammateIdleResult {
-  /** Exit 2 (or a prompt/agent verdict): the member keeps working with `reason` as feedback. */
-  blocked: boolean
-  reason?: string
-  /** `continue:false`: the member stops; `stopReason` is shown to the person. */
-  stopReason?: string
 }
 
 /** One model switch (PreModelSwitch / PostModelSwitch). */
@@ -103,8 +94,6 @@ export interface CcAddedHooksRuntime {
   runTaskCreated(task: CcTask): Promise<StopResult>
   /** A card is about to close; `blocked` leaves it open. `continue:false` is ignored on this path. */
   runTaskCompleted(task: CcTask): Promise<StopResult>
-  /** A conversation member (not the leader) finished its turn. */
-  runTeammateIdle(teammate: { name: string; agentId: string }): Promise<TeammateIdleResult>
   /** A context checkpoint was taken (this host's compaction). Observer-only. */
   runPostCompact(trigger: 'manual' | 'auto', summary: string): Promise<void>
   /** One instruction file entered the prompt. Observer-only. */

@@ -1,6 +1,5 @@
 import { InvalidRequestError, NotFoundError } from '../../../lib/domain-errors'
-import { agentRoute, chosenRoute, sessionRoute } from '../../../contracts/session-route'
-import { participantAgentId } from '../../../db/participant'
+import { chosenRoute, sessionRoute } from '../../../contracts/session-route'
 import { randomUUID } from 'node:crypto'
 
 import { sessionAgent, toPersistedMessage } from './message-builders'
@@ -53,21 +52,18 @@ export async function openMessageThread(
   }
   const anchorText = typeof anchor.payload.content === 'string' ? anchor.payload.content : ''
 
-  // A thread continues with the participant who WROTE the anchored message: its route, its seat,
-  // its authorship of the opener. It used to take the first participant for all three, so a
-  // thread opened on @qa's reply was answered — and "written" — by @lead.
-  const authorId = anchor.payload.from ? participantAgentId(anchor.payload.from) : null
-  const author = authorId ? agentRoute(parent, authorId) : undefined
-  const threadRoute = chosenRoute(author ?? sessionRoute(parent))
+  // A thread continues with the conversation's agent: its route, its authorship of the opener.
+  const author = parent.agent ?? undefined
+  const threadRoute = chosenRoute(sessionRoute(parent))
   const titleSeed = anchorText.trim().replace(/\s+/g, ' ')
   const title = titleSeed ? `Thread: ${titleSeed.slice(0, 60)}` : 'Thread'
   const created = await sessionLifecycle.createSession(ctx.sessionLifecycleCtx, userId, {
     title,
     parentSessionId: sessionId,
     projectId: parent.projectId,
-    ...(author ? { agents: [{ agentId: author.agentId }] } : {}),
+    ...(author ? { agent: { agentId: author.agentId } } : {}),
     // Only what the parent CHOSE travels into the thread (`chosenRoute`). A parent following
-    // its project or the agent's card hands its thread a blank seat, which resolves to the same
+    // its project or the agent's card hands its thread a blank route, which resolves to the same
     // model today and keeps following it tomorrow. The effort always travels: it is the dial
     // for the task, and a thread is part of that task.
     providerConnectionId: threadRoute.providerConnectionId,
@@ -87,7 +83,7 @@ export async function openMessageThread(
       {
         id: seedId,
         role: 'assistant',
-        from: sessionAgent(parent, author?.agentId),
+        from: sessionAgent(parent),
         content: anchorText,
       },
       ts,

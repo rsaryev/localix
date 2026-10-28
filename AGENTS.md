@@ -11,11 +11,13 @@ Localix uses Bun 1.4.4 and Turborepo. [CONTRIBUTING.md](CONTRIBUTING.md) documen
   routinely run every gate.
 - Repeat successful checks only after relevant changes or for unresolved failures.
 - For requested commits, stage intended changes and commit. Pre-commit checks formatting, lint,
-  affected source/test types, focused tests, and applicable Rust formatting/Clippy; do not duplicate
-  those checks manually or bypass failures.
-- Pre-push runs the CI gates for affected packages (`--affected`); commit or stash first. Full
-  builds belong to CI. Run optional architecture, documentation, and audit gates when relevant or
-  explicitly requested. Report verification accurately; stop servers and browsers you started.
+  changed and co-located tests, and applicable Rust formatting/Clippy; do not duplicate those checks
+  manually or bypass failures.
+- Pre-push checks source and test types of the packages the pushed commits change; commit or stash
+  first. The test suite and full builds belong to CI on our runner (`main`); do not run the whole
+  suite locally unless asked. Run optional architecture, documentation, and audit gates when
+  relevant or explicitly requested. Report verification accurately; stop servers and browsers you
+  started.
 
 ## Project Structure
 
@@ -26,20 +28,19 @@ owner; use typed ports for cross-feature behavior.
 
 ## Plugins and mini apps
 
-Two separate products that share nothing, named strictly. A **plugin** is the Claude Code format:
-skills, commands, agents, hooks, mods, MCP and LSP servers (`.claude-plugin/plugin.json`). A **mini
-app** is Localix's own format: screens, a backend, agent tools over Localix's APIs, a `guide.md` and
-commands (`mini-app.json`). A mini app contains no plugin and a plugin knows nothing of mini apps;
-neither layer's code imports the other's. Localix ships no mini app: they are installed and updated
-from a catalog. Nothing that is about screens, backends or the mini app SDK is called "plugin".
-Rules X1–X5 and the migration status:
+A **plugin** is the Claude Code format (`.claude-plugin/plugin.json`); a **mini app** is Localix's
+own (`mini-app.json`: screens, backend, agent tools). Neither imports the other, and nothing about
+screens, backends or the mini app SDK is called "plugin". Rules X1–X5:
 [plugins and mini apps](docs/internals/plugins-and-mini-apps.md).
 
 ## Architecture
 
-Read [docs/internals/architecture/README.md](docs/internals/architecture/README.md) before changing
-how features, packages or surfaces depend on each other. Its rules have ids (A1–A8, C1–C7); cite the
-id when a change touches one, and record any exception in the audit rather than in code.
+Always read the architecture prospectus,
+[docs/internals/architecture/README.md](docs/internals/architecture/README.md), and the
+[change feed](docs/internals/subsystems/change-feed.md) before a change that writes, announces,
+reads or shows data, or changes how features, packages or surfaces depend on each other. Build the
+change through its event model rather than a local patch. Its rules have ids (A1–A8, C1–C7); cite
+the id when a change touches one, and record any exception in the audit rather than in code.
 
 - Keep the core agnostic: no provider SDK, UI framework, transport or storage engine in
   `packages/agent` or `packages/engine-loop`; adapters live at the edge.
@@ -52,6 +53,8 @@ id when a change touches one, and record any exception in the audit rather than 
 - Store identities that survive recreation; a provider connection id is a hint for a model route.
 - UI: no imports between slices of the same layer; clients re-read on a poke, and a write never
   patches another surface's store.
+- A view of one item re-reads it on a poke and treats the owner's "not found" as gone: it never
+  keeps showing the last copy (a removed package still saying Installed).
 
 ## Common Commands
 

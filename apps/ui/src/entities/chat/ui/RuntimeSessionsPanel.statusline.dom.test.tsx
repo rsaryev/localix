@@ -83,7 +83,7 @@ async function renderPanel(root: string, sessions: UiSession[]) {
 describe('RuntimeSessionsPanel with a plugin subagent status line', () => {
   test('draws the line’s text in a running subagent’s row and hides a row it empties', async () => {
     const originalSessions = useChatStore.getState().allSessions
-    const originalRows = backendClient.getSubagentRows
+    const originalRows = backendClient.getSubagentRows.bind(backendClient)
     const asked: string[] = []
     backendClient.getSubagentRows = (async (id: string) => {
       asked.push(id)
@@ -114,7 +114,7 @@ describe('RuntimeSessionsPanel with a plugin subagent status line', () => {
 
   test('arms no refresh timer: the rows are read again on a `subagent-rows` poke alone', async () => {
     const originalSessions = useChatStore.getState().allSessions
-    const originalRows = backendClient.getSubagentRows
+    const originalRows = backendClient.getSubagentRows.bind(backendClient)
     let body = 'mapper · 1k tokens'
     let reads = 0
     backendClient.getSubagentRows = (async () => {

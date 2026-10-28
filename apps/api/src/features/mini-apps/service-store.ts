@@ -22,7 +22,7 @@ export function createMiniAppStoreParts(
   })
   const store = createMiniAppStore({
     homeDir: deps.homeDir,
-    sources: catalogList.sources,
+    sources: () => catalogList.sources(),
     onInstalled: async (name, { fresh, userId }) => {
       if (fresh && userId) await setEnabled(userId, { name, enabled: true })
       await recordCoreChanges(deps.db, {

@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import type { RailEntry } from './shellTypes'
+import { turns } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -72,7 +73,7 @@ test('one or two pins stay direct; three combine, and unpinning dissolves the gr
     await React.act(async () => {
       group.focus()
       group.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 30))
+      await turns(3)
     })
     const rows = [...document.querySelectorAll<HTMLElement>('[role="menuitemradio"]')]
     expect(rows.map((row) => row.textContent)).toEqual(['Git', 'Reader', 'Database'])

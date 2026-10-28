@@ -6,7 +6,7 @@ import type { SessionRecord } from '../../repository'
 import { dispatchParams } from '../run-params'
 import { attemptTransientRetry } from './recovery'
 import type { RunEnv, RunParams } from './types'
-import { DEFAULT_AGENT_PARTICIPANT, USER_PARTICIPANT } from '../../../../db'
+import { DEFAULT_AGENT_AUTHOR, USER_AUTHOR } from '../../../../db'
 
 function harness() {
   const session = { ...sessionFixture(), id: 'retry-session' } as SessionRecord
@@ -18,7 +18,7 @@ function harness() {
     payload: {
       id,
       role,
-      from: role === 'user' ? USER_PARTICIPANT : DEFAULT_AGENT_PARTICIPANT,
+      from: role === 'user' ? USER_AUTHOR : DEFAULT_AGENT_AUTHOR,
       content,
     },
     createdAt: timestamp,

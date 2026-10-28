@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
+import { sql } from 'kysely'
 import { createDatabase, destroyDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
-import { routedParticipants, sessionFixture } from '../../testing/session-fixture'
+import { routedAgent, sessionFixture } from '../../testing/session-fixture'
 import { createChatRepository } from './repository'
 
 describe('narrow chat projections', () => {
@@ -19,7 +20,7 @@ describe('narrow chat projections', () => {
           seq: i + 1,
           isPinned: i === 0,
           updatedAt: `2026-10-01T00:00:${String(i).padStart(2, '0')}.000Z`,
-          agents: routedParticipants({ modelId: 'test-model', reasoningEffort: 'high' }),
+          agent: routedAgent({ modelId: 'test-model', reasoningEffort: 'high' }),
         }),
       )
     }
@@ -69,11 +70,13 @@ describe('narrow chat projections', () => {
     expect(rows.map((row) => row.id)).not.toContain('child')
   })
 
-  test('list and point reads share route fields, including an absent participant', async () => {
+  test('list and point reads share route fields, including an absent agent', async () => {
     const [row] = await repo.listRecentChatSessions('user-1', { limit: 1 })
     expect(await repo.getChatSessionProjection('user-1', 'chat-0')).toEqual(row)
     expect(row).toMatchObject({ modelId: 'test-model', reasoningEffort: 'high' })
-    await db.deleteFrom('conversation_participants').where('session_id', '=', 'chat-0').execute()
+    await sql`UPDATE agent_sessions SET agent_id = NULL, agent_name = NULL, provider_connection_id = NULL, model_id = '', reasoning_effort = 'medium' WHERE id = 'chat-0'`.execute(
+      db,
+    )
     expect(await repo.getChatSessionProjection('user-1', 'chat-0')).toEqual({
       ...row,
       agentId: null,

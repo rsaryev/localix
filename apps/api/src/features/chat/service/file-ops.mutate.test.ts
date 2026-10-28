@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { mkdtempSync, rmSync, existsSync, writeFileSync, mkdirSync, readFileSync } from 'node:fs'
+import { stat } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 
@@ -322,6 +323,17 @@ describe('incrementName', () => {
   })
 })
 
+/**
+ * Gives an operation that is NOT blocked every chance to run: real filesystem round trips and
+ * event-loop turns, counted rather than timed. A lock that fails to hold shows as a change.
+ */
+async function blockedIo(): Promise<void> {
+  for (let turn = 0; turn < 20; turn++) {
+    await stat(tmpdir())
+    await new Promise((resolve) => setImmediate(resolve))
+  }
+}
+
 describe('file-tree mutation locking', () => {
   test('an editor write waits for ownership of every ancestor below the workspace', async () => {
     const entered = deferred()
@@ -337,7 +349,7 @@ describe('file-tree mutation locking', () => {
     await entered.promise
 
     const write = writeFile(ctx(), 'u', 's1', target, 'after', contentHash('before'))
-    await new Promise((resolve) => setTimeout(resolve, 20))
+    await blockedIo()
     expect(readFileSync(target, 'utf8')).toBe('before')
 
     release.resolve()
@@ -357,7 +369,7 @@ describe('file-tree mutation locking', () => {
     await entered.promise
 
     const create = createEntry(ctx(), 'u', 's1', parent, 'new.txt', 'file')
-    await new Promise((resolve) => setTimeout(resolve, 20))
+    await blockedIo()
     expect(existsSync(path.join(parent, 'new.txt'))).toBe(false)
 
     release.resolve()
@@ -378,9 +390,9 @@ describe('file-tree mutation locking', () => {
     await entered.promise
 
     const rename = renameEntry(ctx(), 'u', 's1', source, 'new.txt')
-    await new Promise((resolve) => setTimeout(resolve, 10))
+    await blockedIo()
     const undo = undoLastFileOp(ctx(), 'u', 's1')
-    await new Promise((resolve) => setTimeout(resolve, 20))
+    await blockedIo()
     expect(existsSync(source)).toBe(true)
     expect(existsSync(destination)).toBe(false)
 
@@ -407,7 +419,7 @@ describe('file-tree mutation locking', () => {
     await entered.promise
 
     const copy = pasteEntry(ctx(), 'u', 's1', source, targetDir, 'copy')
-    await new Promise((resolve) => setTimeout(resolve, 20))
+    await blockedIo()
     expect(existsSync(destination)).toBe(false)
 
     release.resolve()
@@ -427,7 +439,7 @@ describe('file-tree mutation locking', () => {
     await entered.promise
 
     const deletion = deleteEntry(ctx(), 'u', 's1', source)
-    await new Promise((resolve) => setTimeout(resolve, 20))
+    await blockedIo()
     expect(existsSync(source)).toBe(true)
 
     release.resolve()

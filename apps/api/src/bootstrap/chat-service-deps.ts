@@ -4,7 +4,8 @@ import { createSkillSourcePolicy } from './skill-source-lock'
 import { installSkillSourcePolicy } from '../features/agent-core/skill-source-policy'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import { withChannelPermissionRelay } from './mcp-channels'
-import { createSessionSeatResolver } from '../features/agents/session-seat'
+import { createSessionAgentResolver } from '../features/agents/session-agent-resolver'
+import { agentModelChoicesPort } from '../features/agents/model-choices-port'
 import { agentModelDefaultsPort } from '../features/agents/agent-model-defaults'
 import type { createTerminalService } from '../features/terminal/service'
 import { CAP_DOCUMENT_EXTRACT } from '@localixai/mini-app-sdk/backend'
@@ -23,7 +24,6 @@ import type { createSecretsStore } from '../features/secrets/store'
 import { createChatVaultPorts } from './chat-vault-ports'
 import { createChatService } from '../features/chat/service'
 import type { MonitorService } from '../features/monitors/service'
-import type { SemanticService } from '../features/embeddings/service'
 import type { DecisionService } from '../features/decisions/service'
 import type { ExitNotices } from '../features/chat/runtime/exit-notices'
 import type { ConfigProposalService } from '../features/config-proposals/service'
@@ -73,9 +73,9 @@ export interface BootstrapServiceRefs {
   /** "Continue" (`features/resume`) — built with the session services, beside the plans. */
   resume?: ResumeRegistry
   comments?: CommentRepository
-  /** Global search — built with the app services, after chat; the agent's `global_search`. */
+  /** Global search — built with the app services, after chat; the agent's `GlobalSearch`. */
   globalSearch?: SearchService
-  /** The Store — built after chat; the agent's `store` tool and the `/plugin` commands. */
+  /** The Store — built after chat; the agent's `Store` tool and the `/plugin` commands. */
   store?: StoreAgentPort
 }
 
@@ -96,7 +96,7 @@ export interface ChatServicePhaseInput extends Pick<
   uiLocationCatalogService: ChatServiceDeps['uiLocationCatalog']
   /** The host's plugin service; chat shares it rather than building a second. */
   pluginService?: PluginService
-  /** The host's mini app service: its authoring backs `/mini-app` and `mini_app_build`. */
+  /** The host's mini app service: what `/mini-app` reads and changes. */
   miniAppService?: MiniAppService
   agentNotifications: NonNullable<ChatServiceDeps['notifications']>
   logger: ReturnType<typeof createLogger>
@@ -109,9 +109,7 @@ export interface ChatServicePhaseInput extends Pick<
   contextManager: ReturnType<typeof createContextManager>
   agentsService: ReturnType<typeof createAgentsService>
   serviceRefs: BootstrapServiceRefs
-  /** Semantic search, built from infra before chat: group routing's embedding model. */
-  semanticService: Pick<SemanticService, 'vectors'>
-  /** Decisions, built from infra before chat: group routing's decision model. */
+  /** Decisions, built from infra before chat: games, the browser's goal check and mini apps. */
   decisionService: DecisionService
 }
 
@@ -120,7 +118,6 @@ export interface ChatServicePhase {
 }
 
 export function createChatServicePhase({
-  semanticService,
   decisionService,
   externalAgents,
   db,
@@ -198,7 +195,7 @@ export function createChatServicePhase({
     // Mini app capabilities resolve PER USE: resolving once at boot would freeze hot
     // enable/disable in both directions. An absent provider degrades gracefully.
     documentExtract: () => capabilityRegistry.get(CAP_DOCUMENT_EXTRACT),
-    // The vault as chat reaches it: resolve, create-only store, and the agent's `vault` tool.
+    // The vault as chat reaches it: resolve, create-only store, and the agent's `Vault` tool.
     ...createChatVaultPorts({ secretsStore, secretExposureShield, secretsService }),
     sanitizeToolResult: (...args) => secretExposureShield.redactResult(...args),
     sanitizeToolError: (...args) => secretExposureShield.redactError(...args),
@@ -271,12 +268,11 @@ export function createChatServicePhase({
     get editorBufferText() {
       return serviceRefs.lspDocumentService?.openBufferText
     },
-    // Who may be seated in a session, and whether this session is a conversation.
-    vectors: semanticService.vectors,
+    // Who may be used by a session, and whether this session is a conversation.
     decisions: decisionService,
-    resolveSessionAgent: createSessionSeatResolver(agentsService),
+    resolveSessionAgent: createSessionAgentResolver(agentsService),
     claudeCodeModes: (cwd) => claudeCodeModes({ homeDir: claudeCodeHome(), cwd }),
-    loadAgentModelDefaults: agentModelDefaultsPort(agentsService),
+    loadAgentModelDefaults: agentModelDefaultsPort(agentModelChoicesPort(userService).read),
     ...createAgentDirectoryPorts(agentsService, {
       cwdOf: async (userId, projectId) =>
         projectId

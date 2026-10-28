@@ -5,8 +5,7 @@ import { handleSkillsControlCommand } from './command-handlers-listings'
 import type { CommandHandlerContext } from './command-handlers-context'
 import type { SessionRecord } from '../repository'
 import type { SkillRecord } from './skills'
-import { routedParticipants, sessionFixture } from '../../../testing/session-fixture'
-import { noLeadership } from '../runtime/conversation-strategy'
+import { routedAgent, sessionFixture } from '../../../testing/session-fixture'
 import { pluginDataDir } from '../../plugins/mcp'
 import { userHome } from '../../../lib/env'
 
@@ -14,7 +13,7 @@ const session: SessionRecord = sessionFixture({
   id: 's1',
   userId: 'u1',
   title: 'test',
-  agents: routedParticipants({
+  agent: routedAgent({
     providerConnectionId: 'p1',
     modelId: 'model',
     reasoningEffort: 'low',
@@ -42,7 +41,7 @@ describe('handleSkillCommand', () => {
     const macroCalls: unknown[][] = []
     const ctx = {
       repo: { listMessages: async () => [] },
-      runner: { isBusy: () => false, isRunning: () => false, leadership: () => noLeadership },
+      runner: { isBusy: () => false, isRunning: () => false },
       now: () => 'now',
       gatherSessionSkills: async () => [skill],
       loadSkillOverrides: async () => ({}),
@@ -71,7 +70,7 @@ describe('handleSkillCommand', () => {
           throw new Error('direct replies must not hydrate the transcript')
         },
       },
-      runner: { isBusy: () => false, isRunning: () => false, leadership: () => noLeadership },
+      runner: { isBusy: () => false, isRunning: () => false },
       now: () => 'now',
       gatherSessionSkills: async () => [{ ...skill, userInvocable: false }],
       loadSkillOverrides: async () => ({}),
@@ -99,7 +98,7 @@ describe('handleSkillCommand', () => {
     })
     const ctx = {
       repo: { listMessages: async () => [] },
-      runner: { isBusy: () => false, isRunning: () => false, leadership: () => noLeadership },
+      runner: { isBusy: () => false, isRunning: () => false },
       now: () => 'now',
       gatherSessionSkills: async () => [stale],
       loadSkillOverrides: async () => ({}),
@@ -148,7 +147,7 @@ const pluginSkill = (plugin: string, name: string): SkillRecord => ({
 function pluginCtx(plugins: SkillRecord[], macroCalls: unknown[][]) {
   return {
     repo: { listMessages: async () => [] },
-    runner: { isBusy: () => false, isRunning: () => false, leadership: () => noLeadership },
+    runner: { isBusy: () => false, isRunning: () => false },
     now: () => 'now',
     gatherSessionSkills: async () => [skill],
     gatherEnabledPluginSkills: async () => plugins,

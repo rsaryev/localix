@@ -28,7 +28,6 @@ const plan = (id: string, version: number, body: string): SessionPlan => ({
   status: version === 2 ? 'presented' : 'superseded',
   title: 'Cache',
   body,
-  authorAgentId: 'lead',
   approvedMode: null,
   createdAt: '2026-10-03T00:00:00.000Z',
   decidedAt: null,

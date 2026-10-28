@@ -113,7 +113,9 @@ function ElementNodeImpl({ id, data, selected, width, height }: NodeProps<Elemen
       ))}
       {/* The content, faded by the element's opacity; the ring and the handles around it are
           the board's and stay crisp, so a faint background is still plainly selected. */}
+      {/* No role of its own: it only passes on what the widgets inside it do (focus, keys). */}
       <div
+        role="presentation"
         onClickCapture={(event) => {
           // Capture sees clicks a widget stops. Select after its native change event finishes:
           // selecting during capture can replace a controlled checkbox before it saves its tick.

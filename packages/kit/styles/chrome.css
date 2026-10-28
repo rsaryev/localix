@@ -248,14 +248,11 @@
 }
 
 /* Read-only editor line numbers. CodeBlock guarantees one `.sh__line` per source line in
-   `lineNumbers` mode, so a CSS counter stays aligned without a mirrored gutter or pixel math.
-   `.file-line-numbers` remains as a compatibility alias for the inspector wrapper. */
-.code-line-numbers,
-.file-line-numbers {
+   `lineNumbers` mode, so a CSS counter stays aligned without a mirrored gutter or pixel math. */
+.code-line-numbers {
   counter-reset: sh-line;
 }
-.code-line-numbers .sh__line::before,
-.file-line-numbers .sh__line::before {
+.code-line-numbers .sh__line::before {
   counter-increment: sh-line;
   content: counter(sh-line);
   display: inline-block;

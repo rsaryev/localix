@@ -41,7 +41,7 @@ export function DeviceAuthorizationStatus({
         <span className="select-all rounded-md border border-border-soft bg-foreground/[0.06] px-3 py-1.5 font-mono text-base tracking-[0.3em] text-foreground">
           {deviceInfo.userCode}
         </span>
-        <Button variant="outline" size="lg" onClick={onCopy}>
+        <Button variant="ghost" size="lg" onClick={onCopy}>
           {copied ? <Check data-icon="inline-start" /> : <Copy data-icon="inline-start" />}
           {copied ? 'Copied' : 'Copy'}
         </Button>

@@ -82,7 +82,7 @@ describe('self-healing click', () => {
       height: 40,
       toJSON: () => ({}),
     })
-    const previousHitTest = document.elementFromPoint
+    const previousHitTest = document.elementFromPoint.bind(document)
     document.elementFromPoint = () => overlay
     let clicked = false
     buy.addEventListener('click', () => {

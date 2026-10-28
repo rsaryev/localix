@@ -22,7 +22,7 @@ import { isWireCarriableImage } from '@localixai/agent/agents'
 
 import type { PersistedMessage } from '../../../contracts'
 import type { StoredMessagePayload } from '../../../../../db/payload'
-import { USER_PARTICIPANT } from '../../../../../db/participant'
+import { USER_AUTHOR } from '../../../../../db/author'
 import type { MediaStore } from '../../../../media/store'
 import { rehydrateMediaAttachments } from '../../../../media/attachments'
 import type { DocumentTextExtractor } from '../../../../agent-core/tools/file/document-ports'
@@ -57,7 +57,7 @@ export function findActiveInvocationIndex(
   for (let i = messages.length - 1; i >= 0; i -= 1) {
     const message = messages[i]
     if (
-      message?.payload.from === USER_PARTICIPANT &&
+      message?.payload.from === USER_AUTHOR &&
       message.payload.role === 'user' &&
       !message.payload.uiOnly &&
       !message.payload.isInternal

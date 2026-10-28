@@ -267,7 +267,7 @@ describe('createMcpClientManager', () => {
 
     expect(tracker.connectCalls).toBe(2)
     // Old config disappeared from the scope's gathered set → disposed.
-    await Bun.sleep(0)
+    await new Promise((resolve) => setTimeout(resolve, 0))
     expect(tracker.created[0].closed).toBe(true)
     expect(tracker.created[1].closed).toBe(false)
     expect(manager.size()).toBe(1)
@@ -361,7 +361,7 @@ describe('createMcpClientManager', () => {
     expect(manager.size()).toBe(2)
 
     await manager.gather([alpha], GATHER_OPTS)
-    await Bun.sleep(0)
+    await new Promise((resolve) => setTimeout(resolve, 0))
     expect(manager.size()).toBe(1)
     // Exactly one of the two clients (beta's) must be closed; alpha's stays open.
     expect(tracker.created.filter((c) => c.closed)).toHaveLength(1)
@@ -379,7 +379,7 @@ describe('createMcpClientManager', () => {
     expect(manager.size()).toBe(2)
 
     await manager.releaseScope('run:child')
-    await Bun.sleep(0)
+    await new Promise((resolve) => setTimeout(resolve, 0))
     expect(manager.size()).toBe(1)
     expect(tracker.created.filter((c) => c.closed)).toHaveLength(1)
     // Releasing a scope nobody gathered is harmless.
@@ -394,7 +394,7 @@ describe('createMcpClientManager', () => {
 
     await manager.gather([alpha], { cwd: '/tmp', scope: 'user-1:proj-a' })
     await manager.gather([beta], { cwd: '/tmp', scope: 'user-1:proj-b' })
-    await Bun.sleep(0)
+    await new Promise((resolve) => setTimeout(resolve, 0))
 
     // proj-b's gather doesn't include alpha, but proj-a still references it.
     expect(manager.size()).toBe(2)
@@ -577,17 +577,24 @@ describe('createMcpClientManager', () => {
   })
 
   test('a required server waits for startup instead of being backgrounded', async () => {
+    const release = Promise.withResolvers<void>()
     const manager = createMcpClientManager({
       connect: async () => {
-        await Bun.sleep(10)
+        await release.promise
         return makeFakeClient(['echo'])
       },
     })
 
-    const result = await manager.gather(
+    const gathering = manager.gather(
       [makeServer({ config: { command: ['fake-server'], required: true } })],
-      { ...GATHER_OPTS, connectBudgetMs: 1 },
+      { ...GATHER_OPTS, connectBudgetMs: 0 },
     )
+    // Let the (zero) budget timer fire before the connect finishes: a budgeted server would be
+    // backgrounded by now.
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    release.resolve()
+    const result = await gathering
 
     expect(result.servers).toEqual([{ name: 'alpha', ok: true, toolCount: 1, cached: false }])
   })
@@ -871,7 +878,7 @@ describe('per-tool policy + description cap', () => {
 
     // The background connect now completes; the cached entry resolves.
     resolveConnect(makeFakeClient(['echo']))
-    await Bun.sleep(0)
+    await new Promise((resolve) => setTimeout(resolve, 0))
 
     // Next gather reuses the same in-flight entry — tools available, no reconnect.
     const second = await manager.gather([server], { ...GATHER_OPTS, connectBudgetMs: 1_000 })
@@ -957,9 +964,11 @@ describe('namespaced-name collision dedup', () => {
  */
 describe("gather assembles in the caller's server order, not connect order", () => {
   const slowThenFast = (slowName: string) => {
+    const fastDone = Promise.withResolvers<void>()
     const connect = async (server: McpServerRecord): Promise<McpClientLike> => {
       // The first-listed server answers LAST — the shape that used to invert everything.
-      if (server.name === slowName) await new Promise((r) => setTimeout(r, 25))
+      if (server.name === slowName) await fastDone.promise
+      else fastDone.resolve()
       return makeFakeClient(['search'])
     }
     return connect
@@ -990,15 +999,20 @@ describe("gather assembles in the caller's server order, not connect order", () 
   })
 
   test('servers still connect CONCURRENTLY — the reverse direction', async () => {
-    // Assembling in order must not serialize the connects: 3 servers sleeping 25ms each
-    // take ~25ms in parallel and ~75ms if this regressed into a sequential await loop.
+    // Assembling in order must not serialize the connects: with a sequential await loop only one
+    // connect would be under way while the others wait their turn.
+    let inFlight = 0
+    let peak = 0
+    const release = Promise.withResolvers<void>()
     const connect = async (): Promise<McpClientLike> => {
-      await new Promise((r) => setTimeout(r, 25))
+      inFlight += 1
+      peak = Math.max(peak, inFlight)
+      await release.promise
+      inFlight -= 1
       return makeFakeClient(['echo'])
     }
     const manager = createMcpClientManager({ connect })
-    const started = performance.now()
-    await manager.gather(
+    const gathering = manager.gather(
       [
         makeServer({ id: 'a', name: 'a' }),
         makeServer({ id: 'b', name: 'b' }),
@@ -1006,16 +1020,21 @@ describe("gather assembles in the caller's server order, not connect order", () 
       ],
       GATHER_OPTS,
     )
-    expect(performance.now() - started).toBeLessThan(60)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    release.resolve()
+    await gathering
+    expect(peak).toBe(3)
   })
 })
 
 describe('resources/list enumeration', () => {
   test('results follow server order even when the first server responds last', async () => {
+    const betaDone = Promise.withResolvers<void>()
     const manager = createMcpClientManager({
       connect: async (server) =>
         makeResourceClient(async () => {
-          if (server.name === 'alpha') await Bun.sleep(25)
+          if (server.name === 'alpha') await betaDone.promise
+          else betaDone.resolve()
           return { resources: [{ uri: `${server.name}://resource`, name: server.name }] }
         }),
     })

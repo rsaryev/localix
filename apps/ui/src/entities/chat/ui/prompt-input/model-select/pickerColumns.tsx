@@ -13,7 +13,7 @@ interface PickerColumnsInput {
   taskColumn: boolean
   task: TaskColumnProps
   provider: ProviderColumnProps
-  /** What the workload switcher names: the active participant or workload. */
+  /** What the workload switcher names: the active agent or workload. */
   workloadLabel: string
   allProviders: readonly ProviderEntry[]
 }

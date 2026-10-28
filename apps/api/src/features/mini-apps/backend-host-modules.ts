@@ -11,7 +11,7 @@ import * as sdkRichText from '@localixai/mini-app-sdk/rich-text'
 import * as storeChanges from '@localixai/mini-app-sdk/store-changes'
 import * as sdkDocumentLayout from '@localixai/mini-app-sdk/document-layout'
 
-import type { MiniAppBackendHostModule } from './authoring/kit-layout'
+import type { MiniAppBackendHostModule } from './kit-layout'
 
 /**
  * The host's own instance of each module a mini app backend imports as external

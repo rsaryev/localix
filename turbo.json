@@ -1,6 +1,6 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "globalDependencies": [".nvmrc"],
+  "globalDependencies": [".nvmrc", "tsconfig.base.json"],
   "tasks": {
     "build": {
       "dependsOn": ["^build", "docs:gen"],
@@ -57,11 +57,11 @@
       "outputs": []
     },
     "type-check": {
-      "dependsOn": ["^build", "docs:gen"],
+      "dependsOn": ["^type-check"],
       "outputs": []
     },
     "type-check:tests": {
-      "dependsOn": ["^build", "docs:gen"],
+      "dependsOn": ["^type-check"],
       "outputs": []
     },
     "tauri:check": {

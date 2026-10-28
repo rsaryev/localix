@@ -31,7 +31,7 @@ class GuestEventTarget {
     if (!listener) return
     const list = this.#listeners.get(type) ?? []
     if (list.some((entry) => entry.listener === listener)) return
-    const once = typeof options === 'object' && options !== null && options.once === true
+    const once = typeof options === 'object' && options?.once === true
     list.push({ listener, once })
     this.#listeners.set(type, list)
   }

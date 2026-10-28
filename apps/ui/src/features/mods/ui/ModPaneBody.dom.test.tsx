@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, expect, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import type { ModElement, ModPaneRef } from '@/shared/api/modsApi'
+import { turns } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -73,7 +74,7 @@ async function mount(panes: ModPaneRef[], tree: ModElement[] = STEPS) {
       </SWRConfig>,
     ),
   )
-  await React.act(async () => new Promise((resolve) => setTimeout(resolve, 20)))
+  await React.act(async () => turns())
   return {
     host,
     calls,

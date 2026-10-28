@@ -17,7 +17,8 @@ export function PresentBar({
 }) {
   if (!presentation.active) return null
   const { index, frames } = presentation
-  const title = frames[index] ? String(space.elements[frames[index]]?.props.title ?? '') : ''
+  const frameTitle = frames[index] ? space.elements[frames[index]]?.props.title : undefined
+  const title = typeof frameTitle === 'string' ? frameTitle : ''
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-4 z-(--z-controls) flex justify-center">
       <BarSurface label="Presentation" className="pointer-events-auto">

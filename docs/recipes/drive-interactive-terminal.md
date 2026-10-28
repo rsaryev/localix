@@ -69,8 +69,8 @@ call just to confirm that this terminal closed. Do not combine `wait_for_exit` w
 `action: "close"` when you intend to stop it.
 
 Large automatic observations include a clipping notice. Read `action: "screen"` if the next decision
-needs the omitted area. For accumulated output of a running PTY job, use `jobs action: "read"`.
-Finished work is no longer readable through `jobs`, and a child-process job without a terminal has
+needs the omitted area. For accumulated output of a running PTY job, use `Jobs action: "read"`.
+Finished work is no longer readable through `Jobs`, and a child-process job without a terminal has
 no PTY scrollback. Inspect its transcript output or direct output to a file when every line must
 remain available.
 

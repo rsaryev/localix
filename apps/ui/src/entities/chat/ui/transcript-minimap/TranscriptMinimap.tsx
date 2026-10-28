@@ -75,14 +75,16 @@ export function TranscriptMinimap({
           height: layout.viewportHeight,
           animation: 'fade-up var(--dur-base) var(--ease-soft) both',
         }}
-        onMouseLeave={() => setHovered(null)}
       >
         {/* The mask lives on this INNER layer, never on the nav: a mask clips everything outside
             the element's own box, and with it on the nav the preview card — which opens outward —
             was masked away entirely. The gradient fades the column at both ends, so the strip
             reads as continuing past the viewport instead of being cut off at the first tick. */}
         <div
+          // Fills the nav's box, so leaving it is leaving the rail; the nav itself stays a plain landmark.
+          role="presentation"
           className="absolute inset-0"
+          onMouseLeave={() => setHovered(null)}
           style={{
             maskImage:
               // `black` here is an ALPHA channel, not a colour: in a mask it means "keep these

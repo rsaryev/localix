@@ -24,7 +24,7 @@ export function systemNoticeMessage(notice: SystemNotice): Message {
  *
  * A model change and a reasoning change are facts about the conversation that the AGENTS have to
  * read as well — so the server writes them, as ordinary rows that also render as notices, naming
- * the participant they are about (`runtime/session-notice.ts`). A client-only copy of an event
+ * the agent they are about (`runtime/session-notice.ts`). A client-only copy of an event
  * the server already records would print it twice and, worse, disagree with it about whose
  * change it was.
  *

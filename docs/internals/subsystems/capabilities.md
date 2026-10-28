@@ -38,7 +38,7 @@ The snapshot's revision (`apps/api/src/features/capabilities/revision.ts`) start
 process's boot time in milliseconds and only grows, so it stays monotonic across a restart: a client
 that outlived the old process drops answers older than the one it holds, and a counter restarting at
 0 made it drop every answer of the new one. Every mutation owner bumps it and pokes clients — a
-plugin or mini app toggle, an MCP change, and the agent's own `skill` save or delete, which reaches
+plugin or mini app toggle, an MCP change, and the agent's own `Skill` save or delete, which reaches
 the host through an injected port rather than an import.
 
 ## How it works
@@ -64,7 +64,7 @@ same nine columns spelled three times plus a fourth that differed by two fields 
 transport and connection details — which is what keeps the table agnostic. Columns for those would
 sit null on three kinds out of four.
 
-`capability_rule` holds the decisions. A switch and a permission are the same statement: `tool:bash`
+`capability_rule` holds the decisions. A switch and a permission are the same statement: `tool:Bash`
 over resource `*` with effect `deny` turns the tool off; the same action over `git push*` with
 effect `ask` leaves it on and prompts.
 
@@ -79,12 +79,12 @@ policy in the same transaction as its binding (`apps/api/src/features/agents/bin
 `apps/ui/src/features/settings/ui/permissions/PermissionRulesView.tsx` edits its rules with the
 shared editor. Every edit applies deliberately: the editor holds it and an explicit **Apply** writes
 it, because a rule field is typed one character at a time and `tool:ba` must not be persisted on the
-way to `tool:bash`.
+way to `tool:Bash`.
 
 ### One list, and the last match wins
 
 A list is ordered from general to specific, so the last rule that matches is the more specific
-statement and it decides: `tool:bash * allow` then `tool:bash rm * deny` means "bash is fine, except
+statement and it decides: `tool:Bash * allow` then `tool:Bash rm * deny` means "bash is fine, except
 rm". A positive list closes its kind the same way — `tool:* * deny` first, then an `allow` per name.
 
 There is ONE resolution rule, and no effect is special. A `deny` is not terminal: written before a
@@ -96,10 +96,10 @@ wildcard `ask` does not reopen a closed allowlist. `resolve.test.ts` and `runtim
 cover both projection and call-time enforcement.
 
 What the rules do NOT arbitrate is a name the catalog does not carry. `RESERVED_NON_TOOL_NAMES`
-(`agent-core/tool-names-reserved.ts`) is core-owned machinery — `activate_tools` is built from the
-run's own deferred set after assembly — so the roster never offers it and the projection can never
-deny it. The gate skips those names for exactly that reason: the alternative was a blanket `tool:*`
-deny, written about capabilities, making an already-permitted tool unreachable through its loader.
+(`agent-core/tool-names-reserved.ts`) is core-owned machinery — `ToolSearch` is built from the run's
+own deferred set after assembly — so the roster never offers it and the projection can never deny
+it. The gate skips those names for exactly that reason: the alternative was a blanket `tool:*` deny,
+written about capabilities, making an already-permitted tool unreachable through its loader.
 
 What this replaced was a three-scope chain — `global → project:<id> → agent:<id>` — composed by
 taking the STRICTEST verdict, plus a separate baseline the permission engine evaluated alongside it
@@ -111,7 +111,7 @@ read.
 
 The user-facing consequence is deliberate: a limit is a property of a role, and a role is chosen by
 the same person who wrote the limit. What that stops is not the user — it is the QUIET removal. An
-**Always** on a card writes `tool:bash` over the program it showed, or `tool:read` over the folder
+**Always** on a card writes `tool:Bash` over the program it showed, or `tool:Read` over the folder
 the person picked, and both can match a call a guard is about (`git push --force`, a `.env` in that
 folder). So the confirmations every shipped role carries sit LAST in its preset
 (`builtin-agent-presets.ts`), and the writer inserts an **Always** row just before them rather than
@@ -160,7 +160,7 @@ it out of `untrusted`.
 A mini app waiting on that question is NOT loaded — its code is never imported, which is the point —
 so its tools cannot be listed either: a manifest declares entry FILES, not tool names. The prompt
 says the honest thing instead (the mini app is here, nobody has allowed it, its tools are unknown
-until someone does) and `configure` carries the one click that settles it, through the same HITL
+until someone does) and `Configure` carries the one click that settles it, through the same HITL
 card every other proposal uses.
 
 ### An enabled mini app's tools are inspected once, not once per launch
@@ -229,7 +229,7 @@ stored in `capability_rule.origin_json`. It is provenance only — `evaluate` ne
 proposed rule composes exactly like a hand-written one. The Capabilities screen uses it to say which
 session asked, and the proposal itself is kept in `config_proposals` with what the user decided.
 
-The agent proposes through `configure`; the write goes through the paths described above, under the
+The agent proposes through `Configure`; the write goes through the paths described above, under the
 user's approval. See `apps/api/src/features/config-proposals/registry.ts`.
 
 ### The ledger: one verdict per tool, per run
@@ -252,10 +252,10 @@ took:
 | Economy   | Measurement | `apps/api/src/features/chat/runtime/run/tool-deferral.ts`                  |
 
 The model layer keeps a text-only model from being offered what it cannot read: a tool whose whole
-output is a picture declares `requiresModelInput: ['image']` and is withheld. `read` is not such a
+output is a picture declares `requiresModelInput: ['image']` and is withheld. `Read` is not such a
 tool — a text-only model needs it for everything else — so its `forModel` variant answers an image
 with its format, size and dimensions in text. A tool with only some model-dependent actions declares
-`forModel` instead and returns its own variant for the run's model — `browser` keeps every action
+`forModel` instead and returns its own variant for the run's model — `Browser` keeps every action
 but `take_screenshot`. An unknown model is not judged. Both declarations live on the tool, so a mini
 app or MCP tool uses them the same way (`tool-model-layer.test.ts`).
 

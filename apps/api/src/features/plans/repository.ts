@@ -32,7 +32,6 @@ function toRecord(row: Selectable<SessionPlansTable>): PlanRecord {
     status: row.status,
     title: row.title,
     body: row.body,
-    authorAgentId: row.author_agent_id,
     approvedMode: row.approved_mode === null ? null : parsePermissionMode(row.approved_mode),
     reviewRound: row.review_round,
     createdAt: row.created_at,
@@ -54,12 +53,7 @@ export interface PlanRepository {
    * Write the next version and supersede the one still waiting, together: a conversation never
    * has two plans presented at once, and the numbers are never reused.
    */
-  present(
-    owner: PlanOwner,
-    authorAgentId: string,
-    draft: PlanDraft,
-    at: string,
-  ): Promise<PlanRecord>
+  present(owner: PlanOwner, draft: PlanDraft, at: string): Promise<PlanRecord>
   /** Every version, newest first. */
   list(owner: PlanOwner): Promise<PlanRecord[]>
   /** One version, when it is the caller's. */
@@ -107,7 +101,7 @@ const LEFT_PRESENTED = { awaiting_person: 0 } as const
 
 export function createPlanRepository(db: Kysely<AppDatabase>): PlanRepository {
   return {
-    async present(owner, authorAgentId, draft, at) {
+    async present(owner, draft, at) {
       return db.transaction().execute(async (trx) => {
         const top = await trx
           .selectFrom('session_plans')
@@ -130,7 +124,6 @@ export function createPlanRepository(db: Kysely<AppDatabase>): PlanRepository {
             status: 'presented',
             title: draft.title,
             body: draft.body,
-            author_agent_id: authorAgentId,
             approved_mode: null,
             created_at: at,
             decided_at: null,

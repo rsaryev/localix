@@ -17,6 +17,9 @@ import { listDelegatedRuns } from './service/delegated-runs'
 import { createSubagentRows } from './service/subagent-rows'
 import { createStatusLine } from './service/status-line'
 import { statusLineUsage } from './service/status-line-usage'
+import { statusLineModelInfo } from './service/status-line-model'
+import { createModelContextRepository } from './model-context-repository'
+import { createCcTranscript } from './runtime/run/cc-transcript'
 
 /**
  * The chat service: one API surface assembled from facades over one object graph.
@@ -65,7 +68,6 @@ export function createChatService(deps: ChatServiceDeps) {
     ...createChatSessionFacade({
       repo,
       now,
-      routeDefaults: graph.routeDefaults,
       sessionLifecycleCtx,
       sessionDetailCtx,
       getSessionDetail,
@@ -107,7 +109,14 @@ export function createChatService(deps: ChatServiceDeps) {
     statusLine: createStatusLine({
       requireSession,
       resolveSessionWorkingDir: core.resolveSessionWorkingDir,
-      usage: (userId, sessionId) => statusLineUsage(repo, userId, sessionId),
+      usage: (userId, sessionId) =>
+        statusLineUsage(repo, createModelContextRepository(deps.db), userId, sessionId),
+      modelInfo: statusLineModelInfo(deps),
+      transcriptPath: async (userId, session, cwd) => {
+        const transcript = createCcTranscript({ repo, userId, session, cwd })
+        await transcript.refreshSession()
+        return transcript.path
+      },
       publish: (sessionId, text) => deps.mods?.composer.status(sessionId, 'statusLine', text),
       watched: (userId, sessionId) => streamRegistry.hasWatchers(userId, sessionId),
     }),

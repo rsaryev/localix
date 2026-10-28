@@ -2,7 +2,7 @@
  * VOCABULARY HINTS — the few words a pointer carries FROM the content it replaced.
  *
  * An elision pointer tells the model that content exists and how to get it back. What it
- * cannot tell the model is what is IN there — so a follow-up (`tool_output`, a re-read,
+ * cannot tell the model is what is IN there — so a follow-up (`ToolOutput`, a re-read,
  * a search) is aimed by guessing vocabulary. Guessed vocabulary misses: the model searches
  * for `handleError` in output that says `onFailure`, gets nothing, and concludes the content
  * is irrelevant rather than that its query was.

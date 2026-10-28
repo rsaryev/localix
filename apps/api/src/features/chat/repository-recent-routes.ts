@@ -2,90 +2,59 @@ import type { Kysely } from 'kysely'
 
 import type { AppDatabase } from '../../db'
 import type { RecentRoute, RecentRoutes } from './repository-types'
-import { parseModelChoices } from './session-model-choices'
 
 /**
  * THE MODEL EACH AGENT USED MOST RECENTLY — the "recent" level of the model chain.
  *
- * Two records of a pick, both written by the one choice writer (`repository-model-choices.ts`):
- * a seat's `model_selected_at` (a model picked for a participant, or stated at birth), and a
- * session's choice-map stamp (`model_choices.chosenAt`), which also covers a pick for an agent
- * that was never seated — the picker's "All" cascade names every listed agent. The newest of the
- * two wins per agent. Reopening an old conversation stamps nothing, so it never makes an old
- * model the agent's newest preference again.
- *
- * Its own module rather than another method on the session reader, because it answers a
- * different question: every query there is "what is this session", and this one is "what has
- * this person been choosing" — over all of them at once, grouped by agent.
- *
- * Every participant of a room counts, not only the one at position 0, and `is_pinned` plays no
- * part: pinning is about where a conversation sits in the sidebar.
+ * A session's `model_selected_at` is stamped only when someone picked its model (or stated one at
+ * birth); the newest stamp per agent is that agent's recent route, with the reasoning level it
+ * ran at when that was picked as well (`reasoning_selected_at`). Reopening an old conversation
+ * stamps nothing, so it never makes an old model the agent's newest preference again, and
+ * `is_pinned` plays no part: pinning is about where a conversation sits in the sidebar.
  */
 export function createRecentRouteQueries(db: Kysely<AppDatabase>) {
-  const seatPicks = (userId: string) =>
-    db
-      .selectFrom('agent_sessions')
-      .innerJoin('conversation_participants as route', 'route.session_id', 'agent_sessions.id')
-      .select([
-        'route.agent_id',
-        'route.provider_connection_id',
-        'route.model_id',
-        'route.model_selected_at as chosen_at',
-      ])
-      .where('agent_sessions.user_id', '=', userId)
-      .where('route.model_id', '!=', '')
-      .where('route.model_selected_at', 'is not', null)
-      .execute()
-
-  const choiceMaps = (userId: string) =>
-    db
-      .selectFrom('agent_sessions')
-      .select('model_choices')
-      .where('user_id', '=', userId)
-      .where('model_choices', 'is not', null)
-      .execute()
-
   return {
     /**
-     * Whether a seat's model is the person's own pick (stamped when picked, or stated when the
-     * seat was born) rather than a default filled in from a card, the project or a plugin.
+     * Whether the session's model is the person's own pick (stamped when picked, or stated when
+     * the session was born) rather than a default filled in from a card, the project or a plugin.
      */
-    async isSeatModelChosen(userId: string, sessionId: string, agentId: string) {
+    async isSessionModelChosen(userId: string, sessionId: string) {
       const row = await db
         .selectFrom('agent_sessions')
-        .innerJoin('conversation_participants as route', 'route.session_id', 'agent_sessions.id')
-        .select('route.model_selected_at')
-        .where('agent_sessions.user_id', '=', userId)
-        .where('agent_sessions.id', '=', sessionId)
-        .where('route.agent_id', '=', agentId)
+        .select('model_selected_at')
+        .where('user_id', '=', userId)
+        .where('id', '=', sessionId)
         .executeTakeFirst()
       return Boolean(row?.model_selected_at)
     },
 
     async listRecentRoutes(userId: string): Promise<RecentRoutes> {
-      const [seats, maps] = await Promise.all([seatPicks(userId), choiceMaps(userId)])
-      const newest = new Map<string, { at: string; route: RecentRoute }>()
-      const offer = (agentId: string, at: string, route: RecentRoute) => {
-        const held = newest.get(agentId)
-        // Seats are offered first and a tie goes to the later offer: one pick stamps its seat and
-        // its entry in the same transaction, and the entry also knows the level.
-        if (!held || at >= held.at) newest.set(agentId, { at, route })
-      }
-      for (const row of seats) {
-        if (!row.chosen_at) continue
-        offer(row.agent_id, row.chosen_at, {
+      const rows = await db
+        .selectFrom('agent_sessions')
+        .select([
+          'agent_id',
+          'provider_connection_id',
+          'model_id',
+          'reasoning_effort',
+          'reasoning_selected_at',
+        ])
+        .where('user_id', '=', userId)
+        .where('agent_id', 'is not', null)
+        .where('model_id', '!=', '')
+        .where('model_selected_at', 'is not', null)
+        .orderBy('model_selected_at', 'asc')
+        .execute()
+      const byAgent = new Map<string, RecentRoute>()
+      // Ascending, so the newest pick of each agent is the one left in the map.
+      for (const row of rows) {
+        byAgent.set(row.agent_id!, {
           providerConnectionId: row.provider_connection_id,
           modelId: row.model_id,
+          // The level only travels when it was picked too, not filled in from a default.
+          ...(row.reasoning_selected_at ? { reasoningEffort: row.reasoning_effort } : {}),
         })
       }
-      for (const row of maps) {
-        const choices = parseModelChoices(row.model_choices)
-        for (const [agentId, at] of Object.entries(choices.chosenAt ?? {})) {
-          const route = choices.agents[agentId]
-          if (route) offer(agentId, at, route)
-        }
-      }
-      return { byAgent: new Map([...newest].map(([agentId, { route }]) => [agentId, route])) }
+      return { byAgent }
     },
   }
 }

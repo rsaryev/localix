@@ -7,7 +7,7 @@ Resize the divider to give the work you are using more space.
 **Availability:** The grid is a desktop/web surface. Headless clients use the same backend without
 this layout.
 
-![Source and terminal tabs beside the team conversation](../assets/screenshots/workspace/editor-grid--2026-10-09.png)
+![Source and terminal tabs beside the conversation](../assets/screenshots/workspace/editor-grid--2026-10-09.png)
 
 ## Native workspace tabs on macOS
 
@@ -41,20 +41,19 @@ command palette with **Set up Localix**. The left rail and top bar stay visible,
 project is selected. Opening the sidebar or a tab works as usual and is remembered, so later
 launches restore the layout you left.
 
-The setup dialog pages through the workspace tips in setup order: appearance, the agent island,
-connecting a model, connecting OpenRouter for decision models, approvals and permission modes,
-project folders, `@` references, base keymaps, the command palette, agents in one chat, and handing
-a whole goal to a team. Each tip animates the real surface; seven carry the control itself.
+The setup dialog pages through the workspace tips in setup order: appearance, connecting a model,
+connecting OpenRouter for decision models, approvals and permission modes, project folders, `@`
+references, base keymaps, the command palette, agents in one chat, and handing a whole goal to a
+team. Each tip animates the real surface; seven carry the control itself.
 
 The OpenRouter tip opens the model picker on OpenRouter's **Sign in with OpenRouter**, the same
 sign-in the picker uses. With OpenRouter connected, Localix uses small, inexpensive decision models
-to route group chats, drive the Browser toward a goal, and play games in mini apps. Once a
-connection exists, the tip shows **Connected**.
+to drive the Browser toward a goal, and play games in mini apps. Once a connection exists, the tip
+shows **Connected**.
 
 The goal tip appears only while an enabled mini app features a command, and shows that command. The
-agent island tip appears only in the macOS desktop app; its switch turns the island on or off at
-once, like the one in Settings. The dialog remembers the last tip you viewed on this device, and its
-last step, **Start chatting**, closes it onto the chat.
+dialog remembers the last tip you viewed on this device, and its last step, **Start chatting**,
+closes it onto the chat.
 
 An editor group with nothing open, such as one whose chat tab you closed, shows the Localix bird.
 
@@ -315,7 +314,7 @@ primary shortcut.
   waits up to 6 seconds for them. A project whose server twice in a row answers nothing within that
   window stops waiting for two minutes — the file is still pushed to the server — and resumes as
   soon as an answer arrives.
-- When an agent's `write` or `edit` finishes, every open editor of that file updates. This works
+- When an agent's `Write` or `Edit` finishes, every open editor of that file updates. This works
   even outside the session's watched folder, and for tabs owned by another session. A clean tab
   takes the new text and keeps the cursor and undo history. The changed lines are highlighted in the
   text and on the scrollbar until you next edit the file. A tab with unsaved edits shows the

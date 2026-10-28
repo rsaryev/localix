@@ -1,6 +1,7 @@
-import { useEffect, type Dispatch, type RefObject, type SetStateAction } from 'react'
-import type { IChartApi, ITimeScaleApi, Time } from 'lightweight-charts'
+import { useEffect, type Dispatch, type SetStateAction } from 'react'
+import type { ITimeScaleApi, Time } from 'lightweight-charts'
 import type { Candle } from '../../backend/contracts'
+import type { ChartRuntime } from './useChartRuntime'
 import type { ChartDrawing } from '../../backend/chart-drawing'
 import { applyDrawCommand } from '../model/chartDrawings'
 import { chartControlBus, type ChartControlCommand } from '../model/chartControlBus'
@@ -42,8 +43,8 @@ export function navigateTimeScale(
 interface ChartAgentCommandTargets {
   controlKey: string | undefined
   controlSessionId: string | undefined
-  chartRef: RefObject<IChartApi | null>
-  candlesRef: RefObject<Candle[]>
+  /** The canvas's runtime: the chart to navigate and the candles to navigate over. */
+  runtime: ChartRuntime
   setIndicatorItems: Dispatch<SetStateAction<IndicatorPrefRecord[]>>
   setScaleMode: Dispatch<SetStateAction<ChartScaleMode>>
   setChartType: Dispatch<SetStateAction<ChartType>>
@@ -58,8 +59,7 @@ interface ChartAgentCommandTargets {
 export function useChartAgentCommands({
   controlKey,
   controlSessionId,
-  chartRef,
-  candlesRef,
+  runtime,
   setIndicatorItems,
   setScaleMode,
   setChartType,
@@ -84,8 +84,8 @@ export function useChartAgentCommands({
             applyDrawCommand(prev, command.mode, command.drawing, command.id),
           )
         case 'navigate': {
-          const chart = chartRef.current
-          if (chart) navigateTimeScale(chart.timeScale(), command, candlesRef.current)
+          const chart = runtime.chart.current
+          if (chart) navigateTimeScale(chart.timeScale(), command, runtime.candles.current)
           break
         }
         case 'set_timeframe':

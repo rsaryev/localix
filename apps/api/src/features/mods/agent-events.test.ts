@@ -4,14 +4,14 @@ import { defineAgentTool, type AgentTool } from '@localixai/agent/agents'
 
 import { hostWithMod } from './testing/testing-host'
 
-test('agent.offer sees a plugin agent type as one, and hides it from delegate too', async () => {
-  const delegated: unknown[] = []
-  const delegate = defineAgentTool({
-    name: 'delegate',
-    description: 'delegate',
+test('agent.offer sees a plugin agent type as one, and hides it from Agent too', async () => {
+  const started: unknown[] = []
+  const agent = defineAgentTool({
+    name: 'Agent',
+    description: 'Agent',
     activeVerb: 'Delegating',
     inputSchema: z.object({}).passthrough(),
-    execute: async (_id, input) => (delegated.push(input), { content: 'started' }),
+    execute: async (_id, input) => (started.push(input), { content: 'started' }),
   }) as AgentTool
   const offers: unknown[] = []
   const { scope } = await hostWithMod((on) => {
@@ -33,10 +33,18 @@ test('agent.offer sees a plugin agent type as one, and hides it from delegate to
     { agent: 'sec:auditor', source: 'plugin' },
   ])
 
-  const [wrapped] = scope.wrapTools([delegate])
-  const refused = await wrapped!.execute('t1', { task: 'x', title: 't', agent: 'sec:auditor' })
+  const [wrapped] = scope.wrapTools([agent])
+  const refused = await wrapped!.execute('t1', {
+    prompt: 'x',
+    description: 't',
+    subagent_type: 'sec:auditor',
+  })
   expect(refused).toMatchObject({ isError: true })
   expect(offers.at(-1)).toEqual({ agent: 'sec:auditor', source: 'plugin' })
-  await wrapped!.execute('t2', { task: 'Review.', title: 'Review', agent: 'sec:reviewer' })
-  expect(delegated).toEqual([expect.objectContaining({ agent: 'sec:reviewer' })])
+  await wrapped!.execute('t2', {
+    prompt: 'Review.',
+    description: 'Review',
+    subagent_type: 'sec:reviewer',
+  })
+  expect(started).toEqual([expect.objectContaining({ subagent_type: 'sec:reviewer' })])
 })

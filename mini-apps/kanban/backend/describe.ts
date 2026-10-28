@@ -16,7 +16,7 @@ export function describeTask(task: KanbanTask): string {
     : ''
   const kind = task.kind === 'epic' ? 'epic ' : ''
   const priority = task.priority ? ` p${task.priority > 0 ? '+' : ''}${task.priority}` : ''
-  const owner = task.assignee ? ` → @${task.assignee}` : ''
+  const owner = task.assignee ? ` → ${task.assignee}` : ''
   const deps = task.dependsOn.length ? ` ⇐ deps: ${task.dependsOn.join(', ')}` : ''
   const blocker = task.error ? ` — ${task.error}` : ''
   return `- [${task.status}] ${kind}${task.id} — ${task.title}${priority}${checklist}${owner}${deps}${blocker}`

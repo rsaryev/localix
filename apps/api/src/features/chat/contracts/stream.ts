@@ -57,7 +57,7 @@ export type AgentStreamEvent =
       turnCount?: number
       toolCount?: number
     }
-  | { type: 'run.started'; sessionId: string; messageId: string; agentId?: string }
+  | { type: 'run.started'; sessionId: string; messageId: string }
   /**
    * `finishedAt` — when the run actually ended (epoch ms), set by the producer.
    *

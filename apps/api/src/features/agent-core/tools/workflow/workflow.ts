@@ -36,51 +36,114 @@ export interface WorkflowToolPort extends WorkflowRunPort {
 const WORKFLOW_CLASS: CallClass = { effect: 'session' }
 
 const inputSchema = z.object({
-  name: z.string().trim().min(1).describe('The workflow: `<plugin>:<name>`.'),
+  script: z
+    .string()
+    .optional()
+    .describe(
+      'An inline workflow script: plain JavaScript (not TypeScript) that begins with `export const meta = { name, description, phases? }` as a pure literal, then the body; `return` its result. See the tool description for the API.',
+    ),
+  name: z
+    .string()
+    .trim()
+    .min(1)
+    .optional()
+    .describe(
+      'The name of a workflow saved in `.claude/workflows/` or `~/.claude/workflows/`, or a plugin workflow (`<plugin>:<name>`). Resolved to a script.',
+    ),
+  scriptPath: z
+    .string()
+    .trim()
+    .min(1)
+    .optional()
+    .describe(
+      'The path of a workflow script file on disk, such as the scriptPath a previous run returned. Takes precedence over script and name.',
+    ),
   args: z
     .unknown()
     .optional()
-    .describe('Its input, as JSON: a list or an object when the input is structured.'),
+    .describe(
+      'The input exposed to the script as the global `args`: any JSON value, passed as an actual array or object, not as a JSON-encoded string.',
+    ),
   resumeFromRunId: z
     .string()
     .trim()
     .optional()
     .describe(
-      'Resume an earlier run of this conversation that stopped (its run id, `wf-…`): completed agents return their saved results. Omit args to reuse that run’s.',
+      'The run id of an earlier Workflow call of this conversation to resume. Completed agent() calls with unchanged inputs return cached results; the rest run live.',
     ),
-  budget: z
-    .number()
-    .int()
-    .positive()
+  title: z.string().optional().describe('Ignored: the script’s meta block sets the title.'),
+  description: z
+    .string()
     .optional()
-    .describe(
-      'A token target for the run (the script’s budget.total), only when the person set one, such as "+500k" (500000).',
-    ),
+    .describe('Ignored: the script’s meta block sets the description.'),
 })
 
 type Input = z.infer<typeof inputSchema>
 
+/** The script a call runs, its entry, or why it cannot run. */
+async function resolveScript(
+  port: WorkflowToolPort,
+  input: Input,
+  entries: WorkflowEntry[],
+): Promise<{ entry: WorkflowEntry; source: string; body: string } | string> {
+  let entry: WorkflowEntry | undefined
+  let source: string | null
+  if (input.scriptPath) {
+    source = await port.read(input.scriptPath)
+    if (source === null) return `Workflow script ${input.scriptPath} cannot be read.`
+    entry = { fullName: '', description: '', file: input.scriptPath }
+  } else if (input.script !== undefined) {
+    source = input.script
+    entry = { fullName: '', description: '', file: '' }
+  } else if (input.name) {
+    const found = findWorkflow(entries, input.name)
+    if (typeof found === 'string') return found
+    entry = found
+    source = await port.read(found.file)
+  } else {
+    return 'At least one of script, name or scriptPath is required.'
+  }
+  const parsed = source === null ? null : parseWorkflowMeta(source)
+  if (!parsed?.meta) {
+    const why = parsed && 'error' in parsed ? parsed.error : 'it cannot be read'
+    return `Workflow ${entry.fullName || input.name || 'script'} cannot run: ${why}`
+  }
+  const named = entry.fullName
+    ? entry
+    : { ...entry, fullName: parsed.meta.name, description: parsed.meta.description }
+  return { entry: named, source: source!, body: parsed.body }
+}
+
 export function createWorkflowTool(port: WorkflowToolPort) {
   return defineAgentTool<Input, WorkflowDetails>({
-    name: TOOL.workflow,
+    name: TOOL.Workflow,
     label: 'Workflow',
     activeVerb: 'Running a workflow',
-    description:
-      "Run a plugin workflow: a script that runs many agents in child sessions and returns one result. Use it when the person runs a workflow's /<plugin>:<name> command; pass their input as args. It runs in the background and its result arrives in a later turn; resumeFromRunId resumes a stopped run.",
+    description: [
+      'Run a dynamic workflow: a script that orchestrates many subagents in the background and returns one consolidated result. It returns at once and the result arrives in a later turn; resumeFromRunId resumes an earlier run of this conversation.',
+      'Use it only when the person asked for a workflow or multi-agent orchestration in their own words, when a command or skill they invoked says to run one, or when they named a saved or plugin workflow (`name`, or `scriptPath` of a script a run returned). Otherwise describe what a workflow would do and ask.',
+      'Script: plain JavaScript that begins with `export const meta = { name, description, phases? }` as a pure literal. No Date.now(), Math.random() or argless new Date() (pass a seed or time in through args). Its `return` value is the result. Globals:',
+      '- agent(prompt, { label, phase, schema, agentType, isolation: "worktree" }): runs one subagent; resolves to its final text, to the validated object when `schema` (JSON Schema) is given, or to null if the agent dies.',
+      '- parallel(thunks): takes FUNCTIONS, `() => agent(...)`, never promises. A barrier: waits for all, results in order; a thunk that throws gives null and the call never rejects.',
+      '- pipeline(items, ...stages): each stage is `(prev, item, index) => ...`; every item flows through the stages on its own, with no barrier between them, and a stage that throws drops that item to null. The default for multi-stage work.',
+      '- phase(title) groups the agents that follow; log(message) adds a progress line; args is the input; budget.total / spent() / remaining() track output tokens; workflow(name, args) runs a nested workflow.',
+      'Example:',
+      '```js',
+      "export const meta = { name: 'audit', description: 'Review each file, then merge', phases: [{ title: 'Review' }, { title: 'Merge' }] }",
+      "const reviews = await pipeline(args.files, (file) => agent(`Review ${file}`, { label: file, phase: 'Review' }))",
+      "const [summary] = await parallel([() => agent(`Merge these reviews: ${reviews.filter(Boolean).join('\\n')}`, { phase: 'Merge' })])",
+      'return { summary }',
+      '```',
+    ].join('\n'),
     inputSchema,
     mutates: true,
     classify: () => WORKFLOW_CLASS,
     executionMode: 'sequential',
     async execute(toolCallId, input, signal, onUpdate, context) {
       const entries = await port.list()
-      const found = findWorkflow(entries, input.name)
-      if (typeof found === 'string') return { content: found, isError: true }
-      const source = await port.read(found.file)
-      const parsed = source === null ? null : parseWorkflowMeta(source)
-      if (!parsed?.meta) {
-        const why = parsed && 'error' in parsed ? parsed.error : 'it cannot be read'
-        return { content: `Workflow ${found.fullName} cannot run: ${why}`, isError: true }
-      }
+      const script = await resolveScript(port, input, entries)
+      if (typeof script === 'string') return { content: script, isError: true }
+      const { entry: found, source, body } = script
       const resumed = await resumeOf(port, input)
       if (typeof resumed === 'string') return { content: resumed, isError: true }
       const runId = newRunId()
@@ -93,16 +156,16 @@ export function createWorkflowTool(port: WorkflowToolPort) {
             ...(args === undefined ? {} : { args }),
             ...(input.resumeFromRunId ? { resumedFrom: input.resumeFromRunId } : {}),
           },
-          source!,
+          source,
         )
         .catch((error: unknown) => console.warn(`[workflow] run ${runId} not journaled:`, error))
       const run = {
         toolCallId,
         entry: found,
-        body: parsed.body,
+        body,
         args,
         runId,
-        budget: input.budget ?? null,
+        budget: null,
         previous: resumed?.entries ?? [],
         entries,
       }
@@ -125,7 +188,7 @@ async function resumeOf(
   if (!from) return undefined
   if (!port.runs) return 'This chat keeps no workflow journals, so a run cannot be resumed.'
   if (isRunActive(from))
-    return `Workflow run ${from} is still running. Stop it first (\`jobs\` action="stop"); a resume waits until its agents have ended.`
+    return `Workflow run ${from} is still running. Stop it first (TaskStop); a resume waits until its agents have ended.`
   const loaded = await port.runs.load(from)
   if (!loaded)
     return `Nothing to resume: this conversation has no workflow run ${from}. Start the workflow over without resumeFromRunId.`

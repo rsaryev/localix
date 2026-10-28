@@ -4,7 +4,87 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ## Unreleased
 
-Changes land on `main`.
+## v0.1.0-beta.17 — 2026-10-28
+
+This release makes Localix work the way Claude Code does: one agent per chat with subagents, Claude
+Code's tool names, memory, commands and status line, and mini apps you can make from either app. The
+Store and Settings are laid out anew.
+
+### Added
+
+- **Make mini apps from Claude Code too**: the built-in **mini-app-authoring** plugin works the same
+  in Localix and in Claude Code (`/plugin install mini-app-authoring@localix`).
+  `/mini-app-authoring:create <what it should do>` creates the app in your project, checks it and
+  installs it into the running Localix; `/mini-app-authoring:publish` packs it into a catalog others
+  can add, and `/mini-app-authoring:get-localix` installs Localix itself. See
+  [Build a mini app with the agent](docs/extending/build-with-the-agent.md).
+- **MCP servers' prompts are slash commands**: a connected server's prompts appear in the composer
+  menu and run as `/mcp__<server>__<prompt>` with their arguments. `/mcp` groups servers by where
+  they come from and can reconnect, enable or disable one, and a WebSocket server now receives its
+  configured headers.
+- **More of Claude Code's commands**: `/init`, `/status`, `/hooks`, `/diff`, `/add-dir` and
+  `/export` work as in Claude Code, and `/compact` takes a context checkpoint by hand and tells your
+  `PreCompact` hooks. A Claude Code command Localix cannot run says why instead of "unknown".
+- **Claude Code's status line under the message box**: your `statusLine` command gets what Claude
+  Code gives it, including whether the prompt cache is still warm, and its rows show with their
+  colors and links.
+- **Store recommendations**: Discover opens with a **For your work** row ranked against your open
+  tabs, project and installed packages, and a **Recommended for you** strip appears above the
+  composer.
+
+### Changed
+
+- **Subagents work as in Claude Code**: the assistant starts one with `Agent`, talks to it with
+  `SendMessage` and stops it with `TaskStop`, with Claude Code's own fields, so skills and agent
+  files written for Claude Code run unchanged. Up to 10 run at once (was 3) and several start
+  together; a subagent works in the background, can ask the agent a question, and its whole answer
+  arrives as a message. Its card is titled by its task and says truthfully whether it is queued,
+  running, waiting for an answer, done or stopped. See [Subagents](docs/features/delegation.md).
+- **Tools have one name, Claude Code's**: every built-in tool is named as in Claude Code (`Bash`,
+  `Read`, `AskUserQuestion`, `Agent`) in the tool list, permission rules, hooks and the
+  conversation. Existing rules and past conversations are updated on first start; an agent file's
+  `tools`, a skill's `allowed-tools`, a hook matcher or a mod's `tool` filter must use the new
+  names. Tool cards show what a tool was called with under **In** and what came back under **Out**,
+  and a run of calls reads as a sentence: "Started 2 agents, ran 1 command". See
+  [Tool names](docs/features/tools.md#tool-names).
+- **Memory lives in Claude Code's own folder**: a chat loads the `MEMORY.md` of
+  `~/.claude/projects/<project>/memory/`, the one Claude Code keeps, so what you taught either app
+  the other already knows. `/memory` shows the folder and `/memory <fact>` saves a fact. See
+  [Memory](docs/features/learning-loop.md#memory).
+- **A new Store and Settings layout**: the Store has search and your library (Installed, Updates,
+  Yours, Sources) on one row and the catalog as tabs beneath, and opens on Discover. Settings shows
+  its sections as tabs across the top instead of a sidebar.
+- **The tip strip stays put**: the tips above the message box no longer blink in and out; a tip
+  stays between turns and when you switch chats, and the next one follows a few seconds later.
+- **Lighter requests**: rarely used tools wait in `ToolSearch` until the assistant needs them, as in
+  Claude Code, and `TaskStop` stops any background work, so every request carries fewer tokens.
+- **Language servers install when you need them**: they no longer ship inside the app. The first
+  time you open a file of a language, its server downloads into `~/.localix/language-servers`, and
+  the status bar shows the install or why it could not finish.
+- **A project cannot pick a permissive mode for you**: `bypassPermissions` or `auto` as the
+  `defaultMode` of a project's or local settings file no longer applies.
+
+### Fixed
+
+- **Stop gives your queued messages back**: messages sent while the assistant worked return to the
+  message box when you press Stop. An empty Enter never sends, and a message sent mid-run waits in
+  the queue without flashing into the conversation.
+- **The prompt cache hits again**: new conversations with the same agent, model and project reuse
+  the provider's cache, and OpenAI requests carry the headers that let it hit.
+- **Local models no longer pile up in memory**: a local model server stops within about two seconds
+  after Localix quits or crashes, and the desktop app and a development server share one.
+- **`SessionEnd` hooks run when you quit Localix**, and **Set up Localix** opens at its first step.
+
+### Removed
+
+- **Group conversations**: a conversation has one agent, fixed when you start it. Participants,
+  `@handle` and `@all`, leaders, handoffs and `/agents add`, `remove` and `members` are gone; the
+  agent starts a subagent to bring another agent in.
+- **The agent island**: the quick chat at the notch on macOS, its **Cmd+Shift+J** shortcut and its
+  **Quick Chat** menu-bar item are gone. Ask the agent from the workspace chat.
+- **Tools Claude Code does not have**: the `CodeMode` script tool, the topic tool and the `Memory`
+  tool. Earlier runs still show in your conversations; notes saved with the old `Memory` tool stay
+  in `~/.localix/memories` but no longer load.
 
 ## v0.1.0-beta.16 — 2026-10-25
 

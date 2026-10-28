@@ -12,7 +12,7 @@ import {
   updateKanbanTaskSchema,
 } from '../shared/contracts'
 import { BoardRefusal } from '../shared/errors'
-import type { BoardSeat, BoardService } from './service'
+import type { BoardChat, BoardService } from './service'
 
 /**
  * The view's routes: a person's hand on the board. The board is the chat it belongs to — the view
@@ -24,7 +24,7 @@ import type { BoardSeat, BoardService } from './service'
 export function createBoardRoutes(boards: BoardService, agents?: MiniAppAgentDirectory) {
   const answer = async <T>(
     c: Context<MiniAppRouteContext>,
-    action: (seat: BoardSeat) => Promise<T>,
+    action: (chat: BoardChat) => Promise<T>,
     status: 200 | 201 = 200,
   ) => {
     const sessionId = c.env.sessionId
@@ -44,26 +44,26 @@ export function createBoardRoutes(boards: BoardService, agents?: MiniAppAgentDir
     new Hono<MiniAppRouteContext>()
       .get('/board', (c) => {
         c.header('Cache-Control', 'no-store')
-        return answer(c, (seat) => boards.read(seat))
+        return answer(c, (chat) => boards.read(chat))
       })
       .get('/agents', (c) =>
-        answer(c, async (seat) => ({
-          agents: agents ? await agents.list(seat.userId, seat.sessionId) : [],
+        answer(c, async (chat) => ({
+          agents: agents ? await agents.list(chat.userId, chat.sessionId) : [],
         })),
       )
       .post('/tasks', jsonBody(createKanbanTaskSchema), (c) =>
-        answer(c, (seat) => boards.create(seat, c.req.valid('json'), 'user'), 201),
+        answer(c, (chat) => boards.create(chat, c.req.valid('json'), 'user'), 201),
       )
       // One drag, one request: the batch lands together or not at all.
       .post('/moves', jsonBody(kanbanMovesSchema), (c) =>
-        answer(c, async (seat) => ({
-          tasks: await boards.move(seat, c.req.valid('json').moves, 'user'),
+        answer(c, async (chat) => ({
+          tasks: await boards.move(chat, c.req.valid('json').moves, 'user'),
         })),
       )
-      .get('/tasks/:id', (c) => answer(c, (seat) => boards.get(seat, c.req.param('id'))))
+      .get('/tasks/:id', (c) => answer(c, (chat) => boards.get(chat, c.req.param('id'))))
       .patch('/tasks/:id', jsonBody(updateKanbanTaskSchema), (c) =>
-        answer(c, (seat) => boards.update(seat, c.req.param('id'), c.req.valid('json'), 'user')),
+        answer(c, (chat) => boards.update(chat, c.req.param('id'), c.req.valid('json'), 'user')),
       )
-      .delete('/tasks/:id', (c) => answer(c, (seat) => boards.remove(seat, c.req.param('id'))))
+      .delete('/tasks/:id', (c) => answer(c, (chat) => boards.remove(chat, c.req.param('id'))))
   )
 }

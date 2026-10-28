@@ -10,18 +10,21 @@ import { agentRoute, sessionRoute } from '../../../../contracts/session-route'
  *  - `mcp_tool` → a call into a CONNECTED MCP tool, folding its text like stdout.
  *
  * INVARIANT — every one of them FAILS OPEN. A missing provider, a timeout, a bad
- * reply, a throw: all yield `{ ok: true }`. A hook is a policy check bolted onto a
- * turn; it must never be able to hard-fail that turn by breaking itself. Callers
- * therefore never need a try/catch around these.
+ * reply, a throw: all yield `{ ok: true }`. The hook page names no fail-closed rule for a
+ * prompt or agent hook, and a hook is a policy check bolted onto a turn; it must never be able
+ * to hard-fail that turn by breaking itself. Callers therefore never need a try/catch around
+ * these.
  *
  * Fail-open is not the same as fail-SILENT, and the difference is the whole point of
- * the warnings below: a broken guardrail reports itself as an explicit allow, so the
- * one person who could fix it — the user who wrote the hook — otherwise has no signal
- * at all that their policy stopped running. Every fail-open path here says why.
+ * the `failed` marker: a broken guardrail would otherwise report itself as an explicit allow,
+ * so the one person who could fix it — the user who wrote the hook — has no signal at all
+ * that their policy stopped running. Every fail-open path here sets `failed` (the run shows a
+ * hook error line) and logs why. A cancelled run is not a failure.
  */
 
 import { hookPromptText, parsePromptHookResult, type PromptHookResult } from '../../../cc-hooks'
 import { TOOL } from '../../../agent-core/tool-names'
+import { resolveModelAlias } from '../../../agent-core/model-alias'
 import { resolveRunProfile, type RunProfile } from '../../../agent-core/run-shape'
 import type { SessionRecord } from '../../repository'
 import { resolveLanguageModel } from '../model-resolution'
@@ -34,6 +37,11 @@ import { prefixedWarnLogger } from '../plugin-hook-logger'
 
 /** One sink for every fail-open path in this module (see the header). */
 const hookWarn = prefixedWarnLogger('cc-hook')
+
+/** An allow that says it is no verdict: the hook could not run, so the person is told. */
+function failedOpen(why: string): PromptHookResult {
+  return { ok: true, failed: why }
+}
 
 /** Options both LLM-backed evaluators take from the hook definition. */
 interface HookEvalOptions {
@@ -58,12 +66,19 @@ export function createPromptHookEvaluator(input: {
   effectiveModelId: string
 }): (opts: HookEvalOptions) => Promise<PromptHookResult> {
   const { env, userId, session, catalog, effectiveModelId } = input
-  const route = input.agentId ? agentRoute(session, input.agentId) : sessionRoute(session)
+  const route = input.agentId ? agentRoute(session) : sessionRoute(session)
   return async (opts) => {
     if (opts.signal?.aborted) return { ok: true }
     const providerConnectionId = route?.providerConnectionId
-    if (!providerConnectionId) return { ok: true }
-    const modelId = opts.model || effectiveModelId
+    if (!providerConnectionId) return failedOpen('prompt hook has no provider connection to ask')
+    // `haiku`, `sonnet`, `opus` are families, not catalog ids: the session model when it is of
+    // that family, else the newest one the catalog lists.
+    const modelId =
+      resolveModelAlias(
+        opts.model,
+        effectiveModelId,
+        catalog.models.map((m) => m.id),
+      ) ?? effectiveModelId
     const resolved = await resolveLanguageModel({
       deps: env.deps,
       userId,
@@ -74,7 +89,8 @@ export function createPromptHookEvaluator(input: {
       hookWarn.warn(`prompt hook could not resolve model "${modelId}" — allowing: ${String(err)}`)
       return null
     })
-    if (!resolved || opts.signal?.aborted) return { ok: true }
+    if (opts.signal?.aborted) return { ok: true }
+    if (!resolved) return failedOpen(`prompt hook could not use the model "${modelId}"`)
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), opts.timeoutMs)
     try {
@@ -85,7 +101,8 @@ export function createPromptHookEvaluator(input: {
         // with ONLY …"), and a prompt is behavior.
         systemPrompt:
           'You are a hook policy evaluator. Read the instruction and the event JSON, then reply with ONLY a JSON object ' +
-          '{"ok": boolean, "reason"?: string}. ok=true allows; ok=false blocks and the reason is shown. No other text.',
+          '{"ok": boolean, "reason"?: string, "impossible"?: boolean}. ok=true allows; ok=false blocks and the reason is shown. ' +
+          'Add "impossible": true to an ok=false only when the condition can never be satisfied. No other text.',
         messages: [
           {
             role: 'user',
@@ -124,7 +141,7 @@ export function createPromptHookEvaluator(input: {
       return parsePromptHookResult(assistantText(message.content))
     } catch (err) {
       hookWarn.warn(`prompt hook evaluation failed — allowing: ${String(err)}`)
-      return { ok: true }
+      return failedOpen(`prompt hook evaluation failed: ${String(err)}`)
     } finally {
       clearTimeout(timer)
     }
@@ -132,8 +149,8 @@ export function createPromptHookEvaluator(input: {
 }
 
 /**
- * `agent` hooks. Reuses the delegate/subsession machinery — the same service the
- * delegate tool binds — to run a short-lived, READ-ONLY (read + search) child
+ * `agent` hooks. Reuses the subagent machinery — the same service the
+ * `Agent` tool binds — to run a short-lived, READ-ONLY (read + search) child
  * session to completion under a turn cap + timeout, then parses its final text.
  */
 /**
@@ -151,7 +168,7 @@ function verifierProfile(): RunProfile {
         'You are a hook policy verifier with read-only tools (read, search). Investigate as needed, ' +
         'then end your FINAL message with ONLY a JSON object {"ok": boolean, "reason"?: string} — ' +
         '"reason" is shown to the user when ok is false. Do not modify anything.',
-      tools: [TOOL.read, TOOL.search],
+      tools: [TOOL.Read, TOOL.Search],
     },
   )
 }
@@ -160,13 +177,25 @@ export function createAgentHookRunner(input: {
   userId: string
   session: SessionRecord
   agentId?: string
+  /** With the session's model: what a `haiku`/`sonnet`/`opus` alias in the hook resolves against. */
+  catalog?: RunCatalog
+  effectiveModelId?: string
 }): (opts: HookEvalOptions) => Promise<PromptHookResult> {
   const { userId, session } = input
-  const route = input.agentId ? agentRoute(session, input.agentId) : sessionRoute(session)
+  const route = input.agentId ? agentRoute(session) : sessionRoute(session)
   return async (opts) => {
     if (opts.signal?.aborted) return { ok: true }
     const svc = getAgentService()
-    if (!svc || !route?.providerConnectionId) return { ok: true }
+    if (!svc || !route?.providerConnectionId)
+      return failedOpen('agent hook has no provider connection to run its verifier on')
+    const parentModelId = route.modelId ?? input.effectiveModelId ?? undefined
+    const modelId = opts.model
+      ? resolveModelAlias(
+          opts.model,
+          parentModelId,
+          input.catalog?.models.map((m) => m.id),
+        )
+      : parentModelId
     let child: { id: string }
     try {
       child = await svc.createSession(userId, {
@@ -176,12 +205,12 @@ export function createAgentHookRunner(input: {
         sourceToolCallId: `cc-hook-agent-${Date.now()}`,
         provenance: { kind: 'hook', parentSessionId: session.id, phase: 'verifier' },
         providerConnectionId: route.providerConnectionId,
-        modelId: opts.model || route.modelId || undefined,
+        modelId: modelId || undefined,
         projectId: session.projectId,
       })
     } catch (err) {
       hookWarn.warn(`agent hook could not open its verifier session — allowing: ${String(err)}`)
-      return { ok: true }
+      return failedOpen(`agent hook could not open its verifier session: ${String(err)}`)
     }
     const stop = () => {
       void Promise.resolve()
@@ -205,7 +234,7 @@ export function createAgentHookRunner(input: {
       return parsePromptHookResult(text)
     } catch (err) {
       hookWarn.warn(`agent hook verifier run failed — allowing: ${String(err)}`)
-      return { ok: true }
+      return failedOpen(`agent hook verifier run failed: ${String(err)}`)
     } finally {
       clearTimeout(timer)
       opts.signal?.removeEventListener('abort', stop)

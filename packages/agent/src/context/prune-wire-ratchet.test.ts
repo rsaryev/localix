@@ -26,13 +26,13 @@ const readCall = (id: string, path: string): Message => ({
   role: 'assistant',
   model: 'm',
   timestamp: 0,
-  content: [{ type: 'tool_call', id, name: 'read', arguments: { path } }],
+  content: [{ type: 'tool_call', id, name: 'Read', arguments: { path } }],
 })
 
 const readResult = (id: string, chars = 4000): Message => ({
   role: 'tool',
   timestamp: 0,
-  results: [{ type: 'tool_result', toolCallId: id, toolName: 'read', content: big(chars) }],
+  results: [{ type: 'tool_result', toolCallId: id, toolName: 'Read', content: big(chars) }],
 })
 
 const user = (text: string): Message => ({ role: 'user', content: text, timestamp: 0 })
@@ -97,7 +97,7 @@ describe('the wire prune ratchets: an elided result never re-inflates', () => {
   test('a ratcheted read loses the live-read protection it already lost', () => {
     // `t-0` is the only copy of f-0.ts, so `maxLiveReads` normally keeps it whole even out
     // here past the tail. But we already sent it as a pointer: protecting it now would
-    // re-inflate it, and its `tool_output` handle is what recovers the bytes.
+    // re-inflate it, and its `ToolOutput` handle is what recovers the bytes.
     const msgs = history(5)
     const opts = { ...OPTS, maxLiveReads: 6, liveReadBudgetBytes: 100_000 }
     expect(contentOf(pruneWireMessages(msgs, opts), 't-0')).toBe(big(4000))
@@ -154,13 +154,13 @@ describe('the ARG half: elided write/patch args never re-inflate either', () => 
     role: 'assistant',
     model: 'm',
     timestamp: 0,
-    content: [{ type: 'tool_call', id, name: 'write', arguments: { path, content: big(chars) } }],
+    content: [{ type: 'tool_call', id, name: 'Write', arguments: { path, content: big(chars) } }],
   })
   const writeResult = (id: string): Message => ({
     role: 'tool',
     timestamp: 0,
     results: [
-      { type: 'tool_result', toolCallId: id, toolName: 'write', content: 'Wrote 4000 bytes' },
+      { type: 'tool_result', toolCallId: id, toolName: 'Write', content: 'Wrote 4000 bytes' },
     ],
   })
   const argOf = (msgs: Message[], id: string): string => {
@@ -212,7 +212,7 @@ describe('the ARG half: elided write/patch args never re-inflate either', () => 
           {
             type: 'tool_result',
             toolCallId: 'w-f',
-            toolName: 'write',
+            toolName: 'Write',
             content: 'EACCES',
             isError: true,
           },

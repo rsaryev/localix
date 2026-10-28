@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, beforeEach, expect, test } from 'bun:test'
+import { afterAll, afterEach, beforeAll, beforeEach, expect, jest, test } from 'bun:test'
 import { act, type ReactNode } from 'react'
 import { useFocusStack } from '@localixai/mini-app-sdk/ui/focus'
 import { registerDom } from '@localixai/kit/testing/dom'
@@ -9,13 +9,22 @@ import { installWorkbenchGestures } from '@/shared/lib/workbenchGesture'
 import { keepFileDropActive, resetFileDrop } from '@/shared/lib/fileDropActive'
 
 let teardown: () => Promise<void>
+const realRequestAnimationFrame = globalThis.requestAnimationFrame
 beforeAll(() => {
   teardown = registerDom()
+  // A painted picture is revealed on the next animation frame; a frame is an event-loop turn here,
+  // not a 16 ms wait.
+  globalThis.requestAnimationFrame = (callback) => {
+    setImmediate(() => callback(0))
+    return 0
+  }
   ;(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 })
 afterAll(async () => {
+  globalThis.requestAnimationFrame = realRequestAnimationFrame
   await teardown()
 })
+afterEach(() => jest.useRealTimers())
 beforeEach(() => useFocusStack.getState().reset())
 
 const TAB = { previewId: 'browser-1', url: 'https://openai.com/', version: 1 }
@@ -151,7 +160,7 @@ async function paintPicture(
   await settle()
   const picture = host.querySelector<HTMLImageElement>('[aria-label^="Browser page:"] img')
   await act(async () => picture?.dispatchEvent(new Event('load')))
-  await act(() => new Promise((resolve) => setTimeout(resolve, 32)))
+  await settle()
   return picture
 }
 
@@ -239,6 +248,7 @@ test('without a picture the page still steps aside within the capture budget', a
   const { Dialog, DialogContent, DialogTitle } = await import('@localixai/kit/dialog')
   const desktop = fakeDesktop()
   const view = await mount((tab) => tab)
+  jest.useFakeTimers()
   try {
     await view.render((tab) => (
       <>
@@ -251,7 +261,10 @@ test('without a picture the page still steps aside within the capture budget', a
       </>
     ))
     // The capture never answers: the budget alone decides.
-    await act(() => new Promise((resolve) => setTimeout(resolve, CAPTURE_BUDGET_MS + 20)))
+    await act(async () => {
+      jest.advanceTimersByTime(CAPTURE_BUDGET_MS)
+    })
+    jest.useRealTimers()
     expect(desktop.pageVisible()).toBe(false)
   } finally {
     await view.unmount()

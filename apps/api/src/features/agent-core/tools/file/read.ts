@@ -57,7 +57,7 @@ export function createReadTool(
   const make = (canSeeImages: boolean): AgentTool<ReadInput, ReadToolDetails> => {
     // TDetails stated, not inferred: a stated type keeps every branch on one card payload.
     const tool = defineAgentTool<ReadInput, ReadToolDetails>({
-      name: TOOL.read,
+      name: TOOL.Read,
       label: 'Read File',
       activeVerb: 'Reading',
       // Batching reads into one turn is the prompt's cross-tool rule ("# Execution
@@ -108,7 +108,7 @@ export function createReadTool(
         if (file.kind === 'unreadable') return undefined
         if (file.kind === 'too-big') {
           const limit = formatSize(MAX_IMAGE_FILE_BYTES)
-          const content = `${targetPath} is ${formatSize(file.bytes)}, over the ${limit} image limit. Crop or convert it with \`bash\` first.`
+          const content = `${targetPath} is ${formatSize(file.bytes)}, over the ${limit} image limit. Crop or convert it with \`Bash\` first.`
           return respond(content, { bytes: file.bytes, isError: true })
         }
         const image = await prepareImage(targetPath, file.data, file.bytes, canSeeImages)

@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
+import { useEffect } from 'react'
 import { z } from 'zod'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { bindMiniAppUiTransport } from './transport'
@@ -24,13 +25,16 @@ test('a read that brings back the same data keeps the rendered object, so nothin
   const seen: (z.infer<typeof schema> | null)[] = []
   let latest!: PolledSnapshot<z.infer<typeof schema>>
   function Probe() {
-    latest = usePolledSnapshot({
+    const polled = usePolledSnapshot({
       path: '/rpc/game',
       schema,
       intervalMs: null,
       failureMessage: 'The board could not be read.',
     })
-    seen.push(latest.snapshot)
+    seen.push(polled.snapshot)
+    useEffect(() => {
+      latest = polled
+    })
     return null
   }
   const root = createRoot(document.createElement('div'))
@@ -50,6 +54,52 @@ test('a read that brings back the same data keeps the rendered object, so nothin
     await act(async () => latest.refresh())
     expect(latest.snapshot).toEqual({ board: ['X', 'O'] })
     expect(latest.snapshot).not.toBe(first)
+  } finally {
+    await act(async () => root.unmount())
+    unbind()
+  }
+})
+
+test("a new route starts empty at once, and the old route's late answer never lands on it", async () => {
+  const { act } = await import('react')
+  const { createRoot } = await import('react-dom/client')
+  const answers = new Map<string, (board: string[]) => void>()
+  const unbind = bindMiniAppUiTransport({
+    url: (path) => path,
+    request: (path) =>
+      new Promise<Response>((resolve) =>
+        answers.set(path, (board) => resolve(Response.json({ board }))),
+      ),
+  })
+  const views: { path: string; polled: PolledSnapshot<z.infer<typeof schema>> }[] = []
+  function Probe({ path }: { path: string }) {
+    const polled = usePolledSnapshot({
+      path,
+      schema,
+      intervalMs: null,
+      failureMessage: 'The board could not be read.',
+    })
+    // Recorded on commit: only what the screen could show counts.
+    useEffect(() => {
+      views.push({ path, polled })
+    })
+    return null
+  }
+  const root = createRoot(document.createElement('div'))
+  try {
+    await act(async () => root.render(<Probe path="/rpc/a" />))
+    await act(async () => answers.get('/rpc/a')!(['A']))
+    expect(views.at(-1)!.polled.snapshot).toEqual({ board: ['A'] })
+
+    await act(async () => root.render(<Probe path="/rpc/b" />))
+    // No render of the new route ever shows the old route's board.
+    expect(
+      views.filter((view) => view.path === '/rpc/b').map((view) => view.polled.snapshot),
+    ).toEqual(views.filter((view) => view.path === '/rpc/b').map(() => null))
+    expect(views.at(-1)!.polled.loading).toBe(true)
+
+    await act(async () => answers.get('/rpc/b')!(['B']))
+    expect(views.at(-1)!.polled.snapshot).toEqual({ board: ['B'] })
   } finally {
     await act(async () => root.unmount())
     unbind()

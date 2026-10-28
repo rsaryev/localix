@@ -5,6 +5,10 @@ import { BOARD_SUBSCRIBE, BOARD_UNSUBSCRIBE } from '../../shared/resource'
 import { card, fakeBoardBackend, type FakeBoardBackend } from '../testing/fakeBoardBackend'
 import { applyBoardEvent, reconcileBoard, resetBoardStore } from './boardStore'
 
+const turns = async (n = 10) => {
+  for (let i = 0; i < n; i++) await new Promise((r) => setImmediate(r))
+}
+
 let teardown: () => Promise<void>
 const actEnvironment = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 const priorActEnvironment = actEnvironment.IS_REACT_ACT_ENVIRONMENT
@@ -41,7 +45,7 @@ async function harness(initial = { s1: [card({ id: 'LX-1', kind: 'epic' })] }) {
   const root = createRoot(document.createElement('div'))
   const settle = () =>
     React.act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 5))
+      await turns()
     })
   const render = async (node: React.ReactNode) => {
     await React.act(async () => root.render(node))
@@ -85,7 +89,10 @@ describe('one mirror per chat', () => {
     const { useBoardTasks } = await import('./useBoard')
     const seen: Record<string, string[]> = {}
     function Board({ sessionId }: { sessionId: string }) {
-      seen[sessionId] = useBoardTasks(sessionId).tasks.map((t) => t.title)
+      const titles = useBoardTasks(sessionId).tasks.map((t) => t.title)
+      h.React.useEffect(() => {
+        seen[sessionId] = titles
+      })
       return null
     }
     await h.render(
@@ -108,8 +115,11 @@ describe('one mirror per chat', () => {
     const { useBoardTask } = await import('./useBoard')
     let renders = 0
     function TaskTab() {
-      renders += 1
       useBoardTask('s1', 'LX-2')
+      // Counted when the render commits, so nothing is written while rendering.
+      h.React.useEffect(() => {
+        renders += 1
+      })
       return null
     }
     await h.render(<TaskTab />)
@@ -136,7 +146,10 @@ describe('the mirror stays true', () => {
     const { useBoardTasks } = await import('./useBoard')
     let ids: string[] = []
     function Board() {
-      ids = useBoardTasks('s1').tasks.map((t) => t.id)
+      const current = useBoardTasks('s1').tasks.map((t) => t.id)
+      h.React.useEffect(() => {
+        ids = current
+      })
       return null
     }
     await h.render(<Board />)
@@ -197,7 +210,9 @@ describe('the mirror stays true', () => {
     let state: { loading: boolean; error: string | null } = { loading: true, error: null }
     function Board() {
       const { loading, error } = useBoardTasks('s1')
-      state = { loading, error }
+      h.React.useEffect(() => {
+        state = { loading, error }
+      })
       return null
     }
     backend.refuseNext(503, 'board_unavailable', 'The board could not be saved. Try again.')

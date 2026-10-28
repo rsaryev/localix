@@ -22,22 +22,14 @@ function messageText(row: PersistedMessage): string {
   return texts.length > 0 ? texts.join('\n\n') : (payload.content ?? '')
 }
 
-/**
- * Whose words a pin carries, from the reader's seat. Every assistant row used to read "your
- * reply", so in a conversation a colleague's pinned answer arrived as the reader's own — the
- * misattribution the participant view exists to prevent, coming back through the context.
- */
-function pinnedWho(row: PersistedMessage, viewer: string): string {
-  if (row.payload.role === 'user') return 'said to you'
-  if (row.payload.from === undefined || row.payload.from === viewer) return 'your reply'
-  return `${row.payload.authorSnapshot?.handle ?? 'a colleague'}'s reply`
+/** Whose words a pin carries, from the agent's side: the person's or its own. */
+function pinnedWho(row: PersistedMessage): string {
+  return row.payload.role === 'user' ? 'said to you' : 'your reply'
 }
 
 export function pinnedOutOfViewSection(
   rows: readonly PersistedMessage[],
   checkpoint: ContextCheckpoint | undefined,
-  /** The participant reading the view (`ModelView.viewer`). */
-  viewer: string,
 ): RuntimeSection | undefined {
   if (!checkpoint) return undefined
   const cut = checkpoint.evictedThroughId
@@ -60,7 +52,7 @@ export function pinnedOutOfViewSection(
       'The person pinned these messages to keep them in your view; the conversation above shows them only in part:',
       ...pins.map(
         (row) =>
-          `- ${row.id} (${pinnedWho(row, viewer)}): ` +
+          `- ${row.id} (${pinnedWho(row)}): ` +
           truncateMiddle(messageText(row).trim(), { maxChars: PIN_MAX_CHARS }),
       ),
     ].join('\n'),

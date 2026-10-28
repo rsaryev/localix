@@ -1,5 +1,7 @@
 import { afterAll, beforeAll, describe, expect, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
+import type { StartupRetrySchedule } from '@/shared/lib/startupRetry'
+import { turns } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 
@@ -12,6 +14,21 @@ afterAll(async () => {
   await new Promise((resolve) => setTimeout(resolve, 0))
   await teardown()
 })
+
+/** The startup retry timer, held by the test: `runNext` fires the oldest retry nobody has run. */
+function retryScheduler() {
+  const queued: Array<{ run: () => void; delay: number }> = []
+  let ran = 0
+  const schedule: StartupRetrySchedule = (run, delay) => {
+    queued.push({ run, delay })
+    return 0 as unknown as ReturnType<typeof setTimeout>
+  }
+  return {
+    schedule,
+    delays: () => queued.map((entry) => entry.delay),
+    runNext: () => queued[ran++]?.run(),
+  }
+}
 
 describe('workspace startup recovery', () => {
   test('a transient first failure reads as still-starting, never as an error', async () => {
@@ -46,8 +63,9 @@ describe('workspace startup recovery', () => {
       activeSessionId: null,
     })
 
+    const scheduler = retryScheduler()
     function StartupSurface() {
-      const workspace = useWorkspace()
+      const workspace = useWorkspace({ schedule: scheduler.schedule })
       const hydrated = useHasHydrated()
       return (
         <main data-testid="startup-shell">
@@ -66,7 +84,7 @@ describe('workspace startup recovery', () => {
           <StartupSurface />
         </SWRConfig>,
       )
-      await new Promise((resolve) => setTimeout(resolve, 20))
+      await turns()
     })
 
     expect(host.querySelector('[data-testid="startup-shell"]')).not.toBeNull()
@@ -79,8 +97,10 @@ describe('workspace startup recovery', () => {
 
     // The first retry is 100 ms. Once the local service becomes reachable, the
     // authoritative workspace snapshot flips the hydration gate without a reload.
+    expect(scheduler.delays()).toEqual([100])
     await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 180))
+      scheduler.runNext()
+      await turns()
     })
 
     expect(sessions).toHaveBeenCalledTimes(2)
@@ -123,8 +143,9 @@ describe('workspace startup recovery', () => {
       activeSessionId: null,
     })
 
+    const scheduler = retryScheduler()
     function StartupSurface() {
-      const workspace = useWorkspace()
+      const workspace = useWorkspace({ schedule: scheduler.schedule })
       const hydrated = useHasHydrated()
       return (
         <main>
@@ -143,15 +164,19 @@ describe('workspace startup recovery', () => {
           <StartupSurface />
         </SWRConfig>,
       )
-      await new Promise((resolve) => setTimeout(resolve, 20))
+      await turns()
     })
     // Still calm after the first refusal — the fix under test.
     expect(host.textContent).toContain('Starting…')
 
     // Backoff runs 100/200/400 ms; four failures clear the patience threshold.
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 900))
-    })
+    for (let retry = 0; retry < 3; retry++) {
+      await act(async () => {
+        scheduler.runNext()
+        await turns()
+      })
+    }
+    expect(scheduler.delays()).toEqual([100, 200, 400, 800])
 
     expect(sessions.mock.calls.length).toBeGreaterThanOrEqual(4)
     expect(host.textContent).toContain('Retrying local service')
@@ -206,7 +231,10 @@ describe('workspace startup recovery', () => {
 
     let reload!: () => Promise<void>
     function Surface() {
-      reload = useWorkspace().mutate
+      const { mutate } = useWorkspace()
+      React.useEffect(() => {
+        reload = mutate
+      })
       return <main>Workspace</main>
     }
 
@@ -219,7 +247,7 @@ describe('workspace startup recovery', () => {
           <Surface />
         </SWRConfig>,
       )
-      await new Promise((resolve) => setTimeout(resolve, 20))
+      await turns()
     })
 
     // Mounting the active-session SWR key used to race the route owner's

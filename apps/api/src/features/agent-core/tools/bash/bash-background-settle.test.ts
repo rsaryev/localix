@@ -8,7 +8,7 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { awaitBackgroundSettle, type SettleSource } from './bash-background-settle'
 
-const WINDOW = { minMs: 60, maxMs: 400, quietMs: 20 }
+const WINDOW = { minMs: 30, maxMs: 200, quietMs: 20 }
 
 function source(opts: { exited?: Promise<unknown> } = {}) {
   const listeners = new Set<() => void>()
@@ -63,12 +63,15 @@ describe('awaitBackgroundSettle', () => {
   test('each chunk restarts the quiet window', async () => {
     const { src, chunk } = source()
     const start = Date.now()
-    const talker = realSetInterval(chunk, 10)
-    setTimeout(() => clearInterval(talker), 150)
+    let talks = 0
+    const talker = realSetInterval(() => {
+      chunk()
+      if (++talks === 10) clearInterval(talker)
+    }, 10)
     await awaitBackgroundSettle(src, WINDOW, start)
     clearInterval(talker)
-    // Still talking at the minimum, so it settles only once the talk stops (~150ms + quiet).
-    expect(Date.now() - start).toBeGreaterThanOrEqual(150)
+    // Still talking at the minimum, so it settles only once the talk stops (~100ms + quiet).
+    expect(Date.now() - start).toBeGreaterThanOrEqual(100)
   })
 
   test('an exit returns at once and leaves no listener behind', async () => {

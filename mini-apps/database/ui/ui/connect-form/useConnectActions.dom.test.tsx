@@ -42,7 +42,7 @@ test('connection actions ignore a test result invalidated by an input change', a
   let actions: ReturnType<typeof UseConnectActions> | undefined
 
   function Harness() {
-    actions = useConnectActions({
+    const latest = useConnectActions({
       config,
       name: '',
       edit: undefined,
@@ -53,6 +53,9 @@ test('connection actions ignore a test result invalidated by an input change', a
       vaultTlsKey: false,
       setTls: () => {},
       setTlsAdv: () => {},
+    })
+    React.useEffect(() => {
+      actions = latest
     })
     return null
   }
@@ -120,7 +123,7 @@ test('connection actions collapse duplicate submits before React disables the fo
 
   let actions: ReturnType<typeof UseConnectActions> | undefined
   function Harness() {
-    actions = useConnectActions({
+    const latest = useConnectActions({
       config: { dialect: 'sqlite', file: ':memory:' },
       name: '',
       edit: undefined,
@@ -133,6 +136,9 @@ test('connection actions collapse duplicate submits before React disables the fo
       vaultTlsKey: false,
       setTls: () => {},
       setTlsAdv: () => {},
+    })
+    React.useEffect(() => {
+      actions = latest
     })
     return null
   }

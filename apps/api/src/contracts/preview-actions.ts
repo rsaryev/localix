@@ -1,5 +1,5 @@
 /**
- * Browser-safe leaf for the `browser` tool's action vocabulary.
+ * Browser-safe leaf for the `Browser` tool's action vocabulary.
  *
  * `BrowserAction` is the union the tool card keys its presentation map on
  * (`Record<BrowserAction, string>`). Its AUTHORITY is the tool's own `ACTIONS` tuple in

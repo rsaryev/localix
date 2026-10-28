@@ -2,6 +2,10 @@ import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { setCompactDragImage, setElementDragImage, setNativeWindowDragImage } from './drag-image'
 
+const turns = async (n = 10) => {
+  for (let i = 0; i < n; i++) await new Promise((r) => setTimeout(r, 0))
+}
+
 let teardown: () => Promise<void>
 beforeAll(() => {
   teardown = registerDom()
@@ -36,7 +40,7 @@ test('the visual ghost keeps the source footprint and grabbed point without any 
   expect(ghost.hasAttribute('draggable')).toBe(false)
   expect(ghost.querySelector('[id], [role], [data-drop-target]')).toBeNull()
   expect(document.getElementById('real-tab')).toBe(source)
-  await new Promise((resolve) => setTimeout(resolve, 1))
+  await turns()
   expect(ghost.isConnected).toBe(false)
   source.remove()
 })
@@ -71,7 +75,7 @@ test('a native window replaces the tab ghost and later strip helpers cannot dupl
   expect(image.tagName).toBe('CANVAS')
   expect(image.width).toBe(1)
   expect(image.height).toBe(1)
-  await new Promise((resolve) => setTimeout(resolve, 1))
+  await turns()
   expect(image.isConnected).toBe(false)
   const nextGesture = {
     setDragImage(element: HTMLElement) {

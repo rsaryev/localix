@@ -21,6 +21,7 @@ export function NativePageSurface({
   url: string
   viewport: PreviewViewportPreset
 }) {
+  const { hostRef, picture, onPictureLoad, paused } = page
   const pinned = isFixedViewport(viewport)
   return (
     <div
@@ -32,7 +33,7 @@ export function NativePageSurface({
       )}
     >
       <div
-        ref={page.hostRef}
+        ref={hostRef}
         data-native-page-id={pageId}
         aria-label={`Browser page: ${url}`}
         className={cn(
@@ -43,13 +44,13 @@ export function NativePageSurface({
         )}
         style={pinned ? { width: viewport.width!, height: viewport.height! } : undefined}
       >
-        {page.picture && (
+        {picture && (
           <img
-            src={page.picture}
+            src={picture}
             alt=""
             aria-hidden="true"
             draggable={false}
-            onLoad={page.onPictureLoad}
+            onLoad={onPictureLoad}
             className="pointer-events-none absolute inset-0 size-full select-none object-fill"
           />
         )}
@@ -57,10 +58,10 @@ export function NativePageSurface({
             tuned to frost over that tone, and over a bright page it washes out instead. */}
         <div
           aria-hidden="true"
-          data-paused={page.paused || undefined}
+          data-paused={paused || undefined}
           className={cn(
             'pointer-events-none absolute inset-0 bg-background-solid/50 opacity-0 transition-opacity duration-(--dur-instant)',
-            page.paused && 'opacity-100',
+            paused && 'opacity-100',
           )}
         />
       </div>

@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { useLocation, useNavigate, useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import { isSectionId, resolveNavScope, scopePath, type SectionId } from '@/shared/routing/routes'
 
 /**
@@ -11,8 +11,8 @@ import { isSectionId, resolveNavScope, scopePath, type SectionId } from '@/share
  *
  * Addressing is hierarchical: the project scope is a path segment
  * (`/project/:projectId/...`), so a URL identifies WHERE a chat lives. A null
- * `projectId` is not a scope — it is the index (`/`) and the legacy `/chat/:id`
- * link, both of which resolve to a real project before anything is addressable.
+ * `projectId` is not a scope — it is the index (`/`), which resolves to a real
+ * project before anything is addressable.
  *
  * Settings/Stats/mini app views are inspector panels (no URL); they're opened via
  * the inspector store, not this hook.
@@ -21,28 +21,22 @@ export interface RoutedNavigation {
   sessionId: string | null
   sectionId: SectionId | null
   projectId: string | null
-  /** True when the current URL is a legacy `/chat/:id` link awaiting redirect. */
-  isLegacyRoute: boolean
   goToSession: (id: string, opts?: { project?: string }) => void
   openSection: (id: SectionId | null) => void
   /** Switch the active scope: drops the session so it resolves to the scope's default. */
   switchProject: (id: string) => void
-  /** Replace the current entry (used for the index/normalization/legacy redirect). */
+  /** Replace the current entry (used for the index/normalization redirect). */
   goReplace: (path: string) => void
 }
 
 export function useRoutedNavigation(): RoutedNavigation {
   const params = useParams()
   const navigate = useNavigate()
-  const { pathname } = useLocation()
 
   const sessionId = params.sessionId ?? null
   const sectionId = isSectionId(params.section) ? params.section : null
-  // Scope from the PATH: /project/:projectId → that id; index or legacy link → null.
+  // Scope from the PATH: /project/:projectId → that id; the index → null.
   const projectId = params.projectId ?? null
-  // A legacy `/chat/...` URL has no scope segment. ChatPage owns the redirect
-  // once it resolves the session's project.
-  const isLegacyRoute = pathname.startsWith('/chat')
 
   // Commit user navigation URGENTLY. Wrapping this in `startTransition` marked
   // the URL update as low-priority and interruptible, so the steady stream of
@@ -59,9 +53,9 @@ export function useRoutedNavigation(): RoutedNavigation {
   /**
    * A navigation that needs a scope, from a URL that may not have one yet.
    *
-   * Only the index and a legacy `/chat/:id` link lack one, and both are one redirect away
-   * from a real project. Sending those to `/` re-enters that redirect rather than building
-   * an address for a scope that cannot hold a session.
+   * Only the index lacks one, and it is one redirect away from a real project. Sending it to
+   * `/` re-enters that redirect rather than building an address for a scope that cannot hold a
+   * session.
    */
   const inScope = useCallback(
     (scope: string | null, id?: string | null, section?: SectionId | null) =>
@@ -89,7 +83,6 @@ export function useRoutedNavigation(): RoutedNavigation {
     sessionId,
     sectionId,
     projectId,
-    isLegacyRoute,
     goToSession,
     openSection,
     switchProject,

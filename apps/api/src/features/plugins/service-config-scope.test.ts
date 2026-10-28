@@ -164,69 +164,6 @@ describe('a user-scope plugin’s state', () => {
     expect(JSON.stringify(catalog.find('b', '')?.state?.config ?? {})).not.toContain('CANARY-A')
   })
 
-  test('boot moves plain-text secrets to the vault and folds an old per-project copy', async () => {
-    const held = new Map<string, string>()
-    const { db, service, home } = await setup()
-    const repo = capabilityStores.sources(db, 'plugin')
-    // What an older build left: the token in plain text, and a stale per-project copy.
-    await repo.patchConfig('u1', '', 'cfg', { api_url: 'https://new', api_token: 'OLD-PLAIN' })
-    await repo.patchConfig('u1', 'p1', 'cfg', { api_url: 'https://stale' })
-    observeOptionVault({
-      store: async (_u, key, secret) => void held.set(key, secret),
-      resolve: async (_u, key) => held.get(key) ?? null,
-      versions: async () => new Map([...held.keys()].map((key) => [key, 1])),
-      remove: async (_u, key) => void held.delete(key),
-    })
-
-    expect(await service.reconcileStoredConfig('u1')).toBe(2)
-    const rows = await db
-      .selectFrom('capability_source')
-      .select(['project_id', 'config'])
-      .where('kind', '=', 'plugin')
-      .execute()
-    expect(rows.map((row) => row.project_id)).toEqual([''])
-    expect(rows[0]!.config).not.toContain('OLD-PLAIN')
-    expect([...held.values()]).toEqual(['OLD-PLAIN'])
-    const catalog = await buildPluginCatalog({
-      repo,
-      availability: UNDECIDED,
-      userId: 'u1',
-      projectId: 'p1',
-      cwd: null,
-      homeDir: home,
-    })
-    expect(catalog.find('cfg', 'p1')?.state?.config).toEqual({
-      api_url: 'https://new',
-      api_token: 'OLD-PLAIN',
-    })
-    expect(await service.reconcileStoredConfig('u1')).toBe(0)
-  })
-
-  test('an install row a user-scope plugin folds from keeps no plain-text secret', async () => {
-    const held = new Map<string, string>()
-    const { db, service } = await setup()
-    const repo = capabilityStores.sources(db, 'plugin')
-    // A project install row (it records its source) from an older build, its token in plain text.
-    await repo.patchConfig('u1', 'p1', 'cfg', { api_token: 'P1-PLAIN' })
-    await db
-      .updateTable('capability_source')
-      .set({ source: '/old/src' })
-      .where('project_id', '=', 'p1')
-      .execute()
-    observeOptionVault({
-      store: async (_u, key, secret) => void held.set(key, secret),
-      resolve: async (_u, key) => held.get(key) ?? null,
-      versions: async () => new Map([...held.keys()].map((key) => [key, 1])),
-      remove: async (_u, key) => void held.delete(key),
-    })
-
-    expect(await service.reconcileStoredConfig('u1')).toBe(1)
-    const rows = await db.selectFrom('capability_source').select(['config']).execute()
-    expect(rows.some((row) => row.config.includes('P1-PLAIN'))).toBe(false)
-    expect([...held.values()]).toEqual(['P1-PLAIN'])
-    expect(await service.reconcileStoredConfig('u1')).toBe(0)
-  })
-
   test('an update from a chat of the Default project re-installs it for all chats', async () => {
     const { service, src, workspace } = await setup()
     writePlugin(src, 'cfg', '1.1.0')

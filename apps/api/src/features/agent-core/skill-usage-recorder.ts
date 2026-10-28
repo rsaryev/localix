@@ -37,7 +37,7 @@ export function recordSkillUse(
 
 /**
  * Authorship sink, the same arrangement: a skill written for the first time by Localix (the Store,
- * the `skill` tool) is recorded as created here. The folder is shared with Claude Code, whose use
+ * the `Skill` tool) is recorded as created here. The folder is shared with Claude Code, whose use
  * Localix cannot see, so the curator only archives skills made in Localix.
  */
 export type SkillAuthoredSink = (

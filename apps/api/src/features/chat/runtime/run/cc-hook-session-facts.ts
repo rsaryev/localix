@@ -8,7 +8,7 @@
 import { join } from 'node:path'
 
 import type { PermissionMode } from '../../../../contracts/permission-modes'
-import { GENERAL_PURPOSE_TYPE } from '../../../agent-core/tools/delegate-agent-type'
+import { GENERAL_PURPOSE_TYPE } from '../../../agent-core/tools/agent/agent-type'
 import { ccSessionEnvFiles, type CcSessionEnvFiles } from '../../../cc-hooks'
 import { sessionDataDir } from '../../../mini-apps/session-storage'
 import type { SessionRecord } from '../../repository'

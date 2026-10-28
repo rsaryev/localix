@@ -80,8 +80,11 @@ const byImportance = (a: SlashCommand, b: SlashCommand): number =>
  * the leaf's `name`/`description` fields map back to the composer's `trigger`/`title`.
  */
 export function matchSlashCommand(query: string, cmd: SlashCommand): SlashMatch | null {
+  // A row that stands for a plugin answers to `/<plugin>:<command>` too: its name is what counts.
+  const typed = cmd.onChoose ? query.split(':')[0]! : query
+  if (!typed) return null
   const result = scoreSlashMatch(
-    query,
+    typed,
     { name: cmd.trigger, description: cmd.title },
     { minWeakLen: 1, descriptionPrefixTier: true },
   )
@@ -109,6 +112,7 @@ export function filterAndRankSlashCommands(
 ): SlashCommand[] {
   if (query === '') {
     return commands
+      .filter((cmd) => !cmd.onChoose)
       .map((cmd, i) => ({ cmd, i }))
       .sort((a, b) => byImportance(a.cmd, b.cmd) || a.i - b.i)
       .map((e) => e.cmd)

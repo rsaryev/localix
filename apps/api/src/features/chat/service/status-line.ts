@@ -1,57 +1,46 @@
-import { claudeCodeHome } from '../../cc-settings/config-dir'
-import { agentRoute, sessionRoute } from '../../../contracts/session-route'
+import { join } from 'node:path'
+
+import { claudeCodeHome, claudeConfigDir } from '../../cc-settings/config-dir'
+import { sessionRoute } from '../../../contracts/session-route'
 import { childEnv } from '../../../lib/login-shell-env'
-import { settingsCommandLine } from '../../cc-settings/settings-commands'
-import { readSettingsFileLayers } from '../../cc-settings/settings-files'
-import type { ManagedSettingsSource } from '../../cc-settings/managed-settings'
+import { settingsCommandLine, type SettingsCommandLine } from '../../cc-settings/settings-commands'
+import {
+  localSettingsRoot,
+  readSettingsFileLayers,
+  type SettingsLayer,
+} from '../../cc-settings/settings-files'
 import { claudeCodeSettingsEnv } from '../../cc-settings/settings-env'
 import { settingsAdditionalDirectories } from '../../cc-settings/settings-permissions'
 import { claudeCodeTrusts } from '../../cc-settings/settings-trust'
-import { runHookCommand, type HookCommandOptions } from '../../lifecycle-hooks/command'
-import { plainRowText } from '../../plugins/subagent-status-line'
-import type { SessionRecord } from '../repository'
+import { runHookCommand } from '../../lifecycle-hooks/command'
+import type { StatusLineDeps } from './status-line-deps'
+import { statusLineInput } from './status-line-input'
+import { statusLineRows } from './status-line-output'
+import { watchSettingsDirs } from './status-line-watch'
+import { readStatusLineWorkspace } from './status-line-workspace'
 import type { Timers } from './subagent-rows-live'
+
+export { statusLineInput } from './status-line-input'
+export type { StatusLineDeps } from './status-line-deps'
+export type { StatusLineUsage } from './status-line-usage'
 
 /**
  * CLAUDE CODE'S `statusLine`, UNDER A CONVERSATION'S MESSAGE BOX (statusline.md). The command of
- * the person's settings for the conversation's folder runs with the session as JSON on stdin, and
- * what it prints is the line — drawn with the mods' status lines, as Claude Code's status bar
- * shows both. Colors and links are stripped (the line is drawn in the kit's own type) and rows
- * are joined with ` · `.
+ * the person's settings for the conversation's folder runs with the session as JSON on stdin
+ * (`status-line-input.ts`), and what it prints is the line: each printed row its own row, with
+ * its colors and links (`status-line-output.ts`) — drawn with the mods' status lines, as Claude
+ * Code's status bar shows both.
  *
- * When it runs, as in Claude Code: when the conversation is opened or changes (a new message,
- * a mode change), batched 300 ms; every `refreshInterval` seconds while a client renders it; an
- * update while the command runs cancels it. A command that fails, times out or prints nothing
- * clears the line.
+ * When it runs, as in Claude Code: when the conversation is opened or changes (a new message, a
+ * mode change, a compaction), batched 300 ms; at once when the `command` setting changes; every
+ * `refreshInterval` seconds while a client renders it; an update while the command runs cancels
+ * it. A command that fails, times out or prints nothing clears the line.
  */
 
 const DEBOUNCE_MS = 300
 const TIMEOUT_MS = 10_000
 const MAX_OUTPUT_BYTES = 64 * 1024
 const COLUMNS = 120
-
-export interface StatusLineUsage {
-  totalCost?: number
-  inputTokens?: number
-  outputTokens?: number
-  /** Tokens in the context window after the last model call, and the window's size. */
-  context?: { used?: number; size?: number }
-}
-
-export interface StatusLineDeps {
-  requireSession(userId: string, sessionId: string): Promise<SessionRecord>
-  resolveSessionWorkingDir(userId: string, session: SessionRecord): Promise<string>
-  usage(userId: string, sessionId: string): Promise<StatusLineUsage>
-  /** Draw (or with `undefined`, clear) the conversation's line. */
-  publish(sessionId: string, text: string | undefined): void
-  /** Is a client rendering the conversation? The refresh timer runs only then. */
-  watched(userId: string, sessionId: string): boolean
-  homeDir?: string
-  env?: Record<string, string | undefined>
-  managed?: ManagedSettingsSource | null
-  timers?: Timers
-  run?: (options: HookCommandOptions) => ReturnType<typeof runHookCommand>
-}
 
 const realTimers: Timers = {
   set(run, ms) {
@@ -62,64 +51,14 @@ const realTimers: Timers = {
   clear: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
 }
 
-const percent = (used: number | undefined, size: number | undefined) =>
-  used !== undefined && size ? Math.round((used / size) * 100) : null
-
-/** The session as the command reads it on stdin (statusline.md, "Available data"). */
-export function statusLineInput(input: {
-  session: SessionRecord
-  cwd: string
-  addedDirs: readonly string[]
-  usage: StatusLineUsage
-}) {
-  const { session, cwd, usage } = input
-  const route = agentRoute(session, sessionRoute(session).agentId) ?? sessionRoute(session)
-  const modelId = route?.modelId ?? ''
-  const used = usage.context?.used
-  const size = usage.context?.size
-  const usedPercentage = percent(used, size)
-  return {
-    cwd,
-    session_id: session.id,
-    ...(session.title ? { session_name: session.title } : {}),
-    transcript_path: '',
-    model: { id: modelId, display_name: modelId },
-    workspace: { current_dir: cwd, project_dir: cwd, added_dirs: [...input.addedDirs] },
-    ...(session.outputStyle ? { output_style: { name: session.outputStyle } } : {}),
-    cost: {
-      total_cost_usd: usage.totalCost ?? 0,
-      total_duration_ms: Math.max(0, Date.now() - (Date.parse(session.createdAt) || Date.now())),
-      total_api_duration_ms: 0,
-      total_lines_added: 0,
-      total_lines_removed: 0,
-    },
-    context_window: {
-      total_input_tokens: usage.inputTokens ?? 0,
-      total_output_tokens: usage.outputTokens ?? 0,
-      context_window_size: size ?? null,
-      used_percentage: usedPercentage,
-      remaining_percentage: usedPercentage === null ? null : 100 - usedPercentage,
-      current_usage: null,
-    },
-    exceeds_200k_tokens: (used ?? 0) > 200_000,
-    ...(route?.reasoningEffort ? { effort: { level: route.reasoningEffort } } : {}),
-  }
-}
-
-/** The line a command printed: escapes stripped, rows joined. */
-export function statusLineText(stdout: string): string | undefined {
-  const rows = stdout
-    .split('\n')
-    .map((row) => plainRowText(row))
-    .filter(Boolean)
-  return rows.length > 0 ? rows.join(' · ') : undefined
-}
-
 interface Entry {
   timer: unknown
   refreshTimer: unknown
   running: AbortController | null
   done: Promise<void>
+  /** The command the last draw ran, to tell a changed one from another setting. */
+  command: string | undefined
+  unwatch: (() => void) | null
 }
 
 export function createStatusLine(deps: StatusLineDeps) {
@@ -133,16 +72,20 @@ export function createStatusLine(deps: StatusLineDeps) {
     if (!entry)
       entries.set(
         key,
-        (entry = { timer: null, refreshTimer: null, running: null, done: Promise.resolve() }),
+        (entry = {
+          timer: null,
+          refreshTimer: null,
+          running: null,
+          done: Promise.resolve(),
+          command: undefined,
+          unwatch: null,
+        }),
       )
     return entry
   }
 
-  async function draw(
-    userId: string,
-    sessionId: string,
-    signal: AbortSignal,
-  ): Promise<number | undefined> {
+  /** The session, its folder and the `statusLine` setting that applies there. */
+  async function resolveLine(userId: string, sessionId: string) {
     const session = await deps.requireSession(userId, sessionId)
     const cwd = await deps.resolveSessionWorkingDir(userId, session)
     const settingsInput = {
@@ -151,14 +94,65 @@ export function createStatusLine(deps: StatusLineDeps) {
       ...(deps.env ? { env: deps.env } : {}),
       ...(deps.managed !== undefined ? { managed: deps.managed } : {}),
     }
-    const layers = readSettingsFileLayers(settingsInput)
-    const line = settingsCommandLine(layers, 'statusLine')
+    const layers: SettingsLayer[] = readSettingsFileLayers(settingsInput)
+    const line: SettingsCommandLine | undefined = settingsCommandLine(layers, 'statusLine')
+    return { session, cwd, settingsInput, layers, line }
+  }
+
+  /** The folders whose settings files may set the line: a change in one is a trigger. */
+  function settingsDirs(cwd: string): string[] {
+    const root = localSettingsRoot(cwd, homeDir())
+    return [
+      claudeConfigDir(homeDir(), deps.env ?? process.env),
+      join(cwd, '.claude'),
+      ...(root ? [join(root, '.claude')] : []),
+    ]
+  }
+
+  /** The conversation's entry, if it is still the one in the map (a deletion or release drops it). */
+  const isLive = (userId: string, sessionId: string, entry: Entry) =>
+    entries.get(keyOf(userId, sessionId)) === entry
+
+  /** Stop everything the conversation's line holds: its draw, timers and settings watchers. */
+  function release(userId: string, sessionId: string) {
+    const key = keyOf(userId, sessionId)
+    const entry = entries.get(key)
+    if (!entry) return
+    entry.running?.abort()
+    entry.unwatch?.()
+    entry.unwatch = null
+    timers.clear(entry.timer)
+    timers.clear(entry.refreshTimer)
+    entries.delete(key)
+  }
+
+  async function draw(
+    userId: string,
+    sessionId: string,
+    entry: Entry,
+    signal: AbortSignal,
+  ): Promise<number | undefined> {
+    const { session, cwd, settingsInput, layers, line } = await resolveLine(userId, sessionId)
+    // Deleted, or let go of, while the settings were read: leave nothing behind.
+    if (signal.aborted || !isLive(userId, sessionId, entry)) return undefined
+    entry.command = line?.command
+    const onSettingsChange = () => void (entry.done = settingsChanged(userId, sessionId))
+    const dirs = settingsDirs(cwd)
+    entry.unwatch ??= deps.watchSettings
+      ? deps.watchSettings(dirs, onSettingsChange)
+      : watchSettingsDirs(dirs, onSettingsChange)
     if (!line) {
       deps.publish(sessionId, undefined)
       return undefined
     }
     const trusted = claudeCodeTrusts(settingsInput)
-    const usage = await deps.usage(userId, sessionId)
+    const route = sessionRoute(session)
+    const [usage, model, workspace, transcriptPath] = await Promise.all([
+      deps.usage(userId, sessionId),
+      deps.modelInfo?.(userId, route).catch(() => ({})),
+      (deps.workspace ? deps.workspace(cwd) : readStatusLineWorkspace(cwd)).catch(() => ({})),
+      deps.transcriptPath?.(userId, session, cwd).catch(() => undefined),
+    ])
     const result = await (deps.run ?? runHookCommand)({
       command: line.command,
       input: JSON.stringify(
@@ -171,6 +165,9 @@ export function createStatusLine(deps: StatusLineDeps) {
             homeDir: homeDir(),
           }),
           usage,
+          ...(model ? { model } : {}),
+          workspace,
+          ...(transcriptPath ? { transcriptPath } : {}),
         }),
       ),
       cwd,
@@ -185,8 +182,10 @@ export function createStatusLine(deps: StatusLineDeps) {
       }),
     }).catch(() => null)
     if (signal.aborted) return line.refreshInterval
-    const text = result && result.code === 0 ? statusLineText(result.stdout) : undefined
-    deps.publish(sessionId, text && line.padding ? `${' '.repeat(line.padding)}${text}` : text)
+    deps.publish(
+      sessionId,
+      result?.code === 0 ? statusLineRows(result.stdout, line.padding) : undefined,
+    )
     return line.refreshInterval
   }
 
@@ -197,12 +196,15 @@ export function createStatusLine(deps: StatusLineDeps) {
     const controller = new AbortController()
     entry.running = controller
     timers.clear(entry.refreshTimer)
-    entry.done = draw(userId, sessionId, controller.signal)
+    entry.done = draw(userId, sessionId, entry, controller.signal)
       .then((interval) => {
-        if (entry.running !== controller) return
+        if (entry.running !== controller || !isLive(userId, sessionId, entry)) return
         entry.running = null
         if (interval && deps.watched(userId, sessionId))
-          entry.refreshTimer = timers.set(() => void refresh(userId, sessionId), interval * 1000)
+          entry.refreshTimer = timers.set(
+            () => refreshIfWatched(userId, sessionId),
+            interval * 1000,
+          )
       })
       .catch(() => {
         if (entry.running === controller) entry.running = null
@@ -210,14 +212,46 @@ export function createStatusLine(deps: StatusLineDeps) {
     return entry.done
   }
 
-  /** The conversation changed: draw once, a moment later, however many changes arrive. */
-  function changed(userId: string, sessionId: string) {
+  /** A timer fired: draw if a client still renders the conversation, else let go of it. */
+  function refreshIfWatched(userId: string, sessionId: string) {
+    if (deps.watched(userId, sessionId)) void refresh(userId, sessionId)
+    else release(userId, sessionId)
+  }
+
+  /** Draw once, a moment later, however many requests arrive; `opened` skips the watched check. */
+  function schedule(userId: string, sessionId: string, opened = false) {
     const entry = entryOf(userId, sessionId)
     timers.clear(entry.timer)
     entry.timer = timers.set(() => {
       entry.timer = null
-      void refresh(userId, sessionId)
+      if (opened) void refresh(userId, sessionId)
+      else refreshIfWatched(userId, sessionId)
     }, DEBOUNCE_MS)
+  }
+
+  /**
+   * The conversation changed: draw once, a moment later, however many changes arrive — but only a
+   * conversation a client renders; a background or child session runs no command, and one nobody
+   * renders any more lets go of its settings watchers.
+   */
+  function changed(userId: string, sessionId: string) {
+    if (deps.watched(userId, sessionId)) schedule(userId, sessionId)
+    else release(userId, sessionId)
+  }
+
+  /**
+   * A settings file changed. A different `command` (or none, or a first one) runs at once, past
+   * the debounce, as Claude Code runs a new command right away; any other setting is a change
+   * like the rest.
+   */
+  async function settingsChanged(userId: string, sessionId: string): Promise<void> {
+    const entry = entries.get(keyOf(userId, sessionId))
+    if (!entry) return
+    if (!deps.watched(userId, sessionId)) return release(userId, sessionId)
+    const { line } = await resolveLine(userId, sessionId).catch(() => ({ line: undefined }))
+    if (!isLive(userId, sessionId, entry)) return
+    if (line?.command !== entry.command) await refresh(userId, sessionId)
+    else changed(userId, sessionId)
   }
 
   return {
@@ -225,25 +259,19 @@ export function createStatusLine(deps: StatusLineDeps) {
     changed,
     /** Every conversation it draws, again (settings may have changed). */
     refreshAll() {
-      for (const key of entries.keys()) {
+      for (const key of Array.from(entries.keys())) {
         const [userId, sessionId] = key.split('\0') as [string, string]
-        void refresh(userId, sessionId)
+        refreshIfWatched(userId, sessionId)
       }
     },
-    deleted(userId: string, sessionId: string) {
-      const entry = entries.get(keyOf(userId, sessionId))
-      if (!entry) return
-      entry.running?.abort()
-      timers.clear(entry.timer)
-      timers.clear(entry.refreshTimer)
-      entries.delete(keyOf(userId, sessionId))
-    },
-    /** A client opened the conversation: its first draw, once. */
+    deleted: release,
+    /** A client opened the conversation: its first draw, once (its stream may not be up yet). */
     viewed(userId: string, sessionId: string) {
-      if (!entries.has(keyOf(userId, sessionId))) changed(userId, sessionId)
+      if (!entries.has(keyOf(userId, sessionId))) schedule(userId, sessionId, true)
     },
     /** Resolves when the draw in flight, if any, is done. */
-    settled: (userId: string, sessionId: string) => entryOf(userId, sessionId).done,
+    settled: (userId: string, sessionId: string) =>
+      entries.get(keyOf(userId, sessionId))?.done ?? Promise.resolve(),
   }
 }
 

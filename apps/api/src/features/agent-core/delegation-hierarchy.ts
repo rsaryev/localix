@@ -1,7 +1,7 @@
 /**
- * Only root conversations create child work (`tools/delegate.ts`). A delegated child executes its
- * task and reports back; it cannot delegate again, so a tree is one level deep and no chain of
- * agents handing work to each other can form.
+ * Only root conversations start subagents (`tools/agent/agent-tool.ts`). A subagent executes its
+ * task and reports back; it cannot start subagents of its own, so a tree is one level deep and no
+ * chain of agents handing work to each other can form.
  */
 
 /** The deepest a delegated child sits: the root is depth 0, its children depth 1. */
@@ -18,8 +18,8 @@ export function delegatesAt(depth: number): boolean {
  */
 export function delegationNote(depth: number): string {
   return delegatesAt(depth)
-    ? 'You may delegate an independent part of this task with `delegate`; do the core of it yourself.'
-    : 'Do this task yourself: a delegated task cannot be delegated again.'
+    ? 'You may hand an independent part of this task to a subagent with `Agent`; do the core of it yourself.'
+    : 'Do this task yourself: a subagent cannot start subagents of its own.'
 }
 
 export interface DelegationPosition {

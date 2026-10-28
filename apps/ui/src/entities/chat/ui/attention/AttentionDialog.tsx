@@ -1,9 +1,9 @@
 /**
  * THE ONE CROSS-SESSION PROMPT: something in a chat the person is not looking at is waiting on
- * them — a blocked request, a plan to decide on, a mention by name.
+ * them — a blocked request or a plan to decide on.
  *
  * There used to be one dialog per kind, each with its own inbox, and they had to know about each
- * other: the mention dialog read the HITL inbox to stay out of the way, and a presented plan had
+ * other: the plan dialog read the HITL inbox to stay out of the way, and a presented plan had
  * no dialog at all. Two modals is a stack the person digs out of in an order nobody chose. So one
  * shell, mounted once at page level (it surfaces over the chat, settings or stats alike), raises
  * the single item `dialogAttentionItem` picks from the shared roster, and renders that kind's body

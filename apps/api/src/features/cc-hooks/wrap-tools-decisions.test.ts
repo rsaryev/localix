@@ -26,7 +26,7 @@ function runtime(over: Partial<CcHooksRuntime>): CcHooksRuntime {
 /** A `bash`-named tool answering `result`, remembering the context each call carried. */
 function tool(result: AgentToolResult, seen: unknown[] = []): AgentTool {
   return defineAgentTool({
-    name: 'bash',
+    name: 'Bash',
     description: 'runs',
     activeVerb: 'Running',
     inputSchema: z.object({ command: z.string() }),

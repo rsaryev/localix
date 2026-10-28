@@ -52,7 +52,7 @@ export function resolveLiveTaskModel<
   return liveRouteModel(models, connections, slot.modelId, slot.providerConnectionId)
 }
 
-/** The checkmark in one connection's list follows the active target, not the party's first row. */
+/** The checkmark in one connection's list follows the active target, not the conversation's model. */
 export function selectedTaskModelId(
   live: { connection: { id: string }; model: { id: string } } | null,
   selectedConnectionId: string | null | undefined,

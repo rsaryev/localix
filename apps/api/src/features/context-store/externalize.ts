@@ -27,7 +27,6 @@ export const EXTERNALIZE_THRESHOLD_BYTES = 20_000
 export interface ExternalizeOptions {
   userId: string
   sessionId: string
-  participant?: string
   threshold?: number
   /**
    * Host secret shield for tool arguments. Required because this hook is a
@@ -55,12 +54,11 @@ export function buildExternalizeAfterToolCall(
     const textBytes = rawBytes > contentBytes ? rawBytes : contentBytes
 
     // Mandatory durability barrier. Do not catch this write: returning a bounded
-    // result after it failed would expose a tool_output pointer with no source.
+    // result after it failed would expose a ToolOutput pointer with no source.
     const safeInput = options.sanitizeInput(input)
     await store.putToolOutputArtifact({
       userId: options.userId,
       sessionId: options.sessionId,
-      participant: options.participant,
       toolCallId,
       toolName,
       text,
@@ -95,7 +93,7 @@ export function buildExternalizeAfterToolCall(
       }
     }
 
-    // Keep indexing for a later turn that may re-enable tool_output, but do
+    // Keep indexing for a later turn that may re-enable ToolOutput, but do
     // not advertise a call the current model cannot make.
     if (sections === 0 || options.toolOutputAvailable === false) return undefined
     // Say WHICH part is indexed when chunking dropped the tail. "400 sections of this
@@ -109,8 +107,8 @@ export function buildExternalizeAfterToolCall(
       content:
         result.content +
         `\n\n[${scope} — ` +
-        `tool_output(action="search", queries=[…], tool_call_id="${toolCallId}") finds matching sections without replaying it all` +
-        `${covered === 'prefix' ? '; tool_output action="get" has the whole text' : ''}]`,
+        `ToolOutput(action="search", queries=[…], tool_call_id="${toolCallId}") finds matching sections without replaying it all` +
+        `${covered === 'prefix' ? '; ToolOutput action="get" has the whole text' : ''}]`,
     }
   }
 }

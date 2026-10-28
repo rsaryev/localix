@@ -134,6 +134,6 @@ export async function runSubagentStatusLine(input: {
         : {}),
     }),
   }).catch(() => null)
-  if (!result || result.code !== 0) return []
+  if (result?.code !== 0) return []
   return parseSubagentRows(result.stdout, new Set(input.tasks.map((task) => task.id)))
 }

@@ -7,7 +7,6 @@ import type { LineageDecision } from '../../policy/axes/lineage'
 import { getAgentService } from '../agent-service-binding'
 import type { RunnerDeps } from '../agent-runner-types'
 import type { EarlyDelegationOutcome } from '../../../agent-core/tools/task-delegation-contracts'
-import { agentParticipant } from '../../../../db/participant'
 import { delegationReportWake } from '../delegation-report'
 import { releaseLane, requestLane } from '../../../agent-core/delegation-lanes'
 import {
@@ -17,6 +16,7 @@ import {
   takeExpectedReport,
   takeTurnLimit,
 } from '../../../agent-core/delegation-awaits'
+import { watchFirstSign } from '../../../agent-core/delegation-first-sign'
 import { wrapSystemReminder } from '../system-reminder'
 import { delegationPlace } from '../../session-provenance'
 import { endSubagentWork, type SubagentWorkDeps } from './subagent-work'
@@ -26,15 +26,23 @@ import { createForkPort } from '../fork/fork-port'
 import type { ForkLiveRun } from '../fork/fork-port'
 
 /**
- * How long a delegation call watches its child before returning "running".
+ * The longest a delegation call watches its child before returning "running".
  *
  * Without a settle window, a role that fails to resolve or a child that exits before its
  * first model token looks exactly like healthy detached work until a later wake arrives.
  * The parent needs that startup outcome in the same turn so it can react without extra
  * status checks. The window is short enough to keep the call non-blocking and long enough
- * to catch failures that happen before the first model token.
+ * to catch failures that happen before the first model token — and it ends sooner than that
+ * when the child's first output shows it is running (`delegation-first-sign.ts`).
  */
 const DELEGATION_SETTLE_MS = 1_200
+
+/** The window's clock: a timer that stops when the call no longer needs it. */
+const timerDelay = (ms: number, signal: AbortSignal): Promise<void> =>
+  new Promise((resolve) => {
+    const timer = setTimeout(resolve, ms)
+    signal.addEventListener('abort', () => (clearTimeout(timer), resolve()), { once: true })
+  })
 
 /** Everything the delegate host needs from the run being assembled. */
 export interface TaskDelegationOptionsInput {
@@ -55,10 +63,12 @@ export interface TaskDelegationOptionsInput {
   subagentWork: SubagentWorkDeps
   /** What a fork of this run is made from, once the run is streaming (`fork/fork-live.ts`). */
   forkLive?: () => ForkLiveRun | undefined
+  /** How the settle window waits: a timer by default, a test's own clock otherwise. */
+  settleDelay?: (ms: number, signal: AbortSignal) => Promise<void>
 }
 
 /**
- * Wire the child-session host for a run that may create children with `delegate`. Runtime
+ * Wire the child-session host for a run that may create children with `Agent`. Runtime
  * capability policy is the independent authority gate.
  *
  * Returns `undefined` whenever a precondition is missing: the session cannot create children,
@@ -70,7 +80,7 @@ export function buildTaskDelegationOptions(
   const { userId, session, agentProfile, ccHooks } = input
 
   // Persisted nested sessions remain readable, but only the root can create new child work.
-  if (!input.lineage.mayDelegate || !isToolDirect(agentProfile, TOOL.delegate)) return undefined
+  if (!input.lineage.mayDelegate || !isToolDirect(agentProfile, TOOL.Agent)) return undefined
   const place = delegationPlace(session.provenance)
   // The `delegation` model route is a ROUTE, never a switch for the tool. With the route off
   // a child simply runs on the session model (the picker's own "Use session model" promise);
@@ -97,10 +107,7 @@ export function buildTaskDelegationOptions(
     createSession: (uid, sessionInput) =>
       svc.createSession(uid, {
         ...sessionInput,
-        provenance: {
-          ...sessionInput.provenance,
-          ...(input.agentId ? { parentParticipant: agentParticipant(input.agentId) } : {}),
-        },
+        provenance: sessionInput.provenance,
       }),
     // Where this session sits (`delegation-hierarchy.ts`), as its creation wrote it, and the
     // agent delegating now.
@@ -115,7 +122,11 @@ export function buildTaskDelegationOptions(
       now: () => (input.deps.now ?? (() => new Date().toISOString()))(),
     }),
     // Keyed by ROOT: the budget counts the children the whole conversation created since the
-    // person last wrote there, whichever participant delegated them.
+    // person last wrote there, whichever agent delegated them.
+    ...(svc.sessionToolStats
+      ? { toolStats: (sid: string) => svc.sessionToolStats!(userId, sid) }
+      : {}),
+    ...(svc.sessionSpend ? { spend: (sid: string) => svc.sessionSpend!(userId, sid) } : {}),
     delegationsSinceHuman: svc.countDelegationsSinceHuman
       ? () => svc.countDelegationsSinceHuman!(userId, session.rootSessionId ?? session.id)
       : undefined,
@@ -186,13 +197,10 @@ export function buildTaskDelegationOptions(
             if (!launched && takeExpectedReport(sid)) {
               try {
                 if (!deliverHeldReport(sid, { status: 'failed', text })) {
-                  const handle = session.agents.find((m) => m.agentId === input.agentId)?.handle
                   await wake(
                     delegationReportWake({
                       userId: uid,
                       parent: session,
-                      delegatingAgentId: input.agentId,
-                      handle,
                       label: taskOpts.label,
                       childSessionId: sid,
                       runId: 'launch',
@@ -221,26 +229,32 @@ export function buildTaskDelegationOptions(
           }
         })().catch(() => {})
 
+      // Watched from before the child starts, so its first output cannot slip past.
+      const firstSign = watchFirstSign(sid)
       // The delegator now waits for this task's outcome, however long the child queues for it.
-      expectReport(sid, {
-        sessionId: session.id,
-        ...(input.agentId ? { participant: agentParticipant(input.agentId) } : {}),
-      })
+      expectReport(sid, { sessionId: session.id })
       // Over the cap the child WAITS, and says so in this turn's result; it starts on its own.
       const lane = requestLane(session.id, sid, launch, taskOpts.priority, taskOpts.lane)
-      if (lane.state === 'queued') return { queued: lane.position }
+      if (lane.state === 'queued') {
+        firstSign.stop()
+        return { queued: lane.position }
+      }
 
       // Watch the child through a short settle window so a role that fails to resolve,
       // a provider that refuses, or a child that dies on its first turn is reported in the
       // SAME turn that spawned it. Without the window, the parent gets silence and must wait
       // for a wake to learn that nothing was ever going to arrive. A child still active when
       // the window closes reads as `running`, so the call stays non-blocking.
-      return Promise.race([
+      const window = new AbortController()
+      const delay = input.settleDelay ?? timerDelay
+      const early = await Promise.race([
         earlyExit,
-        new Promise<EarlyDelegationOutcome | null>((resolve) =>
-          setTimeout(() => resolve(null), DELEGATION_SETTLE_MS),
-        ),
-      ]).then((early) => early ?? undefined)
+        firstSign.seen.then(() => null),
+        delay(DELEGATION_SETTLE_MS, window.signal).then(() => null),
+      ])
+      window.abort()
+      firstSign.stop()
+      return early ?? undefined
     },
   }
 }

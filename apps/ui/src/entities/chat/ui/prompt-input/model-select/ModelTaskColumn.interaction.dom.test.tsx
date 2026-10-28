@@ -14,7 +14,7 @@ afterAll(async () => {
 })
 
 describe('ModelTaskColumn switch interaction', () => {
-  test('selects a participant by stable agent ID while displaying its handle', async () => {
+  test('selects an agent by stable agent ID while displaying its name', async () => {
     const React = await import('react')
     const { act } = React
     const { createRoot } = await import('react-dom/client')
@@ -33,12 +33,12 @@ describe('ModelTaskColumn switch interaction', () => {
             modelLabelFor={() => null}
             enabledFor={() => true}
             onEnabledChange={() => {}}
-            participants={[{ agentId: 'builtin:localix', handle: 'localix', label: 'Localix' }]}
+            agent={{ agentId: 'builtin:localix', name: 'localix' }}
           />,
         ),
       )
       await act(async () =>
-        host.querySelector<HTMLButtonElement>('[aria-label="Configure Localix"]')!.click(),
+        host.querySelector<HTMLButtonElement>('[aria-label="Configure localix"]')!.click(),
       )
       expect(onSelectTask).toHaveBeenCalledWith('agent:builtin:localix')
     } finally {
@@ -70,7 +70,6 @@ describe('ModelTaskColumn switch interaction', () => {
             onEnabledChange(key, enabled)
             if (key === 'titleGeneration') setTitleGenerationEnabled(enabled)
           }}
-          participants={[]}
         />
       )
     }

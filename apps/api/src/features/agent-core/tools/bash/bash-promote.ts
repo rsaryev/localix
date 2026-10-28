@@ -45,7 +45,7 @@ export function refuseAtJobCap(
   return {
     content:
       `Not started: ${running} background jobs already running (limit ${MAX_BACKGROUND_JOBS_PER_SESSION}). ` +
-      'Stop the ones that have served with `jobs` action="list"/"stop", then retry.',
+      'List them with `Jobs` action="list", stop the ones that have served with `TaskStop`, then retry.',
     isError: true,
   }
 }
@@ -90,7 +90,7 @@ export async function promoteTimedOutCommand(
       joinCapture(detached) +
       `\n[Timed out after ${timeoutSecs}s — not promoted to a background job: ` +
       `${running} already running (limit ${MAX_BACKGROUND_JOBS_PER_SESSION}). ` +
-      `Reap some with \`jobs\` action="list"/"stop", then retry.]`
+      `List them with \`Jobs\` action="list", stop some with \`TaskStop\`, then retry.]`
     const details: BashToolDetails = {
       command,
       cwd,

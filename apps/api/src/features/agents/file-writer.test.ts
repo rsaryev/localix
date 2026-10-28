@@ -9,45 +9,33 @@ describe('agent file writer', () => {
   const dir = tempDirPerTest('agent-writer-')
 
   const roundTrip = async (input: Parameters<typeof agentFileText>[1], existing = '') => {
-    const path = agentFilePath(join(dir(), 'agents'), input.handle)
+    const path = agentFilePath(join(dir(), 'agents'), input.name)
     await writeAgentFile(path, agentFileText(existing, input))
     const read = await readAgentFile(path, 'user', '')
     return { path, record: recordOf(read!, 'id') }
   }
 
-  test('a definition survives the file: route, effort, turns, skills, priority and memory', async () => {
+  test('a definition survives the file: turns and skills', async () => {
     const { record } = await roundTrip({
-      handle: 'reviewer',
+      name: 'reviewer',
       description: 'Use when: reviewing',
       instructions: 'Review the diff.',
-      leadershipPriority: 1,
-      modelPreference: { provider: 'openai', model: 'gpt-4o', effort: 'max' },
-      limits: { maxTurns: 7 },
-      context: { preloadSkills: ['lint'], memory: { scope: 'project' } },
+      maxTurns: 7,
+      skills: ['lint'],
     })
     expect(record).toMatchObject({
-      handle: 'reviewer',
+      name: 'reviewer',
       description: 'Use when: reviewing',
       instructions: 'Review the diff.',
-      leadershipPriority: 1,
-      modelPreference: { provider: 'openai', model: 'gpt-4o', effort: 'max' },
-      limits: { maxTurns: 7 },
-      context: { preloadSkills: ['lint'], memory: { scope: 'project' } },
+      maxTurns: 7,
+      skills: ['lint'],
     })
   })
 
-  test('a route Claude Code cannot run stays out of its own keys', async () => {
-    const { path } = await roundTrip({
-      handle: 'a',
-      description: 'd',
-      instructions: 'x',
-      leadershipPriority: 0,
-      modelPreference: { provider: 'openai', model: 'gpt-4o', effort: 'high' },
-    })
+  test('a definition never writes a model, an effort or a localix key', async () => {
+    const { path } = await roundTrip({ name: 'a', description: 'd', instructions: 'x' })
     const text = await readAgentFileText(path)
-    expect(text).toContain('model: inherit')
-    expect(text).toContain('effort: high')
-    expect(text).toContain('model: openai/gpt-4o')
+    expect(text).not.toMatch(/^(model|effort|localix):/m)
   })
 
   test('saving keeps the keys, comments and order Localix does not model', async () => {
@@ -62,7 +50,7 @@ describe('agent file writer', () => {
       'old body',
     ].join('\n')
     const { path } = await roundTrip(
-      { handle: 'a', description: 'new', instructions: 'new body', leadershipPriority: 0 },
+      { name: 'a', description: 'new', instructions: 'new body' },
       existing,
     )
     const text = await readAgentFileText(path)
@@ -75,17 +63,15 @@ describe('agent file writer', () => {
 
   test('a field cleared in the Definition leaves the file', async () => {
     const first = agentFileText('', {
-      handle: 'a',
+      name: 'a',
       description: 'd',
       instructions: 'x',
-      leadershipPriority: 2,
-      limits: { maxTurns: 3 },
+      maxTurns: 3,
     })
     const second = agentFileText(first, {
-      handle: 'a',
+      name: 'a',
       description: 'd',
       instructions: 'x',
-      leadershipPriority: 0,
     })
     expect(second).not.toContain('maxTurns')
     expect(second).not.toContain('localix')

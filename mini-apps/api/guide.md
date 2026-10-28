@@ -102,5 +102,5 @@ Each teammate supplies the value through their own Vault.
 
 ## Related guides
 
-- [API Client](../../../../docs/features/api.md)
-- [Secrets Vault](../../../../docs/features/secrets.md)
+- [API Client](https://github.com/rsaryev/localix/blob/main/docs/features/api.md)
+- [Secrets Vault](https://github.com/rsaryev/localix/blob/main/docs/features/secrets.md)

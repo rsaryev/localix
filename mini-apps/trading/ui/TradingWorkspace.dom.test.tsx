@@ -2,6 +2,10 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing'
 import { bindMiniAppUiTestDoubles } from '@localixai/mini-app-sdk/ui/testing'
 
+const turns = async (n = 10) => {
+  for (let i = 0; i < n; i++) await new Promise((r) => setImmediate(r))
+}
+
 let teardown: () => Promise<void>
 let unbindDoubles: () => void
 let originalFetch: typeof fetch
@@ -55,7 +59,7 @@ describe('Trading Workspace navigation', () => {
       expect(marketsButton).not.toBeNull()
       await act(async () => {
         marketsButton?.click()
-        await new Promise((resolve) => setTimeout(resolve, 5))
+        await turns()
       })
       // Embedded, the market pane no longer repeats the section name in a panel header —
       // the workspace toolbar's active segment already carries it — so the pane identifies

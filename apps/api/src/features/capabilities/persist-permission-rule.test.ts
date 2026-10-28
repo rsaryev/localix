@@ -29,17 +29,17 @@ const asEngine = (rules: Rule[]) =>
 
 describe('where an "Always" rule lands', () => {
   test('before the danger guard, so "Always for git" does not approve a force push', async () => {
-    // Appended, `tool:bash git * allow` was the LAST match for `git push --force` — the
+    // Appended, `tool:Bash git * allow` was the LAST match for `git push --force` — the
     // `dangerous ask` above it lost, and one click disarmed the one confirmation kept.
     const store = memoryRules(builtinAgentPreset('localix'))
-    await persistPermissionRule(store.repo, 'u', 'a', { action: 'tool:bash', resource: 'git *' })
+    await persistPermissionRule(store.repo, 'u', 'a', { action: 'tool:Bash', resource: 'git *' })
 
     const rules = asEngine(store.read().filter((rule) => rule.action.startsWith('tool:')))
     const verdict = (command: string) =>
       evaluate(
         rules,
-        { name: 'bash', effect: 'external' },
-        extractCallFacts('bash', { command }, '/w'),
+        { name: 'Bash', effect: 'external' },
+        extractCallFacts('Bash', { command }, '/w'),
       )
     expect(verdict('git push origin main').action).toBe('allow')
     expect(verdict('git push --force origin main').action).toBe('ask')
@@ -48,15 +48,15 @@ describe('where an "Always" rule lands', () => {
   test('after the rule that raised the card, so it does silence that card', async () => {
     const store = memoryRules(builtinAgentPreset('localix'))
     await persistPermissionRule(store.repo, 'u', 'a', {
-      action: 'tool:read',
+      action: 'tool:Read',
       resource: '/elsewhere/src/*',
     })
     const rules = asEngine(store.read().filter((rule) => rule.action.startsWith('tool:')))
     const read = (file: string) =>
       evaluate(
         rules,
-        { name: 'read', effect: 'read' },
-        extractCallFacts('read', { path: file }, '/w'),
+        { name: 'Read', effect: 'read' },
+        extractCallFacts('Read', { path: file }, '/w'),
       )
     expect(read('/elsewhere/src/a.ts').action).toBe('allow')
     expect(read('/elsewhere/other.ts').action).toBe('ask')
@@ -64,7 +64,7 @@ describe('where an "Always" rule lands', () => {
 
   test('re-approving the same rule replaces it instead of stacking a duplicate', async () => {
     const store = memoryRules([])
-    const rule = { action: 'tool:bash', resource: 'git *' }
+    const rule = { action: 'tool:Bash', resource: 'git *' }
     await persistPermissionRule(store.repo, 'u', 'a', rule)
     await persistPermissionRule(store.repo, 'u', 'a', rule)
     expect(store.read()).toEqual([{ ...rule, effect: 'allow' }])

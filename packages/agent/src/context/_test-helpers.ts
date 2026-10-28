@@ -27,8 +27,8 @@ import type {
 
 let toolSeq = 0
 
-const MUTATE_NAMES = new Set(['write', 'edit', 'apply_patch', 'patch'])
-const COMMAND_NAMES = new Set(['bash', 'shell', 'terminal'])
+const MUTATE_NAMES = new Set(['Write', 'Edit', 'apply_patch', 'patch'])
+const COMMAND_NAMES = new Set(['Bash', 'shell', 'terminal'])
 
 // Map a legacy tool-call state onto an item status (output-available → completed,
 // output-error → failed, input-* → pending) so ported fixtures read the same.
@@ -104,7 +104,7 @@ export function namedTool(name: string, input: unknown, over: ItemOverrides = {}
 
 /** Generic command item (defaults to bash). Mirrors the old `toolPart()` default. */
 export function toolItem(over: ItemOverrides & { name?: string } = {}): ToolBackedItem {
-  const name = over.name ?? 'bash'
+  const name = over.name ?? 'Bash'
   // Honor an explicit `input: undefined` (token tests rely on 0 input chars).
   const input = 'input' in over ? over.input : { command: 'run' }
   return namedTool(name, input, over)

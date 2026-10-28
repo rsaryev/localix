@@ -21,7 +21,6 @@ export const router = createHashRouter([
       // Dev-only harness for the editor grid (Phase 3) — listed before catchAll.
       { path: 'grid-preview', element: <GridPreviewPage /> },
       { path: ROUTE_PATTERNS.projectChat, element: chatElement },
-      { path: ROUTE_PATTERNS.legacyChat, element: chatElement },
       { path: ROUTE_PATTERNS.catchAll, element: chatElement },
     ],
   },

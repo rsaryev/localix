@@ -12,10 +12,10 @@ import { verdictOf, type CallVerdict } from './permission-verdict'
  * gate ignored, or a query that asked a person.
  */
 const ROOT = path.join(os.homedir(), 'proj')
-const bash = { name: 'bash', classify: () => ({ effect: 'external' }) } as unknown as AgentTool
-const rules: PermissionRule[] = [{ permission: 'bash', pattern: '*', action: 'deny' }]
-const options = { rules, toolsByName: new Map([['bash', bash]]), root: ROOT }
-const call = { toolCallId: 'c', toolName: 'bash', input: { command: 'ls' } }
+const bash = { name: 'Bash', classify: () => ({ effect: 'external' }) } as unknown as AgentTool
+const rules: PermissionRule[] = [{ permission: 'Bash', pattern: '*', action: 'deny' }]
+const options = { rules, toolsByName: new Map([['Bash', bash]]), root: ROOT }
+const call = { toolCallId: 'c', toolName: 'Bash', input: { command: 'ls' } }
 
 describe('a reviewed verdict', () => {
   test('a review that allows a denied call lets it run', async () => {
@@ -25,7 +25,7 @@ describe('a reviewed verdict', () => {
       reviewVerdict: async (_call, verdict) => (seen.push(verdict), { decision: 'allow' }),
     })
     expect(await gate(call)).toBeUndefined()
-    expect(seen).toEqual([{ decision: 'deny', rule: 'bash(*)' }])
+    expect(seen).toEqual([{ decision: 'deny', rule: 'Bash(*)' }])
   })
 
   test('a review that asks puts the call to a person, its reason on the card', async () => {
@@ -35,7 +35,7 @@ describe('a reviewed verdict', () => {
       toolsByName: options.toolsByName,
       root: ROOT,
       reviewVerdict: async () => ({ decision: 'ask', reason: 'A mod wants you to look.' }),
-      requestConfirm: async (args) => (asked.push(args.message), false),
+      requestConfirm: async (args) => (asked.push(args.message), { approved: false }),
     })
     expect(await gate(call)).toMatchObject({ block: true, refusal: 'human' })
     expect(asked).toEqual(['A mod wants you to look.'])
@@ -47,11 +47,11 @@ describe('a reviewed verdict', () => {
   })
 
   test('a query answers the verdict and asks nobody', () => {
-    expect(verdictOf(options)('bash', { command: 'ls' })).toEqual({
+    expect(verdictOf(options)('Bash', { command: 'ls' })).toEqual({
       decision: 'deny',
-      rule: 'bash(*)',
+      rule: 'Bash(*)',
     })
-    expect(verdictOf({ ...options, rules: [] })('bash', { command: 'ls' })).toEqual({
+    expect(verdictOf({ ...options, rules: [] })('Bash', { command: 'ls' })).toEqual({
       decision: 'allow',
     })
   })

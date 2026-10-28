@@ -9,6 +9,10 @@ import {
 } from './runtime'
 import { createWorkspaceChangeCoalescer, MAX_COALESCED_PATHS } from './workspace-changes'
 
+const turns = async (n = 10) => {
+  for (let i = 0; i < n; i++) await new Promise((r) => setTimeout(r, 0))
+}
+
 /** Manual timers: a test decides when the window closes. */
 function manualTimers() {
   const pending = new Map<number, () => void>()
@@ -109,7 +113,7 @@ describe('miniAppFiles.watchWorkspace', () => {
     handlers!.onLive(true)
     handlers!.onChange(['/w/a.ts'])
     handlers!.onChange(['/w/b.ts'])
-    await new Promise((resolve) => setTimeout(resolve, 20))
+    await turns()
     expect(live).toEqual([true])
     expect(seen).toEqual([{ sessionId: 's1', paths: ['/w/a.ts', '/w/b.ts'] }])
     off()

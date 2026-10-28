@@ -18,8 +18,6 @@ import {
 } from './MarkdownRendererImpl'
 import { rehypePluginsFor, remarkPluginsFor } from '@localixai/markdown/markdownPlugins'
 import { classifyMarkdownLink, markdownUrlTransform } from './markdownLink'
-import { remarkAgentMention } from './remarkAgentMention'
-import { conversationMentionHandles } from '@localixai/api/agent-mentions'
 
 describe('streaming markdown', () => {
   test('keeps sandbox artifact links clickable without weakening URL sanitization', () => {
@@ -212,83 +210,5 @@ describe('mention chips', () => {
     )
     expect(orphan).not.toContain('title="Open src/app.ts"')
     expect(orphan).toContain('disabled=""')
-  })
-
-  test('an @handle of a conversation member is marked up as an agent link', () => {
-    // Rendered through the raw pipeline rather than the component: the chip resolves identity
-    // and navigation through hooks that want their providers, and what is under test here is
-    // the parse — that `@qa` becomes an `agent:` link and `@nobody` stays text.
-    const html = renderToStaticMarkup(
-      <ReactMarkdown
-        remarkPlugins={[remarkAgentMention(['qa', 'lead'])]}
-        urlTransform={markdownUrlTransform}
-      >
-        {'@qa check this, @nobody is not here'}
-      </ReactMarkdown>,
-    )
-    expect(html).toContain('href="agent:qa"')
-    expect(html).not.toContain('agent:nobody')
-  })
-
-  test('known agent names in assistant prose become weaker mention chips', () => {
-    const html = renderToStaticMarkup(
-      <ReactMarkdown
-        remarkPlugins={[remarkAgentMention(['pm', 'lead'], { linkifyBareNames: true })]}
-        urlTransform={markdownUrlTransform}
-      >
-        {'The winner is pm! Next is lead. leader and pmo stay plain.'}
-      </ReactMarkdown>,
-    )
-    expect(html).toContain('href="agent:pm"')
-    expect(html).toContain('href="agent:lead"')
-    expect(html).not.toContain('agent:leader')
-    expect(html).not.toContain('agent:pmo')
-  })
-
-  test('an agent writing @human is plain text — the person is not an address', () => {
-    // Agents reach the person through `ask`; a stray `@human` must not read as a handoff.
-    const html = renderToStaticMarkup(
-      <ReactMarkdown
-        remarkPlugins={[remarkAgentMention(conversationMentionHandles(['qa']))]}
-        urlTransform={markdownUrlTransform}
-      >
-        {'@qa done, @human please confirm'}
-      </ReactMarkdown>,
-    )
-    expect(html).toContain('href="agent:qa"')
-    expect(html).not.toContain('human:')
-    expect(html).not.toContain('agent:human')
-    expect(html).toContain('@human please confirm')
-  })
-
-  test('a mention the writer wrapped in backticks is still a mention', () => {
-    // Models write handles as code — "available: `@lead`, `@qa`" — and markdown puts that in an
-    // inlineCode node the text pass never sees. Every mention an agent wrote rendered as a grey
-    // code pill that could not be clicked, while the same handle typed by the person linked.
-    const html = renderToStaticMarkup(
-      <ReactMarkdown
-        remarkPlugins={[remarkAgentMention(['qa', 'lead'])]}
-        urlTransform={markdownUrlTransform}
-      >
-        {'available: `@lead`, `@qa` — but `@nobody` is not here'}
-      </ReactMarkdown>,
-    )
-    expect(html).toContain('href="agent:lead"')
-    expect(html).toContain('href="agent:qa"')
-    expect(html).not.toContain('agent:nobody')
-  })
-
-  test('a handle inside a command stays code — only a whole span is a mention', () => {
-    // `grep @lead src/` is something to type, and a chip in the middle of it would be a lie
-    // about what to type. A fenced block is a different node and is never touched.
-    const html = renderToStaticMarkup(
-      <ReactMarkdown
-        remarkPlugins={[remarkAgentMention(['qa', 'lead'])]}
-        urlTransform={markdownUrlTransform}
-      >
-        {'run `grep @lead src/`\n\n```\n@qa\n```\n'}
-      </ReactMarkdown>,
-    )
-    expect(html).not.toContain('href="agent:')
   })
 })

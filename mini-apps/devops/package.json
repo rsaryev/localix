@@ -7,7 +7,7 @@
   "type": "module",
   "scripts": {
     "test": "bun test .",
-    "type-check": "tsc --noEmit -p tsconfig.json"
+    "type-check": "node ../../scripts/tsc.mjs --noEmit -p tsconfig.json"
   },
   "dependencies": {
     "@iconify-icons/vscode-icons": "^2.0.19",

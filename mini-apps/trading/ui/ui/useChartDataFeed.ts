@@ -39,7 +39,7 @@ export function useChartDataFeed(
     // Older bars push every logical index up; moving the viewport by the same amount keeps the
     // chart still while the void to its left fills in.
     const added = prependedBars(rt.firstBarTime.current, candles)
-    rt.firstBarTime.current = candles[0]?.time ?? null
+    rt.write('firstBarTime', candles[0]?.time ?? null)
 
     const pushBar = (bar: Candle) => {
       mainSeries.update(mainSeriesPoint(rt.chartType.current, bar) as never)
@@ -61,7 +61,7 @@ export function useChartDataFeed(
         volumeSeries.setData(toVolumeData(candles, rt.volumeColors.current))
         break
     }
-    rt.renderedCandles.current = candles
+    rt.write('renderedCandles', candles)
     rt.sessionPrim.current?.setTimes(candles.map((c) => c.time))
     // Indicators are opt-in — nothing is computed while none are on. The latest values ride into
     // the snapshot store so the agent reads numbers, not ids.

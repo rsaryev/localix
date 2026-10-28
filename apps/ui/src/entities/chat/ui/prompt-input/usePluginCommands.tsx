@@ -3,6 +3,7 @@ import { useChatStore } from '@/entities/chat/model/store'
 import { selectComposerProjectId } from './commandScope'
 import type { PluginCommandArgSpec, PluginCommandSpec } from '@/shared/api/contracts'
 import { useCapabilities } from '@/shared/contrib/capabilityCache'
+import { openStore } from '@/shared/lib/openStore'
 
 const NO_COMMANDS: PluginCommandSpec[] = []
 import type { SlashCommand } from './SlashCommandMenu'
@@ -48,6 +49,36 @@ export function mapArgs(args: PluginCommandArgSpec[]): SlashArgSpec[] {
 }
 
 /**
+ * A plugin that is installed but waits for its OK has loaded none of its commands, so typing one
+ * would show nothing. One row names the plugin instead and opens its Store page, where the OK is
+ * given. The Store lists a plugin as `<plugin>@<marketplace>`, which the capability document
+ * records as its source; one it cannot place there opens the Plugins shelf.
+ */
+function awaitingConsentRows(
+  plugins: ReadonlyArray<{ name: string; source: string; awaitingConsent?: boolean }>,
+): SlashCommand[] {
+  return plugins
+    .filter((plugin) => plugin.awaitingConsent)
+    .map((plugin): SlashCommand => {
+      const message = `${plugin.name} is waiting for your OK`
+      return {
+        id: `plugin:awaiting:${plugin.name}`,
+        trigger: plugin.name,
+        title: message,
+        description: message,
+        icon: <PluginsIcon />,
+        kind: 'builtin',
+        onChoose: () =>
+          openStore(
+            plugin.source.includes('@')
+              ? { ref: { kind: 'plugin', id: plugin.source } }
+              : { shelf: 'package:plugin' },
+          ),
+      }
+    })
+}
+
+/**
  * Fetches slash commands declared by enabled Claude Code plugins and exposes them as composer
  * commands (a mini app's are `useMiniAppCommands`). They are `kind: 'builtin'` so the picker inserts their namespaced
  * prefix (`/<plugin>:<cmd> `) and the message flows through the normal arg engine
@@ -62,10 +93,11 @@ export function usePluginCommands(sessionId: string | null, enabled = true): Sla
   // copy of "which contributions are enabled".
   const { snapshot } = useCapabilities(projectId ?? '', enabled)
   const commands = snapshot?.commands ?? NO_COMMANDS
+  const plugins = snapshot?.plugins
 
   return useMemo(
-    () =>
-      commands.map((spec): SlashCommand => ({
+    () => [
+      ...commands.map((spec): SlashCommand => ({
         id: `plugin:${spec.fullName}`,
         trigger: spec.fullName,
         title: spec.fullName,
@@ -76,6 +108,8 @@ export function usePluginCommands(sessionId: string | null, enabled = true): Sla
         args: mapArgs(spec.args),
         ...(spec.featured ? { featured: true } : {}),
       })),
-    [commands],
+      ...awaitingConsentRows(plugins ?? []),
+    ],
+    [commands, plugins],
   )
 }

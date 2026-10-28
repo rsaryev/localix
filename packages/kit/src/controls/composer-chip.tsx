@@ -17,7 +17,7 @@ type ComposerChipProps = React.ComponentPropsWithoutRef<'button'> & {
  * so tones speak through text colour alone.
  */
 export const COMPOSER_CHIP =
-  'lx-glass lx-glass-self lx-glass-still inline-flex cursor-pointer items-center gap-1.5 rounded-full text-xs text-text-soft outline-none transition-colors focus-ring hover:text-foreground disabled:cursor-default disabled:opacity-50'
+  'lx-glass lx-glass-self inline-flex cursor-pointer items-center gap-1.5 rounded-full text-xs text-text-soft outline-none transition-colors focus-ring hover:text-foreground disabled:cursor-default disabled:opacity-50'
 
 /**
  * Native action/trigger for the composer's “where and how am I working?” row.

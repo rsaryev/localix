@@ -64,20 +64,32 @@ function setup() {
     contextProviderRegistry: createContextProviderRegistry(),
   }
   let settled = 0
+  const settledWaiters: (() => void)[] = []
   const host = createMiniAppBackendHost({
     ...registries,
+    refreshDebounceMs: 5,
     // Fresh register() per load, like the real loader: a new backend object each time.
     loadBackends: async () =>
       [...enabled].map((name) => ({ app: name, backend: makeBackend(name, counters) })),
     onSettled: () => {
       settled++
+      for (const wake of settledWaiters.splice(0)) wake()
     },
   })
   // One outer app, dispatcher mounted once — the app.ts shape.
   const app = new Hono()
   app.use('*', host.middleware())
   app.get('/other', (c) => c.json({ core: true }))
-  return { host, app, enabled, counters, registries, settled: () => settled }
+  return {
+    host,
+    app,
+    enabled,
+    counters,
+    registries,
+    settled: () => settled,
+    /** Resolves at the next settled refresh. */
+    nextSettle: () => new Promise<void>((resolve) => settledWaiters.push(resolve)),
+  }
 }
 
 describe('createMiniAppBackendHost', () => {
@@ -276,6 +288,7 @@ describe('createMiniAppBackendHost', () => {
     const counters = { registered: 0, shutdown: 0 }
     let fail = false
     let settled = 0
+    let wake = () => {}
     const host = createMiniAppBackendHost({
       loadBackends: async () => {
         if (fail) throw new Error('boom')
@@ -286,14 +299,17 @@ describe('createMiniAppBackendHost', () => {
       wsFrameRegistry: createWsFrameRegistry(),
       resourceRefsRegistry: createResourceProviderRegistry(),
       contextProviderRegistry: createContextProviderRegistry(),
+      refreshDebounceMs: 5,
       onSettled: () => {
         settled++
+        wake()
       },
     })
     await host.reconcile()
     fail = true
+    const settle = new Promise<void>((resolve) => (wake = resolve))
     host.refresh()
-    await new Promise((resolve) => setTimeout(resolve, 400))
+    await settle
     expect(settled).toBe(1)
     expect(host.wired()).toEqual(['sample'])
   })
@@ -310,15 +326,16 @@ describe('createMiniAppBackendHost', () => {
   })
 
   it('overlapping refreshes serialize to last-state-wins', async () => {
-    const { host, enabled, app } = setup()
+    const { host, enabled, app, nextSettle } = setup()
     await host.reconcile()
+    const settle = nextSettle()
     enabled.delete('sample')
     host.refresh()
     enabled.add('sample')
     host.refresh()
     enabled.delete('sample')
     host.refresh()
-    await new Promise((resolve) => setTimeout(resolve, 500))
+    await settle
     expect(host.wired()).toEqual([])
     expect((await app.request('/rpc/sample/ping')).status).toBe(404)
   })
@@ -642,5 +659,34 @@ describe('what the backend host tells a person', () => {
     t.explode(false)
     await t.host.reconcile()
     expect(t.reconciles).toEqual(['catalog unreadable', undefined])
+  })
+})
+
+describe('releasing host registrations of a mini app that is no longer wired', () => {
+  it('releases the mini app on disable, not on a rebuild that keeps it', async () => {
+    const counters = { registered: 0, shutdown: 0 }
+    let revision = 'build-1'
+    const enabled = new Set(['sample'])
+    const released: string[] = []
+    const host = createMiniAppBackendHost({
+      subsystemRegistry: createSubsystemRegistry(),
+      capabilityRegistry: createCapabilityRegistry(),
+      wsFrameRegistry: createWsFrameRegistry(),
+      resourceRefsRegistry: createResourceProviderRegistry(),
+      contextProviderRegistry: createContextProviderRegistry(),
+      loadBackends: async () =>
+        [...enabled].map((name) => ({ app: name, revision, backend: makeBackend(name, counters) })),
+      releaseHostServices: async (app) => {
+        released.push(app)
+      },
+    })
+    await host.reconcile()
+    revision = 'build-2'
+    await host.reconcile()
+    expect(host.wired()).toEqual(['sample'])
+    expect(released).toEqual([])
+    enabled.delete('sample')
+    await host.reconcile()
+    expect(released).toEqual(['sample'])
   })
 })

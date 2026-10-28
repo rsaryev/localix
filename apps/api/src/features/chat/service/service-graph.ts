@@ -17,7 +17,6 @@
  * per-use-case contexts in `operation-contexts.ts`.
  */
 import { createChatRepository } from '../repository'
-import { withResolvedRoutes } from './session-route-backfill'
 import { createRouteDefaults } from './session-route-defaults'
 import { readAgentSettings } from './agent-settings'
 import { normalizeProjectSettings } from '../../projects/contracts'
@@ -36,10 +35,9 @@ export function createChatServiceGraph(deps: ChatServiceDeps) {
   const now = deps.now ?? (() => new Date().toISOString())
 
   const { ports } = deps
-  const { projectsRepo, miniAppService } = ports
-  // A seat stores its route explicitly. The wrapper only fills a legacy blank seat once and
-  // writes it back; new seats are decided at birth by `routeDefaults.seatRoute`.
-  const baseRepo = createChatRepository(deps.db)
+  const { projectsRepo } = ports
+  // A session stores its route explicitly, decided at birth by `routeDefaults.startingRoute`.
+  const repo = createChatRepository(deps.db)
   const routeDefaults = createRouteDefaults({
     loadProjectModelDefaults: async (userId, projectId) => {
       const project = await projectsRepo.getProject(userId, projectId)
@@ -53,11 +51,10 @@ export function createChatServiceGraph(deps: ChatServiceDeps) {
       }
     },
     ...(deps.loadAgentModelDefaults ? { loadAgentModelDefaults: deps.loadAgentModelDefaults } : {}),
-    loadRecentRoutes: (userId) => baseRepo.listRecentRoutes(userId),
+    loadRecentRoutes: (userId) => repo.listRecentRoutes(userId),
     loadAgentModelSettings: async (userId) =>
       (await readAgentSettings(ports.userProfileRepo, userId))?.agentModelSettings ?? [],
   })
-  const repo = withResolvedRoutes(baseRepo, routeDefaults)
   const streamRegistry = deps.streamRegistry ?? createSessionStreamRegistry()
   const hitlRegistry: HitlRegistry =
     deps.hitlRegistry ??
@@ -79,7 +76,7 @@ export function createChatServiceGraph(deps: ChatServiceDeps) {
       // The same request's row in the notification journal: raised here, settled by its ending.
       lifecycle: deps.notifications?.hitl,
     })
-  // Relay for the `browser` tool: publishes commands on the firehose and
+  // Relay for the `Browser` tool: publishes commands on the firehose and
   // parks a promise the host UI resolves via the `preview-result` WS RPC. Driving the
   // user's own iframe preview through its injected probe is the ONLY preview-control
   // backend (the external headless-browser backend was removed).
@@ -116,7 +113,6 @@ export function createChatServiceGraph(deps: ChatServiceDeps) {
       terminalControl: deps.terminalControl,
       previewControl: previewRegistry,
       miniAppCommands,
-      miniAppAuthoring: miniAppService.authoring,
       // Read lazily: `deps.monitors` is a forward-holder getter (bootstrap/chat-service-deps),
       // so a snapshot taken here would be the `undefined` from before the service exists.
       get monitors() {
@@ -155,10 +151,8 @@ export function createChatServiceGraph(deps: ChatServiceDeps) {
       sanitizeToolInput: deps.sanitizeToolInput,
       sanitizeText: deps.sanitizeText,
       persistPermissionRule: deps.persistPermissionRule,
-      listInvocableRegistryAgents: deps.listInvocableRegistryAgents,
       listRegistryAgents: deps.listRegistryAgents,
       resolveMainAgent: deps.resolveMainAgent,
-      ...(deps.vectors ? { vectors: deps.vectors } : {}),
       ...(deps.decisions ? { decisions: deps.decisions } : {}),
       agentManagement: deps.agentManagement,
       now: deps.now,

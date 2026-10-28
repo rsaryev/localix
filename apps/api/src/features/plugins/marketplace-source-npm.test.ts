@@ -77,9 +77,9 @@ describe('parseNpmEntrySource', () => {
       }),
     ).toEqual({ package: '@org/plugin', version: '^2.0.0', registry: 'https://r.example' })
   })
-  it('parses the legacy npm shorthand and a bare package key', () => {
-    expect(parseNpmEntrySource('x', { npm: 'left-pad' })).toEqual({ package: 'left-pad' })
-    expect(parseNpmEntrySource('x', { package: 'left-pad' })).toEqual({ package: 'left-pad' })
+  it('does not treat a shorthand or a bare package key as npm', () => {
+    expect(parseNpmEntrySource('x', { npm: 'left-pad' })).toBeNull()
+    expect(parseNpmEntrySource('x', { package: 'left-pad' })).toBeNull()
   })
   it('returns null for git-shaped sources', () => {
     expect(parseNpmEntrySource('x', { source: 'github', repo: 'a/b' })).toBeNull()

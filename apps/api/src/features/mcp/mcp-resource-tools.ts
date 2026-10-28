@@ -73,7 +73,7 @@ export function createMcpResourceTools(
   }
 
   const tool = defineAgentTool<McpResourceInput>({
-    name: TOOL.mcp_resources,
+    name: TOOL.McpResources,
     description: [
       `Inspect resources exposed by connected MCP servers (${serverList}).`,
       ...(allowedActions.includes('list')
@@ -268,7 +268,7 @@ export function buildMcpResourceTools(args: {
     read: (server, uri) => args.manager.readResource(args.servers, args.cwd, server, uri),
   }
   const disabledTools = args.disabledTools
-  if (disabledTools?.has(TOOL.mcp_resources)) return []
+  if (disabledTools?.has(TOOL.McpResources)) return []
   const allowedActions = [
     ...(!disabledTools?.has('list_mcp_resources') ? (['list'] as const) : []),
     ...(!disabledTools?.has('list_mcp_resource_templates') ? (['list_templates'] as const) : []),

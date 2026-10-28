@@ -30,7 +30,7 @@ function makeDeps() {
     // only visible when the document update takes more than a microtask to land, which
     // is the real case — it crosses a process boundary to the language server.
     changeDocument: async (_root: string, _file: string, content: string) => {
-      await Bun.sleep(5)
+      await new Promise((resolve) => setTimeout(resolve, 0))
       changeSeen = content
       calls.push('change')
     },

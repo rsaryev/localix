@@ -1,3 +1,4 @@
+import { readJsonFile } from '../../lib/json'
 import { join } from 'node:path'
 
 import { asStringArray } from '../../lib/coerce'
@@ -12,7 +13,7 @@ import {
 import { parseMonitors, type PluginMonitor } from './contracts-monitors'
 import { toAbsList } from './discovery-paths'
 import { isMcpBundle, loadMcpBundles, type McpBundles } from './mcpb-bundle'
-import { findHookModule, mergedConfigs, readJson, readMcpJson } from './discovery-entrypoint-files'
+import { findHookModule, mergedConfigs, readMcpJson } from './discovery-entrypoint-files'
 import { readPluginHookFiles } from './discovery-hook-files'
 import { collectMarkdownFiles, type CollectedMarkdownFile } from './discovery-cc-files'
 import { resolveCcComponents, type PluginCcComponents } from './discovery-cc-components'
@@ -189,7 +190,7 @@ export async function resolveEntrypoints(
     dir,
     DEFAULT_LOCATIONS.lspServers,
     sources.lspServers,
-    readJson,
+    readJsonFile,
   )) {
     if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
       const rec = raw as Record<string, unknown>
@@ -208,12 +209,13 @@ export async function resolveEntrypoints(
   let parsedMonitors: ReturnType<typeof parseMonitors> = { monitors: [], errors: [] }
   if (typeof manifest.monitors === 'string') {
     const [file] = toAbsList(dir, manifest.monitors)
-    if (file) parsedMonitors = parseMonitors(await readJson(file))
+    if (file) parsedMonitors = parseMonitors(await readJsonFile(file))
   } else if (manifest.monitors !== undefined) {
     parsedMonitors = parseMonitors(manifest.monitors)
   } else {
     const monitorsFile = join(dir, 'monitors', 'monitors.json')
-    if (await pathExists(monitorsFile)) parsedMonitors = parseMonitors(await readJson(monitorsFile))
+    if (await pathExists(monitorsFile))
+      parsedMonitors = parseMonitors(await readJsonFile(monitorsFile))
   }
   const monitors: PluginMonitor[] = parsedMonitors.monitors
   // Localix's own cap on how many run is not Claude Code's rule: only a broken entry counts.

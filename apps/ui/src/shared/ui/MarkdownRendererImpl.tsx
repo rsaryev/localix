@@ -33,8 +33,6 @@ import { MarkdownAgentLink } from './MarkdownAgentLink'
 import { MarkdownAppViewLink } from './MarkdownAppViewLink'
 import { childrenToText, getLanguage, isCodeBlock } from '@localixai/markdown/markdownHelpers'
 import { remarkFileMention, mentionPathFromHref } from './remarkFileMention'
-import { remarkAgentMention, agentHandleFromHref } from './remarkAgentMention'
-import { AgentMentionChip } from './AgentMentionChip'
 import { FileMentionChip } from './FileMentionChip'
 import { ExternalAnchor } from './external-anchor'
 import { MarkdownBlockquote } from '@localixai/markdown/MarkdownBlockquote'
@@ -52,13 +50,6 @@ export interface MarkdownRendererProps {
   isStreaming?: boolean
   /** Render `@path` tokens as clickable file-mention chips (user messages). */
   linkifyMentions?: boolean
-  /**
-   * Handles that `@handle` in the text may address — the conversation's members. Each becomes a
-   * clickable agent chip. Absent or empty (every one-to-one) renders the text as it is.
-   */
-  mentionHandles?: readonly string[]
-  /** Render known agent handles in assistant prose as chips even without an `@` prefix. */
-  linkifyAgentNames?: boolean
   /**
    * For markdown whose text IS its store (a board's text element): a ticked checklist box
    * rewrites its `[ ]` in the source and hands the new text here. Absent, a box outside a
@@ -168,16 +159,12 @@ const MarkdownBody = memo(function MarkdownBody({
   components,
   streaming,
   linkifyMentions,
-  mentionHandles,
-  linkifyAgentNames,
   rawHtml = true,
 }: {
   text: string
   components: Components
   streaming?: boolean
   linkifyMentions?: boolean
-  mentionHandles?: readonly string[]
-  linkifyAgentNames?: boolean
   rawHtml?: boolean
 }) {
   const plainStreaming = shouldRenderPlainStreaming(text.length, streaming)
@@ -231,19 +218,11 @@ const MarkdownBody = memo(function MarkdownBody({
     }
   }, [hasMath, mathReady, mathAttempt])
   const mathActive = shouldActivateMath(hasMath, mathReady && mathPluginsReady())
-  // The handle list is keyed by content, not identity: a parent that re-derives the same
-  // members each render must not rebuild the plugin chain (and re-parse the message) for it.
-  const handlesKey = mentionHandles?.join('\u0000') ?? ''
   const remarkPlugins = useMemo(() => {
     const plugins = [...remarkPluginsFor(mathActive)]
     if (linkifyMentions) plugins.push(remarkFileMention)
-    if (handlesKey)
-      plugins.push(
-        remarkAgentMention(handlesKey.split('\u0000'), { linkifyBareNames: linkifyAgentNames }),
-      )
     return plugins
-    // `handlesKey` stands in for `mentionHandles` by design (see above).
-  }, [mathActive, linkifyMentions, handlesKey, linkifyAgentNames])
+  }, [mathActive, linkifyMentions])
   const rehypePlugins = useMemo(
     () =>
       rehypePluginsFor(
@@ -357,20 +336,15 @@ function MarkdownCode({ children: c, className }: CodeProps) {
     // A file reference in prose → open it in the inspector. Resting style is
     // unchanged; the underline only appears on hover so prose stays calm.
     return (
-      <code
-        className={`${className ?? ''} cursor-pointer underline-offset-2 hover:underline`}
-        role="button"
-        tabIndex={0}
-        title={fileLine ? `Open ${filePath}:${fileLine}` : `Open ${filePath}`}
-        onClick={open}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault()
-            open()
-          }
-        }}
-      >
-        {c}
+      <code className={className}>
+        <button
+          type="button"
+          className="inline cursor-pointer rounded-xs text-left underline-offset-2 outline-none hover:underline focus-ring"
+          title={fileLine ? `Open ${filePath}:${fileLine}` : `Open ${filePath}`}
+          onClick={open}
+        >
+          {c}
+        </button>
       </code>
     )
   }
@@ -394,8 +368,6 @@ function MarkdownLink({ href, children: c }: MarkdownLinkProps) {
   const safeHref = typeof href === 'string' ? href : undefined
   const mentionPath = mentionPathFromHref(safeHref)
   if (mentionPath) return <FileMentionChip path={mentionPath} />
-  const agentHandle = agentHandleFromHref(safeHref)
-  if (agentHandle) return <AgentMentionChip handle={agentHandle} />
   const target = classifyMarkdownLink(safeHref)
   if (target.kind === 'agent-profile')
     return <MarkdownAgentLink href={target.href}>{c}</MarkdownAgentLink>
@@ -464,8 +436,6 @@ const MarkdownRendererImpl = memo(function MarkdownRendererImpl({
   children,
   isStreaming,
   linkifyMentions,
-  mentionHandles,
-  linkifyAgentNames,
   onSourceChange,
   rawHtml,
 }: MarkdownRendererProps) {
@@ -487,8 +457,6 @@ const MarkdownRendererImpl = memo(function MarkdownRendererImpl({
       components={markdownComponentsForStreaming(streaming)}
       streaming={isStreaming}
       linkifyMentions={linkifyMentions}
-      mentionHandles={mentionHandles}
-      linkifyAgentNames={linkifyAgentNames}
       rawHtml={rawHtml}
     />
   )

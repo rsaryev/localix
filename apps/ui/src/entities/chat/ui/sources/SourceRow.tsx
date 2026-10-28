@@ -1,3 +1,4 @@
+import { createElement } from 'react'
 import { Braces, ExternalLink, FileText, Globe2 } from 'lucide-react'
 import type { AgentSource } from '@localixai/agent/agents'
 
@@ -65,7 +66,7 @@ export function SourceRow({
 }) {
   const href = httpHref(source.uri)
   const internal = !href && canNavigateUi(source.uri)
-  const SourceIcon = sourceIcon(source, href)
+  const sourceGlyph = sourceIcon(source, href)
   const domain = sourceDomain(source)
   const badge =
     source.status === 'failed'
@@ -78,7 +79,7 @@ export function SourceRow({
   const body = (
     <>
       <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center text-text-faint">
-        <SourceIcon className="size-3.5" />
+        {createElement(sourceGlyph, { className: 'size-3.5' })}
       </span>
       <span className="min-w-0 flex-1">
         <span className="flex min-w-0 items-center gap-1.5">

@@ -8,7 +8,7 @@ import {
   runExternalTurn,
   type ExternalSessionsContext,
 } from './external-sessions'
-import { routedParticipants, sessionFixture } from '../../../testing/session-fixture'
+import { routedAgent, sessionFixture } from '../../../testing/session-fixture'
 import { sessionRoute } from '../../../contracts/session-route'
 
 describe('external channel binding boundary', () => {
@@ -116,7 +116,7 @@ function session(overrides: Partial<SessionRecord> = {}): SessionRecord {
     userId: 'user-a',
     seq: 2,
     title: 'External',
-    agents: routedParticipants({
+    agent: routedAgent({
       providerConnectionId: 'connection-a',
       modelId: 'model-a',
       reasoningEffort: 'low',
@@ -171,8 +171,8 @@ describe('resolveExternalSession', () => {
     })
   })
 
-  test('creates a seat with no model of its own and answers with the resolved one', async () => {
-    // The seat it writes is blank: an inbound conversation is an ordinary chat and takes the
+  test('creates a route with no model of its own and answers with the resolved one', async () => {
+    // The route it writes is blank: an inbound conversation is an ordinary chat and takes the
     // ordinary chain — your last choice for this agent, project, its card — on every read. What
     // it hands back is therefore the RESOLVED record, not the literal it just inserted.
     let rosterReads = 0
@@ -185,7 +185,7 @@ describe('resolveExternalSession', () => {
           stored
             ? {
                 ...stored,
-                agents: routedParticipants({ modelId: 'chain/model', handle: 'localix' }),
+                agent: routedAgent({ modelId: 'chain/model', name: 'localix' }),
               }
             : null,
         listSessions: async () => {

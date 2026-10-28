@@ -20,7 +20,7 @@ Read [Privacy](getting-started/privacy.md) to understand data storage and outbou
 
 | I want to…                           | Read                                                                                                                       |
 | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| Work with several agents             | [Conversations](features/conversations.md) · [Forks](features/delegation.md)                                               |
+| Work in parallel                     | [Subagents](features/delegation.md) · [Agents](features/agents.md)                                                         |
 | Control what enters the next request | [Workspace context](features/workspace.md#explicit-and-automatic-context) · [Checkpoints](features/context-checkpoints.md) |
 | Review actions before they run       | [Permission modes](features/permission-modes.md) · [Permission rules](features/permissions.md)                             |
 | Choose a provider or model           | [Providers](features/providers.md)                                                                                         |
@@ -54,7 +54,6 @@ Each recipe walks through one task from setup to a visible result.
 | [Permission rules](features/permissions.md)                                   | Write ordered allow, ask, and deny rules.                              |
 | [Let the agent propose configuration changes](features/configure.md)          | Review an agent’s proposal to enable a missing capability.             |
 | [Organize work with projects and sessions](features/sessions-and-projects.md) | Organize projects, sessions, branches, drafts, and attachments.        |
-| [Conversations with several agents](features/conversations.md)                | Address participants with their own roles and models in one chat.      |
 | [Read conversation activity](features/conversation-history.md)                | Inspect messages, tool activity, and navigation through a transcript.  |
 | [Give the agent files and images](features/attachments.md)                    | Attach uploads or original paths and understand model-facing previews. |
 | [Answer formatting](features/answer-formatting.md)                            | Use supported Markdown, structured content, links, and deliverables.   |

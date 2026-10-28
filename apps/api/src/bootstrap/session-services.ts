@@ -128,12 +128,10 @@ export function wireSessionServices({
         })
     },
     wake: (...args) => wakes.deliver(...args),
-    participants: ({ userId, sessionId }) => chatService.participantHandles(userId, sessionId),
     lifecycle: {
       notice: ({ userId, sessionId }, notice) =>
         chatService.recordSessionNotice(userId, sessionId, notice),
-      authorHandle: ({ userId, sessionId }, agentId) =>
-        chatService.participantHandle(userId, sessionId, agentId),
+      authorName: ({ userId, sessionId }) => chatService.agentName(userId, sessionId),
       awaiting: ({ userId }, plan, handle) => planSignals.awaiting(userId, plan, handle),
       settled: ({ userId, sessionId }, planId, reason) =>
         planSignals.settled(userId, sessionId, planId, reason),
@@ -175,6 +173,12 @@ export function wireSessionServices({
         sessionId,
         file: push.file,
         diagnostics: push.diagnostics,
+      }),
+    publishStatus: (userId, sessionId, servers) =>
+      chatService.streamRegistry.publish(userId, sessionId, {
+        type: 'lsp.status',
+        sessionId,
+        servers,
       }),
     // Commit a rename's WorkspaceEdit through the editor's locked, optimistic-
     // concurrency write path (file-change tracking stays coherent for the agent).

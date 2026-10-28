@@ -10,13 +10,14 @@ interface ProjectClient {
   rootDir: string
   status: LspServerStatus
   diagnostics: Record<string, LspDiagnostic[]>
+  pending?: Map<string, unknown>
 }
 
 interface ProjectOperationPorts<T extends ProjectClient> {
-  getClients(projectRoot: string): ReadonlyMap<string, T> | undefined
-  clearIdleTimer(client: T): void
-  armIdleEviction(projectRoot: string, key: string, client: T): void
-  notifyUpdate(projectRoot: string): void
+  getClients: (projectRoot: string) => ReadonlyMap<string, T> | undefined
+  clearIdleTimer: (client: T) => void
+  armIdleEviction: (projectRoot: string, key: string, client: T) => void
+  notifyUpdate: (projectRoot: string) => void
 }
 
 /** Operations across existing project clients; server startup stays with the manager. */
@@ -45,6 +46,8 @@ export function createProjectOperations<T extends ProjectClient>({
       if (!clients) return
       await Promise.all(
         Array.from(clients.entries(), async ([key, mc]) => {
+          // A buffer closed while its server installs is not opened once it is ready.
+          mc.pending?.delete(filePath)
           if (!mc.client) return
           await mc.client.closeDocument(filePath).catch(() => {})
           mc.diagnostics = mc.client.diagnostics()

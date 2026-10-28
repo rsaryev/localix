@@ -17,7 +17,7 @@ afterEach(() => {
 function routes(sessionId: string | null = 's1') {
   const root = mkdtempSync(join(tmpdir(), 'kanban-routes-'))
   roots.push(root)
-  const agents = { list: async () => [{ id: 'builtin:qa', handle: 'qa' }] }
+  const agents = { list: async () => [{ id: 'builtin:qa', name: 'qa' }] }
   const app = createBoardRoutes(
     createBoardService({ resolveDir: async (_user, session) => join(root, session), agents }),
     agents,
@@ -93,6 +93,6 @@ describe('board routes', () => {
 
   test('lists the agents a card may be assigned to', async () => {
     const response = await routes().send('GET', '/agents')
-    expect(await response.json()).toEqual({ agents: [{ id: 'builtin:qa', handle: 'qa' }] })
+    expect(await response.json()).toEqual({ agents: [{ id: 'builtin:qa', name: 'qa' }] })
   })
 })

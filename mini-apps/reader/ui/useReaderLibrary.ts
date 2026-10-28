@@ -29,32 +29,44 @@ export function useReaderLibrary({
   const [error, setError] = useState<string | null>(null)
 
   const readRevision = useRef({ value: 0 })
-  const refresh = useCallback(async () => {
+  // One read of the library, newest wins. The state it settles is set when the answer arrives.
+  const read = useCallback(() => {
     const revision = ++readRevision.current.value
-    setLoading(true)
-    try {
-      const next = await readerApi.library()
-      if (revision !== readRevision.current.value) return
-      setResult(next)
-      const available = new Set(next.books.map(readerBookKey))
-      setSelectedBookKeys((current) => new Set([...current].filter((key) => available.has(key))))
-      setError(null)
-    } catch (cause) {
-      if (revision !== readRevision.current.value) return
-      acknowledgeInline(cause)
-      setError(cause instanceof Error ? cause.message : String(cause))
-    } finally {
-      if (revision === readRevision.current.value) setLoading(false)
-    }
+    return new Promise<ReaderLibraryResponse>((resolve) => resolve(readerApi.library()))
+      .then(
+        (next) => {
+          if (revision !== readRevision.current.value) return
+          setResult(next)
+          const available = new Set(next.books.map(readerBookKey))
+          setSelectedBookKeys(
+            (current) => new Set([...current].filter((key) => available.has(key))),
+          )
+          setError(null)
+        },
+        (cause: unknown) => {
+          if (revision !== readRevision.current.value) return
+          acknowledgeInline(cause)
+          setError(cause instanceof Error ? cause.message : String(cause))
+        },
+      )
+      .finally(() => {
+        if (revision === readRevision.current.value) setLoading(false)
+      })
   }, [setSelectedBookKeys])
+  /** A re-read of a library already on screen shows as loading again. */
+  const refresh = useCallback(() => {
+    setLoading(true)
+    return read()
+  }, [read])
 
+  // The first read: `loading` already starts true, so only the read itself is begun here.
   useEffect(() => {
     const revision = readRevision.current
-    void refresh()
+    void read()
     return () => {
       revision.value++
     }
-  }, [refresh])
+  }, [read])
   const live = useStoreChanges({ miniApp: 'reader', sessionId: null }, () => void refresh())
   useVisiblePolling({ enabled: !live, intervalMs: LIBRARY_POLL_INTERVAL_MS, onTick: refresh })
 

@@ -9,11 +9,28 @@ const GAP_REM = 1
 
 type Edge = { start: boolean; end: boolean }
 
-export interface ShelfRowProps {
+/**
+ * A strip that scrolls sideways (`perView`), or a grid of whole tiles that wraps (`columns`, at
+ * most `rows` rows; the rest is behind "See all").
+ */
+type ShelfRowShape =
+  | {
+      /** How many tiles one view holds; a fraction lets the next one peek in from the edge. */
+      perView: number
+      columns?: never
+      rows?: never
+    }
+  | {
+      perView?: never
+      /** How many whole tiles side by side; the host picks it from its pane’s width. */
+      columns: number
+      /** How many rows it shows at most: 1 when left out. */
+      rows?: number
+    }
+
+export type ShelfRowProps = ShelfRowShape & {
   title: string
   subtitle?: string
-  /** How many tiles one view holds; a fraction lets the next one peek in from the edge. */
-  perView: number
   /** Open the whole list: the row is a preview of it. */
   onSeeAll?: () => void
   children: ReactNode
@@ -22,19 +39,66 @@ export interface ShelfRowProps {
 
 /**
  * One row of a storefront: a title and a line under it, "See all" for the whole list, and its
- * tiles side by side in a strip that scrolls sideways — by trackpad or a sideways wheel, by
- * swipe, by the arrow buttons that appear on hover or focus, or by tabbing through the tiles. It
- * snaps a tile to the start, fades out at the side where more is hidden, and never widens the
- * page. `perView` says how many tiles fill one view; the host picks it from its pane's width.
+ * tiles. With `columns` they are a grid of whole tiles, cut to `rows` rows. With `perView` they sit
+ * side by side in a strip that scrolls sideways — by trackpad or a sideways wheel, by swipe, by
+ * the arrow buttons that appear on hover or focus, or by tabbing through the tiles. It snaps a
+ * tile to the start, fades out at the side where more is hidden, and never widens the page.
+ * `perView` says how many tiles fill one view; the host picks it from its pane's width.
  */
-export function ShelfRow({
+export function ShelfRow(props: ShelfRowProps) {
+  const { title, subtitle, onSeeAll, children, className } = props
+  return (
+    <section
+      aria-label={title}
+      className={cn('group/shelf-row flex min-w-0 flex-col gap-3', className)}
+    >
+      <header className="flex min-w-0 items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <h2 className="text-base font-semibold text-foreground">{title}</h2>
+          {subtitle && <p className="truncate text-xs text-text-soft">{subtitle}</p>}
+        </div>
+        {onSeeAll && (
+          <Button size="sm" variant="ghost" aria-label={`See all ${title}`} onClick={onSeeAll}>
+            See all
+            <ChevronRight data-icon="inline-end" aria-hidden />
+          </Button>
+        )}
+      </header>
+      {props.columns !== undefined ? (
+        <ul
+          className="grid py-1"
+          style={{
+            gap: `${GAP_REM}rem`,
+            gridTemplateColumns: `repeat(${props.columns}, minmax(0, 1fr))`,
+          }}
+        >
+          {Children.toArray(children)
+            .slice(0, props.columns * (props.rows ?? 1))
+            .map((child, index) => (
+              <li key={index} className="min-w-0">
+                {child}
+              </li>
+            ))}
+        </ul>
+      ) : (
+        <ShelfStrip title={title} perView={props.perView}>
+          {children}
+        </ShelfStrip>
+      )}
+    </section>
+  )
+}
+
+/** The sideways strip: tiles in one line, paged by arrows, faded where more is hidden. */
+function ShelfStrip({
   title,
-  subtitle,
   perView,
-  onSeeAll,
   children,
-  className,
-}: ShelfRowProps) {
+}: {
+  title: string
+  perView: number
+  children: ReactNode
+}) {
   const strip = useRef<HTMLUListElement>(null)
   const [edge, setEdge] = useState<Edge>({ start: true, end: true })
   const measure = useCallback(() => {
@@ -67,62 +131,45 @@ export function ShelfRow({
     'pointer-events-auto rounded-full lx-glass lx-glass-self opacity-0 group-hover/shelf-row:opacity-100 focus-visible:opacity-100 disabled:opacity-0'
   const rail = 'pointer-events-none absolute inset-y-0 z-(--z-controls) flex items-center'
   return (
-    <section
-      aria-label={title}
-      className={cn('group/shelf-row flex min-w-0 flex-col gap-3', className)}
-    >
-      <header className="flex min-w-0 items-end gap-3">
-        <div className="min-w-0 flex-1">
-          <h2 className="text-base font-semibold text-foreground">{title}</h2>
-          {subtitle && <p className="truncate text-xs text-text-soft">{subtitle}</p>}
-        </div>
-        {onSeeAll && (
-          <Button size="sm" variant="ghost" aria-label={`See all ${title}`} onClick={onSeeAll}>
-            See all
-            <ChevronRight data-icon="inline-end" aria-hidden />
-          </Button>
-        )}
-      </header>
-      <div className="relative min-w-0">
-        <ul
-          ref={strip}
-          onScroll={measure}
-          data-fade={fade}
-          className="lx-fade-x grid snap-x snap-mandatory grid-flow-col overflow-x-auto overscroll-x-contain py-1"
-          style={{
-            gap: `${GAP_REM}rem`,
-            gridAutoColumns: `calc((100% - ${Math.ceil(perView) - 1} * ${GAP_REM}rem) / ${perView})`,
-          }}
+    <div className="relative min-w-0">
+      <ul
+        ref={strip}
+        onScroll={measure}
+        data-fade={fade}
+        className="lx-fade-x grid snap-x snap-mandatory grid-flow-col overflow-x-auto overscroll-x-contain py-1"
+        style={{
+          gap: `${GAP_REM}rem`,
+          gridAutoColumns: `calc((100% - ${Math.ceil(perView) - 1} * ${GAP_REM}rem) / ${perView})`,
+        }}
+      >
+        {Children.map(children, (child) => (
+          <li className="min-w-0 snap-start">{child}</li>
+        ))}
+      </ul>
+      <div data-slot="shelf-arrow" className={cn(rail, 'left-1')}>
+        <Button
+          size="icon"
+          variant="ghost"
+          aria-label={`Scroll ${title} back`}
+          disabled={edge.start}
+          onClick={() => page(-1)}
+          className={arrow}
         >
-          {Children.map(children, (child) => (
-            <li className="min-w-0 snap-start">{child}</li>
-          ))}
-        </ul>
-        <div data-slot="shelf-arrow" className={cn(rail, 'left-1')}>
-          <Button
-            size="icon"
-            variant="ghost"
-            aria-label={`Scroll ${title} back`}
-            disabled={edge.start}
-            onClick={() => page(-1)}
-            className={arrow}
-          >
-            <ChevronLeft aria-hidden />
-          </Button>
-        </div>
-        <div data-slot="shelf-arrow" className={cn(rail, 'right-1')}>
-          <Button
-            size="icon"
-            variant="ghost"
-            aria-label={`Scroll ${title} forward`}
-            disabled={edge.end}
-            onClick={() => page(1)}
-            className={arrow}
-          >
-            <ChevronRight aria-hidden />
-          </Button>
-        </div>
+          <ChevronLeft aria-hidden />
+        </Button>
       </div>
-    </section>
+      <div data-slot="shelf-arrow" className={cn(rail, 'right-1')}>
+        <Button
+          size="icon"
+          variant="ghost"
+          aria-label={`Scroll ${title} forward`}
+          disabled={edge.end}
+          onClick={() => page(1)}
+          className={arrow}
+        >
+          <ChevronRight aria-hidden />
+        </Button>
+      </div>
+    </div>
   )
 }

@@ -2,6 +2,9 @@ import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from 'b
 import { registerDom } from '@localixai/kit/testing/dom'
 import { resetDesktopInvokeEventsForTests } from '@/shared/lib/tauri'
 import type { DesktopUpdateState } from '@/shared/hooks/useDesktopUpdate'
+import type { Listing } from '@localixai/store'
+import { makeListing } from '@localixai/store/testing'
+import { turns } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -147,20 +150,22 @@ describe('UpdateStrip', () => {
     const { createElement } = await import('react')
     const { act } = await import('react')
     const { UpdateStrip } = await import('./UpdateStrip')
+    // The click loads the confirmation flow lazily; load it first so the click only waits on turns.
+    await import('../../model/restartToUpdateFlow')
     let fail: (reason: Error) => void = () => {}
     await publishAvailable('0.2.0', () => new Promise((_, reject) => (fail = reject)))
     const view = await mount(() => createElement(UpdateStrip, { isFocused: true }))
     await act(async () => {
       buttonNamed(view.host, 'Restart to update')?.click()
       // The confirmation flow is loaded on the click; with nothing running it installs at once.
-      await new Promise((resolve) => setTimeout(resolve, 50))
+      await turns()
     })
     expect(view.host.textContent).toContain('Updating')
     expect(buttonNamed(view.host, 'Restart to update')).toBeUndefined()
 
     await act(async () => {
       fail(new Error('signature verification failed'))
-      await new Promise((resolve) => setTimeout(resolve, 50))
+      await turns()
     })
     expect(view.host.textContent).toContain('Update available')
     expect(buttonNamed(view.host, 'Restart to update')).toBeDefined()
@@ -197,8 +202,23 @@ describe('UpdateStrip with other updates on offer', () => {
         installed: [],
         running: [],
       } as never),
+      ...(await recommend([])),
     ]
     return () => spies.forEach((spy) => spy.mockRestore())
+  }
+
+  /** What the Store recommends for the work: these listings, all of them found by meaning. */
+  async function recommend(listings: Listing[]) {
+    const { storeApi } = await import('@/shared/api/store-client')
+    return [
+      spyOn(storeApi, 'reportWorkingSet').mockResolvedValue(undefined),
+      spyOn(storeApi, 'recommendations').mockResolvedValue({
+        listings,
+        matched: listings.length,
+        strategy: { mode: 'hybrid' },
+        pending: false,
+      }),
+    ]
   }
 
   async function mountStrip() {
@@ -212,7 +232,7 @@ describe('UpdateStrip with other updates on offer', () => {
         createElement(UpdateStrip, { isFocused: true }),
       ),
     )
-    await act(async () => new Promise((resolve) => setTimeout(resolve, 20)))
+    await act(async () => turns())
     return view
   }
 
@@ -230,6 +250,35 @@ describe('UpdateStrip with other updates on offer', () => {
     expect(view.host.textContent).toContain('Chess and Reader')
     await view.unmount()
     restore()
+  })
+
+  test('with no update on offer, the strip says what the Store recommends for the work', async () => {
+    const { storeApi } = await import('@/shared/api/store-client')
+    const { localModelsApi } = await import('@/shared/api/localModelsApi')
+    const spies = [
+      spyOn(storeApi, 'activity').mockResolvedValue({ jobs: [], updates: [] }),
+      spyOn(localModelsApi, 'status').mockResolvedValue({
+        jobs: [],
+        paused: [],
+        installed: [],
+        running: [],
+      } as never),
+      ...(await recommend([
+        makeListing({ id: 'docker', kind: 'plugin', displayName: 'Docker tools' }),
+      ])),
+    ]
+    ;(window as unknown as { __TAURI__?: unknown }).__TAURI__ = {
+      core: {
+        invoke: async () => ({ available: false, currentVersion: '0.1.0', latestVersion: null }),
+      },
+    }
+    const { checkDesktopUpdate } = await import('@/shared/hooks/useDesktopUpdate')
+    await checkDesktopUpdate()
+    const view = await mountStrip()
+    expect(view.host.textContent).toContain('Recommended for you')
+    expect(view.host.textContent).toContain('Docker tools suit what you work on')
+    await view.unmount()
+    spies.forEach((spy) => spy.mockRestore())
   })
 
   test('the app’s own update always wins the strip', async () => {

@@ -46,18 +46,22 @@ export function capMiniAppToolDescription(description: string): string {
   return `${description.slice(0, MINI_APP_TOOL_DESCRIPTION_MAX_CHARS - 1)}…`
 }
 
-const RESERVED_TOOL_NAMES: ReadonlySet<string> = new Set(CORE_RESERVED_TOOL_NAMES)
+// Compared without case: Claude Code's hook matchers, tool lists and rules read a name without it,
+// so `bash` beside `Bash` would be one tool to them.
+const RESERVED_TOOL_NAMES: ReadonlySet<string> = new Set(
+  CORE_RESERVED_TOOL_NAMES.map((name) => name.toLowerCase()),
+)
 
 /** True when a mini app may register a tool under this name (valid shape + not reserved). */
 export function isAcceptableToolName(name: string): boolean {
   return (
     TOOL_NAME_RE.test(name) &&
-    !RESERVED_TOOL_NAMES.has(name) &&
+    !RESERVED_TOOL_NAMES.has(name.toLowerCase()) &&
     !name.toLowerCase().startsWith(MCP_TOOL_PREFIX)
   )
 }
 
 /** Whether a name belongs to a built-in tool (exposed for diagnostics/tests). */
 export function isReservedToolName(name: string): boolean {
-  return RESERVED_TOOL_NAMES.has(name)
+  return RESERVED_TOOL_NAMES.has(name.toLowerCase())
 }

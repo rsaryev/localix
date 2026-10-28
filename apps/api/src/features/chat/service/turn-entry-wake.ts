@@ -1,4 +1,3 @@
-import { agentParticipant } from '../../../db/participant'
 import { ApiError, errorMessage } from '../../../lib/errors'
 import type { SessionRecord } from '../repository'
 import type { WakeRequest } from '../contracts'
@@ -83,30 +82,10 @@ function acceptsWake(session: SessionRecord, request: WakeRequest): boolean {
   )
 }
 
-/**
- * The queue's view of a request, against the session as it is NOW.
- *
- * An addressee who has left the conversation is dropped rather than kept: the drain dismisses a
- * delivery no current participant answers, so a loop armed by @qa, or a report owed to the
- * participant who delegated, would otherwise vanish once they were removed. Without `to` the
- * conversation's own strategy chooses who answers — the wake still lands.
- */
+/** The queue's view of a request, against the session as it is NOW. */
 function wakeParams(session: SessionRecord, request: WakeRequest) {
-  const {
-    userId,
-    content,
-    source,
-    to,
-    addressedAs,
-    deliveryKey,
-    receipt,
-    extraDisabledTools,
-    coalesce,
-    report,
-  } = request
-  const present =
-    to !== undefined &&
-    session.agents.some((member) => agentParticipant(member.agentId) === to.participant)
+  const { userId, content, source, deliveryKey, receipt, extraDisabledTools, coalesce, report } =
+    request
   return {
     userId,
     session,
@@ -117,7 +96,6 @@ function wakeParams(session: SessionRecord, request: WakeRequest) {
     ...(coalesce ? { coalesce } : {}),
     ...(report ? { report } : {}),
     ...(deliveryKey ? { deliveryKey, ...(receipt ? { receipt } : {}) } : {}),
-    ...(present ? { to } : to === undefined && addressedAs !== undefined ? { addressedAs } : {}),
   }
 }
 

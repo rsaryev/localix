@@ -38,6 +38,39 @@ describe('the answers of $ calls', () => {
     ).toEqual([{ command: 'recap' }, { tool: 'mcp__m__count' }, { agent: 'm:scout' }])
   })
 
+  test('command.register refuses a built-in name and keeps immediate', async () => {
+    const answers = await answersOf(
+      [
+        ($) => call($, 'command.register', { name: 'clear', description: 'Mine' }),
+        ($) => call($, 'command.register', { name: 'now', description: 'Now', immediate: true }),
+        ($) => call($, 'command.list'),
+      ],
+      {
+        listCommands: async () => [{ name: 'clear', description: 'Start over', source: 'builtin' }],
+      },
+    )
+    expect(answers[0]).toBe('threw: command.register: /clear is a built-in command')
+    expect(answers[1]).toEqual({ command: 'now' })
+    expect(answers[2]).toContainEqual({
+      name: 'now',
+      description: 'Now',
+      source: 'plugin',
+      plugin: 'm',
+      immediate: true,
+    })
+  })
+
+  test('ui.open takes the sizes Claude Code names as positive whole numbers', async () => {
+    const answers = await answersOf([
+      ($) => call($, 'ui.open', { id: 'a', rows: 0 }),
+      ($) => call($, 'ui.open', { id: 'a', columns: 1.5 }),
+      ($) => call($, 'ui.open', { id: 'a', rows: 12, columns: 60 }),
+    ])
+    expect(answers[0]).toBe('threw: ui.open: rows is a positive whole number or left out')
+    expect(answers[1]).toBe('threw: ui.open: columns is a positive whole number or left out')
+    expect(answers[2]).toMatchObject({ isPlaced: false })
+  })
+
   test('$.command.list lists Localix’s own commands and skills beside the mods’', async () => {
     const [listed] = await answersOf(
       [

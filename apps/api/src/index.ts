@@ -13,7 +13,6 @@ import {
   clearRuntimeEndpoint,
   discoverRuntimeEndpoint,
   dialableRuntimeBaseUrl,
-  legacyRuntimeEndpointFile,
   publishRuntimeEndpoint,
   readRuntimeEndpoint,
   resolveRuntimeIdentity,
@@ -35,7 +34,7 @@ import {
 } from './lib/runtime-protocol'
 import { MAX_REQUEST_BODY_BYTES } from './lib/request-limits'
 import { runtimeBaseUrlMatchesHost } from './lib/runtime-address'
-import { defaultDbFile, envFlag, envString, resolveDbFile } from './lib/env'
+import { envFlag, envString, resolveDbFile } from './lib/env'
 import { captureConsoleDiagnostics, createLogger } from './lib/logger'
 import { createRuntimeLogDestination, runtimeLogFile } from './lib/runtime-log-destination'
 import { installServerSignalHandlers } from './lib/process-signals'
@@ -223,10 +222,6 @@ export async function startServer(options: StartServerOptions = {}): Promise<Emb
   const runtime = await (async () => {
     try {
       await assertNoLiveRuntimeEndpoint(runtimeOwnership.endpointFile, runtimeOwnership.databaseId)
-      const defaultIdentity = await resolveRuntimeIdentity(defaultDbFile())
-      if (defaultIdentity.databaseId === runtimeOwnership.databaseId) {
-        await assertNoLiveRuntimeEndpoint(legacyRuntimeEndpointFile(), runtimeOwnership.databaseId)
-      }
       return await bootstrap(undefined, {
         instanceId: runtimeInstanceId,
         startedAt: runtimeStartedAt,
@@ -425,13 +420,6 @@ export async function startServer(options: StartServerOptions = {}): Promise<Emb
     }
     await publishRuntimeEndpoint(endpoint, runtimeOwnership.endpointFile)
     publishedEndpointFiles.push(runtimeOwnership.endpointFile)
-
-    const defaultIdentity = await resolveRuntimeIdentity(defaultDbFile())
-    if (defaultIdentity.databaseId === runtimeOwnership.databaseId) {
-      const legacyFile = legacyRuntimeEndpointFile()
-      await publishRuntimeEndpoint(endpoint, legacyFile)
-      publishedEndpointFiles.push(legacyFile)
-    }
   } catch (startupError) {
     try {
       await stop()

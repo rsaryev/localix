@@ -35,7 +35,7 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "prepack": "node scripts/build.mjs",
-    "type-check": "tsc --noEmit",
+    "type-check": "node ../../scripts/tsc.mjs --noEmit",
     "test": "bun test src",
     "clean": "shx rm -rf server .turbo"
   },

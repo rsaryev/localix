@@ -23,7 +23,7 @@ import { registerContextToolClasses } from '@localixai/agent'
 // `read` (images included) is already a base read-result tool. `view_image` was removed, but
 // saved sessions still hold its results, which are recoverable observations like a read.
 registerContextToolClasses({
-  readResult: ['view_image', 'global_search'],
+  readResult: ['view_image', 'GlobalSearch'],
 })
 
 import type { RunnerDeps } from './agent-runner-types'
@@ -35,15 +35,10 @@ import { createRunnerStatus } from './agent-runner-status'
 import { createRunnerInteraction } from './agent-runner-interaction'
 import { drainMidRunReminders, recordMidRunReminder } from './mid-run-reminders'
 import { createWakeQueue } from './wake-queue'
-import { inviteAddressedAgents } from './run/conversation-invite'
-import type { SessionRecord } from '../repository'
-import { rosterLeadership } from './conversation-strategy'
 import { createDatabaseWakeQueueStore } from './wake-queue-repository'
 import { resolveAuxiliaryModel as resolveAuxiliarySlotModel } from './model-resolution'
-import { createFloorAdvisor } from './floor-advisor'
-import { decisionFloorStrategy } from './floor-decision'
-import { similarityFloorStrategy } from './floor-similarity'
 import { executeRun } from './run/execute-run'
+import { requestCheckpoint } from './run/session-stores'
 import type { RunEnv, RunParams } from './run/types'
 import { failedRun } from './run-outcome'
 import { classifyRunError } from './run/classify-run-error'
@@ -55,8 +50,7 @@ export function createAgentRunner(deps: RunnerDeps) {
   // Handed in, not built here: see `RunnerDeps.repo` for the turn that failed when it was.
   const repo = deps.repo
   // Other features' stores, built by the composition root (`bootstrap/chat-feature-ports.ts`).
-  const { usageRepo, memoryRepo, userProfileRepo, projectsRepo, mcpRepo, pluginRepo, miniAppRepo } =
-    deps.ports
+  const { usageRepo, userProfileRepo, projectsRepo, mcpRepo, pluginRepo, miniAppRepo } = deps.ports
   const runs = createAgentRunRepository(deps.db)
   const agentRuns: typeof runs = {
     ...runs,
@@ -94,39 +88,12 @@ export function createAgentRunner(deps: RunnerDeps) {
   }
 
   // Wake queue (push-a-session): callbacks avoid a module cycle.
-  const leadership = (userId: string, projectId: string | null) =>
-    rosterLeadership(deps.listRegistryAgents, userId, projectId)
-  // Who speaks next where the grammar cannot tell (`floor-advisor.ts`).
-  const floorAdvisor = createFloorAdvisor({
-    // Who can answer decides, in this order: the decision model, the embedding model, none.
-    strategies: [
-      ...(deps.decisions ? [decisionFloorStrategy(deps.decisions)] : []),
-      ...(deps.vectors ? [similarityFloorStrategy(deps.vectors)] : []),
-    ],
-    listRegistryAgents: deps.listRegistryAgents,
-    log: (record) => deps.logger?.info?.({ event: 'conversation.floor_advice', ...record }),
-  })
-  // A tag in the person's message brings an available agent in before the message is routed.
-  const inviteAddressed = (userId: string, session: SessionRecord, text: string) =>
-    inviteAddressedAgents(
-      {
-        repo,
-        deps,
-        activeAgentId: (sessionId: string) => state.activeRunSessions.get(sessionId)?.agentId,
-      },
-      userId,
-      session,
-      text,
-    )
   const wakeQueue = createWakeQueue({
     repo,
     streamRegistry: deps.streamRegistry,
     now,
     state: { activeRuns, drainingSessions, sessionRunIdentity: state.sessionRunIdentity },
     store: createDatabaseWakeQueueStore(deps.db),
-    leadership,
-    floorAdvisor,
-    inviteAddressed,
     // Whether a delegator still waits on children at work, and word when that changes: the
     // delegation ledger's facts, which the queue only asks (`wake-queue/holds.ts`).
     reportBarrier: { awaits: awaitsReports, subscribe: onReportSettled },
@@ -141,7 +108,6 @@ export function createAgentRunner(deps: RunnerDeps) {
     deps,
     repo,
     usageRepo,
-    memoryRepo,
     userProfileRepo,
     projectsRepo,
     mcpRepo,
@@ -152,7 +118,6 @@ export function createAgentRunner(deps: RunnerDeps) {
     now,
     resolveAuxiliaryModel: (userId, slot, catalog) =>
       resolveAuxiliarySlotModel({ deps, userId, slot, catalog }),
-    floorAdvisor,
     publishChildSummary,
     markRuntimeSessionStatus,
     persistAndPublish,
@@ -162,9 +127,8 @@ export function createAgentRunner(deps: RunnerDeps) {
     run: (p) => runner.run(p),
     enqueueRun: wakeQueue.enqueueRun,
     cancelAgentTurns: wakeQueue.cancelAgentTurns,
-    boostReferencedAgentTurns: wakeQueue.boostReferencedAgentTurns,
-    queueMidRunReminder: (address, body) => recordMidRunReminder(state, address, body),
-    drainMidRunReminders: (address) => drainMidRunReminders(state, address),
+    queueMidRunReminder: (sessionId, body) => recordMidRunReminder(state, sessionId, body),
+    drainMidRunReminders: (sessionId) => drainMidRunReminders(state, sessionId),
     drainPendingAndRun: wakeQueue.drainPendingAndRun,
     hasPendingQueue: (sessionId) => Promise.resolve(wakeQueue.hasPending(sessionId)),
     reserveSteerableTurns: (sessionId, filter) =>
@@ -177,15 +141,15 @@ export function createAgentRunner(deps: RunnerDeps) {
   }
 
   const runner = {
-    leadership,
-    floorAdvisor,
-    inviteAddressed,
     /** Claude Code hooks between runs (model switch, project move, watched files). */
     ccHookSessions: state.ccHookSessions,
     ...createRunnerStatus(state),
     ...createRunnerQueue({ state, wakeQueue, stopCtx }),
     ...createRunnerInteraction({ deps, repo, state }),
     ...lifecycle,
+    /** `/compact`: the named agents' next turn takes a checkpoint (`run/session-stores.ts`). */
+    requestCheckpoint: (sessionId: string, instructions: string) =>
+      requestCheckpoint(state, sessionId, instructions),
 
     async run(params: RunParams) {
       trackRuntimeSession(params.session.id)

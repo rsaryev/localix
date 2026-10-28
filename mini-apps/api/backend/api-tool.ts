@@ -105,7 +105,7 @@ export function createApiTool(deps: HttpRequestDeps): AgentTool {
      * A session id only exists in the execution context, after permission planning. When dynamic
      * scope resolution is enabled, declare the narrow common ancestor of every possible session
      * collection for mutations. Export remains project-scoped and can use the request body's exact
-     * path. Standalone/unscoped tools keep delegating their exact legacy paths.
+     * path. Standalone/unscoped tools keep delegating their exact paths.
      */
     permissionPaths: (input) => {
       const call = (input ?? {}) as { target?: string }

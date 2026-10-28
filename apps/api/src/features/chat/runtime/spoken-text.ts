@@ -16,8 +16,8 @@ export function appendSpokenText(text: string, part: string, newPart: boolean): 
  *
  * `content` keeps only the last model call's text, which is right for a channel reply but loses
  * whatever the agent said before a tool call. In a conversation that earlier text can be the turn's
- * whole point — "@design, draft the concept", then `ask`, then "I asked the person a few
- * questions" (LOCALIX-136) — so routing and colleagues read this instead. A row without text
+ * whole point — "I will draft the concept", then `ask`, then "I asked the person a few
+ * questions" (LOCALIX-136) — so anything that reads what the turn said uses this instead. A row without text
  * items (older rows, hook-rewritten replies with none) falls back to `content`.
  */
 export function publishedText(payload: Pick<StoredMessagePayload, 'content' | 'items'>): string {

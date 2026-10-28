@@ -245,7 +245,7 @@ export function buildToolForServer(
           toolCallId,
           context,
           signal,
-          hold: deadline.hold,
+          hold: () => deadline.hold(),
         }
         const result = await withElicitationRoute(client, call, () =>
           client.callTool(

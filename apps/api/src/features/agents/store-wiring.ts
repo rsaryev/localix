@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises'
 import type { StoreProvider } from '@localixai/store'
 
 import type { AgentsService } from './service-contract'
+import type { AgentModelChoicesPort } from './model-choices-port'
 import { createAgentStoreProvider } from './store-provider'
 
 /**
@@ -12,15 +13,17 @@ import { createAgentStoreProvider } from './store-provider'
  */
 export const agentStoreProviderOf = (
   agents: AgentsService,
-  seats: { chatsOf: (agentId: string) => Promise<number> },
+  routes: { chatsOf: (agentId: string) => Promise<number> },
   onChange: (listener: () => void) => () => void,
+  choices?: AgentModelChoicesPort,
 ): StoreProvider =>
   createAgentStoreProvider({
     agents,
-    chatsOf: seats.chatsOf,
+    chatsOf: routes.chatsOf,
     revisionOf: async (path) =>
       createHash('sha1')
         .update(await readFile(path).catch(() => ''))
         .digest('hex'),
     onChange,
+    ...(choices ? { choices } : {}),
   })

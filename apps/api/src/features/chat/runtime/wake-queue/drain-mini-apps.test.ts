@@ -21,6 +21,8 @@ describe('drain — a mini app’s wake', () => {
     const session = sessionFixture({ id: 's1' })
     const messages: PersistedMessage[] = []
     const runs: RunParams[] = []
+    let started: () => void = () => {}
+    const firstRun = new Promise<void>((resolve) => (started = resolve))
     const queue = createWakeQueue({
       repo: {
         listMessages: async () => [...messages],
@@ -39,6 +41,7 @@ describe('drain — a mini app’s wake', () => {
       state: { activeRuns: new Map(), drainingSessions: new Set(), sessionRunIdentity: new Map() },
       run: async (params: RunParams) => {
         runs.push(params)
+        started()
         return { status: 'completed' as const }
       },
     })
@@ -51,7 +54,7 @@ describe('drain — a mini app’s wake', () => {
       source: 'mini-app',
       miniApps: ['fixture-game'],
     })
-    for (let i = 0; i < 200 && runs.length === 0; i++) await new Promise((r) => setTimeout(r, 5))
+    await firstRun
 
     const userRow = messages.find((message) => message.payload.role === 'user')!
     expect(userRow.payload).toMatchObject({ isInternal: true, miniApps: ['fixture-game'] })

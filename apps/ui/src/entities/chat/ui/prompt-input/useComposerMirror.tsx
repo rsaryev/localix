@@ -16,9 +16,6 @@
  */
 import { useMemo, type ReactNode } from 'react'
 
-import { ALL_MENTION_HANDLE } from '@localixai/agent/agents'
-
-import { isMultiParticipant } from '@/shared/api/contracts'
 import { InlineCompletionGhost } from '@localixai/kit/inline-completion-ghost'
 import { renderMentionHighlight } from './mentionHighlight'
 
@@ -27,26 +24,15 @@ export function useComposerMirror(input: {
   prompt: string
   /** The inline completion showing after the caret, if any. */
   suggestionGhost?: string
-  /** The conversation's participants — each handle is painted in its participant's colour. */
-  participants: readonly { handle: string }[]
 }): ((value: string) => ReactNode) | undefined {
-  const { prompt, suggestionGhost, participants } = input
-  // `@all` rides along with the participants because it addresses them and is answered like a
-  // handle (`conversation-strategy.ts`) — a token that does something has to look like one.
-  const handles = useMemo(
-    () =>
-      isMultiParticipant({ agents: participants })
-        ? [...participants.map((member) => member.handle), ALL_MENTION_HANDLE]
-        : [],
-    [participants],
-  )
+  const { prompt, suggestionGhost } = input
   return useMemo(() => {
     if (!suggestionGhost && !prompt.includes('@')) return undefined
     return (value: string) => (
       <>
-        {value.includes('@') ? renderMentionHighlight(value, handles) : value}
+        {value.includes('@') ? renderMentionHighlight(value) : value}
         {suggestionGhost ? <InlineCompletionGhost>{suggestionGhost}</InlineCompletionGhost> : null}
       </>
     )
-  }, [suggestionGhost, prompt, handles])
+  }, [suggestionGhost, prompt])
 }

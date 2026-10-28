@@ -1,6 +1,10 @@
 import { afterAll, beforeAll, describe, expect, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing'
 
+const turns = async (n = 10) => {
+  for (let i = 0; i < n; i++) await new Promise((r) => setImmediate(r))
+}
+
 let teardown: () => Promise<void>
 beforeAll(() => {
   teardown = registerDom()
@@ -11,7 +15,7 @@ afterAll(async () => {
   await teardown()
 })
 
-const settle = () => new Promise((resolve) => setTimeout(resolve, 20))
+const settle = () => turns()
 
 describe('warm-hidden Source Control data sources', () => {
   test('HEAD, forge, log, and staging reads wait for selection', async () => {

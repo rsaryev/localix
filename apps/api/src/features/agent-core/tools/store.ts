@@ -20,6 +20,8 @@ export { classifyStoreCall, type StoreToolPort } from './store-call'
 
 /** Results a search shows: a model chooses among a few, and asks again with other words. */
 const SEARCH_LIMIT = 10
+/** Results each search of a batch shows, so eight of them stay one short answer. */
+const BATCH_LIMIT = 5
 
 const fail = (content: string): AgentToolResult => ({ content, isError: true })
 
@@ -50,12 +52,12 @@ function questionOf(input: StoreInput, ref: ListingRef | undefined, scope: Scope
  */
 export function createStoreTool(port: StoreToolPort) {
   return defineAgentTool<StoreInput>({
-    name: TOOL.store,
+    name: TOOL.Store,
     label: 'Store',
     activeVerb: 'Using the Store',
     description:
       'Find, inspect and manage packages from the sources the user added: mini apps, plugins, MCP servers, skills and agents. ' +
-      'search (query, kind, installed) returns cards; get shows one with what it installs and runs; install, update, remove, enable and disable take a ref and a scope (user or project) and each waits for the user’s approval. ' +
+      'search (query, kind, installed) returns cards; queries runs several searches in one call, grouped per query: prefer it to repeated calls. get shows one with what it installs and runs; install, update, remove, enable and disable take a ref and a scope (user or project) and each waits for the user’s approval. ' +
       'Install and update only start the job: check the result with get. create makes an agent (name, description, instructions) or a skill (name, description, content). ' +
       'Prefer an existing package to a new one, and never install what the task does not need.',
     inputSchema: storeToolInputSchema,
@@ -69,6 +71,7 @@ export function createStoreTool(port: StoreToolPort) {
       const input = storeToolInputSchema.parse(raw)
       const { ref } = input
       try {
+        if (input.action === 'search' && input.queries) return await batch(input, input.queries)
         if (input.action === 'search') {
           const found = await port.search({
             ...(input.query ? { query: input.query } : {}),
@@ -98,6 +101,44 @@ export function createStoreTool(port: StoreToolPort) {
       }
     },
   })
+
+  /**
+   * Several searches at once, concurrently through the same port a single one uses, each kept
+   * short. A package an earlier query showed is named, not repeated; a query that fails says so in
+   * its own group and the others still answer.
+   */
+  async function batch(input: StoreInput, queries: readonly string[]): Promise<AgentToolResult> {
+    const answers = await Promise.allSettled(
+      queries.map((query) =>
+        port.search({
+          query,
+          ...(input.kind ? { kind: input.kind } : {}),
+          ...(input.installed !== undefined ? { installed: input.installed } : {}),
+          limit: BATCH_LIMIT,
+        }),
+      ),
+    )
+    const shown = new Map<string, string>()
+    const groups = answers.map((answer, at) => {
+      const query = queries[at]!
+      if (answer.status === 'rejected') return { query, error: errorMessage(answer.reason) }
+      const results = answer.value.map((listing) => {
+        const key = `${listing.ref.kind}:${listing.ref.id}`
+        const first = shown.get(key)
+        if (first !== undefined) return { ref: listing.ref, shownFor: first }
+        shown.set(key, query)
+        return storeCard(listing)
+      })
+      return {
+        query,
+        results,
+        ...(results.length >= BATCH_LIMIT
+          ? { note: `First ${BATCH_LIMIT} shown; search it alone for more.` }
+          : {}),
+      }
+    })
+    return { content: JSON.stringify({ groups }) }
+  }
 
   async function change(
     input: StoreInput,

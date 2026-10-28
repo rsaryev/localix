@@ -40,7 +40,8 @@ env:
 jobs:
   deploy:
     name: Deploy website
-    runs-on: ubuntu-24.04
+    # Our own runner; the workflow runs only by hand, never for a pull request.
+    runs-on: localix
     timeout-minutes: 20
     steps:
       - name: Checkout source

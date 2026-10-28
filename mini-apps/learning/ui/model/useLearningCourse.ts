@@ -1,9 +1,23 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { LearningCourse, StepEvidence } from '../../shared/contracts'
 import { parseLearningResourceUri } from '../../shared/resource-uri'
 import { activeLesson, activeStep, nextLesson, previousLesson } from './course'
 import { LearningApiError, learningApi } from '../api/learningApi'
 import { useCourseChanges } from './courseChanges'
+
+/** What a failed read or write looks like; `write` tells a write failure (a retry) from a read one. */
+function describeFailure(cause: unknown, write: boolean) {
+  return {
+    message: cause instanceof LearningApiError ? cause.message : 'The course could not be updated.',
+    detail:
+      cause instanceof LearningApiError
+        ? cause.detail
+        : cause instanceof Error
+          ? cause.message
+          : String(cause),
+    write,
+  }
+}
 
 /** A late poll must not overwrite navigation or a saved answer with older course state. */
 export function useLearningCourse(
@@ -15,85 +29,76 @@ export function useLearningCourse(
   const [course, setCourse] = useState<LearningCourse | null>(null)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
-  const [failure, setFailure] = useState<{ message: string; detail?: string } | null>(null)
+  const [failureState, setFailureState] = useState<ReturnType<typeof describeFailure> | null>(null)
+  const failure = useMemo(
+    () => failureState && { message: failureState.message, detail: failureState.detail },
+    [failureState],
+  )
   const request = useRef(0)
   const writing = useRef(false)
   const applied = useRef<string | null>(null)
-  const failureSource = useRef<'read' | 'write' | null>(null)
-  const fail = useCallback(
-    (cause: unknown) =>
-      setFailure({
-        message:
-          cause instanceof LearningApiError ? cause.message : 'The course could not be updated.',
-        detail:
-          cause instanceof LearningApiError
-            ? cause.detail
-            : cause instanceof Error
-              ? cause.message
-              : String(cause),
-      }),
-    [],
-  )
-  const invalidate = useCallback(() => {
-    request.current++
-  }, [])
-  const refresh = useCallback(async () => {
-    if (writing.current) return
-    const sequence = ++request.current
-    try {
-      const next = await learningApi.get(sessionId, courseId)
-      if (sequence !== request.current) return
-      setCourse(next)
-      if (failureSource.current !== 'write') setFailure(null)
-    } catch (cause) {
-      if (sequence === request.current && failureSource.current !== 'write') {
-        failureSource.current = 'read'
-        fail(cause)
-      }
-    } finally {
-      if (sequence === request.current) setLoading(false)
-    }
-  }, [sessionId, courseId, fail])
-  useEffect(() => {
-    invalidate()
-    writing.current = false
-    failureSource.current = null
+  // Another course starts from nothing: reset while rendering, not in an effect afterwards.
+  const scope = `${sessionId}\u0000${courseId}`
+  const [loadedScope, setLoadedScope] = useState(scope)
+  if (loadedScope !== scope) {
+    setLoadedScope(scope)
     setBusy(false)
     setLoading(true)
     setCourse(null)
-    setFailure(null)
+    setFailureState(null)
+  }
+  const invalidate = useCallback(() => {
+    request.current++
+  }, [])
+  const refresh = useCallback(() => {
+    if (writing.current) return Promise.resolve()
+    const sequence = ++request.current
+    return learningApi
+      .get(sessionId, courseId)
+      .then(
+        (next) => {
+          if (sequence !== request.current) return
+          setCourse(next)
+          setFailureState((current) => (current?.write ? current : null))
+        },
+        (cause) => {
+          // A write failure stays on the line: a late read must not replace the retry it explains.
+          if (sequence === request.current)
+            setFailureState((current) => (current?.write ? current : describeFailure(cause, false)))
+        },
+      )
+      .finally(() => {
+        if (sequence === request.current) setLoading(false)
+      })
+  }, [sessionId, courseId])
+  useEffect(() => {
+    invalidate()
+    writing.current = false
     applied.current = null
     void refresh()
     return invalidate
   }, [refresh, invalidate])
   useCourseChanges(sessionId, visible, refresh)
-  const run = useCallback(
-    async (change: () => Promise<LearningCourse | null>) => {
-      if (writing.current) throw new Error('A course change is already being saved')
-      writing.current = true
-      const sequence = ++request.current
-      setBusy(true)
-      setFailure(null)
-      failureSource.current = null
-      try {
-        const next = await change()
-        if (sequence === request.current) setCourse(next)
-        return next
-      } catch (cause) {
-        if (sequence === request.current) {
-          failureSource.current = 'write'
-          fail(cause)
-        }
-        throw cause
-      } finally {
-        if (sequence === request.current) {
-          writing.current = false
-          setBusy(false)
-        }
+  const run = useCallback(async (change: () => Promise<LearningCourse | null>) => {
+    if (writing.current) throw new Error('A course change is already being saved')
+    writing.current = true
+    const sequence = ++request.current
+    setBusy(true)
+    setFailureState(null)
+    try {
+      const next = await change()
+      if (sequence === request.current) setCourse(next)
+      return next
+    } catch (cause) {
+      if (sequence === request.current) setFailureState(describeFailure(cause, true))
+      throw cause
+    } finally {
+      if (sequence === request.current) {
+        writing.current = false
+        setBusy(false)
       }
-    },
-    [fail],
-  )
+    }
+  }, [])
   const choose = useCallback(
     async (lessonId: string, stepId?: string) => {
       try {
@@ -115,6 +120,9 @@ export function useLearningCourse(
         : resource.kind === 'module'
           ? course.modules.find((module) => module.id === resource.moduleId)?.lessons[0]?.id
           : undefined
+    // Opening a lesson link writes the active step to the server; `busy` is that write's own
+    // in-flight flag, so it flips with the write, not as a derivation of anything rendered.
+    // oxlint-disable-next-line react/set-state-in-effect -- the effect starts a server write; busy and the failure line belong to the write
     if (lessonId) void choose(lessonId, resource.kind === 'step' ? resource.stepId : undefined)
   }, [course, initialResourceUri, busy, choose])
   const location = course ? activeLesson(course) : null
@@ -173,7 +181,7 @@ export function useLearningCourse(
     loading,
     busy,
     failure,
-    failureIsWrite: failureSource.current === 'write',
+    failureIsWrite: failureState?.write === true,
     location,
     step,
     choose,

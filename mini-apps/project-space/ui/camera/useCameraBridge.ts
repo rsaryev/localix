@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useEffectEvent } from 'react'
 import { useCanvasCamera, zoomAt, type CameraViewport } from '@localixai/kit/canvas'
 import type { CameraCommand, CameraMove } from '../../shared/camera'
 import { spaceApi } from '../api'
@@ -37,31 +37,27 @@ export function useCameraBridge(
 ) {
   const camera = useCanvasCamera()
   // The director changes identity with its history; the subscription must not restart with it.
-  const current = useRef(director)
-  current.current = director
-  const shown = useRef(onShown)
-  shown.current = onShown
-  const wait = useRef(pause)
-  wait.current = pause
-  const clock = useRef(now)
-  clock.current = now
+  const currentDirector = useEffectEvent(() => director)
+  const shown = useEffectEvent(onShown)
+  const wait = useEffectEvent(pause)
+  const clock = useEffectEvent(now)
 
   useEffect(() => {
     if (!live) return
     const stop = new AbortController()
-    const mounted = clock.current()
+    const mounted = clock()
     let taken = 0
     let queue = Promise.resolve()
     const take = async (command: CameraCommand) => {
-      const settling = PLACEMENT_MS - (clock.current() - mounted)
-      if (settling > 0) await wait.current(settling, stop.signal)
+      const settling = PLACEMENT_MS - (clock() - mounted)
+      if (settling > 0) await wait(settling, stop.signal)
       if (stop.signal.aborted) return
-      const size = current.current.size()
+      const size = currentDirector().size()
       if (!size) return
-      await move(current.current, camera.get(), command.move, size)
+      await move(currentDirector(), camera.get(), command.move, size)
       if (stop.signal.aborted) return
       if (command.move.kind === 'frame' && command.move.spotlight?.length)
-        shown.current(command.move.spotlight)
+        shown(command.move.spotlight)
       await spaceApi.cameraReport(sessionId, { seq: command.seq, viewport: camera.get(), size })
     }
     const release = cameraFeed.follow(sessionId, {

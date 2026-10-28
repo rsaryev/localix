@@ -3,7 +3,11 @@ import { createStoreChangeFeed } from './store-change-feed'
 import type { MiniAppPathWatch } from './context'
 import type { StoreFrame } from '../store-changes'
 
-const tick = () => new Promise((resolve) => setTimeout(resolve, 5))
+const turns = async (n = 10) => {
+  for (let i = 0; i < n; i++) await new Promise((r) => setTimeout(r, 0))
+}
+
+const tick = () => turns()
 test('one store feed proves native coverage, batches writes and disk edits, and releases both on shutdown', async () => {
   let write: (path: string) => void = () => {}
   let disk: () => void = () => {}

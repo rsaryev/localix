@@ -30,8 +30,8 @@ export function createAgentsSemanticSource(deps: {
     projects: deps.projects,
     list: async (projectId) =>
       (await deps.listAgents(deps.owner, { projectId })).map((a) => ({
-        name: a.record.handle,
-        title: a.record.handle,
+        name: a.record.name,
+        title: a.record.name,
         description: a.record.description ?? '',
         body: a.record.instructions,
       })),

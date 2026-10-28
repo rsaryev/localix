@@ -5,7 +5,7 @@ import { useChatStore } from '@/entities/chat/model/store'
 import { backendClient } from '@/shared/api/client'
 
 let teardown: () => Promise<void>
-const originalRows = backendClient.getSubagentRows
+const originalRows = backendClient.getSubagentRows.bind(backendClient)
 beforeAll(() => {
   // No plugin status line here: the panel reads the rows once and draws its own.
   backendClient.getSubagentRows = (async () => ({
@@ -96,7 +96,7 @@ describe('RuntimeSessionsPanel lifecycle rows', () => {
     const { RuntimeSessionsPanel } = await import('./RuntimeSessionsPanel')
     const originalSessions = useChatStore.getState().allSessions
     const originalStop = backendClient.stop.bind(backendClient)
-    const stop = mock(async (_sessionId: string) => true)
+    const stop = mock(async (_sessionId: string) => ({ stopped: true, returned: [] }))
     const onSelect = mock((_sessionId: string) => {})
     const worker = {
       id: 'worker-1',

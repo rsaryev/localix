@@ -220,5 +220,5 @@ export function createModPanes(deps: {
   }
 }
 
-/** Who raised a `Client`'s events: code on the screen, seated with its plugin. */
+/** Who raised a `Client`'s events: code on the screen, owned by its plugin. */
 const CLIENT_ORIGIN: HookOrigin = { plugin: 'client', tier: 'user' }

@@ -78,7 +78,16 @@ export function RestApiWorkspace({
 
   const onRequestsStateChange = useCallback((state: RequestsState) => setRequestsState(state), [])
 
-  useEffect(() => setRequestContext(null), [selected, managingEnvironments])
+  // What the previous request (or the environment editor) published is not about the next one.
+  // Reset while rendering, when either changes, so nothing the new surface publishes is wiped.
+  const [contextFor, setContextFor] = useState({ selected, managingEnvironments })
+  if (
+    contextFor.selected !== selected ||
+    contextFor.managingEnvironments !== managingEnvironments
+  ) {
+    setContextFor({ selected, managingEnvironments })
+    setRequestContext(null)
+  }
 
   const workspaceContext = useMemo(() => {
     return snippetMessageBindingDraft({
@@ -108,12 +117,14 @@ export function RestApiWorkspace({
   // `@`-ref, or the agent's own button — arrives as a new payload on the tab that is already
   // mounted. Without this the link would focus the workspace and leave the previous request on
   // screen, which reads as the link having done nothing.
-  useEffect(() => {
+  const [seenRequestedName, setSeenRequestedName] = useState(requestedName)
+  if (requestedName !== seenRequestedName) {
+    setSeenRequestedName(requestedName)
     if (requestedName) {
       setSelected(requestedName)
       setManagingEnvironments(false)
     }
-  }, [requestedName])
+  }
 
   const sidebar = usePaneResize({
     axis: 'x',

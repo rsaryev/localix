@@ -224,9 +224,14 @@ export function createToolHookRunners({
         false,
         { ifCtx: { toolName, toolInput: input, aliases: ref.aliases, cwd: base.cwd } },
       )
-      // An exit-2 stderr is shown to Claude, as on PostToolUse.
+      // An exit-2 stderr and a `decision:"block"` reason are shown to Claude, as on PostToolUse:
+      // the tool already failed, so neither can block anything.
       const additionalContext = joinContext(
-        outcomes.flatMap((o) => [o.additionalContext, o.blocked ? o.blockReason : undefined]),
+        outcomes.flatMap((o) => [
+          o.additionalContext,
+          o.decision === 'block' ? o.reason : undefined,
+          o.blocked ? o.blockReason : undefined,
+        ]),
       )
       return additionalContext ? { additionalContext } : {}
     },

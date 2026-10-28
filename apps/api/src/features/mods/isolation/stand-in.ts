@@ -52,7 +52,7 @@ export function createCalls(endpoint: Endpoint) {
     return {
       payload: { hook, call, e, shape: shapeOf($), next: meta },
       signal: next.signal,
-      close() {
+      close: () => {
         open.delete(call)
         next.signal.removeEventListener('abort', abort)
       },

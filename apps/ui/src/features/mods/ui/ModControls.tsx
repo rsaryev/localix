@@ -62,7 +62,7 @@ export function ModButton(input: {
   )
 }
 
-/** Typing stays on screen; Enter submits it, and leaving the field sends what was typed. */
+/** Each change is sent as `ui.input` of kind `change`, as it is typed; Enter submits the text. */
 export function ModInput(input: { element: string; props: Record<string, unknown>; act: Act }) {
   const { props } = input
   const [value, setValue] = useState(text(props.value))
@@ -72,8 +72,11 @@ export function ModInput(input: { element: string; props: Record<string, unknown
     'aria-label': label ?? input.element,
     placeholder: typeof props.placeholder === 'string' ? props.placeholder : undefined,
     value,
-    onBlur: () => input.act({ kind: 'input', element: input.element, value }),
     ...autoFocusOf(props),
+  }
+  const change = (next: string) => {
+    setValue(next)
+    input.act({ kind: 'change', element: input.element, value: next })
   }
   const submit = () => input.act({ kind: 'submit', element: input.element, value })
   return (
@@ -89,7 +92,7 @@ export function ModInput(input: { element: string; props: Record<string, unknown
         <Textarea
           {...field}
           rows={rows}
-          onChange={(event) => setValue(event.target.value)}
+          onChange={(event) => change(event.target.value)}
           onKeyDown={(event) => {
             // Enter submits, as in the terminal; Shift+Enter is a new line.
             if (event.key !== 'Enter' || event.shiftKey) return
@@ -98,7 +101,7 @@ export function ModInput(input: { element: string; props: Record<string, unknown
           }}
         />
       ) : (
-        <Input {...field} onChange={(event) => setValue(event.target.value)} />
+        <Input {...field} onChange={(event) => change(event.target.value)} />
       )}
       {typeof props.submitLabel === 'string' && (
         <Button size="sm" type="submit">

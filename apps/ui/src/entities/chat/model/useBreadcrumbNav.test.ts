@@ -2,10 +2,10 @@ import { describe, expect, mock, test } from 'bun:test'
 import type { UiSession } from '@/shared/api/contracts'
 import { sessionCrumbItems } from './useBreadcrumbNav'
 
-const chat = (id: string, handle: string, projectId = 'PRJ-0'): UiSession =>
+const chat = (id: string, name: string, projectId = 'PRJ-0'): UiSession =>
   ({
     id,
-    agents: [{ handle }],
+    agent: { name },
     projectId,
     title: id,
     updatedAt: 1,

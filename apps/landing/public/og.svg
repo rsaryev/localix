@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title description">
-  <title id="title">Localix — One workspace for you and a team of agents</title>
+  <title id="title">Localix — One workspace for you and your agents</title>
   <!-- The card is the demo's app window rising from the bottom edge: no headline, no mark, so the
        preview reads as the product itself. The demo frame is embedded so the file opens in
        Finder and Quick Look, which skip linked images. `og.png` is the same layout. Keep the metadata sentence in sync with index.html / README. -->
-  <desc id="description">Localix is an open source Agentic Development Environment: a team of AI agents with your editor, terminals and browser. Use any model, or run one locally.</desc>
+  <desc id="description">Localix is an open source Agentic Development Environment: an AI agent, its subagents, your editor, terminals and browser. Use any model, or run one locally.</desc>
   <defs>
     <clipPath id="window">
       <rect x="80" y="64" width="1040" height="620" rx="18" />

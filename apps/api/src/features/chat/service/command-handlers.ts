@@ -13,17 +13,20 @@ import { handleOutputStyleCommand } from './command-handlers-output-style'
 import { handlePluginsControlCommand, reloadPlugins } from './command-handlers-plugins'
 import { handleMiniAppsControlCommand } from './command-handlers-mini-apps'
 import { handleAgentsControlCommand } from './command-handlers-agents'
+import { handleClaudeCodeControlCommand, isClaudeCodeControl } from './command-handlers-claude-code'
 import type { SessionRecord } from '../repository'
 import type { MessageMutationResponse } from '../contracts'
 import type { CommandHandlerContext } from './command-handlers-context'
 import { readSessionUsageRows } from '../../usage/session-summary'
 import { resolveCommandSpec, suggestCommands } from '../slash-catalog'
+import { claudeCodeGapReply } from '../slash-catalog-claude-code-gaps'
 
 // Re-export the handler-context surface so existing importers of
 // './command-handlers' (the sibling handler modules + service.ts) are unchanged.
 export { type CommandHandlerContext, type DirectReply } from './command-handlers-context'
 
 export { handlePluginCommand } from './command-handlers-plugin-command'
+export { handleMcpPromptCommand } from './command-handlers-mcp-prompt'
 export { handleSkillCommand } from './command-handlers-skill'
 
 /**
@@ -73,16 +76,7 @@ export async function handleControlCommand(
   }
 
   if (control === 'model') {
-    return handleModelCommand(
-      ctx,
-      userId,
-      sessionId,
-      session,
-      existingMessages,
-      prompt,
-      ts,
-      directReply,
-    )
+    return handleModelCommand(ctx, userId, sessionId, session, prompt, ts, directReply)
   }
 
   if (control === 'output-style') {
@@ -103,7 +97,7 @@ export async function handleControlCommand(
   }
 
   if (control === 'memory') {
-    return handleMemoryControlCommand(ctx, userId, session, prompt, ts, directReply)
+    return handleMemoryControlCommand(ctx, userId, session, prompt, directReply)
   }
 
   if (control === 'skills') {
@@ -111,7 +105,7 @@ export async function handleControlCommand(
   }
 
   if (control === 'mcp') {
-    return handleMcpControlCommand(ctx, userId, session, directReply)
+    return handleMcpControlCommand(ctx, userId, session, prompt, directReply)
   }
 
   if (control === 'plugins') {
@@ -124,6 +118,10 @@ export async function handleControlCommand(
 
   if (control === 'mini-apps') {
     return handleMiniAppsControlCommand(ctx, userId, session, prompt, directReply)
+  }
+
+  if (isClaudeCodeControl(control)) {
+    return handleClaudeCodeControlCommand(ctx, control, userId, session, prompt, directReply)
   }
 
   // Values can cross untyped RPC/plugin/test boundaries; an unknown one fails closed.
@@ -149,6 +147,10 @@ export async function handleUnresolvedSlashCommand(
   if (!invocation) return null
 
   const spec = resolveCommandSpec(invocation.name)
+  // A Claude Code command Localix cannot run says why. Read only here, after skills and plugins
+  // had their chance, so a skill or plugin command of the same name still runs.
+  const gap = spec ? undefined : claudeCodeGapReply(invocation.name)
+  if (gap) return ctx.insertDirectReply(userId, sessionId, prompt, gap, ctx.now(), 'warning')
   const reply =
     spec?.scope === 'client'
       ? `Command \`/${spec.name}\` must be handled by a compatible client and is not available on this surface.`

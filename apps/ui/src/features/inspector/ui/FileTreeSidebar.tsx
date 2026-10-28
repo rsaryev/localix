@@ -102,16 +102,20 @@ function SessionFileTreeSidebar({ sessionId }: { sessionId: string | null }) {
   // path becomes in it, and the success wording. The tree owns only the failure the provider cannot
   // see: the session moved on while the write was in flight, so the toast would name the wrong one.
   const addToIgnore = decorations.addToIgnore
-  const runAddToIgnore = addToIgnore
-    ? (full: string, isDir: boolean) => {
-        void addToIgnore(full, isDir).catch((e) => {
-          if (isSessionCurrent())
-            toast.error('Could not update the ignore list', {
-              description: errorMessage(e, '') || undefined,
+  const runAddToIgnore = useMemo(
+    () =>
+      addToIgnore
+        ? (full: string, isDir: boolean) => {
+            void addToIgnore(full, isDir).catch((e) => {
+              if (isSessionCurrent())
+                toast.error('Could not update the ignore list', {
+                  description: errorMessage(e, '') || undefined,
+                })
             })
-        })
-      }
-    : undefined
+          }
+        : undefined,
+    [addToIgnore, isSessionCurrent],
+  )
   const deleteConfirm = describeDeletion(pendingDelete ?? [], deletePermanent)
 
   // One field, two modes (find-in-files vs filter-loaded-tree-by-name). See useTreeSearch.
@@ -165,7 +169,6 @@ function SessionFileTreeSidebar({ sessionId }: { sessionId: string | null }) {
       selected: new Set(selected.keys()),
       root,
     }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- runAddToIgnore closes over the listed session-currency check.
     [
       startRename,
       duplicate,
@@ -179,7 +182,6 @@ function SessionFileTreeSidebar({ sessionId }: { sessionId: string | null }) {
       root,
       runAddToIgnore,
       decorations.ignoreLabel,
-      isSessionCurrent,
     ],
   )
 
@@ -312,10 +314,11 @@ function SessionFileTreeSidebar({ sessionId }: { sessionId: string | null }) {
               }}
               {...dnd.rootDropTarget(root)}
               role="tree"
+              tabIndex={-1}
               aria-label="Files"
               aria-multiselectable
               className={cn(
-                'min-h-0 flex-1 overflow-auto scrollbar-thin virtual-scroller py-1',
+                'min-h-0 flex-1 overflow-auto scrollbar-thin virtual-scroller py-1 outline-none',
                 DROP_TARGET_TRANSITION,
                 dnd.isRootOver && DROP_TARGET_INSET_ACTIVE,
               )}

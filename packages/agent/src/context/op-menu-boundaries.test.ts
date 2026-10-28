@@ -19,10 +19,10 @@ describe('heavyMutateInputs — the tool→field mapping', () => {
   // `edit` carrying a whole-file `content`, and NOT the `patch` alias of `apply_patch`.
   // Both were free mutations.
 
-  // Kills: `if (name === 'write' || name === 'edit') pushString('content')` → `name !== 'edit'`.
+  // Kills: `if (name === 'Write' || name === 'Edit') pushString('content')` → `name !== 'Edit'`.
   it('extracts the `content` arg of an EDIT (not just of a write)', () => {
     expect(
-      heavyMutateInputs(namedTool('edit', { path: 'f.ts', content: 'whole new body' })),
+      heavyMutateInputs(namedTool('Edit', { path: 'f.ts', content: 'whole new body' })),
     ).toEqual([{ field: 'content', text: 'whole new body' }])
   })
 
@@ -35,8 +35,8 @@ describe('heavyMutateInputs — the tool→field mapping', () => {
 
   // The mapping is by NAME: an apply_patch does not get its unrelated string args scooped
   // up as recoverable payload (they would be pointered, promising a recovery that the
-  // `tool_output` handle does not serve for them).
-  // Kills: `if (name === 'write' || ...)` → `name !== 'write'`.
+  // `ToolOutput` handle does not serve for them).
+  // Kills: `if (name === 'Write' || ...)` → `name !== 'Write'`.
   it('takes ONLY the named field of the named tool', () => {
     expect(
       heavyMutateInputs(namedTool('apply_patch', { patch: '@@ body @@', content: 'unrelated' })),
@@ -46,14 +46,14 @@ describe('heavyMutateInputs — the tool→field mapping', () => {
   // Kills: `if (!input || typeof input !== 'object') return []` → `&&` (which reads
   // `input[field]` off a null and throws mid-plan).
   it('survives a null input', () => {
-    expect(heavyMutateInputs(namedTool('write', null))).toEqual([])
+    expect(heavyMutateInputs(namedTool('Write', null))).toEqual([])
   })
 })
 
 describe('operationMenu — the compressible-payload floor (minCompressibleTokens)', () => {
   const menuFor = (chars: number, minCompressibleTokens?: number) =>
     operationMenu(
-      msg({ items: [namedTool('write', { path: 'a.ts', content: 'x'.repeat(chars) })] }),
+      msg({ items: [namedTool('Write', { path: 'a.ts', content: 'x'.repeat(chars) })] }),
       false,
       minCompressibleTokens === undefined ? {} : { minCompressibleTokens },
     )
@@ -72,7 +72,7 @@ describe('operationMenu — the compressible-payload floor (minCompressibleToken
     // 40 CJK code units are 120 UTF-8 bytes = 30 approximate tokens. The old
     // chars/4 estimate called this only 10 tokens and incorrectly skipped elision.
     const menu = operationMenu(
-      msg({ items: [namedTool('write', { path: 'a.ts', content: '你'.repeat(40) })] }),
+      msg({ items: [namedTool('Write', { path: 'a.ts', content: '你'.repeat(40) })] }),
       false,
     )
     expect(menu.some((o) => o.kind === 'elide')).toBe(true)
@@ -94,7 +94,7 @@ describe('operationMenu — the compressible-payload floor (minCompressibleToken
 describe('operationMenu — the lossy chain', () => {
   // Kills: `if (resultTokens < minCompressible) return menu` → `<=`.
   it('builds the lossy chain when the result lands EXACTLY on the floor', () => {
-    const bash = namedTool('bash', { command: 'x' }, { resultText: 'z'.repeat(400) }) // 100 tokens
+    const bash = namedTool('Bash', { command: 'x' }, { resultText: 'z'.repeat(400) }) // 100 tokens
     const at = operationMenu(msg({ items: [bash] }), false, { minCompressibleTokens: 100 })
     expect(at.some((o) => o.kind !== 'verbatim')).toBe(true)
 
@@ -111,8 +111,8 @@ describe('operationMenu — the lossy chain', () => {
   it('does not count an EMPTY result as a lossy item', () => {
     const m = msg({
       items: [
-        namedTool('bash', { command: 'a' }, { resultText: 'z'.repeat(8000) }),
-        namedTool('bash', { command: 'b' }, { resultText: '' }), // completed, no output
+        namedTool('Bash', { command: 'a' }, { resultText: 'z'.repeat(8000) }),
+        namedTool('Bash', { command: 'b' }, { resultText: '' }), // completed, no output
       ],
     })
     const menu = operationMenu(m, false)
@@ -135,7 +135,7 @@ describe('operationMenu — the lossy chain', () => {
   // equivalent on the strength of the unreachable arm alone; it is not.)
   it('a truncate op retains the KEPT/TOTAL ratio, not 1', () => {
     const m = msg({
-      items: [namedTool('bash', { command: 'x' }, { resultText: 'z'.repeat(8000) })],
+      items: [namedTool('Bash', { command: 'x' }, { resultText: 'z'.repeat(8000) })],
     })
     const menu = operationMenu(m, false, { truncateTiers: [2000] })
     const truncate = menu.find((o) => o.kind === 'truncate')!
@@ -147,7 +147,7 @@ describe('operationMenu — the lossy chain', () => {
   it('prices a CJK truncate tier from the UTF-8 bytes actually retained', () => {
     const resultText = '你'.repeat(8000)
     const menu = operationMenu(
-      msg({ items: [namedTool('bash', { command: 'x' }, { resultText })] }),
+      msg({ items: [namedTool('Bash', { command: 'x' }, { resultText })] }),
       false,
       { truncateTiers: [2000] },
     )
@@ -162,7 +162,7 @@ describe('operationMenu — the lossy chain', () => {
   // Kills: `pushIfCheaper` `if (op.cost < menu[menu.length - 1].cost)` → `<=`.
   it('drops a downgrade tier that is not strictly cheaper than the one before it', () => {
     const m = msg({
-      items: [namedTool('bash', { command: 'x' }, { resultText: 'z'.repeat(8000) })],
+      items: [namedTool('Bash', { command: 'x' }, { resultText: 'z'.repeat(8000) })],
     })
     const menu = operationMenu(m, false, { truncateTiers: [2000, 2000] })
     expect(menu.filter((o) => o.kind === 'truncate')).toHaveLength(1)

@@ -1,5 +1,5 @@
 import type { SessionAgentRoute, SessionRecord } from '../features/chat/repository-types'
-import { DEFAULT_AGENT_HANDLE } from '../db/participant'
+import { DEFAULT_AGENT_NAME } from '../db/author'
 import { builtinAgentId } from '@localixai/agent/agents'
 
 const FIXTURE_TIMESTAMP = '2026-01-01T00:00:00.000Z'
@@ -21,24 +21,20 @@ const FIXTURE_TIMESTAMP = '2026-01-01T00:00:00.000Z'
  * parent, the kind — and let the rest be uninteresting-but-valid.
  */
 /**
- * One participant on a stated route — what a test means by "this session runs on model X".
+ * The session's agent on a stated route — what a test means by "this session runs on model X".
  *
- * Spelled here rather than inline at each test because a model belongs to a participant, so
- * the literal is four fields deep and would otherwise be retyped at every case that pins one.
+ * Spelled here rather than inline at each test because the literal is several fields deep and
+ * would otherwise be retyped at every case that pins one.
  */
-export function routedParticipants(
-  route: Partial<SessionAgentRoute> = {},
-): [SessionAgentRoute, ...SessionAgentRoute[]] {
-  return [
-    {
-      agentId: builtinAgentId(route.handle ?? DEFAULT_AGENT_HANDLE),
-      handle: DEFAULT_AGENT_HANDLE,
-      providerConnectionId: null,
-      modelId: '',
-      reasoningEffort: 'medium',
-      ...route,
-    },
-  ]
+export function routedAgent(route: Partial<SessionAgentRoute> = {}): SessionAgentRoute {
+  return {
+    agentId: builtinAgentId(route.name ?? DEFAULT_AGENT_NAME),
+    name: DEFAULT_AGENT_NAME,
+    providerConnectionId: null,
+    modelId: '',
+    reasoningEffort: 'medium',
+    ...route,
+  }
 }
 
 export function sessionFixture(overrides: Partial<SessionRecord> = {}): SessionRecord {
@@ -65,9 +61,8 @@ export function sessionFixture(overrides: Partial<SessionRecord> = {}): SessionR
     // null, so a fixture that omits it still behaves like a real row.
     rootSessionId: id,
     sessionKind: 'chat',
-    agents: routedParticipants(),
+    agent: routedAgent(),
     description: null,
-    avatar: null,
     runtimeStatus: 'idle',
     sourceToolCallId: null,
     provenance: { kind: 'root' },

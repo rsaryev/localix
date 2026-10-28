@@ -8,7 +8,7 @@
   "scripts": {
     "test": "bun test --path-ignore-patterns='**/*.integration.test.ts' .",
     "test:integration": "bun test integration.test",
-    "type-check": "tsc --noEmit -p tsconfig.json"
+    "type-check": "node ../../scripts/tsc.mjs --noEmit -p tsconfig.json"
   },
   "dependencies": {
     "@localixai/dataview": "workspace:*",

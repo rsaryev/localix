@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { BookMarked, NotebookPen } from 'lucide-react'
 import { createMessageBindingDraft, runMiniAppAction, toast } from '@localixai/mini-app-sdk/ui'
 import { miniAppFiles, miniAppNavigation } from '@localixai/mini-app-sdk/ui/runtime'
@@ -64,7 +64,7 @@ export function LibraryPane({
     readLibrarySort(loadJSON<ReaderLibrarySort>(LIBRARY_SORT_KEY)),
   )
   const [activeCollection, setActiveCollection] = useState<ReaderShelfFilter>(SHELF_ALL)
-  const [focusedBookKey, setFocusedBookKey] = useState<string | null>(null)
+  const [requestedBookKey, setFocusedBookKey] = useState<string | null>(null)
   const keyboardRoot = useRef<HTMLDivElement>(null)
   const [metadataBook, setMetadataBook] = useState<ReaderBookSummary | null>(null)
   const [collectionBooks, setCollectionBooks] = useState<ReaderBookSummary[] | null>(null)
@@ -80,14 +80,14 @@ export function LibraryPane({
   const library = useReaderLibrary({ setSelectedBookKeys })
   const { result, loading, error, refresh } = library
 
-  useEffect(() => {
-    if (
-      activeCollection.kind === 'collection' &&
-      !result?.collections.some((collection) => collection.id === activeCollection.id)
-    ) {
-      setActiveCollection(SHELF_ALL)
-    }
-  }, [activeCollection, result?.collections])
+  // A shelf that is gone (the library was re-read without it) goes back to all books, in the
+  // render that found it missing.
+  if (
+    activeCollection.kind === 'collection' &&
+    !result?.collections.some((collection) => collection.id === activeCollection.id)
+  ) {
+    setActiveCollection(SHELF_ALL)
+  }
 
   const { contentSearch, contentSearchLoading } = useReaderLibraryContentSearch({
     query,
@@ -134,16 +134,12 @@ export function LibraryPane({
     [activeCollection, query, result, sort],
   )
 
-  useEffect(() => {
+  // The focused book is the one asked for while it is still shown, else the first one shown.
+  const focusedBookKey = useMemo(() => {
     const keys = new Set(visibleBooks.map(readerBookKey))
-    setFocusedBookKey((current) =>
-      current && keys.has(current)
-        ? current
-        : visibleBooks[0]
-          ? readerBookKey(visibleBooks[0])
-          : null,
-    )
-  }, [visibleBooks])
+    if (requestedBookKey && keys.has(requestedBookKey)) return requestedBookKey
+    return visibleBooks[0] ? readerBookKey(visibleBooks[0]) : null
+  }, [requestedBookKey, visibleBooks])
 
   const visibleContentSearch = useMemo(
     () => filterContentSearch(contentSearch, activeCollection),
@@ -265,11 +261,11 @@ export function LibraryPane({
               }
               actions={
                 !query && activeCollection.kind === 'all' ? (
-                  <Button variant="outline" onClick={chooseBook}>
+                  <Button variant="ghost" onClick={chooseBook}>
                     Open book
                   </Button>
                 ) : !query ? (
-                  <Button variant="outline" onClick={() => setActiveCollection(SHELF_ALL)}>
+                  <Button variant="ghost" onClick={() => setActiveCollection(SHELF_ALL)}>
                     Show all books
                   </Button>
                 ) : undefined

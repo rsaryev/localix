@@ -50,6 +50,11 @@ export const storeSearchOptionsSchema = z.object({
     source: z.string().optional(),
     trust: trustSchema.optional(),
   }),
+  /**
+   * A recommendation (`recommend.ts`): the text is what the person works on, not words they
+   * typed, so only meaning finds a listing; a word the two share is no reason to show it.
+   */
+  related: z.boolean().optional(),
 })
 
 /** Where a Store hit leads: the Store, open on the listing's page. */
@@ -107,9 +112,12 @@ export function createStoreSearchProvider(deps: {
       // From the palette: what can still be added, a few at most.
       const palette = !options.success
       const filters = (palette ? { installed: false } : options.data.filters) as IndexFilters
-      const terms = queryTerms(query.text, { prefixLast: true })
+      const related = !palette && options.data.related === true
+      const terms = related ? [] : queryTerms(query.text, { prefixLast: true })
       const [words, meaning, project] = await Promise.all([
-        deps.index.wordCandidates(userId, ftsOrQuery(terms), filters, WORD_CANDIDATES),
+        related
+          ? Promise.resolve([])
+          : deps.index.wordCandidates(userId, ftsOrQuery(terms), filters, WORD_CANDIDATES),
         query.semantic
           ? query.semantic.similar(STORE_COLLECTION, { limit: MEANING_CANDIDATES }).catch(() => [])
           : Promise.resolve([]),
@@ -128,7 +136,7 @@ export function createStoreSearchProvider(deps: {
           key,
           z: match?.z,
           gate: match?.gate,
-          textScore: bestFieldScore([listing.displayName, listing.name], query.text),
+          textScore: related ? 0 : bestFieldScore([listing.displayName, listing.name], query.text),
           coverage: wordCoverage(terms, textOf(listing)),
         })
       }
@@ -145,11 +153,12 @@ export function createStoreSearchProvider(deps: {
         const uri = storeListingUri(listing.ref)
         // A name that says the query outranks a summary that does: words in the name count once
         // more, and a name that is exactly the query as much as a strong match by meaning.
-        const named =
-          wordCoverage(terms, `${listing.displayName} ${listing.name}`) +
-          (sameWords(listing.name, query.text) || sameWords(listing.displayName, query.text)
-            ? EXACT_NAME
-            : 0)
+        const named = related
+          ? 0
+          : wordCoverage(terms, `${listing.displayName} ${listing.name}`) +
+            (sameWords(listing.name, query.text) || sameWords(listing.displayName, query.text)
+              ? EXACT_NAME
+              : 0)
         return {
           id: uri,
           uri,

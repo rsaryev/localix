@@ -12,7 +12,7 @@ import * as loopOps from './loop-ops'
  * Grouped because they share one property that matters: none of them starts a run, mutates a
  * session, or touches the runtime beyond asking what is live. That is what makes them safe to
  * call from anywhere — a channel resolving a fallback model, the sidebar, the agent's own
- * `global_search` — and it is worth being able to see that at a glance rather than inferring it
+ * `GlobalSearch` — and it is worth being able to see that at a glance rather than inferring it
  * from ninety neighbouring methods.
  */
 export interface ChatQueryFacadeDeps {
@@ -39,7 +39,7 @@ export function createChatQueryFacade({ repo, runner, sessionLifecycleCtx }: Cha
     },
     /**
      * User-facing cross-conversation message search — reuses the same FTS5 index
-     * the agent's `global_search` tool queries (no parallel search system). The
+     * the agent's `GlobalSearch` tool queries (no parallel search system). The
      * raw query is sanitized into an FTS5 MATCH; an empty/whitespace query or an
      * unavailable FTS5 index degrades to no results rather than throwing.
      */

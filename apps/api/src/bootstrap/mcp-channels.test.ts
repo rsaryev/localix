@@ -21,7 +21,7 @@ const confirmCard = (payload: Record<string, unknown>, title = 'Run a command'):
   interaction: {
     messageId: 'm1',
     toolCallId: 'call-1',
-    toolName: 'bash',
+    toolName: 'Bash',
     request: { requestId: 'req-1', kind: 'confirm', title, payload },
   },
 })
@@ -32,7 +32,7 @@ describe('approval cards as relayed permission requests', () => {
       userId: 'u1',
       sessionId: 'chat-a',
       hostRequestId: 'req-1',
-      toolName: 'bash',
+      toolName: 'Bash',
       description: 'Run shell command',
       input: { command: 'git push', cwd: '/repo' },
     })

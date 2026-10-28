@@ -22,7 +22,6 @@ type SessionRunners = Omit<
   | 'runPostToolBatch'
   | 'runTaskCreated'
   | 'runTaskCompleted'
-  | 'runTeammateIdle'
   | 'hasHooks'
   | 'approveWithInput'
   | 'takeApprovedInput'

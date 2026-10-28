@@ -14,7 +14,7 @@ afterAll(async () => {
 })
 
 test('rejects stale channels and settles pending commands when the frame changes', async () => {
-  const { act, useRef } = await import('react')
+  const { act, useEffect, useRef } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { useVisualFeedback } = await import('./useVisualFeedback')
   const host = document.createElement('div')
@@ -23,7 +23,10 @@ test('rejects stale channels and settles pending commands when the frame changes
   let bridge: VisualFeedbackBridge | undefined
   function Harness() {
     const frame = useRef<HTMLIFrameElement>(null)
-    bridge = useVisualFeedback(frame)
+    const value = useVisualFeedback(frame)
+    useEffect(() => {
+      bridge = value
+    })
     return <iframe ref={frame} srcDoc="" title="Preview test" />
   }
   const emit = async (channel: string, payload: Record<string, unknown>) => {
@@ -60,7 +63,7 @@ test('rejects stale channels and settles pending commands when the frame changes
 })
 
 test('a comment being written survives a page reload, and a commented element opens its comment', async () => {
-  const { act, useRef } = await import('react')
+  const { act, useEffect, useRef } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { useVisualFeedback } = await import('./useVisualFeedback')
   const host = document.createElement('div')
@@ -70,7 +73,10 @@ test('a comment being written survives a page reload, and a commented element op
   const posted: Array<Record<string, unknown>> = []
   function Harness() {
     const frame = useRef<HTMLIFrameElement>(null)
-    bridge = useVisualFeedback(frame)
+    const value = useVisualFeedback(frame)
+    useEffect(() => {
+      bridge = value
+    })
     return <iframe ref={frame} srcDoc="" title="Preview reload test" />
   }
   const emit = async (channel: string, payload: Record<string, unknown>) => {

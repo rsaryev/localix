@@ -1,12 +1,12 @@
 /**
  * Several identities in the footprint of one avatar.
  *
- * A room heading has no single face. Listing every member's avatar in a row would give a
- * six-member room a heading six tiles wide and break the fixed-height list rows around it, so
+ * A heading over several agents has no single face. Listing every avatar in a row would give a
+ * six-agent heading six tiles wide and break the fixed-height list rows around it, so
  * the tiles OVERLAP and the list is CAPPED: past the cap, one more tile says how many are left.
  *
  * The cap is a layout fact, not a product one — it is the number of overlapping tiles that
- * still read as distinct at this size. Callers that need every member name it beside the stack.
+ * still read as distinct at this size. Callers that need every identity name it beside the stack.
  */
 import { MonogramAvatar } from './monogram-avatar'
 

@@ -33,10 +33,16 @@ export function HistoryPanel({
   const [error, setError] = useState<string | null>(null)
   const [confirm, setConfirm] = useState(false)
   const [refresh, setRefresh] = useState(0)
-  useEffect(() => {
-    let live = true
+  // A new resume, revision or retry starts the list from "loading": reset while rendering.
+  const listKey = `${sessionId}\u0000${resume.id}\u0000${resume.revision}\u0000${refresh}`
+  const [listedKey, setListedKey] = useState(listKey)
+  if (listedKey !== listKey) {
+    setListedKey(listKey)
     setRecords(null)
     setListError(null)
+  }
+  useEffect(() => {
+    let live = true
     void resumeApi.history(sessionId, resume.id).then(
       (items) => {
         if (live) setRecords(items)
@@ -50,10 +56,15 @@ export function HistoryPanel({
       live = false
     }
   }, [sessionId, resume.id, resume.revision, refresh])
-  useEffect(() => {
-    let live = true
+  const recordKey = `${sessionId}\u0000${resume.id}\u0000${selected}\u0000${refresh}`
+  const [openedKey, setOpenedKey] = useState(recordKey)
+  if (openedKey !== recordKey) {
+    setOpenedKey(recordKey)
     setRecord(null)
     setConfirm(false)
+  }
+  useEffect(() => {
+    let live = true
     void resumeApi.revision(sessionId, resume.id, selected).then(
       (item) => {
         if (live) {

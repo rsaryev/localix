@@ -1,4 +1,4 @@
-/* "/<command> goal" → the cards land on the board → the leader hands the first one out */
+/* "/<command> goal" → the cards land on the board → the agent hands the first one out */
 .wt-goal {
   --loop: 9s;
   position: absolute;

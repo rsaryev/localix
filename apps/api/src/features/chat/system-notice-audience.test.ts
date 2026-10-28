@@ -5,8 +5,6 @@ import { noticeVisibility } from './system-notice-audience'
 describe('the persisted visibility of a system notice', () => {
   test('every notice stays out of history because its binding owns model visibility', () => {
     for (const kind of [
-      'participants_change',
-      'handoff_limit',
       'model_change',
       'reasoning_change',
       'connection_change',

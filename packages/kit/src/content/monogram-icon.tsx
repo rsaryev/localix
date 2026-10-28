@@ -2,7 +2,7 @@ import type { IconComponent } from '@localixai/mini-app-sdk/ui'
 import { MonogramAvatar } from './monogram-avatar'
 
 /**
- * An identity's monogram as a menu row's `icon` — an agent among addressees, a participant to add.
+ * An identity's monogram as a menu row's `icon` — an agent in a picker or a directory list.
  *
  * The defects it closes, both met in the composer's menus:
  *   - each surface built its own: one cached a factory privately, another hand-built menu rows
@@ -15,8 +15,8 @@ import { MonogramAvatar } from './monogram-avatar'
  * one every icon row shares.
  *
  * CACHED per (identity, label): a row's icon must be the same component on every render or the
- * tile remounts on each pick, and a rename must re-letter it. A roster is a handful of agents, so
- * the cache stays as small as the rosters it has seen.
+ * tile remounts on each pick, and a rename must re-letter it. A menu lists a handful of agents, so
+ * the cache stays as small as the menus it has seen.
  */
 const ICONS = new Map<string, IconComponent>()
 

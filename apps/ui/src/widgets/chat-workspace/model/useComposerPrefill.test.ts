@@ -64,7 +64,7 @@ describe('where an insert lands in the draft', () => {
   })
 
   test('an inline insert continues the sentence', () => {
-    // Clicking three colleagues in the roster builds an address line, not a column.
+    // Three inline inserts build one line, not a column.
     let draft = appendToDraft('', '@localix ', { inline: true })
     draft = appendToDraft(draft, '@lead ', { inline: true })
     draft = appendToDraft(draft, '@product ', { inline: true })

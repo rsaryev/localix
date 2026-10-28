@@ -55,13 +55,13 @@ function noMatchDiagnosis(
       .replace(/ ?\n ?/g, '\n')
       .trim()
   if (squash(text).includes(squash(oldString))) {
-    return ' The text exists but differs in indentation or spacing — copy it exactly as `read` printed it.'
+    return ' The text exists but differs in indentation or spacing — copy it exactly as `Read` printed it.'
   }
   if (mtimes.wasInvalidated(path)) {
     return ` ${path} was modified outside this session after you last read it; read it again and rebuild \`old_string\` from the current content.`
   }
   if (!mtimes.has(path)) {
-    return ` You have not read ${path} with the \`read\` tool in this session, so \`old_string\` came from memory. Read it first, then edit.`
+    return ` You have not read ${path} with \`Read\` in this session, so \`old_string\` came from memory. Read it first, then edit.`
   }
   return ' Re-read the region and copy the current text verbatim.'
 }

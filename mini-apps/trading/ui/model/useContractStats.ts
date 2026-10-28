@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import type { FundingRate, OpenInterest } from '../../backend/contracts'
 import { useVisiblePolling } from '@localixai/mini-app-sdk/ui/visibility'
 import { tradingApi } from '../api/tradingApi'
@@ -14,6 +14,8 @@ export interface ContractStats {
  * fast-moving data.
  */
 const POLL_MS = 60_000
+
+const NO_STATS: ContractStats = { funding: null, openInterest: null }
 
 /**
  * A derivative market's carry cost and outstanding size.
@@ -34,7 +36,10 @@ export function useContractStats(
   symbol: string,
   opts: { enabled?: boolean; funding?: boolean; openInterest?: boolean } = {},
 ): ContractStats {
-  const [stats, setStats] = useState<ContractStats>({ funding: null, openInterest: null })
+  // Stats belong to the market they were read for; another market reads as empty at once, with no
+  // reset effect: the previous market's funding is not this one's.
+  const [stored, setStored] = useState<{ target: string; stats: ContractStats } | null>(null)
+  const target = `${connectionId}/${symbol}`
   const askFunding = opts.funding ?? true
   const askOpenInterest = opts.openInterest ?? true
   const on = (opts.enabled ?? true) && !!connectionId && !!symbol && (askFunding || askOpenInterest)
@@ -49,13 +54,8 @@ export function useContractStats(
         ? tradingApi.openInterest(connectionId, symbol).catch(() => null)
         : Promise.resolve(null),
     ])
-    setStats({ funding, openInterest })
-  }, [connectionId, symbol, on, askFunding, askOpenInterest])
-
-  // Clear immediately on a target change: the previous market's funding is not this one's.
-  useEffect(() => {
-    setStats({ funding: null, openInterest: null })
-  }, [connectionId, symbol])
+    setStored({ target, stats: { funding, openInterest } })
+  }, [connectionId, symbol, target, on, askFunding, askOpenInterest])
 
   useVisiblePolling({
     enabled: on,
@@ -65,5 +65,5 @@ export function useContractStats(
     resetKey: `${connectionId}/${symbol}/${String(askFunding)}/${String(askOpenInterest)}`,
   })
 
-  return stats
+  return stored?.target === target ? stored.stats : NO_STATS
 }

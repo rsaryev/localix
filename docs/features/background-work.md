@@ -8,10 +8,10 @@ started, found, stopped, and reported, and what a restart does to it.
 
 | Term        | Meaning                                                                               | Boundary                                                                                        |
 | ----------- | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| Job         | A `bash` command running in the background, addressed as `bg-1`, `bg-2`.              | Starting a job checks the session’s running work; see Limits for the shared count.              |
-| Pane        | An interactive terminal (`bash` `action: "open"`), or a server the preview restarted. | Listed as `bg-N` with its terminal id and counted when starting another job.                    |
+| Job         | A `Bash` command running in the background, addressed as `bg-1`, `bg-2`.              | Starting a job checks the session’s running work; see Limits for the shared count.              |
+| Pane        | An interactive terminal (`Bash` `action: "open"`), or a server the preview restarted. | Listed as `bg-N` with its terminal id and counted when starting another job.                    |
 | Monitor     | A wait or watch the session is woken by, addressed as `mon-1`.                        | Described on its own page: [Wait for something to happen](monitors.md).                         |
-| Sub-agent   | A detached child of the session (`delegate`), addressed as `sub-1`.                   | It does not count toward the job limit.                                                         |
+| Sub-agent   | A detached child of the session (`Agent`), addressed as `sub-1`.                      | It does not count toward the job limit.                                                         |
 | Work record | The durable row every one of these has: what it is, that it runs, how it ended.       | One row per item; the running set is also kept in memory for live actions.                      |
 | Exit notice | The wake armed for a job started with `notify`.                                       | Repeated exit reports reuse one delivery identity; delivery is not proof of a successful reply. |
 
@@ -19,12 +19,12 @@ started, found, stopped, and reported, and what a restart does to it.
 
 | Need                  | Mechanism                                                                                      | Boundary                                                                                                 |
 | --------------------- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| Start a job           | `bash` with `background: true` streams output and returns after a brief initial-output window. | An eligible local foreground command can be promoted after its timeout.                                  |
+| Start a job           | `Bash` with `background: true` streams output and returns after a brief initial-output window. | An eligible local foreground command can be promoted after its timeout.                                  |
 | Hear when it ends     | `notify: true` requests an agent wake with the output when the job finishes.                   | If notice creation fails, completion falls back to a reminder; without notify, it does not start a turn. |
 | See what is running   | The composer's background-work strip lists jobs, monitors and sub-agents together.             | It shows running work; an item leaves the strip when it ends.                                            |
-| Read or stop one      | `jobs` with `action="list"`, `"read"`, `"stop"` or `"send_input"`, or the strip's Stop.        | Stop is a request: a process gets a moment to exit before it is killed.                                  |
+| Read or stop one      | `Jobs` with `action="list"`, `"read"` or `"send_input"`; `TaskStop`, or the strip's Stop.      | Stop is a request: a process gets a moment to exit before it is killed.                                  |
 | Open a job's terminal | A job started in a terminal pane opens from its strip row.                                     | If PTY creation fails or no terminal host exists, the job has only its captured transcript output.       |
-| Talk to a child       | `delegate` with `action="message"`, `"stop"` or `"close"` ([Delegation](delegation.md)).       | Every run of a child is listed as `sub-N` and reports back.                                              |
+| Talk to a child       | `SendMessage` and `TaskStop` ([Subagents](delegation.md)).                                     | Every run of a child is listed as `sub-N` and reports back.                                              |
 
 ## Manage live work
 
@@ -34,15 +34,15 @@ List work before referring to an id:
 { "action": "list" }
 ```
 
-Use the returned `job_id` with `jobs`, for example:
+Stop one with `TaskStop` and the returned `job_id`:
 
 ```json
-{ "action": "stop", "job_id": "bg-1" }
+{ "task_id": "bg-1" }
 ```
 
 **Stop requested** confirms that the registered action was invoked, not that the process has exited.
 List again to check whether it remains in the running registry. An item without a stop action can
-refuse the request; manage listed children through `delegate`.
+refuse the request. `TaskStop` with a `sub-N` id stops a subagent's run.
 
 ```json
 { "action": "send_input", "job_id": "bg-1", "input": "status\n" }
@@ -59,19 +59,19 @@ Ownership does not turn arbitrary commands written into a live terminal into rea
 
 ## How it works
 
-`bash background:true` spawns the process (`agent-core/tools/bash/bash-process.ts`) — a PTY pane
+`Bash background:true` spawns the process (`agent-core/tools/bash/bash-process.ts`) — a PTY pane
 when a terminal host is wired, else a detached child — and registers its live actions with the run's
 async registry (`features/chat/runtime/run/async-registry.ts`). The registry records it in the work
 registry (`features/work/registry.ts`), which mints the id, writes the durable row and publishes
-`session_work.updated`, the event the composer strip renders from. The `jobs` tool, the prompt's
+`session_work.updated`, the event the composer strip renders from. The `Jobs` tool, the prompt's
 list of running work and the strip all use that registry and the same user/session ownership
-boundary. This lists work owned by the session, including its participants; it does not expose
-another session's jobs. Listing an item does not guarantee that it supports every `jobs` action.
+boundary. This lists work owned by the session, including its subagents; it does not expose another
+session's jobs. Listing an item does not guarantee that it supports every `Jobs` action.
 
 The agent's interactive terminal (`bootstrap/terminal-ports.ts`) and the preview's restart route
 (`features/terminal/routes.ts`) record panes through `features/terminal/terminal-work.ts`, keyed by
-its PTY. `jobs` stops and types into such a pane through the terminal itself, and a closed pane ends
-as `cancelled`, not `failed`. The output the prompt and `jobs read` show is the pane's scrollback as
+its PTY. `Jobs stop`s and types into such a pane through the terminal itself, and a closed pane ends
+as `cancelled`, not `failed`. The output the prompt and `Jobs read` show is the pane's scrollback as
 plain text.
 
 A job started with `notify` arms an exit notice (`features/chat/runtime/exit-notices.ts`): a
@@ -95,7 +95,7 @@ will be interrupted. Review and stop important background work before restarting
 
 ### Job deadlines
 
-A background job has no deadline: it runs until it exits, the agent stops it with `jobs`, you stop
+A background job has no deadline: it runs until it exits, the agent stops it with `Jobs`, you stop
 it, its session is deleted, or the server stops. `timeout` on a `background: true` call is ignored,
 so a server started with a habitual `timeout: 60` is not closed a minute later. It sets the deadline
 of an `until` wait (values below 60 seconds use the engine's default) and of a foreground command,
@@ -115,7 +115,7 @@ outcome is shown beside it.
 | ------------------------------------------------------ | ------------------------------------------- | --------------------------------------------------- |
 | Exit 0                                                 | `finished successfully (exit 0)`            | Background terminal finished                        |
 | Unexpected non-zero exit                               | `FAILED (exit N)`                           | Background terminal exited with code N              |
-| The agent ran `jobs stop`                              | None; the `jobs` result already answered it | Background terminal stopped (stopped by the agent)  |
+| The agent ran `Jobs stop`                              | None; the `Jobs` result already answered it | Background terminal stopped (stopped by the agent)  |
 | You stopped it                                         | `was stopped by the person`                 | Background terminal stopped (stopped by the person) |
 | A stop signal from elsewhere (exit 129, 130, 137, 143) | `was stopped by a signal (exit N)`          | Background terminal interrupted (exit N)            |
 
@@ -127,15 +127,15 @@ outcome is shown beside it.
   terminal is refused, and a timed-out command is killed instead of promoted. Monitor creation has
   its own four-monitor limit, so ten is not a universal cap on all work.
 - A pane a background conversation opens does not take focus; it waits in that conversation's strip.
-- `jobs read` reads a running monitor's event log or a job's terminal scrollback. A child-process
+- `Jobs read` reads a running monitor's event log or a job's terminal scrollback. A child-process
   bash job without a terminal cannot be read that way; inspect its transcript card. Finished work
-  leaves the running registry and is no longer accessible through `jobs`.
+  leaves the running registry and is no longer accessible through `Jobs`.
 - Captured output is bounded. A background job can spill large final output to a temporary file, and
   model-facing output may be summarized or clipped. After a restart live actions and in-memory
   capture are gone; the stored work record and transcript remain.
 - Work-row writes happen asynchronously and log failures. An interrupted or failed write can leave
   restart recovery without a complete record.
-- Stopping with `jobs stop`, the strip, or a tool card does not start an agent turn. Other endings
+- Stopping with `Jobs stop`, the strip, or a tool card does not start an agent turn. Other endings
   of a `notify` job use its armed notice; if notice creation failed, completion falls back to a
   reminder for a subsequent tool result.
 
@@ -143,7 +143,7 @@ outcome is shown beside it.
 
 - [Wait for something to happen](monitors.md)
 - [Repeat work on a schedule](loops.md)
-- [Delegation](delegation.md)
+- [Subagents](delegation.md)
 
 ## Source of truth
 

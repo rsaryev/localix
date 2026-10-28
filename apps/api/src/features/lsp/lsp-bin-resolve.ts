@@ -143,13 +143,14 @@ export function spawnJsServer(
   binPath: string,
   args: string[],
   cwd: string,
+  extraEnv?: Record<string, string>,
 ): ChildProcessWithoutNullStreams | undefined {
   const script = resolveJsEntry(binPath)
   // No JS entry recoverable: run the shim itself, which needs whatever runtime it names
   // but at least does not feed a batch file to a JS parser.
   return script
-    ? spawnServer(process.execPath, [script, ...args], cwd)
-    : spawnServer(binPath, args, cwd)
+    ? spawnServer(process.execPath, [script, ...args], cwd, extraEnv)
+    : spawnServer(binPath, args, cwd, extraEnv)
 }
 
 export function findUpward(
@@ -169,20 +170,29 @@ export function findUpward(
 }
 
 /**
- * Language servers the API installation ships in its own `node_modules`. An opened repository may
- * not replace these: its `node_modules/.bin` is repository code, and the resolved entry runs with
- * the API's runtime as soon as a matching file is opened.
+ * Language servers Localix installs itself (`language-servers.json`). An opened repository may not
+ * replace these: its `node_modules/.bin` is repository code, and the resolved entry runs with the
+ * API's runtime as soon as a matching file is opened.
  */
-const BUNDLED_NPM_BINS: ReadonlySet<string> = new Set([
+const MANAGED_NPM_BINS: ReadonlySet<string> = new Set([
   'vtsls',
   'vscode-json-language-server',
   'vscode-css-language-server',
+  'vscode-html-language-server',
   'docker-langserver',
   'yaml-language-server',
 ])
 
-/** First `node_modules/.bin/<bin>` from `startDir` upward, stopping after `stopDir` when given. */
-function findNpmBinUpward(bin: string, startDir: string, stopDir?: string): string | undefined {
+/** A Windows executable's suffix; nothing elsewhere. */
+export const EXE_SUFFIX = process.platform === 'win32' ? '.exe' : ''
+
+/** An npm bin inside a managed install, or undefined when that install lacks it. */
+export function managedNpmBin(installDir: string, bin: string): string | undefined {
+  return resolveBinPath(path.join(installDir, 'node_modules', '.bin', bin))
+}
+
+/** First `node_modules/.bin/<bin>` from `startDir` upward, stopping after `stopDir`. */
+function findNpmBinUpward(bin: string, startDir: string, stopDir: string): string | undefined {
   let dir = startDir
   while (true) {
     const candidate = resolveBinPath(path.join(dir, 'node_modules', '.bin', bin))
@@ -194,35 +204,23 @@ function findNpmBinUpward(bin: string, startDir: string, stopDir?: string): stri
 }
 
 /**
- * Resolve an npm language server, then fall back to `PATH`. A server Localix bundles comes from
- * the installation first and from the project only when the installation lacks it; any other
- * server comes from the project first. Project lookup walks from `rootDir` up to `projectRoot` and
- * never above it (only `rootDir` itself when it lies outside the project). `installDir` is the
- * installation's own location, injectable for tests.
+ * Resolve an npm language server. A server Localix installs comes from its managed install
+ * (`installDir`) first and from the project only while that install is missing — never from
+ * `PATH`, so an absent server is installed rather than guessed. Any other server comes from the
+ * project first, then the managed install, then `PATH`. Project lookup walks from `rootDir` up to
+ * `projectRoot` and never above it (only `rootDir` itself when it lies outside the project).
  */
 export function resolveNpmBin(
   bin: string,
   rootDir: string,
   projectRoot: string = rootDir,
-  installDir: string = import.meta.dir,
+  installDir?: string,
 ): string | undefined {
-  const bundled = BUNDLED_NPM_BINS.has(bin)
-  const own = bundled ? findNpmBinUpward(bin, installDir) : undefined
-  if (own) return own
+  const managed = MANAGED_NPM_BINS.has(bin)
+  const own = installDir ? managedNpmBin(installDir, bin) : undefined
+  if (managed && own) return own
   const inside = isPathWithin(projectRoot, rootDir)
   const fromProject = findNpmBinUpward(bin, rootDir, inside ? projectRoot : rootDir)
   if (fromProject) return fromProject
-  return (bundled ? undefined : findNpmBinUpward(bin, installDir)) ?? which(bin)
-}
-
-export function resolveUpward(relativePath: string, startDir: string): string | undefined {
-  let dir = startDir
-  while (true) {
-    const candidate = path.join(dir, relativePath)
-    if (fileExists(candidate)) return candidate
-    const parent = path.dirname(dir)
-    if (parent === dir) break
-    dir = parent
-  }
-  return undefined
+  return managed ? undefined : (own ?? which(bin))
 }

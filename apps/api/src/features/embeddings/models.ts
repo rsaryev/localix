@@ -43,8 +43,9 @@ function fromFamily(family: EmbeddingFamily, id: string) {
       : dimensions,
     maxChunkChars: family.maxChunkChars,
     promptVersion: family.promptVersion,
-    formatQuery: family.formatQuery,
-    formatDocument: family.formatDocument,
+    formatQuery: (task: SemanticTask, text: string) => family.formatQuery(task, text),
+    formatDocument: (task: SemanticTask, title: string | undefined, text: string) =>
+      family.formatDocument(task, title, text),
   }
 }
 

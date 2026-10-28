@@ -9,7 +9,6 @@
  */
 import { AgentRunError } from '@localixai/agent/agents'
 
-import { agentRoute } from '../../../../../contracts/session-route'
 import type { SessionRecord } from '../../../repository'
 import { publishAgentPhase } from '../../session-stream-registry'
 import { identityOf, identityOutlivesRun } from '../../run-params'
@@ -37,14 +36,11 @@ export async function admitRun(
   const { deps, repo, state: runtimeState } = env
   const { activeRuns, activeRunSessions } = runtimeState
   const { userId, session, assistantMessageId } = params
-  const speakerAgentId = params.scope.speakerAgentId
-  const speakerRoute = agentRoute(session, speakerAgentId)
-  if (!speakerRoute) {
-    throw new AgentRunError(
-      'AGENT_UNAVAILABLE',
-      `Agent is no longer in the conversation: ${speakerAgentId}`,
-    )
+  const route = session.agent
+  if (!route) {
+    throw new AgentRunError('AGENT_UNAVAILABLE', 'The session has no agent to run.')
   }
+  const agentId = route.agentId
   const fork = await loadForkRun(repo, userId, session, history.rows, assistantMessageId)
   const loadSessionSnapshot = createRunSessionSnapshot(repo, userId)
   const { targetSessionId, reachable } = resolveRunHitlRouting(
@@ -54,17 +50,14 @@ export async function admitRun(
   )
 
   assertAdmitted()
-  const stores = ensureSessionStores(runtimeState, {
-    sessionId: session.id,
-    agentId: speakerAgentId,
-  })
+  const stores = ensureSessionStores(runtimeState, session.id)
   if (activeRuns.has(session.id)) {
     throw new Error(`Session ${session.id} is already running`)
   }
 
   const abort = new AbortController()
   activeRuns.set(session.id, abort)
-  activeRunSessions.set(session.id, { userId, session, agentId: speakerAgentId })
+  activeRunSessions.set(session.id, { userId, session })
   // Runtime children retain their dispatched role across wakes.
   if (identityOutlivesRun(session)) {
     runtimeState.sessionRunIdentity.set(session.id, identityOf(params.scope))
@@ -75,21 +68,20 @@ export async function admitRun(
     activeRunSessions.set(session.id, {
       userId,
       session: frame.runtimeSession,
-      agentId: speakerAgentId,
     })
   }
   const frame: RunFrame = {
     env,
     params,
     userId,
-    speakerAgentId,
+    agentId,
     assistantMessageId,
     assertAdmitted,
     abort,
     isContinuation: params.chain.continuation,
     ...(fork ? { fork } : {}),
     session,
-    speakerRoute,
+    route,
     runtimeSession: session,
     publishRuntimeSession,
     publishPhase: (phase) =>
@@ -118,7 +110,6 @@ export async function admitRun(
     type: 'run.started',
     sessionId: session.id,
     messageId: assistantMessageId,
-    agentId: speakerAgentId,
   })
   if (!frame.isContinuation) frame.publishPhase('connecting')
   return frame

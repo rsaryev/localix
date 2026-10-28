@@ -1,3 +1,5 @@
+import { sleep } from '@localixai/agent/backoff'
+
 /**
  * RFC 8628 device-code polling loop.
  * Provider-agnostic: the caller supplies a `poll()` that hits the provider's token
@@ -35,23 +37,6 @@ export interface DeviceCodePollOptions<T> {
   signal?: AbortSignal
   /** Clock seam (injected in tests to drive the deadline without real sleeps). Defaults to Date.now. */
   now?: () => number
-}
-
-function sleep(ms: number, signal?: AbortSignal): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const abortError = () =>
-      signal?.reason instanceof Error ? signal.reason : new Error('Device flow cancelled')
-    if (signal?.aborted) return reject(abortError())
-    const onAbort = () => {
-      clearTimeout(timer)
-      reject(abortError())
-    }
-    const timer = setTimeout(() => {
-      signal?.removeEventListener('abort', onAbort)
-      resolve()
-    }, ms)
-    signal?.addEventListener('abort', onAbort, { once: true })
-  })
 }
 
 export async function pollDeviceCode<T>(options: DeviceCodePollOptions<T>): Promise<T> {

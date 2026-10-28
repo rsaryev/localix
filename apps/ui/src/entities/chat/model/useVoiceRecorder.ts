@@ -56,7 +56,8 @@ export function useVoiceRecorder(active = true): VoiceRecorder {
     typeof MediaRecorder !== 'undefined' &&
     typeof navigator.mediaDevices?.getUserMedia === 'function'
 
-  const cleanup = useCallback(() => {
+  /** Release the mic, timer and recorder handles; the state reset is `cleanup`'s. */
+  const release = useCallback(() => {
     if (timerRef.current) {
       clearInterval(timerRef.current)
       timerRef.current = null
@@ -64,9 +65,13 @@ export function useVoiceRecorder(active = true): VoiceRecorder {
     streamRef.current?.getTracks().forEach((t) => t.stop())
     streamRef.current = null
     recorderRef.current = null
+  }, [])
+
+  const cleanup = useCallback(() => {
+    release()
     setIsRecording(false)
     setSeconds(0)
-  }, [])
+  }, [release])
 
   useEffect(() => {
     mountedRef.current = true
@@ -121,7 +126,8 @@ export function useVoiceRecorder(active = true): VoiceRecorder {
     })
   }, [cleanup])
 
-  const cancel = useCallback(() => {
+  /** Stop and drop the recording's handles without touching React state. */
+  const discard = useCallback(() => {
     // Invalidate an unresolved getUserMedia request too. Merely checking the
     // current focus after it resolves would resurrect a recording if the user
     // briefly switched away and came back while the permission prompt was open.
@@ -137,13 +143,25 @@ export function useVoiceRecorder(active = true): VoiceRecorder {
       }
     }
     chunksRef.current = []
-    cleanup()
-  }, [cleanup])
+    release()
+  }, [release])
 
+  const cancel = useCallback(() => {
+    discard()
+    setIsRecording(false)
+    setSeconds(0)
+  }, [discard])
+
+  // A hidden composer shows no recording: reset while rendering, and let the effect below stop
+  // the recorder itself.
+  if (!active && (isRecording || seconds !== 0)) {
+    setIsRecording(false)
+    setSeconds(0)
+  }
   useEffect(() => {
     activeRef.current = active
-    if (!active) cancel()
-  }, [active, cancel])
+    if (!active) discard()
+  }, [active, discard])
 
   return { isRecording, seconds, isSupported, start, stop, cancel }
 }

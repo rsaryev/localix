@@ -7,12 +7,11 @@ import {
 import { MenuEntries } from '@localixai/kit/menu-entries'
 import { ActionTooltip } from '@localixai/kit/tooltip'
 import { IconButton } from '@localixai/kit/icon-button'
-import { ArrowDownUp, Layers3, ListFilter } from 'lucide-react'
-import type { SessionGroupingMode } from '../model/sessionGrouping'
+import { ArrowDownUp, ListFilter } from 'lucide-react'
 import type { SortMode } from '../model/useSidebarSessions'
 
 /**
- * HOW THE CONVERSATION LIST IS SHOWN — grouping, order and archived visibility, in one menu.
+ * HOW THE CONVERSATION LIST IS SHOWN — order and archived visibility, in one menu.
  *
  * They were two icon buttons side by side, each drawing its picks differently: grouping as Radix
  * radio items, sorting as hand-placed trailing checks under a hand-drawn rule, and the archived
@@ -22,19 +21,12 @@ import type { SortMode } from '../model/useSidebarSessions'
  * and archived visibility is a real on/off toggle with its count as the trailing hint.
  */
 interface ChatSidebarViewMenuProps {
-  groupingMode: SessionGroupingMode
-  onGroupingModeChange: (mode: SessionGroupingMode) => void
   sortMode: SortMode
   onSortModeChange: (mode: SortMode) => void
   showArchived: boolean
   onShowArchivedChange: (show: boolean) => void
   /** Count of archived root chats — the toggle's trailing hint. */
   archivedCount: number
-}
-
-const GROUPING_LABEL: Record<SessionGroupingMode, string> = {
-  activity: 'Activity',
-  agent: 'Agent',
 }
 
 const SORT_LABEL: Record<SortMode, string> = {
@@ -60,8 +52,6 @@ function axisRows<T extends string>(
 }
 
 export function chatSidebarViewEntries({
-  groupingMode,
-  onGroupingModeChange,
   sortMode,
   onSortModeChange,
   showArchived,
@@ -69,13 +59,6 @@ export function chatSidebarViewEntries({
   archivedCount,
 }: ChatSidebarViewMenuProps): MenuEntry[] {
   return [
-    {
-      id: 'group-by',
-      label: 'Group by',
-      icon: Layers3,
-      hint: GROUPING_LABEL[groupingMode],
-      items: axisRows(GROUPING_LABEL, groupingMode, onGroupingModeChange),
-    },
     {
       id: 'sort-by',
       label: 'Sort by',

@@ -664,6 +664,20 @@ jobs:
           fi
           gh release upload "$RELEASE_TAG" "${FILES[@]}" --clobber --repo "$RELEASE_REPO"
 
+      # The kit mini apps are built against, for the mini-app-authoring plugin where no Localix is
+      # installed: `releases/latest/download/mini-app-kit.tar.gz`, `kit.json` at its root, checked
+      # against SHA256SUMS.txt (publish-desktop names it there).
+      - name: Stage and upload the mini app kit
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          set -euo pipefail
+          bun scripts/stage-mini-app-kit.mjs . "$RUNNER_TEMP/mini-app-kit"
+          tar -czf "$RUNNER_TEMP/mini-app-kit.tar.gz" -C "$RUNNER_TEMP/mini-app-kit" .
+          gh release upload "$RELEASE_TAG" "$RUNNER_TEMP/mini-app-kit.tar.gz" --clobber --repo "$RELEASE_REPO"
+
   # ── publish-desktop: flip the draft to the public "latest" release ───────────
   publish-desktop:
     name: Publish release
@@ -741,8 +755,8 @@ jobs:
           echo "Current latest release: ${tag:-none}"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
 
-      # Checksums of every installer and updater bundle that actually reached the release, so a leg
-      # that failed is simply absent. GitHub records each asset's SHA-256 on upload, so nothing is
+      # Checksums of every installer, updater bundle and the mini app kit that reached the release,
+      # so a leg that failed is simply absent. GitHub records each asset's SHA-256 on upload, so nothing is
       # downloaded again. The notes are written from the same asset list, so their download table
       # never offers a file the release does not have.
       - name: Write checksums and release notes
@@ -758,7 +772,7 @@ jobs:
           set -euo pipefail
           gh api "repos/$RELEASE_REPO/releases?per_page=100" --jq '
             [.[] | select(.tag_name == env.RELEASE_TAG) | .assets[]
-              | select(.name | test("\\.(dmg|AppImage|deb|app\\.tar\\.gz)$"))]
+              | select(.name | test("(\\.(dmg|AppImage|deb|app\\.tar\\.gz)|^mini-app-kit\\.tar\\.gz)$"))]
             | if length == 0 or any(.digest == null) then error("assets without a SHA-256 digest")
               else sort_by(.name)[] | "\(.digest | ltrimstr("sha256:"))  \(.name)" end
           ' > "$RUNNER_TEMP/SHA256SUMS.txt"

@@ -1,6 +1,6 @@
 import { Search, X } from 'lucide-react'
-import { useRef, type ComponentProps, type ReactNode } from 'react'
-import { cn, CONTROL_FOCUS_WITHIN } from '@localixai/mini-app-sdk/ui/classes'
+import { useEffectEvent, useLayoutEffect, useRef, type ComponentProps, type ReactNode } from 'react'
+import { cn, CONTROL_FOCUS_WITHIN, FIELD_SURFACE } from '@localixai/mini-app-sdk/ui/classes'
 
 type SearchInputProps = Omit<
   ComponentProps<'input'>,
@@ -57,6 +57,13 @@ export function SearchInput({
   ...inputProps
 }: SearchInputProps) {
   const inputRef = useRef<HTMLInputElement>(null)
+  // The `autoFocus` attribute, done by hand: focus once when the field mounts, before paint.
+  const focusOnMount = useEffectEvent(() => {
+    if (autoFocus) inputRef.current?.focus()
+  })
+  useLayoutEffect(() => {
+    focusOnMount()
+  }, [])
   // The two ends of the three rungs this field uses; `lg` is the middle.
   const compact = size === 'md'
   const roomy = size === 'xl'
@@ -70,6 +77,7 @@ export function SearchInput({
     : 'text-text-faint hover:text-foreground'
   return (
     <div
+      data-size={bare ? undefined : size}
       className={cn(
         'flex min-w-0 items-center',
         roomy ? 'gap-2' : 'gap-1.5',
@@ -80,21 +88,21 @@ export function SearchInput({
               ? 'h-[var(--chrome-control-sm)]'
               : 'h-[var(--chrome-control-xs)]'
           : cn(
-              'border border-control-border/55 transition-colors hover:border-control-border-hover',
+              // The field recipe every Input and Select trigger wears — radius, hairline and fill —
+              // so a search beside a picker reads as one strip. The sidebar's own search keeps its
+              // fainter hairline: it sits on the sidebar ground, not a pane.
+              sidebar ? 'rounded-md border border-control-border/55 bg-field-fill' : FIELD_SURFACE,
+              'transition-colors hover:border-control-border-hover',
               CONTROL_FOCUS_WITHIN,
-              // The shared field fill (see choice-trigger.ts for why it is a foreground veil, and
-              // index.css for why 4% was not enough of a step to define a field by).
               // `inset` steps one notch quieter for a field nested in an already-inset panel.
-              inset ? 'bg-field-fill/70' : 'bg-field-fill',
+              inset && 'bg-field-fill/70',
               // One ladder with Input and the Select/Combobox trigger, name for name:
-              // md 28 / lg 32 / xl 36. The largest used to be 44px — a height on no scale in
-              // the app, which made the one surface using it (settings search) taller
-              // than every control it sits beside.
+              // md 28 / lg 32 / xl 36, one radius (`rounded-md`: 24-36px) on every rung.
               compact
-                ? 'h-[var(--chrome-control-md)] rounded-md px-2'
+                ? 'h-[var(--chrome-control-md)] px-2'
                 : roomy
-                  ? 'h-[var(--chrome-control-xl)] rounded-lg px-3'
-                  : 'h-[var(--chrome-control-lg)] rounded-md px-2.5',
+                  ? 'h-[var(--chrome-control-xl)] px-3'
+                  : 'h-[var(--chrome-control-lg)] px-2.5',
             ),
         className,
       )}
@@ -110,7 +118,6 @@ export function SearchInput({
         onKeyDown={onKeyDown}
         onFocus={onFocus}
         onBlur={onBlur}
-        autoFocus={autoFocus}
         spellCheck={false}
         autoComplete="off"
         autoCorrect="off"

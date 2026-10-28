@@ -17,7 +17,6 @@ import type { ContextAnchorIdentity, ContextAnchorProof } from '../context-token
 import type { StoredTurnContext } from '../model-view/turn-context'
 import type { ModelView } from '../model-view/view'
 import type { ChatTurnFrame } from './frame'
-import type { ParticipantAudience } from './stages/participant-view'
 import type { ElisionLedger } from './request-transform'
 
 /**
@@ -44,20 +43,17 @@ export interface ChatHistoryRunContext {
     toolSchemaHash: string
   }
   /**
-   * WHOSE VIEW of the conversation this run reads: the speaking participant, plus what it can
-   * actually do this turn. Production runs supply this even with one current participant:
-   * the shared transcript can still contain a former participant's private tool work.
+   * The tool names this run is actually holding: past tool work in tools it no longer holds reads
+   * as historical observation. Absent means "do not gate".
    */
-  participantAudience?: ParticipantAudience
+  availableTools?: ReadonlySet<string>
   /** The frozen view in force and whether this turn re-plans it (`model-view/view.ts`). */
   view: ModelView
   recoveryToolAvailable?: boolean
   /** Set on a fork's runs (`ForkHistory`). */
   fork?: ForkHistory
-  /** Is `global_search` in the roster? Cards and folds point at it only when it is. */
+  /** Is `GlobalSearch` in the roster? Cards and folds point at it only when it is. */
   recallToolAvailable?: boolean
-  /** Is `memory` in the roster? The checkpoint warning asks the agent to save with it. */
-  memoryToolAvailable?: boolean
   /** What this model has taught about the heuristic so far; prices appended messages. */
   calibration?: TokenCalibration
   media: {

@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
+import { counter } from '@/testing/hookProbe'
 import { useMemo, useState } from 'react'
 import type { FileTreeDecorationIndex } from '@localixai/mini-app-sdk/ui'
 import { registerDom } from '@localixai/kit/testing/dom'
@@ -38,14 +39,14 @@ test('a decoration provider registering after first paint remounts rather than r
   const { act } = await import('react')
   const { createRoot } = await import('react-dom/client')
 
-  let renders = 0
+  const renders = counter()
   function Tree() {
     // A hook of the consumer's own, ahead of the contributed one: it is the slot a changed hook
     // order would be measured against.
     const [, force] = useState(0)
     void force
     const decorations = useFileTreeDecorations(null)
-    renders += 1
+    renders.tick()
     return <span data-testid="tree">{decorations.decorationFor('a/b.ts')?.letter ?? 'plain'}</span>
   }
 
@@ -59,7 +60,7 @@ test('a decoration provider registering after first paint remounts rather than r
   try {
     await act(async () => root.render(<Sidebar />))
     expect(host.textContent).toBe('plain')
-    const beforeRegistration = renders
+    const beforeRegistration = renders.value
 
     // What mini app discovery does, one capability snapshot later.
     await act(async () => {
@@ -85,7 +86,7 @@ test('a decoration provider registering after first paint remounts rather than r
     })
 
     expect(host.textContent).toBe('M')
-    expect(renders).toBeGreaterThan(beforeRegistration)
+    expect(renders.value).toBeGreaterThan(beforeRegistration)
   } finally {
     await act(async () => root.unmount())
     host.remove()

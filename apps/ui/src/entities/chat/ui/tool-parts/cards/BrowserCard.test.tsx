@@ -8,7 +8,7 @@ const item = (input: unknown): ToolCallItem => ({
   type: 'tool_call',
   status: 'completed',
   toolCallId: 'tc1',
-  name: 'browser',
+  name: 'Browser',
   input,
   activeVerb: 'x',
 })

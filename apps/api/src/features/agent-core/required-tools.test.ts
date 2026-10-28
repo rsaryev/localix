@@ -11,20 +11,20 @@ describe('required run tools', () => {
     expect(() =>
       assertRequiredToolsAvailable(
         [{ name: 'report' }, { name: 'mcp_archive' }],
-        [{ name: 'read' }, { name: 'report' }, { name: 'mcp_archive' }],
+        [{ name: 'Read' }, { name: 'report' }, { name: 'mcp_archive' }],
       ),
     ).not.toThrow()
   })
 
   test('reports every missing requirement once without restoring a tool', () => {
-    const tools = [{ name: 'read' }]
+    const tools = [{ name: 'Read' }]
     expect(() =>
       assertRequiredToolsAvailable(
         ['report', 'recover', 'report', 'read'].map((name) => ({ name })),
         tools,
       ),
     ).toThrow('Required run tools are unavailable: report, recover')
-    expect(tools).toEqual([{ name: 'read' }])
+    expect(tools).toEqual([{ name: 'Read' }])
   })
 
   test('rechecks the current roster when a tool disappears between runs', () => {

@@ -72,7 +72,7 @@ function tool(answer: (req: SearchRequest) => Promise<SearchResponse>) {
   return { run, requests }
 }
 
-describe('global_search', () => {
+describe('GlobalSearch', () => {
   test('asks the search service exactly what the palette would, scoped to the session', async () => {
     const { run, requests } = tool(async () => response())
     await run({ query: 'webhook retries' })

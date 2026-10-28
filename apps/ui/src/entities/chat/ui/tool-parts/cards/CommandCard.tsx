@@ -167,7 +167,7 @@ export function CommandCard({ item }: { item: CommandItem }) {
 
   return (
     <ToolLine
-      icon={toolMeta('bash').icon}
+      icon={toolMeta('Bash').icon}
       title={title}
       titleDetails={rawCommand || title}
       subtitle={subtitle}
@@ -189,7 +189,7 @@ export function CommandCard({ item }: { item: CommandItem }) {
     >
       <ToolBody>
         {rawCommand && (
-          <IORow label="IN">
+          <IORow label="In">
             <CodePreview
               code={commandPreview}
               syntaxHighlight={rawCommand.length <= MAX_HIGHLIGHTED_COMMAND_CHARS}
@@ -198,11 +198,11 @@ export function CommandCard({ item }: { item: CommandItem }) {
           </IORow>
         )}
         {isActive ? (
-          <IORow label="OUT">
+          <IORow label="Out">
             <ConsoleOutput output={item.output ?? ''} isStreaming={isActive} className="max-h-64" />
           </IORow>
         ) : (
-          <IORow label="OUT">
+          <IORow label="Out">
             {item.output ? (
               <OutputBlock linkify>{item.output}</OutputBlock>
             ) : (

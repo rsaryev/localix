@@ -13,8 +13,7 @@ export async function restartTerminalTab(paneId: string): Promise<boolean> {
   const item = useGridStore.getState().items[paneId]
   const sessionId = item?.payload?.sessionId
   if (
-    !item ||
-    item.kind !== 'terminal' ||
+    item?.kind !== 'terminal' ||
     typeof sessionId !== 'string' ||
     typeof item.payload?.terminalId !== 'string'
   )

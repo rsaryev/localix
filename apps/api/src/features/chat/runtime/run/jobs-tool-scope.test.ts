@@ -37,7 +37,6 @@ function harness() {
   ) => {
     work.start({
       owner: { userId, sessionId },
-      agentId: null,
       kind: 'job',
       label: 'dev',
       toolCallId,

@@ -1,8 +1,7 @@
 /**
  * THIS WINDOW'S COPY OF WHAT IS WAITING ON THE PERSON — the one store every attention channel reads.
  *
- * The roster used to be assembled in the window from stream frames (`hitl.requested`,
- * `user.mentioned`) into per-kind inboxes. A frame is not state: a reload, a second window or a
+ * The roster used to be assembled in the window from stream frames (`hitl.requested` and the like) into per-kind inboxes. A frame is not state: a reload, a second window or a
  * request asked while the window was closed left the inboxes empty although the run was still
  * blocked. The server now keeps the roster, so this store only MIRRORS it, by two paths:
  *

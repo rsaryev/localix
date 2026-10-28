@@ -91,7 +91,7 @@ export function composeCapabilities(rules: readonly Rule[]): ResolvedCapabilitie
  *
  *   - an `allow`, whatever its resource — including a class, which is how "deny writes, allow
  *     `inside-workspace`" is written;
- *   - an `ask` on an ordinary PATTERN (`tool:bash git *`), because someone named a particular
+ *   - an `ask` on an ordinary PATTERN (`tool:Bash git *`), because someone named a particular
  *     thing to be asked about, and a person can say yes to it.
  *
  * An `ask` on a named resource CLASS is not. A class asks about the MANNER of a call —

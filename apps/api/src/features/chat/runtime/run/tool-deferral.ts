@@ -8,7 +8,7 @@ import type { SessionRecord } from '../../repository'
 import type { RunEnv } from './types'
 
 /**
- * WHICH of a run's tools ride on the wire, and which wait behind `activate_tools`.
+ * WHICH of a run's tools ride on the wire, and which wait behind `ToolSearch`.
  *
  * Split out of `tool-assembly.ts` because it is the one pure decision in that file: given
  * the wrapped tools, their provenance, and what this session already activated, it says
@@ -21,7 +21,7 @@ import type { RunEnv } from './types'
  * Split this run's tools into what rides on the wire and what stays behind the activator.
  *
  * The line is provenance for a tool the session has never asked for, and the SESSION for one it has:
- * `activate_tools` used to hold its state in a per-run closure, so a promotion died with the turn and the
+ * `ToolSearch` used to hold its state in a per-run closure, so a promotion died with the turn and the
  * model spent a whole second turn re-activating a tool it had used two minutes earlier. The decision
  * belongs to the session, not the run.
  */
@@ -82,7 +82,7 @@ export function splitDeferredTools(
  * Sticky activation trades schema tokens for turns, and the trade stops paying at some point: a session
  * that wandered through every installed mini app would otherwise send every suite forever. The
  * oldest activation is dropped first, and dropping one costs nothing worse than one
- * `activate_tools` call if the model needs it again.
+ * `ToolSearch` call if the model needs it again.
  */
 export const MAX_SESSION_ACTIVATED_TOOLS = 24
 
@@ -138,8 +138,8 @@ export async function rememberActivatedTools(
   // run merges onto this one instead of onto the set the run started with.
   session.activatedTools = change.next
   try {
-    // Merged onto what is STORED, not onto this run's copy: another run of the session (a group
-    // chat's next speaker) may have activated tools since this one started.
+    // Merged onto what is STORED, not onto this run's copy: another run of the session (a
+    // subagent's wake, a queued turn) may have activated tools since this one started.
     const stored = await env.repo.changeActivatedTools(userId, session.id, (current) =>
       nextActivatedTools(current, activated),
     )

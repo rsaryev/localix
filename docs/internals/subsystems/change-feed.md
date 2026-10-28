@@ -39,7 +39,7 @@ registry, so a kind added to it fails to compile until every consumer gives it a
 | `user.view-state`     | An accepted view-state write, by kind and key                | Relay                                         |
 | `secret`              | A vault item created, rotated, edited or removed, by key     | Relay                                         |
 | `system.toggle`       | A host control switched                                      | Relay                                         |
-| `agent`               | Every write by handle, with the stable `agentId`; `resync`   | Semantic index, agent seats, relay            |
+| `agent`               | Every write by name, with the stable `agentId`; `resync`     | Semantic index, agent names, relay            |
 | `plugin`, `mcp`       | Removal from `capability_source`, by name; `resync`          | Semantic index, capability cleanup            |
 | `mini-app`            | Installed, updated, removed or its settings changed, by name | Mini app hosts, capability cleanup, relay     |
 | `skill`               | `resync` after a capability bump                             | Semantic index, relay                         |
@@ -48,12 +48,12 @@ registry, so a kind added to it fails to compile until every consumer gives it a
 
 The consumers besides the semantic index are wired in `apps/api/src/bootstrap/core-reactors.ts`:
 
-- `route-repair` (`features/chat/route-repair/`) rebinds seats, choice maps, project models and
-  workload routes whose connection is gone, to the account `routeReadiness` calls ready, and
+- `route-repair` (`features/chat/route-repair/`) rebinds session routes, choice maps, project models
+  and workload routes whose connection is gone, to the account `routeReadiness` calls ready, and
   surfaces loops whose chat no account can serve.
 - `notifications-cleanup` settles the provider condition rows of a deleted connection.
-- `agent-seats` (`features/chat/agent-seats/`) follows a renamed agent's handle; a deleted agent
-  leaves shared rooms and its picks are forgotten.
+- `agent-names` (`features/chat/agent-names/`) follows a renamed agent's name on the sessions that
+  run it; a deleted agent's picks are forgotten.
 - `capability-cleanup` (`features/capabilities/cleanup.ts`) drops a removed plugin's, mini app's or
   server's switches, MCP sign-in and vault bindings.
 - `session-residue` (`features/chat/session-residue.ts`) reaps monitors, loops, inbox rows and the

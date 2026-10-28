@@ -11,7 +11,6 @@ describe('ModelTaskColumn', () => {
         modelLabelFor={(key) => (key === 'titleGeneration' ? 'GPT 5.6' : null)}
         enabledFor={(key) => key !== 'titleGeneration'}
         onEnabledChange={() => {}}
-        participants={[]}
       />,
     )
 
@@ -22,45 +21,50 @@ describe('ModelTaskColumn', () => {
     expect(html).not.toContain('Delegated task runs')
   })
 
-  test("lists the conversation's party in place of the single session row", () => {
+  test("lists the conversation's agent in place of the single session row", () => {
     const html = renderToStaticMarkup(
       <ModelTaskColumn
-        activeTask="agent:builtin:reviewer"
+        activeTask="agent:builtin:localix"
         onSelectTask={() => {}}
-        modelLabelFor={(key) => (key === 'agent:builtin:reviewer' ? 'Claude Opus 5' : null)}
+        modelLabelFor={(key) => (key === 'agent:builtin:localix' ? 'Claude Opus 5' : null)}
         enabledFor={() => true}
         onEnabledChange={() => {}}
-        participants={[
-          {
-            agentId: 'builtin:localix',
-            handle: 'localix',
-            label: 'Localix',
-            inheritedLabel: 'Use anthropic/haiku',
-          },
-          { agentId: 'builtin:reviewer', handle: 'reviewer', label: 'Reviewer' },
-        ]}
+        agent={{ agentId: 'builtin:localix', name: 'localix' }}
       />,
     )
 
-    // One row per participant, named by the registry, each with its own model.
-    expect(html).toContain('Localix')
-    expect(html).toContain('Reviewer')
+    // The agent is named by its file and shows its own model.
+    expect(html).toContain('localix')
     expect(html).toContain('Claude Opus 5')
-    // The one with no choice of its own falls back to that agent's own registry model.
-    expect(html).toContain('Use anthropic/haiku')
-    // The single "Chat sessions" row is what the party replaces — it cannot describe a room.
+    // The single "Chat sessions" row is what the agent's row replaces.
     expect(html).not.toContain('Chat sessions')
-    // Every group is labelled the same way, the party's included.
-    expect(html).toContain('Agents')
+    expect(html).toContain('This chat')
     expect(html).toContain('Background workloads')
     expect(html).toContain('Session titles')
   })
 
+  test('an agent with no model of its own falls back to its registry model', () => {
+    const html = renderToStaticMarkup(
+      <ModelTaskColumn
+        activeTask="agent:builtin:localix"
+        onSelectTask={() => {}}
+        modelLabelFor={() => null}
+        enabledFor={() => true}
+        onEnabledChange={() => {}}
+        agent={{
+          agentId: 'builtin:localix',
+          name: 'localix',
+          inheritedLabel: 'Use anthropic/haiku',
+        }}
+      />,
+    )
+
+    expect(html).toContain('Use anthropic/haiku')
+  })
+
   test('with no conversation open the same heading covers the stand-in session row', () => {
-    // The agent editor and onboarding open the same picker with nobody to list. That is not a
-    // special case in the component: a party is a list, and this one has nothing in it — the
-    // `session` row stands in, under the heading the participants would have had, because both
-    // answer the same question about who the chat runs as.
+    // The agent editor and onboarding open the same picker with no agent to list: the `session`
+    // row stands in, under the heading the agent would have had.
     const html = renderToStaticMarkup(
       <ModelTaskColumn
         activeTask="session"
@@ -68,18 +72,17 @@ describe('ModelTaskColumn', () => {
         modelLabelFor={() => null}
         enabledFor={() => true}
         onEnabledChange={() => {}}
-        participants={[]}
       />,
     )
 
     expect(html).toContain('Chat sessions')
-    expect(html).toContain('Agents')
+    expect(html).toContain('This chat')
     expect(html).toContain('Background workloads')
   })
 
-  test('a participant the registry cannot name still gets a row', () => {
+  test('an agent the registry cannot name still gets a row', () => {
     // A disabled or deleted agent leaves a handle behind on the conversation. Hiding the row
-    // would make the picker disagree with a transcript that still shows that agent speaking.
+    // would make the picker disagree with the transcript that still shows that agent.
     const html = renderToStaticMarkup(
       <ModelTaskColumn
         activeTask="agent:deleted:ghost"
@@ -87,13 +90,13 @@ describe('ModelTaskColumn', () => {
         modelLabelFor={() => null}
         enabledFor={() => true}
         onEnabledChange={() => {}}
-        participants={[{ agentId: 'deleted:ghost', handle: 'ghost' }]}
+        agent={{ agentId: 'deleted:ghost', name: 'ghost' }}
       />,
     )
 
     expect(html).toContain('ghost')
     // Rendered through JSX, so the apostrophe arrives HTML-escaped.
-    expect(html).toContain('Use @ghost&#x27;s model')
+    expect(html).toContain('Use ghost&#x27;s model')
   })
 
   test('offers the Session recap workload with its own switch, on, falling back to the chat model', () => {
@@ -104,7 +107,6 @@ describe('ModelTaskColumn', () => {
         modelLabelFor={() => null}
         enabledFor={() => true}
         onEnabledChange={() => {}}
-        participants={[]}
       />,
     )
 

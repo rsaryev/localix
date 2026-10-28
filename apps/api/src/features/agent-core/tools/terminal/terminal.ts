@@ -9,7 +9,7 @@ export { waitForScreen, type WaitOutcome } from './terminal-wait'
 export { terminalActionFields, INTERACTIVE_ACTIONS } from './terminal-schema'
 
 /**
- * Interactive-terminal actions, folded INTO the `bash` tool (not a separate tool):
+ * Interactive-terminal actions, folded INTO the `Bash` tool (not a separate tool):
  * `bash` with no `action` runs a shell command; `bash` with an `action` drives a
  * full-screen / interactive program (vim, REPLs, htop, arrow-key menus) in a live
  * PTY pane — reading the RENDERED screen (a VT emulator reconstructs the visible

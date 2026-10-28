@@ -20,12 +20,12 @@ import { HUGE_BUDGET, msg, namedTool, userMsg } from './_test-helpers'
 
 /** A message whose payload is RECOVERABLE (a write's content) ⇒ its menu offers `elide`. */
 const writeMsg = (i: number, chars: number): ChatMessage =>
-  msg({ items: [namedTool('write', { path: `f${i}.ts`, content: 'W'.repeat(chars) })] })
+  msg({ items: [namedTool('Write', { path: `f${i}.ts`, content: 'W'.repeat(chars) })] })
 
 /** A message whose payload is NON-recoverable (bash output) ⇒ its menu is the lossy chain. */
 const bashMsg = (i: number, chars: number): ChatMessage =>
   msg({
-    items: [namedTool('bash', { command: `bun test ${i}` }, { resultText: 'L'.repeat(chars) })],
+    items: [namedTool('Bash', { command: `bun test ${i}` }, { resultText: 'L'.repeat(chars) })],
   })
 
 /** No pressure gate, no quantization noise, first message NOT auto-locked. */
@@ -110,7 +110,7 @@ describe('planContextCompression — the hard-keep tail', () => {
     }
     expect(wireItem.toolCallId).toBe(originalItem.toolCallId)
     expect(wireItem.resultText).toContain(
-      `tool_output(action="get", tool_call_id="${originalItem.toolCallId}")`,
+      `ToolOutput(action="get", tool_call_id="${originalItem.toolCallId}")`,
     )
     expect(originalItem.resultText).toHaveLength(200_000)
   })

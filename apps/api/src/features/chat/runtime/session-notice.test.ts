@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
 import {
-  participantsChangeText,
   permissionModeChangeNotice,
   recordSessionNotice,
   routeChangeNotices,
@@ -9,10 +8,10 @@ import {
 import type { AgentStreamEvent, PersistedMessage } from '../contracts'
 import type { SessionAgentRoute } from '../repository-types'
 
-const member = (over: Partial<SessionAgentRoute>): SessionAgentRoute =>
+const route = (over: Partial<SessionAgentRoute>): SessionAgentRoute =>
   ({
     agentId: 'a1',
-    handle: 'lead',
+    name: 'lead',
     providerConnectionId: 'c1',
     modelId: 'anthropic/claude-opus-5',
     reasoningEffort: 'medium',
@@ -20,43 +19,28 @@ const member = (over: Partial<SessionAgentRoute>): SessionAgentRoute =>
   }) as SessionAgentRoute
 
 describe('what a conversation says about itself', () => {
-  test('a membership change names who came and who went', () => {
-    expect(
-      participantsChangeText([member({})], [member({}), member({ agentId: 'a2', handle: 'qa' })]),
-    ).toBe('qa joined the conversation.')
-    expect(
-      participantsChangeText([member({}), member({ agentId: 'a2', handle: 'qa' })], [member({})]),
-    ).toBe('qa left the conversation.')
-    expect(participantsChangeText([member({})], [member({})])).toBeNull()
-  })
-
-  test('a route change names the PARTICIPANT it is about', () => {
-    // The defect this replaces: "Reasoning effort set to low", with nothing saying whose. In a
-    // room of three that sentence is about one of them and reads as being about all of them.
-    const before = [member({}), member({ agentId: 'a2', handle: 'qa' })]
-    const after = [member({ reasoningEffort: 'low' }), member({ agentId: 'a2', handle: 'qa' })]
-    expect(routeChangeNotices(before, after)).toEqual([
+  test('a route change names the agent it is about', () => {
+    expect(routeChangeNotices(route({}), route({ reasoningEffort: 'low' }))).toEqual([
       {
         kind: 'reasoning_change',
         tone: 'neutral',
-        participant: 'lead',
         text: 'lead reasoning effort set to low.',
       },
     ])
   })
 
   test('a model change is reported without its provider prefix', () => {
-    expect(routeChangeNotices([member({})], [member({ modelId: 'openai/gpt-5' })])).toEqual([
-      { kind: 'model_change', tone: 'neutral', participant: 'lead', text: 'lead is now on gpt-5.' },
+    expect(routeChangeNotices(route({}), route({ modelId: 'openai/gpt-5' }))).toEqual([
+      { kind: 'model_change', tone: 'neutral', text: 'lead is now on gpt-5.' },
     ])
   })
 
-  test('a newcomer’s model is not a change — the join line already said they are here', () => {
-    expect(routeChangeNotices([], [member({})])).toEqual([])
+  test('a first assignment is not a change', () => {
+    expect(routeChangeNotices(null, route({}))).toEqual([])
   })
 
   test('nothing is announced when nothing moved', () => {
-    expect(routeChangeNotices([member({})], [member({})])).toEqual([])
+    expect(routeChangeNotices(route({}), route({}))).toEqual([])
   })
 
   test('a mode line carries the mode it switched TO, so the client can draw that mode', () => {
@@ -89,7 +73,6 @@ test('the visible line is UI-only and its agent context is carried by a binding'
     {
       kind: 'reasoning_change',
       tone: 'neutral',
-      participant: 'lead',
       text: 'lead reasoning effort set to low.',
     },
   )
@@ -104,7 +87,7 @@ test('the visible line is UI-only and its agent context is carried by a binding'
     source: 'system',
     target: {
       kind: 'system-event',
-      token: 'notice:reasoning_change:participant:lead',
+      token: 'notice:reasoning_change',
     },
     resolution: {
       status: 'resolved',

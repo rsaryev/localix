@@ -46,8 +46,6 @@ async function editor(page) {
 }
 
 export async function compose(page, scenario) {
-  if (scenario.startsWith('island-'))
-    return (await import('./agent-island.mjs')).composeIsland(page, scenario)
   if (scenario === 'agent-command')
     return (await import('./agent-command.mjs')).composeAgentCommand(page)
   if (scenario === 'agent-management')
@@ -60,17 +58,22 @@ export async function compose(page, scenario) {
     return (await import('./visual-feedback.mjs')).composeVisualFeedback(page)
   if (scenario === 'session-window-drag')
     return (await import('./session-drag.mjs')).composeSessionDrag(page)
-  if (scenario === 'party-route') return (await import('./party-route.mjs')).composePartyRoute(page)
-  if (scenario === 'model-command')
-    return (await import('./model-command.mjs')).composeModelCommand(page)
   if (scenario === 'cloud-connection')
     return (await import('./cloud-connection.mjs')).composeCloudConnection(page)
   if (scenario === 'unfinished-reply')
     return (await import('./unfinished-reply.mjs')).composeUnfinishedReply(page)
+  if (scenario === 'settings-strip')
+    return (await import('./settings-strip.mjs')).composeSettingsStrip(page)
+  if (scenario === 'tool-sections')
+    return (await import('./tool-sections.mjs')).composeToolSections(page)
+  if (scenario === 'agent-children')
+    return (await import('./agent-children.mjs')).composeAgentChildren(page)
+  if (['status-line', 'mcp-prompts', 'plugin-waiting'].includes(scenario))
+    return (await import('./composer-surfaces.mjs')).composeComposerSurfaces(page, scenario)
+  if (['for-your-work', 'for-your-work-all'].includes(scenario))
+    return (await import('./recommendations.mjs')).composeRecommendations(page, scenario)
   if (scenario.startsWith('store'))
     return (await import('./store.mjs')).composeStore(page, scenario)
-  if (scenario === 'codemode-card')
-    return (await import('./codemode-card.mjs')).composeCodemodeCard(page)
   if (['local-models-settings', 'semantic-search'].includes(scenario))
     return (await import('./local-models.mjs')).composeLocalModels(page, scenario)
   if (['trading', 'system-overview', 'kubernetes'].includes(scenario))
@@ -104,14 +107,6 @@ export async function compose(page, scenario) {
       await page.getByRole('dialog').getByRole('combobox').fill('Toggle sidebar')
       await page.getByRole('option', { name: /Toggle sidebar/ }).click()
     }
-  } else if (scenario === 'participants') {
-    await button(page, 'Chat history').click()
-    await page.locator('[data-session-row]').first().waitFor({ state: 'visible' })
-    await page.getByRole('heading', { name: 'Release checklist', exact: true }).waitFor()
-    await button(page, 'Add participant').click()
-    await page.getByRole('menu').waitFor({ state: 'visible' })
-    await page.keyboard.press('Escape')
-    await page.getByRole('heading', { name: 'Release checklist', exact: true }).click()
   } else if (scenario === 'resume' || scenario === 'resume-library') {
     await openTool(page, 'Resumes')
     await page.getByText('Product engineer — demo', { exact: true }).waitFor()
@@ -129,11 +124,19 @@ export async function compose(page, scenario) {
     await page.getByText('Manage plugins…', { exact: true }).waitFor()
   } else if (scenario === 'models') {
     await page
-      .getByRole('button', { name: /Choose a model and connect a provider|^Model:/ })
+      .getByRole('button', { name: /Choose a model and connect a provider|^Choose model|^Model:/ })
       .click()
     await page.getByText('Add provider', { exact: true }).waitFor()
-    await page.getByRole('dialog').getByText('OpenAI', { exact: true }).first().click()
-    await page.getByText('API Key(s) (manual)', { exact: true }).waitFor()
+    // OpenAI leaves the list once a connection to it exists (the capture's placeholder is one).
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: /^(OpenAI|Anthropic)$/ })
+      .first()
+      .click()
+    await page
+      .getByText(/API Key/)
+      .first()
+      .waitFor()
   } else if (scenario === 'palette') {
     await page.keyboard.press('F1')
     await page.getByRole('dialog').getByRole('combobox').fill('terminal')

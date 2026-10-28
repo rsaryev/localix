@@ -97,7 +97,7 @@ export async function resolveMarketplaceInstall(
   if (!entry)
     throw new Error(`Plugin "${requested.name}" not found in marketplace "${ref.marketplace}"`)
   const id = `${entry.name}@${ref.marketplace}`
-  if ((await readManagedPolicy(deps.managedSettingsDir)).enabledPlugins[id] === false)
+  if (!((await readManagedPolicy(deps.managedSettingsDir)).enabledPlugins[id] ?? true))
     throw new Error(`Plugin "${id}" is blocked by managed settings (enabledPlugins)`)
 
   // Honor the catalog's `metadata.pluginRoot` so relative entry sources resolve
@@ -116,9 +116,9 @@ export async function resolveMarketplaceInstall(
   if ('localPath' in resolved) {
     // A hosted catalog brought only its marketplace.json: there is no tree to resolve against.
     const hosted = known[ref.marketplace]?.source
-    if (hosted && hosted.source === 'url')
+    if (hosted?.source === 'url')
       throw new Error(
-        `Marketplace "${ref.marketplace}" was added from a URL, so its relative source "${String(entry.source)}" cannot be fetched; the entry needs a github, url or git-subdir source`,
+        `Marketplace "${ref.marketplace}" was added from a URL, so its relative source "${typeof entry.source === 'string' ? entry.source : JSON.stringify(entry.source)}" cannot be fetched; the entry needs a github, url or git-subdir source`,
       )
     if (!(await fs.stat(resolved.localPath).catch(() => null))?.isDirectory())
       throw new Error(`Source path does not exist: ${resolved.localPath}`)

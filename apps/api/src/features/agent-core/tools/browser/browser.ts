@@ -202,7 +202,7 @@ export function createBrowserTool(hostDeps: BrowserToolDeps) {
 
   const goal = !!deps.decide
   const tool: AgentTool<BrowserInput, BrowserDetails> = defineAgentTool({
-    name: TOOL.browser,
+    name: TOOL.Browser,
     label: 'Browser',
     activeVerb: 'Controlling browser',
     // The injected preview port owns availability. Engine-created sessions have no client

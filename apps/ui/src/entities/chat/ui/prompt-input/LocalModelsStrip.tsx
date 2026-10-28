@@ -20,7 +20,7 @@ export const LocalModelsStrip = memo(function LocalModelsStrip({
 }) {
   const { status, refresh } = useLocalModelsStatus(isFocused)
   if (!isFocused || !status) return null
-  const run = (action: Promise<unknown>) => void action.finally(() => refresh())
+  const run = (action: Promise<unknown>) => void action.finally(() => void refresh())
   // Downloads fetched ahead of need stay quiet: the status bar shows the one search waits on.
   const active = status.jobs.filter((job) => isActiveJob(job) && !job.background)
   const pausedShown = status.paused.filter((p) => !p.background)

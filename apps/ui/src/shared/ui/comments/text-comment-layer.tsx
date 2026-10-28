@@ -8,6 +8,7 @@ import { IconButton } from '@localixai/kit/icon-button'
 import { Textarea } from '@localixai/kit/textarea'
 import { POPOVER_SURFACE } from '@localixai/kit/popover-surface'
 import { AnchoredCommentCard } from './AnchoredCommentCard'
+import { focusOnMount } from './CommentDraftCard'
 import { useCommentDraft } from './useCommentDraft'
 import type { MessageAttachment } from '@/shared/api/contracts'
 import { matchesChord, withChordHint } from '@/shared/lib/keybindings'
@@ -154,6 +155,19 @@ export function TextCommentLayer({
     return () => document.removeEventListener('selectionchange', onSelectionChange)
   }, [active, composing])
 
+  // The content is not a control: it only reports where a selection ended, so those listeners
+  // are attached to the element itself rather than declared as interactions on a static node.
+  useEffect(() => {
+    const prose = proseRef.current
+    if (!prose) return
+    prose.addEventListener('mouseup', captureSelection)
+    prose.addEventListener('keyup', captureSelection)
+    return () => {
+      prose.removeEventListener('mouseup', captureSelection)
+      prose.removeEventListener('keyup', captureSelection)
+    }
+  }, [captureSelection])
+
   // The same draft the preview writes into: a note, plus anything attached to it. A quoted
   // sentence seeds no evidence of its own, so the seed is empty and the Attach control is what
   // puts a screenshot or a file on a text comment.
@@ -184,12 +198,7 @@ export function TextCommentLayer({
       className={cn('relative min-h-0 overflow-auto scrollbar-thin', className)}
       data-scrollable
     >
-      <div
-        ref={proseRef}
-        className={contentClassName}
-        onMouseUp={captureSelection}
-        onKeyUp={captureSelection}
-      >
+      <div ref={proseRef} className={contentClassName}>
         {children}
       </div>
 
@@ -267,7 +276,7 @@ export function TextCommentLayer({
                 }}
               >
                 <Textarea
-                  autoFocus
+                  ref={focusOnMount}
                   aria-label="Comment"
                   aria-keyshortcuts="Control+Enter Meta+Enter"
                   value={draft}

@@ -1,7 +1,7 @@
 /**
  * Localix's session tools in Claude Code's input shapes (the mod types' `BuiltinToolInputs`):
  * `loops` is `CronCreate` (`cron`, `prompt`, `recurring`), `CronDelete` (`id`), `CronList` or
- * `ScheduleWakeup` (`delaySeconds`, `prompt`) by its action; `mcp_resources` is
+ * `ScheduleWakeup` (`delaySeconds`, `prompt`) by its action; `McpResources` is
  * `ListMcpResourcesTool` (`server`) or `ReadMcpResourceTool` (`server`, `uri`).
  */
 import { defined, num, without, type ToolShape } from './cc-tool-fields'
@@ -12,12 +12,13 @@ const LOOP_NAMES: Readonly<Record<string, string>> = {
   reschedule: 'ScheduleWakeup',
 }
 
+// An update, a removal by another name or a run goes by the name the model calls it, `Loops`.
 const loops: ToolShape = {
-  name: 'loops',
+  name: 'Loops',
   names: ['CronCreate', 'CronDelete', 'CronList', 'ScheduleWakeup'],
   nameFor(input) {
     if (input.action === 'add') return input.cron === undefined ? 'ScheduleWakeup' : 'CronCreate'
-    return LOOP_NAMES[String(input.action)] ?? 'loops'
+    return LOOP_NAMES[String(input.action)] ?? 'Loops'
   },
   toClaude(input) {
     const name = loops.nameFor!(input)
@@ -50,6 +51,6 @@ const mcpResources: ToolShape = {
 }
 
 export const SESSION_SHAPES: Record<string, ToolShape> = {
-  loops,
-  mcp_resources: mcpResources,
+  Loops: loops,
+  McpResources: mcpResources,
 }

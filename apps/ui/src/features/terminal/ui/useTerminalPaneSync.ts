@@ -24,6 +24,7 @@ export function useTerminalPaneSync({
   onExit: () => void
 }) {
   useEffect(() => {
+    // oxlint-disable-next-line react/immutability -- `term` is the caller's ref to the live xterm instance; setting its option is the imperative integration this hook exists for
     if (term.current) term.current.options.disableStdin = Boolean(terminalExit)
     if (terminalExit) onExit()
     fit.current?.()
@@ -37,6 +38,7 @@ export function useTerminalPaneSync({
     // Focusing the tab means the user is looking at it → any unseen-activity mark
     // is now seen. (The resize handler covers the shown-but-unfocused case.)
     if (attention.current) {
+      // oxlint-disable-next-line react/immutability -- `attention` is the caller's ref to the tab's activity flag, which the caller's imperative xterm callbacks also read
       attention.current = false
       useGridStore.getState().setItemAttention(paneId, false)
     }

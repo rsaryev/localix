@@ -13,7 +13,7 @@ import { normalizeChartPayload } from './openTab'
  *
  * Both builders normalize the payload FIRST, and that is the whole reason they live together
  * rather than inline in `register.tsx`: the rule they share is that a ref must name the connection
- * the tab is actually showing. It has been broken before — the render migrated a restored legacy
+ * the tab is actually showing. It has been broken before — the render mapped an unflagged
  * credentialed `connectionId` onto the venue's public profile while the drag ref kept the raw id,
  * so a tab showing a public chart handed the agent a ref to an account-bearing connection. Two
  * functions with one invariant belong in one file, where the invariant can be stated once.

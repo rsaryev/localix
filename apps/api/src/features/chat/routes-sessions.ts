@@ -23,15 +23,14 @@ export function createChatSessionsRoutes(service: ChatRoutesService) {
         return c.json({ hits: await service.searchHistory(c.get('userId'), q, limit ?? 30) }, 200)
       })
       .post('/sessions', zValidator('json', createSessionRequestSchema), async (c) => {
-        // Handles on the wire become the service's party. The mapping lives here because it is
-        // transport shape meeting domain shape: the wire says WHO is in the conversation, the
-        // service's richer form also says what each of them runs on, which a client never states
-        // at creation — an unrouted member inherits the session's model like any other.
-        const { agentIds, ...input } = c.req.valid('json')
+        // The wire names the conversation's agent by id; the service's richer form also carries
+        // its route, which a client never states at creation: an unrouted agent inherits the
+        // session's model like any other.
+        const { agentId, ...input } = c.req.valid('json')
         return c.json(
           await service.createSession(c.get('userId'), {
             ...input,
-            ...(agentIds?.length ? { agents: agentIds.map((agentId) => ({ agentId })) } : {}),
+            ...(agentId ? { agent: { agentId } } : {}),
           }),
           201,
         )
@@ -61,9 +60,6 @@ export function createChatSessionsRoutes(service: ChatRoutesService) {
           )
         },
       )
-      .get('/sessions/:id/join-routes', zValidator('param', sessionParamsSchema), async (c) => {
-        return c.json(await service.getJoinRoutes(c.get('userId'), c.req.valid('param').id), 200)
-      })
       // What a plugin's `subagentStatusLine` last drew in this conversation's subagent rows; the
       // server redraws them and pokes `subagent-rows` when they change.
       .get('/sessions/:id/subagent-rows', zValidator('param', sessionParamsSchema), async (c) => {
@@ -83,14 +79,12 @@ export function createChatSessionsRoutes(service: ChatRoutesService) {
         zValidator('param', sessionParamsSchema),
         zValidator('json', updateSessionRequestSchema),
         async (c) => {
-          // Same wire-to-domain mapping as creation: the client states membership, the service
-          // owns what each participant runs on (`reseatParticipants` keeps a survivor's own route).
-          const { agentIds, ...patch } = c.req.valid('json')
           return c.json(
-            await service.updateSession(c.get('userId'), c.req.valid('param').id, {
-              ...patch,
-              ...(agentIds?.length ? { agents: agentIds.map((agentId) => ({ agentId })) } : {}),
-            }),
+            await service.updateSession(
+              c.get('userId'),
+              c.req.valid('param').id,
+              c.req.valid('json'),
+            ),
             200,
           )
         },

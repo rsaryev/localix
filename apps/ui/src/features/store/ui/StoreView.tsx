@@ -2,8 +2,6 @@ import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { CircleAlert } from 'lucide-react'
 import type { Listing, ListingRef, PackageKind, StoreComponent } from '@localixai/store'
 import { SearchInput } from '@localixai/kit/search-input'
-import { SectionHeading } from '@localixai/kit/section-heading'
-import { SidebarNav } from '@localixai/kit/sidebar-nav'
 import { useElementWidth } from '@localixai/kit/lib'
 import { WorkbenchNoticeBar } from '@localixai/kit/workbench-notice-bar'
 import type { StoreClient } from '@/shared/api/store-client'
@@ -11,15 +9,14 @@ import type { StoreTarget } from '@/shared/lib/openStore'
 import type { StoreInstallExtra } from '@/shared/lib/storeInstallExtra'
 import { layoutFor, StoreFrameContext } from '../model/layout'
 import {
-  navGroups,
   parseSection,
   sectionLabel,
+  storeNav,
   type StoreSection,
   type StoreView as View,
 } from '../model/navigation'
 import { StoreMemoryContext } from '../model/storeMemory'
 import { StoreScopeContext, type StoreProject, type StoreScope } from '../model/storeContext'
-import { useSidebarFold } from '../model/sidebarFold'
 import { useStoreActions } from '../model/useStoreActions'
 import { keyOf } from '../model/useExtrasAfterInstall'
 import {
@@ -29,11 +26,13 @@ import {
   useStoreSources,
 } from '../model/useStoreData'
 import { createReadAhead } from '../model/readAhead'
-import { useDebounced, SEARCH_DEBOUNCE_MS } from '../model/useDebounced'
+import { useDebounced } from '@localixai/mini-app-sdk/ui/runtime-hooks'
+import { SEARCH_DEBOUNCE_MS } from '../model/searchDebounce'
 import { AddSourceDialog } from './AddSourceDialog'
 import { ConsentSheet } from './ConsentSheet'
 import { StoreScrollContext } from './PagedList'
 import { StoreBody } from './StoreBody'
+import { StoreNav } from './StoreNav'
 
 /** A view over the section, with the listing in hand when it was opened from a card. */
 type Opened = View & { listing?: Listing }
@@ -42,9 +41,9 @@ type Opened = View & { listing?: Listing }
 const INTENT_MS = 120
 
 /**
- * THE STORE (`docs/internals/store.md`, "Screens"): the search on top; the sections beside it —
- * a full column, a column of icons, or one picker in the header, by the pane's own width — and
- * Discover, a shelf, a package's page, the library or the sources. It renders the contract and
+ * THE STORE (`docs/internals/store.md`, "Screens"): the bar on top (`StoreNav`: search and
+ * library, the catalog's tabs under them), and below it Discover, a shelf, a package's page, the library or the
+ * sources. It renders the contract and
  * names no provider; `target` is where the tab was opened.
  */
 export function StoreView({
@@ -52,6 +51,7 @@ export function StoreView({
   target,
   extras,
   project = null,
+  sessionId = null,
   onNavigate,
   searchDelay = SEARCH_DEBOUNCE_MS,
 }: {
@@ -61,6 +61,8 @@ export function StoreView({
   extras: readonly StoreInstallExtra[]
   /** The project open beside the Store. */
   project?: StoreProject | null
+  /** The chat open beside the Store: what it works in is part of what suits it. */
+  sessionId?: string | null
   /** Open a `localix://` address: an installed package, a provider's settings. */
   onNavigate: (uri: string) => void
   searchDelay?: number
@@ -69,7 +71,6 @@ export function StoreView({
   const scroller = useRef<HTMLDivElement>(null)
   const width = useElementWidth(root)
   const layout = layoutFor(width)
-  const fold = useSidebarFold()
   const [section, setSection] = useState<StoreSection>('discover')
   const [stack, setStack] = useState<Opened[]>([])
   const [query, setQuery] = useState('')
@@ -88,10 +89,18 @@ export function StoreView({
   const [arrived, setArrived] = useState<StoreTarget | undefined>(undefined)
   if (target && target !== arrived) {
     setArrived(target)
-    const next = parseSection(target.shelf)
+    // A plain open names no place: it lands on Discover, as the first one does.
+    const plain = !target.shelf && !target.ref && !target.recommended && !target.addSource
+    const next = plain ? 'discover' : parseSection(target.shelf)
     if (next) setSection(next)
-    setStack(target.ref ? [{ type: 'listing', ref: target.ref as ListingRef }] : [])
-    if (target.ref || next) setQuery('')
+    setStack(
+      target.ref
+        ? [{ type: 'listing', ref: target.ref as ListingRef }]
+        : target.recommended
+          ? [{ type: 'recommended' }]
+          : [],
+    )
+    if (target.ref || target.recommended || next) setQuery('')
     if (target.addSource)
       setAdding({ kind: target.addSource.kind as PackageKind, input: target.addSource.input })
   }
@@ -115,6 +124,7 @@ export function StoreView({
     () => ({
       client,
       project,
+      sessionId,
       open: (item: Listing | ListingRef, focus?: Pick<StoreComponent, 'kind' | 'name'>) =>
         push(
           'ref' in item
@@ -142,11 +152,11 @@ export function StoreView({
       removeExtra: (extra, listing) => actions.run(extra.remove(listing)),
       extraProblems: actions.extras.problems,
     }),
-    [client, project, actions, extras, onNavigate, push, ahead],
+    [client, project, sessionId, actions, extras, onNavigate, push, ahead],
   )
   const frame = useMemo(() => ({ layout, width }), [layout, width])
   const creatable = useCreatable(client)
-  const groups = navGroups(facets.data?.facets, creatable.data)
+  const sections = storeNav(facets.data?.facets, creatable.data)
   const choose = (id: string) => scope.goTo(id as StoreSection)
   const search = (
     <SearchInput
@@ -179,44 +189,19 @@ export function StoreView({
             onScrollCapture={ahead.scrolled}
             onWheelCapture={ahead.scrolled}
           >
-            <header className="flex items-center gap-3 px-4 pt-3 pb-3">
-              {layout === 'narrow' ? (
-                <SidebarNav
-                  mode="select"
-                  label="Store sections"
-                  groups={groups}
-                  active={q ? '' : section}
-                  onSelect={choose}
-                  search={search}
-                  className="w-full"
-                />
-              ) : (
-                <>
-                  <SectionHeading as="h1" level="section" title="Store" className="shrink-0" />
-                  <div className="max-w-xl min-w-0 flex-1">{search}</div>
-                </>
-              )}
-            </header>
+            <StoreNav
+              sections={sections}
+              // While a search shows its results, no section is the one on screen.
+              active={q ? '' : section}
+              onChange={choose}
+              search={search}
+              layout={layout}
+            />
             <div className="flex min-h-0 flex-1">
-              {layout !== 'narrow' && (
-                <SidebarNav
-                  mode={fold.folded ? 'compact' : 'full'}
-                  label="Store sections"
-                  groups={groups}
-                  active={q ? '' : section}
-                  onSelect={choose}
-                  onToggle={fold.toggle}
-                  className={
-                    fold.folded
-                      ? 'w-14 shrink-0 self-stretch'
-                      : 'w-52 shrink-0 overflow-y-auto px-3 pb-4'
-                  }
-                />
-              )}
               <div
                 ref={scroller}
                 data-store-scroller
-                className="flex min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto px-4 pb-6 @2xl:px-6"
+                className="flex min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto px-4 pt-4 pb-6 @2xl:px-6"
               >
                 {actions.problem && (
                   <WorkbenchNoticeBar
@@ -236,7 +221,7 @@ export function StoreView({
                       q
                         ? 'search'
                         : top
-                          ? `${depth}:${top.type === 'listing' ? keyOf(top.ref) : top.title}`
+                          ? `${depth}:${top.type === 'listing' ? keyOf(top.ref) : top.type === 'list' ? top.title : top.type}`
                           : section
                     }
                     section={section}

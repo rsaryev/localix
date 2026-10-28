@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useSyncExternalStore } from 'react'
 import { SearchInput } from '@localixai/kit/search-input'
 import { WorkbenchToolbar } from '@localixai/kit/workbench-toolbar'
 import { Search } from 'lucide-react'
@@ -49,6 +49,12 @@ export function GlobalSearchTab({
     sessionProjectId: (id) =>
       useChatStore.getState().allSessions.find((session) => session.id === id)?.projectId ?? null,
   })
+
+  // The tab opens on a person's request to search: focus the field once, before paint.
+  const controlsRef = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    controlsRef.current?.querySelector('input')?.focus()
+  }, [])
 
   // The tab is one per chat — re-opening it with a new seed query changes the payload
   // without remounting, so sync the seed in (once per distinct value; user edits win
@@ -125,11 +131,15 @@ export function GlobalSearchTab({
           the toolbar's own `border-b` is the only treatment that cannot drift from its neighbour.
           `lx-occluder` stays for the strips that genuinely have content sliding beneath them —
           table heads, hunk bars, list-section heads. */}
-      <WorkbenchToolbar as="header" aria-label="Global search controls" layout="stacked">
+      <WorkbenchToolbar
+        ref={controlsRef}
+        as="header"
+        aria-label="Global search controls"
+        layout="stacked"
+      >
         <SearchInput
           value={q}
           onValueChange={search.setQuery}
-          autoFocus
           // `rounded-full`, matching the scope pills directly beneath it. By tokens the field
           // already shares their fill and border, but a wide `rounded-lg` slab over a row of
           // pills reads as a different family — the corner is what makes the row one control

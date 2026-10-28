@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from 'bun:test'
+import { afterAll, afterEach, describe, expect, test } from 'bun:test'
 
 import { acceptAttribute, attachmentGate } from '@/shared/lib/attachment-policy'
 import {
@@ -7,6 +7,12 @@ import {
   messageAttachmentToFile,
   rememberDroppedFilePath,
 } from '@/shared/lib/attachments/file-staging'
+
+// This runner has no DOM, so no FileReader: restoring the original by assignment would leave the
+// key behind as `undefined` for every later file.
+afterAll(() => {
+  Reflect.deleteProperty(globalThis, 'FileReader')
+})
 
 describe('attachmentGate', () => {
   test('unknown / empty modalities are permissive (matches backend default)', () => {

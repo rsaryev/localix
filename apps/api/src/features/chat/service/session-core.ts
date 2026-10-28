@@ -59,6 +59,7 @@ export function createSessionCore(deps: ChatServiceDeps, graph: ChatServiceGraph
     gatherEnabledPluginCommands,
     gatherEnabledPluginSkills,
     buildSessionPluginCatalog,
+    loadSessionPluginMcpServers,
   } = createSessionWorkspace({
     projectsRepo,
     pluginRepo,
@@ -121,8 +122,6 @@ export function createSessionCore(deps: ChatServiceDeps, graph: ChatServiceGraph
   const sessionLifecycleCtx: SessionLifecycleCtx = {
     onSessionsDeleted: (userId, sessionIds) =>
       streamRegistry.publish(userId, '', { type: 'session.deleted', sessionIds }),
-    activeAgentId: runner.activeAgentId,
-    cancelAgentTurn: runner.cancelAgentTurn,
     resolveSessionAgent: deps.resolveSessionAgent,
     repo,
     streamRegistry,
@@ -131,7 +130,7 @@ export function createSessionCore(deps: ChatServiceDeps, graph: ChatServiceGraph
     resolveSessionWorkingDir,
     ...(deps.claudeCodeModes ? { claudeCodeModes: deps.claudeCodeModes } : {}),
     closeSessionTerminals: deps.closeSessionTerminals,
-    // Clear any pending relay (`browser` tool) commands when a session is deleted —
+    // Clear any pending relay (`Browser` tool) commands when a session is deleted —
     // otherwise they only clear via their 22s timeout.
     closeSessionPreview: (userId, sessionId) => {
       previewRegistry.closeForSession(userId, sessionId)
@@ -159,7 +158,7 @@ export function createSessionCore(deps: ChatServiceDeps, graph: ChatServiceGraph
     reasoningModel: routeReasoningModel(deps),
     // Only the effort is decided at birth; the model is left blank so the chain answers for it
     // on every read. Same chain, same cache — see `session-route-defaults.ts`.
-    seatRoute: routeDefaults.seatRoute,
+    startingRoute: routeDefaults.startingRoute,
     requireSession,
     getSessionDetail,
     publishSession,
@@ -178,6 +177,7 @@ export function createSessionCore(deps: ChatServiceDeps, graph: ChatServiceGraph
     gatherEnabledPluginCommands,
     gatherEnabledPluginSkills,
     buildSessionPluginCatalog,
+    loadSessionPluginMcpServers,
     resolveSessionWorkspaceMetadata,
     fileWatchService,
     sessionDetailCtx,

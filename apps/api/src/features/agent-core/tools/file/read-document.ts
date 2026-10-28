@@ -60,7 +60,7 @@ export async function readDocument(
 ): Promise<DocumentRead> {
   if (!extractor) {
     return {
-      output: `${targetPath} is a PDF/office document, and document extraction is unavailable in this run (the Documents plugin is not loaded). Enable the plugin to read its text, or convert it with \`bash\` (e.g. \`pdftotext\`).`,
+      output: `${targetPath} is a PDF/office document, and document extraction is unavailable in this run (the Documents plugin is not loaded). Enable the plugin to read its text, or convert it with \`Bash\` (e.g. \`pdftotext\`).`,
     }
   }
   const pageRange = input.pages ? parsePageRange(input.pages) : undefined

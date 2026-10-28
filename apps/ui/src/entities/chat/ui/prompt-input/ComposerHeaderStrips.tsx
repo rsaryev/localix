@@ -8,11 +8,6 @@ import { SessionSurface } from '@/shared/contrib/sessionSurfaces'
 import { WorkStrip } from './WorkStrip'
 import { PlanStrip } from '../plan/PlanStrip'
 import { ResumeStrip } from '../resume/ResumeStrip'
-import {
-  ParticipantsStrip,
-  type ConversationFloor,
-  type StripParticipantRef,
-} from './ParticipantsStrip'
 import type { SessionLoopSummary } from '@/shared/api/contracts'
 import type { useStreamTip } from '../../model/streamTips'
 
@@ -31,18 +26,8 @@ interface ComposerHeaderStripsProps {
   runtimePanel?: ReactNode
   activeSessionId: string | null
   isFocused: boolean
-  isGenerating: boolean
   sessionUsage?: ChatUsagePayload
   loops?: SessionLoopSummary[]
-  /** The conversation's participants, shown as the roster. */
-  participants?: readonly StripParticipantRef[]
-  /** Which participant holds the floor and who is queued behind them, live. */
-  conversationFloor?: ConversationFloor | null
-  /** Rendered after the last participant; see ParticipantsStrip for why it is a node. */
-  addParticipantControl?: React.ReactNode
-  onRemoveParticipant?: (agentId: string) => void
-  selectedParticipantId?: string | null
-  onSelectParticipant?: (agentId: string) => void
 }
 
 /**
@@ -57,15 +42,8 @@ export function ComposerHeaderStrips({
   runtimePanel,
   activeSessionId,
   isFocused,
-  isGenerating,
   sessionUsage,
   loops,
-  participants,
-  conversationFloor,
-  addParticipantControl,
-  onRemoveParticipant,
-  selectedParticipantId,
-  onSelectParticipant,
 }: ComposerHeaderStripsProps) {
   return (
     <div className="overflow-hidden rounded-t-(--radius-composer)">
@@ -77,20 +55,6 @@ export function ComposerHeaderStrips({
       <LocalModelsStrip isFocused={isFocused} />
       {/* One thin contextual tip strip; stream status lives under the active message. */}
       <StatusTipStrip tip={tip} onDismissTip={onDismissTip} />
-      {/* Who is in the conversation. First in the stack because it is the least volatile thing
-          here — everything below it is about what is happening right now. */}
-      {participants ? (
-        <ParticipantsStrip
-          participants={participants}
-          floor={conversationFloor}
-          isGenerating={isGenerating}
-          sessionId={activeSessionId}
-          addControl={addParticipantControl}
-          onRemove={onRemoveParticipant}
-          selectedAgentId={selectedParticipantId}
-          onSelect={onSelectParticipant}
-        />
-      ) : null}
       {runtimePanel}
       {/* The plan the agent presented, and the person's decision on it — first:
           a presented plan has ended the agent's turn, so nothing moves until it is decided. */}

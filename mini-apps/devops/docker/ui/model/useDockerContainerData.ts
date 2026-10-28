@@ -9,6 +9,7 @@ import { appendStatSample, statSampleOf, type StatSample } from './statsHistory'
 import { containerPollNeeded, sameContainer, type DockerContainerPanel } from './containerPanel'
 import { createEventRefreshBatcher, useDockerEvents } from './dockerEventsClient'
 import { useLogFollow } from '../../../ui/model/logFollowFeed'
+import { useStableCallback } from '@localixai/mini-app-sdk/ui/runtime-hooks'
 
 type LogResult =
   | { status: 'ok'; lines: string }
@@ -179,15 +180,14 @@ export function useDockerContainerData({
   }, [active, containerId, panel, logsLive, refresh])
 
   // The container's own events (a stop, a start, a restart) re-read it at once.
-  const latestRead = useRef(() => {})
-  latestRead.current = () => void refresh(panel, panel === 'logs' && logsLive)
+  const readLatest = useStableCallback(() => void refresh(panel, panel === 'logs' && logsLive))
   const eventsBatcher = useMemo(
     () =>
       createEventRefreshBatcher<'read'>(
-        () => latestRead.current(),
+        () => readLatest(),
         () => 'read',
       ),
-    [],
+    [readLatest],
   )
   useEffect(() => eventsBatcher.cancel, [eventsBatcher])
   const eventsLive = useDockerEvents(active, {

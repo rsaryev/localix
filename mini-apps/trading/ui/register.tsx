@@ -71,8 +71,8 @@ function TradingWorkspaceBody({ item, visible }: { item: WorkItemLike; visible: 
 
 /** Adapt the generic WorkItem body props to the chart tab's own props (reads `payload`).
  *  The payload is read through `normalizeChartPayload` — the SAME helper the drag-ref uses —
- *  so what the tab charts and what its ref names can never diverge: a restored legacy
- *  credentialed id migrates onto the venue's public profile on BOTH surfaces, and only an
+ *  so what the tab charts and what its ref names can never diverge: a payload without
+ *  the `credentialed` claim charts the venue's public profile on BOTH surfaces, and only an
  *  explicitly-`credentialed` payload keeps account context. */
 function TradingChartBody({
   item,
@@ -164,8 +164,8 @@ export function registerUi(host: MiniAppUiHost): void {
         'Use manage_chart for requested symbol, timeframe, or indicator changes.',
       ],
     },
-    // Grouped by the NORMALIZED connection — the one the tab actually charts — so a restored
-    // legacy tab groups with its venue's public siblings, not with a connection it no longer shows.
+    // Grouped by the NORMALIZED connection — the one the tab actually charts — so a tab without
+    // the claim groups with its venue's public siblings, not with a connection it no longer shows.
     siblingGroupKey: (item) =>
       item.payload?.connectionId || item.payload?.exchangeId
         ? `trading:chart:${normalizeChartPayload(item.payload).connectionId}`

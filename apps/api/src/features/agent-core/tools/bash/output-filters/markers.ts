@@ -24,7 +24,7 @@ export function filterMarker(
   toolCallId?: string,
 ): string {
   const recover = toolCallId
-    ? `full output: tool_output action="get" tool_call_id="${toolCallId}"`
+    ? `full output: ToolOutput action="get" tool_call_id="${toolCallId}"`
     : 'full output available in the terminal panel'
   return `[${name} output filtered: kept ${keptLines} of ${totalLines} lines; ${recover}]`
 }

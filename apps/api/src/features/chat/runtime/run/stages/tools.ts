@@ -5,8 +5,7 @@ import type { PersistedMessage } from '../../../contracts'
  * A tool the model is shown but the dispatcher cannot run (or the reverse) fails mid-turn with
  * an error the model cannot act on, so exposure and dispatch are derived from ONE descriptor
  * surface here and every later stage — prompt, permission gate, stream — reads this result.
- * Which seat-bound protocol ports the run holds (`set_topic`, `skip_answer`) is its policy's
- * answer (`stages/policy.ts`); MCP gather and the session snapshot then run together.
+ * MCP gather and the session snapshot then run together.
  */
 import { claudeCodeHome } from '../../../../cc-settings/config-dir'
 import { mkdirSync } from 'node:fs'
@@ -20,7 +19,6 @@ import { recordToolRoster } from '../../../../tools/usage-recorder'
 import { executionToolSurface } from '../../execution-context'
 import { checkpointAtTokens } from '../../model-view/checkpoint-policy'
 import { resolveExecutionProfile } from '../../run-profile'
-import { createSetTopicPort } from '../set-topic-port'
 import { buildRunToolRegistry } from '../runtime-tools'
 import type { SkillCommandPolicyRef } from '../skill-tool-ports'
 import { agentRunMcpServers } from '../agent-run-mcp'
@@ -74,7 +72,6 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
     {
       deps,
       repo,
-      memoryRepo: env.memoryRepo,
       work: runtimeState.work,
       actionRegistry: runtimeState.actionRegistry,
       terminalWaits: runtimeState.terminalWaits,
@@ -87,7 +84,6 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
       session,
       agentId: inputs.agent.id,
       policy,
-      setTopic: policy.seat.ownsTopic ? createSetTopicPort(env, params) : undefined,
       currentMessageId: () => currentAssistantMessageId(frame),
       forkLive: () => frame.forkLive,
       env: inputs.env,
@@ -97,7 +93,6 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
       agentSettings: turn.globalAgentSettings,
       skillOverrides: inputs.skillOverrides,
       latestUserText: latestUserTextOf(params.historyMessages),
-      memoryScope: inputs.agent.context?.memory?.scope,
       disabledTools,
       toolDenials: inputs.toolDenials,
       agentProfile,
@@ -113,11 +108,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
       ccHooks,
       fileMtimes: frame.stores.fileMtimes,
       skillCommandPolicy,
-      chatModel: {
-        providerId: turn.model.providerId,
-        connectionId: turn.model.connection.id,
-        modelId: turn.model.effectiveModelId,
-      },
+      agentModelChoices: turn.globalAgentSettings?.agentModelChoices,
       listWorkflows: () =>
         listEnabledPluginWorkflows({
           repo: env.pluginRepo,
@@ -165,11 +156,13 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
   // (see `handleToolExecutionStart`).
   const mutatingToolNames = new Set<string>()
 
+  const claudeCodeScope = { homeDir: claudeCodeHome(), cwd: defaultCwd }
   const agentServers = agentRunMcpServers(session, turn.admittedAgent.spec, {
     userId,
-    projectTrusted: claudeCodeTrusts({ homeDir: claudeCodeHome(), cwd: defaultCwd }),
+    projectTrusted: claudeCodeTrusts(claudeCodeScope),
   })
 
+  const claudeCodePermissionsPromise = loadClaudeCodePermissions(claudeCodeScope)
   // MCP gather + plugin tool-call hooks + repeat-failure guard, populating the two sets above.
   const assembledPromise = assembleRunTools({
     env,
@@ -183,7 +176,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
     mods: inputs.mods,
     defaultCwd,
     availability: inputs.availability,
-    agentId: frame.speakerAgentId,
+    agentId: frame.agentId,
     capabilities: inputs.capabilities,
     modelInput: turn.modelInput,
     disabledTools,
@@ -196,6 +189,13 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
     registerMcpRelease: (release) => {
       frame.teardown.releaseMcp = release
     },
+    // A bare deny in Claude Code's settings (`WebFetch`, `mcp__github`) takes the tool out of the
+    // model's view, catalog included, as Claude Code removes it; the gate refuses a call anyway.
+    hiddenBySettings: claudeCodePermissionsPromise.then(
+      ({ rules }) =>
+        (tool) =>
+          settingsRemoveTool(rules, tool),
+    ),
   })
   // Answers "why can the model not see my tool" with the values the roster was built from.
   // Failure-proof by construction: a snapshot must never affect the run that produced it.
@@ -212,7 +212,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
   )
 
   // The prompt tells the model it may write here, and a shell redirect (`> scratch/out.txt`)
-  // does not create directories the way the `write` tool does — two live runs each lost a
+  // does not create directories the way the `Write` tool does — two live runs each lost a
   // turn to "No such file or directory" on their own scratch dir before this mkdir.
   const scratchDir = sessionScratchDir(session.id)
   mkdirSync(scratchDir, { recursive: true })
@@ -232,18 +232,13 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
   ] = await Promise.all([
     assembledPromise,
     frame.loadSessionSnapshot(),
-    loadClaudeCodePermissions({ homeDir: claudeCodeHome(), cwd: defaultCwd }),
+    claudeCodePermissionsPromise,
   ])
-  // A bare deny in Claude Code's settings (`WebFetch`, `mcp__github`) takes the tool out of the
-  // model's view, as Claude Code removes it; the gate refuses a call that names it anyway.
-  const visibleTools = assembledTools.filter(
-    (tool) => !settingsRemoveTool(claudeCodePermissions.rules, tool),
-  )
   // A fork is offered the tools its parent was offered, as declared there: they come first in the
   // provider's cache prefix. What it can run stays its own (`agent-core/fork-seed.ts`).
   const surface = frame.fork
-    ? forkToolSurface(frame.fork.seed, { tools: visibleTools, dispatchTools: assembledDispatch })
-    : { tools: visibleTools, dispatchTools: assembledDispatch }
+    ? forkToolSurface(frame.fork.seed, { tools: assembledTools, dispatchTools: assembledDispatch })
+    : { tools: assembledTools, dispatchTools: assembledDispatch }
   const { tools, dispatchTools } = surface
   recordToolRoster(
     preflightTools.map((tool) => tool.name),
@@ -264,7 +259,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
     runtimeTools: {
       ...runtimeTools,
       ledger,
-      // The names decide what past tool work reads as (`participant-audience.ts`): a fork reads
+      // The names decide what past tool work reads as (`history/stages/agent-history.ts`): a fork reads
       // its parent's rows as its parent did.
       toolNames: frame.fork?.seed.toolNames ?? preflightTools.map((tool) => tool.name),
     },
@@ -285,7 +280,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
     claudeCodePermissions,
     agentDirectory: turn.registry,
     scratchDir,
-    recoveryToolAvailable: tools.some((tool) => tool.name === TOOL.tool_output),
+    recoveryToolAvailable: tools.some((tool) => tool.name === TOOL.ToolOutput),
   }
 }
 

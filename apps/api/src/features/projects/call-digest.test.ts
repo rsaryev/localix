@@ -12,7 +12,7 @@ import {
 const base: CallDigestInput = {
   sessionId: 'LOCALIX-7',
   toolCallId: 'toolu_01ABC',
-  name: 'bash',
+  name: 'Bash',
   status: 'completed',
   itemType: 'command',
 }
@@ -52,7 +52,7 @@ describe('callResultExcerpt', () => {
 describe('buildCallDigest', () => {
   test('renders name, status, input, result, and the history pointer', () => {
     const digest = buildCallDigest({ ...base, command: 'bun test', resultText: '12 pass, 0 fail' })
-    expect(digest).toContain('Tool call toolu_01ABC — `bash` (completed) in session LOCALIX-7')
+    expect(digest).toContain('Tool call toolu_01ABC — `Bash` (completed) in session LOCALIX-7')
     expect(digest).toContain('Input: bun test')
     expect(digest).toContain('12 pass, 0 fail')
     expect(digest).toContain('history')

@@ -19,10 +19,9 @@ const CC_TOOLS: ReadonlySet<string> = new Set(Object.values(CC_TOOL_NAME_MAP))
 export function applyMainAgent<Agent extends { id: string; instructions?: string | null }>(
   input: { agent: Agent; disabledTools: readonly string[] },
   mainAgent: LoadedPluginAgent | null,
-  run: { speakerAgentId: string; host: string },
+  run: { agentId: string; host: string },
 ): { agent: Agent; disabledTools: string[]; mainAgent: LoadedPluginAgent | null } {
-  const applies =
-    mainAgent !== null && run.host === 'chat' && run.speakerAgentId === DEFAULT_AGENT_ID
+  const applies = mainAgent !== null && run.host === 'chat' && run.agentId === DEFAULT_AGENT_ID
   if (!applies) return { ...input, disabledTools: [...input.disabledTools], mainAgent: null }
   return { ...runAsPluginAgent(input, mainAgent), mainAgent }
 }

@@ -86,6 +86,7 @@ export function VoiceMessage({
       // composer/transcript this bubble sits on, so the player read as a black pill.
       className={`flex items-center gap-2.5 rounded-2xl border border-control-border bg-field-fill ${compact ? 'px-2 py-1.5' : 'px-3 py-2'}`}
     >
+      {/* oxlint-disable-next-line jsx-a11y/media-has-caption -- an invisible player behind our own controls; a recording has no caption track */}
       <audio ref={audioRef} src={src} preload="metadata" />
       <IconButton
         onClick={toggle}

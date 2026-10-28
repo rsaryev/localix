@@ -35,25 +35,18 @@ export interface JobsToolDeps {
 const MAX_READ_CHARS = 20_000
 
 const inputSchema = z.object({
-  action: z.enum(['list', 'read', 'stop', 'send_input']),
+  action: z.enum(['list', 'read', 'send_input']),
   job_id: z.string().optional().describe('From list or a reminder. Required except for list.'),
   input: z.string().optional().describe('send_input: text for the stdin of a bash job.'),
 })
 
 const JOBS_READ: CallClass = { effect: 'read' }
 const JOBS_SEND: CallClass = { effect: 'external' }
-/**
- * `jobs` only reaches this conversation's own jobs (one owner filter, `work.resolve`), so stopping
- * one ends state the conversation started — `session`. As `external` it made a plan-mode run
- * unable to stop the read-only monitor plan mode had just let it start.
- */
-const JOBS_STOP: CallClass = { effect: 'session', irreversible: true }
 
 /** One `jobs` call's class; an action this table does not name is `external` (fail-closed). */
 export function classifyJobsCall(input: unknown): CallClass {
   const action = ((input ?? {}) as { action?: unknown }).action
   if (action === 'list' || action === 'read') return JOBS_READ
-  if (action === 'stop') return JOBS_STOP
   return JOBS_SEND
 }
 
@@ -61,17 +54,17 @@ export function classifyJobsCall(input: unknown): CallClass {
  * Lets the model see and manage its own long-running background jobs (dev
  * servers, watchers, and live data streams) across turns. Background jobs keep
  * running after the turn that started them; without this the model is blind to
- * them and tends to spawn duplicates or poll with sleep loops. Stop/send_input
- * reuse the exact same action registry the UI Stop button drives.
+ * them and tends to spawn duplicates or poll with sleep loops. send_input, and `TaskStop`'s stop
+ * (`stopJob`), reuse the exact same action registry the UI Stop button drives.
  */
 export function createJobsTool(deps: JobsToolDeps, options: { terminalInput?: boolean } = {}) {
   return defineAgentTool({
-    name: TOOL.jobs,
+    name: TOOL.Jobs,
     label: 'Jobs',
     activeVerb: 'Managing jobs',
     // The wait rule (`bash until`, never a poll loop) lives on bash's `until` field only.
     description: [
-      'Manage background work: list before launching duplicates; read returns logs/events; stop requests termination; send_input writes raw stdin.',
+      'See background work: list before launching duplicates; read returns logs/events; send_input writes raw stdin. TaskStop stops a job.',
       ...(options.terminalInput
         ? [
             'Interactive PTYs: bash type/keys with terminal_id sends named keys AND returns the current screen. read is accumulated logs.',
@@ -79,14 +72,13 @@ export function createJobsTool(deps: JobsToolDeps, options: { terminalInput?: bo
         : []),
     ].join(' '),
     inputSchema,
-    // `stop` signals a live process and `send_input` writes to its stdin — processes are
-    // external state by the same measure as files. `list`/`read` only observe, and they are the
-    // half a read-only investigation wants, so a plan session must not lose them to the static
-    // flag. A stopped process cannot be resumed, so `stop` is also irreversible.
+    // `send_input` writes to a live process's stdin — processes are external state by the same
+    // measure as files. `list`/`read` only observe, and they are the half a read-only
+    // investigation wants, so a plan session must not lose them to the static flag.
     mutates: true,
     classify: classifyJobsCall,
     executionMode: 'sequential',
-    // list/read only observe, so they overlap other reads; stop/send_input stay a barrier.
+    // list/read only observe, so they overlap other reads; send_input stays a barrier.
     executionModeFor: (input) =>
       classifyJobsCall(input).effect === 'read' ? 'parallel' : 'sequential',
     async execute(_toolCallId, input) {
@@ -131,7 +123,7 @@ export function createJobsTool(deps: JobsToolDeps, options: { terminalInput?: bo
       const terminalId = jobs.find((job) => job.toolCallId === toolCallId)?.terminalId
       const screenAdvice =
         options.terminalInput && terminalId
-          ? ` For the current TUI screen, use bash action="screen", terminal_id="${terminalId}"; type with keys:["Enter"] submits text and returns the screen.`
+          ? ` For the current TUI screen, use \`Bash\` action="screen", terminal_id="${terminalId}"; type with keys:["Enter"] submits text and returns the screen.`
           : ''
 
       // read works while the job is live (its terminal scrollback); a just-exited
@@ -146,7 +138,7 @@ export function createJobsTool(deps: JobsToolDeps, options: { terminalInput?: bo
         }
         // Honest, like every other model-facing cap: a bare leading `…` gave the model no idea how much
         // of the job's output it was NOT seeing, on the one call whose entire purpose is inspecting that
-        // output. `tool_output` already does this right ("clipped at N chars"); this did not.
+        // output. `ToolOutput` already does this right ("clipped at N chars"); this did not.
         const clipped =
           snap.output.length > MAX_READ_CHARS
             ? truncateTail(snap.output, { maxBytes: MAX_READ_CHARS })
@@ -160,21 +152,6 @@ export function createJobsTool(deps: JobsToolDeps, options: { terminalInput?: bo
         return {
           content: `[job ${input.job_id} — ${snap.running ? 'running' : 'exited'}]${screenAdvice}\n${tail.trim() || '(no output yet)'}`,
           supersedeKey: `job:${toolCallId}`,
-        }
-      }
-
-      if (input.action === 'stop') {
-        // "Stopped" was a claim nothing here can make. Running the action invokes a `void`
-        // closure; for a process that means SIGTERM with SIGKILL held back for a grace
-        // window, so the job is usually still alive when this returns — and for an
-        // already-settled job the closure does nothing at all. A model told "stopped" stops
-        // polling and reasons as though the work is gone.
-        const ok = deps.runAction(toolCallId, 'kill')
-        return {
-          content: ok
-            ? `Stop requested for job ${input.job_id}. It is not confirmed gone: a process is given a moment to exit before it is killed. Use action="list" to see whether it is still running.`
-            : `Could not request a stop for job ${input.job_id} — it has no stop action (it may have already finished).`,
-          isError: !ok,
         }
       }
 
@@ -193,4 +170,31 @@ export function createJobsTool(deps: JobsToolDeps, options: { terminalInput?: bo
       }
     },
   })
+}
+
+/**
+ * Ask a job to stop. "Stopped" was a claim nothing here can make. Running the action invokes a
+ * `void` closure; for a process that means SIGTERM with SIGKILL held back for a grace window, so
+ * the job is usually still alive when this returns — and for an already-settled job the closure
+ * does nothing at all. A model told "stopped" stops polling and reasons as though the work is gone.
+ */
+function requestStop(deps: JobsToolDeps, toolCallId: string, jobId: string) {
+  const ok = deps.runAction(toolCallId, 'kill')
+  return {
+    content: ok
+      ? `Stop requested for job ${jobId}. It is not confirmed gone: a process is given a moment to exit before it is killed.`
+      : `Could not request a stop for job ${jobId} — it has no stop action (it may have already finished).`,
+    isError: !ok,
+  }
+}
+
+/**
+ * `TaskStop` on a background job: the same stop, for an id that names one of THIS session's jobs
+ * (`listJobs` is session-filtered), else `undefined` so the caller can try its subagents.
+ */
+export function stopJob(deps: JobsToolDeps, jobId: string) {
+  const toolCallId =
+    deps.resolveJobId?.(jobId) ??
+    deps.listJobs().find((job) => job.jobId === jobId || job.toolCallId === jobId)?.toolCallId
+  return toolCallId ? requestStop(deps, toolCallId, jobId) : undefined
 }

@@ -6,7 +6,7 @@ import { entry, event, person, report } from './testing/test-entries'
 describe('what kind of entry an admission makes', () => {
   test('each producer shape is its own kind', () => {
     expect(person('p').value.entry).toBe('person')
-    expect(report('r', 'agent:lead').value.entry).toBe('report')
+    expect(report('r').value.entry).toBe('report')
     expect(event('e').value.entry).toBe('event')
     expect(entry('c', { command: {}, internal: false, source: 'user-busy' }).value.entry).toBe(
       'command',
@@ -21,7 +21,6 @@ describe('what kind of entry an admission makes', () => {
     const surface = { capabilities: ['workbench-ui'] }
     expect(fixesExecution(person('p', 'p', { toolSurface: surface }).value)).toBe(false)
     expect(fixesExecution(event('e', { extraDisabledTools: ['bash'] }).value)).toBe(true)
-    expect(fixesExecution(event('e', { addressedAs: '' }).value)).toBe(true)
   })
 
   test('surfaces compare by capability and catalog, in any order', () => {
@@ -37,7 +36,7 @@ describe('a durable row written before entries were tagged', () => {
   const legacy = { userId: 'u', content: 'c', queuedAt: 't', internal: true, kind: 'wake' }
 
   test('is classified by the fields that made each kind', () => {
-    expect(readPendingTurn({ ...legacy, agentTurn: { speakerAgentId: 'a' } }).entry).toBe('ticket')
+    expect(readPendingTurn({ ...legacy, agentTurn: { agentId: 'a' } }).entry).toBe('ticket')
     expect(readPendingTurn({ ...legacy, kind: 'user', internal: false, command: {} }).entry).toBe(
       'command',
     )

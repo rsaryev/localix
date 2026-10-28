@@ -38,7 +38,7 @@ function wire(reads: number): Message[] {
       role: 'assistant',
       content: [
         { type: 'text', text: 'reading' },
-        { type: 'tool_call', id: `r${i}`, name: 'read', arguments: { path: `src/f${i}.ts` } },
+        { type: 'tool_call', id: `r${i}`, name: 'Read', arguments: { path: `src/f${i}.ts` } },
       ],
       model: 'm',
       timestamp: 0,
@@ -46,7 +46,7 @@ function wire(reads: number): Message[] {
     msgs.push({
       role: 'tool',
       results: [
-        { type: 'tool_result', toolCallId: `r${i}`, toolName: 'read', content: big(`f${i}`) },
+        { type: 'tool_result', toolCallId: `r${i}`, toolName: 'Read', content: big(`f${i}`) },
       ],
       timestamp: 0,
     })
@@ -187,7 +187,7 @@ describe('per-request wire policy — budget frame', () => {
     expect(total(out)).toBeLessThan(total(messages))
   })
 
-  test('does not emit dead recovery calls when tool_output is disabled', async () => {
+  test('does not emit dead recovery calls when ToolOutput is disabled', async () => {
     const out = await policy({
       contextWindow: 32_768,
       fixedOverheadTokens: 7100,
@@ -195,7 +195,7 @@ describe('per-request wire policy — budget frame', () => {
     }).transform(wire(60), signal())
     const serialized = JSON.stringify(out)
     expect(serialized).toContain('elided to save context')
-    expect(serialized).not.toContain('tool_output')
+    expect(serialized).not.toContain('ToolOutput')
   })
 
   test('a large physical window still uses the canonical Localix policy cap', async () => {

@@ -54,7 +54,30 @@ test('disableBypassPermissionsMode holds from any file', async () => {
       'home/.claude/settings.json': perms({ disableBypassPermissionsMode: 'disable' }),
       'project/.claude/settings.local.json': perms({ defaultMode: 'bypassPermissions' }),
     }),
-  ).toEqual({ defaultMode: 'bypass', bypassDisabled: true })
+  ).toEqual({ bypassDisabled: true })
+})
+
+// permission-modes.md: `auto` and `bypassPermissions` take no effect from project or local files,
+// and the session then starts in the built-in default, not in the user file's mode.
+test('bypassPermissions and auto from a project or local file are ignored', async () => {
+  for (const file of ['project/.claude/settings.json', 'project/.claude/settings.local.json'])
+    for (const mode of ['bypassPermissions', 'auto'])
+      expect(
+        await modesOf({
+          'home/.claude/settings.json': perms({ defaultMode: 'plan' }),
+          [file]: perms({ defaultMode: mode }),
+        }),
+      ).toEqual({ bypassDisabled: false })
+  // The user file may set it, and the project's other values still apply.
+  expect(
+    await modesOf({ 'home/.claude/settings.json': perms({ defaultMode: 'bypassPermissions' }) }),
+  ).toEqual({ defaultMode: 'bypass', bypassDisabled: false })
+  expect(
+    await modesOf({
+      'home/.claude/settings.json': perms({ defaultMode: 'bypassPermissions' }),
+      'project/.claude/settings.json': perms({ defaultMode: 'plan' }),
+    }),
+  ).toEqual({ defaultMode: 'plan', bypassDisabled: false })
 })
 
 test('the `agent` setting is the main agent: the higher file wins, a blank one is none', async () => {

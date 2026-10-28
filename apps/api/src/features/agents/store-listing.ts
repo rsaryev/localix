@@ -9,6 +9,7 @@ import type {
   Scope,
 } from '@localixai/store'
 
+import type { AgentModelChoice } from '../agent-core/agent-model-route'
 import type { AgentRecordInput, AgentSummary } from './contracts'
 
 /**
@@ -39,8 +40,8 @@ export function agentListing(summary: AgentSummary): Listing {
   const { record } = summary
   return {
     ref: { kind: 'agent', id: record.id },
-    name: record.handle,
-    displayName: record.handle,
+    name: record.name,
+    displayName: record.name,
     summary: record.description || 'No description',
     tags: [summary.source.startsWith('plugin:') ? 'plugin' : summary.source],
     publisher: { name: summary.editable ? 'You' : sourceOf(summary).label, verified: false },
@@ -63,15 +64,14 @@ export function agentDetail(summary: AgentSummary, chats = 0): ListingDetail {
   const facts: [string, string | undefined][] = [
     ['Kept in', sourceOf(summary).label],
     ['File', summary.path || undefined],
-    ['Seated in', chats > 0 ? `${chats} ${chats === 1 ? 'chat' : 'chats'}` : undefined],
-    ['Priority', record.leadershipPriority ? String(record.leadershipPriority) : undefined],
+    ['Used by', chats > 0 ? `${chats} ${chats === 1 ? 'chat' : 'chats'}` : undefined],
   ]
   return {
     ...agentListing(summary),
     readme: record.instructions || null,
     media: [],
     facts: facts.flatMap(([label, value]) => (value ? [{ label, value }] : [])),
-    components: [{ kind: 'agent', name: record.handle }],
+    components: [{ kind: 'agent', name: record.name }],
   }
 }
 
@@ -100,24 +100,20 @@ export const DEFINITION_FIELDS: ConfigField[] = [
     required: true,
     multiline: true,
   }),
-  field('model', 'Model', 'A model, an alias, or provider/model. Empty: the chat’s.', {
-    type: 'model',
-  }),
+  field(
+    'model',
+    'Model',
+    'The model this agent runs on. Empty: the model of the chat it runs in.',
+    {
+      type: 'model',
+    },
+  ),
   field('effort', 'Effort', 'How hard it reasons.', {
     type: 'choice',
     options: ['low', 'medium', 'high', 'xhigh', 'max'].map((value) => ({ value })),
   }),
   field('maxTurns', 'Turn limit', 'Most turns one run takes.', { type: 'number', min: 1 }),
   field('skills', 'Skills', 'Skills loaded into its context.', { type: 'list' }),
-  field('priority', 'Priority', 'Who leads a conversation: -2 to 2.', {
-    type: 'number',
-    min: -2,
-    max: 2,
-  }),
-  field('memoryScope', 'Memory', 'Where it remembers.', {
-    type: 'choice',
-    options: ['global', 'project', 'session'].map((value) => ({ value })),
-  }),
 ]
 
 export const COPY: ItemAction = {
@@ -131,7 +127,12 @@ export const DUPLICATE: ItemAction = {
   help: 'Another agent with the same definition',
 }
 
-export function agentConfig(summary: AgentSummary, revision?: string): ListingConfig {
+/** The model and effort fields hold the person's choice (Localix settings), not the agent's file. */
+export function agentConfig(
+  summary: AgentSummary,
+  revision?: string,
+  choice?: AgentModelChoice,
+): ListingConfig {
   const scope = scopeOf(summary)
   const base = { scope, scopes: [scope], set: [] }
   if (!summary.editable) return { ...base, fields: [], values: {}, actions: [COPY] }
@@ -140,22 +141,17 @@ export function agentConfig(summary: AgentSummary, revision?: string): ListingCo
       ? { id: 'move', label: 'Move to project', help: 'Keep it in the open project instead' }
       : { id: 'move', label: 'Move to user', help: 'Keep it in your agents folder instead' }
   const { record } = summary
-  const route = [record.modelPreference?.provider, record.modelPreference?.model]
-    .filter(Boolean)
-    .join('/')
   return {
     ...base,
     fields: DEFINITION_FIELDS,
     values: {
-      name: record.handle,
+      name: record.name,
       description: record.description,
       instructions: record.instructions,
-      model: route || null,
-      effort: record.modelPreference?.effort ?? null,
-      maxTurns: record.limits?.maxTurns ?? null,
-      skills: record.context?.preloadSkills ?? [],
-      priority: record.leadershipPriority,
-      memoryScope: record.context?.memory?.scope ?? null,
+      model: choice?.modelId ?? null,
+      effort: choice?.effort ?? null,
+      maxTurns: record.maxTurns ?? null,
+      skills: record.skills ?? [],
     },
     actions: [DUPLICATE, move],
     ...(revision ? { revision } : {}),
@@ -174,43 +170,43 @@ export function inputFromValues(
 ): AgentRecordInput {
   const { record } = summary
   const has = (key: string) => key in values
-  const preference = { ...record.modelPreference }
-  if (has('model')) {
-    const model = str(values, 'model').trim()
-    const slash = model.indexOf('/')
-    delete preference.provider
-    delete preference.model
-    if (model) {
-      if (slash > 0) preference.provider = model.slice(0, slash)
-      preference.model = slash > 0 ? model.slice(slash + 1) : model
-    }
-  }
-  if (has('effort')) {
-    const effort = str(values, 'effort')
-    if (isReasoningEffort(effort)) preference.effort = effort
-    else delete preference.effort
-  }
-  const memory = has('memoryScope') ? str(values, 'memoryScope') : record.context?.memory?.scope
-  const preload = Array.isArray(values.skills) ? values.skills : record.context?.preloadSkills
-  const context = {
-    ...(preload?.length ? { preloadSkills: preload } : {}),
-    ...(memory ? { memory: { scope: memory as 'global' | 'project' | 'session' } } : {}),
-  }
+  const preload = Array.isArray(values.skills) ? values.skills : record.skills
+  const skills = preload?.length ? preload : undefined
   const turns = values.maxTurns
   const maxTurns = has('maxTurns')
     ? typeof turns === 'number'
       ? turns
       : undefined
-    : record.limits?.maxTurns
-  const priority = values.priority
+    : record.maxTurns
   return {
-    handle: str(values, 'name', record.handle).trim(),
+    name: str(values, 'name', record.name).trim(),
     description: str(values, 'description', record.description),
     instructions: str(values, 'instructions', record.instructions),
-    leadershipPriority: typeof priority === 'number' ? priority : record.leadershipPriority,
-    ...(Object.keys(preference).length ? { modelPreference: preference } : {}),
-    ...(maxTurns ? { limits: { maxTurns } } : {}),
-    ...(Object.keys(context).length ? { context } : {}),
+    ...(maxTurns ? { maxTurns } : {}),
+    ...(skills ? { skills } : {}),
     projectId: summary.projectId || null,
+  }
+}
+
+/**
+ * The person's choice for an agent after a saved form: the form's model and effort over the
+ * choice kept so far (a key the form does not carry stays), or none when both are empty.
+ */
+export function choiceFromValues(
+  agentId: string,
+  values: Record<string, ConfigValue>,
+  kept?: AgentModelChoice,
+): AgentModelChoice | undefined {
+  const model = 'model' in values ? str(values, 'model').trim() : (kept?.modelId ?? '')
+  const asked = 'effort' in values ? str(values, 'effort') : (kept?.effort ?? '')
+  const effort = isReasoningEffort(asked) ? asked : undefined
+  // A model typed over another one drops the connection that went with it.
+  const connection = model && model === kept?.modelId ? kept.providerConnectionId : undefined
+  if (!model && !effort) return undefined
+  return {
+    agentId,
+    ...(model ? { modelId: model } : {}),
+    ...(connection ? { providerConnectionId: connection } : {}),
+    ...(effort ? { effort } : {}),
   }
 }

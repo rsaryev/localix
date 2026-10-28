@@ -21,12 +21,12 @@ events. Localix runs its own engine behind this boundary: an agent loop, model a
 The engine is four packages. Each may import only the packages listed for it; the architecture check
 enforces this.
 
-| Package                     | Owns                                                                                                                                        | May import                                |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| `@localixai/engine-loop`    | Turns, the tool batch scheduler, argument coercion, hooks, nested calls, steering, follow-ups, event buffer.                                | `@localixai/agent` only; no provider SDK. |
-| `@localixai/engine-models`  | The models.dev catalog, provider SDKs (`@ai-sdk/*`), sign-in flows, credentials, wire shaping, usage, retry.                                | `@localixai/agent` and provider packages. |
-| `@localixai/engine-scripts` | The `codemode` sandbox: a QuickJS VM in a worker thread per script, and the tool declarations it reads; and the long-lived VMs mods run in. | `@localixai/agent` and `quickjs-wasi`.    |
-| `@localixai/engine`         | Composition: `createEngine()` binds a run's model session and hands it to the loop.                                                         | `@localixai/agent` and the three layers.  |
+| Package                     | Owns                                                                                                           | May import                                |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `@localixai/engine-loop`    | Turns, the tool batch scheduler, argument coercion, hooks, nested calls, steering, follow-ups, event buffer.   | `@localixai/agent` only; no provider SDK. |
+| `@localixai/engine-models`  | The models.dev catalog, provider SDKs (`@ai-sdk/*`), sign-in flows, credentials, wire shaping, usage, retry.   | `@localixai/agent` and provider packages. |
+| `@localixai/engine-scripts` | The script sandbox: a QuickJS VM in a worker thread per `Workflow` script, and the long-lived VMs mods run in. | `@localixai/agent` and `quickjs-wasi`.    |
+| `@localixai/engine`         | Composition: `createEngine()` binds a run's model session and hands it to the loop.                            | `@localixai/agent` and the three layers.  |
 
 The Localix host owns session state, modes, tools, permissions, context policy, persistence, and
 event publication. It depends on the `AgentRuntime` port, not on the engine's types. Only the
@@ -71,17 +71,19 @@ in the engine packages against a scripted model session.
 context, tools, prompt, intake, history, stream, then complete or fail. Each stage owns one concern;
 the stream stage hands everything to `AgentRuntime.run()`.
 
-| Layer           | What it carries                                                                                                                     | Owner                                                                       |
-| --------------- | ----------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| Stable prompt   | Identity, core principles, runtime role, collaboration, execution discipline, workspace, conversation protocol, skills, formatting. | `agent-core/prompt/catalog.ts`; goldens in `agent-core/prompt/__golden__/`. |
-| Runtime context | Date and model, project tree, participants, agent directory, jobs, loops, reactions, the current-turn line.                         | `agent-core/prompt/catalog-tail.ts`, sent as a changed-sections-only block. |
-| History         | Participant view, turn contexts, media, checkpoint, budget admission.                                                               | `chat/runtime/history/chat-strategy.ts`.                                    |
-| Tools           | Shape and policy resolution, deferral behind `activate_tools`, the wrapper chain.                                                   | `chat/runtime/run/tool-assembly.ts`.                                        |
+| Layer           | What it carries                                                                                         | Owner                                                                                         |
+| --------------- | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| System prompt   | The agent's own instructions, core principles, the host, the protocol of the runtime context.           | `agent-core/prompt/catalog-cached.ts`; goldens in `agent-core/prompt/__golden__/`.            |
+| Runtime context | Role, discipline, workspace, skills, formatting, mode and plan, then date and model, tree, jobs, loops. | `agent-core/prompt/catalog-run.ts`, `catalog-tail.ts`, sent as a changed-sections-only block. |
+| History         | Turn contexts, media, checkpoint, budget admission.                                                     | `chat/runtime/history/chat-strategy.ts`.                                                      |
+| Tools           | Shape and policy resolution, deferral behind `ToolSearch`, the wrapper chain.                           | `chat/runtime/run/tool-assembly.ts`.                                                          |
 
-Every agent in a conversation receives the same prompt for the same run shape. The only
-seat-specific parts are the leadership block and session-topic control (`set_topic`), both given to
-the participant with the highest leadership priority. The `chat` shape names no role, and a shipped
-persona says who the agent is, not which seat it holds.
+The system prompt is the same bytes for every kind of run
+(`chat/runtime/run/system-prompt-one.test.ts`): only the agent's own instructions differ. What
+depends on the run's kind, tools, depth, mode or workspace is in the runtime context, and the tools
+are not listed, since their definitions are what the model receives. A subagent or fork with fewer
+tools therefore reads the same cached prefix. The `chat` shape names no role, and a shipped persona
+says who the agent is.
 
 The host adds facts to a turn, not instructions: what happened, and where to find it. A reminder
 says that a background job finished and where its output is stored, or that a language server still
@@ -96,7 +98,7 @@ compared by its answers as well.
 
 ### Reasoning level
 
-The speaker's stored route supplies `reasoningEffort` to `AgentRuntime.run()`; a delegated child
+The agent's stored route supplies `reasoningEffort` to `AgentRuntime.run()`; a delegated child
 snapshots its parent's route. Model access resolves the level on every request against the levels
 the catalog lists for the model:
 
@@ -161,7 +163,7 @@ names is already in the transcript when a queued message opens a new assistant r
 asks nothing, and the queue stays untouched.
 
 What a running turn may take is the queue's `joins` rule (`wake-queue/kinds.ts`). User messages are
-filtered by the current speaker's address and must come from the run's client surface. A delegator's
+filtered by the current agent's address and must come from the run's client surface. A delegator's
 message can amend a running child's assignment. After a completed tool turn, chat runs also take
 every report addressed to the running delegator, as one message; only solo chats accept an
 unaddressed report. An entry with an independent completion waiter remains on the standalone run
@@ -171,13 +173,12 @@ mid-run queue consumption.
 ### Tool deferral
 
 Mini app and MCP tool schemas are the half of the tool list that grows without bound, so they are
-deferred: the model sees `activate_tools` with a compact catalog instead, and activates by exact
-name.
+deferred: the model sees `ToolSearch` with a compact catalog instead, and activates by exact name.
 
 | Surface            | Mechanism                                                                                                                | Boundary                                                                                              |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
 | Core toolkit       | Assembled core tools remain on the wire after policy and run-shape filtering.                                            | Run shape can still exclude a tool that the host cannot support, such as human-only UI in automation. |
-| Deferred tools     | `activate_tools` advertises them; the loop appends an activated schema before the next model turn.                       | A deferred implementation stays dispatchable, so deferral is a wire decision only.                    |
+| Deferred tools     | `ToolSearch` advertises them; the loop appends an activated schema before the next model turn.                           | A deferred implementation stays dispatchable, so deferral is a wire decision only.                    |
 | Session activation | An activated name is remembered on the session and promoted onto the wire at the start of every later run.               | Bounded per session; the oldest activation is released and the model is told which.                   |
 | Surface tools      | A mini app whose tab the person's latest message links, or whose wake the turn answers, brings every tool it registered. | Per turn and never stored; appended after the session's activations, sorted by name.                  |
 | The loader itself  | Stays present while any external tool exists, with an empty-catalog description once all are active.                     | Names resolve through the run's own registry, never through the remembered list.                      |
@@ -259,7 +260,7 @@ Runtime settings are assembled in the API bootstrap, not in user settings.
 | `retry`             | `{ maxRetries: 2, maxDelayMs: 60_000 }` | Retries before a response produces content.                              |
 | `silence`           | 300 s first byte, 120 s between         | A provider that goes quiet fails the request (`StreamIdleTimeoutError`). |
 | `maxBufferedEvents` | `256`                                   | Capacity of the Localix event buffer.                                    |
-| `scripts`           | Bundled worker and wasm, when present   | Where the `codemode` sandbox finds its files in a packaged app.          |
+| `scripts`           | Bundled worker and wasm, when present   | Where the script sandbox finds its files in a packaged app.              |
 
 Context-policy round trips preserve prompt-cache anchors on user, assistant, and tool messages. At
 the client/service boundary, failed-retry recovery snapshots cannot overwrite newer stream state.
@@ -308,9 +309,9 @@ outcomes beside authoritative ledger totals. Ledger totals include auxiliary mod
 transcript message. A subscription value is an API-equivalent estimate, not a metered charge;
 unpriced rows remain visible. Cumulative input across a tool loop is not its context-window size.
 
-Replay uses the session's persisted delegation depth and the selected participant's overhead. It
-states that it reads all stored branches; it is a diagnostic replay, not a captured provider
-request. A simulated checkpoint does not change the live session or prove a better task outcome.
+Replay uses the session's persisted delegation depth and the session agent's overhead. It states
+that it reads all stored branches; it is a diagnostic replay, not a captured provider request. A
+simulated checkpoint does not change the live session or prove a better task outcome.
 
 Workspace instruction discovery reads Claude Code's instruction files (`CLAUDE.md`,
 `.claude/CLAUDE.md`, `CLAUDE.local.md`, then `AGENTS.md`) from the filesystem root to the working

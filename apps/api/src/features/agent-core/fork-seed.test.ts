@@ -86,7 +86,7 @@ describe('what a fork can run', () => {
   test('a tool it was shown but cannot run answers with an error, and is still listed', async () => {
     const seed = captureForkSeed({
       systemPrompt: SYSTEM,
-      tools: [tool('read', 'p'), tool(TOOL.delegate, 'p'), tool('mcp__x__y', 'p')],
+      tools: [tool('read', 'p'), tool(TOOL.Agent, 'p'), tool('mcp__x__y', 'p')],
       cacheSessionId: 'parent',
       toolNames: [],
       profile: resolveRunProfile({ sessionKind: 'chat' }),
@@ -95,9 +95,9 @@ describe('what a fork can run', () => {
       tools: [tool('read', 'child')],
       dispatchTools: [tool('read', 'child')],
     })
-    expect(tools.map((t) => t.name)).toEqual(['read', TOOL.delegate, 'mcp__x__y'])
+    expect(tools.map((t) => t.name)).toEqual(['read', TOOL.Agent, 'mcp__x__y'])
     const run = async (name: string) => dispatchTools.find((t) => t.name === name)!.execute('c', {})
-    expect(await run(TOOL.delegate)).toEqual({ content: NESTED_FORK_REFUSAL, isError: true })
+    expect(await run(TOOL.Agent)).toEqual({ content: NESTED_FORK_REFUSAL, isError: true })
     const missing = await run('mcp__x__y')
     expect(missing.isError).toBe(true)
     expect(missing.content).toContain('mcp__x__y')

@@ -1,4 +1,5 @@
-import { DEFAULT_AGENT_PARTICIPANT, USER_PARTICIPANT } from '../../db'
+import { tmpdir } from 'node:os'
+import { DEFAULT_AGENT_AUTHOR, USER_AUTHOR } from '../../db'
 /// <reference types="bun" />
 
 /**
@@ -43,7 +44,7 @@ import {
   createTestChatService as createChatService,
 } from './test-harness'
 
-const tempDir = join(process.cwd(), 'tmp', 'chat-repo-concurrency-tests')
+const tempDir = join(tmpdir(), `localix-chat-repo-concurrency-tests-${process.pid}`)
 
 async function externalServices() {
   const filename = join(tempDir, `${randomUUID()}.sqlite`)
@@ -113,7 +114,7 @@ async function seededRow() {
     id,
     sessionId: session.id,
     userId,
-    payload: { id, role: 'assistant', from: DEFAULT_AGENT_PARTICIPANT, content: 'seed' },
+    payload: { id, role: 'assistant', from: DEFAULT_AGENT_AUTHOR, content: 'seed' },
     createdAt: ts,
     updatedAt: ts,
   }
@@ -150,7 +151,7 @@ describe('repository.insertMessages — atomic turn preamble', () => {
       payload: {
         id,
         role,
-        from: role === 'user' ? USER_PARTICIPANT : DEFAULT_AGENT_PARTICIPANT,
+        from: role === 'user' ? USER_AUTHOR : DEFAULT_AGENT_AUTHOR,
         content: role === 'user' ? 'go' : '',
       },
       createdAt: ts,
@@ -288,7 +289,7 @@ describe('repository.listMessages — cross-run parse cache coherence', () => {
       id,
       sessionId: session.id,
       userId,
-      payload: { id, role: 'assistant', from: DEFAULT_AGENT_PARTICIPANT, content: 'seed' },
+      payload: { id, role: 'assistant', from: DEFAULT_AGENT_AUTHOR, content: 'seed' },
       createdAt: ts,
       updatedAt: ts,
     })
@@ -303,7 +304,7 @@ describe('repository.listMessages — cross-run parse cache coherence', () => {
         payload_json: serializeMessagePayload({
           id,
           role: 'assistant',
-          from: DEFAULT_AGENT_PARTICIPANT,
+          from: DEFAULT_AGENT_AUTHOR,
           content: 'foreign',
         }),
       })

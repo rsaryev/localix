@@ -65,7 +65,7 @@ function decodeSource(segment: string): ReaderSource | null {
       }
     }
   } catch {
-    // Malformed or legacy identities are handled by the legacy parser below.
+    // A malformed identity is not a source.
   }
   return null
 }
@@ -79,19 +79,6 @@ export function readerChapterUri(source: string | ReaderSource, chapter: number)
   return `${readerBookUri(source)}/${chapter}`
 }
 
-function legacyResource(parsed: URL, segments: string[]): ReaderResource | null {
-  if (segments.length !== 2 || (segments[1] !== 'book' && segments[1] !== 'chapter')) return null
-  const path = parsed.searchParams.get('path')?.trim()
-  const mediaId = parsed.searchParams.get('mediaId')?.trim()
-  if (Boolean(path) === Boolean(mediaId)) return null
-  const source: ReaderSource = path
-    ? { path }
-    : { mediaId: mediaId!, name: parsed.searchParams.get('name')?.trim() || undefined }
-  if (segments[1] === 'book') return { kind: 'book', source }
-  const chapter = Number(parsed.searchParams.get('chapter'))
-  return Number.isSafeInteger(chapter) && chapter >= 0 ? { kind: 'chapter', source, chapter } : null
-}
-
 export function parseReaderUri(uri: string): ReaderResource | null {
   if (uri === ROOT) return { kind: 'root' }
   let parsed: URL
@@ -103,7 +90,7 @@ export function parseReaderUri(uri: string): ReaderResource | null {
   if (parsed.protocol !== 'localix:' || parsed.host !== 'resource' || parsed.hash) return null
   const segments = parsed.pathname.split('/').filter(Boolean)
   if (segments[0] !== READER_PROVIDER) return null
-  if (parsed.search) return legacyResource(parsed, segments)
+  if (parsed.search) return null
   if (segments.length !== 2 && segments.length !== 3) return null
   const source = decodeSource(segments[1]!)
   if (!source) return null

@@ -91,7 +91,7 @@ export function SpaceWorkspace({
               .map((issue) => `${issue.path || 'file'}: ${issue.message}`)
               .join('\n')}
             actions={
-              <Button size="xs" variant="outline" onClick={openFile}>
+              <Button size="xs" variant="ghost" onClick={openFile}>
                 Open the board file
               </Button>
             }

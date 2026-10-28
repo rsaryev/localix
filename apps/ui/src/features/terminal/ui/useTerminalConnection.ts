@@ -191,7 +191,6 @@ export function useTerminalConnection({
     if (retained !== undefined) {
       term.write(retained)
       workItemTransferReady.success(terminalTransferReadyKey(terminalId))
-      setConnected(false)
     } else {
       openTerminalStream(terminalId, term, link, {
         isDisposed: () => disposed,
@@ -231,6 +230,9 @@ export function useTerminalConnection({
 
     return () => {
       disposed = true
+      // A torn-down attachment is not connected; the next one says so itself when it opens (a
+      // retained, already-exited terminal never does, and stays "not connected").
+      setConnected(false)
       if (reconnectTimer) clearTimeout(reconnectTimer)
       if (stableTimer) clearTimeout(stableTimer)
       fitRef.current = null

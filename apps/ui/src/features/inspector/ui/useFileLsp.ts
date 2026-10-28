@@ -1,4 +1,5 @@
-import { useCallback, useRef } from 'react'
+import { useCallback } from 'react'
+import { useLatestRef } from '@/shared/lib/useLatestRef'
 import { backendClient } from '@/shared/api/client'
 import type {
   EditorPosition,
@@ -50,15 +51,14 @@ export function useFileLsp(
   // same tick as the keystroke that triggered it was answered for the text BEFORE that
   // keystroke. `ask` sends the buffer first when it is ahead — the socket keeps the two in
   // order and the server's sync barrier holds the request behind the change.
-  const flushRef = useRef(flushDocument)
-  flushRef.current = flushDocument
+  const flushRef = useLatestRef(flushDocument)
   const ask = useCallback(
     <T>(fallback: T, run: (session: string, file: string) => Promise<T>): Promise<T> => {
       if (!sessionId || !editPath) return Promise.resolve(fallback)
       flushRef.current?.()
       return run(sessionId, editPath)
     },
-    [sessionId, editPath],
+    [sessionId, editPath, flushRef],
   )
   const hoverSource = useCallback(
     (pos: EditorPosition) => ask(null, (s, f) => backendClient.lspHover(s, f, pos)),

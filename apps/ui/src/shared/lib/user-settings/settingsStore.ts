@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { backoffMs } from '@localixai/api/backoff'
+import { backoffMs } from '@localixai/agent/backoff'
 import { backendClient } from '@/shared/api/client'
 import type { UiSettingsPatch, AgentSettingsPatch, UserProfile } from '@/shared/api/contracts'
 import { setSaveCleanupPrefs } from '@/shared/ui/code-editor/saveCleanup'

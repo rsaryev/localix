@@ -328,25 +328,32 @@ describe('sameNameInCwdHint', () => {
 describe('path locks', () => {
   it('serializes same-path critical sections in acquisition order', async () => {
     const order: number[] = []
+    let release!: () => void
+    const gate = new Promise<void>((resolve) => (release = resolve))
     const p1 = withPathLock('/x', async () => {
-      await new Promise((r) => setTimeout(r, 20))
+      await gate
       order.push(1)
     })
     const p2 = withPathLock('/x', async () => {
       order.push(2)
     })
+    await new Promise((r) => setTimeout(r, 0)) // p2 has had its turn and still waits
+    release()
     await Promise.all([p1, p2])
     expect(order).toEqual([1, 2]) // p2 waited for the slower p1
   })
 
   it('lets different paths run concurrently', async () => {
     const order: number[] = []
+    let release!: () => void
+    const gate = new Promise<void>((resolve) => (release = resolve))
     const a = withPathLock('/a', async () => {
-      await new Promise((r) => setTimeout(r, 20))
+      await gate
       order.push(1)
     })
     const b = withPathLock('/b', async () => {
       order.push(2)
+      release()
     })
     await Promise.all([a, b])
     expect(order).toEqual([2, 1]) // b did not wait for the slower a

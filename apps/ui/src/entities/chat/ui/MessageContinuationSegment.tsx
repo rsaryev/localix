@@ -30,7 +30,6 @@ export function MessageContinuationSegment({
   wakeSource,
   isLast,
   isStreaming,
-  mentionHandles,
 }: {
   message: Message
   sessionId?: string | null
@@ -39,7 +38,6 @@ export function MessageContinuationSegment({
   wakeSource?: WakeSource
   isLast: boolean
   isStreaming?: boolean
-  mentionHandles?: readonly string[]
 }) {
   const uri =
     addressable && sessionId
@@ -69,13 +67,7 @@ export function MessageContinuationSegment({
         <MessageReasoning text={message.reasoning} isStreaming={isStreaming && !message.content} />
       )}
       <ToolTimingProvider tools={message.timing?.tools}>
-        <MessageBody
-          message={message}
-          isUser={false}
-          isStreaming={isStreaming}
-          isLast={isLast}
-          mentionHandles={mentionHandles}
-        />
+        <MessageBody message={message} isUser={false} isStreaming={isStreaming} isLast={isLast} />
       </ToolTimingProvider>
       {message.bindings?.length ? (
         <MessageAttachments bindings={message.bindings} align="start" />

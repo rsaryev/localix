@@ -53,6 +53,27 @@ describe('reaching a model', () => {
     expect(addressOf(claude, {})).toBe(`${base}/v1`)
   })
 
+  test("OpenAI's routing headers: the underscore one only to OpenAI itself, the other wherever the family goes", () => {
+    const headers = (providerId: string, base?: string, access?: { baseURL?: string }) =>
+      profileFor(
+        entry(providerId, { family: 'openai', ...(base ? { baseURL: base } : {}) }),
+        access,
+      ).requestHeaders?.(context())
+    // OpenAI's own address, however the person signed in.
+    expect(headers('openai')).toEqual({ session_id: 's', 'x-client-request-id': 's' })
+    // A proxy or another vendor's OpenAI-compatible host may refuse a header with an underscore.
+    expect(headers('github-copilot', 'https://api.githubcopilot.com')).toEqual({
+      'x-client-request-id': 's',
+    })
+    expect(headers('openai', undefined, { baseURL: 'https://proxy.example/v1' })).toEqual({
+      'x-client-request-id': 's',
+    })
+    // The ChatGPT backend has its own `session-id` (the sign-in flow) and refuses the underscore.
+    expect(headers('openai-codex', 'https://chatgpt.com/backend-api/codex')).toEqual({
+      'x-client-request-id': 's',
+    })
+  })
+
   test('OpenRouter is told the reasoning level in its own terms, since its SDK reads no standard one', () => {
     const profile = profileFor(
       entry('openrouter', { family: 'openrouter', baseURL: 'https://openrouter.ai/api/v1' }),

@@ -3,7 +3,7 @@
  * `backendClient` domain modules spread into the facade in `./client`.
  *
  * The roster is read over HTTP because the live `attention.updated` frame only carries changes
- * that happen while this window listens: a request asked, a plan presented or a mention made
+ * that happen while this window listens: a request asked or a plan presented
  * while the window was closed would otherwise be invisible until something else changed.
  */
 

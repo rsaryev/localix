@@ -68,8 +68,8 @@ describe('parseControlCommand', () => {
     expect(parseControlCommand('/COST')).toBe('usage')
     // `/clear` is a client command (a new chat); it never parses as a server control command.
     expect(parseControlCommand('/clear')).toBeNull()
-    // No LLM compaction command; the runtime checkpoints on its own.
-    expect(parseControlCommand('/compact')).toBeNull()
+    // `/compact` is a server command: it asks the runtime for a checkpoint, with no model call.
+    expect(parseControlCommand('/compact keep the plan')).toBe('compact')
     expect(parseControlCommand('/model gpt-5')).toBe('model')
     // Valid contributed/synthetic names are not core built-ins.
     expect(parseControlCommand('/sample-command')).toBeNull()
@@ -80,6 +80,7 @@ describe('parseControlCommand', () => {
     expect(parseControlCommand('/skills')).toBe('skills')
     expect(parseControlCommand('/mcp')).toBe('mcp')
     expect(parseControlCommand('/MCP')).toBe('mcp')
+    expect(parseControlCommand('/mcp reconnect github')).toBe('mcp')
     expect(parseControlCommand('/plugin list')).toBe('plugins')
     expect(parseControlCommand('/loop 5m check the deploy')).toBe('loop')
     // `/reasoning` is gone: the level is set in the model picker.

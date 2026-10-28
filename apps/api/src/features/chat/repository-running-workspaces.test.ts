@@ -1,3 +1,4 @@
+import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -9,7 +10,7 @@ import { sessionFixture } from '../../testing/session-fixture'
 import { createProjectsRepository } from '../projects/repository'
 import { createChatRepository } from './repository'
 
-const tempDir = join(process.cwd(), 'tmp', 'chat-running-workspaces-tests')
+const tempDir = join(tmpdir(), `localix-chat-running-workspaces-tests-${process.pid}`)
 
 beforeAll(async () => mkdir(tempDir, { recursive: true }))
 afterAll(async () => rm(tempDir, { recursive: true, force: true }))

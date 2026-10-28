@@ -50,7 +50,7 @@ export function recoveredUsage(payloadJson: string) {
     }
     const providerMeta = jsonObject(payload.providerMeta)
     // The message's own author, which is the one attribution a repair can trust: the session's
-    // party may have been re-ordered, or the member removed, since the row was written.
+    // agent may have been replaced since the row was written.
     const from = jsonObject(payload.from)
     const timing = jsonObject(payload.timing)
     const modelMs = timing ? optionalFiniteNonnegative(timing, 'modelMs') : undefined

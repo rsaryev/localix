@@ -172,8 +172,8 @@ HMR.
 
 - Native workbench UI runs in the host page, so it follows the native-backend trust rule: a bundled
   mini app ships trusted, and any other mini app's artifact is served only after the user enabled
-  it. The app builds a user mini app's artifact itself from the mini app kit
-  (`apps/api/src/features/mini-apps/authoring/`).
+  it. A user mini app's artifact is built from the mini app kit by the mini-app-authoring plugin
+  (`plugins/mini-app-authoring/`), and Localix installs the built package.
 - Backend enablement is process-global once any exact scope enables the mini app. Route scope is
   resolved per request, but a mini app must not capture one project's working directory at register
   time and treat it as universal.
@@ -210,9 +210,10 @@ HMR.
 - [UI host adapter](../../../apps/ui/src/shared/contrib/host.ts)
 - [Mini app UI wiring](../../../apps/ui/src/shared/contrib/miniAppUiDiscovery.ts)
 - [Mini app UI runtime](../../../apps/ui/src/shared/contrib/miniAppUiRuntime.ts)
-- [Mini app UI artifact builder](../../../apps/api/src/features/mini-apps/authoring/ui-build.ts)
+- [Mini app UI artifact builder](../../../plugins/mini-app-authoring/src/build/ui-build.ts)
 - [Mini app kit staging](../../../scripts/stage-mini-app-kit.mjs)
 - [Development kit cache](../../../scripts/mini-app-kit-cache.mjs) (a kit staged for identical
   inputs is reused across `bun run dev` launches)
-- [User mini app authoring](../../../apps/api/src/features/mini-apps/authoring/service.ts)
+- [User mini app authoring](../../../plugins/mini-app-authoring/README.md) and
+  [the local install](../../../apps/api/src/features/mini-apps/local-install.ts)
 - [Workbench registries](../../../apps/ui/src/shared/contrib/uiContrib.ts)

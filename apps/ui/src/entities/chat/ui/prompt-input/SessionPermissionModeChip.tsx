@@ -14,7 +14,7 @@ export function SessionPermissionModeChip({
     <PermissionModeControl
       value={permission.mode}
       editable={permission.editable}
-      onChange={permission.setMode}
+      onChange={(mode) => void permission.setMode(mode)}
       waitingPlan={permission.waitingPlan}
       onApprovePlan={permission.approvePlan}
       disabled={disabled}

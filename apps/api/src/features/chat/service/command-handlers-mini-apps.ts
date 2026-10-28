@@ -1,22 +1,16 @@
 import { errorMessage } from '../../../lib/errors'
-import { formatMiniAppCheck } from '../../mini-apps/authoring/check'
 import type { MiniAppRecord } from '../../mini-apps/contracts'
 import type { MessageMutationResponse } from '../contracts'
 import type { SessionRecord } from '../repository'
 import type { CommandHandlerContext, DirectReply } from './command-handlers'
 import { handleMiniAppCatalogCommand } from './command-handlers-mini-apps-catalog'
-import { handleMiniAppCreateSubcommand } from './command-handlers-mini-apps-create'
 
 /** The slice of {@link CommandHandlerContext} the `/mini-app` sub-commands need. */
-type MiniAppsCommandContext = Pick<
-  CommandHandlerContext,
-  'miniAppService' | 'repo' | 'runner' | 'now' | 'runMacroCommand'
->
+type MiniAppsCommandContext = Pick<CommandHandlerContext, 'miniAppService'>
 
 /** Every accepted sub-command, in menu order — the reply to an unrecognized one. */
 const MINI_APP_SUBCOMMAND_USAGE = [
   '/mini-app list',
-  '/mini-app create <what it should do>',
   '/mini-app enable <name>',
   '/mini-app disable <name>',
   '/mini-app remove <name>',
@@ -42,9 +36,10 @@ function listLine(app: MiniAppRecord): string {
 }
 
 /**
- * `/mini-app …`: the person's mini apps from the chat — list, create, switch on and off, remove,
- * reload. Every write goes through the mini apps feature, which announces it; nothing here
- * re-converges a host.
+ * `/mini-app …`: the person's mini apps from the chat — list, switch on and off, remove, reload.
+ * Every write goes through the mini apps feature, which announces it; nothing here re-converges a
+ * host. Localix runs and manages mini apps and builds none: making one is the mini-app-authoring
+ * plugin's job, through its own commands (X3).
  */
 export async function handleMiniAppsControlCommand(
   ctx: MiniAppsCommandContext,
@@ -59,10 +54,6 @@ export async function handleMiniAppsControlCommand(
   const name = tokens.slice(2).join(' ').trim()
   const projectId = session.projectId ?? null
 
-  if (sub === 'create') {
-    return handleMiniAppCreateSubcommand(ctx, userId, session, prompt, directReply)
-  }
-
   if (sub === 'catalog') {
     let response: MessageMutationResponse | undefined
     await handleMiniAppCatalogCommand(
@@ -75,23 +66,10 @@ export async function handleMiniAppsControlCommand(
   }
 
   if (sub === 'reload') {
-    let rebuilt: Awaited<ReturnType<typeof miniAppService.reload>> = []
-    let rebuildError: string | null = null
-    try {
-      rebuilt = await miniAppService.reload(userId)
-    } catch (err) {
-      rebuildError = errorMessage(err)
-    }
-    const failed = rebuilt.filter(({ report }) => !report.ok)
+    // A folder changed on disk is a change no write announced: say every mini app changed.
+    await miniAppService.resync()
     return directReply(
-      [
-        'Mini apps reloaded. Their tools, screens and commands take effect on the next turn.',
-        ...(rebuilt.length
-          ? [`Rebuilt ${rebuilt.map(({ name }) => `\`${name}\``).join(', ')}.`]
-          : []),
-        ...(rebuildError ? [`Your mini apps could not be rebuilt: ${rebuildError}`] : []),
-        ...failed.map(({ name, report }) => '```\n' + formatMiniAppCheck(name, report) + '\n```'),
-      ].join('\n\n'),
+      'Mini apps reloaded. Their tools, screens and commands take effect on the next turn.',
     )
   }
 
@@ -130,7 +108,7 @@ export async function handleMiniAppsControlCommand(
   const { miniApps } = await miniAppService.list(userId, { projectId })
   return directReply(
     miniApps.length === 0
-      ? 'No mini apps yet. Add one from the catalog in the Store, or describe one with `/mini-app create <what it should do>`.'
+      ? 'No mini apps yet. Add one from the catalog in the Store.'
       : ['**Mini apps** — manage them in the Store:', '', ...miniApps.map(listLine)].join('\n'),
   )
 }

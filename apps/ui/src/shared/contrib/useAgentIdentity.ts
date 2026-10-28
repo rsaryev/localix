@@ -1,14 +1,11 @@
-import { useMemo } from 'react'
-import { participantAgentId } from '@localixai/api/participant'
+import { useMemo, useSyncExternalStore } from 'react'
+import { authorAgentId } from '@localixai/api/author'
 import { localixUiUri } from '@localixai/mini-app-sdk/navigation'
-import { miniAppContribSnapshot } from './enabledMiniApps'
-import { useMiniAppContribVersion } from './useMiniAppContribVersion'
+import { miniAppContribSnapshot, subscribeMiniAppContrib } from './enabledMiniApps'
 
 export interface AgentIdentity {
   agentId?: string
-  /** The registry handle — the immutable username, and what the avatar's colour comes from. */
-  handle: string
-  /** What to call it on screen: the registry label, or the handle read as words. */
+  /** The agent's Claude Code `name`: what to call it on screen, and what the avatar's colour comes from. */
   name: string
   /**
    * The scope its record lives in: `''` is the global registry, otherwise a project id.
@@ -33,7 +30,7 @@ export interface AgentIdentity {
 export function agentProfileUri(identity: AgentIdentity): string {
   return localixUiUri('work-item', ['store'], {
     kind: 'agent',
-    id: identity.agentId ?? identity.handle,
+    id: identity.agentId ?? identity.name,
   })
 }
 
@@ -41,17 +38,11 @@ export function agentProfileUri(identity: AgentIdentity): string {
  * The stable AgentId behind a message's `from`, or null for the human and application.
  *
  * Thin on purpose: the `agent:` prefix grammar is owned by the storage vocabulary
- * (`db/participant.ts`), reached here through its own package export rather than the server
+ * (`db/author.ts`), reached here through its own package export rather than the server
  * bundle. A second copy of the prefix rule is how the two ends drift.
  */
 export function agentAuthorId(from: string | undefined): string | null {
-  return from ? participantAgentId(from) : null
-}
-
-/** `code-reviewer` → `Code reviewer`. The fallback when a record carries no label. */
-export function humanizeHandle(handle: string): string {
-  const words = handle.replace(/[-_.]+/g, ' ').trim()
-  return words ? words[0]!.toLocaleUpperCase() + words.slice(1) : handle
+  return from ? authorAgentId(from) : null
 }
 
 /**
@@ -60,56 +51,33 @@ export function humanizeHandle(handle: string): string {
  * Reading the CONTRIBUTION store rather than fetching is the point: that document is the
  * active scope's, already loaded, and shared by every capability surface — so a transcript
  * of two hundred rows costs no requests and cannot disagree with the settings list about
- * what an agent is called. Missing registry entries use the captured display snapshot;
- * a same-named replacement cannot become the author of an earlier message.
+ * what an agent is called. An agent deleted since falls back to its id; a same-named replacement
+ * cannot become the author of an earlier message.
  */
-export function useAgentIdentity(
-  from: string | undefined,
-  snapshot?: { handle: string },
-): AgentIdentity | null {
-  const version = useMiniAppContribVersion()
+export function useAgentIdentity(from: string | undefined): AgentIdentity | null {
+  // The snapshot is replaced wholesale on a publish, so a rename reaches this read.
+  const contrib = useSyncExternalStore(
+    subscribeMiniAppContrib,
+    miniAppContribSnapshot,
+    miniAppContribSnapshot,
+  )
   return useMemo(() => {
     const agentId = agentAuthorId(from)
     if (!agentId) return null
-    return resolveAuthorIdentity(agentId, snapshot, miniAppContribSnapshot().document?.agents ?? [])
-    // `version` is a dependency, not a value: a capability publish can rename an agent.
-  }, [from, snapshot?.handle, version])
+    return resolveAuthorIdentity(agentId, contrib.document?.agents ?? [])
+  }, [from, contrib])
 }
+
+type AgentEntry = { record: { id: string; name: string }; projectId: string }
 
 export function resolveAuthorIdentity(
   agentId: string,
-  snapshot: { handle: string } | undefined,
-  agents: readonly { record: { id: string; handle: string; label?: string }; projectId: string }[],
+  agents: readonly AgentEntry[],
 ): AgentIdentity {
   const found = agents.find((agent) => agent.record.id === agentId)
-  const handle = snapshot?.handle ?? found?.record.handle ?? agentId
   return {
     agentId,
-    handle,
-    name: found?.record.label?.trim() || humanizeHandle(handle),
-    scope: found?.projectId ?? '',
-  }
-}
-
-/** Catalog selection by handle is only for navigation, never for a stored author. */
-export function useAgentHandleIdentity(handle: string): AgentIdentity {
-  const version = useMiniAppContribVersion()
-  return useMemo(() => resolveHandleIdentity(handle), [handle, version])
-}
-
-/**
- * The same lookup as {@link useAgentHandleIdentity}, for a LIST of handles resolved in one pass —
- * a hook cannot run once per row of a described menu. The caller re-reads it under
- * `useMiniAppContribVersion()` so a rename reaches it.
- */
-export function resolveHandleIdentity(handle: string): AgentIdentity {
-  const found = miniAppContribSnapshot().document?.agents.find(
-    (agent) => agent.record.handle === handle,
-  )
-  return {
-    agentId: found?.record.id,
-    handle,
-    name: found?.record.label?.trim() || humanizeHandle(handle),
+    name: found?.record.name ?? agentId,
     scope: found?.projectId ?? '',
   }
 }

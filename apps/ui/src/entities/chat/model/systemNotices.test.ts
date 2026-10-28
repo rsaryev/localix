@@ -32,7 +32,7 @@ describe('systemNotices', () => {
 
   test('the events the AGENTS have to read are not drawn here', () => {
     // A model change and a reasoning change are written by the server as ordinary, model-visible
-    // rows that name the participant (`runtime/session-notice.ts`). A client-only copy would
+    // rows that name the agent (`runtime/session-notice.ts`). A client-only copy would
     // print the same event twice and disagree with it about whose change it was — so the
     // builders for them must not come back. This is the positive control for that.
     expect(Object.keys(systemNotices)).toEqual(['connectionChange'])

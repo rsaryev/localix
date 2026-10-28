@@ -73,7 +73,7 @@ const RETENTION = {
   pointer: 0.12,
   recoverable: 0.95, // re-readable from disk / superseded → near-lossless
   // The head says what an answer was about and the tail how it ended; the middle is one
-  // `global_search` away. Worth more than a masked observation, which says nothing.
+  // `GlobalSearch` away. Worth more than a masked observation, which says nothing.
   fold: 0.3,
 }
 

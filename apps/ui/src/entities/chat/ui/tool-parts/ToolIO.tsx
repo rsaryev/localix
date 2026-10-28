@@ -1,141 +1,98 @@
-import { Fragment, useMemo, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { Check, Copy } from 'lucide-react'
 import { inspector } from '@/shared/lib/inspectorBus'
 import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { useCopied } from '@localixai/mini-app-sdk/ui/interactions'
-import { SectionLabel } from '@localixai/kit/section-label'
-import { splitLinkedPaths, type TextSegment } from './linkText'
+import { LinkedText } from './LinkedText'
 import { clampConsoleTail } from './consoleTail'
-import { ExternalAnchor } from '@/shared/ui/external-anchor'
 import { IconButton } from '@localixai/kit/icon-button'
 import { TextAction } from '@localixai/kit/text-action'
-import { ActionTooltip } from '@localixai/kit/tooltip'
 import { MetadataTooltip } from '@localixai/kit/tooltip'
 import { baseName } from '@localixai/api/context-refs'
 import { createMessageBindingDraft } from '@localixai/mini-app-sdk/ui/message-binding-drag'
 import { linkDragProps } from '../linkDrag'
-import { detectCodeLanguage } from '@/shared/ui/code-block/detectCodeLanguage'
-import { highlightCodeTokens } from '@/shared/ui/code-block/highlightCode'
 import { SUGAR_HIGH_THEME } from '@/shared/ui/code-block/sugarHighTheme'
-
-/** Render plain text with file-path tokens turned into inspector-opening links. */
-export function LinkedText({
-  text,
-  syntax = false,
-  linkify = true,
-}: {
-  text: string
-  syntax?: boolean
-  linkify?: boolean
-}) {
-  // The transcript's chat: a path in a tool's output opens in the chat that ran the tool.
-  const sessionId = useWorkItemSessionId()
-  const tokens = useMemo(() => {
-    const language = syntax ? detectCodeLanguage(text) : undefined
-    return language ? highlightCodeTokens(text, language) : null
-  }, [text, syntax])
-  const segments: TextSegment[] = linkify ? splitLinkedPaths(text) : [{ text, start: 0 }]
-  let tokenIndex = 0
-  const colored = (value: string, start: number) => {
-    if (!tokens) return value
-    const end = start + value.length
-    const children: ReactNode[] = []
-    while (tokenIndex < tokens.length) {
-      const token = tokens[tokenIndex]!
-      if (token.start >= end) break
-      const content = text.slice(Math.max(start, token.start), Math.min(end, token.end))
-      children.push(
-        token.kind === 'space' || token.kind === 'break' ? (
-          content
-        ) : (
-          <span
-            key={token.start}
-            className={`sh__token--${token.kind}`}
-            style={{ color: `var(--sh-${token.kind})` }}
-          >
-            {content}
-          </span>
-        ),
-      )
-      if (token.end > end) break
-      tokenIndex++
-    }
-    return children
-  }
-  return (
-    <>
-      {segments.map((seg) =>
-        seg.path ? (
-          <TextAction
-            key={seg.start}
-            tooltip={seg.line ? `Open ${seg.path}:${seg.line}` : `Open ${seg.path}`}
-            tooltipSide="top"
-            onClick={(e) => {
-              e.stopPropagation()
-              if (sessionId) inspector.openFile({ sessionId, path: seg.path!, line: seg.line })
-            }}
-            className="cursor-pointer rounded-sm text-text-soft underline decoration-dotted decoration-text-faint underline-offset-2 transition-colors hover:text-foreground hover:decoration-foreground"
-          >
-            {colored(seg.text, seg.start)}
-          </TextAction>
-        ) : seg.href ? (
-          <ActionTooltip key={seg.start} label={seg.href} side="top">
-            <ExternalAnchor
-              href={seg.href}
-              onClick={(e) => e.stopPropagation()}
-              className="cursor-pointer rounded-sm text-text-soft underline decoration-dotted decoration-text-faint underline-offset-2 transition-colors hover:text-foreground hover:decoration-foreground"
-            >
-              {colored(seg.text, seg.start)}
-            </ExternalAnchor>
-          </ActionTooltip>
-        ) : (
-          <Fragment key={seg.start}>{colored(seg.text, seg.start)}</Fragment>
-        ),
-      )}
-    </>
-  )
-}
 
 // ── Layout primitives ──────────────────────────────────────────────────────────
 
-/** Labelled IN / OUT / DIFF row inside a tool's collapsed body. */
-export function IORow({ label, children }: { label: string; children: ReactNode }) {
+/**
+ * The words a tool card labels its sections with. Every card says what it was given (`In`) and
+ * what came back (`Out`), a failure as `Error`; a batch numbers its items. A free-form label was
+ * the old shape, and a long one (PROMPT) outgrew the label column and printed over its content.
+ */
+export type ToolSectionLabel = 'In' | 'Out' | 'Error' | number
+
+/**
+ * One labelled section of a tool card's body: the label in a fixed column, the content beside it.
+ * The group is named by its label so a screen reader hears "In" / "Out" / "Error" for what the
+ * sighted reader sees; the visible label is hidden from it so the word is not read twice.
+ */
+export function IORow({ label, children }: { label: ToolSectionLabel; children: ReactNode }) {
   return (
-    <div className="flex gap-2 min-w-0">
-      <SectionLabel
-        as="span"
-        weight="semibold"
-        className="shrink-0 w-8 pt-0.5 select-none font-mono"
+    <div
+      role="group"
+      aria-label={typeof label === 'number' ? `Item ${label}` : label}
+      className="flex min-w-0 gap-2"
+    >
+      <span
+        aria-hidden="true"
+        className="w-10 shrink-0 select-none pt-2 text-2xs font-medium text-text-faint"
       >
         {label}
-      </SectionLabel>
+      </span>
       <div className="min-w-0 flex-1">{children}</div>
     </div>
   )
 }
 
-/** Scrollable monospace output block — the standard flat "OUT" body.
- *  Pass `linkify` for command/search output so `path:line` tokens become clickable. */
-export function OutputBlock({ children, linkify }: { children: ReactNode; linkify?: boolean }) {
+/**
+ * Scrollable output block — the standard flat body of an `In` or `Out` section. Code, JSON and
+ * command output stay monospace (a `<pre>`); pass `prose` for natural language (a subagent's
+ * prompt or answer, a message), which is set in the interface font and wraps at word boundaries.
+ * Both cap at the same height, scroll inside themselves, and carry the same copy button.
+ * Pass `linkify` for command/search output so `path:line` tokens become clickable.
+ */
+export function OutputBlock({
+  children,
+  linkify,
+  prose,
+}: {
+  children: ReactNode
+  linkify?: boolean
+  prose?: boolean
+}) {
   // Tool output remains lossless in the session model. The transcript projection
   // is deliberately bounded, matching ConsoleOutput's live-path caps, so settling a
   // command cannot suddenly mount a multi-megabyte <pre>. The visible marker makes
   // the projection explicit.
   const display = typeof children === 'string' ? clampConsoleTail(children) : children
+  // `overscroll-contain`: nested inside the transcript scroller — reaching the
+  // end of this capped block must not chain into the conversation.
+  const frame = 'max-h-64 overflow-auto overscroll-contain scrollbar-thin px-1 py-1.5 pr-8'
   return (
     <div className="group relative min-w-0">
       {typeof children === 'string' && <RawCopyButton text={children} />}
-      {/* `overscroll-contain`: nested inside the transcript scroller — reaching the
-          end of this capped <pre> must not chain into the conversation. */}
-      <pre
-        className={`max-h-64 overflow-auto overscroll-contain scrollbar-thin px-1 py-1.5 pr-8 font-mono text-2xs leading-relaxed text-text-soft whitespace-pre-wrap break-all ${SUGAR_HIGH_THEME}`}
-      >
-        {typeof display === 'string' ? (
-          <LinkedText text={display} syntax linkify={linkify ?? false} />
-        ) : (
-          display
-        )}
-      </pre>
+      {prose ? (
+        <div
+          className={`${frame} text-xs leading-relaxed text-text-soft whitespace-pre-wrap break-words`}
+        >
+          {typeof display === 'string' ? (
+            <LinkedText text={display} linkify={linkify ?? false} />
+          ) : (
+            display
+          )}
+        </div>
+      ) : (
+        <pre
+          className={`${frame} font-mono text-2xs leading-relaxed text-text-soft whitespace-pre-wrap break-all ${SUGAR_HIGH_THEME}`}
+        >
+          {typeof display === 'string' ? (
+            <LinkedText text={display} syntax linkify={linkify ?? false} />
+          ) : (
+            display
+          )}
+        </pre>
+      )}
     </div>
   )
 }
@@ -161,14 +118,14 @@ export function RawCopyButton({ text }: { text: string }) {
   )
 }
 
-/** The standard "ERR" row — a labelled OutputBlock for a failed tool's message.
+/** The standard `Error` section — a labelled OutputBlock for a failed tool's message.
  *  Renders nothing when `message` is empty, so call sites need no extra guard.
  *  `linkify` (default on) makes `path:line` tokens clickable; pass false for raw
  *  terminal output. */
 export function ErrorRow({ message, linkify = true }: { message?: string; linkify?: boolean }) {
   if (!message) return null
   return (
-    <IORow label="ERR">
+    <IORow label="Error">
       <OutputBlock linkify={linkify}>{message}</OutputBlock>
     </IORow>
   )

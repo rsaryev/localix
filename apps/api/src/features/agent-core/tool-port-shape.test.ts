@@ -24,14 +24,14 @@ const HERE = import.meta.dir
 const read = (file: string) => stripComments(readFileSync(join(HERE, file), 'utf8'))
 
 /** Always built (`buildCoreTools`) — no port because there is nothing optional about them. */
-const CORE_TOOLS = ['ask', 'bash', 'read', 'search', 'write', 'edit', 'research']
-/** Arrive through `policy.extraTools` as host/plugin-owned instances, not through a port. */
-const EXTRA_TOOLS_CHANNEL = ['mcp_resources', 'vault', 'external_agent_sessions']
+const CORE_TOOLS = ['AskUserQuestion', 'Bash', 'Read', 'Search', 'Write', 'Edit', 'Research']
+/** Arrives through `policy.extraTools` from the run's MCP servers, not through a port. */
+const EXTRA_TOOLS_CHANNEL = ['McpResources']
 
 function portKeys(source = read('tool-registry.ts')): string[] {
   const block = /export interface OptionalToolPorts \{([\s\S]*?)\n\}/.exec(source)?.[1]
   if (!block) throw new Error('OptionalToolPorts not found')
-  return [...block.matchAll(/^\s*([a-z_]+)\?:/gm)].map((m) => m[1]!)
+  return [...block.matchAll(/^\s*([A-Za-z_]+)\?:/gm)].map((m) => m[1]!)
 }
 
 function registrationBranches(
@@ -40,7 +40,7 @@ function registrationBranches(
 ): string[] {
   const names = new Set<string>()
   for (const src of [optionals, registry]) {
-    for (const m of src.matchAll(/\boptional\.([a-z_]+)\b/g)) names.add(m[1]!)
+    for (const m of src.matchAll(/\boptional\.([A-Za-z_]+)\b/g)) names.add(m[1]!)
   }
   return [...names]
 }

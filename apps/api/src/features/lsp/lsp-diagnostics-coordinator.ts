@@ -8,12 +8,12 @@ import {
 interface DiagnosticPullPorts {
   connection: MessageConnection
   diagnosticRegistrations: ReadonlyMap<string, CapabilityRegistration>
-  hasStaticPullDiagnostics(): boolean
-  getWorkspacePullInFlight(): Map<string, Promise<DiagnosticRequestResult>>
-  mergePullResults(
+  hasStaticPullDiagnostics: () => boolean
+  getWorkspacePullInFlight: () => Map<string, Promise<DiagnosticRequestResult>>
+  mergePullResults: (
     filePath: string,
     results: DiagnosticRequestResult[],
-  ): { handled: boolean; matched: boolean }
+  ) => { handled: boolean; matched: boolean }
 }
 
 /** Select live registrations and share workspace requests only until they settle. */

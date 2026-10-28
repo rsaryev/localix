@@ -22,9 +22,9 @@ import {
   describeFailure,
   isRetryable,
   retryDelayMs,
-  sleep,
   type RetryPolicy,
 } from './retry'
+import { sleep } from '@localixai/agent/backoff'
 import { priceUsage } from './usage'
 import { PartialUsage } from './wire/partial-usage'
 import {
@@ -61,6 +61,8 @@ export const DEFAULT_SILENCE: SilenceDeadline = { firstPartMs: 300_000, betweenP
 
 export interface SessionOptions {
   sessionId: string
+  /** The prompt-cache key when it is not the session id (`AgentRuntimeRunInput`). */
+  promptCacheKey?: string
   idleMs?: number
   /** `long`: the longest-lived prompt cache the provider offers. */
   cacheRetention?: 'short' | 'long'
@@ -133,6 +135,7 @@ export function createModelSession(bound: BoundModel, options: SessionOptions): 
       bound.profile,
       {
         sessionId: options.sessionId,
+        ...(options.promptCacheKey ? { promptCacheKey: options.promptCacheKey } : {}),
         reasoningEffort: request.reasoningEffort,
         idleMs: options.idleMs,
         ...(options.cacheRetention ? { cacheRetention: options.cacheRetention } : {}),

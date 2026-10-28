@@ -27,8 +27,8 @@ need a catalog entry, and sign-in appears only when that runtime reports an OAut
 
 ## How it works
 
-Each participant's seat stores its model, connection, and reasoning effort explicitly; nothing is
-inherited after the seat exists. The details panel shows the running model's stored level. For any
+A conversation stores its model, connection, and reasoning effort explicitly; nothing is inherited
+after the conversation exists. The details panel shows the running model's stored level. For any
 other model it shows the level that model would start at: the level last chosen for that agent on
 that model, otherwise the default, limited to the levels the model supports. Every level change,
 from the picker or the composer, is remembered for that agent and model.
@@ -52,38 +52,32 @@ If you close the browser before finishing sign-in, return to the provider form a
 again. A new attempt cancels your pending login for that provider and waits for its local callback
 listener to close before opening a fresh sign-in page.
 
-A conversation stores a connection id and a namespaced model id **per participant**, and only when
-someone actually chose one there. At run time, Localix verifies that the provider owns the model,
-tries the stored connection first, and can resolve another usable connection for the same provider
-if that one no longer works. It never crosses to a different provider or model.
+A conversation stores a connection id and a namespaced model id, and only when someone actually
+chose one there. At run time, Localix verifies that the provider owns the model, tries the stored
+connection first, and can resolve another usable connection for the same provider if that one no
+longer works. It never crosses to a different provider or model.
 
-### Which model a participant runs on
+### Which model a conversation runs on
 
-A new seat's route is decided once, when the participant joins, and then stored. Its model comes
+A new conversation's route is decided once, when it is created, and then stored. Its model comes
 from the first source that names one:
 
-| Order | Source                                       | Set from                                                 |
-| ----- | -------------------------------------------- | -------------------------------------------------------- |
-| 1     | The conversation's choice **for this agent** | The model picker (including **All agents**), or `/model` |
-| 2     | The agent's default                          | **the agent's Store page**                               |
-| 3     | Your last choice **for this agent**          | Every pick for that agent, in any conversation           |
-| 4     | The project                                  | **Settings → Project**                                   |
+| Order | Source                          | Set from                               |
+| ----- | ------------------------------- | -------------------------------------- |
+| 1     | The conversation's own choice   | The model picker, or `/model`          |
+| 2     | The agent's default             | **the agent's Store page**             |
+| 3     | Your last choice for this agent | Every pick for that agent, in any chat |
+| 4     | The project                     | **Settings → Project**                 |
 
-A new conversation is not seeded with a copy of another one: each agent resolves through this order.
-An agent without a default model therefore starts on the model you last picked for it, including a
-pick made through **All agents** or for an agent that was never invited. A participant never copies
-another participant's model. With none of these sources, the seat has no model until you pick one.
-The model picker lists an agent that is not invited yet on the model this order would give it.
+A new conversation is not seeded with a copy of another one: the agent resolves through this order.
+With none of these sources, the conversation has no model until you pick one.
 
 Its **reasoning effort** is the explicit choice, otherwise the level of your last choice when the
 model came from it, otherwise the level last chosen for that agent on that model, otherwise the
-agent's default, otherwise **medium**. It never copies another participant's level or another
-model's level, and it is never capped.
+agent's default, otherwise **medium**. It is never copied from another model and never capped.
 
-Later changes to defaults reach new seats only. Conversations created before this rule may hold a
-seat with no model; it is filled once by the same rule on first read and stored. A delegated child
-snapshots its assigned participant's route from the parent. Filled-in defaults never count as your
-last choice for an agent.
+Later changes to defaults reach new conversations only. A delegated child snapshots the route of its
+parent. Filled-in defaults never count as your last choice for an agent.
 
 A model that cannot reason receives no reasoning request. For models that support it, the runtime
 clamps the requested effort to a supported level; that runtime adjustment does not rewrite the
@@ -116,6 +110,27 @@ Every model list shows the newest models first: the picker's per-connection list
 filter results, and the `/model` command's Model step. Release dates come from models.dev; models
 without a date follow in catalog order.
 
+### Switch models with `/model`
+
+Type `/model` to choose a model without opening the picker. The composer shows the picker's columns
+as steps, in the same order, each with a list of choices:
+
+1. **Provider**: your connections, in the picker's order. The current connection is marked.
+2. **Model**: the models of that connection. Type to filter by name, id or reasoning level.
+3. **Settings** (optional): **Reasoning** offers only the levels the chosen model supports and is
+   skipped for a model that does not reason. **Turns per message** and **Context limit** follow;
+   each offers _Keep_, _Use default_ and the picker's values. Context limit is skipped for a model
+   with nothing to choose, and accepts `auto`, `400k`, `1m` or `full`.
+
+Each choice becomes a crumb in the composer. Select a crumb's x to return to that step, or press
+Backspace in an empty step to remove the last crumb. Press Enter on an optional step to apply what
+you have chosen. The result is the same write the picker makes, so the next run uses it.
+
+`/model` never prints a list of models. `/model <name>` still switches the model by matching the
+name. Reasoning **Off** is offered only for models that can turn reasoning off; elsewhere the
+request carries the model's lowest level, and the picker shows that level instead of Off. A level a
+model does not offer is stored as the nearest level it does offer.
+
 ### How the model list stays current
 
 The model list is [models.dev](https://models.dev)'s, normalized for the providers Localix can
@@ -140,8 +155,8 @@ exactly that:
 Settings are stored with every key of the connection, so a key added later reaches the same place,
 and they show in the connection's settings. A setting whose name reads like a secret (a key, token,
 password, credential, or personal access token such as `CLARIFAI_PAT`) is refused, and a change that
-includes one is rejected without writing anything; such a value stored by an earlier version is
-never shown back. A name the provider's catalog entry does not ask for is refused too.
+includes one is rejected without writing anything. A name the provider's catalog entry does not ask
+for is refused too.
 
 Requests use only what the connection holds. Every request names its address and passes its key
 explicitly, so the server's own environment never supplies either: variables such as
@@ -280,14 +295,12 @@ connections and selects the conversation's model.
 - [OAuth flow lifecycle](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/provider-connections/oauth-flow-manager.ts)
 - [OAuth completion watch](https://github.com/rsaryev/localix/blob/main/apps/ui/src/entities/chat/ui/prompt-input/oauthConnectionWatch.ts)
 - [Model and connection resolution](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/model-resolution.ts)
-- [Participant model and effort precedence](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/agent-route-resolution.ts)
-- [Participant birth and reseating](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/participant-routes.ts)
+- [Model and effort precedence](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/agent-route-resolution.ts)
 - [Recent model and effort selection](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/repository-recent-routes.ts)
 - [Inline workload resolution](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/autocomplete/resolve-model.ts)
 - [Title workload](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/title-generation.ts)
 - [Key-selection policy](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/provider-keys.ts)
 - [Model browser](https://github.com/rsaryev/localix/blob/main/apps/ui/src/entities/chat/ui/prompt-input/model-select/ModelBrowser.tsx)
 - [Workload route catalog](https://github.com/rsaryev/localix/blob/main/apps/api/src/contracts/model-task-catalog.ts)
-- [Group routing strategies](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/floor-advisor.ts)
 - [Model route persistence](https://github.com/rsaryev/localix/blob/main/apps/ui/src/entities/chat/ui/prompt-input/model-select/useModelTaskRouting.ts)
 - [Per-model reasoning control](https://github.com/rsaryev/localix/blob/main/apps/ui/src/entities/chat/ui/prompt-input/model-select/ModelDetailPanel.tsx)

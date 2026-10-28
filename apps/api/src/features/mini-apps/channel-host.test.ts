@@ -109,6 +109,9 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
+  // The fixture mini app wrote its probes onto the shared global.
+  delete (globalThis as Record<string, unknown>).__channelTestReply
+  delete (globalThis as Record<string, unknown>).__channelTestStopped
   if (prevBundled === undefined) delete process.env.LOCALIX_BUNDLED_MINI_APPS_DIR
   else process.env.LOCALIX_BUNDLED_MINI_APPS_DIR = prevBundled
   await fs.rm(dir, { recursive: true, force: true })
@@ -166,6 +169,7 @@ describe('mini app channels', () => {
 
   it('host starts a channel, bridges inbound, and stops it via the signal', async () => {
     const inboundCalls: unknown[] = []
+    const inboundSeen = Promise.withResolvers<void>()
     const host = createMiniAppChannelHost({
       availabilityFor: async () => on('chan'),
       repo: fakeRepo([state('chan')]),
@@ -174,6 +178,7 @@ describe('mini app channels', () => {
       homeDir: dir,
       inbound: async (input) => {
         inboundCalls.push(input)
+        inboundSeen.resolve()
         return { sessionId: 's1', reply: `echo:${input.message.text}` }
       },
       workspace: stubWorkspace,
@@ -182,12 +187,10 @@ describe('mini app channels', () => {
     await host.start()
     expect(host.running()).toEqual(['chan:echo'])
 
-    // The channel posts its inbound on start; poll for it rather than a fixed
-    // sleep — a fixed 50ms delay flakes under CPU load when the async inbound
-    // hasn't completed yet (exits early once it has, so the happy path is fast).
-    for (let i = 0; i < 200 && inboundCalls.length < 1; i++) {
-      await new Promise((r) => setTimeout(r, 15))
-    }
+    // The channel posts its inbound on start; wait for the host to receive it, then one
+    // event-loop turn for the reply to reach the channel.
+    await inboundSeen.promise
+    await new Promise((resolve) => setTimeout(resolve, 0))
     expect(inboundCalls.length).toBe(1)
     expect((globalThis as Record<string, unknown>).__channelTestReply).toEqual({
       sessionId: 's1',
@@ -201,6 +204,7 @@ describe('mini app channels', () => {
 
   it('reports a crashed receive loop as a condition, cleared by the next start', async () => {
     const events: string[] = []
+    const crashed = Promise.withResolvers<void>()
     const host = createMiniAppChannelHost({
       availabilityFor: async () => on('chan'),
       repo: fakeRepo([state('chan')]),
@@ -214,11 +218,14 @@ describe('mini app channels', () => {
       workspace: stubWorkspace,
       conditions: {
         channelStarted: (app, channel) => events.push(`started ${app}/${channel}`),
-        channelCrashed: (app, channel, error) => events.push(`crashed ${app}/${channel}: ${error}`),
+        channelCrashed: (app, channel, error) => {
+          events.push(`crashed ${app}/${channel}: ${error}`)
+          crashed.resolve()
+        },
       },
     })
     await host.start()
-    for (let i = 0; i < 200 && events.length < 2; i++) await new Promise((r) => setTimeout(r, 15))
+    await crashed.promise
     expect(events).toEqual(['started chan/echo', 'crashed chan/echo: platform token revoked'])
     await host.stop()
   })

@@ -133,8 +133,8 @@ describe('pruneWireMessages — the mutate-arg elision floor (minElideChars)', (
   it('a mutate arg EXACTLY at minElideChars is left verbatim', () => {
     const content = 'C'.repeat(MIN_ELIDE)
     const ms = wire(
-      calls(tc('w1', 'write', { path: 'a.ts', content })),
-      result('w1', 'write', 'ok'),
+      calls(tc('w1', 'Write', { path: 'a.ts', content })),
+      result('w1', 'Write', 'ok'),
     )
     expect(argsOf(pruneWireMessages(ms, OPEN), 'w1')!.content).toBe(content)
   })
@@ -142,8 +142,8 @@ describe('pruneWireMessages — the mutate-arg elision floor (minElideChars)', (
   it('one char over it, the same arg is elided to a pointer', () => {
     const content = 'C'.repeat(MIN_ELIDE + 1)
     const ms = wire(
-      calls(tc('w1', 'write', { path: 'a.ts', content })),
-      result('w1', 'write', 'ok'),
+      calls(tc('w1', 'Write', { path: 'a.ts', content })),
+      result('w1', 'Write', 'ok'),
     )
     expect(argsOf(pruneWireMessages(ms, OPEN), 'w1')!.content).toContain(ELISION_MARKER)
   })
@@ -152,13 +152,13 @@ describe('pruneWireMessages — the mutate-arg elision floor (minElideChars)', (
   // (the `||` mutant elides EVERY edits array, however small).
   it('an `edits` array whose JSON is EXACTLY minElideChars is left verbatim', () => {
     const edits = editsOfJsonLength(MIN_ELIDE)
-    const ms = wire(calls(tc('e1', 'edit', { path: 'a.ts', edits })), result('e1', 'edit', 'ok'))
+    const ms = wire(calls(tc('e1', 'Edit', { path: 'a.ts', edits })), result('e1', 'Edit', 'ok'))
     expect(argsOf(pruneWireMessages(ms, OPEN), 'e1')!.edits).toEqual(edits)
   })
 
   it('one char over it, the same `edits` array is elided', () => {
     const edits = editsOfJsonLength(MIN_ELIDE + 1)
-    const ms = wire(calls(tc('e1', 'edit', { path: 'a.ts', edits })), result('e1', 'edit', 'ok'))
+    const ms = wire(calls(tc('e1', 'Edit', { path: 'a.ts', edits })), result('e1', 'Edit', 'ok'))
     expect(argsOf(pruneWireMessages(ms, OPEN), 'e1')!.edits).toContain(ELISION_MARKER)
   })
 })
@@ -169,13 +169,13 @@ describe('pruneWireMessages — output size bounds', () => {
   // Kills: `cmd.length > MIDDLE_TRUNCATE_THRESHOLD` → `>=`.
   it('a bash command arg EXACTLY at the head+tail threshold is left verbatim', () => {
     const command = uncrushable(HEAD_TAIL)
-    const ms = wire(calls(tc('b1', 'bash', { command })), result('b1', 'bash', 'out'))
+    const ms = wire(calls(tc('b1', 'Bash', { command })), result('b1', 'Bash', 'out'))
     expect(argsOf(pruneWireMessages(ms, OPEN), 'b1')!.command).toBe(command)
   })
 
   it('one char over it, the same command is head+tail bounded', () => {
     const command = uncrushable(HEAD_TAIL + 1)
-    const ms = wire(calls(tc('b1', 'bash', { command })), result('b1', 'bash', 'out'))
+    const ms = wire(calls(tc('b1', 'Bash', { command })), result('b1', 'Bash', 'out'))
     expect(argsOf(pruneWireMessages(ms, OPEN), 'b1')!.command).toContain(MIDDLE_TRUNCATE_MARKER)
   })
 
@@ -184,13 +184,13 @@ describe('pruneWireMessages — output size bounds', () => {
   // Kills: `if (s.length > MIDDLE_TRUNCATE_THRESHOLD)` (inside boundLargeOutput) → `>=`.
   it('an unstructured result EXACTLY at the head+tail threshold is left verbatim', () => {
     const out = uncrushable(HEAD_TAIL)
-    const ms = wire(calls(tc('b1', 'bash', { command: 'run' })), result('b1', 'bash', out))
+    const ms = wire(calls(tc('b1', 'Bash', { command: 'run' })), result('b1', 'Bash', out))
     expect(contentOf(pruneWireMessages(ms, OPEN), 'b1')).toBe(out)
   })
 
   it('one char over it, the same result is head+tail bounded', () => {
     const out = uncrushable(HEAD_TAIL + 1)
-    const ms = wire(calls(tc('b1', 'bash', { command: 'run' })), result('b1', 'bash', out))
+    const ms = wire(calls(tc('b1', 'Bash', { command: 'run' })), result('b1', 'Bash', out))
     expect(contentOf(pruneWireMessages(ms, OPEN), 'b1')).toContain(MIDDLE_TRUNCATE_MARKER)
   })
 
@@ -198,13 +198,13 @@ describe('pruneWireMessages — output size bounds', () => {
   // Kills: `if (r.content.length > threshold)` → `>=`.
   it('a structured result EXACTLY at the crush floor is left verbatim', () => {
     const out = crushable(CRUSH_FLOOR)
-    const ms = wire(calls(tc('b1', 'bash', { command: 'run' })), result('b1', 'bash', out))
+    const ms = wire(calls(tc('b1', 'Bash', { command: 'run' })), result('b1', 'Bash', out))
     expect(contentOf(pruneWireMessages(ms, OPEN), 'b1')).toBe(out)
   })
 
   it('one char over it, the same result is structurally crushed', () => {
     const out = crushable(CRUSH_FLOOR + 1)
-    const ms = wire(calls(tc('b1', 'bash', { command: 'run' })), result('b1', 'bash', out))
+    const ms = wire(calls(tc('b1', 'Bash', { command: 'run' })), result('b1', 'Bash', out))
     expect(contentOf(pruneWireMessages(ms, OPEN), 'b1')).toContain(CRUSH_MARKER)
   })
 
@@ -212,13 +212,13 @@ describe('pruneWireMessages — output size bounds', () => {
   // (maxLiveReads:0 — otherwise live-read protection masks the comparison entirely.)
   it('a read result EXACTLY at minElideChars is left verbatim', () => {
     const body = 'R'.repeat(MIN_ELIDE)
-    const ms = wire(calls(tc('r1', 'read', { path: 'a.ts' })), result('r1', 'read', body))
+    const ms = wire(calls(tc('r1', 'Read', { path: 'a.ts' })), result('r1', 'Read', body))
     expect(contentOf(pruneWireMessages(ms, { ...OPEN, maxLiveReads: 0 }), 'r1')).toBe(body)
   })
 
   it('one char over it, the same read result is pointered', () => {
     const body = 'R'.repeat(MIN_ELIDE + 1)
-    const ms = wire(calls(tc('r1', 'read', { path: 'a.ts' })), result('r1', 'read', body))
+    const ms = wire(calls(tc('r1', 'Read', { path: 'a.ts' })), result('r1', 'Read', body))
     expect(contentOf(pruneWireMessages(ms, { ...OPEN, maxLiveReads: 0 }), 'r1')).toContain(
       ELISION_MARKER,
     )
@@ -255,7 +255,7 @@ describe('pruneWireMessages — which bound WINS (boundLargeOutput)', () => {
   }
 
   const bashOut = (out: string) =>
-    wire(calls(tc('b1', 'bash', { command: 'run' })), result('b1', 'bash', out))
+    wire(calls(tc('b1', 'Bash', { command: 'run' })), result('b1', 'Bash', out))
 
   // A crush that shrinks the output to EXACTLY 70% still wins. The `<` mutant makes it lose —
   // and since 1000 < chars <= 4500 there is no head+tail fallback either, so the output goes
@@ -290,7 +290,7 @@ describe('pruneWireMessages — which bound WINS (boundLargeOutput)', () => {
 
 describe('pruneWireMessages — what supersedes a LIVE read', () => {
   const liveRead = () =>
-    [calls(tc('r1', 'read', { path: 'a.ts' })), result('r1', 'read', LIVE)] as const
+    [calls(tc('r1', 'Read', { path: 'a.ts' })), result('r1', 'Read', LIVE)] as const
 
   // A read result AT minChars (a few lines of the file) is too little to stand in for the
   // live read, so it must not evict it.
@@ -298,8 +298,8 @@ describe('pruneWireMessages — what supersedes a LIVE read', () => {
   it('a minChars-sized re-read does not supersede the live read', () => {
     const ms = wire(
       ...liveRead(),
-      calls(tc('r2', 'read', { path: 'a.ts' })),
-      result('r2', 'read', 'S'.repeat(MIN_ELIDE)),
+      calls(tc('r2', 'Read', { path: 'a.ts' })),
+      result('r2', 'Read', 'S'.repeat(MIN_ELIDE)),
     )
     expect(contentOf(pruneWireMessages(ms, OPEN), 'r1')).toBe(LIVE)
   })
@@ -307,8 +307,8 @@ describe('pruneWireMessages — what supersedes a LIVE read', () => {
   it('one char over minChars, the re-read DOES supersede it', () => {
     const ms = wire(
       ...liveRead(),
-      calls(tc('r2', 'read', { path: 'a.ts' })),
-      result('r2', 'read', 'S'.repeat(MIN_ELIDE + 1)),
+      calls(tc('r2', 'Read', { path: 'a.ts' })),
+      result('r2', 'Read', 'S'.repeat(MIN_ELIDE + 1)),
     )
     expect(contentOf(pruneWireMessages(ms, OPEN), 'r1')).toContain(ELISION_MARKER)
   })
@@ -317,10 +317,10 @@ describe('pruneWireMessages — what supersedes a LIVE read', () => {
   // not elide it, while a batch that re-delivers the file supersedes an earlier single read.
   it('a re-read of one file of a batched read leaves the batch live', () => {
     const ms = wire(
-      calls(tc('r1', 'read', { reads: [{ path: 'a.ts' }, { path: 'b.ts' }] })),
-      result('r1', 'read', LIVE),
-      calls(tc('r2', 'read', { path: 'a.ts' })),
-      result('r2', 'read', 'S'.repeat(MIN_ELIDE + 1)),
+      calls(tc('r1', 'Read', { reads: [{ path: 'a.ts' }, { path: 'b.ts' }] })),
+      result('r1', 'Read', LIVE),
+      calls(tc('r2', 'Read', { path: 'a.ts' })),
+      result('r2', 'Read', 'S'.repeat(MIN_ELIDE + 1)),
     )
     expect(contentOf(pruneWireMessages(ms, OPEN), 'r1')).toBe(LIVE)
   })
@@ -328,8 +328,8 @@ describe('pruneWireMessages — what supersedes a LIVE read', () => {
   it('a batched re-read that delivers the file supersedes the single read', () => {
     const ms = wire(
       ...liveRead(),
-      calls(tc('r2', 'read', { reads: [{ path: 'a.ts' }] })),
-      result('r2', 'read', 'S'.repeat(MIN_ELIDE + 1)),
+      calls(tc('r2', 'Read', { reads: [{ path: 'a.ts' }] })),
+      result('r2', 'Read', 'S'.repeat(MIN_ELIDE + 1)),
     )
     expect(contentOf(pruneWireMessages(ms, OPEN), 'r1')).toContain(ELISION_MARKER)
   })
@@ -339,8 +339,8 @@ describe('pruneWireMessages — what supersedes a LIVE read', () => {
   it('a FAILED re-read does not supersede the live read it was retrying', () => {
     const ms = wire(
       ...liveRead(),
-      calls(tc('r2', 'read', { path: 'a.ts' })),
-      result('r2', 'read', 'E'.repeat(800), true),
+      calls(tc('r2', 'Read', { path: 'a.ts' })),
+      result('r2', 'Read', 'E'.repeat(800), true),
     )
     expect(contentOf(pruneWireMessages(ms, OPEN), 'r1')).toBe(LIVE)
   })
@@ -354,8 +354,8 @@ describe('pruneWireMessages — what supersedes a LIVE read', () => {
     }))
     const ms = wire(
       ...liveRead(),
-      calls(tc('r2', 'read', { path: 'a.ts' })),
-      result('r2', 'read', blocks),
+      calls(tc('r2', 'Read', { path: 'a.ts' })),
+      result('r2', 'Read', blocks),
     )
     expect(contentOf(pruneWireMessages(ms, OPEN), 'r1')).toBe(LIVE)
   })
@@ -366,24 +366,24 @@ describe('pruneWireMessages — the live-read budget', () => {
   // (which lets a never-elided short read take the last live-read slot from a real read).
   it('a minChars-sized read does not consume a live-read slot', () => {
     const ms = wire(
-      calls(tc('r1', 'read', { path: 'a.ts' })),
-      result('r1', 'read', LIVE),
-      calls(tc('r2', 'read', { path: 'b.ts' })), // MORE RECENT, so it wins the slot if eligible
-      result('r2', 'read', 'S'.repeat(MIN_ELIDE)),
+      calls(tc('r1', 'Read', { path: 'a.ts' })),
+      result('r1', 'Read', LIVE),
+      calls(tc('r2', 'Read', { path: 'b.ts' })), // MORE RECENT, so it wins the slot if eligible
+      result('r2', 'Read', 'S'.repeat(MIN_ELIDE)),
     )
     expect(contentOf(pruneWireMessages(ms, { ...OPEN, maxLiveReads: 1 }), 'r1')).toBe(LIVE)
   })
 
   // Kills: `bytes > budgetBytes` → `>=`, and `if (spent + bytes > budgetBytes) continue` → `>=`.
   it('a read landing EXACTLY on the live-read budget is still protected', () => {
-    const ms = wire(calls(tc('r1', 'read', { path: 'a.ts' })), result('r1', 'read', LIVE))
+    const ms = wire(calls(tc('r1', 'Read', { path: 'a.ts' })), result('r1', 'Read', LIVE))
     expect(contentOf(pruneWireMessages(ms, { ...OPEN, liveReadBudgetBytes: 800 }), 'r1')).toBe(LIVE)
   })
 
   it('one byte over the budget, the same ASCII read is pointered', () => {
     const ms = wire(
-      calls(tc('r1', 'read', { path: 'a.ts' })),
-      result('r1', 'read', 'L'.repeat(801)),
+      calls(tc('r1', 'Read', { path: 'a.ts' })),
+      result('r1', 'Read', 'L'.repeat(801)),
     )
     expect(contentOf(pruneWireMessages(ms, { ...OPEN, liveReadBudgetBytes: 800 }), 'r1')).toContain(
       ELISION_MARKER,
@@ -392,7 +392,7 @@ describe('pruneWireMessages — the live-read budget', () => {
 
   it('applies the byte boundary to CJK while minElideChars remains character-based', () => {
     const cjk = '你'.repeat(MIN_ELIDE + 1) // 401 chars, 1203 UTF-8 bytes
-    const ms = wire(calls(tc('r1', 'read', { path: 'cjk.ts' })), result('r1', 'read', cjk))
+    const ms = wire(calls(tc('r1', 'Read', { path: 'cjk.ts' })), result('r1', 'Read', cjk))
 
     expect(contentOf(pruneWireMessages(ms, { ...OPEN, liveReadBudgetBytes: 1203 }), 'r1')).toBe(cjk)
     expect(
@@ -405,10 +405,10 @@ describe('pruneWireMessages — the live-read budget', () => {
     const a = 'A'.repeat(600)
     const b = 'B'.repeat(600)
     const ms = wire(
-      calls(tc('r1', 'read', { path: 'a.ts' })),
-      result('r1', 'read', a),
-      calls(tc('r2', 'read', { path: 'b.ts' })),
-      result('r2', 'read', b),
+      calls(tc('r1', 'Read', { path: 'a.ts' })),
+      result('r1', 'Read', a),
+      calls(tc('r2', 'Read', { path: 'b.ts' })),
+      result('r2', 'Read', b),
     )
     const out = pruneWireMessages(ms, { ...OPEN, liveReadBudgetBytes: 1200 })
     expect(contentOf(out, 'r1')).toBe(a)
@@ -419,7 +419,7 @@ describe('pruneWireMessages — the live-read budget', () => {
 describe('pruneWireMessages — the gates', () => {
   const content = 'C'.repeat(2000)
   const gated = () =>
-    wire(calls(tc('w1', 'write', { path: 'a.ts', content })), result('w1', 'write', 'ok'))
+    wire(calls(tc('w1', 'Write', { path: 'a.ts', content })), result('w1', 'Write', 'ok'))
 
   // Compression is a RESPONSE TO PRESSURE. The gate compares the WHOLE request: every
   // message plus the fixed system-prompt/tool-schema overhead the messages do not carry.
@@ -475,8 +475,8 @@ describe('pruneWireMessages — malformed tool calls', () => {
   // Kills: `if (!args || typeof args !== 'object') return []` (wireTargets) → `&&`.
   it('survives a tool call with null arguments', () => {
     const ms = wire(
-      calls(tc('w1', 'write', null), tc('r1', 'read', { path: 'a.ts' })),
-      result('r1', 'read', LIVE), // forces the lazy live-read scan, which is what reaches wireTargets
+      calls(tc('w1', 'Write', null), tc('r1', 'Read', { path: 'a.ts' })),
+      result('r1', 'Read', LIVE), // forces the lazy live-read scan, which is what reaches wireTargets
     )
     const out = pruneWireMessages(ms, OPEN)
     expect(argsOf(out, 'w1')).toBeNull()
@@ -493,8 +493,8 @@ describe('pruneWireMessages — the arg ratchet inside the protected tail', () =
     const content = 'C'.repeat(2000)
     const ms = wire(
       calls(
-        tc('w1', 'write', { path: 'a.ts', content }),
-        tc('w2', 'write', { path: 'b.ts', content }),
+        tc('w1', 'Write', { path: 'a.ts', content }),
+        tc('w2', 'Write', { path: 'b.ts', content }),
       ),
     )
     // a huge recent window ⇒ every message is locked; only the ratchet may still touch one
@@ -517,7 +517,7 @@ describe('collectElidedToolCallIds', () => {
   const POINTERED = `[output ${ELISION_MARKER} — 900 chars]`
   const toolMsg = (toolCallId: string): Message => ({
     role: 'tool',
-    results: [{ type: 'tool_result', toolCallId, toolName: 'read', content: POINTERED }],
+    results: [{ type: 'tool_result', toolCallId, toolName: 'Read', content: POINTERED }],
     timestamp: 0,
   })
 
@@ -537,17 +537,17 @@ describe('collectElidedArgToolCallIds', () => {
   // Kills: two of the three `||`s in
   // `if (tc.type !== 'tool_call' || !tc.id || !tc.arguments || typeof tc.arguments !== 'object') continue`.
   it('skips a call with no id', () => {
-    expect(collectElidedArgToolCallIds([asst(tc('', 'write', { content: ELIDED_ARG }))])).toEqual(
+    expect(collectElidedArgToolCallIds([asst(tc('', 'Write', { content: ELIDED_ARG }))])).toEqual(
       [],
     )
-    expect(collectElidedArgToolCallIds([asst(tc('w1', 'write', { content: ELIDED_ARG }))])).toEqual(
+    expect(collectElidedArgToolCallIds([asst(tc('w1', 'Write', { content: ELIDED_ARG }))])).toEqual(
       ['w1'],
     )
   })
 
   // Kills: the third `||` (whose `&&` mutant calls `Object.values(null)` and throws).
   it('survives null arguments', () => {
-    expect(collectElidedArgToolCallIds([asst(tc('w1', 'write', null))])).toEqual([])
+    expect(collectElidedArgToolCallIds([asst(tc('w1', 'Write', null))])).toEqual([])
   })
 
   // Kills: `(v) => typeof v === 'string' && (v.includes(…) || v.includes(…))` → `||`, whose
@@ -556,7 +556,7 @@ describe('collectElidedArgToolCallIds', () => {
   it('reports only args that actually carry a compression marker', () => {
     expect(
       collectElidedArgToolCallIds([
-        asst(tc('w1', 'write', { path: 'a.ts', content: 'plain body' })),
+        asst(tc('w1', 'Write', { path: 'a.ts', content: 'plain body' })),
       ]),
     ).toEqual([])
   })

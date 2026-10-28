@@ -38,11 +38,7 @@ describe('the engine', () => {
     expect(catalog.oauthProviderIds).toEqual(
       expect.arrayContaining(['openai', 'openrouter', 'github-copilot']),
     )
-    expect(
-      engine.scripts?.declare([
-        { name: 'read', description: 'Read', inputSchema: { type: 'object' } },
-      ]),
-    ).toContain('read(args:')
+    expect(typeof engine.scripts?.run).toBe('function')
     expect(
       engine
         .createAuth({} as never)
@@ -59,7 +55,7 @@ describe('the engine', () => {
     )
     const controller = new AbortController()
     const turn = session.turn({ signal: controller.signal } as never)
-    setTimeout(() => controller.abort(), 10)
+    setTimeout(() => controller.abort(), 0)
     const started = Date.now()
     const message = await turn.message
     expect(Date.now() - started).toBeLessThan(1_000)

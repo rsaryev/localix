@@ -413,7 +413,7 @@ describe('research tool', () => {
     const fetchImpl = async () => {
       active++
       maxActive = Math.max(maxActive, active)
-      await new Promise((resolve) => setTimeout(resolve, 5))
+      await new Promise((resolve) => setTimeout(resolve, 0))
       active--
       return response('Evidence', {
         headers: { 'content-type': 'text/plain' },
@@ -470,7 +470,7 @@ describe('research tool', () => {
 
   test('exposes one composite public tool', () => {
     const tool = createResearchTool()
-    expect(tool.name).toBe('research')
+    expect(tool.name).toBe('Research')
     expect(tool.executionMode).toBe('parallel')
     expect(tool.contextClass).toBe('readResult')
   })

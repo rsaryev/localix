@@ -42,14 +42,12 @@ const session = (id: string) =>
     id,
     title: id,
     projectId: 'default',
-    modelChoices: { agents: {} },
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     seq: 1,
     closedAt: null,
     permissionMode: 'default',
     description: null,
-    avatar: null,
     sessionTiming: null,
     loops: [],
     work: [],
@@ -63,7 +61,7 @@ const session = (id: string) =>
     runtimeStatus: 'idle',
     sourceToolCallId: null,
     pinnedSkills: [],
-    agents: [],
+    agent: null,
   } satisfies SessionSummary)
 
 const native = (id: string, title: string) => ({
@@ -116,7 +114,6 @@ async function mount() {
           onDelete={() => {}}
           onTogglePin={() => {}}
           onOpenScopeSwitcher={() => {}}
-          onNewChat={() => {}}
         />
       </MemoryRouter>,
     ),
@@ -138,9 +135,8 @@ async function typeSearch(host: HTMLElement, value: string) {
   const toggle = host.querySelector<HTMLElement>('[aria-label="Search chats"]')
   if (toggle) await act(async () => toggle.click())
   const input = host.querySelector<HTMLInputElement>('input[placeholder^="Filter chats"]')!
-  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
   await act(async () => {
-    setter.call(input, value)
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(input, value)
     input.dispatchEvent(new Event('input', { bubbles: true }))
   })
 }
@@ -154,7 +150,10 @@ test('Localix is the default tab and arrow keys switch to External history', asy
     )
     expect(view.host.querySelector('[role="region"][aria-label="Session history"]')).not.toBeNull()
     expect(view.tab('Localix')!.getAttribute('aria-selected')).toBe('true')
-    expect(view.rows().sort()).toEqual(['Parser fix', 'Release notes'])
+    expect(view.rows().sort((a, b) => (a ?? '').localeCompare(b ?? ''))).toEqual([
+      'Parser fix',
+      'Release notes',
+    ])
     const localix = view.tab('Localix')!
     localix.focus()
     await act(async () =>
@@ -224,7 +223,10 @@ test('without external history the tabs are hidden and Localix chats show', asyn
     expect(view.host.querySelector('[role="tablist"]')).toBeNull()
     expect(view.tab('External')).toBeUndefined()
     expect(view.host.querySelector('[role="region"][aria-label="Session history"]')).not.toBeNull()
-    expect(view.rows().sort()).toEqual(['Parser fix', 'Release notes'])
+    expect(view.rows().sort((a, b) => (a ?? '').localeCompare(b ?? ''))).toEqual([
+      'Parser fix',
+      'Release notes',
+    ])
   } finally {
     await view.unmount()
   }

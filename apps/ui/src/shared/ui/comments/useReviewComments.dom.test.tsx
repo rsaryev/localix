@@ -1,5 +1,6 @@
 import { afterAll, afterEach, beforeAll, beforeEach, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
+import { tap } from '@/testing/hookProbe'
 import { composerBus, type ComposerInsert, type ComposerRetract } from '@/shared/lib/composerBus'
 import { useComments } from '@localixai/mini-app-sdk/ui/comments'
 import { useReviewComments, type ReviewComments } from './useReviewComments'
@@ -31,16 +32,16 @@ afterEach(() => {
 async function mountHook(scope: string, sessionId: string | null = 'session-1') {
   const { act } = await import('react')
   const { createRoot } = await import('react-dom/client')
-  let api: ReviewComments | null = null
+  const latest = tap<ReviewComments>()
   function Harness() {
-    api = useReviewComments(scope, sessionId)
+    latest.put(useReviewComments(scope, sessionId))
     return null
   }
   const root = createRoot(document.createElement('div'))
   await act(async () => root.render(<Harness />))
   return {
     get api() {
-      return api!
+      return latest.value!
     },
     act,
     unmount: () => act(async () => root.unmount()),

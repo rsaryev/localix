@@ -22,7 +22,7 @@ export const searchToolInputSchema = z.object({
     .min(1)
     .max(SEARCH_CONTEXT_MAX)
     .optional()
-    .describe('Lines around each hit (2-5 often saves a `read`).'),
+    .describe('Lines around each hit (2-5 often saves a `Read`).'),
   output_mode: z
     .enum(['content', 'files_with_matches', 'count'])
     .optional()

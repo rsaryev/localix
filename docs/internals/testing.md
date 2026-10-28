@@ -18,13 +18,13 @@ never waits on the machine, so the sharded run stays fast and deterministic.
 
 ## Where tests run
 
-| Command                         | Runs                                                                               | When                            |
-| ------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------- |
-| `bun test path/to/file.test.ts` | One file, from the repository root or the package.                                 | While editing.                  |
-| `.githooks/pre-commit`          | Format, lint, affected type checks and the changed or co-located tests.            | Every commit.                   |
-| `.githooks/pre-push`            | The CI gates for the packages that differ from `origin/main` and their dependents. | Every push.                     |
-| Pull-request CI                 | The same gates, `--affected` against the pull request's base.                      | Every pull request.             |
-| Merge queue and `main` CI       | Every gate over the whole tree.                                                    | Before anything reaches `main`. |
+| Command                         | Runs                                                                | When                            |
+| ------------------------------- | ------------------------------------------------------------------- | ------------------------------- |
+| `bun test path/to/file.test.ts` | One file, from the repository root or the package.                  | While editing.                  |
+| `.githooks/pre-commit`          | Format, lint and the changed or co-located tests.                   | Every commit.                   |
+| `.githooks/pre-push`            | Source and test types of the packages the pushed commits change.    | Every push.                     |
+| Pull-request CI                 | Types and unit tests, `--affected` against the pull request's base. | Every pull request.             |
+| `main` CI                       | Types and unit tests over the whole tree, on our own runner.        | Before anything reaches `main`. |
 
 Bun reads `bunfig.toml` only from the directory a run starts in, so every workspace with tests has
 its own and lists `packages/testing/src/preload/index.ts` by its relative path. The preload removes
@@ -48,8 +48,12 @@ Work red, green, refactor, as
    everything else a unit test.
 2. Never sleep in a unit test. Give the code under test its delay, clock or window as an option
    whose default is the production value, and pass a small one in the test (`attemptTransientRetry`
-   takes `wait`; the bash tool takes `backgroundSettle`). Use `jest.useFakeTimers()` only for a
-   timer you cannot inject, and restore real timers in `afterEach`.
+   takes `wait`; the `Bash` tool takes `backgroundSettle`). Use `jest.useFakeTimers()` only for a
+   timer you cannot inject, and restore real timers in `afterEach`. To let a screen catch up, use
+   `turns()` or `settle()` from `apps/ui/src/testing/settle.ts`: event-loop turns, never a timer.
+   `scripts/test-determinism-guard.test.ts` fails a unit test (or a shared test helper) that waits
+   on a non-zero timer, sleeps or binds a fixed port; today's offenders are pinned in
+   `scripts/test-determinism-baseline.json`, a list that only shrinks.
 3. Create directories with `tempDirPerTest()` or `makeTempDir()` from `@localixai/testing`. They are
    removed after the test, pass or fail. Never make one beside the test (`import.meta.dir`): the
    source lints walk those trees and can meet a half-written fixture. A fixture that must resolve

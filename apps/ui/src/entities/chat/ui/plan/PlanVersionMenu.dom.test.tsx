@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import type { SessionPlan } from '@localixai/api/client'
 import { registerDom } from '@localixai/kit/testing/dom'
+import { turns as settle } from '@/testing/settle'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -12,8 +13,6 @@ afterAll(async () => {
   await teardown()
 })
 
-const settle = () => new Promise((resolve) => setTimeout(resolve, 30))
-
 const plan = (id: string, version: number, status: SessionPlan['status']): SessionPlan => ({
   id,
   sessionId: 'root',
@@ -21,7 +20,6 @@ const plan = (id: string, version: number, status: SessionPlan['status']): Sessi
   status,
   title: `Plan ${version}`,
   body: 'Body',
-  authorAgentId: 'lead',
   approvedMode: null,
   createdAt: '2026-10-03T00:00:00.000Z',
   decidedAt: null,

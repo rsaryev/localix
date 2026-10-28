@@ -6,7 +6,7 @@ import { ccDomainRuleMatches } from './cc-path-rule'
  * hostname of each URL, without case or a trailing dot. `*.example.com` covers every subdomain at
  * any depth but not `example.com`; a bare `*` covers every host; any other `*` stands for the text
  * between two dots, so `example.*` matches `example.org` and never `example.evil.com`. Localix's
- * `research` tool reads the pages of its `urls`; a `url` field counts too.
+ * `Research` tool reads the pages of its `urls`; a `url` field counts too.
  */
 
 /** The URLs a call reads. */

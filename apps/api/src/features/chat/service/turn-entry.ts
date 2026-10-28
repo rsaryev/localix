@@ -10,6 +10,7 @@ import { handleModCommand } from './command-handlers-mod-command'
 import {
   handleControlCommand,
   handlePluginCommand,
+  handleMcpPromptCommand,
   handleSkillCommand,
   handleUnresolvedSlashCommand,
   type CommandHandlerContext,
@@ -131,6 +132,17 @@ export async function sendMessage(
     )
     if (pluginResult) return pluginResult
 
+    // ---- MCP prompts (/mcp__<server>__<prompt>) -------------------------------
+    const promptResult = await handleMcpPromptCommand(
+      turnCommandCtx,
+      userId,
+      sessionId,
+      session,
+      prompt,
+      bindings,
+    )
+    if (promptResult) return promptResult
+
     // ---- Mods' commands (`$.command.register`), answered by their `command.run` hooks ----
     const modResult = await handleModCommand(turnCommandCtx, userId, sessionId, session, prompt)
     if (modResult) return modResult
@@ -176,7 +188,7 @@ export async function sendMessage(
       // Don't drop the message with a 409 (which silently loses it on any
       // client/server isGenerating de-sync). Queue it in the person's band
       // (`queue-policy.ts`): after the answers still owed to their earlier
-      // message, ahead of any colleague chain and any machine wake. The turn
+      // message, ahead of any machine wake. The turn
       // is created when the active run finishes and the wake drains; the UI
       // renders it from the streamed message.created event.
       await runner.wake({

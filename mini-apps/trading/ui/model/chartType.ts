@@ -14,7 +14,7 @@ import {
 } from 'lightweight-charts'
 import type { Candle } from '../../backend/contracts'
 import { CHART_TYPES, type ChartTypeToken } from '../../backend/chart-command'
-import { loadJSON, loadString, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
+import { loadJSON, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
 import type { StorageReader, StorageWriter } from '@localixai/mini-app-sdk/ui/storage'
 
 /**
@@ -138,25 +138,20 @@ export function mainSeriesData(type: ChartType, candles: Candle[]): MainSeriesPo
 
 /**
  * Persisted PER TAB (`localix.trading.chartType:<tabId>`), keyed like the indicator set and
- * drawings. The old global key (`localix.trading.chartType`, no tab suffix) survives as the
- * ONE-TIME SEED for a tab's first load, so no one loses their current chart type. Best-effort;
- * unknown values ignored on load.
+ * drawings; a chart without a tab id uses the bare key. Best-effort; unknown values ignored on
+ * load.
  */
-const GLOBAL_PREFS_KEY = 'localix.trading.chartType'
-const tabPrefsKey = (tabId: string) => `localix.trading.chartType:${tabId}`
+const PREFS_KEY = 'localix.trading.chartType'
+const tabPrefsKey = (tabId: string) => `${PREFS_KEY}:${tabId}`
 
 /**
- * The chart type for a tab. Reads the per-tab key; on a tab's FIRST load (no per-tab entry yet) it
- * SEEDS from the old global key. Without a tab id it reads the global key directly.
+ * The chart type for a tab, or the default when none is stored.
  */
 export function loadChartType(tabId?: string, storage?: StorageReader): ChartType {
-  const key =
-    tabId && loadString(tabPrefsKey(tabId), storage) !== null
-      ? tabPrefsKey(tabId)
-      : GLOBAL_PREFS_KEY
+  const key = tabId ? tabPrefsKey(tabId) : PREFS_KEY
   return normalizeChartType(loadJSON<unknown>(key, storage)) ?? DEFAULT_CHART_TYPE
 }
 
 export function saveChartType(type: ChartType, tabId?: string, storage?: StorageWriter): void {
-  saveJSON(tabId ? tabPrefsKey(tabId) : GLOBAL_PREFS_KEY, type, storage)
+  saveJSON(tabId ? tabPrefsKey(tabId) : PREFS_KEY, type, storage)
 }

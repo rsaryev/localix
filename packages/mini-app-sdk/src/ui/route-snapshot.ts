@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { z } from 'zod'
 import { MiniAppApiError, miniAppApiFetch, unwrapMiniAppResponse } from './transport'
 import { useVisiblePolling } from './visibility'
@@ -62,76 +62,64 @@ export function usePolledSnapshot<T>({
   timeoutMs?: number
   failureMessage: string
 }): PolledSnapshot<T> {
-  const [state, setState] = useState<Pick<PolledSnapshot<T>, 'snapshot' | 'error' | 'loading'>>({
-    snapshot: null,
-    error: null,
-    loading: true,
-  })
-  const scope = useRef({ path, epoch: 0, active: true })
-  if (scope.current.path !== path)
-    scope.current = { path, epoch: scope.current.epoch + 1, active: true }
+  const [view, setView] = useState<View<T>>(() => freshView(path))
+  // A new route starts from nothing. Adjusted while rendering, so no frame shows the old route's
+  // data or pending count under the new path.
+  if (view.path !== path) setView(freshView(path))
+  // One bookkeeping object per route and mount: a request keeps the one it started under, so an
+  // answer that lands after the route changed (or the surface unmounted) finds it inactive.
+  const scopeRef = useRef<Scope>(freshScope(path))
   useEffect(() => {
-    scope.current.active = true
+    const scope = freshScope(path)
+    scopeRef.current = scope
     return () => {
-      scope.current.active = false
-      scope.current.epoch++
+      scope.active = false
     }
   }, [path])
-  // The last snapshot shown, as JSON. A read that brings back the same data keeps the object it
-  // already rendered: every poll and every store nudge used to hand the view a new object, so a board
-  // re-rendered whole and republished its message context while nothing on it had changed.
-  const shownJson = useRef<string | null>(null)
-  const [pending, setPending] = useState(0)
-  const tickets = useMemo(() => ({ path, issued: 0, shown: 0, sending: 0 }), [path])
-  useEffect(() => {
-    setPending(0)
-    shownJson.current = null
-    setState({ snapshot: null, error: null, loading: true })
-  }, [path])
 
-  const show = useCallback(
-    (ticket: number, snapshot: T) => {
-      if (ticket < tickets.shown) return
-      tickets.shown = ticket
-      const json = JSON.stringify(snapshot)
-      const same = json === shownJson.current
-      shownJson.current = json
-      setState((current) =>
-        same && current.snapshot !== null && current.error === null && !current.loading
-          ? current
-          : {
-              snapshot: same && current.snapshot !== null ? current.snapshot : snapshot,
-              error: null,
-              loading: false,
-            },
-      )
-    },
-    [tickets],
-  )
+  const show = useCallback((scope: Scope, ticket: number, snapshot: T) => {
+    if (ticket < scope.shown) return
+    scope.shown = ticket
+    // The last snapshot shown, as JSON. A read that brings back the same data keeps the object it
+    // already rendered: every poll and every store nudge used to hand the view a new object, so a
+    // board re-rendered whole and republished its message context while nothing on it had changed.
+    const json = JSON.stringify(snapshot)
+    const same = json === scope.json
+    scope.json = json
+    setView((current) =>
+      current.path !== scope.path ||
+      (same && current.snapshot !== null && current.error === null && !current.loading)
+        ? current
+        : {
+            ...current,
+            snapshot: same && current.snapshot !== null ? current.snapshot : snapshot,
+            error: null,
+            loading: false,
+          },
+    )
+  }, [])
 
   const onTick = useCallback(async () => {
-    const epoch = scope.current.epoch
-    const current = () =>
-      scope.current.active && scope.current.path === path && scope.current.epoch === epoch
-    const ticket = ++tickets.issued
+    const scope = scopeRef.current
+    const current = () => scope.active && scope.path === path
+    const ticket = ++scope.issued
     try {
       const response = await miniAppApiFetch(path, { signal: AbortSignal.timeout(timeoutMs) })
       const snapshot = schema.parse(await unwrapMiniAppResponse<unknown>(response))
-      if (current() && tickets.sending === 0) show(ticket, snapshot)
+      if (current() && scope.sending === 0) show(scope, ticket, snapshot)
     } catch {
-      if (!current() || tickets.sending > 0 || ticket < tickets.shown) return
-      setState((current) => ({ ...current, error: failureMessage, loading: false }))
+      if (!current() || scope.sending > 0 || ticket < scope.shown) return
+      setView((view) => ({ ...view, error: failureMessage, loading: false }))
     }
-  }, [path, schema, timeoutMs, failureMessage, show, tickets])
+  }, [path, schema, timeoutMs, failureMessage, show])
 
   const send = useCallback(
     async (body: unknown, options: SendOptions = {}): Promise<T | null> => {
-      const epoch = scope.current.epoch
-      const current = () =>
-        scope.current.active && scope.current.path === path && scope.current.epoch === epoch
-      const ticket = ++tickets.issued
-      tickets.sending += 1
-      setPending((count) => count + 1)
+      const scope = scopeRef.current
+      const current = () => scope.active && scope.path === path
+      const ticket = ++scope.issued
+      scope.sending += 1
+      setView((view) => (view.path === path ? { ...view, pending: view.pending + 1 } : view))
       try {
         const response = await miniAppApiFetch(options.path ?? path, {
           method: options.method ?? 'POST',
@@ -140,24 +128,63 @@ export function usePolledSnapshot<T>({
           signal: AbortSignal.timeout(timeoutMs),
         })
         const snapshot = schema.parse(await unwrapMiniAppResponse<unknown>(response))
-        if (current()) show(ticket, snapshot)
+        if (current()) show(scope, ticket, snapshot)
         return snapshot
       } catch (error) {
         // The route's own sentence ("That note is too long.") when it answered one; a transport
         // or schema failure is the fixed message, never a stack or a zod dump.
-        if (!current() || ticket < tickets.shown) return null
+        if (!current() || ticket < scope.shown) return null
         const message = error instanceof MiniAppApiError ? error.message : failureMessage
-        setState((current) => ({ ...current, error: message, loading: false }))
+        setView((view) => ({ ...view, error: message, loading: false }))
         return null
       } finally {
-        tickets.sending -= 1
-        if (current()) setPending((count) => count - 1)
+        scope.sending -= 1
+        if (current())
+          setView((view) => (view.path === path ? { ...view, pending: view.pending - 1 } : view))
       }
     },
-    [path, schema, timeoutMs, failureMessage, show, tickets],
+    [path, schema, timeoutMs, failureMessage, show],
   )
 
   useVisiblePolling({ enabled: active, intervalMs, immediate: true, onTick, resetKey: path })
   const refresh = useCallback(() => void onTick(), [onTick])
-  return { ...state, sending: pending > 0, send, refresh }
+  const { snapshot, error, loading, pending } = view
+  return { snapshot, error, loading, sending: pending > 0, send, refresh }
 }
+
+/** What the view shows for one route. */
+interface View<T> {
+  path: string
+  snapshot: T | null
+  error: string | null
+  loading: boolean
+  /** Actions sent with `send` still waiting for their answer. */
+  pending: number
+}
+
+const freshView = <T>(path: string): View<T> => ({
+  path,
+  snapshot: null,
+  error: null,
+  loading: true,
+  pending: 0,
+})
+
+/** Request bookkeeping for one route: tickets order the answers, `json` is the snapshot shown. */
+interface Scope {
+  path: string
+  active: boolean
+  issued: number
+  shown: number
+  sending: number
+  json: string | null
+}
+
+const freshScope = (path: string): Scope => ({
+  path,
+  active: true,
+  issued: 0,
+  shown: 0,
+  sending: 0,
+  json: null,
+})

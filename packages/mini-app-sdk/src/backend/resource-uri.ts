@@ -109,7 +109,7 @@ export const encodeResourceSegment = (segment: string): string =>
     .replace(/\.+$/, (run) => pctEncode('.').repeat(run.length))
 
 /** Decodes a segment minted by {@link encodeResourceSegment}. Guarded: malformed
- * percent-input (or a legacy/drag-minted unencoded name) is returned verbatim. */
+ * percent-input (or a drag-minted unencoded name) is returned verbatim. */
 export function decodeResourceSegment(segment: string): string {
   try {
     return decodeURIComponent(segment)

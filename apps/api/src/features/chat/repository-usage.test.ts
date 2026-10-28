@@ -1,3 +1,4 @@
+import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -8,10 +9,10 @@ import { createDatabase, destroyDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import type { PersistedMessage } from './contracts'
 import { createChatRepository, type SessionRecord } from './repository'
-import { routedParticipants, sessionFixture } from '../../testing/session-fixture'
-import { DEFAULT_AGENT_PARTICIPANT, USER_PARTICIPANT } from '../../db'
+import { routedAgent, sessionFixture } from '../../testing/session-fixture'
+import { DEFAULT_AGENT_AUTHOR, USER_AUTHOR } from '../../db'
 
-const tempDir = join(process.cwd(), 'tmp', 'chat-repository-usage-tests')
+const tempDir = join(tmpdir(), `localix-chat-repository-usage-tests-${process.pid}`)
 const timestamp = '2026-07-31T00:00:00.000Z'
 
 function session(): SessionRecord {
@@ -20,7 +21,7 @@ function session(): SessionRecord {
     userId: 'user-a',
     seq: 1,
     title: 'Usage branches',
-    agents: routedParticipants({ modelId: '', reasoningEffort: 'low' }),
+    agent: routedAgent({ modelId: '', reasoningEffort: 'low' }),
     createdAt: timestamp,
     updatedAt: timestamp,
     lastMessageAt: timestamp,
@@ -40,7 +41,7 @@ function message(
     payload: {
       id,
       role,
-      from: role === 'user' ? USER_PARTICIPANT : DEFAULT_AGENT_PARTICIPANT,
+      from: role === 'user' ? USER_AUTHOR : DEFAULT_AGENT_AUTHOR,
       content: id,
       usage,
     },

@@ -8,6 +8,7 @@
  * handed to the host, whose cooldown can honour it.
  */
 import { APICallError } from '@ai-sdk/provider'
+import { backoffMs } from '@localixai/agent/backoff'
 import { PROVIDER_HTTP_ERROR_NAME, providerHttpErrorMessage } from '@localixai/agent'
 import { attachProviderResponse } from '@localixai/agent/agents'
 
@@ -105,21 +106,7 @@ export function retryDelayMs(
 ): number | undefined {
   const stated = statedDelayMs(headersOf(error))
   if (stated !== undefined) return stated > policy.maxDelayMs ? undefined : stated
-  return Math.min(2_000 * 2 ** attempt, policy.maxDelayMs)
-}
-
-/** Wait, or stop waiting the moment the request is cancelled. */
-export function sleep(ms: number, signal: AbortSignal): Promise<void> {
-  return new Promise((resolve) => {
-    if (signal.aborted) return resolve()
-    const timer = setTimeout(done, ms)
-    signal.addEventListener('abort', done, { once: true })
-    function done() {
-      clearTimeout(timer)
-      signal.removeEventListener('abort', done)
-      resolve()
-    }
-  })
+  return backoffMs(attempt, { baseMs: 2_000, maxMs: policy.maxDelayMs })
 }
 
 /**

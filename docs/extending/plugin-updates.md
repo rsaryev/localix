@@ -25,9 +25,9 @@ sets `defaultEnabled: false`, and its switch turns it off like any plugin's. It 
 and no **Update now**: `/plugin remove` and `/plugin update` refuse it, and it updates when Localix
 does. `builtin` is a reserved origin, so no marketplace can register under it.
 
-| Built-in plugin     | What it adds                                                                                           |
-| ------------------- | ------------------------------------------------------------------------------------------------------ |
-| `localix-mini-apps` | A `build-mini-app` skill and `/localix-mini-apps:new`, `check`, `build`, `pack` and `publish` commands |
+| Built-in plugin      | What it adds                                                                                                  |
+| -------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `mini-app-authoring` | `/mini-app-authoring:create`, `check`, `install`, `publish` and `get-localix`, a reviewer agent, an edit hook |
 
 **Name conflicts:** a built-in plugin holds its name over every other copy, as managed plugins do in
 Claude Code. Localix's order, highest first, is built-in, your installs (`~/.localix/plugins` and
@@ -42,7 +42,7 @@ listed in the repository's own `.claude-plugin/marketplace.json`, so in plain Cl
 
 ```bash
 claude plugin marketplace add rsaryev/localix
-claude plugin install localix-mini-apps@localix
+claude plugin install mini-app-authoring@localix
 ```
 
 ### The default marketplaces
@@ -98,9 +98,9 @@ the marketplace's listing resolves to another version. What is available is comp
 listings without installing anything: the Store (Plugins) fetches the listings when it opens, and
 every marketplace refresh checks again. An unpinned git entry is compared by its remote commit.
 **Update marketplace** refreshes the listing and updates the plugins installed from it, and names
-any it leaves for you, such as an entry with a `headersHelper`. Localix does not read
-`extraKnownMarketplaces` from Claude Code's settings files: a marketplace's `autoUpdate` lives on
-its record in `~/.localix/marketplaces/known.json`.
+any it leaves for you, such as an entry with a `headersHelper`. A marketplace's `autoUpdate` lives
+on its record in `~/.localix/marketplaces/known.json`; one that Claude Code's settings declare under
+`extraKnownMarketplaces` brings its own `autoUpdate` value along (see below).
 
 ### Claude Code settings
 

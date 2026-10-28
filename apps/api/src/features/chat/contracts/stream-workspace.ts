@@ -3,7 +3,7 @@ import type { ResourceChangedEvent } from '../../realtime/resources'
  * THE STREAM EVENTS THAT ARE NOT ABOUT THE CONVERSATION.
  *
  * One socket carries every live update, but its union answers two different questions. Most of
- * it is the conversation: a message arrived, a run started, the room's floor moved. These are
+ * it is the conversation: a message arrived, a run started, a reply streamed. These are
  * about the MACHINE the conversation is running on — the language servers, the preview, the
  * terminals, the files on disk, the installed capabilities. A client can render a whole chat
  * without handling one of them, and the surfaces that do handle them (the inspector, the
@@ -72,7 +72,7 @@ export type WorkspaceStreamEvent =
       frameBlocked?: boolean
     }
   | {
-      /** Agent-driven preview control: the `browser` tool asks the open
+      /** Agent-driven preview control: the `Browser` tool asks the open
        *  inspector's probe to execute one command. The UI runs it and replies via
        *  the `{t:'preview-result'}` WS RPC, keyed by `commandId`. */
       type: 'preview.command'

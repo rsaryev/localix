@@ -1,98 +1,40 @@
 /**
- * CONVERSATION — who shares the session with the speaker, and how the room may change.
+ * CONVERSATION — what surrounds the agent: a chat with the person, or nothing.
  *
- * Every multi-participant branch used to ask its own question: `agents.length > 1` for the
- * pass, `<= 1` for routing, `=== 1` for steering, `sessionKind === 'chat'` for invites and the
- * directory, and a handle comparison in the prompt. They agreed only by accident. This axis is
- * the one answer, and it is a pure function of the session record, so the server's dispatch,
- * the run stages and the browser all read the same decision (`@localixai/api/conversation-policy`).
- *
- * A non-chat session (a delegated child, a job) is `isolated`: it has one agent and a fixed
- * membership. Every chat is a `group` conversation, open to whoever a tag or the person brings
- * in — with one participant it is a lone agent that may still bring colleagues in.
+ * A conversation has exactly one agent, fixed when it is created, so there is no roster to
+ * route, invite into or pass within. What is left to decide is whether the session is the
+ * person's own chat or an isolated one (a delegated child, a job), and whether a delegated
+ * child's report may join a running turn here. It is a pure function of the session record, so
+ * the server's dispatch, the run stages and the browser all read the same decision.
  */
 import { defineAxis, type AxisVariant } from '../axis'
 
 export interface ConversationFacts {
   sessionKind: string
-  agents: readonly unknown[]
 }
 
-export type ConversationKind = 'isolated' | 'group'
+export type ConversationKind = 'isolated' | 'chat'
 
 export interface ConversationDecision {
   kind: ConversationKind
-  /** More than one agent shares the conversation right now. */
-  withColleagues: boolean
-  /** Who receives a message (`runtime/conversation-strategy.ts`). */
-  routing: 'direct' | 'multi-participant'
-  /** An @tag in the person's message or an agent's reply invites an available agent. */
-  tagInvites: boolean
-  /** Who is in the conversation can change at all. */
-  membershipEditable: boolean
-  /** The prompt lists the registry: who a tag can reach. */
-  showsDirectory: boolean
-  /** A participant may pass with `skip_answer`. */
-  canPass: boolean
-  /** A turn that wrote nothing is a silent pass rather than an empty reply. */
-  silentEmptyTurns: boolean
-  /** A settled reply is routed to whoever it addresses. */
-  routesReplies: boolean
   /** A delegated child's report may join a running turn here; `null` when it never does. */
-  childReports: { allowUnaddressed: boolean } | null
+  childReports: boolean
 }
-
-const count = (facts: ConversationFacts) => facts.agents.length
 
 const conversation = (
   kind: ConversationKind,
   applies: (facts: ConversationFacts) => boolean,
-  decide: (
-    facts: ConversationFacts,
-    withColleagues: boolean,
-  ) => Omit<ConversationDecision, 'kind' | 'withColleagues' | 'routing'>,
+  childReports: ConversationDecision['childReports'],
 ): AxisVariant<ConversationFacts, ConversationDecision> => ({
   id: kind,
   applies,
-  decide: (facts) => {
-    const withColleagues = count(facts) > 1
-    return {
-      kind,
-      withColleagues,
-      routing: withColleagues ? 'multi-participant' : 'direct',
-      ...decide(facts, withColleagues),
-    }
-  },
+  decide: () => ({ kind, childReports }),
 })
 
 export const conversationAxis = defineAxis<ConversationFacts, ConversationDecision>(
   'conversation',
   [
-    conversation(
-      'isolated',
-      (facts) => facts.sessionKind !== 'chat',
-      (_facts, withColleagues) => ({
-        tagInvites: false,
-        membershipEditable: false,
-        showsDirectory: false,
-        canPass: false,
-        silentEmptyTurns: withColleagues,
-        routesReplies: withColleagues,
-        childReports: null,
-      }),
-    ),
-    conversation(
-      'group',
-      () => true,
-      (facts, withColleagues) => ({
-        tagInvites: true,
-        membershipEditable: true,
-        showsDirectory: true,
-        canPass: withColleagues,
-        silentEmptyTurns: withColleagues,
-        routesReplies: true,
-        childReports: { allowUnaddressed: count(facts) === 1 },
-      }),
-    ),
+    conversation('isolated', (facts) => facts.sessionKind !== 'chat', false),
+    conversation('chat', () => true, true),
   ],
 )

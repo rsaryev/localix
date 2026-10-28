@@ -1,5 +1,5 @@
 /**
- * `context_budget` — how much of the request window this session has left.
+ * `ContextBudget` — how much of the request window this session has left.
  *
  * A model that can see its budget narrows its reads or saves
  * what matters before the host checkpoints its view; without it, the only signal it ever gets
@@ -67,7 +67,7 @@ export function describeContextBudget(reading: ContextBudgetReading): string {
     `Fixed per-request cost (system prompt + tool schemas): ${format.format(reading.fixedOverheadTokens)} tokens${describeFixedBreakdown(reading.fixed)}.`,
     `Budget: policy window ${format.format(reading.policyWindowTokens)} (model ${format.format(reading.modelWindowTokens)}), ${format.format(reading.reservedTokens)} reserved for the response.`,
     used !== undefined && used >= reading.checkpointAtTokens * 0.85
-      ? 'Guidance: a checkpoint is near — finish the current step, avoid re-reading large files, and prefer `search`/ranged `read`. At the checkpoint older turns become short cards; anything whose reasons must survive belongs in memory.'
+      ? 'Guidance: a checkpoint is near — finish the current step, avoid re-reading large files, and prefer `Search`/ranged `Read`. At the checkpoint older turns become short cards; anything whose reasons must survive belongs in memory.'
       : '',
   ]
   return lines.filter(Boolean).join('\n')
@@ -75,7 +75,7 @@ export function describeContextBudget(reading: ContextBudgetReading): string {
 
 export function createContextBudgetTool(read: () => ContextBudgetReading | undefined) {
   return defineAgentTool<Record<string, never>, ContextBudgetReading | undefined>({
-    name: TOOL.context_budget,
+    name: TOOL.ContextBudget,
     label: 'Context budget',
     activeVerb: 'Checking context budget',
     description:

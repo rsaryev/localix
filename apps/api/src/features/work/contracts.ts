@@ -30,8 +30,6 @@ export interface WorkRecord {
   id: string
   userId: string
   sessionId: string
-  /** The participant whose run started it. */
-  agentId: string | null
   /** What the agent and the user call it: `bg-3`, `mon-1`. Never reused within a session. */
   displayId: string
   kind: WorkKind

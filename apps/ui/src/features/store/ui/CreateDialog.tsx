@@ -123,7 +123,7 @@ export function CreateBar({
   const shown = kinds === 'all' ? creatable : creatable.filter((kind) => kinds.includes(kind))
   if (shown.length === 0 && !before) return null
   return (
-    <div className="mb-3 flex flex-wrap justify-end gap-2">
+    <div className="flex flex-wrap justify-end gap-2">
       {before}
       {shown.map((kind) => (
         <CreateButton key={kind} kind={kind} initial={initial} />

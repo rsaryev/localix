@@ -50,7 +50,7 @@ export async function failRun(frame: RunFrame, error: unknown): Promise<RunExecu
     userId,
     session,
     // Current, not admitted: model resolution may have rebound the provider (stages/turn.ts).
-    route: frame.speakerRoute,
+    route: frame.route,
     assistantMessageId: currentAssistantMessageId(frame),
     error,
     contextDiagnostics: failureDiagnostics(frame, error),
@@ -74,9 +74,9 @@ export async function failRun(frame: RunFrame, error: unknown): Promise<RunExecu
     runId: currentAssistantMessageId(frame),
     outcome,
     // The same presentation the transcript notice was written from (`finalize.ts`).
-    presented: presentErrorInfo(failure, { connectionId: frame.speakerRoute.providerConnectionId }),
+    presented: presentErrorInfo(failure, { connectionId: frame.route.providerConnectionId }),
     invocation: params.scope.executionContext.invocation.kind,
-    connectionId: frame.speakerRoute.providerConnectionId,
+    connectionId: frame.route.providerConnectionId,
     cascaded: env.state.cascadeStoppedSessionIds.has(session.id),
     failure: {
       rateLimited: failure.rateLimited,

@@ -7,7 +7,7 @@ import { ShelfRow } from '@localixai/kit/shelf-row'
 import { Skeleton } from '@localixai/kit/skeleton'
 import { WorkbenchNoticeBar } from '@localixai/kit/workbench-notice-bar'
 import { plural } from '../model/presentation'
-import { tilesPerView, useStoreFrame } from '../model/layout'
+import { tileColumns, useStoreFrame } from '../model/layout'
 import { useStoreScope } from '../model/storeContext'
 import { keyOf } from '../model/useExtrasAfterInstall'
 import { Categories } from './DiscoverCategories'
@@ -26,6 +26,7 @@ function CollectionCard({ collection, listings }: { collection: Collection; list
   return (
     <button
       type="button"
+      aria-label={`${collection.title}, ${plural(collection.items.length, 'package')}`}
       onClick={() =>
         store.show({
           type: 'list',
@@ -36,28 +37,33 @@ function CollectionCard({ collection, listings }: { collection: Collection; list
       }
       className="@container/collection min-w-0 rounded-xl border border-border-faint bg-card p-4 text-left transition-colors duration-(--dur-fast) hover:bg-surface-hover focus-ring"
     >
-      <span className="flex min-w-0 flex-col gap-3 @md/collection:flex-row @md/collection:items-center @md/collection:gap-4">
-        <span className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className="text-2xs font-semibold tracking-wide text-text-soft uppercase">
-            Collection · {plural(collection.items.length, 'package')}
-          </span>
+      <span className="flex min-w-0 flex-col gap-3">
+        {/* What it holds, as a stack of icons; the words get the card's whole width. */}
+        <span aria-hidden className="flex items-center">
+          {listings.slice(0, 5).map((listing) => (
+            <span key={keyOf(listing.ref)} className="-ml-2 rounded-xl ring-2 ring-card first:ml-0">
+              <ListingIcon listing={listing} size={40} />
+            </span>
+          ))}
+          <ChevronRight className="ml-auto size-4 shrink-0 text-text-faint" aria-hidden />
+        </span>
+        <span className="flex min-w-0 flex-col gap-1">
           <span className="text-base font-semibold text-balance text-foreground">
             {collection.title}
           </span>
           {collection.subtitle && (
             <span className="line-clamp-2 text-xs text-text-soft">{collection.subtitle}</span>
           )}
-        </span>
-        <span aria-hidden className="flex shrink-0 items-center gap-2">
-          {listings.slice(0, 4).map((listing) => (
-            <ListingIcon key={keyOf(listing.ref)} listing={listing} size={48} />
-          ))}
-          <ChevronRight className="ml-auto size-4 shrink-0 text-text-faint" aria-hidden />
+          <span className="text-2xs text-text-faint">
+            {plural(collection.items.length, 'package')}
+          </span>
         </span>
       </span>
     </button>
   )
 }
+
+const NONE: readonly Listing[] = []
 
 /** The first look while Discover is read: two rows in outline. */
 export function DiscoverSkeleton() {
@@ -84,14 +90,24 @@ export function DiscoverSkeleton() {
 }
 
 /**
- * DISCOVER (`docs/internals/store.md`, "Discover"): the updates waiting, Start here,
- * For this project, the editors' collections as wide cards, a row per kind, New & updated, and
- * the categories — every part from one `/rpc/store/discover` answer, each left out when empty.
+ * DISCOVER (`docs/internals/store.md`, "Discover"): the updates waiting, Start here, For your
+ * work, For this project, the editors' collections as wide cards, a row per kind, New & updated,
+ * and the categories — every part from one `/rpc/store/discover` answer, each left out when
+ * empty. For your work is the recommendations' answer (`recommended`), read beside it.
  */
-export function Discover({ data }: { data: DiscoverResponse }) {
+/** How many rows of tiles a Discover row shows; "See all" has the rest. */
+const ROWS = 2
+
+export function Discover({
+  data,
+  recommended = NONE,
+}: {
+  data: DiscoverResponse
+  recommended?: readonly Listing[]
+}) {
   const store = useStoreScope()
   const { layout, width } = useStoreFrame()
-  const perView = tilesPerView(layout, width)
+  const columns = tileColumns(width)
   const byKey = useMemo(() => {
     const map = new Map(data.listings.map((listing) => [keyOf(listing.ref), listing]))
     return (ref: ListingRef) => map.get(keyOf(ref))
@@ -101,8 +117,11 @@ export function Discover({ data }: { data: DiscoverResponse }) {
   const computed = (ids: (id: string) => boolean) =>
     data.rows.filter((row) => !row.source && ids(row.id))
 
-  const row = (collection: Collection) => {
-    const listings = listingsOf(collection)
+  const row = (
+    collection: Collection,
+    listings = listingsOf(collection),
+    onSeeAll?: () => void,
+  ) => {
     if (listings.length === 0) return null
     const seeAll = SEE_ALL[collection.id]
     return (
@@ -110,14 +129,17 @@ export function Discover({ data }: { data: DiscoverResponse }) {
         key={collection.id}
         title={collection.title}
         subtitle={collection.subtitle}
-        perView={perView}
-        onSeeAll={() =>
-          store.show({
-            type: 'list',
-            title: collection.title,
-            subtitle: collection.subtitle,
-            ...(seeAll ? { query: seeAll } : { refs: collection.items }),
-          })
+        columns={columns}
+        rows={ROWS}
+        onSeeAll={
+          onSeeAll ??
+          (() =>
+            store.show({
+              type: 'list',
+              title: collection.title,
+              subtitle: collection.subtitle,
+              ...(seeAll ? { query: seeAll } : { refs: collection.items }),
+            }))
         }
       >
         {listings.map((listing) => (
@@ -147,7 +169,19 @@ export function Discover({ data }: { data: DiscoverResponse }) {
           className="rounded-lg border border-border-faint"
         />
       )}
-      {computed((id) => id === 'start' || id === 'project').map(row)}
+      {computed((id) => id === 'start').map((collection) => row(collection))}
+      {row(
+        {
+          id: 'work',
+          title: 'For your work',
+          subtitle: 'Suits what is open beside you',
+          style: 'row',
+          items: recommended.map((listing) => listing.ref),
+        },
+        [...recommended],
+        () => store.show({ type: 'recommended' }),
+      )}
+      {computed((id) => id === 'project').map((collection) => row(collection))}
       {editorial.length > 0 && (
         <section aria-label="Collections" className="flex flex-col gap-4">
           <SectionHeading level="section" as="h2" title="Collections" />
@@ -167,8 +201,8 @@ export function Discover({ data }: { data: DiscoverResponse }) {
           </div>
         </section>
       )}
-      {computed((id) => id.startsWith('kind:')).map(row)}
-      {computed((id) => id === 'new').map(row)}
+      {computed((id) => id.startsWith('kind:')).map((collection) => row(collection))}
+      {computed((id) => id === 'new').map((collection) => row(collection))}
       {data.categories.length > 0 && <Categories categories={data.categories} />}
     </div>
   )

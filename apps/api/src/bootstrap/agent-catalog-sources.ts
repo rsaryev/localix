@@ -11,7 +11,7 @@ import { createAgentWatcher, type After, type WatchDir } from '../features/agent
 import { recordCoreChanges } from '../features/changes/core-entities'
 import { onCapabilityRevision } from '../features/capabilities/revision'
 import { buildPluginCatalog } from '../features/plugins/catalog'
-import { buildLoadedAgent } from '../features/plugins/loader-contract'
+import { buildLoadedAgent, type LoadedPluginAgent } from '../features/plugins/loader-contract'
 
 /** Claude Code's folders for one scope; `project` is null while the project's directory is gone. */
 export function createAgentFoldersPort(
@@ -33,6 +33,8 @@ export function createAgentFoldersPort(
 export function createPluginAgentGroups(
   db: Kysely<AppDatabase>,
   resolveProjectCwd: (userId: string, projectId: string) => Promise<string | null>,
+  /** The agent types the loaded mods registered (`$.agent.register`), by plugin. */
+  modAgents: () => readonly ModAgentGroup[] = () => [],
 ) {
   return async (userId: string, projectId: string): Promise<PluginAgentGroup[]> => {
     const catalog = await buildPluginCatalog({
@@ -43,7 +45,7 @@ export function createPluginAgentGroups(
       cwd: projectId ? await resolveProjectCwd(userId, projectId) : null,
       homeDir: userHome(),
     })
-    return catalog.all.map((entry) => ({
+    const files = catalog.all.map((entry) => ({
       plugin: entry.plugin.manifest.name,
       projectId: entry.plugin.scope === 'global' ? '' : projectId,
       enabled: entry.enabled,
@@ -51,7 +53,36 @@ export function createPluginAgentGroups(
         buildLoadedAgent(entry.plugin.manifest.name, agent, (text) => text),
       ),
     }))
+    return withModAgents(files, modAgents())
   }
+}
+
+/** The agents a plugin's loaded mod registered. */
+export interface ModAgentGroup {
+  plugin: string
+  agents: readonly LoadedPluginAgent[]
+}
+
+/**
+ * Plugin groups with the mods' agents in them. A mod is part of its plugin, so its agents join the
+ * plugin's own group (a type the mod registers replaces a file of the same name); a plugin the
+ * catalog does not list gets a group of its own, on for every project.
+ */
+export function withModAgents(
+  groups: readonly PluginAgentGroup[],
+  mods: readonly ModAgentGroup[],
+): PluginAgentGroup[] {
+  const out = groups.map((group) => ({ ...group }))
+  for (const mod of mods) {
+    const own = out.find((group) => group.plugin === mod.plugin && group.projectId === '')
+    if (!own) {
+      out.push({ plugin: mod.plugin, projectId: '', enabled: true, agents: [...mod.agents] })
+      continue
+    }
+    const names = new Set(mod.agents.map((agent) => agent.fullName))
+    own.agents = [...own.agents.filter((agent) => !names.has(agent.fullName)), ...mod.agents]
+  }
+  return out
 }
 
 /** `fs.watch` as the watcher's seam: a missing folder is reported, never thrown. */

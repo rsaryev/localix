@@ -247,7 +247,7 @@ describe('QueuePanel accessibility', () => {
     await act(async () => root.unmount())
   })
 
-  test("a participant's turn shows who answers and cancels in one click; other wakes arm first", async () => {
+  test("an agent's turn shows who answers and cancels in one click; other wakes arm first", async () => {
     const React = await import('react')
     const { act } = React
     const { createRoot } = await import('react-dom/client')
@@ -261,10 +261,10 @@ describe('QueuePanel accessibility', () => {
           queue: [
             {
               id: 'turn-1',
-              text: 'Gamer — waiting to answer',
+              text: 'gamer — waiting to answer',
               queueKind: 'wake',
               delivery: 'next-turn',
-              agent: { handle: 'gamer', name: 'Gamer' },
+              agent: { name: 'gamer' },
             },
             { id: 'loop-1', text: 'Nightly check', queueKind: 'wake', delivery: 'next-turn' },
           ],
@@ -275,10 +275,10 @@ describe('QueuePanel accessibility', () => {
         }),
       )
     })
-    expect(host.textContent).toContain('Gamer')
+    expect(host.textContent).toContain('gamer')
     expect(host.textContent).not.toContain('Turn for')
     const cancel = host.querySelector<HTMLButtonElement>(
-      'button[aria-label="Cancel Gamer\'s queued turn"]',
+      'button[aria-label="Cancel gamer\'s queued turn"]',
     )!
     await act(async () => cancel.click())
     expect(removed).toEqual(['turn-1'])

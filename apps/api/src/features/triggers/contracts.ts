@@ -136,7 +136,7 @@ export interface TriggerAction {
   readonly id: string
   /**
    * Asked before every scheduled fire; absent means always admitted. Events are never gated.
-   * May be async: a loop's gate reads the addressed participant's route from its session.
+   * May be async: a loop's gate reads the addressed agent's route from its session.
    */
   gate?(trigger: TriggerRecord): FireGate | null | Promise<FireGate | null>
   /** Deliver the fire. */

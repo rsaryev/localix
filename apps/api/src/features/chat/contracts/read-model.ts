@@ -11,7 +11,6 @@ import type { LastMessagePreview } from '../repository-types'
 import type { reasoningEffortSchema, runtimeStatusSchema, sessionKindSchema } from './session'
 import type { SessionLoopSummary, SessionQueueItem, SessionWork } from './queue'
 import type { SessionTiming } from '../../../contracts/message-timing'
-import type { SessionModelChoicesView } from './model-choices'
 
 export type {
   MessageProviderMeta,
@@ -19,15 +18,14 @@ export type {
   SessionTiming,
   ToolTiming,
 } from '../../../contracts/message-timing'
-export type { JoinRoutesView, ModelChoiceView, SessionModelChoicesView } from './model-choices'
 export type { LastMessagePreview } from '../repository-types'
 
-/** One participant of a conversation, and the model its turns run on here. */
+/** The conversation's agent, and the model its turns run on. */
 export interface SessionAgentRoute {
   /** Registry identity. Execution must resolve this ID, never the display snapshot. */
   agentId: string
   /** Handle captured at assignment, retained for historical display. */
-  handle: string
+  name: string
   providerConnectionId: string | null
   modelId: string
   reasoningEffort: z.infer<typeof reasoningEffortSchema>
@@ -36,11 +34,11 @@ export interface SessionAgentRoute {
    * for this agent, or its own card (`agent-route-resolution.ts`).
    *
    * Sent because the picker has to say it: a row showing a model with no word about where it
-   * came from cannot distinguish "chosen for this participant here" from "following the
+   * came from cannot distinguish "chosen for this agent here" from "following the
    * project", and those differ in what changing it will affect.
    *
    * The MODEL only. There is no companion for the effort and there must not be one: the effort
-   * is settled when the seat is created and belongs to the conversation from then on, so a
+   * is settled when the route is created and belongs to the conversation from then on, so a
    * field naming a level for it could only ever say `session` — a word that suggests a
    * following relationship the value does not have.
    */
@@ -63,25 +61,17 @@ export interface SessionSummary {
   rootSessionId: string | null
   sessionKind: z.infer<typeof sessionKindSchema>
   /**
-   * WHO this conversation is with and what each of them runs on, in join order — never empty.
-   * The list IS the party: one participant is a private chat, several a group. The human is
-   * not in it, being present in every session by construction and not running on a model.
-   *
-   * The model picker reads this: it offers the party, and a choice is made FOR one of them.
-   * There is deliberately no session-level model beside it — a room runs several at once, and
-   * a single field could only ever describe the one-participant case.
+   * The conversation's one agent and the model its turns run on, fixed at creation. The human
+   * is not an agent: they are in every session by construction and do not run on a model.
+   * Null for a session that runs no model.
    */
-  agents: SessionAgentRoute[]
-  /** Model choices per agent, seated or not (`session-model-choices.ts`). */
-  modelChoices: SessionModelChoicesView
+  agent: SessionAgentRoute | null
   /** A delegated child its delegator closed; null while open. The chat is read-only when set. */
   closedAt: string | null
   /** How the agent's rules are rewritten for this conversation's runs; a child shows its root's. */
   permissionMode: PermissionMode
   /** Optional conversation description. */
   description: string | null
-  /** A group's avatar ref (media id or emoji); null = generated from the title. */
-  avatar: string | null
   runtimeStatus: z.infer<typeof runtimeStatusSchema>
   externalAgentProvider?: string | null
   externalAgentSessionKey?: string | null
@@ -208,7 +198,7 @@ export interface SessionDetail extends SessionSummary {
    * `/root/audit_repo`). Null only for sessions that predate the column.
    *
    * On DETAIL and not on `SessionSummary` deliberately: it is the address a spawning agent needs
-   * back from the call that created the child (`delegate` reports it so the caller can message what
+   * back from the call that created the child (`Agent` reports it so the caller can message what
    * it just started), not a field the session LIST renders. Assigned once at insert and never
    * updated — renaming an address invalidates every reference a running agent already holds.
    */
@@ -216,8 +206,6 @@ export interface SessionDetail extends SessionSummary {
   messages: PersistedMessage[]
   /** Canonical all-history usage, even when `messages` is a windowed tail. */
   sessionUsage?: ChatUsagePayload
-  /** Whole-history assistant usage by author, including participants who left. */
-  participantUsage?: Record<string, ChatUsagePayload>
   /** Active interactive-terminal waits, independently hydrated after reconnect. */
   terminalWaits?: SessionTerminalWait[]
   /**
@@ -237,12 +225,6 @@ export interface SessionDetail extends SessionSummary {
   pendingInteractions: PendingHitlInteraction[]
   /** True when the agent runner is actively processing this session. */
   isRunning: boolean
-  /**
-   * The participant whose turn is running, or null. Only `run.started` carried it, so a client
-   * that loaded a session mid-turn knew SOMETHING was running and could not say who was speaking
-   * until the next turn began.
-   */
-  activeAgentId: string | null
   /** Computed runtime context for sessions spawned by a tool call (job/subagent). */
   sourceRuntime: SessionSourceRuntime | null
   /** Current in-memory LSP servers for the session project, if any. */
@@ -281,7 +263,7 @@ export interface SessionDetail extends SessionSummary {
  * any of them by id; they are just no longer sent. Absent until the first eviction.
  */
 export interface SessionModelView {
-  /** The participant whose view it is — the one whose run took the checkpoint. */
+  /** The agent whose view it is — the one whose run took the checkpoint. */
   agentId: string
   /** Messages up to and including this one are outside that view. */
   evictedThroughId: string

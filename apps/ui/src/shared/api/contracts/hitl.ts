@@ -56,7 +56,7 @@ export interface PendingRequestSecretInteraction extends PendingHitlSource {
 
 /**
  * An agent-proposed configuration change awaiting the user's click (raised by the
- * `configure` tool). The payload IS the card: title, detail, diff and the scope choice.
+ * `Configure` tool). The payload IS the card: title, detail, diff and the scope choice.
  */
 export interface PendingConfigChangeInteraction extends PendingHitlSource {
   kind: 'config_change'

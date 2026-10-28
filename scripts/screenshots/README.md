@@ -12,9 +12,9 @@ database to exercise the configured composer; it never reaches a provider.
 bun run screenshots:prepare
 ```
 
-Use the isolated database and port command printed by the script to start
-`bun scripts/dev-servers.mjs` in another terminal. This launcher supplies both HTTP and WebSocket
-origins. Never point the capture runner at the personal application on port 5050.
+Use the command the script prints to start `bun scripts/dev-servers.mjs` in another terminal: an
+isolated database, ports, and `HOME=<capture-root>/home`. This launcher supplies both HTTP and
+WebSocket origins. Never point the capture runner at the personal application on port 5050.
 
 ```bash
 bun run screenshots:seed
@@ -22,7 +22,9 @@ bun run screenshots:seed
 
 Seeding is repeatable: it keeps one project, conversation, resume, database and component board. The
 runtime verifier compares the temporary database identity with both its descriptor and the running
-API, and refuses another database. Data stays outside the repository.
+API, refuses another database, and refuses an API whose `HOME` is outside the capture root. The seed
+installs every mini app on the Store's shelf into that home, as a person installs one, and switches
+on the demo agents a fresh database finds in the fixture project. Data stays outside the repository.
 
 A failed seed can leave partial fixtures. In particular, the disposable Git repository inherits
 commit signing and its initial commit can time out. Rerunning skips initialization when `.git`
@@ -38,27 +40,6 @@ bunx playwright install chromium
 
 Alternatively, set `CAPTURE_BROWSER` to an installed Chrome executable. `LOCALIX_CAPTURE_ROOT` can
 select another dedicated `localix-…capture…` directory beneath the system temporary directory.
-
-## Live agent question
-
-The `agents/island-question*` scenarios need a run that genuinely blocks on the agent's `ask` tool.
-Start the isolated API with the scripted provider preload instead of the plain command printed by
-`screenshots:prepare`:
-
-```bash
-TURBO_ENV_MODE=loose BUN_OPTIONS="--preload=$PWD/scripts/screenshots/scripted-provider.mjs" \
-  LOCALIX_DB_FILE=<capture-root>/localix.db LOCALIX_DEV_API_PORT=5151 LOCALIX_DEV_UI_PORT=5150 \
-  VITE_DEV_HOST=127.0.0.1 bun scripts/dev-servers.mjs
-```
-
-`TURBO_ENV_MODE=loose` lets Turborepo pass `BUN_OPTIONS` to the API; use the `--preload=` form,
-because a separate argument breaks `bun install` and `bun x`. The preload answers only requests that
-carry the seeded placeholder key, with a scripted OpenAI Responses stream that calls `ask` once per
-user turn and then replies with a short text. Every other request uses the real `fetch`. The
-scenario sends a message to the `Island question fixture` conversation and waits for the live
-request; other island scenarios dismiss pending requests through `/rpc/tools/interact` first. The
-scenario refuses to send anything unless the running API process left the preload's marker beside
-the capture database. The run is real; the model reply is scripted.
 
 ## Local models and semantic search
 
@@ -105,6 +86,31 @@ so it needs the network, and the scenarios assert what any answer looks like rat
 plugin. To look at the Store at another width or theme, set `LOCALIX_CAPTURE_VIEWPORT=2000x1100`
 (the pane is about 60% of it) and `LOCALIX_CAPTURE_THEME=light` and read the run directory;
 publishing needs the native 1600×1000 capture, so those runs are for review only.
+
+## Composer surfaces and recommendations
+
+`composer/status-line`, `composer/mcp-prompts`, `composer/plugin-waiting` and `store/for-your-work`,
+`store/for-your-work-all` run in a Store-style runtime (own `HOME`,
+`bun scripts/screenshots/store-seed.mjs` once for its fixture) that is also **offline**: start it
+with `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1` and `TURBO_ENV_MODE=loose` (Turborepo otherwise
+drops the variable before it reaches the API), and clone the embedding model into its `HOME` as in
+the local models section. No marketplace is read, so the catalog is Localix's own mini apps and the
+recommendation answer is the same on every run; the scenarios assert that nothing is installed,
+third-party, labelled Community or unreadable.
+
+The composer ones seed a folder of their own, `claude-code-surfaces`, so no other capture shows
+them: its `.claude/settings.json` has a `statusLine` command, `.localix/plugins/release-helper` is a
+plugin that waits for its OK, and a project MCP server (`mcp-prompts-server.mjs`, started by the
+runtime) is connected through the Store's own **Test connection** so its prompts reach the slash
+menu. `agents/context-and-limits` needs the demo agents (`demo-agents.mjs`) and a fresh
+`/agents list` in the fixture conversation; it maximizes the Store pane so the chat beside it stays
+out of the image.
+
+Not captured: the **Recommended for you** row above the composer (it shows only when meaning finds a
+match, and a Localix-only catalog of thirty-odd mini apps rarely clears the semantic gate for a
+fixed working set, so it cannot be made deterministic without a live marketplace); the
+language-server install status and Stop returning queued messages (they need a genuinely running
+install or run).
 
 ## Demo HTTP responses
 

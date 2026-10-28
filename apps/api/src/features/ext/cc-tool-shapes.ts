@@ -22,14 +22,18 @@ const SHAPES: Record<string, ToolShape> = {
 const nameOfCall = (shape: ToolShape, input: unknown) =>
   shape.nameFor && isRecord(input) ? shape.nameFor(input) : shape.name
 
-/** A tool's name as Claude Code's hooks match it: `Bash`, or an MCP tool's `mcp__<server>__<t>`. */
+/**
+ * A tool's name as Claude Code's hooks match it: `Bash`, or an MCP tool's `mcp__<server>__<t>`. A
+ * core tool Claude Code has no name for goes by its own (`Browser`).
+ */
 export function claudeCodeToolName(
   tool: { name: string; aliases?: readonly string[] },
   /** The call's input, when the name depends on it (`Grep` or `Glob`, `Agent` or `TaskStop`). */
   input?: unknown,
 ): string {
   const shape = SHAPES[tool.name]
-  return shape ? nameOfCall(shape, input) : (tool.aliases?.[0] ?? tool.name)
+  if (shape) return nameOfCall(shape, input)
+  return tool.aliases?.[0] ?? tool.name
 }
 
 /** Every Claude Code name a Localix tool answers to, for a hook matcher or a rule's tool. */
@@ -41,7 +45,7 @@ export function claudeCodeNames(localName: string): string[] {
 /** Localix's tools that have a Claude Code shape, in the order a shared name resolves by. */
 export const shapedToolNames = (): string[] => Object.keys(SHAPES)
 
-/** Localix's name for a tool a hook names as Claude Code does (`Bash` is `bash`). */
+/** Localix's name for a tool a hook names as Claude Code does (`Grep` is `Search`). */
 export function localToolName(name: string): string {
   const named = (shape: ToolShape) => shape.name === name || shape.names?.includes(name) === true
   return Object.entries(SHAPES).find(([, shape]) => named(shape))?.[0] ?? name
@@ -72,15 +76,18 @@ export function toolCallEvent(
  */
 export function singleCalls(tool: string, input: unknown): Fields[] {
   const fields = isRecord(input) ? input : {}
-  const list = ({ edit: 'edits', write: 'files', read: 'reads' } as Record<string, string>)[tool]
+  const list = ({ Edit: 'edits', Write: 'files', Read: 'reads' } as Record<string, string>)[tool]
   const entries = list ? fields[list] : undefined
   if (!list || !Array.isArray(entries) || entries.length < 2) return [fields]
   return entries.map((entry) => ({ ...fields, [list]: [entry] }))
 }
 
-/** The tool's own input from the event a hook passed to `next`. */
+/**
+ * The tool's own input from the event a hook passed to `next`. `agentId` says whose call the mod
+ * was shown (a subagent's); it is no argument of the tool.
+ */
 export function toolInputOf(tool: string, event: Fields): Fields {
-  const { tool: name, tool_use_id: _id, consent: _consent, ...fields } = event
+  const { tool: name, tool_use_id: _id, consent: _consent, agentId: _agent, ...fields } = event
   const shape = SHAPES[tool]
   if (!shape) return fields
   return shape.fromClaude(fields, typeof name === 'string' ? name : nameOfCall(shape, fields))
