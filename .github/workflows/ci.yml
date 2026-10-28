@@ -184,7 +184,7 @@ jobs:
           fi
           rust=true
           if [ -n "$base" ] && ! git diff --name-only "$base" HEAD |
-            grep -Eq '^(apps/desktop-tauri/|package\.json$|bun\.lock$|\.nvmrc$|\.github/workflows/ci\.yml$|\.github/actions/(setup-workspace|setup-desktop)/)'; then
+            grep -Eq '^(apps/desktop-tauri/|package\.json$|bun\.lock$|\.github/workflows/ci\.yml$|\.github/actions/(setup-workspace|setup-desktop)/)'; then
             rust=false
           fi
           echo "rust=$rust" >> "$GITHUB_OUTPUT"

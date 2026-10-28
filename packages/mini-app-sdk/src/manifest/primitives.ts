@@ -13,9 +13,12 @@ export const MINI_APP_QUALIFIED_NAME_RE = /^[a-z0-9][a-z0-9_-]*(?::[a-z0-9][a-z0
  * The mini app API contract version this host implements (the `register(ctx)` shape,
  * hook signatures, command/arg/config schemas). A manifest may declare `apiVersion`;
  * a higher major than this means the mini app needs a newer host and is flagged in
- * validation. Bump on any breaking change to the mini-app-facing contract.
+ * validation. Bump on any breaking change to the mini-app-facing contract, and when the SDK adds a
+ * module a mini app may import that an older host does not serve: such an app is then listed as
+ * needing an update there instead of failing to load. v2 adds the app layer
+ * (`createMiniApp`, `defineCollection`, `decide`, `rankByMeaning`, `askAgent`, `ui/app`).
  */
-export const MINI_APP_API_VERSION = 1
+export const MINI_APP_API_VERSION = 2
 
 /**
  * ── Mini app SURFACES ────────────────────────────────────────────────────────────

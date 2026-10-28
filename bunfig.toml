@@ -1,3 +1,9 @@
+# Bun is the only JavaScript runtime here. A script that calls `node`, and a tool whose launcher
+# says `#!/usr/bin/env node` (tsc, vite, turbo, oxlint, playwright), runs on Bun even where Node is
+# installed — the same as it does where it is not.
+[run]
+bun = true
+
 [test]
 # `test-globals-guard` fails the run when a test leaks a key onto `globalThis`. One process
 # is shared across files and their order is not the order you pass them, so a forgotten

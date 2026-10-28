@@ -2,7 +2,7 @@
   "name": "@localix-mini-app/template",
   "version": "0.1.0",
   "private": true,
-  "description": "System Overview mini app and reference template with a native Bun backend.",
+  "description": "Daily Log: the reference mini app every new mini app is created from.",
   "license": "MIT",
   "type": "module",
   "scripts": {
@@ -10,8 +10,8 @@
     "dev": "bun run prepare:sdk && bun preview/serve.ts",
     "build": "bun run prepare:sdk && bun run type-check && vite build && bun build backend/index.ts --target=bun --outfile=dist/backend/index.js",
     "preview": "bun preview/serve.ts --preview",
-    "type-check": "node ../../scripts/tsc.mjs --noEmit -p tsconfig.json",
-    "type-check:tests": "node ../../scripts/tsc.mjs --noEmit -p tsconfig.tests.json",
+    "type-check": "bun ../../scripts/tsc.mjs --noEmit -p tsconfig.json",
+    "type-check:tests": "bun ../../scripts/tsc.mjs --noEmit -p tsconfig.tests.json",
     "test": "bun test ui backend shared"
   },
   "dependencies": {

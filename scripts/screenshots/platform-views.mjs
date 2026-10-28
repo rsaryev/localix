@@ -6,18 +6,24 @@ const marketSnapshots = new WeakMap()
 
 export async function seedPlatformViews() {
   // Live inventory comes only from the capture API's isolated KUBECONFIG.
-  // Public market sources and host metrics are read-only; there is nothing to fabricate or seed.
+  // Public market sources are read-only; the reference app seeds its own entries when composed.
 }
 
 export async function composePlatformViews(page, scenario) {
   if (scenario === 'system-overview') {
-    await openTool(page, 'System Overview')
-    await page.getByText('CPU utilization', { exact: true }).waitFor()
-    await page.getByRole('textbox', { name: 'Filter processes', exact: true }).fill('bun')
-    await page.getByText('CPU utilization', { exact: true }).hover()
-    await page.mouse.wheel(0, -3000)
-    // Allow several genuine OS samples to form the small historical charts.
-    await page.waitForTimeout(10_000)
+    // The reference mini app, Daily Log, with the day a person would have logged by lunch.
+    const { items } = await api('/template/entries')
+    if (!items.length) {
+      const at = (hour) => new Date(new Date().setHours(hour, 0, 0, 0)).toISOString()
+      for (const entry of [
+        { title: 'Oatmeal with berries', amount: 320, category: 'Breakfast', at: at(8) },
+        { title: 'Flat white', amount: 120, category: 'Breakfast', at: at(9) },
+        { title: 'Chicken salad', amount: 540, category: 'Lunch', at: at(13) },
+      ])
+        await api('/template/entries', entry)
+    }
+    await openTool(page, 'Daily Log')
+    await page.getByText('Chicken salad', { exact: true }).waitFor()
   } else if (scenario === 'kubernetes') {
     const contexts = await api('/kubernetes/contexts')
     if (!JSON.stringify(contexts).includes('localix-capture'))
@@ -56,14 +62,15 @@ export async function composePlatformViews(page, scenario) {
 
 export async function verifyPlatformViews(page, scenario) {
   if (scenario === 'system-overview') {
-    await expect(page.getByRole('heading', { name: 'System overview', exact: true })).toBeVisible()
-    await expect(page.getByRole('region', { name: 'System metrics', exact: true })).toBeVisible()
-    await expect(page.getByText('Native OS APIs', { exact: true })).toBeVisible()
-    await expect(page.getByText('Collecting CPU history…', { exact: true })).toHaveCount(0)
-    // The real filter limits any visible process rows to the capture runtime's engine.
-    await expect(page.getByRole('textbox', { name: 'Filter processes', exact: true })).toHaveValue(
-      'bun',
-    )
+    await expect(page.getByRole('heading', { name: 'Daily Log', exact: true })).toBeVisible()
+    const today = page.getByRole('region', { name: 'Today', exact: true })
+    await expect(today.getByText('980', { exact: true })).toBeVisible()
+    await expect(today.getByText('1020 kcal left')).toBeVisible()
+    // Today's bar is the week's tallest: a chart that rendered only its labels shows nothing.
+    const week = page.getByRole('region', { name: 'Last 7 days', exact: true })
+    const todayBar = week.locator('[title$=": 980 kcal"]')
+    expect((await todayBar.boundingBox())?.height ?? 0).toBeGreaterThan(100)
+    await expect(page.getByRole('button', { name: 'Remove Chicken salad' })).toBeVisible()
   } else if (scenario === 'kubernetes') {
     await expect(page.getByText(/Configuration complete; ready for start up/).first()).toBeVisible()
     await expect(page.getByText(/release-studio · k3d-localix-capture/).first()).toBeVisible()

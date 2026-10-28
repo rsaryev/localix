@@ -28,3 +28,12 @@ test('a push after the deadline cannot change the completed result', async () =>
   notifyDiagnosticsListeners('/same')
   expect(await expired).toBe(false)
 })
+
+// vtsls publishes only what changed: of two clean files written together, one gets a push and the
+// other none, and an agent's every multi-file write used to wait out the whole deadline for it.
+test('a file the server checked and left unchanged settles once the server goes quiet', async () => {
+  const { waitForPush, notifyDiagnosticsListeners } = createPushWait({ quietMs: 5 })
+  const unchanged = waitForPush('/index.ts', 1_000)
+  notifyDiagnosticsListeners('/meals.ts')
+  expect(await unchanged).toBe(true)
+})

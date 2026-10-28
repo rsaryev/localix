@@ -40,16 +40,18 @@ The plugin and Localix meet in the **mini app kit** — the template, the SDK an
 the host theme and Localix's own validation rules, published with every release — and in one install
 request.
 
-1. `mini-app create <name>` forks the System Overview template from the kit into a new folder and
-   checks the fresh copy. Template-domain residue is expected at this point; every other check
-   passes.
+1. `mini-app create <name>` forks the Daily Log template from the kit into a new folder and checks
+   the fresh copy. Template-domain residue is expected at this point; every other check passes.
 2. The copy is a mini app: `mini-app.json` holds its name, description, category, settings and
    commands, and `guide.md` tells the agent which tool does what, read with `MiniAppGuide` before it
    first uses the app. The agent replaces the template's domain with yours and writes the tools, the
-   tests and a guide for the new domain. After every edit, the plugin's hook reports what in that
+   tests, a guide for the new domain and an icon of its own (`mini-app icon`). The routes, storage,
+   live updates and search between the tools and the screen are the SDK's, so the agent writes the
+   data model, the tools and the screen. After every edit, the plugin's hook reports what in that
    file breaks Localix's rules.
-3. `mini-app check` runs template residue, manifest, style, routes, store media, message context,
-   the backend and UI builds, types and tests, and reports each.
+3. `mini-app check` runs template residue (including an icon that is still the template's),
+   manifest, style, routes, store media, message context, the backend and UI builds, types and
+   tests, and reports each.
 4. `mini-app install` builds the package — the built backend and UI, the manifest, guide and icon,
    without sources or tests — and hands it to the running Localix, which validates it, installs it
    under `~/.localix/mini-apps/<name>` and switches it on. Installing again from the same folder
@@ -59,6 +61,10 @@ request.
 
 After you change an installed mini app's files by hand, `/mini-app reload` in Localix reloads every
 mini app.
+
+The template it starts from, Daily Log, shows the pattern: entries the agent logs from what you say
+or show, a daily goal and unit set in Settings, and a screen with today's total, a chart of the week
+and a quick-add form. A setting you change reaches the mini app's backend without a restart.
 
 A mini app keeps state and shows it, and the chat agent does the understanding. Because that agent
 already reads the files and photos you attach, a meal photo can arrive as a call to a calorie

@@ -64,7 +64,7 @@ export const capturePlan = {
   },
   'system/overview': {
     guide: 'extending/mini-apps.md',
-    purpose: 'Real OS metrics with a filtered process list',
+    purpose: 'The reference mini app: a day of entries against a goal',
     scenario: 'system-overview',
     scope: 'platform',
   },

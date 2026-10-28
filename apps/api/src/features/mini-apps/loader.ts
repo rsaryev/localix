@@ -1,4 +1,5 @@
 import { registerContextToolClasses } from '@localixai/agent'
+import { createHash } from 'node:crypto'
 
 import type { CapabilitySourceRepository } from '../capabilities/source-repository'
 import { scalarConfig } from '../capabilities/source-repository'
@@ -116,6 +117,8 @@ export async function loadEnabledMiniApps(opts: LoadMiniAppsOptions): Promise<Lo
       opts.agentDirectory,
     )
 
+    // Hashed: the revision is compared and kept, and the settings can hold secrets.
+    const settingsRevision = createHash('sha256').update(JSON.stringify(config)).digest('hex')
     const importStartedAt = performance.now()
     for (const entry of app.backendEntries) {
       try {
@@ -126,8 +129,9 @@ export async function loadEnabledMiniApps(opts: LoadMiniAppsOptions): Promise<Lo
             app: app.name,
             projectId: app.projectId,
             backend,
-            // The path and mtime it was imported under: a rebuilt backend is a new revision.
-            revision: freshModuleUrl(entry),
+            // The path and mtime it was imported under, and the settings it was given: a rebuilt
+            // backend, or one whose settings changed, is a new revision the host wires again.
+            revision: `${freshModuleUrl(entry)}#${settingsRevision}`,
           })
         }
         if (memory) {

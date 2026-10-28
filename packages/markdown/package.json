@@ -19,7 +19,7 @@
   },
   "scripts": {
     "test": "bun test src",
-    "type-check": "node ../../scripts/tsc.mjs --noEmit"
+    "type-check": "bun ../../scripts/tsc.mjs --noEmit"
   },
   "dependencies": {
     "@localixai/kit": "workspace:*",

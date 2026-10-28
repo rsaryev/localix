@@ -141,7 +141,7 @@ export function PageGetAction({ listing, className }: { listing: Listing; classN
               {choose.length ? <ChevronDown /> : <Ellipsis />}
             </IconButton>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-64">
+          <DropdownMenuContent align="start" className="w-64">
             <MenuEntries entries={menu} family="dropdown" />
           </DropdownMenuContent>
         </DropdownMenu>

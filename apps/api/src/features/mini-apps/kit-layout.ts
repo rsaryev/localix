@@ -102,6 +102,8 @@ export const MINI_APP_BACKEND_SHARED_MODULES: readonly string[] = [
  * Rendering tests need the host's DOM harness, which only the in-repo mini apps have.
  */
 export const MINI_APP_TEST_EXTRA_MODULES: readonly string[] = [
+  // A backend tested through its tools and routes on folders of its own (`testMiniAppContext`).
+  '@localixai/mini-app-sdk/backend/testing',
   '@localixai/mini-app-sdk/ui',
   'react',
   'react/jsx-runtime',

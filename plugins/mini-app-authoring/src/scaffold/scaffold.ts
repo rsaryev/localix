@@ -5,6 +5,7 @@ import { basename, dirname, join } from 'node:path'
 import type { Kit } from '../kit/kit'
 import { writeKitCatalog } from '../kit/kit-files'
 import { UserError } from '../lib/errors'
+import { ensureGitignore } from '../publish/ci'
 import { agentsMd, readme } from './prose'
 import {
   fillPlaceholders,
@@ -112,7 +113,7 @@ export function renameMap(
 }
 
 /**
- * The display name is written INTO source by the rename map ("System Overview" sits in string
+ * The display name is written INTO source by the rename map ("Daily Log" sits in string
  * literals, JSX text and JSON), so a quote, backtick, brace or angle bracket in it would break the
  * copy's code before the agent touched it. Keep it to one plain line.
  */
@@ -199,6 +200,8 @@ export async function scaffoldMiniApp(input: ScaffoldInput): Promise<ScaffoldRes
       displayName,
       description,
       version: '0.1.0',
+      // The template's author is Localix's, not the copy's: its own is set when it is published.
+      author: undefined,
     })
     await fs.writeFile(
       join(staging, 'README.md'),
@@ -206,6 +209,8 @@ export async function scaffoldMiniApp(input: ScaffoldInput): Promise<ScaffoldRes
     )
     await fs.writeFile(join(staging, 'AGENTS.md'), agentsMd({ name, displayName, kit, scaffold }))
     await writeKitCatalog(kit, staging)
+    // Ready for git from the start: what the checks generate never reaches a repository.
+    await ensureGitignore(staging)
     if (await exists(dir)) {
       throw new ScaffoldError(`${dir} already exists — choose another name, or remove that folder.`)
     }

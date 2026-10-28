@@ -426,7 +426,6 @@
     "mini-apps/snake/backend/index.ts",
     "mini-apps/template/preview/main.tsx",
     "mini-apps/template/preview/serve.ts",
-    "mini-apps/template/ui/system/SystemMarks.tsx",
     "mini-apps/trading/backend/ccxt-backend.ts",
     "mini-apps/trading/backend/ccxt-driver-guards.ts",
     "mini-apps/trading/backend/ccxt-market-table.ts",

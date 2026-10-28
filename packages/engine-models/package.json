@@ -23,7 +23,7 @@
   "scripts": {
     "build": "shx rm -rf dist && tsc --project tsconfig.build.json",
     "dev": "tsc --project tsconfig.build.json --watch --preserveWatchOutput",
-    "type-check": "node ../../scripts/tsc.mjs --noEmit",
+    "type-check": "bun ../../scripts/tsc.mjs --noEmit",
     "test": "bun test src",
     "clean": "shx rm -rf dist .turbo"
   },

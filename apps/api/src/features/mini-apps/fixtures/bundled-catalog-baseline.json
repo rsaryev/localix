@@ -213,10 +213,15 @@
     "trust": "bundled",
     "ruleKey": "mini-app:template",
     "commands": [],
-    "tools": ["system_mark", "system_overview", "system_processes"],
+    "tools": [
+      "template_find_entries",
+      "template_log_entry",
+      "template_remove_entry",
+      "template_summary"
+    ],
     "views": [],
     "promptSections": [],
-    "config": []
+    "config": ["DAILY_GOAL", "UNIT"]
   },
   "tic-tac-toe": {
     "category": "games",

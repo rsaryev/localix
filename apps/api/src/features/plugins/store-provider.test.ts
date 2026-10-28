@@ -251,6 +251,28 @@ describe('plugins in the Store', () => {
     expect(review.configurable).toBeUndefined()
   })
 
+  // A built-in plugin holds its name over every marketplace's copy (`builtin-plugins.ts`): its
+  // listing is the plugin the person already has, never one to Get — installing it is refused.
+  test('a built-in plugin is installed under the listing of its name', async () => {
+    const { provider, install } = fixture()
+    install([
+      {
+        name: 'review',
+        version: '2.0.0',
+        description: '',
+        projectId: '',
+        scope: 'global',
+        dir: '/builtin/review',
+        source: 'builtin',
+        builtin: true,
+        enabled: true,
+        config: [],
+      } as unknown as PluginRecord,
+    ])
+    const review = byId((await provider.listings(actor)).listings, `review@${OFFICIAL}`)
+    expect(review.installs).toEqual([{ scope: 'user', version: '2.0.0', enabled: true }])
+  })
+
   describe('settings', () => {
     const installed = (config: PluginRecord['config'], scope: 'global' | 'project' = 'global') =>
       ({

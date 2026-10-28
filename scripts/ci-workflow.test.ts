@@ -61,7 +61,7 @@ describe('CI minute budget contract', () => {
     expect(workflow).toContain('{"os":"ubuntu-22.04","name":"linux-x64"')
   })
 
-  test('shares pinned Node, Bun, dependencies, and Rust setup across workflows', () => {
+  test('shares pinned Bun, dependencies, and Rust setup across workflows', () => {
     const workspace = Bun.YAML.parse(read('.github/actions/setup-workspace/action.yml')) as {
       runs: { steps: Step[] }
     }
@@ -70,9 +70,7 @@ describe('CI minute budget contract', () => {
     }
     const bun = workspace.runs.steps.find((step) => step.uses?.startsWith('oven-sh/setup-bun@'))
     expect(bun?.with?.['no-cache']).toBeUndefined()
-    expect(
-      workspace.runs.steps.find((step) => step.name === 'Setup Node')?.with?.['node-version-file'],
-    ).toBe('.nvmrc')
+    expect(bun?.with?.['bun-version']).toBe('1.4.4')
     const install = workspace.runs.steps.find((step) => step.name === 'Install dependencies')
     expect(install?.run).toContain('bun install --frozen-lockfile')
     expect(install?.run).toContain('--ignore-scripts')
@@ -91,8 +89,22 @@ describe('CI minute budget contract', () => {
     }
   })
 
-  test('invalidates task caches when the Node toolchain changes', () => {
-    expect(JSON.parse(read('turbo.json')).globalDependencies).toContain('.nvmrc')
+  // Bun is the only JavaScript runtime: scripts, type-checks and tool launchers all run on it, so
+  // no job installs Node and no task cache keys on a Node version.
+  test('installs no Node toolchain anywhere', () => {
+    const setups = [
+      '.github/actions/setup-workspace/action.yml',
+      '.github/actions/setup-desktop/action.yml',
+      '.github/workflows/ci.yml',
+      '.github/workflows/release.yml',
+      '.github/workflows/landing.yml',
+    ].map(read)
+    for (const setup of setups) {
+      expect(setup).not.toContain('actions/setup-node')
+      expect(setup).not.toMatch(/\bnpm (?:install|ci|i)\b/u)
+    }
+    expect(existsSync(join(root, '.nvmrc'))).toBe(false)
+    expect(JSON.parse(read('turbo.json')).globalDependencies).not.toContain('.nvmrc')
   })
 
   test('gives checks, desktop releases, and website deployments distinct names', () => {

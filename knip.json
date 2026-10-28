@@ -93,9 +93,8 @@
       "ignoreDependencies": ["@happy-dom/global-registrator", "radix-ui"]
     },
     "mini-apps/template": {
-      "entry": ["backend/index.ts", "ui/system/SystemMarks.tsx", "**/*.test.{ts,tsx}"],
-      "project": ["**/*.{ts,tsx}"],
-      "ignore": ["ui/register.example.tsx"]
+      "entry": ["backend/index.ts", "ui/register.tsx", "preview/*.{ts,tsx}", "**/*.test.{ts,tsx}"],
+      "project": ["**/*.{ts,tsx}"]
     },
     "packages/*": {
       "entry": ["src/index.ts", "src/**/*.test.{ts,tsx,mjs}"]

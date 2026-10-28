@@ -237,13 +237,12 @@ signature checks follow
 
 ### Toolchain
 
-| Tool                  | Repository selection                      | Boundary                                                            |
-| --------------------- | ----------------------------------------- | ------------------------------------------------------------------- |
-| Bun                   | `1.4.4` in root `package.json`.           | CI installs this exact version.                                     |
-| Node.js               | `24` in `.nvmrc`.                         | The CLI package build invokes `node`; application runtime uses Bun. |
-| Rust                  | `1.96.1` in CI and the release workflow.  | Local scripts detect Rust; hosted checks pin this exact version.    |
-| Git                   | Required for checkout and source control. | The agent shell still requires a Bash executable on Windows.        |
-| Native platform tools | Listed in the installation guide.         | Requirements differ across macOS, Windows, and Linux.               |
+| Tool                  | Repository selection                      | Boundary                                                              |
+| --------------------- | ----------------------------------------- | --------------------------------------------------------------------- |
+| Bun                   | `1.4.4` in root `package.json`.           | CI installs this exact version. The only JavaScript runtime: no Node. |
+| Rust                  | `1.96.1` in CI and the release workflow.  | Local scripts detect Rust; hosted checks pin this exact version.      |
+| Git                   | Required for checkout and source control. | The agent shell still requires a Bash executable on Windows.          |
+| Native platform tools | Listed in the installation guide.         | Requirements differ across macOS, Windows, and Linux.                 |
 
 Use the root Bun scripts. Do not run a second package-manager install inside `vendor/`; the root
 workspace install creates its links.
@@ -298,7 +297,6 @@ format check as a read-only gate before review.
 ## Source of truth
 
 - [Root scripts and Bun version](https://github.com/rsaryev/localix/blob/main/package.json)
-- [Node version](https://github.com/rsaryev/localix/blob/main/.nvmrc)
 - [Turbo task graph](https://github.com/rsaryev/localix/blob/main/turbo.json)
 - [Continuous integration workflow](https://github.com/rsaryev/localix/blob/main/.github/workflows/ci.yml)
 - [Required contribution checks](https://github.com/rsaryev/localix/blob/main/CONTRIBUTING.md)

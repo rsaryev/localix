@@ -25,7 +25,9 @@ import { KIT_MANIFEST } from './kit'
  */
 
 export const KIT_ARCHIVE = 'mini-app-kit.tar.gz'
-export const RELEASES = 'https://github.com/rsaryev/localix/releases/latest/download'
+/** Localix's repository: its releases carry the kit, its tags the toolchain. */
+export const LOCALIX_REPO = 'rsaryev/localix'
+export const RELEASES = `https://github.com/${LOCALIX_REPO}/releases/latest/download`
 
 export interface KitSource {
   dir: string

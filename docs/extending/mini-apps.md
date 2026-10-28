@@ -80,8 +80,8 @@ records the rules.
 
 Tools over Localix's APIs, settings or a screen make a mini app; skills, commands, hooks and MCP
 servers for any agent make a [plugin](claude-code-plugins.md). For a workbench,
-`/mini-app-authoring:create <what it should do>` forks the System Overview template into a new
-folder and installs it when it passes its checks; see [workbench UI](mini-app-ui.md).
+`/mini-app-authoring:create <what it should do>` forks the Daily Log template into a new folder and
+installs it when it passes its checks; see [workbench UI](mini-app-ui.md).
 
 ### A minimal mini app
 
@@ -130,6 +130,47 @@ export function register({ z, defineTool, dataDir }: MiniAppContext) {
 `classify` tells the permission gate where the change lands (`host`: the app's own data), so a
 session that refuses network effects still allows it. An installed backend has no repository
 dependency tree: use relative modules and built-in modules only, or pre-bundle dependencies.
+
+### The app layer
+
+A mini app that keeps a list does not write its routes, storage or live updates. With
+`"apiVersion": 2`, the SDK's app layer turns a declared collection into all three. This is how the
+Daily Log template (`mini-apps/template`) is built:
+
+```ts
+import {
+  createMiniApp,
+  defineCollection,
+  type MiniAppContext,
+} from '@localixai/mini-app-sdk/backend'
+
+const mealsSpec = defineCollection({
+  name: 'meals',
+  item: mealSchema,
+  input: mealInputSchema,
+  create: (input, { id, now }) => ({ ...input, id, at: input.at ?? now.toISOString() }),
+  scope: 'app',
+  search: (meal) => `${meal.name} ${meal.note}`,
+})
+
+export function register(ctx: MiniAppContext) {
+  const app = createMiniApp(ctx)
+  const meals = app.collection(mealsSpec)
+  return app.registration({ tools: createTools(ctx, meals) })
+}
+```
+
+`meals` has `list`, `get`, `add`, `update`, `remove` and `search`, for the tools to call.
+`app.registration` mounts `GET` and `POST` on `/rpc/<app>/meals` and `PATCH` and `DELETE` on
+`/rpc/<app>/meals/:id`, each answering with the whole list. It also adds the feed that updates an
+open screen when a tool writes and the index that finds items by meaning. `scope: 'chat'` keeps one
+list per chat instead, and `routes` or `backend` fields add anything else.
+
+`decide`, `rankByMeaning` and `askAgent` from the same module reach the host's decision model,
+embedding model and chat agent, and answer with a fallback when none is available.
+`@localixai/mini-app-sdk/backend/testing` tests the backend through what the agent and the screen
+do: `testMiniAppContext`, `callTool`, `requestRoute` and `fakeSemantic`. The screen's side
+(`useCollection`, `screenUi`) is in [Build workbench UI](mini-app-ui.md#what-you-can-do).
 
 ### Scope and enablement
 
@@ -240,7 +281,7 @@ refuses unknown keys, a plugin's `skills` or `hooks` among them:
 | `icon`                   | path in the folder                                        | The app's icon in the store, Settings and its Mac app. Required to publish; see [icon](mini-app-publishing.md#icon-and-screenshots). |
 | `screenshots`            | `{ path, caption? }` array; max 10                        | Shown on the app's store page at their own resolution; `.png`, `.jpg` or `.webp`, ≤5 MB each.                                        |
 | `tags`                   | string array; max 8                                       | Lower-case words joined by dashes; the store filters and searches by them.                                                           |
-| `apiVersion`             | positive integer                                          | Targets the contract, currently `1`. A newer version blocks loading; omission warns.                                                 |
+| `apiVersion`             | positive integer                                          | Targets the contract, currently `2` (the app layer). A newer version blocks loading; omission warns.                                 |
 | `category`               | `development`, `data`, `content`, `utilities` or `games`  | Groups workbenches in the rail's tools menu; one per app.                                                                            |
 | `surfaces`               | string array; `['agent']`                                 | `workbench` adds a screen. Unknown values are retained.                                                                              |
 | `private`                | boolean                                                   | Keeps an authoring scaffold out of packaging.                                                                                        |
@@ -297,25 +338,25 @@ its own `mini-app.json` and `guide.md` and runs once installed; `surfaces` decid
 workbench. Its native code still runs in the trusted API process. Fifteen workbenches complement the
 four [games](../features/games.md):
 
-| Mini app            | Guide                                           | What the workbench shows                                                              |
-| ------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------- |
-| **2048**            | [2048](../features/game-2048.md)                | A tile puzzle with human-play and agent-play modes                                    |
-| **Snake**           | [Snake](../features/game-snake.md)              | A snake steered by the person or by a decision model                                  |
-| **API Client**      | [API client](../features/api.md)                | Saved requests, environments, imports, parameters, responses, vault-backed references |
-| **Code Graph**      | [Code Graph](../features/code-graph.md)         | Directories, files and symbols with imports, calls, inheritance, impact and cycles    |
-| **Database**        | [Database](../features/database.md)             | Connections, schemas, SQL and non-SQL consoles, tables, diagrams, result sets         |
-| **DevOps**          | [DevOps](../features/devops.md)                 | Containers, images, volumes, networks, Kubernetes workloads, logs                     |
-| **Documents**       | [Documents](../features/documents.md)           | PDF, document, spreadsheet, presentation, CSV, table, and chart surfaces              |
-| **Resumes**         | [Resumes](../features/resumes.md)               | Six templates, structured editing, source import, A4 preview, PDF and Word export     |
-| **Git**             | [Source control](../features/source-control.md) | Changes, conflicts, history, branches, and review context                             |
-| **Kanban board**    | [Kanban board](../features/task-board.md)       | One passive task board per chat: epics, tasks, dependencies, owners and blockers      |
-| **Learning Studio** | [Learning loop](../features/learning-loop.md)   | File-authored courses, lessons, and durable progress                                  |
-| **Project Space**   | [Project Space](../features/project-space.md)   | One board per project: notes, shapes, connectors and live references to its files     |
-| **Reader**          | [Reader](../features/reader.md)                 | EPUB, PDF, MOBI/AZW3, FB2, CBZ, Markdown, HTML, and text with annotations             |
-| **Trading**         | [Market research](../features/trading.md)       | Read-only public venues, charts, indicators, order books, and trades                  |
-| **System Overview** | this guide                                      | OS history, process context and a guide for the agent                                 |
+| Mini app            | Guide                                           | What the workbench shows                                                                |
+| ------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------- |
+| **2048**            | [2048](../features/game-2048.md)                | A tile puzzle with human-play and agent-play modes                                      |
+| **Snake**           | [Snake](../features/game-snake.md)              | A snake steered by the person or by a decision model                                    |
+| **API Client**      | [API client](../features/api.md)                | Saved requests, environments, imports, parameters, responses, vault-backed references   |
+| **Code Graph**      | [Code Graph](../features/code-graph.md)         | Directories, files and symbols with imports, calls, inheritance, impact and cycles      |
+| **Database**        | [Database](../features/database.md)             | Connections, schemas, SQL and non-SQL consoles, tables, diagrams, result sets           |
+| **DevOps**          | [DevOps](../features/devops.md)                 | Containers, images, volumes, networks, Kubernetes workloads, logs                       |
+| **Documents**       | [Documents](../features/documents.md)           | PDF, document, spreadsheet, presentation, CSV, table, and chart surfaces                |
+| **Resumes**         | [Resumes](../features/resumes.md)               | Six templates, structured editing, source import, A4 preview, PDF and Word export       |
+| **Git**             | [Source control](../features/source-control.md) | Changes, conflicts, history, branches, and review context                               |
+| **Kanban board**    | [Kanban board](../features/task-board.md)       | One passive task board per chat: epics, tasks, dependencies, owners and blockers        |
+| **Learning Studio** | [Learning loop](../features/learning-loop.md)   | File-authored courses, lessons, and durable progress                                    |
+| **Project Space**   | [Project Space](../features/project-space.md)   | One board per project: notes, shapes, connectors and live references to its files       |
+| **Reader**          | [Reader](../features/reader.md)                 | EPUB, PDF, MOBI/AZW3, FB2, CBZ, Markdown, HTML, and text with annotations               |
+| **Trading**         | [Market research](../features/trading.md)       | Read-only public venues, charts, indicators, order books, and trades                    |
+| **Daily Log**       | this guide                                      | Entries the agent logs, a daily goal, today's total, a 7-day chart and a quick-add form |
 
-![The System Overview workbench reading live OS metrics and recent CPU and memory samples](../assets/screenshots/system/overview--2026-10-08.png)
+![The Daily Log workbench with today's total in a progress ring, a bar per category, a seven-day chart and today's entries](../assets/screenshots/system/overview--2026-10-28.png)
 
 ## Limits
 

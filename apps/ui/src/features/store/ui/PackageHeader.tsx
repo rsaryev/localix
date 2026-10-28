@@ -50,8 +50,9 @@ function Tags({ tags }: { tags: readonly string[] }) {
 /**
  * A package page's header: back to where it was opened from; its icon in the same tile as every
  * other; its name, one line of what it does, who publishes it and how far that is trusted; its
- * tags; and the Get button with where to get it. In a narrow pane the Get button is pinned to the
- * bottom of the page instead, so it is always in reach.
+ * tags; and the Get button with where to get it. Beside the icon only what identifies it — the
+ * name, who publishes it, the Get button — so that block is as tall as the icon at every width;
+ * what it does and its tags run the full width under them.
  */
 export function PackageHeader({
   listing,
@@ -72,51 +73,45 @@ export function PackageHeader({
   return (
     <>
       <StoreBackButton label={backLabel} onBack={onBack} />
-      <header className={cn('flex min-w-0 items-start gap-5', narrow && 'gap-4')}>
-        <ListingIcon listing={listing} size={narrow ? 72 : 104} />
-        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-          <div className="flex min-w-0 flex-wrap items-start justify-between gap-x-4 gap-y-2">
-            <div className="flex min-w-0 flex-col gap-0.5">
-              <h1
-                ref={heading}
-                tabIndex={-1}
-                className="text-2xl leading-tight font-semibold text-balance text-foreground outline-none"
-              >
-                {listing.displayName}
-              </h1>
-              <p className="line-clamp-2 text-sm text-text-soft">{listing.summary}</p>
-            </div>
-            {!narrow && <PageGetAction listing={listing} className="pt-0.5" />}
-          </div>
-          <p className="flex min-w-0 flex-wrap items-center gap-x-1.5 text-xs text-text-soft">
-            <Publisher listing={listing} />
-            <span aria-hidden>·</span>
-            <span>{KIND_LABELS[listing.ref.kind].one}</span>
-            {listing.category && (
-              <>
-                <span aria-hidden>·</span>
-                <span>{listing.category}</span>
-              </>
-            )}
-          </p>
-          {problem && (
-            <p role="alert" className="text-xs text-status-error">
-              {problem[0]!.toUpperCase() + problem.slice(1)}
+      <header className="flex min-w-0 flex-col gap-4">
+        <div className={cn('flex min-w-0 items-center gap-5', narrow && 'gap-4')}>
+          <ListingIcon listing={listing} size={narrow ? 72 : 104} />
+          <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
+            <h1
+              ref={heading}
+              tabIndex={-1}
+              className="text-2xl leading-tight font-semibold text-balance text-foreground outline-none"
+            >
+              {listing.displayName}
+            </h1>
+            <p className="flex min-w-0 flex-wrap items-center gap-x-1.5 text-xs text-text-soft">
+              <Publisher listing={listing} />
+              <span aria-hidden>·</span>
+              <span>{KIND_LABELS[listing.ref.kind].one}</span>
+              {listing.category && (
+                <>
+                  <span aria-hidden>·</span>
+                  <span>{listing.category}</span>
+                </>
+              )}
             </p>
-          )}
-          <div className="pt-1">
+            <PageGetAction listing={listing} className={narrow ? 'pt-1' : 'pt-2'} />
+          </div>
+        </div>
+        {(listing.summary || problem || listing.tags.length > 0) && (
+          <div className="flex min-w-0 flex-col gap-2.5">
+            {listing.summary && (
+              <p className="line-clamp-3 text-sm text-pretty text-text-soft">{listing.summary}</p>
+            )}
+            {problem && (
+              <p role="alert" className="text-xs text-status-error">
+                {problem[0]!.toUpperCase() + problem.slice(1)}
+              </p>
+            )}
             <Tags tags={listing.tags} />
           </div>
-        </div>
+        )}
       </header>
-      {narrow && (
-        <div className="lx-occluder sticky bottom-0 z-(--z-sticky) -mx-4 order-last flex items-center justify-between gap-3 border-t border-border-faint px-4 py-2">
-          <span className="min-w-0 truncate text-sm font-medium text-foreground">
-            {listing.displayName}
-          </span>
-          <PageGetAction listing={listing} />
-        </div>
-      )}
     </>
   )
 }

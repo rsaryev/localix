@@ -42,6 +42,17 @@ export function withEnvScripts(ctx: BashRunContext, command: string): string {
   return `${sourced.join('\n')}\n${command}`
 }
 
+/**
+ * The command with the enabled plugins' `bin/` folders appended to PATH in the shell that runs it.
+ * A child process gets them through its environment; a terminal pane runs a login shell whose
+ * profile rebuilds PATH, so there they have to be set after it, in the command itself. After the
+ * person's own PATH, as for a child process. POSIX shells only: a Windows pane keeps its PATH.
+ */
+export function withPluginPath(dirs: string[] | undefined, command: string): string {
+  if (!dirs?.length || process.platform === 'win32') return command
+  return `export PATH="$PATH":${dirs.map(quote).join(':')}\n${command}`
+}
+
 /** How long a background spawn watches its early output before the call returns. */
 export interface BackgroundSettleWindow {
   minMs: number

@@ -1,76 +1,35 @@
-import { lazy, Suspense } from 'react'
-import { MonitorCog } from 'lucide-react'
-import {
-  resourceMessageBindingDraft,
-  type MiniAppUiHost,
-  type PublishMessageContext,
-} from '@localixai/mini-app-sdk/ui'
-import { SYSTEM_URI } from '../shared/system'
+import { lazy } from 'react'
+import { NotebookPen } from 'lucide-react'
+import { screenUi } from '@localixai/mini-app-sdk/ui/app'
 import { LoadingHint } from '@localixai/kit/empty-hint'
+import { APP } from '../shared/model'
 
-const Workspace = lazy(() =>
-  import('./Workspace').then((module) => ({ default: module.Workspace })),
-)
+const App = lazy(() => import('./App').then((module) => ({ default: module.App })))
 
-function TemplateBody({
-  visible,
-  publishMessageContext,
-}: {
-  visible: boolean
-  publishMessageContext: PublishMessageContext
-}) {
-  return (
-    <Suspense fallback={<LoadingHint>Opening System Overview…</LoadingHint>}>
-      <Workspace active={visible} publishMessageContext={publishMessageContext} />
-    </Suspense>
-  )
-}
-
-const registeredHosts = new WeakSet<MiniAppUiHost>()
-
-export function registerUi(host: MiniAppUiHost): void {
-  if (registeredHosts.has(host)) return
-  registeredHosts.add(host)
-  host.workItems.register({
-    kind: 'template:workspace',
-    Component: TemplateBody,
-    Icon: MonitorCog,
-    restorable: true,
-    scope: 'global',
-    toMessageBinding: () =>
-      resourceMessageBindingDraft({ uri: SYSTEM_URI, label: 'System overview' }),
-    agentContext: {
-      description:
-        'OS, CPU, memory, runtime and process information for the Localix backend machine. The visible snapshot includes process names, PIDs, parent PIDs and resource usage.',
-      tools: ['system_overview', 'system_processes'],
-      nextSteps: [
-        'Use the published snapshot to explain what the user sees.',
-        'Call system_overview for a fresh server snapshot; never infer that this is the browser device.',
-        'Call system_processes for current process identifiers and resource usage.',
-        'When the user asks to manage a process, use its PID with native system tools and apply the normal confirmation and safety rules; the mini app intentionally hardcodes no process actions.',
-      ],
-    },
-  })
-  host.railViewlets.register({
-    kind: 'template:workspace',
-    title: 'System Overview',
-    label: 'System Overview — OS, CPU, memory & runtime',
-    defaultArea: 'overflow',
-    keywords: ['system', 'os', 'cpu', 'memory', 'runtime', 'bun', 'template', 'starter'],
-    Icon: MonitorCog,
-  })
-  host.anchors.register({
-    id: 'template:system-anchor',
-    namespaces: ['template'],
-    icons: { system: MonitorCog },
-    resolve: (uri) =>
-      uri === SYSTEM_URI
-        ? {
-            kind: 'work-item',
-            workKind: 'template:workspace',
-            id: 'template:workspace',
-            title: 'System Overview',
-          }
-        : null,
-  })
-}
+/**
+ * The screen's registration: its tab, its launcher in the rail's overflow, and what the agent is
+ * told while it is open. `scope: 'chat'` would give every chat its own tab (for a chat collection).
+ */
+export const registerUi = screenUi({
+  app: APP,
+  title: 'Daily Log',
+  label: 'Daily Log — what you log each day, against a goal',
+  keywords: ['log', 'journal', 'daily', 'goal', 'tracker'],
+  Icon: NotebookPen,
+  Screen: App,
+  loading: <LoadingHint>Opening Daily Log…</LoadingHint>,
+  agentContext: {
+    description:
+      "Daily Log: today's entries and total against the person's daily goal, and the last seven days.",
+    tools: [
+      'template_log_entry',
+      'template_summary',
+      'template_find_entries',
+      'template_remove_entry',
+    ],
+    nextSteps: [
+      'When the person tells you or shows you something to log, extract title, amount and category and call template_log_entry.',
+      'Answer questions about today from the published summary; call template_summary for fresh numbers.',
+    ],
+  },
+})

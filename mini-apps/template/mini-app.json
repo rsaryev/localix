@@ -1,22 +1,30 @@
 {
   "name": "template",
-  "displayName": "System Overview",
+  "displayName": "Daily Log",
   "version": "0.1.0",
-  "description": "OS, CPU and memory history with process inspection and agent context.",
+  "description": "Log what you eat, spend or do each day — by telling the agent or by hand — against a daily goal.",
   "author": {
     "name": "Localix"
   },
   "license": "MIT",
-  "apiVersion": 1,
+  "apiVersion": 2,
   "category": "utilities",
-  "tags": ["system", "processes", "monitoring"],
+  "tags": ["log", "journal", "tracker", "goal"],
   "icon": "./icon.svg",
-  "screenshots": [
-    {
-      "path": "./screenshots/overview.png",
-      "caption": "Live OS metrics with CPU and memory history"
-    }
-  ],
   "surfaces": ["agent", "workbench"],
-  "backend": "./backend/index.ts"
+  "backend": "./backend/index.ts",
+  "config": {
+    "DAILY_GOAL": {
+      "type": "string",
+      "title": "Daily goal",
+      "description": "The amount a day aims for, in the unit below.",
+      "default": "2000"
+    },
+    "UNIT": {
+      "type": "string",
+      "title": "Unit",
+      "description": "What an amount counts: kcal, $, minutes, steps.",
+      "default": "kcal"
+    }
+  }
 }

@@ -5,7 +5,6 @@
 import { afterAll, beforeAll, describe, expect, setDefaultTimeout, test } from 'bun:test'
 import { execFileSync } from 'node:child_process'
 import {
-  cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -30,12 +29,12 @@ import { typecheckMiniApp } from '../plugins/mini-app-authoring/src/check/typech
 import { type Kit, loadKit } from '../plugins/mini-app-authoring/src/kit/kit'
 import { assemblePackage } from '../plugins/mini-app-authoring/src/package/assemble'
 import { validatePackage } from '../plugins/mini-app-authoring/src/package/validate'
+import { drawIcon } from '../plugins/mini-app-authoring/src/scaffold/icon'
 import { scaffoldMiniApp } from '../plugins/mini-app-authoring/src/scaffold/scaffold'
 import {
   copyDomain,
   fillPlaceholders,
   findTemplateResidue,
-  frameDomainImports,
   listFiles,
   loadTemplateScaffold,
 } from '../plugins/mini-app-authoring/src/scaffold/template-layout'
@@ -87,7 +86,8 @@ function ownMiniApp(): string {
       icon: './icon.svg',
     }),
     'guide.md': '# Tally\n\n`tally_add` adds to a named count.\n',
-    'icon.svg': readFileSync(join(kit.templateDir, 'icon.svg'), 'utf8'),
+    // Its own icon: one that kept the template's is residue.
+    'icon.svg': drawIcon('<circle cx="12" cy="12" r="9"/>'),
     'backend/index.ts': [
       "import type { MiniAppContext } from '@localixai/mini-app-sdk/backend'",
       'const counts = new Map<string, number>()',
@@ -269,16 +269,14 @@ describe('template layout', () => {
       .filter((file) => /\.tsx?$/u.test(file))
       .map((file) => readFileSync(join(template, file), 'utf8'))
       .join('\n')
-    for (const token of scaffold.domainTokens) {
+    for (const token of scaffold.domainTokens.map((t) =>
+      fillPlaceholders(t, { name: 'template' }),
+    )) {
       expect({ token, used: new RegExp(`\\b${token}\\b`, 'u').test(code) }).toEqual({
         token,
         used: true,
       })
     }
-  })
-
-  test('the frame imports no domain module, so replacing the domain cannot break it', () => {
-    expect(frameDomainImports(template)).toEqual([])
   })
 
   // The instruction sends the agent to these files for the patterns it needs; a pattern whose file
@@ -290,18 +288,6 @@ describe('template layout', () => {
       const found = existsSync(path) && readFileSync(path, 'utf8').includes(anchor)
       expect({ file, anchor, found }).toEqual({ file, anchor, found: true })
     }
-  })
-
-  test('positive control: a frame file importing the domain is reported', () => {
-    const copy = join(root, 'frame-control')
-    cpSync(template, copy, { recursive: true, filter: (src) => !src.includes('node_modules') })
-    const domainModule = scaffold.domain.find((path) => /^[^/]+\/[^/.]+\.ts$/u.test(path))!
-    const hook = join(copy, 'ui', 'usePolledSnapshot.ts')
-    writeFileSync(
-      hook,
-      `import * as domain from '../${domainModule.slice(0, -3)}'\n${readFileSync(hook, 'utf8')}`,
-    )
-    expect(frameDomainImports(copy)).toEqual([`ui/usePolledSnapshot.ts → ${domainModule}`])
   })
 })
 
@@ -612,7 +598,7 @@ describe('a scaffolded mini app', () => {
 
   test('a fresh copy lists every domain file and identifier as residue', async () => {
     const { dir } = await freshCopy()
-    const residue = findTemplateResidue(dir, 'gpu-monitor', scaffold).join('\n')
+    const residue = findTemplateResidue(dir, 'gpu-monitor', scaffold, template).join('\n')
     const named = scaffold.domain.filter((path) =>
       new RegExp(scaffold.domainNamedPaths.join('|'), 'iu').test(path),
     )
@@ -637,7 +623,7 @@ describe('a scaffolded mini app', () => {
     for (const path of copyDomain(scaffold, 'gpu-monitor')) {
       rmSync(join(dir, path), { recursive: true, force: true })
     }
-    const residue = findTemplateResidue(dir, 'gpu-monitor', scaffold)
+    const residue = findTemplateResidue(dir, 'gpu-monitor', scaffold, template)
     expect(residue.some((line) => line.startsWith('no test'))).toBe(true)
   })
 
@@ -649,6 +635,20 @@ describe('a scaffolded mini app', () => {
       expect(text).not.toContain(repoRoot)
       expect(text).not.toMatch(/apps\/ui|scripts\/|mini-app:verify|bun run/u)
     }
+  })
+
+  // A copy pushed to GitHub as it was carried this computer's kit path in its tsconfig.json.
+  test('a copy keeps what the checks generate out of git', async () => {
+    const { dir } = await freshCopy()
+    const ignored = readFileSync(join(dir, '.gitignore'), 'utf8').split('\n')
+    expect(ignored).toEqual(expect.arrayContaining(['tsconfig.json', 'KIT.md', 'dist/']))
+  })
+
+  // Packed by the release workflow, a copy was published as "Localix", the template's author.
+  test("a copy names no author until its own is set: the template's is not its", async () => {
+    const { dir } = await freshCopy()
+    const manifest = JSON.parse(readFileSync(join(dir, 'mini-app.json'), 'utf8'))
+    expect(manifest.author).toBeUndefined()
   })
 
   test('refuses a bad name and an existing folder, leaving nothing behind', async () => {

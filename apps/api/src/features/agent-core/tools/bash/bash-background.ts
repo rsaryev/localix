@@ -24,7 +24,7 @@ import {
 import { childBgProc, ptyBgProc, type BgProc, type BackgroundInputPayload } from './bash-process'
 import { classifyBgExit, type BashToolInput, type BashToolDetails } from './bash-types'
 import type { BashRunContext } from './bash-run'
-import type { BackgroundSettleWindow } from './bash-run-context'
+import { withPluginPath, type BackgroundSettleWindow } from './bash-run-context'
 
 const BACKGROUND_STREAM_THROTTLE_MS = 120
 // Before returning from a background spawn, briefly watch its output so the model
@@ -73,9 +73,14 @@ export async function runBackgroundCommand(
   } else {
     try {
       proc = ctx.spawnTerminalJob
-        ? await ptyBgProc(ctx.spawnTerminalJob, cwd, execCommand, {
-            wakesAgent: input.notify === true,
-          })
+        ? await ptyBgProc(
+            ctx.spawnTerminalJob,
+            cwd,
+            withPluginPath(ctx.pluginBinDirs, execCommand),
+            {
+              wakesAgent: input.notify === true,
+            },
+          )
         : childBgProc(execCommand, cwd, ctx.pluginBinDirs)
     } catch {
       proc = childBgProc(execCommand, cwd, ctx.pluginBinDirs)

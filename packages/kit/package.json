@@ -30,8 +30,8 @@
     "./*": "./src/entries/*.ts"
   },
   "scripts": {
-    "type-check": "node ../../scripts/tsc.mjs --noEmit",
-    "type-check:tests": "node ../../scripts/tsc.mjs --noEmit",
+    "type-check": "bun ../../scripts/tsc.mjs --noEmit",
+    "type-check:tests": "bun ../../scripts/tsc.mjs --noEmit",
     "test": "bun test src",
     "clean": "shx rm -rf .turbo"
   },

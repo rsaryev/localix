@@ -1,7 +1,9 @@
-# System Overview
+# Daily Log
 
-System Overview is a complete Localix mini app. It shows live information about the machine running
-the Localix backend, short-term CPU and memory history, and a read-only process inspector.
+Daily Log is the reference mini app: the one every new mini app is created from. A person logs what
+they eat, spend or do — by telling the agent in the chat, attaching a photo, or typing it in — and
+sees today's total against a daily goal, what each category added, the last seven days and today's
+entries.
 
 ## Run it
 
@@ -12,9 +14,9 @@ cd mini-apps/template
 bun run dev
 ```
 
-Open `http://127.0.0.1:5174`. This starts Vite and the Bun backend on loopback port 5175. In
-Localix, open **System Overview** from the workspace overflow menu or command palette. It appears in
-the normal mini app catalog and follows the same enablement rules as Database, DevOps and Trading.
+Open `http://127.0.0.1:5174`. This starts Vite and the same backend on loopback port 5175, over a
+data folder of its own. In Localix, open **Daily Log** from the workspace overflow menu or the
+command palette.
 
 | Command                    | Purpose                                                 |
 | -------------------------- | ------------------------------------------------------- |
@@ -26,102 +28,34 @@ the normal mini app catalog and follows the same enablement rules as Database, D
 
 ## Architecture
 
-| Location                  | Responsibility                                                  |
-| ------------------------- | --------------------------------------------------------------- |
-| `mini-app.json`           | The mini app: identity, category, surfaces, backend, commands   |
-| `icon.svg`                | Its icon in the store, the rail and its Mac app; replace it     |
-| `screenshots/`            | What the store page shows; replace them with your app's own     |
-| `backend/system.ts`       | Injectable native OS reader and one-second snapshot cache       |
-| `backend/processes.ts`    | Cross-platform process collector                                |
-| `backend/system-marks.ts` | Marks: notes saved with the CPU and memory of their moment      |
-| `backend/store.ts`        | Durable JSON state under `ctx.dataDir`, one change at a time    |
-| `backend/routes.ts`       | `GET /system`, `/processes`, `/marks`; `POST`/`DELETE /marks`   |
-| `backend/context.ts`      | Resource discovery and agent-context expansion                  |
-| `backend/index.ts`        | Backend registration, tools and `createRoutes(dataDir)`         |
-| `shared/system.ts`        | Validated snapshot contract and shared formatter                |
-| `shared/system-marks.ts`  | The marks contract and the note limit both sides enforce        |
-| `ui/register.tsx`         | Launcher, work item, resource anchor and agent guidance         |
-| `ui/Workspace.tsx`        | The domain's root component, imported by the frame              |
-| `ui/system/`              | Responsive dashboard and visible-context publication            |
-| `ui/usePolledSnapshot.ts` | Visibility-gated reads and `send()` for actions                 |
-| `ui/useStoreSnapshot.ts`  | Store-change reads; polling only when the feed is unavailable   |
-| `backend/store-feed.ts`   | Nudges an open view after an `openJsonStore` write              |
-| `shared/store-feed.ts`    | The store feed's frame tag, commands and frame                  |
-| `ui/useNow.ts`            | The SDK clock for values derived from a stored timestamp        |
-| `@localixai/kit/*`        | The host UI kit — the mini app's only view of the host          |
-| `guide.md`                | How the agent reads these sources without inventing a diagnosis |
-| `preview/`                | Standalone composition and loopback backend runner              |
+The plumbing — routes, durable storage, the feed that updates an open screen when the agent writes,
+semantic search — is the SDK's app layer (`createMiniApp`, `defineCollection`, `useCollection`,
+`screenUi`). What is here is only the app.
 
-System snapshots use Bun's native `node:os` APIs. The process inspector runs `ps` on Unix or
-`powershell.exe` on Windows through the SDK's bounded subprocess reader. System CPU utilization
-requires two counter samples; repeated system reads within one second reuse the cached snapshot.
-Unix process CPU comes from `ps`; Windows process CPU uses counter deltas divided by logical core
-count and is unavailable on the first read. Used memory is total minus free and includes OS caches.
-Readings describe the backend machine, which may differ from the browser device. Hostnames,
-usernames, paths and network addresses are deliberately excluded.
+| Location              | Responsibility                                                          |
+| --------------------- | ----------------------------------------------------------------------- |
+| `mini-app.json`       | Identity, category, the settings (`DAILY_GOAL`, `UNIT`) and the backend |
+| `guide.md`            | What the agent reads before it first uses the app                       |
+| `icon.svg`            | Its icon in the store, the rail and its Mac app                         |
+| `shared/model.ts`     | The entry schema and the summary the screen shows and the agent is told |
+| `backend/entries.ts`  | The entries collection: how an entry is made and what search reads      |
+| `backend/settings.ts` | The settings, read from `ctx.config`, and the route the screen reads    |
+| `backend/tools.ts`    | The agent's tools: log, summary, find by meaning, remove                |
+| `backend/index.ts`    | `register(ctx)`: the collection, the routes and the tools               |
+| `ui/App.tsx`          | The screen: reads, the agent context and the problem line               |
+| `ui/parts/`           | Today's ring and categories, the week chart, the list and the quick add |
+| `ui/register.tsx`     | The tab, its launcher and what the agent is told while it is open       |
+| `preview/`            | Standalone shell and loopback backend runner (this repository only)     |
 
-The dashboard refreshes every three seconds while visible, keeps 30 in-memory chart samples, cancels
-in-flight requests on cleanup and preserves the last successful sample after a failure. That exact
-timestamped sample is published as message context. `localix://resource/template/system` supports
-explicit attachment; `system_overview` obtains a read-only snapshot subject to the one-second cache.
-`system_processes` lists processes without command lines or private paths. Process names, PIDs,
-parent PIDs, CPU and memory are included in agent context, so the agent can use native system tools
-when the user explicitly requests process management. The mini app deliberately hardcodes no process
-actions. Its guide (`guide.md`) tells the agent how to interpret these sources without inventing a
-diagnosis.
+The screen and the tools compute every number with the same `summarize`, and the screen publishes
+that summary as message context, so the agent and the person always see the same day. The goal and
+the unit come from Settings → Mini apps; a changed setting re-wires the backend, so the screen and
+the tools pick it up without a restart.
 
-The process collector keeps at most 500 rows, sorted by CPU and then memory. The agent tool formats
-the first 100; pane and resource context format the first 50 before host context limits. An omitted
-process is not evidence that it is absent.
+## Make your own
 
-Marks are the mini app's one piece of state a person creates: a note — "before the build" — saved
-with the machine's CPU and memory at that moment, so a later sample has something to compare with.
-The `system_mark` tool lets the agent add one, and the HTTP routes support adding and deleting them.
-Both go through one store under the mini app's data folder, so marks outlive the pane and the app.
-
-Only the latest 50 marks are retained; notes are trimmed and limited to 200 characters. Saving a
-mark uses the same cached system reading rather than forcing a new CPU sample. The agent tool
-classifies this durable write as `host`; conversation permissions can refuse it while still allowing
-read-only system and process tools.
-
-See the [mini app guide](../../docs/extending/mini-apps.md) for the full Localix contract.
-
-## Fork it and publish
-
-Every mini app starts from this one. To make your own:
-
-1. Copy this folder to `mini-apps/<name>`. In `mini-app.json`, set `name`, `displayName`,
-   `description`, `category` and `author`, and start `version` at `0.1.0`. Rename the domain files
-   and tools that `scaffold.json` lists. The mini-app-authoring plugin's `mini-app create` does the
-   same renames for you.
-2. Replace the system domain with yours, keeping the shapes: a store under `ctx.dataDir`, routes
-   that answer with the new state, tools for the agent, and a `guide.md` that tells the agent how to
-   read what the app shows.
-3. Check it: `bun run test`, `bun run type-check:tests` and `bun run build` in its folder.
-4. Pack it, from the repository root:
-   `bun run pack:mini-apps --only <name> --publisher "<you>" --out dist/catalog`.
-5. Publish the folder's files as one release's assets. Then share the catalog URL, which people add
-   to Localix.
-6. For every update, raise `version` and repeat steps 4 and 5.
-
-[Publish a mini app](../../docs/extending/mini-app-publishing.md) covers the catalog format,
-hosting, updates and trust.
-
-## Source of truth
-
-- [Mini app manifest](mini-app.json) and [agent guide](guide.md)
-- [Development and build commands](package.json)
-- [Standalone ports and proxy](vite.config.ts)
-- [Standalone process ownership](preview/serve.ts)
-- [System readings](backend/system.ts)
-- [Process collectors](backend/processes.ts)
-- [System sampling and history limits](ui/system/useSystem.ts)
-- [Shared store synchronization](../../packages/mini-app-sdk/src/ui/store-snapshot.ts)
-
-## Publish it
-
-`mini-app.json` names the app's `icon`, `screenshots` and `tags`. A copy keeps `icon.svg`, so it
-always has an icon; draw your own on the same tile, and take screenshots of your app at full
-resolution. The mini-app-authoring plugin's check reports problems with them in the **store media**
-step, and packing refuses an app without a valid icon. See
-[Publish a mini app](../../docs/extending/mini-app-publishing.md).
+`mini-app create <name> --description "…"` from the mini-app-authoring plugin copies this app under
+a new name, renames its identity and tools, and prints the instruction an agent follows to replace
+the domain. `scaffold.json` says which files a copy keeps (entries), which it replaces (domain) and
+which identifiers `mini-app check` reports when a copy still carries them.
+[Publish a mini app](../../docs/extending/mini-app-publishing.md) covers packing and sharing.

@@ -6,6 +6,7 @@ import { createMiniAppSharedModules, SDK_SHARED_MODULES } from './miniAppSharedM
 /** SDK entries that never belong in a browser artifact: server code, test doubles, the contract. */
 const NOT_SHARED = new Set([
   './backend',
+  './backend/testing',
   './manifest',
   './app-manifest',
   // The store media rules the host checks when it packs, serves or authors an app's icon.

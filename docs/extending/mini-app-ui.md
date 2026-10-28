@@ -6,37 +6,37 @@ of your own, reach the host through its UI kit, and understand how an edit reach
 
 ## Terminology
 
-| Term           | Meaning                                                                                                   | Boundary                                                          |
-| -------------- | --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| UI artifact    | `dist/ui/` in a mini app's folder: an entry, hashed chunks, styles, a manifest.                           | Built by the app from the mini app's `ui/` sources.               |
-| Revision       | A hash of every artifact file, carried in the mini app record.                                            | Moves when the UI changed, not when the backend or docs did.      |
-| UI kit         | `@localixai/kit/<id>`: the host's explicit public component surface.                                      | Public components; SDK services are separate host ports.          |
-| Shared module  | React, `@localixai/mini-app-sdk` and the kit, taken from the host at runtime.                             | Every other dependency is bundled into the artifact.              |
-| Mini app kit   | What each release ships to build mini apps: template, shared-module exports, theme CSS, validation tools. | `resources/mini-app-kit` and the release's `mini-app-kit.tar.gz`. |
-| Frame / domain | The template's fixed shell versus the part a copy replaces.                                               | The frame imports no domain module.                               |
+| Term          | Meaning                                                                                                   | Boundary                                                          |
+| ------------- | --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| UI artifact   | `dist/ui/` in a mini app's folder: an entry, hashed chunks, styles, a manifest.                           | Built by the app from the mini app's `ui/` sources.               |
+| Revision      | A hash of every artifact file, carried in the mini app record.                                            | Moves when the UI changed, not when the backend or docs did.      |
+| UI kit        | `@localixai/kit/<id>`: the host's explicit public component surface.                                      | Public components; SDK services are separate host ports.          |
+| Shared module | React, `@localixai/mini-app-sdk` and the kit, taken from the host at runtime.                             | Every other dependency is bundled into the artifact.              |
+| Mini app kit  | What each release ships to build mini apps: template, shared-module exports, theme CSS, validation tools. | `resources/mini-app-kit` and the release's `mini-app-kit.tar.gz`. |
 
 ## What you can do
 
-| Task                           | Mechanism                                                       | Boundary                                                             |
-| ------------------------------ | --------------------------------------------------------------- | -------------------------------------------------------------------- |
-| Create a mini app              | `/mini-app-authoring:create <what it should do>`                | The mini-app-authoring plugin; in Localix or Claude Code.            |
-| Check, build and install it    | `mini-app check`, then `mini-app install`                       | Leftovers, style, builds, types, the mini app's tests.               |
-| Look at it and use it          | The agent's `Browser` tool with `url: "mini-app:<name>"`        | snapshot, take_screenshot, steps, console; no evaluate.              |
-| Use a host control             | Import it from `@localixai/kit/<id>`                            | Typed by its real props; an `@/…` import fails the build.            |
-| Draw a graph or a board        | `Canvas` from `@localixai/kit/canvas`                           | The host's camera and edge; never bundle `@xyflow/react`.            |
-| Take any app link              | `readMessageBindingDrag`, `linksInText` (`kit/context-links`)   | A drop or a pasted `@session:…`/`localix://…` is the same link.      |
-| Show an app link               | `ContextBindingPreview` from `@localixai/mini-app-sdk/ui`       | The host draws it: a file, a session, a message, a tool call's card. |
-| Act on the mini app's state    | `send()` from the frame's `ui/usePolledSnapshot.ts`             | The route answers with the new state.                                |
-| Hear what the agent wrote      | `useStoreSnapshot` + `createStoreFeed` (frame)                  | A nudge per store write in one scope; re-read via the route.         |
-| Follow a live stream           | `createRealtimeFeed`, `useRealtimeFeed` (`ui/realtime-feed`)    | One subscription per key; resubscribes after a reconnect.            |
-| Complete what is typed         | `useMiniAppTextInputCompletion` + `textInputCompletionSurfaces` | Surface id `<app>.<field>`; open tabs are added by the host.         |
-| Keep what the user creates     | `openJsonStore` from the frame's `backend/store.ts`             | Under `ctx.dataDir`; one change at a time per file.                  |
-| Keep what one chat creates     | `ctx.sessionStorage.resolveDataDir(userId, sessionId)`          | Removed with the chat and every session beneath it.                  |
-| Keep tabs in their workspace   | The default work-item scope (`'session'`)                       | Scoped instances stay in their root workspace.                       |
-| Know the tab's own chat        | `useWorkItemSessionId()` from `ui/work-item-session`            | The only session a tab acts for; the SDK has no active session.      |
-| React to file changes          | `useMiniAppWorkspaceChanges` (`ui/runtime-hooks`)               | One chat, coalesced; poll only when source coverage is unavailable.  |
-| Use icons                      | Import from `lucide-react`                                      | Bundled per icon from the mini app kit.                              |
-| See an edit in the running app | Install again; the mini app is swapped in place                 | An open tab re-renders; the app is never reloaded.                   |
+| Task                           | Mechanism                                                                 | Boundary                                                              |
+| ------------------------------ | ------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Create a mini app              | `/mini-app-authoring:create <what it should do>`                          | The mini-app-authoring plugin; in Localix or Claude Code.             |
+| Check, build and install it    | `mini-app check`, then `mini-app install`                                 | Leftovers, style, builds, types, the mini app's tests.                |
+| Look at it and use it          | The agent's `Browser` tool with `url: "mini-app:<name>"`                  | snapshot, take_screenshot, steps, console; no evaluate.               |
+| Use a host control             | Import it from `@localixai/kit/<id>`                                      | Typed by its real props; an `@/…` import fails the build.             |
+| Draw a graph or a board        | `Canvas` from `@localixai/kit/canvas`                                     | The host's camera and edge; never bundle `@xyflow/react`.             |
+| Take any app link              | `readMessageBindingDrag`, `linksInText` (`kit/context-links`)             | A drop or a pasted `@session:…`/`localix://…` is the same link.       |
+| Show an app link               | `ContextBindingPreview` from `@localixai/mini-app-sdk/ui`                 | The host draws it: a file, a session, a message, a tool call's card.  |
+| Read and change a list         | `useCollection` from `@localixai/mini-app-sdk/ui/app`; it hears the agent | `add`, `update` and `remove` answer with the new list, shown at once. |
+| Register a screen              | `screenUi`, `useAgentContext`, `useScreenProblem` (`ui/app`)              | The tab, what the agent is told, and a failure line.                  |
+| Read or act on any other route | `usePolledSnapshot` and its `send()` (`ui/route-snapshot`)                | The escape hatch under `useCollection`; the route answers.            |
+| Follow a live stream           | `createRealtimeFeed`, `useRealtimeFeed` (`ui/realtime-feed`)              | One subscription per key; resubscribes after a reconnect.             |
+| Complete what is typed         | `useMiniAppTextInputCompletion` + `textInputCompletionSurfaces`           | Surface id `<app>.<field>`; open tabs are added by the host.          |
+| Keep what the user creates     | `defineCollection` and `createMiniApp(ctx).collection(spec)`              | Under `ctx.dataDir`, or per chat with `scope: 'chat'`.                |
+| Keep what one chat creates     | `ctx.sessionStorage.resolveDataDir(userId, sessionId)`                    | Removed with the chat and every session beneath it.                   |
+| Keep tabs in their workspace   | The default work-item scope (`'session'`)                                 | Scoped instances stay in their root workspace.                        |
+| Know the tab's own chat        | `useWorkItemSessionId()` from `ui/work-item-session`                      | The only session a tab acts for; the SDK has no active session.       |
+| React to file changes          | `useMiniAppWorkspaceChanges` (`ui/runtime-hooks`)                         | One chat, coalesced; poll only when source coverage is unavailable.   |
+| Use icons                      | Import from `lucide-react`                                                | Bundled per icon from the mini app kit.                               |
+| See an edit in the running app | Install again; the mini app is swapped in place                           | An open tab re-renders; the app is never reloaded.                    |
 
 Open HTTP and HTTPS links with `miniAppExternal.open(url)` from
 `@localixai/mini-app-sdk/ui/runtime`: the active conversation's Browser by default, the system
@@ -50,27 +50,28 @@ retain the host's confirmation policy.
 
 The whole text after the command is the request. The agent names the mini app (lower-kebab-case,
 such as `gpu-monitor`) and runs `mini-app create`, which copies the
-[System Overview reference template](https://github.com/rsaryev/localix/tree/main/mini-apps/template)
-from the mini app kit into a new folder — the current project unless another folder is named — and
+[Daily Log reference template](https://github.com/rsaryev/localix/tree/main/mini-apps/template) from
+the mini app kit into a new folder — the current project unless another folder is named — and
 refuses a folder that already exists. To change a mini app, ask in chat; the agent checks and
 installs it again.
 
-The reference copy builds and passes its tests before its domain is changed. Its frame reaches the
-domain only through the entries — `ui/Workspace.tsx`, and `createRoutes` and `register` in
-`backend/index.ts` — so deleting the domain never breaks the frame.
+The reference copy, Daily Log, builds and passes its tests before its domain is changed. It carries
+no copied plumbing: routes, storage, live updates and search are the SDK's
+[app layer](mini-apps.md#the-app-layer) (mini app API version 2). A copy is its entries —
+`mini-app.json`, `guide.md`, `icon.svg`, `backend/index.ts`, `ui/register.tsx` — and its domain.
 
 For a new copy, `mini-app create` prints a numbered order of work — read the entries and the
-patterns it needs, replace the domain, test, check, install, look, report — followed by the
-contracts copies have broken before: the tool signature (`execute(_toolCallId, input)`,
-`executionMode: 'sequential'` for a change), state kept with `openJsonStore`, actions through
-`send()`, notifications through `toast`, and the published message context. `scaffold.json` names
-the files in the reference that show each pattern (an acting tool, a state-changing route, a form
-driven by `send`, a value derived with `useNow`), and the kit's digest lists the core controls with
-their props.
+patterns it needs, replace the domain, test, check, install, look, report — followed by the app
+layer's calls and the contracts copies have broken before: the tool signature
+(`execute(_toolCallId, input)`, `executionMode: 'sequential'` for a change), state kept in
+collections, never in a module variable (`register(ctx)` runs more than once), notifications through
+`toast`, and the published message context. `scaffold.json` names the files in the reference that
+show each pattern, and the kit's digest lists the core controls with their props.
 
-`mini-app check` reports template residue first. It names every System Overview file, identifier,
-and a missing test still in a copy. A fresh copy fails this step by design; its first report is the
-to-do list. `mini-app install` refuses a copy until every step passes.
+`mini-app check` reports template residue first: every Daily Log file and identifier, a missing
+test, and an `icon.svg` still the template's (draw one with `mini-app icon`; see
+[the icon standard](mini-app-publishing.md#the-icon-standard)). A fresh copy fails this step by
+design, and `mini-app install` refuses a copy until every step passes.
 
 The other checks cover the host's design tokens (the same rules the repository guard applies to the
 app), palette colours, and native controls such as `<button>` where the kit has a control. They also
@@ -178,10 +179,11 @@ The bundled games are built this way. Tic-Tac-Toe, Checkers, Chess and Battleshi
 board per chat, played against the agent in that chat.
 
 An open board hears the agent's move instead of polling for it. Every `openJsonStore` write nudges
-the views that follow its folder over the realtime socket: `createStoreFeed` in the backend,
-`useStoreSnapshot` in the view (frame tag `c`, commands `<app>:store.subscribe`). The folder is
-resolved with the socket's own user, so a view can follow only a chat that user owns. The nudge
-names the mini app and the chat, never the state, so the view re-reads through its route.
+the views that follow its folder over the realtime socket. A collection wires this for you
+(`app.registration`, `useCollection`); the lower-level pair is `createJsonStoreFeed` and
+`useStoreSnapshot` (frame tag `c`, commands `<app>:store.subscribe`). The folder is resolved with
+the socket's own user, so a view can follow only a chat that user owns. The nudge names the mini app
+and the chat, never the state, so the view re-reads through its route.
 
 The view polls at its own cadence until native watcher coverage is confirmed and while the socket is
 down. A healthy feed has no periodic read. The shared SDK `createStoreChangeFeed` covers committed

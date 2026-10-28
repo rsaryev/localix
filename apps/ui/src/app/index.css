@@ -21,6 +21,10 @@
    from the app's stylesheet. */
 @source '../../../../packages/kit/src';
 @source '../../../../packages/markdown/src';
+/* The SDK's UI modules are lent to mini apps by this app (`miniAppSharedModules.ts`), so their
+   classes are this stylesheet's to emit: a mini app's own build scans only its own sources, and a
+   chart whose bar row was `h-44` rendered as labels alone. */
+@source '../../../../packages/mini-app-sdk/src/ui';
 
 /* Tests contain obsolete style examples and synthetic identifiers (e.g. m-100000) that
    Tailwind also recognizes as utilities. They are never rendered by the app, so scanning them
@@ -28,4 +32,5 @@
 @source not '../**/*.test.{ts,tsx}';
 @source not '../../../../packages/kit/src/**/*.test.{ts,tsx}';
 @source not '../../../../packages/markdown/src/**/*.test.{ts,tsx}';
+@source not '../../../../packages/mini-app-sdk/src/ui/**/*.test.{ts,tsx}';
 @source not '../../../../packages/kit/src/testing';

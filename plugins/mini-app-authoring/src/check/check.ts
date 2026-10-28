@@ -118,7 +118,7 @@ export async function checkMiniApp(input: {
   await writeKitCatalog(kit, miniAppDir)
   const steps = await Promise.all([
     step('template residue', async () =>
-      findTemplateResidue(miniAppDir, name, loadTemplateScaffold(kit.templateDir)),
+      findTemplateResidue(miniAppDir, name, loadTemplateScaffold(kit.templateDir), kit.templateDir),
     ),
     kit.tools.manifest.validate(miniAppDir).then(
       ({ errors, warnings }): CheckStep => ({

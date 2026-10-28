@@ -1,5 +1,5 @@
 import { promises as fs } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { join, relative, resolve } from 'node:path'
 
 import { checkMiniApp, formatCheck, MANIFEST_FILE, type TestRunner } from '../check/check'
 import type { Kit } from '../kit/kit'
@@ -10,6 +10,15 @@ import { installIntoLocalix, type InstallDeps } from '../localix/install'
 import { assemblePackage } from '../package/assemble'
 import { CATALOG_FILE, packIntoCatalog } from '../package/pack'
 import { formatVerdict, validatePackage } from '../package/validate'
+import { WORKFLOW_FILE, writeReleaseSetup } from '../publish/ci'
+import {
+  AGENT_PARTNERSHIP,
+  APP_LAYER,
+  APP_LAYER_API_VERSION,
+  BEYOND_COLLECTIONS,
+  DESIGN_BRIEF,
+} from '../scaffold/contract'
+import { drawIcon } from '../scaffold/icon'
 import { agentInstruction } from '../scaffold/prose'
 import { MINI_APP_NAME_RE, scaffoldMiniApp, toMiniAppName } from '../scaffold/scaffold'
 import { type ParsedArgs, stringOption } from './args'
@@ -70,6 +79,11 @@ const create: Command = async (args, context) => {
   const name = MINI_APP_NAME_RE.test(raw) ? raw : toMiniAppName(raw)
   const dir = resolve(context.cwd, stringOption(args, 'dir') ?? name)
   const { kit } = await context.kit()
+  if ((kit.manifest.apiVersion ?? 0) < APP_LAYER_API_VERSION) {
+    throw new UserError(
+      `This Localix (mini app API ${kit.manifest.apiVersion ?? 'unknown'}) is older than this plugin, which needs API ${APP_LAYER_API_VERSION}: update Localix — \`mini-app get-localix\` installs the latest — then create the app again.`,
+    )
+  }
   const created = await scaffoldMiniApp({
     kit,
     dir,
@@ -165,6 +179,70 @@ const validate: Command = async (args, context) => {
   return verdict.ok ? 0 : 1
 }
 
+const icon: Command = async (args, context) => {
+  const dir = folder(args, context)
+  const manifest = await readManifest(dir)
+  const glyph = stringOption(args, 'glyph')
+  if (!glyph) {
+    throw new UserError(
+      'Give the glyph: mini-app icon [folder] --glyph \'<path d="…"/>\' (or a 24×24 .svg file).',
+    )
+  }
+  const markup = glyph.trimStart().startsWith('<')
+    ? glyph
+    : await fs.readFile(resolve(context.cwd, glyph), 'utf8').catch(() => {
+        throw new UserError(`Cannot read the glyph file ${glyph}.`)
+      })
+  const named = typeof manifest.icon === 'string' && manifest.icon.endsWith('.svg')
+  const target = resolve(dir, named ? (manifest.icon as string) : 'icon.svg')
+  if (relative(dir, target).startsWith('..')) {
+    throw new UserError(`The manifest's icon ${String(manifest.icon)} is outside the mini app.`)
+  }
+  await fs.writeFile(target, drawIcon(markup, stringOption(args, 'tint')))
+  if (!named) {
+    await fs.writeFile(
+      join(dir, MANIFEST_FILE),
+      `${JSON.stringify({ ...manifest, icon: './icon.svg' }, null, 2)}\n`,
+    )
+  }
+  context.out(`Drew ${relative(dir, target)}: the glyph on the store tile.`)
+  return 0
+}
+
+/** Set the app up to be released by GitHub Actions from its repository. */
+const ci: Command = async (args, context) => {
+  const dir = folder(args, context)
+  const manifest = await readManifest(dir)
+  const publisher = stringOption(args, 'publisher')
+  if (!publisher && !manifest.author) {
+    throw new UserError(
+      'Name the publisher people will see: --publisher "<name>" (kept as "author" in mini-app.json).',
+    )
+  }
+  const { kit } = await context.kit()
+  const pin = await writeReleaseSetup({
+    dir,
+    manifest,
+    manifestFile: MANIFEST_FILE,
+    localixVersion: kit.manifest.localixVersion,
+    publisher,
+  })
+  const version = typeof manifest.version === 'string' ? manifest.version : '<version>'
+  context.out(
+    [
+      `Wrote ${WORKFLOW_FILE}: every push and pull request is checked, and a tag v<version> releases the app — built with Localix ${pin.ref}'s toolchain and kit.`,
+      `Release: commit and push, then \`git tag v${version} && git push origin v${version}\`. People add https://github.com/<owner>/<repo>/releases/latest/download/mini-app-catalog.json in Localix's mini app store.`,
+    ].join('\n'),
+  )
+  return 0
+}
+
+/** The contract `create` prints, any time: what a skill injects and an agent re-reads. */
+const contract: Command = async (_args, context) => {
+  context.out([AGENT_PARTNERSHIP, APP_LAYER, BEYOND_COLLECTIONS, DESIGN_BRIEF].join('\n\n'))
+  return 0
+}
+
 const kitInfo: Command = async (_args, context) => {
   const { kit, source } = await context.kit()
   context.out(
@@ -195,6 +273,9 @@ export const HELP = `mini-app — create, check, build, install and share Locali
   mini-app install [folder]              build, then install into the running Localix
   mini-app pack [folder] [--out <dir>] [--publisher "…"]   add the app to a shareable catalog
   mini-app validate <package folder | .tar.gz> [--json]
+  mini-app icon [folder] --glyph '<path …/>' [--tint #hex]   draw the app's icon from a 24×24 glyph
+  mini-app ci [folder] [--publisher "…"]   release it from GitHub: a workflow that checks and releases tags
+  mini-app contract                      the SDK contract a mini app is written against
   mini-app kit                           which mini app kit the commands build with
   mini-app get-localix                   install the latest Localix (verified) and open it
 
@@ -208,6 +289,9 @@ export const COMMANDS: Record<string, Command> = {
   install,
   pack,
   validate,
+  icon,
+  ci,
+  contract,
   kit: kitInfo,
   'get-localix': getLocalixCommand,
 }

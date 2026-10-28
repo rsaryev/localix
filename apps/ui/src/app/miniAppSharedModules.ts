@@ -57,6 +57,7 @@ export const SDK_SHARED_MODULES: Record<string, Loader> = {
     import('@localixai/mini-app-sdk/ui/store-resource'),
   '@localixai/mini-app-sdk/ui/route-snapshot': () =>
     import('@localixai/mini-app-sdk/ui/route-snapshot'),
+  '@localixai/mini-app-sdk/ui/app': () => import('@localixai/mini-app-sdk/ui/app'),
   '@localixai/mini-app-sdk/ui/store-snapshot': () =>
     import('@localixai/mini-app-sdk/ui/store-snapshot'),
   '@localixai/mini-app-sdk/ui/now': () => import('@localixai/mini-app-sdk/ui/now'),

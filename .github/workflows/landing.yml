@@ -106,8 +106,8 @@ jobs:
 
       - name: Install the pinned Vercel CLI
         run: |
-          npm install --global --prefix "$RUNNER_TEMP/npm-global" "vercel@$VERCEL_CLI_VERSION"
-          echo "$RUNNER_TEMP/npm-global/bin" >> "$GITHUB_PATH"
+          BUN_INSTALL="$RUNNER_TEMP/bun-global" bun add --global "vercel@$VERCEL_CLI_VERSION"
+          echo "$RUNNER_TEMP/bun-global/bin" >> "$GITHUB_PATH"
 
       - name: Pull the Vercel configuration
         run: vercel pull --yes --environment="$TARGET_ENVIRONMENT" --token "$VERCEL_TOKEN"

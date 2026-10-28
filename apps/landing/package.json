@@ -13,7 +13,7 @@
     "postbuild": "bun run scripts/build-static-docs.mjs",
     "test": "bun test scripts src",
     "pretype-check": "bun run generate",
-    "type-check": "node ../../scripts/tsc.mjs -b",
+    "type-check": "bun ../../scripts/tsc.mjs -b",
     "docs:gen": "bun run scripts/build-docs.mjs",
     "shots:gen": "bun run scripts/build-shots.mjs",
     "generate": "bun run docs:gen && bun run shots:gen",

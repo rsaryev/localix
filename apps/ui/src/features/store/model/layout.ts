@@ -9,7 +9,7 @@ import { createContext, useContext } from 'react'
  * | ≥ 1200px     | 4 columns          | 2–3    | facts beside           |
  * | 1100–1200px  | 3 columns          | 2      | facts beside           |
  * | 760–1100px   | 2–3 columns        | 2      | facts under the header |
- * | < 760px      | 1–2 columns        | 1      | one column, Get pinned |
+ * | < 760px      | 1–2 columns        | 1      | one column, Get under the name |
  */
 export type StoreLayout = 'wide' | 'medium' | 'narrow'
 

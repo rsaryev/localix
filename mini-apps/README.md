@@ -13,18 +13,18 @@ than this source tree.
 
 ## Workbenches
 
-| Mini app                        | Product surface                                                  |
-| ------------------------------- | ---------------------------------------------------------------- |
-| [Code Graph](code-graph/)       | Project files, symbols, imports, calls, and graph queries.       |
-| [Database](database/)           | SQL and data-source connections, schemas, and queries.           |
-| [DevOps](devops/)               | Docker and Kubernetes inspection and operations.                 |
-| [Documents](documents/)         | Extraction, generation, viewers, tables, and charts.             |
-| [Learning Studio](learning/)    | File-authored courses, lessons, assessment, and progress.        |
-| [Project Space](project-space/) | Shared notes and live file cards on a canvas.                    |
-| [Reader](reader/)               | Local books and documents with annotations and agent context.    |
-| [Resumes](resume/)              | Resume fields, templates, preview, and document export.          |
-| [System Overview](template/)    | OS, CPU, memory, and process inspection; the workbench scaffold. |
-| [Trading](trading/)             | Public market data; no order placement.                          |
+| Mini app                        | Product surface                                                      |
+| ------------------------------- | -------------------------------------------------------------------- |
+| [Code Graph](code-graph/)       | Project files, symbols, imports, calls, and graph queries.           |
+| [Database](database/)           | SQL and data-source connections, schemas, and queries.               |
+| [DevOps](devops/)               | Docker and Kubernetes inspection and operations.                     |
+| [Documents](documents/)         | Extraction, generation, viewers, tables, and charts.                 |
+| [Learning Studio](learning/)    | File-authored courses, lessons, assessment, and progress.            |
+| [Project Space](project-space/) | Shared notes and live file cards on a canvas.                        |
+| [Reader](reader/)               | Local books and documents with annotations and agent context.        |
+| [Resumes](resume/)              | Resume fields, templates, preview, and document export.              |
+| [Daily Log](template/)          | Entries the agent logs against a daily goal; the workbench scaffold. |
+| [Trading](trading/)             | Public market data; no order placement.                              |
 
 ## Workflow and integration mini apps
 
@@ -46,8 +46,10 @@ than this source tree.
 | [Snake](snake/)                             | A per-chat board steered by the user or a model.   |
 | [Tic-Tac-Toe](tic-tac-toe/)                 | A per-chat board and agent-opponent play.          |
 
-[System Overview](template/) doubles as the workbench reference: retain its registration entry, host
-adapter, and backend structure when copying, then replace its domain code. Its
+[Daily Log](template/) doubles as the workbench reference: retain its entries (`mini-app.json`,
+`guide.md`, `icon.svg`, `backend/index.ts`, `ui/register.tsx`) when copying, then replace its domain
+code. The routes, storage, live updates and search come from the SDK's app layer (`createMiniApp`,
+`defineCollection`, `useCollection`, `screenUi`), so there is no helper code to keep. Its
 [AGENTS.md](template/AGENTS.md) defines that boundary.
 
 ## Runtime model
@@ -86,7 +88,7 @@ A mini app a user asks for is not one of these: the
 package into Localix. Nothing in this repository changes when a user creates one.
 
 To add a first-party mini app, copy [`template/`](template/) by hand — its
-[`scaffold.json`](template/scaffold.json) lists the frame to keep and the domain to replace. A
+[`scaffold.json`](template/scaffold.json) lists the entries to keep and the domain to replace. A
 running `bun run dev` re-stages the mini app on every save (`scripts/dev-mini-app-watch.mjs`), and
 the workbench swaps its UI in place.
 

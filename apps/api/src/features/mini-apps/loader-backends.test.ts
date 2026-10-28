@@ -74,6 +74,7 @@ beforeAll(async () => {
       apiVersion: 1,
       description: 'fixture backend subsystem',
       backend: './tools/index.mjs',
+      config: { GREETING: { type: 'string', title: 'Greeting', default: 'hello' } },
     }),
   )
   // register(ctx) returns a BackendSubsystem (route + resource/search providers +
@@ -157,6 +158,41 @@ describe('loadMiniAppBackends', () => {
     expect(sub?.resourceProvider).toBeDefined()
     expect(sub?.searchProvider).toBeDefined()
     expect(sub?.wsFrames?.length).toBe(1)
+  })
+
+  // A backend reads its settings once, in register(ctx): the host keeps a wired backend while its
+  // revision holds, so a changed setting must move the revision or the old one goes on serving.
+  it('a changed setting is a new revision, so the host wires the backend again', async () => {
+    const withGreeting = (greeting: string): CapabilitySourceRepository => ({
+      ...emptyRepo,
+      listForScope: async () => [
+        {
+          id: 'row',
+          userId: 'u',
+          projectId: '',
+          name: 'test-sub',
+          enabled: true,
+          config: { GREETING: greeting },
+          source: 'local',
+          createdAt: '',
+          updatedAt: '',
+        },
+      ],
+    })
+    const revisionWith = async (greeting: string) => {
+      const { backends } = await loadMiniAppBackends({
+        availability: UNDECIDED,
+        repo: withGreeting(greeting),
+        userId: 'u',
+        cwd: '/',
+        homeDir: fixtureHome,
+      })
+      return backends.find((b) => b.app === 'test-sub')?.revision
+    }
+    const hello = await revisionWith('hello')
+    expect(hello).toBeDefined()
+    expect(await revisionWith('hello')).toBe(hello)
+    expect(await revisionWith('bonjour')).not.toBe(hello)
   })
 
   /**

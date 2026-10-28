@@ -3,6 +3,7 @@ import { join } from 'node:path'
 
 import type { Kit, ThemeTokens, UiTokenRule } from '../kit/kit'
 import { lineAt, scanSources } from '../lib/scan'
+import { MINI_APP_DESIGN_RULES } from './design'
 
 /**
  * The house style, checked on a mini app the way Localix checks its own UI.
@@ -64,7 +65,11 @@ export async function checkMiniAppStyle(miniAppDir: string, kit: Kit): Promise<s
   const tokens = files.length > 0 ? await kitThemeTokens(kit) : null
   const problems: string[] = []
   for (const { file, code } of files) {
-    for (const rule of [...kit.tools.style.rules, ...MINI_APP_STYLE_RULES]) {
+    for (const rule of [
+      ...kit.tools.style.rules,
+      ...MINI_APP_STYLE_RULES,
+      ...MINI_APP_DESIGN_RULES,
+    ]) {
       for (const match of code.matchAll(rule.pattern)) {
         problems.push(
           `${file}:${lineAt(code, match.index)} ${match[0]} — ${rule.name}: ${rule.fix}`,

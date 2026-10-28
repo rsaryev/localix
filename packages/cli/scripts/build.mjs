@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 /**
  * Build script for the localix CLI package.
  *
@@ -11,7 +11,7 @@
  * bundler tree-shakes a re-export-only module down to nothing, and the shim would
  * import an undefined `runCli`.
  *
- * Run from anywhere:  node packages/cli/scripts/build.mjs
+ * Run from anywhere:  bun packages/cli/scripts/build.mjs
  * Or via package:     bun run build  (inside packages/cli)
  */
 
@@ -37,5 +37,5 @@ execFileSync('bun', ['build', ENTRY, '--target=bun', '--minify', '--outfile', OU
 })
 
 console.log('\n  ✓  localix CLI build complete.')
-console.log('     Test source:  node packages/cli/bin/localix.mjs --help')
-console.log('     Test bundle:  LOCALIX_USE_BUNDLED=1 node packages/cli/bin/localix.mjs --help\n')
+console.log('     Test source:  bun packages/cli/bin/localix.mjs --help')
+console.log('     Test bundle:  LOCALIX_USE_BUNDLED=1 bun packages/cli/bin/localix.mjs --help\n')

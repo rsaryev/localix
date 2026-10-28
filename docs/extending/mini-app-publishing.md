@@ -18,18 +18,19 @@ their store.
 
 ## What you can do
 
-| Task                     | Do this                                                                         | Boundary                                                                |
-| ------------------------ | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Start an app             | Copy `mini-apps/template` to `mini-apps/<name>` and rename it                   | Or `/mini-app-authoring:create`, which forks the same template.         |
-| Give it an icon          | Put `icon.svg` in the app and set `"icon": "./icon.svg"`                        | Required to publish; see [Icon and screenshots](#icon-and-screenshots). |
-| Show it in the store     | Add `screenshots`, `tags` and `homepage` to `mini-app.json`, and a `README.md`  | Optional; the README becomes the store page's About.                    |
-| Pack it                  | `bun run pack:mini-apps --only <name> --publisher "<you>"`                      | Builds it exactly as a Localix release does; refuses a missing icon.    |
-| Pack an app of your own  | `mini-app pack <folder> --publisher "<you>"` (the mini-app-authoring plugin)    | Checks and builds it first; or `/mini-app-authoring:publish`.           |
-| Host the catalog         | Upload everything in the output folder to one place: a GitHub release, a site   | Any HTTPS host, or a folder read as `file://`.                          |
-| Add a catalog to Localix | Store → **Sources** → **Add source…**, or `/mini-app catalog add <url>`         | Its publishers are shown as unverified.                                 |
-| Link people to it        | Share `localix://ui/work-item/mini-app-store/add-catalog?url=<encoded address>` | Opens the Store's add dialog filled in; nothing is added until Add.     |
-| Ship an update           | Raise `version`, pack again, replace the hosted files                           | Installed copies update within six hours, or at once with Update.       |
-| Require a newer Localix  | Raise `apiVersion` in `mini-app.json`                                           | Older Localix lists the app as needing a newer version.                 |
+| Task                     | Do this                                                                                              | Boundary                                                                       |
+| ------------------------ | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Start an app             | Copy `mini-apps/template` (Daily Log) to `mini-apps/<name>` and rename it                            | Or `/mini-app-authoring:create`, which forks the same template.                |
+| Give it an icon          | `mini-app icon --glyph '<path d="…"/>'`, or put `icon.svg` in the app and set `"icon": "./icon.svg"` | Required to publish; see [Icon and screenshots](#icon-and-screenshots).        |
+| Show it in the store     | Add `screenshots`, `tags` and `homepage` to `mini-app.json`, and a `README.md`                       | Optional; the README becomes the store page's About.                           |
+| Pack it                  | `bun run pack:mini-apps --only <name> --publisher "<you>"`                                           | Builds it exactly as a Localix release does; refuses a missing icon.           |
+| Pack an app of your own  | `mini-app pack <folder> --publisher "<you>"` (the mini-app-authoring plugin)                         | Checks and builds it first; or `/mini-app-authoring:publish`.                  |
+| Release it from GitHub   | `mini-app ci <folder> --publisher "<you>"`, push, then tag `v<version>`                              | The workflow checks and packs it; see [Hosting on GitHub](#hosting-on-github). |
+| Host the catalog         | Upload everything in the output folder to one place: a GitHub release, a site                        | Any HTTPS host, or a folder read as `file://`.                                 |
+| Add a catalog to Localix | Store → **Sources** → **Add source…**, or `/mini-app catalog add <url>`                              | Its publishers are shown as unverified.                                        |
+| Link people to it        | Share `localix://ui/work-item/mini-app-store/add-catalog?url=<encoded address>`                      | Opens the Store's add dialog filled in; nothing is added until Add.            |
+| Ship an update           | Raise `version`, pack again, replace the hosted files                                                | Installed copies update within six hours, or at once with Update.              |
+| Require a newer Localix  | Raise `apiVersion` in `mini-app.json`                                                                | Older Localix lists the app as needing a newer version.                        |
 
 ## How it works
 
@@ -92,6 +93,12 @@ this and replace the inner `<svg>` with your glyph:
 ```
 
 Any square picture is accepted; the standard only keeps a catalog's apps looking like one family.
+
+The mini-app-authoring plugin draws this tile for you:
+`mini-app icon [folder] --glyph '<path d="…"/>'` puts a 24×24 glyph (or the path to a 24×24 `.svg`
+file) on it in `icon.svg`, in `#e7e6e6` unless `--tint #hex` names another ink, and sets
+`"icon": "./icon.svg"` when the manifest had none. A copy of the template keeps the Daily Log icon
+until you do, and `mini-app check` reports it.
 
 ### The catalog
 
@@ -208,12 +215,25 @@ opens the store with that dialog filled in, from a chat or from outside the app.
 
 ### Hosting on GitHub
 
-A release is enough. Pack, then upload the folder's files as the release's assets:
+Keep the app's source in its own repository and let GitHub Actions build each release. `mini-app ci`
+writes `.github/workflows/mini-app.yml`, keeps what the checks generate (`tsconfig.json`, `KIT.md`,
+`dist/`) out of git, and records the publisher as `author`:
 
 ```bash
-mini-app pack notes --publisher "Ada" --out dist/catalog
-gh release create notes-v1.2.0 dist/catalog/*
+mini-app ci notes --publisher "Ada"
+git -C notes init -b main && git -C notes add -A && git -C notes commit -m "Release v1.2.0"
+gh repo create notes --public --source notes --push
+git -C notes tag v1.2.0 && git -C notes push origin v1.2.0
 ```
+
+The workflow checks every push and pull request. On a tag that matches `version` in `mini-app.json`
+it packs the catalog and attaches it to a GitHub release; a tag that does not match fails the run.
+It builds with the toolchain and kit of the Localix release the app was made with; run `mini-app ci`
+again after updating Localix. `/mini-app-authoring:publish` does all of this, updates included.
+
+Without the workflow, pack on your computer and upload the folder's files as a release's assets:
+`mini-app pack notes --publisher "Ada" --out dist/catalog`, then
+`gh release create v1.2.0 dist/catalog/*`.
 
 In a fork of the repository,
 `bun run pack:mini-apps --only notes --publisher "Ada" --out dist/catalog` packs a first-party app

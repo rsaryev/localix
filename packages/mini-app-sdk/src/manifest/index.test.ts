@@ -58,8 +58,8 @@ describe('surfaces', () => {
   })
 })
 
-test('the SDK pins mini app API v1', () => {
-  expect(MINI_APP_API_VERSION).toBe(1)
+test('the SDK pins mini app API v2, the app layer', () => {
+  expect(MINI_APP_API_VERSION).toBe(2)
 })
 
 describe('mini app manifest core contract', () => {

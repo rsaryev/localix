@@ -32,6 +32,11 @@
       "types": "./dist/backend/index.d.ts",
       "import": "./dist/backend/index.js"
     },
+    "./backend/testing": {
+      "@localixai/source": "./src/backend/testing.ts",
+      "types": "./dist/backend/testing.d.ts",
+      "import": "./dist/backend/testing.js"
+    },
     "./ui": {
       "@localixai/source": "./src/ui/index.ts",
       "types": "./dist/ui/index.d.ts",
@@ -297,6 +302,11 @@
       "types": "./dist/ui/route-snapshot.d.ts",
       "import": "./dist/ui/route-snapshot.js"
     },
+    "./ui/app": {
+      "@localixai/source": "./src/ui/app.tsx",
+      "types": "./dist/ui/app.d.ts",
+      "import": "./dist/ui/app.js"
+    },
     "./ui/store-snapshot": {
       "@localixai/source": "./src/ui/store-snapshot.ts",
       "types": "./dist/ui/store-snapshot.d.ts",
@@ -333,7 +343,7 @@
     "dev": "tsc --project tsconfig.build.json --watch --preserveWatchOutput",
     "test": "bun test --path-ignore-patterns='**/*.integration.test.ts' src",
     "test:integration": "bun test integration.test",
-    "type-check": "node ../../scripts/tsc.mjs --noEmit",
+    "type-check": "bun ../../scripts/tsc.mjs --noEmit",
     "clean": "shx rm -rf dist .turbo"
   },
   "dependencies": {

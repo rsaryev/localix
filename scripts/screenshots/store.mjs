@@ -201,7 +201,10 @@ const VERIFY = {
     const detail = page.locator('[data-store-page="chess"]')
     await expect(detail.getByRole('heading', { level: 1 }).first()).toHaveText('Chess')
     await expect(detail.getByLabel(/^Verified/).first()).toBeVisible()
-    await expect(detail.getByRole('button', { name: 'Get Chess', exact: true })).toBeVisible()
+    // The package's one action sits in its header, under the name; the seed may have installed it.
+    await expect(
+      detail.locator('header').getByRole('button', { name: /^(?:Get|Open) Chess$/ }),
+    ).toBeVisible()
     await expect(detail.getByRole('tabpanel')).toContainText('A screen of its own')
   },
   async 'store-consent'(page) {

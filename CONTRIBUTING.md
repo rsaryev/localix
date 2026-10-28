@@ -88,13 +88,13 @@ a pull request cancels its older run. Main runs one at a time and keeps only the
 a release asks for a run of its commit when main skipped it.
 
 CI runs pinned Rust formatting, Clippy, and tests unless a change reaches none of the desktop
-sources, root manifest, Bun lockfile, Node version, or shared CI setup: a pull request's merge diff,
-or the commits since main's last successful run. A manual run, or no run to compare with, keeps them
+sources, root manifest, Bun lockfile, or shared CI setup: a pull request's merge diff, or the
+commits since main's last successful run. A manual run, or no run to compare with, keeps them
 enabled. Use `bun run check:rust` locally when diagnosing native failures. All jobs run on
 GitHub-hosted runners: Linux on `ubuntu-24.04` (the Rust job and Linux packaging on `ubuntu-22.04`),
 macOS release builds on `macos-15`.
 
-Local composite actions in `.github/actions/` own Node/Bun installation, frozen dependency installs,
+Local composite actions in `.github/actions/` own Bun installation, frozen dependency installs,
 Linux native dependencies, and Rust compilation caching. They keep checks and release toolchains
 consistent. Pre-commit prints its selected packages, native platform, and test count: passing that
 scope does not mean the full CI suite has passed.

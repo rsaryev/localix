@@ -7,7 +7,7 @@
   "type": "module",
   "scripts": {
     "test": "bun test .",
-    "type-check": "node ../../scripts/tsc.mjs --noEmit -p tsconfig.json"
+    "type-check": "bun ../../scripts/tsc.mjs --noEmit -p tsconfig.json"
   },
   "dependencies": {
     "@localixai/path-containment": "workspace:*",

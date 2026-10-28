@@ -195,7 +195,7 @@ describe('a package’s page', () => {
     }
   })
 
-  test('narrow, the facts go under the header and Get is pinned to the bottom', async () => {
+  test('narrow, Get stays in the header and the facts go under the header', async () => {
     const view = await renderStore({
       listings: LISTINGS,
       target: { ref: { kind: 'mini-app', id: 'chess' } },
@@ -203,8 +203,10 @@ describe('a package’s page', () => {
     })
     try {
       const page = view.host.querySelector('[data-store-page="chess"]')!
-      const pinned = page.querySelector('.sticky.bottom-0')!
-      expect(view.button('Get Chess', pinned)).toBeDefined()
+      const header = page.querySelector('header')!
+      expect(view.button('Get Chess', header)).toBeDefined()
+      // One Get on the page, where the eye already is: no second bar pinned to the bottom.
+      expect(page.querySelectorAll('button[aria-label="Get Chess"]')).toHaveLength(1)
       expect(page.querySelectorAll('[aria-label="Information"]')).toHaveLength(1)
       expect(page.querySelector('aside')).toBeNull()
     } finally {
