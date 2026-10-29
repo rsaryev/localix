@@ -49,6 +49,8 @@ the rest of Localix asks.
 - **A mini app's decision model works from the chat**: a mini app that lets a decision model pick
   for it (a habit's category, a card's column) now gets an answer when the agent uses its tools, not
   only from its own screen; before, it always fell back to its default.
+- **A mini app keeps what its update adds**: after a mini app updated in place, a field its new
+  version stores (a habit's category) is no longer dropped until Localix restarts.
 - **A plugin you removed installs again**: **Get** on a plugin removed from the Store no longer
   fails with "A plugin already exists at this destination".
 - **A mini app whose screen fails to load says so**: its tabs stay open while the screen is tried

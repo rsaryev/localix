@@ -11,7 +11,7 @@ import type { z } from 'zod'
  * tools must see exactly what the view shows. Written ad hoc, that goes wrong in three known ways:
  * two read-modify-writes interleave and one is lost; a crash halfway through `writeFile` leaves a
  * truncated file that never parses again; a file written by an older version fails the new schema
- * and throws at every read. So there is one store per file, and:
+ * and throws at every read. So every store of one file shares its queue, and:
  *
  * - `update` runs one change at a time, in order, for EVERY caller in the process. The host calls
  *   `register(ctx)` more than once — for the backend, and again for each run's tools — so the
@@ -26,7 +26,12 @@ export interface JsonStore<T> {
   update(change: (current: T) => T | Promise<T>): Promise<T>
 }
 
-const stores = new Map<string, JsonStore<unknown>>()
+/**
+ * The write queue of each file, shared by every opener. Only the queue: each opener reads and
+ * writes through its own schema, since an app updated in place opens the same file with a newer
+ * one, and the first opener's would drop every field it adds.
+ */
+const queues = new Map<string, { tail: Promise<unknown> }>()
 
 /**
  * Who hears that a store's file was written: the store feed (`createJsonStoreFeed`), which nudges an
@@ -51,10 +56,12 @@ export function openJsonStore<T>(options: {
   initial: T
 }): JsonStore<T> {
   const path = join(options.dir, options.file)
-  const known = stores.get(path)
-  if (known) return known as JsonStore<T>
-
-  let queue: Promise<unknown> = Promise.resolve()
+  let queue = queues.get(path)
+  if (!queue) {
+    queue = { tail: Promise.resolve() }
+    queues.set(path, queue)
+  }
+  const shared = queue
   const load = async (): Promise<T> => {
     try {
       const parsed = options.schema.safeParse(JSON.parse(await readFile(path, 'utf8')))
@@ -69,11 +76,11 @@ export function openJsonStore<T>(options: {
   const save = (value: T): Promise<void> =>
     atomicWriteFile(path, `${JSON.stringify(value, null, 2)}\n`)
 
-  const store: JsonStore<T> = {
+  return {
     // Behind the queue, so a read never returns the value a pending update is about to replace.
-    read: () => queue.then(load),
+    read: () => shared.tail.then(load),
     update(change) {
-      const next = queue.then(async () => {
+      const next = shared.tail.then(async () => {
         const value = options.schema.parse(await change(await load()))
         await save(value)
         for (const listener of writeListeners) {
@@ -85,12 +92,10 @@ export function openJsonStore<T>(options: {
         }
         return value
       })
-      queue = next.catch(() => undefined)
+      shared.tail = next.catch(() => undefined)
       return next
     },
   }
-  stores.set(path, store)
-  return store
 }
 
 /**

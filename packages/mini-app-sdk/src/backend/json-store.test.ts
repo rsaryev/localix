@@ -104,7 +104,6 @@ test('concurrent updates apply in order and every opener of a file shares one qu
   const { mine } = folders()
   const first = counter(mine)
   const second = counter(mine)
-  expect(second).toBe(first)
   await Promise.all(
     Array.from({ length: 20 }, () => [first, second])
       .flat()
@@ -112,6 +111,22 @@ test('concurrent updates apply in order and every opener of a file shares one qu
   )
   expect(await first.read()).toEqual({ n: 40 })
   expect(readdirSync(mine)).toEqual(['count.json'])
+})
+
+// The app updated in place: the process still held the store its first version opened, and that
+// version's schema dropped the field the new one adds, at every read and every write.
+test('a newer version of the app keeps the fields its own schema adds', async () => {
+  const { mine } = folders()
+  await counter(mine).update(() => ({ n: 1 }))
+  const newer = openJsonStore({
+    dir: mine,
+    file: 'count.json',
+    schema: z.object({ n: z.number(), label: z.string().default('none') }),
+    initial: { n: 0, label: 'none' },
+  })
+  expect(await newer.read()).toEqual({ n: 1, label: 'none' })
+  await newer.update((current) => ({ ...current, label: 'learning' }))
+  expect(await newer.read()).toEqual({ n: 1, label: 'learning' })
 })
 
 test('a corrupt or invalid file reads as the initial value, and a rejected change persists nothing', async () => {
