@@ -34,6 +34,18 @@ describe('a catalog signature', () => {
     expect(verifyCatalogSignature(catalog, JSON.stringify(forged)).state).toBe('invalid')
   })
 
+  // The authoring plugin (localix-marketplace, `mini-app sign`) writes this same file for these
+  // bytes and this key: the two sides agree on the format byte for byte.
+  test('the signature the authoring plugin writes holds', () => {
+    const bytes = new TextEncoder().encode('{"schema":1,"apps":[]}\n')
+    const written =
+      '{"schema":1,"algorithm":"ed25519","key":"6kpsY+KcUgq+9VB7Ey7F+ZVHdq6+vnuSQh7qaRRG0iw=","signature":"x14FDCLQa1mrXW5bu06kNoAMfVlMD4FY7cxCYobmglHedXe/6dx+Um81YVbHoaTUubDDcjLl9iBnw7rJTjYTDw=="}\n'
+    expect(verifyCatalogSignature(bytes, written)).toEqual({
+      state: 'signed',
+      key: '6kpsY+KcUgq+9VB7Ey7F+ZVHdq6+vnuSQh7qaRRG0iw=',
+    })
+  })
+
   test('a file that is not a signature is not', () => {
     expect(verifyCatalogSignature(catalog, 'not json').state).toBe('invalid')
     expect(verifyCatalogSignature(catalog, '{"schema":1}').state).toBe('invalid')
