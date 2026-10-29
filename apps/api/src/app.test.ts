@@ -1,4 +1,7 @@
 import { describe, test, expect } from 'bun:test'
+import { createHash } from 'node:crypto'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 import { createHealthRoutes } from './health'
 import { LOCALIX_API_PRODUCT_ID, LOCALIX_API_PROTOCOL_VERSION } from './lib/runtime-protocol'
@@ -30,7 +33,31 @@ describe('health probe', () => {
       protocolVersion: LOCALIX_API_PROTOCOL_VERSION,
       startedAt: 'now',
       databaseId: 'database-a',
+      miniAppContract: expect.any(String),
     })
+  })
+
+  // The mini app authoring plugin builds against the kit of the release it runs in: it reads the
+  // running Localix's version here and downloads that release's kit.
+  test('says which Localix release is running, when the build knows it', async () => {
+    const info = { instanceId: 'instance-a', startedAt: 'now' }
+    const released = await createHealthRoutes({ ...info, version: '0.4.0' }).request('/health')
+    expect(((await released.json()) as { version?: string }).version).toBe('0.4.0')
+    const source = await createHealthRoutes(info).request('/health')
+    expect(await source.json()).not.toHaveProperty('version')
+  })
+
+  // The authoring plugin compares this with the `contract` of the kit it builds against: a kit
+  // staged from other sources than the running Localix's names another one.
+  test('names the mini app contract it implements: the committed one', async () => {
+    const committed = readFileSync(
+      join(import.meta.dir, '../../../packages/mini-app-sdk/mini-app.api.md'),
+      'utf8',
+    )
+    const response = await createHealthRoutes().request('/health')
+    expect(((await response.json()) as { miniAppContract?: string }).miniAppContract).toBe(
+      createHash('sha256').update(committed).digest('hex'),
+    )
   })
 
   // A reopen right after quit attached to the dying runtime because this answered 200 for

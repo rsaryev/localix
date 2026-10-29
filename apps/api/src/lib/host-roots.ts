@@ -20,7 +20,7 @@ import { isPathWithin } from './path-containment'
  * output file): which directories are the application?
  *
  *   - SOURCE layout (development): this file sits at `apps/api/src/lib/`, so the checkout root
- *     is four levels up. That covers the dev mini app staging under `<repo>/.turbo` as well.
+ *     is four levels up, `.turbo` and every other build product included.
  *   - BUNDLED layout (packaged): the server bundle's directory, plus its staging container when
  *     that is one of the known shapes (`resources/` in the desktop app, `server/` in the CLI
  *     package), plus the enclosing `*.app` bundle on macOS.
@@ -120,20 +120,4 @@ export function hostRootContaining(
 ): string | undefined {
   const spellings = [path.resolve(candidate), canonicalCandidate(candidate)]
   return roots.find((root) => spellings.some((s) => isPathWithin(root, s)))
-}
-
-let readableProvider: () => readonly string[] = () => []
-
-/**
- * Directories inside a host root that agents may READ (never write): the mini app kit, whose SDK
- * declarations are the contract a mini app is written against. The mini apps feature owns where
- * it is; bootstrap registers it here, so this lib names no feature.
- */
-export function setReadableHostRoots(provider: () => readonly string[]): void {
-  readableProvider = provider
-}
-
-/** The registered read-only exemptions, in lexical and canonical spelling. */
-export function readableHostRoots(): string[] {
-  return readableProvider().flatMap((dir) => [dir, canonicalCandidate(dir)])
 }

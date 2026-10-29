@@ -28,6 +28,8 @@ describe('release workflow contract', () => {
       'verify',
       'draft-release',
       'build-desktop',
+      'mini-app-kit-stage',
+      'mini-apps-against-kit',
       'mini-app-kit',
       'publish-desktop',
     ])
@@ -46,9 +48,9 @@ describe('release workflow contract', () => {
     const workflow = Bun.YAML.parse(release) as {
       jobs: Record<string, { steps: { name?: string; run?: string }[] }>
     }
-    const runs = workflow.jobs['mini-app-kit']!.steps.map((step) => step.run ?? '').join('\n')
-    expect(runs).toContain('bun scripts/stage-mini-app-kit.mjs')
-    expect(runs).toMatch(/gh release upload [^\n]*mini-app-kit\.tar\.gz/u)
+    const runs = (job: string) => workflow.jobs[job]!.steps.map((step) => step.run ?? '').join('\n')
+    expect(runs('mini-app-kit-stage')).toContain('bun scripts/stage-mini-app-kit.mjs')
+    expect(runs('mini-app-kit')).toMatch(/gh release upload [^\n]*mini-app-kit\.tar\.gz/u)
     const checksums = workflow.jobs['publish-desktop']!.steps.find(
       (step) => step.name === 'Write checksums and release notes',
     )!.run!
@@ -58,6 +60,32 @@ describe('release workflow contract', () => {
     expect(named('Localix-macos-arm64.dmg')).toBe(true)
     expect(named('Localix.app.tar.gz')).toBe(true)
     expect(named('notes-1.2.0-0a1b2c3d.tar.gz')).toBe(false)
+  })
+
+  // A kit that breaks the Localix marketplace's mini apps is not published. The marketplace's code
+  // runs in a job that can write nothing and holds no release secret.
+  test('publishes the kit only after the marketplace’s mini apps pass against it', () => {
+    const workflow = Bun.YAML.parse(release) as {
+      jobs: Record<
+        string,
+        {
+          needs?: string[]
+          environment?: string
+          permissions?: Record<string, string>
+          steps: { run?: string; env?: Record<string, string> }[]
+        }
+      >
+    }
+    const against = workflow.jobs['mini-apps-against-kit']!
+    expect(against.needs).toContain('mini-app-kit-stage')
+    expect(against.permissions).toEqual({ contents: 'read' })
+    expect(against.environment).toBeUndefined()
+    const run = against.steps.map((step) => step.run ?? '').join('\n')
+    expect(run).toContain('rsaryev/localix-marketplace')
+    expect(run).toContain('bun run check mini-apps')
+    expect(against.steps.some((step) => step.env?.MINI_APP_KIT)).toBe(true)
+    expect(workflow.jobs['mini-app-kit-stage']!.permissions).toEqual({ contents: 'read' })
+    expect(workflow.jobs['mini-app-kit']!.needs).toContain('mini-apps-against-kit')
   })
 
   test('accepts release secrets only behind the protected release environment', () => {
@@ -185,7 +213,7 @@ describe('release workflow contract', () => {
 
   test('bounds every job, so a hung runner cannot burn the six-hour default', () => {
     const jobs = [...release.matchAll(/\n {2}([a-z-]+):\n(?: {4}.*\n)*? {4}runs-on:/gu)]
-    expect(jobs.length).toBe(6)
+    expect(jobs.length).toBe(8)
     for (const [, job] of jobs) {
       const start = release.indexOf(`\n  ${job}:`)
       const header = release.slice(start, release.indexOf('    steps:', start))

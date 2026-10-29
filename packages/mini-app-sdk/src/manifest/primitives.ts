@@ -15,7 +15,9 @@ export const MINI_APP_QUALIFIED_NAME_RE = /^[a-z0-9][a-z0-9_-]*(?::[a-z0-9][a-z0
  * a higher major than this means the mini app needs a newer host and is flagged in
  * validation. Bump on any breaking change to the mini-app-facing contract, and when the SDK adds a
  * module a mini app may import that an older host does not serve: such an app is then listed as
- * needing an update there instead of failing to load. v2 adds the app layer
+ * needing an update there instead of failing to load. The contract it numbers is
+ * `packages/mini-app-sdk/mini-app.api.md`; `bun run check:mini-app-contract` refuses a break of it
+ * without a new number. v2 adds the app layer
  * (`createMiniApp`, `defineCollection`, `decide`, `rankByMeaning`, `askAgent`, `ui/app`).
  */
 export const MINI_APP_API_VERSION = 2

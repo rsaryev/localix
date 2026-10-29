@@ -1,15 +1,13 @@
 /**
  * The MINI APP KIT: the platform a Localix release publishes for building mini apps — the export names of the modules the host shares with mini app UI, the host theme's
  * stylesheets, prebuilt copies of the modules a backend may import, the declarations, and the
- * `tools` module carrying Localix's own rules (`kit-tools.ts`). Localix builds no mini app: the
- * authoring plugin reads the kit (`GET /rpc/mini-apps/kit`, or a release's
- * `mini-app-kit.tar.gz`) and builds against it. Staging (`scripts/stage-mini-app-kit.mjs`) writes
- * it; this module is the one description of its layout, and of the modules the host lends every
- * mini app backend at runtime.
+ * `tools` module carrying Localix's own rules (`kit-tools.ts`). Localix neither builds mini apps
+ * nor ships the kit: each release publishes it as `mini-app-kit.tar.gz`, and a mini app installs
+ * the one it is built against, as a development dependency. Staging
+ * (`scripts/stage-mini-app-kit.mjs`) writes it; this module is the one description of its layout,
+ * and of the modules the host lends every mini app backend at runtime.
  */
 
-/** The kit's directory name beside the API in a release (`resources/mini-app-kit`). */
-export const MINI_APP_KIT_DIR_NAME = 'mini-app-kit'
 /** The kit's self-description (see {@link MiniAppKitManifest}). */
 export const MINI_APP_KIT_MANIFEST = 'kit.json'
 export const MINI_APP_KIT_SCHEMA_VERSION = 1

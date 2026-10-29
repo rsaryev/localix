@@ -1,15 +1,9 @@
 import os from 'node:os'
 
 import { localixHome } from '../../lib/env'
-import {
-  canonicalCandidate,
-  hostRootContaining,
-  hostRoots,
-  readableHostRoots,
-} from '../../lib/host-roots'
+import { canonicalCandidate, hostRootContaining, hostRoots } from '../../lib/host-roots'
 import { isPathWithin } from '../../lib/path-containment'
 import type { CallFacts } from './permission-facts'
-import { TOOL } from './tool-names'
 import { resolveToolCwd } from './tools/environment'
 import { commandPathTokens } from './tools/workspace'
 
@@ -57,7 +51,6 @@ function candidatePaths(input: unknown, call: CallFacts, root: string | undefine
  * `roots` is injectable for tests; production reads the process-wide {@link hostRoots}.
  */
 export function hostRootDenial(
-  toolName: string,
   input: unknown,
   call: CallFacts,
   root: string | undefined,
@@ -67,18 +60,8 @@ export function hostRootDenial(
   const guarded = roots.filter((r) => !project.some((p) => isPathWithin(r, p)))
   if (guarded.length === 0) return undefined
   const state = localixHome()
-  // The mini app kit is readable through the read-only file tools — its SDK declarations are the
-  // contract a mini app is written against — and nothing else: no write, edit or shell.
-  const readable = toolName === TOOL.Read || toolName === TOOL.Search ? readableHostRoots() : []
   for (const candidate of candidatePaths(input, call, root)) {
     if (isPathWithin(state, candidate) || isPathWithin(state, canonicalCandidate(candidate))) {
-      continue
-    }
-    if (
-      readable.some(
-        (r) => isPathWithin(r, candidate) || isPathWithin(r, canonicalCandidate(candidate)),
-      )
-    ) {
       continue
     }
     if (hostRootContaining(candidate, guarded)) return `Blocked: ${candidate} ${HOST_ROOT_DENIAL}`

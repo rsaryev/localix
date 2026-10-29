@@ -163,7 +163,8 @@ agent to choose there before writing a control.
 | `packages/kit/AGENTS.md`                  | The rules for changing the kit.                                    |
 | `apps/ui/src/app/kit/`                    | The modules the host lends, and the recorded debt among them.      |
 | `apps/ui/src/app/miniAppSharedModules.ts` | The runtime registry mini apps load the kit from.                  |
-| `scripts/stage-mini-app-kit.mjs`          | What an installed app ships to build mini apps, `KIT.md` included. |
+| `scripts/stage-mini-app-kit.mjs`          | What each release publishes to build mini apps, `KIT.md` included. |
+| `packages/mini-app-sdk/mini-app.api.md`   | The mini app contract: every door's declarations, checked in CI.   |
 
 ## Limits
 

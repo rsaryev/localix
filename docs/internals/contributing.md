@@ -279,9 +279,10 @@ format check as a read-only gate before review.
 - Development starts with `bun install --frozen-lockfile`, so a pull that moved `bun.lock` installs
   what it pins before anything builds. A lockfile that no longer matches its `package.json` is
   reported and development continues on what is installed.
-- The core builds no mini app. To work on one, use a checkout of the Localix marketplace with this
-  checkout's kit (`MINI_APP_KIT=<dir>` or `bun link`, see that repository), or install a package
-  into your running Localix with `mini-app install`.
+- The core builds no mini app and ships no mini app kit. To build one against this checkout,
+  `bun run mini-app-kit` stages its kit into `.turbo/mini-app-kit`; point a mini app or the Localix
+  marketplace at it with `MINI_APP_KIT=<that folder>`, then install the package into your running
+  Localix with `mini-app install`.
 - Generated desktop resources, sidecar binaries, package `dist` trees, Turbo state, and generated
   landing modules are ignored build products. Change their inputs instead.
 - Release configuration describes a pipeline, not the existence of a public signed artifact. Check

@@ -54,11 +54,34 @@ A Localix plugin is still only a plugin. The authoring plugin of the
 [Localix marketplace](https://github.com/rsaryev/localix-marketplace) is where mini apps are made:
 its skills, reviewer agent, edit hook and `mini-app` command scaffold, check, build, pack and
 install them, and it imports no Localix code, so X1 and X2 hold: no code path joins the two layers,
-and its folder holds no `mini-app.json`. It reaches Localix only through data — the mini app kit,
-whose `tools/authoring.mjs` carries Localix's own validation (`features/mini-apps/kit-tools.ts`),
-and `GET /rpc/mini-apps/kit` and `POST /rpc/mini-apps/install-local` — so it lives and changes
-outside this repository. The core keeps no authoring: no build tool for the agent and no
-`/mini-app create` (X3: creating is the plugin's command, not a `/mini-app` subcommand).
+and its folder holds no `mini-app.json`. It reaches Localix only through data — the mini app kit
+each release publishes, whose `tools/authoring.mjs` carries Localix's own validation
+(`features/mini-apps/kit-tools.ts`), the version and contract digest `GET /health` reports, and
+`POST /rpc/mini-apps/install-local` — so it lives and changes outside this repository. The app does
+not carry the kit: a mini app installs the release's kit it is built against. The core keeps no
+authoring: no build tool for the agent and no `/mini-app create` (X3: creating is the plugin's
+command, not a `/mini-app` subcommand).
+
+### The mini app contract
+
+What a mini app may rely on is one committed text,
+[`packages/mini-app-sdk/mini-app.api.md`](../../packages/mini-app-sdk/mini-app.api.md), as VS Code
+keeps its extension API in one declaration file. It is read out of the staged kit
+(`scripts/mini-app-contract.mjs`): every Localix module a mini app may import with each export's
+declaration, the Localix types those declarations name, the third-party packages the host lends and
+their versions, and the modules the host serves at runtime. The kit carries the same text as
+`API.md` and its digest in `kit.json`; the API reports the committed one's digest
+(`apps/api/src/lib/mini-app-contract.ts`) in `GET /health`, so the authoring plugin tells whether a
+mini app's kit is exactly the running Localix's.
+
+`bun run check:mini-app-contract` stages the kit and compares. A contract that moved fails until
+`--write` records it, and a move that breaks a mini app built against the committed one — a module,
+export, served name or lent package taken away, a lent package's major version, a property removed
+or made required, an argument a function now requires, a module served for the first time — is
+refused, written or not, until `MINI_APP_API_VERSION` moves too. Every CI run checks it; a release
+checks the kit it is about to publish against it, then checks the Localix marketplace's mini apps
+against that kit, and publishes neither on a failure. The marketplace checks its mini apps against
+the kit of `main` every night.
 
 A mod must get what Claude Code gives it. `scripts/cc-parity/` runs one probe mod in the installed
 Claude Code and in Localix's mods host and compares the shapes each hands it, per event and `$`

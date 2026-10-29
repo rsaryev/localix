@@ -6,13 +6,13 @@ of your own, reach the host through its UI kit, and understand how an edit reach
 
 ## Terminology
 
-| Term          | Meaning                                                                                         | Boundary                                                          |
-| ------------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| UI artifact   | `dist/ui/` in a mini app's folder: an entry, hashed chunks, styles, a manifest.                 | Built by the app from the mini app's `ui/` sources.               |
-| Revision      | A hash of every artifact file, carried in the mini app record.                                  | Moves when the UI changed, not when the backend or docs did.      |
-| UI kit        | `@localixai/kit/<id>`: the host's explicit public component surface.                            | Public components; SDK services are separate host ports.          |
-| Shared module | React, `@localixai/mini-app-sdk` and the kit, taken from the host at runtime.                   | Every other dependency is bundled into the artifact.              |
-| Mini app kit  | What each release ships to build mini apps: shared-module exports, theme CSS, validation tools. | `resources/mini-app-kit` and the release's `mini-app-kit.tar.gz`. |
+| Term          | Meaning                                                                                             | Boundary                                                          |
+| ------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| UI artifact   | `dist/ui/` in a mini app's folder: an entry, hashed chunks, styles, a manifest.                     | Built by the app from the mini app's `ui/` sources.               |
+| Revision      | A hash of every artifact file, carried in the mini app record.                                      | Moves when the UI changed, not when the backend or docs did.      |
+| UI kit        | `@localixai/kit/<id>`: the host's explicit public component surface.                                | Public components; SDK services are separate host ports.          |
+| Shared module | React, `@localixai/mini-app-sdk` and the kit, taken from the host at runtime.                       | Every other dependency is bundled into the artifact.              |
+| Mini app kit  | What each release publishes to build mini apps: shared-module exports, theme CSS, validation tools. | The release's `mini-app-kit.tar.gz`, installed into the mini app. |
 
 ## What you can do
 
@@ -113,13 +113,12 @@ An open mini app tab's context tells the agent this address, so "take a screensh
 
 ## How it works
 
-1. The app builds a user mini app itself, from the mini app kit it ships: the backend into
+1. The authoring plugin builds a mini app against the mini app kit installed in it: the backend into
    `dist/backend/index-<hash>.mjs` (a new file per build; the mini app's `backend` is pointed at it,
    so a running module is never replaced under the app) with `hono`, `zod` and
    `@localixai/mini-app-sdk/backend` taken from the kit, the UI into `dist/ui/`, and the tests run
-   on the Bun binary the app ships. The Localix marketplace builds its own mini apps the same way,
-   in its release workflow; a mini app's artifact keeps its source maps unless its author leaves
-   them out.
+   on Bun. The Localix marketplace builds its own mini apps the same way, in its release workflow; a
+   mini app's artifact keeps its source maps unless its author leaves them out.
 2. The API reads the artifact manifest into the mini app record's `ui` field and serves the files
    under `/rpc/mini-apps/<name>/ui/`, confined to `dist/ui/`. A mini app is served only once the
    user enabled it, the same consent as a native backend.

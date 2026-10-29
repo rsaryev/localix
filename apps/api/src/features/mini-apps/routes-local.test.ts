@@ -5,10 +5,9 @@ import type { AppContext } from '../../app'
 import { UnprocessableError } from '../../lib/domain-errors'
 import { createMiniAppRoutes, type MiniAppRoutesService } from './routes'
 
-/** The two routes the authoring plugin calls: where the kit is, and install a package. */
+/** The route the authoring plugin calls: install a package it built. */
 function app(installs: unknown[]) {
   const service = {
-    kitDir: () => '/Applications/Localix.app/Contents/Resources/resources/mini-app-kit',
     installLocal: async (userId: string, input: { dir: string; source: string }) => {
       if (input.dir.endsWith('broken'))
         throw new UnprocessableError('mini_app_package_invalid', 'Invalid mini-app.json: name')
@@ -32,14 +31,7 @@ const post = (root: Hono<AppContext>, body: unknown) =>
     body: JSON.stringify(body),
   })
 
-describe('the authoring plugin’s routes', () => {
-  test('GET /kit names the kit this Localix builds mini apps against', async () => {
-    const response = await app([]).request('/rpc/mini-apps/kit')
-    expect(await response.json()).toEqual({
-      dir: '/Applications/Localix.app/Contents/Resources/resources/mini-app-kit',
-    })
-  })
-
+describe('the authoring plugin’s route', () => {
   test('POST /install-local installs the package for the person who asked', async () => {
     const installs: unknown[] = []
     const response = await post(app(installs), {

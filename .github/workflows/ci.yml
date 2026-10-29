@@ -55,6 +55,7 @@ jobs:
               bun run type-check
               bun run check:tests
               bun run check:size
+              bun run check:mini-app-contract
           # The unit tests run here, on our own runner, and nowhere else by default: on a busy
           # laptop (pre-push) and on shared runners their timing made them fail on unchanged code.
           # Integration tests, coverage and the desktop bundle run on demand.

@@ -623,16 +623,17 @@ jobs:
             "${FILES[@]}" --clobber --repo "$RELEASE_REPO"
 
   # ── mini-app-kit: what mini apps are built against, as this release's asset ────
-  # Localix ships and hosts no mini app (rule X5): the Localix marketplace publishes its own
-  # catalog. A release publishes the kit the authoring plugin builds against.
-  mini-app-kit:
-    name: Mini app kit
-    needs: [prepare, verify, draft-release]
+  # Localix ships and hosts no mini app (rule X5) and carries no kit: the Localix marketplace
+  # publishes its own catalog, and each mini app installs the kit of the release it is built
+  # against. The kit is staged and checked without write access, the marketplace's mini apps are
+  # checked against it, and only then is it published.
+  mini-app-kit-stage:
+    name: Stage mini app kit
+    needs: [prepare, verify]
     runs-on: ubuntu-24.04
     timeout-minutes: 30
-    environment: release
     permissions:
-      contents: write
+      contents: read
     steps:
       - name: Checkout source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -646,20 +647,101 @@ jobs:
       - name: Build workspace packages
         run: bunx turbo build --filter=@localixai/api
 
-      # The kit mini apps are built against, for the authoring plugin where no Localix is
-      # installed: `releases/latest/download/mini-app-kit.tar.gz`, `kit.json` at its root, checked
-      # against SHA256SUMS.txt (publish-desktop names it there).
-      - name: Stage and upload the mini app kit
+      # `mini-app-kit.tar.gz`, `kit.json` at its root, checked against SHA256SUMS.txt
+      # (publish-desktop names it there).
+      - name: Stage the mini app kit
         shell: bash
         env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
           # This job's checkout is unstamped: the kit and its package carry the release's version.
           LOCALIX_VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           set -euo pipefail
           bun scripts/stage-mini-app-kit.mjs . "$RUNNER_TEMP/mini-app-kit"
+          # The kit says exactly what the committed contract says, or nothing is published.
+          bun scripts/check-mini-app-contract.mjs --kit "$RUNNER_TEMP/mini-app-kit"
           tar -czf "$RUNNER_TEMP/mini-app-kit.tar.gz" -C "$RUNNER_TEMP/mini-app-kit" .
+
+      - name: Keep the kit for the next jobs
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: mini-app-kit
+          path: ${{ runner.temp }}/mini-app-kit.tar.gz
+          retention-days: 3
+
+  # The mini apps people already run, checked against the kit before it is published: a kit that
+  # breaks one stops the release. Their code runs here, where nothing can be written.
+  mini-apps-against-kit:
+    name: Mini apps against the kit
+    needs: [prepare, mini-app-kit-stage]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      # Only for the pinned Bun: nothing of this checkout runs.
+      - name: Checkout source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.prepare.outputs.commit }}
+          persist-credentials: false
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-workspace
+        with:
+          install: 'false'
+
+      - name: Take the staged kit
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: mini-app-kit
+          path: ${{ runner.temp }}
+
+      - name: The Localix marketplace's mini apps
+        shell: bash
+        env:
+          MINI_APP_KIT: ${{ runner.temp }}/kit
+        run: |
+          set -euo pipefail
+          mkdir -p "$MINI_APP_KIT"
+          tar -xzf "$RUNNER_TEMP/mini-app-kit.tar.gz" -C "$MINI_APP_KIT"
+          git clone --depth 1 https://github.com/rsaryev/localix-marketplace "$RUNNER_TEMP/marketplace"
+          cd "$RUNNER_TEMP/marketplace"
+          bun install --frozen-lockfile
+          bun run check mini-apps
+
+  mini-app-kit:
+    name: Mini app kit
+    needs: [prepare, draft-release, mini-apps-against-kit]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: release
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.prepare.outputs.commit }}
+          persist-credentials: false
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup-workspace
+        with:
+          install: 'false'
+
+      - name: Take the staged kit
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: mini-app-kit
+          path: ${{ runner.temp }}
+
+      - name: Upload the mini app kit
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          set -euo pipefail
           gh release upload "$RELEASE_TAG" "$RUNNER_TEMP/mini-app-kit.tar.gz" --clobber --repo "$RELEASE_REPO"
 
   # ── publish-desktop: flip the draft to the public "latest" release ───────────

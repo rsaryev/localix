@@ -41,6 +41,12 @@ The plugin and Localix meet in the **mini app kit** — the SDK and UI kit decla
 theme, the prebuilt backend modules and Localix's own validation rules, published with every release
 as `mini-app-kit.tar.gz` — and in one install request.
 
+The kit is a development dependency of each mini app: the plugin installs the kit of the running
+Localix's release into the app's `node_modules/@localixai/mini-app-kit` (the latest release's when
+Localix is not running), so the agent reads the SDK's declarations inside the app's own folder.
+`mini-app kit` says whether that kit is exactly the running Localix's contract, and
+`mini-app kit --update` installs the current one.
+
 1. `mini-app create <name>` forks the plugin's Daily Log template into a new folder and checks the
    fresh copy. Template-domain residue is expected at this point; every other check passes.
 2. The copy is a mini app: `mini-app.json` holds its name, description, category, settings and

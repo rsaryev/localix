@@ -65,4 +65,8 @@ export interface LocalixRuntimeInfo {
   protocolVersion: number
   startedAt: string
   databaseId?: string
+  /** The Localix release, absent when run from source: tools fetch what matches it (the mini app kit). */
+  version?: string
+  /** The mini app contract it implements (`packages/mini-app-sdk/mini-app.api.md`), by digest. */
+  miniAppContract?: string
 }

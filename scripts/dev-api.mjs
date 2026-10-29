@@ -1,73 +1,16 @@
-import { readdirSync, rmSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { join } from 'node:path'
 
-import { kitCacheRoot } from './mini-app-kit-cache.mjs'
-import { watchMiniAppKitInputs } from './dev-mini-app-kit-watch.mjs'
-import { stageMiniAppKitInto } from './run-mini-app-kit-stager.mjs'
 import { repoRoot } from './lib/paths.mjs'
 
 const repo = repoRoot()
 const apiDir = join(repo, 'apps', 'api')
-const devStageRoot = join(repo, '.turbo', 'dev-mini-apps', String(process.pid))
-const stagedKit = join(devStageRoot, 'mini-app-kit')
 
-/**
- * Drop staging trees left by dev runs that are no longer alive.
- *
- * The `finally` at the bottom removes this run's tree, but it never runs on a SIGKILL, a crash,
- * or an OS kill — so the per-PID trees accumulate. Measured on one developer machine before this
- * was added: 12 orphaned trees and 3.1GB under `.turbo`, of which ~1.2GB was 11 copies of
- * one native database library alone.
- *
- * Conservative on purpose: PIDs are reused, so a directory whose number belongs to ANY live
- * process is kept. The failure mode is then leaving a dead tree for the next run to collect,
- * never deleting a tree a running dev server is serving its kit from.
- */
-function pruneOrphanedStageTrees() {
-  const root = dirname(devStageRoot)
-  let entries
-  try {
-    entries = readdirSync(root, { withFileTypes: true })
-  } catch {
-    return
-  }
-  for (const entry of entries) {
-    if (!entry.isDirectory() || !/^\d+$/u.test(entry.name)) continue
-    const pid = Number(entry.name)
-    if (pid === process.pid) continue
-    try {
-      process.kill(pid, 0)
-      continue
-    } catch (error) {
-      // EPERM means the pid exists but belongs to another user — still alive, so keep it.
-      if (error?.code === 'EPERM') continue
-    }
-    rmSync(join(root, entry.name), { recursive: true, force: true })
-  }
-}
-
-pruneOrphanedStageTrees()
-
-// Localix ships no mini app: the store installs them, as it does in a release. Development stages
-// only the mini app kit, which the API serves the authoring plugin to build against.
-// Kits staged for identical inputs are reused across launches (`mini-app-kit-cache.mjs`).
-const kitCache = kitCacheRoot(repo)
-stageMiniAppKitInto({ repoRoot: repo, outKit: stagedKit, cacheRoot: kitCache })
-// The kit follows its inputs, so the reloading API never serves a kit older than its own code.
-const kitWatcher = watchMiniAppKitInputs({
-  repoRoot: repo,
-  outKit: stagedKit,
-  cacheRoot: kitCache,
-  log: (message) => console.log(`[dev-api] ${message}`),
-})
-
+// Localix ships no mini app and no mini app kit: the store installs mini apps, and a mini app
+// installs the kit it is built against (`docs/extending/mini-apps.md`).
 const spawnApi = () =>
   Bun.spawn(['bun', '--watch', 'src/index.ts'], {
     cwd: apiDir,
-    env: {
-      ...process.env,
-      LOCALIX_MINI_APP_KIT_DIR: stagedKit,
-    },
+    env: process.env,
     stdin: 'inherit',
     stdout: 'inherit',
     stderr: 'inherit',
@@ -193,6 +136,4 @@ try {
   process.exitCode = await waitForFinalExit()
 } finally {
   supervisor.stop()
-  kitWatcher.close()
-  rmSync(devStageRoot, { recursive: true, force: true })
 }

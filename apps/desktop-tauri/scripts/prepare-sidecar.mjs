@@ -6,8 +6,6 @@
 // Produces (under src-tauri/):
 //   binaries/bun-<triple>.exe   the native Bun runtime (Tauri sidecar)
 //   resources/server.js         the API bundled to one JS file, migrations and `kysely` included
-//   resources/mini-app-kit/     what the authoring plugin builds USER mini apps against
-//                               (shared-module exports, types, theme, validation tools)
 //
 // Pass --ui to ALSO build apps/ui into apps/ui/dist (the prod frontendDist).
 // Run by tauri's beforeDev/BuildCommand; also runnable by hand.
@@ -42,8 +40,6 @@ import {
   hostTriple,
   resourcesDir as resources,
 } from './tauri-staging.mjs'
-import { stageMiniAppKitInto } from '../../../scripts/run-mini-app-kit-stager.mjs'
-import { MINI_APP_KIT_INPUTS } from '../../../scripts/stage-mini-app-kit.mjs'
 import { BUILD_STAMP_ENV, resolveBuildStamp } from '../../../scripts/build-stamp.mjs'
 import {
   buildVisualFeedbackProbe,
@@ -69,9 +65,8 @@ const desktop = resolve(here, '..') // apps/desktop-tauri
 const repo = resolve(desktop, '..', '..') // repo root
 const buildUi = process.argv.includes('--ui')
 const tauriConfigFile = join(desktop, 'src-tauri', 'tauri.conf.json')
-const stagedCliPackage = buildStagedCliPackageMetadata(
-  JSON.parse(readFileSync(tauriConfigFile, 'utf8')),
-)
+const tauriConfig = JSON.parse(readFileSync(tauriConfigFile, 'utf8'))
+const stagedCliPackage = buildStagedCliPackageMetadata(tauriConfig)
 
 const log = (...a) => console.log('[prepare-sidecar]', ...a)
 
@@ -117,11 +112,8 @@ const runtimeKey = fingerprint([
   join(repo, 'packages'),
   join(desktop, 'scripts'),
   join(repo, 'scripts', 'build-visual-feedback-probe.mjs'),
-  join(repo, 'scripts', 'run-mini-app-kit-stager.mjs'),
   join(repo, 'scripts', 'embed-migrations-plugin.mjs'),
   join(desktop, 'scripts', 'sidecar-bun.mjs'),
-  // Everything the mini app kit is made from — the same list the dev watcher re-stages on.
-  ...MINI_APP_KIT_INPUTS.map((input) => join(repo, input)),
   join(repo, 'scripts', 'stage-third-party-notices.mjs'),
   join(repo, 'scripts', 'rust-third-party-notices.mjs'),
   join(desktop, 'licenses'),
@@ -145,7 +137,6 @@ const runtimeReady =
   Object.values(SCRIPT_EXTENSION_FILES).every((file) => existsSync(join(resources, file))) &&
   existsSync(join(resources, 'visual-feedback-probe.js')) &&
   existsSync(join(resources, 'visual-feedback-native-probe.js')) &&
-  existsSync(join(resources, 'mini-app-kit', 'kit.json')) &&
   existsSync(join(resources, 'cli', 'server', 'cli.js')) &&
   existsSync(join(resources, 'cli', 'package.json')) &&
   existsSync(join(resources, 'LICENSE')) &&
@@ -191,7 +182,11 @@ if (!runtimeReady) {
     naming: { entry: 'server.js' },
     minify: { syntax: true, whitespace: true, identifiers: false },
     external: watcherExternals,
-    define: { [EMBEDDED_MIGRATIONS_FLAG]: 'true' },
+    // The release it belongs to, which `/health` reports (`lib/app-version.ts`).
+    define: {
+      [EMBEDDED_MIGRATIONS_FLAG]: 'true',
+      __LOCALIX_VERSION__: JSON.stringify(tauriConfig.version),
+    },
     plugins: [embeddedMigrationsPlugin(join(repo, 'apps', 'api', 'migrations'))],
   })
   if (!bundled.success) {
@@ -236,13 +231,7 @@ if (!runtimeReady) {
     log,
   })
 
-  // ── 3. the mini app kit ────────────────────────────────────────────────────────
-  // The app ships no mini app (rule X5): the store installs them from the catalogs of the
-  // marketplaces it trusts. It ships the kit, which the authoring plugin builds mini apps
-  // against (`GET /rpc/mini-apps/kit`).
-  stageMiniAppKitInto({ repoRoot: repo, outKit: join(resources, 'mini-app-kit') })
-
-  // ── 3b. the `localix` CLI, staged INSIDE the bundle (no separate CLI product) ──
+  // ── 3. the `localix` CLI, staged INSIDE the bundle (no separate CLI product) ──
   // The shim (bin/localix.mjs) + the launcher bundle it imports (runCli). lib.rs points
   // LOCALIX_CLI_ENTRY at the shim so the shell-command install execs it under the
   // sidecar Bun — that's how `localix .` / `localix <path>` reach the running app.
@@ -296,7 +285,7 @@ if (!runtimeReady) {
   cache.runtime = runtimeKey
   cache.runtimeVariant = runtimeVariant
 } else {
-  log('runtime inputs unchanged — reusing staged API, mini app kit, CLI and Bun')
+  log('runtime inputs unchanged — reusing staged API, CLI and Bun')
 }
 
 // Tauri signs its main executable and declared sidecars, but native modules copied

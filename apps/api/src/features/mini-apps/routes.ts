@@ -23,7 +23,6 @@ import {
   miniAppCatalogRequestSchema,
   miniAppCatalogPreviewSchema,
   miniAppCatalogsResponseSchema,
-  miniAppKitResponseSchema,
   miniAppStoreMediaParamsSchema,
   miniAppStorePageSchema,
   miniAppStoreResponseSchema,
@@ -59,7 +58,6 @@ export type MiniAppRoutesService = Pick<
   | 'invokeUiAction'
   | 'store'
   | 'catalogs'
-  | 'kitDir'
   | 'installLocal'
 >
 
@@ -112,9 +110,8 @@ export function createMiniAppRoutes(service: MiniAppRoutesService) {
       await service.store.install(name, { userId: c.get('userId'), acceptUnverified })
       return c.body(null, 202)
     })
-    // The authoring plugin: Localix builds no mini app, it publishes the kit one is built
-    // against and installs the package the plugin built (`local-install.ts`).
-    .get('/kit', (c) => c.json(miniAppKitResponseSchema.parse({ dir: service.kitDir() }), 200))
+    // The authoring plugin: Localix builds no mini app, it installs the package the plugin built
+    // (`local-install.ts`) against a release's kit.
     .post('/install-local', zValidator('json', installLocalMiniAppRequestSchema), async (c) =>
       c.json(
         installLocalMiniAppResponseSchema.parse(

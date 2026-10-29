@@ -63,9 +63,6 @@ export const installLocalMiniAppResponseSchema = z.object({
   warnings: z.array(z.string()),
 })
 
-/** The mini app kit this Localix builds mini apps against. */
-export const miniAppKitResponseSchema = z.object({ dir: z.string() })
-
 /** One catalog the store reads (`catalogs.ts`). */
 export const miniAppCatalogSchema = z.object({ url: z.string(), builtIn: z.boolean() })
 export type MiniAppCatalogEntryRecord = z.infer<typeof miniAppCatalogSchema>

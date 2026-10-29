@@ -1,13 +1,14 @@
-// Stage the MINI APP KIT beside the staged mini apps: everything the running app needs to scaffold,
-// build and test a user mini app without a source tree (layout: apps/api/src/features/mini-apps/
-// kit-layout.ts). The authoring plugin reads it; Localix serves it at `/rpc/mini-apps/kit`.
+// Stage the MINI APP KIT: everything a mini app is checked, tested and built against without a
+// Localix source tree (layout: apps/api/src/features/mini-apps/kit-layout.ts). Each release
+// publishes it as `mini-app-kit.tar.gz`; the app itself does not carry it. To build a mini app
+// against this checkout, `bun run mini-app-kit` stages it into `.turbo/mini-app-kit`, and
+// `MINI_APP_KIT=<that folder>` points the authoring tools at it.
 //
-// Why at staging: an installed app has no `node_modules`, no host sources and no scanner binaries,
-// so whatever a user mini app build needs from the host is resolved HERE, once, where it all exists
-// — the export names of every module the host shares with mini app UI, the host
-// theme's stylesheets, and prebuilt copies of the modules a mini app backend may import — and the
-// app reads only the result. Development stages the same kit, so there is one path, not a dev
-// shortcut.
+// Why at staging: a mini app's build has no Localix `node_modules`, no host sources and no scanner
+// binaries, so whatever it needs from the host is resolved HERE, once, where it all exists — the
+// export names of every module the host shares with mini app UI, the host theme's stylesheets, and
+// prebuilt copies of the modules a mini app backend may import — and the build reads only the
+// result.
 //
 // Run as a child (`bun scripts/stage-mini-app-kit.mjs <repoRoot> <outKit>`), so staging's
 // synchronous pipeline stays synchronous while this uses the async bundler.
@@ -55,6 +56,12 @@ import {
   localixVersion,
 } from './stage-mini-app-kit-tools.mjs'
 import { stageMiniAppKitTypes } from './stage-mini-app-kit-types.mjs'
+import {
+  contractDigest,
+  KIT_CONTRACT_FILE,
+  readContract,
+  renderContract,
+} from './mini-app-contract.mjs'
 
 /** The host's design-system stylesheet: its theme, variants and utilities. */
 export const HOST_STYLESHEET = 'apps/ui/src/app/index.css'
@@ -72,8 +79,7 @@ const HOST_SHARED_MODULES = 'apps/ui/src/app/miniAppSharedModules.ts'
 
 /**
  * Everything the kit is made from, repository-relative: a change to any of these is a stale kit.
- * One list, read by the dev watcher (re-stage while the API runs) and by packaging (its cache
- * key), so the two cannot disagree about when a kit is current.
+ * The cache key (`mini-app-kit-cache.mjs`) is read from it.
  */
 export const MINI_APP_KIT_INPUTS = [
   'scripts/stage-mini-app-kit.mjs',
@@ -83,6 +89,7 @@ export const MINI_APP_KIT_INPUTS = [
   'scripts/stage-mini-app-kit-runtime.mjs',
   'scripts/stage-mini-app-kit-plugins.mjs',
   'scripts/mini-app-kit-cache.mjs',
+  'scripts/mini-app-contract.mjs',
   'apps/api/src/features/mini-apps/kit-layout.ts',
   // The context contract a mini app's provider tests certify against (`@localixai/kit/testing/*`).
   'apps/api/src/features/context-fabric',
@@ -295,6 +302,12 @@ export async function stageMiniAppKit({ repoRoot, outKit, log = () => {} }) {
     tools: await buildKitTools(repoRoot, outKit),
   }
   writeFileSync(join(outKit, MINI_APP_KIT_MANIFEST), `${JSON.stringify(manifest, null, 2)}\n`)
+  // What a mini app may rely on, read out of the kit just staged (`mini-app-contract.mjs`): as text
+  // beside it, and by digest in `kit.json`, which a running Localix reports the same way.
+  const contract = renderContract(readContract(outKit))
+  writeFileSync(join(outKit, KIT_CONTRACT_FILE), contract)
+  manifest.contract = contractDigest(contract)
+  writeFileSync(join(outKit, MINI_APP_KIT_MANIFEST), `${JSON.stringify(manifest, null, 2)}\n`)
   writeFileSync(join(outKit, 'package.json'), `${JSON.stringify(kitPackage(manifest), null, 2)}\n`)
   if (types.kitRejected.length) {
     log(
@@ -313,14 +326,13 @@ if (process.argv[1] && resolve(process.argv[1]) === resolve(import.meta.path)) {
     console.error('Usage: bun scripts/stage-mini-app-kit.mjs <repoRoot> <outKit> [--cache=<dir>]')
     process.exit(2)
   }
-  // Staged beside, then swapped in: a running API re-staged under (the dev watcher) must never
-  // read half a kit.
+  // Staged beside, then swapped in: a build reading the kit must never see half of one.
   const target = resolve(outKit)
   const next = `${target}.next-${process.pid}`
   const root = resolve(repoRoot)
   const log = (line) => console.log(`[mini-app-kit] ${line}`)
   try {
-    // Development only (`--cache`): reuse the kit staged for identical inputs. See
+    // Development and tests only (`--cache`): reuse the kit staged for identical inputs. See
     // `mini-app-kit-cache.mjs` for why a kit is safe to reuse and why the key is content.
     // The version is part of the key: a release stamps its own into an otherwise identical kit.
     const key = () => `${kitInputsDigest(root, MINI_APP_KIT_INPUTS)}-${localixVersion(root)}`

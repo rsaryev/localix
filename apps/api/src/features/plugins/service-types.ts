@@ -45,8 +45,6 @@ export interface PluginServiceDeps {
   env?: Record<string, string | undefined>
   /** The commit a remote git ref points at (`git ls-remote`); tests stub the network. */
   remoteCommit?: (url: string, ref?: string) => Promise<string | undefined>
-  /** Where the plugin kit is; defaults to the one shipped beside the staged plugins. */
-  miniAppKitDir?: () => string
   /**
    * The user's home, root of the global `.localix/plugins` (see `discoverPlugins`). Required: Bun
    * reads the home once at process start, so reassigning `process.env.HOME` isolates nothing —

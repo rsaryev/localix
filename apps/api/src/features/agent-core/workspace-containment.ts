@@ -2,7 +2,6 @@ import { TOOL } from './tool-names'
 import { isPathWithin } from '@localixai/path-containment'
 import { realpathSync } from 'node:fs'
 import path from 'node:path'
-import { readableHostRoots } from '../../lib/host-roots'
 import { AGENT_ALLOWED_ROOTS, isInsideWorkspace } from './tools/workspace'
 
 /**
@@ -79,11 +78,9 @@ export function isOutsideWorkspace(
   }
   // Readers are judged on canonical paths (a link inside may point out), against the workspace
   // and the agent-authored roots — the same roots a write may touch, so a plugin an agent was
-  // asked to build is as readable as it is writable. The mini app kit's SDK declarations join
-  // them for reading only: they are what a mini app is written against, and the host-root guard
-  // already lets these two tools open them.
+  // asked to build is as readable as it is writable.
   const target = canonicalAncestor(candidate)
-  return ![root, ...AGENT_ALLOWED_ROOTS, ...readableHostRoots()].some((allowed) =>
+  return ![root, ...AGENT_ALLOWED_ROOTS].some((allowed) =>
     isPathWithin(canonicalAncestor(allowed), target),
   )
 }

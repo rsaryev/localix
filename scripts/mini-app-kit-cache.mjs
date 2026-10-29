@@ -36,7 +36,7 @@ const KEEP = 2
  */
 const KEY_EXTRA_INPUTS = ['bun.lock', 'scripts/mini-app-kit-cache.mjs']
 
-/** The one cache every caller shares: dev launches, the dev watcher and the test suites. */
+/** The one cache every caller shares: `bun run mini-app-kit` and the test suites. */
 export function kitCacheRoot(repoRoot) {
   return join(repoRoot, '.turbo', 'mini-app-kit-cache')
 }

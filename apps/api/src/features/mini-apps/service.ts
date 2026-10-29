@@ -15,7 +15,6 @@ import { buildMiniAppCatalog, type MiniAppCatalog } from './catalog'
 import type { InvokeMiniAppUiActionRequest, MiniAppViewSpec } from './contracts-contributions'
 import type { MiniAppCommandSpec, MiniAppRecord } from './contracts'
 import { createMiniAppInspections } from './inspection-snapshots'
-import { miniAppKitDir } from './kit-root'
 import { miniAppInstallRoot } from './discovery'
 import { installLocalPackage } from './local-install'
 import { toMiniAppRecord } from './records'
@@ -48,8 +47,6 @@ export interface MiniAppServiceDeps {
     context: MiniAppUiActionContext
   }) => Promise<unknown>
   logger?: { warn: (msg: string, meta?: unknown) => void }
-  /** Where the mini app kit is; defaults to the one shipped beside the server bundle. */
-  miniAppKitDir?: () => string
   /** The catalogs every installation reads; defaults to `builtInMiniAppSources`. */
   storeSources?: () => Promise<MiniAppStoreSource[]>
   /**
@@ -186,9 +183,6 @@ export function createMiniAppService(deps: MiniAppServiceDeps) {
 
     /** A switch is a rule like any other: `mini-app:<name>`, in one agent's list. */
     setEnabled,
-
-    /** Where the mini app kit is: what the authoring plugin builds against. */
-    kitDir: deps.miniAppKitDir ?? miniAppKitDir,
 
     /** Install a package the person built (`mini-app install`) and switch it on. */
     installLocal: (userId: string, input: { dir: string; source: string }) =>

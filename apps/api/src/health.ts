@@ -4,6 +4,8 @@ import {
   LOCALIX_API_PROTOCOL_VERSION,
   type LocalixRuntimeInfo,
 } from './lib/runtime-protocol'
+import { localixVersion } from './lib/app-version'
+import { MINI_APP_CONTRACT } from './lib/mini-app-contract'
 
 /**
  * Liveness probe — DEPENDENCY-FREE BY DESIGN.
@@ -19,7 +21,7 @@ import {
  * `App` type, same as the subsystem route mounts.
  */
 export function createHealthRoutes(
-  info?: Pick<LocalixRuntimeInfo, 'instanceId' | 'startedAt' | 'databaseId'> & {
+  info?: Pick<LocalixRuntimeInfo, 'instanceId' | 'startedAt' | 'databaseId' | 'version'> & {
     /**
      * True once shutdown has begun. A reopen right after quit found the dying runtime still
      * answering 200 here and attached to it; the socket closed a second later and the new
@@ -31,6 +33,7 @@ export function createHealthRoutes(
 ) {
   return new Hono().get('/health', (c) => {
     const draining = info?.isDraining?.() === true
+    const version = info?.version ?? localixVersion()
     return c.json(
       {
         status: draining ? 'draining' : 'ok',
@@ -39,6 +42,8 @@ export function createHealthRoutes(
         protocolVersion: LOCALIX_API_PROTOCOL_VERSION,
         startedAt: info?.startedAt ?? 'unknown',
         ...(info?.databaseId ? { databaseId: info.databaseId } : {}),
+        ...(version ? { version } : {}),
+        miniAppContract: MINI_APP_CONTRACT,
       } satisfies LocalixRuntimeInfo,
       draining ? 503 : 200,
     )

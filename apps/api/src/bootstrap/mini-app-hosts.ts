@@ -1,6 +1,4 @@
 import { createMiniAppBackendHost } from '../features/mini-apps/backend-host'
-import { miniAppKitDir } from '../features/mini-apps/kit-root'
-import { setReadableHostRoots } from '../lib/host-roots'
 import { loadMiniAppBackends } from '../features/mini-apps/loader'
 import { createMiniAppWakes } from '../features/mini-apps/mini-app-wake'
 import { resolveMiniAppRouteScope } from '../features/mini-apps/route-scope'
@@ -85,9 +83,6 @@ export function createMiniAppHostsPhase({
   decisionService,
   changes,
 }: MiniAppHostsPhaseInput): MiniAppHostsPhase {
-  // The kit's SDK declarations are what a mini app is written against: agents may read them
-  // although the kit lives inside the application (`lib/host-roots.ts`, read and search only).
-  setReadableHostRoots(() => [miniAppKitDir()])
   const warnMiniAppOnce = warnOnce(logger, MINI_APP_WARNINGS)
   const miniAppConditions = createMiniAppConditions(notifications, env.LOCALIX_DEFAULT_USER_ID)
   // The per-run load and every mini app context are built inside the chat runtime, out of reach.

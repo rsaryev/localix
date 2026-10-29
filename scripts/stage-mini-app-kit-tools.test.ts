@@ -7,7 +7,7 @@ import { KIT_TOOLS_ENTRY } from './stage-mini-app-kit-tools.mjs'
 const root = join(import.meta.dir, '..')
 
 describe('the kit input list', () => {
-  // The kit cache digest and the dev watcher read MINI_APP_KIT_INPUTS; a file the authoring bundle
+  // The kit cache digest reads MINI_APP_KIT_INPUTS; a file the authoring bundle
   // absorbs that is not named there leaves a stale bundle in use after an edit.
   test('names every repository file the authoring bundle is built from', async () => {
     const built = await Bun.build({

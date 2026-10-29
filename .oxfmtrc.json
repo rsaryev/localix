@@ -20,6 +20,7 @@
     "apps/landing/src/generated",
     "apps/ui/test-results",
     "apps/api/migrations/*.ts",
+    "packages/mini-app-sdk/mini-app.api.md",
     "extend",
     "vendor",
     ".agents/skills",

@@ -36,7 +36,7 @@ const release = Bun.YAML.parse(read('.github/workflows/release.yml')) as Workflo
 const landing = Bun.YAML.parse(read('.github/workflows/landing.yml')) as Workflow
 // Unit tests run in CI on our own runner, where a busy laptop cannot make them flaky; integration
 // tests, the bundle and coverage run on demand.
-const gates = ['type-check', 'check:tests', 'check:size', 'test']
+const gates = ['type-check', 'check:tests', 'check:size', 'check:mini-app-contract', 'test']
 const slices = ci.jobs.app.strategy?.matrix.include ?? []
 /** Every `bun run <script>` the app matrix runs, slice by slice. */
 const sliceCommands = slices.flatMap((slice) =>
@@ -63,6 +63,18 @@ describe('CI minute budget contract', () => {
       .flatMap((job) => job.steps)
       .find((candidate) => candidate.run?.includes('stage-mini-app-kit.mjs'))
     expect(step?.env?.LOCALIX_VERSION).toBe('${{ needs.prepare.outputs.version }}')
+  })
+
+  // The contract is what mini apps rely on (`packages/mini-app-sdk/mini-app.api.md`): every main
+  // commit proves the committed one is what its kit carries, and a release publishes no kit that
+  // says anything else.
+  test('checks the mini app contract on every run, and against the kit a release publishes', () => {
+    const run = Object.values(release.jobs)
+      .flatMap((job) => job.steps)
+      .find((candidate) => candidate.run?.includes('stage-mini-app-kit.mjs'))!.run!
+    const check = run.indexOf('check-mini-app-contract.mjs --kit "$RUNNER_TEMP/mini-app-kit"')
+    expect(check).toBeGreaterThan(run.indexOf('stage-mini-app-kit.mjs'))
+    expect(check).toBeLessThan(run.indexOf('tar -czf'))
   })
 
   test('packages macOS on macos-15 and Linux on ubuntu-22.04', () => {

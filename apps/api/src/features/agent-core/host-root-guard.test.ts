@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 
 import { localixHome } from '../../lib/env'
-import { hostRoots, setReadableHostRoots } from '../../lib/host-roots'
+import { hostRoots } from '../../lib/host-roots'
 import { isPathWithin } from '../../lib/path-containment'
 import { HOST_ROOT_DENIAL } from './host-root-guard'
 import { createPermissionGate } from './permission-gate'
@@ -90,27 +90,6 @@ describe('host-root guard', () => {
     expect(blocked(await verdict('Bash', { command: 'ls' }, path.join(CHECKOUT, 'apps/ui')))).toBe(
       false,
     )
-  })
-
-  test('the mini app kit inside the application is readable, never writable', async () => {
-    const kit = path.join(CHECKOUT, 'apps/api')
-    const file = path.join(kit, 'package.json')
-    setReadableHostRoots(() => [kit])
-    try {
-      expect(blocked(await verdict('Read', { path: file }))).toBe(false)
-      expect(blocked(await verdict('Search', { path: kit, pattern: 'name' }))).toBe(false)
-      expect(blocked(await verdict('Write', { path: file, content: 'x' }))).toBe(true)
-      expect(
-        blocked(await verdict('Edit', { path: file, old_string: '"name"', new_string: '"x"' })),
-      ).toBe(true)
-      expect(blocked(await verdict('Bash', { command: `cat ${file}` }))).toBe(true)
-      // the rest of the application stays closed
-      expect(blocked(await verdict('Read', { path: path.join(CHECKOUT, 'package.json') }))).toBe(
-        true,
-      )
-    } finally {
-      setReadableHostRoots(() => [])
-    }
   })
 
   test('the agent-owned allowed roots never whitelist a host root', () => {

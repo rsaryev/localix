@@ -133,7 +133,7 @@ export function judgeCall(
 
   // The host application is not a permission question: no rule, preset or mode reaches
   // past this line into Localix's own source or install tree (`host-root-guard.ts`).
-  const hostDenial = hostRootDenial(ctx.toolName, ctx.input, call, opts.root, opts.hostRoots)
+  const hostDenial = hostRootDenial(ctx.input, call, opts.root, opts.hostRoots)
   if (hostDenial) return { kind: 'host', message: hostDenial }
 
   // ONE evaluation, because there is one list. A session mode that stops asking does it by
