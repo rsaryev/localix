@@ -22,6 +22,8 @@ export type ComposerCommandButtonProps = Omit<
   sessionId?: string | null
   /** Replace the current draft instead of appending to it. */
   replace?: boolean
+  /** The terminal glyph before the command; off where the monospace text says enough. */
+  glyph?: boolean
 }
 
 /**
@@ -34,6 +36,7 @@ export function ComposerCommandButton({
   insertText = command,
   sessionId,
   replace,
+  glyph = true,
   className,
   title = 'Insert into composer',
   disabled,
@@ -64,7 +67,7 @@ export function ComposerCommandButton({
       }}
       {...props}
     >
-      <SquareTerminal className="size-3.5" aria-hidden="true" />
+      {glyph && <SquareTerminal className="size-3.5" aria-hidden="true" />}
       {command}
     </Button>
   )

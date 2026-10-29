@@ -14,6 +14,7 @@ import {
 } from '@/shared/lib/background-activity/dismissals'
 import { openStore } from '@/shared/lib/openStore'
 import { useChatStore } from '../../model/store'
+import { reportRecommendationsShown } from '@/shared/lib/recommendationEvents'
 import { RecommendationsRow } from './RecommendationsRow'
 import { UpdateOffersRow } from './UpdateOffersRow'
 
@@ -102,5 +103,12 @@ function RecommendationsStrip() {
   const sessionId = useChatStore((s) => s.activeSessionId)
   const answer = useStoreRecommendations(storeApi, projectId, sessionId)
   if (!answer.data) return null
-  return <RecommendationsRow answer={answer.data} onSee={() => openStore({ recommended: true })} />
+  const reasons = answer.data.reasons
+  return (
+    <RecommendationsRow
+      answer={answer.data}
+      onSee={() => openStore({ recommended: true })}
+      onShown={(named) => reportRecommendationsShown(storeApi, 'notice', named, reasons)}
+    />
+  )
 }

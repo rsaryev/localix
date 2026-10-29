@@ -26,7 +26,8 @@ describe('StatusTipStrip', () => {
     expect(html).toContain('/help')
     expect(html).toContain('data-slot="workbench-notice-bar"')
     expect(html).toContain('data-slot="composer-command-button"')
-    expect(html).toContain('lucide-square-terminal')
+    // The title and the command's own type say what they are; the only picture is the dismiss.
+    expect(html.match(/<svg/g)).toHaveLength(1)
     expect(html).toContain('lucide-x')
     expect(html).toContain('border-border-soft')
     expect(html).not.toContain('lx-activity-orb')

@@ -1,11 +1,11 @@
 import { memo, useMemo, useSyncExternalStore } from 'react'
-import { ArrowUpRight, Lightbulb } from 'lucide-react'
 import { ComposerCommandButton } from '@/shared/ui/composer-command-button'
 import { WorkbenchNoticeBar } from '@localixai/kit/workbench-notice-bar'
 import { Button } from '@localixai/kit/button'
 import { subscribeUiCommands, uiCommandRevision } from '@/shared/contrib/uiCommands'
 import { subscribeUiLocations, uiLocationRevision } from '@/shared/contrib/uiLocations'
 import { useUiNavigation } from '@/shared/hooks/useUiNavigation'
+import { useComposerAdviceHeld } from '@/shared/lib/composerAdvice'
 import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import {
   navigateUiAction,
@@ -78,7 +78,6 @@ function TipNavigateButton({ action }: { action: NavigateTipAction }) {
       onClick={() => void navigateUiAction(serialized, navigation)}
     >
       <span className="truncate">{view.label}</span>
-      <ArrowUpRight data-icon="inline-end" />
     </Button>
   )
 }
@@ -97,6 +96,7 @@ function TipActions({ actions }: { actions: readonly ComposerTipAction[] }) {
             key={`insert:${action.text}`}
             command={action.label}
             insertText={action.text}
+            glyph={false}
           />
         ) : action.kind === 'local' ? (
           <Button
@@ -119,7 +119,9 @@ function TipActions({ actions }: { actions: readonly ComposerTipAction[] }) {
 
 /**
  * A quiet, single-purpose hint strip above the composer. Stream activity belongs to the
- * message footer, so this surface never repeats its spinner, phase label, model, or timer.
+ * message footer, so this surface never repeats its spinner, phase label, model, or timer. No
+ * glyphs: the title says it is a tip, a command reads as one in its own type, and a destination
+ * is a word, so the line carries text and the dismiss only.
  */
 /**
  * Memoized: the composer re-renders on every keystroke, but this strip's props
@@ -130,13 +132,14 @@ export const StatusTipStrip = memo(function StatusTipStrip({
   tip,
   onDismissTip,
 }: StatusTipStripProps) {
-  if (!tip) return null
+  // A recommendation holds the advice place: the tip waits (`composerAdvice.ts`).
+  const waiting = useComposerAdviceHeld()
+  if (!tip || waiting) return null
   const actions = tip.actions ?? NO_ACTIONS
 
   return (
     <WorkbenchNoticeBar
       key={tip.id}
-      icon={<Lightbulb className="size-3.5" />}
       title="Tip"
       description={tip.text}
       className="animate-in fade-in duration-(--dur-moderate)"

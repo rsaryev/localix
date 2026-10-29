@@ -34,10 +34,12 @@ async function recommendDocker() {
   return [
     spyOn(storeApi, 'activity').mockResolvedValue({ jobs: [], updates: [] }),
     spyOn(storeApi, 'reportWorkingSet').mockResolvedValue(undefined),
+    spyOn(storeApi, 'recordRecommendationEvents').mockResolvedValue(undefined),
     spyOn(storeApi, 'recommendations').mockResolvedValue({
       listings: [docker],
       matched: 1,
       strategy: { mode: 'hybrid' },
+      reasons: {},
       pending: false,
     }),
     spyOn(localModelsApi, 'status').mockResolvedValue({
@@ -116,7 +118,7 @@ describe('the strips above the composer', () => {
     const spies = await recommendDocker()
     const view = await mountComposer({ isFocused: false, isVisible: true })
     try {
-      expect(view.host.textContent).toContain('Recommended for you')
+      expect(view.host.textContent).toContain('Docker tools for your work')
     } finally {
       await view.done()
       spies.forEach((spy) => spy.mockRestore())
@@ -127,7 +129,7 @@ describe('the strips above the composer', () => {
     const spies = await recommendDocker()
     const view = await mountComposer({ isFocused: false, isVisible: false })
     try {
-      expect(view.host.textContent).not.toContain('Recommended for you')
+      expect(view.host.textContent).not.toContain('Docker tools for your work')
     } finally {
       await view.done()
       spies.forEach((spy) => spy.mockRestore())

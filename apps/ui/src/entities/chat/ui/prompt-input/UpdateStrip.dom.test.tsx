@@ -212,10 +212,12 @@ describe('UpdateStrip with other updates on offer', () => {
     const { storeApi } = await import('@/shared/api/store-client')
     return [
       spyOn(storeApi, 'reportWorkingSet').mockResolvedValue(undefined),
+      spyOn(storeApi, 'recordRecommendationEvents').mockResolvedValue(undefined),
       spyOn(storeApi, 'recommendations').mockResolvedValue({
         listings,
         matched: listings.length,
         strategy: { mode: 'hybrid' },
+        reasons: {},
         pending: false,
       }),
     ]
@@ -275,8 +277,8 @@ describe('UpdateStrip with other updates on offer', () => {
     const { checkDesktopUpdate } = await import('@/shared/hooks/useDesktopUpdate')
     await checkDesktopUpdate()
     const view = await mountStrip()
-    expect(view.host.textContent).toContain('Recommended for you')
-    expect(view.host.textContent).toContain('Docker tools suits what you work on')
+    expect(view.host.textContent).toContain('Recommended')
+    expect(view.host.textContent).toContain('Docker tools for your work')
     await view.unmount()
     spies.forEach((spy) => spy.mockRestore())
   })

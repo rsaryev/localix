@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
-import type { Listing } from '@localixai/store'
+import type { Listing, RecommendReason } from '@localixai/store'
 import { makeListing } from '@localixai/store/testing'
 
 let teardown: () => Promise<void>
@@ -16,11 +16,16 @@ const k8s = makeListing({ id: 'k8s', kind: 'plugin', displayName: 'Kubernetes' }
 const helm = makeListing({ id: 'helm', kind: 'plugin', displayName: 'Helm' })
 const filler = makeListing({ id: 'filler', kind: 'plugin', displayName: 'Popular thing' })
 
-async function mount(listings: Listing[], matched: number) {
+async function mount(
+  listings: Listing[],
+  matched: number,
+  reasons: Record<string, RecommendReason> = {},
+) {
   const React = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { RecommendationsRow } = await import('./RecommendationsRow')
   const opened: string[] = []
+  const shown: string[][] = []
   const host = document.createElement('div')
   document.body.append(host)
   const root = createRoot(host)
@@ -28,8 +33,9 @@ async function mount(listings: Listing[], matched: number) {
     React.act(async () =>
       root.render(
         <RecommendationsRow
-          answer={{ listings: next, matched: suited }}
+          answer={{ listings: next, matched: suited, reasons }}
           onSee={() => opened.push('recommendations')}
+          onShown={(named) => shown.push(named.map((listing) => listing.ref.id))}
         />,
       ),
     )
@@ -41,6 +47,7 @@ async function mount(listings: Listing[], matched: number) {
   return {
     host,
     opened,
+    shown,
     render,
     click: (name: string) => React.act(async () => button(name)!.click()),
     unmount: async () => {
@@ -51,15 +58,37 @@ async function mount(listings: Listing[], matched: number) {
 }
 
 describe('the composer’s recommendations row', () => {
+  test('tells the Store which package it names', async () => {
+    const view = await mount([docker, k8s, helm, filler], 3)
+    try {
+      expect(view.shown.at(-1)).toEqual(['docker'])
+    } finally {
+      await view.unmount()
+    }
+  })
+
+  test('says why: what found the first of them', async () => {
+    const view = await mount([docker, k8s], 2, {
+      'plugin:docker': { source: 'open', label: 'compose.yaml' },
+    })
+    try {
+      expect(view.host.textContent).toContain('Docker tools and 1 more for compose.yaml')
+    } finally {
+      await view.unmount()
+    }
+  })
+
   test('says what suits the work and opens the recommendations in the Store', async () => {
     const view = await mount([docker, k8s, helm, filler], 3)
     try {
-      expect(view.host.textContent).toContain('Recommended for you')
-      expect(view.host.textContent).toContain('Docker tools, Kubernetes and 1 more')
+      expect(view.host.textContent).toContain('Recommended')
+      expect(view.host.textContent).toContain('Docker tools and 2 more for your work')
       expect(view.host.textContent).not.toContain('Popular thing')
+      // No glyph repeats the title: the only picture is the dismiss button's.
+      expect(view.host.querySelectorAll('svg')).toHaveLength(1)
       await view.click('See')
       expect(view.opened).toEqual(['recommendations'])
-      expect(view.host.textContent).not.toContain('Recommended for you')
+      expect(view.host.textContent).not.toContain('Recommended')
     } finally {
       await view.unmount()
     }
@@ -68,9 +97,9 @@ describe('the composer’s recommendations row', () => {
   test('one package suits the work; several suit it', async () => {
     const view = await mount([docker], 1)
     try {
-      expect(view.host.textContent).toContain('Docker tools suits what you work on')
+      expect(view.host.textContent).toContain('Docker tools for your work')
       await view.render([docker, k8s], 2)
-      expect(view.host.textContent).toContain('Docker tools and Kubernetes suit what you work on')
+      expect(view.host.textContent).toContain('Docker tools and 1 more for your work')
     } finally {
       await view.unmount()
     }
