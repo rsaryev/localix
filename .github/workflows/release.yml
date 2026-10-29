@@ -510,7 +510,12 @@ jobs:
           for target in "$dmg" "$app"; do
             codesign -dv "$target" 2>&1 | grep -qx "TeamIdentifier=$team" ||
               { echo "$target is not signed by team $team" >&2; exit 1; }
-            xcrun stapler validate "$target"
+            # Apple's CloudKit drops a hosted runner's connection now and then (exit 68).
+            for attempt in 1 2 3 4; do
+              xcrun stapler validate "$target" && break
+              [ "$attempt" = 4 ] && exit 1
+              sleep 30
+            done
           done
           spctl --assess --type open --context context:primary-signature --verbose=2 "$dmg"
           spctl --assess --type execute --verbose=2 "$app"

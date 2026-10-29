@@ -1,5 +1,6 @@
 import { readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
+import { untilAppleAnswers } from './apple-retry.mjs'
 import {
   assertUpdaterEmbedded,
   readUpdaterSettings,
@@ -132,8 +133,8 @@ if (notarizeDmg && process.platform === 'darwin') {
       process.env.APPLE_API_ISSUER,
       '--wait',
     ])
-    if (code === 0) code = await run(['xcrun', 'stapler', 'staple', dmg])
-    if (code === 0) code = await run(['xcrun', 'stapler', 'validate', dmg])
+    if (code === 0) code = await untilAppleAnswers(run, ['xcrun', 'stapler', 'staple', dmg])
+    if (code === 0) code = await untilAppleAnswers(run, ['xcrun', 'stapler', 'validate', dmg])
     if (code !== 0) process.exit(code)
   }
 }
