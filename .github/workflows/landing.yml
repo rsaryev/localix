@@ -104,19 +104,22 @@ jobs:
             echo "No published release yet; installers stay marked coming soon."
           fi
 
+      # On Bun: the CLI's own launcher starts `#!/usr/bin/env node`, and this runner has no Node.
       - name: Install the pinned Vercel CLI
-        run: |
-          BUN_INSTALL="$RUNNER_TEMP/bun-global" bun add --global "vercel@$VERCEL_CLI_VERSION"
-          echo "$RUNNER_TEMP/bun-global/bin" >> "$GITHUB_PATH"
+        run: bunx --bun "vercel@$VERCEL_CLI_VERSION" --version
 
       - name: Pull the Vercel configuration
-        run: vercel pull --yes --environment="$TARGET_ENVIRONMENT" --token "$VERCEL_TOKEN"
+        run:
+          bunx --bun "vercel@$VERCEL_CLI_VERSION" pull --yes --environment="$TARGET_ENVIRONMENT"
+          --token "$VERCEL_TOKEN"
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           TARGET_ENVIRONMENT: ${{ steps.target.outputs.environment }}
 
       - name: Build website
-        run: vercel build ${TARGET_FLAG:+"$TARGET_FLAG"} --token "$VERCEL_TOKEN"
+        run:
+          bunx --bun "vercel@$VERCEL_CLI_VERSION" build ${TARGET_FLAG:+"$TARGET_FLAG"} --token
+          "$VERCEL_TOKEN"
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           TARGET_FLAG: ${{ steps.target.outputs.flag }}
@@ -129,7 +132,7 @@ jobs:
         run: |
           # The CLI prints plain text here and JSON when it detects an agent, so the address is
           # read with a pattern that works for both, and readiness is asked of the API instead.
-          vercel deploy --prebuilt ${TARGET_FLAG:+"$TARGET_FLAG"} --token "$VERCEL_TOKEN" > deploy.out
+          bunx --bun "vercel@$VERCEL_CLI_VERSION" deploy --prebuilt ${TARGET_FLAG:+"$TARGET_FLAG"} --token "$VERCEL_TOKEN" > deploy.out
           url=$(grep -Eo 'https://[A-Za-z0-9.-]+\.vercel\.app' deploy.out | tail -n 1)
           test -n "$url" || { cat deploy.out >&2; echo "No deployment address in the CLI output" >&2; exit 1; }
           host="${url#https://}"

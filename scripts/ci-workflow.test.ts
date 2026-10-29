@@ -117,6 +117,17 @@ describe('CI minute budget contract', () => {
     expect(JSON.parse(read('turbo.json')).globalDependencies).not.toContain('.nvmrc')
   })
 
+  // The Vercel CLI's launcher starts with `#!/usr/bin/env node`: run bare on our Node-free runner,
+  // it failed with "node: No such file or directory" and the release left the website undeployed.
+  test('runs the Vercel CLI on Bun, never through its Node launcher', () => {
+    const calls = landing.jobs.deploy.steps
+      .flatMap((step) => (step.run ?? '').split('\n'))
+      .filter((line) => /\bvercel\b/u.test(line) && !line.includes('vercel.app'))
+      .filter((line) => !/^\s*(?:#|url=|host=|state=|"https:)/u.test(line))
+    expect(calls.length).toBeGreaterThan(0)
+    for (const line of calls) expect(line).toMatch(/\bbunx --bun "vercel@\$VERCEL_CLI_VERSION"/u)
+  })
+
   test('gives checks, desktop releases, and website deployments distinct names', () => {
     expect(Bun.YAML.parse(read('.github/workflows/ci.yml')).name).toBe('Checks')
     expect(Bun.YAML.parse(read('.github/workflows/release.yml')).name).toBe('Desktop Release')
