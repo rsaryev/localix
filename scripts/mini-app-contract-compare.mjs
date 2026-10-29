@@ -71,7 +71,10 @@ function shapeOf(text) {
   const walk = (node, path) => {
     if (ts.isPropertySignature(node) || ts.isPropertyDeclaration(node)) {
       const at = [...path, node.name.getText(source)]
-      properties.set(at.join('.'), Boolean(node.questionToken))
+      // A path the members of a union both name is optional when any of them leaves it out, so
+      // the order the union lists them in does not decide.
+      const key = at.join('.')
+      properties.set(key, Boolean(properties.get(key)) || Boolean(node.questionToken))
       if (node.type) walk(node.type, at)
       return
     }

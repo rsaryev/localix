@@ -56,6 +56,16 @@ describe('a declaration as the contract writes it', () => {
     )
     expect(a).toBe(b)
   })
+
+  test('reads the same whatever order an inferred object type listed its properties in', () => {
+    const a = canonicalDeclaration(
+      'export declare const Panel: (props: {\n    asChild?: boolean;\n    onOpenAutoFocus?: (event: Event) => void;\n    forceMount?: true;\n}) => void;',
+    )
+    const b = canonicalDeclaration(
+      'export declare const Panel: (props: {\n    forceMount?: true;\n    onOpenAutoFocus?: (event: Event) => void;\n    asChild?: boolean;\n}) => void;',
+    )
+    expect(a).toBe(b)
+  })
 })
 
 describe('what breaks a mini app built against the committed contract', () => {
@@ -93,6 +103,30 @@ describe('what breaks a mini app built against the committed contract', () => {
         'interface Options {\n    title: string;\n}'
     })
     expect(required.breaking).toEqual(['mini-app-sdk/dist/app.d.ts#Options: title is now required'])
+  })
+
+  test('nothing, when the members of a union of objects only trade places', () => {
+    const swapped = compareContracts(
+      parseContract(
+        text({
+          ...base(),
+          types: {
+            'mini-app-sdk/dist/app.d.ts#Options':
+              'type Options = {\n    kind: "file";\n    path: string;\n} | {\n    kind: "link";\n    path?: string;\n};',
+          },
+        }),
+      ),
+      parseContract(
+        text({
+          ...base(),
+          types: {
+            'mini-app-sdk/dist/app.d.ts#Options':
+              'type Options = {\n    kind: "link";\n    path?: string;\n} | {\n    kind: "file";\n    path: string;\n};',
+          },
+        }),
+      ),
+    )
+    expect(swapped.breaking).toEqual([])
   })
 
   test('a function that now needs an argument it did not', () => {

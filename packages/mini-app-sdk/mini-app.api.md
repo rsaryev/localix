@@ -669,8 +669,8 @@ export declare function toCsv(columns: TableColumn[], rows: TableRow[], delimite
 
 ```ts
 export declare function validateChartSpec(spec: ChartSpec, columns: TableColumn[]): {
-    ok: boolean;
     errors: string[];
+    ok: boolean;
 };
 ```
 
@@ -692,8 +692,8 @@ export declare const ACTION_FEEDBACK_MS: 4000;
 
 ```ts
 export declare const ActionFeedback: (props: {
-    store: ActionFeedbackStore;
     className?: string;
+    store: ActionFeedbackStore;
 }) => React.ReactElement | null;
 ```
 
@@ -710,9 +710,9 @@ export type ActionFeedbackAction = {
 
 ```ts
 export type ActionFeedbackInput = {
-    tone?: ActionFeedbackTone | undefined;
-    detail?: string | undefined;
     action?: ActionFeedbackAction | undefined;
+    detail?: string | undefined;
+    tone?: ActionFeedbackTone | undefined;
 };
 ```
 
@@ -720,11 +720,11 @@ export type ActionFeedbackInput = {
 
 ```ts
 export type ActionFeedbackMessage = {
+    action?: ActionFeedbackAction | undefined;
+    detail?: string | undefined;
     id: number;
     message: string;
     tone: ActionFeedbackTone;
-    detail?: string | undefined;
-    action?: ActionFeedbackAction | undefined;
 };
 ```
 
@@ -732,8 +732,8 @@ export type ActionFeedbackMessage = {
 
 ```ts
 export type ActionFeedbackProps = {
-    store: ActionFeedbackStore;
     className?: string | undefined;
+    store: ActionFeedbackStore;
 };
 ```
 
@@ -741,10 +741,10 @@ export type ActionFeedbackProps = {
 
 ```ts
 export type ActionFeedbackStore = {
-    show: (message: string, input?: ActionFeedbackInput | undefined) => void;
     clear: () => void;
-    hold: (held: boolean) => void;
     getSnapshot: () => ActionFeedbackMessage | null;
+    hold: (held: boolean) => void;
+    show: (message: string, input?: ActionFeedbackInput | undefined) => void;
     subscribe: (listener: () => void) => () => void;
 };
 ```
@@ -773,10 +773,10 @@ export declare const useActionFeedback: (durationMs?: number) => ActionFeedbackS
 
 ```ts
 export declare const ActionPill: (props: {
-    asChild?: boolean;
-    recommended?: boolean;
     active?: boolean;
+    asChild?: boolean;
     elevated?: boolean;
+    recommended?: boolean;
 } & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "active" | "asChild" | "elevated" | "recommended"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
 ```
 
@@ -794,8 +794,8 @@ export declare const ActivityOrb: (props: {
 
 ```ts
 export declare const ActivitySignal: (props: {
-    label: string;
     className?: string;
+    label: string;
     labelClassName?: string;
 }) => React.ReactElement | null;
 ```
@@ -812,11 +812,11 @@ export declare const cleanActivityLabel: (label: string) => string;
 
 ```ts
 export declare const AppTile: (props: {
+    className?: string;
     identity: string;
     label: string;
-    src?: string;
     size: number;
-    className?: string;
+    src?: string;
 }) => React.ReactElement | null;
 ```
 
@@ -824,11 +824,11 @@ export declare const AppTile: (props: {
 
 ```ts
 export type AppTileProps = {
+    className?: string | undefined;
     identity: string;
     label: string;
-    src?: string | undefined;
     size: number;
-    className?: string | undefined;
+    src?: string | undefined;
 };
 ```
 
@@ -839,10 +839,10 @@ export type AppTileProps = {
 ```ts
 export declare const Autocomplete: (props: {
     children?: React.ReactNode;
-    open?: boolean;
     defaultOpen?: boolean;
-    onOpenChange?: ((open: boolean) => void);
     modal?: boolean;
+    onOpenChange?: ((open: boolean) => void);
+    open?: boolean;
 }) => React.ReactElement | null;
 ```
 
@@ -873,27 +873,27 @@ export declare const AutocompleteHeader: (props: {} & React.HTMLAttributes<HTMLD
 export declare const AutocompleteList: (props: {
     "aria-label"?: string;
     "aria-labelledby"?: string;
-    asChild?: boolean;
-    side?: "bottom" | "left" | "right" | "top";
-    sideOffset?: number;
     align?: "center" | "end" | "start";
     alignOffset?: number;
     arrowPadding?: number;
+    asChild?: boolean;
     avoidCollisions?: boolean;
     collisionBoundary?: Boundary | Boundary[];
     collisionPadding?: Partial<Record<"bottom" | "left" | "right" | "top", number>> | number;
-    sticky?: Sticky;
-    hideWhenDetached?: boolean;
-    updatePositionStrategy?: UpdatePositionStrategy;
     deferPointerDownOutside?: boolean;
+    forceMount?: true;
+    hideWhenDetached?: boolean;
+    material?: "app" | "foreign";
+    onCloseAutoFocus?: ((event: Event) => void);
     onEscapeKeyDown?: ((event: KeyboardEvent) => void);
-    onPointerDownOutside?: ((event: PointerDownOutsideEvent) => void);
     onFocusOutside?: ((event: FocusOutsideEvent) => void);
     onInteractOutside?: ((event: FocusOutsideEvent | PointerDownOutsideEvent) => void);
     onOpenAutoFocus?: ((event: Event) => void);
-    onCloseAutoFocus?: ((event: Event) => void);
-    forceMount?: true;
-    material?: "app" | "foreign";
+    onPointerDownOutside?: ((event: PointerDownOutsideEvent) => void);
+    side?: "bottom" | "left" | "right" | "top";
+    sideOffset?: number;
+    sticky?: Sticky;
+    updatePositionStrategy?: UpdatePositionStrategy;
 } & Omit<React.HTMLAttributes<HTMLDivElement>, "align" | "alignOffset" | "aria-label" | "aria-labelledby" | "arrowPadding" | "asChild" | "avoidCollisions" | "collisionBoundary" | "collisionPadding" | "deferPointerDownOutside" | "forceMount" | "hideWhenDetached" | "material" | "onCloseAutoFocus" | "onEscapeKeyDown" | "onFocusOutside" | "onInteractOutside" | "onOpenAutoFocus" | "onPointerDownOutside" | "side" | "sideOffset" | "sticky" | "updatePositionStrategy"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
@@ -943,27 +943,27 @@ export type AutocompleteOptionsProps = Omit<Omit<React.DetailedHTMLProps<React.H
 
 ```ts
 export declare const AutocompletePanel: (props: {
-    asChild?: boolean;
-    side?: "bottom" | "left" | "right" | "top";
-    sideOffset?: number;
     align?: "center" | "end" | "start";
     alignOffset?: number;
     arrowPadding?: number;
+    asChild?: boolean;
     avoidCollisions?: boolean;
     collisionBoundary?: Boundary | Boundary[];
     collisionPadding?: Partial<Record<"bottom" | "left" | "right" | "top", number>> | number;
-    sticky?: Sticky;
-    hideWhenDetached?: boolean;
-    updatePositionStrategy?: UpdatePositionStrategy;
     deferPointerDownOutside?: boolean;
+    forceMount?: true;
+    hideWhenDetached?: boolean;
+    material?: "app" | "foreign";
+    onCloseAutoFocus?: ((event: Event) => void);
     onEscapeKeyDown?: ((event: KeyboardEvent) => void);
-    onPointerDownOutside?: ((event: PointerDownOutsideEvent) => void);
     onFocusOutside?: ((event: FocusOutsideEvent) => void);
     onInteractOutside?: ((event: FocusOutsideEvent | PointerDownOutsideEvent) => void);
     onOpenAutoFocus?: ((event: Event) => void);
-    onCloseAutoFocus?: ((event: Event) => void);
-    forceMount?: true;
-    material?: "app" | "foreign";
+    onPointerDownOutside?: ((event: PointerDownOutsideEvent) => void);
+    side?: "bottom" | "left" | "right" | "top";
+    sideOffset?: number;
+    sticky?: Sticky;
+    updatePositionStrategy?: UpdatePositionStrategy;
 } & Omit<React.HTMLAttributes<HTMLDivElement>, "align" | "alignOffset" | "arrowPadding" | "asChild" | "avoidCollisions" | "collisionBoundary" | "collisionPadding" | "deferPointerDownOutside" | "forceMount" | "hideWhenDetached" | "material" | "onCloseAutoFocus" | "onEscapeKeyDown" | "onFocusOutside" | "onInteractOutside" | "onOpenAutoFocus" | "onPointerDownOutside" | "side" | "sideOffset" | "sticky" | "updatePositionStrategy"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
@@ -971,62 +971,6 @@ export declare const AutocompletePanel: (props: {
 
 ```ts
 export type AutocompletePanelProps = {
-    slot?: string | undefined;
-    style?: React.CSSProperties | undefined;
-    title?: string | undefined;
-    ref?: React.Ref<HTMLDivElement> | undefined;
-    key?: React.Key | null | undefined;
-    defaultChecked?: boolean | undefined;
-    defaultValue?: number | readonly string[] | string | undefined;
-    suppressContentEditableWarning?: boolean | undefined;
-    suppressHydrationWarning?: boolean | undefined;
-    accessKey?: string | undefined;
-    autoCapitalize?: "characters" | "none" | "off" | "on" | "sentences" | "words" | (string & {}) | undefined;
-    autoFocus?: boolean | undefined;
-    className?: string | undefined;
-    contentEditable?: "inherit" | "plaintext-only" | any | undefined;
-    contextMenu?: string | undefined;
-    dir?: string | undefined;
-    draggable?: any | undefined;
-    enterKeyHint?: "done" | "enter" | "go" | "next" | "previous" | "search" | "send" | undefined;
-    hidden?: boolean | undefined;
-    id?: string | undefined;
-    lang?: string | undefined;
-    nonce?: string | undefined;
-    spellCheck?: any | undefined;
-    tabIndex?: number | undefined;
-    translate?: "no" | "yes" | undefined;
-    radioGroup?: string | undefined;
-    about?: string | undefined;
-    content?: string | undefined;
-    datatype?: string | undefined;
-    inlist?: any;
-    prefix?: string | undefined;
-    property?: string | undefined;
-    rel?: string | undefined;
-    resource?: string | undefined;
-    rev?: string | undefined;
-    typeof?: string | undefined;
-    vocab?: string | undefined;
-    autoCorrect?: string | undefined;
-    autoSave?: string | undefined;
-    color?: string | undefined;
-    itemProp?: string | undefined;
-    itemScope?: boolean | undefined;
-    itemType?: string | undefined;
-    itemID?: string | undefined;
-    itemRef?: string | undefined;
-    results?: number | undefined;
-    security?: string | undefined;
-    unselectable?: "off" | "on" | undefined;
-    popover?: "" | "auto" | "hint" | "manual" | undefined;
-    popoverTargetAction?: "hide" | "show" | "toggle" | undefined;
-    popoverTarget?: string | undefined;
-    inert?: boolean | undefined;
-    inputMode?: "decimal" | "email" | "none" | "numeric" | "search" | "tel" | "text" | "url" | undefined;
-    is?: string | undefined;
-    exportparts?: string | undefined;
-    part?: string | undefined;
     "aria-activedescendant"?: string | undefined;
     "aria-atomic"?: any | undefined;
     "aria-autocomplete"?: "both" | "inline" | "list" | "none" | undefined;
@@ -1080,98 +1024,89 @@ export type AutocompletePanelProps = {
     "aria-valuemin"?: number | undefined;
     "aria-valuenow"?: number | undefined;
     "aria-valuetext"?: string | undefined;
+    about?: string | undefined;
+    accessKey?: string | undefined;
+    align?: "center" | "end" | "start" | undefined;
+    alignOffset?: number | undefined;
+    arrowPadding?: number | undefined;
+    asChild?: boolean | undefined;
+    autoCapitalize?: "characters" | "none" | "off" | "on" | "sentences" | "words" | (string & {}) | undefined;
+    autoCorrect?: string | undefined;
+    autoFocus?: boolean | undefined;
+    autoSave?: string | undefined;
+    avoidCollisions?: boolean | undefined;
     children?: React.ReactNode;
+    className?: string | undefined;
+    collisionBoundary?: Boundary | Boundary[] | undefined;
+    collisionPadding?: Partial<Record<"bottom" | "left" | "right" | "top", number>> | number | undefined;
+    color?: string | undefined;
+    content?: string | undefined;
+    contentEditable?: "inherit" | "plaintext-only" | any | undefined;
+    contextMenu?: string | undefined;
     dangerouslySetInnerHTML?: undefined | {
         __html: any | string;
     };
-    onCopy?: React.ClipboardEventHandler<HTMLDivElement> | undefined;
-    onCopyCapture?: React.ClipboardEventHandler<HTMLDivElement> | undefined;
-    onCut?: React.ClipboardEventHandler<HTMLDivElement> | undefined;
-    onCutCapture?: React.ClipboardEventHandler<HTMLDivElement> | undefined;
-    onPaste?: React.ClipboardEventHandler<HTMLDivElement> | undefined;
-    onPasteCapture?: React.ClipboardEventHandler<HTMLDivElement> | undefined;
+    datatype?: string | undefined;
+    defaultChecked?: boolean | undefined;
+    defaultValue?: number | readonly string[] | string | undefined;
+    deferPointerDownOutside?: boolean | undefined;
+    dir?: string | undefined;
+    draggable?: any | undefined;
+    enterKeyHint?: "done" | "enter" | "go" | "next" | "previous" | "search" | "send" | undefined;
+    exportparts?: string | undefined;
+    forceMount?: true | undefined;
+    hidden?: boolean | undefined;
+    hideWhenDetached?: boolean | undefined;
+    id?: string | undefined;
+    inert?: boolean | undefined;
+    inlist?: any;
+    inputMode?: "decimal" | "email" | "none" | "numeric" | "search" | "tel" | "text" | "url" | undefined;
+    is?: string | undefined;
+    itemID?: string | undefined;
+    itemProp?: string | undefined;
+    itemRef?: string | undefined;
+    itemScope?: boolean | undefined;
+    itemType?: string | undefined;
+    key?: React.Key | null | undefined;
+    lang?: string | undefined;
+    material?: "app" | "foreign" | undefined;
+    nonce?: string | undefined;
+    onAbort?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onAbortCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onAnimationEnd?: React.AnimationEventHandler<HTMLDivElement> | undefined;
+    onAnimationEndCapture?: React.AnimationEventHandler<HTMLDivElement> | undefined;
+    onAnimationIteration?: React.AnimationEventHandler<HTMLDivElement> | undefined;
+    onAnimationIterationCapture?: React.AnimationEventHandler<HTMLDivElement> | undefined;
+    onAnimationStart?: React.AnimationEventHandler<HTMLDivElement> | undefined;
+    onAnimationStartCapture?: React.AnimationEventHandler<HTMLDivElement> | undefined;
+    onAuxClick?: React.MouseEventHandler<HTMLDivElement> | undefined;
+    onAuxClickCapture?: React.MouseEventHandler<HTMLDivElement> | undefined;
+    onBeforeInput?: React.InputEventHandler<HTMLDivElement> | undefined;
+    onBeforeInputCapture?: React.InputEventHandler<HTMLDivElement> | undefined;
+    onBeforeToggle?: React.ToggleEventHandler<HTMLDivElement> | undefined;
+    onBlur?: React.FocusEventHandler<HTMLDivElement> | undefined;
+    onBlurCapture?: React.FocusEventHandler<HTMLDivElement> | undefined;
+    onCanPlay?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onCanPlayCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onCanPlayThrough?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onCanPlayThroughCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onChange?: React.ChangeEventHandler<HTMLDivElement, Element> | undefined;
+    onChangeCapture?: React.ChangeEventHandler<HTMLDivElement, Element> | undefined;
+    onClick?: React.MouseEventHandler<HTMLDivElement> | undefined;
+    onClickCapture?: React.MouseEventHandler<HTMLDivElement> | undefined;
+    onCloseAutoFocus?: ((event: Event) => void) | undefined;
     onCompositionEnd?: React.CompositionEventHandler<HTMLDivElement> | undefined;
     onCompositionEndCapture?: React.CompositionEventHandler<HTMLDivElement> | undefined;
     onCompositionStart?: React.CompositionEventHandler<HTMLDivElement> | undefined;
     onCompositionStartCapture?: React.CompositionEventHandler<HTMLDivElement> | undefined;
     onCompositionUpdate?: React.CompositionEventHandler<HTMLDivElement> | undefined;
     onCompositionUpdateCapture?: React.CompositionEventHandler<HTMLDivElement> | undefined;
-    onFocus?: React.FocusEventHandler<HTMLDivElement> | undefined;
-    onFocusCapture?: React.FocusEventHandler<HTMLDivElement> | undefined;
-    onBlur?: React.FocusEventHandler<HTMLDivElement> | undefined;
-    onBlurCapture?: React.FocusEventHandler<HTMLDivElement> | undefined;
-    onChange?: React.ChangeEventHandler<HTMLDivElement, Element> | undefined;
-    onChangeCapture?: React.ChangeEventHandler<HTMLDivElement, Element> | undefined;
-    onBeforeInput?: React.InputEventHandler<HTMLDivElement> | undefined;
-    onBeforeInputCapture?: React.InputEventHandler<HTMLDivElement> | undefined;
-    onInput?: React.InputEventHandler<HTMLDivElement> | undefined;
-    onInputCapture?: React.InputEventHandler<HTMLDivElement> | undefined;
-    onReset?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onResetCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onSubmit?: React.SubmitEventHandler<HTMLDivElement> | undefined;
-    onSubmitCapture?: React.SubmitEventHandler<HTMLDivElement> | undefined;
-    onInvalid?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onInvalidCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onLoad?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onLoadCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onError?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onErrorCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onKeyDown?: React.KeyboardEventHandler<HTMLDivElement> | undefined;
-    onKeyDownCapture?: React.KeyboardEventHandler<HTMLDivElement> | undefined;
-    onKeyPress?: React.KeyboardEventHandler<HTMLDivElement> | undefined;
-    onKeyPressCapture?: React.KeyboardEventHandler<HTMLDivElement> | undefined;
-    onKeyUp?: React.KeyboardEventHandler<HTMLDivElement> | undefined;
-    onKeyUpCapture?: React.KeyboardEventHandler<HTMLDivElement> | undefined;
-    onAbort?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onAbortCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onCanPlay?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onCanPlayCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onCanPlayThrough?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onCanPlayThroughCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onDurationChange?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onDurationChangeCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onEmptied?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onEmptiedCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onEncrypted?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onEncryptedCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onEnded?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onEndedCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onLoadedData?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onLoadedDataCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onLoadedMetadata?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onLoadedMetadataCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onLoadStart?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onLoadStartCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onPause?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onPauseCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onPlay?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onPlayCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onPlaying?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onPlayingCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onProgress?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onProgressCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onRateChange?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onRateChangeCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onSeeked?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onSeekedCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onSeeking?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onSeekingCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onStalled?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onStalledCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onSuspend?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onSuspendCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onTimeUpdate?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onTimeUpdateCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onVolumeChange?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onVolumeChangeCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onWaiting?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onWaitingCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
-    onAuxClick?: React.MouseEventHandler<HTMLDivElement> | undefined;
-    onAuxClickCapture?: React.MouseEventHandler<HTMLDivElement> | undefined;
-    onClick?: React.MouseEventHandler<HTMLDivElement> | undefined;
-    onClickCapture?: React.MouseEventHandler<HTMLDivElement> | undefined;
     onContextMenu?: React.MouseEventHandler<HTMLDivElement> | undefined;
     onContextMenuCapture?: React.MouseEventHandler<HTMLDivElement> | undefined;
+    onCopy?: React.ClipboardEventHandler<HTMLDivElement> | undefined;
+    onCopyCapture?: React.ClipboardEventHandler<HTMLDivElement> | undefined;
+    onCut?: React.ClipboardEventHandler<HTMLDivElement> | undefined;
+    onCutCapture?: React.ClipboardEventHandler<HTMLDivElement> | undefined;
     onDoubleClick?: React.MouseEventHandler<HTMLDivElement> | undefined;
     onDoubleClickCapture?: React.MouseEventHandler<HTMLDivElement> | undefined;
     onDrag?: React.DragEventHandler<HTMLDivElement> | undefined;
@@ -1190,6 +1125,43 @@ export type AutocompletePanelProps = {
     onDragStartCapture?: React.DragEventHandler<HTMLDivElement> | undefined;
     onDrop?: React.DragEventHandler<HTMLDivElement> | undefined;
     onDropCapture?: React.DragEventHandler<HTMLDivElement> | undefined;
+    onDurationChange?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onDurationChangeCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onEmptied?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onEmptiedCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onEncrypted?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onEncryptedCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onEnded?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onEndedCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onError?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onErrorCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onEscapeKeyDown?: ((event: KeyboardEvent) => void) | undefined;
+    onFocus?: React.FocusEventHandler<HTMLDivElement> | undefined;
+    onFocusCapture?: React.FocusEventHandler<HTMLDivElement> | undefined;
+    onFocusOutside?: ((event: FocusOutsideEvent) => void) | undefined;
+    onGotPointerCapture?: React.PointerEventHandler<HTMLDivElement> | undefined;
+    onGotPointerCaptureCapture?: React.PointerEventHandler<HTMLDivElement> | undefined;
+    onInput?: React.InputEventHandler<HTMLDivElement> | undefined;
+    onInputCapture?: React.InputEventHandler<HTMLDivElement> | undefined;
+    onInteractOutside?: ((event: FocusOutsideEvent | PointerDownOutsideEvent) => void) | undefined;
+    onInvalid?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onInvalidCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onKeyDown?: React.KeyboardEventHandler<HTMLDivElement> | undefined;
+    onKeyDownCapture?: React.KeyboardEventHandler<HTMLDivElement> | undefined;
+    onKeyPress?: React.KeyboardEventHandler<HTMLDivElement> | undefined;
+    onKeyPressCapture?: React.KeyboardEventHandler<HTMLDivElement> | undefined;
+    onKeyUp?: React.KeyboardEventHandler<HTMLDivElement> | undefined;
+    onKeyUpCapture?: React.KeyboardEventHandler<HTMLDivElement> | undefined;
+    onLoad?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onLoadCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onLoadStart?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onLoadStartCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onLoadedData?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onLoadedDataCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onLoadedMetadata?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onLoadedMetadataCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onLostPointerCapture?: React.PointerEventHandler<HTMLDivElement> | undefined;
+    onLostPointerCaptureCapture?: React.PointerEventHandler<HTMLDivElement> | undefined;
     onMouseDown?: React.MouseEventHandler<HTMLDivElement> | undefined;
     onMouseDownCapture?: React.MouseEventHandler<HTMLDivElement> | undefined;
     onMouseEnter?: React.MouseEventHandler<HTMLDivElement> | undefined;
@@ -1202,8 +1174,55 @@ export type AutocompletePanelProps = {
     onMouseOverCapture?: React.MouseEventHandler<HTMLDivElement> | undefined;
     onMouseUp?: React.MouseEventHandler<HTMLDivElement> | undefined;
     onMouseUpCapture?: React.MouseEventHandler<HTMLDivElement> | undefined;
+    onOpenAutoFocus?: ((event: Event) => void) | undefined;
+    onPaste?: React.ClipboardEventHandler<HTMLDivElement> | undefined;
+    onPasteCapture?: React.ClipboardEventHandler<HTMLDivElement> | undefined;
+    onPause?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onPauseCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onPlay?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onPlayCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onPlaying?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onPlayingCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onPointerCancel?: React.PointerEventHandler<HTMLDivElement> | undefined;
+    onPointerCancelCapture?: React.PointerEventHandler<HTMLDivElement> | undefined;
+    onPointerDown?: React.PointerEventHandler<HTMLDivElement> | undefined;
+    onPointerDownCapture?: React.PointerEventHandler<HTMLDivElement> | undefined;
+    onPointerDownOutside?: ((event: PointerDownOutsideEvent) => void) | undefined;
+    onPointerEnter?: React.PointerEventHandler<HTMLDivElement> | undefined;
+    onPointerLeave?: React.PointerEventHandler<HTMLDivElement> | undefined;
+    onPointerMove?: React.PointerEventHandler<HTMLDivElement> | undefined;
+    onPointerMoveCapture?: React.PointerEventHandler<HTMLDivElement> | undefined;
+    onPointerOut?: React.PointerEventHandler<HTMLDivElement> | undefined;
+    onPointerOutCapture?: React.PointerEventHandler<HTMLDivElement> | undefined;
+    onPointerOver?: React.PointerEventHandler<HTMLDivElement> | undefined;
+    onPointerOverCapture?: React.PointerEventHandler<HTMLDivElement> | undefined;
+    onPointerUp?: React.PointerEventHandler<HTMLDivElement> | undefined;
+    onPointerUpCapture?: React.PointerEventHandler<HTMLDivElement> | undefined;
+    onProgress?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onProgressCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onRateChange?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onRateChangeCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onReset?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onResetCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onScroll?: React.UIEventHandler<HTMLDivElement> | undefined;
+    onScrollCapture?: React.UIEventHandler<HTMLDivElement> | undefined;
+    onScrollEnd?: React.UIEventHandler<HTMLDivElement> | undefined;
+    onScrollEndCapture?: React.UIEventHandler<HTMLDivElement> | undefined;
+    onSeeked?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onSeekedCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onSeeking?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onSeekingCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
     onSelect?: React.ReactEventHandler<HTMLDivElement> | undefined;
     onSelectCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onStalled?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onStalledCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onSubmit?: React.SubmitEventHandler<HTMLDivElement> | undefined;
+    onSubmitCapture?: React.SubmitEventHandler<HTMLDivElement> | undefined;
+    onSuspend?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onSuspendCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onTimeUpdate?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onTimeUpdateCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onToggle?: React.ToggleEventHandler<HTMLDivElement> | undefined;
     onTouchCancel?: React.TouchEventHandler<HTMLDivElement> | undefined;
     onTouchCancelCapture?: React.TouchEventHandler<HTMLDivElement> | undefined;
     onTouchEnd?: React.TouchEventHandler<HTMLDivElement> | undefined;
@@ -1212,38 +1231,6 @@ export type AutocompletePanelProps = {
     onTouchMoveCapture?: React.TouchEventHandler<HTMLDivElement> | undefined;
     onTouchStart?: React.TouchEventHandler<HTMLDivElement> | undefined;
     onTouchStartCapture?: React.TouchEventHandler<HTMLDivElement> | undefined;
-    onPointerDown?: React.PointerEventHandler<HTMLDivElement> | undefined;
-    onPointerDownCapture?: React.PointerEventHandler<HTMLDivElement> | undefined;
-    onPointerMove?: React.PointerEventHandler<HTMLDivElement> | undefined;
-    onPointerMoveCapture?: React.PointerEventHandler<HTMLDivElement> | undefined;
-    onPointerUp?: React.PointerEventHandler<HTMLDivElement> | undefined;
-    onPointerUpCapture?: React.PointerEventHandler<HTMLDivElement> | undefined;
-    onPointerCancel?: React.PointerEventHandler<HTMLDivElement> | undefined;
-    onPointerCancelCapture?: React.PointerEventHandler<HTMLDivElement> | undefined;
-    onPointerEnter?: React.PointerEventHandler<HTMLDivElement> | undefined;
-    onPointerLeave?: React.PointerEventHandler<HTMLDivElement> | undefined;
-    onPointerOver?: React.PointerEventHandler<HTMLDivElement> | undefined;
-    onPointerOverCapture?: React.PointerEventHandler<HTMLDivElement> | undefined;
-    onPointerOut?: React.PointerEventHandler<HTMLDivElement> | undefined;
-    onPointerOutCapture?: React.PointerEventHandler<HTMLDivElement> | undefined;
-    onGotPointerCapture?: React.PointerEventHandler<HTMLDivElement> | undefined;
-    onGotPointerCaptureCapture?: React.PointerEventHandler<HTMLDivElement> | undefined;
-    onLostPointerCapture?: React.PointerEventHandler<HTMLDivElement> | undefined;
-    onLostPointerCaptureCapture?: React.PointerEventHandler<HTMLDivElement> | undefined;
-    onScroll?: React.UIEventHandler<HTMLDivElement> | undefined;
-    onScrollCapture?: React.UIEventHandler<HTMLDivElement> | undefined;
-    onScrollEnd?: React.UIEventHandler<HTMLDivElement> | undefined;
-    onScrollEndCapture?: React.UIEventHandler<HTMLDivElement> | undefined;
-    onWheel?: React.WheelEventHandler<HTMLDivElement> | undefined;
-    onWheelCapture?: React.WheelEventHandler<HTMLDivElement> | undefined;
-    onAnimationStart?: React.AnimationEventHandler<HTMLDivElement> | undefined;
-    onAnimationStartCapture?: React.AnimationEventHandler<HTMLDivElement> | undefined;
-    onAnimationEnd?: React.AnimationEventHandler<HTMLDivElement> | undefined;
-    onAnimationEndCapture?: React.AnimationEventHandler<HTMLDivElement> | undefined;
-    onAnimationIteration?: React.AnimationEventHandler<HTMLDivElement> | undefined;
-    onAnimationIterationCapture?: React.AnimationEventHandler<HTMLDivElement> | undefined;
-    onToggle?: React.ToggleEventHandler<HTMLDivElement> | undefined;
-    onBeforeToggle?: React.ToggleEventHandler<HTMLDivElement> | undefined;
     onTransitionCancel?: React.TransitionEventHandler<HTMLDivElement> | undefined;
     onTransitionCancelCapture?: React.TransitionEventHandler<HTMLDivElement> | undefined;
     onTransitionEnd?: React.TransitionEventHandler<HTMLDivElement> | undefined;
@@ -1252,27 +1239,40 @@ export type AutocompletePanelProps = {
     onTransitionRunCapture?: React.TransitionEventHandler<HTMLDivElement> | undefined;
     onTransitionStart?: React.TransitionEventHandler<HTMLDivElement> | undefined;
     onTransitionStartCapture?: React.TransitionEventHandler<HTMLDivElement> | undefined;
-    asChild?: boolean | undefined;
+    onVolumeChange?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onVolumeChangeCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onWaiting?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onWaitingCapture?: React.ReactEventHandler<HTMLDivElement> | undefined;
+    onWheel?: React.WheelEventHandler<HTMLDivElement> | undefined;
+    onWheelCapture?: React.WheelEventHandler<HTMLDivElement> | undefined;
+    part?: string | undefined;
+    popover?: "" | "auto" | "hint" | "manual" | undefined;
+    popoverTarget?: string | undefined;
+    popoverTargetAction?: "hide" | "show" | "toggle" | undefined;
+    prefix?: string | undefined;
+    property?: string | undefined;
+    radioGroup?: string | undefined;
+    ref?: React.Ref<HTMLDivElement> | undefined;
+    rel?: string | undefined;
+    resource?: string | undefined;
+    results?: number | undefined;
+    rev?: string | undefined;
+    security?: string | undefined;
     side?: "bottom" | "left" | "right" | "top" | undefined;
     sideOffset?: number | undefined;
-    align?: "center" | "end" | "start" | undefined;
-    alignOffset?: number | undefined;
-    arrowPadding?: number | undefined;
-    avoidCollisions?: boolean | undefined;
-    collisionBoundary?: Boundary | Boundary[] | undefined;
-    collisionPadding?: Partial<Record<"bottom" | "left" | "right" | "top", number>> | number | undefined;
+    slot?: string | undefined;
+    spellCheck?: any | undefined;
     sticky?: Sticky | undefined;
-    hideWhenDetached?: boolean | undefined;
+    style?: React.CSSProperties | undefined;
+    suppressContentEditableWarning?: boolean | undefined;
+    suppressHydrationWarning?: boolean | undefined;
+    tabIndex?: number | undefined;
+    title?: string | undefined;
+    translate?: "no" | "yes" | undefined;
+    typeof?: string | undefined;
+    unselectable?: "off" | "on" | undefined;
     updatePositionStrategy?: UpdatePositionStrategy | undefined;
-    deferPointerDownOutside?: boolean | undefined;
-    onEscapeKeyDown?: ((event: KeyboardEvent) => void) | undefined;
-    onPointerDownOutside?: ((event: PointerDownOutsideEvent) => void) | undefined;
-    onFocusOutside?: ((event: FocusOutsideEvent) => void) | undefined;
-    onInteractOutside?: ((event: FocusOutsideEvent | PointerDownOutsideEvent) => void) | undefined;
-    onOpenAutoFocus?: ((event: Event) => void) | undefined;
-    onCloseAutoFocus?: ((event: Event) => void) | undefined;
-    forceMount?: true | undefined;
-    material?: "app" | "foreign" | undefined;
+    vocab?: string | undefined;
 };
 ```
 
@@ -1282,11 +1282,11 @@ export type AutocompletePanelProps = {
 
 ```ts
 export declare const AvatarStack: (props: {
+    className?: string;
     identities: readonly string[];
     labels?: readonly string[];
-    size?: number;
     max?: number;
-    className?: string;
+    size?: number;
 }) => React.ReactElement | null;
 ```
 
@@ -1294,10 +1294,10 @@ export declare const AvatarStack: (props: {
 
 ```ts
 export declare const MonogramAvatar: (props: {
+    className?: string;
     identity: string;
     label?: string;
     size?: number;
-    className?: string;
 }) => React.ReactElement | null;
 ```
 
@@ -1325,19 +1325,19 @@ export declare const monogramInkStyle: (identity: string) => React.CSSProperties
 
 ```ts
 export declare const BreadcrumbSelect: (props: {
-    label: string;
-    icon?: React.ReactNode;
-    items: BreadcrumbSelectItem[];
-    onSearchAll?: (() => void);
-    searchAllLabel?: string;
-    searchPlaceholder?: string;
-    onOpenChange?: ((open: boolean) => void);
-    placeholder?: string;
-    ariaLabel: string;
     ariaCurrent?: "date" | "false" | "location" | "page" | "step" | "time" | "true" | boolean;
+    ariaLabel: string;
     className?: string;
     density?: "compact" | "default";
+    icon?: React.ReactNode;
+    items: BreadcrumbSelectItem[];
+    label: string;
     onNavigate?: (() => void);
+    onOpenChange?: ((open: boolean) => void);
+    onSearchAll?: (() => void);
+    placeholder?: string;
+    searchAllLabel?: string;
+    searchPlaceholder?: string;
 }) => React.ReactElement | null;
 ```
 
@@ -1345,14 +1345,14 @@ export declare const BreadcrumbSelect: (props: {
 
 ```ts
 export type BreadcrumbSelectItem = {
-    id: string;
-    label: string;
+    active?: boolean | undefined;
     description?: string | undefined;
+    disabled?: boolean | undefined;
     hint?: string | undefined;
     icon?: React.ReactNode;
     iconClassName?: string | undefined;
-    active?: boolean | undefined;
-    disabled?: boolean | undefined;
+    id: string;
+    label: string;
     onSelect: () => void;
 };
 ```
@@ -1363,10 +1363,10 @@ export type BreadcrumbSelectItem = {
 
 ```ts
 export declare const Button: (props: {
-    size?: "default" | "icon" | "icon-lg" | "icon-sm" | "icon-touch" | "icon-xl" | "icon-xs" | "lg" | "sm" | "xl" | "xs" | null;
-    variant?: "default" | "destructive" | "destructive-solid" | "field" | "ghost" | "link" | "mono" | "secondary" | null;
     asChild?: boolean;
     recommended?: boolean;
+    size?: "default" | "icon" | "icon-lg" | "icon-sm" | "icon-touch" | "icon-xl" | "icon-xs" | "lg" | "sm" | "xl" | "xs" | null;
+    variant?: "default" | "destructive" | "destructive-solid" | "field" | "ghost" | "link" | "mono" | "secondary" | null;
 } & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "asChild" | "recommended" | "size" | "variant"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
 ```
 
@@ -1374,14 +1374,14 @@ export declare const Button: (props: {
 
 ```ts
 export declare const WorkbenchSash: (props: {
+    active?: boolean;
     label: string;
     orientation: "horizontal" | "vertical";
-    valueNow: number;
-    valueMin?: number;
-    valueMax?: number;
-    valueText?: string;
     resetLabel?: string;
-    active?: boolean;
+    valueMax?: number;
+    valueMin?: number;
+    valueNow: number;
+    valueText?: string;
 } & Omit<React.HTMLAttributes<HTMLDivElement>, "active" | "label" | "orientation" | "resetLabel" | "valueMax" | "valueMin" | "valueNow" | "valueText"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
@@ -1391,8 +1391,8 @@ export declare const WorkbenchSash: (props: {
 
 ```ts
 export type BoardCaptureOptions = {
-    padding?: number | undefined;
     maxEdge?: number | undefined;
+    padding?: number | undefined;
     prepare?: (() => () => void) | undefined;
 };
 ```
@@ -1401,10 +1401,10 @@ export type BoardCaptureOptions = {
 
 ```ts
 export declare const CAMERA_MOTION: {
-    readonly pan: 120;
-    readonly step: 160;
     readonly fit: 240;
     readonly focus: 320;
+    readonly pan: 120;
+    readonly step: 160;
 };
 ```
 
@@ -1434,53 +1434,53 @@ export type CameraViewport = {
 
 ```ts
 export declare const Canvas: <N extends Node = Node, E extends Edge = Edge>(props: {
-    label: string;
-    interaction?: CanvasInteraction;
-    zoomLimits?: ZoomLimits;
-    edgeTypes?: EdgeTypes;
-    hidden?: boolean;
-    controls?: boolean;
     background?: boolean;
+    className?: string;
+    controls?: boolean;
+    defaultViewport?: Viewport;
+    edgeTypes?: EdgeTypes;
+    edges?: E[];
+    elementsSelectable?: boolean;
+    hidden?: boolean;
+    interaction?: CanvasInteraction;
+    label: string;
     minimap?: boolean;
-    overlay?: React.ReactNode;
-    onBoardKey?: ((event: React.KeyboardEvent<HTMLDivElement>) => boolean);
+    nodeTypes?: NodeTypes;
+    nodes?: N[];
+    nodesConnectable?: boolean;
+    nodesDraggable?: boolean;
     onBoardDoubleClick?: ((position: {
         x: number;
         y: number;
     }) => void);
-    snapZoom?: boolean;
-    className?: string;
-    nodes?: N[];
-    edges?: E[];
-    nodeTypes?: NodeTypes;
-    onNodesChange?: OnNodesChange<N>;
-    onEdgesChange?: OnEdgesChange<E>;
+    onBoardKey?: ((event: React.KeyboardEvent<HTMLDivElement>) => boolean);
     onConnect?: OnConnect;
     onConnectEnd?: OnConnectEnd;
+    onEdgeClick?: ((event: React.MouseEvent<Element, MouseEvent>, edge: E) => void);
+    onEdgeContextMenu?: EdgeMouseHandler<E>;
+    onEdgeDoubleClick?: EdgeMouseHandler<E>;
+    onEdgesChange?: OnEdgesChange<E>;
     onNodeClick?: NodeMouseHandler<N>;
+    onNodeContextMenu?: NodeMouseHandler<N>;
     onNodeDoubleClick?: NodeMouseHandler<N>;
-    onNodeMouseEnter?: NodeMouseHandler<N>;
-    onNodeMouseLeave?: NodeMouseHandler<N>;
-    onPaneClick?: ((event: React.MouseEvent<Element, MouseEvent>) => void);
-    onSelectionChange?: OnSelectionChangeFunc<N, E>;
     onNodeDragStart?: OnNodeDrag<N>;
     onNodeDragStop?: OnNodeDrag<N>;
+    onNodeMouseEnter?: NodeMouseHandler<N>;
+    onNodeMouseLeave?: NodeMouseHandler<N>;
+    onNodesChange?: OnNodesChange<N>;
+    onPaneClick?: ((event: React.MouseEvent<Element, MouseEvent>) => void);
+    onPaneContextMenu?: ((event: MouseEvent | any) => void);
+    onSelectionChange?: OnSelectionChangeFunc<N, E>;
+    onSelectionContextMenu?: ((event: React.MouseEvent<Element, MouseEvent>, nodes: N[]) => void);
     onSelectionDragStart?: SelectionDragHandler<N>;
     onSelectionDragStop?: SelectionDragHandler<N>;
-    onNodeContextMenu?: NodeMouseHandler<N>;
-    onEdgeContextMenu?: EdgeMouseHandler<E>;
-    onPaneContextMenu?: ((event: MouseEvent | any) => void);
-    onSelectionContextMenu?: ((event: React.MouseEvent<Element, MouseEvent>, nodes: N[]) => void);
-    onEdgeClick?: ((event: React.MouseEvent<Element, MouseEvent>, edge: E) => void);
-    onEdgeDoubleClick?: EdgeMouseHandler<E>;
-    nodesDraggable?: boolean;
-    nodesConnectable?: boolean;
-    elementsSelectable?: boolean;
-    zIndexMode?: ZIndexMode;
     onlyRenderVisibleElements?: boolean;
-    snapToGrid?: boolean;
+    overlay?: React.ReactNode;
     snapGrid?: SnapGrid;
-    defaultViewport?: Viewport;
+    snapToGrid?: boolean;
+    snapZoom?: boolean;
+    zIndexMode?: ZIndexMode;
+    zoomLimits?: ZoomLimits;
 }) => React.ReactElement | null;
 ```
 
@@ -1488,40 +1488,40 @@ export declare const Canvas: <N extends Node = Node, E extends Edge = Edge>(prop
 
 ```ts
 export type CanvasCamera = {
-    get: () => CameraViewport;
-    set: (viewport: CameraViewport, options?: undefined | {
-        duration?: number | undefined;
-    }) => void;
-    panBy: (dx: number, dy: number) => void;
-    zoom: (direction: -1 | 1) => void;
     actualSize: () => void;
-    fit: (options?: undefined | {
-        nodes?: readonly string[] | undefined;
-        maxZoom?: number | undefined;
-        duration?: number | undefined;
-    }) => void;
-    fitSelection: () => boolean;
-    focus: (rect: CanvasRect, options?: undefined | {
-        padding?: number | undefined;
-        duration?: number | undefined;
-    }) => void;
-    focusNode: (id: string, options?: undefined | {
-        padding?: number | undefined;
-        duration?: number | undefined;
-    }) => boolean;
-    toBoard: (clientX: number, clientY: number) => {
-        x: number;
-        y: number;
-    };
     centre: () => {
         x: number;
         y: number;
     };
-    size: () => null | {
-        width: number;
-        height: number;
-    };
+    fit: (options?: undefined | {
+        duration?: number | undefined;
+        maxZoom?: number | undefined;
+        nodes?: readonly string[] | undefined;
+    }) => void;
+    fitSelection: () => boolean;
+    focus: (rect: CanvasRect, options?: undefined | {
+        duration?: number | undefined;
+        padding?: number | undefined;
+    }) => void;
+    focusNode: (id: string, options?: undefined | {
+        duration?: number | undefined;
+        padding?: number | undefined;
+    }) => boolean;
+    get: () => CameraViewport;
+    panBy: (dx: number, dy: number) => void;
     run: (command: CameraCommand) => void;
+    set: (viewport: CameraViewport, options?: undefined | {
+        duration?: number | undefined;
+    }) => void;
+    size: () => null | {
+        height: number;
+        width: number;
+    };
+    toBoard: (clientX: number, clientY: number) => {
+        x: number;
+        y: number;
+    };
+    zoom: (direction: -1 | 1) => void;
 };
 ```
 
@@ -1538,37 +1538,37 @@ export declare const CanvasControls: (props: {
 
 ```ts
 export declare const CanvasEdge: (props: {
-    data?: CanvasEdgeData;
-    source: string;
-    style?: React.CSSProperties;
-    id: string;
-    type?: string;
-    target: string;
     animated?: boolean;
-    selected?: boolean;
-    selectable?: boolean;
+    data?: CanvasEdgeData;
     deletable?: boolean;
-    sourceX: number;
-    sourceY: number;
-    targetX: number;
-    targetY: number;
-    sourcePosition: Position;
-    targetPosition: Position;
+    id: string;
+    interactionWidth?: number;
     label?: React.ReactNode;
-    labelStyle?: React.CSSProperties;
-    labelShowBg?: boolean;
-    labelBgStyle?: React.CSSProperties;
+    labelBgBorderRadius?: number;
     labelBgPadding?: [
         number,
         number
     ];
-    labelBgBorderRadius?: number;
-    sourceHandleId?: null | string;
-    targetHandleId?: null | string;
-    markerStart?: string;
+    labelBgStyle?: React.CSSProperties;
+    labelShowBg?: boolean;
+    labelStyle?: React.CSSProperties;
     markerEnd?: string;
+    markerStart?: string;
     pathOptions?: any;
-    interactionWidth?: number;
+    selectable?: boolean;
+    selected?: boolean;
+    source: string;
+    sourceHandleId?: null | string;
+    sourcePosition: Position;
+    sourceX: number;
+    sourceY: number;
+    style?: React.CSSProperties;
+    target: string;
+    targetHandleId?: null | string;
+    targetPosition: Position;
+    targetX: number;
+    targetY: number;
+    type?: string;
 }) => React.ReactElement | null;
 ```
 
@@ -1576,25 +1576,25 @@ export declare const CanvasEdge: (props: {
 
 ```ts
 export type CanvasEdgeData = {
-    emphasis?: CanvasEdgeEmphasis | undefined;
-    tone?: CanvasEdgeTone | undefined;
-    weight?: number | undefined;
     arrow?: "always" | "focus" | "never" | undefined;
-    label?: string | undefined;
-    route?: "bezier" | "step" | "straight" | undefined;
+    caption?: boolean | undefined;
+    emphasis?: CanvasEdgeEmphasis | undefined;
+    endCap?: "arrow" | "bar" | "circle" | "diamond" | "none" | "triangle" | undefined;
     float?: boolean | undefined;
     fromSide?: HandleSide | undefined;
-    toSide?: HandleSide | undefined;
-    tail?: boolean | undefined;
-    startCap?: "arrow" | "bar" | "circle" | "diamond" | "none" | "triangle" | undefined;
-    endCap?: "arrow" | "bar" | "circle" | "diamond" | "none" | "triangle" | undefined;
-    stroke?: "dashed" | "dotted" | "solid" | undefined;
+    label?: string | undefined;
     labelAlways?: boolean | undefined;
-    caption?: boolean | undefined;
     labelAt?: number | undefined;
     onLabelMove?: ((at: number) => void) | undefined;
     onLabelSelect?: (() => void) | undefined;
+    route?: "bezier" | "step" | "straight" | undefined;
+    startCap?: "arrow" | "bar" | "circle" | "diamond" | "none" | "triangle" | undefined;
+    stroke?: "dashed" | "dotted" | "solid" | undefined;
+    tail?: boolean | undefined;
+    toSide?: HandleSide | undefined;
+    tone?: CanvasEdgeTone | undefined;
     toneClass?: string | undefined;
+    weight?: number | undefined;
 };
 ```
 
@@ -1614,12 +1614,12 @@ export type CanvasEdgeTone = "info" | "neutral" | "warning";
 
 ```ts
 export type CanvasEdgeType = EdgeBase<CanvasEdgeData, string | undefined> & EdgeLabelOptions & {
-    style?: React.CSSProperties | undefined;
-    className?: string | undefined;
-    reconnectable?: HandleType | boolean | undefined;
-    focusable?: boolean | undefined;
     ariaRole?: React.AriaRole | undefined;
+    className?: string | undefined;
     domAttributes?: Omit<React.SVGAttributes<SVGGElement>, "aria-label" | "className" | "dangerouslySetInnerHTML" | "id" | "role" | "style"> | undefined;
+    focusable?: boolean | undefined;
+    reconnectable?: HandleType | boolean | undefined;
+    style?: React.CSSProperties | undefined;
 };
 ```
 
@@ -1642,53 +1642,53 @@ export type CanvasPoint = {
 
 ```ts
 export type CanvasProps<N extends Node = Node, E extends Edge = Edge> = {
-    label: string;
-    interaction?: CanvasInteraction | undefined;
-    zoomLimits?: ZoomLimits | undefined;
-    edgeTypes?: EdgeTypes | undefined;
-    hidden?: boolean | undefined;
-    controls?: boolean | undefined;
     background?: boolean | undefined;
+    className?: string | undefined;
+    controls?: boolean | undefined;
+    defaultViewport?: Viewport | undefined;
+    edgeTypes?: EdgeTypes | undefined;
+    edges?: E[] | undefined;
+    elementsSelectable?: boolean | undefined;
+    hidden?: boolean | undefined;
+    interaction?: CanvasInteraction | undefined;
+    label: string;
     minimap?: boolean | undefined;
-    overlay?: React.ReactNode;
-    onBoardKey?: ((event: React.KeyboardEvent<HTMLDivElement>) => boolean) | undefined;
+    nodeTypes?: NodeTypes | undefined;
+    nodes?: N[] | undefined;
+    nodesConnectable?: boolean | undefined;
+    nodesDraggable?: boolean | undefined;
     onBoardDoubleClick?: ((position: {
         x: number;
         y: number;
     }) => void) | undefined;
-    snapZoom?: boolean | undefined;
-    className?: string | undefined;
-    nodes?: N[] | undefined;
-    edges?: E[] | undefined;
-    nodeTypes?: NodeTypes | undefined;
-    onNodesChange?: OnNodesChange<N> | undefined;
-    onEdgesChange?: OnEdgesChange<E> | undefined;
+    onBoardKey?: ((event: React.KeyboardEvent<HTMLDivElement>) => boolean) | undefined;
     onConnect?: OnConnect | undefined;
     onConnectEnd?: OnConnectEnd | undefined;
+    onEdgeClick?: ((event: React.MouseEvent<Element, MouseEvent>, edge: E) => void) | undefined;
+    onEdgeContextMenu?: EdgeMouseHandler<E> | undefined;
+    onEdgeDoubleClick?: EdgeMouseHandler<E> | undefined;
+    onEdgesChange?: OnEdgesChange<E> | undefined;
     onNodeClick?: NodeMouseHandler<N> | undefined;
+    onNodeContextMenu?: NodeMouseHandler<N> | undefined;
     onNodeDoubleClick?: NodeMouseHandler<N> | undefined;
-    onNodeMouseEnter?: NodeMouseHandler<N> | undefined;
-    onNodeMouseLeave?: NodeMouseHandler<N> | undefined;
-    onPaneClick?: ((event: React.MouseEvent<Element, MouseEvent>) => void) | undefined;
-    onSelectionChange?: OnSelectionChangeFunc<N, E> | undefined;
     onNodeDragStart?: OnNodeDrag<N> | undefined;
     onNodeDragStop?: OnNodeDrag<N> | undefined;
+    onNodeMouseEnter?: NodeMouseHandler<N> | undefined;
+    onNodeMouseLeave?: NodeMouseHandler<N> | undefined;
+    onNodesChange?: OnNodesChange<N> | undefined;
+    onPaneClick?: ((event: React.MouseEvent<Element, MouseEvent>) => void) | undefined;
+    onPaneContextMenu?: ((event: MouseEvent | any) => void) | undefined;
+    onSelectionChange?: OnSelectionChangeFunc<N, E> | undefined;
+    onSelectionContextMenu?: ((event: React.MouseEvent<Element, MouseEvent>, nodes: N[]) => void) | undefined;
     onSelectionDragStart?: SelectionDragHandler<N> | undefined;
     onSelectionDragStop?: SelectionDragHandler<N> | undefined;
-    onNodeContextMenu?: NodeMouseHandler<N> | undefined;
-    onEdgeContextMenu?: EdgeMouseHandler<E> | undefined;
-    onPaneContextMenu?: ((event: MouseEvent | any) => void) | undefined;
-    onSelectionContextMenu?: ((event: React.MouseEvent<Element, MouseEvent>, nodes: N[]) => void) | undefined;
-    onEdgeClick?: ((event: React.MouseEvent<Element, MouseEvent>, edge: E) => void) | undefined;
-    onEdgeDoubleClick?: EdgeMouseHandler<E> | undefined;
-    nodesDraggable?: boolean | undefined;
-    nodesConnectable?: boolean | undefined;
-    elementsSelectable?: boolean | undefined;
-    zIndexMode?: ZIndexMode | undefined;
     onlyRenderVisibleElements?: boolean | undefined;
-    snapToGrid?: boolean | undefined;
+    overlay?: React.ReactNode;
     snapGrid?: SnapGrid | undefined;
-    defaultViewport?: Viewport | undefined;
+    snapToGrid?: boolean | undefined;
+    snapZoom?: boolean | undefined;
+    zIndexMode?: ZIndexMode | undefined;
+    zoomLimits?: ZoomLimits | undefined;
 };
 ```
 
@@ -1696,19 +1696,19 @@ export type CanvasProps<N extends Node = Node, E extends Edge = Edge> = {
 
 ```ts
 export declare const CanvasProvider: (props: {
-    initialNodes?: Node[];
-    initialEdges?: Edge[];
-    defaultNodes?: Node[];
-    defaultEdges?: Edge[];
-    initialWidth?: number;
-    initialHeight?: number;
-    fitView?: boolean;
-    initialFitViewOptions?: FitViewOptions;
-    initialMinZoom?: number;
-    initialMaxZoom?: number;
-    nodeOrigin?: NodeOrigin;
-    nodeExtent?: CoordinateExtent;
     children: React.ReactNode;
+    defaultEdges?: Edge[];
+    defaultNodes?: Node[];
+    fitView?: boolean;
+    initialEdges?: Edge[];
+    initialFitViewOptions?: FitViewOptions;
+    initialHeight?: number;
+    initialMaxZoom?: number;
+    initialMinZoom?: number;
+    initialNodes?: Node[];
+    initialWidth?: number;
+    nodeExtent?: CoordinateExtent;
+    nodeOrigin?: NodeOrigin;
     zIndexMode?: ZIndexMode;
 }) => React.ReactElement | null;
 ```
@@ -1717,10 +1717,10 @@ export declare const CanvasProvider: (props: {
 
 ```ts
 export type CanvasRect = {
+    height: number;
+    width: number;
     x: number;
     y: number;
-    width: number;
-    height: number;
 };
 ```
 
@@ -1728,8 +1728,8 @@ export type CanvasRect = {
 
 ```ts
 export type CanvasSize = {
-    width: number;
     height: number;
+    width: number;
 };
 ```
 
@@ -1775,14 +1775,14 @@ export declare const HIDDEN_HANDLE: "!size-px !min-h-0 !min-w-0 !border-0 !bg-tr
 ```ts
 export type Handle = any;
 export declare const Handle: (props: {
-    type: HandleType;
-    position: Position;
-    isConnectable?: boolean;
-    isConnectableStart?: boolean;
-    isConnectableEnd?: boolean;
-    isValidConnection?: IsValidConnection;
     id?: null | string;
+    isConnectable?: boolean;
+    isConnectableEnd?: boolean;
+    isConnectableStart?: boolean;
+    isValidConnection?: IsValidConnection;
     onConnect?: OnConnect;
+    position: Position;
+    type: HandleType;
 } & Omit<React.HTMLAttributes<HTMLDivElement>, "id" | "isConnectable" | "isConnectableEnd" | "isConnectableStart" | "isValidConnection" | "onConnect" | "position" | "type"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
@@ -1814,23 +1814,23 @@ export type NodeProps<NodeType = any> = any;
 
 ```ts
 export declare const NodeResizer: (props: {
-    nodeId?: string;
+    autoScale?: boolean;
     color?: string;
     handleClassName?: string;
     handleStyle?: React.CSSProperties;
+    isVisible?: boolean;
+    keepAspectRatio?: boolean;
     lineClassName?: string;
     lineStyle?: React.CSSProperties;
-    isVisible?: boolean;
-    minWidth?: number;
-    minHeight?: number;
-    maxWidth?: number;
     maxHeight?: number;
-    keepAspectRatio?: boolean;
-    autoScale?: boolean;
-    shouldResize?: ShouldResize;
-    onResizeStart?: OnResizeStart;
+    maxWidth?: number;
+    minHeight?: number;
+    minWidth?: number;
+    nodeId?: string;
     onResize?: OnResize;
     onResizeEnd?: OnResizeEnd;
+    onResizeStart?: OnResizeStart;
+    shouldResize?: ShouldResize;
 }) => React.ReactElement | null;
 ```
 
@@ -1838,11 +1838,11 @@ export declare const NodeResizer: (props: {
 
 ```ts
 export declare const NodeToolbar: (props: {
-    nodeId?: string | string[];
-    isVisible?: boolean;
-    position?: Position;
-    offset?: number;
     align?: Align;
+    isVisible?: boolean;
+    nodeId?: string | string[];
+    offset?: number;
+    position?: Position;
 } & Omit<React.HTMLAttributes<HTMLElement>, "align" | "isVisible" | "nodeId" | "offset" | "position">) => React.ReactElement | null;
 ```
 
@@ -1862,12 +1862,12 @@ export declare const Position: any;
 
 ```ts
 export type ReadableOptions = {
+    anchor?: CanvasPoint | undefined;
+    limits?: ZoomLimits | undefined;
+    maxZoom?: number | undefined;
+    padding?: number | undefined;
     readableZoom?: number | undefined;
     readingZoom?: number | undefined;
-    anchor?: CanvasPoint | undefined;
-    padding?: number | undefined;
-    maxZoom?: number | undefined;
-    limits?: ZoomLimits | undefined;
 };
 ```
 
@@ -1883,8 +1883,8 @@ export declare const ViewportPortal: (props: {
 
 ```ts
 export type ZoomLimits = {
-    min: number;
     max: number;
+    min: number;
 };
 ```
 
@@ -1981,9 +1981,9 @@ export declare const CardGrid: (props: {
 
 ```ts
 export declare const CardGridSection: (props: {
-    title: string;
-    count?: number;
     children: React.ReactNode;
+    count?: number;
+    title: string;
 }) => React.ReactElement | null;
 ```
 
@@ -2023,10 +2023,10 @@ export declare const ChipButton: (props: {
 
 ```ts
 export declare const ChordHint: (props: {
-    commandId: string;
-    className?: string;
     chipClassName?: string;
     chipVariant?: "default" | "filled";
+    className?: string;
+    commandId: string;
 }) => React.ReactElement | null;
 ```
 
@@ -2056,15 +2056,15 @@ export declare const CODE_VIEWER_HIGHLIGHT: string;
 
 ```ts
 export declare const CodeBlock: (props: {
+    actions?: React.ReactNode;
+    bare?: boolean;
+    caret?: boolean;
+    className?: string;
     code: string;
     language?: string;
-    className?: string;
-    syntaxHighlight?: boolean;
-    bare?: boolean;
-    wrap?: boolean;
     lineNumbers?: boolean;
-    caret?: boolean;
-    actions?: React.ReactNode;
+    syntaxHighlight?: boolean;
+    wrap?: boolean;
 }) => React.ReactElement | null;
 ```
 
@@ -2072,12 +2072,12 @@ export declare const CodeBlock: (props: {
 
 ```ts
 export declare const CodePreview: (props: {
+    bare?: boolean;
+    caret?: boolean;
+    className?: string;
     code: string;
     language?: string;
     maxHeightClass?: string;
-    className?: string;
-    bare?: boolean;
-    caret?: boolean;
     syntaxHighlight?: boolean;
 }) => React.ReactElement | null;
 ```
@@ -2112,79 +2112,79 @@ export declare const highlightCode: (code: string, language?: string | undefined
 
 ```ts
 export declare const CodeEditor: (props: {
-    value: string;
-    language?: string;
-    readOnly?: boolean;
-    followTail?: boolean;
+    applyCodeActionSource?: ApplyCodeActionSource;
+    ariaLabel?: string;
     autoFocus?: boolean;
-    placeholder?: string;
-    onChange?: ((value: string, changes?: readonly EditorContentChange[] | undefined) => void);
-    diagnostics?: EditorDiagnostic[];
-    dirtyDiff?: DirtyDiffFeed;
-    externalChanges?: readonly DirtyChange[];
-    scrollbarMarkersEnabled?: boolean;
+    blameSource?: InlineBlameSource;
     bracketColorizationEnabled?: boolean;
-    stickyScrollEnabled?: boolean;
-    hoverSource?: HoverSource;
+    className?: string;
+    codeActionSource?: CodeActionSource;
+    commentRanges?: CommentedRange[];
     completionSource?: CompletionSource;
-    signatureHelpSource?: SignatureHelpSource;
-    nextEditSource?: NextEditSource;
-    nextEdit?: EditorSuggestion[] | null;
-    onNextEdit?: ((suggestions: EditorSuggestion[] | null) => void);
-    onCursorLineChange?: ((line: number) => void);
-    onCursorPositionChange?: ((position: EditorCursorStatus) => void);
-    onSelectionChange?: ((selection: EditorTextSelection | null) => void);
-    onEditorReady?: ((api: EditorHandle) => void);
-    onScroll?: ((percent: number) => void);
-    scrollSyncHost?: HTMLElement | null;
-    stickySymbols?: StickySymbol[];
-    onFixRequest?: ((diagnostic: EditorDiagnostic) => void);
     definitionSource?: DefinitionSource;
     definitionTargetSource?: DefinitionTargetSource;
-    documentHighlightSource?: DocumentHighlightSource;
-    inlayHintSource?: InlayHintSource;
-    blameSource?: InlineBlameSource;
+    diagnostics?: EditorDiagnostic[];
+    dirtyDiff?: DirtyDiffFeed;
     documentColorSource?: DocumentColorSource;
-    prepareRenameSource?: PrepareRenameSource;
-    renameSource?: RenameSource;
-    onRenameApplied?: ((result: EditorRenameResult) => void);
+    documentHighlightSource?: DocumentHighlightSource;
+    extensions?: MonacoEditorExtension[];
+    externalChanges?: readonly DirtyChange[];
+    filePath?: string;
+    followTail?: boolean;
     formatSource?: FormatSource;
     formatText?: FormatTextSource;
-    codeActionSource?: CodeActionSource;
-    applyCodeActionSource?: ApplyCodeActionSource;
-    onCodeActionApplied?: ((result: EditorRenameResult) => void);
-    onPeekDefinition?: ((location: {
-        file: string;
-        line: number;
-        character?: number | undefined;
-    }) => void);
-    initialLine?: number;
-    initialColumn?: number;
-    initialEndLine?: number;
-    initialEndColumn?: number;
-    revealKey?: number;
-    extensions?: MonacoEditorExtension[];
-    viewState?: ViewStateBridge;
-    className?: string;
-    ariaLabel?: string;
-    onSave?: (() => void);
-    onSubmit?: (() => void);
-    submitActionLabel?: string;
-    onAddComment?: ((selection: EditorSelectionRange, body: string) => void);
-    commentRanges?: CommentedRange[];
-    onEditComment?: ((id: string, body: string) => void);
-    filePath?: string;
-    implementationSource?: ((position: EditorPosition) => Promise<EditorReference[]>);
-    typeDefinitionSource?: ((position: EditorPosition) => Promise<EditorReference[]>);
-    referencesSource?: ((position: EditorPosition) => Promise<EditorReference[]>);
+    hoverSource?: HoverSource;
     hunkSource?: HunkSource;
-    revertHunkSource?: RevertHunkSource;
+    implementationSource?: ((position: EditorPosition) => Promise<EditorReference[]>);
+    initialColumn?: number;
+    initialEndColumn?: number;
+    initialEndLine?: number;
+    initialLine?: number;
+    inlayHintSource?: InlayHintSource;
+    language?: string;
+    nextEdit?: EditorSuggestion[] | null;
+    nextEditSource?: NextEditSource;
+    onAddComment?: ((selection: EditorSelectionRange, body: string) => void);
+    onChange?: ((value: string, changes?: readonly EditorContentChange[] | undefined) => void);
+    onCodeActionApplied?: ((result: EditorRenameResult) => void);
+    onCursorLineChange?: ((line: number) => void);
+    onCursorPositionChange?: ((position: EditorCursorStatus) => void);
+    onEditComment?: ((id: string, body: string) => void);
+    onEditorReady?: ((api: EditorHandle) => void);
+    onFixRequest?: ((diagnostic: EditorDiagnostic) => void);
     onHunkReverted?: (() => void);
     onLocationNavigate?: ((location: {
+        column?: number | undefined;
         file: string;
         line: number;
-        column?: number | undefined;
     }) => void);
+    onNextEdit?: ((suggestions: EditorSuggestion[] | null) => void);
+    onPeekDefinition?: ((location: {
+        character?: number | undefined;
+        file: string;
+        line: number;
+    }) => void);
+    onRenameApplied?: ((result: EditorRenameResult) => void);
+    onSave?: (() => void);
+    onScroll?: ((percent: number) => void);
+    onSelectionChange?: ((selection: EditorTextSelection | null) => void);
+    onSubmit?: (() => void);
+    placeholder?: string;
+    prepareRenameSource?: PrepareRenameSource;
+    readOnly?: boolean;
+    referencesSource?: ((position: EditorPosition) => Promise<EditorReference[]>);
+    renameSource?: RenameSource;
+    revealKey?: number;
+    revertHunkSource?: RevertHunkSource;
+    scrollSyncHost?: HTMLElement | null;
+    scrollbarMarkersEnabled?: boolean;
+    signatureHelpSource?: SignatureHelpSource;
+    stickyScrollEnabled?: boolean;
+    stickySymbols?: StickySymbol[];
+    submitActionLabel?: string;
+    typeDefinitionSource?: ((position: EditorPosition) => Promise<EditorReference[]>);
+    value: string;
+    viewState?: ViewStateBridge;
 }) => React.ReactElement | null;
 ```
 
@@ -2199,9 +2199,9 @@ export type CompletionSource = (pos: EditorPosition) => Promise<EditorCompletion
 ```ts
 export type DirtyChange = {
     fromLine: number;
+    layer?: DirtyChangeLayer | undefined;
     toLine: number;
     type: DirtyChangeType;
-    layer?: DirtyChangeLayer | undefined;
 };
 ```
 
@@ -2218,25 +2218,25 @@ export type DirtyDiffFeed = {
 
 ```ts
 export type EditorCompletionItem = {
-    label: string;
-    detail?: string | undefined;
-    kind?: number | undefined;
-    insertText?: string | undefined;
-    insertTextFormat?: "plainText" | "snippet" | undefined;
-    range?: undefined | {
-        start: EditorPosition;
-        end: EditorPosition;
-    };
-    filterText?: string | undefined;
-    sortText?: string | undefined;
-    preselect?: boolean | undefined;
-    commitCharacters?: string[] | undefined;
     command?: undefined | {
+        arguments?: undefined | unknown[];
         id: string;
         title?: string | undefined;
-        arguments?: undefined | unknown[];
     };
+    commitCharacters?: string[] | undefined;
+    detail?: string | undefined;
     documentation?: string | undefined;
+    filterText?: string | undefined;
+    insertText?: string | undefined;
+    insertTextFormat?: "plainText" | "snippet" | undefined;
+    kind?: number | undefined;
+    label: string;
+    preselect?: boolean | undefined;
+    range?: undefined | {
+        end: EditorPosition;
+        start: EditorPosition;
+    };
+    sortText?: string | undefined;
 };
 ```
 
@@ -2244,14 +2244,14 @@ export type EditorCompletionItem = {
 
 ```ts
 export type EditorDiagnostic = {
-    line: number;
     character: number;
-    endLine: number;
-    endCharacter: number;
-    severity: "error" | "hint" | "info" | "warning";
-    message: string;
-    source?: string | undefined;
     code?: number | string | undefined;
+    endCharacter: number;
+    endLine: number;
+    line: number;
+    message: string;
+    severity: "error" | "hint" | "info" | "warning";
+    source?: string | undefined;
     tags?: EditorDiagnosticTag[] | undefined;
 };
 ```
@@ -2260,16 +2260,16 @@ export type EditorDiagnostic = {
 
 ```ts
 export type EditorHandle = {
-    revealLine: (line: number) => void;
-    getSelectedText: () => string;
-    getCursorOffset: () => number;
-    setText: (text: string) => void;
+    acceptNextEdit: (hunk?: EditorSuggestion | undefined) => void;
+    acceptSuggestion: (suggestion: EditorSuggestion) => void;
     formatDocument: () => Promise<void>;
+    getCursorOffset: () => number;
     getScrollState: () => {
         percent: number;
     };
-    acceptNextEdit: (hunk?: EditorSuggestion | undefined) => void;
-    acceptSuggestion: (suggestion: EditorSuggestion) => void;
+    getSelectedText: () => string;
+    revealLine: (line: number) => void;
+    setText: (text: string) => void;
 };
 ```
 
@@ -2277,12 +2277,12 @@ export type EditorHandle = {
 
 ```ts
 export type EditorHunk = {
-    index: number;
     header: string;
-    modifiedStart: number;
+    index: number;
     modifiedEnd: number;
-    oldLines: string[];
+    modifiedStart: number;
     newLines: string[];
+    oldLines: string[];
 };
 ```
 
@@ -2290,8 +2290,8 @@ export type EditorHunk = {
 
 ```ts
 export type EditorPosition = {
-    line: number;
     character: number;
+    line: number;
 };
 ```
 
@@ -2299,14 +2299,14 @@ export type EditorPosition = {
 
 ```ts
 export type EditorSuggestion = {
+    endLine: number;
     id: string;
     kind: "comment" | "suggestion";
-    source?: "edit-prediction" | "review" | undefined;
-    startLine: number;
-    endLine: number;
+    note?: string | undefined;
     original: string;
     replacement?: string | undefined;
-    note?: string | undefined;
+    source?: "edit-prediction" | "review" | undefined;
+    startLine: number;
 };
 ```
 
@@ -2314,12 +2314,12 @@ export type EditorSuggestion = {
 
 ```ts
 export type InlineBlameLine = {
-    line: number;
     author: string;
     authorTime: number;
+    line: number;
+    onSelect?: (() => void) | undefined;
     summary: string;
     uncommitted: boolean;
-    onSelect?: (() => void) | undefined;
 };
 ```
 
@@ -2342,10 +2342,10 @@ export type MonacoEditorExtension = {
 ```ts
 export type NextEditRequest = {
     content: string;
-    cursorLine: number;
     cursorColumn: number;
-    documentVersion: number;
+    cursorLine: number;
     documentDigest: string;
+    documentVersion: number;
     requestId: string;
 };
 ```
@@ -2430,9 +2430,9 @@ export declare const OpenCodeMark: (props: {
 
 ```ts
 export declare const COLLAPSIBLE_MOTION: {
-    readonly header: "transition-colors duration-(--dur-fast)";
-    readonly chevron: "transition-transform duration-(--dur-base)";
     readonly body: "transition-[grid-template-rows,opacity] duration-(--dur-base)";
+    readonly chevron: "transition-transform duration-(--dur-base)";
+    readonly header: "transition-colors duration-(--dur-fast)";
 };
 ```
 
@@ -2442,18 +2442,18 @@ export declare const COLLAPSIBLE_MOTION: {
 
 ```ts
 export declare const CollapsibleSection: (props: {
-    title: string;
-    defaultOpen?: boolean;
-    open?: boolean;
-    onOpenChange?: ((open: boolean) => void);
-    count?: number;
     actions?: React.ReactNode;
     actionsLabel?: string;
     children: React.ReactNode;
     className?: string;
+    count?: number;
+    defaultOpen?: boolean;
+    minHeight?: number;
+    onOpenChange?: ((open: boolean) => void);
+    open?: boolean;
     resizable?: boolean;
     resizeStorageKey?: string;
-    minHeight?: number;
+    title: string;
 }) => React.ReactElement | null;
 ```
 
@@ -2463,23 +2463,23 @@ export declare const CollapsibleSection: (props: {
 
 ```ts
 export declare const CollapsibleStrip: (props: {
-    icon: React.ReactNode;
-    count: React.ReactNode;
-    summary?: React.ReactNode;
-    title?: React.ReactNode;
-    children: React.ReactNode;
-    listLabel: string;
-    expanded?: boolean;
-    defaultExpanded?: boolean;
-    onExpandedChange?: ((expanded: boolean) => void);
-    label: {
-        expand: string;
-        collapse: string;
-    };
-    maxHeightPx?: number;
-    leading?: React.ReactNode;
     actions?: React.ReactNode;
     actionsLabel?: string;
+    children: React.ReactNode;
+    count: React.ReactNode;
+    defaultExpanded?: boolean;
+    expanded?: boolean;
+    icon: React.ReactNode;
+    label: {
+        collapse: string;
+        expand: string;
+    };
+    leading?: React.ReactNode;
+    listLabel: string;
+    maxHeightPx?: number;
+    onExpandedChange?: ((expanded: boolean) => void);
+    summary?: React.ReactNode;
+    title?: React.ReactNode;
 }) => React.ReactElement | null;
 ```
 
@@ -2489,17 +2489,17 @@ export declare const CollapsibleStrip: (props: {
 
 ```ts
 export declare const Combobox: (props: {
-    value: string;
+    className?: string;
+    contentClassName?: string;
+    emptyLabel?: React.ReactNode;
+    menuHeader?: React.ReactNode;
+    modal?: boolean;
     onValueChange: (value: string) => void;
     options: readonly ComboboxOption[];
     placeholder?: string;
     searchPlaceholder?: string;
-    emptyLabel?: React.ReactNode;
-    menuHeader?: React.ReactNode;
     size?: ChoiceControlSize;
-    modal?: boolean;
-    className?: string;
-    contentClassName?: string;
+    value: string;
 } & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "className" | "contentClassName" | "emptyLabel" | "menuHeader" | "modal" | "onValueChange" | "options" | "placeholder" | "searchPlaceholder" | "size" | "value"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
 ```
 
@@ -2507,12 +2507,12 @@ export declare const Combobox: (props: {
 
 ```ts
 export type ComboboxOption = {
-    value: string;
-    label: string;
-    hint?: string | undefined;
     description?: string | undefined;
     group?: string | undefined;
+    hint?: string | undefined;
     icon?: React.ReactNode;
+    label: string;
+    value: string;
 };
 ```
 
@@ -2520,23 +2520,23 @@ export type ComboboxOption = {
 
 ```ts
 export type ComboboxProps = {
-    value: string;
-    onValueChange: (value: string) => void;
-    options: readonly ComboboxOption[];
-    placeholder?: string | undefined;
-    searchPlaceholder?: string | undefined;
-    emptyLabel?: React.ReactNode;
-    menuHeader?: React.ReactNode;
-    size?: ChoiceControlSize | undefined;
-    modal?: boolean | undefined;
-    className?: string | undefined;
-    contentClassName?: string | undefined;
-    id?: string | undefined;
     "aria-describedby"?: string | undefined;
     "aria-invalid"?: "false" | "grammar" | "spelling" | "true" | boolean | undefined;
     "aria-label"?: string | undefined;
     "aria-labelledby"?: string | undefined;
+    className?: string | undefined;
+    contentClassName?: string | undefined;
     disabled?: boolean | undefined;
+    emptyLabel?: React.ReactNode;
+    id?: string | undefined;
+    menuHeader?: React.ReactNode;
+    modal?: boolean | undefined;
+    onValueChange: (value: string) => void;
+    options: readonly ComboboxOption[];
+    placeholder?: string | undefined;
+    searchPlaceholder?: string | undefined;
+    size?: ChoiceControlSize | undefined;
+    value: string;
 };
 ```
 
@@ -2546,15 +2546,15 @@ export type ComboboxProps = {
 
 ```ts
 export declare const Command: (props: {
-    children?: React.ReactNode;
     asChild?: boolean;
-    label?: string;
-    shouldFilter?: boolean;
-    filter?: CommandFilter;
-    value?: string;
-    onValueChange?: ((value: string) => void);
-    loop?: boolean;
+    children?: React.ReactNode;
     disablePointerSelection?: boolean;
+    filter?: CommandFilter;
+    label?: string;
+    loop?: boolean;
+    onValueChange?: ((value: string) => void);
+    shouldFilter?: boolean;
+    value?: string;
     vimBindings?: boolean;
 } & Omit<React.HTMLAttributes<HTMLDivElement>, "asChild" | "children" | "disablePointerSelection" | "filter" | "label" | "loop" | "onValueChange" | "shouldFilter" | "value" | "vimBindings"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
@@ -2564,14 +2564,14 @@ export declare const Command: (props: {
 ```ts
 export declare const CommandDialog: (props: {
     children?: React.ReactNode;
-    open?: boolean;
-    defaultOpen?: boolean;
-    onOpenChange?: ((open: boolean) => void);
-    modal?: boolean;
-    title?: string;
-    description?: string;
     className?: string;
+    defaultOpen?: boolean;
+    description?: string;
+    modal?: boolean;
+    onOpenChange?: ((open: boolean) => void);
+    open?: boolean;
     showCloseButton?: boolean;
+    title?: string;
 }) => React.ReactElement | null;
 ```
 
@@ -2579,8 +2579,8 @@ export declare const CommandDialog: (props: {
 
 ```ts
 export declare const CommandEmpty: (props: {
-    children?: React.ReactNode;
     asChild?: boolean;
+    children?: React.ReactNode;
 } & Omit<React.HTMLAttributes<HTMLDivElement>, "asChild" | "children"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
@@ -2588,11 +2588,11 @@ export declare const CommandEmpty: (props: {
 
 ```ts
 export declare const CommandGroup: (props: {
-    children?: React.ReactNode;
     asChild?: boolean;
+    children?: React.ReactNode;
+    forceMount?: boolean;
     heading?: React.ReactNode;
     value?: string;
-    forceMount?: boolean;
 } & Omit<React.HTMLAttributes<HTMLDivElement>, "asChild" | "children" | "forceMount" | "heading" | "value"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
@@ -2601,12 +2601,12 @@ export declare const CommandGroup: (props: {
 ```ts
 export declare const CommandInput: (props: {
     asChild?: boolean;
-    value?: string;
-    onValueChange?: ((search: string) => void);
-    icon?: LucideIcon;
     containerClassName?: string;
+    icon?: LucideIcon;
     inputGroupClassName?: string;
+    onValueChange?: ((search: string) => void);
     trailing?: React.ReactNode;
+    value?: string;
 } & Omit<React.InputHTMLAttributes<HTMLInputElement>, "asChild" | "containerClassName" | "icon" | "inputGroupClassName" | "onValueChange" | "trailing" | "value"> & React.RefAttributes<HTMLInputElement>) => React.ReactElement | null;
 ```
 
@@ -2614,14 +2614,14 @@ export declare const CommandInput: (props: {
 
 ```ts
 export declare const CommandItem: (props: {
-    children?: React.ReactNode;
     asChild?: boolean;
+    children?: React.ReactNode;
     disabled?: boolean;
-    onSelect?: ((value: string) => void);
-    value?: string;
-    keywords?: string[];
     forceMount?: boolean;
+    keywords?: string[];
+    onSelect?: ((value: string) => void);
     showCheck?: boolean;
+    value?: string;
 } & Omit<React.HTMLAttributes<HTMLDivElement>, "asChild" | "children" | "disabled" | "forceMount" | "keywords" | "onSelect" | "showCheck" | "value"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
@@ -2629,8 +2629,8 @@ export declare const CommandItem: (props: {
 
 ```ts
 export declare const CommandList: (props: {
-    children?: React.ReactNode;
     asChild?: boolean;
+    children?: React.ReactNode;
     label?: string;
 } & Omit<React.HTMLAttributes<HTMLDivElement>, "asChild" | "children" | "label"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
@@ -2639,8 +2639,8 @@ export declare const CommandList: (props: {
 
 ```ts
 export declare const CommandSeparator: (props: {
-    asChild?: boolean;
     alwaysRender?: boolean;
+    asChild?: boolean;
 } & Omit<React.HTMLAttributes<HTMLDivElement>, "alwaysRender" | "asChild"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
@@ -2663,8 +2663,8 @@ export declare const useCommandState: <T = any>(selector: (state: State) => T) =
 ```ts
 export type AnchoredTextComment = {
     id: string;
-    quote: string;
     note: string;
+    quote: string;
 };
 ```
 
@@ -2673,17 +2673,17 @@ export type AnchoredTextComment = {
 ```ts
 export declare const CommentsManager: (props: {
     comments: Comment[];
-    submitting?: boolean;
-    submitLabel?: string;
-    onRemove: (id: string) => void;
+    description?: string;
+    elevated?: boolean;
+    onAction?: ((action: CommentActionContribution) => void);
     onClear: () => void;
+    onNavigate?: ((comment: Comment) => void);
+    onRemove: (id: string) => void;
     onSubmit?: (() => void);
     recommendSubmit?: boolean;
-    onNavigate?: ((comment: Comment) => void);
-    onAction?: ((action: CommentActionContribution) => void);
     runningAction?: null | string;
-    elevated?: boolean;
-    description?: string;
+    submitLabel?: string;
+    submitting?: boolean;
 }) => React.ReactElement | null;
 ```
 
@@ -2691,16 +2691,16 @@ export declare const CommentsManager: (props: {
 
 ```ts
 export declare const TextCommentLayer: (props: {
-    children: React.ReactNode;
-    comments: readonly AnchoredTextComment[];
-    onAdd: (quote: string, note: string, assets: MessageAttachment[]) => void;
-    onUpdate: (id: string, note: string) => void;
-    onRemove: (id: string) => void;
     active?: boolean;
-    readOnly?: boolean;
     attachments?: boolean;
+    children: React.ReactNode;
     className?: string;
+    comments: readonly AnchoredTextComment[];
     contentClassName?: string;
+    onAdd: (quote: string, note: string, assets: MessageAttachment[]) => void;
+    onRemove: (id: string) => void;
+    onUpdate: (id: string, note: string) => void;
+    readOnly?: boolean;
 }) => React.ReactElement | null;
 ```
 
@@ -2726,15 +2726,15 @@ export declare const ComposerChip: (props: {
 
 ```ts
 export declare const ComposerCommandButton: (props: {
-    size?: "default" | "icon" | "icon-lg" | "icon-sm" | "icon-touch" | "icon-xl" | "icon-xs" | "lg" | "sm" | "xl" | "xs" | null;
     asChild?: boolean;
-    variant?: "default" | "destructive" | "destructive-solid" | "field" | "ghost" | "link" | "mono" | "secondary" | null;
-    recommended?: boolean;
     command: string;
-    insertText?: string;
-    sessionId?: null | string;
-    replace?: boolean;
     glyph?: boolean;
+    insertText?: string;
+    recommended?: boolean;
+    replace?: boolean;
+    sessionId?: null | string;
+    size?: "default" | "icon" | "icon-lg" | "icon-sm" | "icon-touch" | "icon-xl" | "icon-xs" | "lg" | "sm" | "xl" | "xs" | null;
+    variant?: "default" | "destructive" | "destructive-solid" | "field" | "ghost" | "link" | "mono" | "secondary" | null;
 } & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "asChild" | "command" | "glyph" | "insertText" | "recommended" | "replace" | "sessionId" | "size" | "variant"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
 ```
 
@@ -2744,15 +2744,15 @@ export declare const ComposerCommandButton: (props: {
 
 ```ts
 export declare const ConfirmDialog: (props: {
+    cancelLabel?: string;
+    confirmLabel?: string;
+    description?: string;
+    icon?: React.ReactNode;
+    onClose: () => void;
+    onConfirm: () => void;
     open: boolean;
     title: string;
-    description?: string;
-    confirmLabel?: string;
-    cancelLabel?: string;
     variant?: "default" | "destructive";
-    icon?: React.ReactNode;
-    onConfirm: () => void;
-    onClose: () => void;
 }) => React.ReactElement | null;
 ```
 
@@ -2780,10 +2780,10 @@ export declare const linksInText: (text: string) => TextLinks;
 ```ts
 export declare const ContextMenu: (props: {
     children?: React.ReactNode;
-    open?: boolean;
-    onOpenChange?: ((open: boolean) => void);
     dir?: Direction;
     modal?: boolean;
+    onOpenChange?: ((open: boolean) => void);
+    open?: boolean;
 }) => React.ReactElement | null;
 ```
 
@@ -2791,25 +2791,25 @@ export declare const ContextMenu: (props: {
 
 ```ts
 export declare const ContextMenuContent: (props: {
-    asChild?: boolean;
-    side?: "bottom" | "left" | "right" | "top";
-    sideOffset?: number;
     align?: "center" | "end" | "start";
     alignOffset?: number;
     arrowPadding?: number;
+    asChild?: boolean;
     avoidCollisions?: boolean;
     collisionBoundary?: Boundary | Boundary[];
     collisionPadding?: Partial<Record<"bottom" | "left" | "right" | "top", number>> | number;
-    sticky?: Sticky;
+    forceMount?: true;
     hideWhenDetached?: boolean;
-    updatePositionStrategy?: UpdatePositionStrategy;
+    loop?: boolean;
+    onCloseAutoFocus?: ((event: Event) => void);
     onEscapeKeyDown?: ((event: KeyboardEvent) => void);
-    onPointerDownOutside?: ((event: PointerDownOutsideEvent) => void);
     onFocusOutside?: ((event: FocusOutsideEvent) => void);
     onInteractOutside?: ((event: FocusOutsideEvent | PointerDownOutsideEvent) => void);
-    onCloseAutoFocus?: ((event: Event) => void);
-    forceMount?: true;
-    loop?: boolean;
+    onPointerDownOutside?: ((event: PointerDownOutsideEvent) => void);
+    side?: "bottom" | "left" | "right" | "top";
+    sideOffset?: number;
+    sticky?: Sticky;
+    updatePositionStrategy?: UpdatePositionStrategy;
 } & Omit<React.HTMLAttributes<HTMLDivElement>, "align" | "alignOffset" | "arrowPadding" | "asChild" | "avoidCollisions" | "collisionBoundary" | "collisionPadding" | "forceMount" | "hideWhenDetached" | "loop" | "onCloseAutoFocus" | "onEscapeKeyDown" | "onFocusOutside" | "onInteractOutside" | "onPointerDownOutside" | "side" | "sideOffset" | "sticky" | "updatePositionStrategy"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
@@ -2817,11 +2817,11 @@ export declare const ContextMenuContent: (props: {
 
 ```ts
 export declare const ContextMenuItem: (props: {
-    onSelect?: ((event: Event) => void);
-    disabled?: boolean;
     asChild?: boolean;
-    textValue?: string;
+    disabled?: boolean;
     inset?: boolean;
+    onSelect?: ((event: Event) => void);
+    textValue?: string;
     tone?: MenuItemTone;
 } & Omit<React.HTMLAttributes<HTMLDivElement>, "asChild" | "disabled" | "inset" | "onSelect" | "textValue" | "tone"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
@@ -2838,8 +2838,8 @@ export declare const ContextMenuSeparator: (props: {
 
 ```ts
 export declare const ContextMenuTrigger: (props: {
-    disabled?: boolean;
     asChild?: boolean;
+    disabled?: boolean;
 } & Omit<React.HTMLAttributes<HTMLSpanElement>, "asChild" | "disabled"> & React.RefAttributes<HTMLSpanElement>) => React.ReactElement | null;
 ```
 
@@ -2849,12 +2849,12 @@ export declare const ContextMenuTrigger: (props: {
 
 ```ts
 export declare const ContextRing: (props: {
-    fraction: number;
-    size?: number;
-    radius?: number;
-    strokeWidth?: number;
-    dot?: boolean;
     className?: string;
+    dot?: boolean;
+    fraction: number;
+    radius?: number;
+    size?: number;
+    strokeWidth?: number;
 }) => React.ReactElement | null;
 ```
 
@@ -2864,12 +2864,12 @@ export declare const ContextRing: (props: {
 
 ```ts
 export declare const CoordinateMenu: (props: {
-    x: number;
-    y: number;
+    children: React.ReactNode;
+    className?: string;
     label: string;
     onClose: () => void;
-    className?: string;
-    children: React.ReactNode;
+    x: number;
+    y: number;
 }) => React.ReactElement | null;
 ```
 
@@ -2877,8 +2877,8 @@ export declare const CoordinateMenu: (props: {
 
 ```ts
 export declare const CoordinateMenuItem: (props: {
-    tone?: MenuItemTone;
     onSelect?: (() => void);
+    tone?: MenuItemTone;
 } & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "onSelect" | "tone"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
 ```
 
@@ -2895,8 +2895,8 @@ export declare const CoordinateMenuSeparator: (props: {} & React.HTMLAttributes<
 ```ts
 export declare const DetailField: (props: {
     label: string;
-    value: string;
     title?: string;
+    value: string;
 }) => React.ReactElement | null;
 ```
 
@@ -2907,10 +2907,10 @@ export declare const DetailField: (props: {
 ```ts
 export declare const Dialog: (props: {
     children?: React.ReactNode;
-    open?: boolean;
     defaultOpen?: boolean;
-    onOpenChange?: ((open: boolean) => void);
     modal?: boolean;
+    onOpenChange?: ((open: boolean) => void);
+    open?: boolean;
 }) => React.ReactElement | null;
 ```
 
@@ -2932,19 +2932,19 @@ export declare const DialogClose: (props: {
 
 ```ts
 export declare const DialogContent: (props: {
-    forceMount?: true;
+    appearance?: "media" | "surface";
     asChild?: boolean;
     deferPointerDownOutside?: boolean;
+    forceMount?: true;
+    layout?: DialogContentLayout;
+    onCloseAutoFocus?: ((event: Event) => void);
     onEscapeKeyDown?: ((event: KeyboardEvent) => void);
-    onPointerDownOutside?: ((event: PointerDownOutsideEvent) => void);
     onFocusOutside?: ((event: FocusOutsideEvent) => void);
     onInteractOutside?: ((event: FocusOutsideEvent | PointerDownOutsideEvent) => void);
     onOpenAutoFocus?: ((event: Event) => void);
-    onCloseAutoFocus?: ((event: Event) => void);
+    onPointerDownOutside?: ((event: PointerDownOutsideEvent) => void);
     showCloseButton?: boolean;
     size?: "2xl" | "3xl" | "fit" | "lg" | "md" | "sm" | "xl" | "xs";
-    layout?: DialogContentLayout;
-    appearance?: "media" | "surface";
 } & Omit<React.HTMLAttributes<HTMLDivElement>, "appearance" | "asChild" | "deferPointerDownOutside" | "forceMount" | "layout" | "onCloseAutoFocus" | "onEscapeKeyDown" | "onFocusOutside" | "onInteractOutside" | "onOpenAutoFocus" | "onPointerDownOutside" | "showCloseButton" | "size"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
@@ -2972,9 +2972,9 @@ export declare const DialogDescription: (props: {
 
 ```ts
 export declare const DialogFooter: (props: {
+    actionsLabel?: string;
     aside?: React.ReactNode;
     children: React.ReactNode;
-    actionsLabel?: string;
     showCloseButton?: boolean;
 } & Omit<React.HTMLAttributes<HTMLElement>, "actionsLabel" | "aside" | "children" | "showCloseButton">) => React.ReactElement | null;
 ```
@@ -2983,9 +2983,9 @@ export declare const DialogFooter: (props: {
 
 ```ts
 export declare const DialogHeader: (props: {
-    children: React.ReactNode;
     actions?: React.ReactNode;
     actionsLabel?: string;
+    children: React.ReactNode;
 } & Omit<React.HTMLAttributes<HTMLElement>, "actions" | "actionsLabel" | "children">) => React.ReactElement | null;
 ```
 
@@ -2993,8 +2993,8 @@ export declare const DialogHeader: (props: {
 
 ```ts
 export declare const DialogOverlay: (props: {
-    forceMount?: true;
     asChild?: boolean;
+    forceMount?: true;
 } & Omit<React.HTMLAttributes<HTMLDivElement>, "asChild" | "forceMount"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
@@ -3045,15 +3045,15 @@ export declare const PaneDialogBody: (props: {} & React.HTMLAttributes<HTMLDivEl
 
 ```ts
 export declare const PaneDialogContent: (props: {
-    forceMount?: true;
     asChild?: boolean;
     deferPointerDownOutside?: boolean;
+    forceMount?: true;
+    onCloseAutoFocus?: ((event: Event) => void);
     onEscapeKeyDown?: ((event: KeyboardEvent) => void);
-    onPointerDownOutside?: ((event: PointerDownOutsideEvent) => void);
     onFocusOutside?: ((event: FocusOutsideEvent) => void);
     onInteractOutside?: ((event: FocusOutsideEvent | PointerDownOutsideEvent) => void);
     onOpenAutoFocus?: ((event: Event) => void);
-    onCloseAutoFocus?: ((event: Event) => void);
+    onPointerDownOutside?: ((event: PointerDownOutsideEvent) => void);
 } & Omit<React.HTMLAttributes<HTMLDivElement>, "asChild" | "deferPointerDownOutside" | "forceMount" | "onCloseAutoFocus" | "onEscapeKeyDown" | "onFocusOutside" | "onInteractOutside" | "onOpenAutoFocus" | "onPointerDownOutside"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
@@ -3069,9 +3069,9 @@ export declare const PaneDialogDescription: (props: {
 
 ```ts
 export declare const PaneDialogFooter: (props: {
+    actionsLabel?: string;
     aside?: React.ReactNode;
     children: React.ReactNode;
-    actionsLabel?: string;
 } & Omit<React.HTMLAttributes<HTMLElement>, "actionsLabel" | "aside" | "children">) => React.ReactElement | null;
 ```
 
@@ -3079,9 +3079,9 @@ export declare const PaneDialogFooter: (props: {
 
 ```ts
 export declare const PaneDialogHeader: (props: {
-    children: React.ReactNode;
     actions?: React.ReactNode;
     actionsLabel?: string;
+    children: React.ReactNode;
 } & Omit<React.HTMLAttributes<HTMLElement>, "actions" | "actionsLabel" | "children">) => React.ReactElement | null;
 ```
 
@@ -3099,12 +3099,12 @@ export declare const PaneDialogTitle: (props: {
 
 ```ts
 export declare const DialogHero: (props: {
-    icon: React.ReactNode;
-    tone?: DialogHeroTone;
-    size?: "lg" | "sm";
     badge?: React.ReactNode;
     children?: React.ReactNode;
     className?: string;
+    icon: React.ReactNode;
+    size?: "lg" | "sm";
+    tone?: DialogHeroTone;
 }) => React.ReactElement | null;
 ```
 
@@ -3120,14 +3120,14 @@ export type DialogHeroTone = "accent" | "danger" | "neutral";
 
 ```ts
 export type DiffDocument = {
+    additions: number;
+    deletions: number;
     files: DocFile[];
     hunks: DocHunk[];
     lines: DocLine[];
-    runs: DocRun[];
-    additions: number;
-    deletions: number;
     maxCols: number;
     maxLineNo: number;
+    runs: DocRun[];
 };
 ```
 
@@ -3135,12 +3135,12 @@ export type DiffDocument = {
 
 ```ts
 export type DiffFileInput = {
-    path: string;
-    hunks: DiffHunkInput[];
-    deleted?: boolean | undefined;
     added?: boolean | undefined;
-    binary?: boolean | undefined;
     badge?: string | undefined;
+    binary?: boolean | undefined;
+    deleted?: boolean | undefined;
+    hunks: DiffHunkInput[];
+    path: string;
 };
 ```
 
@@ -3157,11 +3157,11 @@ export type DiffHunkInput = {
 
 ```ts
 export type DiffLineInput = {
-    type: DiffLineType;
-    text: string;
-    oldNo?: number | undefined;
-    newNo?: number | undefined;
     key?: number | undefined;
+    newNo?: number | undefined;
+    oldNo?: number | undefined;
+    text: string;
+    type: DiffLineType;
 };
 ```
 
@@ -3178,17 +3178,17 @@ export declare const DiffStat: (props: {
 
 ```ts
 export type DocFile = {
-    path: string;
-    deleted: boolean;
     added: boolean;
-    binary: boolean;
-    badge?: string | undefined;
     additions: number;
+    badge?: string | undefined;
+    binary: boolean;
+    deleted: boolean;
     deletions: number;
-    lineCount: number;
     firstLine?: number | undefined;
-    hunkStart: number;
     hunkEnd: number;
+    hunkStart: number;
+    lineCount: number;
+    path: string;
 };
 ```
 
@@ -3197,8 +3197,8 @@ export type DocFile = {
 ```ts
 export type DocRun = {
     hunk: number;
-    lineStart: number;
     lineEnd: number;
+    lineStart: number;
 };
 ```
 
@@ -3206,20 +3206,20 @@ export type DocRun = {
 
 ```ts
 export declare const VirtualDiff: (props: {
-    doc: DiffDocument;
-    multiFile?: boolean;
-    linkPath?: ((file: DocFile) => string | undefined);
-    languagePath?: string;
-    lead?: React.ReactNode;
     actions?: React.ReactNode;
-    notice?: React.ReactNode;
-    fileActions?: ((file: DocFile) => React.ReactNode);
-    runActions?: ((run: number) => React.ReactNode);
-    onKeyDown?: ((event: React.KeyboardEvent<HTMLDivElement>) => void);
-    followTail?: boolean;
-    collapseLarge?: boolean;
     ariaLabel?: string;
     className?: string;
+    collapseLarge?: boolean;
+    doc: DiffDocument;
+    fileActions?: ((file: DocFile) => React.ReactNode);
+    followTail?: boolean;
+    languagePath?: string;
+    lead?: React.ReactNode;
+    linkPath?: ((file: DocFile) => string | undefined);
+    multiFile?: boolean;
+    notice?: React.ReactNode;
+    onKeyDown?: ((event: React.KeyboardEvent<HTMLDivElement>) => void);
+    runActions?: ((run: number) => React.ReactNode);
 }) => React.ReactElement | null;
 ```
 
@@ -3227,20 +3227,20 @@ export declare const VirtualDiff: (props: {
 
 ```ts
 export type VirtualDiffProps = {
-    doc: DiffDocument;
-    multiFile?: boolean | undefined;
-    linkPath?: ((file: DocFile) => string | undefined) | undefined;
-    languagePath?: string | undefined;
-    lead?: React.ReactNode;
     actions?: React.ReactNode;
-    notice?: React.ReactNode;
-    fileActions?: ((file: DocFile) => React.ReactNode) | undefined;
-    runActions?: ((run: number) => React.ReactNode) | undefined;
-    onKeyDown?: ((event: React.KeyboardEvent<HTMLDivElement>) => void) | undefined;
-    followTail?: boolean | undefined;
-    collapseLarge?: boolean | undefined;
     ariaLabel?: string | undefined;
     className?: string | undefined;
+    collapseLarge?: boolean | undefined;
+    doc: DiffDocument;
+    fileActions?: ((file: DocFile) => React.ReactNode) | undefined;
+    followTail?: boolean | undefined;
+    languagePath?: string | undefined;
+    lead?: React.ReactNode;
+    linkPath?: ((file: DocFile) => string | undefined) | undefined;
+    multiFile?: boolean | undefined;
+    notice?: React.ReactNode;
+    onKeyDown?: ((event: React.KeyboardEvent<HTMLDivElement>) => void) | undefined;
+    runActions?: ((run: number) => React.ReactNode) | undefined;
 };
 ```
 
@@ -3277,13 +3277,13 @@ export declare const useDiffViewMode: () => [
 
 ```ts
 export declare const DismissibleHint: (props: {
-    hintKey: string;
-    when?: boolean;
-    icon?: React.ReactNode;
-    children: React.ReactNode;
     action?: string;
-    onAction?: (() => void);
+    children: React.ReactNode;
     className?: string;
+    hintKey: string;
+    icon?: React.ReactNode;
+    onAction?: (() => void);
+    when?: boolean;
 }) => React.ReactElement | null;
 ```
 
@@ -3313,34 +3313,34 @@ export declare const DocumentThumbnail: (props: {
 ```ts
 export declare const Drawer: (props: {
     activeSnapPoint?: null | number | string;
-    setActiveSnapPoint?: ((snapPoint: null | number | string) => void);
+    autoFocus?: boolean;
     children?: React.ReactNode;
-    open?: boolean;
     closeThreshold?: number;
-    noBodyStyles?: boolean;
-    onOpenChange?: ((open: boolean) => void);
-    shouldScaleBackground?: boolean;
-    setBackgroundColorOnScale?: boolean;
-    scrollLockTimeout?: number;
+    container?: HTMLElement | null;
+    defaultOpen?: boolean;
+    direction?: "bottom" | "left" | "right" | "top";
+    disablePreventScroll?: boolean;
+    dismissible?: boolean;
+    fadeFromIndex?: number;
     fixed?: boolean;
     handleOnly?: boolean;
-    dismissible?: boolean;
-    onDrag?: ((event: React.PointerEvent<HTMLDivElement>, percentageDragged: number) => void);
-    onRelease?: ((event: React.PointerEvent<HTMLDivElement>, open: boolean) => void);
     modal?: boolean;
     nested?: boolean;
-    onClose?: (() => void);
-    direction?: "bottom" | "left" | "right" | "top";
-    defaultOpen?: boolean;
-    disablePreventScroll?: boolean;
-    repositionInputs?: boolean;
-    snapToSequentialPoint?: boolean;
-    container?: HTMLElement | null;
+    noBodyStyles?: boolean;
     onAnimationEnd?: ((open: boolean) => void);
+    onClose?: (() => void);
+    onDrag?: ((event: React.PointerEvent<HTMLDivElement>, percentageDragged: number) => void);
+    onOpenChange?: ((open: boolean) => void);
+    onRelease?: ((event: React.PointerEvent<HTMLDivElement>, open: boolean) => void);
+    open?: boolean;
     preventScrollRestoration?: boolean;
-    autoFocus?: boolean;
+    repositionInputs?: boolean;
+    scrollLockTimeout?: number;
+    setActiveSnapPoint?: ((snapPoint: null | number | string) => void);
+    setBackgroundColorOnScale?: boolean;
+    shouldScaleBackground?: boolean;
     snapPoints?: (number | string)[];
-    fadeFromIndex?: number;
+    snapToSequentialPoint?: boolean;
 }) => React.ReactElement | null;
 ```
 
@@ -3356,14 +3356,14 @@ export declare const DrawerBody: (props: {} & React.HTMLAttributes<HTMLElement>)
 export declare const DrawerContent: (props: {
     asChild?: boolean;
     deferPointerDownOutside?: boolean;
+    forceMount?: true;
+    material?: "modal" | "popover";
+    onCloseAutoFocus?: ((event: Event) => void);
     onEscapeKeyDown?: ((event: KeyboardEvent) => void);
-    onPointerDownOutside?: ((event: PointerDownOutsideEvent) => void);
     onFocusOutside?: ((event: FocusOutsideEvent) => void);
     onInteractOutside?: ((event: FocusOutsideEvent | PointerDownOutsideEvent) => void);
     onOpenAutoFocus?: ((event: Event) => void);
-    onCloseAutoFocus?: ((event: Event) => void);
-    forceMount?: true;
-    material?: "modal" | "popover";
+    onPointerDownOutside?: ((event: PointerDownOutsideEvent) => void);
 } & Omit<React.HTMLAttributes<HTMLDivElement>, "asChild" | "deferPointerDownOutside" | "forceMount" | "material" | "onCloseAutoFocus" | "onEscapeKeyDown" | "onFocusOutside" | "onInteractOutside" | "onOpenAutoFocus" | "onPointerDownOutside"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
@@ -3379,9 +3379,9 @@ export declare const DrawerDescription: (props: {
 
 ```ts
 export declare const DrawerFooter: (props: {
+    actionsLabel?: string;
     aside?: React.ReactNode;
     children: React.ReactNode;
-    actionsLabel?: string;
 } & Omit<React.HTMLAttributes<HTMLElement>, "actionsLabel" | "aside" | "children">) => React.ReactElement | null;
 ```
 
@@ -3389,9 +3389,9 @@ export declare const DrawerFooter: (props: {
 
 ```ts
 export declare const DrawerHeader: (props: {
-    children: React.ReactNode;
     actions?: React.ReactNode;
     actionsLabel?: string;
+    children: React.ReactNode;
 } & Omit<React.HTMLAttributes<HTMLElement>, "actions" | "actionsLabel" | "children">) => React.ReactElement | null;
 ```
 
@@ -3484,11 +3484,11 @@ export declare const DROP_TARGET_TRANSITION: "transition-[border-color,box-shado
 ```ts
 export declare const DropdownMenu: (props: {
     children?: React.ReactNode;
-    dir?: Direction;
-    open?: boolean;
     defaultOpen?: boolean;
-    onOpenChange?: ((open: boolean) => void);
+    dir?: Direction;
     modal?: boolean;
+    onOpenChange?: ((open: boolean) => void);
+    open?: boolean;
 }) => React.ReactElement | null;
 ```
 
@@ -3496,13 +3496,13 @@ export declare const DropdownMenu: (props: {
 
 ```ts
 export declare const DropdownMenuCheckboxItem: (props: {
-    onSelect?: ((event: Event) => void);
-    disabled?: boolean;
-    checked?: CheckedState;
     asChild?: boolean;
-    textValue?: string;
-    onCheckedChange?: ((checked: boolean) => void);
+    checked?: CheckedState;
+    disabled?: boolean;
     inset?: boolean;
+    onCheckedChange?: ((checked: boolean) => void);
+    onSelect?: ((event: Event) => void);
+    textValue?: string;
 } & Omit<React.HTMLAttributes<HTMLDivElement>, "asChild" | "checked" | "disabled" | "inset" | "onCheckedChange" | "onSelect" | "textValue"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
@@ -3510,26 +3510,26 @@ export declare const DropdownMenuCheckboxItem: (props: {
 
 ```ts
 export declare const DropdownMenuContent: (props: {
-    asChild?: boolean;
-    side?: "bottom" | "left" | "right" | "top";
-    sideOffset?: number;
     align?: "center" | "end" | "start";
     alignOffset?: number;
     arrowPadding?: number;
+    asChild?: boolean;
     avoidCollisions?: boolean;
     collisionBoundary?: Boundary | Boundary[];
     collisionPadding?: Partial<Record<"bottom" | "left" | "right" | "top", number>> | number;
-    sticky?: Sticky;
+    forceMount?: true;
     hideWhenDetached?: boolean;
-    updatePositionStrategy?: UpdatePositionStrategy;
+    loop?: boolean;
+    onCloseAutoFocus?: ((event: Event) => void);
     onEscapeKeyDown?: ((event: KeyboardEvent) => void);
-    onPointerDownOutside?: ((event: PointerDownOutsideEvent) => void);
     onFocusOutside?: ((event: FocusOutsideEvent) => void);
     onInteractOutside?: ((event: FocusOutsideEvent | PointerDownOutsideEvent) => void);
-    onCloseAutoFocus?: ((event: Event) => void);
-    forceMount?: true;
-    loop?: boolean;
     onOpenAutoFocus?: ((event: Event) => void);
+    onPointerDownOutside?: ((event: PointerDownOutsideEvent) => void);
+    side?: "bottom" | "left" | "right" | "top";
+    sideOffset?: number;
+    sticky?: Sticky;
+    updatePositionStrategy?: UpdatePositionStrategy;
 } & Omit<React.HTMLAttributes<HTMLDivElement>, "align" | "alignOffset" | "arrowPadding" | "asChild" | "avoidCollisions" | "collisionBoundary" | "collisionPadding" | "forceMount" | "hideWhenDetached" | "loop" | "onCloseAutoFocus" | "onEscapeKeyDown" | "onFocusOutside" | "onInteractOutside" | "onOpenAutoFocus" | "onPointerDownOutside" | "side" | "sideOffset" | "sticky" | "updatePositionStrategy"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
@@ -3545,11 +3545,11 @@ export declare const DropdownMenuGroup: (props: {
 
 ```ts
 export declare const DropdownMenuItem: (props: {
-    onSelect?: ((event: Event) => void);
-    disabled?: boolean;
     asChild?: boolean;
-    textValue?: string;
+    disabled?: boolean;
     inset?: boolean;
+    onSelect?: ((event: Event) => void);
+    textValue?: string;
     tone?: MenuItemTone;
 } & Omit<React.HTMLAttributes<HTMLDivElement>, "asChild" | "disabled" | "inset" | "onSelect" | "textValue" | "tone"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
@@ -3577,9 +3577,9 @@ export declare const DropdownMenuPortal: (props: {
 
 ```ts
 export declare const DropdownMenuRadioGroup: (props: {
-    value?: string;
     asChild?: boolean;
     onValueChange?: ((value: string) => void);
+    value?: string;
 } & Omit<React.HTMLAttributes<HTMLDivElement>, "asChild" | "onValueChange" | "value"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
@@ -3587,11 +3587,11 @@ export declare const DropdownMenuRadioGroup: (props: {
 
 ```ts
 export declare const DropdownMenuRadioItem: (props: {
-    onSelect?: ((event: Event) => void);
-    disabled?: boolean;
-    value: string;
     asChild?: boolean;
+    disabled?: boolean;
+    onSelect?: ((event: Event) => void);
     textValue?: string;
+    value: string;
 } & Omit<React.HTMLAttributes<HTMLDivElement>, "asChild" | "disabled" | "onSelect" | "textValue" | "value"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
@@ -3614,9 +3614,9 @@ export declare const DropdownMenuShortcut: (props: {} & React.HTMLAttributes<HTM
 ```ts
 export declare const DropdownMenuSub: (props: {
     children?: React.ReactNode;
-    open?: boolean;
     defaultOpen?: boolean;
     onOpenChange?: ((open: boolean) => void);
+    open?: boolean;
 }) => React.ReactElement | null;
 ```
 
@@ -3624,23 +3624,23 @@ export declare const DropdownMenuSub: (props: {
 
 ```ts
 export declare const DropdownMenuSubContent: (props: {
-    asChild?: boolean;
-    sideOffset?: number;
     align?: AlignSubContent;
     alignOffset?: number;
     arrowPadding?: number;
+    asChild?: boolean;
     avoidCollisions?: boolean;
     collisionBoundary?: Boundary | Boundary[];
     collisionPadding?: Partial<Record<"bottom" | "left" | "right" | "top", number>> | number;
-    sticky?: Sticky;
+    forceMount?: true;
     hideWhenDetached?: boolean;
-    updatePositionStrategy?: UpdatePositionStrategy;
+    loop?: boolean;
     onEscapeKeyDown?: ((event: KeyboardEvent) => void);
-    onPointerDownOutside?: ((event: PointerDownOutsideEvent) => void);
     onFocusOutside?: ((event: FocusOutsideEvent) => void);
     onInteractOutside?: ((event: FocusOutsideEvent | PointerDownOutsideEvent) => void);
-    forceMount?: true;
-    loop?: boolean;
+    onPointerDownOutside?: ((event: PointerDownOutsideEvent) => void);
+    sideOffset?: number;
+    sticky?: Sticky;
+    updatePositionStrategy?: UpdatePositionStrategy;
 } & Omit<React.HTMLAttributes<HTMLDivElement>, "align" | "alignOffset" | "arrowPadding" | "asChild" | "avoidCollisions" | "collisionBoundary" | "collisionPadding" | "forceMount" | "hideWhenDetached" | "loop" | "onEscapeKeyDown" | "onFocusOutside" | "onInteractOutside" | "onPointerDownOutside" | "sideOffset" | "sticky" | "updatePositionStrategy"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
@@ -3648,10 +3648,10 @@ export declare const DropdownMenuSubContent: (props: {
 
 ```ts
 export declare const DropdownMenuSubTrigger: (props: {
-    disabled?: boolean;
     asChild?: boolean;
-    textValue?: string;
+    disabled?: boolean;
     inset?: boolean;
+    textValue?: string;
 } & Omit<React.HTMLAttributes<HTMLDivElement>, "asChild" | "disabled" | "inset" | "textValue"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
@@ -3801,16 +3801,16 @@ export declare const ExternalAnchor: (props: {
 
 ```ts
 export declare const Field: (props: {
-    controlId?: string;
-    label: React.ReactNode;
-    description?: React.ReactNode;
-    error?: React.ReactNode;
-    required?: boolean;
-    optional?: boolean;
-    disabled?: boolean;
-    readOnly?: boolean;
-    layout?: "inline" | "stacked";
     children: React.ReactNode;
+    controlId?: string;
+    description?: React.ReactNode;
+    disabled?: boolean;
+    error?: React.ReactNode;
+    label: React.ReactNode;
+    layout?: "inline" | "stacked";
+    optional?: boolean;
+    readOnly?: boolean;
+    required?: boolean;
 } & Omit<React.HTMLAttributes<HTMLElement>, "children" | "controlId" | "description" | "disabled" | "error" | "label" | "layout" | "optional" | "readOnly" | "required">) => React.ReactElement | null;
 ```
 
@@ -3820,15 +3820,15 @@ export declare const Field: (props: {
 
 ```ts
 export declare const FileChip: (props: {
+    className?: string;
+    imageClassName?: string;
+    imageSrc?: string;
     kind: "file" | "image" | "text";
     name: string;
-    size: number;
-    imageSrc?: string;
-    onView?: (() => void);
     onRemove?: (() => void);
+    onView?: (() => void);
     readonly?: boolean;
-    imageClassName?: string;
-    className?: string;
+    size: number;
 }) => React.ReactElement | null;
 ```
 
@@ -3836,8 +3836,8 @@ export declare const FileChip: (props: {
 
 ```ts
 export declare const FileChipStrip: (props: {
-    children: React.ReactNode;
     align?: "end" | "start";
+    children: React.ReactNode;
     className?: string;
 }) => React.ReactElement | null;
 ```
@@ -3846,8 +3846,8 @@ export declare const FileChipStrip: (props: {
 
 ```ts
 export declare const RemoveBadge: (props: {
-    onClick: () => void;
     floating?: boolean;
+    onClick: () => void;
 }) => React.ReactElement | null;
 ```
 
@@ -3871,9 +3871,9 @@ export declare const folderIcon: (open: boolean) => FileIconSpec;
 
 ```ts
 export declare const FindWidgetCount: (props: {
-    query: string;
     count: number;
     index: number;
+    query: string;
 } & Omit<React.HTMLAttributes<HTMLElement>, "count" | "index" | "query">) => React.ReactElement | null;
 ```
 
@@ -3897,9 +3897,9 @@ export declare const FindWidgetSurface: (props: {
 
 ```ts
 export declare const GameControlRow: (props: {
-    status: React.ReactNode;
-    controls?: React.ReactNode;
     className?: string;
+    controls?: React.ReactNode;
+    status: React.ReactNode;
     style?: React.CSSProperties;
 }) => React.ReactElement | null;
 ```
@@ -3908,10 +3908,10 @@ export declare const GameControlRow: (props: {
 
 ```ts
 export declare const GameProblem: (props: {
-    title: string;
-    description?: React.ReactNode;
     actions?: React.ReactNode;
+    description?: React.ReactNode;
     role?: "alert" | "status";
+    title: string;
 }) => React.ReactElement | null;
 ```
 
@@ -3919,10 +3919,10 @@ export declare const GameProblem: (props: {
 
 ```ts
 export declare const GameStatus: (props: {
-    icon?: React.ReactNode;
-    title: string;
-    suffix?: React.ReactNode;
     detail?: React.ReactNode;
+    icon?: React.ReactNode;
+    suffix?: React.ReactNode;
+    title: string;
     tone?: "default" | "success";
 }) => React.ReactElement | null;
 ```
@@ -3933,11 +3933,11 @@ export declare const GameStatus: (props: {
 
 ```ts
 export declare const GetButton: (props: {
-    state: GetState;
+    emphasis?: "quiet" | "strong";
     name: string;
     onPress?: (() => void);
     size?: "lg" | "md" | "sm";
-    emphasis?: "quiet" | "strong";
+    state: GetState;
 } & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "emphasis" | "name" | "onPress" | "size" | "state"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
 ```
 
@@ -3945,68 +3945,6 @@ export declare const GetButton: (props: {
 
 ```ts
 export type GetButtonProps = {
-    state: GetState;
-    name: string;
-    onPress?: (() => void) | undefined;
-    size?: "lg" | "md" | "sm" | undefined;
-    emphasis?: "quiet" | "strong" | undefined;
-    form?: string | undefined;
-    slot?: string | undefined;
-    style?: React.CSSProperties | undefined;
-    title?: string | undefined;
-    key?: React.Key | null | undefined;
-    defaultChecked?: boolean | undefined;
-    defaultValue?: number | readonly string[] | string | undefined;
-    suppressContentEditableWarning?: boolean | undefined;
-    suppressHydrationWarning?: boolean | undefined;
-    accessKey?: string | undefined;
-    autoCapitalize?: "characters" | "none" | "off" | "on" | "sentences" | "words" | (string & {}) | undefined;
-    autoFocus?: boolean | undefined;
-    className?: string | undefined;
-    contentEditable?: "inherit" | "plaintext-only" | any | undefined;
-    contextMenu?: string | undefined;
-    dir?: string | undefined;
-    draggable?: any | undefined;
-    enterKeyHint?: "done" | "enter" | "go" | "next" | "previous" | "search" | "send" | undefined;
-    hidden?: boolean | undefined;
-    id?: string | undefined;
-    lang?: string | undefined;
-    nonce?: string | undefined;
-    spellCheck?: any | undefined;
-    tabIndex?: number | undefined;
-    translate?: "no" | "yes" | undefined;
-    radioGroup?: string | undefined;
-    role?: React.AriaRole | undefined;
-    about?: string | undefined;
-    content?: string | undefined;
-    datatype?: string | undefined;
-    inlist?: any;
-    prefix?: string | undefined;
-    property?: string | undefined;
-    rel?: string | undefined;
-    resource?: string | undefined;
-    rev?: string | undefined;
-    typeof?: string | undefined;
-    vocab?: string | undefined;
-    autoCorrect?: string | undefined;
-    autoSave?: string | undefined;
-    color?: string | undefined;
-    itemProp?: string | undefined;
-    itemScope?: boolean | undefined;
-    itemType?: string | undefined;
-    itemID?: string | undefined;
-    itemRef?: string | undefined;
-    results?: number | undefined;
-    security?: string | undefined;
-    unselectable?: "off" | "on" | undefined;
-    popover?: "" | "auto" | "hint" | "manual" | undefined;
-    popoverTargetAction?: "hide" | "show" | "toggle" | undefined;
-    popoverTarget?: string | undefined;
-    inert?: boolean | undefined;
-    inputMode?: "decimal" | "email" | "none" | "numeric" | "search" | "tel" | "text" | "url" | undefined;
-    is?: string | undefined;
-    exportparts?: string | undefined;
-    part?: string | undefined;
     "aria-activedescendant"?: string | undefined;
     "aria-atomic"?: any | undefined;
     "aria-autocomplete"?: "both" | "inline" | "list" | "none" | undefined;
@@ -4060,96 +3998,84 @@ export type GetButtonProps = {
     "aria-valuemin"?: number | undefined;
     "aria-valuenow"?: number | undefined;
     "aria-valuetext"?: string | undefined;
+    about?: string | undefined;
+    accessKey?: string | undefined;
+    autoCapitalize?: "characters" | "none" | "off" | "on" | "sentences" | "words" | (string & {}) | undefined;
+    autoCorrect?: string | undefined;
+    autoFocus?: boolean | undefined;
+    autoSave?: string | undefined;
+    className?: string | undefined;
+    color?: string | undefined;
+    content?: string | undefined;
+    contentEditable?: "inherit" | "plaintext-only" | any | undefined;
+    contextMenu?: string | undefined;
     dangerouslySetInnerHTML?: undefined | {
         __html: any | string;
     };
-    onCopy?: React.ClipboardEventHandler<HTMLButtonElement> | undefined;
-    onCopyCapture?: React.ClipboardEventHandler<HTMLButtonElement> | undefined;
-    onCut?: React.ClipboardEventHandler<HTMLButtonElement> | undefined;
-    onCutCapture?: React.ClipboardEventHandler<HTMLButtonElement> | undefined;
-    onPaste?: React.ClipboardEventHandler<HTMLButtonElement> | undefined;
-    onPasteCapture?: React.ClipboardEventHandler<HTMLButtonElement> | undefined;
+    datatype?: string | undefined;
+    defaultChecked?: boolean | undefined;
+    defaultValue?: number | readonly string[] | string | undefined;
+    dir?: string | undefined;
+    disabled?: boolean | undefined;
+    draggable?: any | undefined;
+    emphasis?: "quiet" | "strong" | undefined;
+    enterKeyHint?: "done" | "enter" | "go" | "next" | "previous" | "search" | "send" | undefined;
+    exportparts?: string | undefined;
+    form?: string | undefined;
+    formAction?: ((formData: FormData) => Promise<void> | void) | string | undefined;
+    formEncType?: string | undefined;
+    formMethod?: string | undefined;
+    formNoValidate?: boolean | undefined;
+    formTarget?: string | undefined;
+    hidden?: boolean | undefined;
+    id?: string | undefined;
+    inert?: boolean | undefined;
+    inlist?: any;
+    inputMode?: "decimal" | "email" | "none" | "numeric" | "search" | "tel" | "text" | "url" | undefined;
+    is?: string | undefined;
+    itemID?: string | undefined;
+    itemProp?: string | undefined;
+    itemRef?: string | undefined;
+    itemScope?: boolean | undefined;
+    itemType?: string | undefined;
+    key?: React.Key | null | undefined;
+    lang?: string | undefined;
+    name: string;
+    nonce?: string | undefined;
+    onAbort?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onAbortCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onAnimationEnd?: React.AnimationEventHandler<HTMLButtonElement> | undefined;
+    onAnimationEndCapture?: React.AnimationEventHandler<HTMLButtonElement> | undefined;
+    onAnimationIteration?: React.AnimationEventHandler<HTMLButtonElement> | undefined;
+    onAnimationIterationCapture?: React.AnimationEventHandler<HTMLButtonElement> | undefined;
+    onAnimationStart?: React.AnimationEventHandler<HTMLButtonElement> | undefined;
+    onAnimationStartCapture?: React.AnimationEventHandler<HTMLButtonElement> | undefined;
+    onAuxClick?: React.MouseEventHandler<HTMLButtonElement> | undefined;
+    onAuxClickCapture?: React.MouseEventHandler<HTMLButtonElement> | undefined;
+    onBeforeInput?: React.InputEventHandler<HTMLButtonElement> | undefined;
+    onBeforeInputCapture?: React.InputEventHandler<HTMLButtonElement> | undefined;
+    onBeforeToggle?: React.ToggleEventHandler<HTMLButtonElement> | undefined;
+    onBlur?: React.FocusEventHandler<HTMLButtonElement> | undefined;
+    onBlurCapture?: React.FocusEventHandler<HTMLButtonElement> | undefined;
+    onCanPlay?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onCanPlayCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onCanPlayThrough?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onCanPlayThroughCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onChange?: React.ChangeEventHandler<HTMLButtonElement, Element> | undefined;
+    onChangeCapture?: React.ChangeEventHandler<HTMLButtonElement, Element> | undefined;
+    onClickCapture?: React.MouseEventHandler<HTMLButtonElement> | undefined;
     onCompositionEnd?: React.CompositionEventHandler<HTMLButtonElement> | undefined;
     onCompositionEndCapture?: React.CompositionEventHandler<HTMLButtonElement> | undefined;
     onCompositionStart?: React.CompositionEventHandler<HTMLButtonElement> | undefined;
     onCompositionStartCapture?: React.CompositionEventHandler<HTMLButtonElement> | undefined;
     onCompositionUpdate?: React.CompositionEventHandler<HTMLButtonElement> | undefined;
     onCompositionUpdateCapture?: React.CompositionEventHandler<HTMLButtonElement> | undefined;
-    onFocus?: React.FocusEventHandler<HTMLButtonElement> | undefined;
-    onFocusCapture?: React.FocusEventHandler<HTMLButtonElement> | undefined;
-    onBlur?: React.FocusEventHandler<HTMLButtonElement> | undefined;
-    onBlurCapture?: React.FocusEventHandler<HTMLButtonElement> | undefined;
-    onChange?: React.ChangeEventHandler<HTMLButtonElement, Element> | undefined;
-    onChangeCapture?: React.ChangeEventHandler<HTMLButtonElement, Element> | undefined;
-    onBeforeInput?: React.InputEventHandler<HTMLButtonElement> | undefined;
-    onBeforeInputCapture?: React.InputEventHandler<HTMLButtonElement> | undefined;
-    onInput?: React.InputEventHandler<HTMLButtonElement> | undefined;
-    onInputCapture?: React.InputEventHandler<HTMLButtonElement> | undefined;
-    onReset?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onResetCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onSubmit?: React.SubmitEventHandler<HTMLButtonElement> | undefined;
-    onSubmitCapture?: React.SubmitEventHandler<HTMLButtonElement> | undefined;
-    onInvalid?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onInvalidCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onLoad?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onLoadCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onError?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onErrorCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onKeyDown?: React.KeyboardEventHandler<HTMLButtonElement> | undefined;
-    onKeyDownCapture?: React.KeyboardEventHandler<HTMLButtonElement> | undefined;
-    onKeyPress?: React.KeyboardEventHandler<HTMLButtonElement> | undefined;
-    onKeyPressCapture?: React.KeyboardEventHandler<HTMLButtonElement> | undefined;
-    onKeyUp?: React.KeyboardEventHandler<HTMLButtonElement> | undefined;
-    onKeyUpCapture?: React.KeyboardEventHandler<HTMLButtonElement> | undefined;
-    onAbort?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onAbortCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onCanPlay?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onCanPlayCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onCanPlayThrough?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onCanPlayThroughCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onDurationChange?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onDurationChangeCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onEmptied?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onEmptiedCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onEncrypted?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onEncryptedCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onEnded?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onEndedCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onLoadedData?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onLoadedDataCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onLoadedMetadata?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onLoadedMetadataCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onLoadStart?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onLoadStartCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onPause?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onPauseCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onPlay?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onPlayCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onPlaying?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onPlayingCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onProgress?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onProgressCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onRateChange?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onRateChangeCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onSeeked?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onSeekedCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onSeeking?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onSeekingCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onStalled?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onStalledCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onSuspend?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onSuspendCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onTimeUpdate?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onTimeUpdateCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onVolumeChange?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onVolumeChangeCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onWaiting?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onWaitingCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
-    onAuxClick?: React.MouseEventHandler<HTMLButtonElement> | undefined;
-    onAuxClickCapture?: React.MouseEventHandler<HTMLButtonElement> | undefined;
-    onClickCapture?: React.MouseEventHandler<HTMLButtonElement> | undefined;
     onContextMenu?: React.MouseEventHandler<HTMLButtonElement> | undefined;
     onContextMenuCapture?: React.MouseEventHandler<HTMLButtonElement> | undefined;
+    onCopy?: React.ClipboardEventHandler<HTMLButtonElement> | undefined;
+    onCopyCapture?: React.ClipboardEventHandler<HTMLButtonElement> | undefined;
+    onCut?: React.ClipboardEventHandler<HTMLButtonElement> | undefined;
+    onCutCapture?: React.ClipboardEventHandler<HTMLButtonElement> | undefined;
     onDoubleClick?: React.MouseEventHandler<HTMLButtonElement> | undefined;
     onDoubleClickCapture?: React.MouseEventHandler<HTMLButtonElement> | undefined;
     onDrag?: React.DragEventHandler<HTMLButtonElement> | undefined;
@@ -4168,6 +4094,40 @@ export type GetButtonProps = {
     onDragStartCapture?: React.DragEventHandler<HTMLButtonElement> | undefined;
     onDrop?: React.DragEventHandler<HTMLButtonElement> | undefined;
     onDropCapture?: React.DragEventHandler<HTMLButtonElement> | undefined;
+    onDurationChange?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onDurationChangeCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onEmptied?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onEmptiedCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onEncrypted?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onEncryptedCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onEnded?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onEndedCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onError?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onErrorCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onFocus?: React.FocusEventHandler<HTMLButtonElement> | undefined;
+    onFocusCapture?: React.FocusEventHandler<HTMLButtonElement> | undefined;
+    onGotPointerCapture?: React.PointerEventHandler<HTMLButtonElement> | undefined;
+    onGotPointerCaptureCapture?: React.PointerEventHandler<HTMLButtonElement> | undefined;
+    onInput?: React.InputEventHandler<HTMLButtonElement> | undefined;
+    onInputCapture?: React.InputEventHandler<HTMLButtonElement> | undefined;
+    onInvalid?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onInvalidCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onKeyDown?: React.KeyboardEventHandler<HTMLButtonElement> | undefined;
+    onKeyDownCapture?: React.KeyboardEventHandler<HTMLButtonElement> | undefined;
+    onKeyPress?: React.KeyboardEventHandler<HTMLButtonElement> | undefined;
+    onKeyPressCapture?: React.KeyboardEventHandler<HTMLButtonElement> | undefined;
+    onKeyUp?: React.KeyboardEventHandler<HTMLButtonElement> | undefined;
+    onKeyUpCapture?: React.KeyboardEventHandler<HTMLButtonElement> | undefined;
+    onLoad?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onLoadCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onLoadStart?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onLoadStartCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onLoadedData?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onLoadedDataCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onLoadedMetadata?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onLoadedMetadataCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onLostPointerCapture?: React.PointerEventHandler<HTMLButtonElement> | undefined;
+    onLostPointerCaptureCapture?: React.PointerEventHandler<HTMLButtonElement> | undefined;
     onMouseDown?: React.MouseEventHandler<HTMLButtonElement> | undefined;
     onMouseDownCapture?: React.MouseEventHandler<HTMLButtonElement> | undefined;
     onMouseEnter?: React.MouseEventHandler<HTMLButtonElement> | undefined;
@@ -4180,8 +4140,54 @@ export type GetButtonProps = {
     onMouseOverCapture?: React.MouseEventHandler<HTMLButtonElement> | undefined;
     onMouseUp?: React.MouseEventHandler<HTMLButtonElement> | undefined;
     onMouseUpCapture?: React.MouseEventHandler<HTMLButtonElement> | undefined;
+    onPaste?: React.ClipboardEventHandler<HTMLButtonElement> | undefined;
+    onPasteCapture?: React.ClipboardEventHandler<HTMLButtonElement> | undefined;
+    onPause?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onPauseCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onPlay?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onPlayCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onPlaying?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onPlayingCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onPointerCancel?: React.PointerEventHandler<HTMLButtonElement> | undefined;
+    onPointerCancelCapture?: React.PointerEventHandler<HTMLButtonElement> | undefined;
+    onPointerDown?: React.PointerEventHandler<HTMLButtonElement> | undefined;
+    onPointerDownCapture?: React.PointerEventHandler<HTMLButtonElement> | undefined;
+    onPointerEnter?: React.PointerEventHandler<HTMLButtonElement> | undefined;
+    onPointerLeave?: React.PointerEventHandler<HTMLButtonElement> | undefined;
+    onPointerMove?: React.PointerEventHandler<HTMLButtonElement> | undefined;
+    onPointerMoveCapture?: React.PointerEventHandler<HTMLButtonElement> | undefined;
+    onPointerOut?: React.PointerEventHandler<HTMLButtonElement> | undefined;
+    onPointerOutCapture?: React.PointerEventHandler<HTMLButtonElement> | undefined;
+    onPointerOver?: React.PointerEventHandler<HTMLButtonElement> | undefined;
+    onPointerOverCapture?: React.PointerEventHandler<HTMLButtonElement> | undefined;
+    onPointerUp?: React.PointerEventHandler<HTMLButtonElement> | undefined;
+    onPointerUpCapture?: React.PointerEventHandler<HTMLButtonElement> | undefined;
+    onPress?: (() => void) | undefined;
+    onProgress?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onProgressCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onRateChange?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onRateChangeCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onReset?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onResetCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onScroll?: React.UIEventHandler<HTMLButtonElement> | undefined;
+    onScrollCapture?: React.UIEventHandler<HTMLButtonElement> | undefined;
+    onScrollEnd?: React.UIEventHandler<HTMLButtonElement> | undefined;
+    onScrollEndCapture?: React.UIEventHandler<HTMLButtonElement> | undefined;
+    onSeeked?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onSeekedCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onSeeking?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onSeekingCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
     onSelect?: React.ReactEventHandler<HTMLButtonElement> | undefined;
     onSelectCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onStalled?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onStalledCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onSubmit?: React.SubmitEventHandler<HTMLButtonElement> | undefined;
+    onSubmitCapture?: React.SubmitEventHandler<HTMLButtonElement> | undefined;
+    onSuspend?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onSuspendCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onTimeUpdate?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onTimeUpdateCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onToggle?: React.ToggleEventHandler<HTMLButtonElement> | undefined;
     onTouchCancel?: React.TouchEventHandler<HTMLButtonElement> | undefined;
     onTouchCancelCapture?: React.TouchEventHandler<HTMLButtonElement> | undefined;
     onTouchEnd?: React.TouchEventHandler<HTMLButtonElement> | undefined;
@@ -4190,38 +4196,6 @@ export type GetButtonProps = {
     onTouchMoveCapture?: React.TouchEventHandler<HTMLButtonElement> | undefined;
     onTouchStart?: React.TouchEventHandler<HTMLButtonElement> | undefined;
     onTouchStartCapture?: React.TouchEventHandler<HTMLButtonElement> | undefined;
-    onPointerDown?: React.PointerEventHandler<HTMLButtonElement> | undefined;
-    onPointerDownCapture?: React.PointerEventHandler<HTMLButtonElement> | undefined;
-    onPointerMove?: React.PointerEventHandler<HTMLButtonElement> | undefined;
-    onPointerMoveCapture?: React.PointerEventHandler<HTMLButtonElement> | undefined;
-    onPointerUp?: React.PointerEventHandler<HTMLButtonElement> | undefined;
-    onPointerUpCapture?: React.PointerEventHandler<HTMLButtonElement> | undefined;
-    onPointerCancel?: React.PointerEventHandler<HTMLButtonElement> | undefined;
-    onPointerCancelCapture?: React.PointerEventHandler<HTMLButtonElement> | undefined;
-    onPointerEnter?: React.PointerEventHandler<HTMLButtonElement> | undefined;
-    onPointerLeave?: React.PointerEventHandler<HTMLButtonElement> | undefined;
-    onPointerOver?: React.PointerEventHandler<HTMLButtonElement> | undefined;
-    onPointerOverCapture?: React.PointerEventHandler<HTMLButtonElement> | undefined;
-    onPointerOut?: React.PointerEventHandler<HTMLButtonElement> | undefined;
-    onPointerOutCapture?: React.PointerEventHandler<HTMLButtonElement> | undefined;
-    onGotPointerCapture?: React.PointerEventHandler<HTMLButtonElement> | undefined;
-    onGotPointerCaptureCapture?: React.PointerEventHandler<HTMLButtonElement> | undefined;
-    onLostPointerCapture?: React.PointerEventHandler<HTMLButtonElement> | undefined;
-    onLostPointerCaptureCapture?: React.PointerEventHandler<HTMLButtonElement> | undefined;
-    onScroll?: React.UIEventHandler<HTMLButtonElement> | undefined;
-    onScrollCapture?: React.UIEventHandler<HTMLButtonElement> | undefined;
-    onScrollEnd?: React.UIEventHandler<HTMLButtonElement> | undefined;
-    onScrollEndCapture?: React.UIEventHandler<HTMLButtonElement> | undefined;
-    onWheel?: React.WheelEventHandler<HTMLButtonElement> | undefined;
-    onWheelCapture?: React.WheelEventHandler<HTMLButtonElement> | undefined;
-    onAnimationStart?: React.AnimationEventHandler<HTMLButtonElement> | undefined;
-    onAnimationStartCapture?: React.AnimationEventHandler<HTMLButtonElement> | undefined;
-    onAnimationEnd?: React.AnimationEventHandler<HTMLButtonElement> | undefined;
-    onAnimationEndCapture?: React.AnimationEventHandler<HTMLButtonElement> | undefined;
-    onAnimationIteration?: React.AnimationEventHandler<HTMLButtonElement> | undefined;
-    onAnimationIterationCapture?: React.AnimationEventHandler<HTMLButtonElement> | undefined;
-    onToggle?: React.ToggleEventHandler<HTMLButtonElement> | undefined;
-    onBeforeToggle?: React.ToggleEventHandler<HTMLButtonElement> | undefined;
     onTransitionCancel?: React.TransitionEventHandler<HTMLButtonElement> | undefined;
     onTransitionCancelCapture?: React.TransitionEventHandler<HTMLButtonElement> | undefined;
     onTransitionEnd?: React.TransitionEventHandler<HTMLButtonElement> | undefined;
@@ -4230,14 +4204,40 @@ export type GetButtonProps = {
     onTransitionRunCapture?: React.TransitionEventHandler<HTMLButtonElement> | undefined;
     onTransitionStart?: React.TransitionEventHandler<HTMLButtonElement> | undefined;
     onTransitionStartCapture?: React.TransitionEventHandler<HTMLButtonElement> | undefined;
-    disabled?: boolean | undefined;
-    formAction?: ((formData: FormData) => Promise<void> | void) | string | undefined;
-    formEncType?: string | undefined;
-    formMethod?: string | undefined;
-    formNoValidate?: boolean | undefined;
-    formTarget?: string | undefined;
+    onVolumeChange?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onVolumeChangeCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onWaiting?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onWaitingCapture?: React.ReactEventHandler<HTMLButtonElement> | undefined;
+    onWheel?: React.WheelEventHandler<HTMLButtonElement> | undefined;
+    onWheelCapture?: React.WheelEventHandler<HTMLButtonElement> | undefined;
+    part?: string | undefined;
+    popover?: "" | "auto" | "hint" | "manual" | undefined;
+    popoverTarget?: string | undefined;
+    popoverTargetAction?: "hide" | "show" | "toggle" | undefined;
+    prefix?: string | undefined;
+    property?: string | undefined;
+    radioGroup?: string | undefined;
+    rel?: string | undefined;
+    resource?: string | undefined;
+    results?: number | undefined;
+    rev?: string | undefined;
+    role?: React.AriaRole | undefined;
+    security?: string | undefined;
+    size?: "lg" | "md" | "sm" | undefined;
+    slot?: string | undefined;
+    spellCheck?: any | undefined;
+    state: GetState;
+    style?: React.CSSProperties | undefined;
+    suppressContentEditableWarning?: boolean | undefined;
+    suppressHydrationWarning?: boolean | undefined;
+    tabIndex?: number | undefined;
+    title?: string | undefined;
+    translate?: "no" | "yes" | undefined;
     type?: "button" | "reset" | "submit" | undefined;
+    typeof?: string | undefined;
+    unselectable?: "off" | "on" | undefined;
     value?: number | readonly string[] | string | undefined;
+    vocab?: string | undefined;
 };
 ```
 
@@ -4252,8 +4252,8 @@ export type GetState = {
     kind: "open";
 } | {
     kind: "progress";
-    percent: null | number;
     label: string;
+    percent: null | number;
 } | {
     kind: "retry";
 } | {
@@ -4268,11 +4268,11 @@ export type GetState = {
 ```ts
 export declare const HoverCard: (props: {
     children?: React.ReactNode;
-    open?: boolean;
+    closeDelay?: number;
     defaultOpen?: boolean;
     onOpenChange?: ((open: boolean) => void);
+    open?: boolean;
     openDelay?: number;
-    closeDelay?: number;
 }) => React.ReactElement | null;
 ```
 
@@ -4280,23 +4280,23 @@ export declare const HoverCard: (props: {
 
 ```ts
 export declare const HoverCardContent: (props: {
-    asChild?: boolean;
-    side?: "bottom" | "left" | "right" | "top";
-    sideOffset?: number;
     align?: "center" | "end" | "start";
     alignOffset?: number;
     arrowPadding?: number;
+    asChild?: boolean;
     avoidCollisions?: boolean;
     collisionBoundary?: Boundary | Boundary[];
     collisionPadding?: Partial<Record<"bottom" | "left" | "right" | "top", number>> | number;
-    sticky?: Sticky;
+    forceMount?: true;
     hideWhenDetached?: boolean;
-    updatePositionStrategy?: UpdatePositionStrategy;
     onEscapeKeyDown?: ((event: KeyboardEvent) => void);
-    onPointerDownOutside?: ((event: PointerDownOutsideEvent) => void);
     onFocusOutside?: ((event: FocusOutsideEvent) => void);
     onInteractOutside?: ((event: FocusOutsideEvent | PointerDownOutsideEvent) => void);
-    forceMount?: true;
+    onPointerDownOutside?: ((event: PointerDownOutsideEvent) => void);
+    side?: "bottom" | "left" | "right" | "top";
+    sideOffset?: number;
+    sticky?: Sticky;
+    updatePositionStrategy?: UpdatePositionStrategy;
 } & Omit<React.HTMLAttributes<HTMLDivElement>, "align" | "alignOffset" | "arrowPadding" | "asChild" | "avoidCollisions" | "collisionBoundary" | "collisionPadding" | "forceMount" | "hideWhenDetached" | "onEscapeKeyDown" | "onFocusOutside" | "onInteractOutside" | "onPointerDownOutside" | "side" | "sideOffset" | "sticky" | "updatePositionStrategy"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
@@ -4314,14 +4314,14 @@ export declare const HoverCardTrigger: (props: {
 
 ```ts
 export declare const IconButton: (props: {
-    asChild?: boolean;
-    recommended?: boolean;
     "aria-label": string;
+    asChild?: boolean;
     children: React.ReactNode;
-    tone?: "danger" | "default";
     emphasis?: "solid" | "subtle";
-    surface?: "content" | "sidebar";
+    recommended?: boolean;
     size?: "lg" | "md" | "sm" | "touch" | "xl" | "xs";
+    surface?: "content" | "sidebar";
+    tone?: "danger" | "default";
     tooltip?: React.ReactNode;
     tooltipSide?: "bottom" | "left" | "right" | "top";
 } & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "aria-label" | "asChild" | "children" | "emphasis" | "recommended" | "size" | "surface" | "tone" | "tooltip" | "tooltipSide"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
@@ -4336,10 +4336,10 @@ export type IconButtonProps = Omit<Omit<Omit<React.DetailedHTMLProps<React.Butto
 } & React.RefAttributes<HTMLButtonElement>, "ref">, "aria-label" | "children" | "size" | "title" | "variant"> & {
     'aria-label': string;
     children: React.ReactNode;
-    tone?: "danger" | "default" | undefined;
     emphasis?: "solid" | "subtle" | undefined;
-    surface?: "content" | "sidebar" | undefined;
     size?: "lg" | "md" | "sm" | "touch" | "xl" | "xs" | undefined;
+    surface?: "content" | "sidebar" | undefined;
+    tone?: "danger" | "default" | undefined;
     tooltip?: React.ReactNode;
     tooltipSide?: "bottom" | "left" | "right" | "top" | undefined;
 };
@@ -4387,9 +4387,9 @@ export declare const InputGroupAddon: (props: {
 ```ts
 export declare const InputGroupButton: (props: {
     asChild?: boolean;
-    variant?: "default" | "destructive" | "destructive-solid" | "field" | "ghost" | "link" | "mono" | "secondary" | null;
     recommended?: boolean;
     size?: "icon" | "icon-sm" | "sm" | "xs" | null;
+    variant?: "default" | "destructive" | "destructive-solid" | "field" | "ghost" | "link" | "mono" | "secondary" | null;
 } & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "asChild" | "recommended" | "size" | "variant"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
 ```
 
@@ -4407,15 +4407,15 @@ export declare const InputGroupInput: (props: {
 
 ```ts
 export declare const ItemCard: (props: {
+    actions?: React.ReactNode;
+    description: string;
+    footer?: React.ReactNode;
+    marks?: React.ReactNode;
+    note?: string;
+    onOpen: () => void;
+    openLabel: string;
     tile?: React.ReactNode;
     title: React.ReactNode;
-    marks?: React.ReactNode;
-    description: string;
-    note?: string;
-    footer?: React.ReactNode;
-    actions?: React.ReactNode;
-    openLabel: string;
-    onOpen: () => void;
 } & Omit<React.HTMLAttributes<HTMLElement>, "actions" | "description" | "footer" | "marks" | "note" | "onOpen" | "openLabel" | "tile" | "title">) => React.ReactElement | null;
 ```
 
@@ -4423,69 +4423,6 @@ export declare const ItemCard: (props: {
 
 ```ts
 export type ItemCardProps = {
-    tile?: React.ReactNode;
-    title: React.ReactNode;
-    marks?: React.ReactNode;
-    description: string;
-    note?: string | undefined;
-    footer?: React.ReactNode;
-    actions?: React.ReactNode;
-    openLabel: string;
-    onOpen: () => void;
-    slot?: string | undefined;
-    style?: React.CSSProperties | undefined;
-    defaultChecked?: boolean | undefined;
-    defaultValue?: number | readonly string[] | string | undefined;
-    suppressContentEditableWarning?: boolean | undefined;
-    suppressHydrationWarning?: boolean | undefined;
-    accessKey?: string | undefined;
-    autoCapitalize?: "characters" | "none" | "off" | "on" | "sentences" | "words" | (string & {}) | undefined;
-    autoFocus?: boolean | undefined;
-    className?: string | undefined;
-    contentEditable?: "inherit" | "plaintext-only" | any | undefined;
-    contextMenu?: string | undefined;
-    dir?: string | undefined;
-    draggable?: any | undefined;
-    enterKeyHint?: "done" | "enter" | "go" | "next" | "previous" | "search" | "send" | undefined;
-    hidden?: boolean | undefined;
-    id?: string | undefined;
-    lang?: string | undefined;
-    nonce?: string | undefined;
-    spellCheck?: any | undefined;
-    tabIndex?: number | undefined;
-    translate?: "no" | "yes" | undefined;
-    radioGroup?: string | undefined;
-    role?: React.AriaRole | undefined;
-    about?: string | undefined;
-    content?: string | undefined;
-    datatype?: string | undefined;
-    inlist?: any;
-    prefix?: string | undefined;
-    property?: string | undefined;
-    rel?: string | undefined;
-    resource?: string | undefined;
-    rev?: string | undefined;
-    typeof?: string | undefined;
-    vocab?: string | undefined;
-    autoCorrect?: string | undefined;
-    autoSave?: string | undefined;
-    color?: string | undefined;
-    itemProp?: string | undefined;
-    itemScope?: boolean | undefined;
-    itemType?: string | undefined;
-    itemID?: string | undefined;
-    itemRef?: string | undefined;
-    results?: number | undefined;
-    security?: string | undefined;
-    unselectable?: "off" | "on" | undefined;
-    popover?: "" | "auto" | "hint" | "manual" | undefined;
-    popoverTargetAction?: "hide" | "show" | "toggle" | undefined;
-    popoverTarget?: string | undefined;
-    inert?: boolean | undefined;
-    inputMode?: "decimal" | "email" | "none" | "numeric" | "search" | "tel" | "text" | "url" | undefined;
-    is?: string | undefined;
-    exportparts?: string | undefined;
-    part?: string | undefined;
     "aria-activedescendant"?: string | undefined;
     "aria-atomic"?: any | undefined;
     "aria-autocomplete"?: "both" | "inline" | "list" | "none" | undefined;
@@ -4539,98 +4476,81 @@ export type ItemCardProps = {
     "aria-valuemin"?: number | undefined;
     "aria-valuenow"?: number | undefined;
     "aria-valuetext"?: string | undefined;
+    about?: string | undefined;
+    accessKey?: string | undefined;
+    actions?: React.ReactNode;
+    autoCapitalize?: "characters" | "none" | "off" | "on" | "sentences" | "words" | (string & {}) | undefined;
+    autoCorrect?: string | undefined;
+    autoFocus?: boolean | undefined;
+    autoSave?: string | undefined;
     children?: React.ReactNode;
+    className?: string | undefined;
+    color?: string | undefined;
+    content?: string | undefined;
+    contentEditable?: "inherit" | "plaintext-only" | any | undefined;
+    contextMenu?: string | undefined;
     dangerouslySetInnerHTML?: undefined | {
         __html: any | string;
     };
-    onCopy?: React.ClipboardEventHandler<HTMLLIElement> | undefined;
-    onCopyCapture?: React.ClipboardEventHandler<HTMLLIElement> | undefined;
-    onCut?: React.ClipboardEventHandler<HTMLLIElement> | undefined;
-    onCutCapture?: React.ClipboardEventHandler<HTMLLIElement> | undefined;
-    onPaste?: React.ClipboardEventHandler<HTMLLIElement> | undefined;
-    onPasteCapture?: React.ClipboardEventHandler<HTMLLIElement> | undefined;
+    datatype?: string | undefined;
+    defaultChecked?: boolean | undefined;
+    defaultValue?: number | readonly string[] | string | undefined;
+    description: string;
+    dir?: string | undefined;
+    draggable?: any | undefined;
+    enterKeyHint?: "done" | "enter" | "go" | "next" | "previous" | "search" | "send" | undefined;
+    exportparts?: string | undefined;
+    footer?: React.ReactNode;
+    hidden?: boolean | undefined;
+    id?: string | undefined;
+    inert?: boolean | undefined;
+    inlist?: any;
+    inputMode?: "decimal" | "email" | "none" | "numeric" | "search" | "tel" | "text" | "url" | undefined;
+    is?: string | undefined;
+    itemID?: string | undefined;
+    itemProp?: string | undefined;
+    itemRef?: string | undefined;
+    itemScope?: boolean | undefined;
+    itemType?: string | undefined;
+    lang?: string | undefined;
+    marks?: React.ReactNode;
+    nonce?: string | undefined;
+    note?: string | undefined;
+    onAbort?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onAbortCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onAnimationEnd?: React.AnimationEventHandler<HTMLLIElement> | undefined;
+    onAnimationEndCapture?: React.AnimationEventHandler<HTMLLIElement> | undefined;
+    onAnimationIteration?: React.AnimationEventHandler<HTMLLIElement> | undefined;
+    onAnimationIterationCapture?: React.AnimationEventHandler<HTMLLIElement> | undefined;
+    onAnimationStart?: React.AnimationEventHandler<HTMLLIElement> | undefined;
+    onAnimationStartCapture?: React.AnimationEventHandler<HTMLLIElement> | undefined;
+    onAuxClick?: React.MouseEventHandler<HTMLLIElement> | undefined;
+    onAuxClickCapture?: React.MouseEventHandler<HTMLLIElement> | undefined;
+    onBeforeInput?: React.InputEventHandler<HTMLLIElement> | undefined;
+    onBeforeInputCapture?: React.InputEventHandler<HTMLLIElement> | undefined;
+    onBeforeToggle?: React.ToggleEventHandler<HTMLLIElement> | undefined;
+    onBlur?: React.FocusEventHandler<HTMLLIElement> | undefined;
+    onBlurCapture?: React.FocusEventHandler<HTMLLIElement> | undefined;
+    onCanPlay?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onCanPlayCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onCanPlayThrough?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onCanPlayThroughCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onChange?: React.ChangeEventHandler<HTMLLIElement, Element> | undefined;
+    onChangeCapture?: React.ChangeEventHandler<HTMLLIElement, Element> | undefined;
+    onClick?: React.MouseEventHandler<HTMLLIElement> | undefined;
+    onClickCapture?: React.MouseEventHandler<HTMLLIElement> | undefined;
     onCompositionEnd?: React.CompositionEventHandler<HTMLLIElement> | undefined;
     onCompositionEndCapture?: React.CompositionEventHandler<HTMLLIElement> | undefined;
     onCompositionStart?: React.CompositionEventHandler<HTMLLIElement> | undefined;
     onCompositionStartCapture?: React.CompositionEventHandler<HTMLLIElement> | undefined;
     onCompositionUpdate?: React.CompositionEventHandler<HTMLLIElement> | undefined;
     onCompositionUpdateCapture?: React.CompositionEventHandler<HTMLLIElement> | undefined;
-    onFocus?: React.FocusEventHandler<HTMLLIElement> | undefined;
-    onFocusCapture?: React.FocusEventHandler<HTMLLIElement> | undefined;
-    onBlur?: React.FocusEventHandler<HTMLLIElement> | undefined;
-    onBlurCapture?: React.FocusEventHandler<HTMLLIElement> | undefined;
-    onChange?: React.ChangeEventHandler<HTMLLIElement, Element> | undefined;
-    onChangeCapture?: React.ChangeEventHandler<HTMLLIElement, Element> | undefined;
-    onBeforeInput?: React.InputEventHandler<HTMLLIElement> | undefined;
-    onBeforeInputCapture?: React.InputEventHandler<HTMLLIElement> | undefined;
-    onInput?: React.InputEventHandler<HTMLLIElement> | undefined;
-    onInputCapture?: React.InputEventHandler<HTMLLIElement> | undefined;
-    onReset?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onResetCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onSubmit?: React.SubmitEventHandler<HTMLLIElement> | undefined;
-    onSubmitCapture?: React.SubmitEventHandler<HTMLLIElement> | undefined;
-    onInvalid?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onInvalidCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onLoad?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onLoadCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onError?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onErrorCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onKeyDown?: React.KeyboardEventHandler<HTMLLIElement> | undefined;
-    onKeyDownCapture?: React.KeyboardEventHandler<HTMLLIElement> | undefined;
-    onKeyPress?: React.KeyboardEventHandler<HTMLLIElement> | undefined;
-    onKeyPressCapture?: React.KeyboardEventHandler<HTMLLIElement> | undefined;
-    onKeyUp?: React.KeyboardEventHandler<HTMLLIElement> | undefined;
-    onKeyUpCapture?: React.KeyboardEventHandler<HTMLLIElement> | undefined;
-    onAbort?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onAbortCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onCanPlay?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onCanPlayCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onCanPlayThrough?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onCanPlayThroughCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onDurationChange?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onDurationChangeCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onEmptied?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onEmptiedCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onEncrypted?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onEncryptedCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onEnded?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onEndedCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onLoadedData?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onLoadedDataCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onLoadedMetadata?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onLoadedMetadataCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onLoadStart?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onLoadStartCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onPause?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onPauseCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onPlay?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onPlayCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onPlaying?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onPlayingCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onProgress?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onProgressCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onRateChange?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onRateChangeCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onSeeked?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onSeekedCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onSeeking?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onSeekingCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onStalled?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onStalledCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onSuspend?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onSuspendCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onTimeUpdate?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onTimeUpdateCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onVolumeChange?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onVolumeChangeCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onWaiting?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onWaitingCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
-    onAuxClick?: React.MouseEventHandler<HTMLLIElement> | undefined;
-    onAuxClickCapture?: React.MouseEventHandler<HTMLLIElement> | undefined;
-    onClick?: React.MouseEventHandler<HTMLLIElement> | undefined;
-    onClickCapture?: React.MouseEventHandler<HTMLLIElement> | undefined;
     onContextMenu?: React.MouseEventHandler<HTMLLIElement> | undefined;
     onContextMenuCapture?: React.MouseEventHandler<HTMLLIElement> | undefined;
+    onCopy?: React.ClipboardEventHandler<HTMLLIElement> | undefined;
+    onCopyCapture?: React.ClipboardEventHandler<HTMLLIElement> | undefined;
+    onCut?: React.ClipboardEventHandler<HTMLLIElement> | undefined;
+    onCutCapture?: React.ClipboardEventHandler<HTMLLIElement> | undefined;
     onDoubleClick?: React.MouseEventHandler<HTMLLIElement> | undefined;
     onDoubleClickCapture?: React.MouseEventHandler<HTMLLIElement> | undefined;
     onDrag?: React.DragEventHandler<HTMLLIElement> | undefined;
@@ -4649,6 +4569,40 @@ export type ItemCardProps = {
     onDragStartCapture?: React.DragEventHandler<HTMLLIElement> | undefined;
     onDrop?: React.DragEventHandler<HTMLLIElement> | undefined;
     onDropCapture?: React.DragEventHandler<HTMLLIElement> | undefined;
+    onDurationChange?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onDurationChangeCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onEmptied?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onEmptiedCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onEncrypted?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onEncryptedCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onEnded?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onEndedCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onError?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onErrorCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onFocus?: React.FocusEventHandler<HTMLLIElement> | undefined;
+    onFocusCapture?: React.FocusEventHandler<HTMLLIElement> | undefined;
+    onGotPointerCapture?: React.PointerEventHandler<HTMLLIElement> | undefined;
+    onGotPointerCaptureCapture?: React.PointerEventHandler<HTMLLIElement> | undefined;
+    onInput?: React.InputEventHandler<HTMLLIElement> | undefined;
+    onInputCapture?: React.InputEventHandler<HTMLLIElement> | undefined;
+    onInvalid?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onInvalidCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onKeyDown?: React.KeyboardEventHandler<HTMLLIElement> | undefined;
+    onKeyDownCapture?: React.KeyboardEventHandler<HTMLLIElement> | undefined;
+    onKeyPress?: React.KeyboardEventHandler<HTMLLIElement> | undefined;
+    onKeyPressCapture?: React.KeyboardEventHandler<HTMLLIElement> | undefined;
+    onKeyUp?: React.KeyboardEventHandler<HTMLLIElement> | undefined;
+    onKeyUpCapture?: React.KeyboardEventHandler<HTMLLIElement> | undefined;
+    onLoad?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onLoadCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onLoadStart?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onLoadStartCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onLoadedData?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onLoadedDataCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onLoadedMetadata?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onLoadedMetadataCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onLostPointerCapture?: React.PointerEventHandler<HTMLLIElement> | undefined;
+    onLostPointerCaptureCapture?: React.PointerEventHandler<HTMLLIElement> | undefined;
     onMouseDown?: React.MouseEventHandler<HTMLLIElement> | undefined;
     onMouseDownCapture?: React.MouseEventHandler<HTMLLIElement> | undefined;
     onMouseEnter?: React.MouseEventHandler<HTMLLIElement> | undefined;
@@ -4661,8 +4615,54 @@ export type ItemCardProps = {
     onMouseOverCapture?: React.MouseEventHandler<HTMLLIElement> | undefined;
     onMouseUp?: React.MouseEventHandler<HTMLLIElement> | undefined;
     onMouseUpCapture?: React.MouseEventHandler<HTMLLIElement> | undefined;
+    onOpen: () => void;
+    onPaste?: React.ClipboardEventHandler<HTMLLIElement> | undefined;
+    onPasteCapture?: React.ClipboardEventHandler<HTMLLIElement> | undefined;
+    onPause?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onPauseCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onPlay?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onPlayCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onPlaying?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onPlayingCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onPointerCancel?: React.PointerEventHandler<HTMLLIElement> | undefined;
+    onPointerCancelCapture?: React.PointerEventHandler<HTMLLIElement> | undefined;
+    onPointerDown?: React.PointerEventHandler<HTMLLIElement> | undefined;
+    onPointerDownCapture?: React.PointerEventHandler<HTMLLIElement> | undefined;
+    onPointerEnter?: React.PointerEventHandler<HTMLLIElement> | undefined;
+    onPointerLeave?: React.PointerEventHandler<HTMLLIElement> | undefined;
+    onPointerMove?: React.PointerEventHandler<HTMLLIElement> | undefined;
+    onPointerMoveCapture?: React.PointerEventHandler<HTMLLIElement> | undefined;
+    onPointerOut?: React.PointerEventHandler<HTMLLIElement> | undefined;
+    onPointerOutCapture?: React.PointerEventHandler<HTMLLIElement> | undefined;
+    onPointerOver?: React.PointerEventHandler<HTMLLIElement> | undefined;
+    onPointerOverCapture?: React.PointerEventHandler<HTMLLIElement> | undefined;
+    onPointerUp?: React.PointerEventHandler<HTMLLIElement> | undefined;
+    onPointerUpCapture?: React.PointerEventHandler<HTMLLIElement> | undefined;
+    onProgress?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onProgressCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onRateChange?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onRateChangeCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onReset?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onResetCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onScroll?: React.UIEventHandler<HTMLLIElement> | undefined;
+    onScrollCapture?: React.UIEventHandler<HTMLLIElement> | undefined;
+    onScrollEnd?: React.UIEventHandler<HTMLLIElement> | undefined;
+    onScrollEndCapture?: React.UIEventHandler<HTMLLIElement> | undefined;
+    onSeeked?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onSeekedCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onSeeking?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onSeekingCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
     onSelect?: React.ReactEventHandler<HTMLLIElement> | undefined;
     onSelectCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onStalled?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onStalledCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onSubmit?: React.SubmitEventHandler<HTMLLIElement> | undefined;
+    onSubmitCapture?: React.SubmitEventHandler<HTMLLIElement> | undefined;
+    onSuspend?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onSuspendCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onTimeUpdate?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onTimeUpdateCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onToggle?: React.ToggleEventHandler<HTMLLIElement> | undefined;
     onTouchCancel?: React.TouchEventHandler<HTMLLIElement> | undefined;
     onTouchCancelCapture?: React.TouchEventHandler<HTMLLIElement> | undefined;
     onTouchEnd?: React.TouchEventHandler<HTMLLIElement> | undefined;
@@ -4671,38 +4671,6 @@ export type ItemCardProps = {
     onTouchMoveCapture?: React.TouchEventHandler<HTMLLIElement> | undefined;
     onTouchStart?: React.TouchEventHandler<HTMLLIElement> | undefined;
     onTouchStartCapture?: React.TouchEventHandler<HTMLLIElement> | undefined;
-    onPointerDown?: React.PointerEventHandler<HTMLLIElement> | undefined;
-    onPointerDownCapture?: React.PointerEventHandler<HTMLLIElement> | undefined;
-    onPointerMove?: React.PointerEventHandler<HTMLLIElement> | undefined;
-    onPointerMoveCapture?: React.PointerEventHandler<HTMLLIElement> | undefined;
-    onPointerUp?: React.PointerEventHandler<HTMLLIElement> | undefined;
-    onPointerUpCapture?: React.PointerEventHandler<HTMLLIElement> | undefined;
-    onPointerCancel?: React.PointerEventHandler<HTMLLIElement> | undefined;
-    onPointerCancelCapture?: React.PointerEventHandler<HTMLLIElement> | undefined;
-    onPointerEnter?: React.PointerEventHandler<HTMLLIElement> | undefined;
-    onPointerLeave?: React.PointerEventHandler<HTMLLIElement> | undefined;
-    onPointerOver?: React.PointerEventHandler<HTMLLIElement> | undefined;
-    onPointerOverCapture?: React.PointerEventHandler<HTMLLIElement> | undefined;
-    onPointerOut?: React.PointerEventHandler<HTMLLIElement> | undefined;
-    onPointerOutCapture?: React.PointerEventHandler<HTMLLIElement> | undefined;
-    onGotPointerCapture?: React.PointerEventHandler<HTMLLIElement> | undefined;
-    onGotPointerCaptureCapture?: React.PointerEventHandler<HTMLLIElement> | undefined;
-    onLostPointerCapture?: React.PointerEventHandler<HTMLLIElement> | undefined;
-    onLostPointerCaptureCapture?: React.PointerEventHandler<HTMLLIElement> | undefined;
-    onScroll?: React.UIEventHandler<HTMLLIElement> | undefined;
-    onScrollCapture?: React.UIEventHandler<HTMLLIElement> | undefined;
-    onScrollEnd?: React.UIEventHandler<HTMLLIElement> | undefined;
-    onScrollEndCapture?: React.UIEventHandler<HTMLLIElement> | undefined;
-    onWheel?: React.WheelEventHandler<HTMLLIElement> | undefined;
-    onWheelCapture?: React.WheelEventHandler<HTMLLIElement> | undefined;
-    onAnimationStart?: React.AnimationEventHandler<HTMLLIElement> | undefined;
-    onAnimationStartCapture?: React.AnimationEventHandler<HTMLLIElement> | undefined;
-    onAnimationEnd?: React.AnimationEventHandler<HTMLLIElement> | undefined;
-    onAnimationEndCapture?: React.AnimationEventHandler<HTMLLIElement> | undefined;
-    onAnimationIteration?: React.AnimationEventHandler<HTMLLIElement> | undefined;
-    onAnimationIterationCapture?: React.AnimationEventHandler<HTMLLIElement> | undefined;
-    onToggle?: React.ToggleEventHandler<HTMLLIElement> | undefined;
-    onBeforeToggle?: React.ToggleEventHandler<HTMLLIElement> | undefined;
     onTransitionCancel?: React.TransitionEventHandler<HTMLLIElement> | undefined;
     onTransitionCancelCapture?: React.TransitionEventHandler<HTMLLIElement> | undefined;
     onTransitionEnd?: React.TransitionEventHandler<HTMLLIElement> | undefined;
@@ -4711,6 +4679,38 @@ export type ItemCardProps = {
     onTransitionRunCapture?: React.TransitionEventHandler<HTMLLIElement> | undefined;
     onTransitionStart?: React.TransitionEventHandler<HTMLLIElement> | undefined;
     onTransitionStartCapture?: React.TransitionEventHandler<HTMLLIElement> | undefined;
+    onVolumeChange?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onVolumeChangeCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onWaiting?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onWaitingCapture?: React.ReactEventHandler<HTMLLIElement> | undefined;
+    onWheel?: React.WheelEventHandler<HTMLLIElement> | undefined;
+    onWheelCapture?: React.WheelEventHandler<HTMLLIElement> | undefined;
+    openLabel: string;
+    part?: string | undefined;
+    popover?: "" | "auto" | "hint" | "manual" | undefined;
+    popoverTarget?: string | undefined;
+    popoverTargetAction?: "hide" | "show" | "toggle" | undefined;
+    prefix?: string | undefined;
+    property?: string | undefined;
+    radioGroup?: string | undefined;
+    rel?: string | undefined;
+    resource?: string | undefined;
+    results?: number | undefined;
+    rev?: string | undefined;
+    role?: React.AriaRole | undefined;
+    security?: string | undefined;
+    slot?: string | undefined;
+    spellCheck?: any | undefined;
+    style?: React.CSSProperties | undefined;
+    suppressContentEditableWarning?: boolean | undefined;
+    suppressHydrationWarning?: boolean | undefined;
+    tabIndex?: number | undefined;
+    tile?: React.ReactNode;
+    title: React.ReactNode;
+    translate?: "no" | "yes" | undefined;
+    typeof?: string | undefined;
+    unselectable?: "off" | "on" | undefined;
+    vocab?: string | undefined;
 };
 ```
 
@@ -4720,8 +4720,8 @@ export type ItemCardProps = {
 
 ```ts
 export declare const JsonTree: (props: {
-    value: unknown;
     expandDepth?: number;
+    value: unknown;
 }) => React.ReactElement | null;
 ```
 
@@ -4763,11 +4763,11 @@ export type ChordModifier = "alt" | "mod" | "secondary" | "shift";
 
 ```ts
 export type KeyChordEvent = {
-    key: string;
-    code?: string | undefined;
-    metaKey: boolean;
-    ctrlKey: boolean;
     altKey: boolean;
+    code?: string | undefined;
+    ctrlKey: boolean;
+    key: string;
+    metaKey: boolean;
     shiftKey: boolean;
 };
 ```
@@ -4782,8 +4782,8 @@ export type NativeEditCommand = "redo" | "select_all" | "undo";
 
 ```ts
 export type PrimaryModifierEvent = {
-    metaKey: boolean;
     ctrlKey: boolean;
+    metaKey: boolean;
 };
 ```
 
@@ -4805,13 +4805,13 @@ export type ShortcutCategory = "composer" | "editor" | "files" | "layout" | "nav
 
 ```ts
 export type ShortcutCommand = {
+    category: ShortcutCategory;
+    configurable?: boolean | undefined;
+    defaultChord: Chord;
+    description: string;
     id: string;
     label: string;
-    description: string;
-    category: ShortcutCategory;
-    defaultChord: Chord;
     when?: string | undefined;
-    configurable?: boolean | undefined;
 };
 ```
 
@@ -4923,8 +4923,8 @@ export declare const LabelDivider: (props: {
 
 ```ts
 export declare const HINT: {
-    readonly composerSuggest: "hint.composer-suggest";
     readonly canvasGestures: "hint.canvas-gestures";
+    readonly composerSuggest: "hint.composer-suggest";
 };
 ```
 
@@ -4938,11 +4938,11 @@ export declare const IGNORE_WHEEL: WheelOutcome;
 
 ```ts
 export type StripScrollMetrics = {
-    scrollWidth: number;
-    clientWidth: number;
-    scrollLeft: number;
-    scrollHeight: number;
     clientHeight: number;
+    clientWidth: number;
+    scrollHeight: number;
+    scrollLeft: number;
+    scrollWidth: number;
 };
 ```
 
@@ -4956,9 +4956,9 @@ export declare const WHEEL_LINE_PX: 16;
 
 ```ts
 export type WheelIntent = {
+    deltaMode: number;
     deltaX: number;
     deltaY: number;
-    deltaMode: number;
 };
 ```
 
@@ -5058,9 +5058,9 @@ export declare const useHorizontalWheelScroll: <T extends HTMLElement>(enabled?:
 
 ```ts
 export declare const DragHandle: (props: {
+    className?: string;
     handleProps: ReorderHandleProps;
     label: string;
-    className?: string;
 }) => React.ReactElement | null;
 ```
 
@@ -5095,11 +5095,11 @@ export declare const useListReorder: ({ ids, onMove, labelOf }: ListReorderOptio
 ```ts
 export declare const LocalixBorderBeam: (props: {
     active: boolean;
-    variant?: "focus" | "working";
-    intensity?: LocalixBeamIntensity;
-    surface?: "fill" | "ground";
-    still?: boolean;
     className?: string;
+    intensity?: LocalixBeamIntensity;
+    still?: boolean;
+    surface?: "fill" | "ground";
+    variant?: "focus" | "working";
 }) => React.ReactElement | null;
 ```
 
@@ -5141,9 +5141,9 @@ export type MarkdownRendererProps = {
 
 ```ts
 export declare const MermaidDiagram: (props: {
-    source: string;
-    renderer?: MermaidRenderer;
     embedded?: boolean;
+    renderer?: MermaidRenderer;
+    source: string;
 }) => React.ReactElement | null;
 ```
 
@@ -5153,12 +5153,12 @@ export declare const MermaidDiagram: (props: {
 
 ```ts
 export declare const MatchedText: (props: {
-    text: string;
-    query: string;
-    positions?: ReadonlySet<number> | null;
-    plainClassName?: string;
     dimClassName?: string;
     matchClassName?: string;
+    plainClassName?: string;
+    positions?: ReadonlySet<number> | null;
+    query: string;
+    text: string;
 }) => React.ReactElement | null;
 ```
 
@@ -5169,8 +5169,8 @@ export declare const MatchedText: (props: {
 ```ts
 export declare const MediaCarousel: (props: {
     items: readonly MediaCarouselItem[];
-    title: string;
     onOpen?: ((index: number) => void);
+    title: string;
 }) => React.ReactElement | null;
 ```
 
@@ -5178,8 +5178,8 @@ export declare const MediaCarousel: (props: {
 
 ```ts
 export type MediaCarouselItem = {
-    src: string;
     caption?: string | undefined;
+    src: string;
 };
 ```
 
@@ -5189,10 +5189,10 @@ export type MediaCarouselItem = {
 
 ```ts
 export declare const MediaOverlayButton: (props: {
-    size?: "lg" | "md" | "sm" | "xl" | "xs";
-    shape?: "round" | "square";
-    destructive?: boolean;
     "aria-label": string;
+    destructive?: boolean;
+    shape?: "round" | "square";
+    size?: "lg" | "md" | "sm" | "xl" | "xs";
 } & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "aria-label" | "destructive" | "shape" | "size"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
 ```
 
@@ -5223,8 +5223,8 @@ export declare const MenuEntries: (props: {
 
 ```ts
 export declare const MenuGroupHeader: (props: {
-    label: string;
     divider?: boolean;
+    label: string;
 }) => React.ReactElement | null;
 ```
 
@@ -5247,14 +5247,14 @@ export declare const normalizeMenuEntries: (entries: readonly MenuEntry[]) => Me
 ```ts
 export declare const OPPONENT_CHOICES: {
     readonly agent: {
-        readonly label: "Chat agent";
-        readonly icon: LucideIcon;
         readonly description: "The agent in this chat moves with its tool";
+        readonly icon: LucideIcon;
+        readonly label: "Chat agent";
     };
     readonly decision: {
-        readonly label: "Decision model";
-        readonly icon: LucideIcon;
         readonly description: "A decision model picks each move in a second";
+        readonly icon: LucideIcon;
+        readonly label: "Decision model";
     };
 };
 ```
@@ -5263,12 +5263,12 @@ export declare const OPPONENT_CHOICES: {
 
 ```ts
 export declare const OpponentMenu: (props: {
-    value: "agent" | "decision";
-    onChange: (opponent: "agent" | "decision") => void;
+    className?: string;
     disabled?: boolean;
     heading?: string;
+    onChange: (opponent: "agent" | "decision") => void;
     size?: "default" | "lg" | "sm";
-    className?: string;
+    value: "agent" | "decision";
 }) => React.ReactElement | null;
 ```
 
@@ -5276,12 +5276,12 @@ export declare const OpponentMenu: (props: {
 
 ```ts
 export type OpponentMenuProps = {
-    value: "agent" | "decision";
-    onChange: (opponent: "agent" | "decision") => void;
+    className?: string | undefined;
     disabled?: boolean | undefined;
     heading?: string | undefined;
+    onChange: (opponent: "agent" | "decision") => void;
     size?: "default" | "lg" | "sm" | undefined;
-    className?: string | undefined;
+    value: "agent" | "decision";
 };
 ```
 
@@ -5291,11 +5291,11 @@ export type OpponentMenuProps = {
 
 ```ts
 export declare const OverviewRegistryRow: (props: {
-    title: string;
     description?: string;
     icon: LucideIcon;
     metrics: OverviewRegistryMetric[];
     onOpen: () => void;
+    title: string;
 }) => React.ReactElement | null;
 ```
 
@@ -5305,16 +5305,16 @@ export declare const OverviewRegistryRow: (props: {
 
 ```ts
 export declare const startResizeSession: (event: {
-    type?: string | undefined;
     button: number;
     clientX: number;
     clientY: number;
     pointerId?: number | undefined;
+    type?: string | undefined;
 }, ports: {
     cursor: "col-resize" | "row-resize";
-    onMove: (event: MouseEvent | PointerEvent) => void;
-    onEnd: () => void;
     onCancel?: (() => void) | undefined;
+    onEnd: () => void;
+    onMove: (event: MouseEvent | PointerEvent) => void;
 }) => () => void;
 ```
 
@@ -5323,14 +5323,14 @@ export declare const startResizeSession: (event: {
 ```ts
 export declare const usePaneResize: (opts: {
     axis: "x" | "y";
+    containerRef?: React.RefObject<HTMLElement | null> | undefined;
     direction?: -1 | 1 | undefined;
     initial: number;
-    min: number;
     max: number;
-    storageKey?: string | undefined;
-    containerRef?: React.RefObject<HTMLElement | null> | undefined;
-    reserve?: number | undefined;
     measureKey?: unknown;
+    min: number;
+    reserve?: number | undefined;
+    storageKey?: string | undefined;
 }) => PaneResize;
 ```
 
@@ -5350,11 +5350,11 @@ export declare const PaneStateOverlay: (props: {
 
 ```ts
 export declare const PanelHeader: (props: {
-    title: React.ReactNode;
-    icon?: React.ReactNode;
-    summary?: React.ReactNode;
     actions?: React.ReactNode;
     actionsLabel?: string;
+    icon?: React.ReactNode;
+    summary?: React.ReactNode;
+    title: React.ReactNode;
     tone?: "content" | "sidebar";
 } & Omit<React.HTMLAttributes<HTMLElement>, "actions" | "actionsLabel" | "icon" | "summary" | "title" | "tone"> & React.RefAttributes<HTMLElement>) => React.ReactElement | null;
 ```
@@ -5365,8 +5365,8 @@ export declare const PanelHeader: (props: {
 
 ```ts
 export declare const PdfPages: (props: {
-    blob: Blob;
     "aria-label"?: string;
+    blob: Blob;
     onError?: ((error: Error) => void);
 }) => React.ReactElement | null;
 ```
@@ -5375,8 +5375,8 @@ export declare const PdfPages: (props: {
 
 ```ts
 export type PdfPagesProps = {
-    blob: Blob;
     "aria-label"?: string | undefined;
+    blob: Blob;
     onError?: ((error: Error) => void) | undefined;
 };
 ```
@@ -5402,10 +5402,10 @@ export declare const prefersReducedMotion: () => boolean;
 ```ts
 export declare const Popover: (props: {
     children?: React.ReactNode;
-    open?: boolean;
     defaultOpen?: boolean;
-    onOpenChange?: ((open: boolean) => void);
     modal?: boolean;
+    onOpenChange?: ((open: boolean) => void);
+    open?: boolean;
 }) => React.ReactElement | null;
 ```
 
@@ -5436,28 +5436,28 @@ export declare const PopoverClose: (props: {
 
 ```ts
 export declare const PopoverContent: (props: {
-    asChild?: boolean;
-    side?: "bottom" | "left" | "right" | "top";
-    sideOffset?: number;
     align?: "center" | "end" | "start";
     alignOffset?: number;
     arrowPadding?: number;
+    asChild?: boolean;
     avoidCollisions?: boolean;
     collisionBoundary?: Boundary | Boundary[];
     collisionPadding?: Partial<Record<"bottom" | "left" | "right" | "top", number>> | number;
-    sticky?: Sticky;
-    hideWhenDetached?: boolean;
-    updatePositionStrategy?: UpdatePositionStrategy;
     deferPointerDownOutside?: boolean;
+    forceMount?: true;
+    hideWhenDetached?: boolean;
+    layout?: PopoverContentLayout;
+    material?: "app" | "foreign";
+    onCloseAutoFocus?: ((event: Event) => void);
     onEscapeKeyDown?: ((event: KeyboardEvent) => void);
-    onPointerDownOutside?: ((event: PointerDownOutsideEvent) => void);
     onFocusOutside?: ((event: FocusOutsideEvent) => void);
     onInteractOutside?: ((event: FocusOutsideEvent | PointerDownOutsideEvent) => void);
     onOpenAutoFocus?: ((event: Event) => void);
-    onCloseAutoFocus?: ((event: Event) => void);
-    forceMount?: true;
-    layout?: PopoverContentLayout;
-    material?: "app" | "foreign";
+    onPointerDownOutside?: ((event: PointerDownOutsideEvent) => void);
+    side?: "bottom" | "left" | "right" | "top";
+    sideOffset?: number;
+    sticky?: Sticky;
+    updatePositionStrategy?: UpdatePositionStrategy;
 } & Omit<React.HTMLAttributes<HTMLDivElement>, "align" | "alignOffset" | "arrowPadding" | "asChild" | "avoidCollisions" | "collisionBoundary" | "collisionPadding" | "deferPointerDownOutside" | "forceMount" | "hideWhenDetached" | "layout" | "material" | "onCloseAutoFocus" | "onEscapeKeyDown" | "onFocusOutside" | "onInteractOutside" | "onOpenAutoFocus" | "onPointerDownOutside" | "side" | "sideOffset" | "sticky" | "updatePositionStrategy"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
@@ -5522,9 +5522,9 @@ export declare const POPOVER_SURFACE_OVER_FOREIGN: "rounded-xl border border-con
 
 ```ts
 export declare const ProgressBar: (props: {
-    value: number;
     className?: string;
     fillClassName?: string;
+    value: number;
 }) => React.ReactElement | null;
 ```
 
@@ -5566,15 +5566,15 @@ export declare const statusBtnActive: "bg-surface-active text-foreground before:
 ```ts
 export declare const RefreshAction: (props: {
     "aria-label": string;
-    size?: "lg" | "md" | "sm" | "touch" | "xl" | "xs";
-    tooltip?: React.ReactNode;
     asChild?: boolean;
-    tone?: "danger" | "default";
-    recommended?: boolean;
-    emphasis?: "solid" | "subtle";
-    surface?: "content" | "sidebar";
-    tooltipSide?: "bottom" | "left" | "right" | "top";
     busy?: boolean;
+    emphasis?: "solid" | "subtle";
+    recommended?: boolean;
+    size?: "lg" | "md" | "sm" | "touch" | "xl" | "xs";
+    surface?: "content" | "sidebar";
+    tone?: "danger" | "default";
+    tooltip?: React.ReactNode;
+    tooltipSide?: "bottom" | "left" | "right" | "top";
 } & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "aria-label" | "asChild" | "busy" | "emphasis" | "recommended" | "size" | "surface" | "tone" | "tooltip" | "tooltipSide"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
 ```
 
@@ -5584,11 +5584,11 @@ export declare const RefreshAction: (props: {
 
 ```ts
 export declare const ResourceContextButton: (props: {
-    uri: string;
-    label: string;
     className?: string;
+    label: string;
     mode?: "action" | "icon";
     sessionId?: null | string;
+    uri: string;
 }) => React.ReactElement | null;
 ```
 
@@ -5598,13 +5598,13 @@ export declare const ResourceContextButton: (props: {
 
 ```ts
 export declare const RichTextEditor: (props: {
-    value: RichTextValue;
-    onChange: (value: RichTextDocument) => void;
-    maxLength?: number;
-    disabled?: boolean;
-    readOnly?: boolean;
-    id?: string;
     className?: string;
+    disabled?: boolean;
+    id?: string;
+    maxLength?: number;
+    onChange: (value: RichTextDocument) => void;
+    readOnly?: boolean;
+    value: RichTextValue;
 }) => React.ReactElement | null;
 ```
 
@@ -5612,19 +5612,19 @@ export declare const RichTextEditor: (props: {
 
 ```ts
 export type RichTextEditorProps = {
-    value: RichTextValue;
-    onChange: (value: RichTextDocument) => void;
-    maxLength?: number | undefined;
-    disabled?: boolean | undefined;
-    readOnly?: boolean | undefined;
-    id?: string | undefined;
-    className?: string | undefined;
     "aria-describedby"?: string | undefined;
     "aria-invalid"?: "false" | "grammar" | "spelling" | "true" | boolean | undefined;
     "aria-label"?: string | undefined;
     "aria-labelledby"?: string | undefined;
     "aria-readonly"?: any | undefined;
     "aria-required"?: any | undefined;
+    className?: string | undefined;
+    disabled?: boolean | undefined;
+    id?: string | undefined;
+    maxLength?: number | undefined;
+    onChange: (value: RichTextDocument) => void;
+    readOnly?: boolean | undefined;
+    value: RichTextValue;
 };
 ```
 
@@ -5632,8 +5632,8 @@ export type RichTextEditorProps = {
 
 ```ts
 export declare const RichTextView: (props: {
-    value: RichTextValue;
     className?: string;
+    value: RichTextValue;
 }) => React.ReactElement | null;
 ```
 
@@ -5643,8 +5643,8 @@ export declare const RichTextView: (props: {
 
 ```ts
 export declare const RichTextView: (props: {
-    value: RichTextValue;
     className?: string;
+    value: RichTextValue;
 }) => React.ReactElement | null;
 ```
 
@@ -5686,14 +5686,14 @@ export declare const scrollPercent: (m: ScrollGeometry) => number;
 
 ```ts
 export declare const SearchInput: (props: {
-    value: string;
-    onValueChange: (value: string) => void;
     bare?: boolean;
-    size?: "lg" | "md" | "xl";
-    inset?: boolean;
-    tone?: "default" | "sidebar";
     className?: string;
+    inset?: boolean;
+    onValueChange: (value: string) => void;
+    size?: "lg" | "md" | "xl";
+    tone?: "default" | "sidebar";
     trailing?: React.ReactNode;
+    value: string;
 } & Omit<React.InputHTMLAttributes<HTMLElement>, "bare" | "className" | "inset" | "onValueChange" | "size" | "tone" | "trailing" | "value">) => React.ReactElement | null;
 ```
 
@@ -5703,12 +5703,12 @@ export declare const SearchInput: (props: {
 
 ```ts
 export declare const SectionHeading: (props: {
-    title: React.ReactNode;
-    description?: React.ReactNode;
     actions?: React.ReactNode;
-    level?: "page" | "section";
     as?: "h1" | "h2" | "h3";
     className?: string;
+    description?: React.ReactNode;
+    level?: "page" | "section";
+    title: React.ReactNode;
 }) => React.ReactElement | null;
 ```
 
@@ -5716,12 +5716,12 @@ export declare const SectionHeading: (props: {
 
 ```ts
 export type SectionHeadingProps = {
-    title: React.ReactNode;
-    description?: React.ReactNode;
     actions?: React.ReactNode;
-    level?: "page" | "section" | undefined;
     as?: "h1" | "h2" | "h3" | undefined;
     className?: string | undefined;
+    description?: React.ReactNode;
+    level?: "page" | "section" | undefined;
+    title: React.ReactNode;
 };
 ```
 
@@ -5731,11 +5731,11 @@ export type SectionHeadingProps = {
 
 ```ts
 export declare const SectionLabel: (props: {
-    children: React.ReactNode;
     as?: "div" | "h2" | "h3" | "h4" | "span";
+    children: React.ReactNode;
+    className?: string;
     size?: "2xs" | "xs";
     weight?: "medium" | "semibold";
-    className?: string;
 }) => React.ReactElement | null;
 ```
 
@@ -5745,14 +5745,14 @@ export declare const SectionLabel: (props: {
 
 ```ts
 export declare const Select: (props: {
-    value: string;
+    align?: "center" | "end" | "start";
+    className?: string;
+    contentClassName?: string;
     onValueChange: (value: string) => void;
     options: readonly SelectOption[];
     placeholder?: string;
     size?: ChoiceControlSize;
-    align?: "center" | "end" | "start";
-    className?: string;
-    contentClassName?: string;
+    value: string;
 } & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "align" | "className" | "contentClassName" | "onValueChange" | "options" | "placeholder" | "size" | "value"> & React.RefAttributes<HTMLButtonElement>) => React.ReactElement | null;
 ```
 
@@ -5760,11 +5760,11 @@ export declare const Select: (props: {
 
 ```ts
 export type SelectOption = {
-    value: string;
-    label: string;
-    icon?: LucideIcon | undefined;
     description?: string | undefined;
     disabled?: boolean | undefined;
+    icon?: LucideIcon | undefined;
+    label: string;
+    value: string;
 };
 ```
 
@@ -5798,14 +5798,14 @@ export declare const SelectionTile: (props: {
 
 ```ts
 export declare const ShelfRow: (props: {
-    perView?: number;
-    columns?: number;
-    rows?: number;
-    title: string;
-    subtitle?: string;
-    onSeeAll?: (() => void);
     children: React.ReactNode;
     className?: string;
+    columns?: number;
+    onSeeAll?: (() => void);
+    perView?: number;
+    rows?: number;
+    subtitle?: string;
+    title: string;
 }) => React.ReactElement | null;
 ```
 
@@ -5813,11 +5813,11 @@ export declare const ShelfRow: (props: {
 
 ```ts
 export type ShelfRowProps = ShelfRowShape & {
-    title: string;
-    subtitle?: string | undefined;
-    onSeeAll?: (() => void) | undefined;
     children: React.ReactNode;
     className?: string | undefined;
+    onSeeAll?: (() => void) | undefined;
+    subtitle?: string | undefined;
+    title: string;
 };
 ```
 
@@ -5827,14 +5827,14 @@ export type ShelfRowProps = ShelfRowShape & {
 
 ```ts
 export declare const SidebarNav: (props: {
-    label: string;
-    groups: readonly SidebarNavGroup[];
     active: string;
-    onSelect: (id: string) => void;
-    mode?: SidebarNavMode;
-    search?: React.ReactNode;
     className?: string;
+    groups: readonly SidebarNavGroup[];
+    label: string;
+    mode?: SidebarNavMode;
+    onSelect: (id: string) => void;
     onToggle?: (() => void);
+    search?: React.ReactNode;
     selectSize?: "lg" | "md" | "xl";
 }) => React.ReactElement | null;
 ```
@@ -5844,8 +5844,8 @@ export declare const SidebarNav: (props: {
 ```ts
 export type SidebarNavGroup = {
     id: string;
-    label?: string | undefined;
     items: readonly SidebarNavItem[];
+    label?: string | undefined;
 };
 ```
 
@@ -5853,14 +5853,14 @@ export type SidebarNavGroup = {
 
 ```ts
 export type SidebarNavItem = {
-    id: string;
-    label: string;
+    badge?: React.ReactNode;
+    count?: number | undefined;
+    description?: string | undefined;
     icon?: React.ComponentType<{
         className?: string | undefined;
     }> | undefined;
-    count?: number | undefined;
-    badge?: React.ReactNode;
-    description?: string | undefined;
+    id: string;
+    label: string;
 };
 ```
 
@@ -5884,9 +5884,9 @@ export declare const Skeleton: (props: {} & React.HTMLAttributes<HTMLDivElement>
 
 ```ts
 export declare const Slider: (props: {
+    onValueChange: (index: number) => void;
     steps: readonly string[];
     value: number;
-    onValueChange: (index: number) => void;
 } & Omit<React.InputHTMLAttributes<HTMLInputElement>, "onValueChange" | "steps" | "value"> & React.RefAttributes<HTMLInputElement>) => React.ReactElement | null;
 ```
 
@@ -5894,9 +5894,9 @@ export declare const Slider: (props: {
 
 ```ts
 export type SliderProps = Omit<Omit<React.DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputElement>, HTMLInputElement>, "ref">, "defaultValue" | "max" | "min" | "onChange" | "step" | "type" | "value"> & {
+    onValueChange: (index: number) => void;
     steps: readonly string[];
     value: number;
-    onValueChange: (index: number) => void;
 };
 ```
 
@@ -5906,8 +5906,8 @@ export type SliderProps = Omit<Omit<React.DetailedHTMLProps<React.InputHTMLAttri
 
 ```ts
 export declare const Spinner: (props: {
-    size?: "lg" | "md" | "sm" | "xs";
     label?: string;
+    size?: "lg" | "md" | "sm" | "xs";
 } & Omit<React.SVGAttributes<SVGElement>, "label" | "size"> & React.RefAttributes<SVGSVGElement>) => React.ReactElement | null;
 ```
 
@@ -5917,12 +5917,12 @@ export declare const Spinner: (props: {
 
 ```ts
 export declare const StatCard: (props: {
-    label: string;
-    value: number | string;
     dot?: string;
     hint?: string;
     hintTone?: "good" | "muted";
+    label: string;
     title?: string;
+    value: number | string;
 }) => React.ReactElement | null;
 ```
 
@@ -5930,9 +5930,9 @@ export declare const StatCard: (props: {
 
 ```ts
 export declare const StatSection: (props: {
-    title: string;
     action?: React.ReactNode;
     children: React.ReactNode;
+    title: string;
 }) => React.ReactElement | null;
 ```
 
@@ -5942,19 +5942,19 @@ export declare const StatSection: (props: {
 
 ```ts
 export declare const StateNotice: (props: {
-    icon?: React.ComponentType<{
-        className?: string | undefined;
-        strokeWidth?: number | undefined;
-        'aria-hidden'?: boolean | undefined;
-    }>;
-    title: React.ReactNode;
-    body?: React.ReactNode;
     actions?: React.ReactNode;
     actionsLabel?: string;
-    className?: string;
-    bodyClassName?: string;
-    role?: "alert" | "status";
     ariaLive?: "assertive" | "off" | "polite";
+    body?: React.ReactNode;
+    bodyClassName?: string;
+    className?: string;
+    icon?: React.ComponentType<{
+        'aria-hidden'?: boolean | undefined;
+        className?: string | undefined;
+        strokeWidth?: number | undefined;
+    }>;
+    role?: "alert" | "status";
+    title: React.ReactNode;
 }) => React.ReactElement | null;
 ```
 
@@ -5970,9 +5970,9 @@ export declare const STATUS_TONE_DOT: Record<WorkStatusTone, string>;
 
 ```ts
 export declare const StatusDot: (props: {
-    size?: "lg" | "md" | "sm";
     className?: string;
     label?: string;
+    size?: "lg" | "md" | "sm";
 }) => React.ReactElement | null;
 ```
 
@@ -6007,26 +6007,26 @@ export declare const Switch: (props: {
 
 ```ts
 export type StripTabItem<T extends string = string> = {
-    id: T;
-    label: React.ReactNode;
-    tabId?: string | undefined;
-    panelId?: string | undefined;
-    title?: string | undefined;
-    icon?: React.ReactNode;
-    hint?: React.ReactNode;
+    attention?: boolean | undefined;
     badge?: React.ReactNode;
     badgeTone?: "default" | "error" | "warn" | undefined;
-    disabled?: boolean | undefined;
-    italic?: boolean | undefined;
-    faded?: boolean | undefined;
-    dirty?: boolean | undefined;
-    attention?: boolean | undefined;
     closeLabel?: string | undefined;
-    onClose?: ((id: T) => void) | undefined;
-    onAuxClose?: ((id: T) => void) | undefined;
+    dirty?: boolean | undefined;
+    disabled?: boolean | undefined;
+    faded?: boolean | undefined;
+    hint?: React.ReactNode;
+    icon?: React.ReactNode;
+    id: T;
+    italic?: boolean | undefined;
+    label: React.ReactNode;
     menu?: readonly TabMenuItem<T>[] | undefined;
+    onAuxClose?: ((id: T) => void) | undefined;
+    onClose?: ((id: T) => void) | undefined;
     onContextMenu?: ((id: T, event: React.MouseEvent<Element, MouseEvent>) => void) | undefined;
     onDoubleClick?: ((id: T) => void) | undefined;
+    panelId?: string | undefined;
+    tabId?: string | undefined;
+    title?: string | undefined;
 };
 ```
 
@@ -6034,13 +6034,13 @@ export type StripTabItem<T extends string = string> = {
 
 ```ts
 export declare const TabBar: <T extends string>(props: {
-    items: readonly TabItem<T>[];
-    active: T;
-    stretch?: boolean;
-    onChange: (id: T) => void;
-    className?: string;
-    trailing?: React.ReactNode;
     "aria-label": string;
+    active: T;
+    className?: string;
+    items: readonly TabItem<T>[];
+    onChange: (id: T) => void;
+    stretch?: boolean;
+    trailing?: React.ReactNode;
 }) => React.ReactElement | null;
 ```
 
@@ -6048,13 +6048,13 @@ export declare const TabBar: <T extends string>(props: {
 
 ```ts
 export type TabItem<T extends string = string> = {
-    id: T;
-    label: string;
-    tabId?: string | undefined;
-    panelId?: string | undefined;
-    icon?: LucideIcon | undefined;
     badge?: number | string | undefined;
     disabled?: boolean | undefined;
+    icon?: LucideIcon | undefined;
+    id: T;
+    label: string;
+    panelId?: string | undefined;
+    tabId?: string | undefined;
 };
 ```
 
@@ -6062,9 +6062,9 @@ export type TabItem<T extends string = string> = {
 
 ```ts
 export declare const TabPanel: (props: {
-    id: string;
     "aria-labelledby": string;
     active: boolean;
+    id: string;
 } & Omit<React.HTMLAttributes<HTMLDivElement>, "active" | "aria-labelledby" | "id"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
@@ -6072,24 +6072,24 @@ export declare const TabPanel: (props: {
 
 ```ts
 export declare const TabStrip: <T extends string = string>(props: {
-    items: readonly StripTabItem<T>[];
-    activeId: T | null;
-    onChange: (id: T) => void;
-    variant?: TabStripVariant;
-    className?: string;
-    listClassName?: string;
-    tabClassName?: string;
-    activeTabClassName?: string;
-    inactiveTabClassName?: string;
+    "aria-label": string;
     actions?: React.ReactNode;
     actionsLabel?: string;
-    renderOverflow?: (() => React.ReactNode);
+    activeId: T | null;
+    activeTabClassName?: string;
+    className?: string;
     edgeFade?: boolean;
-    onReorder?: ((fromId: T, toId: T | null) => void);
+    inactiveTabClassName?: string;
+    items: readonly StripTabItem<T>[];
+    listClassName?: string;
+    onChange: (id: T) => void;
     onDragStateChange?: ((dragging: boolean, id?: T | undefined) => void);
-    onItemDragStart?: ((id: T, e: React.DragEvent<Element>) => void);
     onItemDragEnd?: ((id: T, event: DragEvent | null, cancelled: boolean) => void);
-    "aria-label": string;
+    onItemDragStart?: ((id: T, e: React.DragEvent<Element>) => void);
+    onReorder?: ((fromId: T, toId: T | null) => void);
+    renderOverflow?: (() => React.ReactNode);
+    tabClassName?: string;
+    variant?: TabStripVariant;
 }) => React.ReactElement | null;
 ```
 
@@ -6097,12 +6097,12 @@ export declare const TabStrip: <T extends string = string>(props: {
 
 ```ts
 export declare const useTabPanelIds: (scope?: string) => {
-    tabId: (id: string) => string;
-    panelId: (id: string) => string;
     item: (id: string) => {
-        tabId: string;
         panelId: string;
+        tabId: string;
     };
+    panelId: (id: string) => string;
+    tabId: (id: string) => string;
 };
 ```
 
@@ -6282,10 +6282,10 @@ export type TextareaProps = Omit<React.DetailedHTMLProps<React.TextareaHTMLAttri
 
 ```ts
 export declare const useTheme: () => {
-    themeMode: ThemeMode;
+    cycleThemeMode: (origin?: ThemeChangeOrigin | undefined) => ThemeMode;
     resolvedTheme: ResolvedTheme;
     setThemeMode: (mode: ThemeMode, origin?: ThemeChangeOrigin | undefined) => void;
-    cycleThemeMode: (origin?: ThemeChangeOrigin | undefined) => ThemeMode;
+    themeMode: ThemeMode;
 };
 ```
 
@@ -6295,14 +6295,14 @@ export declare const useTheme: () => {
 
 ```ts
 export declare const TileCard: (props: {
+    action?: React.ReactNode;
+    className?: string;
+    onIntent?: (() => void);
+    onOpen: () => void;
+    openLabel: string;
+    subtitle?: React.ReactNode;
     tile: React.ReactNode;
     title: string;
-    subtitle?: React.ReactNode;
-    action?: React.ReactNode;
-    openLabel: string;
-    onOpen: () => void;
-    onIntent?: (() => void);
-    className?: string;
 }) => React.ReactElement | null;
 ```
 
@@ -6310,14 +6310,14 @@ export declare const TileCard: (props: {
 
 ```ts
 export type TileCardProps = {
+    action?: React.ReactNode;
+    className?: string | undefined;
+    onIntent?: (() => void) | undefined;
+    onOpen: () => void;
+    openLabel: string;
+    subtitle?: React.ReactNode;
     tile: React.ReactNode;
     title: string;
-    subtitle?: React.ReactNode;
-    action?: React.ReactNode;
-    openLabel: string;
-    onOpen: () => void;
-    onIntent?: (() => void) | undefined;
-    className?: string | undefined;
 };
 ```
 
@@ -6328,11 +6328,11 @@ export type TileCardProps = {
 ```ts
 export declare const TogglePill: (props: {
     active: boolean;
-    onClick: () => void;
-    className?: string;
     activeClassName?: string;
-    title?: string;
     children: React.ReactNode;
+    className?: string;
+    onClick: () => void;
+    title?: string;
 }) => React.ReactElement | null;
 ```
 
@@ -6342,8 +6342,8 @@ export declare const TogglePill: (props: {
 
 ```ts
 export declare const ErrorRow: (props: {
-    message?: string;
     linkify?: boolean;
+    message?: string;
 }) => React.ReactElement | null;
 ```
 
@@ -6351,8 +6351,8 @@ export declare const ErrorRow: (props: {
 
 ```ts
 export declare const IORow: (props: {
-    label: ToolSectionLabel;
     children: React.ReactNode;
+    label: ToolSectionLabel;
 }) => React.ReactElement | null;
 ```
 
@@ -6378,12 +6378,12 @@ export declare const ToolBody: (props: {
 
 ```ts
 export declare const ToolHeaderAction: (props: {
+    disabled?: boolean;
     icon: React.ComponentType<{
         className?: string | undefined;
     }>;
     label: string;
     onClick: () => void;
-    disabled?: boolean;
     tone?: "danger" | "default";
 }) => React.ReactElement | null;
 ```
@@ -6392,22 +6392,22 @@ export declare const ToolHeaderAction: (props: {
 
 ```ts
 export declare const ToolLine: (props: {
+    autoOpen?: boolean;
+    badge?: React.ReactNode;
+    children?: React.ReactNode;
+    durationMs?: number;
+    hasError?: boolean;
+    headerActions?: React.ReactNode;
     icon?: React.ComponentType<{
         className?: string | undefined;
     }>;
+    isDismissed?: boolean;
+    isLoading?: boolean;
+    onClick?: (() => void);
+    onRegisteredActionStart?: ((action: ToolActionDescriptor) => void);
+    subtitle?: string;
     title: string;
     titleDetails?: string;
-    subtitle?: string;
-    badge?: React.ReactNode;
-    headerActions?: React.ReactNode;
-    onRegisteredActionStart?: ((action: ToolActionDescriptor) => void);
-    isLoading?: boolean;
-    hasError?: boolean;
-    durationMs?: number;
-    isDismissed?: boolean;
-    children?: React.ReactNode;
-    autoOpen?: boolean;
-    onClick?: (() => void);
 }) => React.ReactElement | null;
 ```
 
@@ -6441,13 +6441,13 @@ export declare const itemErrorMessage: (item: ToolBackedItem) => string | undefi
 
 ```ts
 export declare const ActionTooltip: (props: {
-    children: React.ReactElement<unknown, React.JSXElementConstructor<any> | string>;
-    label: React.ReactNode;
-    side?: "bottom" | "left" | "right" | "top";
-    disabled?: boolean;
     accessibleLabel?: string;
-    open?: boolean;
+    children: React.ReactElement<unknown, React.JSXElementConstructor<any> | string>;
+    disabled?: boolean;
+    label: React.ReactNode;
     onOpenChange?: ((open: boolean) => void);
+    open?: boolean;
+    side?: "bottom" | "left" | "right" | "top";
 }) => React.ReactElement | null;
 ```
 
@@ -6455,10 +6455,10 @@ export declare const ActionTooltip: (props: {
 
 ```ts
 export declare const MetadataTooltip: (props: {
+    align?: "center" | "end" | "start";
     children: React.ReactElement<unknown, React.JSXElementConstructor<any> | string>;
     label: React.ReactNode;
     side?: "bottom" | "left" | "right" | "top";
-    align?: "center" | "end" | "start";
 }) => React.ReactElement | null;
 ```
 
@@ -6466,10 +6466,10 @@ export declare const MetadataTooltip: (props: {
 
 ```ts
 export type MetadataTooltipProps = {
+    align?: "center" | "end" | "start" | undefined;
     children: React.ReactElement<unknown, React.JSXElementConstructor<any> | string>;
     label: React.ReactNode;
     side?: "bottom" | "left" | "right" | "top" | undefined;
-    align?: "center" | "end" | "start" | undefined;
 };
 ```
 
@@ -6478,11 +6478,11 @@ export type MetadataTooltipProps = {
 ```ts
 export declare const Tooltip: (props: {
     children?: React.ReactNode;
-    open?: boolean;
     defaultOpen?: boolean;
-    onOpenChange?: ((open: boolean) => void);
     delayDuration?: number;
     disableHoverableContent?: boolean;
+    onOpenChange?: ((open: boolean) => void);
+    open?: boolean;
 }) => React.ReactElement | null;
 ```
 
@@ -6490,21 +6490,21 @@ export declare const Tooltip: (props: {
 
 ```ts
 export declare const TooltipContent: (props: {
-    forceMount?: true;
     "aria-label"?: string;
-    onEscapeKeyDown?: ((event: KeyboardEvent) => void);
-    onPointerDownOutside?: ((event: PointerDownOutsideEvent) => void);
-    asChild?: boolean;
-    side?: "bottom" | "left" | "right" | "top";
-    sideOffset?: number;
     align?: "center" | "end" | "start";
     alignOffset?: number;
     arrowPadding?: number;
+    asChild?: boolean;
     avoidCollisions?: boolean;
     collisionBoundary?: Boundary | Boundary[];
     collisionPadding?: Partial<Record<"bottom" | "left" | "right" | "top", number>> | number;
-    sticky?: Sticky;
+    forceMount?: true;
     hideWhenDetached?: boolean;
+    onEscapeKeyDown?: ((event: KeyboardEvent) => void);
+    onPointerDownOutside?: ((event: PointerDownOutsideEvent) => void);
+    side?: "bottom" | "left" | "right" | "top";
+    sideOffset?: number;
+    sticky?: Sticky;
     updatePositionStrategy?: UpdatePositionStrategy;
 } & Omit<React.HTMLAttributes<HTMLDivElement>, "align" | "alignOffset" | "aria-label" | "arrowPadding" | "asChild" | "avoidCollisions" | "collisionBoundary" | "collisionPadding" | "forceMount" | "hideWhenDetached" | "onEscapeKeyDown" | "onPointerDownOutside" | "side" | "sideOffset" | "sticky" | "updatePositionStrategy"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
@@ -6515,8 +6515,8 @@ export declare const TooltipContent: (props: {
 export declare const TooltipProvider: (props: {
     children: React.ReactNode;
     delayDuration?: number;
-    skipDelayDuration?: number;
     disableHoverableContent?: boolean;
+    skipDelayDuration?: number;
 }) => React.ReactElement | null;
 ```
 
@@ -6534,8 +6534,8 @@ export declare const TooltipTrigger: (props: {
 
 ```ts
 export type TypeaheadRow = {
-    path: string;
     name: string;
+    path: string;
 };
 ```
 
@@ -6543,8 +6543,8 @@ export type TypeaheadRow = {
 
 ```ts
 export declare const createTypeahead: (opts?: {
-    timeoutMs?: number | undefined;
     now?: (() => number) | undefined;
+    timeoutMs?: number | undefined;
 }) => Typeahead;
 ```
 
@@ -6558,8 +6558,8 @@ export declare const indentGuideStyle: (depth: number) => React.CSSProperties;
 
 ```ts
 export declare const treeNavKeyDown: (e: React.KeyboardEvent<HTMLElement>, opts: {
-    toggleDir: (path: string) => void;
     parentOf: (path: string) => null | string;
+    toggleDir: (path: string) => void;
 }) => void;
 ```
 
@@ -6593,8 +6593,8 @@ export declare const useUserSettings: UseBoundStore<StoreApi<SettingsState & Set
 
 ```ts
 export declare const WorkItemFocusProvider: (props: {
-    focused: boolean;
     children: React.ReactNode;
+    focused: boolean;
 }) => React.ReactElement | null;
 ```
 
@@ -6611,11 +6611,11 @@ export declare const useWorkItemFocused: () => boolean;
 ```ts
 export declare const WorkbenchBreadcrumb: (props: {
     "aria-label": string;
-    density?: "compact" | "default";
     bordered?: boolean;
+    density?: "compact" | "default";
     dragRegion?: boolean;
-    scrollable?: boolean;
     scrollToEndKey?: string;
+    scrollable?: boolean;
 } & Omit<React.HTMLAttributes<HTMLElement>, "aria-label" | "bordered" | "density" | "dragRegion" | "scrollToEndKey" | "scrollable"> & React.RefAttributes<HTMLElement>) => React.ReactElement | null;
 ```
 
@@ -6638,8 +6638,8 @@ export declare const WorkbenchFilterBar: (props: {
 
 ```ts
 export declare const WorkbenchListRow: (props: {
-    density?: "compact" | "default" | "dense";
     active?: boolean;
+    density?: "compact" | "default" | "dense";
     dragging?: boolean;
 } & Omit<React.HTMLAttributes<HTMLDivElement>, "active" | "density" | "dragging"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
@@ -6649,8 +6649,8 @@ export declare const WorkbenchListRow: (props: {
 ```ts
 export declare const WorkbenchListRowActions: (props: {
     "aria-label": string;
-    visibility?: "always" | "hover";
     fallback?: React.ReactNode;
+    visibility?: "always" | "hover";
 } & Omit<React.HTMLAttributes<HTMLDivElement>, "aria-label" | "fallback" | "visibility"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
@@ -6670,9 +6670,9 @@ export declare const WorkbenchListRowMeta: (props: {} & React.HTMLAttributes<HTM
 
 ```ts
 export declare const WorkbenchListRowText: (props: {
-    title: React.ReactNode;
-    description?: React.ReactNode;
     className?: string;
+    description?: React.ReactNode;
+    title: React.ReactNode;
 }) => React.ReactElement | null;
 ```
 
@@ -6688,15 +6688,15 @@ export declare const WorkbenchListRowTrigger: (props: {} & React.ButtonHTMLAttri
 
 ```ts
 export declare const WorkbenchNoticeBar: (props: {
-    tone?: "error" | "info" | "neutral" | "success" | "warning";
-    icon?: React.ReactNode;
-    title: React.ReactNode;
-    description?: React.ReactNode;
     actions?: React.ReactNode;
     actionsLabel?: string;
-    onDismiss?: (() => void);
+    description?: React.ReactNode;
     dismissLabel?: string;
+    icon?: React.ReactNode;
     layout?: WorkbenchNoticeLayout;
+    onDismiss?: (() => void);
+    title: React.ReactNode;
+    tone?: "error" | "info" | "neutral" | "success" | "warning";
 } & Omit<React.HTMLAttributes<HTMLDivElement>, "actions" | "actionsLabel" | "description" | "dismissLabel" | "icon" | "layout" | "onDismiss" | "title" | "tone"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
@@ -6712,12 +6712,12 @@ export declare const BREADCRUMB_FLOOR: 180;
 
 ```ts
 export declare const STATUS_STRIP_METRICS: {
-    readonly gap: 2;
     readonly compact: 28;
-    readonly roomy: 104;
-    readonly overflow: 28;
     readonly core: number;
     readonly crumb: 116;
+    readonly gap: 2;
+    readonly overflow: 28;
+    readonly roomy: 104;
 };
 ```
 
@@ -6737,9 +6737,9 @@ export declare const STRIP_MAX_SHARE: 0.5;
 
 ```ts
 export declare const StatusItemBody: (props: {
-    state: StatusItemState;
-    placement: string;
     compact?: boolean;
+    placement: string;
+    state: StatusItemState;
 }) => React.ReactElement | null;
 ```
 
@@ -6747,8 +6747,8 @@ export declare const StatusItemBody: (props: {
 
 ```ts
 export type StatusStripFit = {
-    visible: number;
     compact: boolean;
+    visible: number;
 };
 ```
 
@@ -6756,10 +6756,10 @@ export type StatusStripFit = {
 
 ```ts
 export type StatusStripFitInput = {
+    breadcrumbDepth?: number | undefined;
     containerWidth: null | number;
     count: number;
     max: number;
-    breadcrumbDepth?: number | undefined;
 };
 ```
 
@@ -6860,8 +6860,8 @@ export declare const WorkbenchToolbar: (props: {
     "aria-label": string;
     as?: "div" | "figcaption" | "header";
     density?: "compact" | "default" | "slim";
-    tone?: WorkbenchToolbarTone;
     layout?: WorkbenchToolbarLayout;
+    tone?: WorkbenchToolbarTone;
     wrap?: boolean;
 } & Omit<React.HTMLAttributes<HTMLDivElement>, "aria-label" | "as" | "density" | "layout" | "tone" | "wrap"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
@@ -6870,10 +6870,10 @@ export declare const WorkbenchToolbar: (props: {
 
 ```ts
 export declare const WorkbenchToolbarSection: (props: {
+    "aria-label"?: string;
     align?: "end" | "start";
     spacing?: "compact" | "default";
     wrap?: boolean;
-    "aria-label"?: string;
 } & Omit<React.HTMLAttributes<HTMLDivElement>, "align" | "aria-label" | "spacing" | "wrap"> & React.RefAttributes<HTMLDivElement>) => React.ReactElement | null;
 ```
 
@@ -6889,12 +6889,12 @@ export type AgentWait = z.infer<typeof agentWaitSchema>;
 
 ```ts
 export declare const agentWaitSchema: z.ZodObject<{
+    reason: z.ZodOptional<z.ZodString>;
     since: z.ZodString;
     status: z.ZodEnum<{
         thinking: "thinking";
         unreachable: "unreachable";
     }>;
-    reason: z.ZodOptional<z.ZodString>;
 }, z.core.$strip>;
 ```
 
@@ -6942,8 +6942,8 @@ export type MiniAppManifestInput = z.input<typeof miniAppManifestSchema>;
 export declare const manifestAuthorSchema: z.ZodUnion<readonly [
     z.ZodString,
     z.ZodObject<{
-        name: z.ZodOptional<z.ZodString>;
         email: z.ZodOptional<z.ZodString>;
+        name: z.ZodOptional<z.ZodString>;
         url: z.ZodOptional<z.ZodString>;
     }, z.core.$strip>
 ]>;
@@ -6953,12 +6953,12 @@ export declare const manifestAuthorSchema: z.ZodUnion<readonly [
 
 ```ts
 export declare const miniAppCommandSchema: z.ZodObject<{
-    description: z.ZodDefault<z.ZodString>;
-    prompt: z.ZodString;
+    activateTools: z.ZodOptional<z.ZodArray<z.ZodString>>;
     args: z.ZodOptional<z.ZodArray<z.ZodUnknown>>;
     argumentHint: z.ZodOptional<z.ZodString>;
+    description: z.ZodDefault<z.ZodString>;
     featured: z.ZodOptional<z.ZodBoolean>;
-    activateTools: z.ZodOptional<z.ZodArray<z.ZodString>>;
+    prompt: z.ZodString;
 }, z.core.$strict>;
 ```
 
@@ -6967,7 +6967,18 @@ export declare const miniAppCommandSchema: z.ZodObject<{
 ```ts
 export declare const miniAppManifestSchema: z.ZodObject<{
     apiVersion: z.ZodOptional<z.ZodNumber>;
-    private: z.ZodOptional<z.ZodBoolean>;
+    author: z.ZodOptional<z.ZodUnion<readonly [
+        z.ZodString,
+        z.ZodObject<{
+            email: z.ZodOptional<z.ZodString>;
+            name: z.ZodOptional<z.ZodString>;
+            url: z.ZodOptional<z.ZodString>;
+        }, z.core.$strip>
+    ]>>;
+    backend: z.ZodOptional<z.ZodUnion<readonly [
+        z.ZodString,
+        z.ZodArray<z.ZodString>
+    ]>>;
     category: z.ZodOptional<z.ZodEnum<{
         content: "content";
         data: "data";
@@ -6975,8 +6986,26 @@ export declare const miniAppManifestSchema: z.ZodObject<{
         games: "games";
         utilities: "utilities";
     }>>;
-    surfaces: z.ZodOptional<z.ZodArray<z.ZodString>>;
+    commands: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+        activateTools: z.ZodOptional<z.ZodArray<z.ZodString>>;
+        args: z.ZodOptional<z.ZodArray<z.ZodUnknown>>;
+        argumentHint: z.ZodOptional<z.ZodString>;
+        description: z.ZodDefault<z.ZodString>;
+        featured: z.ZodOptional<z.ZodBoolean>;
+        prompt: z.ZodString;
+    }, z.core.$strict>>>;
     config: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+        default: z.ZodOptional<z.ZodUnion<readonly [
+            z.ZodString,
+            z.ZodNumber,
+            z.ZodBoolean
+        ]>>;
+        description: z.ZodDefault<z.ZodString>;
+        max: z.ZodOptional<z.ZodNumber>;
+        min: z.ZodOptional<z.ZodNumber>;
+        required: z.ZodDefault<z.ZodBoolean>;
+        secret: z.ZodDefault<z.ZodBoolean>;
+        title: z.ZodOptional<z.ZodString>;
         type: z.ZodDefault<z.ZodEnum<{
             boolean: "boolean";
             directory: "directory";
@@ -6984,73 +7013,44 @@ export declare const miniAppManifestSchema: z.ZodObject<{
             number: "number";
             string: "string";
         }>>;
-        description: z.ZodDefault<z.ZodString>;
-        required: z.ZodDefault<z.ZodBoolean>;
-        secret: z.ZodDefault<z.ZodBoolean>;
-        default: z.ZodOptional<z.ZodUnion<readonly [
-            z.ZodString,
-            z.ZodNumber,
-            z.ZodBoolean
-        ]>>;
-        title: z.ZodOptional<z.ZodString>;
-        min: z.ZodOptional<z.ZodNumber>;
-        max: z.ZodOptional<z.ZodNumber>;
     }, z.core.$strip>>>;
+    description: z.ZodString;
+    displayName: z.ZodOptional<z.ZodString>;
     fileAssociations: z.ZodOptional<z.ZodArray<z.ZodObject<{
-        ext: z.ZodArray<z.ZodPipe<z.ZodString, z.ZodTransform<string, string>>>;
-        name: z.ZodString;
         description: z.ZodOptional<z.ZodString>;
+        ext: z.ZodArray<z.ZodPipe<z.ZodString, z.ZodTransform<string, string>>>;
         mimeType: z.ZodOptional<z.ZodString>;
-        role: z.ZodOptional<z.ZodEnum<{
-            Editor: "Editor";
-            None: "None";
-            Shell: "Shell";
-            Viewer: "Viewer";
-        }>>;
+        name: z.ZodString;
         rank: z.ZodOptional<z.ZodEnum<{
             Alternate: "Alternate";
             Default: "Default";
             None: "None";
             Owner: "Owner";
         }>>;
+        role: z.ZodOptional<z.ZodEnum<{
+            Editor: "Editor";
+            None: "None";
+            Shell: "Shell";
+            Viewer: "Viewer";
+        }>>;
     }, z.core.$strip>>>;
-    name: z.ZodString;
-    version: z.ZodString;
-    description: z.ZodString;
-    displayName: z.ZodOptional<z.ZodString>;
-    author: z.ZodOptional<z.ZodUnion<readonly [
-        z.ZodString,
-        z.ZodObject<{
-            name: z.ZodOptional<z.ZodString>;
-            email: z.ZodOptional<z.ZodString>;
-            url: z.ZodOptional<z.ZodString>;
-        }, z.core.$strip>
-    ]>>;
-    homepage: z.ZodOptional<z.ZodString>;
-    repository: z.ZodOptional<z.ZodString>;
-    license: z.ZodOptional<z.ZodString>;
-    keywords: z.ZodOptional<z.ZodArray<z.ZodString>>;
-    icon: z.ZodOptional<z.ZodString>;
-    screenshots: z.ZodOptional<z.ZodArray<z.ZodObject<{
-        path: z.ZodString;
-        caption: z.ZodOptional<z.ZodString>;
-    }, z.core.$strict>>>;
-    tags: z.ZodOptional<z.ZodArray<z.ZodString>>;
-    backend: z.ZodOptional<z.ZodUnion<readonly [
-        z.ZodString,
-        z.ZodArray<z.ZodString>
-    ]>>;
     guide: z.ZodDefault<z.ZodString>;
-    commands: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
-        description: z.ZodDefault<z.ZodString>;
-        prompt: z.ZodString;
-        args: z.ZodOptional<z.ZodArray<z.ZodUnknown>>;
-        argumentHint: z.ZodOptional<z.ZodString>;
-        featured: z.ZodOptional<z.ZodBoolean>;
-        activateTools: z.ZodOptional<z.ZodArray<z.ZodString>>;
-    }, z.core.$strict>>>;
-    views: z.ZodOptional<z.ZodArray<z.ZodUnknown>>;
+    homepage: z.ZodOptional<z.ZodString>;
+    icon: z.ZodOptional<z.ZodString>;
+    keywords: z.ZodOptional<z.ZodArray<z.ZodString>>;
+    license: z.ZodOptional<z.ZodString>;
+    name: z.ZodString;
+    private: z.ZodOptional<z.ZodBoolean>;
     promptSections: z.ZodOptional<z.ZodArray<z.ZodUnknown>>;
+    repository: z.ZodOptional<z.ZodString>;
+    screenshots: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        caption: z.ZodOptional<z.ZodString>;
+        path: z.ZodString;
+    }, z.core.$strict>>>;
+    surfaces: z.ZodOptional<z.ZodArray<z.ZodString>>;
+    tags: z.ZodOptional<z.ZodArray<z.ZodString>>;
+    version: z.ZodString;
+    views: z.ZodOptional<z.ZodArray<z.ZodUnknown>>;
 }, z.core.$strict>;
 ```
 
@@ -7058,8 +7058,8 @@ export declare const miniAppManifestSchema: z.ZodObject<{
 
 ```ts
 export declare const miniAppScreenshotSchema: z.ZodObject<{
-    path: z.ZodString;
     caption: z.ZodOptional<z.ZodString>;
+    path: z.ZodString;
 }, z.core.$strict>;
 ```
 
@@ -7197,8 +7197,8 @@ export interface AssistantMessageEvent {
 
 ```ts
 export type AssistantMessageHookResult = void | {
-    content?: string;
     bindings?: MessageBinding[];
+    content?: string;
 };
 ```
 
@@ -7219,29 +7219,29 @@ export interface AutomaticContextProvider {
 ```ts
 export interface AutomaticContextRequest extends ResolveContext {
     document?: {
-        uri: string;
+        content: string;
         languageId: string;
         revision: string;
-        content: string;
+        uri: string;
     };
     editHistory?: {
         before?: string[];
+        endLine?: number;
         lines: string[];
         startLine?: number;
-        endLine?: number;
     }[];
     cursor?: {
-        line: number;
         character: number;
+        line: number;
     };
     selection?: {
-        start: {
-            line: number;
-            character: number;
-        };
         end: {
-            line: number;
             character: number;
+            line: number;
+        };
+        start: {
+            character: number;
+            line: number;
         };
     };
 }
@@ -7259,8 +7259,8 @@ export declare const BINARY_SNIFF_LENGTH = 8000;
 export interface BackendSubsystem {
     id: string;
     routeMount?: {
-        path: string;
         app: Hono<MiniAppRouteContext, Schema, string>;
+        path: string;
     };
     uiActions?: Record<string, MiniAppUiActionHandler>;
     resourceProvider?: ResourceRefProvider;
@@ -7278,11 +7278,11 @@ export interface BackendSubsystem {
 ```ts
 export interface BodySchema<T> {
     safeParse(value: unknown): {
-        success: false;
-        error: ZodIssueBearer;
-    } | {
-        success: true;
         data: T;
+        success: true;
+    } | {
+        error: ZodIssueBearer;
+        success: false;
     };
 }
 ```
@@ -7386,10 +7386,10 @@ export interface ChannelInboundResult {
     reply: string;
     bindings?: MessageAttachment[];
     usage?: {
+        cacheWriteTokens?: number;
+        cachedInputTokens?: number;
         inputTokens?: number;
         outputTokens?: number;
-        cachedInputTokens?: number;
-        cacheWriteTokens?: number;
         totalCost?: number;
     };
 }
@@ -7409,19 +7409,19 @@ export interface ChannelModelOption {
 
 ```ts
 export type ChannelRunEvent = {
-    type: 'hitl';
-    requestId: string;
+    activity?: string;
+    text: string;
+    type: 'progress';
+} | {
     kind: string;
+    payload: unknown;
+    requestId: string;
     title?: string;
     toolName: string;
-    payload: unknown;
+    type: 'hitl';
 } | {
-    type: 'progress';
-    text: string;
-    activity?: string;
-} | {
-    type: 'status';
     status: 'completed' | 'failed' | 'running';
+    type: 'status';
 };
 ```
 
@@ -7448,13 +7448,13 @@ export interface ChannelWorkspaceApi {
         name: string;
     }>>;
     listSessions(opts?: {
-        projectId?: null | string;
         limit?: number;
+        projectId?: null | string;
     }): Promise<ChannelSessionSummary[]>;
     getSession(sessionId: string): Promise<ChannelSessionSummary | null>;
     createSession(input: {
-        title?: string;
         projectId?: null | string;
+        title?: string;
     }): Promise<ChannelSessionSummary>;
     stopSession(sessionId: string): Promise<boolean>;
     listModels(): Promise<ChannelModelOption[]>;
@@ -7466,12 +7466,12 @@ export interface ChannelWorkspaceApi {
     setSessionReasoning(sessionId: string, effort: ReasoningEffort): Promise<void>;
     getSessionUsage(sessionId: string): Promise<string>;
     respondHitl(requestId: string, answers: unknown): Promise<{
-        ok: boolean;
         error?: string;
+        ok: boolean;
     }>;
     dismissHitl(requestId: string): Promise<{
-        ok: boolean;
         error?: string;
+        ok: boolean;
     }>;
 }
 ```
@@ -7632,9 +7632,9 @@ export type ConfirmToolResponse = HumanInLoopResponseBase<'confirm', ConfirmTool
 export interface ConfirmToolResponsePayload {
     answers: {
         confirmed: boolean;
-        scope?: 'always' | 'once' | 'session';
         grant?: string;
         message?: string;
+        scope?: 'always' | 'once' | 'session';
     };
 }
 ```
@@ -7662,22 +7662,22 @@ export interface ContextContribution {
         path: string;
     };
     range?: {
-        start: {
-            line: number;
-            character: number;
-        };
         end: {
-            line: number;
             character: number;
+            line: number;
+        };
+        start: {
+            character: number;
+            line: number;
         };
     };
     revision?: string;
     priority: number;
     sensitivity: ContextSensitivity;
     relevanceHints?: {
-        symbols?: string[];
-        recency?: number;
         explicit?: boolean;
+        recency?: number;
+        symbols?: string[];
     };
     ttlMs?: number;
 }
@@ -7723,15 +7723,15 @@ export interface ContextReference {
     kind: string;
     uri?: string;
     presentation: {
-        token?: string;
         label: string;
+        token?: string;
     };
     freshness: 'resolve-at-send' | 'snapshot';
     scope: {
-        userId: string;
+        isolationId?: string;
         projectId?: string;
         sessionId?: string;
-        isolationId?: string;
+        userId: string;
     };
     attributes?: ContextReferenceAttributes;
 }
@@ -7773,9 +7773,9 @@ export type ContextSensitivity = 'forbidden' | 'project' | 'public' | 'sensitive
 export type CoreDeletion = {
     entity: 'agent';
     ref: {
+        agentId?: string;
         id: string;
         scope: string;
-        agentId?: string;
     };
 } | {
     entity: 'chat';
@@ -7793,8 +7793,8 @@ export type CoreDeletion = {
     entity: 'provider.connection';
     ref: {
         id: string;
-        userId: string;
         providerId: string;
+        userId: string;
     };
 };
 ```
@@ -7852,8 +7852,8 @@ export interface DecisionBoolQuestion {
     type: 'bool';
     instructions: string;
     criteria: {
-        true: string;
         false: string;
+        true: string;
     };
 }
 ```
@@ -7910,14 +7910,14 @@ export interface DecisionOptions {
 
 ```ts
 export type DecisionOutcome = {
-    status: 'answered';
+    answers: Record<string, DecisionAnswer>;
     model: string;
     ms: number;
-    answers: Record<string, DecisionAnswer>;
+    status: 'answered';
 } | {
-    status: 'cancelled' | 'deadline' | 'failed' | 'unavailable';
     model?: string;
     ms: number;
+    status: 'cancelled' | 'deadline' | 'failed' | 'unavailable';
 };
 ```
 
@@ -7931,12 +7931,12 @@ export type DecisionQuestion = DecisionBoolQuestion | DecisionChoiceQuestion;
 
 ```ts
 export type DecisionResult<K extends string> = {
-    pick: K;
     by: 'fallback';
+    pick: K;
     reason: DecisionMissReason;
 } | {
-    pick: K;
     by: 'model';
+    pick: K;
 };
 ```
 
@@ -7961,8 +7961,8 @@ export interface DocExtractMetadata {
 export interface DocExtractParams {
     path: string;
     pageRange?: {
-        start: number;
         end?: number;
+        start: number;
     };
     sheet?: number | string;
     offset?: number;
@@ -8208,22 +8208,22 @@ export interface ManifestOAuthSpec {
     callbackMode?: 'app-redirect' | 'local-server';
     localServer?: {
         host: string;
-        port: number;
         path: string;
+        port: number;
     };
     authorize: {
-        url: string;
         clientId?: string;
-        scopes?: string[];
-        params?: Record<string, string>;
         paramNames?: Partial<Record<'challenge' | 'challengeMethod' | 'clientId' | 'redirectUri' | 'responseType' | 'scope' | 'state', string>>;
+        params?: Record<string, string>;
+        scopes?: string[];
+        url: string;
     };
     token: ManifestOAuthTokenSpec;
     refresh?: {
-        url?: string;
         format?: 'form' | 'json';
         headers?: Record<string, string>;
         params?: Record<string, string>;
+        url?: string;
     };
 }
 ```
@@ -8274,12 +8274,12 @@ export interface MiniApp {
         id: string;
     }, S extends z.ZodRawShape>(spec: CollectionSpec<T, S>): Collection<T, S>;
     registration(parts?: {
-        tools?: AgentTool[];
-        routes?: Hono<MiniAppRouteContext>;
         backend?: Omit<BackendSubsystem, 'id' | 'routeMount'>;
+        routes?: Hono<MiniAppRouteContext>;
+        tools?: AgentTool[];
     }): MiniAppRegistration & {
-        tools: AgentTool[];
         backend: BackendSubsystem[];
+        tools: AgentTool[];
     };
 }
 ```
@@ -8290,8 +8290,8 @@ export interface MiniApp {
 export interface MiniAppAgentDirectory {
     list(userId: string, sessionId: string): Promise<readonly MiniAppAgentSummary[]>;
     notifyHuman?(userId: string, sessionId: string, notice: {
-        key: string;
         from?: string;
+        key: string;
         text: string;
     }): Promise<void>;
 }
@@ -8359,8 +8359,8 @@ export interface MiniAppContext {
     sessionStorage?: {
         resolveDataDir(userId: string, sessionId: string): Promise<string>;
         listDataDirs?(): Promise<readonly {
-            sessionId: string;
             dir: string;
+            sessionId: string;
         }[]>;
     };
     agents?: MiniAppAgentDirectory;
@@ -8377,8 +8377,8 @@ export interface MiniAppHelpers {
     configBoolean(value: unknown, fallback: boolean): boolean;
     configString(value: unknown, fallback?: string): string;
     errorResult(content: string, opts?: {
-        userMessage?: string;
         retryable?: boolean;
+        userMessage?: string;
     }): AgentToolResult;
     withTimeoutSignal(parent: AbortSignal | undefined, timeoutMs: number): {
         signal: AbortSignal;
@@ -8538,8 +8538,8 @@ export interface MiniAppRuntimeInfo {
 export interface MiniAppScreenSnapshot {
     readonly text: string;
     readonly cursor: {
-        readonly row: number;
         readonly col: number;
+        readonly row: number;
     };
     readonly cols: number;
     readonly rows: number;
@@ -8617,16 +8617,16 @@ export interface MiniAppUiDestination {
 
 ```ts
 export type MiniAppWakeOutcome = {
-    status: 'delivered';
-} | {
+    reason: string;
     status: 'failed';
-    reason: string;
 } | {
+    reason: string;
     status: 'missed';
-    reason: string;
 } | {
-    status: 'refused';
     reason: string;
+    status: 'refused';
+} | {
+    status: 'delivered';
 };
 ```
 
@@ -8744,8 +8744,8 @@ export interface PostToolCallEvent {
 
 ```ts
 export type PostToolCallHookResult = void | {
-    replaceContent?: string;
     appendContent?: string;
+    replaceContent?: string;
 };
 ```
 
@@ -8861,9 +8861,9 @@ export interface ResolveContext {
     sessionId?: string;
     isolationId?: string;
     workspace?: {
-        rootPath: string;
-        isolationId?: string;
         excludedRelativePaths?: string[];
+        isolationId?: string;
+        rootPath: string;
     };
     maxBytes: number;
     maxTokens?: number;
@@ -8907,9 +8907,9 @@ export interface ResourceContextExpander {
     expand(userId: string, uri: string, scope?: {
         sessionId?: string;
     }): Promise<{
-        ok: boolean;
         content?: string;
         language?: string;
+        ok: boolean;
     }>;
 }
 ```
@@ -9083,8 +9083,8 @@ export interface SafeFetchOptions extends RequestInit {
 
 ```ts
 export type SafeFetchResult = {
-    ok: false;
     error: string;
+    ok: false;
 } | {
     ok: true;
     response: Response;
@@ -9248,9 +9248,9 @@ export interface SemanticIndexHost extends Omit<SemanticVectors, 'ready'> {
 export interface SemanticIndexStatus {
     ready: boolean;
     model: null | {
+        dimensions: number;
         id: string;
         label: string;
-        dimensions: number;
     };
 }
 ```
@@ -9285,8 +9285,8 @@ export interface SemanticQuery {
 export interface SemanticRanking {
     model: string;
     ranked: {
-        key: string;
         cosine: number;
+        key: string;
     }[];
 }
 ```
@@ -9348,15 +9348,15 @@ export type SemanticTask = 'classification' | 'code' | 'question' | 'search' | '
 ```ts
 export interface SemanticVectors {
     ready(): null | {
-        model: string;
         dimensions: number;
+        model: string;
     };
     embed(texts: readonly string[], options: {
         role: 'document' | 'query';
         task?: SemanticTask;
     }): Promise<null | {
-        model: string;
         dimensions: number;
+        model: string;
         vectors: Float32Array[];
     }>;
     rank(query: string, candidates: readonly SemanticCandidate[], options?: {
@@ -9408,8 +9408,8 @@ export interface TerminalRead {
     list(input: {
         sessionId: null | string;
     }): {
-        terminalId: string;
         command?: string;
+        terminalId: string;
     }[];
     watch?(input: {
         sessionId: null | string;
@@ -9423,26 +9423,26 @@ export interface TerminalRead {
 ```ts
 export interface TerminalReadHost {
     screen(input: {
-        userId: string;
         sessionId: null | string;
         terminalId: string;
+        userId: string;
     }): Promise<MiniAppScreenSnapshot | null>;
     finalScreen(input: {
-        userId: string;
         sessionId: null | string;
         terminalId: string;
+        userId: string;
     }): Promise<MiniAppScreenSnapshot | null>;
     list(input: {
-        userId: string;
         sessionId: null | string;
+        userId: string;
     }): {
-        terminalId: string;
         command?: string;
+        terminalId: string;
     }[];
     watch?(input: {
-        userId: string;
         sessionId: null | string;
         terminalId: string;
+        userId: string;
     }, onEvent: (event: 'exit' | 'output') => void): (() => void) | null;
 }
 ```
@@ -9465,9 +9465,9 @@ export type ToolBackedItem = CommandItem | FileChangeItem | McpCallItem | ToolCa
 
 ```ts
 export type ToolCommandReplyOutcome = {
-    ok: false;
     error: string;
     noReply?: boolean;
+    ok: false;
 } | {
     ok: true;
     result: unknown;
@@ -9702,16 +9702,16 @@ export interface WsFrameContribution<Params = Record<string, unknown>, Handle = 
 
 ```ts
 export type WsFrameRegistration = {
-    status: 'registered';
-} | {
-    status: 'rejected';
+    command: string;
     reason: 'duplicate_subscribe' | 'duplicate_unsubscribe';
-    command: string;
-} | {
     status: 'rejected';
-    reason: 'reserved_tag';
+} | {
     command: string;
+    reason: 'reserved_tag';
+    status: 'rejected';
     tag: string;
+} | {
+    status: 'registered';
 };
 ```
 
@@ -9766,9 +9766,9 @@ export interface ZodIssueSummary {
 
 ```ts
 export declare function askAgent(ctx: Pick<MiniAppContext, 'host'>, request: JudgmentChat & {
+    key?: string;
     message: string;
     tools?: readonly string[];
-    key?: string;
 }): Promise<MiniAppWakeOutcome>;
 ```
 
@@ -9776,9 +9776,9 @@ export declare function askAgent(ctx: Pick<MiniAppContext, 'host'>, request: Jud
 
 ```ts
 export declare function askAgentForTurn(wake: Wake | undefined, chat: ChatRef, turn: {
+    key: string;
     message: string;
     tools: string[];
-    key: string;
 }, now: string): Promise<AgentWait>;
 ```
 
@@ -9787,8 +9787,8 @@ export declare function askAgentForTurn(wake: Wake | undefined, chat: ChatRef, t
 ```ts
 export declare function askDecisionForTurn(decisions: DecisionHost | undefined, chat: ChatRef, turn: {
     ask: DecisionAsk;
-    question: string;
     purpose: string;
+    question: string;
 }, now: string): Promise<{
     answer: DecisionChoiceAnswer;
 } | {
@@ -9843,15 +9843,15 @@ export declare function chatAnswer<G, V = G>(options: {
         message: string;
     };
     refused: {
-        error: abstract new (...args: never[]) => Error;
         code: string;
+        error: abstract new (...args: never[]) => Error;
     };
     view?: (game: G) => V;
 }): (c: Context<MiniAppRouteContext>, action: (chat: ChatRef) => Promise<G>) => Promise<(Response & import("hono").TypedResponse<never, import("hono/utils/http-status").ContentfulStatusCode, "json">) | (Response & import("hono").TypedResponse<{
     error: {
         code: string;
-        message: string;
         detail?: string | undefined;
+        message: string;
     };
 }, 400 | 401 | 403 | 404 | 409 | 422 | 500 | 503, "json">)>;
 ```
@@ -9940,16 +9940,16 @@ export declare function createStaticContextProvider(spec: StaticContextProviderS
 
 ```ts
 export declare function createStoreChangeFeed(options: {
+    acceptPath?: (userId: string, path: string) => boolean;
     miniApp: string;
+    onExternalChange?: (userId: string) => void;
     resolveDir: (userId: string, sessionId: null | string) => Promise<null | string>;
     subscribeWrites: (listener: (path: string) => void) => () => void;
     watchPath?: MiniAppPathWatch;
-    onExternalChange?: (userId: string) => void;
-    acceptPath?: (userId: string, path: string) => boolean;
     windowMs?: number;
 }): {
-    wsFrames: WsFrameContribution[];
     onShutdown: () => void;
+    wsFrames: WsFrameContribution[];
 };
 ```
 
@@ -9957,17 +9957,17 @@ export declare function createStoreChangeFeed(options: {
 
 ```ts
 export declare function createTurnTable<G extends TurnGameState, A>(options: TurnTableOptions<G, A>): {
-    settled: () => Promise<void>;
-    read: (chat: ChatRef) => Promise<G>;
-    update: (chat: ChatRef, change: (game: G, at: string) => G) => Promise<G>;
+    agentTurn: (chat: ChatRef, play: (game: G, at: string) => G) => Promise<{
+        answered: boolean;
+        game: G;
+    }>;
+    agentUpdate: (chat: ChatRef, change: (game: G, at: string) => G) => Promise<G>;
     personTurn: (chat: ChatRef, change: (game: G, at: string) => G) => Promise<G>;
+    read: (chat: ChatRef) => Promise<G>;
     remind: (chat: ChatRef) => Promise<G>;
     setOpponent: (chat: ChatRef, opponent: Opponent) => Promise<G>;
-    agentUpdate: (chat: ChatRef, change: (game: G, at: string) => G) => Promise<G>;
-    agentTurn: (chat: ChatRef, play: (game: G, at: string) => G) => Promise<{
-        game: G;
-        answered: boolean;
-    }>;
+    settled: () => Promise<void>;
+    update: (chat: ChatRef, change: (game: G, at: string) => G) => Promise<G>;
 };
 ```
 
@@ -9995,13 +9995,13 @@ export declare function createWsFrameRegistry(): WsFrameRegistry;
 
 ```ts
 export declare function decide<K extends string>(ctx: Pick<MiniAppContext, 'host'>, request: JudgmentChat & {
-    purpose: string;
-    state: Record<string, unknown>;
-    question: string;
-    options: Record<K, string>;
-    fallback: NoInfer<K>;
     confidence?: number;
     deadlineMs?: number;
+    fallback: NoInfer<K>;
+    options: Record<K, string>;
+    purpose: string;
+    question: string;
+    state: Record<string, unknown>;
 }): Promise<DecisionResult<K>>;
 ```
 
@@ -10026,8 +10026,8 @@ export declare function decodeResourceSegment(segment: string): string;
 export declare function defaultErrorHandler(error: unknown, context: Context): Response & import("hono").TypedResponse<{
     error: {
         code: string;
-        message: string;
         detail?: string | undefined;
+        message: string;
     };
 }, 400 | 401 | 403 | 404 | 409 | 422 | 500 | 503, "json">;
 ```
@@ -10193,8 +10193,8 @@ export declare function jsonBody<T>(schema: BodySchema<T>): import("hono").Middl
 }, (T extends Promise<infer PR_1> ? PR_1 extends import("hono").TypedResponse<infer T_1, infer S extends import("hono/utils/http-status").StatusCode, infer F extends string> ? import("hono").TypedResponse<T_1, S, F> : PR_1 extends Response ? PR_1 : PR_1 extends undefined ? never : never : T extends import("hono").TypedResponse<infer T_2, infer S_1 extends import("hono/utils/http-status").StatusCode, infer F_1 extends string> ? import("hono").TypedResponse<T_2, S_1, F_1> : T extends Response ? T : T extends undefined ? never : never) | import("hono").TypedResponse<{
     error: {
         code: string;
-        message: string;
         detail?: string | undefined;
+        message: string;
     };
 }, 400 | 401 | 403 | 404 | 409 | 422 | 500 | 503, "json">>;
 ```
@@ -10205,8 +10205,8 @@ export declare function jsonBody<T>(schema: BodySchema<T>): import("hono").Middl
 export declare function jsonError(context: Context, status: JsonErrorStatus, code: string, message: string, detail?: string): Response & import("hono").TypedResponse<{
     error: {
         code: string;
-        message: string;
         detail?: string | undefined;
+        message: string;
     };
 }, 400 | 401 | 403 | 404 | 409 | 422 | 500 | 503, "json">;
 ```
@@ -10285,8 +10285,8 @@ export declare function openCollection<T extends {
 export declare function openJsonStore<T>(options: {
     dir: string;
     file: string;
-    schema: z.ZodType<T>;
     initial: T;
+    schema: z.ZodType<T>;
 }): JsonStore<T>;
 ```
 
@@ -10330,8 +10330,8 @@ export declare function providerSegments(provider: string, uri: string): null | 
 
 ```ts
 export declare function rankByMeaning<T>(ctx: Pick<MiniAppContext, 'host'>, query: string, items: readonly T[], text: (item: T) => string): Promise<{
-    items: T[];
     by: 'fallback' | 'model';
+    items: T[];
 }>;
 ```
 
@@ -10348,8 +10348,8 @@ export declare function readBodyCapped(res: {
     body: ReadableStream<Uint8Array> | null;
     text: () => Promise<string>;
 }, maxBytes: number, charset?: string): Promise<{
-    text: string;
     bytes: number;
+    text: string;
     truncated: boolean;
 }>;
 ```
@@ -10538,8 +10538,8 @@ export declare const TEST_USER = "test-user";
 export declare function callTool(registration: MiniAppRegistration, name: string, input: unknown, options?: {
     sessionId?: string;
 }): Promise<{
-    text: string;
     isError: boolean;
+    text: string;
 }>;
 ```
 
@@ -10557,8 +10557,8 @@ export declare function fakeSemantic(): SemanticIndexHost & {
 export declare function requestRoute(registration: MiniAppRegistration, method: string, path: string, body?: unknown, options?: {
     sessionId?: string;
 }): Promise<{
-    status: number;
     json: unknown;
+    status: number;
 }>;
 ```
 
@@ -10566,9 +10566,9 @@ export declare function requestRoute(registration: MiniAppRegistration, method: 
 
 ```ts
 export declare function testMiniAppContext(options: {
-    name: string;
     config?: MiniAppContext['config'];
     host?: Partial<NonNullable<MiniAppContext['host']>>;
+    name: string;
 }): Promise<MiniAppContext & AsyncDisposable>;
 ```
 
@@ -10643,20 +10643,20 @@ export declare const documentFontIds: Array<keyof typeof documentFonts>;
 
 ```ts
 export declare const documentFontSchema: z.ZodEnum<{
-    arimo: "arimo";
-    carlito: "carlito";
     "courier-prime": "courier-prime";
     "eb-garamond": "eb-garamond";
     "geist-mono": "geist-mono";
     "ibm-plex-mono": "ibm-plex-mono";
-    inter: "inter";
     "jetbrains-mono": "jetbrains-mono";
-    lora: "lora";
-    merriweather: "merriweather";
     "open-sans": "open-sans";
-    roboto: "roboto";
     "source-sans-3": "source-sans-3";
     "source-serif-4": "source-serif-4";
+    arimo: "arimo";
+    carlito: "carlito";
+    inter: "inter";
+    lora: "lora";
+    merriweather: "merriweather";
+    roboto: "roboto";
     tinos: "tinos";
 }>;
 ```
@@ -10665,21 +10665,21 @@ export declare const documentFontSchema: z.ZodEnum<{
 
 ```ts
 export declare const documentFonts: {
-    readonly inter: 'Inter';
-    readonly carlito: 'Carlito';
-    readonly arimo: 'Arimo';
-    readonly roboto: 'Roboto';
+    readonly 'courier-prime': 'Courier Prime';
+    readonly 'eb-garamond': 'EB Garamond';
+    readonly 'geist-mono': 'Geist Mono';
+    readonly 'ibm-plex-mono': 'IBM Plex Mono';
+    readonly 'jetbrains-mono': 'JetBrains Mono';
     readonly 'open-sans': 'Open Sans';
     readonly 'source-sans-3': 'Source Sans 3';
-    readonly lora: 'Lora';
-    readonly tinos: 'Tinos';
-    readonly 'eb-garamond': 'EB Garamond';
     readonly 'source-serif-4': 'Source Serif 4';
+    readonly arimo: 'Arimo';
+    readonly carlito: 'Carlito';
+    readonly inter: 'Inter';
+    readonly lora: 'Lora';
     readonly merriweather: 'Merriweather';
-    readonly 'geist-mono': 'Geist Mono';
-    readonly 'jetbrains-mono': 'JetBrains Mono';
-    readonly 'courier-prime': 'Courier Prime';
-    readonly 'ibm-plex-mono': 'IBM Plex Mono';
+    readonly roboto: 'Roboto';
+    readonly tinos: 'Tinos';
 };
 ```
 
@@ -10687,292 +10687,292 @@ export declare const documentFonts: {
 
 ```ts
 export declare const documentLayoutSchema: z.ZodObject<{
-    title: z.ZodString;
-    margin: z.ZodDefault<z.ZodNumber>;
     blocks: z.ZodArray<z.ZodDiscriminatedUnion<[
         z.ZodObject<{
-            kind: z.ZodLiteral<"paragraph">;
-            runs: z.ZodArray<z.ZodObject<{
-                text: z.ZodString;
-                bold: z.ZodOptional<z.ZodBoolean>;
-                italic: z.ZodOptional<z.ZodBoolean>;
-                href: z.ZodOptional<z.ZodString>;
-                font: z.ZodOptional<z.ZodEnum<{
-                    arimo: "arimo";
-                    carlito: "carlito";
-                    "courier-prime": "courier-prime";
-                    "eb-garamond": "eb-garamond";
-                    "geist-mono": "geist-mono";
-                    "ibm-plex-mono": "ibm-plex-mono";
-                    inter: "inter";
-                    "jetbrains-mono": "jetbrains-mono";
-                    lora: "lora";
-                    merriweather: "merriweather";
-                    "open-sans": "open-sans";
-                    roboto: "roboto";
-                    "source-sans-3": "source-sans-3";
-                    "source-serif-4": "source-serif-4";
-                    tinos: "tinos";
-                }>>;
-            }, z.core.$strict>>;
-            size: z.ZodNumber;
-            font: z.ZodEnum<{
-                arimo: "arimo";
-                carlito: "carlito";
-                "courier-prime": "courier-prime";
-                "eb-garamond": "eb-garamond";
-                "geist-mono": "geist-mono";
-                "ibm-plex-mono": "ibm-plex-mono";
-                inter: "inter";
-                "jetbrains-mono": "jetbrains-mono";
-                lora: "lora";
-                merriweather: "merriweather";
-                "open-sans": "open-sans";
-                roboto: "roboto";
-                "source-sans-3": "source-sans-3";
-                "source-serif-4": "source-serif-4";
-                tinos: "tinos";
-            }>;
+            after: z.ZodDefault<z.ZodNumber>;
             align: z.ZodDefault<z.ZodEnum<{
                 center: "center";
                 left: "left";
                 right: "right";
             }>>;
             before: z.ZodDefault<z.ZodNumber>;
-            after: z.ZodDefault<z.ZodNumber>;
-            indent: z.ZodDefault<z.ZodNumber>;
-            lineHeight: z.ZodDefault<z.ZodNumber>;
-            tracking: z.ZodDefault<z.ZodNumber>;
-            muted: z.ZodOptional<z.ZodBoolean>;
-            keepWithNext: z.ZodOptional<z.ZodBoolean>;
+            font: z.ZodEnum<{
+                "courier-prime": "courier-prime";
+                "eb-garamond": "eb-garamond";
+                "geist-mono": "geist-mono";
+                "ibm-plex-mono": "ibm-plex-mono";
+                "jetbrains-mono": "jetbrains-mono";
+                "open-sans": "open-sans";
+                "source-sans-3": "source-sans-3";
+                "source-serif-4": "source-serif-4";
+                arimo: "arimo";
+                carlito: "carlito";
+                inter: "inter";
+                lora: "lora";
+                merriweather: "merriweather";
+                roboto: "roboto";
+                tinos: "tinos";
+            }>;
             icon: z.ZodOptional<z.ZodEnum<{
                 email: "email";
                 link: "link";
                 location: "location";
                 phone: "phone";
             }>>;
+            indent: z.ZodDefault<z.ZodNumber>;
+            keepWithNext: z.ZodOptional<z.ZodBoolean>;
+            kind: z.ZodLiteral<"paragraph">;
+            lineHeight: z.ZodDefault<z.ZodNumber>;
+            muted: z.ZodOptional<z.ZodBoolean>;
+            runs: z.ZodArray<z.ZodObject<{
+                bold: z.ZodOptional<z.ZodBoolean>;
+                font: z.ZodOptional<z.ZodEnum<{
+                    "courier-prime": "courier-prime";
+                    "eb-garamond": "eb-garamond";
+                    "geist-mono": "geist-mono";
+                    "ibm-plex-mono": "ibm-plex-mono";
+                    "jetbrains-mono": "jetbrains-mono";
+                    "open-sans": "open-sans";
+                    "source-sans-3": "source-sans-3";
+                    "source-serif-4": "source-serif-4";
+                    arimo: "arimo";
+                    carlito: "carlito";
+                    inter: "inter";
+                    lora: "lora";
+                    merriweather: "merriweather";
+                    roboto: "roboto";
+                    tinos: "tinos";
+                }>>;
+                href: z.ZodOptional<z.ZodString>;
+                italic: z.ZodOptional<z.ZodBoolean>;
+                text: z.ZodString;
+            }, z.core.$strict>>;
+            size: z.ZodNumber;
+            tracking: z.ZodDefault<z.ZodNumber>;
         }, z.core.$strict>,
         z.ZodObject<{
+            centered: z.ZodBoolean;
             kind: z.ZodLiteral<"header">;
             left: z.ZodArray<z.ZodObject<{
-                kind: z.ZodLiteral<"paragraph">;
-                runs: z.ZodArray<z.ZodObject<{
-                    text: z.ZodString;
-                    bold: z.ZodOptional<z.ZodBoolean>;
-                    italic: z.ZodOptional<z.ZodBoolean>;
-                    href: z.ZodOptional<z.ZodString>;
-                    font: z.ZodOptional<z.ZodEnum<{
-                        arimo: "arimo";
-                        carlito: "carlito";
-                        "courier-prime": "courier-prime";
-                        "eb-garamond": "eb-garamond";
-                        "geist-mono": "geist-mono";
-                        "ibm-plex-mono": "ibm-plex-mono";
-                        inter: "inter";
-                        "jetbrains-mono": "jetbrains-mono";
-                        lora: "lora";
-                        merriweather: "merriweather";
-                        "open-sans": "open-sans";
-                        roboto: "roboto";
-                        "source-sans-3": "source-sans-3";
-                        "source-serif-4": "source-serif-4";
-                        tinos: "tinos";
-                    }>>;
-                }, z.core.$strict>>;
-                size: z.ZodNumber;
-                font: z.ZodEnum<{
-                    arimo: "arimo";
-                    carlito: "carlito";
-                    "courier-prime": "courier-prime";
-                    "eb-garamond": "eb-garamond";
-                    "geist-mono": "geist-mono";
-                    "ibm-plex-mono": "ibm-plex-mono";
-                    inter: "inter";
-                    "jetbrains-mono": "jetbrains-mono";
-                    lora: "lora";
-                    merriweather: "merriweather";
-                    "open-sans": "open-sans";
-                    roboto: "roboto";
-                    "source-sans-3": "source-sans-3";
-                    "source-serif-4": "source-serif-4";
-                    tinos: "tinos";
-                }>;
+                after: z.ZodDefault<z.ZodNumber>;
                 align: z.ZodDefault<z.ZodEnum<{
                     center: "center";
                     left: "left";
                     right: "right";
                 }>>;
                 before: z.ZodDefault<z.ZodNumber>;
-                after: z.ZodDefault<z.ZodNumber>;
-                indent: z.ZodDefault<z.ZodNumber>;
-                lineHeight: z.ZodDefault<z.ZodNumber>;
-                tracking: z.ZodDefault<z.ZodNumber>;
-                muted: z.ZodOptional<z.ZodBoolean>;
-                keepWithNext: z.ZodOptional<z.ZodBoolean>;
-                icon: z.ZodOptional<z.ZodEnum<{
-                    email: "email";
-                    link: "link";
-                    location: "location";
-                    phone: "phone";
-                }>>;
-            }, z.core.$strict>>;
-            right: z.ZodArray<z.ZodObject<{
-                kind: z.ZodLiteral<"paragraph">;
-                runs: z.ZodArray<z.ZodObject<{
-                    text: z.ZodString;
-                    bold: z.ZodOptional<z.ZodBoolean>;
-                    italic: z.ZodOptional<z.ZodBoolean>;
-                    href: z.ZodOptional<z.ZodString>;
-                    font: z.ZodOptional<z.ZodEnum<{
-                        arimo: "arimo";
-                        carlito: "carlito";
-                        "courier-prime": "courier-prime";
-                        "eb-garamond": "eb-garamond";
-                        "geist-mono": "geist-mono";
-                        "ibm-plex-mono": "ibm-plex-mono";
-                        inter: "inter";
-                        "jetbrains-mono": "jetbrains-mono";
-                        lora: "lora";
-                        merriweather: "merriweather";
-                        "open-sans": "open-sans";
-                        roboto: "roboto";
-                        "source-sans-3": "source-sans-3";
-                        "source-serif-4": "source-serif-4";
-                        tinos: "tinos";
-                    }>>;
-                }, z.core.$strict>>;
-                size: z.ZodNumber;
                 font: z.ZodEnum<{
-                    arimo: "arimo";
-                    carlito: "carlito";
                     "courier-prime": "courier-prime";
                     "eb-garamond": "eb-garamond";
                     "geist-mono": "geist-mono";
                     "ibm-plex-mono": "ibm-plex-mono";
-                    inter: "inter";
                     "jetbrains-mono": "jetbrains-mono";
-                    lora: "lora";
-                    merriweather: "merriweather";
                     "open-sans": "open-sans";
-                    roboto: "roboto";
                     "source-sans-3": "source-sans-3";
                     "source-serif-4": "source-serif-4";
+                    arimo: "arimo";
+                    carlito: "carlito";
+                    inter: "inter";
+                    lora: "lora";
+                    merriweather: "merriweather";
+                    roboto: "roboto";
                     tinos: "tinos";
                 }>;
-                align: z.ZodDefault<z.ZodEnum<{
-                    center: "center";
-                    left: "left";
-                    right: "right";
-                }>>;
-                before: z.ZodDefault<z.ZodNumber>;
-                after: z.ZodDefault<z.ZodNumber>;
-                indent: z.ZodDefault<z.ZodNumber>;
-                lineHeight: z.ZodDefault<z.ZodNumber>;
-                tracking: z.ZodDefault<z.ZodNumber>;
-                muted: z.ZodOptional<z.ZodBoolean>;
-                keepWithNext: z.ZodOptional<z.ZodBoolean>;
                 icon: z.ZodOptional<z.ZodEnum<{
                     email: "email";
                     link: "link";
                     location: "location";
                     phone: "phone";
                 }>>;
+                indent: z.ZodDefault<z.ZodNumber>;
+                keepWithNext: z.ZodOptional<z.ZodBoolean>;
+                kind: z.ZodLiteral<"paragraph">;
+                lineHeight: z.ZodDefault<z.ZodNumber>;
+                muted: z.ZodOptional<z.ZodBoolean>;
+                runs: z.ZodArray<z.ZodObject<{
+                    bold: z.ZodOptional<z.ZodBoolean>;
+                    font: z.ZodOptional<z.ZodEnum<{
+                        "courier-prime": "courier-prime";
+                        "eb-garamond": "eb-garamond";
+                        "geist-mono": "geist-mono";
+                        "ibm-plex-mono": "ibm-plex-mono";
+                        "jetbrains-mono": "jetbrains-mono";
+                        "open-sans": "open-sans";
+                        "source-sans-3": "source-sans-3";
+                        "source-serif-4": "source-serif-4";
+                        arimo: "arimo";
+                        carlito: "carlito";
+                        inter: "inter";
+                        lora: "lora";
+                        merriweather: "merriweather";
+                        roboto: "roboto";
+                        tinos: "tinos";
+                    }>>;
+                    href: z.ZodOptional<z.ZodString>;
+                    italic: z.ZodOptional<z.ZodBoolean>;
+                    text: z.ZodString;
+                }, z.core.$strict>>;
+                size: z.ZodNumber;
+                tracking: z.ZodDefault<z.ZodNumber>;
             }, z.core.$strict>>;
-            centered: z.ZodBoolean;
             photo: z.ZodOptional<z.ZodObject<{
-                data: z.ZodString;
-                size: z.ZodNumber;
-                radius: z.ZodNumber;
                 align: z.ZodEnum<{
                     bottom: "bottom";
                     center: "center";
                     top: "top";
                 }>;
-            }, z.core.$strict>>;
-        }, z.core.$strict>,
-        z.ZodObject<{
-            kind: z.ZodLiteral<"rule">;
-            width: z.ZodNumber;
-            dashed: z.ZodOptional<z.ZodBoolean>;
-        }, z.core.$strict>,
-        z.ZodObject<{
-            kind: z.ZodLiteral<"columns">;
-            columns: z.ZodArray<z.ZodArray<z.ZodObject<{
-                kind: z.ZodLiteral<"paragraph">;
-                runs: z.ZodArray<z.ZodObject<{
-                    text: z.ZodString;
-                    bold: z.ZodOptional<z.ZodBoolean>;
-                    italic: z.ZodOptional<z.ZodBoolean>;
-                    href: z.ZodOptional<z.ZodString>;
-                    font: z.ZodOptional<z.ZodEnum<{
-                        arimo: "arimo";
-                        carlito: "carlito";
-                        "courier-prime": "courier-prime";
-                        "eb-garamond": "eb-garamond";
-                        "geist-mono": "geist-mono";
-                        "ibm-plex-mono": "ibm-plex-mono";
-                        inter: "inter";
-                        "jetbrains-mono": "jetbrains-mono";
-                        lora: "lora";
-                        merriweather: "merriweather";
-                        "open-sans": "open-sans";
-                        roboto: "roboto";
-                        "source-sans-3": "source-sans-3";
-                        "source-serif-4": "source-serif-4";
-                        tinos: "tinos";
-                    }>>;
-                }, z.core.$strict>>;
+                data: z.ZodString;
+                radius: z.ZodNumber;
                 size: z.ZodNumber;
-                font: z.ZodEnum<{
-                    arimo: "arimo";
-                    carlito: "carlito";
-                    "courier-prime": "courier-prime";
-                    "eb-garamond": "eb-garamond";
-                    "geist-mono": "geist-mono";
-                    "ibm-plex-mono": "ibm-plex-mono";
-                    inter: "inter";
-                    "jetbrains-mono": "jetbrains-mono";
-                    lora: "lora";
-                    merriweather: "merriweather";
-                    "open-sans": "open-sans";
-                    roboto: "roboto";
-                    "source-sans-3": "source-sans-3";
-                    "source-serif-4": "source-serif-4";
-                    tinos: "tinos";
-                }>;
+            }, z.core.$strict>>;
+            right: z.ZodArray<z.ZodObject<{
+                after: z.ZodDefault<z.ZodNumber>;
                 align: z.ZodDefault<z.ZodEnum<{
                     center: "center";
                     left: "left";
                     right: "right";
                 }>>;
                 before: z.ZodDefault<z.ZodNumber>;
-                after: z.ZodDefault<z.ZodNumber>;
-                indent: z.ZodDefault<z.ZodNumber>;
-                lineHeight: z.ZodDefault<z.ZodNumber>;
-                tracking: z.ZodDefault<z.ZodNumber>;
-                muted: z.ZodOptional<z.ZodBoolean>;
-                keepWithNext: z.ZodOptional<z.ZodBoolean>;
+                font: z.ZodEnum<{
+                    "courier-prime": "courier-prime";
+                    "eb-garamond": "eb-garamond";
+                    "geist-mono": "geist-mono";
+                    "ibm-plex-mono": "ibm-plex-mono";
+                    "jetbrains-mono": "jetbrains-mono";
+                    "open-sans": "open-sans";
+                    "source-sans-3": "source-sans-3";
+                    "source-serif-4": "source-serif-4";
+                    arimo: "arimo";
+                    carlito: "carlito";
+                    inter: "inter";
+                    lora: "lora";
+                    merriweather: "merriweather";
+                    roboto: "roboto";
+                    tinos: "tinos";
+                }>;
                 icon: z.ZodOptional<z.ZodEnum<{
                     email: "email";
                     link: "link";
                     location: "location";
                     phone: "phone";
                 }>>;
-            }, z.core.$strict>>>;
+                indent: z.ZodDefault<z.ZodNumber>;
+                keepWithNext: z.ZodOptional<z.ZodBoolean>;
+                kind: z.ZodLiteral<"paragraph">;
+                lineHeight: z.ZodDefault<z.ZodNumber>;
+                muted: z.ZodOptional<z.ZodBoolean>;
+                runs: z.ZodArray<z.ZodObject<{
+                    bold: z.ZodOptional<z.ZodBoolean>;
+                    font: z.ZodOptional<z.ZodEnum<{
+                        "courier-prime": "courier-prime";
+                        "eb-garamond": "eb-garamond";
+                        "geist-mono": "geist-mono";
+                        "ibm-plex-mono": "ibm-plex-mono";
+                        "jetbrains-mono": "jetbrains-mono";
+                        "open-sans": "open-sans";
+                        "source-sans-3": "source-sans-3";
+                        "source-serif-4": "source-serif-4";
+                        arimo: "arimo";
+                        carlito: "carlito";
+                        inter: "inter";
+                        lora: "lora";
+                        merriweather: "merriweather";
+                        roboto: "roboto";
+                        tinos: "tinos";
+                    }>>;
+                    href: z.ZodOptional<z.ZodString>;
+                    italic: z.ZodOptional<z.ZodBoolean>;
+                    text: z.ZodString;
+                }, z.core.$strict>>;
+                size: z.ZodNumber;
+                tracking: z.ZodDefault<z.ZodNumber>;
+            }, z.core.$strict>>;
         }, z.core.$strict>,
         z.ZodObject<{
-            kind: z.ZodLiteral<"portrait">;
-            data: z.ZodString;
-            size: z.ZodNumber;
-            radius: z.ZodNumber;
+            dashed: z.ZodOptional<z.ZodBoolean>;
+            kind: z.ZodLiteral<"rule">;
+            width: z.ZodNumber;
+        }, z.core.$strict>,
+        z.ZodObject<{
+            columns: z.ZodArray<z.ZodArray<z.ZodObject<{
+                after: z.ZodDefault<z.ZodNumber>;
+                align: z.ZodDefault<z.ZodEnum<{
+                    center: "center";
+                    left: "left";
+                    right: "right";
+                }>>;
+                before: z.ZodDefault<z.ZodNumber>;
+                font: z.ZodEnum<{
+                    "courier-prime": "courier-prime";
+                    "eb-garamond": "eb-garamond";
+                    "geist-mono": "geist-mono";
+                    "ibm-plex-mono": "ibm-plex-mono";
+                    "jetbrains-mono": "jetbrains-mono";
+                    "open-sans": "open-sans";
+                    "source-sans-3": "source-sans-3";
+                    "source-serif-4": "source-serif-4";
+                    arimo: "arimo";
+                    carlito: "carlito";
+                    inter: "inter";
+                    lora: "lora";
+                    merriweather: "merriweather";
+                    roboto: "roboto";
+                    tinos: "tinos";
+                }>;
+                icon: z.ZodOptional<z.ZodEnum<{
+                    email: "email";
+                    link: "link";
+                    location: "location";
+                    phone: "phone";
+                }>>;
+                indent: z.ZodDefault<z.ZodNumber>;
+                keepWithNext: z.ZodOptional<z.ZodBoolean>;
+                kind: z.ZodLiteral<"paragraph">;
+                lineHeight: z.ZodDefault<z.ZodNumber>;
+                muted: z.ZodOptional<z.ZodBoolean>;
+                runs: z.ZodArray<z.ZodObject<{
+                    bold: z.ZodOptional<z.ZodBoolean>;
+                    font: z.ZodOptional<z.ZodEnum<{
+                        "courier-prime": "courier-prime";
+                        "eb-garamond": "eb-garamond";
+                        "geist-mono": "geist-mono";
+                        "ibm-plex-mono": "ibm-plex-mono";
+                        "jetbrains-mono": "jetbrains-mono";
+                        "open-sans": "open-sans";
+                        "source-sans-3": "source-sans-3";
+                        "source-serif-4": "source-serif-4";
+                        arimo: "arimo";
+                        carlito: "carlito";
+                        inter: "inter";
+                        lora: "lora";
+                        merriweather: "merriweather";
+                        roboto: "roboto";
+                        tinos: "tinos";
+                    }>>;
+                    href: z.ZodOptional<z.ZodString>;
+                    italic: z.ZodOptional<z.ZodBoolean>;
+                    text: z.ZodString;
+                }, z.core.$strict>>;
+                size: z.ZodNumber;
+                tracking: z.ZodDefault<z.ZodNumber>;
+            }, z.core.$strict>>>;
+            kind: z.ZodLiteral<"columns">;
+        }, z.core.$strict>,
+        z.ZodObject<{
             align: z.ZodEnum<{
                 center: "center";
                 left: "left";
                 right: "right";
             }>;
+            data: z.ZodString;
+            kind: z.ZodLiteral<"portrait">;
+            radius: z.ZodNumber;
+            size: z.ZodNumber;
         }, z.core.$strict>
     ], "kind">>;
+    margin: z.ZodDefault<z.ZodNumber>;
     pageNumbers: z.ZodDefault<z.ZodBoolean>;
+    title: z.ZodString;
 }, z.core.$strict>;
 ```
 
@@ -10980,66 +10980,66 @@ export declare const documentLayoutSchema: z.ZodObject<{
 
 ```ts
 export declare const documentParagraphSchema: z.ZodObject<{
-    kind: z.ZodLiteral<"paragraph">;
-    runs: z.ZodArray<z.ZodObject<{
-        text: z.ZodString;
-        bold: z.ZodOptional<z.ZodBoolean>;
-        italic: z.ZodOptional<z.ZodBoolean>;
-        href: z.ZodOptional<z.ZodString>;
-        font: z.ZodOptional<z.ZodEnum<{
-            arimo: "arimo";
-            carlito: "carlito";
-            "courier-prime": "courier-prime";
-            "eb-garamond": "eb-garamond";
-            "geist-mono": "geist-mono";
-            "ibm-plex-mono": "ibm-plex-mono";
-            inter: "inter";
-            "jetbrains-mono": "jetbrains-mono";
-            lora: "lora";
-            merriweather: "merriweather";
-            "open-sans": "open-sans";
-            roboto: "roboto";
-            "source-sans-3": "source-sans-3";
-            "source-serif-4": "source-serif-4";
-            tinos: "tinos";
-        }>>;
-    }, z.core.$strict>>;
-    size: z.ZodNumber;
-    font: z.ZodEnum<{
-        arimo: "arimo";
-        carlito: "carlito";
-        "courier-prime": "courier-prime";
-        "eb-garamond": "eb-garamond";
-        "geist-mono": "geist-mono";
-        "ibm-plex-mono": "ibm-plex-mono";
-        inter: "inter";
-        "jetbrains-mono": "jetbrains-mono";
-        lora: "lora";
-        merriweather: "merriweather";
-        "open-sans": "open-sans";
-        roboto: "roboto";
-        "source-sans-3": "source-sans-3";
-        "source-serif-4": "source-serif-4";
-        tinos: "tinos";
-    }>;
+    after: z.ZodDefault<z.ZodNumber>;
     align: z.ZodDefault<z.ZodEnum<{
         center: "center";
         left: "left";
         right: "right";
     }>>;
     before: z.ZodDefault<z.ZodNumber>;
-    after: z.ZodDefault<z.ZodNumber>;
-    indent: z.ZodDefault<z.ZodNumber>;
-    lineHeight: z.ZodDefault<z.ZodNumber>;
-    tracking: z.ZodDefault<z.ZodNumber>;
-    muted: z.ZodOptional<z.ZodBoolean>;
-    keepWithNext: z.ZodOptional<z.ZodBoolean>;
+    font: z.ZodEnum<{
+        "courier-prime": "courier-prime";
+        "eb-garamond": "eb-garamond";
+        "geist-mono": "geist-mono";
+        "ibm-plex-mono": "ibm-plex-mono";
+        "jetbrains-mono": "jetbrains-mono";
+        "open-sans": "open-sans";
+        "source-sans-3": "source-sans-3";
+        "source-serif-4": "source-serif-4";
+        arimo: "arimo";
+        carlito: "carlito";
+        inter: "inter";
+        lora: "lora";
+        merriweather: "merriweather";
+        roboto: "roboto";
+        tinos: "tinos";
+    }>;
     icon: z.ZodOptional<z.ZodEnum<{
         email: "email";
         link: "link";
         location: "location";
         phone: "phone";
     }>>;
+    indent: z.ZodDefault<z.ZodNumber>;
+    keepWithNext: z.ZodOptional<z.ZodBoolean>;
+    kind: z.ZodLiteral<"paragraph">;
+    lineHeight: z.ZodDefault<z.ZodNumber>;
+    muted: z.ZodOptional<z.ZodBoolean>;
+    runs: z.ZodArray<z.ZodObject<{
+        bold: z.ZodOptional<z.ZodBoolean>;
+        font: z.ZodOptional<z.ZodEnum<{
+            "courier-prime": "courier-prime";
+            "eb-garamond": "eb-garamond";
+            "geist-mono": "geist-mono";
+            "ibm-plex-mono": "ibm-plex-mono";
+            "jetbrains-mono": "jetbrains-mono";
+            "open-sans": "open-sans";
+            "source-sans-3": "source-sans-3";
+            "source-serif-4": "source-serif-4";
+            arimo: "arimo";
+            carlito: "carlito";
+            inter: "inter";
+            lora: "lora";
+            merriweather: "merriweather";
+            roboto: "roboto";
+            tinos: "tinos";
+        }>>;
+        href: z.ZodOptional<z.ZodString>;
+        italic: z.ZodOptional<z.ZodBoolean>;
+        text: z.ZodString;
+    }, z.core.$strict>>;
+    size: z.ZodNumber;
+    tracking: z.ZodDefault<z.ZodNumber>;
 }, z.core.$strict>;
 ```
 
@@ -11047,27 +11047,27 @@ export declare const documentParagraphSchema: z.ZodObject<{
 
 ```ts
 export declare const documentRunSchema: z.ZodObject<{
-    text: z.ZodString;
     bold: z.ZodOptional<z.ZodBoolean>;
-    italic: z.ZodOptional<z.ZodBoolean>;
-    href: z.ZodOptional<z.ZodString>;
     font: z.ZodOptional<z.ZodEnum<{
-        arimo: "arimo";
-        carlito: "carlito";
         "courier-prime": "courier-prime";
         "eb-garamond": "eb-garamond";
         "geist-mono": "geist-mono";
         "ibm-plex-mono": "ibm-plex-mono";
-        inter: "inter";
         "jetbrains-mono": "jetbrains-mono";
-        lora: "lora";
-        merriweather: "merriweather";
         "open-sans": "open-sans";
-        roboto: "roboto";
         "source-sans-3": "source-sans-3";
         "source-serif-4": "source-serif-4";
+        arimo: "arimo";
+        carlito: "carlito";
+        inter: "inter";
+        lora: "lora";
+        merriweather: "merriweather";
+        roboto: "roboto";
         tinos: "tinos";
     }>>;
+    href: z.ZodOptional<z.ZodString>;
+    italic: z.ZodOptional<z.ZodBoolean>;
+    text: z.ZodString;
 }, z.core.$strict>;
 ```
 
@@ -11237,6 +11237,17 @@ export declare function isWorkbenchMiniApp(surfaces?: null | readonly string[]):
 
 ```ts
 export declare const miniAppConfigOptionSchema: z.ZodObject<{
+    default: z.ZodOptional<z.ZodUnion<readonly [
+        z.ZodString,
+        z.ZodNumber,
+        z.ZodBoolean
+    ]>>;
+    description: z.ZodDefault<z.ZodString>;
+    max: z.ZodOptional<z.ZodNumber>;
+    min: z.ZodOptional<z.ZodNumber>;
+    required: z.ZodDefault<z.ZodBoolean>;
+    secret: z.ZodDefault<z.ZodBoolean>;
+    title: z.ZodOptional<z.ZodString>;
     type: z.ZodDefault<z.ZodEnum<{
         boolean: "boolean";
         directory: "directory";
@@ -11244,17 +11255,6 @@ export declare const miniAppConfigOptionSchema: z.ZodObject<{
         number: "number";
         string: "string";
     }>>;
-    description: z.ZodDefault<z.ZodString>;
-    required: z.ZodDefault<z.ZodBoolean>;
-    secret: z.ZodDefault<z.ZodBoolean>;
-    default: z.ZodOptional<z.ZodUnion<readonly [
-        z.ZodString,
-        z.ZodNumber,
-        z.ZodBoolean
-    ]>>;
-    title: z.ZodOptional<z.ZodString>;
-    min: z.ZodOptional<z.ZodNumber>;
-    max: z.ZodOptional<z.ZodNumber>;
 }, z.core.$strip>;
 ```
 
@@ -11262,21 +11262,21 @@ export declare const miniAppConfigOptionSchema: z.ZodObject<{
 
 ```ts
 export declare const miniAppFileAssociationSchema: z.ZodObject<{
-    ext: z.ZodArray<z.ZodPipe<z.ZodString, z.ZodTransform<string, string>>>;
-    name: z.ZodString;
     description: z.ZodOptional<z.ZodString>;
+    ext: z.ZodArray<z.ZodPipe<z.ZodString, z.ZodTransform<string, string>>>;
     mimeType: z.ZodOptional<z.ZodString>;
-    role: z.ZodOptional<z.ZodEnum<{
-        Editor: "Editor";
-        None: "None";
-        Shell: "Shell";
-        Viewer: "Viewer";
-    }>>;
+    name: z.ZodString;
     rank: z.ZodOptional<z.ZodEnum<{
         Alternate: "Alternate";
         Default: "Default";
         None: "None";
         Owner: "Owner";
+    }>>;
+    role: z.ZodOptional<z.ZodEnum<{
+        Editor: "Editor";
+        None: "None";
+        Shell: "Shell";
+        Viewer: "Viewer";
     }>>;
 }, z.core.$strip>;
 ```
@@ -11285,8 +11285,8 @@ export declare const miniAppFileAssociationSchema: z.ZodObject<{
 
 ```ts
 export declare function miniAppLabel(app: {
-    name: string;
     displayName?: null | string;
+    name: string;
 }): string;
 ```
 
@@ -11294,10 +11294,7 @@ export declare function miniAppLabel(app: {
 
 ```ts
 export declare const miniAppManifestCoreSchema: z.ZodObject<{
-    name: z.ZodString;
-    version: z.ZodDefault<z.ZodString>;
     apiVersion: z.ZodOptional<z.ZodNumber>;
-    private: z.ZodOptional<z.ZodBoolean>;
     category: z.ZodOptional<z.ZodEnum<{
         content: "content";
         data: "data";
@@ -11305,8 +11302,18 @@ export declare const miniAppManifestCoreSchema: z.ZodObject<{
         games: "games";
         utilities: "utilities";
     }>>;
-    surfaces: z.ZodOptional<z.ZodArray<z.ZodString>>;
     config: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+        default: z.ZodOptional<z.ZodUnion<readonly [
+            z.ZodString,
+            z.ZodNumber,
+            z.ZodBoolean
+        ]>>;
+        description: z.ZodDefault<z.ZodString>;
+        max: z.ZodOptional<z.ZodNumber>;
+        min: z.ZodOptional<z.ZodNumber>;
+        required: z.ZodDefault<z.ZodBoolean>;
+        secret: z.ZodDefault<z.ZodBoolean>;
+        title: z.ZodOptional<z.ZodString>;
         type: z.ZodDefault<z.ZodEnum<{
             boolean: "boolean";
             directory: "directory";
@@ -11314,36 +11321,29 @@ export declare const miniAppManifestCoreSchema: z.ZodObject<{
             number: "number";
             string: "string";
         }>>;
-        description: z.ZodDefault<z.ZodString>;
-        required: z.ZodDefault<z.ZodBoolean>;
-        secret: z.ZodDefault<z.ZodBoolean>;
-        default: z.ZodOptional<z.ZodUnion<readonly [
-            z.ZodString,
-            z.ZodNumber,
-            z.ZodBoolean
-        ]>>;
-        title: z.ZodOptional<z.ZodString>;
-        min: z.ZodOptional<z.ZodNumber>;
-        max: z.ZodOptional<z.ZodNumber>;
     }, z.core.$strip>>>;
     fileAssociations: z.ZodOptional<z.ZodArray<z.ZodObject<{
-        ext: z.ZodArray<z.ZodPipe<z.ZodString, z.ZodTransform<string, string>>>;
-        name: z.ZodString;
         description: z.ZodOptional<z.ZodString>;
+        ext: z.ZodArray<z.ZodPipe<z.ZodString, z.ZodTransform<string, string>>>;
         mimeType: z.ZodOptional<z.ZodString>;
-        role: z.ZodOptional<z.ZodEnum<{
-            Editor: "Editor";
-            None: "None";
-            Shell: "Shell";
-            Viewer: "Viewer";
-        }>>;
+        name: z.ZodString;
         rank: z.ZodOptional<z.ZodEnum<{
             Alternate: "Alternate";
             Default: "Default";
             None: "None";
             Owner: "Owner";
         }>>;
+        role: z.ZodOptional<z.ZodEnum<{
+            Editor: "Editor";
+            None: "None";
+            Shell: "Shell";
+            Viewer: "Viewer";
+        }>>;
     }, z.core.$strip>>>;
+    name: z.ZodString;
+    private: z.ZodOptional<z.ZodBoolean>;
+    surfaces: z.ZodOptional<z.ZodArray<z.ZodString>>;
+    version: z.ZodDefault<z.ZodString>;
 }, z.core.$strip>;
 ```
 
@@ -11371,8 +11371,8 @@ export declare function humanizeMiniAppId(id: string): string;
 
 ```ts
 export declare function miniAppLabel(app: {
-    name: string;
     displayName?: null | string;
+    name: string;
 }): string;
 ```
 
@@ -11448,8 +11448,8 @@ export type MiniAppFileReader = (path: string) => Promise<Uint8Array | null>;
 export interface MiniAppMediaFields {
     icon?: string;
     screenshots?: readonly {
-        path: string;
         caption?: string;
+        path: string;
     }[];
     homepage?: string;
 }
@@ -11668,8 +11668,8 @@ export declare function fileOpenMarkdownLink(path: string, title?: string): stri
 
 ```ts
 export declare function fileUiUri(input: {
-    path: string;
     line?: number;
+    path: string;
 }): string;
 ```
 
@@ -11752,8 +11752,8 @@ export declare const OPPONENTS: readonly [
 
 ```ts
 export declare const OTHER_OPPONENT: Record<Opponent, {
-    opponent: Opponent;
     label: string;
+    opponent: Opponent;
 }>;
 ```
 
@@ -12072,15 +12072,15 @@ export declare function truncationNotice(parentUri: string, shown: number, total
 
 ```ts
 export type RichBlock = RichParagraph | {
-    type: 'bulletList';
-    content: RichListItem[];
-} | {
-    type: 'orderedList';
     attrs?: {
         start?: number;
         type?: '1' | 'A' | 'I' | 'a' | 'i' | null;
     };
     content: RichListItem[];
+    type: 'orderedList';
+} | {
+    content: RichListItem[];
+    type: 'bulletList';
 };
 ```
 
@@ -12088,11 +12088,11 @@ export type RichBlock = RichParagraph | {
 
 ```ts
 export type RichInline = {
-    type: 'hardBreak';
-} | {
-    type: 'text';
-    text: string;
     marks?: RichMark[];
+    text: string;
+    type: 'text';
+} | {
+    type: 'hardBreak';
 };
 ```
 
@@ -12112,15 +12112,15 @@ export interface RichListItem {
 
 ```ts
 export type RichMark = {
-    type: 'bold' | 'italic';
-} | {
-    type: 'link';
     attrs: {
-        href: string;
-        target?: null | string;
-        rel?: null | string;
         class?: null;
+        href: string;
+        rel?: null | string;
+        target?: null | string;
     };
+    type: 'link';
+} | {
+    type: 'bold' | 'italic';
 };
 ```
 
@@ -12164,8 +12164,8 @@ export declare function richTextDocument(value: RichTextValue): RichTextDocument
 
 ```ts
 export declare const richTextSchema: z.ZodPipe<z.ZodUnknown, z.ZodObject<{
-    type: z.ZodLiteral<"doc">;
     content: z.ZodArray<z.ZodType<RichBlock, unknown, z.core.$ZodTypeInternals<RichBlock, unknown>>>;
+    type: z.ZodLiteral<"doc">;
 }, z.core.$strict>>;
 ```
 
@@ -12211,12 +12211,12 @@ export declare function sealedPreimage(value: string, salt: string): string;
 
 ```ts
 export declare const sealedSchema: z.ZodObject<{
-    owner: z.ZodString;
-    value: z.ZodString;
-    salt: z.ZodString;
     digest: z.ZodString;
-    sealedAt: z.ZodString;
+    owner: z.ZodString;
     revealedAt: z.ZodNullable<z.ZodString>;
+    salt: z.ZodString;
+    sealedAt: z.ZodString;
+    value: z.ZodString;
 }, z.core.$strip>;
 ```
 
@@ -12231,16 +12231,16 @@ export declare function sealedView(sealed: Sealed): SealedView;
 ```ts
 export declare const sealedViewSchema: z.ZodDiscriminatedUnion<[
     z.ZodObject<{
-        revealed: z.ZodLiteral<false>;
-        owner: z.ZodString;
         digest: z.ZodString;
+        owner: z.ZodString;
+        revealed: z.ZodLiteral<false>;
     }, z.core.$strip>,
     z.ZodObject<{
-        revealed: z.ZodLiteral<true>;
-        owner: z.ZodString;
         digest: z.ZodString;
-        value: z.ZodString;
+        owner: z.ZodString;
+        revealed: z.ZodLiteral<true>;
         salt: z.ZodString;
+        value: z.ZodString;
     }, z.core.$strip>
 ], "revealed">;
 ```
@@ -12271,9 +12271,9 @@ export declare function redactSecrets(input: string): string;
 
 ```ts
 export declare function sessionResourceAddress(provider: string, name: string): {
-    uri: string;
     forSession: (sessionId: string) => string;
     sessionOf: (candidate: string) => null | string | undefined;
+    uri: string;
 };
 ```
 
@@ -12304,9 +12304,9 @@ export declare const storeFeedCommands: (miniApp: string) => {
 
 ```ts
 export declare const storeFrameSchema: z.ZodObject<{
+    live: z.ZodOptional<z.ZodBoolean>;
     miniApp: z.ZodString;
     sessionId: z.ZodNullable<z.ZodString>;
-    live: z.ZodOptional<z.ZodBoolean>;
 }, z.core.$strip>;
 ```
 
@@ -12405,8 +12405,8 @@ export interface ActionContribution extends MiniAppOwnedContribution {
 
 ```ts
 export declare function ActionSurfaceProvider({ surface, children, }: {
-    surface: null | string;
     children: ReactNode;
+    surface: null | string;
 }): import("react").JSX.Element;
 ```
 
@@ -12414,41 +12414,41 @@ export declare function ActionSurfaceProvider({ surface, children, }: {
 
 ```ts
 export type ActionTarget = {
+    alt?: string;
+    height?: number;
+    kind: 'image';
+    src: string;
+    title?: string;
+    width?: number;
+} | {
+    block: 'callout' | 'heading' | 'list' | 'math' | 'other' | 'paragraph' | 'quote';
+    kind: 'markdown';
+    markdown: string;
+} | {
+    format: string;
+    height?: number;
+    kind: 'visualization';
+    source: string;
+    svg?: string;
+    title?: string;
+    width?: number;
+} | {
     kind: 'code';
-    text: string;
     language?: string;
+    text: string;
     title?: string;
 } | {
     kind: 'file';
-    path: string;
     line?: number;
+    path: string;
     title?: string;
-} | {
-    kind: 'image';
-    src: string;
-    alt?: string;
-    title?: string;
-    width?: number;
-    height?: number;
 } | {
     kind: 'link';
-    url: string;
     title?: string;
-} | {
-    kind: 'markdown';
-    markdown: string;
-    block: 'callout' | 'heading' | 'list' | 'math' | 'other' | 'paragraph' | 'quote';
+    url: string;
 } | {
     kind: 'table';
     markdown: string;
-} | {
-    kind: 'visualization';
-    format: string;
-    source: string;
-    title?: string;
-    svg?: string;
-    width?: number;
-    height?: number;
 };
 ```
 
@@ -12595,14 +12595,14 @@ export interface DedicatedViewerType {
 
 ```ts
 export declare function DistributionChart({ rows, formatValue, onSelect, isSelectable, selectedKey, labelKey, emptyLabel, overflowLabel, }: {
-    rows: readonly ChartPoint[];
-    formatValue: (value: number) => string;
-    onSelect?: (key: string) => void;
-    isSelectable?: (key: string) => boolean;
-    selectedKey?: string;
-    labelKey?: (key: string) => string;
     emptyLabel?: string;
+    formatValue: (value: number) => string;
+    isSelectable?: (key: string) => boolean;
+    labelKey?: (key: string) => string;
+    onSelect?: (key: string) => void;
     overflowLabel?: (hidden: number) => string;
+    rows: readonly ChartPoint[];
+    selectedKey?: string;
 }): import("react").JSX.Element;
 ```
 
@@ -12869,10 +12869,10 @@ export interface MenuActionEntry {
     description?: string;
     disabled?: boolean;
     trailingAction?: {
-        label: string;
-        icon: IconComponent;
         checked?: boolean;
         disabled?: boolean;
+        icon: IconComponent;
+        label: string;
         onSelect: () => void;
     };
     checked?: boolean;
@@ -12965,11 +12965,11 @@ export interface MessageContextBindingDraft {
     assets?: MessageAttachment[];
     miniApp?: string;
     target: {
-        kind: MessageBindingTargetKind;
-        token: string;
-        label: string;
-        uri?: string;
         attributes?: Record<string, boolean | number | string>;
+        kind: MessageBindingTargetKind;
+        label: string;
+        token: string;
+        uri?: string;
     };
 }
 ```
@@ -13140,8 +13140,8 @@ export interface MiniAppContextBindingPreviewProps {
     sessionId: null | string;
     className?: string;
     onIntrinsicSize?: (size: {
-        width: number;
         height: number;
+        width: number;
     }) => void;
 }
 ```
@@ -13182,9 +13182,9 @@ export interface MiniAppEditPredictionRequest {
     language: string;
     recentlyEditedRanges: Array<{
         before?: string[];
+        endLine?: number;
         lines: string[];
         startLine?: number;
-        endLine?: number;
     }>;
     contextReferences?: MiniAppCompletionReference[];
 }
@@ -13194,8 +13194,6 @@ export interface MiniAppEditPredictionRequest {
 
 ```ts
 export type MiniAppEditPredictionResult = {
-    outcome: 'empty' | 'stale_delivery';
-    edits: null;
     diagnostic?: {
         code: 'empty';
         outcome: 'cancelled' | 'deadline_exceeded' | 'empty' | 'no_model' | 'provider_error';
@@ -13203,9 +13201,11 @@ export type MiniAppEditPredictionResult = {
         code: 'stale_delivery';
         mismatch: string;
     };
+    edits: null;
+    outcome: 'empty' | 'stale_delivery';
 } | {
-    outcome: 'predicted';
     edits: MiniAppEditPrediction[];
+    outcome: 'predicted';
 };
 ```
 
@@ -13219,17 +13219,17 @@ export interface MiniAppEditorCompletionItem {
     insertText?: string;
     insertTextFormat?: 'plainText' | 'snippet';
     range?: {
-        start: MiniAppEditorPosition;
         end: MiniAppEditorPosition;
+        start: MiniAppEditorPosition;
     };
     filterText?: string;
     sortText?: string;
     preselect?: boolean;
     commitCharacters?: string[];
     command?: {
+        arguments?: unknown[];
         id: string;
         title?: string;
-        arguments?: unknown[];
     };
     documentation?: string;
 }
@@ -13372,8 +13372,8 @@ export interface MiniAppPendingInteraction {
     kind: string;
     request: {
         id: string;
-        title?: string;
         payload: unknown;
+        title?: string;
     };
 }
 ```
@@ -13415,8 +13415,8 @@ export interface MiniAppResourceNode {
     navigationOnly?: boolean;
     actions?: Array<{
         id: string;
-        label: string;
         kind: 'link';
+        label: string;
     }>;
 }
 ```
@@ -13442,9 +13442,9 @@ export interface MiniAppSession {
     rootSessionId: null | string;
     sessionKind: 'chat' | 'job' | 'subagent' | 'system';
     agent: {
+        modelId: string;
         name: string;
         providerConnectionId: null | string;
-        modelId: string;
         reasoningEffort: string;
     };
     runtimeStatus: 'completed' | 'failed' | 'idle' | 'running' | 'stopped';
@@ -13453,9 +13453,9 @@ export interface MiniAppSession {
     createdAt: number;
     updatedAt: number;
     messages: Array<{
-        role: string;
         createdAt?: string;
         items?: AgentItem[];
+        role: string;
     }>;
     pendingInteraction: MiniAppPendingInteraction | null;
 }
@@ -13502,10 +13502,10 @@ export interface MiniAppTableGridProps {
     showCellActions?: boolean;
     allowNullValues?: boolean;
     columnActions?: {
-        rename?: (id: string, title: string) => void;
         insert?: (id: string, side: 'after' | 'before') => void;
         move?: (id: string, direction: 'left' | 'right') => void;
         remove?: (id: string) => void;
+        rename?: (id: string, title: string) => void;
     };
     pkColumns?: Set<string>;
     onColumnFilter?: (columnId: string, value: string) => void;
@@ -13757,8 +13757,8 @@ export interface MiniAppUiRuntime {
         openDiff(request: MiniAppOpenDiffRequest): void;
         openPreview(request: MiniAppOpenPreviewRequest): Promise<void>;
         closeWorkItems(prefix: string, options?: {
-            session?: string;
             everyChat?: boolean;
+            session?: string;
         }): void;
         focusWorkItem(id: string): void;
         openSidebarSection(sectionId: null | string): void;
@@ -13771,12 +13771,12 @@ export interface MiniAppUiRuntime {
     terminal: {
         openPanel(sessionId: string): void;
         paste(request: {
-            sessionId: string;
             command: string;
+            sessionId: string;
         }): void;
         openJob(request: {
-            terminalId: string;
             sessionId: string;
+            terminalId: string;
             title?: string;
         }): void;
         spawnCommand(request: {
@@ -13796,8 +13796,8 @@ export interface MiniAppUiRuntime {
         }): Promise<string[]>;
         bindingsFromFiles(files: readonly File[]): Promise<MessageBindingDraft[]>;
         droppedPaths(files: readonly File[]): Promise<null | {
-            path: string;
             isDir: boolean;
+            path: string;
         }[]>;
         read(sessionId: string, path: string, options?: {
             full?: boolean;
@@ -14163,9 +14163,9 @@ export declare function ResultCountStatus({ count, singular, plural, formatCount
 ```ts
 export type ResultCountStatusProps = Omit<ComponentPropsWithoutRef<'span'>, 'aria-atomic' | 'aria-live' | 'children' | 'role'> & {
     count: number;
-    singular?: string;
-    plural?: string;
     formatCount?: (count: number) => ReactNode;
+    plural?: string;
+    singular?: string;
 };
 ```
 
@@ -14218,13 +14218,13 @@ export interface SearchDomainScope {
 
 ```ts
 export declare function Segmented<T extends string>({ options, value, onChange, ...accessibleName }: SegmentedRadioAccessibleName & {
+    className?: string;
+    onChange: (value: T) => void;
     options: readonly {
         id: T;
         label: string;
     }[];
     value: T;
-    onChange: (value: T) => void;
-    className?: string;
 }): import("react").JSX.Element;
 ```
 
@@ -14232,10 +14232,10 @@ export declare function Segmented<T extends string>({ options, value, onChange, 
 
 ```ts
 export declare function SegmentedControl({ variant, fullWidth, className, children, ...rest }: {
-    variant?: SegmentedVariant;
-    fullWidth?: boolean;
-    className?: string;
     children: React.ReactNode;
+    className?: string;
+    fullWidth?: boolean;
+    variant?: SegmentedVariant;
 } & React.HTMLAttributes<HTMLDivElement>): import("react").JSX.Element;
 ```
 
@@ -14243,13 +14243,13 @@ export declare function SegmentedControl({ variant, fullWidth, className, childr
 
 ```ts
 export declare function SegmentedControlItem({ active, onClick, disabled, className, title, 'aria-label': ariaLabel, children, }: {
-    active: boolean;
-    onClick: () => void;
-    disabled?: boolean;
-    className?: string;
-    title?: string;
     'aria-label'?: string;
+    active: boolean;
     children: React.ReactNode;
+    className?: string;
+    disabled?: boolean;
+    onClick: () => void;
+    title?: string;
 }): import("react").JSX.Element;
 ```
 
@@ -14263,16 +14263,16 @@ export declare function SegmentedRadioGroup<T extends string>({ value, onValueCh
 
 ```ts
 export type SegmentedRadioGroupProps<T extends string> = Omit<React.HTMLAttributes<HTMLDivElement>, 'aria-label' | 'aria-labelledby' | 'onChange'> & SegmentedRadioAccessibleName & {
-    value: T;
+    disabled?: boolean;
+    form?: string;
+    fullWidth?: boolean;
+    name?: string;
     onValueChange: (value: T) => void;
     options: readonly SegmentedRadioOption<T>[];
-    name?: string;
-    size?: SegmentedRadioSize;
-    variant?: SegmentedVariant;
-    fullWidth?: boolean;
-    disabled?: boolean;
     required?: boolean;
-    form?: string;
+    size?: SegmentedRadioSize;
+    value: T;
+    variant?: SegmentedVariant;
 };
 ```
 
@@ -14467,10 +14467,10 @@ export interface ToolPresentation {
 
 ```ts
 export declare function TrendChart({ points, formatValue, bucketLabel, emptyLabel, }: {
-    points: readonly ChartPoint[];
-    formatValue: (value: number) => string;
     bucketLabel?: string;
     emptyLabel?: string;
+    formatValue: (value: number) => string;
+    points: readonly ChartPoint[];
 }): import("react").JSX.Element;
 ```
 
@@ -14568,25 +14568,25 @@ export interface UiAnchorFile {
 
 ```ts
 export type UiAnchorInspector = {
+    command?: string;
     kind: 'inspector';
-    target: 'global-search';
-    query?: string;
-    searchScope?: string;
+    sessionId?: string;
+    target: 'terminal';
+    terminalMode?: 'new' | 'reuse';
+    title?: string;
 } | {
     kind: 'inspector';
-    target: 'message-replay';
-    sessionId: string;
     messageId: string;
+    sessionId: string;
+    target: 'message-replay';
+} | {
+    kind: 'inspector';
+    query?: string;
+    searchScope?: string;
+    target: 'global-search';
 } | {
     kind: 'inspector';
     target: 'stats';
-} | {
-    kind: 'inspector';
-    target: 'terminal';
-    sessionId?: string;
-    terminalMode?: 'new' | 'reuse';
-    command?: string;
-    title?: string;
 };
 ```
 
@@ -14808,28 +14808,28 @@ export interface UiLocationExposure {
 
 ```ts
 export type UiLocationParamDefinition = {
-    type: 'boolean';
-    description?: string;
-    optional?: boolean;
-} | {
-    type: 'integer';
-    description?: string;
-    optional?: boolean;
-    minimum?: number;
-    maximum?: number;
-} | {
-    type: 'string';
-    description?: string;
-    optional?: boolean;
     allowEmpty?: boolean;
+    description?: string;
     maxLength?: number;
+    optional?: boolean;
+    type: 'string';
     values?: readonly string[];
 } | {
-    type: 'string-array';
     description?: string;
-    optional?: boolean;
     maxItems?: number;
     maxLength?: number;
+    optional?: boolean;
+    type: 'string-array';
+} | {
+    description?: string;
+    maximum?: number;
+    minimum?: number;
+    optional?: boolean;
+    type: 'integer';
+} | {
+    description?: string;
+    optional?: boolean;
+    type: 'boolean';
 };
 ```
 
@@ -14852,10 +14852,10 @@ export interface UiLocationPresentation {
 
 ```ts
 export type UiMutationContribution<TParams extends UiLocationParamSchema> = Omit<UiLocationContribution<TParams>, 'agent' | 'effect' | 'params' | 'surface'> & {
-    effect: 'write';
-    surface: 'action';
-    params: TParams;
     agent?: never;
+    effect: 'write';
+    params: TParams;
+    surface: 'action';
 };
 ```
 
@@ -14982,8 +14982,8 @@ export interface WorkItemSlotContribution extends MiniAppOwnedContribution {
 
 ```ts
 export declare function WorkItemVisibilityProvider({ visible, children, }: {
-    visible: boolean;
     children: ReactNode;
+    visible: boolean;
 }): import("react").JSX.Element;
 ```
 
@@ -15057,9 +15057,9 @@ export declare function buildSessionChain<T extends SessionTreeNode>(active: T |
 
 ```ts
 export declare function buildUiLocationUri(descriptor: {
-    uri: string;
-    surface: UiSurfaceKind;
     params: UiLocationParamSchema;
+    surface: UiSurfaceKind;
+    uri: string;
 }, args?: Readonly<Record<string, unknown>>): null | string;
 ```
 
@@ -15421,9 +15421,9 @@ export declare const miniAppComposer: {
 
 ```ts
 export declare const miniAppEditor: {
+    predictNextEdit: (sessionId: string, request: MiniAppEditPredictionRequest, signal?: AbortSignal) => Promise<MiniAppEditPredictionResult>;
     predictionEnabled: () => boolean;
     subscribe: (listener: () => void) => (() => void);
-    predictNextEdit: (sessionId: string, request: MiniAppEditPredictionRequest, signal?: AbortSignal) => Promise<MiniAppEditPredictionResult>;
 };
 ```
 
@@ -15446,24 +15446,24 @@ export declare const miniAppExternal: {
 ```ts
 export declare const miniAppFiles: {
     announceReloaded: (paths: readonly string[]) => void;
-    saveBlob: (filename: string, blob: Blob) => Promise<void>;
+    bindingsFromFiles: (files: readonly File[]) => Promise<MessageBindingDraft[]>;
     download: (path: string, filename: string) => Promise<void>;
+    droppedPaths: (files: readonly File[]) => Promise<null | {
+        isDir: boolean;
+        path: string;
+    }[]>;
     pickFiles: (options?: {
         extensions?: readonly string[];
     }) => Promise<string[]>;
-    bindingsFromFiles: (files: readonly File[]) => Promise<MessageBindingDraft[]>;
-    droppedPaths: (files: readonly File[]) => Promise<null | {
-        path: string;
-        isDir: boolean;
-    }[]>;
     read: (sessionId: string, path: string, options?: {
         full?: boolean;
         knownHash?: string;
         signal?: AbortSignal;
     }) => Promise<MiniAppFileContent>;
+    saveBlob: (filename: string, blob: Blob) => Promise<void>;
     watchWorkspace: (sessionId: string, listener: (change: MiniAppWorkspaceChange) => void, options?: {
-        windowMs?: number;
         onLive?: (live: boolean) => void;
+        windowMs?: number;
     }) => (() => void);
 };
 ```
@@ -15472,8 +15472,8 @@ export declare const miniAppFiles: {
 
 ```ts
 export declare const miniAppNavigation: {
-    revealSession: (sessionId: string, projectId?: string) => void;
     openBinding: (binding: MessageContextBindingDraft, sessionId: null | string) => Promise<boolean>;
+    revealSession: (sessionId: string, projectId?: string) => void;
 };
 ```
 
@@ -15487,10 +15487,10 @@ export declare function miniAppNotificationCallSite(): string | undefined;
 
 ```ts
 export declare const miniAppProjects: {
+    refresh: () => Promise<void>;
     resolvePath: (path: string) => Promise<{
         id: string;
     }>;
-    refresh: () => Promise<void>;
 };
 ```
 
@@ -15498,9 +15498,9 @@ export declare const miniAppProjects: {
 
 ```ts
 export declare const miniAppRealtime: {
+    onDisconnect: (handler: () => void) => (() => void);
     onFrame: (tag: string, handler: (json: string) => void) => (() => void);
     onReconnect: (handler: () => void) => (() => void);
-    onDisconnect: (handler: () => void) => (() => void);
     request: <T = unknown>(payload: Record<string, unknown>, options?: {
         signal?: AbortSignal;
         timeoutMs?: number;
@@ -15532,15 +15532,15 @@ export declare const miniAppSecrets: {
 
 ```ts
 export declare const miniAppSessions: {
-    list: () => readonly MiniAppSession[];
-    subscribe: (listener: () => void) => (() => void);
-    stop: (sessionId: string) => Promise<void>;
-    interact: (requestId: string, action: string, payload: Record<string, unknown>) => Promise<void>;
     importConversation: (input: MiniAppConversationImport) => Promise<{
         id: string;
         projectId: string;
     }>;
+    interact: (requestId: string, action: string, payload: Record<string, unknown>) => Promise<void>;
+    list: () => readonly MiniAppSession[];
     openTranscript: (input: MiniAppTranscriptInput) => void;
+    stop: (sessionId: string) => Promise<void>;
+    subscribe: (listener: () => void) => (() => void);
 };
 ```
 
@@ -15548,15 +15548,15 @@ export declare const miniAppSessions: {
 
 ```ts
 export declare const miniAppTerminal: {
+    openJob: (request: {
+        sessionId: string;
+        terminalId: string;
+        title?: string;
+    }) => void;
     openPanel: (sessionId: string) => void;
     paste: (request: {
-        sessionId: string;
         command: string;
-    }) => void;
-    openJob: (request: {
-        terminalId: string;
         sessionId: string;
-        title?: string;
     }) => void;
     spawnCommand: (request: {
         command: string;
@@ -15572,17 +15572,17 @@ export declare const miniAppTerminal: {
 
 ```ts
 export declare const miniAppWorkspace: {
-    openWorkItem: (request: MiniAppWorkItemRequest) => void;
-    openFile: (request: MiniAppOpenFileRequest) => void;
-    openDiff: (request: MiniAppOpenDiffRequest) => void;
-    openPreview: (request: MiniAppOpenPreviewRequest) => Promise<void>;
     closeWorkItems: (prefix: string, options?: {
-        session?: string;
         everyChat?: boolean;
+        session?: string;
     }) => void;
     focusWorkItem: (id: string) => void;
-    openSidebarSection: (sectionId: null | string) => void;
     getSnapshot: () => MiniAppWorkspaceSnapshot;
+    openDiff: (request: MiniAppOpenDiffRequest) => void;
+    openFile: (request: MiniAppOpenFileRequest) => void;
+    openPreview: (request: MiniAppOpenPreviewRequest) => Promise<void>;
+    openSidebarSection: (sectionId: null | string) => void;
+    openWorkItem: (request: MiniAppWorkItemRequest) => void;
     subscribe: (listener: () => void) => (() => void);
 };
 ```
@@ -15777,8 +15777,8 @@ export declare function settingsUiUri(tab?: string, options?: {
 
 ```ts
 export declare function snippetMessageBindingDraft(input: {
-    label: string;
     content: string;
+    label: string;
     language?: string;
 }, source?: MessageContextBindingDraft['source']): PublishedMessageContextBindingDraft;
 ```
@@ -16020,15 +16020,15 @@ export interface ScreenProps {
 
 ```ts
 export declare function screenUi(screen: {
-    app: string;
-    title: string;
-    label: string;
-    keywords: string[];
     Icon: IconComponent;
     Screen: ComponentType<ScreenProps>;
-    loading: ReactNode;
     agentContext: WorkItemAgentContext;
+    app: string;
+    keywords: string[];
+    label: string;
+    loading: ReactNode;
     scope?: 'app' | 'chat';
+    title: string;
 }): (host: MiniAppUiHost) => void;
 ```
 
@@ -16036,8 +16036,8 @@ export declare function screenUi(screen: {
 
 ```ts
 export declare function useAgentContext(publish: PublishMessageContext | undefined, active: boolean, context: null | {
-    label: string;
     content: string;
+    label: string;
 }): void;
 ```
 
@@ -16045,11 +16045,11 @@ export declare function useAgentContext(publish: PublishMessageContext | undefin
 
 ```ts
 export declare function useCollection<T, Input = Omit<T, 'id'>>(options: {
-    app: string;
-    name: string;
-    item: z.ZodType<T>;
-    scope?: 'app' | 'chat';
     active?: boolean;
+    app: string;
+    item: z.ZodType<T>;
+    name: string;
+    scope?: 'app' | 'chat';
 }): CollectionView<T, Input>;
 ```
 
@@ -16058,9 +16058,9 @@ export declare function useCollection<T, Input = Omit<T, 'id'>>(options: {
 ```ts
 export declare function useScreenProblem(options: {
     app: string;
-    subject: string;
     failure: null | string;
     showingData: boolean;
+    subject: string;
 }): MiniAppProblemLineProps | null;
 ```
 
@@ -16274,8 +16274,8 @@ export interface MiniAppContextBindingPreviewProps {
     sessionId: null | string;
     className?: string;
     onIntrinsicSize?: (size: {
-        width: number;
         height: number;
+        width: number;
     }) => void;
 }
 ```
@@ -16290,17 +16290,17 @@ export interface MiniAppEditorCompletionItem {
     insertText?: string;
     insertTextFormat?: 'plainText' | 'snippet';
     range?: {
-        start: MiniAppEditorPosition;
         end: MiniAppEditorPosition;
+        start: MiniAppEditorPosition;
     };
     filterText?: string;
     sortText?: string;
     preselect?: boolean;
     commitCharacters?: string[];
     command?: {
+        arguments?: unknown[];
         id: string;
         title?: string;
-        arguments?: unknown[];
     };
     documentation?: string;
 }
@@ -16386,9 +16386,9 @@ export interface MiniAppProblemLineProps {
 ```ts
 export interface MiniAppProblemStateProps extends MiniAppProblemLineProps {
     icon?: ComponentType<{
+        'aria-hidden'?: boolean;
         className?: string;
         strokeWidth?: number;
-        'aria-hidden'?: boolean;
     }>;
 }
 ```
@@ -16428,10 +16428,10 @@ export interface MiniAppTableGridProps {
     showCellActions?: boolean;
     allowNullValues?: boolean;
     columnActions?: {
-        rename?: (id: string, title: string) => void;
         insert?: (id: string, side: 'after' | 'before') => void;
         move?: (id: string, direction: 'left' | 'right') => void;
         remove?: (id: string) => void;
+        rename?: (id: string, title: string) => void;
     };
     pkColumns?: Set<string>;
     onColumnFilter?: (columnId: string, value: string) => void;
@@ -16518,8 +16518,8 @@ export interface FileResourceSyncOptions<T> extends ResourceSyncReader<T> {
 
 ```ts
 export declare function useFileResourceSync<T>(options: FileResourceSyncOptions<T>): {
-    refresh: () => Promise<void>;
     live: boolean | null;
+    refresh: () => Promise<void>;
     supersede: () => void;
 };
 ```
@@ -16734,23 +16734,23 @@ export declare const IDLE_POLL_MS = 4000;
 
 ```ts
 export declare function useTableGame<T>(options: {
-    miniApp: string;
-    route: string;
-    schema: z.ZodType<T>;
     active: boolean;
+    failureMessage: string;
+    miniApp: string;
     quick: (snapshot: T | null) => boolean;
     quickMs?: number;
-    failureMessage: string;
+    route: string;
+    schema: z.ZodType<T>;
 }): {
-    snapshot: T | null;
-    error: null | string;
-    loading: boolean;
-    sending: boolean;
-    send: (body: unknown, options?: import("./route-snapshot").SendOptions) => Promise<T | null>;
-    refresh: () => void;
-    live: boolean;
-    hasTable: boolean;
     act: (action: string, body: object) => Promise<T | null>;
+    error: null | string;
+    hasTable: boolean;
+    live: boolean;
+    loading: boolean;
+    refresh: () => void;
+    send: (body: unknown, options?: import("./route-snapshot").SendOptions) => Promise<T | null>;
+    sending: boolean;
+    snapshot: T | null;
 };
 ```
 
@@ -17191,8 +17191,8 @@ export interface ResourceSyncReader<T> {
 export declare function createResourceSync<Resource extends string = string>(options?: {
     retryDelaysMs?: readonly number[];
 }): {
-    register: <T>(resource: Resource, reader: ResourceSyncReader<T>) => () => void;
     invalidate: (resources: readonly Resource[], read?: boolean) => void;
+    register: <T>(resource: Resource, reader: ResourceSyncReader<T>) => () => void;
     refresh(resources: readonly Resource[]): Promise<void>;
     subscribe(resource: Resource, listener: () => void): () => void;
     connected(options?: {
@@ -17245,9 +17245,9 @@ export declare function ResultCountStatus({ count, singular, plural, formatCount
 ```ts
 export type ResultCountStatusProps = Omit<ComponentPropsWithoutRef<'span'>, 'aria-atomic' | 'aria-live' | 'children' | 'role'> & {
     count: number;
-    singular?: string;
-    plural?: string;
     formatCount?: (count: number) => ReactNode;
+    plural?: string;
+    singular?: string;
 };
 ```
 
@@ -17279,12 +17279,12 @@ export interface SendOptions {
 
 ```ts
 export declare function usePolledSnapshot<T>({ path, schema, intervalMs, active, timeoutMs, failureMessage, }: {
+    active?: boolean;
+    failureMessage: string;
+    intervalMs: null | number;
     path: string;
     schema: z.ZodType<T>;
-    intervalMs: null | number;
-    active?: boolean;
     timeoutMs?: number;
-    failureMessage: string;
 }): PolledSnapshot<T>;
 ```
 
@@ -17353,9 +17353,9 @@ export interface MiniAppEditPredictionRequest {
     language: string;
     recentlyEditedRanges: Array<{
         before?: string[];
+        endLine?: number;
         lines: string[];
         startLine?: number;
-        endLine?: number;
     }>;
     contextReferences?: MiniAppCompletionReference[];
 }
@@ -17365,8 +17365,6 @@ export interface MiniAppEditPredictionRequest {
 
 ```ts
 export type MiniAppEditPredictionResult = {
-    outcome: 'empty' | 'stale_delivery';
-    edits: null;
     diagnostic?: {
         code: 'empty';
         outcome: 'cancelled' | 'deadline_exceeded' | 'empty' | 'no_model' | 'provider_error';
@@ -17374,9 +17372,11 @@ export type MiniAppEditPredictionResult = {
         code: 'stale_delivery';
         mismatch: string;
     };
+    edits: null;
+    outcome: 'empty' | 'stale_delivery';
 } | {
-    outcome: 'predicted';
     edits: MiniAppEditPrediction[];
+    outcome: 'predicted';
 };
 ```
 
@@ -17445,8 +17445,8 @@ export interface MiniAppPendingInteraction {
     kind: string;
     request: {
         id: string;
-        title?: string;
         payload: unknown;
+        title?: string;
     };
 }
 ```
@@ -17477,8 +17477,8 @@ export interface MiniAppResourceNode {
     navigationOnly?: boolean;
     actions?: Array<{
         id: string;
-        label: string;
         kind: 'link';
+        label: string;
     }>;
 }
 ```
@@ -17504,9 +17504,9 @@ export interface MiniAppSession {
     rootSessionId: null | string;
     sessionKind: 'chat' | 'job' | 'subagent' | 'system';
     agent: {
+        modelId: string;
         name: string;
         providerConnectionId: null | string;
-        modelId: string;
         reasoningEffort: string;
     };
     runtimeStatus: 'completed' | 'failed' | 'idle' | 'running' | 'stopped';
@@ -17515,9 +17515,9 @@ export interface MiniAppSession {
     createdAt: number;
     updatedAt: number;
     messages: Array<{
-        role: string;
         createdAt?: string;
         items?: AgentItem[];
+        role: string;
     }>;
     pendingInteraction: MiniAppPendingInteraction | null;
 }
@@ -17611,8 +17611,8 @@ export interface MiniAppUiRuntime {
         openDiff(request: MiniAppOpenDiffRequest): void;
         openPreview(request: MiniAppOpenPreviewRequest): Promise<void>;
         closeWorkItems(prefix: string, options?: {
-            session?: string;
             everyChat?: boolean;
+            session?: string;
         }): void;
         focusWorkItem(id: string): void;
         openSidebarSection(sectionId: null | string): void;
@@ -17625,12 +17625,12 @@ export interface MiniAppUiRuntime {
     terminal: {
         openPanel(sessionId: string): void;
         paste(request: {
-            sessionId: string;
             command: string;
+            sessionId: string;
         }): void;
         openJob(request: {
-            terminalId: string;
             sessionId: string;
+            terminalId: string;
             title?: string;
         }): void;
         spawnCommand(request: {
@@ -17650,8 +17650,8 @@ export interface MiniAppUiRuntime {
         }): Promise<string[]>;
         bindingsFromFiles(files: readonly File[]): Promise<MessageBindingDraft[]>;
         droppedPaths(files: readonly File[]): Promise<null | {
-            path: string;
             isDir: boolean;
+            path: string;
         }[]>;
         read(sessionId: string, path: string, options?: {
             full?: boolean;
@@ -17792,9 +17792,9 @@ export declare const miniAppComposer: {
 
 ```ts
 export declare const miniAppEditor: {
+    predictNextEdit: (sessionId: string, request: MiniAppEditPredictionRequest, signal?: AbortSignal) => Promise<MiniAppEditPredictionResult>;
     predictionEnabled: () => boolean;
     subscribe: (listener: () => void) => (() => void);
-    predictNextEdit: (sessionId: string, request: MiniAppEditPredictionRequest, signal?: AbortSignal) => Promise<MiniAppEditPredictionResult>;
 };
 ```
 
@@ -17811,24 +17811,24 @@ export declare const miniAppExternal: {
 ```ts
 export declare const miniAppFiles: {
     announceReloaded: (paths: readonly string[]) => void;
-    saveBlob: (filename: string, blob: Blob) => Promise<void>;
+    bindingsFromFiles: (files: readonly File[]) => Promise<MessageBindingDraft[]>;
     download: (path: string, filename: string) => Promise<void>;
+    droppedPaths: (files: readonly File[]) => Promise<null | {
+        isDir: boolean;
+        path: string;
+    }[]>;
     pickFiles: (options?: {
         extensions?: readonly string[];
     }) => Promise<string[]>;
-    bindingsFromFiles: (files: readonly File[]) => Promise<MessageBindingDraft[]>;
-    droppedPaths: (files: readonly File[]) => Promise<null | {
-        path: string;
-        isDir: boolean;
-    }[]>;
     read: (sessionId: string, path: string, options?: {
         full?: boolean;
         knownHash?: string;
         signal?: AbortSignal;
     }) => Promise<MiniAppFileContent>;
+    saveBlob: (filename: string, blob: Blob) => Promise<void>;
     watchWorkspace: (sessionId: string, listener: (change: MiniAppWorkspaceChange) => void, options?: {
-        windowMs?: number;
         onLive?: (live: boolean) => void;
+        windowMs?: number;
     }) => (() => void);
 };
 ```
@@ -17837,8 +17837,8 @@ export declare const miniAppFiles: {
 
 ```ts
 export declare const miniAppNavigation: {
-    revealSession: (sessionId: string, projectId?: string) => void;
     openBinding: (binding: MessageContextBindingDraft, sessionId: null | string) => Promise<boolean>;
+    revealSession: (sessionId: string, projectId?: string) => void;
 };
 ```
 
@@ -17846,10 +17846,10 @@ export declare const miniAppNavigation: {
 
 ```ts
 export declare const miniAppProjects: {
+    refresh: () => Promise<void>;
     resolvePath: (path: string) => Promise<{
         id: string;
     }>;
-    refresh: () => Promise<void>;
 };
 ```
 
@@ -17857,9 +17857,9 @@ export declare const miniAppProjects: {
 
 ```ts
 export declare const miniAppRealtime: {
+    onDisconnect: (handler: () => void) => (() => void);
     onFrame: (tag: string, handler: (json: string) => void) => (() => void);
     onReconnect: (handler: () => void) => (() => void);
-    onDisconnect: (handler: () => void) => (() => void);
     request: <T = unknown>(payload: Record<string, unknown>, options?: {
         signal?: AbortSignal;
         timeoutMs?: number;
@@ -17891,15 +17891,15 @@ export declare const miniAppSecrets: {
 
 ```ts
 export declare const miniAppSessions: {
-    list: () => readonly MiniAppSession[];
-    subscribe: (listener: () => void) => (() => void);
-    stop: (sessionId: string) => Promise<void>;
-    interact: (requestId: string, action: string, payload: Record<string, unknown>) => Promise<void>;
     importConversation: (input: MiniAppConversationImport) => Promise<{
         id: string;
         projectId: string;
     }>;
+    interact: (requestId: string, action: string, payload: Record<string, unknown>) => Promise<void>;
+    list: () => readonly MiniAppSession[];
     openTranscript: (input: MiniAppTranscriptInput) => void;
+    stop: (sessionId: string) => Promise<void>;
+    subscribe: (listener: () => void) => (() => void);
 };
 ```
 
@@ -17907,15 +17907,15 @@ export declare const miniAppSessions: {
 
 ```ts
 export declare const miniAppTerminal: {
+    openJob: (request: {
+        sessionId: string;
+        terminalId: string;
+        title?: string;
+    }) => void;
     openPanel: (sessionId: string) => void;
     paste: (request: {
-        sessionId: string;
         command: string;
-    }) => void;
-    openJob: (request: {
-        terminalId: string;
         sessionId: string;
-        title?: string;
     }) => void;
     spawnCommand: (request: {
         command: string;
@@ -17931,17 +17931,17 @@ export declare const miniAppTerminal: {
 
 ```ts
 export declare const miniAppWorkspace: {
-    openWorkItem: (request: MiniAppWorkItemRequest) => void;
-    openFile: (request: MiniAppOpenFileRequest) => void;
-    openDiff: (request: MiniAppOpenDiffRequest) => void;
-    openPreview: (request: MiniAppOpenPreviewRequest) => Promise<void>;
     closeWorkItems: (prefix: string, options?: {
-        session?: string;
         everyChat?: boolean;
+        session?: string;
     }) => void;
     focusWorkItem: (id: string) => void;
-    openSidebarSection: (sectionId: null | string) => void;
     getSnapshot: () => MiniAppWorkspaceSnapshot;
+    openDiff: (request: MiniAppOpenDiffRequest) => void;
+    openFile: (request: MiniAppOpenFileRequest) => void;
+    openPreview: (request: MiniAppOpenPreviewRequest) => Promise<void>;
+    openSidebarSection: (sectionId: null | string) => void;
+    openWorkItem: (request: MiniAppWorkItemRequest) => void;
     subscribe: (listener: () => void) => (() => void);
 };
 ```
@@ -17988,8 +17988,8 @@ export declare function useMiniAppWorkspace(): MiniAppWorkspaceSnapshot;
 
 ```ts
 export declare function useMiniAppWorkspaceChanges(sessionId: null | string, onChange: (change: MiniAppWorkspaceChange) => void, options?: {
-    windowMs?: number;
     enabled?: boolean;
+    windowMs?: number;
 }): boolean | null;
 ```
 
@@ -18005,13 +18005,13 @@ export declare function useStableCallback<A extends unknown[], R>(fn: (...args: 
 
 ```ts
 export declare function Segmented<T extends string>({ options, value, onChange, ...accessibleName }: SegmentedRadioAccessibleName & {
+    className?: string;
+    onChange: (value: T) => void;
     options: readonly {
         id: T;
         label: string;
     }[];
     value: T;
-    onChange: (value: T) => void;
-    className?: string;
 }): import("react").JSX.Element;
 ```
 
@@ -18019,10 +18019,10 @@ export declare function Segmented<T extends string>({ options, value, onChange, 
 
 ```ts
 export declare function SegmentedControl({ variant, fullWidth, className, children, ...rest }: {
-    variant?: SegmentedVariant;
-    fullWidth?: boolean;
-    className?: string;
     children: React.ReactNode;
+    className?: string;
+    fullWidth?: boolean;
+    variant?: SegmentedVariant;
 } & React.HTMLAttributes<HTMLDivElement>): import("react").JSX.Element;
 ```
 
@@ -18030,13 +18030,13 @@ export declare function SegmentedControl({ variant, fullWidth, className, childr
 
 ```ts
 export declare function SegmentedControlItem({ active, onClick, disabled, className, title, 'aria-label': ariaLabel, children, }: {
-    active: boolean;
-    onClick: () => void;
-    disabled?: boolean;
-    className?: string;
-    title?: string;
     'aria-label'?: string;
+    active: boolean;
     children: React.ReactNode;
+    className?: string;
+    disabled?: boolean;
+    onClick: () => void;
+    title?: string;
 }): import("react").JSX.Element;
 ```
 
@@ -18050,16 +18050,16 @@ export declare function SegmentedRadioGroup<T extends string>({ value, onValueCh
 
 ```ts
 export type SegmentedRadioGroupProps<T extends string> = Omit<React.HTMLAttributes<HTMLDivElement>, 'aria-label' | 'aria-labelledby' | 'onChange'> & SegmentedRadioAccessibleName & {
-    value: T;
+    disabled?: boolean;
+    form?: string;
+    fullWidth?: boolean;
+    name?: string;
     onValueChange: (value: T) => void;
     options: readonly SegmentedRadioOption<T>[];
-    name?: string;
-    size?: SegmentedRadioSize;
-    variant?: SegmentedVariant;
-    fullWidth?: boolean;
-    disabled?: boolean;
     required?: boolean;
-    form?: string;
+    size?: SegmentedRadioSize;
+    value: T;
+    variant?: SegmentedVariant;
 };
 ```
 
@@ -18156,19 +18156,19 @@ export declare function useSessionActivity(sessionId: null | string | undefined)
 
 ```ts
 export declare function sessionGameUi(game: {
-    miniApp: string;
-    kind: string;
-    title: string;
-    label: string;
-    keywords: string[];
     Icon: IconComponent;
     Workspace: ComponentType<{
         active: boolean;
         publishMessageContext: PublishMessageContext;
     }>;
-    loading: ReactNode;
     agentContext: WorkItemAgentContext;
+    keywords: string[];
+    kind: string;
+    label: string;
+    loading: ReactNode;
+    miniApp: string;
     sessionOf: (uri: string) => null | string | undefined;
+    title: string;
 }): (host: MiniAppUiHost) => void;
 ```
 
@@ -18246,14 +18246,14 @@ export interface ChartPoint {
 
 ```ts
 export declare function DistributionChart({ rows, formatValue, onSelect, isSelectable, selectedKey, labelKey, emptyLabel, overflowLabel, }: {
-    rows: readonly ChartPoint[];
-    formatValue: (value: number) => string;
-    onSelect?: (key: string) => void;
-    isSelectable?: (key: string) => boolean;
-    selectedKey?: string;
-    labelKey?: (key: string) => string;
     emptyLabel?: string;
+    formatValue: (value: number) => string;
+    isSelectable?: (key: string) => boolean;
+    labelKey?: (key: string) => string;
+    onSelect?: (key: string) => void;
     overflowLabel?: (hidden: number) => string;
+    rows: readonly ChartPoint[];
+    selectedKey?: string;
 }): import("react").JSX.Element;
 ```
 
@@ -18261,10 +18261,10 @@ export declare function DistributionChart({ rows, formatValue, onSelect, isSelec
 
 ```ts
 export declare function TrendChart({ points, formatValue, bucketLabel, emptyLabel, }: {
-    points: readonly ChartPoint[];
-    formatValue: (value: number) => string;
     bucketLabel?: string;
     emptyLabel?: string;
+    formatValue: (value: number) => string;
+    points: readonly ChartPoint[];
 }): import("react").JSX.Element;
 ```
 
@@ -18323,9 +18323,9 @@ export type StoreScope = Pick<StoreFrame, 'miniApp' | 'sessionId'>;
 
 ```ts
 export declare const storeFeed: import("./realtime-feed").RealtimeFeed<StoreScope, {
+    live?: boolean | undefined;
     miniApp: string;
     sessionId: null | string;
-    live?: boolean | undefined;
 }>;
 ```
 
@@ -18347,9 +18347,9 @@ export declare const STORE_BACKSTOP_POLL_MS: null;
 
 ```ts
 export declare const storeFeed: import("./realtime-feed").RealtimeFeed<StoreScope, {
+    live?: boolean | undefined;
     miniApp: string;
     sessionId: null | string;
-    live?: boolean | undefined;
 }>;
 ```
 
@@ -18357,9 +18357,9 @@ export declare const storeFeed: import("./realtime-feed").RealtimeFeed<StoreScop
 
 ```ts
 export declare function useStoreSnapshot<T>(options: Parameters<typeof usePolledSnapshot<T>>[0] & {
+    backstopMs?: null | number;
     miniApp: string;
     sessionId: null | string;
-    backstopMs?: null | number;
 }): PolledSnapshot<T> & {
     live: boolean;
 };
@@ -18486,8 +18486,8 @@ export declare function miniAppErrorDetail(error: unknown): string | undefined;
 export declare function miniAppFailureFacts(error: unknown): {
     code?: string;
     detail?: string;
-    request?: ProblemRequest;
     prerequisite?: Prerequisite;
+    request?: ProblemRequest;
 };
 ```
 
@@ -18746,8 +18746,8 @@ export interface VisiblePollingOptions {
 
 ```ts
 export declare function WorkItemVisibilityProvider({ visible, children, }: {
-    visible: boolean;
     children: ReactNode;
+    visible: boolean;
 }): import("react").JSX.Element;
 ```
 
@@ -18796,8 +18796,8 @@ export declare function useWorkItemVisible(): boolean;
 
 ```ts
 export declare function WorkItemSessionProvider({ sessionId, children, }: {
-    sessionId: null | string;
     children: ReactNode;
+    sessionId: null | string;
 }): import("react").JSX.Element;
 ```
 
@@ -19073,25 +19073,25 @@ export interface AgentSource {
 ```ts
 export interface AsyncToolRegistry {
     registerActions(toolCallId: string, actions: Record<string, ToolAction>, options?: {
-        label?: string;
         jobId?: string;
         kind?: 'monitor' | 'promoted';
+        label?: string;
         notify?: boolean;
     }): () => void;
     getActions(toolCallId: string): Record<string, ToolAction> | undefined;
     getBackgroundJobId?(toolCallId: string): string | undefined;
     setBackgroundJobTerminalId?(toolCallId: string, terminalId: string): void;
     emitBackground(toolCallId: string, output: string, opts?: {
-        exitCode?: number;
-        wallTimeMs?: number;
-        done?: boolean;
-        jobStatus?: string;
         details?: Record<string, unknown>;
+        done?: boolean;
+        exitCode?: number;
+        jobStatus?: string;
         notify?: boolean;
         stop?: {
             by: 'agent' | 'person' | 'timeout';
             timeoutSecs?: number;
         };
+        wallTimeMs?: number;
     }): void;
     countBackgroundJobs?(): number;
     abortSession?(): void;
@@ -19271,48 +19271,48 @@ TInput = unknown;
 
 ```ts
 export type MessageAttachment = {
-    kind: 'audio';
-    mediaType: string;
-    data?: string;
-    mediaId?: string;
+    contextRef?: boolean;
+    kind: 'text';
+    lineCount?: number;
     name: string;
+    path?: string;
     size: number;
+    spilled?: boolean;
+    text: string;
+} | {
+    data?: string;
     durationMs?: number;
-} | {
-    kind: 'file';
-    mediaType: string;
-    data?: string;
+    kind: 'audio';
     mediaId?: string;
+    mediaType: string;
     name: string;
     size: number;
 } | {
-    kind: 'image';
-    mediaType: string;
     data?: string;
+    kind: 'file';
     mediaId?: string;
+    mediaType: string;
+    name: string;
+    size: number;
+} | {
+    data?: string;
+    kind: 'image';
+    mediaId?: string;
+    mediaType: string;
+    name: string;
+    size: number;
+} | {
+    data?: string;
+    kind: 'video';
+    mediaId?: string;
+    mediaType: string;
     name: string;
     size: number;
 } | {
     kind: 'path';
+    mediaType: string;
+    name: string;
     path: string;
-    mediaType: string;
-    name: string;
-    size: number;
-} | {
-    kind: 'text';
-    name: string;
-    text: string;
-    size: number;
-    spilled?: boolean;
-    path?: string;
-    lineCount?: number;
-    contextRef?: boolean;
-} | {
-    kind: 'video';
-    mediaType: string;
-    data?: string;
-    mediaId?: string;
-    name: string;
     size: number;
 };
 ```
@@ -19360,16 +19360,16 @@ export interface MessageContextBinding {
     assets?: MessageAttachment[];
     miniApp?: string;
     target: {
-        kind: string;
-        token: string;
-        label: string;
-        uri?: string;
         attributes?: Record<string, boolean | number | string>;
+        kind: string;
+        label: string;
+        token: string;
+        uri?: string;
     };
     resolution: {
-        status: MessageBindingStatus;
         capturedAt?: string;
         contributions: MessageBindingContribution[];
+        status: MessageBindingStatus;
     };
 }
 ```
@@ -19382,10 +19382,10 @@ export interface MessageInvocationBinding {
     id: string;
     source: 'plugin' | 'slash' | 'system';
     invocation: {
-        kind: 'plugin-command' | 'skill' | 'workflow' | (string & {});
-        name: string;
         arguments?: string;
+        kind: 'plugin-command' | 'skill' | 'workflow' | (string & {});
         lifetime: 'session' | 'turn';
+        name: string;
     };
     presentation: {
         label: string;
@@ -19591,11 +19591,11 @@ export interface DeviceCodePollOptions<T> {
 
 ```ts
 export type DeviceCodePollResult<T> = {
+    message: string;
+    status: 'failed';
+} | {
     status: 'complete';
     value: T;
-} | {
-    status: 'failed';
-    message: string;
 } | {
     status: 'pending';
 } | {
@@ -19671,12 +19671,12 @@ export interface OAuthAdapter {
     callbackMode: OAuthCallbackMode;
     localServer?: {
         host: string;
-        port: number;
         path: string;
+        port: number;
     };
     buildAuthorizeUrl?: (args: BuildAuthorizeUrlArgs) => {
-        url: string;
         redirectUri: string;
+        url: string;
     };
     exchangeCode?: (args: ExchangeCodeArgs) => Promise<OAuthCredential>;
     startDeviceFlow?: () => Promise<DeviceFlowStart>;
@@ -20295,18 +20295,18 @@ type Align = any;
 
 ```ts
 type CameraCommand = {
+    direction: -1 | 1;
+    kind: "zoom";
+} | {
+    dx: number;
+    dy: number;
+    kind: "pan";
+} | {
     kind: "actual-size";
 } | {
     kind: "fit";
 } | {
     kind: "fit-selection";
-} | {
-    kind: "pan";
-    dx: number;
-    dy: number;
-} | {
-    kind: "zoom";
-    direction: -1 | 1;
 };
 ```
 
@@ -20351,9 +20351,9 @@ type EdgeTypes = any;
 
 ```ts
 type FitOptions = {
-    padding?: number | undefined;
-    maxZoom?: number | undefined;
     limits?: ZoomLimits | undefined;
+    maxZoom?: number | undefined;
+    padding?: number | undefined;
 };
 ```
 
@@ -20507,8 +20507,8 @@ type BufferEdit = any;
 
 ```ts
 type CodeActionSource = (range: {
-    start: EditorPosition;
     end: EditorPosition;
+    start: EditorPosition;
 }, kinds?: string[] | undefined, trigger?: "automatic" | "invoked" | undefined) => Promise<EditorCodeAction[]>;
 ```
 
@@ -20516,10 +20516,10 @@ type CodeActionSource = (range: {
 
 ```ts
 type CommentedRange = {
-    line: number;
+    body?: string | undefined;
     endLine: number;
     id?: string | undefined;
-    body?: string | undefined;
+    line: number;
 };
 ```
 
@@ -20566,12 +20566,12 @@ type DocumentHighlightSource = (pos: EditorPosition) => Promise<EditorDocumentHi
 
 ```ts
 type EditorCodeAction = {
-    title: string;
-    kind?: string | undefined;
-    isPreferred?: boolean | undefined;
-    edit?: unknown;
     command?: unknown;
     data?: unknown;
+    edit?: unknown;
+    isPreferred?: boolean | undefined;
+    kind?: string | undefined;
+    title: string;
 };
 ```
 
@@ -20579,15 +20579,15 @@ type EditorCodeAction = {
 
 ```ts
 type EditorColorInfo = {
-    range: {
-        start: EditorPosition;
-        end: EditorPosition;
-    };
     color: {
-        red: number;
-        green: number;
-        blue: number;
         alpha: number;
+        blue: number;
+        green: number;
+        red: number;
+    };
+    range: {
+        end: EditorPosition;
+        start: EditorPosition;
     };
 };
 ```
@@ -20596,8 +20596,8 @@ type EditorColorInfo = {
 
 ```ts
 type EditorContentChange = {
-    startLine: number;
     endLine: number;
+    startLine: number;
     text: string;
 };
 ```
@@ -20606,8 +20606,8 @@ type EditorContentChange = {
 
 ```ts
 type EditorCursorStatus = {
-    line: number;
     column: number;
+    line: number;
     selectedChars: number;
     selectedLines: number;
 };
@@ -20617,9 +20617,9 @@ type EditorCursorStatus = {
 
 ```ts
 type EditorDefinition = {
+    character?: number | undefined;
     file: string;
     line: number;
-    character?: number | undefined;
 };
 ```
 
@@ -20633,11 +20633,11 @@ type EditorDiagnosticTag = "deprecated" | "unnecessary";
 
 ```ts
 type EditorDocumentHighlight = {
-    range: {
-        start: EditorPosition;
-        end: EditorPosition;
-    };
     kind?: number | undefined;
+    range: {
+        end: EditorPosition;
+        start: EditorPosition;
+    };
 };
 ```
 
@@ -20645,11 +20645,11 @@ type EditorDocumentHighlight = {
 
 ```ts
 type EditorInlayHint = {
-    position: EditorPosition;
-    label: string;
     kind?: number | undefined;
+    label: string;
     paddingLeft?: boolean | undefined;
     paddingRight?: boolean | undefined;
+    position: EditorPosition;
 };
 ```
 
@@ -20657,10 +20657,10 @@ type EditorInlayHint = {
 
 ```ts
 type EditorReference = {
+    character: number;
     file: string;
     fileLabel: string;
     line: number;
-    character: number;
     preview: string;
 };
 ```
@@ -20669,11 +20669,11 @@ type EditorReference = {
 
 ```ts
 type EditorRenamePrepare = {
-    range: null | {
-        start: EditorPosition;
-        end: EditorPosition;
-    };
     placeholder?: string | undefined;
+    range: null | {
+        end: EditorPosition;
+        start: EditorPosition;
+    };
 };
 ```
 
@@ -20681,12 +20681,12 @@ type EditorRenamePrepare = {
 
 ```ts
 type EditorRenameResult = {
+    bufferEdits?: BufferEdit[] | undefined;
     changedFiles: string[];
     files: {
-        file: string;
         content: string;
+        file: string;
     }[];
-    bufferEdits?: BufferEdit[] | undefined;
 };
 ```
 
@@ -20694,8 +20694,8 @@ type EditorRenameResult = {
 
 ```ts
 type EditorSelectionRange = {
-    line: number;
     endLine: number;
+    line: number;
     text: string;
 };
 ```
@@ -20704,13 +20704,13 @@ type EditorSelectionRange = {
 
 ```ts
 type EditorSignatureHelp = {
+    activeParameter: number;
+    activeSignature: number;
     signatures: {
+        documentation?: string | undefined;
         label: string;
         parameters: string[];
-        documentation?: string | undefined;
     }[];
-    activeSignature: number;
-    activeParameter: number;
 };
 ```
 
@@ -20718,11 +20718,11 @@ type EditorSignatureHelp = {
 
 ```ts
 type EditorTextSelection = {
-    text: string;
-    startLine: number;
-    startColumn: number;
-    endLine: number;
     endColumn: number;
+    endLine: number;
+    startColumn: number;
+    startLine: number;
+    text: string;
 };
 ```
 
@@ -20774,8 +20774,8 @@ type ITextModel = any;
 
 ```ts
 type InlayHintSource = (range: {
-    start: EditorPosition;
     end: EditorPosition;
+    start: EditorPosition;
 }) => Promise<EditorInlayHint[]>;
 ```
 
@@ -20783,9 +20783,9 @@ type InlayHintSource = (range: {
 
 ```ts
 type MonacoEditorExtensionContext = {
-    monaco: any;
     editor: IStandaloneCodeEditor;
     model: ITextModel;
+    monaco: any;
 };
 ```
 
@@ -20817,10 +20817,10 @@ type SignatureHelpSource = (pos: EditorPosition) => Promise<EditorSignatureHelp 
 
 ```ts
 type StickySymbol = {
-    name: string;
-    line: number;
-    endLine: number;
     depth: number;
+    endLine: number;
+    line: number;
+    name: string;
 };
 ```
 
@@ -20838,8 +20838,8 @@ type ViewStateBridge = {
 
 ```ts
 type ViewStateSnapshot = {
-    line: number;
     column: number;
+    line: number;
     top: number;
 };
 ```
@@ -20848,8 +20848,8 @@ type ViewStateSnapshot = {
 
 ```ts
 type WordDiffMark = {
-    line: number;
     from: number;
+    line: number;
     to: number;
 };
 ```
@@ -20882,10 +20882,10 @@ T = any;
 
 ```ts
 type Comment = {
-    id: string;
-    scope: string;
     anchor: CommentAnchor;
     body: string;
+    id: string;
+    scope: string;
 };
 ```
 
@@ -20893,14 +20893,14 @@ type Comment = {
 
 ```ts
 type CommentActionContribution = {
+    Icon: IconComponent;
     id: string;
     label: string;
-    title?: string | undefined;
-    Icon: IconComponent;
+    miniAppName?: string | undefined;
     run: (batch: CommentBatch) => Promise<void | {
         message?: string | undefined;
     }>;
-    miniAppName?: string | undefined;
+    title?: string | undefined;
 };
 ```
 
@@ -20908,13 +20908,13 @@ type CommentActionContribution = {
 
 ```ts
 type CommentAnchor = {
-    kind: string;
-    targetId: string;
-    label: string;
+    context?: string | undefined;
     groupId?: string | undefined;
     groupLabel?: string | undefined;
-    context?: string | undefined;
+    kind: string;
+    label: string;
     locator?: Record<string, unknown> | undefined;
+    targetId: string;
 };
 ```
 
@@ -20922,10 +20922,10 @@ type CommentAnchor = {
 
 ```ts
 type CommentBatch = {
-    sessionId: string;
-    title: string;
-    summary: string;
     files: readonly string[];
+    sessionId: string;
+    summary: string;
+    title: string;
 };
 ```
 
@@ -20943,48 +20943,48 @@ type IconComponent = React.ComponentClass<{
 
 ```ts
 type MessageAttachment = {
-    kind: "audio";
-    mediaType: string;
-    data?: string | undefined;
-    mediaId?: string | undefined;
+    contextRef?: boolean | undefined;
+    kind: "text";
+    lineCount?: number | undefined;
     name: string;
+    path?: string | undefined;
     size: number;
+    spilled?: boolean | undefined;
+    text: string;
+} | {
+    data?: string | undefined;
     durationMs?: number | undefined;
-} | {
-    kind: "file";
-    mediaType: string;
-    data?: string | undefined;
+    kind: "audio";
     mediaId?: string | undefined;
+    mediaType: string;
     name: string;
     size: number;
 } | {
-    kind: "image";
-    mediaType: string;
     data?: string | undefined;
+    kind: "file";
     mediaId?: string | undefined;
+    mediaType: string;
+    name: string;
+    size: number;
+} | {
+    data?: string | undefined;
+    kind: "image";
+    mediaId?: string | undefined;
+    mediaType: string;
+    name: string;
+    size: number;
+} | {
+    data?: string | undefined;
+    kind: "video";
+    mediaId?: string | undefined;
+    mediaType: string;
     name: string;
     size: number;
 } | {
     kind: "path";
+    mediaType: string;
+    name: string;
     path: string;
-    mediaType: string;
-    name: string;
-    size: number;
-} | {
-    kind: "text";
-    name: string;
-    text: string;
-    size: number;
-    spilled?: boolean | undefined;
-    path?: string | undefined;
-    lineCount?: number | undefined;
-    contextRef?: boolean | undefined;
-} | {
-    kind: "video";
-    mediaType: string;
-    data?: string | undefined;
-    mediaId?: string | undefined;
-    name: string;
     size: number;
 };
 ```
@@ -20993,48 +20993,48 @@ type MessageAttachment = {
 
 ```ts
 type MessageAttachment = {
-    kind: "audio";
-    mediaType: string;
-    data?: string | undefined;
-    mediaId?: string | undefined;
+    contextRef?: boolean | undefined;
+    kind: "text";
+    lineCount?: number | undefined;
     name: string;
+    path?: string | undefined;
     size: number;
+    spilled?: boolean | undefined;
+    text: string;
+} | {
+    data?: string | undefined;
     durationMs?: number | undefined;
-} | {
-    kind: "file";
-    mediaType: string;
-    data?: string | undefined;
+    kind: "audio";
     mediaId?: string | undefined;
+    mediaType: string;
     name: string;
     size: number;
 } | {
-    kind: "image";
-    mediaType: string;
     data?: string | undefined;
+    kind: "file";
     mediaId?: string | undefined;
+    mediaType: string;
+    name: string;
+    size: number;
+} | {
+    data?: string | undefined;
+    kind: "image";
+    mediaId?: string | undefined;
+    mediaType: string;
+    name: string;
+    size: number;
+} | {
+    data?: string | undefined;
+    kind: "video";
+    mediaId?: string | undefined;
+    mediaType: string;
     name: string;
     size: number;
 } | {
     kind: "path";
+    mediaType: string;
+    name: string;
     path: string;
-    mediaType: string;
-    name: string;
-    size: number;
-} | {
-    kind: "text";
-    name: string;
-    text: string;
-    size: number;
-    spilled?: boolean | undefined;
-    path?: string | undefined;
-    lineCount?: number | undefined;
-    contextRef?: boolean | undefined;
-} | {
-    kind: "video";
-    mediaType: string;
-    data?: string | undefined;
-    mediaId?: string | undefined;
-    name: string;
     size: number;
 };
 ```
@@ -21049,16 +21049,16 @@ type MessageBindingTargetKind = "call" | "file" | "message" | "project" | "resou
 
 ```ts
 type MessageContextBindingDraft = {
-    kind: "context";
-    source: "active-tab" | "drag" | "mini-app";
     assets?: MessageAttachment[] | undefined;
+    kind: "context";
     miniApp?: string | undefined;
+    source: "active-tab" | "drag" | "mini-app";
     target: {
-        kind: MessageBindingTargetKind;
-        token: string;
-        label: string;
-        uri?: string | undefined;
         attributes?: Record<string, boolean | number | string> | undefined;
+        kind: MessageBindingTargetKind;
+        label: string;
+        token: string;
+        uri?: string | undefined;
     };
 };
 ```
@@ -21141,8 +21141,8 @@ type DiffViewMode = "split" | "unified";
 type DocHunk = {
     file: number;
     header: string;
-    lineStart: number;
     lineEnd: number;
+    lineStart: number;
 };
 ```
 
@@ -21150,15 +21150,15 @@ type DocHunk = {
 
 ```ts
 type DocLine = {
-    type: DiffLineType;
-    text: string;
-    oldNo?: number | undefined;
-    newNo?: number | undefined;
-    key?: number | undefined;
+    cols: number;
     hunk: number;
+    key?: number | undefined;
+    newNo?: number | undefined;
+    oldNo?: number | undefined;
     partner: number;
     run: number;
-    cols: number;
+    text: string;
+    type: DiffLineType;
 };
 ```
 
@@ -21323,13 +21323,13 @@ type UseBoundStore<S = any> = any;
 
 ```ts
 type BoundedCache<K, V> = {
-    get: (key: K) => V | undefined;
-    peek: (key: K) => V | undefined;
-    has: (key: K) => boolean;
-    set: (key: K, value: V) => boolean;
+    clear: () => void;
     delete: (key: K) => boolean;
     deleteWhere: (predicate: (value: V, key: K) => boolean) => void;
-    clear: () => void;
+    get: (key: K) => V | undefined;
+    has: (key: K) => boolean;
+    peek: (key: K) => V | undefined;
+    set: (key: K, value: V) => boolean;
     size: number;
     weight: number;
 };
@@ -21341,8 +21341,8 @@ type BoundedCache<K, V> = {
 type BoundedCacheOptions<K, V> = {
     maxEntries: number;
     maxWeight?: number | undefined;
-    weigh?: ((value: V, key: K) => number) | undefined;
     onEvict?: ((key: K, value: V) => void) | undefined;
+    weigh?: ((value: V, key: K) => number) | undefined;
 };
 ```
 
@@ -21369,10 +21369,10 @@ V;
 
 ```ts
 type WheelOutcome = {
-    type: "ignore";
-} | {
-    type: "scroll";
     scrollLeft: number;
+    type: "scroll";
+} | {
+    type: "ignore";
 };
 ```
 
@@ -21380,9 +21380,9 @@ type WheelOutcome = {
 
 ```ts
 type ListReorder = {
+    announcement: string;
     draggingId: null | string;
     rowProps: (id: string) => ReorderRow;
-    announcement: string;
 };
 ```
 
@@ -21391,8 +21391,8 @@ type ListReorder = {
 ```ts
 type ListReorderOptions = {
     ids: readonly string[];
-    onMove: (id: string, index: number) => void;
     labelOf?: ((id: string) => string) | undefined;
+    onMove: (id: string, index: number) => void;
 };
 ```
 
@@ -21400,10 +21400,10 @@ type ListReorderOptions = {
 
 ```ts
 type ReorderHandleProps = {
-    draggable: boolean;
     "aria-keyshortcuts": string;
-    onDragStart: (event: React.DragEvent<Element>) => void;
+    draggable: boolean;
     onDragEnd: () => void;
+    onDragStart: (event: React.DragEvent<Element>) => void;
     onKeyDown: (event: React.KeyboardEvent<Element>) => void;
 };
 ```
@@ -21421,13 +21421,13 @@ type ReorderRow = {
 
 ```ts
 type ReorderRowProps = {
-    "aria-setsize": number;
     "aria-posinset": number;
-    onDragOver: (event: React.DragEvent<Element>) => void;
-    onDrop: (event: React.DragEvent<Element>) => void;
-    onDragLeave: () => void;
+    "aria-setsize": number;
     "data-dragging"?: true | undefined;
     "data-drop-before"?: true | undefined;
+    onDragLeave: () => void;
+    onDragOver: (event: React.DragEvent<Element>) => void;
+    onDrop: (event: React.DragEvent<Element>) => void;
 };
 ```
 
@@ -21447,8 +21447,8 @@ type LocalixBeamIntensity = 0 | 1 | 2 | 3 | 4 | 5;
 
 ```ts
 type MermaidLook = {
-    key: string;
     config: Record<string, unknown>;
+    key: string;
 };
 ```
 
@@ -21465,10 +21465,10 @@ type MermaidRenderer = {
 
 ```ts
 type MediaOverlayStyleOptions = {
-    size?: "lg" | "md" | "sm" | "xl" | "xs" | undefined;
-    shape?: "round" | "square" | undefined;
-    destructive?: boolean | undefined;
     className?: string | undefined;
+    destructive?: boolean | undefined;
+    shape?: "round" | "square" | undefined;
+    size?: "lg" | "md" | "sm" | "xl" | "xs" | undefined;
 };
 ```
 
@@ -21486,26 +21486,26 @@ type IconComponent = React.ComponentClass<{
 
 ```ts
 type MenuActionEntry = {
-    id: string;
-    label: string;
-    icon?: IconComponent | undefined;
+    checked?: boolean | undefined;
     chordId?: string | undefined;
-    hint?: string | undefined;
+    danger?: boolean | undefined;
     description?: string | undefined;
     disabled?: boolean | undefined;
+    hint?: string | undefined;
+    icon?: IconComponent | undefined;
+    id: string;
+    keepOpen?: boolean | undefined;
+    label: string;
+    onSelect: () => void;
+    recommended?: boolean | undefined;
+    selected?: boolean | undefined;
     trailingAction?: undefined | {
-        label: string;
-        icon: IconComponent;
         checked?: boolean | undefined;
         disabled?: boolean | undefined;
+        icon: IconComponent;
+        label: string;
         onSelect: () => void;
     };
-    checked?: boolean | undefined;
-    selected?: boolean | undefined;
-    keepOpen?: boolean | undefined;
-    danger?: boolean | undefined;
-    recommended?: boolean | undefined;
-    onSelect: () => void;
 };
 ```
 
@@ -21541,14 +21541,14 @@ type MenuSeparatorEntry = {
 
 ```ts
 type MenuSubmenuEntry = {
-    id: string;
-    label: string;
-    icon?: IconComponent | undefined;
-    hint?: string | undefined;
     description?: string | undefined;
     disabled?: boolean | undefined;
-    items: readonly MenuEntry[];
     emptyLabel?: string | undefined;
+    hint?: string | undefined;
+    icon?: IconComponent | undefined;
+    id: string;
+    items: readonly MenuEntry[];
+    label: string;
 };
 ```
 
@@ -21556,9 +21556,9 @@ type MenuSubmenuEntry = {
 
 ```ts
 type OverviewRegistryMetric = {
+    icon?: LucideIcon | undefined;
     label: string;
     value: React.ReactNode;
-    icon?: LucideIcon | undefined;
 };
 ```
 
@@ -21566,13 +21566,13 @@ type OverviewRegistryMetric = {
 
 ```ts
 type PaneResize = {
-    size: number;
-    resizing: boolean;
-    onResizeStart: (e: React.PointerEvent<Element>) => void;
-    onResizeKeyDown: (e: React.KeyboardEvent<Element>) => void;
-    reset: () => void;
     limit: number;
     min: number;
+    onResizeKeyDown: (e: React.KeyboardEvent<Element>) => void;
+    onResizeStart: (e: React.PointerEvent<Element>) => void;
+    reset: () => void;
+    resizing: boolean;
+    size: number;
 };
 ```
 
@@ -21600,21 +21600,21 @@ type ListenFn = (event: string, handler: (event: {
 ```ts
 type PlatformCapabilities = {
     clipboard: {
-        writeText: (text: string) => Promise<boolean>;
         readText: () => Promise<null | string>;
         writeBlob: (blob: Blob, mediaType?: string | undefined) => Promise<boolean>;
-    };
-    navigation: {
-        reload: () => void;
-    };
-    external: {
-        open: (url: string, systemBrowser?: boolean | undefined) => void;
-        requestOpen: (url: string, systemBrowser?: boolean | undefined) => Promise<boolean>;
+        writeText: (text: string) => Promise<boolean>;
     };
     desktop: {
         invoke: <T = unknown>(command: string, args?: Record<string, unknown> | undefined) => Promise<T> | null;
         invoker: () => InvokeFn | undefined;
         listener: () => ListenFn | undefined;
+    };
+    external: {
+        open: (url: string, systemBrowser?: boolean | undefined) => void;
+        requestOpen: (url: string, systemBrowser?: boolean | undefined) => Promise<boolean>;
+    };
+    navigation: {
+        reload: () => void;
     };
 };
 ```
@@ -21677,15 +21677,15 @@ type UpdatePositionStrategy = any;
 
 ```ts
 type RichBlock = RichParagraph | {
-    type: "bulletList";
-    content: RichListItem[];
-} | {
-    type: "orderedList";
     attrs?: undefined | {
         start?: number | undefined;
         type?: "1" | "A" | "I" | "a" | "i" | null | undefined;
     };
     content: RichListItem[];
+    type: "orderedList";
+} | {
+    content: RichListItem[];
+    type: "bulletList";
 };
 ```
 
@@ -21693,11 +21693,11 @@ type RichBlock = RichParagraph | {
 
 ```ts
 type RichInline = {
-    type: "hardBreak";
-} | {
-    type: "text";
-    text: string;
     marks?: RichMark[] | undefined;
+    text: string;
+    type: "text";
+} | {
+    type: "hardBreak";
 };
 ```
 
@@ -21705,11 +21705,11 @@ type RichInline = {
 
 ```ts
 type RichListItem = {
-    type: "listItem";
     content: [
         RichParagraph,
         ...RichBlock[]
     ];
+    type: "listItem";
 };
 ```
 
@@ -21717,15 +21717,15 @@ type RichListItem = {
 
 ```ts
 type RichMark = {
-    type: "bold" | "italic";
-} | {
-    type: "link";
     attrs: {
-        href: string;
-        target?: null | string | undefined;
-        rel?: null | string | undefined;
         class?: null | undefined;
+        href: string;
+        rel?: null | string | undefined;
+        target?: null | string | undefined;
     };
+    type: "link";
+} | {
+    type: "bold" | "italic";
 };
 ```
 
@@ -21733,8 +21733,8 @@ type RichMark = {
 
 ```ts
 type RichParagraph = {
-    type: "paragraph";
     content?: RichInline[] | undefined;
+    type: "paragraph";
 };
 ```
 
@@ -21742,8 +21742,8 @@ type RichParagraph = {
 
 ```ts
 type RichTextDocument = {
-    type: "doc";
     content: RichBlock[];
+    type: "doc";
 };
 ```
 
@@ -21757,15 +21757,15 @@ type RichTextValue = RichTextDocument | string;
 
 ```ts
 type RichBlock = RichParagraph | {
-    type: "bulletList";
-    content: RichListItem[];
-} | {
-    type: "orderedList";
     attrs?: undefined | {
         start?: number | undefined;
         type?: "1" | "A" | "I" | "a" | "i" | null | undefined;
     };
     content: RichListItem[];
+    type: "orderedList";
+} | {
+    content: RichListItem[];
+    type: "bulletList";
 };
 ```
 
@@ -21773,11 +21773,11 @@ type RichBlock = RichParagraph | {
 
 ```ts
 type RichInline = {
-    type: "hardBreak";
-} | {
-    type: "text";
-    text: string;
     marks?: RichMark[] | undefined;
+    text: string;
+    type: "text";
+} | {
+    type: "hardBreak";
 };
 ```
 
@@ -21785,11 +21785,11 @@ type RichInline = {
 
 ```ts
 type RichListItem = {
-    type: "listItem";
     content: [
         RichParagraph,
         ...RichBlock[]
     ];
+    type: "listItem";
 };
 ```
 
@@ -21797,15 +21797,15 @@ type RichListItem = {
 
 ```ts
 type RichMark = {
-    type: "bold" | "italic";
-} | {
-    type: "link";
     attrs: {
-        href: string;
-        target?: null | string | undefined;
-        rel?: null | string | undefined;
         class?: null | undefined;
+        href: string;
+        rel?: null | string | undefined;
+        target?: null | string | undefined;
     };
+    type: "link";
+} | {
+    type: "bold" | "italic";
 };
 ```
 
@@ -21813,8 +21813,8 @@ type RichMark = {
 
 ```ts
 type RichParagraph = {
-    type: "paragraph";
     content?: RichInline[] | undefined;
+    type: "paragraph";
 };
 ```
 
@@ -21822,8 +21822,8 @@ type RichParagraph = {
 
 ```ts
 type RichTextDocument = {
-    type: "doc";
     content: RichBlock[];
+    type: "doc";
 };
 ```
 
@@ -21837,9 +21837,9 @@ type RichTextValue = RichTextDocument | string;
 
 ```ts
 type ScrollGeometry = {
-    scrollTop: number;
-    scrollHeight: number;
     clientHeight: number;
+    scrollHeight: number;
+    scrollTop: number;
 };
 ```
 
@@ -21847,8 +21847,8 @@ type ScrollGeometry = {
 
 ```ts
 type ScrollSyncGuard = {
-    isGuarded: () => boolean;
     guard: (applyScroll: () => void) => void;
+    isGuarded: () => boolean;
 };
 ```
 
@@ -21862,13 +21862,13 @@ type ChoiceControlSize = "lg" | "md" | "xl";
 
 ```ts
 type ShelfRowShape = {
-    perView: number;
-    columns?: undefined;
-    rows?: undefined;
-} | {
-    perView?: undefined;
     columns: number;
+    perView?: undefined;
     rows?: number | undefined;
+} | {
+    columns?: undefined;
+    perView: number;
+    rows?: undefined;
 };
 ```
 
@@ -21889,11 +21889,11 @@ string = string;
 
 ```ts
 type TabMenuItem<T extends string = string> = {
+    chordId?: string | undefined;
+    disabled?: boolean | undefined;
     label: string;
     onSelect: (id: T) => void;
     separatorBefore?: boolean | undefined;
-    disabled?: boolean | undefined;
-    chordId?: string | undefined;
 };
 ```
 
@@ -21907,11 +21907,11 @@ type TabStripVariant = "compact" | "primary" | "underline";
 
 ```ts
 type AutomaticContextProvider = {
-    id: string;
-    version: string;
     destinations: readonly ContextDestination[];
-    sensitivity: ContextSensitivity;
+    id: string;
     provide: (req: AutomaticContextRequest, signal: AbortSignal) => Promise<ContextContribution[]>;
+    sensitivity: ContextSensitivity;
+    version: string;
 };
 ```
 
@@ -21919,46 +21919,46 @@ type AutomaticContextProvider = {
 
 ```ts
 type AutomaticContextRequest = {
+    cursor?: undefined | {
+        character: number;
+        line: number;
+    };
+    deadlineAtMs?: number | undefined;
+    destination: ContextDestination;
     document?: undefined | {
-        uri: string;
+        content: string;
         languageId: string;
         revision: string;
-        content: string;
+        uri: string;
     };
     editHistory?: undefined | {
         before?: string[] | undefined;
+        endLine?: number | undefined;
         lines: string[];
         startLine?: number | undefined;
-        endLine?: number | undefined;
     }[];
-    cursor?: undefined | {
-        line: number;
-        character: number;
-    };
-    selection?: undefined | {
-        start: {
-            line: number;
-            character: number;
-        };
-        end: {
-            line: number;
-            character: number;
-        };
-    };
-    destination: ContextDestination;
-    userId: string;
-    projectId?: string | undefined;
-    sessionId?: string | undefined;
     isolationId?: string | undefined;
-    workspace?: undefined | {
-        rootPath: string;
-        isolationId?: string | undefined;
-        excludedRelativePaths?: string[] | undefined;
-    };
     maxBytes: number;
-    maxTokens?: number | undefined;
     maxItems?: number | undefined;
-    deadlineAtMs?: number | undefined;
+    maxTokens?: number | undefined;
+    projectId?: string | undefined;
+    selection?: undefined | {
+        end: {
+            character: number;
+            line: number;
+        };
+        start: {
+            character: number;
+            line: number;
+        };
+    };
+    sessionId?: string | undefined;
+    userId: string;
+    workspace?: undefined | {
+        excludedRelativePaths?: string[] | undefined;
+        isolationId?: string | undefined;
+        rootPath: string;
+    };
 };
 ```
 
@@ -21966,35 +21966,35 @@ type AutomaticContextRequest = {
 
 ```ts
 type ContextContribution = {
+    content: string;
     id: string;
+    kind: string;
+    priority: number;
     providerId: string;
     providerVersion: string;
+    range?: undefined | {
+        end: {
+            character: number;
+            line: number;
+        };
+        start: {
+            character: number;
+            line: number;
+        };
+    };
+    relevanceHints?: undefined | {
+        explicit?: boolean | undefined;
+        recency?: number | undefined;
+        symbols?: string[] | undefined;
+    };
+    revision?: string | undefined;
     scope: ContextScope;
-    kind: string;
-    content: string;
-    uri?: string | undefined;
+    sensitivity: ContextSensitivity;
     source?: undefined | {
         path: string;
     };
-    range?: undefined | {
-        start: {
-            line: number;
-            character: number;
-        };
-        end: {
-            line: number;
-            character: number;
-        };
-    };
-    revision?: string | undefined;
-    priority: number;
-    sensitivity: ContextSensitivity;
-    relevanceHints?: undefined | {
-        symbols?: string[] | undefined;
-        recency?: number | undefined;
-        explicit?: boolean | undefined;
-    };
     ttlMs?: number | undefined;
+    uri?: string | undefined;
 };
 ```
 
@@ -22009,8 +22009,8 @@ type ContextDestination = "chat" | "edit-prediction" | "inline-completion" | "re
 ```ts
 type ContextEstimate = {
     bytes: number;
-    tokens?: number | undefined;
     revision?: string | undefined;
+    tokens?: number | undefined;
 };
 ```
 
@@ -22018,14 +22018,14 @@ type ContextEstimate = {
 
 ```ts
 type ContextProviderContribution = {
-    provider: AutomaticContextProvider | ContextResolver;
-    destinations: readonly ContextDestination[];
     activation: "automatic" | "explicit";
     defaultEnabled: boolean;
-    maxTokens: number;
-    timeoutMs: number;
-    sensitivity: ContextSensitivity;
+    destinations: readonly ContextDestination[];
     fallback?: boolean | undefined;
+    maxTokens: number;
+    provider: AutomaticContextProvider | ContextResolver;
+    sensitivity: ContextSensitivity;
+    timeoutMs: number;
 };
 ```
 
@@ -22033,22 +22033,22 @@ type ContextProviderContribution = {
 
 ```ts
 type ContextReference = {
-    version: 1;
+    attributes?: Readonly<Record<string, boolean | number | string>> | undefined;
+    freshness: "resolve-at-send" | "snapshot";
     id: string;
     kind: string;
-    uri?: string | undefined;
     presentation: {
-        token?: string | undefined;
         label: string;
+        token?: string | undefined;
     };
-    freshness: "resolve-at-send" | "snapshot";
     scope: {
-        userId: string;
+        isolationId?: string | undefined;
         projectId?: string | undefined;
         sessionId?: string | undefined;
-        isolationId?: string | undefined;
+        userId: string;
     };
-    attributes?: Readonly<Record<string, boolean | number | string>> | undefined;
+    uri?: string | undefined;
+    version: 1;
 };
 ```
 
@@ -22056,11 +22056,11 @@ type ContextReference = {
 
 ```ts
 type ContextResolver = {
-    id: string;
-    version: string;
-    supports: (ref: ContextReference, destination: ContextDestination) => boolean;
     estimate: (ref: ContextReference, ctx: ResolveContext, signal: AbortSignal) => Promise<ContextEstimate>;
+    id: string;
     resolve: (ref: ContextReference, ctx: ResolveContext, signal: AbortSignal) => Promise<ContextContribution[]>;
+    supports: (ref: ContextReference, destination: ContextDestination) => boolean;
+    version: string;
 };
 ```
 
@@ -22080,20 +22080,20 @@ type ContextSensitivity = "forbidden" | "project" | "public" | "sensitive";
 
 ```ts
 type ResolveContext = {
+    deadlineAtMs?: number | undefined;
     destination: ContextDestination;
-    userId: string;
+    isolationId?: string | undefined;
+    maxBytes: number;
+    maxItems?: number | undefined;
+    maxTokens?: number | undefined;
     projectId?: string | undefined;
     sessionId?: string | undefined;
-    isolationId?: string | undefined;
+    userId: string;
     workspace?: undefined | {
-        rootPath: string;
-        isolationId?: string | undefined;
         excludedRelativePaths?: string[] | undefined;
+        isolationId?: string | undefined;
+        rootPath: string;
     };
-    maxBytes: number;
-    maxTokens?: number | undefined;
-    maxItems?: number | undefined;
-    deadlineAtMs?: number | undefined;
 };
 ```
 
@@ -22136,14 +22136,14 @@ type AgentItemStatus = "aborted" | "completed" | "failed" | "pending" | "running
 type AgentSource = {
     id: string;
     kind: string;
+    metadata?: Record<string, boolean | number | string> | undefined;
+    provider?: string | undefined;
+    retrievedAt?: string | undefined;
+    role: "cited" | "consulted" | "discovered";
+    snippet?: string | undefined;
+    status: "available" | "failed";
     title: string;
     uri: string;
-    role: "cited" | "consulted" | "discovered";
-    status: "available" | "failed";
-    provider?: string | undefined;
-    snippet?: string | undefined;
-    retrievedAt?: string | undefined;
-    metadata?: Record<string, boolean | number | string> | undefined;
 };
 ```
 
@@ -22151,8 +22151,8 @@ type AgentSource = {
 
 ```ts
 type AgentToolPresentation = {
-    transcript?: "content" | "hidden" | "tool" | undefined;
     sealed?: AgentToolSealing | undefined;
+    transcript?: "content" | "hidden" | "tool" | undefined;
 };
 ```
 
@@ -22169,46 +22169,46 @@ type AgentToolSealing = {
 
 ```ts
 type CommandItem = {
-    type: "command";
-    command: string;
-    cwd?: string | undefined;
-    output?: string | undefined;
-    exitCode?: number | undefined;
-    durationMs?: number | undefined;
-    terminalId?: string | undefined;
-    toolCallId: string;
-    name: string;
-    input?: unknown;
-    thoughtSignature?: string | undefined;
-    resultText?: string | undefined;
-    sources?: AgentSource[] | undefined;
+    actions?: ToolActionDescriptor[] | undefined;
+    api?: string | undefined;
     attachments?: undefined | {
-        kind: "image";
-        mediaType: string;
         data?: string | undefined;
+        kind: "image";
         mediaId?: string | undefined;
+        mediaType: string;
         name: string;
         size: number;
     }[];
+    command: string;
+    completedAt?: number | undefined;
+    contentIndex?: number | undefined;
+    cwd?: string | undefined;
+    durationMs?: number | undefined;
+    error?: ToolErrorPayload | undefined;
+    errorText?: string | undefined;
+    exitCode?: number | undefined;
+    gate?: ToolGateProvenance | undefined;
+    id: string;
+    input?: unknown;
     isBackground?: boolean | undefined;
     jobStatus?: CommandJobStatus | undefined;
-    errorText?: string | undefined;
-    error?: ToolErrorPayload | undefined;
-    supersedeKey?: string | undefined;
-    gate?: ToolGateProvenance | undefined;
-    standalone?: boolean | undefined;
-    presentation?: AgentToolPresentation | undefined;
-    actions?: ToolActionDescriptor[] | undefined;
-    id: string;
-    status: AgentItemStatus;
-    turnIndex?: number | undefined;
-    contentIndex?: number | undefined;
-    api?: string | undefined;
-    provider?: string | undefined;
     model?: string | undefined;
+    name: string;
+    output?: string | undefined;
+    presentation?: AgentToolPresentation | undefined;
+    provider?: string | undefined;
     providerThinkingLevel?: string | undefined;
+    resultText?: string | undefined;
+    sources?: AgentSource[] | undefined;
+    standalone?: boolean | undefined;
     startedAt?: number | undefined;
-    completedAt?: number | undefined;
+    status: AgentItemStatus;
+    supersedeKey?: string | undefined;
+    terminalId?: string | undefined;
+    thoughtSignature?: string | undefined;
+    toolCallId: string;
+    turnIndex?: number | undefined;
+    type: "command";
 };
 ```
 
@@ -22222,11 +22222,11 @@ type CommandJobStatus = "completed" | "failed" | "killed" | "lost" | "running" |
 
 ```ts
 type FileChange = {
-    path: string;
-    kind: FileChangeKind;
     diff?: string | undefined;
-    failed?: boolean | undefined;
     failReason?: string | undefined;
+    failed?: boolean | undefined;
+    kind: FileChangeKind;
+    path: string;
 };
 ```
 
@@ -22234,41 +22234,41 @@ type FileChange = {
 
 ```ts
 type FileChangeItem = {
-    type: "file_change";
-    changes: FileChange[];
-    toolCallId: string;
-    name: string;
-    input?: unknown;
-    thoughtSignature?: string | undefined;
-    resultText?: string | undefined;
-    sources?: AgentSource[] | undefined;
+    actions?: ToolActionDescriptor[] | undefined;
+    api?: string | undefined;
     attachments?: undefined | {
-        kind: "image";
-        mediaType: string;
         data?: string | undefined;
+        kind: "image";
         mediaId?: string | undefined;
+        mediaType: string;
         name: string;
         size: number;
     }[];
+    changes: FileChange[];
+    completedAt?: number | undefined;
+    contentIndex?: number | undefined;
+    error?: ToolErrorPayload | undefined;
+    errorText?: string | undefined;
+    gate?: ToolGateProvenance | undefined;
+    id: string;
+    input?: unknown;
     isBackground?: boolean | undefined;
     jobStatus?: CommandJobStatus | undefined;
-    errorText?: string | undefined;
-    error?: ToolErrorPayload | undefined;
-    supersedeKey?: string | undefined;
-    gate?: ToolGateProvenance | undefined;
-    standalone?: boolean | undefined;
-    presentation?: AgentToolPresentation | undefined;
-    actions?: ToolActionDescriptor[] | undefined;
-    id: string;
-    status: AgentItemStatus;
-    turnIndex?: number | undefined;
-    contentIndex?: number | undefined;
-    api?: string | undefined;
-    provider?: string | undefined;
     model?: string | undefined;
+    name: string;
+    presentation?: AgentToolPresentation | undefined;
+    provider?: string | undefined;
     providerThinkingLevel?: string | undefined;
+    resultText?: string | undefined;
+    sources?: AgentSource[] | undefined;
+    standalone?: boolean | undefined;
     startedAt?: number | undefined;
-    completedAt?: number | undefined;
+    status: AgentItemStatus;
+    supersedeKey?: string | undefined;
+    thoughtSignature?: string | undefined;
+    toolCallId: string;
+    turnIndex?: number | undefined;
+    type: "file_change";
 };
 ```
 
@@ -22282,44 +22282,44 @@ type FileChangeKind = "add" | "delete" | "modify" | "rename";
 
 ```ts
 type McpCallItem = {
-    type: "mcp_call";
-    server: string;
-    tool: string;
-    result?: unknown;
-    durationMs?: number | undefined;
-    toolCallId: string;
-    name: string;
-    input?: unknown;
-    thoughtSignature?: string | undefined;
-    resultText?: string | undefined;
-    sources?: AgentSource[] | undefined;
+    actions?: ToolActionDescriptor[] | undefined;
+    api?: string | undefined;
     attachments?: undefined | {
-        kind: "image";
-        mediaType: string;
         data?: string | undefined;
+        kind: "image";
         mediaId?: string | undefined;
+        mediaType: string;
         name: string;
         size: number;
     }[];
+    completedAt?: number | undefined;
+    contentIndex?: number | undefined;
+    durationMs?: number | undefined;
+    error?: ToolErrorPayload | undefined;
+    errorText?: string | undefined;
+    gate?: ToolGateProvenance | undefined;
+    id: string;
+    input?: unknown;
     isBackground?: boolean | undefined;
     jobStatus?: CommandJobStatus | undefined;
-    errorText?: string | undefined;
-    error?: ToolErrorPayload | undefined;
-    supersedeKey?: string | undefined;
-    gate?: ToolGateProvenance | undefined;
-    standalone?: boolean | undefined;
-    presentation?: AgentToolPresentation | undefined;
-    actions?: ToolActionDescriptor[] | undefined;
-    id: string;
-    status: AgentItemStatus;
-    turnIndex?: number | undefined;
-    contentIndex?: number | undefined;
-    api?: string | undefined;
-    provider?: string | undefined;
     model?: string | undefined;
+    name: string;
+    presentation?: AgentToolPresentation | undefined;
+    provider?: string | undefined;
     providerThinkingLevel?: string | undefined;
+    result?: unknown;
+    resultText?: string | undefined;
+    server: string;
+    sources?: AgentSource[] | undefined;
+    standalone?: boolean | undefined;
     startedAt?: number | undefined;
-    completedAt?: number | undefined;
+    status: AgentItemStatus;
+    supersedeKey?: string | undefined;
+    thoughtSignature?: string | undefined;
+    tool: string;
+    toolCallId: string;
+    turnIndex?: number | undefined;
+    type: "mcp_call";
 };
 ```
 
@@ -22333,20 +22333,20 @@ type NarrativeItem = ReasoningItem | TextItem;
 
 ```ts
 type ReasoningItem = {
-    type: "reasoning";
+    api?: string | undefined;
+    completedAt?: number | undefined;
+    contentIndex?: number | undefined;
+    id: string;
+    model?: string | undefined;
+    provider?: string | undefined;
+    providerThinkingLevel?: string | undefined;
+    redacted?: boolean | undefined;
+    startedAt?: number | undefined;
+    status: AgentItemStatus;
     text: string;
     thinkingSignature?: string | undefined;
-    redacted?: boolean | undefined;
-    id: string;
-    status: AgentItemStatus;
     turnIndex?: number | undefined;
-    contentIndex?: number | undefined;
-    api?: string | undefined;
-    provider?: string | undefined;
-    model?: string | undefined;
-    providerThinkingLevel?: string | undefined;
-    startedAt?: number | undefined;
-    completedAt?: number | undefined;
+    type: "reasoning";
 };
 ```
 
@@ -22354,19 +22354,19 @@ type ReasoningItem = {
 
 ```ts
 type TextItem = {
-    type: "text";
-    text: string;
-    textSignature?: string | undefined;
-    id: string;
-    status: AgentItemStatus;
-    turnIndex?: number | undefined;
-    contentIndex?: number | undefined;
     api?: string | undefined;
-    provider?: string | undefined;
+    completedAt?: number | undefined;
+    contentIndex?: number | undefined;
+    id: string;
     model?: string | undefined;
+    provider?: string | undefined;
     providerThinkingLevel?: string | undefined;
     startedAt?: number | undefined;
-    completedAt?: number | undefined;
+    status: AgentItemStatus;
+    text: string;
+    textSignature?: string | undefined;
+    turnIndex?: number | undefined;
+    type: "text";
 };
 ```
 
@@ -22374,12 +22374,12 @@ type TextItem = {
 
 ```ts
 type ToolActionDescriptor = {
-    toolCallId: string;
     action: string;
-    label: string;
-    icon?: string | undefined;
     enabled?: boolean | undefined;
+    icon?: string | undefined;
+    label: string;
     tone?: "danger" | "neutral" | undefined;
+    toolCallId: string;
 };
 ```
 
@@ -22393,42 +22393,42 @@ type ToolBackedItem = CommandItem | FileChangeItem | McpCallItem | ToolCallItem;
 
 ```ts
 type ToolCallItem = {
-    type: "tool_call";
-    output?: unknown;
+    actions?: ToolActionDescriptor[] | undefined;
     activeVerb: string;
-    toolCallId: string;
-    name: string;
-    input?: unknown;
-    thoughtSignature?: string | undefined;
-    resultText?: string | undefined;
-    sources?: AgentSource[] | undefined;
+    api?: string | undefined;
     attachments?: undefined | {
-        kind: "image";
-        mediaType: string;
         data?: string | undefined;
+        kind: "image";
         mediaId?: string | undefined;
+        mediaType: string;
         name: string;
         size: number;
     }[];
+    completedAt?: number | undefined;
+    contentIndex?: number | undefined;
+    error?: ToolErrorPayload | undefined;
+    errorText?: string | undefined;
+    gate?: ToolGateProvenance | undefined;
+    id: string;
+    input?: unknown;
     isBackground?: boolean | undefined;
     jobStatus?: CommandJobStatus | undefined;
-    errorText?: string | undefined;
-    error?: ToolErrorPayload | undefined;
-    supersedeKey?: string | undefined;
-    gate?: ToolGateProvenance | undefined;
-    standalone?: boolean | undefined;
-    presentation?: AgentToolPresentation | undefined;
-    actions?: ToolActionDescriptor[] | undefined;
-    id: string;
-    status: AgentItemStatus;
-    turnIndex?: number | undefined;
-    contentIndex?: number | undefined;
-    api?: string | undefined;
-    provider?: string | undefined;
     model?: string | undefined;
+    name: string;
+    output?: unknown;
+    presentation?: AgentToolPresentation | undefined;
+    provider?: string | undefined;
     providerThinkingLevel?: string | undefined;
+    resultText?: string | undefined;
+    sources?: AgentSource[] | undefined;
+    standalone?: boolean | undefined;
     startedAt?: number | undefined;
-    completedAt?: number | undefined;
+    status: AgentItemStatus;
+    supersedeKey?: string | undefined;
+    thoughtSignature?: string | undefined;
+    toolCallId: string;
+    turnIndex?: number | undefined;
+    type: "tool_call";
 };
 ```
 
@@ -22442,14 +22442,14 @@ type ToolErrorKind = "aborted" | "blocked" | "dismissed" | "execution" | "not_fo
 
 ```ts
 type ToolErrorPayload = {
+    code?: string | undefined;
+    fatal?: boolean | undefined;
     kind: ToolErrorKind;
     message: string;
-    userMessage: string;
-    code?: string | undefined;
-    retryable?: boolean | undefined;
-    fatal?: boolean | undefined;
     personMessage?: string | undefined;
     refusal?: "automatic" | "human" | undefined;
+    retryable?: boolean | undefined;
+    userMessage: string;
 };
 ```
 
@@ -22499,73 +22499,73 @@ type Typeahead = {
 
 ```ts
 type SettingsActions = {
-    update: (patch: Partial<UserSettings>) => void;
-    flush: () => Promise<void>;
-    flushIfPending: () => Promise<void> | null;
-    loadFromBackend: () => Promise<boolean>;
     applyBackendProfile: (profile: {
-        userId: string;
-        uiSettings: null | {
-            fontFamily?: "dm-sans" | "fira-code" | "geist" | "inter" | "jetbrains-mono" | "system" | undefined;
-            codeFont?: "fira-code" | "fragment-mono" | "jetbrains-mono" | "system-mono" | undefined;
-            fontSize?: "lg" | "md" | "sm" | "xl" | undefined;
-            keybindings?: Record<string, null | string> | undefined;
-            keymapPreset?: string | undefined;
-        };
         agentSettings: null | {
-            schemaVersion?: 1 | undefined;
-            contextExclusions?: string[] | undefined;
-            maxTurns?: number | undefined;
-            toolBudgetWarn?: number | undefined;
-            outputStyle?: string | undefined;
-            modelRouting?: Partial<Record<"inlineCompletion" | "session" | "sessionRecap" | "titleGeneration", {
-                enabled?: boolean | undefined;
-                providerConnectionId?: string | undefined;
-                modelId?: string | undefined;
-                reasoningEffort?: "high" | "low" | "max" | "medium" | "minimal" | "off" | "xhigh" | undefined;
-                reasoningPreferences?: undefined | {
-                    providerId: string;
-                    modelId: string;
-                    effort: "high" | "low" | "max" | "medium" | "minimal" | "off" | "xhigh";
-                }[];
-            }>> | undefined;
             agentModelChoices?: undefined | {
                 agentId: string;
-                providerConnectionId?: null | string | undefined;
-                modelId?: string | undefined;
                 effort?: "high" | "low" | "max" | "medium" | "minimal" | "off" | "xhigh" | undefined;
+                modelId?: string | undefined;
+                providerConnectionId?: null | string | undefined;
             }[];
             agentModelSettings?: undefined | {
                 agentId: string;
-                providerId: string;
-                modelId: string;
+                contextLimit?: "full" | number | undefined;
                 effort?: "high" | "low" | "max" | "medium" | "minimal" | "off" | "xhigh" | undefined;
                 maxTurns?: number | undefined;
-                contextLimit?: "full" | number | undefined;
+                modelId: string;
+                providerId: string;
             }[];
-            gitBlame?: undefined | {
+            bracketPairColorization?: undefined | {
                 enabled: boolean;
+            };
+            contextExclusions?: string[] | undefined;
+            editorSave?: undefined | {
+                ensureFinalNewline?: boolean | undefined;
+                formatOnSave?: boolean | undefined;
+                trimTrailingWhitespace?: boolean | undefined;
             };
             editorScrollbarMarkers?: undefined | {
                 enabled: boolean;
             };
-            bracketPairColorization?: undefined | {
+            gitBlame?: undefined | {
                 enabled: boolean;
             };
-            editorSave?: undefined | {
-                trimTrailingWhitespace?: boolean | undefined;
-                ensureFinalNewline?: boolean | undefined;
-                formatOnSave?: boolean | undefined;
-            };
+            maxTurns?: number | undefined;
+            modelRouting?: Partial<Record<"inlineCompletion" | "session" | "sessionRecap" | "titleGeneration", {
+                enabled?: boolean | undefined;
+                modelId?: string | undefined;
+                providerConnectionId?: string | undefined;
+                reasoningEffort?: "high" | "low" | "max" | "medium" | "minimal" | "off" | "xhigh" | undefined;
+                reasoningPreferences?: undefined | {
+                    effort: "high" | "low" | "max" | "medium" | "minimal" | "off" | "xhigh";
+                    modelId: string;
+                    providerId: string;
+                }[];
+            }>> | undefined;
+            outputStyle?: string | undefined;
             research?: undefined | {
                 allowPrivate?: boolean | undefined;
             };
+            schemaVersion?: 1 | undefined;
             storage?: undefined | {
                 retentionDays?: number | undefined;
             };
+            toolBudgetWarn?: number | undefined;
+        };
+        uiSettings: null | {
+            codeFont?: "fira-code" | "fragment-mono" | "jetbrains-mono" | "system-mono" | undefined;
+            fontFamily?: "dm-sans" | "fira-code" | "geist" | "inter" | "jetbrains-mono" | "system" | undefined;
+            fontSize?: "lg" | "md" | "sm" | "xl" | undefined;
+            keybindings?: Record<string, null | string> | undefined;
+            keymapPreset?: string | undefined;
         };
         updatedAt: string;
+        userId: string;
     }) => void;
+    flush: () => Promise<void>;
+    flushIfPending: () => Promise<void> | null;
+    loadFromBackend: () => Promise<boolean>;
+    update: (patch: Partial<UserSettings>) => void;
 };
 ```
 
@@ -22573,70 +22573,70 @@ type SettingsActions = {
 
 ```ts
 type SettingsState = {
-    settings: UserSettings;
-    synced: boolean;
-    syncError: null | string;
     _debounceTimer: Timeout | null;
     _pending: Partial<UserSettings>;
-    _pendingUiSettingsPatch: {
-        fontFamily?: "dm-sans" | "fira-code" | "geist" | "inter" | "jetbrains-mono" | "system" | null | undefined;
-        codeFont?: "fira-code" | "fragment-mono" | "jetbrains-mono" | "system-mono" | null | undefined;
-        fontSize?: "lg" | "md" | "sm" | "xl" | null | undefined;
-        keybindings?: Record<string, null | string> | null | undefined;
-        keymapPreset?: null | string | undefined;
-    };
     _pendingAgentSettingsPatch: {
-        schemaVersion?: 1 | null | undefined;
-        contextExclusions?: null | string[] | undefined;
-        maxTurns?: null | number | undefined;
-        toolBudgetWarn?: null | number | undefined;
-        outputStyle?: null | string | undefined;
-        modelRouting?: Partial<Record<"inlineCompletion" | "session" | "sessionRecap" | "titleGeneration", {
-            enabled?: boolean | undefined;
-            providerConnectionId?: string | undefined;
-            modelId?: string | undefined;
-            reasoningEffort?: "high" | "low" | "max" | "medium" | "minimal" | "off" | "xhigh" | undefined;
-            reasoningPreferences?: undefined | {
-                providerId: string;
-                modelId: string;
-                effort: "high" | "low" | "max" | "medium" | "minimal" | "off" | "xhigh";
-            }[];
-        }>> | null | undefined;
         agentModelChoices?: null | undefined | {
             agentId: string;
-            providerConnectionId?: null | string | undefined;
-            modelId?: string | undefined;
             effort?: "high" | "low" | "max" | "medium" | "minimal" | "off" | "xhigh" | undefined;
+            modelId?: string | undefined;
+            providerConnectionId?: null | string | undefined;
         }[];
         agentModelSettings?: null | undefined | {
             agentId: string;
-            providerId: string;
-            modelId: string;
+            contextLimit?: "full" | number | undefined;
             effort?: "high" | "low" | "max" | "medium" | "minimal" | "off" | "xhigh" | undefined;
             maxTurns?: number | undefined;
-            contextLimit?: "full" | number | undefined;
+            modelId: string;
+            providerId: string;
         }[];
-        gitBlame?: null | undefined | {
+        bracketPairColorization?: null | undefined | {
             enabled: boolean;
+        };
+        contextExclusions?: null | string[] | undefined;
+        editorSave?: null | undefined | {
+            ensureFinalNewline?: boolean | undefined;
+            formatOnSave?: boolean | undefined;
+            trimTrailingWhitespace?: boolean | undefined;
         };
         editorScrollbarMarkers?: null | undefined | {
             enabled: boolean;
         };
-        bracketPairColorization?: null | undefined | {
+        gitBlame?: null | undefined | {
             enabled: boolean;
         };
-        editorSave?: null | undefined | {
-            trimTrailingWhitespace?: boolean | undefined;
-            ensureFinalNewline?: boolean | undefined;
-            formatOnSave?: boolean | undefined;
-        };
+        maxTurns?: null | number | undefined;
+        modelRouting?: Partial<Record<"inlineCompletion" | "session" | "sessionRecap" | "titleGeneration", {
+            enabled?: boolean | undefined;
+            modelId?: string | undefined;
+            providerConnectionId?: string | undefined;
+            reasoningEffort?: "high" | "low" | "max" | "medium" | "minimal" | "off" | "xhigh" | undefined;
+            reasoningPreferences?: undefined | {
+                effort: "high" | "low" | "max" | "medium" | "minimal" | "off" | "xhigh";
+                modelId: string;
+                providerId: string;
+            }[];
+        }>> | null | undefined;
+        outputStyle?: null | string | undefined;
         research?: null | undefined | {
             allowPrivate?: boolean | undefined;
         };
+        schemaVersion?: 1 | null | undefined;
         storage?: null | undefined | {
             retentionDays?: number | undefined;
         };
+        toolBudgetWarn?: null | number | undefined;
     };
+    _pendingUiSettingsPatch: {
+        codeFont?: "fira-code" | "fragment-mono" | "jetbrains-mono" | "system-mono" | null | undefined;
+        fontFamily?: "dm-sans" | "fira-code" | "geist" | "inter" | "jetbrains-mono" | "system" | null | undefined;
+        fontSize?: "lg" | "md" | "sm" | "xl" | null | undefined;
+        keybindings?: Record<string, null | string> | null | undefined;
+        keymapPreset?: null | string | undefined;
+    };
+    settings: UserSettings;
+    syncError: null | string;
+    synced: boolean;
 };
 ```
 
@@ -22662,64 +22662,64 @@ type UseBoundStore<S = any> = any;
 
 ```ts
 type UserSettings = {
-    uiSettings: {
-        fontFamily?: "dm-sans" | "fira-code" | "geist" | "inter" | "jetbrains-mono" | "system" | undefined;
-        codeFont?: "fira-code" | "fragment-mono" | "jetbrains-mono" | "system-mono" | undefined;
-        fontSize?: "lg" | "md" | "sm" | "xl" | undefined;
-        keybindings?: Record<string, null | string> | undefined;
-        keymapPreset?: string | undefined;
-    };
     agentSettings: {
-        schemaVersion?: 1 | undefined;
-        contextExclusions?: string[] | undefined;
-        maxTurns?: number | undefined;
-        toolBudgetWarn?: number | undefined;
-        outputStyle?: string | undefined;
-        modelRouting?: Partial<Record<"inlineCompletion" | "session" | "sessionRecap" | "titleGeneration", {
-            enabled?: boolean | undefined;
-            providerConnectionId?: string | undefined;
-            modelId?: string | undefined;
-            reasoningEffort?: "high" | "low" | "max" | "medium" | "minimal" | "off" | "xhigh" | undefined;
-            reasoningPreferences?: undefined | {
-                providerId: string;
-                modelId: string;
-                effort: "high" | "low" | "max" | "medium" | "minimal" | "off" | "xhigh";
-            }[];
-        }>> | undefined;
         agentModelChoices?: undefined | {
             agentId: string;
-            providerConnectionId?: null | string | undefined;
-            modelId?: string | undefined;
             effort?: "high" | "low" | "max" | "medium" | "minimal" | "off" | "xhigh" | undefined;
+            modelId?: string | undefined;
+            providerConnectionId?: null | string | undefined;
         }[];
         agentModelSettings?: undefined | {
             agentId: string;
-            providerId: string;
-            modelId: string;
+            contextLimit?: "full" | number | undefined;
             effort?: "high" | "low" | "max" | "medium" | "minimal" | "off" | "xhigh" | undefined;
             maxTurns?: number | undefined;
-            contextLimit?: "full" | number | undefined;
+            modelId: string;
+            providerId: string;
         }[];
-        gitBlame?: undefined | {
+        bracketPairColorization?: undefined | {
             enabled: boolean;
+        };
+        contextExclusions?: string[] | undefined;
+        editorSave?: undefined | {
+            ensureFinalNewline?: boolean | undefined;
+            formatOnSave?: boolean | undefined;
+            trimTrailingWhitespace?: boolean | undefined;
         };
         editorScrollbarMarkers?: undefined | {
             enabled: boolean;
         };
-        bracketPairColorization?: undefined | {
+        gitBlame?: undefined | {
             enabled: boolean;
         };
-        editorSave?: undefined | {
-            trimTrailingWhitespace?: boolean | undefined;
-            ensureFinalNewline?: boolean | undefined;
-            formatOnSave?: boolean | undefined;
-        };
+        maxTurns?: number | undefined;
+        modelRouting?: Partial<Record<"inlineCompletion" | "session" | "sessionRecap" | "titleGeneration", {
+            enabled?: boolean | undefined;
+            modelId?: string | undefined;
+            providerConnectionId?: string | undefined;
+            reasoningEffort?: "high" | "low" | "max" | "medium" | "minimal" | "off" | "xhigh" | undefined;
+            reasoningPreferences?: undefined | {
+                effort: "high" | "low" | "max" | "medium" | "minimal" | "off" | "xhigh";
+                modelId: string;
+                providerId: string;
+            }[];
+        }>> | undefined;
+        outputStyle?: string | undefined;
         research?: undefined | {
             allowPrivate?: boolean | undefined;
         };
+        schemaVersion?: 1 | undefined;
         storage?: undefined | {
             retentionDays?: number | undefined;
         };
+        toolBudgetWarn?: number | undefined;
+    };
+    uiSettings: {
+        codeFont?: "fira-code" | "fragment-mono" | "jetbrains-mono" | "system-mono" | undefined;
+        fontFamily?: "dm-sans" | "fira-code" | "geist" | "inter" | "jetbrains-mono" | "system" | undefined;
+        fontSize?: "lg" | "md" | "sm" | "xl" | undefined;
+        keybindings?: Record<string, null | string> | undefined;
+        keymapPreset?: string | undefined;
     };
 };
 ```
@@ -22744,26 +22744,26 @@ type IconComponent = React.ComponentClass<{
 
 ```ts
 type MenuActionEntry = {
-    id: string;
-    label: string;
-    icon?: IconComponent | undefined;
+    checked?: boolean | undefined;
     chordId?: string | undefined;
-    hint?: string | undefined;
+    danger?: boolean | undefined;
     description?: string | undefined;
     disabled?: boolean | undefined;
+    hint?: string | undefined;
+    icon?: IconComponent | undefined;
+    id: string;
+    keepOpen?: boolean | undefined;
+    label: string;
+    onSelect: () => void;
+    recommended?: boolean | undefined;
+    selected?: boolean | undefined;
     trailingAction?: undefined | {
-        label: string;
-        icon: IconComponent;
         checked?: boolean | undefined;
         disabled?: boolean | undefined;
+        icon: IconComponent;
+        label: string;
         onSelect: () => void;
     };
-    checked?: boolean | undefined;
-    selected?: boolean | undefined;
-    keepOpen?: boolean | undefined;
-    danger?: boolean | undefined;
-    recommended?: boolean | undefined;
-    onSelect: () => void;
 };
 ```
 
@@ -22793,14 +22793,14 @@ type MenuSeparatorEntry = {
 
 ```ts
 type MenuSubmenuEntry = {
-    id: string;
-    label: string;
-    icon?: IconComponent | undefined;
-    hint?: string | undefined;
     description?: string | undefined;
     disabled?: boolean | undefined;
-    items: readonly MenuEntry[];
     emptyLabel?: string | undefined;
+    hint?: string | undefined;
+    icon?: IconComponent | undefined;
+    id: string;
+    items: readonly MenuEntry[];
+    label: string;
 };
 ```
 
@@ -22808,21 +22808,21 @@ type MenuSubmenuEntry = {
 
 ```ts
 type StatusItemState = {
-    label: string;
     Icon?: IconComponent | undefined;
-    text?: string | undefined;
-    metrics?: readonly StatusMetric[] | undefined;
+    active?: boolean | undefined;
     badge?: undefined | {
         count: number;
     } | {
         dot: true;
     };
-    tone?: StatusTone | undefined;
-    active?: boolean | undefined;
     busy?: boolean | undefined;
     chordId?: string | undefined;
-    onClick?: (() => void) | undefined;
+    label: string;
     menu?: readonly MenuEntry[] | undefined;
+    metrics?: readonly StatusMetric[] | undefined;
+    onClick?: (() => void) | undefined;
+    text?: string | undefined;
+    tone?: StatusTone | undefined;
 };
 ```
 
@@ -22831,9 +22831,9 @@ type StatusItemState = {
 ```ts
 type StatusMetric = {
     icon?: IconComponent | undefined;
-    value: string;
     label: string;
     tone?: StatusTone | undefined;
+    value: string;
 };
 ```
 

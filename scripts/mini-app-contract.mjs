@@ -28,29 +28,39 @@ export const contractDigest = (text) => createHash('sha256').update(text).digest
 const plainPrinter = ts.createPrinter({ removeComments: true })
 
 /**
- * A declaration as the contract writes it: its unions' members in plain string order. The compiler
- * prints an inferred union in the order it created the members' types, which differs between
- * machines, and the order of a union says nothing.
+ * A declaration as the contract writes it: its unions' members, and the properties of its object
+ * types, in plain string order. The compiler prints an inferred union in the order it created the
+ * members' types, and an inferred object type (a `Pick` of props) in the order it met them, which
+ * differ between machines; neither order says anything. Interfaces are left as they are written.
  */
 export function canonicalDeclaration(text) {
   const source = ts.createSourceFile('contract.d.ts', text, ts.ScriptTarget.Latest, true)
-  const sortUnions = (context) => {
+  const printed = (node) => plainPrinter.printNode(ts.EmitHint.Unspecified, node, source)
+  const inOrder = (nodes) =>
+    nodes
+      .map((node) => ({ node, key: printed(node) }))
+      .sort((a, b) => byCodeUnit(a.key, b.key))
+      .map(({ node }) => node)
+  const sortTypes = (context) => {
+    const { factory } = context
     const visit = (node) => {
       const visited = ts.visitEachChild(node, visit, context)
-      if (!ts.isUnionTypeNode(visited)) return visited
-      const keyed = visited.types.map((member) => ({
-        member,
-        key: plainPrinter.printNode(ts.EmitHint.Unspecified, member, source),
-      }))
-      keyed.sort((a, b) => byCodeUnit(a.key, b.key))
-      return context.factory.updateUnionTypeNode(
-        visited,
-        context.factory.createNodeArray(keyed.map(({ member }) => member)),
-      )
+      if (ts.isUnionTypeNode(visited)) {
+        return factory.updateUnionTypeNode(visited, factory.createNodeArray(inOrder(visited.types)))
+      }
+      if (ts.isTypeLiteralNode(visited)) {
+        // Only properties move: the order of call signatures picks an overload.
+        const properties = inOrder(visited.members.filter(ts.isPropertySignature))
+        const members = visited.members.map((member) =>
+          ts.isPropertySignature(member) ? properties.shift() : member,
+        )
+        return factory.updateTypeLiteralNode(visited, factory.createNodeArray(members))
+      }
+      return visited
     }
     return (file) => ts.visitNode(file, visit)
   }
-  const [sorted] = ts.transform(source, [sortUnions]).transformed
+  const [sorted] = ts.transform(source, [sortTypes]).transformed
   return plainPrinter.printFile(sorted).trim()
 }
 
