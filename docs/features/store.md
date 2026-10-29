@@ -123,8 +123,8 @@ one), and each row says what the part does: a skill's own description, or when a
 
 **Get** is one button for every state: it shows progress while it installs, becomes **Open** once
 installed and **Update** when a newer version is offered, and **Retry** after a failure. On the
-macOS desktop an app with a screen of its own also offers **Install as app**; see
-[Mac apps](mini-app-mac-apps.md).
+macOS desktop an app with a screen of its own also offers **Install as app** in the menu beside
+**Get**; see [Mac apps](mini-app-mac-apps.md).
 
 ### Where packages come from
 

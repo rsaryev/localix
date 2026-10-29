@@ -313,8 +313,8 @@ contract and knows no provider.
 - **Install extras.** Beside Install a listing can offer what another UI feature provides through
   `provideStoreInstallExtra` (`shared/lib/storeInstallExtra.ts`): a label, a hint, a glyph and what
   it makes. Mini apps provide **Install as app** (a desktop app, macOS shell only); the Store draws
-  each one as an icon on a card, a labelled button on the page and Add or Remove once installed, and
-  names no provider.
+  each one as a row of the menu beside Get on the page and Add or Remove once installed, and names
+  no provider.
 - **Narrow panes.** The cards are one column until the content column itself is wide, and below
   42rem of Store width the shelf column becomes one section picker beside the search.
 - **Shelf ids** are `discover`, `installed`, `updates`, `yours`, `project`, `package:<kind>` and
@@ -571,8 +571,8 @@ provider (X1, A8) and only reads or writes through the Store client.
 - **One Get** (`GetAction`, `getState.ts`): Get, progress, Open, Update, Retry. A plan that needs
   consent, or a community source, opens `ConsentSheet` first (what runs, hosts, source and trust,
   scope for a plugin with an open project); nothing is sent until Install.
-- **Install extras** ("Install as app") appear on a package's page and its Get menu only, never on
-  list cards, and a failed one is said once above the content.
+- **Install extras** ("Install as app") appear in the menu beside a package page's Get only, never
+  on list cards, and a failed one is said once above the content.
 - **Filters survive opening a page**: `useRemembered` in `StoreMemoryContext` keeps a list's
   category and source by its query, so Back returns to the list as it was.
 - **Search** debounces 150 ms (`useDebounced`, the delay injected in tests) and shows packages and

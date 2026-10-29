@@ -14,9 +14,9 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
   installed once in the background, like its recommended mini apps; one you remove is not added
   back.
 - **Signed mini app catalogs**: a mini app's page in the Store says whether its catalog is
-  **Signed**, **Not signed**, or its **Signature changed**, and a signed app's Versions tab has
-  **Update automatically**, which you can switch off for that app. Publishing a mini app with the
-  authoring plugin now signs its catalog with your own key.
+  **Signed**, **Not signed**, or its **Signature changed** beside its publisher, and a signed app's
+  **⋯** menu has **Update automatically**, which you can untick for that app. Publishing a mini app
+  with the authoring plugin now signs its catalog with your own key.
 
 ### Changed
 

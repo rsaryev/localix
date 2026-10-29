@@ -2,7 +2,7 @@ import { useState, type RefObject } from 'react'
 import type { Listing } from '@localixai/store'
 import { ChipButton } from '@localixai/kit/chip'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
-import { KIND_LABELS } from '../model/presentation'
+import { KIND_LABELS, SIGNATURE_LABELS } from '../model/presentation'
 import { useStoreFrame } from '../model/layout'
 import { useStoreScope } from '../model/storeContext'
 import { keyOf } from '../model/useExtrasAfterInstall'
@@ -49,8 +49,8 @@ function Tags({ tags }: { tags: readonly string[] }) {
 
 /**
  * A package page's header: back to where it was opened from; its icon in the same tile as every
- * other; its name, one line of what it does, who publishes it and how far that is trusted; its
- * tags; and the Get button with where to get it. Beside the icon only what identifies it — the
+ * other; its name, one line of what it does, who publishes it and how far that is trusted,
+ * whether its catalog is signed; its tags; and the Get button with where to get it. Beside the icon only what identifies it — the
  * name, who publishes it, the Get button — so that block is as tall as the icon at every width;
  * what it does and its tags run the full width under them.
  */
@@ -92,6 +92,14 @@ export function PackageHeader({
                 <>
                   <span aria-hidden>·</span>
                   <span>{listing.category}</span>
+                </>
+              )}
+              {listing.signature && (
+                <>
+                  <span aria-hidden>·</span>
+                  <span className={cn(listing.signature === 'mismatch' && 'text-status-error')}>
+                    {SIGNATURE_LABELS[listing.signature]}
+                  </span>
                 </>
               )}
             </p>

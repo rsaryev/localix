@@ -31,16 +31,23 @@ const appExtra = (opts: Parameters<typeof installExtra>[0] = {}) => {
 
 const page = (view: Awaited<ReturnType<typeof renderStore>>) =>
   view.host.querySelector<HTMLElement>('[data-store-page="puzzle"]')!
+/** Get it the way the extra named `label` offers, from the menu beside Get. */
+const getWith = async (view: Awaited<ReturnType<typeof renderStore>>, label: string) => {
+  await view.openMenu(view.button('Where to get Puzzle', page(view)))
+  await view.click(view.menuItem(label))
+}
 
 describe('getting with or without an app of its own', () => {
-  test('on a package’s page, Get and the extra sit side by side, each named', async () => {
+  test('on a package’s page, Get gets it alone; the extra is offered in the menu beside it', async () => {
     const { extras, made } = appExtra()
     const view = await renderStore({ listings: [puzzle, notes], target: SHELF, extras })
     try {
       // A row has the one control; the extra is offered on the page, where there is room to say it.
-      expect(view.button('Install as app: Puzzle', view.card('puzzle')!)).toBeUndefined()
+      expect(view.button('Where to get Puzzle', view.card('puzzle')!)).toBeUndefined()
       await view.click(view.button('Puzzle', view.card('puzzle')!))
-      expect(view.button('Install as app: Puzzle', page(view))).toBeDefined()
+      await view.openMenu(view.button('Where to get Puzzle', page(view)))
+      expect(view.menuItem('Install as app')).toBeDefined()
+      await view.press('Escape')
       await view.click(view.button('Get Puzzle', page(view)))
       expect(view.calls).toEqual(['install mini-app/puzzle user'])
       expect(made).toEqual([])
@@ -55,7 +62,7 @@ describe('getting with or without an app of its own', () => {
     const view = await renderStore({ listings: [puzzle], target: SHELF, extras })
     try {
       await view.click(view.button('Puzzle', view.card('puzzle')!))
-      await view.click(view.button('Install and sync: Puzzle', page(view)))
+      await getWith(view, 'Install and sync')
       await view.change([landed(puzzle)])
       expect(synced.made).toEqual(['puzzle'])
     } finally {
@@ -69,7 +76,7 @@ describe('getting with or without an app of its own', () => {
       await view.click(view.button('Puzzle', view.card('puzzle')!))
       await view.click(view.button('Get Puzzle', page(view)))
       expect(view.calls).toEqual(['install mini-app/puzzle user'])
-      expect(view.button('Install as app: Puzzle')).toBeUndefined()
+      expect(view.button('Where to get Puzzle')).toBeUndefined()
     } finally {
       await view.done()
     }
@@ -80,7 +87,7 @@ describe('getting with or without an app of its own', () => {
     const view = await renderStore({ listings: [puzzle], target: SHELF, extras })
     try {
       await view.click(view.button('Puzzle', view.card('puzzle')!))
-      await view.click(view.button('Install as app: Puzzle', page(view)))
+      await getWith(view, 'Install as app')
       expect(view.calls).toEqual(['install mini-app/puzzle user'])
       expect(made).toEqual([])
       await view.change([
@@ -101,7 +108,7 @@ describe('getting with or without an app of its own', () => {
     const view = await renderStore({ listings: [puzzle], target: SHELF, extras })
     try {
       await view.click(view.button('Puzzle', view.card('puzzle')!))
-      await view.click(view.button('Install as app: Puzzle', page(view)))
+      await getWith(view, 'Install as app')
       await view.change([landed(puzzle)])
       expect(view.calls).toEqual(['install mini-app/puzzle user'])
       expect(page(view).querySelector('[role="alert"]')?.textContent).toBe(

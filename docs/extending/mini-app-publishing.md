@@ -195,10 +195,11 @@ folder beside the installed copy, refusing any path that leaves the folder and a
 with one rename. A failure at any step keeps the version that was installed.
 
 Apps from a signed catalog take its newer versions on their own, a minute after Localix starts and
-every six hours, unless you switch **Update automatically** off on the app's Store page. Apps from
-an unsigned catalog are never updated behind your back: the Store offers the newer version and
-installs it when you choose **Update**. A folder you made yourself under `~/.localix/mini-apps/` is
-never replaced by a catalog's app of the same name; installing one says the name is taken.
+every six hours, unless you untick **Update automatically** in the **⋯** menu on the app's Store
+page. Apps from an unsigned catalog are never updated behind your back: the Store offers the newer
+version and installs it when you choose **Update**. A folder you made yourself under
+`~/.localix/mini-apps/` is never replaced by a catalog's app of the same name; installing one says
+the name is taken.
 
 ### Trust
 

@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { ChevronDown, Ellipsis, FolderGit2, Settings2, Trash2, User } from 'lucide-react'
+import { ChevronDown, Ellipsis, FolderGit2, RefreshCw, Settings2, Trash2, User } from 'lucide-react'
 import type { Listing } from '@localixai/store'
 import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
 import { GetButton } from '@localixai/kit/get-button'
@@ -42,10 +42,11 @@ export const GetAction = memo(function GetAction({
 })
 
 /**
- * The package page's action: the solid Get button, beside it a chevron choosing where to get it
- * (for you, or for the open project alone, where its kind allows that), the install extras
- * labelled, and once installed a menu to remove it from a scope, configure it, or add or remove
- * an extra.
+ * The package page's action: the solid Get button and one round menu beside it, as tall. Before it
+ * is got, a chevron: where to get it (for you, or for the open project alone, where its kind
+ * allows that) and the install extras, each said in its own words. Once installed, its options:
+ * whether it updates on its own (from a signed catalog), get it in another scope, configure it,
+ * add or remove an extra, remove it.
  */
 export function PageGetAction({ listing, className }: { listing: Listing; className?: string }) {
   const store = useStoreScope()
@@ -56,20 +57,47 @@ export function PageGetAction({ listing, className }: { listing: Listing; classN
   const extras = store.extrasFor(listing)
   const where = (scope: 'user' | 'project') =>
     scope === 'user' ? 'For you, in every project' : `Only in ${project?.name ?? 'this project'}`
-  const choose: MenuEntry[] =
-    scopes.length > 1 && (state.kind === 'get' || state.kind === 'retry')
-      ? scopes.map((scope) => ({
-          id: `get:${scope}`,
-          label: scope === 'user' ? 'Get for you' : `Get for ${project!.name}`,
-          description: where(scope),
-          icon: scope === 'user' ? User : FolderGit2,
-          onSelect: () => store.get(listing, { scope }),
-        }))
-      : []
+  const getting = state.kind === 'get' || state.kind === 'retry'
+  const choose: MenuEntry[] = !getting
+    ? []
+    : [
+        ...(scopes.length > 1
+          ? scopes.map((scope) => ({
+              id: `get:${scope}`,
+              label: scope === 'user' ? 'Get for you' : `Get for ${project!.name}`,
+              description: where(scope),
+              icon: scope === 'user' ? User : FolderGit2,
+              onSelect: () => store.get(listing, { scope }),
+            }))
+          : []),
+        ...(scopes.length > 1 && extras.length ? [{ separator: true } as const] : []),
+        ...(state.kind === 'get'
+          ? extras.map((extra) => ({
+              id: `with:${extra.id}`,
+              label: extra.label,
+              description: extra.hint,
+              icon: extra.icon,
+              onSelect: () => store.get(listing, { extra }),
+            }))
+          : []),
+      ]
+  const autoUpdate = listing.autoUpdate
   const manage: MenuEntry[] =
     listing.installs.length === 0
       ? []
       : [
+          ...(autoUpdate === undefined
+            ? []
+            : [
+                {
+                  id: 'auto-update',
+                  label: 'Update automatically',
+                  description: 'Its catalog is signed: newer versions install on their own.',
+                  icon: RefreshCw,
+                  checked: autoUpdate,
+                  onSelect: () => store.run(store.client.setAutoUpdate(listing.ref, !autoUpdate)),
+                },
+              ]),
           ...scopes
             .filter((scope) => !installedIn.has(scope))
             .map((scope) => ({
@@ -132,7 +160,7 @@ export function PageGetAction({ listing, className }: { listing: Listing; classN
           <DropdownMenuTrigger asChild>
             <IconButton
               size="lg"
-              className="rounded-full"
+              className="rounded-full bg-field-fill text-text-soft"
               aria-label={
                 choose.length
                   ? `Where to get ${listing.displayName}`
@@ -147,19 +175,6 @@ export function PageGetAction({ listing, className }: { listing: Listing; classN
           </DropdownMenuContent>
         </DropdownMenu>
       )}
-      {state.kind === 'get' &&
-        extras.map((extra) => (
-          <IconButton
-            key={extra.id}
-            size="lg"
-            className="rounded-full"
-            aria-label={`${extra.label}: ${listing.displayName}`}
-            tooltip={`${extra.label} — ${extra.hint.toLowerCase()}`}
-            onClick={() => store.get(listing, { extra })}
-          >
-            <extra.icon />
-          </IconButton>
-        ))}
     </div>
   )
 }

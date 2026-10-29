@@ -364,25 +364,43 @@ describe('a package’s page', () => {
     }
   })
 
-  test('an app from a signed catalog updates on its own until the person switches it off', async () => {
-    const { view, page, tab } = await open('clock', 'Clock')
+  // Beside who publishes it: whether the catalog is signed decides whether it updates on its own,
+  // and the person reads it before getting the app.
+  test('its header says whether its catalog is signed', async () => {
+    for (const [id, name, said] of [
+      ['clock', 'Clock', 'Signed'],
+      ['notes', 'Notes', 'Not signed'],
+      ['forged', 'Forged', 'Signature changed'],
+    ] as const) {
+      const { view, page } = await open(id, name)
+      try {
+        expect(page()!.querySelector('header')!.textContent).toContain(said)
+      } finally {
+        await view.done()
+      }
+    }
+  })
+
+  test('an app from a signed catalog updates on its own until the person unticks it in its menu', async () => {
+    const { view } = await open('clock', 'Clock')
     try {
-      await view.click(tab('Versions'))
-      const toggle = page()!.querySelector<HTMLInputElement>('[role="switch"]')!
-      expect(toggle.getAttribute('aria-label') ?? '').toContain('Update automatically')
-      expect(toggle.checked).toBe(true)
-      await view.click(toggle)
+      await view.openMenu(view.button('Clock options'))
+      const row = view.menuItem('Update automatically')!
+      expect(row.getAttribute('role')).toBe('menuitemcheckbox')
+      expect(row.getAttribute('aria-checked')).toBe('true')
+      await view.click(row)
       expect(view.calls).toContain('auto-update mini-app/clock false')
     } finally {
       await view.done()
     }
   })
 
-  test('an app from an unsigned catalog has no switch: it says it updates when asked', async () => {
+  test('an app from an unsigned catalog cannot update on its own: it says it updates when asked', async () => {
     const { view, page, tab } = await open('notes', 'Notes')
     try {
+      await view.openMenu(view.button('Notes options'))
+      expect(view.menuItem('Update automatically')).toBeUndefined()
       await view.click(tab('Versions'))
-      expect(page()!.querySelector('[role="switch"]')).toBeNull()
       expect(page()!.textContent).toContain('when you choose Update')
     } finally {
       await view.done()
