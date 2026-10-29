@@ -4,8 +4,18 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ## Unreleased
 
+## v0.1.0-beta.20 — 2026-10-30
+
+Mini apps are signed: the Store says whether an app's catalog is signed, and only signed apps update
+on their own. The Store also offers the app that opens a file, and asks before an install the way
+the rest of Localix asks.
+
 ### Added
 
+- **Signed mini app catalogs**: a mini app's page in the Store says beside its publisher whether its
+  catalog is **Signed**, **Not signed**, or its **Signature changed**, and the **⋯** menu beside
+  **Open** has **Update automatically**, which you can untick for that app. Publishing a mini app
+  with the authoring plugin now signs its catalog with your own key.
 - **An app for a file**: opening a CSV, a Word document, an e-book or a SQLite database that no
   installed app opens now shows one line above the file, **Documents opens this file**, with
   **Install** or **Keep in editor**. It comes from what each mini app declares it opens, and an open
@@ -13,17 +23,18 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 - **Recommended plugins install on their own**: the plugins the Localix marketplace recommends are
   installed once in the background, like its recommended mini apps; one you remove is not added
   back.
-- **Signed mini app catalogs**: a mini app's page in the Store says whether its catalog is
-  **Signed**, **Not signed**, or its **Signature changed** beside its publisher, and a signed app's
-  **⋯** menu has **Update automatically**, which you can untick for that app. Publishing a mini app
-  with the authoring plugin now signs its catalog with your own key.
 
 ### Changed
 
 - **Only signed mini apps update on their own**: apps from a signed catalog, the Localix one
   included, still update within six hours; an unsigned app updates when you choose **Update**. A
   catalog whose signature changed installs nothing until you remove it and add it again.
-
+- **A calmer install question**: before a package that runs programs on this computer or comes from
+  a community marketplace is installed, the Store asks in the app's usual dialog: where it comes
+  from, in a sentence what it runs, the hosts it reaches and what it adds, and whether it is for you
+  or only for the open project.
+- **Get and Open look like the app's other buttons**: where to get a package (such as **Install as
+  app**) and its options are in a small menu beside the button.
 - **What's inside, by kind**: a package's page groups its parts (**Skills · 6**, **Hook**) in the
   order you use them, and each row says what it does: a skill's description, or when a hook runs.
 
@@ -33,6 +44,12 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
   its **Open** button, a new mini app's rail section, status bar icon, tool card, commands and
   search filter, the update and recommendation lines, the spend warning and the "minutes ago" times
   no longer wait for the page to be opened again.
+- **A plugin you removed installs again**: **Get** on a plugin removed from the Store no longer
+  fails with "A plugin already exists at this destination".
+- **A mini app whose screen fails to load says so**: its tabs stay open while the screen is tried
+  again, and if it keeps failing the Event Center says so under that mini app.
+- **A mini app's tools are set up once**: a mini app no longer sets itself up again with every
+  message, so one that watches files no longer starts another watcher each time.
 - **The disk image from a release** shows the same styled install window as one built locally.
 
 ## v0.1.0-beta.19 — 2026-10-29
