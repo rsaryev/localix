@@ -147,3 +147,48 @@ describe('a catalog with its signature', () => {
     expect(feed.signature.state).toBe('invalid')
   })
 })
+
+// GitHub serves `releases/latest/download/<file>` through two redirects: to the release's own
+// address, then to a storage address whose query names the file (the storage ignores it). The
+// signature is the release's, read beside its own address: not beside the storage's, which would
+// serve the catalog again, nor beside `latest`, which may by then be a newer release.
+describe('a catalog published as a GitHub release', () => {
+  const { privateKey } = generateKeyPairSync('ed25519')
+  const text = JSON.stringify(catalog)
+  const latest = 'https://github.test/o/r/releases/latest/download/mini-app-catalog.json'
+  const release = 'https://github.test/o/r/releases/download/v2/mini-app-catalog.json'
+  const stored = (blob: string, file: string) =>
+    `https://assets.test/${blob}?sig=x&rscd=attachment%3B+filename%3D${file}`
+  const redirect = (to: string) => new Response(null, { status: 302, headers: { location: to } })
+  const routes: Record<string, () => Response> = {
+    [latest]: () => redirect(release),
+    [`${latest}.sig`]: () =>
+      redirect('https://github.test/o/r/releases/download/v3/mini-app-catalog.json.sig'),
+    'https://github.test/o/r/releases/download/v3/mini-app-catalog.json.sig': () =>
+      new Response(signCatalog(new TextEncoder().encode('{"newer":true}'), privateKey)),
+    [release]: () => redirect(stored('catalog', 'mini-app-catalog.json')),
+    [`${release}.sig`]: () => redirect(stored('signature', 'mini-app-catalog.json.sig')),
+    'https://assets.test/catalog': () => new Response(text),
+    'https://assets.test/signature': () =>
+      new Response(signCatalog(new TextEncoder().encode(text), privateKey)),
+  }
+  const github = (async (input: string | URL, init?: RequestInit) => {
+    let at = String(input)
+    for (;;) {
+      const plain = new URL(at)
+      const route = routes[at] ?? routes[`${plain.origin}${plain.pathname}`]
+      const response = route ? route() : new Response('missing', { status: 404 })
+      const to = response.headers.get('location')
+      if (!to || init?.redirect === 'manual') {
+        Object.defineProperty(response, 'url', { value: at })
+        return response
+      }
+      at = new URL(to, at).href
+    }
+  }) as unknown as typeof fetch
+
+  test('is signed by the signature its release published', async () => {
+    const feed = await readMiniAppCatalogFeed(latest, { fetchImpl: github })
+    expect(feed.signature.state).toBe('signed')
+  })
+})

@@ -180,6 +180,36 @@ export async function readMiniAppCatalog(
  * A catalog's apps, the picks it carries for Discover, and the signature beside it, checked
  * against the exact bytes the catalog was served as (`catalog-signature.ts`).
  */
+/** The most redirects a catalog's address may take. */
+const REDIRECTS_MAX = 10
+
+/**
+ * Fetch a catalog, following its redirects one by one, and say where its signature is: beside the
+ * last address on the way that still names the catalog's file. GitHub's `releases/latest/…`
+ * leads to the release's own address and then to storage whose address names nothing (a `.sig`
+ * appended there only lands in its query, and the catalog comes back again); `latest` itself may
+ * by then be a newer release.
+ */
+async function fetchCatalog(
+  url: string,
+  options: { fetchImpl?: typeof fetch; signal?: AbortSignal },
+): Promise<{ response: Response; signedAt: string }> {
+  const file = (address: string) => new URL(address).pathname.split('/').at(-1)
+  let at = url
+  let signedAt = url
+  for (let hop = 0; ; hop++) {
+    const response = await (options.fetchImpl ?? fetch)(at, {
+      signal: options.signal,
+      redirect: 'manual',
+    })
+    const to = response.status >= 300 && response.status < 400 && response.headers.get('location')
+    if (!to) return { response, signedAt }
+    if (hop === REDIRECTS_MAX) throw new Error(`more than ${REDIRECTS_MAX} redirects`)
+    at = new URL(to, at).href
+    if (file(at) === file(url)) signedAt = at
+  }
+}
+
 export async function readMiniAppCatalogFeed(
   url: string,
   options: { fetchImpl?: typeof fetch; signal?: AbortSignal } = {},
@@ -190,11 +220,9 @@ export async function readMiniAppCatalogFeed(
 }> {
   const where = url.startsWith('file:') ? url : new URL(url).host
   let response: Response
+  let signedAt: string
   try {
-    response = await (options.fetchImpl ?? fetch)(url, {
-      signal: options.signal,
-      redirect: 'follow',
-    })
+    ;({ response, signedAt } = await fetchCatalog(url, options))
   } catch (error) {
     throw new Error(
       `Could not reach the mini app catalog at ${where}: ${error instanceof Error ? error.message : String(error)}`,
@@ -229,8 +257,7 @@ export async function readMiniAppCatalogFeed(
       }),
     ]
   })
-  // Beside the file the address led to: `releases/latest/…` redirects to one release.
-  const signature = await readCatalogSignature(response.url || url, bytes, options)
+  const signature = await readCatalogSignature(signedAt, bytes, options)
   return {
     apps,
     ...(editorial ? { editorial: { collections: editorial.collections } } : {}),
