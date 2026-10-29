@@ -17,7 +17,6 @@ import { createPluginService } from './service'
  */
 
 const previousEnv = {
-  LOCALIX_BUNDLED_PLUGINS_DIR: process.env.LOCALIX_BUNDLED_PLUGINS_DIR,
   CLAUDE_CONFIG_DIR: process.env.CLAUDE_CONFIG_DIR,
 }
 let root: string
@@ -37,8 +36,7 @@ const folderIntact = () => {
 }
 
 beforeAll(async () => {
-  root = makeTempDir('in-place-service', { 'bundled/.keep': '', 'claude/.keep': '' })
-  process.env.LOCALIX_BUNDLED_PLUGINS_DIR = join(root, 'bundled')
+  root = makeTempDir('in-place-service', { 'claude/.keep': '' })
   process.env.CLAUDE_CONFIG_DIR = join(root, 'claude')
   db = createDatabase()
   await migrateToLatest(db)

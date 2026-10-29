@@ -622,12 +622,11 @@ jobs:
           gh release upload "$RELEASE_TAG" \
             "${FILES[@]}" --clobber --repo "$RELEASE_REPO"
 
-  # ── mini-app-catalog: the hosted mini app catalog, as this release's assets ────
-  # The desktop app ships no mini app (rule X5); its store reads
-  # `releases/latest/download/mini-app-catalog.json`. Every app is staged as a release stages it,
-  # packed into its own pinned archive, and uploaded beside the catalog that names them.
-  mini-app-catalog:
-    name: Mini app catalog
+  # ── mini-app-kit: what mini apps are built against, as this release's asset ────
+  # Localix ships and hosts no mini app (rule X5): the Localix marketplace publishes its own
+  # catalog. A release publishes the kit the mini-app-authoring plugin builds against.
+  mini-app-kit:
+    name: Mini app kit
     needs: [prepare, verify, draft-release]
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -647,23 +646,6 @@ jobs:
       - name: Build workspace packages
         run: bunx turbo build --filter=@localixai/api
 
-      - name: Pack the mini apps
-        run: bun scripts/pack-mini-apps.mjs --out "$RUNNER_TEMP/mini-app-catalog"
-
-      - name: Upload the catalog to the draft release
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
-        run: |
-          shopt -s nullglob
-          FILES=("$RUNNER_TEMP"/mini-app-catalog/*)
-          if [ ${#FILES[@]} -lt 2 ]; then
-            echo "The mini app catalog is empty" >&2
-            exit 1
-          fi
-          gh release upload "$RELEASE_TAG" "${FILES[@]}" --clobber --repo "$RELEASE_REPO"
-
       # The kit mini apps are built against, for the mini-app-authoring plugin where no Localix is
       # installed: `releases/latest/download/mini-app-kit.tar.gz`, `kit.json` at its root, checked
       # against SHA256SUMS.txt (publish-desktop names it there).
@@ -672,6 +654,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+          # This job's checkout is unstamped: the kit and its package carry the release's version.
+          LOCALIX_VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           set -euo pipefail
           bun scripts/stage-mini-app-kit.mjs . "$RUNNER_TEMP/mini-app-kit"
@@ -681,7 +665,7 @@ jobs:
   # ── publish-desktop: flip the draft to the public "latest" release ───────────
   publish-desktop:
     name: Publish release
-    needs: [prepare, build-desktop, mini-app-catalog]
+    needs: [prepare, build-desktop, mini-app-kit]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     environment: release

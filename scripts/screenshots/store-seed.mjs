@@ -13,10 +13,11 @@ import {
  * The Store's captures need a home of their own: a person's Store has a few mini apps installed
  * and the rest on offer, while the other scenarios need every one installed. Run this against a
  * capture API started with its own `HOME` (scripts/screenshots/README.md, "Store evidence"). It
- * writes the fixture the runner opens and installs three mini apps through the Store, once; it
- * never removes anything, so a home that already holds others fails the scenario's count instead.
+ * writes the fixture the runner opens and installs three mini apps through the Store, once: the
+ * first three of the catalog by id, so the fixture names none. It never removes anything, so a
+ * home that already holds others fails the scenario's count instead.
  */
-export const STORE_INSTALLED = ['kanban', 'git-workspace', 'documents']
+export const STORE_INSTALL_COUNT = 3
 
 /**
  * What the person wrote themselves, for the Yours captures: a skill and an MCP server, made through
@@ -102,6 +103,27 @@ async function miniApps() {
   return (await api('/store/listings?shelf=package:mini-app')).listings
 }
 
+/** The ids of the mini apps the capture home has installed. */
+export async function installedMiniApps() {
+  return (await miniApps())
+    .filter((listing) => listing.installs.length > 0 && !listing.job?.error)
+    .map((listing) => listing.ref.id)
+}
+
+/**
+ * The mini app whose page shows what the Store's page is for: pictures and a screen of its own.
+ * The first of the catalog, by id, that has both.
+ */
+export async function showcaseMiniApp() {
+  const ids = (await miniApps()).map((listing) => listing.ref.id).sort()
+  for (const id of ids) {
+    const detail = await api(`/store/mini-app/${encodeURIComponent(id)}`)
+    if (detail.media.length > 0 && detail.components.some((item) => item.kind === 'screen'))
+      return id
+  }
+  throw new Error('No mini app in the catalog has pictures and a screen to show.')
+}
+
 export async function seedStore() {
   // What an earlier Yours capture left would count as installed.
   await clearYours()
@@ -124,15 +146,17 @@ export async function seedStore() {
   }
   const before = await miniApps()
   if (!before.some((listing) => listing.installs.length > 0)) {
-    for (const id of STORE_INSTALLED)
-      await api(`/store/mini-app/${id}/install`, { scope: 'user', consent: { plan: false } })
+    const first = before.map((listing) => listing.ref.id).sort()
+    for (const id of first.slice(0, STORE_INSTALL_COUNT))
+      await api(`/store/mini-app/${encodeURIComponent(id)}/install`, {
+        scope: 'user',
+        consent: { plan: false },
+      })
   }
-  // Each install is a job: wait until all three have landed.
+  // Each install is a job: wait until all of them have landed.
   for (let attempt = 0; attempt < 240; attempt++) {
-    const listings = await miniApps()
-    const landed = listings.filter((listing) => listing.installs.length > 0 && !listing.job?.error)
-    if (STORE_INSTALLED.every((id) => landed.some((listing) => listing.ref.id === id))) return
-    const failed = listings.find((listing) => listing.job?.phase === 'failed')
+    if ((await installedMiniApps()).length >= STORE_INSTALL_COUNT) return
+    const failed = (await miniApps()).find((listing) => listing.job?.phase === 'failed')
     if (failed) throw new Error(`${failed.ref.id} did not install: ${failed.job.error}`)
     await wait(500)
   }
@@ -142,5 +166,5 @@ export async function seedStore() {
 if (import.meta.main) {
   await verifyDemoRuntime()
   await seedStore()
-  console.log(`Installed through the Store: ${STORE_INSTALLED.join(', ')}`)
+  console.log(`Installed through the Store: ${(await installedMiniApps()).join(', ')}`)
 }

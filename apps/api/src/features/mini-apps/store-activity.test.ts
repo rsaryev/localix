@@ -1,47 +1,11 @@
-import { afterEach, describe, expect, test } from 'bun:test'
-import { promises as fs } from 'node:fs'
+import { describe, expect, test } from 'bun:test'
 import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
 
-import { packMiniAppFiles } from './archive'
-import { __resetBundledSyncCache } from './bundled-install'
+import { hostedMiniAppCatalog } from '../../testing/mini-app-catalog'
 import { createMiniAppStore, type MiniAppInstallOutcome, type MiniAppStoreSource } from './store'
 
 const root = tempDirPerTest('mini-app-store-activity-')
-const CATALOG = 'https://catalog.example.test/mini-app-catalog.json'
-
-/** A hosted catalog offering chess at `version`; a test raises the version it offers. */
-async function hosted(version = '1.0.0') {
-  const state = { version }
-  const archives = new Map<string, Uint8Array>()
-  const listing = async () => {
-    const bytes = await packMiniAppFiles({
-      'mini-app.json': JSON.stringify({ name: 'chess', version: state.version }),
-    })
-    archives.set(`chess-${state.version}.tar.gz`, bytes)
-    return {
-      name: 'chess',
-      displayName: 'Chess',
-      version: state.version,
-      publisher: { name: 'Localix', verified: true },
-      archive: {
-        url: `chess-${state.version}.tar.gz`,
-        bytes: bytes.byteLength,
-        sha256: new Bun.CryptoHasher('sha256').update(bytes).digest('hex'),
-      },
-    }
-  }
-  const fetchImpl = (async (input: string | URL | Request) => {
-    const url = String(input instanceof Request ? input.url : input)
-    if (url === CATALOG) return Response.json({ schema: 1, apps: [await listing()] })
-    const bytes = archives.get(url.split('/').pop() ?? '')
-    return bytes
-      ? new Response(new Blob([bytes as Uint8Array<ArrayBuffer>]))
-      : new Response('missing', { status: 404 })
-  }) as unknown as typeof fetch
-  return { fetchImpl, state }
-}
-
 function storeOver(sources: MiniAppStoreSource[], fetchImpl?: typeof fetch) {
   const settled: MiniAppInstallOutcome[][] = []
   const store = createMiniAppStore({
@@ -54,32 +18,16 @@ function storeOver(sources: MiniAppStoreSource[], fetchImpl?: typeof fetch) {
   return { store, settled }
 }
 
-async function localApp(source: string, name: string, extra: Record<string, unknown> = {}) {
-  await fs.mkdir(join(source, name), { recursive: true })
-  await fs.writeFile(
-    join(source, name, 'mini-app.json'),
-    JSON.stringify({ name, version: '1.0.0', description: name, ...extra }),
-  )
-}
-
-const local = (source: string): MiniAppStoreSource => ({
-  kind: 'local',
-  root: source,
-  publisher: { name: 'Localix', verified: true },
-})
-
-afterEach(() => __resetBundledSyncCache())
-
 describe('the mini app store’s background updates and installs', () => {
   test('Update all installs the newer version of the apps a catalog put here, and says so once', async () => {
-    const catalog = await hosted()
+    const catalog = hostedMiniAppCatalog([{ name: 'chess', displayName: 'Chess' }])
     const { store, settled } = storeOver(
-      [{ kind: 'catalog', url: CATALOG, vouches: true }],
+      [{ kind: 'catalog', url: catalog.url, vouches: true }],
       catalog.fetchImpl,
     )
     await store.install('chess')
     await store.settled()
-    catalog.state.version = '1.1.0'
+    catalog.apps[0]!.version = '1.1.0'
     expect(await store.updateInstalled()).toEqual(['chess'])
     await store.settled()
     expect(settled.at(-1)).toEqual([
@@ -88,14 +36,17 @@ describe('the mini app store’s background updates and installs', () => {
   })
 
   test('installs queued together are reported together, a failure with its reason', async () => {
-    const source = join(root(), 'staged')
-    await localApp(source, 'kanban', { displayName: 'Kanban' })
-    await localApp(source, 'notes')
-    const { store, settled } = storeOver([local(source)])
-    // One whose files are gone by the time its turn comes fails; the other installs.
+    const catalog = hostedMiniAppCatalog([
+      { name: 'kanban', displayName: 'Kanban' },
+      { name: 'notes', corrupt: true },
+    ])
+    const { store, settled } = storeOver(
+      [{ kind: 'catalog', url: catalog.url, vouches: true }],
+      catalog.fetchImpl,
+    )
+    // One whose archive fails its checksum when its turn comes fails; the other installs.
     await store.install('kanban')
     await store.install('notes')
-    await fs.rm(join(source, 'notes'), { recursive: true })
     await store.settled()
 
     expect(settled).toHaveLength(1)

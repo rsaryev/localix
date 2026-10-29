@@ -125,7 +125,7 @@ describe('/mini-app', () => {
 
   describe('catalog', () => {
     const HOSTED =
-      'https://github.com/rsaryev/localix/releases/latest/download/mini-app-catalog.json'
+      'https://github.com/rsaryev/localix-marketplace/releases/latest/download/mini-app-catalog.json'
     const ADA = 'https://ada.test/mini-app-catalog.json'
     const entry = (name: string, source: string) => ({ name, source })
     const service = (calls: string[] = []) => ({

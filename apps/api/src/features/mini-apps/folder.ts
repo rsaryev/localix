@@ -32,7 +32,7 @@ export interface DiscoveredMiniApp {
   manifest: MiniAppManifest | null
   /** Why it cannot run; set, it contributes nothing. */
   error?: string
-  /** A managed copy of one Localix ships, synchronized into the user's root. */
+  /** Always false: Localix ships no mini app (rule X5). Kept for the contract the clients read. */
   bundled: boolean
   /** The backend entrypoints, absolute and inside the folder. */
   backendEntries: string[]

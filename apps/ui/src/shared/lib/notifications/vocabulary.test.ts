@@ -70,7 +70,7 @@ describe('the person’s vocabulary', () => {
     ).toEqual([])
   })
 
-  it('every person-facing literal in the host and in mini apps says "conversation"', () => {
+  it('every person-facing literal in the host and the mini app SDK says "conversation"', () => {
     expect(scanSources(vocabularyViolations)).toEqual([])
   })
 })

@@ -270,9 +270,7 @@ export async function validateSourceReferences(pages, sourceRoot) {
 
   for (const page of pages) {
     const prose = page.content.replace(/```[\s\S]*?```/g, '')
-    for (const match of prose.matchAll(
-      /`((?:apps|packages|plugins|scripts|config|docs)\/[^`\n]+)`/g,
-    )) {
+    for (const match of prose.matchAll(/`((?:apps|packages|scripts|config|docs)\/[^`\n]+)`/g)) {
       const candidate = match[1].replace(/[:#]\d+(?:-\d+)?$/, '')
       if (!/\.[A-Za-z0-9]+$/.test(candidate) || /[<>{}*]|\.\.\.|\s→\s|\s\+\s|\|/.test(candidate)) {
         continue

@@ -1,7 +1,7 @@
 # Store
 
 The Store is where you find, install, update and remove what Localix can add: mini apps and Claude
-Code plugins, from Localix's own sources and from Anthropic's official and community plugin
+Code plugins, from the Localix marketplace and from Anthropic's official and community plugin
 marketplaces. Use this page to see where its packages come from, how its search works, and what
 happens before anything is installed.
 
@@ -24,8 +24,8 @@ happens before anything is installed.
 **Agents** is a package kind of its own: each agent is a Claude Code agent file, listed under
 **Yours**, **This project**, **Managed**, **From plugins** and **Built in**. **Add agent** makes
 one; an agent's page has **Overview**, **Settings** (its definition, written back to the file) and
-**Access** (its per-agent switches). The `team` plugin, Recommended here, adds a starter team. See
-[Agents](agents.md).
+**Access** (its per-agent switches). The `team` plugin from the Localix marketplace, Recommended
+here, adds a starter team. See [Agents](agents.md).
 
 ### Finding your way
 
@@ -106,12 +106,15 @@ macOS desktop an app with a screen of its own also offers **Install as app**; se
 ### Where packages come from
 
 A fresh profile starts with these sources, registered for browsing only: nothing from them is
-installed or switched on.
+installed or switched on. The first two are one repository, the
+[Localix marketplace](https://github.com/rsaryev/localix-marketplace): its releases publish the mini
+app catalog, and its `plugins` folder is the plugin marketplace. The core names none of their
+packages.
 
 | Source                                | Trust     | Shown as                                                |
 | ------------------------------------- | --------- | ------------------------------------------------------- |
-| The Localix mini app catalog          | Localix   | Localix's mini apps; its picks reach **Discover**.      |
-| The `localix` plugin marketplace      | Localix   | Localix's own plugins; its picks reach **Discover**.    |
+| The Localix marketplace's mini apps   | Localix   | Localix's mini apps; its picks reach **Discover**.      |
+| The Localix marketplace's plugins     | Localix   | Localix's own plugins; its picks reach **Discover**.    |
 | `anthropics/claude-plugins-official`  | Official  | Anthropic's reviewed plugins.                           |
 | `anthropics/claude-plugins-community` | Community | Plugins by their authors; Localix does not review them. |
 
@@ -199,7 +202,7 @@ sample icons, asks which kind you mean when both fit, and adds it only when you 
 
 - [Mini apps](mini-apps.md)
 - [Claude Code plugins](../extending/claude-code-plugins.md)
-- [Built-in plugins and updates](../extending/plugin-updates.md)
+- [Plugin marketplaces and updates](../extending/plugin-updates.md)
 - [Semantic search](semantic-search.md)
 
 ## Source of truth

@@ -3,27 +3,17 @@
   "extends": ["//"],
   "tasks": {
     "build": {
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        "$TURBO_ROOT$/mini-apps/**/ui/**",
-        "$TURBO_ROOT$/mini-apps/**/backend/**"
-      ]
+      "inputs": ["$TURBO_DEFAULT$"]
     },
     "type-check": {
       "dependsOn": ["^type-check"],
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        "$TURBO_ROOT$/mini-apps/**/ui/**",
-        "$TURBO_ROOT$/mini-apps/**/backend/**"
-      ],
+      "inputs": ["$TURBO_DEFAULT$"],
       "outputs": []
     },
     "test": {
       "dependsOn": ["^build"],
       "inputs": [
         "$TURBO_DEFAULT$",
-        "$TURBO_ROOT$/mini-apps/**/ui/**",
-        "$TURBO_ROOT$/mini-apps/**/backend/**",
         "$TURBO_ROOT$/scripts/test-deadline.ts",
         "$TURBO_ROOT$/scripts/test-globals-guard.ts",
         "$TURBO_ROOT$/scripts/test-shards.mjs",
@@ -35,11 +25,7 @@
     },
     "type-check:tests": {
       "dependsOn": ["^type-check"],
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        "$TURBO_ROOT$/mini-apps/**/ui/**",
-        "$TURBO_ROOT$/mini-apps/**/backend/**"
-      ],
+      "inputs": ["$TURBO_DEFAULT$"],
       "outputs": []
     }
   }

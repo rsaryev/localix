@@ -147,7 +147,7 @@ export function wrapToolsWithCcHooks(
         : context
 
       // ---- TaskCompleted: before the task board closes a card ---------------
-      const taskEvent = taskBoardEvent(runtime, tool.name, effectiveInput)
+      const taskEvent = taskBoardEvent(runtime, tool, effectiveInput)
       const call = [toolCallId, effectiveInput, signal, onUpdate, gated] as const
       if (taskEvent === 'TaskCompleted') {
         const refused = await blockTaskCompletion(runtime, tool, call)

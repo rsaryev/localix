@@ -50,7 +50,7 @@ export const MINI_APP_STORE_CACHE_SUBDIR = '.localix/cache/mini-app-store'
 
 export function createMiniAppStore(deps: {
   homeDir: string
-  /** Read per call: a development checkout restages while the API runs. */
+  /** Read per call: the person adds and removes catalogs while the API runs. */
   sources: () => MiniAppStoreSource[] | Promise<MiniAppStoreSource[]>
   /**
    * An install finished: announce the app (the owner announces, C1) and, for a `fresh` one the
@@ -90,12 +90,7 @@ export function createMiniAppStore(deps: {
       ...(offer.version ? { version: offer.version } : {}),
       ...(userId ? { userId } : {}),
     } as const
-    setJob(
-      offer.name,
-      offer.from === 'catalog'
-        ? { phase: 'downloading', received: 0, total: offer.archive.bytes }
-        : { phase: 'installing' },
-    )
+    setJob(offer.name, { phase: 'downloading', received: 0, total: offer.archive.bytes })
     try {
       await installOffer(offer, deps.homeDir, {
         fetchImpl: deps.fetchImpl,

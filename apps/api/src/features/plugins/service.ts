@@ -63,7 +63,6 @@ import { createDeclaredMarketplaceSync } from './declared-marketplaces'
 import { installNodeDependencies } from './plugin-node-deps'
 import { userDefaultNpmRegistry } from './marketplace-npm-registry'
 import { inPlaceInstallFor, inPlacePublication } from './install-in-place'
-import { assertNameNotBuiltin, assertNotBuiltin, BUILTIN_ORIGIN } from './builtin-plugins'
 import { createPluginUpdates } from './plugin-updates'
 import { ensureDefaultMarketplaces } from './default-marketplaces'
 import { setInstallRecord } from './plugin-cache'
@@ -121,11 +120,9 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
   ): Promise<PluginRecord> => {
     const resolvedConfig = resolvePluginConfig(plugin.manifest, scalarConfig(state?.config))
     let error = plugin.error
-    const validationNotes = plugin.shadowNotes ?? []
     const loadBlocked = pluginLoadBlockReason(plugin)
     if (loadBlocked) error = error ? `${error}; ${loadBlocked}` : loadBlocked
     const validation = await validatePluginFull(plugin, { config: resolvedConfig })
-    if (validationNotes.length) validation.warnings.push(...validationNotes)
     return {
       name: plugin.manifest.name,
       displayName: plugin.manifest.displayName,
@@ -140,10 +137,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       dir: plugin.dir,
       ...(plugin.inPlaceInstall ? { loadsInPlace: true } : {}),
       // A Claude Code install goes by Claude Code's `name@marketplace`, the id the Store finds it by.
-      source: plugin.builtin
-        ? BUILTIN_ORIGIN
-        : (state?.source ?? plugin.claudeCodeInstall ?? 'local'),
-      ...(plugin.builtin ? { builtin: true } : {}),
+      source: state?.source ?? plugin.claudeCodeInstall ?? 'local',
       enabled,
       ...(awaitingConsent ? { awaitingConsent } : {}),
       provides: plugin.provides,
@@ -230,7 +224,6 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
     opts: { refreshMarketplace: boolean },
   ): Promise<PluginRecord> => {
     const plugin = await findPlugin(userId, input.name, input.projectId ?? '')
-    assertNotBuiltin(plugin, 'update')
     return reinstallFromSource({
       repo,
       userId,
@@ -470,7 +463,6 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
           ? await inPlace.load(projectId)
           : await loadManifest(directory, scope, projectId)
         if (candidate.error) throw new InvalidRequestError('plugin_invalid', candidate.error)
-        await assertNameNotBuiltin(candidate.manifest.name)
         installNotes.push(
           ...(candidate.manifestIssues ?? []).map((found) => `${found.path}: ${found.message}`),
         )

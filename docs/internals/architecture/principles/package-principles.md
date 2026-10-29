@@ -54,8 +54,7 @@ top.
 `scripts/check-architecture.mjs` enforces parts of this: an undeclared workspace import is reported
 as "used without being declared"; `ENGINE_LAYERS` pins each engine package's allowed dependencies;
 `kitBoundaryProblem` keeps `packages/kit` from importing apps or mini apps; a relative import from a
-package into `apps/` or `mini-apps/` is reported; and the agent package may import no `@localixai/*`
-module.
+package into `apps/` is reported; and the agent package may import no `@localixai/*` module.
 
 ## Known gaps
 

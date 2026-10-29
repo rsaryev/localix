@@ -74,12 +74,9 @@ export const pluginRecordSchema = z.object({
    */
   loadsInPlace: z.boolean().optional(),
   /**
-   * Where it came from: 'local' (dropped in / picked dir), a git URL, `<plugin>@<marketplace>`, or
-   * 'builtin' for a plugin shipped inside Localix.
+   * Where it came from: 'local' (dropped in / picked dir), a git URL, or `<plugin>@<marketplace>`.
    */
   source: z.string(),
-  /** Shipped inside Localix: it can be switched off, but not uninstalled or updated on its own. */
-  builtin: z.boolean().optional(),
   enabled: z.boolean(),
   /**
    * Installed, not denied, and not running: nobody has allowed it yet.
@@ -178,7 +175,7 @@ export const marketplaceListingSchema = z.object({
   autoUpdate: z.boolean().optional(),
   /** An environment variable turns the pass off, so the toggle is hidden (as in Claude Code). */
   autoUpdatePaused: z.boolean().optional(),
-  /** Localix's official marketplace (`localix`, from `rsaryev/localix`). */
+  /** Localix's official marketplace (`LOCALIX_MARKETPLACE` in `@localixai/store`). */
   official: z.boolean().optional(),
   /** When its listing was last fetched. */
   lastUpdated: z.string().optional(),

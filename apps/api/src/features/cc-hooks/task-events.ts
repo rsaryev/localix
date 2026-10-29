@@ -1,9 +1,9 @@
 /**
  * TaskCreated / TaskCompleted on Localix's task board.
  *
- * Claude Code fires them for its TaskCreate / TaskUpdate tools. Localix's equivalent is the task
- * board's `kanban` tool (the bundled kanban plugin): `create` puts cards on the board and
- * `complete` closes one. As in CC:
+ * Claude Code fires them for its TaskCreate / TaskUpdate tools. Localix's equivalent is whichever
+ * tool declares the `task-board` role (`ToolRole`), by any name: `create` puts cards on the board
+ * and `complete` closes one. As in CC:
  *   - TaskCreated runs once a card exists; a block takes the card off the board again and the
  *     reason reaches the model as the tool's error;
  *   - TaskCompleted runs before the card closes; a block leaves it open and the reason reaches the
@@ -17,9 +17,6 @@ import { isRecord } from '../../lib/record'
 import type { CcTask } from './runtime-contracts-added'
 import type { CcHooksRuntime } from './run'
 
-/** The task board tool and the actions TaskCreated / TaskCompleted stand for. */
-export const TASK_BOARD_TOOL = 'kanban'
-
 type Execute = AgentTool['execute']
 type ExecuteArgs = Readonly<Parameters<Execute>>
 
@@ -32,10 +29,10 @@ interface BoardCard {
 /** The task event a call stands for, when the runtime has hooks on it. */
 export function taskBoardEvent(
   runtime: CcHooksRuntime,
-  toolName: string,
+  tool: Pick<AgentTool, 'roles'>,
   input: unknown,
 ): 'TaskCreated' | 'TaskCompleted' | null {
-  if (toolName !== TASK_BOARD_TOOL || !isRecord(input)) return null
+  if (!tool.roles?.includes('task-board') || !isRecord(input)) return null
   const event =
     input.action === 'create' ? 'TaskCreated' : input.action === 'complete' ? 'TaskCompleted' : null
   return event && runtime.hasHooks(event) ? event : null

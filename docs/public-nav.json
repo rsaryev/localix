@@ -17,8 +17,7 @@
       "pages": [
         "recipes/bring-your-own-agent-cli.md",
         "recipes/drive-interactive-terminal.md",
-        "recipes/fix-a-ui-bug-by-pointing-at-it.md",
-        "recipes/turn-a-vague-goal-into-a-pipeline.md"
+        "recipes/fix-a-ui-bug-by-pointing-at-it.md"
       ]
     },
     {
@@ -59,32 +58,11 @@
             "features/external-agents.md",
             "features/settings.md",
             "features/keyboard-shortcuts.md",
-            "features/source-control.md",
             "features/visual-feedback.md",
             "features/lsp.md",
             "features/cost-tracking.md",
             "features/notifications.md",
             "features/cli.md"
-          ]
-        },
-        {
-          "title": "Workbenches",
-          "pages": [
-            "features/database.md",
-            "features/code-graph.md",
-            "features/project-space.md",
-            "features/api.md",
-            "features/devops.md",
-            "features/docker.md",
-            "features/kubernetes.md",
-            "features/documents.md",
-            "features/resumes.md",
-            "features/reader.md",
-            "features/trading.md",
-            "features/task-board.md",
-            "features/game-2048.md",
-            "features/game-snake.md",
-            "features/games.md"
           ]
         },
         {

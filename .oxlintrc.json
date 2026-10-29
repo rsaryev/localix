@@ -151,18 +151,8 @@
       }
     },
     {
-      "files": ["mini-apps/**/*.mjs", "plugins/**/*.mjs"],
-      "rules": {
-        "typescript/consistent-type-imports": "off"
-      }
-    },
-    {
-      "files": [
-        "mini-apps/documents/backend/documents/drivers/docx.ts",
-        "mini-apps/documents/backend/documents/drivers/doc.ts",
-        "apps/api/src/features/agent-core/tools/web/readable-extract.ts"
-      ],
-      // The /// <reference> to documents/drivers/vendor.d.ts is load-bearing, not legacy:
+      "files": ["apps/api/src/features/agent-core/tools/web/readable-extract.ts"],
+      // The /// <reference> to turndown-vendor.d.ts is load-bearing, not legacy:
       // packages/tui type-checks apps/api sources through a project that does not pick
       // vendor.d.ts up from `include`, so dropping it makes `turndown` implicitly `any`.
       "rules": {

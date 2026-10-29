@@ -13,11 +13,40 @@ import { cpSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } 
 import { basename, dirname, join, relative, sep } from 'node:path'
 
 import { MINI_APP_KIT_DIGEST } from '@localixai/api/mini-app-kit-layout'
+import { parseSync } from 'oxc-parser'
 import { compilerDir } from '@localixai/mini-app-kit-compiler'
 
 import { declareKitModules, verifyKitDeclarations } from './stage-mini-app-kit-declarations.mjs'
+import { KIT_TESTING_MODULES } from './stage-mini-app-kit-runtime.mjs'
 
 const TYPES_DIR = 'types'
+const AMBIENT_TYPES = 'assets.d.ts'
+/**
+ * What a bundler-imported asset is to the type checker: a stylesheet imported for its side effect,
+ * an image or font as its URL. Without it `import './app.css'` fails the check (TS2882).
+ */
+const AMBIENT_DECLARATIONS = `declare module '*.css'
+declare module '*.svg' {
+  const url: string
+  export default url
+}
+declare module '*.png' {
+  const url: string
+  export default url
+}
+declare module '*.jpg' {
+  const url: string
+  export default url
+}
+declare module '*.webp' {
+  const url: string
+  export default url
+}
+declare module '*.woff2' {
+  const url: string
+  export default url
+}
+`
 const DECLARATION = /\.d\.[cm]?ts$/u
 /** Workspace packages `@localixai/mini-app-sdk`'s declarations import (see the staging loop). */
 export const SDK_DECLARATION_DEPENDENCIES = [
@@ -124,6 +153,10 @@ export function stageMiniAppKitTypes({ repoRoot, outKit, uiSharedExports, sdkDir
   for (const name of SDK_DECLARATION_DEPENDENCIES) {
     copyDeclarations(join(repoRoot, 'packages', name.replace('@localixai/', '')), out, name)
   }
+  // The data views are bundled into a mini app from the kit (`bundledModules`), so importable.
+  typePaths['@localixai/dataview'] = rel(
+    join(out, 'node_modules/@localixai/dataview/dist/index.d.ts'),
+  )
   const sdkManifest = JSON.parse(readFileSync(join(sdkDir, 'package.json'), 'utf8'))
   for (const subpath of Object.keys(sdkManifest.exports ?? {})) {
     if (subpath === '.' || subpath.includes('*')) continue
@@ -142,10 +175,16 @@ export function stageMiniAppKitTypes({ repoRoot, outKit, uiSharedExports, sdkDir
       ['react/jsx-runtime', './jsx-runtime'],
       ['react/jsx-dev-runtime', './jsx-dev-runtime'],
     ],
-    ['@types/react-dom', ['react-dom', '.'], ['react-dom/client', './client']],
+    [
+      '@types/react-dom',
+      ['react-dom', '.'],
+      ['react-dom/client', './client'],
+      ['react-dom/server', './server'],
+    ],
     ['csstype'],
     ['zod', ['zod', '.']],
-    ['hono', ['hono', '.']],
+    // `hono/client` from the same copy as `hono`: a typed client's routes are the backend's own.
+    ['hono', ['hono', '.'], ['hono/client', './client']],
     ['lucide-react', ['lucide-react', '.']],
     ['@types/bun'],
     ['bun-types'],
@@ -172,14 +211,34 @@ export function stageMiniAppKitTypes({ repoRoot, outKit, uiSharedExports, sdkDir
   // names the kit exports.
   const kitDir = join(out, 'kit')
   mkdirSync(kitDir, { recursive: true })
-  const described = declareKitModules({ repoRoot, kitDirs, digest: MINI_APP_KIT_DIGEST })
+  // The host's test harness (`@localixai/kit/testing*`) is declared too, under flat file names:
+  // a mini app's DOM tests type-check against it like any kit module.
+  const testing = Object.entries(KIT_TESTING_MODULES).map(([specifier, file]) => [
+    specifier.slice('@localixai/kit/'.length).replaceAll('/', '-'),
+    join(repoRoot, file),
+    specifier,
+  ])
   const kitNames = {}
+  const described = declareKitModules({
+    repoRoot,
+    kitDirs,
+    digest: MINI_APP_KIT_DIGEST,
+    extra: testing.map(([id, file]) => [id, file]),
+  })
+  for (const [id, file, specifier] of testing) {
+    kitNames[id] = harnessNames(file)
+    writeFileSync(
+      join(kitDir, `${id}.d.ts`),
+      described.declarations.get(id) ?? nameOnlyDeclaration(id, kitNames[id]),
+    )
+    typePaths[specifier] = rel(join(kitDir, `${id}.d.ts`))
+  }
   for (const [specifier, names] of Object.entries(uiSharedExports)) {
     if (!specifier.startsWith('@localixai/kit/')) continue
     const id = specifier.slice('@localixai/kit/'.length)
     const file = join(kitDir, `${id}.d.ts`)
-    kitNames[id] = names
-    writeFileSync(file, described.declarations.get(id) ?? nameOnlyDeclaration(id, names))
+    kitNames[id] = names.map((name) => ({ name, type: false }))
+    writeFileSync(file, described.declarations.get(id) ?? nameOnlyDeclaration(id, kitNames[id]))
     typePaths[specifier] = rel(file)
   }
   // A generated file the compiler rejects is worse than a names-only one: under the mini app
@@ -202,18 +261,34 @@ export function stageMiniAppKitTypes({ repoRoot, outKit, uiSharedExports, sdkDir
     /^(?:typescript\.js|lib\..+\.d\.ts)$/u.test(basename(src)),
   )
   writeFileSync(join(tsOut, 'check.mjs'), CHECK_RUNNER)
+  writeFileSync(join(out, AMBIENT_TYPES), AMBIENT_DECLARATIONS)
   return {
     typePaths,
+    ambientTypes: rel(join(out, AMBIENT_TYPES)),
     typescript: rel(join(tsOut, 'lib', 'typescript.js')),
     kitDigest,
     kitRejected: [...rejected].sort((a, b) => a.localeCompare(b)),
   }
 }
 
+/**
+ * The names a harness module exports, read from its explicit export list, a type kept a type: the
+ * fallback when the host types it re-exports are too deep to declare on their own.
+ */
+function harnessNames(file) {
+  const { module } = parseSync(file, readFileSync(file, 'utf8'))
+  return module.staticExports
+    .flatMap((statement) => statement.entries)
+    .filter((entry) => entry.exportName.kind === 'Name')
+    .map((entry) => ({ name: entry.exportName.name, type: entry.isType }))
+}
+
 function nameOnlyDeclaration(id, names) {
   const lines = names
-    .filter((name) => name !== 'default' && /^[A-Za-z_$][\w$]*$/u.test(name))
-    .map((name) => `export declare const ${name}: any`)
+    .filter(({ name }) => name !== 'default' && /^[A-Za-z_$][\w$]*$/u.test(name))
+    .map(({ name, type }) =>
+      type ? `export type ${name} = any` : `export declare const ${name}: any`,
+    )
   return `// Generated: the names @localixai/kit/${id} exports.\n${lines.join('\n')}\nexport {}\n`
 }
 

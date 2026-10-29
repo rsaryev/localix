@@ -11,27 +11,52 @@ import { TipPick } from '../TipPick'
 import { miniAppIconGlyph } from './miniAppIconGlyph'
 import './mini-apps-scene.css'
 
-/** Three cards of the store, the middle one being installed. */
-const CARDS = [
-  { name: 'chess', label: 'Chess', what: 'Games', state: 'Install' },
-  { name: 'kanban', label: 'Kanban', what: 'Utilities', state: 'Installing' },
-  { name: 'reader', label: 'Reader', what: 'Content', state: 'Installed' },
-] as const
+/** How many cards the slide draws. */
+const CARDS = 3
+
+/** A card's state, in the three words the slide styles. */
+function cardState(entry: Listing): 'Install' | 'Installing' | 'Installed' {
+  if (entry.installs.length) return 'Installed'
+  return isActiveJob(entry.job) ? 'Installing' : 'Install'
+}
+
+/**
+ * The Store's own apps, the ones that matter first: the recommended (installing on their own),
+ * then the vouched-for featured ones. The core names no mini app (X4), so the slide draws whatever
+ * the Store offers, and blank cards when it offers nothing yet.
+ */
+function useStoreApps() {
+  const generation = useResourceGeneration('store')
+  const { data } = useSWR(['tips-mini-apps', generation], () =>
+    storeApi.page({ shelf: 'package:mini-app', limit: LISTINGS_PAGE_MAX }),
+  )
+  return data?.listings ?? []
+}
 
 /** The store as the person meets it: apps as cards, one action each, publishers vouched for. */
 export function MiniAppsScene() {
+  const listings = useStoreApps()
+  const rank = (entry: Listing) => (entry.recommended ? 0 : entry.featured ? 1 : 2)
+  const apps = listings
+    .filter((entry) => entry.recommended || entry.publisher.verified)
+    .sort((a, b) => rank(a) - rank(b))
+    .slice(0, CARDS)
+  const blanks = Array.from({ length: CARDS - apps.length }, (_, index) => index)
   return (
     <div aria-hidden className="wt-mini-apps">
-      {CARDS.map((card) => (
-        <div key={card.name} className="wt-pane wt-mini-app-card" data-state={card.state}>
+      {apps.map((entry) => (
+        <div key={entry.ref.id} className="wt-pane wt-mini-app-card" data-state={cardState(entry)}>
           <div className="wt-mini-app-head">
-            <MonogramAvatar identity={card.name} label={card.label} size={20} />
-            <span className="wt-mini-app-name">{card.label}</span>
-            <BadgeCheck className="size-3 text-status-info" />
+            <MonogramAvatar identity={entry.ref.id} label={entry.displayName} size={20} />
+            <span className="wt-mini-app-name">{entry.displayName}</span>
+            {entry.publisher.verified ? <BadgeCheck className="size-3 text-status-info" /> : null}
           </div>
-          <span className="wt-mini-app-what">{card.what}</span>
-          <span className="wt-mini-app-action">{card.state}</span>
+          {entry.category ? <span className="wt-mini-app-what">{entry.category}</span> : null}
+          <span className="wt-mini-app-action">{cardState(entry)}</span>
         </div>
+      ))}
+      {blanks.map((index) => (
+        <div key={`blank-${index}`} className="wt-pane wt-mini-app-card" data-state="blank" />
       ))}
     </div>
   )
@@ -73,11 +98,7 @@ function row(entry: Listing, install: (entry: Listing) => unknown): MenuEntry {
  * few more of Localix's own with Install, and the Store last — opened behind setup, which stays.
  */
 export function MiniAppsAction() {
-  const generation = useResourceGeneration('store')
-  const { data } = useSWR(['tips-mini-apps', generation], () =>
-    storeApi.page({ shelf: 'package:mini-app', limit: LISTINGS_PAGE_MAX }),
-  )
-  const entries = data?.listings ?? []
+  const entries = useStoreApps()
   const recommended = entries.filter((entry) => entry.recommended)
   const more = entries
     .filter(

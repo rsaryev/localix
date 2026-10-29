@@ -107,7 +107,8 @@ The tokens and style layers are in `packages/kit/styles/`, in the cascade order
 app kit stages it so a mini app's utilities are compiled against the same theme. The rules that keep
 a surface on that system — no palette colour, no literal duration, the radius scale, one focus
 recipe, no pane-sized ground — are the ones [Visual system][visual] lists; each is a check that
-scans the kit as well as the app and the bundled mini apps.
+scans the kit as well as the app, and the mini-app-authoring plugin's style check applies them to a
+mini app.
 
 ### One vocabulary for every primitive
 

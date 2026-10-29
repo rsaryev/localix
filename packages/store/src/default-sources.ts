@@ -29,20 +29,37 @@ export const TRUST_WEIGHTS: Readonly<Record<Trust, number>> = {
   community: 0.35,
 }
 
+/**
+ * LOCALIX'S OWN MARKETPLACE, and everything the core knows about Localix's plugins and mini apps:
+ * the repository they live in. Its plugins are the Claude Code marketplace at its root; its mini
+ * apps are the catalog each of its releases publishes. They install, update and are trusted
+ * through the same flow as anyone's — the core names none of them.
+ */
+export const LOCALIX_MARKETPLACE = {
+  name: 'localix',
+  repo: 'rsaryev/localix-marketplace',
+  /** Only the catalog and the plugins are checked out, not the mini apps' sources. */
+  paths: ['.claude-plugin', 'plugins'],
+} as const
+
+/** The mini app catalog a GitHub repository's latest release publishes. */
+export const releaseMiniAppCatalog = (repo: string): string =>
+  `https://github.com/${repo}/releases/latest/download/mini-app-catalog.json`
+
 export const DEFAULT_SOURCES: readonly DefaultSource[] = [
   {
     id: 'localix-mini-apps',
     kind: 'mini-app',
-    input: 'https://github.com/rsaryev/localix/releases/latest/download/mini-app-catalog.json',
+    input: releaseMiniAppCatalog(LOCALIX_MARKETPLACE.repo),
     trust: 'localix',
     weight: TRUST_WEIGHTS.localix,
     editorial: true,
   },
   {
-    id: 'localix',
+    id: LOCALIX_MARKETPLACE.name,
     kind: 'plugin',
-    input: 'rsaryev/localix',
-    paths: ['.claude-plugin', 'plugins'],
+    input: LOCALIX_MARKETPLACE.repo,
+    paths: LOCALIX_MARKETPLACE.paths,
     trust: 'localix',
     weight: TRUST_WEIGHTS.localix,
     editorial: true,

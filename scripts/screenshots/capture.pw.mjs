@@ -12,20 +12,12 @@ test.beforeAll(async () => {
 for (const [key, spec] of Object.entries(capturePlan)) {
   test(key, async ({ page }, testInfo) => {
     test.skip(
-      spec.scenario === 'containers' && process.env.LOCALIX_CAPTURE_DOCKER !== '1',
-      'Opt in to the demo Docker fixture; never capture unrelated containers.',
-    )
-    test.skip(
       Boolean(spec.requires && process.env[spec.requires] !== '1'),
       `Enable ${spec.requires} with its isolated dependency first.`,
     )
     const fixture = JSON.parse(await fs.readFile(fixtureFile, 'utf8'))
     if (spec.scenario === 'agent-command')
       await (await import('./agent-command.mjs')).seedAgentCommand(fixture)
-    if (['kanban-board', 'kanban-conversation'].includes(spec.scenario))
-      await (await import('./kanban-workbenches.mjs')).seedKanban(fixture)
-    if (spec.scenario === 'diagram-board')
-      await (await import('./diagram-board.mjs')).seedDiagramBoard(fixture)
     if (spec.scenario === 'agent-management')
       await (await import('./agent-management.mjs')).seedAgentManagement(fixture)
     if (spec.scenario === 'agent')
@@ -38,16 +30,7 @@ for (const [key, spec] of Object.entries(capturePlan)) {
     }
     if (['local-models-settings', 'semantic-search'].includes(spec.scenario))
       await (await import('./local-models.mjs')).seedLocalModels()
-    const board = spec.scenario === 'answer-board'
-    const prefix = board
-      ? 'board'
-      : spec.scenario === 'diagram-board'
-        ? 'diagram'
-        : spec.scope === 'platform'
-          ? 'platform'
-          : spec.scope === 'external'
-            ? 'external'
-            : ''
+    const prefix = spec.scope === 'external' ? 'external' : ''
     const route = `${uiOrigin}/#/project/${prefix ? fixture[`${prefix}ProjectId`] : fixture.projectId}/${prefix ? fixture[`${prefix}SessionId`] : fixture.sessionId}`
     const errors = []
     page.on('pageerror', (error) => errors.push(error.message))

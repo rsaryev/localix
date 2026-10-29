@@ -8,7 +8,6 @@ import {
   exemptionKey,
   scanSources,
   staleReport,
-  withPlantedSources,
   type Exemptions,
 } from '../apps/api/src/lib/source-lint'
 
@@ -46,7 +45,7 @@ import {
  *
  * It moved OUT of apps/api and into the SDK, because half its callers are plugins and a plugin
  * cannot import the host: every plugin store was injecting it into `createUserEntityStore` by
- * relative path across the very boundary `plugin-boundary-contract.test.ts` polices. The rule is
+ * relative path across that boundary. The rule is
  * no less single-owner for living in the package both sides depend on — this constant moving is
  * the whole ceremony, and the anti-void assertion below is what makes forgetting it impossible.
  *
@@ -142,46 +141,6 @@ const EXEMPTIONS: Exemptions = {
   //    (`memory/auto-memory.ts`, blessed above: it keys on a resolved path, not a user id). ──
 }
 
-const PLUGIN_EXEMPTION_MARKER = '@safe-file-key-exemption'
-const PLUGIN_EXEMPTION_RE = /^\s*\/\/\s*@safe-file-key-exemption\s+(rule|fileKey)\s+--\s+(\S.*)\s*$/
-
-/**
- * Plugin exceptions belong to the plugin that owns the implementation. Keeping the annotation
- * beside the matching line makes removal stale-safe while keeping this host guard agnostic to the
- * installed plugin set. Only production plugin source is eligible; tests cannot bless runtime code.
- */
-async function pluginOwnedExemptions(root: string): Promise<Exemptions> {
-  const files = await scanSources({
-    root,
-    include: ['mini-apps/**/*.ts'],
-    skip: (f) => f.endsWith('.test.ts'),
-    minFiles: 0,
-  })
-  const exemptions: Exemptions = {}
-  for (const file of files) {
-    for (const [index, line] of file.raw.split(/\r?\n/).entries()) {
-      if (!line.includes(PLUGIN_EXEMPTION_MARKER)) continue
-      const match = PLUGIN_EXEMPTION_RE.exec(line)
-      if (!match) {
-        throw new Error(
-          `${file.file}:${index + 1}: malformed ${PLUGIN_EXEMPTION_MARKER}; expected ` +
-            '`// @safe-file-key-exemption <rule|fileKey> -- <reason>`',
-        )
-      }
-      const key = exemptionKey(file.file, match[1] as 'rule' | 'fileKey')
-      if (key in exemptions) {
-        throw new Error(`${file.file}:${index + 1}: duplicate plugin-owned exemption for ${key}`)
-      }
-      exemptions[key] = { reason: match[2] as string }
-    }
-  }
-  return exemptions
-}
-
-async function allExemptions(root: string): Promise<Exemptions> {
-  return { ...EXEMPTIONS, ...(await pluginOwnedExemptions(root)) }
-}
-
 /**
  * CLAIM 1 — the RULE. The exact file-key charset, in either spelling (`a-zA-Z0-9_-` /
  * `A-Za-z0-9_-`), whatever it replaces with. The charset IS the rule's signature.
@@ -217,12 +176,7 @@ const buildsAPath = (code: string): boolean =>
   PATH_JOIN_RE.test(code) || (PATH_NAMED_IMPORT_RE.test(code) && BARE_JOIN_RE.test(code))
 
 /** The trees a store could plausibly live in. */
-const SCAN_GLOBS = [
-  'apps/api/src/**/*.ts',
-  'apps/ui/src/**/*.ts',
-  'packages/*/src/**/*.ts',
-  'mini-apps/**/*.ts',
-]
+const SCAN_GLOBS = ['apps/api/src/**/*.ts', 'apps/ui/src/**/*.ts', 'packages/*/src/**/*.ts']
 
 const REPO_ROOT = path.resolve(import.meta.dir, '..')
 
@@ -245,7 +199,7 @@ async function scan(root: string): Promise<string[]> {
 /** The offenders: matches that are neither the owner nor blessed. */
 async function offendersIn(root: string): Promise<string[]> {
   const found = (await scan(root)).filter((k) => !k.startsWith(`${OWNER}::`))
-  return auditExemptions(await allExemptions(root), found).offenders
+  return auditExemptions(EXEMPTIONS, found).offenders
 }
 
 describe('safe-file-key contract', () => {
@@ -256,7 +210,7 @@ describe('safe-file-key contract', () => {
    */
   test('the detector is not void — it finds the owner and the files it exempts', async () => {
     const found = await scan(REPO_ROOT)
-    const exemptions = await allExemptions(REPO_ROOT)
+    const exemptions = EXEMPTIONS
 
     assertNotVoid(
       'use of the file-key charset',
@@ -359,28 +313,8 @@ describe('safe-file-key contract', () => {
 
   test('the exemption list has no stale entries (every blessing is still real)', async () => {
     const found = (await scan(REPO_ROOT)).filter((k) => !k.startsWith(`${OWNER}::`))
-    const { stale } = auditExemptions(await allExemptions(REPO_ROOT), found)
+    const { stale } = auditExemptions(EXEMPTIONS, found)
     expect(stale, stale.length === 0 ? '' : staleReport(stale)).toEqual([])
-  })
-
-  test('plugin-owned exemptions are discovered without a host-side plugin catalog', async () => {
-    await assertPositiveControl({
-      subject: 'an unblessed plugin-owned file-key lookalike',
-      file: 'mini-apps/sample/backend/display-name.ts',
-      offender: `export const displayName = (k: string): string => k.replace(/[^A-Za-z0-9_-]/g, '-')\n`,
-      detect: offendersIn,
-    })
-
-    const offenders = await withPlantedSources(
-      {
-        'mini-apps/sample/backend/display-name.ts': [
-          '// @safe-file-key-exemption rule -- Slugs a display label; it is never a path key.',
-          `export const displayName = (k: string): string => k.replace(/[^A-Za-z0-9_-]/g, '-')`,
-        ].join('\n'),
-      },
-      async (root) => offendersIn(root),
-    )
-    expect(offenders).toEqual([])
   })
 
   /**

@@ -102,8 +102,8 @@ once: a message to one is refused. `Loops` is not available to a subagent. See
 You are not an agent. There is no `@human` record: describe yourself and your preferences in
 `~/.claude/CLAUDE.md` or the project's `CLAUDE.md`. Agents never address you with an `@` mention; to
 get your answer, a decision or an approval they use the `AskUserQuestion` tool ([HITL](hitl.md));
-otherwise they report and stop, and the reply returns to you. A board card may still be assigned to
-you ([Cards for you](task-board.md#cards-for-you)).
+otherwise they report and stop, and the reply returns to you. A task-board mini app may still assign
+a card to you.
 
 ## Starter agents
 
@@ -147,7 +147,7 @@ silences outside-workspace and dangerous-command confirmations.
 
 Every agent in a chat shares the repository's [memory](learning-loop.md#memory) folder. Claude
 Code's `memory:` key gives an agent run as a subagent a memory folder of its own. See
-[stored context](learning-loop.md#recall-and-courses).
+[stored context](learning-loop.md#recall).
 
 ![An agent's page in the Store: standing instructions and turn limit](../assets/screenshots/agents/context-and-limits--2026-10-27.png)
 

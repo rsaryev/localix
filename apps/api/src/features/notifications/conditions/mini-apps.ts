@@ -2,7 +2,6 @@ import type { MiniAppProblem } from '@localixai/mini-app-sdk/backend'
 
 import { errorMessage } from '../../../lib/errors'
 import { recoveryAction } from '../recovery'
-import type { BundledStagingFailure } from '../../mini-apps/bundled-install'
 import type { InboxOrigin } from '../contracts'
 import { createConditions, headline, type ConditionJournal } from './condition'
 
@@ -18,12 +17,9 @@ import { createConditions, headline, type ConditionJournal } from './condition'
  *   mini-app:<name>:problem:<source>:   the app reported a problem itself (`ctx.reportProblem`)
  *   mini-apps:load:<projectId>:         the per-run load of a scope's mini apps threw
  *   mini-apps:reconcile:                the backend host could not apply the enabled set at all
- *   mini-apps:build:<name>:             a first-party app's current source did not build or
- *                                       install, so it runs its last good copy or not at all
  *
- * `mini-apps:` is its own root, not an app named "reconcile". A build failure lives there too,
- * because an app that never built is not ENABLED, and the `enabled` sweep would settle its row the
- * moment it was raised. A Claude Code plugin's conditions are `conditions/plugins.ts`.
+ * `mini-apps:` is its own root, not an app named "reconcile". A Claude Code plugin's conditions
+ * are `conditions/plugins.ts`.
  */
 
 export interface MiniAppLoadOutcome {
@@ -44,9 +40,6 @@ export interface MiniAppConditions {
   /** The per-run load of a scope's mini apps as a whole: `error` when it threw. */
   catalogLoaded(userId: string, projectId: string, error?: string): void
   backendProblems(app: string, problems: readonly string[]): void
-  /** The complete set of first-party apps not running their current source: rows about any
-   *  other app are settled as fixed. */
-  stagingFailed(failures: readonly BundledStagingFailure[]): Promise<void>
   reconciled(error?: string): void
   channelStarted(app: string, channelName: string): void
   channelCrashed(app: string, channelName: string, error: string): void
@@ -127,35 +120,6 @@ export function createMiniAppConditions(
         origin: application(app),
         actions: openApp(app),
       })
-    },
-
-    async stagingFailed(failures) {
-      for (const failure of failures) {
-        conditions.raise(userId, {
-          subject: ['mini-apps', 'build', failure.name],
-          problem: failure.reason,
-          // Running the copy that last built is degraded, not broken; no copy at all is broken.
-          severity: failure.lastGoodCopy ? 'warning' : 'error',
-          title: failure.lastGoodCopy
-            ? `The ${label(failure.name)} mini app is running its last successful build`
-            : `The ${label(failure.name)} mini app did not build`,
-          body: [
-            failure.reason,
-            failure.lastGoodCopy
-              ? 'Its current source failed; the copy from the last build that worked stays installed until it builds again.'
-              : 'It is unavailable until its source builds.',
-          ].join('\n'),
-          origin: MINI_APPS,
-          actions: openApp(failure.name),
-        })
-      }
-      const failing = new Set(failures.map((failure) => failure.name))
-      await conditions.sweep(
-        userId,
-        ['mini-apps', 'build'],
-        ([name]) => name !== undefined && failing.has(name),
-        'fixed',
-      )
     },
 
     reconciled(error) {

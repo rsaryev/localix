@@ -1,6 +1,5 @@
 import {
   copyFileSync,
-  existsSync,
   mkdirSync,
   readFileSync,
   readdirSync,
@@ -8,9 +7,6 @@ import {
   writeFileSync,
 } from 'node:fs'
 import { dirname, join, parse, relative } from 'node:path'
-
-import { bundledRoots } from './lib/bundled-roots.mjs'
-import { readExtensionManifest } from './lib/extension-manifest.mjs'
 
 import {
   RUST_NOTICES_FILE,
@@ -42,14 +38,6 @@ const NOTICE_BASENAME_RE = /^(?:licen[cs]e|unlicense|copying|copyright|notice)(?
 
 function readManifest(path) {
   return JSON.parse(readFileSync(path, 'utf8'))
-}
-
-function isPrivatePluginDir(pluginsRoot, name) {
-  try {
-    return readExtensionManifest(join(pluginsRoot, name)).private === true
-  } catch {
-    return false
-  }
 }
 
 function workspaceManifestPaths(repoRoot) {
@@ -107,18 +95,6 @@ function runtimeRootManifestPaths(repoRoot, target) {
   const roots = (target === 'landing' ? LANDING_RUNTIME_ROOTS : PRODUCT_RUNTIME_ROOTS).map((path) =>
     join(repoRoot, path, 'package.json'),
   )
-  if (target === 'landing') return roots
-
-  for (const plugins of bundledRoots(repoRoot).filter((root) => existsSync(root)))
-    for (const entry of readdirSync(plugins, { withFileTypes: true })) {
-      if (!entry.isDirectory() || isPrivatePluginDir(plugins, entry.name)) continue
-      const manifestPath = join(plugins, entry.name, 'package.json')
-      try {
-        if (statSync(manifestPath).isFile()) roots.push(manifestPath)
-      } catch {
-        // Plugins without npm dependencies have no package.json.
-      }
-    }
   return roots.sort((left, right) => left.localeCompare(right))
 }
 

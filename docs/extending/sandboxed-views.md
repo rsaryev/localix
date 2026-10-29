@@ -2,9 +2,9 @@
 
 Declare a `views` entry in the mini app's `mini-app.json`, pointing to an HTML file inside the mini
 app's folder. Each view opens as a work-item tab from its rail button or the command palette. There
-is no second placement; a legacy `surface` key is dropped. HTML views work for installed and bundled
-mini apps, with `sandbox="allow-scripts"` and an opaque origin. They use the message bridge rather
-than native React registrations or host UI-kit imports.
+is no second placement; a legacy `surface` key is dropped. HTML views work for installed mini apps,
+with `sandbox="allow-scripts"` and an opaque origin. They use the message bridge rather than native
+React registrations or host UI-kit imports.
 
 ## Acquire the bridge
 

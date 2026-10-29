@@ -71,8 +71,8 @@ contract. A plan, an issue, or an old benchmark is not evidence.
 Use relative links between public pages and for screenshot assets. In published pages, link source
 files and other unpublished repository documents with their ordinary GitHub URL: the landing site
 cannot route them as documentation pages. Unpublished internals can use repository-relative links.
-Backticked exact source paths beginning with `apps/`, `packages/`, `plugins/`, `scripts/`,
-`config/`, or `docs/` must exist; use a Markdown link when the file helps the reader.
+Backticked exact source paths beginning with `apps/`, `packages/`, `scripts/`, `config/`, or `docs/`
+must exist; use a Markdown link when the file helps the reader.
 
 Do not turn directories, globs, or example placeholders into apparent exact file references.
 External links are allowed, but the local documentation generator does not fetch them.

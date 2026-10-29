@@ -1,11 +1,9 @@
-import { afterEach, describe, expect, test } from 'bun:test'
-import { promises as fs } from 'node:fs'
+import { describe, expect, test } from 'bun:test'
 import { join } from 'node:path'
-import { pathToFileURL } from 'node:url'
 import { tempDirPerTest } from '@localixai/testing'
 
-import { __resetBundledSyncCache } from './bundled-install'
-import { createMiniAppStore, type MiniAppStoreSource } from './store'
+import { hostedMiniAppCatalog, type CatalogEntry } from '../../testing/mini-app-catalog'
+import { createMiniAppStore } from './store'
 import type { MiniAppConfigField } from './contracts'
 import { createMiniAppStoreProvider } from './store-provider'
 
@@ -13,27 +11,22 @@ const root = tempDirPerTest('mini-app-store-provider-')
 const actor = { userId: 'u1' }
 const ADA = 'https://ada.test/mini-app-catalog.json'
 
-async function offer(source: string, name: string, extra: Record<string, unknown> = {}) {
-  await fs.mkdir(join(source, name), { recursive: true })
-  await fs.writeFile(
-    join(source, name, 'mini-app.json'),
-    JSON.stringify({ name, version: '1.0.0', description: `${name} app`, ...extra }),
-  )
-}
-
-function setup(publisher = { name: 'Localix', verified: true }) {
-  const source = join(root(), 'staged')
-  const local: MiniAppStoreSource = { kind: 'local', root: source, publisher, vouches: true }
+function setup(opts: { verified?: boolean; editorial?: unknown } = {}) {
+  const catalog = hostedMiniAppCatalog([], { editorial: opts.editorial })
+  /** Offer an app in the catalog; what a catalog says is read when the store next asks. */
+  const offer = (name: string, extra: Partial<CatalogEntry> = {}) =>
+    void catalog.apps.push({ name, verified: opts.verified, ...extra })
   const store = createMiniAppStore({
     homeDir: join(root(), 'home'),
-    sources: () => [local],
+    sources: () => [{ kind: 'catalog', url: catalog.url, vouches: true }],
     onInstalled: async () => {},
+    fetchImpl: catalog.fetchImpl,
   })
   const calls: string[] = []
   const enabled = new Map<string, boolean>()
   const configs = new Map<string, MiniAppConfigField[]>()
   const own: Record<string, unknown>[] = []
-  const catalogs = [{ url: pathToFileURL(source).href, builtIn: true }]
+  const catalogs = [{ url: catalog.url, builtIn: true }]
   const provider = createMiniAppStoreProvider({
     store,
     catalogs: {
@@ -66,23 +59,21 @@ function setup(publisher = { name: 'Localix', verified: true }) {
       remove: async (_userId, { name }) => void calls.push(`remove ${name}`),
     },
   })
-  return { source, store, provider, calls, enabled, catalogs, configs, own }
+  return { catalog, offer, store, provider, calls, enabled, catalogs, configs, own }
 }
-
-afterEach(() => __resetBundledSyncCache())
 
 describe('the mini apps in the Store', () => {
   test('an offer is a listing: what it is, where it comes from and what is inside', async () => {
-    const { source, provider } = setup()
-    await offer(source, 'chess', {
+    const { catalog, offer, provider } = setup()
+    offer('chess', {
       displayName: 'Chess',
       category: 'games',
       tags: ['board-game'],
       surfaces: ['agent', 'workbench'],
-      commands: { play: { prompt: 'Play', description: 'Play' }, hint: { prompt: 'Hint' } },
+      commands: ['play', 'hint'],
+      featured: true,
     })
-    await offer(source, 'clock', { surfaces: ['workbench'] })
-    await fs.writeFile(join(source, 'catalog-picks.json'), JSON.stringify({ featured: ['chess'] }))
+    offer('clock', { surfaces: ['workbench'] })
 
     const { listings, problems } = await provider.listings(actor)
     expect(problems).toEqual([])
@@ -95,7 +86,7 @@ describe('the mini apps in the Store', () => {
       category: 'games',
       tags: ['board-game'],
       publisher: { name: 'Localix', verified: true },
-      source: { id: pathToFileURL(source).href, label: 'Localix' },
+      source: { id: catalog.url, label: 'Localix' },
       version: '1.0.0',
       contents: { screen: 1, 'agent-tool': 1, backend: 1, command: 2 },
       runsCode: true,
@@ -114,9 +105,8 @@ describe('the mini apps in the Store', () => {
   })
 
   test('Localix’s own catalog is trusted and editorial; one the person added is community', async () => {
-    const { source, provider, catalogs } = setup()
-    await offer(source, 'chess')
-    await fs.writeFile(join(source, 'catalog-picks.json'), JSON.stringify({ featured: ['chess'] }))
+    const { offer, provider, catalogs } = setup()
+    offer('chess', { featured: true })
     const [own] = (await provider.listings(actor)).listings
     expect(own!.source).toMatchObject({ trust: 'localix', weight: 1 })
     expect(own!.origin).toBe('catalog:chess')
@@ -130,12 +120,8 @@ describe('the mini apps in the Store', () => {
   })
 
   test('Localix’s picks for Discover: and collections', async () => {
-    const { source, provider, catalogs } = setup()
-    await offer(source, 'chess')
-    await offer(source, 'checkers')
-    await fs.writeFile(
-      join(source, 'catalog-picks.json'),
-      JSON.stringify({
+    const { catalog, offer, provider, catalogs } = setup({
+      editorial: {
         collections: [
           {
             id: 'play',
@@ -143,11 +129,13 @@ describe('the mini apps in the Store', () => {
             items: ['chess', 'checkers', 'plugin:games@localix'],
           },
         ],
-      }),
-    )
+      },
+    })
+    offer('chess')
+    offer('checkers')
     expect(await provider.editorial!()).toEqual([
       {
-        source: pathToFileURL(source).href,
+        source: catalog.url,
         collections: [
           {
             id: 'play',
@@ -168,11 +156,12 @@ describe('the mini apps in the Store', () => {
   })
 
   test('an install shows its version, its switch, an offered update and its settings', async () => {
-    const { source, store, provider, enabled } = setup()
-    await offer(source, 'chess')
+    const { catalog, offer, store, provider, enabled } = setup()
+    offer('chess')
     await store.install('chess')
     await store.settled()
-    await offer(source, 'chess', { version: '1.1.0' })
+    catalog.apps[0]!.version = '1.1.0'
+    await store.refresh()
     enabled.set('chess', false)
 
     const [chess] = (await provider.listings(actor)).listings
@@ -184,8 +173,8 @@ describe('the mini apps in the Store', () => {
   })
 
   test('an install that declares settings is configurable; they come typed, secrets only as set', async () => {
-    const { source, store, provider, enabled, configs } = setup()
-    await offer(source, 'chess')
+    const { offer, store, provider, enabled, configs } = setup()
+    offer('chess')
     await store.install('chess')
     await store.settled()
     enabled.set('chess', true)
@@ -235,30 +224,24 @@ describe('the mini apps in the Store', () => {
     )
   })
 
-  test('its page: README, pictures, facts and what it adds', async () => {
-    const { source, provider } = setup()
-    await offer(source, 'chess', {
+  test('its page: README, facts and what it adds', async () => {
+    const { offer, provider } = setup()
+    offer('chess', {
       displayName: 'Chess',
       license: 'MIT',
       author: 'Ada',
       homepage: 'https://example.test/chess',
-      icon: 'icon.svg',
-      screenshots: [{ path: 'shots/board.png', caption: 'The board' }],
       surfaces: ['workbench'],
-      commands: { play: { prompt: 'Play' } },
+      commands: ['play'],
+      readme: '# Chess',
     })
-    await fs.writeFile(join(source, 'chess', 'README.md'), '# Chess')
 
     const detail = await provider.detail('chess', actor)
     expect(detail.readme).toBe('# Chess')
-    expect(detail.media).toEqual([
-      {
-        url: expect.stringContaining('/rpc/mini-apps/store/media/chess/screenshot/0'),
-        caption: 'The board',
-      },
-    ])
+    expect(detail.media).toEqual([])
     expect(detail.facts).toEqual([
       { label: 'Version', value: '1.0.0' },
+      { label: 'Size', value: expect.any(String) },
       { label: 'License', value: 'MIT' },
       { label: 'Author', value: 'Ada' },
       { label: 'Homepage', value: 'https://example.test/chess' },
@@ -270,8 +253,8 @@ describe('the mini apps in the Store', () => {
   })
 
   test('a plan says what runs; an unverified publisher needs a yes, given as consent', async () => {
-    const { source, store, provider } = setup({ name: 'Someone', verified: false })
-    await offer(source, 'radio', { displayName: 'Radio', surfaces: ['agent'] })
+    const { offer, store, provider } = setup({ verified: false })
+    offer('radio', { displayName: 'Radio', surfaces: ['agent'] })
 
     const plan = await provider.plan('radio', 'user', actor)
     expect(plan.runs).toEqual([{ kind: 'backend', name: 'Radio' }])
@@ -287,8 +270,8 @@ describe('the mini apps in the Store', () => {
   })
 
   test('a mini app is installed for the person only, never for a project', async () => {
-    const { source, provider } = setup()
-    await offer(source, 'chess')
+    const { offer, provider } = setup()
+    offer('chess')
     await expect(provider.plan('chess', 'project', actor)).rejects.toMatchObject({
       code: 'mini_app_user_scope',
     })
@@ -305,15 +288,15 @@ describe('the mini apps in the Store', () => {
   })
 
   test('sources are the catalogs, labelled, with how many apps each offers', async () => {
-    const { source, provider, catalogs, calls } = setup()
-    await offer(source, 'chess')
+    const { catalog, offer, provider, catalogs, calls } = setup()
+    offer('chess')
     catalogs.push({ url: ADA, builtIn: false })
     expect(await provider.sources()).toEqual([
       {
         kind: 'mini-app',
-        id: pathToFileURL(source).href,
+        id: catalog.url,
         label: 'Localix',
-        url: pathToFileURL(source).href,
+        url: catalog.url,
         builtIn: true,
         count: 1,
         trust: 'localix',
@@ -345,14 +328,9 @@ describe('the mini apps in the Store', () => {
   })
 
   test('a catalog that cannot be read is a source that says why, quietly', async () => {
-    const local: MiniAppStoreSource = {
-      kind: 'local',
-      root: join(root(), 'staged'),
-      publisher: { name: 'Localix', verified: true },
-    }
     const store = createMiniAppStore({
       homeDir: join(root(), 'home'),
-      sources: () => [local, { kind: 'catalog', url: ADA, vouches: false }],
+      sources: () => [{ kind: 'catalog', url: ADA, vouches: false }],
       fetchImpl: (async () => new Response('missing', { status: 404 })) as unknown as typeof fetch,
       onInstalled: async () => {},
     })
@@ -382,8 +360,8 @@ describe('the mini apps in the Store', () => {
   })
 
   test('every move of an install is heard', async () => {
-    const { source, store, provider } = setup()
-    await offer(source, 'chess')
+    const { offer, store, provider } = setup()
+    offer('chess')
     let heard = 0
     provider.subscribe(() => heard++)
     await provider.install('chess', 'user', { plan: false }, actor)
@@ -392,8 +370,8 @@ describe('the mini apps in the Store', () => {
   })
 
   test('a mini app the person made, which no catalog offers, is in the Store as installed', async () => {
-    const { source, provider, own } = setup()
-    await offer(source, 'chess')
+    const { offer, provider, own } = setup()
+    offer('chess')
     own.push({
       name: 'bitcoin-price',
       displayName: 'Bitcoin Price',

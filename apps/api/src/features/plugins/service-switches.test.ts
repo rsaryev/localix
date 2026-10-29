@@ -14,14 +14,12 @@ import { createPluginService } from './service'
 const shared = tempDirPerFile('plugin-switches-env-')
 const tempDir = tempDirPerTest('plugin-switches-')
 const previous = {
-  LOCALIX_BUNDLED_PLUGINS_DIR: process.env.LOCALIX_BUNDLED_PLUGINS_DIR,
   CLAUDE_CONFIG_DIR: process.env.CLAUDE_CONFIG_DIR,
 }
 let db: ReturnType<typeof createDatabase> | undefined
 
 beforeAll(() => {
-  for (const name of ['bundled', 'claude']) mkdirSync(join(shared(), name), { recursive: true })
-  process.env.LOCALIX_BUNDLED_PLUGINS_DIR = join(shared(), 'bundled')
+  mkdirSync(join(shared(), 'claude'), { recursive: true })
   process.env.CLAUDE_CONFIG_DIR = join(shared(), 'claude')
 })
 afterAll(() => {

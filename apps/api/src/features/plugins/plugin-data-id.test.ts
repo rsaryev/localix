@@ -50,6 +50,5 @@ describe("a plugin's data directory", () => {
 
   test('a plugin from no marketplace keeps its bare name', () => {
     expect(pluginIdOf(plugin({}))).toBe('tool')
-    expect(pluginIdOf(plugin({ builtin: true }))).toBe('tool@builtin')
   })
 })

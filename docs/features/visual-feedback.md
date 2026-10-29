@@ -195,7 +195,6 @@ attached is reviewed in the composer's attached-context list.
 ## Related guides
 
 - [Use the workspace](workspace.md)
-- [Kanban board](task-board.md)
 - [Preview control internals](https://github.com/rsaryev/localix/blob/main/docs/internals/subsystems/preview-control.md)
 - [Human in the loop](hitl.md)
 

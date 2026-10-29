@@ -1,11 +1,11 @@
-import { pathToFileURL } from 'node:url'
+import { promises as fs } from 'node:fs'
+import { join } from 'node:path'
+import { MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
 
 import { errorMessage } from '../../lib/errors'
 import { readMiniAppCatalogFeed, type MiniAppCatalogEditorial } from './catalog-feed'
-import { localOffers } from './store-offers-local'
 import type { MiniAppStoreSource, Offer } from './store-offer-types'
 
-export { CATALOG_PICKS_FILE } from './store-offer-types'
 export type {
   MiniAppPublisher,
   MiniAppStoreSource,
@@ -14,7 +14,16 @@ export type {
   OfferMeta,
   OfferStore,
 } from './store-offer-types'
-export { readManifest } from './store-offers-local'
+
+/** The manifest of an installed app's folder, or null when there is none or it does not parse. */
+export async function readManifest(dir: string): Promise<Record<string, unknown> | null> {
+  try {
+    const parsed = JSON.parse(await fs.readFile(join(dir, MINI_APP_MANIFEST_FILE), 'utf8'))
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null
+  } catch {
+    return null
+  }
+}
 
 /**
  * Reads what every source offers, a hosted catalog at most once per `ttlMs`. A catalog that
@@ -35,7 +44,7 @@ export function createOfferReader(deps: {
   >()
 
   async function catalogOffers(
-    source: Extract<MiniAppStoreSource, { kind: 'catalog' }>,
+    source: MiniAppStoreSource,
     fresh: boolean,
   ): Promise<{ offers: Offer[]; editorial?: MiniAppCatalogEditorial }> {
     const cached = cache.get(source.url)
@@ -103,18 +112,14 @@ export function createOfferReader(deps: {
     const problems: string[] = []
     const failed: Record<string, string> = {}
     for (const source of await deps.sources()) {
-      const address = source.kind === 'catalog' ? source.url : pathToFileURL(source.root).href
+      const address = source.url
       let found: { offers: Offer[]; editorial?: MiniAppCatalogEditorial }
       try {
-        found =
-          source.kind === 'local'
-            ? await localOffers(source)
-            : await catalogOffers(source, opts.fresh ?? false)
+        found = await catalogOffers(source, opts.fresh ?? false)
       } catch (error) {
         problems.push(errorMessage(error))
         failed[address] = errorMessage(error)
-        found =
-          source.kind === 'catalog' ? (cache.get(source.url) ?? { offers: [] }) : { offers: [] }
+        found = cache.get(source.url) ?? { offers: [] }
       }
       for (const offer of found.offers) if (!offers.has(offer.name)) offers.set(offer.name, offer)
       if (found.editorial) editorial.push({ source: address, editorial: found.editorial })

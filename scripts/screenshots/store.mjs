@@ -1,13 +1,18 @@
 import { expect } from '@playwright/test'
-import { STALE_SKILL, STORE_INSTALLED } from './store-seed.mjs'
+import {
+  STALE_SKILL,
+  STORE_INSTALL_COUNT,
+  installedMiniApps,
+  showcaseMiniApp,
+} from './store-seed.mjs'
 
 /**
  * The Store (`docs/internals/store.md`): its Discover page, shelves, a package's page and consent
- * sheet, Sources with the add dialog, search and the Library. The capture runtime's mini app
- * catalog is the checkout's staged mini apps, three of them installed through the Store by
- * `store-seed.mjs` in a home of their own; the plugin shelves come from the default marketplaces,
- * read over the network when the runtime starts, so the assertions never name one plugin: they
- * check what any answer looks like.
+ * sheet, Sources with the add dialog, search and the Library. The mini app catalog and the plugin
+ * shelves come from the default sources, read over the network when the runtime starts, and three
+ * mini apps are installed through the Store by `store-seed.mjs` in a home of their own. The
+ * assertions never name a package: they use the ones the seed picked and check what any answer
+ * looks like.
  */
 const sections = (page) => page.getByRole('tablist', { name: 'Store sections' })
 const search = (page) => page.getByLabel('Search the Store')
@@ -61,13 +66,15 @@ const COMPOSE = {
       .waitFor()
   },
   async 'store-listing'(page) {
+    const id = await showcaseMiniApp()
     await openStore(page)
+    await goTo(page, 'Mini apps')
     await page
-      .locator('[data-listing="chess"]')
+      .locator(`[data-listing="${id}"]`)
       .first()
       .click({ position: { x: 8, y: 8 } })
     await page
-      .locator('[data-store-page="chess"] [aria-roledescription="carousel"] img')
+      .locator(`[data-store-page="${id}"] [aria-roledescription="carousel"] img`)
       .first()
       .waitFor()
     await page.getByRole('tab', { name: 'What’s inside', exact: true }).click()
@@ -146,17 +153,17 @@ export async function composeStore(page, scenario) {
 const VERIFY = {
   async store(page) {
     await expect(heading(page)).toHaveText('Mini apps')
-    // The Store's own mini apps, the three the seed installed among them.
-    await expect(page.locator('[data-listing][data-kind="mini-app"]').first()).toBeVisible()
-    await expect(page.locator('[data-listing="chess"]').first()).toContainText('Chess')
-    await expect(page.locator('[data-listing="chess"] img').first()).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Get Chess', exact: true })).toBeVisible()
-    await expect(
-      page
-        .locator('[data-listing="kanban"]')
-        .first()
-        .getByRole('button', { name: /^Open / }),
-    ).toBeVisible()
+    // The catalog's mini apps, the three the seed installed among them.
+    const tiles = page.locator('[data-listing][data-kind="mini-app"]')
+    await expect(tiles.first()).toBeVisible()
+    await expect(tiles.getByRole('button', { name: /^Get / }).first()).toBeVisible()
+    for (const id of await installedMiniApps())
+      await expect(
+        page
+          .locator(`[data-listing="${id}"]`)
+          .first()
+          .getByRole('button', { name: /^Open / }),
+      ).toBeVisible()
   },
   async 'store-discover'(page) {
     // No carousel above the rows: Start here leads, with packages a person can get.
@@ -198,12 +205,12 @@ const VERIFY = {
     expect(await page.locator('[data-listing][data-kind="plugin"]').count()).toBeLessThan(80)
   },
   async 'store-listing'(page) {
-    const detail = page.locator('[data-store-page="chess"]')
-    await expect(detail.getByRole('heading', { level: 1 }).first()).toHaveText('Chess')
+    const detail = page.locator('[data-store-page]')
+    await expect(detail.getByRole('heading', { level: 1 }).first()).toBeVisible()
     await expect(detail.getByLabel(/^Verified/).first()).toBeVisible()
     // The package's one action sits in its header, under the name; the seed may have installed it.
     await expect(
-      detail.locator('header').getByRole('button', { name: /^(?:Get|Open) Chess$/ }),
+      detail.locator('header').getByRole('button', { name: /^(?:Get|Open) / }),
     ).toBeVisible()
     await expect(detail.getByRole('tabpanel')).toContainText('A screen of its own')
   },
@@ -236,7 +243,9 @@ const VERIFY = {
   async 'store-installed'(page) {
     await expect(heading(page)).toHaveText('Installed')
     // The three mini apps the seed installed are there, beside the agents that come with Localix.
-    for (const id of STORE_INSTALLED)
+    const installed = await installedMiniApps()
+    expect(installed).toHaveLength(STORE_INSTALL_COUNT)
+    for (const id of installed)
       await expect(page.locator(`[data-install="${id}"]`)).toHaveCount(1, { timeout: 15_000 })
     await expect(page.getByRole('switch').first()).toBeVisible()
   },

@@ -7,10 +7,10 @@ import type { MiniAppStore } from './store'
 /**
  * RECOMMENDED MINI APPS, installed on their own on a new installation.
  *
- * The catalog Localix vouches for marks a few first-party apps `recommended` (Git, Documents and
- * Kanban today, `mini-apps/catalog-picks.json`); this pass installs them in the background on the
- * first start, without asking, because they are Localix's own and verified (rule X5 holds: they
- * come from the catalog like any other app, and the core names none of them, X4).
+ * The catalog Localix vouches for marks a few first-party apps `recommended` in its feed; this
+ * pass installs them in the background on the first start, without asking, because they are
+ * Localix's own and verified (rule X5 holds: they come from the catalog like any other app, and
+ * the core names none of them, X4).
  *
  * - **Once per app.** Every app it has offered is remembered in a marker under `~/.localix`, so one
  *   the person removes is never added again; a catalog that recommends a new app later offers that

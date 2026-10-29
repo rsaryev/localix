@@ -42,7 +42,6 @@ const state = (name: string): CapabilitySourceRecord => ({
 })
 
 let dir: string
-const prevBundled = process.env.LOCALIX_BUNDLED_MINI_APPS_DIR
 /**
  * The catalog for exactly these mini apps. Availability is a rule, so a fixture names
  * what it switched on — anything unnamed is left to the trust gate, which for a
@@ -63,9 +62,6 @@ const catalogFor = (repo: CapabilitySourceRepository, ...names: string[]) =>
 
 beforeAll(async () => {
   dir = await fs.mkdtemp(join(tmpdir(), 'mini-app-views-'))
-  process.env.LOCALIX_BUNDLED_MINI_APPS_DIR = await fs.mkdtemp(
-    join(tmpdir(), 'mini-app-views-bundled-'),
-  )
 
   const mon = join(dir, '.localix', 'mini-apps', 'mon')
   await fs.mkdir(join(mon, 'views'), { recursive: true })
@@ -125,8 +121,6 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  if (prevBundled === undefined) delete process.env.LOCALIX_BUNDLED_MINI_APPS_DIR
-  else process.env.LOCALIX_BUNDLED_MINI_APPS_DIR = prevBundled
   await fs.rm(dir, { recursive: true, force: true })
 })
 

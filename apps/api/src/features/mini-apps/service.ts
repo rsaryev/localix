@@ -48,7 +48,7 @@ export interface MiniAppServiceDeps {
     context: MiniAppUiActionContext
   }) => Promise<unknown>
   logger?: { warn: (msg: string, meta?: unknown) => void }
-  /** Where the mini app kit is; defaults to the one shipped beside the staged mini apps. */
+  /** Where the mini app kit is; defaults to the one shipped beside the server bundle. */
   miniAppKitDir?: () => string
   /** The catalogs every installation reads; defaults to `builtInMiniAppSources`. */
   storeSources?: () => Promise<MiniAppStoreSource[]>

@@ -1,3 +1,5 @@
+import { LOCALIX_MARKETPLACE } from '@localixai/store'
+
 import { NotFoundError } from '../../lib/domain-errors'
 import { envFlag } from '../../lib/env'
 import {
@@ -12,26 +14,30 @@ import type { MarketplaceSource } from './marketplace-source'
  * WHICH MARKETPLACES AUTO-UPDATE, by Claude Code's rule (loading.md, "Which marketplaces and plugins
  * auto-update"): the `autoUpdate` the person set on the record (the Marketplaces toggle writes it),
  * else the default — on for the official marketplace, off for every other one. Localix's official
- * marketplace is `localix`, registered from the GitHub repository `rsaryev/localix`; a marketplace
- * that takes the name from another source is a third-party one. Localix does not read
+ * marketplace is `LOCALIX_MARKETPLACE` (`@localixai/store`), registered from its GitHub repository;
+ * a marketplace that takes the name from another source is a third-party one. Localix does not read
  * `extraKnownMarketplaces` from Claude Code's settings files, so the record is the only place the
  * choice lives.
  */
 export const OFFICIAL_MARKETPLACE: { name: string; source: MarketplaceSource } = {
-  name: 'localix',
-  // Only the catalog and the plugins are checked out, not the rest of the repository.
-  source: { source: 'github', repo: 'rsaryev/localix', sparsePaths: ['.claude-plugin', 'plugins'] },
+  name: LOCALIX_MARKETPLACE.name,
+  source: {
+    source: 'github',
+    repo: LOCALIX_MARKETPLACE.repo,
+    sparsePaths: [...LOCALIX_MARKETPLACE.paths],
+  },
 }
-// The Store's default sources (`@localixai/store`) name the same repository and folders.
 
-const OFFICIAL_REPO = 'rsaryev/localix'
+const OFFICIAL_REPO = LOCALIX_MARKETPLACE.repo.toLowerCase()
 
 export function isOfficialMarketplace(name: string, record: Pick<KnownMarketplace, 'source'>) {
   if (name !== OFFICIAL_MARKETPLACE.name) return false
   const { source } = record
   if (source.source === 'github') return source.repo.toLowerCase() === OFFICIAL_REPO
-  if (source.source === 'git')
-    return /^https:\/\/github\.com\/rsaryev\/localix(?:\.git)?\/?$/i.test(source.url)
+  if (source.source === 'git') {
+    const repo = /^https:\/\/github\.com\/([^/]+\/[^/]+?)(?:\.git)?\/?$/i.exec(source.url)?.[1]
+    return repo?.toLowerCase() === OFFICIAL_REPO
+  }
   return false
 }
 

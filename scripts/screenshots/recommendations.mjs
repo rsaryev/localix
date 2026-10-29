@@ -1,12 +1,11 @@
 import { expect } from '@playwright/test'
-import { STORE_INSTALLED, seedStore } from './store-seed.mjs'
+import { installedMiniApps, seedStore } from './store-seed.mjs'
 
 /**
  * What the Store recommends for the work (`docs/internals/store.md`, "Recommendations"): the For
  * your work row on Discover and its See all view. They run in the Store's capture runtime started
  * offline (README, "Composer surfaces and recommendations"): its own `HOME`, three mini apps
- * installed and no marketplace read, so the catalog is Localix's own mini apps and the answer is
- * the same on every run. The assertions check what any answer looks like: never a package already
+ * installed and no plugin marketplace read, so the answer is the same on every run. The assertions check what any answer looks like: never a package already
  * installed, never a third party's, no Community badge, no unreadable listing. The answer is worked
  * out in the background, so each scenario waits for the row rather than for a spinner.
  */
@@ -41,7 +40,7 @@ export async function composeRecommendations(page, scenario) {
  * the answer cannot carry a third party's package, a Community badge or an unreadable listing.
  */
 async function expectFirstParty(page, scope) {
-  for (const id of STORE_INSTALLED)
+  for (const id of await installedMiniApps())
     await expect(scope.locator(`[data-listing="${id}"]`)).toHaveCount(0)
   const listings = scope.locator('[data-listing]')
   for (let at = 0; at < (await listings.count()); at++)

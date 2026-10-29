@@ -47,11 +47,10 @@ example, wakes enter only through `chatService.wakeSession` with the `WakeReques
 importing `features/chat`, even as a type; each declares the structural subset it needs. The same
 test records why the earlier mutual imports went stale.
 
-Mini apps are separate contexts. `scripts/check-architecture.mjs` reports "plugin ... imports
-sibling plugin", "host imports concrete plugin source" and "plugin imports workspace internals" (its
-messages still say plugin; they apply to mini apps), so a mini app and the host meet only through
-`packages/mini-app-sdk`. Browser and server share a rule through narrow export-map leaves in
-`apps/api/package.json`, enforced by `scripts/browser-graph-guard.test.ts`.
+Mini apps are separate contexts, and none lives in this repository: a mini app and the host meet
+only through `packages/mini-app-sdk`, and `kitBoundaryProblem` in `scripts/check-architecture.mjs`
+keeps the kit from importing one. Browser and server share a rule through narrow export-map leaves
+in `apps/api/package.json`, enforced by `scripts/browser-graph-guard.test.ts`.
 
 ## Known gaps
 

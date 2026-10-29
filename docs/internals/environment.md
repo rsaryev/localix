@@ -138,21 +138,21 @@ can change a running development process without restarting it.
 
 ### Launcher and source-development seams
 
-| Variable                        | Default            | Owner and effect                                                 |
-| ------------------------------- | ------------------ | ---------------------------------------------------------------- |
-| `LOCALIX_RUNTIME_WATCH`         | off                | API daemon development-watch mode.                               |
-| `LOCALIX_RUNTIME_HOST`          | `127.0.0.1`        | Host requested by the daemon launcher.                           |
-| `LOCALIX_DAEMON_LOG`            | derived            | API log-file override; default `logs/api.log` beside the DB.     |
-| `LOCALIX_LAUNCH_ID`             | set by the shell   | Launch id the API stamps on every log line (`bun run logs`).     |
-| `LOCALIX_DESKTOP_PARENT_PID`    | unset              | Stops the desktop runtime after its owner exits or closes stdin. |
-| `LOCALIX_BUNDLED_MINI_APPS_DIR` | self-located       | Bundled mini app staging root used by discovery and packaging.   |
-| `LOCALIX_TRASH_DIR`             | `~/.localix/trash` | Recoverable-delete root; tests override it.                      |
-| `LOCALIX_DEV_API_PORT`          | `5051`             | API port used by `scripts/dev-servers.mjs`.                      |
-| `LOCALIX_DEV_UI_PORT`           | `5050`             | Vite port and preflight port used by source development.         |
-| `LOCALIX_DEV_HOST`              | `127.0.0.1`        | API host used by source development.                             |
-| `VITE_DEV_HOST`                 | unset              | Optional Vite bind address, including container access.          |
-| `VITE_API_BASE_URL`             | launcher-set       | Required API proxy target when Vite serves.                      |
-| `VITE_WS_BASE_URL`              | launcher-set       | Direct WebSocket base injected into the UI.                      |
+| Variable                     | Default            | Owner and effect                                                  |
+| ---------------------------- | ------------------ | ----------------------------------------------------------------- |
+| `LOCALIX_RUNTIME_WATCH`      | off                | API daemon development-watch mode.                                |
+| `LOCALIX_RUNTIME_HOST`       | `127.0.0.1`        | Host requested by the daemon launcher.                            |
+| `LOCALIX_DAEMON_LOG`         | derived            | API log-file override; default `logs/api.log` beside the DB.      |
+| `LOCALIX_LAUNCH_ID`          | set by the shell   | Launch id the API stamps on every log line (`bun run logs`).      |
+| `LOCALIX_DESKTOP_PARENT_PID` | unset              | Stops the desktop runtime after its owner exits or closes stdin.  |
+| `LOCALIX_MINI_APP_KIT_DIR`   | self-located       | Mini app kit root behind `GET /rpc/mini-apps/kit`; dev stages it. |
+| `LOCALIX_TRASH_DIR`          | `~/.localix/trash` | Recoverable-delete root; tests override it.                       |
+| `LOCALIX_DEV_API_PORT`       | `5051`             | API port used by `scripts/dev-servers.mjs`.                       |
+| `LOCALIX_DEV_UI_PORT`        | `5050`             | Vite port and preflight port used by source development.          |
+| `LOCALIX_DEV_HOST`           | `127.0.0.1`        | API host used by source development.                              |
+| `VITE_DEV_HOST`              | unset              | Optional Vite bind address, including container access.           |
+| `VITE_API_BASE_URL`          | launcher-set       | Required API proxy target when Vite serves.                       |
+| `VITE_WS_BASE_URL`           | launcher-set       | Direct WebSocket base injected into the UI.                       |
 
 ### Terminal notification overrides
 
@@ -168,8 +168,8 @@ can change a running development process without restarting it.
   test-only variables remain contracts of their owning scripts.
 - Environment values are process-level inputs. Provider credentials belong in provider connections,
   plugin and mini app secrets in declared secret configuration, and user preferences in Settings.
-- `LOCALIX_BUNDLED_MINI_APPS_DIR`, `LOCALIX_TRASH_DIR`, and desktop runtime variables are launcher
-  or test seams, not stable end-user controls.
+- `LOCALIX_MINI_APP_KIT_DIR`, `LOCALIX_TRASH_DIR`, and desktop runtime variables are launcher or
+  test seams, not stable end-user controls.
 - A blank or invalid flag silently uses its fallback. Startup schema errors are the exception:
   invalid boot configuration stops API creation.
 

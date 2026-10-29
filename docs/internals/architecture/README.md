@@ -70,7 +70,7 @@ hint that the resolver may replace with another live connection of the same prov
 | API features        | `apps/api/src/features/*`: routes → service → domain → repository                       | Ports of other features, packages     |
 | API composition     | `apps/api/src/bootstrap/`: builds adapters, wires ports and consumers                   | Everything in the API                 |
 | UI                  | `apps/ui/src`: shared → features → widgets → pages → app                                | Lower layers only                     |
-| Mini apps           | `mini-apps/*`: backend, tools and UI through `mini-app-sdk`                             | `mini-app-sdk`, `agent`, a few others |
+| Mini apps           | Not in this repository: a mini app's backend, tools and UI go through `mini-app-sdk`    | `mini-app-sdk`, `agent`, a few others |
 
 Inside an API feature, a route translates HTTP to a service call, the service applies domain rules
 through ports, and only the repository touches Kysely. Errors are domain errors in the core; routes
@@ -172,8 +172,8 @@ command and check that the diff only removes entries. Scope notes:
 
 Checks that hold today and back these rules:
 
-- `kitBoundaryProblem`, `miniAppSdkLayerProblem`, `miniAppHostBoundaryProblem` and
-  `miniAppWorkspaceImportProblem` keep packages and mini apps inside their boundaries.
+- `kitBoundaryProblem` keeps `packages/kit` from importing apps or mini app packages; the kit sits
+  below both.
 - `ENGINE_LAYERS` limits each engine package's workspace imports, and only the composition root may
   import the engine.
 - The UI layer check rejects an import from a higher layer.

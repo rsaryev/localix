@@ -119,45 +119,28 @@ describe('only this module may import the raw validator', () => {
 })
 
 /**
- * The same rule, repo-wide.
+ * The same rule for the mini app SDK.
  *
- * Bundled plugins mount their own routers with their own error envelopes, so they cannot import
- * the host's validator. They used to each own a wrapper — eleven copies of one hook across ten
- * routers, two of which had drifted into sending an object where their clients read a string. The
- * rule now has one plugin-side owner, the SDK's `routeValidator`, where a plugin states only its
- * envelope. So what must hold is the ownership itself: no plugin touches a raw validator, and the
- * one SDK owner formats through the shared `summarizeZodIssues`.
+ * Mini apps mount their own routers with their own error envelopes, so they cannot import the
+ * host's validator. The rule has one owner on their side, the SDK's `routeValidator`, where an app
+ * states only its envelope. So what must hold here is that owner: it formats through the shared
+ * `summarizeZodIssues`. That no mini app touches a raw validator is checked where the mini apps
+ * live.
  */
-describe('every plugin router reaches the validator through the SDK', () => {
+describe('the SDK owns the mini app router validator', () => {
   const ROOT = join(import.meta.dir, '..', '..', '..', '..')
   const SDK_OWNER = join(ROOT, 'packages/mini-app-sdk/src/backend/route-validator.ts')
-
-  /** Code only — a rule satisfied by a COMMENT that merely NAMES the helper is not a rule. */
-  const codeOf = (file: string) => stripComments(readFileSync(file, 'utf8'))
-  const pluginSources = () =>
-    sources(join(ROOT, 'mini-apps')).filter((f) => !f.includes('/node_modules/'))
 
   /** A raw validator is `@hono/zod-validator` or Hono's own `hono/validator` — either needs a hook. */
   const RAW = /['"](?:@hono\/zod-validator|hono\/validator)['"]/u
 
-  test('no plugin imports a raw validator — the SDK owns the hook', () => {
-    // One missed file is one router answering a raw ZodError (or `[object Object]`) again.
-    const offenders = pluginSources().filter((file) => RAW.test(codeOf(file)))
-    expect(offenders.map((f) => f.slice(ROOT.length + 1))).toEqual([])
-  })
-
   test('the SDK owner formats every rejection through the shared formatter', () => {
-    const code = codeOf(SDK_OWNER)
+    const code = stripComments(readFileSync(SDK_OWNER, 'utf8'))
     expect(code).toMatch(RAW)
     expect(code).toContain('summarizeZodIssues')
   })
 
-  test('positive control: plugin routers really do validate through it', () => {
-    // The first check passes trivially if the walk found nothing, or if routers stopped validating.
-    const users = pluginSources().filter((file) => codeOf(file).includes('routeValidator('))
-    // External history is now a core router using the core validator; nine plugins remain.
-    expect(users.length).toBeGreaterThanOrEqual(9)
-    // …and the detector fires on the import it exists to forbid.
+  test('the detector fires on the import it exists to forbid', () => {
     expect(RAW.test("import { zValidator } from '@hono/zod-validator'")).toBe(true)
     expect(RAW.test("import { validator } from 'hono/validator'")).toBe(true)
   })

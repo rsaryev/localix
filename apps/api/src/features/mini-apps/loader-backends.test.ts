@@ -1,11 +1,10 @@
 import { describe, it, expect, beforeAll, afterAll } from 'bun:test'
-import { UNDECIDED } from '../capabilities/availability'
+import type { AvailabilityReader } from '../capabilities/availability'
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import { Hono } from 'hono'
 import type { CapabilitySourceRepository } from '../capabilities/source-repository'
 
-import { installBundledMiniApp } from './bundled-install'
 import { loadMiniAppBackends } from './loader'
 import { makeApiScratchDir } from '../../testing/scratch-dir'
 import { createSubsystemRegistry } from '../ext/subsystem-contrib'
@@ -21,12 +20,12 @@ declare global {
 }
 
 // Proves the additive BACKEND contribution seam end-to-end WITHOUT a real subsystem:
-// a bundled mini app whose register() returns a `backend` gets its route mounted, its
+// an installed mini app whose register() returns a `backend` gets its route mounted, its
 // resource + search providers registered, its ws-frame reachable via the registry,
 // and its onShutdown hook called — exactly how bootstrap wires the registries.
 
-// No DB rows — the fixture mini app is bundled, so the trust gate enables it without any
-// stored state.
+// No DB rows — the person's yes to run the fixture mini app is the availability rule.
+const ENABLED: AvailabilityReader = { effectFor: () => 'allow' }
 const emptyRepo: CapabilitySourceRepository = {
   listForScope: async () => [],
   get: async () => null,
@@ -58,12 +57,10 @@ const emptyRepo: CapabilitySourceRepository = {
 // The fixture lives UNDER the api package so the mini app's `.mjs` can resolve `hono` from the
 // monorepo's node_modules (an OS temp dir cannot), in its scratch root outside `src`.
 const fixtureBase = makeApiScratchDir('backend-fixture')
-const fixtureRoot = join(fixtureBase, 'bundled')
 const fixtureHome = join(fixtureBase, 'home')
-const prevEnv = process.env.LOCALIX_BUNDLED_MINI_APPS_DIR
 
 beforeAll(async () => {
-  const miniApp = join(fixtureRoot, 'test-sub')
+  const miniApp = join(fixtureHome, '.localix', 'mini-apps', 'test-sub')
   await fs.mkdir(fixtureHome, { recursive: true })
   await fs.mkdir(join(miniApp, 'tools'), { recursive: true })
   await fs.writeFile(
@@ -124,9 +121,6 @@ export async function register() {
 `,
   )
 
-  process.env.LOCALIX_BUNDLED_MINI_APPS_DIR = fixtureRoot
-  // Shipped is not installed: the person chose this one from the catalog.
-  await installBundledMiniApp(fixtureRoot, fixtureHome, 'test-sub')
   globalThis.__TEST_SUB_STOP__ = 0
   globalThis.__TEST_SUB_SHUTDOWN__ = 0
 })
@@ -135,15 +129,13 @@ afterAll(async () => {
   // The fixture backend counts its stop and shutdown on the shared global.
   delete globalThis.__TEST_SUB_STOP__
   delete globalThis.__TEST_SUB_SHUTDOWN__
-  if (prevEnv === undefined) delete process.env.LOCALIX_BUNDLED_MINI_APPS_DIR
-  else process.env.LOCALIX_BUNDLED_MINI_APPS_DIR = prevEnv
   await fs.rm(fixtureBase, { recursive: true, force: true })
 })
 
 describe('loadMiniAppBackends', () => {
   it("collects an enabled mini app's backend contribution", async () => {
     const { backends } = await loadMiniAppBackends({
-      availability: UNDECIDED,
+      availability: ENABLED,
       repo: emptyRepo,
       userId: 'u',
       cwd: '/',
@@ -181,7 +173,7 @@ describe('loadMiniAppBackends', () => {
     })
     const revisionWith = async (greeting: string) => {
       const { backends } = await loadMiniAppBackends({
-        availability: UNDECIDED,
+        availability: ENABLED,
         repo: withGreeting(greeting),
         userId: 'u',
         cwd: '/',
@@ -213,7 +205,7 @@ describe('loadMiniAppBackends', () => {
    */
   it('a loaded backend is CONSUMABLE by each registry (shape, not wiring — see the contract test)', async () => {
     const { backends } = await loadMiniAppBackends({
-      availability: UNDECIDED,
+      availability: ENABLED,
       repo: emptyRepo,
       userId: 'u',
       cwd: '/',

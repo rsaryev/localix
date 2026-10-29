@@ -58,8 +58,7 @@ Two keys limit what loads or runs, and are meant for managed settings.
 
 - **`disableSkillShellExecution`** (any file; a managed `true` cannot be turned off). Every inline
   `!` command and fenced `!` block of a skill or command from your folders, a project or a plugin is
-  replaced by `[shell command execution disabled by policy]` and is not run. Skills of Localix's
-  built-in plugins are not affected. See
+  replaced by `[shell command execution disabled by policy]` and is not run. See
   [Skill authoring](skills-authoring.md#dynamic-command-context).
 - **`strictPluginOnlyCustomization`** (managed settings only; a user, project or local file with the
   key is ignored). `true` locks all four kinds, or list the kinds to lock: `"skills"`, `"agents"`,

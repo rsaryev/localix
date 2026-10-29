@@ -4,7 +4,7 @@
 //
 // Why at staging: an installed app has no `node_modules`, no host sources and no scanner binaries,
 // so whatever a user mini app build needs from the host is resolved HERE, once, where it all exists
-// — the template, the export names of every module the host shares with mini app UI, the host
+// — the export names of every module the host shares with mini app UI, the host
 // theme's stylesheets, and prebuilt copies of the modules a mini app backend may import — and the
 // app reads only the result. Development stages the same kit, so there is one path, not a dev
 // shortcut.
@@ -15,17 +15,15 @@ import {
   cpSync,
   existsSync,
   mkdirSync,
-  mkdtempSync,
   readdirSync,
   readFileSync,
   renameSync,
   rmSync,
   writeFileSync,
 } from 'node:fs'
-import { basename, dirname, join, relative, resolve, sep } from 'node:path'
+import { basename, dirname, join, resolve, sep } from 'node:path'
 import { parseSync } from 'oxc-parser'
 import { cachedKit, kitInputsDigest, storeKit } from './mini-app-kit-cache.mjs'
-import { MINI_APPS_DIR, miniAppsRoot } from './lib/bundled-roots.mjs'
 
 import {
   MINI_APP_BACKEND_SHARED_MODULES,
@@ -34,19 +32,21 @@ import {
   MINI_APP_KIT_MANIFEST,
   MINI_APP_KIT_SCHEMA_VERSION,
   MINI_APP_KIT_STYLES_DIR,
-  MINI_APP_KIT_TEMPLATE_DIR,
   MINI_APP_KIT_TEST_PRELOAD,
   MINI_APP_KIT_TYPECHECK,
   MINI_APP_KIT_UI_VENDOR_DIR,
-  MINI_APP_TEST_EXTRA_MODULES,
   MINI_APP_UI_PREBUILT_MODULES,
   MINI_APP_UI_VENDOR_PACKAGES,
   TAILWIND_UTILITIES,
-  TEMPLATE_SCAFFOLD_FILE,
 } from '@localixai/api/mini-app-kit-layout'
 import { MINI_APP_API_VERSION } from '@localixai/mini-app-sdk/manifest-primitives'
 import { MINI_APP_UI_KIT_PREFIX } from '@localixai/mini-app-sdk/ui-artifact'
 
+import {
+  buildBundledModules,
+  buildKitRuntime,
+  MINI_APP_KIT_BUNDLED_DIR,
+} from './stage-mini-app-kit-runtime.mjs'
 import { stageHostStylesheets } from './stage-mini-app-kit-styles.mjs'
 import {
   buildKitTools,
@@ -69,8 +69,6 @@ export const HOST_KIT_DIR = 'apps/ui/src/app/kit'
 const KIT_MODULE_DIRS = [KIT_DOORS_DIR, HOST_KIT_DIR]
 /** The host's registry of shared UI modules; its keys are what a mini app may import. */
 const HOST_SHARED_MODULES = 'apps/ui/src/app/miniAppSharedModules.ts'
-/** Local, gitignored output of the template's own tooling (`.preview-data` is the preview's store). */
-const SKIP = new Set(['node_modules', 'dist', '.turbo', '.preview-data'])
 
 /**
  * Everything the kit is made from, repository-relative: a change to any of these is a stale kit.
@@ -81,33 +79,27 @@ export const MINI_APP_KIT_INPUTS = [
   'scripts/stage-mini-app-kit.mjs',
   'scripts/stage-mini-app-kit-styles.mjs',
   'scripts/stage-mini-app-kit-types.mjs',
+  'scripts/stage-mini-app-kit-declarations.mjs',
+  'scripts/stage-mini-app-kit-runtime.mjs',
+  'scripts/stage-mini-app-kit-plugins.mjs',
+  'scripts/mini-app-kit-cache.mjs',
   'apps/api/src/features/mini-apps/kit-layout.ts',
+  // The context contract a mini app's provider tests certify against (`@localixai/kit/testing/*`).
+  'apps/api/src/features/context-fabric',
   ...KIT_TOOLS_INPUTS,
-  'apps/ui/src/app',
+  // The kit runtime bundles the modules the host lends and the host test harness, which reach
+  // into the whole UI source tree.
+  'apps/ui/src',
   // The kit's component declarations are read from its primitives, its tokens from its styles.
   'packages/kit/src',
   'packages/kit/styles',
-  // Modules the host lends re-export host composites.
-  'apps/ui/src/shared/ui',
   'packages/mini-app-sdk/dist',
   // Declarations the SDK's own declarations import (`stage-mini-app-kit-types.mjs`).
   'packages/agent/dist',
   'packages/dataview/dist',
   'packages/search/dist',
   'packages/uri/dist',
-  `${MINI_APPS_DIR}/template`,
 ]
-
-/** The mini app that describes itself as the template (it carries a scaffold description). */
-export function findTemplateMiniApp(repoRoot) {
-  const miniApps = miniAppsRoot(repoRoot)
-  const found = readdirSync(miniApps).filter((name) =>
-    existsSync(join(miniApps, name, TEMPLATE_SCAFFOLD_FILE)),
-  )
-  if (found.length !== 1)
-    throw new Error(`expected one mini app with ${TEMPLATE_SCAFFOLD_FILE}, found ${found.length}`)
-  return join(miniApps, found[0])
-}
 
 /** Value exports of an ES module, following its `export *` chains (relative or a package). */
 function esmExportNames(file, seen = new Set()) {
@@ -173,82 +165,6 @@ async function uiSharedExports(repoRoot) {
   return Object.fromEntries(entries)
 }
 
-function copyTemplate(templateDir, outDir) {
-  const scaffold = JSON.parse(readFileSync(join(templateDir, TEMPLATE_SCAFFOLD_FILE), 'utf8'))
-  const authoringOnly = scaffold.authoringOnly ?? []
-  cpSync(templateDir, outDir, {
-    recursive: true,
-    filter: (src) => {
-      const rel = relative(templateDir, src).split(sep).join('/')
-      if (!rel) return true
-      if (SKIP.has(basename(src)) || src.endsWith('.tsbuildinfo')) return false
-      return !authoringOnly.some((entry) =>
-        entry.endsWith('/') ? `${rel}/`.startsWith(entry) : rel === entry,
-      )
-    },
-  })
-}
-
-/**
- * Prebuild the backend and test shared modules as ONE split build, so `zod` inside the SDK and
- * the `zod` a mini app imports are the same module. Entries are generated inside the repository so
- * they resolve its packages.
- */
-async function buildBackendModules(repoRoot, outDir) {
-  const specifiers = [...MINI_APP_BACKEND_SHARED_MODULES, ...MINI_APP_TEST_EXTRA_MODULES]
-  mkdirSync(join(repoRoot, '.turbo'), { recursive: true })
-  const scratch = mkdtempSync(join(repoRoot, '.turbo', 'mini-app-kit-'))
-  try {
-    const entries = specifiers.map((specifier) => {
-      const id = specifier.replace(/[^a-z0-9]+/giu, '-').replace(/^-/u, '')
-      const file = join(scratch, `${id}.mjs`)
-      writeFileSync(file, `export * from '${specifier}'\n`)
-      // The bundler names every output `.js`; the kit's own package.json marks them ES modules.
-      return { specifier, file, output: `${id}.js` }
-    })
-    const result = await Bun.build({
-      entrypoints: entries.map((entry) => entry.file),
-      outdir: outDir,
-      root: scratch,
-      target: 'bun',
-      format: 'esm',
-      splitting: true,
-      naming: { entry: '[name].[ext]', chunk: 'chunks/[name]-[hash].[ext]' },
-    })
-    if (!result.success) throw new Error(result.logs.map(String).join('\n'))
-    const modules = Object.fromEntries(
-      entries.map(({ specifier, output }) => [specifier, `${MINI_APP_KIT_BACKEND_DIR}/${output}`]),
-    )
-    writeFileSync(join(outDir, 'package.json'), `${JSON.stringify({ type: 'module' }, null, 2)}\n`)
-    writeFileSync(join(outDir, basename(MINI_APP_KIT_TEST_PRELOAD)), testPreload(modules))
-    return modules
-  } finally {
-    rmSync(scratch, { recursive: true, force: true })
-  }
-}
-
-/** A test preload that answers each shared specifier with the kit's module (Bun virtual modules). */
-function testPreload(modules) {
-  const files = Object.fromEntries(
-    Object.entries(modules).map(([specifier, file]) => [specifier, `./${basename(file)}`]),
-  )
-  return `// Generated by scripts/stage-mini-app-kit.mjs. A user mini app has no node_modules: its tests get
-// the shared modules from the kit, the same copies its backend build bundles.
-import { plugin } from 'bun'
-
-const files = ${JSON.stringify(files, null, 2)}
-const loaded = await Promise.all(
-  Object.entries(files).map(async ([specifier, file]) => [specifier, await import(new URL(file, import.meta.url).href)]),
-)
-plugin({
-  name: 'localix-mini-app-kit',
-  setup(build) {
-    for (const [specifier, exports] of loaded) build.module(specifier, () => ({ exports, loader: 'object' }))
-  },
-})
-`
-}
-
 /** Each vendor package's ES module tree, source maps dropped. */
 function stageVendorPackages(repoRoot, outDir) {
   const modules = {}
@@ -303,10 +219,29 @@ async function stageKitCatalog(repoRoot, outKit) {
   return MINI_APP_KIT_CATALOG
 }
 
+/**
+ * The kit as a package: a mini app repository depends on `@localixai/mini-app-kit` — a release's
+ * tarball, or a staged folder linked with `bun link` — at the Localix version it targets.
+ */
+function kitPackage(manifest) {
+  return {
+    name: '@localixai/mini-app-kit',
+    version: manifest.localixVersion,
+    description: 'What a Localix mini app is type-checked, tested and built against.',
+    license: 'MIT',
+    type: 'module',
+    // `./test-preload` lets a mini app's bunfig preload the kit by name, before its own setup.
+    exports: {
+      './kit.json': './kit.json',
+      './package.json': './package.json',
+      './test-preload': `./${MINI_APP_KIT_TEST_PRELOAD}`,
+    },
+  }
+}
+
 export async function stageMiniAppKit({ repoRoot, outKit, log = () => {} }) {
   rmSync(outKit, { recursive: true, force: true })
   mkdirSync(outKit, { recursive: true })
-  copyTemplate(findTemplateMiniApp(repoRoot), join(outKit, MINI_APP_KIT_TEMPLATE_DIR))
   const stylesDir = join(outKit, MINI_APP_KIT_STYLES_DIR)
   const hostStylesheet = stageHostStylesheets({
     entry: join(repoRoot, HOST_STYLESHEET),
@@ -330,8 +265,17 @@ export async function stageMiniAppKit({ repoRoot, outKit, log = () => {} }) {
     typePaths: types.typePaths,
     typescript: types.typescript,
     hostStylesheet: join(MINI_APP_KIT_STYLES_DIR, hostStylesheet).split(sep).join('/'),
-    backendModules: await buildBackendModules(repoRoot, join(outKit, MINI_APP_KIT_BACKEND_DIR)),
+    backendModules: await buildKitRuntime({
+      repoRoot,
+      outDir: join(outKit, MINI_APP_KIT_BACKEND_DIR),
+      uiSharedExports: shared,
+    }),
     uiVendorModules: stageVendorPackages(repoRoot, join(outKit, MINI_APP_KIT_UI_VENDOR_DIR)),
+    bundledModules: await buildBundledModules({
+      repoRoot,
+      outDir: join(outKit, MINI_APP_KIT_BUNDLED_DIR),
+      uiSharedExports: shared,
+    }),
   }
   // What the mini-app-authoring plugin reads (`stage-mini-app-kit-tools.mjs`): every path
   // kit-relative, so the kit works wherever it is unpacked.
@@ -339,18 +283,19 @@ export async function stageMiniAppKit({ repoRoot, outKit, log = () => {} }) {
   manifest.localixVersion = localixVersion(repoRoot)
   manifest.authoring = {
     version: KIT_AUTHORING_VERSION,
-    template: MINI_APP_KIT_TEMPLATE_DIR,
     catalog: manifest.kitCatalog,
     styles: MINI_APP_KIT_STYLES_DIR,
     tailwindUtilities: join(MINI_APP_KIT_STYLES_DIR, TAILWIND_UTILITIES).split(sep).join('/'),
     typecheck: MINI_APP_KIT_TYPECHECK,
     typeRoots: 'types/node_modules/@types',
+    ambientTypes: types.ambientTypes,
     testPreload: MINI_APP_KIT_TEST_PRELOAD,
     backendSharedModules: [...MINI_APP_BACKEND_SHARED_MODULES],
     uiPrebuiltModules: [...MINI_APP_UI_PREBUILT_MODULES],
     tools: await buildKitTools(repoRoot, outKit),
   }
   writeFileSync(join(outKit, MINI_APP_KIT_MANIFEST), `${JSON.stringify(manifest, null, 2)}\n`)
+  writeFileSync(join(outKit, 'package.json'), `${JSON.stringify(kitPackage(manifest), null, 2)}\n`)
   if (types.kitRejected.length) {
     log(
       `kit modules declared by name only (their types did not compile): ${types.kitRejected.join(', ')}`,
@@ -377,7 +322,9 @@ if (process.argv[1] && resolve(process.argv[1]) === resolve(import.meta.path)) {
   try {
     // Development only (`--cache`): reuse the kit staged for identical inputs. See
     // `mini-app-kit-cache.mjs` for why a kit is safe to reuse and why the key is content.
-    const digest = cacheRoot ? kitInputsDigest(root, MINI_APP_KIT_INPUTS) : null
+    // The version is part of the key: a release stamps its own into an otherwise identical kit.
+    const key = () => `${kitInputsDigest(root, MINI_APP_KIT_INPUTS)}-${localixVersion(root)}`
+    const digest = cacheRoot ? key() : null
     const hit = digest ? cachedKit(cacheRoot, digest, MINI_APP_KIT_MANIFEST) : null
     if (hit) {
       cpSync(hit, next, { recursive: true })
@@ -385,7 +332,7 @@ if (process.argv[1] && resolve(process.argv[1]) === resolve(import.meta.path)) {
     } else {
       await stageMiniAppKit({ repoRoot: root, outKit: next, log })
       // An input edited while staging ran makes this kit match neither digest; keep it uncached.
-      if (digest && kitInputsDigest(root, MINI_APP_KIT_INPUTS) === digest) {
+      if (digest && key() === digest) {
         storeKit(cacheRoot, digest, next)
       }
     }

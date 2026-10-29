@@ -2,9 +2,8 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 /* No `@source` for mini apps: a mini app is not part of this app. Its artifact ships the
-   utilities its own sources use, compiled against this file's theme
-   (`plugins/mini-app-authoring/src/build/ui-styles.ts`, fed by the mini app kit staging writes),
-   so a mini app edit never touches the host stylesheet. */
+   utilities its own sources use, compiled against this file's theme (the copy the mini app kit
+   carries), so a mini app edit never touches the host stylesheet. */
 
 /* Self-hosted fonts (Vite bundles the woff2): no render-blocking Google Fonts
    fetch on startup, and the packaged desktop app keeps its fonts offline.

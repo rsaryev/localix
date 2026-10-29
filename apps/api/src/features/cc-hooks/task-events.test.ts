@@ -10,12 +10,13 @@ import { EMPTY_RUNTIME } from './runtime-results'
 import type { CcTask } from './runtime-contracts-added'
 import { wrapToolsWithCcHooks } from './wrap-tools'
 
-/** A board with one tool, the way the kanban plugin exposes it. */
-function board() {
+/** A board with one tool that declares the task-board role; the core knows it by nothing else. */
+function board(roles: AgentTool['roles'] = ['task-board']) {
   const cards = new Map<string, { id: string; title: string; status: string }>()
   const calls: unknown[] = []
   const tool = {
-    name: 'kanban',
+    name: 'work_items',
+    roles,
     async execute(_id: string, input: unknown): Promise<AgentToolResult> {
       const i = input as { action: string; title?: string; task_id?: string }
       calls.push(i.action)
@@ -74,6 +75,22 @@ describe('TaskCreated', () => {
     )
     expect(b.cards.size).toBe(1)
   })
+})
+
+test('a tool that declares no task-board role runs no task hooks, whatever its name', async () => {
+  const b = board([])
+  const named = { ...b.tool, name: 'kanban' } as AgentTool
+  let ran = false
+  const { runtime } = hooks({
+    runTaskCreated: async () => {
+      ran = true
+      return { blocked: true }
+    },
+  })
+  const [tool] = wrapToolsWithCcHooks([named], runtime, logger)
+  await tool!.execute('tc1', { action: 'create', title: 'Ship' })
+  expect(ran).toBe(false)
+  expect(b.cards.size).toBe(1)
 })
 
 describe('TaskCompleted', () => {

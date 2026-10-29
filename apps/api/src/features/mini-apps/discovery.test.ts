@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 
@@ -95,5 +96,27 @@ describe('discoverMiniApps', () => {
     expect(found.find((entry) => entry.name === 'notes')!.manifest?.description).toBe(
       'The notes app',
     )
+  })
+
+  test('a source checkout with no mini apps of its own lists only what the person installed', async () => {
+    expect(await discoverMiniApps({ homeDir: home() })).toEqual([])
+    under(home(), app('notes'))
+    expect((await discoverMiniApps({ homeDir: home() })).map((entry) => entry.name)).toEqual([
+      'notes',
+    ])
+    expect((await discoverMiniApps({ homeDir: home() }))[0]!.bundled).toBe(false)
+  })
+
+  test('the copies an update retired earlier are swept on the first discovery of a process', async () => {
+    under(home(), {
+      ...app('notes'),
+      '.sync-retired-notes-1-abc/mini-app.json': manifest('notes'),
+    })
+    const root = join(home(), MINI_APPS_SUBDIR)
+
+    const found = await discoverMiniApps({ homeDir: home() })
+
+    expect(found.map((entry) => entry.name)).toEqual(['notes'])
+    expect((await fs.readdir(root)).sort()).toEqual(['notes'])
   })
 })

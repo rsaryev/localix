@@ -38,11 +38,11 @@ export const iconOf = (offer: Offer) =>
   offer.store.icon ? storeMediaUrl(offer.name, 'icon', offer.store.icon) : undefined
 
 /**
- * Whether Update all would take this offer: an app a catalog (or the staged first-party folder)
- * put here, at another version, that this Localix can run. A folder the person made is theirs.
+ * Whether Update all would take this offer: an app a catalog (or an earlier build's staged
+ * first-party copy) put here, at another version, that this Localix can run. A folder the person made is theirs.
  */
 export async function isUpdatable(offer: Offer, installRoot: string): Promise<boolean> {
-  if (offer.from !== 'catalog' || isIncompatible(offer)) return false
+  if (isIncompatible(offer)) return false
   const dir = join(installRoot, offer.name)
   if (!['catalog', 'staged'].includes((await installedBy(dir)) ?? '')) return false
   return (await readManifest(dir))?.version !== offer.version

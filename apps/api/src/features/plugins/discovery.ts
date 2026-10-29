@@ -10,7 +10,6 @@ import { scanDirsCached } from './discovery-cached-scan'
 import { discoverClaudeCodePlugins } from './claude-code-installs'
 import { withDependencyVersionChecks } from './dependency-versions'
 import { discoverInPlacePlugins } from './in-place-installs'
-import { builtinShadowNotes, discoverBuiltinPlugins } from './builtin-plugins'
 import { discoverCachedPlugins } from './cached-installs'
 export { findManifestPath } from './discovery-directory-scan'
 
@@ -28,9 +27,7 @@ export { findManifestPath } from './discovery-directory-scan'
  * Claude Code's. Home plugins are projected into the requested projectId so their enable/config
  * state remains exact-scope.
  *
- * The plugins built into Localix (`builtin-plugins.ts`) come before all of them: a built-in plugin
- * holds its name like Claude Code's managed plugins, and every other copy of that name is reported
- * on it instead of loading. User-scope copies installed from a marketplace live in the version
+ * Localix ships no plugin of its own: every one comes from a folder or a marketplace. User-scope copies installed from a marketplace live in the version
  * cache and are read through their records (`cached-installs.ts`), right after the home folders.
  */
 
@@ -72,7 +69,6 @@ export async function discoverPlugins(opts: {
       ? scanDirsCached(absCwd, PLUGIN_SUBDIRS, 'project', projectId)
       : Promise.resolve([])
   const homeScan = scanDirsCached(home, PLUGIN_SUBDIRS, 'global', '')
-  const builtinScan = discoverBuiltinPlugins(projectId)
   // Uncached on purpose, like the in-place ones: an update swaps the record, not a folder.
   const cachedScan = discoverCachedPlugins({ homeDir: home, projectId })
   // Uncached on purpose: an edit in the folder loads at the next `/plugin reload`.
@@ -82,13 +78,11 @@ export async function discoverPlugins(opts: {
     cwd: projectId ? absCwd : null,
     projectId,
   })
-  const [builtins, projectPlugins, homePlugins, cachedPlugins, inPlacePlugins, claudeCodePlugins] =
-    await Promise.all([builtinScan, projectScan, homeScan, cachedScan, inPlaceScan, claudeCodeScan])
+  const [projectPlugins, homePlugins, cachedPlugins, inPlacePlugins, claudeCodePlugins] =
+    await Promise.all([projectScan, homeScan, cachedScan, inPlaceScan, claudeCodeScan])
   if (!projectId) {
     const installed = [homePlugins, cachedPlugins, inPlacePlugins, claudeCodePlugins]
-    return withDependencyVersionChecks(
-      mergeByPrecedence([builtinShadowNotes(builtins, installed), ...installed]),
-    )
+    return withDependencyVersionChecks(mergeByPrecedence(installed))
   }
 
   // EVERYTHING the user has, plus the repository's own plugins.
@@ -112,9 +106,7 @@ export async function discoverPlugins(opts: {
     claudeCodePlugins,
     projectPlugins,
   ]
-  return withDependencyVersionChecks(
-    mergeByPrecedence([builtinShadowNotes(builtins, installed), ...installed]),
-  )
+  return withDependencyVersionChecks(mergeByPrecedence(installed))
 }
 
 /** The canonical install directory for a scope (global home, or a project dir). */

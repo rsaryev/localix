@@ -392,7 +392,7 @@ every listing an item names is in `listings`.
 | One row per kind | "Mini apps", "Plugins", by score.                                                                 |
 
 A provider hands its picks over through the port's optional `editorial()`. The mini app catalog
-carries them as `editorial` (`collections`) from `mini-apps/catalog-picks.json`; the `localix`
+carries them as `editorial` (`collections`), set by its publisher's repository; the `localix`
 marketplace under `metadata.localix` (`recommended`, `featured`, `collections`), which
 `claude plugin validate` accepts with an unknown-field warning and Claude Code ignores. An item is a
 name of the source's own kind, or `<kind>:<id>`. Only an editorial source's picks are read, and a

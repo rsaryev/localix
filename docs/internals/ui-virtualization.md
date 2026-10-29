@@ -1,10 +1,9 @@
 # UI virtualization
 
-Localix mounts a bounded row window for chat, file trees, tables, the usage requests log, live logs,
-and external-agent rosters. This bounds mounted DOM rows while feature models retain paging,
-selection, navigation, and follow state. Where a window would break a gesture the surface owns — the
-Kanban mini app board's drop index — the board is bounded by a rendered cap with a **Show more**
-tail instead.
+Localix mounts a bounded row window for chat, file trees, tables, the usage requests log, diffs, and
+external-agent rosters. This bounds mounted DOM rows while feature models retain paging, selection,
+navigation, and follow state. A mini app that owns a gesture a window would break, such as a drag
+that counts rendered cards, bounds its surface with a rendered cap instead.
 
 **Boundary:** Virtualization changes rendering only. It does not cap retained data or replace server
 paging.
@@ -18,9 +17,7 @@ paging.
 | Content search         | A flat `SearchRow[]` drives per-kind estimates and measured rows for folder, file, and match rows           | `useContentSearch` owns results, expansion, and replace preview; the virtualizer owns row geometry |
 | Data tables            | `TableGrid` renders 30-pixel rows and requests another page near the loaded tail                            | The caller owns paging, sorting, editing, and the total row count                                  |
 | Usage requests log     | `LogsTable` mounts a window of 36-pixel table rows between two spacer rows inside the same `<table>`        | `useUsageLogs` owns paging; the sentinel below the spacers still pages at the true tail            |
-| DevOps live logs       | Measured rows use end anchoring and `followOnAppend` while the viewer is live                               | Upward wheel or keyboard intent pauses live mode; resume returns to the tail                       |
 | External-agent history | Core virtualizes 28-pixel day headers and 32-pixel agent/session rows; 8-row overscan and 200-session pages | The External history tab and resource container views share this surface                           |
-| Source Control tree    | A flat `ChangesTreeRow[]` per section drives measured 28-pixel rows against the panel's one scroll area     | One delegated context menu per tree; the roving Tab stop is pinned into the rendered range         |
 | Diff views             | One flat document of file, hunk and line rows with exact per-kind heights and a pinned-header overlay       | The document owns parsing and change runs; highlight and word marks run per mounted line           |
 
 ## How it works
@@ -51,8 +48,8 @@ fixed estimate would misplace the scrollbar as soon as context lines are switche
 ### Reverse feeds and follow policy
 
 `anchorTo: 'end'` retains a visible keyed row when chat history or log rows change. `scrollToEnd()`
-reconciles estimates after measurement, and `followOnAppend` keeps live logs at the tail only when
-they were already there.
+reconciles estimates after measurement, and `followOnAppend` keeps a live log at the tail only when
+it was already there.
 
 Chat deliberately keeps a second policy layer. `useAutoScroll` distinguishes programmatic movement
 from wheel, touch, keyboard, pointer, and nested-scroll input. Opening a session starts at its live
@@ -91,7 +88,6 @@ These values are implementation constants, not Settings controls.
 | Content search        | Per kind |  12 rows | 23 px header rows; 19 px match line plus 18 px per context line; measured            |
 | Data tables           |    30 px |  16 rows | Requests another page within 12 rows of the loaded tail                              |
 | Usage requests log    |    36 px |  16 rows | Spacer rows carry the unmounted height; measurement is gated on work-item visibility |
-| DevOps live logs      |    18 px |  12 rows | End threshold 32 px; dynamic measurement when rows wrap                              |
 | External-agent roster |    46 px |  10 rows | Initial geometry is seeded at 720 × 640 px                                           |
 | Diff views            | Per kind |  16 rows | 20 px line, 24 px hunk, 28 px file rows, scaled by root font size; exact, unmeasured |
 
@@ -110,12 +106,6 @@ These values are implementation constants, not Settings controls.
 
 - `LogsTable` uses auto table layout, so column widths are computed from the mounted window rather
   than from every loaded row.
-- Kanban mini app columns are bounded by a cap, not a window. `capColumn` renders the first
-  `KANBAN_COLUMN_CAP` cards of a column and offers **Show more**; the rest are counted, not mounted.
-  The cap exists because `useKanbanDrag` derives a drop index by counting the column's rendered
-  `[data-task-card]` nodes and applies it to the logical section list — that mapping holds only
-  while the rendered cards are the logical list's prefix, which a window would break. Shift-range
-  selection spans the rendered cards; the column header count keeps describing every card.
 - The event journal is bounded by retention: `NOTIFICATIONS_CAP` (200) caps the store, the popover
   is behind a dynamic import, and 200 rows of that complexity mount about 5.4k DOM elements (counted
   in the DOM test environment) once per open. It is not virtualized.
@@ -136,7 +126,6 @@ These values are implementation constants, not Settings controls.
 
 - [Workspace](../features/workspace.md)
 - [Architecture](architecture.md)
-- [Data-view subsystem](subsystems/data-view.md)
 
 ## Source of truth
 
@@ -152,15 +141,8 @@ These values are implementation constants, not Settings controls.
 - [Data tables](../../apps/ui/src/features/inspector/ui/table/TableGrid.tsx)
 - [Usage requests log](../../apps/ui/src/features/stats/ui/LogsTable.tsx) ·
   [row renderer](../../apps/ui/src/features/stats/ui/LogRow.tsx)
-- [Kanban column cap](../../mini-apps/kanban/ui/board/columnCap.ts) ·
-  [board](../../mini-apps/kanban/ui/board/board.tsx) ·
-  [drop index](../../mini-apps/kanban/ui/board/useKanbanDrag.ts)
 - [Event journal retention cap](../../apps/ui/src/shared/lib/notifications/core.ts)
-- [Live logs](../../mini-apps/devops/ui/LiveLogViewport.tsx)
 - [External-agent history](../../apps/ui/src/features/external-agents/ui/ExternalHistoryList.tsx)
-- [Changes-tree rows](../../mini-apps/git-workspace/ui/source-control/ui/changes-tree/changesTreeRows.ts)
-  · [tree](../../mini-apps/git-workspace/ui/source-control/ui/changes-tree/ChangesTree.tsx) ·
-  [shared scroll area](../../mini-apps/git-workspace/ui/source-control/ui/changes-tree/ChangesScrollArea.tsx)
 - [Diff document](../../apps/ui/src/shared/ui/diff/document/diffDocument.ts) ·
   [row layout](../../apps/ui/src/shared/ui/diff/document/diffRows.ts) ·
   [pinned headers](../../apps/ui/src/shared/ui/diff/document/diffSticky.ts) ·

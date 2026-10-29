@@ -20,8 +20,6 @@
     "**/*.config.ts",
     "**/*.config.mjs",
     "**/*.config.js",
-    ".githooks/**",
-    "mini-apps/**",
-    "plugins/**"
+    ".githooks/**"
   ]
 }

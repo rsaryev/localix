@@ -9,7 +9,6 @@
   <url><loc>https://localix.ai/docs/recipes--bring-your-own-agent-cli</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/recipes--drive-interactive-terminal</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/recipes--fix-a-ui-bug-by-pointing-at-it</loc><priority>0.7</priority></url>
-  <url><loc>https://localix.ai/docs/recipes--turn-a-vague-goal-into-a-pipeline</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--capabilities</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--agents</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--agent-management</loc><priority>0.7</priority></url>
@@ -36,27 +35,11 @@
   <url><loc>https://localix.ai/docs/features--external-agents</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--settings</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--keyboard-shortcuts</loc><priority>0.7</priority></url>
-  <url><loc>https://localix.ai/docs/features--source-control</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--visual-feedback</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--lsp</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--cost-tracking</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--notifications</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--cli</loc><priority>0.7</priority></url>
-  <url><loc>https://localix.ai/docs/features--database</loc><priority>0.7</priority></url>
-  <url><loc>https://localix.ai/docs/features--code-graph</loc><priority>0.7</priority></url>
-  <url><loc>https://localix.ai/docs/features--project-space</loc><priority>0.7</priority></url>
-  <url><loc>https://localix.ai/docs/features--api</loc><priority>0.7</priority></url>
-  <url><loc>https://localix.ai/docs/features--devops</loc><priority>0.7</priority></url>
-  <url><loc>https://localix.ai/docs/features--docker</loc><priority>0.7</priority></url>
-  <url><loc>https://localix.ai/docs/features--kubernetes</loc><priority>0.7</priority></url>
-  <url><loc>https://localix.ai/docs/features--documents</loc><priority>0.7</priority></url>
-  <url><loc>https://localix.ai/docs/features--resumes</loc><priority>0.7</priority></url>
-  <url><loc>https://localix.ai/docs/features--reader</loc><priority>0.7</priority></url>
-  <url><loc>https://localix.ai/docs/features--trading</loc><priority>0.7</priority></url>
-  <url><loc>https://localix.ai/docs/features--task-board</loc><priority>0.7</priority></url>
-  <url><loc>https://localix.ai/docs/features--game-2048</loc><priority>0.7</priority></url>
-  <url><loc>https://localix.ai/docs/features--game-snake</loc><priority>0.7</priority></url>
-  <url><loc>https://localix.ai/docs/features--games</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--providers</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--local-models</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--semantic-search</loc><priority>0.7</priority></url>

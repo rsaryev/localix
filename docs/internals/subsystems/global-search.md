@@ -78,10 +78,10 @@ Current mini app domains include database connections, saved API requests, Docke
 Kubernetes pods, trading markets, and Kanban cards. Their owning mini apps define tier, matching,
 resource URI, and shutdown behavior; global search only enforces the registry contract.
 
-The Kanban mini app's `kanban:tasks` domain
-([`references.ts`](../../../mini-apps/kanban/backend/references.ts)) is eager and matches a card's
-title, description and id. It reads only the board of the query's `sessionId` — the chat the search
-tab or palette belongs to — and returns no hits without one, because a board belongs to its chat.
+The Kanban mini app's `kanban:tasks` domain (from the Localix marketplace) is eager and matches a
+card's title, description and id. It reads only the board of the query's `sessionId` — the chat the
+search tab or palette belongs to — and returns no hits without one, because a board belongs to its
+chat.
 
 ### Client-only domains
 
@@ -158,7 +158,6 @@ composition changes.
 - [UI anchors](ui-anchors.md)
 - [Workbench contributions](workbench-contributions.md)
 - [Workspace](../../features/workspace.md)
-- [DevOps Workspace](../../features/devops.md)
 
 ## Source of truth
 

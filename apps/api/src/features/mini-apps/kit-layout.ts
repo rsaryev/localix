@@ -1,6 +1,5 @@
 /**
- * The MINI APP KIT: the platform a Localix release publishes for building mini apps — the reference
- * template, the export names of the modules the host shares with mini app UI, the host theme's
+ * The MINI APP KIT: the platform a Localix release publishes for building mini apps — the export names of the modules the host shares with mini app UI, the host theme's
  * stylesheets, prebuilt copies of the modules a backend may import, the declarations, and the
  * `tools` module carrying Localix's own rules (`kit-tools.ts`). Localix builds no mini app: the
  * mini-app-authoring plugin reads the kit (`GET /rpc/mini-apps/kit`, or a release's
@@ -9,15 +8,11 @@
  * mini app backend at runtime.
  */
 
-/** The kit's directory name, a sibling of the staged mini apps root. */
+/** The kit's directory name beside the API in a release (`resources/mini-app-kit`). */
 export const MINI_APP_KIT_DIR_NAME = 'mini-app-kit'
 /** The kit's self-description (see {@link MiniAppKitManifest}). */
 export const MINI_APP_KIT_MANIFEST = 'kit.json'
 export const MINI_APP_KIT_SCHEMA_VERSION = 1
-/** The reference mini app every scaffold forks. */
-export const MINI_APP_KIT_TEMPLATE_DIR = 'template'
-/** The template's own description of its layout (entry, domain, renames). */
-export const TEMPLATE_SCAFFOLD_FILE = 'scaffold.json'
 /** The host theme's stylesheets, imports rewritten to kit-relative paths. */
 export const MINI_APP_KIT_STYLES_DIR = 'ui/styles'
 /** Tailwind's utilities layer inside {@link MINI_APP_KIT_STYLES_DIR}: what a mini app emits. */
@@ -82,24 +77,18 @@ export const MINI_APP_BACKEND_HOST_MODULES = [
 export type MiniAppBackendHostModule = (typeof MINI_APP_BACKEND_HOST_MODULES)[number]
 
 /**
- * Bare modules a USER mini app backend may import. They are not installed beside the mini app — a
- * user mini app has no `node_modules` — so the host provides each at runtime (every one is in
- * {@link MINI_APP_BACKEND_HOST_MODULES}). Anything else bare is a build error that names this list;
- * `node:*` and `bun:*` are the runtime's own.
+ * Bare modules a mini app backend may import: every module the host hands a backend at runtime.
+ * They are not installed beside the mini app — an installed mini app has no `node_modules` — so the
+ * host provides each. One list for every mini app: a first-party one is built and shipped the way
+ * any other is, so none may import what a third party's build would refuse. Anything else bare is
+ * a build error that names this list; `node:*` and `bun:*` are the runtime's own.
  */
-export const MINI_APP_BACKEND_SHARED_MODULES: readonly string[] = [
-  'hono',
-  'zod',
-  '@localixai/mini-app-sdk/backend',
-  '@localixai/mini-app-sdk/rich-text',
-  '@localixai/mini-app-sdk/document-layout',
-  '@localixai/mini-app-sdk/store-changes',
-]
+export const MINI_APP_BACKEND_SHARED_MODULES: readonly string[] = [...MINI_APP_BACKEND_HOST_MODULES]
 
 /**
  * What a user's mini app's TESTS may import besides {@link MINI_APP_BACKEND_SHARED_MODULES}: a test of
  * shared logic reaches the SDK's UI helpers (a message-context builder) without rendering anything.
- * Rendering tests need the host's DOM harness, which only the in-repo mini apps have.
+ * Rendering tests use the host's DOM harness through the kit's test preload.
  */
 export const MINI_APP_TEST_EXTRA_MODULES: readonly string[] = [
   // A backend tested through its tools and routes on folders of its own (`testMiniAppContext`).

@@ -1,4 +1,4 @@
-/* Three store cards side by side; the middle one fills its bar as it installs. */
+/* Three store cards side by side: the Store's own apps, or blank cards before it has any. */
 .wt-mini-apps {
   position: absolute;
   inset: 1rem 0.75rem;
@@ -39,4 +39,7 @@
   border-radius: 0.375rem;
   background: var(--foreground);
   color: var(--background);
+}
+.wt-mini-app-card[data-state='blank'] {
+  min-height: 3.5rem;
 }

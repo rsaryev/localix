@@ -11,13 +11,12 @@
  * (`upload_too_large`, `media_not_found`), and two were actionable sentences a user needed
  * (`No such file to serve: …`, `project scope needs a session with a working directory`).
  *
- * SCOPE IS apps/api ONLY. Bundled plugins deliberately answer their own flat
- * `{ error, code, detail }` contracts, each with a client written for it — see
- * `mini-apps/<name>/backend/routes.ts`.
+ * SCOPE IS apps/api ONLY. Mini apps deliberately answer their own flat `{ error, code, detail }`
+ * contracts, each with a client written for it.
  */
 import { describe, expect, setDefaultTimeout, test } from 'bun:test'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
-import { join, sep } from 'node:path'
+import { join } from 'node:path'
 import { stripComments } from './source-lint'
 
 // Walks the whole source tree: seconds under a parallel run of every package, not milliseconds.
@@ -75,30 +74,18 @@ describe('no route answers a flat error body', () => {
 })
 
 /**
- * The narrower half of the same rule, applied to PLUGIN routers.
+ * The narrower half of the same rule, applied to mini app routers.
  *
- * Plugins own their envelopes — some flat `{error, code, detail}`, some the SDK's nested
- * `{error:{code,message}}` — so this cannot check the shape. What it CAN check is universal: the
- * `error` field must never hold a bare snake_case TOKEN, because that is a machine code sitting in the
- * slot a UI renders as the message.
- *
- * The guard covers every discovered plugin router, regardless of which plugin owns it.
+ * Mini apps own their envelopes — some flat `{error, code, detail}`, some the SDK's nested
+ * `{error:{code,message}}` — so the shape cannot be checked here, and the mini apps live outside
+ * this repository. What is universal is that the `error` field never holds a bare snake_case TOKEN,
+ * because that is a machine code sitting in the slot a UI renders as the message.
  */
-describe('no plugin route puts a machine code where the message goes', () => {
-  const ROOT = join(import.meta.dir, '..', '..', '..', '..')
-  const PLUGIN_ROOT = join(ROOT, 'mini-apps')
-
+describe('no mini app route puts a machine code where the message goes', () => {
   /** `c.json({ error: '<snake_case_token>' }` — a bare identifier, not a sentence. */
   const BARE_CODE_BODY = new RegExp(String.raw`\bc\.json\(\s*\{\s*error:\s*'[a-z][a-z0-9_]*'\s*\}`)
 
-  test('every plugin backend uses a real sentence', () => {
-    const offenders = sources(PLUGIN_ROOT)
-      .filter((file) => BARE_CODE_BODY.test(stripComments(readFileSync(file, 'utf8'))))
-      .map((file) => file.slice(ROOT.length + 1))
-    expect(offenders).toEqual([])
-  })
-
-  test('positive control: the pattern matches a bare code and spares a sentence', () => {
+  test('the pattern matches a bare code and spares a sentence', () => {
     expect(BARE_CODE_BODY.test(`return c.json({ error: 'connection_not_found' }, 404)`)).toBe(true)
     expect(BARE_CODE_BODY.test(`return c.json({ error: 'table_not_found' }, 404)`)).toBe(true)
     // A real message has spaces, so it is not a bare token…
@@ -107,11 +94,5 @@ describe('no plugin route puts a machine code where the message goes', () => {
     expect(BARE_CODE_BODY.test(`return c.json({ error: 'x', code: 'y', detail: 'z' }, 400)`)).toBe(
       false,
     )
-  })
-
-  test('positive control: the sweep really walked mini-apps/', () => {
-    const files = sources(PLUGIN_ROOT)
-    expect(files.length).toBeGreaterThan(100)
-    expect(files.some((f) => f.includes(`${sep}backend${sep}`))).toBe(true)
   })
 })

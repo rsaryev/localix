@@ -103,7 +103,7 @@ export interface MarketplaceListing {
   autoUpdate?: boolean
   /** An environment variable turns the whole pass off, so the toggle does nothing now. */
   autoUpdatePaused?: boolean
-  /** Localix's official marketplace, registered from `rsaryev/localix`. */
+  /** Localix's official marketplace, registered from `LOCALIX_MARKETPLACE`'s repository. */
   official?: boolean
   /** When its listing was last fetched. */
   lastUpdated?: string

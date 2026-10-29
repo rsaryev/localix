@@ -15,6 +15,12 @@ A mini app does not contain, name or depend on a plugin, and a plugin knows noth
 
 This page is the contract for the split. The status table at the end says what is already true.
 
+Localix's own plugins and mini apps are not in this repository. They live in the
+[Localix marketplace](https://github.com/rsaryev/localix-marketplace) and install, update and are
+trusted from its catalog like anyone's. The core knows only that repository, as a trusted default
+source (`LOCALIX_MARKETPLACE` in `packages/store/src/default-sources.ts`), and names none of its
+plugins or mini apps. What the core publishes for them is the mini app SDK and the mini app kit.
+
 ## Rules
 
 | Id  | Rule                                                                                                                                                                                                                             |
@@ -23,7 +29,7 @@ This page is the contract for the split. The status table at the end says what i
 | X2  | A folder is one or the other. A mini app folder holds no `.claude-plugin/`; a plugin folder holds no `mini-app.json`. The loader refuses a folder with both and says why.                                                        |
 | X3  | Each layer has its own records, routes, storage, settings page, slash command and model-facing names. Nothing is "an extension" that could be either.                                                                            |
 | X4  | The core names no mini app. A feature that needs one (a task board) asks for a capability a mini app declares, never for a mini app by name.                                                                                     |
-| X5  | Localix ships no mini app. Every mini app, first-party included, is installed and updated from a catalog.                                                                                                                        |
+| X5  | Localix ships no mini app and hosts no catalog. Every mini app, first-party included, is installed and updated from a catalog; Localix's own come from the Localix marketplace.                                                  |
 
 `scripts/architecture-rules.test.ts` enforces X1, with a baseline in
 `scripts/architecture-baselines/x1.json` that only shrinks and is now empty: the `localix://`
@@ -32,28 +38,26 @@ loaders enforce X2.
 
 ## Plugins
 
-| Part     | Where                                                                                                                                                                                         |
-| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Format   | `packages/claude-plugin` (`@localixai/claude-plugin`): Claude Code's documented format.                                                                                                       |
-| Runtime  | `apps/api/src/features/plugins/`: discovery, loading, marketplaces, enable state, versions and updates.                                                                                       |
-| Disk     | `~/.localix/plugins/<name>/`, `~/.localix/plugins/cache/<marketplace>/<plugin>/<version>/`, `<project>/.localix/plugins/<name>/`, plugin data folders.                                        |
-| Built-in | The repository's `plugins/<name>/`, staged into `resources/builtin-plugins/`: Claude Code plugins listed as Built-in (source `builtin`), on by default, switchable off, updated with Localix. |
-| Surfaces | `/rpc/plugins` (with `/rpc/plugins/updates`), the Store (Plugins), `/plugin`.                                                                                                                 |
-| Agent    | Skills, commands and agents, namespaced `/<plugin>:<name>` as in Claude Code.                                                                                                                 |
+| Part          | Where                                                                                                                                                                |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Format        | `packages/claude-plugin` (`@localixai/claude-plugin`): Claude Code's documented format.                                                                              |
+| Runtime       | `apps/api/src/features/plugins/`: discovery, loading, marketplaces, enable state, versions and updates.                                                              |
+| Disk          | `~/.localix/plugins/<name>/`, `~/.localix/plugins/cache/<marketplace>/<plugin>/<version>/`, `<project>/.localix/plugins/<name>/`, plugin data folders.               |
+| Localix's own | The Localix marketplace's `plugins` folder, registered as the `localix` marketplace on first start: they install and update like any plugin, with no special origin. |
+| Surfaces      | `/rpc/plugins` (with `/rpc/plugins/updates`), the Store (Plugins), `/plugin`.                                                                                        |
+| Agent         | Skills, commands and agents, namespaced `/<plugin>:<name>` as in Claude Code.                                                                                        |
 
 A part Claude Code defines and Localix does not run is reported in the plugin's validation, never
 dropped silently. A key Claude Code does not define is a validation warning, as in Claude Code.
 
-A built-in plugin is still only a plugin. `mini-app-authoring` is where mini apps are made: its
+A Localix plugin is still only a plugin. `mini-app-authoring` is where mini apps are made: its
 skills, reviewer agent, edit hook and `mini-app` command scaffold, check, build, pack and install
 them, and it imports no Localix code, so X1 and X2 hold: no code path joins the two layers, and its
 folder holds no `mini-app.json`. It reaches Localix only through data — the mini app kit, whose
 `tools/authoring.mjs` carries Localix's own validation (`features/mini-apps/kit-tools.ts`), and
-`GET /rpc/mini-apps/kit` and `POST /rpc/mini-apps/install-local` — so it can leave the repository
-unchanged. The core keeps no authoring: no build tool for the agent and no `/mini-app create` (X3:
-creating is the plugin's command, not a `/mini-app` subcommand). Staging keeps them apart too: a
-folder under `plugins/` whose only manifest is `.claude-plugin/plugin.json` is never staged as a
-mini app.
+`GET /rpc/mini-apps/kit` and `POST /rpc/mini-apps/install-local` — so it lives and changes outside
+this repository. The core keeps no authoring: no build tool for the agent and no `/mini-app create`
+(X3: creating is the plugin's command, not a `/mini-app` subcommand).
 
 A mod must get what Claude Code gives it. `scripts/cc-parity/` runs one probe mod in the installed
 Claude Code and in Localix's mods host and compares the shapes each hands it, per event and `$`
@@ -125,12 +129,14 @@ What a mini app is, fixed so a host can install, update and refuse one without r
 
 ### Catalogs and sources
 
-A catalog is a `catalog.json` index of archives. It lists the first-party mini apps and, later,
-those of other authors; each entry names its publisher and whether it is **verified**:
+A catalog is a `mini-app-catalog.json` index of archives. Localix hosts none: the Localix
+marketplace publishes its own with each of its releases (`releaseMiniAppCatalog`,
+`releases/latest/download/mini-app-catalog.json`), and any author can publish theirs. Each entry
+names its publisher and whether it is **verified**, which only a source Localix vouches for can say:
 
 ```json
 {
-  "schemaVersion": 1,
+  "schema": 1,
   "apps": [
     {
       "name": "chess",
@@ -146,20 +152,21 @@ those of other authors; each entry names its publisher and whether it is **verif
 }
 ```
 
-| Source                | What it is                                                | Updates                     |
-| --------------------- | --------------------------------------------------------- | --------------------------- |
-| HTTPS catalog         | `catalog.json` and archives; Localix's own is the default | by version, automatically   |
-| Git repository        | its release assets, read as an HTTPS catalog              | by version, automatically   |
-| Local catalog folder  | `catalog.json` and archives on disk, read as `file://`    | by version, automatically   |
-| Local mini app folder | one mini app's source: developer mode                     | rebuilt by the host on save |
+| Source               | What it is                                                                     | Updates                   |
+| -------------------- | ------------------------------------------------------------------------------ | ------------------------- |
+| HTTPS catalog        | `mini-app-catalog.json` and archives; the Localix marketplace's is the default | by version, automatically |
+| Git repository       | its release assets, read as an HTTPS catalog                                   | by version, automatically |
+| Local catalog folder | `mini-app-catalog.json` and archives on disk, read as `file://`                | by version, automatically |
+| Local package        | one built package, installed by the authoring plugin (`install-local`)         | by installing it again    |
 
-Only developer mode builds on the person's machine; every other source ships built archives.
+The core builds no mini app: every catalog ships built archives, and a local package is built by the
+authoring plugin before it is installed.
 
 ### Releasing, installing, updating
 
-1. **Release.** The author raises `version`; packing (CI for the first-party ones) builds the
-   archive and writes its catalog entry. The same version with other content is refused by its
-   sha256.
+1. **Release.** The author raises `version`; packing (the authoring plugin's `mini-app pack`, or a
+   release workflow) builds the archive and writes its catalog entry. The same version with other
+   content is refused by its sha256.
 2. **Choose.** The [Store](store.md) is its own workspace tab, opened on its Mini apps shelf from
    the rail's add button, from setup and from the Store (Mini apps). The mini apps provider
    (`store-provider.ts`) serves the catalogs' offers through the Store's port. Category tabs, a tag
@@ -177,13 +184,10 @@ Only developer mode builds on the person's machine; every other source ships bui
    build. An update never touches the app's data folder.
 5. **Trust.** Installing from the store is the person's yes to run the app. An unverified publisher
    is named in the row, and its install asks again first.
-6. **Create.** The mini-app-authoring plugin forks the template from the kit into a folder of the
-   person's, builds the package, and `POST /rpc/mini-apps/install-local` validates it and copies it
-   into `~/.localix/mini-apps/<name>/` with a local install record: the person's own app, updated by
-   no catalog and never installed over a catalog's app.
-
-In development the catalog is built from the checkout, so a change to `mini-apps/` is installed
-without a release.
+6. **Create.** The mini-app-authoring plugin forks its own template into a folder of the person's,
+   builds the package, and `POST /rpc/mini-apps/install-local` validates it and copies it into
+   `~/.localix/mini-apps/<name>/` with a local install record: the person's own app, updated by no
+   catalog and never installed over a catalog's app.
 
 ## Migration
 
@@ -192,11 +196,11 @@ None: mini apps start clean. Their settings, secrets and data live under `mini-a
 
 ## Status
 
-| Phase | Change                                                                                               | State |
-| ----- | ---------------------------------------------------------------------------------------------------- | ----- |
-| 0     | This contract; Workflows removed.                                                                    | Done  |
-| 1     | `mini-app.json` and `guide.md`; the bundled mini apps converted; no `.claude-plugin/` in a mini app. | Done  |
-| 2     | `features/mini-apps` split from `features/plugins`; the composed manifest and legacy layout removed. | Done  |
-| 3     | Separate storage, records, routes, settings and model-facing names; the start-up migration.          | Done  |
-| 4     | Release archives, `catalog.json`, the install and update queue, the picker; nothing bundled.         | Done  |
-| 5     | Tests, guards, screenshots, docs and copy that assumed bundled mini apps.                            |       |
+| Phase | Change                                                                                                           | State     |
+| ----- | ---------------------------------------------------------------------------------------------------------------- | --------- |
+| 0     | This contract; Workflows removed.                                                                                | Done      |
+| 1     | `mini-app.json` and `guide.md`; the first-party mini apps converted; no `.claude-plugin/` in a mini app.         | Done      |
+| 2     | `features/mini-apps` split from `features/plugins`; the composed manifest and legacy layout removed.             | Done      |
+| 3     | Separate storage, records, routes, settings and model-facing names; the start-up migration.                      | Done      |
+| 4     | Release archives, `mini-app-catalog.json`, the install and update queue, the picker.                             | Done      |
+| 5     | Localix's own mini apps and plugins leave for the Localix marketplace; the core ships none and hosts no catalog. | Docs done |

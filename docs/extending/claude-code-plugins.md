@@ -40,12 +40,12 @@ A user-scope plugin has one configuration in every project, as Claude Code's `pl
 to the plugin; the plugin's settings keep only a reference, and the value reaches its hooks, MCP
 servers and `CLAUDE_PLUGIN_OPTION_<KEY>` when they run.
 
-Localix ships a few plugins of its own, listed as **Built-in**, and registers the
-[Store](../features/store.md)'s default marketplaces on first start, `localix`, Anthropic's official
-and its community one, for browsing; every other plugin comes from a source you add. Manage them in
-the Store (Plugins) or with `/plugin`. A plugin runs no Localix native code. Screens, a backend and
-agent tools over Localix's APIs are a mini app's, a separate format with its own folder, settings
-and command; see [Build a mini app](mini-apps.md).
+Localix ships no plugin. It registers the [Store](../features/store.md)'s default marketplaces on
+first start, `localix` (the [Localix marketplace](https://github.com/rsaryev/localix-marketplace)),
+Anthropic's official and its community one, for browsing; every other plugin comes from a source you
+add. Manage them in the Store (Plugins) or with `/plugin`. A plugin runs no Localix native code.
+Screens, a backend and agent tools over Localix's APIs are a mini app's, a separate format with its
+own folder, settings and command; see [Build a mini app](mini-apps.md).
 
 ## How it works
 
@@ -84,7 +84,7 @@ decisions. Where Localix's moment differs, the table says where it fires. See
 | `UserPromptExpansion`                                                            | A typed skill or plugin command, after `UserPromptSubmit`                                             |
 | `PermissionRequest`, `PermissionDenied`                                          | The approval card, which the hook races; refusals by a mode's rules or on an unattended run           |
 | `SubagentStart`, `SubagentStop`                                                  | Delegated tasks                                                                                       |
-| `TaskCreated`, `TaskCompleted`                                                   | Cards on the task board (`kanban`)                                                                    |
+| `TaskCreated`, `TaskCompleted`                                                   | Cards on a task board: a tool with the `task-board` role                                              |
 | `PreCompact`, `PostCompact`, `InstructionsLoaded`                                | A context checkpoint (`trigger: auto`); context files loaded with `SessionStart`                      |
 | `PreModelSwitch`, `PostModelSwitch`, `ConfigChange`, `CwdChanged`, `FileChanged` | The model picker and `/model`; an approved `Configure` write; a project move; watched files           |
 | `StopFailure`, `MessageDisplay`                                                  | A turn that ends on an API error; each text block of a settled reply, its `displayContent` shown only |
@@ -107,11 +107,11 @@ hookify's stop rules read it as they do in Claude Code. A `SubagentStop` hook's
 keeps the conversation in its database and rewrites these files from it before a hook that can read
 them runs; they live in the session's data folder and go with the session.
 
-### Built-in plugins and updates
+### Marketplaces and updates
 
-Localix ships some plugins of its own as **Built-in**, registers the Store's default marketplaces on
-first start, and updates plugins installed from marketplaces by Claude Code's version rule, on its
-own for marketplaces with auto-update on. See [Built-in plugins and updates](plugin-updates.md).
+Localix registers the Store's default marketplaces on first start, and updates plugins installed
+from marketplaces by Claude Code's version rule, on its own for marketplaces with auto-update on.
+See [Plugin marketplaces and updates](plugin-updates.md).
 
 ### Earlier installs
 
@@ -361,7 +361,7 @@ Code unchanged: panes, the band above the message box, buttons and their hotkeys
 ## Related guides
 
 - [Build a mini app](mini-apps.md)
-- [Built-in plugins and updates](plugin-updates.md)
+- [Plugin marketplaces and updates](plugin-updates.md)
 - [Hooks and slash commands](../features/hooks-and-commands.md)
 - [Language servers](../features/lsp.md)
 

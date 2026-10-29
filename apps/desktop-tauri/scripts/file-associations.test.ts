@@ -11,15 +11,13 @@ import {
 
 /**
  * The gate behind `file-associations.mjs`: what the OS is told Localix can open must
- * equal what core and the bundled plugins actually claim.
+ * equal what core actually claims.
  *
- * This is the only place the two representations meet. `bundle.fileAssociations` is
- * read once, at package time, by a Rust bundler nothing here can run; the runtime
- * viewer registries are read by the SPA. Nothing links them except this check — which
- * is precisely why a plugin could ship dedicated viewers that Finder had never heard of.
+ * `bundle.fileAssociations` is read once, at package time, by a Rust bundler nothing here
+ * can run; the runtime viewers are read by the SPA. Nothing links them except this check.
  */
 describe('OS file associations', () => {
-  test('the committed tauri.conf.json matches core + every plugin manifest', () => {
+  test('the committed tauri.conf.json matches the core list', () => {
     const { ok, expected, actual } = checkFileAssociations()
     // Compare the values, not the boolean, so a failure PRINTS the drift instead of
     // reporting `false !== true` and sending the reader to a 130-line JSON file.
@@ -80,11 +78,7 @@ describe('OS file associations', () => {
     // `text/plain` is the one honest group: every extension in it really is plain text.
     for (const entry of buildFileAssociations()) {
       if (entry.ext.length === 1 || entry.mimeType === undefined) continue
-      const shared =
-        entry.mimeType === 'text/plain' ||
-        entry.mimeType === 'image/jpeg' || // jpg + jpeg
-        entry.mimeType === 'application/vnd.sqlite3' || // every SQLite spelling
-        entry.mimeType === 'application/x-mobipocket-ebook' // mobi + azw3 are both Mobipocket
+      const shared = entry.mimeType === 'text/plain' || entry.mimeType === 'image/jpeg' // jpg + jpeg
       expect({ name: entry.name, groupsOneType: shared }).toEqual({
         name: entry.name,
         groupsOneType: true,

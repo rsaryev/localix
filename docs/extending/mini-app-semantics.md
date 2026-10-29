@@ -52,9 +52,9 @@ choice with `OpponentMenu` from `@localixai/kit/opponent-menu`. Show the miss wi
 from `@localixai/kit/game-status`, over the board, with Ask again and the other opponent as its
 actions.
 
-The bundled games are the examples. Ask after the person's request has answered, with
-`decisionTurns` from `@localixai/mini-app-sdk/backend`: the route records the model as thinking and
-returns the person's move at once, and the model's move lands through the store feed.
+The games of the Localix marketplace are the examples. Ask after the person's request has answered,
+with `decisionTurns` from `@localixai/mini-app-sdk/backend`: the route records the model as thinking
+and returns the person's move at once, and the model's move lands through the store feed.
 `createTurnTable`, from the same entry point, does all of this for a game with one board per chat:
 give it the rules (who owes a turn, the position's key, how a decision is played) and it keeps the
 game, settles the opponent, wakes the agent once per position and plays the model's turns.
@@ -69,9 +69,9 @@ is retried from the same notice.
 `followCoreDeletions(consumer, handler)` reads the core's deletions the same way, read-only: a
 deleted agent, chat, project or provider connection, with its ref only (`CoreDeletion`). Use it to
 clean up what you kept about one, such as a card assigned to an agent that is gone. A renamed agent
-is not a deletion: store the agent's stable `agentId`, never its name. The Kanban mini app unassigns
-a deleted agent's cards on every board this way, listing its chat folders with
-`ctx.sessionStorage.listDataDirs()`.
+is not a deletion: store the agent's stable `agentId`, never its name. The Kanban mini app of the
+Localix marketplace unassigns a deleted agent's cards on every board this way, listing its chat
+folders with `ctx.sessionStorage.listDataDirs()`.
 
 This feed is durable and for backend consumers. To refresh an open view after a store write, use the
 store change feed instead; [Mini app synchronization](mini-app-sync.md#two-change-feeds) explains

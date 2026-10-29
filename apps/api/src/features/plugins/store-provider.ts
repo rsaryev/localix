@@ -63,11 +63,7 @@ export function createPluginStoreProvider(deps: {
     changed,
   })
 
-  /**
-   * The installs a listing shows, by listing id. A built-in plugin's source is `builtin`, never a
-   * listing's `name@marketplace`, yet it holds its name over every marketplace's copy: it is the
-   * plugin the person has under that name, so every listing of the name shows it.
-   */
+  /** The installs a listing shows, by listing id (`name@marketplace`). */
   async function installsBy(actor: StoreActor) {
     const { plugins } = await deps.service.listPlugins(actor.userId, {
       projectId: actor.projectId ?? null,
@@ -75,13 +71,7 @@ export function createPluginStoreProvider(deps: {
     const bySource = new Map<string, PluginRecord[]>()
     for (const plugin of plugins)
       bySource.set(plugin.source, [...(bySource.get(plugin.source) ?? []), plugin])
-    const builtin = new Map(plugins.filter((p) => p.builtin).map((p) => [p.name, p]))
-    return {
-      get: (id: string): PluginRecord[] | undefined => {
-        const own = builtin.get(id.slice(0, id.lastIndexOf('@')))
-        return own ? [own] : bySource.get(id)
-      },
-    }
+    return { get: (id: string): PluginRecord[] | undefined => bySource.get(id) }
   }
 
   function stateOf(

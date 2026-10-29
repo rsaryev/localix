@@ -1,57 +1,38 @@
-import { afterEach, describe, expect, test } from 'bun:test'
+import { describe, expect, test } from 'bun:test'
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
 
-import { __resetBundledSyncCache } from './bundled-install'
+import { hostedMiniAppCatalog } from '../../testing/mini-app-catalog'
 import { createRecommendedInstalls } from './recommended'
-import { createMiniAppStore, type MiniAppStoreSource } from './store'
+import { createMiniAppStore } from './store'
 
 const root = tempDirPerTest('mini-app-recommended-')
-const OFFLINE = 'https://catalog.example.test/mini-app-catalog.json'
 
-/** The staged first-party folder: four apps, three of them recommended. */
-async function firstParty() {
-  const source = join(root(), 'staged')
-  for (const name of ['habits', 'documents', 'kanban', 'chess']) {
-    await fs.mkdir(join(source, name), { recursive: true })
-    await fs.writeFile(
-      join(source, name, 'mini-app.json'),
-      JSON.stringify({ name, version: '1.0.0', description: name }),
-    )
-  }
-  await fs.writeFile(
-    join(source, 'catalog-picks.json'),
-    JSON.stringify({ recommended: ['habits', 'documents', 'kanban'] }),
-  )
-  return source
-}
-
+/** The Localix catalog: four apps, three of them recommended. */
 async function setup() {
   const home = join(root(), 'home')
-  const source = await firstParty()
+  const catalog = hostedMiniAppCatalog(
+    ['habits', 'documents', 'kanban', 'chess'].map((name) => ({
+      name,
+      recommended: name !== 'chess',
+    })),
+  )
   const net = { online: true }
-  const local: MiniAppStoreSource = {
-    kind: 'local',
-    root: source,
-    publisher: { name: 'Localix', verified: true },
-    vouches: true,
-  }
   const store = createMiniAppStore({
     homeDir: home,
-    sources: () => (net.online ? [local] : [{ kind: 'catalog', url: OFFLINE, vouches: true }]),
+    sources: () => [{ kind: 'catalog', url: catalog.url, vouches: true }],
     onInstalled: async () => {},
-    fetchImpl: (async () => {
-      throw new Error('offline')
-    }) as unknown as typeof fetch,
+    fetchImpl: ((input, init) => {
+      if (!net.online) throw new Error('offline')
+      return catalog.fetchImpl(input, init)
+    }) as typeof fetch,
   })
   const pass = () => createRecommendedInstalls({ store, homeDir: home, userId: 'u1' }).run()
   const installed = async () =>
     (await store.list()).entries.filter((entry) => entry.installed).map((entry) => entry.name)
   return { home, net, store, pass, installed }
 }
-
-afterEach(() => __resetBundledSyncCache())
 
 describe('recommended mini apps on a new installation', () => {
   test('are installed on the first start without asking, and only once', async () => {

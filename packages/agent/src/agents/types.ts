@@ -29,10 +29,10 @@ export type {
   AgentTool,
   AgentToolPresentation,
   AgentToolSealing,
-  AgentToolCategory,
   ToolSurface,
   ToolAvailability,
 } from './tool-definition'
+export type { AgentToolCategory, ToolRole } from './tool-tags'
 export type { AgentToolUpdateCallback, AgentToolResult } from './tool-result'
 export type { GuardVerdict, ToolGuardContext, ToolStreamGuard } from './tool-guards'
 export type {

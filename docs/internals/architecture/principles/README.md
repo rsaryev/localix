@@ -23,9 +23,8 @@ Read [the architecture overview](../../architecture.md) for the system and
 
 ## Related checks
 
-- `bun run check:architecture` runs `scripts/check-architecture.mjs`. Its mini app rules are
-  `miniAppSdkLayerProblem`, `miniAppHostBoundaryProblem` and `miniAppWorkspaceImportProblem`; its
-  kit rule is `kitBoundaryProblem`.
+- `bun run check:architecture` runs `scripts/check-architecture.mjs`. Its kit rule is
+  `kitBoundaryProblem`.
 - `packages/oxlint-rules` holds per-node rules for the visual system. None of its rules concerns
   module boundaries today.
 - `scripts/architecture-rules.test.ts` (A1–A7) and `scripts/architecture-flow-rules.test.ts` (A8,

@@ -1,9 +1,8 @@
 /**
  * Turning an untrusted key into a filename — once, for every store in the repo.
  *
- * WHY IT LIVES IN THE SDK. Its callers are five host stores AND five mini app stores, and a mini
- * app cannot import `apps/api`: the boundary contract (`plugin-boundary-contract.test.ts`) exists
- * to stop exactly that, and every mini app store was reaching across it by relative path to inject
+ * WHY IT LIVES IN THE SDK. Its callers are host stores AND mini app stores, and a mini app cannot
+ * import `apps/api`: mini app stores used to reach across that boundary by relative path to inject
  * this function into `createUserEntityStore`. A security primitive smuggled over a boundary that
  * a test is meant to enforce is the worst of both worlds — the rule is still single-owner, but
  * nothing about the arrangement says so.

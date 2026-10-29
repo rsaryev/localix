@@ -10,14 +10,14 @@ import type { DiscoveredPlugin } from './discovery-types'
 export function pluginIdOf(
   plugin: Pick<
     DiscoveredPlugin,
-    'manifest' | 'cachedInstall' | 'claudeCodeInstall' | 'inPlaceInstall' | 'builtin'
+    'manifest' | 'cachedInstall' | 'claudeCodeInstall' | 'inPlaceInstall'
   >,
 ): string {
   return (
     plugin.cachedInstall?.id ??
     plugin.claudeCodeInstall ??
     plugin.inPlaceInstall ??
-    (plugin.builtin ? `${plugin.manifest.name}@builtin` : plugin.manifest.name)
+    plugin.manifest.name
   )
 }
 

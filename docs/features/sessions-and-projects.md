@@ -45,8 +45,8 @@ the agent, not the project. The working directory is a third question, which is 
 the **Default** project share one project and not one folder. Projects receive canonical IDs such as
 `PRJ-1`; sessions receive canonical IDs such as `LOCALIX-1`. Parent links define the session tree,
 and the root session anchors a hierarchy's directory: an explicitly spawned child and a fork work
-beside the chat that spawned them. A chat's [Kanban](task-board.md) board is mini app data of that
-chat: its cards create no child session, and deleting the chat deletes the board.
+beside the chat that spawned them. A chat's board in a task-board mini app such as Kanban is mini
+app data of that chat: its cards create no child session, and deleting the chat deletes the board.
 
 The breadcrumb renders the active scope, root session, and descendant path. The session switcher
 opens with `Cmd/Ctrl+K`; the project switcher opens with `Cmd/Ctrl+Alt+P`.

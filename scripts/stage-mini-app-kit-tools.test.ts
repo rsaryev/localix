@@ -27,4 +27,23 @@ describe('the kit input list', () => {
       .filter((file) => !file.includes('node_modules/') && !covered(file))
     expect(uncovered).toEqual([])
   })
+
+  // The declarations script was missing from the list: a fix to how kit components are declared
+  // kept serving the cached kit, and its test failed against the fix.
+  test('names every staging script the kit is staged by', async () => {
+    const built = await Bun.build({
+      entrypoints: [join(root, 'scripts/stage-mini-app-kit.mjs')],
+      target: 'bun',
+      format: 'esm',
+      write: false,
+      metafile: true,
+      packages: 'external',
+    })
+    expect(built.success).toBe(true)
+    const scripts = Object.keys(built.metafile?.inputs ?? {})
+      .map((file) => relative(root, resolve(file)))
+      .filter((file) => file.startsWith('scripts/'))
+    expect(scripts.length).toBeGreaterThan(3)
+    expect(scripts.filter((file) => !MINI_APP_KIT_INPUTS.includes(file))).toEqual([])
+  })
 })

@@ -22,9 +22,8 @@ Localix uses Bun 1.4.4 and Turborepo. [CONTRIBUTING.md](CONTRIBUTING.md) documen
 ## Project Structure
 
 `apps/` holds the Hono API, React/Vite UI, Tauri shell, and landing website. Shared libraries live
-in `packages/`, mini apps in `mini-apps/`, plugins in `plugins/`, automation in `scripts/`,
-configuration in `config/`, docs in `docs/`, and media in `assets/`. Keep feature code within its
-owner; use typed ports for cross-feature behavior.
+in `packages/`, automation in `scripts/`, configuration in `config/`, docs in `docs/`, and media in
+`assets/`. Keep feature code within its owner; use typed ports for cross-feature behavior.
 
 ## Plugins and mini apps
 
@@ -32,6 +31,13 @@ A **plugin** is the Claude Code format (`.claude-plugin/plugin.json`); a **mini 
 own (`mini-app.json`: screens, backend, agent tools). Neither imports the other, and nothing about
 screens, backends or the mini app SDK is called "plugin". Rules X1–X5:
 [plugins and mini apps](docs/internals/plugins-and-mini-apps.md).
+
+This repository holds neither. Localix's own plugins and mini apps live in the
+[Localix marketplace](https://github.com/rsaryev/localix-marketplace) and install, update and are
+trusted through the same flow as anyone's. The core knows only that repository, as a trusted default
+source (`LOCALIX_MARKETPLACE` in `packages/store`), and names none of its plugins or mini apps: a
+feature that needs one asks for a capability (a tool role, a resource provider). What the core
+publishes for them is the mini app SDK and the mini app kit each release ships.
 
 ## Architecture
 
@@ -77,12 +83,11 @@ skills.
 
 Product code stays under **500,000 lines**, counted by `bun run check:size` (CI fails above it).
 Comments and blank lines do not count, so explaining code costs nothing. Only the host counts:
-tests, test helpers, generated and vendored code, the bundled mini apps and plugins in `plugins/`,
-and the tooling that builds, checks and tests the product (`scripts/`, `apps/*/scripts`, the UI's
-build hooks in `apps/ui/build`, lint rules, config files) do not. The limit is in
-`config/code-budget.json` and is not raised. Keep under it by deleting dead code, duplication and
-code another package already provides; a change that adds code makes room for it. Never compress
-code or strip comments to fit.
+tests, test helpers, generated and vendored code, and the tooling that builds, checks and tests the
+product (`scripts/`, `apps/*/scripts`, the UI's build hooks in `apps/ui/build`, lint rules, config
+files) do not. The limit is in `config/code-budget.json` and is not raised. Keep under it by
+deleting dead code, duplication and code another package already provides; a change that adds code
+makes room for it. Never compress code or strip comments to fit.
 
 ## Tests first (TDD)
 

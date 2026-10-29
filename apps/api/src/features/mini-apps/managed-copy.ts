@@ -7,12 +7,17 @@ import { MINI_APP_UI_ARTIFACT_DIR } from '@localixai/mini-app-sdk/ui-artifact'
 import { retainPreviousHashedFiles } from './ui-retained-files'
 
 /**
- * One managed copy of a bundled mini app under `~/.localix/mini-apps/<name>`: how it is installed,
- * how the copy it replaces is kept alive, and when the kept copies are swept. `bundled-install.ts`
- * decides WHICH mini apps need a copy; this module owns the filesystem act.
+ * How an app is put under `~/.localix/mini-apps/<name>`: a complete copy swapped in with one
+ * rename, the copy it replaces kept alive until the next start, and those kept copies swept. The
+ * store (`store-install.ts`) and a local install (`local-install.ts`) decide WHICH app; this
+ * module owns the filesystem act.
  */
 
-/** Marks a directory as a first-party copy this process may refresh; user installs carry none. */
+/**
+ * Marks a directory as a staged first-party copy that an earlier Localix build installed. Nothing
+ * writes it any more; it is still read so such a copy is recognized as ours and moves to the
+ * catalog's version, not mistaken for a folder of the person's own.
+ */
 export const MARKER_FILE = '.localix-managed.json'
 export const MARKER_KIND = 'localix-bundled-mini-app'
 /** Retired copies: the `.sync-` prefix keeps them invisible to discovery like every sync artifact. */
@@ -38,29 +43,13 @@ export async function readManagedFingerprint(dir: string): Promise<string | null
 }
 
 /**
- * Install `sourceDir` as the managed copy at `installDir`, atomically: a complete temp copy,
- * then one rename. The previous copy is RETIRED (renamed aside), not deleted. Its backend
- * bundle may be the module this process is executing right now, and the development runtime
- * is `bun --watch`, which reloads the whole API the moment a file it imported is unlinked
- * (measured: rename-aside leaves it alone; `rm` of the renamed tree reloads). That reload is
- * what killed an agent turn mid-`bash` after a mini app was re-staged. Retired trees are swept by
- * {@link pruneRetiredManagedCopies} on the next process start, before anything is imported.
- */
-export async function installManagedCopy(
-  sourceDir: string,
-  installDir: string,
-  fingerprint: string,
-): Promise<void> {
-  await installCopy(sourceDir, installDir, {
-    file: MARKER_FILE,
-    contents: { kind: MARKER_KIND, fingerprint },
-  })
-}
-
-/**
- * Install `sourceDir` at `installDir` the way {@link installManagedCopy} does — a complete temp
- * copy, one rename, the previous copy retired — with `marker` written beside it: the record of
- * where the copy came from (a staged first-party app, a catalog's archive).
+ * Install `sourceDir` at `installDir`, atomically: a complete temp copy, then one rename. The
+ * previous copy is RETIRED (renamed aside), not deleted. Its backend bundle may be the module this
+ * process is executing right now, and the development runtime is `bun --watch`, which reloads the
+ * whole API the moment a file it imported is unlinked (measured: rename-aside leaves it alone;
+ * `rm` of the renamed tree reloads). Retired trees are swept by {@link pruneRetiredManagedCopies}
+ * on the first discovery of the next process, before anything is imported. `marker` is written
+ * beside the copy: the record of where it came from (a catalog's archive, a local folder).
  */
 export async function installCopy(
   sourceDir: string,
@@ -106,10 +95,9 @@ export async function installCopy(
 }
 
 /**
- * Retire a managed copy whose mini app no longer ships: renamed aside exactly like a replaced copy
- * (its backend may be loaded right now, and deleting an imported file restarts `bun --watch`), and
- * swept by {@link pruneRetiredManagedCopies} on the next start. Without this a removed bundled
- * mini app lingered in `~/.localix/mini-apps` forever and was rediscovered on every boot.
+ * Retire a copy: renamed aside exactly like a replaced one (its backend may be loaded right now,
+ * and deleting an imported file restarts `bun --watch`), and swept by
+ * {@link pruneRetiredManagedCopies} on the next start. Used when the person removes the app.
  */
 export async function retireManagedCopy(installDir: string): Promise<void> {
   const retiredDir = join(
@@ -121,27 +109,9 @@ export async function retireManagedCopy(installDir: string): Promise<void> {
 }
 
 /**
- * Retire every managed copy (ours, by `isManaged`) under `installRoot` whose mini app is not in
- * `shipped`. The caller proves `shipped` complete — a staged marker AND the source directory
- * agree — because a mini app mid-restage must never be unloaded. A user's own mini app carries no
- * marker and is never touched.
- */
-export async function retireUnshippedManagedCopies(
-  installRoot: string,
-  shipped: ReadonlySet<string>,
-  isManaged: (dir: string) => Promise<boolean>,
-): Promise<void> {
-  for (const entry of await fs.readdir(installRoot, { withFileTypes: true }).catch(() => [])) {
-    if (!entry.isDirectory() || entry.name.startsWith('.') || shipped.has(entry.name)) continue
-    const installDir = join(installRoot, entry.name)
-    if (await isManaged(installDir)) await retireManagedCopy(installDir)
-  }
-}
-
-/**
- * Delete the managed copies earlier syncs retired. Safe only while nothing from them is
- * loaded, so the first sync of a process runs it before any mini app module is imported; a
- * later sync in the same process leaves them alone (see {@link installManagedCopy}).
+ * Delete the copies earlier installs retired. Safe only while nothing from them is loaded, so the
+ * first discovery of a process runs it before any mini app module is imported; a later install in
+ * the same process leaves them alone (see {@link installCopy}).
  */
 export async function pruneRetiredManagedCopies(installRoot: string): Promise<number> {
   let entries: string[]

@@ -19,7 +19,7 @@ configured: features that can use a decision model start using it as soon as the
 | Where                                                                | What the model decides                                                   | Without one                   |
 | -------------------------------------------------------------------- | ------------------------------------------------------------------------ | ----------------------------- |
 | [Browser](workspace.md#the-browser)                                  | The next click or field during a `goal` run, from the agent's own values | The agent uses ordinary steps |
-| [Games](games.md)                                                    | The opponent's move, when the table plays the decision model             | The chat agent plays          |
+| Board games from the Localix marketplace                             | The opponent's move, when the table plays the decision model             | The chat agent plays          |
 | [Mini apps](../extending/mini-app-semantics.md#ask-a-decision-model) | Small choices a mini app makes itself, through `ctx.host.decisions`      | The mini app's own fallback   |
 
 Every caller keeps its own fallback. A decision that comes back late, refused, or with no connection

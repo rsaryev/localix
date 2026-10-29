@@ -130,3 +130,47 @@ test('the slide names the apps that install on their own, and its pick never lea
     await view.unmount()
   }
 })
+
+// The core names no mini app (X4): the slide's three cards are the Store's own apps, whatever they
+// are; a Store with nothing to offer draws blank cards rather than an app it may not have.
+test('the slide draws the Store’s own apps, and blank cards when it has none', async () => {
+  const React = await import('react')
+  const { createRoot } = await import('react-dom/client')
+  const { SWRConfig } = await import('swr')
+  const { storeApi } = await import('@/shared/api/store-client')
+  const { MiniAppsScene } = await import('./MiniAppsScene')
+  const render = async (listings: typeof LISTINGS) => {
+    const spy = spyOn(storeApi, 'page').mockImplementation(async (query) =>
+      answer(listings, query ?? {}),
+    )
+    const host = document.createElement('div')
+    document.body.append(host)
+    const root = createRoot(host)
+    await React.act(async () => {
+      root.render(
+        <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>
+          <MiniAppsScene />
+        </SWRConfig>,
+      )
+      await settle()
+    })
+    const cards = [...host.querySelectorAll<HTMLElement>('.wt-mini-app-card')]
+    const seen = cards.map((card) => card.textContent ?? '')
+    await React.act(async () => root.unmount())
+    host.remove()
+    spy.mockRestore()
+    return seen
+  }
+  const cards = await render(LISTINGS)
+  expect(cards).toHaveLength(3)
+  expect(cards[0]).toContain('Git')
+  expect(cards[0]).toContain('Installing')
+  expect(cards[1]).toContain('Documents')
+  expect(cards[1]).toContain('Installed')
+  expect(cards[2]).toContain('Kanban')
+  expect(cards.join(' ')).not.toContain('notes')
+
+  const blank = await render([])
+  expect(blank).toHaveLength(3)
+  expect(blank.join('')).toBe('')
+})

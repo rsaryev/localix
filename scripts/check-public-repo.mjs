@@ -4,7 +4,7 @@ import { access, readFile, readdir } from 'node:fs/promises'
 import { dirname, join, resolve, sep } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { repoRoot } from './lib/paths.mjs'
-import { BUNDLED_DIRS } from './lib/bundled-roots.mjs'
+import { LOCALIX_MARKETPLACE } from '../packages/store/src/default-sources.ts'
 
 const root = repoRoot()
 const requiredFiles = [
@@ -54,7 +54,7 @@ const rootPackage = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'
 assert.equal(rootPackage.private, true, 'The monorepo root must never be publishable to npm')
 
 const workspacePackages = []
-for (const directory of ['apps', 'packages', ...BUNDLED_DIRS]) {
+for (const directory of ['apps', 'packages']) {
   for (const entry of await readdir(join(root, directory), { withFileTypes: true })) {
     if (!entry.isDirectory()) continue
     const packagePath = join(root, directory, entry.name, 'package.json')
@@ -153,11 +153,13 @@ const repositoryFiles = repositoryFilesResult.stdout
   .split('\0')
   .filter((file) => file && existsSync(join(root, file)))
 
-// `localix` is the only repository in the organisation that a reader can open. Naming the
-// retired ones here to blocklist them would republish the very names the check exists to
-// retire, and would miss the next one; allowlisting the canonical repository instead needs
-// no such list and fails closed on any name that has not been made public.
+// `localix` and the Localix marketplace (the one source the core trusts by name) are the only
+// repositories in the organisation that a reader can open. Naming the retired ones here to
+// blocklist them would republish the very names the check exists to retire, and would miss the
+// next one; allowlisting the public ones instead needs no such list and fails closed on any name
+// that has not been made public.
 const CANONICAL_REPOSITORY = 'localix'
+const PUBLIC_REPOSITORIES = new Set([CANONICAL_REPOSITORY, LOCALIX_MARKETPLACE.repo.split('/')[1]])
 const stalePublicRepositoryReferences = []
 const publicReferenceFiles = repositoryFiles.filter(
   (file) =>
@@ -165,7 +167,6 @@ const publicReferenceFiles = repositoryFiles.filter(
     file.startsWith('.github/') ||
     file.startsWith('apps/landing/') ||
     file.startsWith('docs/') ||
-    BUNDLED_DIRS.some((dir) => file.startsWith(`${dir}/`)) ||
     file.endsWith('/package.json'),
 )
 for (const file of publicReferenceFiles) {
@@ -177,7 +178,7 @@ for (const file of publicReferenceFiles) {
     )) {
       // `repository.url` clones carry a `.git` suffix; it names the same repository.
       const repository = match[2].replace(/\.git$/u, '')
-      if (repository === CANONICAL_REPOSITORY) continue
+      if (PUBLIC_REPOSITORIES.has(repository)) continue
       stalePublicRepositoryReferences.push(`${file}:${index + 1} -> ${match[1]}/${repository}`)
     }
   })

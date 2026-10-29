@@ -17,7 +17,6 @@ import { createPluginService } from './service'
  */
 
 const previousEnv = {
-  LOCALIX_BUNDLED_PLUGINS_DIR: process.env.LOCALIX_BUNDLED_PLUGINS_DIR,
   CLAUDE_CONFIG_DIR: process.env.CLAUDE_CONFIG_DIR,
 }
 let root: string
@@ -50,8 +49,7 @@ beforeAll(async () => {
     'marketplace/plugins/typescript-lsp/LICENSE': 'MIT',
     'marketplace/plugins/typescript-lsp/README.md': '# typescript-lsp',
   })
-  writeTree(root, { 'home/.keep': '', 'bundled/.keep': '', 'claude/.keep': '' })
-  process.env.LOCALIX_BUNDLED_PLUGINS_DIR = join(root, 'bundled')
+  writeTree(root, { 'home/.keep': '', 'claude/.keep': '' })
   process.env.CLAUDE_CONFIG_DIR = join(root, 'claude')
   db = createDatabase()
   await migrateToLatest(db)

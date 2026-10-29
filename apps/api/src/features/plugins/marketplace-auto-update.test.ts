@@ -28,6 +28,18 @@ describe('which marketplaces auto-update', () => {
 
   test('a marketplace named localix from another source is not the official one', () => {
     expect(isOfficialMarketplace('localix', thirdParty)).toBe(false)
+    // The app's own repository is not the marketplace: Localix's plugins and mini apps live in a
+    // repository of their own, and the core knows them only by that address.
+    const appRepository = {
+      ...thirdParty,
+      source: { source: 'github' as const, repo: 'rsaryev/localix' },
+    }
+    expect(isOfficialMarketplace('localix', appRepository)).toBe(false)
+    expect(
+      isOfficialMarketplace('localix', {
+        source: { source: 'git', url: 'https://github.com/rsaryev/localix-marketplace.git' },
+      }),
+    ).toBe(true)
     expect(marketplaceAutoUpdate('localix', thirdParty)).toBe(false)
   })
 

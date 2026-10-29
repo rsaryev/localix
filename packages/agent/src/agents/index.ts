@@ -97,6 +97,7 @@ export type {
   BeforeToolCallResult,
   ToolGateProvenance,
   ToolAvailability,
+  ToolRole,
   ToolSurface,
   RunShape,
   ExposureLevel,

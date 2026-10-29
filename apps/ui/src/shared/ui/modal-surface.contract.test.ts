@@ -19,7 +19,7 @@ import {
  * here.
  */
 const REPO_ROOT = new URL('../../../../../', import.meta.url).pathname
-const hostSources = () => tsxSourcesUnder(REPO_ROOT, ['apps/ui/src', 'mini-apps'])
+const hostSources = () => tsxSourcesUnder(REPO_ROOT, ['apps/ui/src'])
 
 describe('modal surface regions', () => {
   test('every current and future standard dialog declares its one scroll-owning body', async () => {

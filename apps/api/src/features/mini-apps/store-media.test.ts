@@ -1,10 +1,8 @@
-import { afterEach, describe, expect, test } from 'bun:test'
-import { promises as fs } from 'node:fs'
+import { describe, expect, test } from 'bun:test'
 import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
 
 import { packMiniAppFiles } from './archive'
-import { __resetBundledSyncCache } from './bundled-install'
 import { createMiniAppStore, type MiniAppStoreSource } from './store'
 
 const root = tempDirPerTest('mini-app-store-media-')
@@ -88,21 +86,6 @@ function storeOver(sources: MiniAppStoreSource[], fetchImpl?: typeof fetch) {
   })
 }
 
-async function localApp(source: string, manifest: Record<string, unknown>) {
-  const dir = join(source, 'notes')
-  await fs.mkdir(join(dir, 'screenshots'), { recursive: true })
-  await fs.writeFile(
-    join(dir, 'mini-app.json'),
-    JSON.stringify({ name: 'notes', version: '0.2.0', description: 'Notes', ...manifest }),
-  )
-  await fs.writeFile(join(dir, 'icon.svg'), ICON)
-  await fs.writeFile(join(dir, 'screenshots', 'main.png'), png(1600, 1000))
-  await fs.writeFile(join(dir, 'README.md'), '# Notes')
-  return dir
-}
-
-afterEach(() => __resetBundledSyncCache())
-
 describe('the store lists each app with its icon and tags as host addresses', () => {
   test('a catalog app: its media through the host, never the catalog address', async () => {
     const { fetchImpl } = await hosted()
@@ -142,17 +125,6 @@ describe('store media', () => {
     await expect(store.media('chess', 'screenshot', 0)).rejects.toThrow()
     await expect(store.media('chess', 'screenshot', 4)).rejects.toThrow(/no screenshot/i)
   })
-
-  test('a local app is read from its own folder, and a path out of it is not served', async () => {
-    const source = join(root(), 'staged')
-    await localApp(source, { icon: './icon.svg', screenshots: [{ path: '../../secret.png' }] })
-    const store = storeOver([
-      { kind: 'local', root: source, publisher: { name: 'Localix', verified: true } },
-    ])
-    expect((await store.list()).entries[0]?.icon).toBe('/rpc/mini-apps/store/media/notes/icon')
-    expect(new TextDecoder().decode((await store.media('notes', 'icon')).bytes)).toBe(ICON)
-    await expect(store.media('notes', 'screenshot', 0)).rejects.toThrow()
-  })
 })
 
 describe('the detail of one app', () => {
@@ -178,25 +150,6 @@ describe('the detail of one app', () => {
       surfaces: ['agent', 'workbench'],
       commands: 2,
     })
-  })
-
-  test('a local app reads its README and manifest from its folder', async () => {
-    const source = join(root(), 'staged')
-    await localApp(source, {
-      icon: './icon.svg',
-      screenshots: [{ path: './screenshots/main.png', caption: 'Main' }],
-      license: 'MIT',
-      commands: { add: { prompt: 'Add a note' } },
-    })
-    const store = storeOver([
-      { kind: 'local', root: source, publisher: { name: 'Localix', verified: true } },
-    ])
-    const detail = await store.detail('notes')
-    expect(detail.readme).toBe('# Notes')
-    expect(detail.screenshots).toEqual([
-      { url: '/rpc/mini-apps/store/media/notes/screenshot/0', caption: 'Main' },
-    ])
-    expect(detail.details).toMatchObject({ version: '0.2.0', license: 'MIT', commands: 1 })
     await expect(store.detail('ghost')).rejects.toThrow(/ghost/)
   })
 })

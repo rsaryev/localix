@@ -3,21 +3,13 @@
   "ignoreWorkspaces": ["vendor/**"],
   "ignoreExportsUsedInFile": true,
   "workspaces": {
-    ".": {
-      "entry": [
-        "mini-apps/*/tools/**/*.mjs",
-        "mini-apps/*/hooks/**/*.mjs",
-        "mini-apps/*/arg-sources/**/*.ts"
-      ],
-      "project": ["mini-apps/**/*.{ts,mjs}"]
-    },
     "scripts": {
       "entry": [
         "*.mjs",
         "*.ts",
         "lib/wait.mjs",
         "cc-parity/run.mjs",
-        "screenshots/{audit,fixture-service,mcp-prompts-server,publish,run,runtime,scripted-provider,seed,workbench-coverage}.mjs",
+        "screenshots/{audit,fixture-service,mcp-prompts-server,publish,run,runtime,scripted-provider,seed}.mjs",
         "screenshots/playwright.config.mjs",
         "screenshots/*.pw.mjs",
         "**/*.test.{ts,mjs}"
@@ -68,33 +60,6 @@
     },
     "apps/desktop-tauri": {
       "entry": ["scripts/**/*.test.ts", "scripts/check-*.mjs"]
-    },
-    "mini-apps/*": {
-      "entry": [
-        "ui/register.tsx",
-        "backend/index.ts",
-        "arg-sources/**/*.ts",
-        "tools/**/*.mjs",
-        "hooks/**/*.mjs",
-        "**/*.test.{ts,tsx}"
-      ],
-      "project": ["**/*.{ts,tsx}"]
-    },
-    "mini-apps/devops": {
-      "entry": [
-        "ui/register.tsx",
-        "backend/index.ts",
-        "arg-sources/**/*.ts",
-        "tools/**/*.mjs",
-        "hooks/**/*.mjs",
-        "**/*.test.{ts,tsx}"
-      ],
-      "project": ["**/*.{ts,tsx}"],
-      "ignoreDependencies": ["@happy-dom/global-registrator", "radix-ui"]
-    },
-    "mini-apps/template": {
-      "entry": ["backend/index.ts", "ui/register.tsx", "preview/*.{ts,tsx}", "**/*.test.{ts,tsx}"],
-      "project": ["**/*.{ts,tsx}"]
     },
     "packages/*": {
       "entry": ["src/index.ts", "src/**/*.test.{ts,tsx,mjs}"]

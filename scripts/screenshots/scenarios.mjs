@@ -1,13 +1,5 @@
 export const button = (page, name) => page.getByRole('button', { name, exact: true })
 
-export async function openTool(page, title) {
-  await button(page, 'All tools').click()
-  await page.getByText(title, { exact: true }).last().click()
-  // Opening a workbench creates the left group; give the feature the whole workspace.
-  const maximize = button(page, 'Maximize panel')
-  if (await maximize.count()) await maximize.first().click()
-}
-
 async function editor(page) {
   await button(page, 'Files').click()
   const sourceFolder = page.getByRole('treeitem').filter({ hasText: /^src$/ })
@@ -52,8 +44,6 @@ export async function compose(page, scenario) {
     return (await import('./agent-management.mjs')).composeAgentManagement(page)
   if (scenario === 'agent')
     return (await import('./agent-management.mjs')).composeAgentProfile(page)
-  if (['kanban-board', 'kanban-conversation'].includes(scenario))
-    return (await import('./kanban-workbenches.mjs')).composeKanban(page, scenario)
   if (scenario === 'visual-feedback')
     return (await import('./visual-feedback.mjs')).composeVisualFeedback(page)
   if (scenario === 'session-window-drag')
@@ -76,21 +66,8 @@ export async function compose(page, scenario) {
     return (await import('./store.mjs')).composeStore(page, scenario)
   if (['local-models-settings', 'semantic-search'].includes(scenario))
     return (await import('./local-models.mjs')).composeLocalModels(page, scenario)
-  if (['trading', 'system-overview', 'kubernetes'].includes(scenario))
-    return (await import('./platform-views.mjs')).composePlatformViews(page, scenario)
-  if (
-    ['game-2048', 'chess', 'checkers', 'battleship', 'tic-tac-toe', 'rock-paper-scissors'].includes(
-      scenario,
-    )
-  )
-    return (await import('./game-workbenches.mjs')).composeGame(page, scenario)
-  if (['code-graph', 'git', 'learning'].includes(scenario))
-    return (await import('./developer-workbenches.mjs')).composeDeveloper(page, scenario)
   if (['external-terminal'].includes(scenario))
     return (await import('./external-workbench.mjs')).composeExternal(page, scenario)
-  if (['api-client', 'documents', 'reader'].includes(scenario)) {
-    return (await import('./content-workbenches.mjs')).composeContent(page, scenario)
-  }
   if (scenario === 'browser-preview') {
     await button(page, 'Browser').click()
     const address = page.getByRole('combobox', { name: 'Browser address', exact: true })
@@ -106,18 +83,6 @@ export async function compose(page, scenario) {
       await page.keyboard.press('F1')
       await page.getByRole('dialog').getByRole('combobox').fill('Toggle sidebar')
       await page.getByRole('option', { name: /Toggle sidebar/ }).click()
-    }
-  } else if (scenario === 'resume' || scenario === 'resume-library') {
-    await openTool(page, 'Resumes')
-    await page.getByText('Product engineer — demo', { exact: true }).waitFor()
-    if (scenario === 'resume') {
-      await page.getByText('Product engineer — demo', { exact: true }).click()
-      await page.getByText('Loading pages…', { exact: true }).waitFor({ state: 'hidden' })
-      await page.getByRole('document', { name: 'Page 1', exact: true }).waitFor()
-      await page
-        .getByRole('region', { name: 'Resume PDF preview', exact: true })
-        .locator('canvas')
-        .waitFor()
     }
   } else if (scenario === 'catalog') {
     await button(page, 'All tools').click()
@@ -140,30 +105,6 @@ export async function compose(page, scenario) {
   } else if (scenario === 'palette') {
     await page.keyboard.press('F1')
     await page.getByRole('dialog').getByRole('combobox').fill('terminal')
-  } else if (scenario === 'database') {
-    await openTool(page, 'Database')
-    await button(page, 'New query console for Release Studio').click()
-    await page.locator('.monaco-editor').waitFor({ state: 'visible' })
-    await page.locator('.monaco-editor').click({ position: { x: 150, y: 30 } })
-    await page.keyboard.press('Meta+A')
-    await page.keyboard.insertText('SELECT title, owner, status\nFROM release_checks\nORDER BY id;')
-    await button(page, 'Run').click()
-    await page.getByText('Write release notes', { exact: true }).waitFor()
-  } else if (scenario === 'answer-board') {
-    await openTool(page, 'Project Space')
-    await page.getByRole('button', { name: /Fit everything/ }).click()
-  } else if (scenario === 'diagram-board') {
-    await openTool(page, 'Project Space')
-    await page.getByRole('button', { name: /Fit everything/ }).click()
-  } else if (scenario === 'containers') {
-    await openTool(page, 'DevOps')
-    await page.getByText('Containers', { exact: true }).first().click()
-    await page.getByPlaceholder('Filter containers…').fill('localix-capture-preview')
-    await page.getByText('localix-capture-preview', { exact: true }).dblclick()
-    await page
-      .getByText(/Configuration complete; ready for start up/)
-      .first()
-      .waitFor()
   } else if (scenario === 'first-run') {
     await page.getByRole('region', { name: 'Workspace tips', exact: true }).waitFor()
   } else if (scenario === 'terminal-error') {

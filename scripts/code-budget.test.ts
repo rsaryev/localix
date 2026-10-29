@@ -40,12 +40,11 @@ describe('budgetFiles', () => {
 })
 
 describe('the recorded budget', () => {
-  test('counts the host, not the bundled mini apps and plugins or the tooling that builds, checks and tests it', () => {
+  test('counts the host, not the tooling that builds, checks and tests it', () => {
     const files = [
       'apps/api/src/index.ts',
       'apps/ui/src/app/main.tsx',
       'packages/kit/src/controls/button.tsx',
-      'mini-apps/chess/backend/routes.ts',
       'apps/desktop-tauri/src-tauri/src/main.rs',
       'scripts/coverage.mjs',
       'scripts/check-architecture.mjs',
@@ -74,7 +73,7 @@ describe('measureBudget', () => {
     ({
       'apps/api/src/a.ts': 'export const a = 1\n// note\nexport const b = 2\n',
       'apps/ui/src/B.tsx': 'export const B = () => <div />\n',
-      'mini-apps/chess/backend/c.ts': 'export const c = 1\n',
+      'packages/kit/src/c.ts': 'export const c = 1\n',
     })[file] ?? ''
 
   test('within the limit it passes and says how much room is left', () => {
@@ -88,7 +87,7 @@ describe('measureBudget', () => {
 
   test('over the limit it fails and names the overrun', () => {
     const result = measureBudget(
-      ['apps/api/src/a.ts', 'apps/ui/src/B.tsx', 'mini-apps/chess/backend/c.ts'],
+      ['apps/api/src/a.ts', 'apps/ui/src/B.tsx', 'packages/kit/src/c.ts'],
       read,
       3,
     )

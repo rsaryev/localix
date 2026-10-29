@@ -15,7 +15,6 @@ export async function ensureFixtureService({ root, directory = captureRoot, port
     version: 1,
     rootId: createHash('sha256').update(realRoot).digest('hex'),
   }
-  // The same marker identifies the optional nginx container mounted on this fixture directory.
   await fs.writeFile(path.join(realRoot, identityPath.slice(1)), JSON.stringify(identity))
   let existing
   if (port) {

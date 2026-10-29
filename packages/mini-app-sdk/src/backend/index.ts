@@ -285,9 +285,20 @@ export type {
   CallEffect,
   HumanInLoopController,
   ToolAvailability,
+  ToolCommandReplyOutcome,
   ToolSurface,
 } from '@localixai/agent/agents'
 export type { ToolBackedItem } from '@localixai/agent/agents/items'
+export { defineAgentTool } from '@localixai/agent/agents'
+// The host's path containment, for a mini app that serves files from a folder of its own.
+export {
+  isAtOrUnder,
+  isPathBelow,
+  isPathWithin,
+  isStrictlyUnder,
+  resolveWithin,
+  type ContainedPath,
+} from '@localixai/path-containment'
 
 export { createStoreChangeFeed, STORE_FEED_WINDOW_MS } from './store-change-feed'
 export { createJsonStoreFeed, onStoreWrite, openJsonStore } from './json-store'

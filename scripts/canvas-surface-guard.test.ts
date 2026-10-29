@@ -15,14 +15,14 @@ import { describe, expect, test } from 'bun:test'
  *     copy, whose `Handle` looks for a store context the host's `Canvas` never provided — and
  *     throws at render.
  *
- * So only the kit's canvas primitive imports the library, and no mini app or other package declares
+ * So only the kit's canvas primitive imports the library, and no other package declares
  * it. The host bundles the kit from source, so its own declaration may only repeat the kit's range
  * — two ranges are how a workspace ends up resolving two copies. The positive control at the
  * bottom plants each defect, because a scanner that reads nothing satisfies both rules too.
  */
 
 const REPO_ROOT = new URL('../', import.meta.url).pathname
-const SOURCE_ROOTS = ['apps/ui/src', 'mini-apps', 'packages'] as const
+const SOURCE_ROOTS = ['apps/ui/src', 'packages'] as const
 /** The primitive that IS the app's board, and so the only place allowed to name the library. */
 const PRIMITIVE_OWNER = 'packages/kit/src/canvas/'
 /** The one package allowed to depend on it: the kit that owns the canvas primitive. */
@@ -74,7 +74,7 @@ function sourceFiles(): string[] {
 
 function manifests(): string[] {
   const paths: string[] = []
-  for (const root of ['mini-apps', 'packages']) {
+  for (const root of ['packages']) {
     for (const path of new Bun.Glob('*/package.json').scanSync({ cwd: `${REPO_ROOT}/${root}` })) {
       paths.push(`${root}/${path}`)
     }

@@ -1,8 +1,0 @@
-[test]
-# The package-local runner does not inherit the root preload. Warm Radix with a DOM before
-# static kit imports bind its portal layout effect, as the shared UI test runner does.
-preload = [
-  "../../scripts/test-deadline.ts",
-  "../../packages/kit/test-preload.ts",
-  "../../packages/testing/src/preload/index.ts",
-]

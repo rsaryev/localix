@@ -39,7 +39,7 @@ describe('the default marketplaces on start', () => {
         'localix',
         {
           source: 'github',
-          repo: 'rsaryev/localix',
+          repo: 'rsaryev/localix-marketplace',
           sparsePaths: ['.claude-plugin', 'plugins'],
         },
       ],

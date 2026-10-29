@@ -6,13 +6,13 @@ state.
 
 ## What you can do
 
-| Symptom                               | First check                                                             | Owning guide                                                                                |
-| ------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| Source build does not open            | Read the first error from `bun run dev`                                 | [Installation](installation.md)                                                             |
-| Session will not run                  | Resolve its provider connection and model in **Settings → Diagnostics** | [Providers and models](../features/providers.md)                                            |
-| A tool is missing or denied           | Inspect the project, effective tool list, and permission summary        | [Capabilities](../features/capabilities.md)                                                 |
-| A workbench is absent                 | Check its project-scoped state in **the Store (Mini apps)**             | [Mini apps](../features/mini-apps.md)                                                       |
-| A workbench cannot reach a dependency | Test the daemon, cluster, database, or network independently            | [DevOps Workspace](../features/devops.md) and [Database workbench](../features/database.md) |
+| Symptom                               | First check                                                             | Owning guide                                       |
+| ------------------------------------- | ----------------------------------------------------------------------- | -------------------------------------------------- |
+| Source build does not open            | Read the first error from `bun run dev`                                 | [Installation](installation.md)                    |
+| Session will not run                  | Resolve its provider connection and model in **Settings → Diagnostics** | [Providers and models](../features/providers.md)   |
+| A tool is missing or denied           | Inspect the project, effective tool list, and permission summary        | [Capabilities](../features/capabilities.md)        |
+| A workbench is absent                 | Check its project-scoped state in **the Store (Mini apps)**             | [Mini apps](../features/mini-apps.md)              |
+| A workbench cannot reach a dependency | Test the daemon, cluster, database, or network independently            | The mini app's own guide, read with `MiniAppGuide` |
 
 ### Terms used in this guide
 
@@ -81,13 +81,9 @@ Open **the Store (Mini apps)** in the intended project scope, or run `/mini-app 
 that project. An inactive mini app contributes neither its gated workbench views nor its
 model-facing tools. `/mini-app enable <name>` turns one back on.
 
-For a visible workbench that cannot connect, test its external dependency separately:
-
-| Workbench | External boundary                                                       | Guide                                         |
-| --------- | ----------------------------------------------------------------------- | --------------------------------------------- |
-| DevOps    | Docker-compatible daemon, kubeconfig, cluster authentication, and RBAC  | [DevOps Workspace](../features/devops.md)     |
-| Database  | Database host, port, TLS settings, credentials, and optional SSH tunnel | [Database workbench](../features/database.md) |
-| Documents | Supported input format, parser limits, and generator output format      | [Documents](../features/documents.md)         |
+For a visible workbench that cannot connect, test its external dependency separately (a Docker
+daemon, a cluster, a database host) and read the mini app's own guide. Localix ships none of these
+workbenches; the ones from the Localix marketplace document themselves in that repository.
 
 ### Read the logs of one launch
 

@@ -51,7 +51,6 @@ const allowing = (...names: string[]): AvailabilityReader => ({
 })
 
 let dir: string
-const prevBundled = process.env.LOCALIX_BUNDLED_MINI_APPS_DIR
 const load = (
   availability: AvailabilityReader,
   extra: Partial<Parameters<typeof loadEnabledMiniApps>[0]> = {},
@@ -88,7 +87,6 @@ const tool = (name: string, extra = '') =>
 
 beforeAll(async () => {
   dir = await fs.mkdtemp(join(tmpdir(), 'mini-app-load-'))
-  process.env.LOCALIX_BUNDLED_MINI_APPS_DIR = await fs.mkdtemp(join(tmpdir(), 'mini-app-b-'))
 
   await app(
     'demo',
@@ -118,6 +116,7 @@ beforeAll(async () => {
       MINI_APP_TOOL_DESCRIPTION_MAX_CHARS + 500,
     )}", inputSchema: {}, execute: async () => ({ content: "ok" }) }]`,
   )
+  await app('boarder', {}, `export const tools = [${tool('work_items', 'roles: ["task-board"],')}]`)
   await app(
     'classer',
     {},
@@ -134,8 +133,6 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  if (prevBundled === undefined) delete process.env.LOCALIX_BUNDLED_MINI_APPS_DIR
-  else process.env.LOCALIX_BUNDLED_MINI_APPS_DIR = prevBundled
   delete globalThis.__TEST_MINI_APP_IMPORTS__
   await fs.rm(dir, { recursive: true, force: true })
 })
@@ -161,6 +158,13 @@ describe('loadEnabledMiniApps', () => {
     expect(READ_RESULT_TOOLS.has('classy_read')).toBe(false)
     await load(allowing('classer'))
     expect(READ_RESULT_TOOLS.has('classy_read')).toBe(true)
+  })
+
+  // The host finds its task board by role (board rules, Claude Code's task hooks), never by name:
+  // a role a mini app's tool declares must survive loading, or the board silently goes unseen.
+  it("keeps the roles a mini app's tool declares", async () => {
+    const loaded = await load(allowing('boarder'))
+    expect(loaded.tools.find((t) => t.name === 'work_items')?.roles).toEqual(['task-board'])
   })
 
   it('passes the session cwd to register(ctx)', async () => {

@@ -1,6 +1,6 @@
 # Desktop package and shell launcher
 
-Localix packages the UI, API, CLI shim, bundled mini apps, migrations, and Bun runtime inside one
+Localix packages the UI, API, CLI shim, the mini app kit, migrations, and Bun runtime inside one
 Tauri desktop application. Use this page to trace native builds, production startup, and the
 `localix` command installed by the desktop runtime.
 
@@ -53,16 +53,16 @@ Linux keeps its group shortcuts because Monaco uses Shift+Alt+Up/Down there. The
 
 `prepare-sidecar.mjs` creates the production resource tree before Tauri builds the native shell.
 
-| Staged input          | Packaged result                                      | Boundary                                                  |
-| --------------------- | ---------------------------------------------------- | --------------------------------------------------------- |
-| API entry             | `resources/server.js` Bun bundle, minified.          | Whitespace and syntax only: stack traces keep names.      |
-| Database migrations   | Compiled into `server.js`, with Kysely.              | No migrations folder ships beside the bundle.             |
-| Bundled mini apps     | Staged mini app tree with backends bundled.          | Backends minified as the API is; UIs without source maps. |
-| Third-party notices   | `resources/THIRD_PARTY_NOTICES/`.                    | The one copy: the embedded UI carries none.               |
-| Visual Feedback probe | `resources/visual-feedback-probe.js`.                | The probe still requires a Localix preview connection.    |
-| CLI launcher          | CLI shim plus a direct bundle of the launcher entry. | The shim is not a second native executable.               |
-| Bun runtime           | Host-triple sidecar under `binaries/`.               | Native builds cannot reuse a sidecar from another target. |
-| UI                    | `apps/ui/dist` used as Tauri `frontendDist`.         | Development loads the Vite URL instead of this directory. |
+| Staged input          | Packaged result                                         | Boundary                                                  |
+| --------------------- | ------------------------------------------------------- | --------------------------------------------------------- |
+| API entry             | `resources/server.js` Bun bundle, minified.             | Whitespace and syntax only: stack traces keep names.      |
+| Database migrations   | Compiled into `server.js`, with Kysely.                 | No migrations folder ships beside the bundle.             |
+| Mini app kit          | `resources/mini-app-kit/`, with `kit.json` at its root. | No mini app ships: the Store installs them from catalogs. |
+| Third-party notices   | `resources/THIRD_PARTY_NOTICES/`.                       | The one copy: the embedded UI carries none.               |
+| Visual Feedback probe | `resources/visual-feedback-probe.js`.                   | The probe still requires a Localix preview connection.    |
+| CLI launcher          | CLI shim plus a direct bundle of the launcher entry.    | The shim is not a second native executable.               |
+| Bun runtime           | Host-triple sidecar under `binaries/`.                  | Native builds cannot reuse a sidecar from another target. |
+| UI                    | `apps/ui/dist` used as Tauri `frontendDist`.            | Development loads the Vite URL instead of this directory. |
 
 The default Tauri build has no updater: its config carries no key or endpoint, and `build.rs` does
 not compile the plugin in. The release command (`run-tauri.mjs --release`) adds an overlay generated

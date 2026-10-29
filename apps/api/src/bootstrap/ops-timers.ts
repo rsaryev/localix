@@ -178,10 +178,9 @@ export function createOpsTimersPhase({
       }
     }
 
-    // Bundled mini apps' staged root, catalog updates and recommended installs.
+    // Mini app catalog updates and recommended installs.
     const miniAppTimers = armMiniAppTimers({
       miniAppService,
-      miniAppConditions,
       userId: env.LOCALIX_DEFAULT_USER_ID,
       logger,
       signal,
@@ -234,7 +233,6 @@ export function createOpsTimersPhase({
           (await projectsService.listProjects(...args)).projects.map((project) => project.id),
         signal,
       }),
-      miniAppTimers.stagingReportTask,
       { name: 'delegation_recovery', run: recoverReports },
       sessionDataSweepTask(db, logger),
       { name: 'skills_curator', run: runCuratorCheck },

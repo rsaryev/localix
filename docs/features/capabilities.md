@@ -54,9 +54,10 @@ The conversation's **Plan** [permission mode](permission-modes.md) constrains pr
 allowing its own plan files and permitted session-state changes. Use it to investigate and prepare a
 plan for approval. For a lasting restriction, give the agent rules that deny the relevant calls;
 denying file-write tools alone does not prevent writes through shell commands or other tools. Agreed
-work can be tracked on the chat's [Kanban board](task-board.md), which the bundled Kanban mini app
-provides; the board starts no model or session. When separate execution is useful, the agent
-explicitly calls `Agent`, whose subagent runs as itself or a directory agent under the same mode.
+work can be tracked on a task-board mini app such as Kanban, from the
+[Localix marketplace](https://github.com/rsaryev/localix-marketplace); its board starts no model or
+session. When separate execution is useful, the agent explicitly calls `Agent`, whose subagent runs
+as itself or a directory agent under the same mode.
 
 ### Going back to what we ship
 
@@ -119,7 +120,6 @@ Permissions also supports argument patterns and order, which a whole-item switch
 
 - [Permissions](permissions.md)
 - [Human in the loop](hitl.md)
-- [Kanban board](task-board.md)
 - [Mini apps](mini-apps.md)
 - [Build a mini app](../extending/mini-apps.md)
 - [Install Claude Code plugins](../extending/claude-code-plugins.md)

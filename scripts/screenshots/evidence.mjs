@@ -6,8 +6,6 @@ export async function verifyEvidence(page, scenario) {
   if (scenario === 'agent-management')
     return (await import('./agent-management.mjs')).verifyAgentManagement(page)
   if (scenario === 'agent') return (await import('./agent-management.mjs')).verifyAgentProfile(page)
-  if (['kanban-board', 'kanban-conversation'].includes(scenario))
-    return (await import('./kanban-workbenches.mjs')).verifyKanban(page, scenario)
   if (scenario === 'visual-feedback')
     return (await import('./visual-feedback.mjs')).verifyVisualFeedback(page)
   if (scenario === 'session-window-drag')
@@ -29,21 +27,8 @@ export async function verifyEvidence(page, scenario) {
   if (scenario.startsWith('store')) return (await import('./store.mjs')).verifyStore(page, scenario)
   if (['local-models-settings', 'semantic-search'].includes(scenario))
     return (await import('./local-models.mjs')).verifyLocalModels(page, scenario)
-  if (['trading', 'system-overview', 'kubernetes'].includes(scenario))
-    return (await import('./platform-views.mjs')).verifyPlatformViews(page, scenario)
-  if (
-    ['game-2048', 'chess', 'checkers', 'battleship', 'tic-tac-toe', 'rock-paper-scissors'].includes(
-      scenario,
-    )
-  )
-    return (await import('./game-workbenches.mjs')).verifyGame(page, scenario)
-  if (['code-graph', 'git', 'learning'].includes(scenario))
-    return (await import('./developer-workbenches.mjs')).verifyDeveloper(page, scenario)
   if (['external-terminal'].includes(scenario))
     return (await import('./external-workbench.mjs')).verifyExternal(page, scenario)
-  if (['api-client', 'documents', 'reader'].includes(scenario)) {
-    return (await import('./content-workbenches.mjs')).verifyContent(page, scenario)
-  }
   if (scenario === 'first-run') {
     await expect(page.getByRole('region', { name: 'Workspace tips', exact: true })).toBeVisible()
     await expect(page.getByRole('region', { name: 'Session history', exact: true })).toBeHidden()
@@ -61,55 +46,10 @@ export async function verifyEvidence(page, scenario) {
     await expect(preview.getByRole('checkbox', { name: 'Publish release notes' })).not.toBeChecked()
     await expect(page.getByRole('combobox', { name: 'Message', exact: true }).last()).toBeVisible()
     await expect(page.getByRole('button', { name: 'Visual Feedback', exact: true })).toBeVisible()
-  } else if (scenario === 'resume') {
-    const document = page.getByRole('document', { name: 'Page 1', exact: true })
-    await expect(document).toContainText('Alex Morgan')
-    await expect(document).toContainText('Example Studio')
-    await expect(page.getByRole('textbox', { name: 'Full name', exact: true })).toHaveValue(
-      'Alex Morgan',
-    )
-  } else if (scenario === 'resume-library') {
-    await expect(page.getByRole('button', { name: 'Open Product engineer — demo' })).toBeVisible()
-  } else if (scenario === 'database') {
-    await expect(page.getByText('Write release notes', { exact: true })).toBeVisible()
-    await expect(page.getByText('Frontend', { exact: true }).first()).toBeVisible()
-    await expect(page.getByText('4 rows', { exact: true }).first()).toBeVisible()
-    await expect(page.getByText('Query failed', { exact: true })).toHaveCount(0)
-  } else if (scenario === 'answer-board') {
-    await expect(page.getByText('Review the interface', { exact: true })).toBeVisible()
-    await page.getByRole('tab', { name: 'Checks', exact: true }).click()
-    await expect(
-      page.getByText('Both pending and ready states are covered.', { exact: true }),
-    ).toBeVisible()
-    await page.getByRole('tab', { name: 'Interface', exact: true }).click()
-    await page.waitForTimeout(450)
-    await page.mouse.click(1450, 850)
-    await page.getByRole('button', { name: 'Fit everything', exact: true }).click()
-    await expect(page.getByRole('heading', { name: 'Project files', exact: true })).toBeInViewport({
-      ratio: 1,
-    })
-    await expect(
-      page.getByRole('heading', { name: 'Release summary', exact: true }),
-    ).toBeInViewport({ ratio: 1 })
-  } else if (scenario === 'diagram-board') {
-    // Marks are drawn, not printed: the bold heading and the ticked tasks are real elements.
-    await expect(page.locator('strong', { hasText: 'Before shipping' })).toBeVisible()
-    await expect(page.locator('input[type="checkbox"]:checked')).toHaveCount(2)
-    await expect(page.getByText('**', { exact: false })).toHaveCount(0)
-    await expect(page.locator('.space-font-hand', { hasText: 'Keep the release' })).toBeVisible()
-    // Captions sit beside their line, readable, never cut by a card.
-    // The Mermaid flowchart is drawn natively: its steps are the board's text, not a picture.
-    await expect(page.getByRole('img', { name: /^Release pipeline: 6 steps/ })).toBeVisible()
-    await expect(page.getByRole('img', { name: /^Next quarter: Offline mode/ })).toBeVisible()
-    for (const caption of ['scope', 'passes', 'fails', 'retry'])
-      await expect(page.locator('[data-canvas-edge-label]', { hasText: caption })).toBeInViewport({
-        ratio: 0.99,
-      })
   } else if (scenario === 'models') {
     await expect(page.getByText(/^API Key\(s\)/).first()).toBeVisible()
     await expect(page.locator('input[type="password"]')).toHaveValue('')
   } else if (scenario === 'catalog') {
-    await expect(page.getByText('Database', { exact: true }).last()).toBeVisible()
     await expect(page.getByText('Manage plugins…', { exact: true })).toBeVisible()
     const rows = await page
       .locator('[role="menu"] [data-slot="menu-leading-icon"]')
@@ -188,11 +128,6 @@ export async function verifyEvidence(page, scenario) {
         await expect(row.getByText(/· \d+(?:\.\d+)?k? chars/)).toBeVisible()
       }
     }
-  } else if (scenario === 'containers') {
-    const panel = page.getByRole('tabpanel', { name: 'localix-capture-preview', exact: true })
-    await expect(panel).toBeVisible()
-    await expect(panel).toContainText('nginx:alpine')
-    await expect(panel).toContainText('running')
   }
   await expect(
     page

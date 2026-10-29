@@ -31,7 +31,7 @@ export interface MiniAppTextInputCompletionRequest {
 }
 
 export interface MiniAppTextInputCompletionSurface {
-  /** Stable id the client asks for, namespaced by the owning mini app (`git-workspace.commit`). */
+  /** Stable id the client asks for, namespaced by the owning mini app (`notes.commit`). */
   readonly id: string
 
   /**

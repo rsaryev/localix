@@ -44,15 +44,15 @@ setDefaultTimeout(30_000)
  * `c.req.json()` because "the schema is overkill for one field" removes a security control and
  * nothing anywhere says so. This test is the thing that says so.
  *
- * Same kit and same shape as `plugin-boundary-contract.test.ts` and `schemes.test.ts`: it reads
+ * Same kit and same shape as `schemes.test.ts`: it reads
  * comment-stripped source, proves it opened something, and carries a planted positive control so
  * a green run means "no offender" and never "the detector quietly stopped matching".
  */
 
 const ROOT = path.resolve(import.meta.dir, '..', '..', '..', '..')
 
-/** Route surfaces: the host's own features, and every bundled plugin's backend. */
-const INCLUDE = ['apps/api/src/features/**/*.ts', 'mini-apps/**/backend/**/*.ts']
+/** Route surfaces: the host's own features. */
+const INCLUDE = ['apps/api/src/features/**/*.ts']
 
 /** The rule's own file, and tests, may name the call in prose or in a probe. */
 const skipTests = (f: string): boolean => f.includes('.test.')
@@ -106,7 +106,7 @@ describe('mutating routes must not parse their own body', () => {
     // commented out, stays silent — so this file's own header cannot satisfy the guard.
     await assertPositiveControl({
       subject: 'a route parsing its body with c.req.json() instead of zValidator',
-      file: 'mini-apps/evil/backend/routes.ts',
+      file: 'apps/api/src/features/evil/routes.ts',
       offender: [
         "import { Hono } from 'hono'",
         'export function createRoutes() {',

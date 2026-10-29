@@ -1,7 +1,7 @@
 # Workbench contributions
 
 Workbench contributions let an enabled mini app add backend services and workspace UI without adding
-domain branches to core composition code. Use this page when creating or changing a bundled
+domain branches to core composition code. Use this page when creating or changing a mini app
 workbench, its registry entries, or its enable and disable lifecycle.
 
 ## Terminology
@@ -12,8 +12,8 @@ workbench, its registry entries, or its enable and disable lifecycle.
 | Backend host        | Reconciler that wires desired mini app subsystems into live registries.    | It keeps an already-wired instance instead of rebuilding it on every refresh.    |
 | Host service        | Narrow capability supplied to mini app code through `MiniAppContext.host`. | Services are optional and do not expose their owning core subsystem directly.    |
 | Mini app UI host    | Registration façade passed to a mini app's `registerUi(host)`.             | Mini app code must not import host registry modules.                             |
-| Native workbench UI | React contribution built into its own artifact and loaded by URL.          | Bundled mini apps, and other mini apps once the user enabled them (consent).     |
-| Manifest UI         | Sandboxed view described as data in `mini-app.json`.                       | Runs in a sandboxed frame, whatever the mini app's origin.                       |
+| Native workbench UI | React contribution built into its own artifact and loaded by URL.          | Mini apps once the user enabled them (consent).                                  |
+| Manifest UI         | Sandboxed view described as data in the mini app manifest.                 | Runs in a sandboxed frame, whatever the mini app's origin.                       |
 
 ## What you can do
 
@@ -25,7 +25,7 @@ workbench, its registry entries, or its enable and disable lifecycle.
 | Add realtime frame families    | Return `wsFrames` with subscribe, unsubscribe, key, frame tag, start, and stop functions.  | Duplicate commands are rejected; same-key subscribers on one socket share a refcounted stream. |
 | Supply typed core capabilities | Return known ports through `capabilities`.                                                 | Capability keys are closed and first-owner-wins; absent ports make the consumer degrade.       |
 | Clean up domain state          | Return `onShutdown`.                                                                       | Disable calls it before unregistering providers and removing the route mount.                  |
-| Add native workspace surfaces  | Register work items, rail entries, anchors, locations, editors, icons, and event handlers. | The bundled mini app module loads only after the API reports that mini app enabled.            |
+| Add native workspace surfaces  | Register work items, rail entries, anchors, locations, editors, icons, and event handlers. | The mini app module loads only after the API reports that mini app enabled.                    |
 | Add installed mini app UI      | Declare `views` in the manifest.                                                           | The host registers removable locations around sandboxed iframe content.                        |
 
 ## How it works
@@ -89,8 +89,8 @@ vault values, and media have no enumeration port.
 
 ### UI contribution lifecycle
 
-Core `features/*/contrib` modules register through `discoverUi`. A bundled mini app's React UI is
-not host source: it is a built artifact the API advertises on the mini app record and serves, which
+Core `features/*/contrib` modules register through `discoverUi`. A mini app's React UI is not host
+source: it is a built artifact the API advertises on the mini app record and serves, which
 [`miniAppUiRuntime.ts`](../../../apps/ui/src/shared/contrib/miniAppUiRuntime.ts) imports by URL for
 the enabled mini apps of the current capability snapshot. `miniAppUiHostFor` stamps the mini app
 name rather than trusting an owner the mini app supplies, and
@@ -146,18 +146,18 @@ enhancers or one tab strip's kinds. Only a consumer whose own slice moved re-ren
 
 ### Example entrypoints
 
-| Mini app  | Backend composition                                                                                                                                    | Native UI composition                                                                                                                                  |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| DevOps    | [`mini-apps/devops/backend/index.ts`](../../../mini-apps/devops/backend/index.ts) combines Docker and Kubernetes subsystems and tools.                 | [`mini-apps/devops/ui/register.tsx`](../../../mini-apps/devops/ui/register.tsx) registers provider contributions and one workbench viewlet.            |
-| Database  | [`mini-apps/database/backend/index.ts`](../../../mini-apps/database/backend/index.ts) returns route, resource, search, context, cleanup, and tools.    | [`mini-apps/database/ui/register.tsx`](../../../mini-apps/database/ui/register.tsx) registers work items, a viewlet, anchors, icons, and file editors. |
-| Documents | [`mini-apps/documents/backend/index.ts`](../../../mini-apps/documents/backend/index.ts) returns document and table subsystems plus typed capabilities. | [`mini-apps/documents/ui/register.tsx`](../../../mini-apps/documents/ui/register.tsx) registers document viewers and editors.                          |
+The core holds no workbench. The mini apps of the
+[Localix marketplace](https://github.com/rsaryev/localix-marketplace/tree/main/mini-apps), such as
+`devops`, `database` and `documents`, are written against this contract: each has a
+`backend/index.ts` returning its subsystems and tools, and a `ui/register.tsx` registering its work
+items, viewlet, anchors, icons and editors.
 
 ### Activation states
 
 | State or event             | Backend behavior                                                         | UI behavior                                                                    |
 | -------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
 | Process start              | First reconciliation runs asynchronously after core composition.         | Core surfaces discover synchronously; mini app surfaces wait for capabilities. |
-| Enabled in any exact scope | One backend group is wired process-wide.                                 | The active project's snapshot enables and imports that mini app's bundled UI.  |
+| Enabled in any exact scope | One backend group is wired process-wide.                                 | The active project's snapshot enables and imports that mini app's built UI.    |
 | Mini app toggle            | A 300 ms debounced refresh converges the backend set, then emits change. | The capability snapshot refetch gates registries, views, and tools.            |
 | Disable                    | Shutdown runs, providers unregister, and the mutable route mount drops.  | Native definitions remain registered but unavailable; manifest UI is removed.  |
 | Re-enable                  | A fresh backend instance wires through the same path.                    | The already-imported native module becomes available without re-registering.   |
@@ -170,10 +170,10 @@ It invalidates the shared-module glob and reloads the host page together, so a r
 cannot keep using a registry that predates its imports. Ordinary component edits keep Vite's normal
 HMR.
 
-- Native workbench UI runs in the host page, so it follows the native-backend trust rule: a bundled
-  mini app ships trusted, and any other mini app's artifact is served only after the user enabled
-  it. A user mini app's artifact is built from the mini app kit by the mini-app-authoring plugin
-  (`plugins/mini-app-authoring/`), and Localix installs the built package.
+- Native workbench UI runs in the host page, so it follows the native-backend trust rule: a mini
+  app's artifact is served only after the user enabled it. The artifact is built from the mini app
+  kit by the mini-app-authoring plugin of the Localix marketplace, and Localix installs the built
+  package.
 - Backend enablement is process-global once any exact scope enables the mini app. Route scope is
   resolved per request, but a mini app must not capture one project's working directory at register
   time and treat it as universal.
@@ -185,8 +185,8 @@ HMR.
   timeout, sensitivity, and destination policy belong to
   [Context Fabric](context-and-edit-prediction-architecture.md).
 - Core work-item and rail lookups still include built-in fallback maps for surfaces not migrated to
-  contribution registries. A new bundled workbench should use the registries instead of extending
-  those maps.
+  contribution registries. A new workbench should use the registries instead of extending those
+  maps.
 - Mini app host services are capability ports, not stable access to core implementation modules.
   Code must handle an optional port being absent.
 
@@ -210,10 +210,10 @@ HMR.
 - [UI host adapter](../../../apps/ui/src/shared/contrib/host.ts)
 - [Mini app UI wiring](../../../apps/ui/src/shared/contrib/miniAppUiDiscovery.ts)
 - [Mini app UI runtime](../../../apps/ui/src/shared/contrib/miniAppUiRuntime.ts)
-- [Mini app UI artifact builder](../../../plugins/mini-app-authoring/src/build/ui-build.ts)
+- [Mini app UI artifact builder](https://github.com/rsaryev/localix-marketplace/blob/main/plugins/mini-app-authoring/src/build/ui-build.ts)
 - [Mini app kit staging](../../../scripts/stage-mini-app-kit.mjs)
 - [Development kit cache](../../../scripts/mini-app-kit-cache.mjs) (a kit staged for identical
   inputs is reused across `bun run dev` launches)
-- [User mini app authoring](../../../plugins/mini-app-authoring/README.md) and
-  [the local install](../../../apps/api/src/features/mini-apps/local-install.ts)
+- [User mini app authoring](https://github.com/rsaryev/localix-marketplace/blob/main/plugins/mini-app-authoring/README.md)
+  and [the local install](../../../apps/api/src/features/mini-apps/local-install.ts)
 - [Workbench registries](../../../apps/ui/src/shared/contrib/uiContrib.ts)

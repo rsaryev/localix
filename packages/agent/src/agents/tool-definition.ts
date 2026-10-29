@@ -4,6 +4,7 @@ import type { CallClass } from './call-class'
 import type { AgentToolExecutionContext } from './tool-execution-context'
 import type { AgentToolResult, AgentToolUpdateCallback } from './tool-result'
 import type { GuardVerdict, ToolGuardContext, ToolStreamGuard } from './tool-guards'
+import type { ToolRole } from './tool-tags'
 
 /** Declarative transcript treatment owned by the tool descriptor. */
 export interface AgentToolPresentation {
@@ -35,13 +36,6 @@ export interface AgentToolSealing {
 
 /** What a sealed value reads as everywhere outside the run that produced it. */
 export const SEALED_PLACEHOLDER = '[sealed]'
-
-/**
- * UI category used to group tools in settings.
- * The api tool manifest tags each tool with one of these; the frontend reads them from the API.
- * Add new categories here as needed.
- */
-export type AgentToolCategory = 'core' | 'filesystem' | 'knowledge' | 'automation' | 'ui'
 
 /**
  * Advisory behavior metadata supplied by an external tool descriptor. These
@@ -84,6 +78,8 @@ export interface AgentTool<TInput = unknown, TDetails = unknown> {
    * source, including mini-app-owned tools unknown to core.
    */
   availability?: ToolAvailability
+  /** The host jobs this tool takes on ({@link ToolRole}); the host knows it by these, not its name. */
+  roles?: readonly ToolRole[]
   /**
    * Input modalities the MODEL must read for this tool to be worth offering (`['image']` for a
    * tool whose whole output is a picture). The ledger's `model` layer withholds the tool from a

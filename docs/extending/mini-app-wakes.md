@@ -2,10 +2,11 @@
 
 A mini app can start a turn in a chat session when something happens that the agent should act on —
 a person moves in the mini app's view, or a condition the mini app watches comes true. The agent
-answers through the mini app's own tools. The bundled Tic-Tac-Toe mini app is the reference: each
-chat has its own board, a move on it wakes that chat, and the agent replies through the mini app's
-one tool, `tic_tac_toe`, with action `move`. A single tool with action dispatch keeps the mini app's
-callable surface compact. The other bundled games have the same shape:
+answers through the mini app's own tools. The Tic-Tac-Toe mini app of the
+[Localix marketplace](https://github.com/rsaryev/localix-marketplace) is the reference: each chat
+has its own board, a move on it wakes that chat, and the agent replies through the mini app's one
+tool, `tic_tac_toe`, with action `move`. A single tool with action dispatch keeps the mini app's
+callable surface compact. The marketplace's other games have the same shape:
 
 - **Checkers** has a larger move. Its wake lists the legal moves, and the agent answers with one of
   them through `checkers`; it can also resign a lost game.
@@ -86,7 +87,7 @@ changing an active run. Explicitly activated tools have their own lifetime; see
 - [Delivery outcomes](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/triggers/delivery.ts)
 - [Initial tool activation](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/tool-deferral.ts)
 - [Tools a wake or an open tab brings](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/surface-tools.ts)
-- [The reference mini app](https://github.com/rsaryev/localix/tree/main/mini-apps/tic-tac-toe)
-- [Checkers, the same shape with multi-square moves](https://github.com/rsaryev/localix/tree/main/mini-apps/checkers)
-- [Battleship, the same shape with hidden information](https://github.com/rsaryev/localix/tree/main/mini-apps/battleship)
-- [Chess, the same shape with a rules library behind one module](https://github.com/rsaryev/localix/tree/main/mini-apps/chess)
+- [The reference mini app](https://github.com/rsaryev/localix-marketplace/tree/main/mini-apps/tic-tac-toe)
+- [Checkers, the same shape with multi-square moves](https://github.com/rsaryev/localix-marketplace/tree/main/mini-apps/checkers)
+- [Battleship, the same shape with hidden information](https://github.com/rsaryev/localix-marketplace/tree/main/mini-apps/battleship)
+- [Chess, the same shape with a rules library behind one module](https://github.com/rsaryev/localix-marketplace/tree/main/mini-apps/chess)

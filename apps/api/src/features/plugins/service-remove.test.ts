@@ -9,7 +9,6 @@ import { migrateToLatest } from '../../db/migrator'
 import { createPluginService } from './service'
 
 const previousEnv = {
-  LOCALIX_BUNDLED_PLUGINS_DIR: process.env.LOCALIX_BUNDLED_PLUGINS_DIR,
   CLAUDE_CONFIG_DIR: process.env.CLAUDE_CONFIG_DIR,
 }
 
@@ -18,7 +17,6 @@ let homeDir: string
 /** Claude Code's configuration directory: its plugins live under it (`CLAUDE_CONFIG_DIR`). */
 let claudeConfigDir: string
 let workspaceDir: string
-let bundledDir: string
 let db: ReturnType<typeof createDatabase>
 let service: ReturnType<typeof createPluginService>
 
@@ -43,14 +41,10 @@ beforeAll(async () => {
   root = await mkdtemp(join(tmpdir(), 'plugin-remove-'))
   homeDir = join(root, 'home')
   workspaceDir = join(root, 'workspace')
-  bundledDir = join(root, 'bundled')
   claudeConfigDir = join(root, 'claude-config')
   await Promise.all(
-    [homeDir, workspaceDir, bundledDir, claudeConfigDir].map((dir) =>
-      mkdir(dir, { recursive: true }),
-    ),
+    [homeDir, workspaceDir, claudeConfigDir].map((dir) => mkdir(dir, { recursive: true })),
   )
-  process.env.LOCALIX_BUNDLED_PLUGINS_DIR = bundledDir
   process.env.CLAUDE_CONFIG_DIR = claudeConfigDir
 
   db = createDatabase()

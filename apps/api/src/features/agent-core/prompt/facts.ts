@@ -5,13 +5,11 @@
  * the answer. This module only normalizes what the host passed, so the agent-agnostic core never
  * reaches back into a host to ask.
  */
+import type { ToolRole } from '@localixai/agent/agents'
 import { CHAT_RUN_PROFILE, type RunProfile } from '../run-shape'
 import { createRuntimeToolRegistry, type RuntimeToolRegistry } from '../tool-registry'
 import type { BuildAgentSystemPromptParams } from './contracts'
 import { rendersAnswerMarkdown } from './sections/answer-format'
-
-/** The task board plugin's tool; its rules join the turn contract only when the run holds it. */
-export const TASK_BOARD_TOOL = 'kanban'
 
 export interface PromptFacts {
   params: BuildAgentSystemPromptParams
@@ -23,6 +21,8 @@ export interface PromptFacts {
    * registry is the only place that knows what this run actually holds.
    */
   hasTool: (name: string) => boolean
+  /** The run holds a tool that takes on this role, whatever the tool is called. */
+  hasRole: (role: ToolRole) => boolean
   /** The transcript renders the answer forms (a chat, not relayed to a channel). */
   rendersAnswers: boolean
 }
@@ -36,6 +36,8 @@ export function promptFacts(params: BuildAgentSystemPromptParams): PromptFacts {
     profile,
     registry,
     hasTool,
+    hasRole: (role) =>
+      registry.tools.some((tool) => tool.roles?.includes(role) && hasTool(tool.name)),
     rendersAnswers: rendersAnswerMarkdown(profile.shape, params.deliveryContext?.channel),
   }
 }

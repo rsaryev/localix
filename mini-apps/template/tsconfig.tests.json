@@ -1,8 +1,0 @@
-{
-  "extends": "./tsconfig.json",
-  "compilerOptions": {
-    "tsBuildInfoFile": "${configDir}/node_modules/.cache/tsc/tests.tsbuildinfo"
-  },
-  "include": ["ui", "backend", "shared", "preview", "vite.config.ts"],
-  "exclude": []
-}

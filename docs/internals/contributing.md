@@ -1,18 +1,19 @@
 # Contributing
 
-Localix contributors use Bun and Turbo to build the desktop, API, UI, packages, and bundled mini
-apps from one workspace. This guide gets a checkout running and maps each change to the checks that
-catch regressions.
+Localix contributors use Bun and Turbo to build the desktop, API, UI, and packages from one
+workspace. Localix's own mini apps and plugins live in the
+[Localix marketplace](https://github.com/rsaryev/localix-marketplace). This guide gets a checkout
+running and maps each change to the checks that catch regressions.
 
 ## Terminology
 
-| Term               | Meaning                                                                 | Boundary                                                           |
-| ------------------ | ----------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Root task          | A script in the repository `package.json` that drives workspace work.   | Prefer it when a Turbo task must build dependencies first.         |
-| Focused check      | A test or package command run while iterating on one change.            | It does not replace the required pull-request gates.               |
-| Workspace package  | A Bun workspace under `apps/`, `packages/`, `mini-apps/`, or `vendor/`. | Bundled mini apps are not all represented by Turbo package tasks.  |
-| Generated output   | Build, documentation, test, or desktop staging material.                | Keep ignored output out of review unless its source file is owned. |
-| Vendored workspace | Source retained under `vendor/` and linked by the root install.         | Update it only through its documented upstream-sync process.       |
+| Term               | Meaning                                                               | Boundary                                                           |
+| ------------------ | --------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Root task          | A script in the repository `package.json` that drives workspace work. | Prefer it when a Turbo task must build dependencies first.         |
+| Focused check      | A test or package command run while iterating on one change.          | It does not replace the required pull-request gates.               |
+| Workspace package  | A Bun workspace under `apps/`, `packages/`, or `vendor/`.             | Turbo runs tasks per package; root scripts cover the rest.         |
+| Generated output   | Build, documentation, test, or desktop staging material.              | Keep ignored output out of review unless its source file is owned. |
+| Vendored workspace | Source retained under `vendor/` and linked by the root install.       | Update it only through its documented upstream-sync process.       |
 
 ## What you can do
 
@@ -51,7 +52,6 @@ report missing `@localixai/*` modules that are not source defects.
 | `apps/desktop-tauri/` | Native shell, staged API sidecar, platform bridge, and packaging.           |
 | `apps/landing/`       | Product site and generated documentation renderer.                          |
 | `packages/`           | Shared runtime-neutral libraries, adapters, CLI launcher, and SDK surfaces. |
-| `mini-apps/`          | Bundled mini apps: workbenches, backends, agent tools, guides and commands. |
 | `scripts/`            | Repository checks, staging, release helpers, and development launchers.     |
 | `config/`             | Shared tool configuration.                                                  |
 | `docs/`               | Public guides, contributor references, and canonical product captures.      |
@@ -75,9 +75,8 @@ dependencies from source. The `tsconfig.build.json` files clear the condition, s
 emits against `dist`, and the packaged app, Bun and Vite never see it.
 
 A workspace that reads another workspace's files through tsconfig `paths` must hash them: depend on
-the target's `type-check` in its `turbo.json`, or list the target in `inputs`. Mini apps do both for
-the kit and `apps/ui/src`. `scripts/type-check-inputs-guard.test.ts` fails when a `paths` target is
-neither.
+the target's `type-check` in its `turbo.json`, or list the target in `inputs`.
+`scripts/type-check-inputs-guard.test.ts` fails when a `paths` target is neither.
 
 Source checking applies the consumer's strictness to a dependency's files; fix the dependency file
 rather than relaxing the consumer. Each package keeps an incremental build info under
@@ -98,7 +97,7 @@ The API uses two TypeScript projects:
 
 | Project                       | Reads                                             | Command                              |
 | ----------------------------- | ------------------------------------------------- | ------------------------------------ |
-| `apps/api/tsconfig.json`      | API and bundled-backend production sources.       | `bun run type-check` through Turbo.  |
+| `apps/api/tsconfig.json`      | API production sources.                           | `bun run type-check` through Turbo.  |
 | `apps/api/tsconfig.test.json` | The same source set with test exclusions removed. | `bun run check:tests` through Turbo. |
 
 `bun test` executes TypeScript but does not provide the separate static test-file gate. CI runs both
@@ -221,6 +220,10 @@ To cut a release:
 6. If one platform leg fails, rerun only that leg with `-f legs=<leg>`; the draft keeps the assets
    that the other legs already uploaded.
 
+The release also attaches `mini-app-kit.tar.gz`, built by its `mini-app-kit` job: the kit the
+mini-app-authoring plugin and the Localix marketplace build mini apps against. The core publishes no
+mini app catalog; the marketplace repository does that with its own releases.
+
 Publication generates `latest.json`, `SHA256SUMS.txt` from the digests GitHub records for each
 asset, and the release notes. It refuses a version older than the current latest release and
 redeploys the website download buttons. Before publication, deleting the draft is the rollback.
@@ -275,11 +278,9 @@ format check as a read-only gate before review.
 - Development starts with `bun install --frozen-lockfile`, so a pull that moved `bun.lock` installs
   what it pins before anything builds. A lockfile that no longer matches its `package.json` is
   reported and development continues on what is installed.
-- In development a bundled mini app whose backend does not build is skipped, not fatal. It keeps the
-  copy from its last successful build if there is one, and the Event Center names the mini app and
-  the build error. Fixing the source or running `bun install` re-stages it without a restart. A
-  release build stops on the same error. Changes under `mini-apps/` are seen by the native file
-  watcher the API's file tree uses, so a scaffold's whole burst of new files re-stages the mini app.
+- The core builds no mini app. To work on one, use a checkout of the Localix marketplace with this
+  checkout's kit (`MINI_APP_KIT=<dir>` or `bun link`, see that repository), or install a package
+  into your running Localix with `mini-app install`.
 - Generated desktop resources, sidecar binaries, package `dist` trees, Turbo state, and generated
   landing modules are ignored build products. Change their inputs instead.
 - Release configuration describes a pipeline, not the existence of a public signed artifact. Check

@@ -121,7 +121,6 @@ changed in Settings.
 
 - [Sessions and projects](../features/sessions-and-projects.md)
 - [Workspace](../features/workspace.md)
-- [Source control](../features/source-control.md)
 
 ## Source of truth
 

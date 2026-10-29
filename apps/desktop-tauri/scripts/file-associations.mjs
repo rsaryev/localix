@@ -1,49 +1,34 @@
 // Single owner of ONE fact: which file types the operating system should believe
-// Localix can open — and where that belief comes from.
+// Localix can open.
 //
-// Three layers already know, at runtime, what the app can render:
+// Core's code editor and image viewer know, at runtime, what the app can render. None of
+// that reaches the OS. Finder, Explorer and the freedesktop MIME database are told what an
+// app opens exactly once — when the app is PACKAGED — through the bundle's Info.plist, the
+// installer's registry writes and the `.desktop` file. Tauri sources all three from
+// `bundle.fileAssociations` in tauri.conf.json, which is a static, committed file that no
+// runtime registry can amend.
 //
-//   - core's code editor      → every text/source extension (the list below)
-//   - contributed viewers     → their manifest-declared formats
-//
-// None of that reaches the OS. Finder, Explorer and the freedesktop MIME database
-// are told what an app opens exactly once — when the app is PACKAGED — through the
-// bundle's Info.plist, the installer's registry writes and the `.desktop` file.
-// Tauri sources all three from `bundle.fileAssociations` in tauri.conf.json, which
-// is a static, committed file that no runtime registry can amend.
-//
-// So the projection happens here: each bundled plugin declares its formats in its own
-// mini app manifest (`fileAssociations`, see `@localixai/mini-app-sdk/manifest`), core keeps
-// its editor list in CORE_FILE_ASSOCIATIONS below, and this module merges the two into
-// exactly the array tauri.conf.json must contain. `--write` applies it; `--check` (and
-// the sibling test) fails when the committed config and the manifests disagree — which
-// prevents contributed viewer formats from silently missing at the OS boundary.
+// So the projection happens here: core keeps its list in CORE_FILE_ASSOCIATIONS below, and
+// this module emits exactly the array tauri.conf.json must contain. Core claims only what
+// core itself renders; it does not know what an extension installed later can open.
+// `--write` applies it; `--check` (and the sibling test) fails when the committed config and
+// the list disagree.
 //
 // Plain `.mjs` on purpose: it runs from packaging scripts and gates under bare node,
-// with no TypeScript loader available. It therefore reads the manifests as data and
-// never imports the zod schema — the schema stays the authoring contract (enforced by
-// the host when it loads a plugin), and the checks below are the packaging contract.
+// with no TypeScript loader available.
 import { execFileSync } from 'node:child_process'
-import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import {
-  hasExtensionManifest,
-  readExtensionManifest,
-} from '../../../scripts/lib/extension-manifest.mjs'
-import { MINI_APPS_DIR, miniAppsRoot } from '../../../scripts/lib/bundled-roots.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url)) // apps/desktop-tauri/scripts
 export const repoRoot = resolve(here, '..', '..', '..')
-export const pluginsDir = miniAppsRoot(repoRoot)
 export const tauriConfigPath = resolve(here, '..', 'src-tauri', 'tauri.conf.json')
 
 /**
  * CORE's claim: the families the built-in viewers open — text/source in the code
- * editor, and raster images in the file viewer's image pane. Owned here rather than by
- * a plugin because those viewers ARE core: disabling every plugin does not take them
- * away. The formats core does NOT render itself (PDF, Office, databases) are
- * deliberately absent — they belong to the plugin that ships their viewer.
+ * editor, and raster images in the file viewer's image pane. The formats core does NOT
+ * render itself (PDF, Office, databases) are deliberately absent.
  *
  * ONE ENTRY PER MIME TYPE, not per viewer. Tauri writes a single `MimeType=` per entry
  * into the Linux `.desktop` file, so a grouped entry advertises only its first format
@@ -233,8 +218,8 @@ const RANKS = new Set(['Owner', 'Default', 'Alternate', 'None'])
 
 /**
  * Validate + normalize one authored entry. Throws with the owner's name in the message:
- * this runs inside packaging, where "invalid file association" with no origin would send
- * the reader through eighteen manifests.
+ * this runs inside packaging, where "invalid file association" with no origin would not
+ * say which entry is wrong.
  * @returns {FileAssociationEntry}
  */
 function normalizeAssociation(entry, owner) {
@@ -273,103 +258,27 @@ function normalizeAssociation(entry, owner) {
   return out
 }
 
-/** Bundled plugin dirs, sorted, so aggregation order never depends on readdir order. */
-function bundledMiniAppNames() {
-  return readdirSync(pluginsDir, { withFileTypes: true })
-    .filter((e) => e.isDirectory())
-    .map((e) => e.name)
-    .sort()
-}
-
 /**
- * Every bundled plugin's declared associations, tagged with its owner. A plugin without
- * the field contributes nothing — which is the common case and must stay free.
- */
-export function miniAppFileAssociations() {
-  const out = []
-  for (const name of bundledMiniAppNames()) {
-    // A dir with no manifest is not a plugin; one that does not parse throws with its path.
-    if (!hasExtensionManifest(join(pluginsDir, name))) continue
-    const manifest = readExtensionManifest(join(pluginsDir, name))
-    const declared = manifest.fileAssociations
-    if (declared === undefined) continue
-    if (!Array.isArray(declared)) {
-      throw new Error(`${MINI_APPS_DIR}/${name}: fileAssociations must be an array`)
-    }
-    for (const entry of declared) {
-      out.push({
-        owner: `${MINI_APPS_DIR}/${name}`,
-        association: normalizeAssociation(entry, name),
-      })
-    }
-  }
-  return out
-}
-
-/**
- * The complete `bundle.fileAssociations` array: core first (its list is the app's
- * baseline identity as an editor), then plugin entries in plugin-name order.
+ * The complete `bundle.fileAssociations` array, from core's list.
  *
  * An extension may appear only ONCE in the emitted bundle. Two entries claiming `.csv`
  * would put two CFBundleDocumentTypes dicts in the same Info.plist and two conflicting
  * registry writes in the same installer — LaunchServices would then pick one by rules
- * nobody intended.
- *
- * But "one BUNDLE entry" is not "one layer may render it". Several layers legitimately
- * open the same format — a PDF has both a fidelity viewer (`mini-apps/documents`) and a
- * reflowed reading view (`mini-apps/reader`), and each plugin's own tests require it to
- * declare what it can open. Rejecting the overlap would force one of them to lie about
- * its capability to satisfy a packaging constraint.
- *
- * So a duplicate claim is RESOLVED, deterministically and visibly, rather than rejected:
- * an explicit `Owner` outranks an `Alternate`, core outranks a plugin, and equals settle
- * by the entry order above (core first, then plugin-name order). The winner supplies the
- * bundle's metadata for that extension; the loser keeps its extension in its own manifest
- * and still renders in-app through the ordinary viewer routing, which is the app's
- * decision to make and not the operating system's.
- *
- * The one genuinely unresolvable case still throws: two entries both claiming `Owner`
- * are a contradiction no precedence rule can settle honestly.
+ * nobody intended. A duplicate claim throws, naming the extension.
  */
 export function buildFileAssociations() {
-  const entries = [
-    ...CORE_FILE_ASSOCIATIONS.map((association) => ({
-      owner: 'core (apps/desktop-tauri)',
-      association: normalizeAssociation(association, 'core'),
-    })),
-    ...miniAppFileAssociations(),
-  ]
-  const claimedBy = new Map()
-  const dropped = new Map()
-  for (const entry of entries) {
-    for (const ext of entry.association.ext) {
-      const previous = claimedBy.get(ext)
-      if (!previous) {
-        claimedBy.set(ext, entry)
-        continue
+  const claimed = new Set()
+  return CORE_FILE_ASSOCIATIONS.map((association) => normalizeAssociation(association, 'core')).map(
+    (association) => {
+      for (const ext of association.ext) {
+        if (claimed.has(ext)) {
+          throw new Error(`file association conflict: ".${ext}" is claimed by more than one entry.`)
+        }
+        claimed.add(ext)
       }
-      const previousOwns = previous.association.rank === 'Owner'
-      const entryOwns = entry.association.rank === 'Owner'
-      if (previousOwns && entryOwns) {
-        throw new Error(
-          `file association conflict: ".${ext}" is claimed as Owner by both ${previous.owner} and ` +
-            `${entry.owner}. Exactly one layer may own an extension — demote one to "Alternate".`,
-        )
-      }
-      // Precedence: Owner wins; otherwise the earlier entry (core, then plugin-name order).
-      const winner = entryOwns && !previousOwns ? entry : previous
-      const loser = winner === entry ? previous : entry
-      claimedBy.set(ext, winner)
-      dropped.set(ext, [...(dropped.get(ext) ?? []), loser.owner])
-    }
-  }
-  // Emit each entry with the extensions it actually won, dropping any that lost every one.
-  return entries
-    .map(({ association }) => ({
-      ...association,
-      ext: association.ext.filter((ext) => claimedBy.get(ext)?.association === association),
-    }))
-    .filter((association) => association.ext.length > 0)
+      return association
+    },
+  )
 }
 
 /** The committed tauri.conf.json, parsed. */
@@ -404,7 +313,7 @@ function formatTauriConfig() {
 }
 
 /**
- * Is the committed config in sync with what core + the manifests declare?
+ * Is the committed config in sync with what core declares?
  * @returns {{ ok: boolean, expected: FileAssociationEntry[], actual: unknown }}
  */
 export function checkFileAssociations() {

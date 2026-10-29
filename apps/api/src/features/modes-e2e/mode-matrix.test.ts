@@ -1,12 +1,11 @@
-import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
+import { beforeAll, describe, expect, test } from 'bun:test'
 import { defineAgentTool, type AgentTool } from '@localixai/agent/agents'
 import { z } from 'zod'
 
 import { DEFAULT_AGENT_NAME } from '../../db/author'
 import { builtinAgentPreset } from '../capabilities/builtin-agent-presets'
 import { PERMISSION_MODES } from '../../contracts/permission-modes'
-import { loadBundledMiniAppTools, type LoadedBundledTools } from './testing/bundled-mini-app-tools'
-import { CORE_CALL_CASES, WORKSPACE, type CallCase } from './testing/core-call-cases'
+import { CORE_CALL_CASES, type CallCase } from './testing/core-call-cases'
 import { contributedCallCases, matrixMismatches, type PresetUnderTest } from './testing/mode-matrix'
 import { modeSurface, runRegistry } from './testing/run-surface'
 
@@ -18,24 +17,40 @@ import { modeSurface, runRegistry } from './testing/run-surface'
  * to destroy, autonomous also refuses what waits on a person. That promise is only as good as
  * the CLASS each tool gives each call — a misclassified write is a write plan mode lets through.
  * So the core tools' calls carry classes written by hand (`core-call-cases.ts`), checked against
- * the tool first; the bundled plugins' tools, which core may not name, are exercised action by
+ * the tool first; the tools a mini app contributes, which core may not name, are exercised action by
  * action with the class each states (`contributedCallCases`) — their hand-written classes are
- * pinned by each plugin's own `classify.test.ts`.
+ * pinned by each mini app's own tests.
  */
-let plugins: LoadedBundledTools
+
+/**
+ * A tool as a mini app contributes it: one tool, several actions, each with a class of its own.
+ * Core knows no concrete mini app, so the roster carries this stand-in.
+ */
+const contributed = defineAgentTool({
+  name: 'fixture_board',
+  label: 'Fixture board',
+  activeVerb: 'Using the board',
+  description: 'A tool with a read action, a write action and a destructive one.',
+  inputSchema: z.object({ action: z.enum(['list', 'add', 'clear']) }),
+  mutates: true,
+  classify: (input) => {
+    const action = (input as { action?: string }).action
+    if (action === 'list') return { effect: 'read' }
+    if (action === 'clear') return { effect: 'files', irreversible: true }
+    return { effect: 'files' }
+  },
+  execute: async () => ({ content: 'ok' }),
+}) as unknown as AgentTool
+const contributedTools: AgentTool[] = [contributed]
 const tools = new Map<string, AgentTool>()
 const pluginNames: string[] = []
 const ALL_CASES: CallCase[] = [...CORE_CALL_CASES]
 
-beforeAll(async () => {
-  plugins = await loadBundledMiniAppTools(WORKSPACE)
-  pluginNames.push(...plugins.tools.map((tool) => tool.name))
-  for (const tool of runRegistry('chat', 'default', [], plugins.tools).tools)
+beforeAll(() => {
+  pluginNames.push(...contributedTools.map((tool) => tool.name))
+  for (const tool of runRegistry('chat', 'default', [], contributedTools).tools)
     tools.set(tool.name, tool)
-  ALL_CASES.push(...contributedCallCases(plugins.tools))
-})
-afterAll(async () => {
-  await plugins?.dispose()
+  ALL_CASES.push(...contributedCallCases(contributedTools))
 })
 
 /**
@@ -50,20 +65,15 @@ const PRESETS: PresetUnderTest[] = [DEFAULT_AGENT_NAME].map((name) => ({
 }))
 
 describe('the roster under test', () => {
-  test('the bundled plugins load through the host loader, and some carry tools', () => {
-    expect(plugins.failures).toEqual([])
-    expect(pluginNames.length).toBeGreaterThan(10)
-  })
-
-  test('every tool a chat run builds, plugin tools included, has at least one case', () => {
+  test('every tool a chat run builds, a mini app’s included, has at least one case', () => {
     const covered = new Set(ALL_CASES.map((call) => call.tool))
     expect([...tools.keys()].filter((name) => !covered.has(name))).toEqual([])
   })
 
-  test('the contributed cases reach past reads: some plugin call is not a read', () => {
-    const contributed = ALL_CASES.filter((call) => pluginNames.includes(call.tool))
-    expect(contributed.some((call) => call.cls.effect !== 'read')).toBe(true)
-    expect(contributed.length).toBeGreaterThan(pluginNames.length)
+  test('the contributed cases reach past reads: some call of a mini app’s tool is not a read', () => {
+    const cases = ALL_CASES.filter((call) => pluginNames.includes(call.tool))
+    expect(cases.some((call) => call.cls.effect !== 'read')).toBe(true)
+    expect(cases.length).toBeGreaterThan(pluginNames.length)
   })
 
   test('every shipped agent has a preset, and localix is among them', () => {

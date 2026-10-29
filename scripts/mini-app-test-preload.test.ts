@@ -20,7 +20,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const ROOT = join(import.meta.dir, '..')
-const WORKSPACE_ROOTS = ['apps', 'plugins']
+const WORKSPACE_ROOTS = ['apps']
 const DEADLINE = '../../scripts/test-deadline.ts'
 const KIT_PRELOAD = '../../packages/kit/test-preload.ts'
 const UI_PRELOAD = './src/testing/preload.ts'
@@ -71,7 +71,7 @@ describe('mini app test preload', () => {
     ).toEqual([])
   })
 
-  test('every app and mini app with DOM tests chains the kit preload', () => {
+  test('every app with DOM tests chains the kit preload', () => {
     const offenders: string[] = []
     for (const owner of WORKSPACE_ROOTS) {
       for (const entry of readdirSync(join(ROOT, owner), { withFileTypes: true })) {

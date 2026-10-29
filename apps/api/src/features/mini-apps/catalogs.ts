@@ -1,4 +1,3 @@
-import { pathToFileURL } from 'node:url'
 import type { Kysely } from 'kysely'
 
 import type { AppDatabase } from '../../db/types'
@@ -11,12 +10,11 @@ import type { MiniAppStoreSource } from './store-offers'
 /** One catalog the store reads, as Settings lists it. */
 export interface MiniAppCatalogRecord {
   url: string
-  /** Comes with Localix: the hosted catalog, or a development checkout's apps. */
+  /** Comes with Localix: the hosted catalog. */
   builtIn: boolean
 }
 
-const urlOf = (source: MiniAppStoreSource) =>
-  source.kind === 'catalog' ? source.url : pathToFileURL(source.root).href
+const urlOf = (source: MiniAppStoreSource) => source.url
 
 /** An HTTPS URL or a `file://` path, or null: a catalog is fetched with no other scheme. */
 export function normalizeCatalogUrl(raw: string): string | null {

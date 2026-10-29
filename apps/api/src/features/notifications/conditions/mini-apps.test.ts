@@ -96,32 +96,6 @@ describe('mini app conditions', () => {
     apps.backendProblems('chat', [])
     expect(await openRows(test)).toEqual([])
   })
-
-  it('an app that did not build is one row until the report that no longer names it', async () => {
-    const { test, apps } = await setup()
-    const reason = 'error: Could not resolve: "left-pad"'
-    await apps.stagingFailed([
-      { name: 'fresh', reason, lastGoodCopy: false },
-      { name: 'weather', reason, lastGoodCopy: true },
-    ])
-    let open = await openRows(test)
-    const described = open.map((row) => [row.title, row.severity, row.body?.includes(reason)])
-    expect(described.sort(([a], [b]) => String(a).localeCompare(String(b)))).toEqual([
-      ['The fresh mini app did not build', 'error', true],
-      ['The weather mini app is running its last successful build', 'warning', true],
-    ])
-    // Not swept by `enabled`: an app that never built is enabled nowhere, and its row must stay.
-    await apps.enabled(new Set(['weather']))
-    expect((await openRows(test)).length).toBe(2)
-
-    await apps.stagingFailed([{ name: 'weather', reason, lastGoodCopy: true }])
-    open = await openRows(test)
-    expect(open.map((row) => row.title)).toEqual([
-      'The weather mini app is running its last successful build',
-    ])
-    await apps.stagingFailed([])
-    expect(await openRows(test)).toEqual([])
-  })
 })
 
 describe('ctx.reportProblem, as bound for a load that runs mini app code', () => {
@@ -159,7 +133,6 @@ describe('ctx.reportProblem, as bound for a load that runs mini app code', () =>
 
 describe('the loader answers for each mini app it loads', () => {
   let dir: string
-  const prevBundled = process.env.LOCALIX_BUNDLED_MINI_APPS_DIR
   const on: AvailabilityReader = { effectFor: () => 'allow' }
   const repo = (): CapabilitySourceRepository => ({
     listForScope: async () => [],
@@ -175,7 +148,6 @@ describe('the loader answers for each mini app it loads', () => {
 
   beforeAll(async () => {
     dir = await fs.mkdtemp(join(tmpdir(), 'mini-app-conditions-'))
-    process.env.LOCALIX_BUNDLED_MINI_APPS_DIR = await fs.mkdtemp(join(tmpdir(), 'mini-app-cond-b-'))
     const root = join(dir, '.localix', 'mini-apps', 'broken')
     await fs.mkdir(join(root, 'backend'), { recursive: true })
     await fs.writeFile(
@@ -194,8 +166,6 @@ describe('the loader answers for each mini app it loads', () => {
     )
   })
   afterAll(async () => {
-    if (prevBundled === undefined) delete process.env.LOCALIX_BUNDLED_MINI_APPS_DIR
-    else process.env.LOCALIX_BUNDLED_MINI_APPS_DIR = prevBundled
     await fs.rm(dir, { recursive: true, force: true })
   })
 

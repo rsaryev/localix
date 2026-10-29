@@ -3,11 +3,8 @@ import { join, resolve } from 'node:path'
 import { MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
 
 import { listSubdirs, pathExists } from '../ext/fs-discovery'
-import { resolveBundledRoot } from '../../lib/bundled-root'
-import { envString } from '../../lib/env'
-import { syncBundledMiniApps } from './bundled-install'
 import { type DiscoveredMiniApp, loadMiniApp } from './folder'
-
+import { pruneRetiredManagedCopies } from './managed-copy'
 import { MINI_APPS_SUBDIR } from './paths'
 
 export { MINI_APPS_SUBDIR }
@@ -20,33 +17,8 @@ export { type DiscoveredMiniApp, loadMiniApp }
  * these folders. A project's copy appears only under a name the user's own do not hold.
  */
 
-/** Written beside a staged root by the build; a root without it is source, never synchronized. */
-const BUNDLED_STAGING_MARKER = '.localix-staged.json'
-
-/**
- * Where the mini apps Localix ships come from: the `LOCALIX_BUNDLED_MINI_APPS_DIR` override, else
- * the staged `mini-apps/` beside the server bundle, else the repository's `mini-apps/` when
- * running from source (`lib/bundled-root.ts`).
- */
-export function bundledMiniAppsRoot(): string {
-  return resolveBundledRoot({
-    moduleUrl: import.meta.url,
-    dirName: 'mini-apps',
-    sourceRelative: '../../../../../mini-apps',
-    override: envString('LOCALIX_BUNDLED_MINI_APPS_DIR'),
-  })
-}
-
-/**
- * The root to synchronize from: one named explicitly (tests, the dev launcher), or a staged one.
- * The source tree fails this on purpose: its mini apps carry authoring files and workspace
- * imports and must never be copied into the user's root as they are.
- */
-export async function bundledMiniAppsSyncRoot(): Promise<string | null> {
-  const root = bundledMiniAppsRoot()
-  if (envString('LOCALIX_BUNDLED_MINI_APPS_DIR')) return root
-  return (await pathExists(join(root, BUNDLED_STAGING_MARKER))) ? root : null
-}
+/** Install roots whose retired copies this process already swept. */
+const prunedRoots = new Set<string>()
 
 async function scanRoot(
   root: string,
@@ -77,41 +49,29 @@ function byPrecedence(batches: DiscoveredMiniApp[][]): DiscoveredMiniApp[] {
 /**
  * The mini apps visible to one scope. The user's own come first: a project picks its own
  * names, and a project copy that shadowed one of the user's would inherit the yes given to it.
+ * The first discovery of a process also sweeps the copies earlier installs and updates retired
+ * (`managed-copy.ts`), before anything from them is imported.
  */
 export async function discoverMiniApps(opts: {
   homeDir: string
   cwd?: string | null
   projectId?: string
-  /** Synchronize the shipped mini apps into the user's root first (default true). */
-  includeBundled?: boolean
 }): Promise<DiscoveredMiniApp[]> {
   const projectId = opts.projectId ?? ''
   const absCwd = opts.cwd && opts.cwd !== '/' ? resolve(opts.cwd) : null
-  const bundledRoot = (opts.includeBundled ?? true) ? await bundledMiniAppsSyncRoot() : null
-  const bundled = bundledRoot
-    ? await syncBundledMiniApps(bundledRoot, opts.homeDir)
-    : new Set<string>()
+  const installRoot = join(opts.homeDir, MINI_APPS_SUBDIR)
+  if (!prunedRoots.has(installRoot)) {
+    prunedRoots.add(installRoot)
+    await pruneRetiredManagedCopies(installRoot)
+  }
   const [own, projects] = await Promise.all([
-    scanRoot(join(opts.homeDir, MINI_APPS_SUBDIR), 'global', ''),
+    scanRoot(installRoot, 'global', ''),
     projectId && absCwd && absCwd !== opts.homeDir
       ? scanRoot(join(absCwd, MINI_APPS_SUBDIR), 'project', projectId)
       : Promise.resolve([]),
   ])
-  const mine = own.map((app) => ({ ...app, projectId, bundled: bundled.has(app.name) }))
+  const mine = own.map((app) => ({ ...app, projectId }))
   return byPrecedence([mine, projects])
-}
-
-/**
- * The mini apps in the shipped source root, read in place and sorted by name: what the build
- * stages, for the checks and generators that must see exactly that set whatever the user has.
- * One marked `private` (the authoring template) is left out.
- */
-export async function discoverBundledMiniApps(): Promise<DiscoveredMiniApp[]> {
-  const found = await scanRoot(bundledMiniAppsRoot(), 'global', '')
-  return found
-    .filter((app) => app.manifest?.private !== true)
-    .map((app) => ({ ...app, bundled: true }))
-    .sort((a, b) => a.name.localeCompare(b.name))
 }
 
 /** Where a new mini app of this scope is installed. */

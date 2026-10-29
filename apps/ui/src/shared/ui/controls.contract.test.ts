@@ -21,7 +21,7 @@ import { expectNoRawOwners } from '@localixai/kit/testing/ownership-contract'
  * owns a raw control lives in the kit now, so no host file is exempt.
  */
 const REPO_ROOT = new URL('../../../../../', import.meta.url).pathname
-const HOST_ROOTS = ['apps/ui/src', 'mini-apps'] as const
+const HOST_ROOTS = ['apps/ui/src'] as const
 
 const hostSources = () => tsxSourcesUnder(REPO_ROOT, HOST_ROOTS)
 const hostRawOwners = (pattern: RegExp, skipTests: boolean) =>

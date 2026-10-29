@@ -24,7 +24,7 @@ Status: steps 2a and 2b are built ([As built](#as-built)); 2c's screens follow. 
 | Source                    | Listings today | Where packages live                       |
 | ------------------------- | -------------- | ----------------------------------------- |
 | Localix mini app catalog  | 20             | Archives in the catalog's release         |
-| `localix` marketplace     | 1–5            | This repository                           |
+| `localix` marketplace     | 1–5            | The Localix marketplace repository        |
 | `claude-plugins-official` | 315            | Mostly in the marketplace repository      |
 | `claude-community`        | 2,283          | Mostly in their authors' own repositories |
 
@@ -65,7 +65,8 @@ One configuration file lists the sources a fresh profile starts with; adding one
 | `weight`    | Ranking factor: `localix` 1.0, `official` 0.7, `community` 0.35 by default. |
 | `editorial` | Whether its collections and featured flags may reach Discover.              |
 
-Starting entries: the Localix mini app catalog and the `localix` marketplace (`localix`, editorial),
+Starting entries: the Localix marketplace's mini app catalog and its `localix` plugin marketplace
+(one repository, `rsaryev/localix-marketplace`; `localix`, editorial),
 `anthropics/claude-plugins-official` (`official`, editorial) and
 `anthropics/claude-plugins-community` (`community`, not editorial).
 

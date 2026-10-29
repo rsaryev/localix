@@ -11,7 +11,7 @@ import { join, relative, resolve } from 'node:path'
  * written as a raw pixel height instead — `h-[43px]`, `min-h-[40px]` — is invisible
  * to that scale: it cannot be retuned with the theme and it silently stops lining up
  * with the row above it. `workbench-foundations.test.ts` pins the primitives; this
- * pins everything downstream of them, across the app AND every mini app, so the drift
+ * pins everything downstream of them, across the app and the kit, so the drift
  * cannot come back one panel at a time.
  *
  * Scope is deliberately narrow: only ARBITRARY PIXEL heights. Tailwind's own scale
@@ -22,7 +22,7 @@ import { join, relative, resolve } from 'node:path'
 
 const repoRoot = resolve(import.meta.dir, '..')
 /** The kit is where the primitives live; a root left out here is a tree the guard never reads. */
-const ROOTS = ['apps/ui/src', 'packages/kit/src', 'plugins']
+const ROOTS = ['apps/ui/src', 'packages/kit/src']
 const SKIP_DIRS = new Set(['node_modules', 'dist', 'build', '.turbo', 'coverage', '__snapshots__'])
 
 /**

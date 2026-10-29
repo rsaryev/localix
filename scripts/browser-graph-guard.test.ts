@@ -41,10 +41,8 @@ describe('the web graph reaches no node builtin', () => {
   test('nothing the web build pulls in imports node:*', () => {
     const entries = webEntries()
     // The globs must actually match, or this test passes by walking nothing — and the
-    // two that reach OUTSIDE apps/ui (mini app UIs, feature contributions) are the ones
-    // a rename would silently empty.
+    // feature contributions are the ones a rename would silently empty.
     expect(entries.length).toBeGreaterThan(10)
-    expect(entries.some((entry) => entry.startsWith('mini-apps/'))).toBe(true)
     expect(entries.some((entry) => entry.includes('/contrib.'))).toBe(true)
     expect(report(reachesNodeBuiltins(entries))).toEqual([])
   })

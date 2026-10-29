@@ -1,61 +1,47 @@
-# Built-in plugins and updates
+# Plugin marketplaces and updates
 
-Localix ships a few Claude Code plugins inside the app, registers the Store's default marketplaces
-on first start, and keeps plugins installed from marketplaces up to date the way Claude Code does.
-Use this page to see what is built in, where a plugin's version comes from, and when an update runs.
+Localix registers the Store's default marketplaces on first start and keeps plugins installed from
+marketplaces up to date the way Claude Code does. Use this page to see which marketplaces come
+registered, where a plugin's version comes from, and when an update runs.
 
 ## What you can do
 
-| Outcome                                       | How                                                                       |
-| --------------------------------------------- | ------------------------------------------------------------------------- |
-| Turn a built-in plugin off                    | Its switch in the Store (Plugins), **Built-in** group                     |
-| Update one plugin now                         | **Update now** on its row, or `/plugin update <name>`                     |
-| Update a marketplace and its plugins          | **Update marketplace** on its row, or `/plugin marketplace update <name>` |
-| Refresh every listing, installing nothing     | `/plugin marketplace update`                                              |
-| Turn auto-update on or off for a marketplace  | The switch on its row under **Marketplaces**                              |
-| Use the built-in plugins in plain Claude Code | `claude plugin marketplace add rsaryev/localix`                           |
+| Outcome                                      | How                                                                       |
+| -------------------------------------------- | ------------------------------------------------------------------------- |
+| Update one plugin now                        | **Update now** on its row, or `/plugin update <name>`                     |
+| Update a marketplace and its plugins         | **Update marketplace** on its row, or `/plugin marketplace update <name>` |
+| Refresh every listing, installing nothing    | `/plugin marketplace update`                                              |
+| Turn auto-update on or off for a marketplace | The switch on its row under **Marketplaces**                              |
+| Use Localix's plugins in plain Claude Code   | `claude plugin marketplace add rsaryev/localix-marketplace`               |
 
 ## How it works
 
-### Built-in plugins
+### Localix's own plugins
 
-A built-in plugin ships inside Localix, like Claude Code's `<name>@builtin` ones: its source is
-`builtin`, and the Store (Plugins) lists it in a **Built-in** group. It is on unless its manifest
-sets `defaultEnabled: false`, and its switch turns it off like any plugin's. It has no **Remove**
-and no **Update now**: `/plugin remove` and `/plugin update` refuse it, and it updates when Localix
-does. `builtin` is a reserved origin, so no marketplace can register under it.
-
-| Built-in plugin      | What it adds                                                                                                  |
-| -------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `mini-app-authoring` | `/mini-app-authoring:create`, `check`, `install`, `publish` and `get-localix`, a reviewer agent, an edit hook |
-
-**Name conflicts:** a built-in plugin holds its name over every other copy, as managed plugins do in
-Claude Code. Localix's order, highest first, is built-in, your installs (`~/.localix/plugins` and
-the version cache), plugins loading in place from a local-folder marketplace, plugins Claude Code
-installed, then a project's own plugins under a name nothing else holds. A copy that loses its name
-to a built-in plugin does not load, and the built-in plugin's row says where that copy is.
-Installing a plugin under a built-in name is refused.
-
-The source of the built-in plugins is the repository's
-[`plugins/`](https://github.com/rsaryev/localix/tree/main/plugins) folder. The same folders are
-listed in the repository's own `.claude-plugin/marketplace.json`, so in plain Claude Code:
+Localix ships no plugin. Its own, such as `mini-app-authoring`, live in the
+[Localix marketplace](https://github.com/rsaryev/localix-marketplace), which is the `localix`
+default marketplace below: they install, update and switch off in the Store (Plugins) like any
+other, and carry no special origin or precedence. In plain Claude Code:
 
 ```bash
-claude plugin marketplace add rsaryev/localix
+claude plugin marketplace add rsaryev/localix-marketplace
 claude plugin install mini-app-authoring@localix
 ```
+
+**Name conflicts:** Localix's order, highest first, is your installs (`~/.localix/plugins` and the
+version cache), plugins loading in place from a local-folder marketplace, plugins Claude Code
+installed, then a project's own plugins under a name nothing else holds.
 
 ### The default marketplaces
 
 On first start Localix registers the [Store](../features/store.md)'s default marketplaces, the way
 Claude Code adds `claude-plugins-official`: its official `localix` from the GitHub repository
-`rsaryev/localix` (only the catalog and `plugins/` are checked out), Anthropic's
+`rsaryev/localix-marketplace` (only the catalog and `plugins/` are checked out), Anthropic's
 `claude-plugins-official` and its community `claude-community`. Nothing from them is installed. One
-already registered from the same repository, under any name, is reused. They are not bundled, so
-they need the network once; offline (or with `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` set) they
-are skipped and tried again at the next start. Removing one is remembered: it is not added back
-until you add it yourself, for example with `/plugin marketplace add rsaryev/localix`. A plugin that
-is both built in and listed there appears once, as built-in.
+already registered from the same repository, under any name, is reused. They need the network once;
+offline (or with `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` set) they are skipped and tried again at
+the next start. Removing one is remembered: it is not added back until you add it yourself, for
+example with `/plugin marketplace add rsaryev/localix-marketplace`.
 
 ### Updates
 
@@ -150,8 +136,6 @@ like credentials and with `CLAUDE_CODE_PLUGIN_NAME` and `CLAUDE_CODE_PLUGIN_ARCH
   `version` field is set, so they are not updated on their own.
 - A remote git entry is checked by its commit without being fetched, so a new commit whose manifest
   keeps the same `version` shows as an update once; applying it installs nothing and says so.
-- A built-in plugin changes only with a Localix release; in development, after a restart of
-  `bun run dev`.
 
 ## Related guides
 
@@ -161,7 +145,7 @@ like credentials and with `CLAUDE_CODE_PLUGIN_NAME` and `CLAUDE_CODE_PLUGIN_ARCH
 
 ## Source of truth
 
-- [Built-in plugins](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/builtin-plugins.ts)
+- [The default sources](https://github.com/rsaryev/localix/blob/main/packages/store/src/default-sources.ts)
 - [The version rule](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/plugin-version.ts)
 - [The version cache](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/plugin-cache.ts)
 - [Updates and the auto-update pass](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/plugin-updates.ts)

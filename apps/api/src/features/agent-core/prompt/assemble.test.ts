@@ -13,6 +13,9 @@ const SHAPE = {
   job: { ...resolveRunProfile({ sessionKind: 'job' }), toolExposure: {} },
 }
 import { renderCapabilityMatrix } from './testing/prompt-harness'
+import type { AgentTool } from '@localixai/agent/agents'
+import { z } from 'zod'
+import { BOARD_OWNER } from './sections/turn-contract'
 import { richRegistry } from './testing/prompt-render'
 
 /** The runtime sections as the model reads them — in order, one block after another. */
@@ -46,6 +49,26 @@ describe('buildAgentSystemPrompt', () => {
     const legacy = partsOf({ toolRegistry, sessionTopic: { title: 'Legacy' } })
     expect(legacy.runtimeTail).toContain('follow the current user request')
     expect(legacy.runtimeTail).not.toContain('## Previous topic summary')
+  })
+  // The core names no mini app (X4): a board is whichever tool says it is one, by any name.
+  test('the board rules follow the tool that declares the task-board role, whatever its name', () => {
+    const tool = (name: string, roles?: AgentTool['roles']): AgentTool => ({
+      name,
+      description: 'Cards.',
+      activeVerb: 'Updating cards',
+      inputSchema: z.object({}),
+      execute: async () => ({ content: '' }),
+      ...(roles ? { roles } : {}),
+    })
+    const promptWith = (extra: AgentTool) =>
+      buildAgentSystemPrompt({
+        toolRegistry: createRuntimeToolRegistry({
+          policy: { agentProfile: SHAPE.orchestrator, extraTools: [extra] },
+        }),
+        conversation: true,
+      })
+    expect(promptWith(tool('work_items', ['task-board']))).toContain(BOARD_OWNER)
+    expect(promptWith(tool('kanban'))).not.toContain(BOARD_OWNER)
   })
   test('the turn contract renders for a run in a conversation, in the runtime context', () => {
     const toolRegistry = richRegistry(SHAPE.orchestrator)

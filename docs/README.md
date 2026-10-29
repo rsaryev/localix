@@ -25,7 +25,6 @@ Read [Privacy](getting-started/privacy.md) to understand data storage and outbou
 | Review actions before they run       | [Permission modes](features/permission-modes.md) · [Permission rules](features/permissions.md)                             |
 | Choose a provider or model           | [Providers](features/providers.md)                                                                                         |
 | Run models on this computer          | [Local models](features/local-models.md) · [Semantic search](features/semantic-search.md)                                  |
-| Track a larger goal                  | [Kanban](features/task-board.md) · [Session tasks recipe](recipes/turn-a-vague-goal-into-a-pipeline.md)                    |
 | Wait for CI or repeat a prompt       | [Monitors](features/monitors.md) · [Loops](features/loops.md)                                                              |
 | Add a tool or workbench              | [Build with the agent](extending/build-with-the-agent.md) · [Mini app authoring](extending/mini-apps.md)                   |
 | Change Localix itself                | [Contributing](internals/contributing.md) · [Code map](internals/code-map.md)                                              |
@@ -34,12 +33,11 @@ Read [Privacy](getting-started/privacy.md) to understand data storage and outbou
 
 Each recipe walks through one task from setup to a visible result.
 
-| Recipe                                                                               | Result                                                          |
-| ------------------------------------------------------------------------------------ | --------------------------------------------------------------- |
-| [Fix a UI bug by pointing at it](recipes/fix-a-ui-bug-by-pointing-at-it.md)          | Attach element context from the preview to a message.           |
-| [Turn a vague goal into session tasks](recipes/turn-a-vague-goal-into-a-pipeline.md) | Break down work on a passive board and fork isolated side work. |
-| [Bring your own agent CLI](recipes/bring-your-own-agent-cli.md)                      | Run a supported external coding agent in Localix.               |
-| [Drive an interactive program](recipes/drive-interactive-terminal.md)                | Send PTY input and wait for rendered terminal output.           |
+| Recipe                                                                      | Result                                                |
+| --------------------------------------------------------------------------- | ----------------------------------------------------- |
+| [Fix a UI bug by pointing at it](recipes/fix-a-ui-bug-by-pointing-at-it.md) | Attach element context from the preview to a message. |
+| [Bring your own agent CLI](recipes/bring-your-own-agent-cli.md)             | Run a supported external coding agent in Localix.     |
+| [Drive an interactive program](recipes/drive-interactive-terminal.md)       | Send PTY input and wait for rendered terminal output. |
 
 ## Feature reference
 
@@ -74,7 +72,6 @@ Each recipe walks through one task from setup to a visible result.
 | [External agent sessions](features/external-agents.md)            | Link supported external coding-agent sessions.                     |
 | [Settings](features/settings.md)                                  | Find application, project, provider, and capability settings.      |
 | [Keyboard shortcuts](features/keyboard-shortcuts.md)              | Find keyboard actions and their focus boundaries.                  |
-| [Use Source Control](features/source-control.md)                  | Inspect diffs, stage changes, commit, and manage branches.         |
 | [Annotate a live preview](features/visual-feedback.md)            | Attach source-mapped element feedback from a live preview.         |
 | [Use language server features](features/lsp.md)                   | Use diagnostics and language-server features.                      |
 | [Track model usage and estimated cost](features/cost-tracking.md) | Inspect model usage and estimated request cost.                    |
@@ -82,26 +79,6 @@ Each recipe walks through one task from setup to a visible result.
 | [Search by meaning](features/semantic-search.md)                  | Find chats, skills, plugins, MCP servers and agents by meaning.    |
 | [Manage notifications](features/notifications.md)                 | Configure notifications and review recorded events.                |
 | [Use Localix from the command line](features/cli.md)              | Open a project or file through the desktop shell launcher.         |
-
-### Workbenches
-
-| Guide                                                 | Covers                                                                  |
-| ----------------------------------------------------- | ----------------------------------------------------------------------- |
-| [Use Database Workspace](features/database.md)        | Query supported databases and inspect schemas and connection limits.    |
-| [Code Graph](features/code-graph.md)                  | Explore code relationships in the graph workbench.                      |
-| [Project Space](features/project-space.md)            | Arrange shared notes and live file cards on a canvas.                   |
-| [Use the API workbench](features/api.md)              | Save and send HTTP requests, inspect responses, and import collections. |
-| [Use DevOps Workspace](features/devops.md)            | Inspect containers and Kubernetes through the shared DevOps surface.    |
-| [Containers](features/docker.md)                      | Browse Docker resources, logs, terminals, and Compose projects.         |
-| [Operate Kubernetes clusters](features/kubernetes.md) | Inspect workloads, manifests, logs, and port forwards.                  |
-| [Documents](features/documents.md)                    | Extract supported files, use viewers, and generate documents.           |
-| [Resumes](features/resumes.md)                        | Edit a resume and preview or export its document.                       |
-| [Reader Workspace](features/reader.md)                | Read supported book and document formats with annotations.              |
-| [Research public markets](features/trading.md)        | Inspect public market data through read-only tools.                     |
-| [Kanban board](features/task-board.md)                | Track tasks, owners, epics, and dependencies on a chat’s board.         |
-| [2048](features/game-2048.md)                         | Play 2048 with the bundled workbench.                                   |
-| [Snake](features/game-snake.md)                       | Play Snake, or watch a decision model play it.                          |
-| [Games with your agent](features/games.md)            | Play the bundled board games with an agent.                             |
 
 ### Models & context
 
@@ -114,10 +91,10 @@ Each recipe walks through one task from setup to a visible result.
 
 ### Memory & skills
 
-| Guide                                                      | Covers                                                    |
-| ---------------------------------------------------------- | --------------------------------------------------------- |
-| [Carry context into later work](features/learning-loop.md) | Use memory, recall, courses, and saved learning progress. |
-| [Reuse procedures with skills](features/skills.md)         | Load, pin, and reuse procedures.                          |
+| Guide                                                      | Covers                                            |
+| ---------------------------------------------------------- | ------------------------------------------------- |
+| [Carry context into later work](features/learning-loop.md) | Use memory, session recall, and memory providers. |
+| [Reuse procedures with skills](features/skills.md)         | Load, pin, and reuse procedures.                  |
 
 ### Integrations
 

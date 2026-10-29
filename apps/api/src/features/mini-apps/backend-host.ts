@@ -14,7 +14,7 @@
  * mount table per request. Delegating with `wrapper.fetch(c.req.raw)` drops the parent
  * context, so a mini app route cannot read `c.get('userId')` — that used to be called
  * lossless because mini apps re-derived the user from the host's env module, which is
- * precisely the boundary crossing `plugin-boundary-contract.test.ts` polices. The resolved
+ * precisely the boundary crossing the SDK exists to prevent. The resolved
  * scope (user, project, CURRENT cwd) now travels as the mounted app's `c.env` instead.
  *
  * SDK capabilities follow the same wire/unwire lifecycle as every other

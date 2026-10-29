@@ -39,7 +39,7 @@ function externalPackage(
 function fixture(): string {
   const root = mkdtempSync(join(tmpdir(), 'localix-third-party-notices-'))
   roots.push(root)
-  manifest(root, '', { private: true, workspaces: ['apps/*', 'packages/*', 'plugins/*'] })
+  manifest(root, '', { private: true, workspaces: ['apps/*', 'packages/*'] })
   manifest(root, 'apps/api', { name: '@fixture/api', devDependencies: { 'dev-only': '1.0.0' } })
   manifest(root, 'apps/ui', {
     name: '@fixture/ui',
@@ -53,15 +53,6 @@ function fixture(): string {
     name: '@fixture/local',
     dependencies: { 'external-a': '1.0.0' },
   })
-  manifest(root, 'plugins/runtime', {
-    name: '@fixture/plugin-runtime',
-    dependencies: { 'plugin-only': '1.0.0' },
-  })
-  manifest(root, 'plugins/scaffold', {
-    name: '@fixture/plugin-scaffold',
-    dependencies: { 'private-only': '1.0.0' },
-  })
-  write(join(root, 'plugins/scaffold/mini-app.json'), JSON.stringify({ private: true }))
 
   externalPackage(
     root,
@@ -78,9 +69,7 @@ function fixture(): string {
     version: '2.0.0',
     license: 'ISC',
   })
-  externalPackage(root, 'plugin-only', { license: 'Apache-2.0' }, 'plugin license\n')
   externalPackage(root, 'landing-only', { license: 'MIT' }, 'landing license\n')
-  externalPackage(root, 'private-only', { license: 'MIT' }, 'private license\n')
   externalPackage(root, 'dev-only', { license: 'MIT' }, 'dev license\n')
 
   write(join(root, 'vendor/monaco-editor-runtime/LICENSE'), 'monaco license\n')
@@ -100,7 +89,6 @@ describe('third-party runtime notices', () => {
     expect(collectRuntimeNoticePackages({ repoRoot: root }).map(({ name }) => name)).toEqual([
       'external-a',
       'external-b',
-      'plugin-only',
     ])
     expect(
       collectRuntimeNoticePackages({ repoRoot: root, target: 'landing' }).map(({ name }) => name),
@@ -117,7 +105,6 @@ describe('third-party runtime notices', () => {
     expect(first).not.toContain('\r')
     expect(first).toContain('external-b@2.0.0\nDeclared license: ISC')
     expect(first).toContain('No license or notice text was included in the installed package.')
-    expect(first).not.toContain('private-only')
     expect(first).not.toContain('dev-only')
   })
 

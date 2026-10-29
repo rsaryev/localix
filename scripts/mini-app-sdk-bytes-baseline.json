@@ -12,6 +12,9 @@
       "bytes": 31
     }
   },
+  "./backend/testing": {
+    "bytes": 2206
+  },
   "./bounded-cache": {
     "bytes": 870
   },
@@ -73,6 +76,9 @@
   },
   "./ui-artifact": {
     "bytes": 994
+  },
+  "./ui/app": {
+    "bytes": 12967
   },
   "./ui/chart-export": {
     "bytes": 2636

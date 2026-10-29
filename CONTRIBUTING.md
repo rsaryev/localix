@@ -44,10 +44,11 @@ One development dependency is not OSI-licensed: `oxlint-plugin-react-doctor`, us
 optional `bun run lint:react-doctor`, ships under a modified MIT license that restricts some uses of
 its own source. It is never bundled into Localix artifacts.
 
-Runnable applications live in `apps/`, shared TypeScript libraries in `packages/`, installable
-extensions in `plugins/`, repository automation in `scripts/`, shared configuration in `config/`,
-documentation in `docs/`, and static media in `assets/`. Keep feature-specific code inside its
-feature and expose cross-feature behavior through typed ports or registries.
+Runnable applications live in `apps/`, shared TypeScript libraries in `packages/`, repository
+automation in `scripts/`, shared configuration in `config/`, documentation in `docs/`, and static
+media in `assets/`. Localix's own plugins and mini apps live in the
+[Localix marketplace](https://github.com/rsaryev/localix-marketplace). Keep feature-specific code
+inside its feature and expose cross-feature behavior through typed ports or registries.
 
 Oxfmt is authoritative: two-space indentation, 100-column width, single-quoted JavaScript strings,
 no semicolons, and trailing commas. Use `PascalCase` for React components and types, `camelCase` for
@@ -99,11 +100,10 @@ Linux native dependencies, and Rust compilation caching. They keep checks and re
 consistent. Pre-commit prints its selected packages, native platform, and test count: passing that
 scope does not mean the full CI suite has passed.
 
-Architecture, documentation, generated-output, vendor, plugin-manifest, dependency-audit, dead-code,
-global-isolation, and drop-in checks remain available as optional root scripts. Run them when
-relevant to a change. They are not required CI or release-verification gates. Full JavaScript
-formatting and lint checks are also available locally; pre-commit also runs focused tests, and
-pre-push checks affected types.
+Architecture, documentation, generated-output, dependency-audit, dead-code, and global-isolation
+checks remain available as optional root scripts. Run them when relevant to a change. They are not
+required CI or release-verification gates. Full JavaScript formatting and lint checks are also
+available locally; pre-commit also runs focused tests, and pre-push checks affected types.
 
 Add a deterministic regression test for changed behavior. Use DOM tests when interaction or
 accessibility needs rendered evidence. Run a focused test while iterating; CI runs the

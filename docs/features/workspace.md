@@ -111,7 +111,7 @@ but is disabled.
 
 ### Session scope and restoration
 
-Session tabs are placed in their root conversation's workspace; [Kanban](task-board.md), Browser,
+Session tabs are placed in their root conversation's workspace; mini app workbenches, Browser,
 Problems, Activity and Search are among them. Each open names its session — the chat a tool card, a
 link or a command belongs to — and a tab never takes the session of whichever chat happens to be on
 screen. Only app-level tabs (Settings, Usage, the Store, and mini app views registered as global)

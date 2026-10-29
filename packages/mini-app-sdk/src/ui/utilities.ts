@@ -1,4 +1,7 @@
 import { isAtOrUnder } from '@localixai/path-containment/ancestry'
+
+// Path ancestry for a screen that shows a tree of its own (the same rules the backend keeps).
+export { isAtOrUnder, isStrictlyUnder } from '@localixai/path-containment/ancestry'
 export { scoreSearchFields, type SearchField, type ScoreSearchOptions } from '@localixai/search'
 export {
   matchPositions,

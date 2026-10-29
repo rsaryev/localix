@@ -1,7 +1,6 @@
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { dirname, relative, resolve } from 'node:path'
 import { runtimeImports } from './runtime-imports'
-import { MINI_APPS_DIR } from './lib/bundled-roots.mjs'
 
 export const repoRoot = resolve(import.meta.dir, '..')
 
@@ -32,15 +31,12 @@ const KIT_LENT_DIR = resolve(repoRoot, 'apps/ui/src/app/kit')
  *
  * Vite's `import.meta.glob` calls are entries too — the feature contributions and the UI
  * surface manifest — and a `node:` import behind one of those is in the bundle exactly as
- * much as one behind `main.tsx`. Every bundled mini app's `ui/register` is the entry of its
- * own browser artifact (`plugins/mini-app-authoring/src/build/ui-build.ts`), so it is walked
- * the same way.
+ * much as one behind `main.tsx`.
  */
 const WEB_ENTRY_GLOBS = [
   'apps/ui/src/app/main.tsx',
   'apps/ui/src/features/*/contrib.{ts,tsx}',
   'apps/ui/src/**/*.surface.{ts,tsx}',
-  `${MINI_APPS_DIR}/*/ui/register.{ts,tsx}`,
 ]
 
 export function webEntries(): string[] {

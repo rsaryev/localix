@@ -63,7 +63,7 @@ const CARDS: Card[] = [
   },
   {
     title: 'Mini apps, with the agent inside',
-    text: 'A mini app is an application inside Localix: a screen, tools the agent can call and a guide for using them. Kanban, Database, DevOps, Trading and the games are mini apps. Run /mini-app-authoring:create and the agent writes, checks and installs one; through the host it gets decision models, embeddings and search. On macOS it also installs as a Mac app, in the Dock, Cmd+Tab and Spotlight.',
+    text: 'A mini app is an application inside Localix: a screen, tools the agent can call and a guide for using them. Kanban, Database, DevOps, Trading and the games are mini apps from the Localix marketplace, installed from the Store like any other. Run /mini-app-authoring:create and the agent writes, checks and installs one; through the host it gets decision models, embeddings and search. On macOS it also installs as a Mac app, in the Dock, Cmd+Tab and Spotlight.',
     capture: {
       name: 'mini-apps',
       alt: 'The Kanban board mini app in Localix: the add-task bar, filters, progress and the columns of task cards',

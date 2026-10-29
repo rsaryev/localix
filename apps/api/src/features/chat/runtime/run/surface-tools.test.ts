@@ -3,8 +3,7 @@ import { describe, expect, test } from 'bun:test'
 import type { StoredMessagePayload } from '../../../../db/payload'
 import { answeredRows, surfaceMiniApps, surfaceTools } from './surface-tools'
 
-// Fixture mini app names: core code must not name a bundled mini app, tests included
-// (`scripts/mini-app-identity-guard.mjs`), and these rules are about any mini app.
+// Fixture mini app names: core code names no mini app (rule X4), and these rules are about any.
 const BOARD = 'fixture-board'
 const GAME = 'fixture-game'
 const STORE = 'fixture-store'

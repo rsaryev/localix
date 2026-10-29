@@ -5,7 +5,7 @@ import type { Offer } from './store-offers'
 export interface MiniAppStoreDetails {
   version?: string
   apiVersion?: number
-  /** The archive's bytes; a local app has none. */
+  /** The archive's bytes. */
   size?: number
   license?: string
   author?: string
@@ -48,7 +48,7 @@ export async function storePage<TEntry>(
     details: {
       ...(offer.version ? { version: offer.version } : {}),
       ...(offer.apiVersion ? { apiVersion: offer.apiVersion } : {}),
-      ...(offer.from === 'catalog' ? { size: offer.archive.bytes } : {}),
+      size: offer.archive.bytes,
       ...(store.license ? { license: store.license } : {}),
       ...(store.author ? { author: store.author } : {}),
       ...(store.homepage ? { homepage: store.homepage } : {}),

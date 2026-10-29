@@ -12,6 +12,7 @@ type Step = {
   if?: string
   'continue-on-error'?: boolean
   with?: Record<string, string>
+  env?: Record<string, string>
 }
 type Job = {
   steps: Step[]
@@ -53,6 +54,15 @@ describe('CI minute budget contract', () => {
     for (const [name, job] of Object.entries(release.jobs)) {
       expect(job['runs-on']).toBe(name === 'build-desktop' ? '${{ matrix.os }}' : 'ubuntu-24.04')
     }
+  })
+
+  // The kit job stages from an unstamped checkout (the desktop job stamps its own); without the
+  // release version the kit — and the package it is — said 0.0.1 in every release.
+  test('stamps the release version into the mini app kit it publishes', () => {
+    const step = Object.values(release.jobs)
+      .flatMap((job) => job.steps)
+      .find((candidate) => candidate.run?.includes('stage-mini-app-kit.mjs'))
+    expect(step?.env?.LOCALIX_VERSION).toBe('${{ needs.prepare.outputs.version }}')
   })
 
   test('packages macOS on macos-15 and Linux on ubuntu-22.04', () => {

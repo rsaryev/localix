@@ -133,12 +133,6 @@ const editorialSchema = z.object({
 })
 export type MiniAppCatalogEditorial = z.infer<typeof editorialSchema>
 
-/** The picks beside a local source's apps (`catalog-picks.json`), read like a catalog's. */
-export function parseCatalogEditorial(raw: unknown): MiniAppCatalogEditorial | undefined {
-  const parsed = editorialSchema.safeParse(raw)
-  return parsed.success ? parsed.data : undefined
-}
-
 const catalogSchema = z.object({
   schema: z.literal(MINI_APP_CATALOG_SCHEMA),
   apps: z.array(z.unknown()),

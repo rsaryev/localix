@@ -25,13 +25,7 @@ const EXEMPT: ReadonlyArray<{ file: string; why: string }> = []
 // venue's rules" is a sentence, not a radius — so mini apps are scanned where their UI lives.
 // The kit is where the primitives live: every consumer inherits a drifted value from there, so
 // leaving it out would stop enforcing the rules on the code they were written for.
-const INCLUDE = [
-  'apps/ui/src/**/*.{ts,tsx}',
-  'packages/kit/src/**/*.{ts,tsx}',
-  'mini-apps/**/*.tsx',
-  'mini-apps/**/ui/**/*.ts',
-  'mini-apps/**/frontend/**/*.ts',
-]
+const INCLUDE = ['apps/ui/src/**/*.{ts,tsx}', 'packages/kit/src/**/*.{ts,tsx}']
 // The kit's `src/testing/` is the renamed home of the `*.test-utils.ts` helpers: test support that
 // plants shapes on purpose, never a class string a surface renders.
 const isTest = (file: string) =>

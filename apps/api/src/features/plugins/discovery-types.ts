@@ -34,10 +34,6 @@ export interface DiscoveredPlugin {
    * never the folder.
    */
   inPlaceInstall?: string
-  /** Shipped inside Localix (`builtin-plugins.ts`): `<name>@builtin`, updated with Localix. */
-  builtin?: boolean
-  /** On a built-in plugin: the other copies of its name that do not load because of it. */
-  shadowNotes?: string[]
   /**
    * A user-scope copy installed from a marketplace into the version cache (`plugin-cache.ts`):
    * its `<name>@<marketplace>` and the resolved version it was installed at.

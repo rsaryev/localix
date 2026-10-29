@@ -44,7 +44,7 @@ export const CC_HOOK_EVENTS = [
   'SessionEnd',
   'SubagentStart',
   'SubagentStop',
-  // The task board (the `kanban` tool) gained a card, or is about to close one.
+  // The task board (the tool with the `task-board` role) gained a card, or is about to close one.
   'TaskCreated',
   'TaskCompleted',
   'PreCompact',

@@ -7,17 +7,14 @@ retrieve evidence from an earlier session.
 **Boundary:** Localix loads stored context, but it does not extract every durable fact or workflow
 automatically.
 
-![A file-authored course open on its concept lesson, with theory, testing and practice steps](../assets/screenshots/learning/course--2026-10-08.png)
-
 ## What you can do
 
-| Surface             | Mechanism                                                                              | Boundary                                                                                                 |
-| ------------------- | -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| Memory              | Keep facts in Claude Code's auto memory folder, one file each, indexed in `MEMORY.md`  | The agent saves with `Write` and `Edit`; `/memory` shows the folder or saves a fact                      |
-| Skills              | Reuse project or global procedures stored as `SKILL.md` files                          | Saving is explicit or depends on the model choosing the `Skill` tool; see [Skills](skills.md)            |
-| Session recall      | Discover sessions by full-text query, browse recent sessions, or page around a message | Recall requires `GlobalSearch`; transcripts are not injected on every turn                               |
-| Learning Studio     | Build, import, export, and study file-authored courses                                 | The bundled `learning` mini app is enabled by default but can be disabled; courses belong to one session |
-| Memory-provider API | Let one enabled mini app backend replace or append built-in prompt memory              | Provider calls are bounded and best-effort; a disabled app contributes nothing                           |
+| Surface             | Mechanism                                                                              | Boundary                                                                                      |
+| ------------------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Memory              | Keep facts in Claude Code's auto memory folder, one file each, indexed in `MEMORY.md`  | The agent saves with `Write` and `Edit`; `/memory` shows the folder or saves a fact           |
+| Skills              | Reuse project or global procedures stored as `SKILL.md` files                          | Saving is explicit or depends on the model choosing the `Skill` tool; see [Skills](skills.md) |
+| Session recall      | Discover sessions by full-text query, browse recent sessions, or page around a message | Recall requires `GlobalSearch`; transcripts are not injected on every turn                    |
+| Memory-provider API | Let one enabled mini app backend replace or append built-in prompt memory              | Provider calls are bounded and best-effort; a disabled app contributes nothing                |
 
 ## How it works
 
@@ -69,34 +66,13 @@ content or overrides change.
 A memory saved mid-session is on disk at once, and the agent can `Read` it, while the frozen prompt
 keeps the index it started with. Set `LOCALIX_FREEZE_CONTEXT=0` to rebuild the snapshot on each run.
 
-### Recall and courses
+### Recall
 
 `GlobalSearch` recalls past work. A `query` runs the search palette's own search — words, and
 meaning when [semantic search](semantic-search.md) is on — with `domains` narrowing it to categories
 such as messages or chats; `around_message_id` or `session_id` reads a bounded window of a
 conversation; no arguments browse recent sessions. The tool returns previews and message identifiers
 rather than replaying a full transcript.
-
-Learning Studio validates course bundles authored under `.localix/learning-drafts/`, imports valid
-content into the owning session's mini app data, and exposes the course hierarchy as session-scoped
-resources. The agent reads the app's guide with `MiniAppGuide`; the bundle format and quality
-checklist are its `course-bundle` page. Course creation, adaptation, import, export, and study
-progress are explicit actions.
-
-Courses prepare one complete module at a time. The first module is ready at activation; course
-activity can request the next pending module once half the current module's lessons are completed
-(rounded up) or its last lesson opens. Pending material refreshes in the reader when ready. Wake
-delivery and preparation can fail, and automatic requests stop after three attempts per module. If
-preparation stalls, ask a reachable tutor to inspect the failure and prepare the pending module in
-the same course. Readiness is not guaranteed by a fixed deadline.
-
-Quiz options use a stable shuffled order. The backend checks selected option ids and preserves
-first-attempt scores across retries. Practice submission saves the solution and wakes the agent
-through the common mini app host interface in the owning conversation. The agent records feedback
-against the acceptance criteria; continuation requires a passing review. That review does not
-complete the step for you. It is tied to the submitted attempt; repeated reviews keep the original
-result, and an outdated submission cannot overwrite a newer one. Course prose and code fences use
-the same Markdown renderer as conversation messages.
 
 An external memory provider can run `loadContext` when a fresh chat prompt snapshot is built, for a
 run that keeps memory. It may append to the `MEMORY.md` index or replace it in the prompt; the
@@ -130,8 +106,6 @@ user and assistant text.
 - A memory provider's `onRunEnd` hook is fire-and-forget. Failure or timeout does not roll back the
   completed chat turn. A hook timeout stops waiting; its work can continue because the hook port has
   no abort signal.
-- Learning Studio progress, files, and resources stay within the owning session. They are not
-  promoted into memory or skills automatically.
 
 ## Related guides
 
@@ -158,7 +132,3 @@ user and assistant text.
   [filesystem discovery](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/skill-discovery.ts)
 - [Completion hook invocation](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/finalize.ts)
 - [Memory provider lifecycle](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/memory-hooks.ts)
-- [Learning mini app manifest](https://github.com/rsaryev/localix/blob/main/mini-apps/learning/mini-app.json),
-  [course service](https://github.com/rsaryev/localix/blob/main/mini-apps/learning/backend/service.ts),
-  and
-  [resource provider](https://github.com/rsaryev/localix/blob/main/mini-apps/learning/backend/resource-provider.ts)

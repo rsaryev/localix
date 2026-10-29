@@ -29,7 +29,7 @@ export const FOUNDATION: readonly KitCatalogEntry[] = [
     exports: ['chromeAction', 'chromeActionActive'],
     summary: "The compact action of the app's own titlebar and header chrome.",
     use: 'Host chrome only.',
-    not: 'Mini apps do not use it (`scripts/mini-app-chrome-recipes.test.ts`): a mini app action is IconButton.',
+    not: 'Mini apps do not use it: a mini app action is IconButton.',
   },
   {
     specifier: k('rail-button'),

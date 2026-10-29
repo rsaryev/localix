@@ -7,7 +7,6 @@
 import { ACTIVATE_TOOLS_TOOL_NAME, TOOL } from '../tool-names'
 import { buildProjectContextSection } from '../context-files'
 import type { PromptSection } from './section'
-import { TASK_BOARD_TOOL } from './facts'
 import { buildAnswerFormatSection } from './sections/answer-format'
 import { buildCollaborationSection } from './sections/collaboration'
 import { buildOutputStyleSection } from './sections/output-style'
@@ -116,7 +115,7 @@ export const RUN_SECTIONS: readonly PromptSection[] = [
     render: (f) =>
       f.params.conversation
         ? buildTurnControlSection({
-            hasBoard: f.hasTool(TASK_BOARD_TOOL),
+            hasBoard: f.hasRole('task-board'),
             canAsk: f.hasTool(TOOL.AskUserQuestion),
           })
         : null,

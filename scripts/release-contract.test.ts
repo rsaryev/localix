@@ -28,19 +28,15 @@ describe('release workflow contract', () => {
       'verify',
       'draft-release',
       'build-desktop',
-      'mini-app-catalog',
+      'mini-app-kit',
       'publish-desktop',
     ])
   })
 
-  test('publishes the mini app catalog with the release, and never a release without it', () => {
-    const workflow = Bun.YAML.parse(release) as {
-      jobs: Record<string, { needs?: string[]; steps: { run?: string }[] }>
-    }
-    const runs = workflow.jobs['mini-app-catalog']!.steps.map((step) => step.run ?? '').join('\n')
-    expect(runs).toContain('bun scripts/pack-mini-apps.mjs')
-    expect(runs).toContain('gh release upload')
-    expect(workflow.jobs['publish-desktop']!.needs).toContain('mini-app-catalog')
+  // Localix ships and hosts no mini app (rule X5): the Localix marketplace's own releases publish
+  // its catalog, and the core only names that marketplace as a trusted source.
+  test('publishes no mini app catalog of its own', () => {
+    expect(release).not.toContain('mini-app-catalog')
   })
 
   // The mini-app-authoring plugin builds against the latest release's kit when no Localix is
@@ -50,7 +46,7 @@ describe('release workflow contract', () => {
     const workflow = Bun.YAML.parse(release) as {
       jobs: Record<string, { steps: { name?: string; run?: string }[] }>
     }
-    const runs = workflow.jobs['mini-app-catalog']!.steps.map((step) => step.run ?? '').join('\n')
+    const runs = workflow.jobs['mini-app-kit']!.steps.map((step) => step.run ?? '').join('\n')
     expect(runs).toContain('bun scripts/stage-mini-app-kit.mjs')
     expect(runs).toMatch(/gh release upload [^\n]*mini-app-kit\.tar\.gz/u)
     const checksums = workflow.jobs['publish-desktop']!.steps.find(
@@ -75,7 +71,7 @@ describe('release workflow contract', () => {
       'verify',
       'draft-release',
       'build-desktop',
-      'mini-app-catalog',
+      'mini-app-kit',
       'publish-desktop',
     ]) {
       expect(workflow.jobs[job].environment).toBe('release')

@@ -2,17 +2,14 @@ import { readdirSync, rmSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 
 import { kitCacheRoot } from './mini-app-kit-cache.mjs'
-import { stageDropins, stageMiniAppKitBeside } from './stage-dropins.mjs'
-import { watchMiniAppKitInputs, watchMiniAppsForRestage } from './dev-mini-app-watch.mjs'
+import { watchMiniAppKitInputs } from './dev-mini-app-kit-watch.mjs'
+import { stageMiniAppKitInto } from './run-mini-app-kit-stager.mjs'
 import { repoRoot } from './lib/paths.mjs'
-import { STAGED_APPS_DIR, STAGED_BUILTIN_PLUGINS_DIR } from './lib/bundled-roots.mjs'
-import { stageBuiltinPlugins } from './stage-builtin-plugins.mjs'
 
 const repo = repoRoot()
 const apiDir = join(repo, 'apps', 'api')
 const devStageRoot = join(repo, '.turbo', 'dev-mini-apps', String(process.pid))
-const stagedMiniApps = join(devStageRoot, STAGED_APPS_DIR)
-const stagedBuiltinPlugins = join(devStageRoot, STAGED_BUILTIN_PLUGINS_DIR)
+const stagedKit = join(devStageRoot, 'mini-app-kit')
 
 /**
  * Drop staging trees left by dev runs that are no longer alive.
@@ -24,7 +21,7 @@ const stagedBuiltinPlugins = join(devStageRoot, STAGED_BUILTIN_PLUGINS_DIR)
  *
  * Conservative on purpose: PIDs are reused, so a directory whose number belongs to ANY live
  * process is kept. The failure mode is then leaving a dead tree for the next run to collect,
- * never deleting a tree a running dev server is serving mini apps from.
+ * never deleting a tree a running dev server is serving its kit from.
  */
 function pruneOrphanedStageTrees() {
   const root = dirname(devStageRoot)
@@ -51,38 +48,15 @@ function pruneOrphanedStageTrees() {
 
 pruneOrphanedStageTrees()
 
-// Runtime discovery is intentionally .localix-only. First-party repo mini apps are
-// authoring sources, so development uses the same self-contained staging boundary
-// as packaged builds before managed copies are synchronized into ~/.localix. The mini app kit comes
-// first: the UI builds read it, and the API needs it to create and build user mini apps.
+// Localix ships no mini app: the store installs them, as it does in a release. Development stages
+// only the mini app kit, which the API serves the mini-app-authoring plugin to build against.
 // Kits staged for identical inputs are reused across launches (`mini-app-kit-cache.mjs`).
 const kitCache = kitCacheRoot(repo)
-stageMiniAppKitBeside({ repoRoot: repo, outMiniApps: stagedMiniApps, cacheRoot: kitCache })
-stageDropins({
-  repoRoot: repo,
-  outMiniApps: stagedMiniApps,
-  log: (message) => console.log(`[dev-api] ${message}`),
-  // Development keeps booting when one mini app is mid-edit. A compile error in any single mini app
-  // used to abort staging, which killed the API, which killed `bun run dev` — the whole workspace
-  // held hostage by one file. The error is still printed in full; only the blast radius changed.
-  // Release staging (prepare-sidecar.mjs) deliberately keeps the default `fatal`.
-  onMiniAppError: 'skip',
-})
-// The plugins built into Localix, staged as a build stages them. A snapshot: an edit under
-// `plugins/` loads after the next `bun run dev`.
-stageBuiltinPlugins({ repoRoot: repo, out: stagedBuiltinPlugins })
-// Boot staging is a snapshot; a mini app created or whose backend changed while the API runs
-// is re-staged on its own, so a new mini app and a backend edit no longer need a restart.
-const miniAppWatcher = watchMiniAppsForRestage({
-  repoRoot: repo,
-  outMiniApps: stagedMiniApps,
-  log: (message) => console.log(`[dev-api] ${message}`),
-})
-// The kit follows its inputs the same way, so the reloading API never reads a kit older than
-// its own authoring code.
+stageMiniAppKitInto({ repoRoot: repo, outKit: stagedKit, cacheRoot: kitCache })
+// The kit follows its inputs, so the reloading API never serves a kit older than its own code.
 const kitWatcher = watchMiniAppKitInputs({
   repoRoot: repo,
-  outMiniApps: stagedMiniApps,
+  outKit: stagedKit,
   cacheRoot: kitCache,
   log: (message) => console.log(`[dev-api] ${message}`),
 })
@@ -92,8 +66,7 @@ const spawnApi = () =>
     cwd: apiDir,
     env: {
       ...process.env,
-      LOCALIX_BUNDLED_MINI_APPS_DIR: stagedMiniApps,
-      LOCALIX_BUILTIN_PLUGINS_DIR: stagedBuiltinPlugins,
+      LOCALIX_MINI_APP_KIT_DIR: stagedKit,
     },
     stdin: 'inherit',
     stdout: 'inherit',
@@ -220,7 +193,6 @@ try {
   process.exitCode = await waitForFinalExit()
 } finally {
   supervisor.stop()
-  miniAppWatcher.close()
   kitWatcher.close()
   rmSync(devStageRoot, { recursive: true, force: true })
 }

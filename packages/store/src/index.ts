@@ -126,5 +126,12 @@ export type { BrowsableComponentKind, ShelfId } from './shelves'
 export { STORE_CATEGORIES, storeCategory } from './categories'
 export type { StoreCategory } from './categories'
 export { catalogOrigin, gitOrigin, npmOrigin } from './identity'
-export { COMMUNITY_SOURCE, DEFAULT_SOURCES, TRUST_WEIGHTS, defaultSource } from './default-sources'
+export {
+  COMMUNITY_SOURCE,
+  DEFAULT_SOURCES,
+  LOCALIX_MARKETPLACE,
+  TRUST_WEIGHTS,
+  defaultSource,
+  releaseMiniAppCatalog,
+} from './default-sources'
 export type { DefaultSource } from './default-sources'

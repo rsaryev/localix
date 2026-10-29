@@ -51,11 +51,11 @@ shared activation point and requests an optional element reveal after the host o
 malformed or colliding discovered surface throws, because silently omitting a static declaration
 would make the source catalogue differ from the running workbench.
 
-Bundled mini app UI follows the API's enabled mini app snapshot. `discoverEnabledMiniAppUi` imports
-an enabled mini app's `ui/register.tsx` once, and `miniAppUiHostFor` stamps the mini app name on
-every contribution. Registries retain the definition after disable, but lookups and lists filter it
-out. Installed mini app views register from manifest data and can be removed during live
-reconciliation; their HTML runs through the separate iframe bridge described by the
+Mini app UI follows the API's enabled mini app snapshot. `discoverEnabledMiniAppUi` imports an
+enabled mini app's `ui/register.tsx` once, and `miniAppUiHostFor` stamps the mini app name on every
+contribution. Registries retain the definition after disable, but lookups and lists filter it out.
+Installed mini app views register from manifest data and can be removed during live reconciliation;
+their HTML runs through the separate iframe bridge described by the
 [mini app guide](../../extending/mini-apps.md#ui-paths).
 
 ### Agent catalogue and serialized output
@@ -113,7 +113,7 @@ button; it never becomes a chat message or a model-blocking interaction.
 - `AddressableResource` is identity and presentation only. Resource providers own backend expansion,
   message bindings own chat attachment, and anchors or locations own navigation.
 - The frontend location registry is process-local. A restart rebuilds it from core declarations,
-  enabled bundled mini app code, and the current manifest-derived views.
+  enabled mini app code, and the current manifest-derived views.
 - Backend catalogues are memory-only and globally bounded to 256 retained snapshots. An evicted id
   yields no agent destinations for that run.
 - Runtime-only locations stay out of backend catalogues. The agent has no catalogue-search tool: it

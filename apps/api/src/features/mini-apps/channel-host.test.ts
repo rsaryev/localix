@@ -70,13 +70,9 @@ function state(name: string): CapabilitySourceRecord {
 }
 
 let dir: string
-const prevBundled = process.env.LOCALIX_BUNDLED_MINI_APPS_DIR
 
 beforeAll(async () => {
   dir = await fs.mkdtemp(join(tmpdir(), 'mini-app-channel-'))
-  process.env.LOCALIX_BUNDLED_MINI_APPS_DIR = await fs.mkdtemp(
-    join(tmpdir(), 'mini-app-channel-bundled-'),
-  )
   const chan = join(dir, '.localix', 'mini-apps', 'chan')
   await fs.mkdir(join(chan, 'tools'), { recursive: true })
   await fs.writeFile(
@@ -112,8 +108,6 @@ afterAll(async () => {
   // The fixture mini app wrote its probes onto the shared global.
   delete (globalThis as Record<string, unknown>).__channelTestReply
   delete (globalThis as Record<string, unknown>).__channelTestStopped
-  if (prevBundled === undefined) delete process.env.LOCALIX_BUNDLED_MINI_APPS_DIR
-  else process.env.LOCALIX_BUNDLED_MINI_APPS_DIR = prevBundled
   await fs.rm(dir, { recursive: true, force: true })
 })
 

@@ -52,7 +52,7 @@ may open it; writes, edits and shell commands stay blocked there.
 
 The roots are computed once per process from the server module's own location
 ([`host-roots.ts`](https://github.com/rsaryev/localix/blob/main/apps/api/src/lib/host-roots.ts)),
-the same self-location rule the bundled `mini-apps/` and `migrations/` roots use. For the same
+the same self-location rule the staged `migrations/` and `mini-app-kit` roots use. For the same
 reason a tool or mini app host given no cwd starts in `~/.localix/workspace`, never in the API's
 launch directory, which is the host application; a source lint keeps `process.cwd()` out of
 agent-core.

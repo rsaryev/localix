@@ -26,7 +26,7 @@ import { describe, expect, test } from 'bun:test'
 const REPO_ROOT = new URL('../', import.meta.url).pathname
 
 /** Where a menu can legitimately be built. Everything under these roots is scanned. */
-const SOURCE_ROOTS = ['apps/ui/src', 'plugins', 'packages'] as const
+const SOURCE_ROOTS = ['apps/ui/src', 'packages'] as const
 
 /** The two files that ARE the app's menus, and so are the only ones allowed to import Radix's. */
 const PRIMITIVE_OWNERS = new Set([

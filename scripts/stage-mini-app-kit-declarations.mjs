@@ -227,7 +227,9 @@ function componentDeclaration(ctx, writer, name, signature, source) {
     ? `<${params
         .map((param) => {
           const constraint = param.getConstraint()
-          return `${param.symbol.name}${constraint ? ` extends ${print(constraint)}` : ''}`
+          // A default kept: `<Canvas<MyNode>>` names one of two parameters.
+          const fallback = ctx.checker.getDefaultFromTypeParameter(param)
+          return `${param.symbol.name}${constraint ? ` extends ${print(constraint)}` : ''}${fallback ? ` = ${print(fallback)}` : ''}`
         })
         .join(', ')}>`
     : ''
@@ -347,14 +349,19 @@ function declareModule(ctx, file, id) {
  * name-only fallback: a kit that stages with a weaker type for one module beats one that does not
  * stage at all.
  */
-export function declareKitModules({ repoRoot, kitDirs, digest }) {
+export function declareKitModules({ repoRoot, kitDirs, digest, extra = [] }) {
   // `@localixai/kit/<id>` is a door of the kit package or a module the host lends; the id is the
-  // file name in either directory (an id in both is refused by the registry's own test).
-  const files = kitDirs.flatMap((kitDir) =>
-    readdirSync(kitDir)
-      .filter((file) => file.endsWith('.ts'))
-      .map((file) => join(kitDir, file)),
-  )
+  // file name in either directory (an id in both is refused by the registry's own test). `extra`
+  // adds `[id, file]` pairs the directories do not hold (the host's test harness).
+  const modules = [
+    ...kitDirs.flatMap((kitDir) =>
+      readdirSync(kitDir)
+        .filter((file) => file.endsWith('.ts'))
+        .map((file) => [basename(file, '.ts'), join(kitDir, file)]),
+    ),
+    ...extra,
+  ]
+  const files = modules.map(([, file]) => file)
   const ui = join(repoRoot, 'apps', 'ui')
   const program = ts.createProgram({
     rootNames: files,
@@ -373,8 +380,7 @@ export function declareKitModules({ repoRoot, kitDirs, digest }) {
   }
   const declarations = new Map()
   const lines = new Map()
-  for (const file of files) {
-    const id = basename(file, '.ts')
+  for (const [id, file] of modules) {
     try {
       const described = declareModule(ctx, file, id)
       declarations.set(id, described.text)

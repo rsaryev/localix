@@ -204,7 +204,7 @@ With `"disableSkillShellExecution": true` in a Claude Code settings file (manage
 nobody can turn it off, are the usual place), no command runs: each inline `!` command and each
 fenced `!` block of a skill or custom command from your folders, a project or a plugin is replaced
 by `[shell command execution disabled by policy]`, the permission rules are not asked, and the rest
-of the skill renders as usual. A skill of a built-in plugin keeps running its commands.
+of the skill renders as usual.
 
 ### File references
 

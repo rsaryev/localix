@@ -50,8 +50,8 @@ command defaults to the git-ignored `.data/dev/localix.db`, separate from the in
 Ctrl+C. `bun run dev:workspace` starts the wider workspace development tasks and uses the normal
 runtime database unless you override it.
 
-`bun run build:desktop` first stages the built UI, API, bundled mini apps, CLI, and Bun sidecar.
-Tauri then packages those resources with the native shell for the current host.
+`bun run build:desktop` first stages the built UI, API, mini app kit, CLI, and Bun sidecar. Tauri
+then packages those resources with the native shell for the current host.
 
 The release workflow builds one native leg, macOS on Apple silicon, which requires signing and
 notarization credentials and fails without them. Linux and Intel Mac legs are parked until their

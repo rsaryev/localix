@@ -60,8 +60,7 @@ export async function listMarketplaceInstalls(deps: {
       if (!ref || row.projectId) return null
       const plugin = await deps.find(row.name)
       // Built-in ones update with Localix, in-place ones load their folder, Claude Code owns its own.
-      if (!plugin || plugin.builtin || plugin.inPlaceInstall || plugin.claudeCodeInstall)
-        return null
+      if (!plugin || plugin.inPlaceInstall || plugin.claudeCodeInstall) return null
       const id = plugin.cachedInstall?.id ?? `${ref.plugin}@${ref.marketplace}`
       const record = records[id]
       const declared = plugin.rawManifest?.version

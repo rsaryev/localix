@@ -35,12 +35,8 @@ import {
 
 const REPO_ROOT = path.resolve(import.meta.dir, '..')
 
-/** Every UI source outside the kit: the workbench, the mini app views, the SDK's own components. */
-const INCLUDE = [
-  'apps/ui/src/**/*.{ts,tsx}',
-  'mini-apps/*/ui/**/*.{ts,tsx}',
-  'packages/mini-app-sdk/src/ui/**/*.{ts,tsx}',
-]
+/** Every UI source outside the kit: the workbench and the SDK's own components. */
+const INCLUDE = ['apps/ui/src/**/*.{ts,tsx}', 'packages/mini-app-sdk/src/ui/**/*.{ts,tsx}']
 
 const skip = (file: string) => /\.test\.|\/testing\//.test(file)
 
@@ -76,18 +72,11 @@ function handPlacedCheck(code: string): boolean {
 }
 
 /**
- * The blessed shapes. The debt pinned when the rule landed has been converted; what remains are
- * legitimate exceptions, keyed by file AND shape so a second hand-built pick in the same file is
- * still caught. A converted debt entry is not re-added here — a new one is a fix, not a blessing.
+ * The blessed shapes. The debt pinned when the rule landed has been converted and no exception
+ * remains; an exception is keyed by file AND shape so a second hand-built pick in the same file
+ * is still caught. A converted debt entry is not re-added here — a new one is a fix, not a blessing.
  */
-const BASELINE: Exemptions = {
-  // The board's colour picker is a swatch GRID, not a list of rows — the check is drawn INSIDE
-  // the chosen swatch, where a menu row's trailing check has no place to go. Its option picker in
-  // the same file is `MenuEntries` `selected` rows.
-  [exemptionKey('mini-apps/project-space/ui/board/pickers.tsx', 'hand-check')]: {
-    reason: 'Board colour swatch grid marks the chosen swatch inside the swatch itself.',
-  },
-}
+const BASELINE: Exemptions = {}
 
 /**
  * Whether a pinned offender that disappeared FAILS the suite. On: the conversions have landed, so

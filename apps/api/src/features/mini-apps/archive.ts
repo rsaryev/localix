@@ -4,8 +4,8 @@ import { MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
 
 /**
  * A mini app as a catalog ships it: one gzip tarball whose root is the app's folder —
- * `mini-app.json` at the top, the built backend and screens beside it. The pack script writes
- * them (`scripts/pack-mini-apps.mjs`); the store unpacks one only after its sha256 matched.
+ * `mini-app.json` at the top, the built backend and screens beside it. A marketplace
+ * release packs them; the store unpacks one only after its sha256 matched.
  */
 
 export interface UnpackLimits {

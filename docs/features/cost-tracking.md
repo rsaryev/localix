@@ -112,9 +112,9 @@ replay model calls, recover missing auxiliary usage, or reprice history using to
 an older message lacks its own model or agent attribution, repair can fall back to the session's
 agent; that historical attribution is approximate.
 
-Usage is not attributed to [Kanban](task-board.md) cards. A child session's rows carry the child's
-own `session_id`, so the workbench lists it as its own session; a query that bounds a session's work
-rolls up the whole tree through `root_session_id`.
+Usage is not attributed to the cards of a task-board mini app. A child session's rows carry the
+child's own `session_id`, so the workbench lists it as its own session; a query that bounds a
+session's work rolls up the whole tree through `root_session_id`.
 
 ## Configuration
 

@@ -19,7 +19,6 @@ import { resolve } from 'node:path'
 
 const ROOTS = [
   resolve(import.meta.dir, '../../..'),
-  resolve(import.meta.dir, '../../../../../../plugins'),
   // The primitives that announce a failure (`Field`'s error line) moved here from `shared/ui`.
   resolve(import.meta.dir, '../../../../../../packages/kit/src'),
 ]

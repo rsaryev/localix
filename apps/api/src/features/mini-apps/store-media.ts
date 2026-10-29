@@ -5,7 +5,6 @@ import {
   MINI_APP_ICON_TYPES,
   MINI_APP_SCREENSHOT_MAX_BYTES,
   MINI_APP_SCREENSHOT_TYPES,
-  mediaExtension,
   readImageInfo,
   svgHoldsActiveContent,
 } from '@localixai/mini-app-sdk/manifest-media'
@@ -13,15 +12,13 @@ import {
 import { NotFoundError, UnavailableError } from '../../lib/domain-errors'
 import { errorMessage } from '../../lib/errors'
 import { downloadPinned, isDownloaded } from '../../lib/pinned-download'
-import { readAppFile } from './app-files'
 import type { Offer, OfferFile } from './store-offers'
 
 /**
  * The files of an app's store page — its icon, screenshots and README — as the host serves them.
- * A local app's come from its folder (`app-files.ts` keeps them inside it). A catalog's are fetched
- * once, refused unless their size and sha256 match the catalog's pin, and kept under the Localix
- * cache by hash. Either way the bytes are checked to be the kind of file they claim before they
- * leave, so a catalog cannot serve a page as an "image".
+ * A catalog's are fetched once, refused unless their size and sha256 match the catalog's pin, and
+ * kept under the Localix cache by hash. The bytes are checked to be the kind of file they claim
+ * before they leave, so a catalog cannot serve a page as an "image".
  */
 
 export type StoreMediaKind = 'icon' | 'screenshot' | 'readme'
@@ -51,23 +48,19 @@ export function storeMediaUrl(
   index?: number,
 ): string {
   const path = `/rpc/mini-apps/store/media/${encodeURIComponent(name)}/${kind}${index === undefined ? '' : `/${index}`}`
-  return file.from === 'catalog' ? `${path}?v=${file.sha256.slice(0, 12)}` : path
+  return `${path}?v=${file.sha256.slice(0, 12)}`
 }
 
-/** The extension a file of this kind is read as: its own for a local one, its type's for a catalog's. */
+/** The extension a file of this kind is read as: its type's. */
 function extensionOf(kind: StoreMediaKind, file: OfferFile): string | undefined {
   const types = TYPES[kind]
-  if (file.from === 'local') {
-    const ext = mediaExtension(file.path)
-    return types[ext] ? ext : undefined
-  }
   return Object.keys(types).find((ext) => types[ext] === file.type)
 }
 
 export function createStoreMediaReader(deps: { cacheDir: string; fetchImpl?: typeof fetch }) {
   const inflight = new Map<string, Promise<unknown>>()
 
-  async function fetchPinned(file: Extract<OfferFile, { from: 'catalog' }>): Promise<Uint8Array> {
+  async function fetchPinned(file: OfferFile): Promise<Uint8Array> {
     const dest = join(deps.cacheDir, file.sha256)
     const pinned = { name: 'store media', url: file.url, bytes: file.bytes, sha256: file.sha256 }
     if (!(await isDownloaded(pinned, dest))) {
@@ -83,9 +76,7 @@ export function createStoreMediaReader(deps: { cacheDir: string; fetchImpl?: typ
   }
 
   /** A catalog's pinned image read before any offer exists (a catalog's preview). */
-  async function catalogImage(
-    file: Extract<OfferFile, { from: 'catalog' }>,
-  ): Promise<StoreMediaFile | null> {
+  async function catalogImage(file: OfferFile): Promise<StoreMediaFile | null> {
     const ext = extensionOf('icon', file)
     if (!ext || file.bytes > CAPS.icon) return null
     const bytes = await fetchPinned(file).catch(() => null)
@@ -106,21 +97,13 @@ export function createStoreMediaReader(deps: { cacheDir: string; fetchImpl?: typ
     if (!file) throw missing()
     const ext = extensionOf(kind, file)
     if (!ext) throw missing()
-    let bytes: Uint8Array | null
-    if (file.from === 'local') {
-      bytes =
-        offer.from === 'local'
-          ? await readAppFile(offer.dir, file.path, { maxBytes: CAPS[kind] })
-          : null
-    } else {
-      if (file.bytes > CAPS[kind]) throw missing()
-      try {
-        bytes = await fetchPinned(file)
-      } catch (error) {
-        throw new UnavailableError('mini_app_media_unavailable', errorMessage(error))
-      }
+    if (file.bytes > CAPS[kind]) throw missing()
+    let bytes: Uint8Array
+    try {
+      bytes = await fetchPinned(file)
+    } catch (error) {
+      throw new UnavailableError('mini_app_media_unavailable', errorMessage(error))
     }
-    if (!bytes) throw missing()
     if (kind === 'readme') return { bytes, type: 'text/markdown; charset=utf-8' }
     const info = readImageInfo(bytes, ext)
     if (!info || (ext === 'svg' && svgHoldsActiveContent(bytes))) throw missing()

@@ -1,7 +1,6 @@
 import { readdirSync, existsSync, readFileSync } from 'node:fs'
 import { builtinModules } from 'node:module'
 import { join } from 'node:path'
-import { BUNDLED_DIRS } from '../lib/bundled-roots.mjs'
 import { addEdge, cyclicEdges, importsOf, repoRoot, type Rule, type Source } from './kit'
 
 /** Package rules: A1 (no package cycle), A2 (agnostic core), A3 (provider SDKs in one package). */
@@ -21,8 +20,7 @@ const CORE_FORBIDDEN: ReadonlyArray<[RegExp, string]> = [
 /** Every workspace package manifest, as a source whose `raw` is the JSON. */
 export function loadManifests(): Source[] {
   const manifests: Source[] = []
-  for (const group of ['apps', 'packages', ...BUNDLED_DIRS]) {
-    // A group with nothing in it is not checked out at all (`plugins/` holds no plugin today).
+  for (const group of ['apps', 'packages']) {
     if (!existsSync(join(repoRoot, group))) continue
     for (const name of readdirSync(join(repoRoot, group))) {
       const file = `${group}/${name}/package.json`

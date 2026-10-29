@@ -4,7 +4,6 @@ import { removeIfUnderRoot } from '../ext/install-tree'
 import { listDependents } from './dependencies'
 import { pluginInstallRoot, type DiscoveredPlugin } from './discovery'
 import { setInPlaceRecord } from './in-place-installs'
-import { assertNotBuiltin } from './builtin-plugins'
 import { releaseCachedInstall } from './install-versioned'
 import { removeDataIfLastCopy, rowScopeOf } from './service-lifecycle'
 import { pluginIdOf } from './plugin-data-id'
@@ -35,7 +34,6 @@ export async function removePlugin(
   const discovered = await ctx.discover({ cwd, projectId })
   const plugin =
     discovered.find((p) => p.manifest.name === input.name && p.projectId === projectId) ?? null
-  assertNotBuiltin(plugin, 'uninstall')
   // Nothing to remove used to answer like a removal, so `/plugin remove typo` said "Removed".
   let rowScope = rowScopeOf(plugin, projectId)
   if (!plugin && !(await repo.get(userId, projectId, input.name))) {

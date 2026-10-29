@@ -158,7 +158,7 @@ describe('how a failure is worded', () => {
     expect(wordingViolations(`setError('Failed to load')`, 'x/backend/a.ts', false)).toEqual([])
   })
 
-  it('every literal failure in the host and in mini apps follows it', () => {
+  it('every literal failure in the host and the mini app SDK follows it', () => {
     expect(scanSources(wordingViolations)).toEqual([])
   })
 })

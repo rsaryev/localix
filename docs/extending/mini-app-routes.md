@@ -60,7 +60,8 @@ route must reject that absence before accessing its storage.
 ## Limits
 
 - Do not import `@hono/zod-validator` or `hono/validator` in a mini app. The repository guard
-  `apps/api/src/lib/validator.test.ts` fails a bundled mini app that does.
+  `apps/api/src/lib/validator.test.ts` fails API source that does, and the routes step of
+  `mini-app check` fails a mini app that does.
 - The envelope is a promise to the mini app's UI client. Change it only together with the client
   that reads it.
 - An unanswered 404 before the first backend reconcile waits up to 15 seconds, then dispatches once

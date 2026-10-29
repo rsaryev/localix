@@ -7,8 +7,7 @@
 //   binaries/bun-<triple>.exe   the native Bun runtime (Tauri sidecar)
 //   resources/server.js         the API bundled to one JS file, migrations and `kysely` included
 //   resources/mini-app-kit/     what the mini-app-authoring plugin builds USER mini apps against
-//                               (template, shared-module exports, theme, validation tools)
-//   resources/builtin-plugins/  the Claude Code plugins built into Localix (`plugins/`)
+//                               (shared-module exports, types, theme, validation tools)
 //
 // Pass --ui to ALSO build apps/ui into apps/ui/dist (the prod frontendDist).
 // Run by tauri's beforeDev/BuildCommand; also runnable by hand.
@@ -43,14 +42,8 @@ import {
   hostTriple,
   resourcesDir as resources,
 } from './tauri-staging.mjs'
-import { stageMiniAppKitBeside } from '../../../scripts/stage-dropins.mjs'
+import { stageMiniAppKitInto } from '../../../scripts/run-mini-app-kit-stager.mjs'
 import { MINI_APP_KIT_INPUTS } from '../../../scripts/stage-mini-app-kit.mjs'
-import {
-  BUNDLED_DIRS,
-  STAGED_APPS_DIR,
-  STAGED_BUILTIN_PLUGINS_DIR,
-} from '../../../scripts/lib/bundled-roots.mjs'
-import { stageBuiltinPlugins } from '../../../scripts/stage-builtin-plugins.mjs'
 import { BUILD_STAMP_ENV, resolveBuildStamp } from '../../../scripts/build-stamp.mjs'
 import {
   buildVisualFeedbackProbe,
@@ -122,16 +115,11 @@ const cache = readCache()
 const runtimeKey = fingerprint([
   join(repo, 'apps', 'api'),
   join(repo, 'packages'),
-  ...BUNDLED_DIRS.map((dir) => join(repo, dir)),
   join(desktop, 'scripts'),
   join(repo, 'scripts', 'build-visual-feedback-probe.mjs'),
-  join(repo, 'scripts', 'stage-dropins.mjs'),
-  join(repo, 'scripts', 'stage-builtin-plugins.mjs'),
-  join(repo, 'scripts', 'lib', 'bundled-roots.mjs'),
+  join(repo, 'scripts', 'run-mini-app-kit-stager.mjs'),
   join(repo, 'scripts', 'embed-migrations-plugin.mjs'),
   join(desktop, 'scripts', 'sidecar-bun.mjs'),
-  join(repo, 'scripts', 'stage-mini-app-ui.mjs'),
-  join(repo, 'scripts', 'build-mini-app-ui.mjs'),
   // Everything the mini app kit is made from — the same list the dev watcher re-stages on.
   ...MINI_APP_KIT_INPUTS.map((input) => join(repo, input)),
   join(repo, 'scripts', 'stage-third-party-notices.mjs'),
@@ -158,7 +146,6 @@ const runtimeReady =
   existsSync(join(resources, 'visual-feedback-probe.js')) &&
   existsSync(join(resources, 'visual-feedback-native-probe.js')) &&
   existsSync(join(resources, 'mini-app-kit', 'kit.json')) &&
-  existsSync(join(resources, STAGED_BUILTIN_PLUGINS_DIR)) &&
   existsSync(join(resources, 'cli', 'server', 'cli.js')) &&
   existsSync(join(resources, 'cli', 'package.json')) &&
   existsSync(join(resources, 'LICENSE')) &&
@@ -179,7 +166,7 @@ if (!runtimeReady) {
     desktop: { targetTriple: hostTriple() },
   })
 
-  // ── 1. bundle the API to resources/server.js (mini apps stay on disk). Use --outdir (not
+  // ── 1. bundle the API to resources/server.js. Use --outdir (not
   // --outfile) so bun can also emit the native
   //       required `.node` addons it references beside server.js — --outfile refuses
   //       multiple outputs.
@@ -250,19 +237,10 @@ if (!runtimeReady) {
   })
 
   // ── 3. the mini app kit ────────────────────────────────────────────────────────
-  // The app ships no mini app (rule X5): the store installs them from the hosted catalog the
-  // release publishes (`scripts/pack-mini-apps.mjs`). It ships the kit, which the
-  // mini-app-authoring plugin builds the person's own mini apps against (`GET /rpc/mini-apps/kit`).
-  stageMiniAppKitBeside({ repoRoot: repo, outMiniApps: join(resources, STAGED_APPS_DIR) })
-
-  // ── 3a. the built-in plugins ─────────────────────────────────────────────────────
-  // Claude Code plugins that ship inside Localix (`plugins/`), read beside `server.js` by
-  // `features/plugins/builtin-plugins.ts`; they update with the app.
-  const builtins = stageBuiltinPlugins({
-    repoRoot: repo,
-    out: join(resources, STAGED_BUILTIN_PLUGINS_DIR),
-  })
-  log(`staged ${builtins.length} built-in plugin(s): ${builtins.join(', ') || 'none'}`)
+  // The app ships no mini app (rule X5): the store installs them from the catalogs of the
+  // marketplaces it trusts. It ships the kit, which the mini-app-authoring plugin builds mini apps
+  // against (`GET /rpc/mini-apps/kit`).
+  stageMiniAppKitInto({ repoRoot: repo, outKit: join(resources, 'mini-app-kit') })
 
   // ── 3b. the `localix` CLI, staged INSIDE the bundle (no separate CLI product) ──
   // The shim (bin/localix.mjs) + the launcher bundle it imports (runCli). lib.rs points
@@ -318,7 +296,7 @@ if (!runtimeReady) {
   cache.runtime = runtimeKey
   cache.runtimeVariant = runtimeVariant
 } else {
-  log('runtime inputs unchanged — reusing staged API, mini apps, CLI and Bun')
+  log('runtime inputs unchanged — reusing staged API, mini app kit, CLI and Bun')
 }
 
 // Tauri signs its main executable and declared sidecars, but native modules copied
@@ -356,7 +334,6 @@ if (buildUi) {
       join(repo, 'apps', 'ui'),
       join(repo, 'apps', 'api'),
       join(repo, 'packages'),
-      ...BUNDLED_DIRS.map((dir) => join(repo, dir)),
       join(repo, 'vendor', 'monaco-editor-runtime'),
       join(repo, 'bun.lock'),
       join(repo, 'tsconfig.base.json'),

@@ -22,7 +22,6 @@ export const LANDING_SHOTS = {
   'browser/agent-preview': 'workspace',
   'chat/agent-card-live': 'subagents',
   'store/search-wide': 'store',
-  'task-board/board': 'mini-apps',
 }
 
 /** CSS pixels of the window: 16:10, small enough that its text reads at a card's width. */

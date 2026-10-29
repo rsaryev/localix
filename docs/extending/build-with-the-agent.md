@@ -16,32 +16,33 @@ creating the mini app.
 
 ## What you can do
 
-| Capability               | Mechanism                                                                        | Boundary                                                                            |
-| ------------------------ | -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| Create a mini app        | Run `/mini-app-authoring:create <what it should do>` in Localix or Claude Code.  | The app is created in the current project, or in the folder you name.               |
-| Change one it built      | Ask in the same chat; the agent edits, runs `mini-app check` and installs again. | A failed check installs nothing; the installed version keeps running.               |
-| Get a native interface   | The agent writes `ui/register.tsx` against the host's own kit.                   | A style check rejects hand-rolled controls and palette colours.                     |
-| Give the agent new tools | The mini app's tools register with the agent with no glue code.                  | A tool must declare its effect, or a read-only session refuses even its reads.      |
-| Let the app start a turn | A UI action calls `ctx.host.wake`, as the bundled games do.                      | A wake is one short message and only the app's own tools; see the wakes guide.      |
-| Share it                 | `/mini-app-authoring:publish` packs it into a catalog other people add in Store. | Hosting the catalog's files is up to you; see [publishing](mini-app-publishing.md). |
+| Capability               | Mechanism                                                                        | Boundary                                                                                          |
+| ------------------------ | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Create a mini app        | Run `/mini-app-authoring:create <what it should do>` in Localix or Claude Code.  | Needs the plugin installed; the app is created in the current project, or in the folder you name. |
+| Change one it built      | Ask in the same chat; the agent edits, runs `mini-app check` and installs again. | A failed check installs nothing; the installed version keeps running.                             |
+| Get a native interface   | The agent writes `ui/register.tsx` against the host's own kit.                   | A style check rejects hand-rolled controls and palette colours.                                   |
+| Give the agent new tools | The mini app's tools register with the agent with no glue code.                  | A tool must declare its effect, or a read-only session refuses even its reads.                    |
+| Let the app start a turn | A UI action calls `ctx.host.wake`, as the Localix marketplace's games do.        | A wake is one short message and only the app's own tools; see the wakes guide.                    |
+| Share it                 | `/mini-app-authoring:publish` packs it into a catalog other people add in Store. | Hosting the catalog's files is up to you; see [publishing](mini-app-publishing.md).               |
 
 ## How it works
 
-Making a mini app is the job of the **mini-app-authoring** plugin, a Claude Code plugin built into
-Localix. In Claude Code, add it with:
+Making a mini app is the job of the **mini-app-authoring** plugin, a Claude Code plugin from the
+[Localix marketplace](https://github.com/rsaryev/localix-marketplace). Install it in Localix from
+the Store (Plugins); in Claude Code, add it with:
 
 ```text
-/plugin marketplace add rsaryev/localix
+/plugin marketplace add rsaryev/localix-marketplace
 /plugin install mini-app-authoring@localix
 ```
 
 Localix itself only runs and manages mini apps: it installs, updates, enables and validates them.
-The plugin and Localix meet in the **mini app kit** — the template, the SDK and UI kit declarations,
-the host theme and Localix's own validation rules, published with every release — and in one install
-request.
+The plugin and Localix meet in the **mini app kit** — the SDK and UI kit declarations, the host
+theme, the prebuilt backend modules and Localix's own validation rules, published with every release
+as `mini-app-kit.tar.gz` — and in one install request.
 
-1. `mini-app create <name>` forks the Daily Log template from the kit into a new folder and checks
-   the fresh copy. Template-domain residue is expected at this point; every other check passes.
+1. `mini-app create <name>` forks the plugin's Daily Log template into a new folder and checks the
+   fresh copy. Template-domain residue is expected at this point; every other check passes.
 2. The copy is a mini app: `mini-app.json` holds its name, description, category, settings and
    commands, and `guide.md` tells the agent which tool does what, read with `MiniAppGuide` before it
    first uses the app. The agent replaces the template's domain with yours and writes the tools, the
@@ -73,9 +74,9 @@ model service in the app. The same split serves a deployment dashboard whose too
 cluster, a research board that ranks notes with the embedding model, or a game whose opponent is a
 decision model; [what a mini app can use](mini-apps.md#what-you-can-build) lists the host's APIs.
 
-A mini app can also answer back. The bundled chess, checkers, battleship, tic-tac-toe and 2048 mini
-apps call `ctx.host.wake` when you move, so your move starts an agent turn and its reply lands on
-the same board.
+A mini app can also answer back. The chess, checkers, battleship, tic-tac-toe and 2048 mini apps of
+the Localix marketplace call `ctx.host.wake` when you move, so your move starts an agent turn and
+its reply lands on the same board.
 
 ## Limits
 
@@ -102,7 +103,7 @@ the same board.
 
 ## Source of truth
 
-- [The mini-app-authoring plugin](https://github.com/rsaryev/localix/tree/main/plugins/mini-app-authoring)
+- [The mini-app-authoring plugin](https://github.com/rsaryev/localix-marketplace/tree/main/plugins/mini-app-authoring)
 - [The kit's validation tools](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/kit-tools.ts)
 - [Installing a local package](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/local-install.ts)
-- [The template every mini app forks](https://github.com/rsaryev/localix/tree/main/mini-apps/template)
+- [The template every mini app forks](https://github.com/rsaryev/localix-marketplace/tree/main/plugins/mini-app-authoring/template)

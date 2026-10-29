@@ -17,10 +17,7 @@ function manifestAt(pluginDir: string): string {
   return join(pluginDir, '.claude-plugin', 'plugin.json')
 }
 
-const previousEnv = {
-  bundled: process.env.LOCALIX_BUNDLED_PLUGINS_DIR,
-  claudeConfig: process.env.CLAUDE_CONFIG_DIR,
-}
+const previousClaudeConfig = process.env.CLAUDE_CONFIG_DIR
 
 let root: string
 let sourceDir: string
@@ -33,17 +30,14 @@ beforeAll(async () => {
   sourceDir = join(root, 'source', 'sample')
   workspaceDir = join(root, 'workspace')
   const homeDir = join(root, 'home')
-  const bundledDir = join(root, 'bundled')
   const claudeConfigDir = join(root, 'claude-config')
   await Promise.all([
     mkdir(sourceDir, { recursive: true }),
     mkdir(workspaceDir, { recursive: true }),
     mkdir(homeDir, { recursive: true }),
-    mkdir(bundledDir, { recursive: true }),
     mkdir(claudeConfigDir, { recursive: true }),
   ])
 
-  process.env.LOCALIX_BUNDLED_PLUGINS_DIR = bundledDir
   process.env.CLAUDE_CONFIG_DIR = claudeConfigDir
 
   db = createDatabase()
@@ -59,11 +53,8 @@ beforeAll(async () => {
 afterAll(async () => {
   await destroyDatabase(db)
   await rm(root, { recursive: true, force: true })
-  for (const [key, value] of Object.entries(previousEnv)) {
-    const envKey = key === 'bundled' ? 'LOCALIX_BUNDLED_PLUGINS_DIR' : 'CLAUDE_CONFIG_DIR'
-    if (value === undefined) delete process.env[envKey]
-    else process.env[envKey] = value
-  }
+  if (previousClaudeConfig === undefined) delete process.env.CLAUDE_CONFIG_DIR
+  else process.env.CLAUDE_CONFIG_DIR = previousClaudeConfig
 })
 
 describe('plugin update rollback', () => {

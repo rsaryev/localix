@@ -40,11 +40,6 @@ const EXEMPTIONS: readonly Exemption[] = [
     reason:
       'records a chord for rebinding, so it must observe the raw key the registry would otherwise claim and swallow',
   },
-  {
-    suffix: '/mini-apps/project-space/ui/board/useLiveBoard.ts',
-    reason:
-      'observes modifier state during pointer drags for snapping; it never claims a key or runs a keyboard command',
-  },
 ]
 
 function targetName(callee: Node): string | null {
