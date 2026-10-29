@@ -1,4 +1,4 @@
-import { defaultSource } from '@localixai/store'
+import { defaultSource, LOCALIX_MARKETPLACE } from '@localixai/store'
 
 import type { MiniAppStoreSource } from './store-offers'
 
@@ -15,10 +15,16 @@ export const DEFAULT_MINI_APP_CATALOG_URL = defaultSource('localix-mini-apps')!.
  * `LOCALIX_MINI_APP_CATALOG_URL` puts another in its place, for trying a Localix marketplace build
  * before its release (`file://…/dist/catalog/mini-app-catalog.json` after its `bun run pack`). It
  * is vouched for as the real one is, so it is for the people who build Localix, never a setting.
+ *
+ * Its signature is checked against the key Localix pins for it (`LOCALIX_MARKETPLACE.catalogKey`),
+ * never one it serves; `LOCALIX_MINI_APP_CATALOG_KEY` names the builder's own key for a local
+ * build. With no key pinned its apps are listed as unsigned and update only when asked.
  */
 export async function builtInMiniAppSources(
   env: Record<string, string | undefined> = process.env,
+  pinned: string | undefined = LOCALIX_MARKETPLACE.catalogKey,
 ): Promise<MiniAppStoreSource[]> {
   const url = env.LOCALIX_MINI_APP_CATALOG_URL?.trim() || DEFAULT_MINI_APP_CATALOG_URL
-  return [{ kind: 'catalog', url, vouches: true }]
+  const key = env.LOCALIX_MINI_APP_CATALOG_KEY?.trim() || pinned
+  return [{ kind: 'catalog', url, vouches: true, ...(key ? { key } : {}) }]
 }

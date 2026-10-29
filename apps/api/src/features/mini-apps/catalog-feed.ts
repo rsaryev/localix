@@ -8,6 +8,8 @@ import {
 import { miniAppFileAssociationSchema } from '@localixai/mini-app-sdk/manifest'
 import { sourceSuitsSchema } from '@localixai/store'
 
+import { readCatalogSignature, type CatalogSignature } from './catalog-signature'
+
 /**
  * A catalog: one `catalog.json` that lists mini apps and where each one's archive is. It may be
  * served over HTTPS (the hosted Localix catalog, a publisher's GitHub release) or read from a
@@ -174,11 +176,18 @@ export async function readMiniAppCatalog(
   return (await readMiniAppCatalogFeed(url, options)).apps
 }
 
-/** A catalog's apps and the picks it carries for Discover. */
+/**
+ * A catalog's apps, the picks it carries for Discover, and the signature beside it, checked
+ * against the exact bytes the catalog was served as (`catalog-signature.ts`).
+ */
 export async function readMiniAppCatalogFeed(
   url: string,
   options: { fetchImpl?: typeof fetch; signal?: AbortSignal } = {},
-): Promise<{ apps: MiniAppCatalogApp[]; editorial?: MiniAppCatalogEditorial }> {
+): Promise<{
+  apps: MiniAppCatalogApp[]
+  editorial?: MiniAppCatalogEditorial
+  signature: CatalogSignature
+}> {
   const where = url.startsWith('file:') ? url : new URL(url).host
   let response: Response
   try {
@@ -192,9 +201,10 @@ export async function readMiniAppCatalogFeed(
     )
   }
   if (!response.ok) throw new Error(`The mini app catalog at ${where} answered ${response.status}`)
+  const bytes = new Uint8Array(await response.arrayBuffer())
   let body: unknown
   try {
-    body = await response.json()
+    body = JSON.parse(new TextDecoder().decode(bytes))
   } catch {
     throw new Error(`The mini app catalog at ${where} is not JSON`)
   }
@@ -219,8 +229,11 @@ export async function readMiniAppCatalogFeed(
       }),
     ]
   })
+  // Beside the file the address led to: `releases/latest/…` redirects to one release.
+  const signature = await readCatalogSignature(response.url || url, bytes, options)
   return {
     apps,
     ...(editorial ? { editorial: { collections: editorial.collections } } : {}),
+    signature,
   }
 }

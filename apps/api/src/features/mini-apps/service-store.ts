@@ -1,4 +1,5 @@
 import { recordCoreChanges } from '../changes/core-entities'
+import { createMiniAppAutoUpdate } from './auto-update'
 import { withCatalogPreview } from './catalog-preview'
 import { createMiniAppCatalogs } from './catalogs'
 import { createRecommendedInstalls } from './recommended'
@@ -20,9 +21,12 @@ export function createMiniAppStoreParts(
     db: deps.db,
     builtIn: deps.storeSources ?? builtInMiniAppSources,
   })
+  const autoUpdate = createMiniAppAutoUpdate({ db: deps.db })
   const store = createMiniAppStore({
     homeDir: deps.homeDir,
     sources: () => catalogList.sources(),
+    pinKey: (url, key) => catalogList.pinKey(url, key),
+    autoUpdateOff: () => autoUpdate.off(),
     onInstalled: async (name, { fresh, userId }) => {
       if (fresh && userId) await setEnabled(userId, { name, enabled: true })
       await recordCoreChanges(deps.db, {
@@ -36,6 +40,7 @@ export function createMiniAppStoreParts(
   return {
     catalogs: withCatalogPreview(catalogList, store),
     store,
+    autoUpdate,
     installRecommended: (userId: string) =>
       createRecommendedInstalls({
         store,

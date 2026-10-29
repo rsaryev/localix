@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'bun:test'
+import { generateKeyPairSync } from 'node:crypto'
 
-import { readMiniAppCatalog } from './catalog-feed'
+import { readMiniAppCatalog, readMiniAppCatalogFeed } from './catalog-feed'
+import { signCatalog } from './catalog-signature'
 
 const sha = 'a'.repeat(64)
 const catalog = {
@@ -116,5 +118,32 @@ describe('a mini app catalog', () => {
     await expect(
       readMiniAppCatalog('https://example.test/catalog.json', { fetchImpl: serve({ schema: 9 }) }),
     ).rejects.toThrow(/catalog/)
+  })
+})
+
+describe('a catalog with its signature', () => {
+  const { privateKey } = generateKeyPairSync('ed25519')
+  const text = JSON.stringify(catalog)
+  const served = (signature: string) =>
+    (async (url: string | URL) =>
+      String(url).endsWith('.sig')
+        ? new Response(signature)
+        : new Response(text)) as unknown as typeof fetch
+
+  test('is read with the signature of the exact bytes it was served as', async () => {
+    const signature = signCatalog(new TextEncoder().encode(text), privateKey)
+    const feed = await readMiniAppCatalogFeed('https://example.test/catalog.json', {
+      fetchImpl: served(signature),
+    })
+    expect(feed.signature).toEqual({ state: 'signed', key: JSON.parse(signature).key })
+  })
+
+  // Re-serialised JSON is not what was signed: a space moved is another catalog.
+  test('a signature of other bytes of the same JSON does not hold', async () => {
+    const pretty = new TextEncoder().encode(JSON.stringify(catalog, null, 2))
+    const feed = await readMiniAppCatalogFeed('https://example.test/catalog.json', {
+      fetchImpl: served(signCatalog(pretty, privateKey)),
+    })
+    expect(feed.signature.state).toBe('invalid')
   })
 })

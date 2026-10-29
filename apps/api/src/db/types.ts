@@ -475,6 +475,13 @@ export interface ToolUsageTable {
 export interface MiniAppCatalogsTable {
   url: string
   added_at: string
+  /** The key its signature must hold for, kept from its first signed read. */
+  signing_key: string | null
+}
+
+export interface MiniAppAutoUpdateOffTable {
+  name: string
+  changed_at: string
 }
 
 export interface AppDatabase {
@@ -507,6 +514,7 @@ export interface AppDatabase {
   wake_outbox: WakeOutboxTable
   mcp_channel_bindings: McpChannelBindingsTable
   mini_app_catalogs: MiniAppCatalogsTable
+  mini_app_auto_update_off: MiniAppAutoUpdateOffTable
   user_view_state: UserViewStateTable
   store_recommendation_dismissals: StoreRecommendationDismissalsTable
   store_recommendation_events: StoreRecommendationEventsTable

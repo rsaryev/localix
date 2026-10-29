@@ -62,9 +62,17 @@ export function createMiniAppStore(deps: {
   fetchImpl?: typeof fetch
   /** Where a catalog's media are kept once fetched; under the Localix cache by default. */
   cacheDir?: string
+  /** Keep the key a catalog a person added was first read signed with (`catalogs.ts`). */
+  pinKey?: (url: string, key: string) => Promise<void>
+  /** The installed apps the person keeps from updating on their own (`auto-update.ts`). */
+  autoUpdateOff?: () => Promise<ReadonlySet<string>>
 }) {
   const installRoot = join(deps.homeDir, MINI_APPS_SUBDIR)
-  const readOffers = createOfferReader({ sources: deps.sources, fetchImpl: deps.fetchImpl })
+  const readOffers = createOfferReader({
+    sources: deps.sources,
+    fetchImpl: deps.fetchImpl,
+    ...(deps.pinKey ? { pinKey: deps.pinKey } : {}),
+  })
   const readMedia = createStoreMediaReader({
     cacheDir: deps.cacheDir ?? join(deps.homeDir, MINI_APP_STORE_CACHE_SUBDIR),
     fetchImpl: deps.fetchImpl,
@@ -175,6 +183,12 @@ export function createMiniAppStore(deps: {
           'mini_app_name_taken',
           `A mini app of yours is already called "${name}"; rename or remove it first`,
         )
+      // The catalog is no longer signed by the key kept for it: someone else may have written it.
+      if (offer.signature === 'mismatch')
+        throw new ConflictError(
+          'mini_app_signature_changed',
+          `"${name}" comes from a catalog whose signature changed (${offer.source}); nothing is installed from it until it is removed and added again`,
+        )
       if (!offer.publisher.verified && !opts.acceptUnverified)
         throw new ConflictError(
           'mini_app_unverified',
@@ -188,13 +202,17 @@ export function createMiniAppStore(deps: {
 
     /**
      * Install the newer version of every app a catalog put here, re-reading the catalogs first.
-     * A folder the person made, an incompatible version and a running job are left alone; a
-     * failed update keeps the version before. Returns the names queued.
+     * Only from a catalog signed with the key kept for it, and not for an app the person keeps
+     * from updating on its own: the rest wait for the person's Update. A folder the person made,
+     * an incompatible version and a running job are left alone; a failed update keeps the version
+     * before. Returns the names queued.
      */
     async updateInstalled(): Promise<string[]> {
       const { offers } = await readOffers({ fresh: true })
+      const off = (await deps.autoUpdateOff?.()) ?? new Set<string>()
       const queued: string[] = []
       for (const offer of offers.values()) {
+        if (offer.signature !== 'signed' || off.has(offer.name)) continue
         // A copy an earlier Localix build installed moves to the catalog's on its next version; a
         // folder the person made is theirs (`isUpdatable`).
         if (busy(offer.name) || !(await isUpdatable(offer, installRoot))) continue

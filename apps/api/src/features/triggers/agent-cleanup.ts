@@ -47,6 +47,7 @@ export function createAgentTriggerCleanup(ports: AgentTriggerPorts) {
     plugin: 'ignore',
     'mini-app': 'ignore',
     'mini-app.catalog': 'ignore',
+    'mini-app.updates': 'ignore',
     mcp: 'ignore',
     agent: (change) => {
       if (change.op === 'resync') return stop(unbound)

@@ -1,4 +1,7 @@
+import type { KeyObject } from 'node:crypto'
+
 import { packMiniAppFiles } from '../features/mini-apps/archive'
+import { signCatalog } from '../features/mini-apps/catalog-signature'
 
 /** One app a fixture catalog lists. Every field but the name has a default. */
 export interface CatalogEntry {
@@ -41,11 +44,17 @@ const sha256 = (bytes: Uint8Array) => new Bun.CryptoHasher('sha256').update(byte
  */
 export function hostedMiniAppCatalog(
   initial: CatalogEntry[] = [],
-  opts: { url?: string; editorial?: unknown } = {},
+  opts: {
+    url?: string
+    editorial?: unknown
+    /** Publishes `<catalog>.sig`, made with this key; a test may set or swap it later. */
+    signWith?: KeyObject
+  } = {},
 ) {
   const url = opts.url ?? DEFAULT_CATALOG_URL
   const apps = [...initial]
   const fetched: string[] = []
+  const signing: { key?: KeyObject } = { key: opts.signWith }
 
   async function serve() {
     const files = new Map<string, Uint8Array>()
@@ -105,17 +114,22 @@ export function hostedMiniAppCatalog(
     const asked = new URL(String(input instanceof Request ? input.url : input))
     fetched.push(asked.href)
     const { files, listed } = await serve()
+    const text = JSON.stringify({
+      schema: 1,
+      apps: listed,
+      ...(opts.editorial ? { editorial: opts.editorial } : {}),
+    })
     if (asked.href === url)
-      return Response.json({
-        schema: 1,
-        apps: listed,
-        ...(opts.editorial ? { editorial: opts.editorial } : {}),
-      })
+      return new Response(text, { headers: { 'content-type': 'application/json' } })
+    if (asked.href === `${url}.sig`)
+      return signing.key
+        ? new Response(signCatalog(new TextEncoder().encode(text), signing.key))
+        : new Response('missing', { status: 404 })
     const bytes = files.get(asked.pathname.split('/').pop() ?? '')
     return bytes
       ? new Response(new Blob([bytes as Uint8Array<ArrayBuffer>]))
       : new Response('missing', { status: 404 })
   }) as unknown as typeof fetch
 
-  return { url, apps, fetchImpl, fetched }
+  return { url, apps, fetchImpl, fetched, signing }
 }

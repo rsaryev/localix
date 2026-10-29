@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import { generateKeyPairSync, type KeyObject } from 'node:crypto'
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
@@ -10,15 +11,31 @@ const root = tempDirPerTest('mini-app-store-catalog-')
 /** A hosted catalog offering these apps. */
 const hostedCatalog = (apps: CatalogEntry[]) => hostedMiniAppCatalog(apps)
 
-function setup(catalog: ReturnType<typeof hostedCatalog>, vouches = true) {
+/** The public key a catalog signature names, as Localix keeps it. */
+const keptKey = (pair: { publicKey: KeyObject }) =>
+  Buffer.from(pair.publicKey.export({ format: 'jwk' }).x!, 'base64url').toString('base64')
+
+function setup(
+  catalog: ReturnType<typeof hostedCatalog>,
+  vouches = true,
+  trust: {
+    key?: string
+    pinKey?: (url: string, key: string) => Promise<void>
+    autoUpdateOff?: () => Promise<ReadonlySet<string>>
+  } = {},
+) {
   const home = join(root(), 'home')
   const installed: { name: string; fresh: boolean }[] = []
   const phases: MiniAppJob[] = []
   const store = createMiniAppStore({
     homeDir: home,
-    sources: () => [{ kind: 'catalog', url: catalog.url, vouches }],
+    sources: () => [
+      { kind: 'catalog', url: catalog.url, vouches, ...(trust.key ? { key: trust.key } : {}) },
+    ],
     onInstalled: async (name, { fresh }) => void installed.push({ name, fresh }),
     fetchImpl: catalog.fetchImpl,
+    ...(trust.pinKey ? { pinKey: trust.pinKey } : {}),
+    ...(trust.autoUpdateOff ? { autoUpdateOff: trust.autoUpdateOff } : {}),
   })
   store.subscribe(() => {
     const job = store.jobs().get('atlas')
@@ -94,11 +111,17 @@ describe('the mini app store, from a hosted catalog', () => {
       JSON.stringify({ name: 'notes', version: '0.1.0' }),
     )
 
+    const author = generateKeyPairSync('ed25519')
     const { store, installed, appDir } = setup(
-      hostedCatalog([
-        { name: 'atlas', version: '1.1.0' },
-        { name: 'notes', version: '2.0.0' },
-      ]),
+      hostedMiniAppCatalog(
+        [
+          { name: 'atlas', version: '1.1.0' },
+          { name: 'notes', version: '2.0.0' },
+        ],
+        { signWith: author.privateKey },
+      ),
+      true,
+      { key: keptKey(author) },
     )
     expect(await store.updateInstalled()).toEqual(['atlas'])
     await store.settled()
@@ -116,5 +139,74 @@ describe('the mini app store, from a hosted catalog', () => {
     const listing = await store.list()
     expect(listing.entries).toEqual([])
     expect(listing.problems[0]).toContain('503')
+  })
+
+  test('updates come on their own only from a catalog signed with the key kept for it', async () => {
+    const author = generateKeyPairSync('ed25519')
+    const signed = hostedMiniAppCatalog([{ name: 'atlas', version: '1.0.0' }], {
+      signWith: author.privateKey,
+    })
+    const { store } = setup(signed, true, { key: keptKey(author) })
+    await store.install('atlas')
+    await store.settled()
+    expect((await store.list()).entries[0]?.signature).toBe('signed')
+
+    signed.apps[0]!.version = '1.1.0'
+    expect(await store.updateInstalled()).toEqual(['atlas'])
+  })
+
+  test('an app from an unsigned catalog is offered its update but never takes it alone', async () => {
+    const unsigned = hostedMiniAppCatalog([{ name: 'atlas', version: '1.0.0' }])
+    const { store } = setup(unsigned)
+    await store.install('atlas')
+    await store.settled()
+
+    unsigned.apps[0]!.version = '1.1.0'
+    expect(await store.updateInstalled()).toEqual([])
+    await store.refresh()
+    expect((await store.list()).entries[0]).toMatchObject({ signature: 'unsigned', update: true })
+  })
+
+  test('an app the person keeps from updating on its own waits for them', async () => {
+    const author = generateKeyPairSync('ed25519')
+    const signed = hostedMiniAppCatalog([{ name: 'atlas', version: '1.0.0' }], {
+      signWith: author.privateKey,
+    })
+    const { store } = setup(signed, true, {
+      key: keptKey(author),
+      autoUpdateOff: async () => new Set(['atlas']),
+    })
+    await store.install('atlas')
+    await store.settled()
+
+    signed.apps[0]!.version = '1.1.0'
+    expect(await store.updateInstalled()).toEqual([])
+  })
+
+  test('a catalog signed with another key than the one kept for it installs nothing', async () => {
+    const author = generateKeyPairSync('ed25519')
+    const impostor = generateKeyPairSync('ed25519')
+    const swapped = hostedMiniAppCatalog([{ name: 'atlas', version: '1.0.0' }], {
+      signWith: impostor.privateKey,
+    })
+    const { store, installed } = setup(swapped, true, { key: keptKey(author) })
+
+    expect((await store.list()).entries[0]?.signature).toBe('mismatch')
+    await expect(store.install('atlas')).rejects.toThrow(/signature/i)
+    expect(installed).toEqual([])
+  })
+
+  test('a catalog the person added keeps the key it was first signed with', async () => {
+    const author = generateKeyPairSync('ed25519')
+    const added = hostedMiniAppCatalog([{ name: 'atlas', version: '1.0.0' }], {
+      signWith: author.privateKey,
+    })
+    const pinned: Array<[string, string]> = []
+    const { store } = setup(added, false, {
+      pinKey: async (url, key) => void pinned.push([url, key]),
+    })
+
+    expect((await store.list()).entries[0]?.signature).toBe('signed')
+    expect(pinned).toEqual([[added.url, keptKey(author)]])
   })
 })

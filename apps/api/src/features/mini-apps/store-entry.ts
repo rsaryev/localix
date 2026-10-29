@@ -1,5 +1,6 @@
 import type { ListingSuits } from '@localixai/store'
 
+import type { CatalogSignatureState } from './catalog-signature'
 import { iconOf, isIncompatible } from './store-activity'
 import type { MiniAppPublisher, Offer } from './store-offers'
 
@@ -25,6 +26,8 @@ export interface MiniAppStoreEntry {
   publisher: MiniAppPublisher
   /** The catalog it comes from, as the catalog list names it. */
   source: string
+  /** Whether its catalog is signed with the key kept for it (`catalog-signature.ts`). */
+  signature: CatalogSignatureState
   /** Where the host serves its icon; the row draws a monogram when it has none. */
   icon?: string
   tags?: string[]
@@ -65,6 +68,7 @@ export function storeEntry(
     ...(offer.version ? { version: offer.version } : {}),
     publisher: offer.publisher,
     source: offer.source,
+    signature: offer.signature,
     ...(icon ? { icon } : {}),
     ...(tags.length ? { tags } : {}),
     ...(featured ? { featured: true } : {}),

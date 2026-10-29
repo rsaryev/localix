@@ -4,6 +4,7 @@ import { MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
 
 import { errorMessage } from '../../lib/errors'
 import { readMiniAppCatalogFeed, type MiniAppCatalogEditorial } from './catalog-feed'
+import { catalogSignatureState } from './catalog-signature'
 import type { MiniAppStoreSource, Offer } from './store-offer-types'
 
 export type {
@@ -35,6 +36,11 @@ export function createOfferReader(deps: {
   fetchImpl?: typeof fetch
   ttlMs?: number
   now?: () => number
+  /**
+   * Keep the key a catalog a person added was first read signed with (`catalogs.ts`). The Localix
+   * catalog's key is pinned in code and never taken from what it serves.
+   */
+  pinKey?: (url: string, key: string) => Promise<void>
 }) {
   const ttl = deps.ttlMs ?? 10 * 60_000
   const now = deps.now ?? Date.now
@@ -49,9 +55,19 @@ export function createOfferReader(deps: {
   ): Promise<{ offers: Offer[]; editorial?: MiniAppCatalogEditorial }> {
     const cached = cache.get(source.url)
     if (cached && !fresh && now() - cached.at < ttl) return cached
-    const { apps, editorial } = await readMiniAppCatalogFeed(source.url, {
+    const {
+      apps,
+      editorial,
+      signature: read,
+    } = await readMiniAppCatalogFeed(source.url, {
       fetchImpl: deps.fetchImpl,
     })
+    let kept = source.key
+    if (!kept && !source.vouches && read.state === 'signed' && deps.pinKey) {
+      await deps.pinKey(source.url, read.key)
+      kept = read.key
+    }
+    const signature = catalogSignatureState(read, kept)
     const pinned = (file: { url: string; bytes: number; sha256: string; type?: string }) => ({
       from: 'catalog' as const,
       url: file.url,
@@ -68,6 +84,7 @@ export function createOfferReader(deps: {
       ...(app.apiVersion ? { apiVersion: app.apiVersion } : {}),
       publisher: { name: app.publisher.name, verified: source.vouches && app.publisher.verified },
       source: source.url,
+      signature,
       store: {
         ...(app.icon ? { icon: pinned(app.icon) } : {}),
         screenshots: (app.screenshots ?? []).map((shot) => ({

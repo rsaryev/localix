@@ -194,9 +194,11 @@ folder beside the installed copy, refusing any path that leaves the folder and a
 512 MB. It checks that `mini-app.json` names the promised app and version, and swaps the folder in
 with one rename. A failure at any step keeps the version that was installed.
 
-Apps a catalog installed take its newer versions a minute after Localix starts and every six hours.
-A folder you made yourself under `~/.localix/mini-apps/` is never replaced by a catalog's app of the
-same name; installing one says the name is taken.
+Apps from a signed catalog take its newer versions on their own, a minute after Localix starts and
+every six hours, unless you switch **Update automatically** off on the app's Store page. Apps from
+an unsigned catalog are never updated behind your back: the Store offers the newer version and
+installs it when you choose **Update**. A folder you made yourself under `~/.localix/mini-apps/` is
+never replaced by a catalog's app of the same name; installing one says the name is taken.
 
 ### Trust
 
@@ -204,6 +206,31 @@ Installing an app from an unverified publisher asks first in the Store, in a she
 would run. Choosing **Install** is the yes that lets its backend run, as for any mini app you allow.
 A mini app's backend runs as trusted local code: a catalog decides where an app comes from, not what
 it may do.
+
+### Signing
+
+A catalog can be signed: beside `mini-app-catalog.json` sits `mini-app-catalog.json.sig`, an Ed25519
+signature of the catalog file's exact bytes and the public key that made it.
+
+```json
+{
+  "schema": 1,
+  "algorithm": "ed25519",
+  "key": "<32 bytes, base64>",
+  "signature": "<64 bytes, base64>"
+}
+```
+
+A signature proves who wrote a catalog only against a key known from before, so Localix keeps one
+per catalog: the Localix marketplace's key is built into Localix, and a catalog you add keeps the
+key it was signed with when you added it (or at its first signed read, for one added unsigned). The
+Store shows each app as **Signed**, **Not signed** or **Signature changed**:
+
+- **Signed**: the catalog's signature holds for the kept key. Its apps update on their own.
+- **Not signed**: no key is kept for the catalog. Its apps install and update when you ask.
+- **Signature changed**: the catalog is signed with another key, is no longer signed, or its
+  signature does not hold. Nothing is installed or updated from it. If the publisher moved to a new
+  key, remove the catalog and add it again to keep the new one.
 
 ### Adding a catalog
 

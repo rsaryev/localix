@@ -1,5 +1,7 @@
 import type { ListingSuits } from '@localixai/store'
 
+import type { CatalogSignatureState } from './catalog-signature'
+
 /** Who publishes an app, and whether Localix vouches for them. */
 export interface MiniAppPublisher {
   name: string
@@ -9,8 +11,10 @@ export interface MiniAppPublisher {
 /**
  * Where offers come from: a `catalog.json` over HTTPS or `file://`. Its publishers are verified
  * only when the source `vouches` — the hosted Localix catalog does; one a person added does not.
+ * `key` is the public key its signature must hold for (`catalog-signature.ts`): pinned in code for
+ * the Localix catalog, kept from the first signed read for one a person added.
  */
-export type MiniAppStoreSource = { kind: 'catalog'; url: string; vouches: boolean }
+export type MiniAppStoreSource = { kind: 'catalog'; url: string; vouches: boolean; key?: string }
 
 /**
  * One file of an app's store page: a catalog's pinned file. It reaches a client only as a host
@@ -56,6 +60,8 @@ export interface OfferMeta {
   publisher: MiniAppPublisher
   /** The catalog it comes from, as the catalog list names it (`catalogs.ts`). */
   source: string
+  /** Whether its catalog is signed with the key kept for it: only `signed` updates on its own. */
+  signature: CatalogSignatureState
   store: OfferStore
 }
 

@@ -40,6 +40,11 @@ export const LOCALIX_MARKETPLACE = {
   repo: 'rsaryev/localix-marketplace',
   /** Only the catalog and the plugins are checked out, not the mini apps' sources. */
   paths: ['.claude-plugin', 'plugins'],
+  /**
+   * The Ed25519 public key (base64) its mini app catalog is signed with: its apps update on their
+   * own only while the catalog's signature holds for it. Unset until the marketplace signs.
+   */
+  catalogKey: undefined as string | undefined,
 } as const
 
 /** The mini app catalog a GitHub repository's latest release publishes. */

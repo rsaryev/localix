@@ -167,6 +167,7 @@ export function createCapabilityCleanup(ports: CapabilityCleanupPorts) {
     plugin: (change) => (change.op === 'deleted' ? removed('plugin', change.ref.id) : undefined),
     'mini-app': (change) => (change.op === 'deleted' ? miniAppRemoved(change.ref.id) : undefined),
     'mini-app.catalog': 'ignore',
+    'mini-app.updates': 'ignore',
     mcp: (change) =>
       change.op === 'deleted' ? removed('mcp', change.ref.id, change.ref.serverId) : undefined,
     agent: (change) =>

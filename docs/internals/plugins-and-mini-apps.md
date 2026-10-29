@@ -204,9 +204,16 @@ authoring plugin before it is installed.
    against the catalog's sha256 before anything is unpacked), unpacks it beside the installed copy
    and swaps it in with one rename. A failed install leaves the previous build.
 4. **Update.** A minute after start and every six hours the catalogs are re-read, and a newer
-   version with a compatible `apiVersion` is installed for every app a catalog put there; an
-   incompatible one says Localix needs updating. A failed download or archive leaves the previous
-   build. An update never touches the app's data folder.
+   version with a compatible `apiVersion` is installed for every app a signed catalog put there,
+   unless the person switched its auto-update off (`auto-update.ts`, a `mini-app.updates` notice);
+   an incompatible one says Localix needs updating. An app from an unsigned catalog is offered its
+   update and takes it on the person's Update. A failed download or archive leaves the previous
+   build. An update never touches the app's data folder. A catalog is **signed** when
+   `<catalog>.sig` holds for the key Localix keeps for it (`catalog-signature.ts`): pinned in code
+   for the Localix marketplace (`LOCALIX_MARKETPLACE.catalogKey`), kept from the first signed read
+   for one the person added (`catalogs.ts`). A catalog signed with another key, or no longer signed,
+   is a **mismatch**: nothing installs or updates from it until the person removes it and adds it
+   again.
 5. **Trust.** Installing from the store is the person's yes to run the app. An unverified publisher
    is named in the row, and its install asks again first.
 6. **Create.** The authoring plugin forks its own template into a folder of the person's, builds the

@@ -125,6 +125,8 @@ export function ownMiniAppEntry(app: OwnMiniApp): MiniAppStoreEntry {
     ...(app.icon ? { icon: app.icon } : {}),
     publisher: { name: 'You', verified: false },
     source: OWN_SOURCE.id,
+    // From the person's own folder, through no catalog: nothing updates it but them.
+    signature: 'unsigned',
     surfaces: app.surfaces ?? [],
     commands: app.commands ?? [],
     installed: app.version ? { version: app.version } : {},

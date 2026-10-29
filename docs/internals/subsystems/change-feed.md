@@ -42,6 +42,8 @@ registry, so a kind added to it fails to compile until every consumer gives it a
 | `agent`               | Every write by name, with the stable `agentId`; `resync`     | Semantic index, agent names, relay            |
 | `plugin`, `mcp`       | Removal from `capability_source`, by name; `resync`          | Semantic index, capability cleanup            |
 | `mini-app`            | Installed, updated, removed or its settings changed, by name | Mini app hosts, capability cleanup, relay     |
+| `mini-app.catalog`    | A catalog added or removed, or its signing key kept, by URL  | Relay                                         |
+| `mini-app.updates`    | Whether an installed mini app updates on its own, by name    | Relay                                         |
 | `skill`               | `resync` after a capability bump                             | Semantic index, relay                         |
 | `capability.rule`     | Every rule-list write, by agent, in its transaction          | Relay                                         |
 | `local.model`         | Installed or removed by id; `resync` at boot                 | Route repair                                  |

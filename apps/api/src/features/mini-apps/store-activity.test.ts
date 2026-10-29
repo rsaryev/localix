@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import { generateKeyPairSync } from 'node:crypto'
 import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
 
@@ -19,10 +20,14 @@ function storeOver(sources: MiniAppStoreSource[], fetchImpl?: typeof fetch) {
 }
 
 describe('the mini app store’s background updates and installs', () => {
-  test('Update all installs the newer version of the apps a catalog put here, and says so once', async () => {
-    const catalog = hostedMiniAppCatalog([{ name: 'atlas', displayName: 'Atlas' }])
+  test('the background update installs the newer version of the apps a signed catalog put here, and says so once', async () => {
+    const author = generateKeyPairSync('ed25519')
+    const key = Buffer.from(author.publicKey.export({ format: 'jwk' }).x!, 'base64url')
+    const catalog = hostedMiniAppCatalog([{ name: 'atlas', displayName: 'Atlas' }], {
+      signWith: author.privateKey,
+    })
     const { store, settled } = storeOver(
-      [{ kind: 'catalog', url: catalog.url, vouches: true }],
+      [{ kind: 'catalog', url: catalog.url, vouches: true, key: key.toString('base64') }],
       catalog.fetchImpl,
     )
     await store.install('atlas')

@@ -127,6 +127,7 @@ describe('semantic pipeline over chat', () => {
           plugin: 'ignore',
           'mini-app': 'ignore',
           'mini-app.catalog': 'ignore',
+          'mini-app.updates': 'ignore',
           mcp: 'ignore',
           agent: 'ignore',
           project: 'ignore',
