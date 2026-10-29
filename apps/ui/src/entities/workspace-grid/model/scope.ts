@@ -2,7 +2,12 @@
 // of its root conversation (`workspaceOf`; a sub-session has none of its own). The one exception is the reserved GLOBAL_SCOPE, which holds the APP-LEVEL kinds a
 // kind declares as such (settings, usage, the Store) — never a tab that reads a session.
 import type { WorkItemKind } from '@/shared/lib/workItem'
-import { isBuiltInWorkItemKind, isSingleton, scopeKindOf } from './capabilities'
+import {
+  activeWorkItemContribution,
+  isBuiltInWorkItemKind,
+  isSingleton,
+  scopeKindOf,
+} from './capabilities'
 import { workspaceOf } from '@/shared/lib/workspaceOf'
 
 /** A scope key: a chat sessionId, or GLOBAL_SCOPE for an app-level kind. */
@@ -26,6 +31,19 @@ export const GLOBAL_SCOPE = '@global'
 export function resolveOpenScope(kind: WorkItemKind, scope: ScopeId | undefined): ScopeId | null {
   if (scopeKindOf(kind) === 'global') return GLOBAL_SCOPE
   return scope && scope !== GLOBAL_SCOPE ? workspaceOf(scope) : null
+}
+
+/**
+ * Whether an open tab contradicts the scope its mini app's screen now declares: a screen that moved
+ * from the app to each chat (`scope: 'chat'`) left the tab it had opened app-wide belonging to no
+ * chat, so the screen had none to name, and the rail button only focused that tab again. The same
+ * rule as a restore (`restoredScope`), for tabs already open; core kinds keep their own contract.
+ */
+export function isMisscopedWorkItem(item: { kind: WorkItemKind; scope?: ScopeId }): boolean {
+  const contributed = activeWorkItemContribution(item.kind)
+  if (!contributed) return false
+  const app = (contributed.scope ?? 'session') === 'global'
+  return app !== (scopeOf(item.scope) === GLOBAL_SCOPE)
 }
 
 /** The scope a session shows in — its workspace; GLOBAL stays GLOBAL. */

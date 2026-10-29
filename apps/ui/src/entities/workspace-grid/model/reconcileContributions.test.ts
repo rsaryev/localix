@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { miniAppUiHostFor } from '@/shared/contrib/host'
+import { miniAppUiHostFor, removeMiniAppUiContributions } from '@/shared/contrib/host'
 import { setEnabledMiniAppNames } from '@/shared/contrib/miniAppActivation'
 import { reconcileUnavailableContributedItems, useGridStore } from './store'
 
@@ -129,5 +129,37 @@ describe('reconcileUnavailableContributedItems', () => {
     reconcileUnavailableContributedItems()
     expect(useGridStore.getState().items['mini-app-view:gone:board']).toBeUndefined()
     expect(useGridStore.getState().items['mini-app:tab']).toBeDefined()
+  })
+
+  // A mini app's screen moved from the app to each chat (`scope: 'chat'`) and was installed again:
+  // its open tab, opened while the screen was app-wide, kept belonging to no chat, so the screen
+  // never had one to name and the rail button only focused that tab again.
+  test('a tab of no chat closes once its screen, installed again, belongs to each chat', () => {
+    const owner = 'reconcile-rescoped'
+    const kind = `${owner}:screen`
+    const screen = (scope: 'global' | 'session') => ({
+      kind,
+      Component: () => null,
+      Icon: () => null,
+      restorable: true,
+      scope,
+    })
+    setEnabledMiniAppNames(new Set([MINI_APP, owner]))
+    miniAppUiHostFor(owner).workItems.register(screen('global'))
+    useGridStore
+      .getState()
+      .openItem(
+        { kind, id: 'screen:tab', title: 'Screen', scope: '@global' },
+        { group: 'group-root' },
+      )
+    expect(useGridStore.getState().items['screen:tab']).toBeDefined()
+
+    removeMiniAppUiContributions(owner)
+    miniAppUiHostFor(owner).workItems.register(screen('session'))
+    reconcileUnavailableContributedItems()
+    expect(useGridStore.getState().items['screen:tab']).toBeUndefined()
+    expect(useGridStore.getState().closed.some(({ item }) => item.id === 'screen:tab')).toBe(false)
+    expect(useGridStore.getState().items['mini-app:tab']).toBeDefined()
+    removeMiniAppUiContributions(owner)
   })
 })

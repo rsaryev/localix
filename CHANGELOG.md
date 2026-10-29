@@ -51,6 +51,9 @@ the rest of Localix asks.
   only from its own screen; before, it always fell back to its default.
 - **A mini app keeps what its update adds**: after a mini app updated in place, a field its new
   version stores (a habit's category) is no longer dropped until Localix restarts.
+- **A mini app screen that moved into each chat opens there**: when an update makes a mini app's
+  screen belong to each chat, its old app-wide tab closes and the rail opens the screen in the open
+  chat; before, the old tab stayed and the screen worked without the chat.
 - **A plugin you removed installs again**: **Get** on a plugin removed from the Store no longer
   fails with "A plugin already exists at this destination".
 - **A mini app whose screen fails to load says so**: its tabs stay open while the screen is tried

@@ -14,7 +14,13 @@ import {
   setItemDirtyState,
   setItemAttention,
 } from './itemOps'
-import { GLOBAL_SCOPE, resolveOpenScope, tabIdInScope, workspaceScope } from './scope'
+import {
+  GLOBAL_SCOPE,
+  isMisscopedWorkItem,
+  resolveOpenScope,
+  tabIdInScope,
+  workspaceScope,
+} from './scope'
 import { emptyEditorState, loadGrid, persistGrid } from './persistence'
 import { isUnavailableWorkItem } from './capabilities'
 import { loadString, saveString } from '@localixai/mini-app-sdk/ui/storage'
@@ -266,7 +272,9 @@ export function hydrateGrid(): void {
 /**
  * Once the backend publishes the authoritative enabled-mini-app set, close only tabs whose
  * owner is now confirmed disabled or removed (a contributed kind, or a bridged mini app view). During the cold `pending` phase those tabs
- * remain intact so a slow sidecar can never erase a user's saved layout.
+ * remain intact so a slow sidecar can never erase a user's saved layout. A tab whose screen now
+ * declares the other scope (`isMisscopedWorkItem`) closes too; the host runs this again after
+ * every mini app UI registers.
  */
 export function reconcileUnavailableContributedItems(): void {
   const snapshot = useGridStore.getState()
@@ -274,7 +282,7 @@ export function reconcileUnavailableContributedItems(): void {
   for (const leaf of leaves(snapshot.root)) {
     const ids = leaf.tabs.filter((id) => {
       const item = snapshot.items[id]
-      return item ? isUnavailableWorkItem(item) : false
+      return item ? isUnavailableWorkItem(item) || isMisscopedWorkItem(item) : false
     })
     if (ids.length > 0) targets.push({ group: leaf.id, ids })
   }
@@ -284,7 +292,9 @@ export function reconcileUnavailableContributedItems(): void {
   // deactivation is a system reconciliation, though: retaining those items
   // would let reopenClosedTab resurrect a kind whose renderer is disabled.
   useGridStore.setState((state) => {
-    const closed = state.closed.filter(({ item }) => !isUnavailableWorkItem(item))
+    const closed = state.closed.filter(
+      ({ item }) => !isUnavailableWorkItem(item) && !isMisscopedWorkItem(item),
+    )
     return closed.length === state.closed.length ? state : { ...state, closed }
   })
 }
