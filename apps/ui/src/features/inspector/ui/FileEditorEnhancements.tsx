@@ -23,8 +23,8 @@ import { Fragment, type ComponentType, type ReactNode } from 'react'
 
 import type { FileEditorEnhancerContribution } from '@localixai/mini-app-sdk/ui'
 import { SurfaceErrorBoundary } from '@/shared/ui/SurfaceErrorBoundary'
-import { fileEditorEnhancersFor } from './fileEditorEnhancers'
-import { useMiniAppRegistrySlice } from './useMiniAppRegistrySlice'
+import { fileEditorEnhancersFor } from '@/shared/contrib/fileEditorEnhancers'
+import { useMiniAppRegistrySlice } from '@/shared/contrib/useMiniAppRegistrySlice'
 
 export interface FileEditorEnhancementsProps {
   /** The file being edited — what each enhancer matches on and scopes its hooks to. */

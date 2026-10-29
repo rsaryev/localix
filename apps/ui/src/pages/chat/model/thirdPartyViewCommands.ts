@@ -1,5 +1,5 @@
-import type { PaletteCommand } from './uiCommands'
-import { listThirdPartyViews } from './runtimeViews'
+import type { PaletteCommand } from '@/shared/contrib/uiCommands'
+import { listThirdPartyViews } from '@/shared/contrib/runtimeViews'
 
 /**
  * Build the command-palette entries for mini apps' sandboxed views — the

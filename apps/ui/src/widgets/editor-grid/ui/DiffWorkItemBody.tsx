@@ -1,4 +1,4 @@
-import { WorkItemSlot } from '@/shared/contrib/WorkItemSlot'
+import { WorkItemSlot } from './WorkItemSlot'
 import { useWorkItemSlot } from '@/shared/contrib/workItemSlots'
 import { useCallback, useMemo } from 'react'
 import { FileText, TriangleAlert } from 'lucide-react'

@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { FileX2, TriangleAlert } from 'lucide-react'
-import { FileEditorEnhancements } from '@/shared/contrib/FileEditorEnhancements'
+import { FileEditorEnhancements } from './FileEditorEnhancements'
 import type { EditorCursorStatus, EditorTextSelection } from '@/shared/ui/code-editor/CodeEditor'
 import { openPreviewFromClick } from '../model/openPreview'
 import { STREAM_MARKDOWN_REPARSE_MS, useStreamingThrottle } from '@/shared/ui/useStreamingThrottle'

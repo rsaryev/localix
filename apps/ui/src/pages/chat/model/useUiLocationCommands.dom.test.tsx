@@ -16,7 +16,7 @@ test('a place a mini app adds while the palette is up is offered in it', async (
   const { act } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { MemoryRouter } = await import('react-router')
-  const { registerUiLocation, unregisterUiLocation } = await import('./uiLocations')
+  const { registerUiLocation, unregisterUiLocation } = await import('@/shared/contrib/uiLocations')
   const { useUiLocationCommands } = await import('./useUiLocationCommands')
   function Palette() {
     return (

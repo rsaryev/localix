@@ -19,7 +19,7 @@
  * hypothetical; `editor-grid/ui/registry.tsx` records it happening live.
  */
 import { SurfaceErrorBoundary } from '@/shared/ui/SurfaceErrorBoundary'
-import { useWorkItemSlot } from './workItemSlots'
+import { useWorkItemSlot } from '@/shared/contrib/workItemSlots'
 
 export interface WorkItemSlotProps {
   /** The slot being filled, `<area>.<name>` (`diff.provenance`, `diff.interactive`). */

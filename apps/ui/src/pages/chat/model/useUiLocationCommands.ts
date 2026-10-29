@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
 import { useUiNavigation } from '@/shared/hooks/useUiNavigation'
 import { invokeUi } from '@/shared/lib/uiNavigation'
-import type { PaletteCommand } from './uiCommands'
-import { buildUiLocationUri, useUiLocations } from './uiLocations'
+import type { PaletteCommand } from '@/shared/contrib/uiCommands'
+import { buildUiLocationUri, useUiLocations } from '@/shared/contrib/uiLocations'
 
 /**
  * Palette adapter over the live location catalog. A feature opts in once in its

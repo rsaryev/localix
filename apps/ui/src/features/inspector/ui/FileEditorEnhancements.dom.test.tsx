@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 
 import { FileEditorEnhancements } from './FileEditorEnhancements'
-import { registerFileEditorEnhancer } from './fileEditorEnhancers'
+import { registerFileEditorEnhancer } from '@/shared/contrib/fileEditorEnhancers'
 
 let teardown: () => Promise<void>
 

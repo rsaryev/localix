@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 
-import { syncThirdPartyViews, __resetThirdPartyViews } from './runtimeViews'
+import { syncThirdPartyViews, __resetThirdPartyViews } from '@/shared/contrib/runtimeViews'
 import { buildThirdPartyViewCommands } from './thirdPartyViewCommands'
 import type { MiniAppViewSpec } from '@/shared/api/contracts'
 
