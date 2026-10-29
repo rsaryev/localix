@@ -10,7 +10,7 @@ export const CONTROLS: readonly KitCatalogEntry[] = [
     provider: 'kit',
     exports: ['GetButton'],
     summary:
-      'A store’s install control for its whole life: Get, a progress ring with %, then Open, Update or Retry.',
+      'A store’s install control for its whole life: Get, a progress ring with %, then Open, Update or Retry; with `menu`, a quiet chevron or ellipsis beside it for where to get it or its options.',
     use: 'The one action of a package tile, row or page; it names its subject ("Get Notes") and its progress is a progressbar.',
     not: 'Not a generic action button (`button`), nor a progress bar for a download list (`progress-bar`).',
   },

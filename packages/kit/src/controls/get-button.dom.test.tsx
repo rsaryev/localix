@@ -72,4 +72,28 @@ describe('GetButton', () => {
     expect(view.host.textContent).toBe('Installed')
     await view.done()
   })
+
+  // What else can be done with it sits beside the action, named for what it holds.
+  test('with a menu, the action and its menu are one group, the menu named for what it holds', async () => {
+    const { GetButton } = await import('./get-button')
+    const chosen: string[] = []
+    const menu = {
+      label: 'Atlas options',
+      entries: [{ id: 'remove', label: 'Remove', onSelect: () => chosen.push('remove') }],
+    }
+    const view = await render(
+      <GetButton name="Atlas" state={{ kind: 'open' }} onPress={() => {}} menu={menu} />,
+    )
+    const group = view.host.querySelector('[role="group"]')!
+    expect(group.getAttribute('aria-label')).toBe('Atlas')
+    const [action, trigger] = [...group.querySelectorAll('button')]
+    expect(action!.getAttribute('aria-label')).toBe('Open Atlas')
+    expect(trigger!.getAttribute('aria-label')).toBe('Atlas options')
+    expect(trigger!.getAttribute('aria-haspopup')).toBe('menu')
+
+    // Installed with nothing to open, the menu is still there to remove it.
+    await view.rerender(<GetButton name="Atlas" state={{ kind: 'installed' }} menu={menu} />)
+    expect(view.host.querySelector('button[aria-label="Atlas options"]')).not.toBeNull()
+    await view.done()
+  })
 })

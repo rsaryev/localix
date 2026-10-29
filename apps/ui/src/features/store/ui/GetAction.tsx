@@ -1,15 +1,8 @@
 import { memo } from 'react'
-import { ChevronDown, Ellipsis, FolderGit2, RefreshCw, Settings2, Trash2, User } from 'lucide-react'
+import { FolderGit2, RefreshCw, Settings2, Trash2, User } from 'lucide-react'
 import type { Listing } from '@localixai/store'
 import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
 import { GetButton } from '@localixai/kit/get-button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from '@localixai/kit/dropdown-menu'
-import { IconButton } from '@localixai/kit/icon-button'
-import { MenuEntries } from '@localixai/kit/menu-entries'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { useStoreOpenAddress } from '@/shared/lib/storeInstallExtra'
 import { getStateOf } from '../model/getState'
@@ -42,8 +35,8 @@ export const GetAction = memo(function GetAction({
 })
 
 /**
- * The package page's action: the solid Get button and one round menu beside it, as tall. Before it
- * is got, a chevron: where to get it (for you, or for the open project alone, where its kind
+ * The package page's action: the solid Get button, and beside it a quiet menu. Before it is got, a
+ * chevron: where to get it (for you, or for the open project alone, where its kind
  * allows that) and the install extras, each said in its own words. Once installed, its options:
  * whether it updates on its own (from a signed catalog), get it in another scope, configure it,
  * add or remove an extra, remove it.
@@ -141,39 +134,34 @@ export function PageGetAction({ listing, className }: { listing: Listing; classN
             onSelect: () => store.remove(listing, install),
           })),
         ]
-  const menu = choose.length ? choose : manage
+  const label = choose.length
+    ? `Where to get ${listing.displayName}`
+    : `${listing.displayName} options`
+  const menu = (entries: MenuEntry[]) =>
+    entries.length ? { label, entries, choose: choose.length > 0 } : undefined
   return (
     <div className={cn('flex flex-wrap items-center gap-1.5', className)}>
       {listing.incompatible ? (
-        <span className="text-xs text-text-soft">{listing.incompatible}</span>
+        <>
+          {manage.length > 0 && (
+            <GetButton
+              name={listing.displayName}
+              state={{ kind: 'installed' }}
+              size="md"
+              menu={menu(manage)}
+            />
+          )}
+          <span className="text-xs text-text-soft">{listing.incompatible}</span>
+        </>
       ) : (
         <GetButton
           name={listing.displayName}
           state={state}
-          size="lg"
+          size="md"
           emphasis="strong"
           onPress={() => store.get(listing)}
+          menu={menu(choose.length ? choose : manage)}
         />
-      )}
-      {menu.length > 0 && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <IconButton
-              size="lg"
-              className="rounded-full bg-field-fill text-text-soft"
-              aria-label={
-                choose.length
-                  ? `Where to get ${listing.displayName}`
-                  : `${listing.displayName} options`
-              }
-            >
-              {choose.length ? <ChevronDown /> : <Ellipsis />}
-            </IconButton>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-64">
-            <MenuEntries entries={menu} family="dropdown" />
-          </DropdownMenuContent>
-        </DropdownMenu>
       )}
     </div>
   )
