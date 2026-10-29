@@ -154,7 +154,7 @@ describe.skipIf(!READY)('recommendations against the golden set, with EmbeddingG
   test(
     'rank what suits each case first, and nothing that does not',
     async () => {
-      const scored = []
+      const scored: Array<{ name: string; ids: string[] } & ReturnType<typeof judged>> = []
       for (const golden of CASES) {
         const ids = await recommended(golden)
         scored.push({ name: golden.name, ids, ...judged(ids, golden) })
