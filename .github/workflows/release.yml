@@ -419,6 +419,10 @@ jobs:
           # pass that rejects binaries built by a current Rust toolchain. Both are no-ops elsewhere.
           APPIMAGE_EXTRACT_AND_RUN: '1'
           NO_STRIP: 'true'
+          # Tauri skips the Finder script that lays out the DMG window (background, icon places from
+          # `tauri.macos.conf.json`) whenever `CI` is set, so the release DMG opened as a bare
+          # window unlike a local build. The runner has a GUI session; the layout runs as locally.
+          TAURI_BUNDLER_DMG_IGNORE_CI: 'true'
         # --verbose: Tauri otherwise hides the packager's own output, which is all that says why a
         # Linux leg failed. macOS gets a second attempt: the disk image twice failed
         # to detach the disk image ("DiskArbitration expired") right after a successful
