@@ -30,32 +30,32 @@ describe('GetButton', () => {
     const { GetButton } = await import('./get-button')
     const pressed: string[] = []
     const view = await render(
-      <GetButton name="Chess" state={{ kind: 'get' }} onPress={() => pressed.push('get')} />,
+      <GetButton name="Atlas" state={{ kind: 'get' }} onPress={() => pressed.push('get')} />,
     )
     const button = () => view.host.querySelector('button')
-    expect(button()?.getAttribute('aria-label')).toBe('Get Chess')
+    expect(button()?.getAttribute('aria-label')).toBe('Get Atlas')
     expect(button()?.textContent).toBe('Get')
     button()!.click()
     expect(pressed).toEqual(['get'])
 
     await view.rerender(
-      <GetButton name="Chess" state={{ kind: 'progress', percent: 42, label: 'Installing' }} />,
+      <GetButton name="Atlas" state={{ kind: 'progress', percent: 42, label: 'Installing' }} />,
     )
     const bar = view.host.querySelector('[role="progressbar"]')
-    expect(bar?.getAttribute('aria-label')).toBe('Installing Chess')
+    expect(bar?.getAttribute('aria-label')).toBe('Installing Atlas')
     expect(bar?.getAttribute('aria-valuenow')).toBe('42')
     expect(view.host.textContent).toContain('42%')
     expect(button()).toBeNull()
 
     await view.rerender(
-      <GetButton name="Chess" state={{ kind: 'progress', percent: null, label: 'Waiting' }} />,
+      <GetButton name="Atlas" state={{ kind: 'progress', percent: null, label: 'Waiting' }} />,
     )
     expect(view.host.querySelector('[role="progressbar"]')?.hasAttribute('aria-valuenow')).toBe(
       false,
     )
 
-    await view.rerender(<GetButton name="Chess" state={{ kind: 'open' }} onPress={() => {}} />)
-    expect(button()?.getAttribute('aria-label')).toBe('Open Chess')
+    await view.rerender(<GetButton name="Atlas" state={{ kind: 'open' }} onPress={() => {}} />)
+    expect(button()?.getAttribute('aria-label')).toBe('Open Atlas')
     await view.done()
   })
 

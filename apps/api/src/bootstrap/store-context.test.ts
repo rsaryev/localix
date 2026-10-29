@@ -79,7 +79,7 @@ describe('the working set a recommendation reads', () => {
           version: '1',
           destinations: ['recommendation'],
           sensitivity: 'project',
-          provide: async () => [piece('mini-app', 'board', 'a kanban board is open')],
+          provide: async () => [piece('mini-app', 'board', 'a tasks board is open')],
         },
         destinations: ['recommendation'],
         activation: 'automatic',
@@ -96,7 +96,7 @@ describe('the working set a recommendation reads', () => {
     })
 
     expect(pieces.map((item) => item.content).sort()).toEqual([
-      'a kanban board is open',
+      'a tasks board is open',
       'everywhere read compose.yaml',
     ])
   })

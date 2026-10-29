@@ -61,7 +61,7 @@ afterEach(() => {
 
 describe('loadPluginCommandArgOptions', () => {
   test('offers Claude Code plugins only, never a mini app', async () => {
-    await installed([plugin('formatter')], [app('chess')])
+    await installed([plugin('formatter')], [app('puzzle')])
     const options = await loadPluginCommandArgOptions('plugin', 'remove', '')
     expect(options.map((o) => o.value)).toEqual(['formatter'])
   })
@@ -131,15 +131,15 @@ describe('loadPluginCommandArgOptions', () => {
 
 describe('loadMiniAppCommandArgOptions', () => {
   test('enable offers the mini apps that are off, disable those that are on, never a plugin', async () => {
-    await installed([plugin('formatter')], [app('chess'), app('notes', { enabled: false })])
+    await installed([plugin('formatter')], [app('puzzle'), app('notes', { enabled: false })])
     expect((await loadMiniAppCommandArgOptions('app', 'enable', '')).map((o) => o.value)).toEqual([
       'notes',
     ])
     expect((await loadMiniAppCommandArgOptions('app', 'disable', '')).map((o) => o.value)).toEqual([
-      'chess',
+      'puzzle',
     ])
-    expect((await loadMiniAppCommandArgOptions('app', 'remove', 'ch')).map((o) => o.label)).toEqual(
-      ['chess'],
+    expect((await loadMiniAppCommandArgOptions('app', 'remove', 'pu')).map((o) => o.label)).toEqual(
+      ['puzzle'],
     )
   })
 })

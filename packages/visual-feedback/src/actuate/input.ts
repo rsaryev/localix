@@ -162,7 +162,7 @@ function keyInit(chord: string): KeyboardEventInit & { key: string } {
   }
 }
 
-// Legacy keyCodes — many games/sites (e.g. play2048.co) read `event.keyCode`/`which`,
+// Legacy keyCodes — many games/sites (e.g. a browser tile game) read `event.keyCode`/`which`,
 // which a constructed KeyboardEvent leaves 0. We patch them on via defineProperty.
 const KEY_CODES: Record<string, number> = {
   Enter: 13,
@@ -181,7 +181,7 @@ const KEY_CODES: Record<string, number> = {
   PageDown: 34,
 }
 // The physical key (`event.code`), which games read so a layout cannot move their controls:
-// play2048.co moves only on `code` "ArrowLeft"/"KeyA", and every key it got carried an empty one.
+// that tile game moves only on `code` "ArrowLeft"/"KeyA", and every key it got carried an empty one.
 const PUNCTUATION_CODES: Record<string, string> = {
   ' ': 'Space',
   '-': 'Minus',

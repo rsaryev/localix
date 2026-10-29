@@ -2,7 +2,8 @@
 
 Localix reads a Claude Code plugin in place: `.claude-plugin/plugin.json` and its component folders
 load as they are, with no conversion, and the same folder keeps working in Claude Code. Use this
-page to install one and to see which Claude Code features run in Localix.
+page to install one and to see which Claude Code features run in Localix. Localix's own plugins are
+in the [Localix marketplace](https://github.com/rsaryev/localix-marketplace).
 
 ## What you can do
 

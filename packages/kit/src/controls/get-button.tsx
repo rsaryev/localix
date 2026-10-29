@@ -56,7 +56,7 @@ export interface GetButtonProps extends Omit<
   'onClick' | 'children' | 'name'
 > {
   state: GetState
-  /** What it acts on — "Chess" — so the control is "Get Chess", not one of many "Get"s. */
+  /** What it acts on — "Notes" — so the control is "Get Notes", not one of many "Get"s. */
   name: string
   onPress?: () => void
   size?: keyof typeof SIZE

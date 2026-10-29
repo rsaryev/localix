@@ -73,7 +73,7 @@ describe('the bell while something runs in the background', () => {
       jobs: [
         {
           ref: { kind: 'mini-app', id: 'sample-git' },
-          displayName: 'Git',
+          displayName: 'Sync',
           action: 'install',
           phase: 'downloading',
           received: 1,
@@ -93,7 +93,7 @@ describe('the bell while something runs in the background', () => {
 
     await view.open()
     const section = document.body.querySelector('section[aria-label="In progress"]')
-    expect(section?.textContent).toContain('Git')
+    expect(section?.textContent).toContain('Sync')
     expect(section?.textContent).toContain('Review')
     await view.unmount()
   })

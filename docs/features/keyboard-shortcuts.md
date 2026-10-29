@@ -76,12 +76,11 @@ In a terminal, Command/Ctrl+K clears the terminal instead of opening the session
 Command/Ctrl+F opens terminal find, and Command/Ctrl+Shift+O opens its link picker. On macOS,
 physical Control+K still belongs to the shell. Unclaimed workspace shortcuts remain available.
 
-Reader, Code Graph and 2048 keyboard commands apply only inside their focused pane. Question-card
-Enter, Escape and number shortcuts apply inside that card. Dialogs and menus block workspace
-commands behind them, including while a field inside the overlay has focus. Ordinary typing, field
-navigation, IME composition and AltGr character entry do not trigger workspace shortcuts. F1 opens
-the command palette only when the focused component has not handled it and no overlay blocks
-workspace keys.
+A mini app's own keyboard commands apply only inside its focused pane. Question-card Enter, Escape
+and number shortcuts apply inside that card. Dialogs and menus block workspace commands behind them,
+including while a field inside the overlay has focus. Ordinary typing, field navigation, IME
+composition and AltGr character entry do not trigger workspace shortcuts. F1 opens the command
+palette only when the focused component has not handled it and no overlay blocks workspace keys.
 
 ## Editing and persistence
 

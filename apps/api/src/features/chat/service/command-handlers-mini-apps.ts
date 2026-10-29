@@ -38,7 +38,7 @@ function listLine(app: MiniAppRecord): string {
 /**
  * `/mini-app …`: the person's mini apps from the chat — list, switch on and off, remove, reload.
  * Every write goes through the mini apps feature, which announces it; nothing here re-converges a
- * host. Localix runs and manages mini apps and builds none: making one is the mini-app-authoring
+ * host. Localix runs and manages mini apps and builds none: making one is the authoring
  * plugin's job, through its own commands (X3).
  */
 export async function handleMiniAppsControlCommand(

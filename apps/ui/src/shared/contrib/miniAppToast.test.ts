@@ -69,7 +69,7 @@ describe('the toast the host lends mini apps', () => {
   test('a mini app cannot file its row under a name it claims', () => {
     setMiniAppSources([{ miniAppName: 'acme', base }], new Map([['acme', 'Acme']]))
     const calls: Call[] = []
-    const claimed = { source: 'Git' } as unknown as Parameters<typeof toast.error>[1]
+    const claimed = { source: 'Sync' } as unknown as Parameters<typeof toast.error>[1]
     let toast = createMiniAppToast(recordingHost(calls), () => miniAppFrame)
     toast.error('a', claimed)
     toast = createMiniAppToast(recordingHost(calls), () => hostFrame)

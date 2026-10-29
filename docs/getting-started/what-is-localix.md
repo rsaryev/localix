@@ -21,7 +21,7 @@ _Demo workspace captured on 8 October 2026. The conversation is seeded._
 | Work with one agent                  | Bind a project, provider connection, model, and agent to one stored session                                                    | [Your first session](first-session.md)            |
 | Coordinate a larger goal             | Let an agent delegate parallel side work from a root chat                                                                      | [Subagents](../features/delegation.md)            |
 | Point at a UI defect                 | Attach rendered element context and available source locations from a supported Localix preview                                | [Visual Feedback](../features/visual-feedback.md) |
-| Add a workbench                      | Install a mini app, such as a task board, database, container or document workbench, from the Store                            | [Mini apps](../features/mini-apps.md)             |
+| Add a workbench                      | Install a mini app, a workbench for the tool you use, from the Store                                                           | [Mini apps](../features/mini-apps.md)             |
 
 ### Terms used in this guide
 
@@ -42,9 +42,9 @@ different models for session titles, inline completion, and child-session work. 
 each turn's tool surface from the answering agent's capability rules, enabled mini apps and plugins,
 skills, and other configured extensions.
 
-A task-board mini app such as Kanban, from the Localix marketplace, keeps one board per chat with
-its tasks, dependencies, and results. It never starts work. An agent explicitly takes a task and may
-explicitly hand it to a subagent (`Agent`) when a child session is useful.
+A task-board mini app, from the Localix marketplace, keeps one board per chat with its tasks,
+dependencies, and results. It never starts work. An agent explicitly takes a task and may explicitly
+hand it to a subagent (`Agent`) when a child session is useful.
 
 Mini app and plugin discovery follows the current project. The shared UI catalog uses the default
 assistant's policy; each agent run uses its own policy. Opening a mini app view does not give every

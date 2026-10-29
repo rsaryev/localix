@@ -18,7 +18,7 @@ export const RELOAD_NOTICE =
  * An almost-empty page (≤2 nodes) right after opening usually means the page
  * didn't actually render: the dev server wasn't ready yet, OR a live SPA dev-server
  * URL rendered blank through the injecting proxy (its module/HMR paths broke). Tell
- * the agent so it doesn't keep driving / screenshotting a blank page (the 2048 churn
+ * the agent so it doesn't keep driving / screenshotting a blank page (the game churn
  * cause) — and point at the reliable path: preview the BUILT output.
  */
 function emptyPageHint(s: PreviewSnapshot): string {

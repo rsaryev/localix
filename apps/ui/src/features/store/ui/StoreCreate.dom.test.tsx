@@ -11,14 +11,14 @@ beforeAll(() => {
 afterAll(async () => teardown())
 
 const FORM: CreateForm = {
-  noun: 'chess set',
+  noun: 'puzzle set',
   scopes: ['user', 'project'],
   fields: [
     { key: 'name', label: 'Name', type: 'string', required: true, secret: false },
     { key: 'note', label: 'Note', type: 'string', required: false, secret: false },
   ],
 }
-const CHESS = listing({ id: 'chess', displayName: 'Chess' })
+const PUZZLE = listing({ id: 'puzzle', displayName: 'Puzzle' })
 
 const dialog = () => document.body.querySelector<HTMLElement>('[role="dialog"]')
 const field = (label: string) => {
@@ -44,36 +44,36 @@ describe('making a new item in the Store', () => {
     })
     try {
       await view.click(view.shelf('Mini apps'))
-      expect(view.button('Add chess set')).toBeDefined()
+      expect(view.button('Add puzzle set')).toBeDefined()
     } finally {
       await view.done()
     }
   })
 
   test('no Add where no provider can make one', async () => {
-    const view = await renderStore({ listings: [CHESS] })
+    const view = await renderStore({ listings: [PUZZLE] })
     try {
       await view.click(view.shelf('Mini apps'))
-      expect(view.button('Add chess set')).toBeUndefined()
+      expect(view.button('Add puzzle set')).toBeUndefined()
     } finally {
       await view.done()
     }
   })
 
   test('the dialog asks the form’s fields, needs the required ones, then creates and opens it', async () => {
-    const view = await renderStore({ listings: [CHESS], creates: { 'mini-app': FORM } })
+    const view = await renderStore({ listings: [PUZZLE], creates: { 'mini-app': FORM } })
     try {
       await view.click(view.shelf('Mini apps'))
-      await view.click(view.button('Add chess set'))
-      expect(dialog()?.textContent).toContain('Add chess set')
+      await view.click(view.button('Add puzzle set'))
+      expect(dialog()?.textContent).toContain('Add puzzle set')
       await view.click(view.button('Add', dialog()!))
       expect(view.calls).toEqual([])
       expect(dialog()?.textContent).toContain('Name is required')
-      await view.type(field('Name'), 'chess')
+      await view.type(field('Name'), 'puzzle')
       await view.click(view.button('Add', dialog()!))
-      expect(view.calls).toEqual(['create mini-app user {"name":"chess"}'])
+      expect(view.calls).toEqual(['create mini-app user {"name":"puzzle"}'])
       expect(dialog()).toBeNull()
-      expect(view.host.querySelector('[data-store-page]')?.textContent).toContain('Chess')
+      expect(view.host.querySelector('[data-store-page]')?.textContent).toContain('Puzzle')
     } finally {
       await view.done()
     }
@@ -81,21 +81,21 @@ describe('making a new item in the Store', () => {
 
   test('with a project open, the dialog says where it is kept and can keep it there', async () => {
     const view = await renderStore({
-      listings: [CHESS],
+      listings: [PUZZLE],
       project: { id: 'p1', name: 'Atlas' },
       creates: { 'mini-app': FORM },
     })
     try {
       await view.click(view.shelf('Mini apps'))
-      await view.click(view.button('Add chess set'))
+      await view.click(view.button('Add puzzle set'))
       await view.openMenu(picker(dialog()!, 'Keep it for')!)
       const option = [...document.body.querySelectorAll<HTMLElement>('[role="option"]')].find(
         (node) => node.textContent?.includes('Atlas'),
       )
       await view.click(option)
-      await view.type(field('Name'), 'chess')
+      await view.type(field('Name'), 'puzzle')
       await view.click(view.button('Add', dialog()!))
-      expect(view.calls).toEqual(['create mini-app project in p1 {"name":"chess"}'])
+      expect(view.calls).toEqual(['create mini-app project in p1 {"name":"puzzle"}'])
     } finally {
       await view.done()
     }
@@ -103,16 +103,16 @@ describe('making a new item in the Store', () => {
 
   test('a provider’s refusal is said in the dialog and the dialog stays', async () => {
     const view = await renderStore({
-      listings: [CHESS],
+      listings: [PUZZLE],
       creates: { 'mini-app': FORM },
-      createFails: 'A chess set named chess exists',
+      createFails: 'A puzzle set named puzzle exists',
     })
     try {
       await view.click(view.shelf('Mini apps'))
-      await view.click(view.button('Add chess set'))
-      await view.type(field('Name'), 'chess')
+      await view.click(view.button('Add puzzle set'))
+      await view.type(field('Name'), 'puzzle')
       await view.click(view.button('Add', dialog()!))
-      expect(dialog()?.textContent).toContain('A chess set named chess exists')
+      expect(dialog()?.textContent).toContain('A puzzle set named puzzle exists')
     } finally {
       await view.done()
     }

@@ -29,16 +29,16 @@ test('one or two pins stay direct; three combine, and unpinning dissolves the gr
   const { RailToolGroups } = await import('./RailToolGroups')
   const opens: string[] = []
   const entries = [
-    entry('Git', () => opens.push('Git')),
-    entry('Reader', () => opens.push('Reader'), true),
-    entry('Database', () => opens.push('Database')),
-    entry('Chess', () => opens.push('Chess')),
+    entry('Sync', () => opens.push('Sync')),
+    entry('Viewer', () => opens.push('Viewer'), true),
+    entry('Records', () => opens.push('Records')),
+    entry('Puzzle', () => opens.push('Puzzle')),
   ]
   const categories = new Map<string, 'development' | 'content' | 'data' | 'games'>([
-    ['Git', 'development'],
-    ['Reader', 'content'],
-    ['Database', 'data'],
-    ['Chess', 'games'],
+    ['Sync', 'development'],
+    ['Viewer', 'content'],
+    ['Records', 'data'],
+    ['Puzzle', 'games'],
   ])
   const host = document.createElement('div')
   document.body.append(host)
@@ -60,32 +60,32 @@ test('one or two pins stay direct; three combine, and unpinning dissolves the gr
   try {
     await paint(entries.slice(0, 2))
     expect([...host.querySelectorAll('button')].map((item) => item.textContent)).toEqual([
-      'Git',
-      'Reader',
+      'Sync',
+      'Viewer',
     ])
     await React.act(async () => host.querySelector<HTMLButtonElement>('button')!.click())
-    expect(opens).toEqual(['Git'])
+    expect(opens).toEqual(['Sync'])
     await paint(entries)
     const group = host.querySelector<HTMLButtonElement>('[aria-label="Workspace"]')!
     expect(group.getAttribute('aria-current')).toBe('true')
     expect(host.querySelectorAll('[data-rail-category]')).toHaveLength(1)
-    expect(host.textContent).toContain('Chess')
+    expect(host.textContent).toContain('Puzzle')
     await React.act(async () => {
       group.focus()
       group.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
       await turns(3)
     })
     const rows = [...document.querySelectorAll<HTMLElement>('[role="menuitemradio"]')]
-    expect(rows.map((row) => row.textContent)).toEqual(['Git', 'Reader', 'Database'])
+    expect(rows.map((row) => row.textContent)).toEqual(['Sync', 'Viewer', 'Records'])
     expect(rows[1]?.getAttribute('aria-checked')).toBe('true')
     await React.act(async () => rows[2]!.click())
-    expect(opens).toEqual(['Git', 'Database'])
-    await paint(entries.filter((item) => item.id !== 'Database'))
+    expect(opens).toEqual(['Sync', 'Records'])
+    await paint(entries.filter((item) => item.id !== 'Records'))
     expect(host.querySelector('[data-rail-category]')).toBeNull()
     expect([...host.querySelectorAll('button')].map((item) => item.textContent)).toEqual([
-      'Git',
-      'Reader',
-      'Chess',
+      'Sync',
+      'Viewer',
+      'Puzzle',
     ])
   } finally {
     await React.act(async () => root.unmount())

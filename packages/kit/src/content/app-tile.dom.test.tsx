@@ -37,13 +37,13 @@ describe('AppTile', () => {
     expect(again.textContent).toBe('CD')
 
     await React.act(async () =>
-      root.render(<AppTile identity="chess" label="Chess" src={ICON} size={64} />),
+      root.render(<AppTile identity="atlas" label="Atlas" src={ICON} size={64} />),
     )
     const img = host.querySelector('img')!
     expect(img.getAttribute('src')).toBe(ICON)
     await React.act(async () => void img.dispatchEvent(new Event('error')))
     expect(host.querySelector('img')).toBeNull()
-    expect(host.textContent).toBe('CH')
+    expect(host.textContent).toBe('AT')
     await React.act(async () => root.unmount())
     host.remove()
   })

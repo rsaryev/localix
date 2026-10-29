@@ -34,7 +34,7 @@ function loginShellTerminalHost(): SpawnTerminalJob {
 }
 
 function pluginWithCli(): string {
-  const plugin = join(root(), 'mini-app-authoring')
+  const plugin = join(root(), 'sample-plugin')
   writeTree(plugin, { 'bin/mini-app': '#!/bin/sh\necho "mini-app $1 ran"\n' })
   chmodSync(join(plugin, 'bin/mini-app'), 0o755)
   return join(plugin, 'bin')

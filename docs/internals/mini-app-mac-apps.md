@@ -15,7 +15,7 @@ entry and window frame. Unlike both, the app draws its window itself: it is a WK
 host's runtime, so no window crosses a process boundary and no private API is involved.
 
 ```text
-Kanban.app (bundle id ai.localix.tauri.app.kanban; a clone of the Localix binary)
+Weather.app (bundle id ai.localix.tauri.app.weather; a clone of the Localix binary)
   │ 1. main() sees LocalixPlugin in its Info.plist and runs app_runner, never the Tauri shell
   │ 2. reads the runtime endpoint; none live → open -g Localix.app --args --background
   ▼

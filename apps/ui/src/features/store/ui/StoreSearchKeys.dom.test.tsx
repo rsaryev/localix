@@ -10,9 +10,9 @@ beforeAll(() => {
 afterAll(async () => teardown())
 
 const LISTINGS = [
-  listing({ id: 'chess', displayName: 'Chess', summary: 'Play board games' }),
-  listing({ id: 'checkers', displayName: 'Checkers', summary: 'Play board games too' }),
-  listing({ id: 'kanban', displayName: 'Kanban', summary: 'Tasks on a board' }),
+  listing({ id: 'puzzle', displayName: 'Puzzle', summary: 'Play board games' }),
+  listing({ id: 'quiz', displayName: 'Quiz', summary: 'Play board games too' }),
+  listing({ id: 'planner', displayName: 'Planner', summary: 'Tasks on a board' }),
 ]
 
 const field = (host: ParentNode) =>
@@ -22,7 +22,7 @@ describe('searching the Store', () => {
   test('Escape in the search field clears it and goes back to what was open', async () => {
     const view = await renderStore({ listings: LISTINGS })
     try {
-      await view.type(field(view.host), 'chess')
+      await view.type(field(view.host), 'puzzle')
       expect(view.host.textContent).toContain('Results for')
       await view.press('Escape', field(view.host))
       expect(field(view.host)!.value).toBe('')
@@ -60,7 +60,7 @@ describe('searching the Store', () => {
     try {
       await view.type(field(view.host), 'board')
       expect(view.host.querySelector('[role="status"]')?.textContent).toContain('3 results')
-      await view.type(field(view.host), 'chess')
+      await view.type(field(view.host), 'puzzle')
       expect(view.host.querySelector('[role="status"]')?.textContent).toContain('1 result')
     } finally {
       await view.done()
@@ -90,13 +90,13 @@ describe('searching the Store', () => {
   test('when the filters leave nothing, one press clears them', async () => {
     const view = await renderStore({ listings: LISTINGS })
     try {
-      await view.type(field(view.host), 'chess')
+      await view.type(field(view.host), 'puzzle')
       // The filter under the search, not the Installed section's tab.
       const results = view.host.querySelector<HTMLElement>('[data-store-scroller]')!
       await view.click(view.button('Installed', results))
       expect(view.host.textContent).toContain('Nothing matches')
       await view.click(view.button('Clear filters', view.host))
-      expect(view.card('chess')).not.toBeNull()
+      expect(view.card('puzzle')).not.toBeNull()
     } finally {
       await view.done()
     }

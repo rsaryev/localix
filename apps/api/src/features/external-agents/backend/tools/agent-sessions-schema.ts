@@ -1,7 +1,7 @@
 /**
  * The model-facing contract for the `ExternalAgentSessions` tool.
  *
- * Follows the repo's schema-module convention (exemplar: `trading/backend/manage-chart-schema.ts`):
+ * Follows the repo's schema-module convention (exemplar: a bundled mini app's `backend/manage-chart-schema.ts`):
  * one flat `z.object` with an `action` enum and per-action optional params, `.describe()` on every
  * field, and a pure `*Problem()` helper that answers a malformed call with a fix-it message before
  * the body runs.

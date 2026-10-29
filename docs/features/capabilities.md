@@ -8,16 +8,16 @@ allow.
 
 ## What you can do
 
-| Goal                                  | How                                                                                 |
-| ------------------------------------- | ----------------------------------------------------------------------------------- |
-| Restrict which tools an agent may use | Switch tools off on the agent's Store page, **Access** tab                          |
-| Require confirmation before a change  | Add an `ask` rule to the agent (see [Permissions](permissions.md))                  |
-| Stop being asked about one command    | Choose **Always** under **Allow** on the confirmation card, then **Approve**        |
-| Stop being asked inside one folder    | Click the folder in the path on a file's confirmation card                          |
-| Switch off a mini app tool            | Switch off that tool, or the whole mini app, for the agent                          |
-| Track substantial work                | Keep the Kanban mini app on; let the agent start subagents when parallel work helps |
-| Cut tokens per turn                   | Give the agent fewer tools — a lean agent is a lean prompt                          |
-| Undo your edits to a shipped role     | **Reset to defaults** on that agent's Permission rules                              |
+| Goal                                  | How                                                                                   |
+| ------------------------------------- | ------------------------------------------------------------------------------------- |
+| Restrict which tools an agent may use | Switch tools off on the agent's Store page, **Access** tab                            |
+| Require confirmation before a change  | Add an `ask` rule to the agent (see [Permissions](permissions.md))                    |
+| Stop being asked about one command    | Choose **Always** under **Allow** on the confirmation card, then **Approve**          |
+| Stop being asked inside one folder    | Click the folder in the path on a file's confirmation card                            |
+| Switch off a mini app tool            | Switch off that tool, or the whole mini app, for the agent                            |
+| Track substantial work                | Keep a task-board mini app on; let the agent start subagents when parallel work helps |
+| Cut tokens per turn                   | Give the agent fewer tools — a lean agent is a lean prompt                            |
+| Undo your edits to a shipped role     | **Reset to defaults** on that agent's Permission rules                                |
 
 ## How it works
 
@@ -44,8 +44,8 @@ withhold a tool its rules allow.
 ### Mini app tools and plugins
 
 A mini app's tools join the same roster as the built-in ones, so one rule shape answers for both.
-`tool:kanban` over `*` with effect `deny` removes the board tool from that agent's runs;
-`mini-app:kanban` removes the whole mini app: its tools, its prompt line and its commands. A
+`tool:<name>` over `*` with effect `deny` removes that mini app tool from the agent's runs;
+`mini-app:<name>` removes the whole mini app: its tools, its prompt line and its commands. A
 `plugin:<name>` rule does the same for a Claude Code plugin: its skills, commands, agents and MCP
 servers. The run projects the rules only after the loaded mini apps and plugins are known, so a tool
 switched off on the agent's **Access** tab never reaches the turn.
@@ -54,18 +54,17 @@ The conversation's **Plan** [permission mode](permission-modes.md) constrains pr
 allowing its own plan files and permitted session-state changes. Use it to investigate and prepare a
 plan for approval. For a lasting restriction, give the agent rules that deny the relevant calls;
 denying file-write tools alone does not prevent writes through shell commands or other tools. Agreed
-work can be tracked on a task-board mini app such as Kanban, from the
-[Localix marketplace](https://github.com/rsaryev/localix-marketplace); its board starts no model or
+work can be tracked on a task-board mini app (see the
+[Localix marketplace](https://github.com/rsaryev/localix-marketplace)); its board starts no model or
 session. When separate execution is useful, the agent explicitly calls `Agent`, whose subagent runs
 as itself or a directory agent under the same mode.
 
 ### Going back to what we ship
 
-The roles Localix ships with — `localix`, `lead`, `pm`, `architect`, `backend`, `frontend`, `qa`,
-`design` and `devops` — start from rules we wrote, and after that the rules are yours. When an
-agent's list no longer matches ours, the **Permissions** page grows a **Reset to defaults** button;
-when it already matches, there is nothing to reset and no button. An agent you created has no
-default to return to, so it never shows one. Reset STAGES our answer rather than writing it — you
+The roles that come with Localix start from rules we wrote, and after that the rules are yours. When
+an agent's list no longer matches ours, the **Permissions** page grows a **Reset to defaults**
+button; when it already matches, there is nothing to reset and no button. An agent you created has
+no default to return to, so it never shows one. Reset STAGES our answer rather than writing it — you
 read it on screen, then press **Apply**, and nothing is stored until you do.
 
 ### Spending fewer tokens

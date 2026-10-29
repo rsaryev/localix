@@ -40,7 +40,7 @@ test('live file sync has no periodic reads, queues invalidation during reads, an
   function Probe() {
     useFileResourceSync({
       sessionId: 's',
-      prefix: '.localix/resumes',
+      prefix: '.localix/notes',
       windowMs: 0,
       fallbackMs: 20,
       read: (signal) => {
@@ -69,8 +69,8 @@ test('live file sync has no periodic reads, queues invalidation during reads, an
     })
     expect(calls).toBe(1)
     await act(async () => {
-      watcher.onChange(['/repo/.localix/resumes/a/resume.json'])
-      watcher.onChange(['/repo/.localix/resumes/a/resume.json'])
+      watcher.onChange(['/repo/.localix/notes/a/note.json'])
+      watcher.onChange(['/repo/.localix/notes/a/note.json'])
       await tick()
     })
     expect(calls).toBe(1)
@@ -97,7 +97,7 @@ test('live file sync has no periodic reads, queues invalidation during reads, an
     expect(calls).toBeGreaterThan(2)
     initial = true
     await act(async () => {
-      watcher.onChange(['/repo/.localix/resumes/a/resume.json'])
+      watcher.onChange(['/repo/.localix/notes/a/note.json'])
       await tick()
     })
     await act(async () => root.unmount())

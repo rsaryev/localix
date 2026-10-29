@@ -33,7 +33,7 @@ mod tests {
 
     #[test]
     fn mini_app_names_follow_the_manifest_grammar() {
-        for name in ["kanban", "game-2048", "my_tool", "Notes2"] {
+        for name in ["notes", "fixture-game-2", "my_tool", "Notes2"] {
             assert!(valid_mini_app(name), "{name}");
         }
         for name in ["", "-lead", "_lead", "../x", "a b", "a.b", &"a".repeat(65)] {
@@ -44,7 +44,7 @@ mod tests {
     #[test]
     fn a_bundle_id_part_uses_only_characters_bundle_ids_allow() {
         assert_eq!(bundle_id_part("My_Tool"), "my-tool");
-        assert_eq!(bundle_id_part("game-2048"), "game-2048");
+        assert_eq!(bundle_id_part("fixture-game-2"), "fixture-game-2");
     }
 
     #[test]

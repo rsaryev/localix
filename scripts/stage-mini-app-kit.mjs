@@ -1,6 +1,6 @@
 // Stage the MINI APP KIT beside the staged mini apps: everything the running app needs to scaffold,
 // build and test a user mini app without a source tree (layout: apps/api/src/features/mini-apps/
-// kit-layout.ts). The mini-app-authoring plugin reads it; Localix serves it at `/rpc/mini-apps/kit`.
+// kit-layout.ts). The authoring plugin reads it; Localix serves it at `/rpc/mini-apps/kit`.
 //
 // Why at staging: an installed app has no `node_modules`, no host sources and no scanner binaries,
 // so whatever a user mini app build needs from the host is resolved HERE, once, where it all exists
@@ -277,7 +277,7 @@ export async function stageMiniAppKit({ repoRoot, outKit, log = () => {} }) {
       uiSharedExports: shared,
     }),
   }
-  // What the mini-app-authoring plugin reads (`stage-mini-app-kit-tools.mjs`): every path
+  // What the authoring plugin reads (`stage-mini-app-kit-tools.mjs`): every path
   // kit-relative, so the kit works wherever it is unpacked.
   manifest.apiVersion = MINI_APP_API_VERSION
   manifest.localixVersion = localixVersion(repoRoot)

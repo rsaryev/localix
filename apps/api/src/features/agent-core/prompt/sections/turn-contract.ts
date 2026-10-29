@@ -15,7 +15,7 @@ export const HUMAN_NO_ASK_CONTROL = `Never @mention the person. Nobody can answe
 
 /**
  * The board lines below render only for a run that holds a task board: a contract naming a board
- * the run does not have once made a model invent a KANBAN.md.
+ * the run does not have once made a model invent a board file.
  */
 export const HUMAN_BOARD_CONTROL = `A card assigned to the person waits for them; never take or do it.`
 export const BOARD_OWNER = `You own the whole task board.`

@@ -29,41 +29,41 @@ const pin = (url: string, bytes: Uint8Array, type?: string) => ({
 async function hosted(opts: { badShot?: boolean; featured?: boolean } = {}) {
   const shot = png(4800, 3000)
   const icon = encoder.encode(ICON)
-  const readme = encoder.encode('# Chess\n\nPlay a game. <script>x</script>')
+  const readme = encoder.encode('# Atlas\n\nPlay a game. <script>x</script>')
   const archive = await packMiniAppFiles({
-    'mini-app.json': JSON.stringify({ name: 'chess', version: '1.0.0' }),
+    'mini-app.json': JSON.stringify({ name: 'atlas', version: '1.0.0' }),
   })
   const files: Record<string, Uint8Array> = {
-    'chess-icon.svg': icon,
-    'chess-1.png': shot,
-    'chess-readme.md': readme,
-    'chess.tar.gz': archive,
+    'atlas-icon.svg': icon,
+    'atlas-1.png': shot,
+    'atlas-readme.md': readme,
+    'atlas.tar.gz': archive,
   }
   const fetched: string[] = []
   const app = {
-    name: 'chess',
-    displayName: 'Chess',
-    description: 'Play chess',
+    name: 'atlas',
+    displayName: 'Atlas',
+    description: 'Play atlas',
     category: 'games',
     version: '1.0.0',
     apiVersion: 1,
     publisher: { name: 'Localix', verified: true },
-    icon: pin('chess-icon.svg', icon, 'image/svg+xml'),
+    icon: pin('atlas-icon.svg', icon, 'image/svg+xml'),
     screenshots: [
       {
-        ...pin('chess-1.png', opts.badShot ? png(1, 1) : shot, 'image/png'),
+        ...pin('atlas-1.png', opts.badShot ? png(1, 1) : shot, 'image/png'),
         caption: 'A position',
       },
     ],
-    readme: pin('chess-readme.md', readme),
+    readme: pin('atlas-readme.md', readme),
     tags: ['game', 'board-game'],
     license: 'MIT',
     author: 'Ada',
-    homepage: 'https://example.test/chess',
+    homepage: 'https://example.test/atlas',
     surfaces: ['agent', 'workbench'],
     commands: ['new', 'resign'],
     featured: opts.featured ?? true,
-    archive: pin('chess.tar.gz', archive),
+    archive: pin('atlas.tar.gz', archive),
   }
   const fetchImpl = (async (input: string | URL | Request) => {
     const url = String(input instanceof Request ? input.url : input)
@@ -90,14 +90,14 @@ describe('the store lists each app with its icon and tags as host addresses', ()
   test('a catalog app: its media through the host, never the catalog address', async () => {
     const { fetchImpl } = await hosted()
     const store = storeOver([{ kind: 'catalog', url: CATALOG, vouches: true }], fetchImpl)
-    const [chess] = (await store.list()).entries
-    expect(chess).toMatchObject({
+    const [atlas] = (await store.list()).entries
+    expect(atlas).toMatchObject({
       tags: ['game', 'board-game'],
       featured: true,
       source: CATALOG,
-      icon: expect.stringMatching(/^\/rpc\/mini-apps\/store\/media\/chess\/icon\?v=[a-f0-9]{12}$/),
+      icon: expect.stringMatching(/^\/rpc\/mini-apps\/store\/media\/atlas\/icon\?v=[a-f0-9]{12}$/),
     })
-    expect(JSON.stringify(chess)).not.toContain('catalog.example.test/apps/chess')
+    expect(JSON.stringify(atlas)).not.toContain('catalog.example.test/apps/atlas')
   })
 
   test('featured counts only in a catalog Localix vouches for', async () => {
@@ -111,19 +111,19 @@ describe('store media', () => {
   test('a catalog file is fetched once, checked against its pin, cached and served by type', async () => {
     const { fetchImpl, fetched, shot } = await hosted()
     const store = storeOver([{ kind: 'catalog', url: CATALOG, vouches: true }], fetchImpl)
-    const first = await store.media('chess', 'screenshot', 0)
+    const first = await store.media('atlas', 'screenshot', 0)
     expect(first.type).toBe('image/png')
     expect(first.bytes).toEqual(shot)
-    await store.media('chess', 'screenshot', 0)
-    expect(fetched.filter((url) => url.endsWith('chess-1.png'))).toHaveLength(1)
-    expect((await store.media('chess', 'icon')).type).toBe('image/svg+xml')
+    await store.media('atlas', 'screenshot', 0)
+    expect(fetched.filter((url) => url.endsWith('atlas-1.png'))).toHaveLength(1)
+    expect((await store.media('atlas', 'icon')).type).toBe('image/svg+xml')
   })
 
   test('a catalog file whose bytes differ from its pin is refused', async () => {
     const { fetchImpl } = await hosted({ badShot: true })
     const store = storeOver([{ kind: 'catalog', url: CATALOG, vouches: true }], fetchImpl)
-    await expect(store.media('chess', 'screenshot', 0)).rejects.toThrow()
-    await expect(store.media('chess', 'screenshot', 4)).rejects.toThrow(/no screenshot/i)
+    await expect(store.media('atlas', 'screenshot', 0)).rejects.toThrow()
+    await expect(store.media('atlas', 'screenshot', 4)).rejects.toThrow(/no screenshot/i)
   })
 })
 
@@ -131,12 +131,12 @@ describe('the detail of one app', () => {
   test('says what it is and brings, with its README and screenshots as host addresses', async () => {
     const { fetchImpl } = await hosted()
     const store = storeOver([{ kind: 'catalog', url: CATALOG, vouches: true }], fetchImpl)
-    const detail = await store.detail('chess')
-    expect(detail.entry.name).toBe('chess')
-    expect(detail.readme).toContain('# Chess')
+    const detail = await store.detail('atlas')
+    expect(detail.entry.name).toBe('atlas')
+    expect(detail.readme).toContain('# Atlas')
     expect(detail.screenshots).toEqual([
       {
-        url: expect.stringMatching(/^\/rpc\/mini-apps\/store\/media\/chess\/screenshot\/0\?v=/),
+        url: expect.stringMatching(/^\/rpc\/mini-apps\/store\/media\/atlas\/screenshot\/0\?v=/),
         caption: 'A position',
       },
     ])
@@ -146,7 +146,7 @@ describe('the detail of one app', () => {
       size: expect.any(Number),
       license: 'MIT',
       author: 'Ada',
-      homepage: 'https://example.test/chess',
+      homepage: 'https://example.test/atlas',
       surfaces: ['agent', 'workbench'],
       commands: 2,
     })

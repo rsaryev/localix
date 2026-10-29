@@ -59,4 +59,5 @@ pass it to `seal` as the owner.
 - [Sealing in the item funnel](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/sealed-items.ts)
 - [Tool presentation contract](https://github.com/rsaryev/localix/blob/main/packages/agent/src/agents/tool-definition.ts)
 - [Commitments and views](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/sealed.ts)
-- [Rock Paper Scissors rules and per-side view](https://github.com/rsaryev/localix-marketplace/blob/main/mini-apps/rock-paper-scissors/shared/game.ts)
+- [A sealed-move game's rules and per-side view](https://github.com/rsaryev/localix-marketplace/tree/main/mini-apps),
+  in the marketplace

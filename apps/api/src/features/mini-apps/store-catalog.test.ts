@@ -21,71 +21,71 @@ function setup(catalog: ReturnType<typeof hostedCatalog>, vouches = true) {
     fetchImpl: catalog.fetchImpl,
   })
   store.subscribe(() => {
-    const job = store.jobs().get('chess')
+    const job = store.jobs().get('atlas')
     if (job) phases.push({ ...job })
   })
-  const appDir = join(home, '.localix', 'mini-apps', 'chess')
+  const appDir = join(home, '.localix', 'mini-apps', 'atlas')
   return { home, store, installed, phases, appDir }
 }
 
 describe('the mini app store, from a hosted catalog', () => {
   test('downloads the archive with progress, checks it and installs it', async () => {
     const { store, installed, phases, appDir } = setup(
-      hostedCatalog([{ name: 'chess', version: '1.0.0' }]),
+      hostedCatalog([{ name: 'atlas', version: '1.0.0' }]),
     )
     expect((await store.list()).entries[0]).toMatchObject({
-      name: 'chess',
+      name: 'atlas',
       version: '1.0.0',
       publisher: { name: 'Localix', verified: true },
       installed: null,
     })
 
-    await store.install('chess')
+    await store.install('atlas')
     await store.settled()
 
     expect(phases.map((job) => job.phase)).toEqual(
       expect.arrayContaining(['queued', 'downloading', 'installing', 'done']),
     )
     expect(phases.find((job) => job.phase === 'downloading')?.total).toBeGreaterThan(0)
-    expect(await fs.readFile(join(appDir, 'guide.md'), 'utf8')).toBe('# chess 1.0.0')
-    expect(installed).toEqual([{ name: 'chess', fresh: true }])
+    expect(await fs.readFile(join(appDir, 'guide.md'), 'utf8')).toBe('# atlas 1.0.0')
+    expect(installed).toEqual([{ name: 'atlas', fresh: true }])
     expect((await store.list()).entries[0]?.installed).toEqual({ version: '1.0.0' })
   })
 
   test('an archive that fails its checksum installs nothing and keeps the version before', async () => {
-    const first = setup(hostedCatalog([{ name: 'chess', version: '1.0.0' }]))
-    await first.store.install('chess')
+    const first = setup(hostedCatalog([{ name: 'atlas', version: '1.0.0' }]))
+    await first.store.install('atlas')
     await first.store.settled()
 
     const { store, appDir } = setup(
-      hostedCatalog([{ name: 'chess', version: '1.1.0', corrupt: true }]),
+      hostedCatalog([{ name: 'atlas', version: '1.1.0', corrupt: true }]),
     )
-    await store.install('chess')
+    await store.install('atlas')
     await store.settled()
 
-    expect(store.jobs().get('chess')).toMatchObject({ phase: 'failed' })
-    expect(store.jobs().get('chess')?.error).toContain('checksum')
-    expect(await fs.readFile(join(appDir, 'guide.md'), 'utf8')).toBe('# chess 1.0.0')
+    expect(store.jobs().get('atlas')).toMatchObject({ phase: 'failed' })
+    expect(store.jobs().get('atlas')?.error).toContain('checksum')
+    expect(await fs.readFile(join(appDir, 'guide.md'), 'utf8')).toBe('# atlas 1.0.0')
   })
 
   test('a publisher the source does not vouch for is unverified and waits for a yes', async () => {
-    const { store, installed } = setup(hostedCatalog([{ name: 'chess', version: '1.0.0' }]), false)
+    const { store, installed } = setup(hostedCatalog([{ name: 'atlas', version: '1.0.0' }]), false)
     expect((await store.list()).entries[0]?.publisher.verified).toBe(false)
-    await expect(store.install('chess')).rejects.toThrow(/unverified/i)
-    await store.install('chess', { acceptUnverified: true })
+    await expect(store.install('atlas')).rejects.toThrow(/unverified/i)
+    await store.install('atlas', { acceptUnverified: true })
     await store.settled()
-    expect(installed.map(({ name }) => name)).toEqual(['chess'])
+    expect(installed.map(({ name }) => name)).toEqual(['atlas'])
   })
 
   test('an app built for a newer Localix is listed as incompatible and not installed', async () => {
-    const { store } = setup(hostedCatalog([{ name: 'chess', version: '1.0.0', apiVersion: 99 }]))
+    const { store } = setup(hostedCatalog([{ name: 'atlas', version: '1.0.0', apiVersion: 99 }]))
     expect((await store.list()).entries[0]?.incompatible).toBe(true)
-    await expect(store.install('chess')).rejects.toThrow(/newer Localix/)
+    await expect(store.install('atlas')).rejects.toThrow(/newer Localix/)
   })
 
   test('updates are installed for what the catalog put there, never for a folder of yours', async () => {
-    const before = setup(hostedCatalog([{ name: 'chess', version: '1.0.0' }]))
-    await before.store.install('chess')
+    const before = setup(hostedCatalog([{ name: 'atlas', version: '1.0.0' }]))
+    await before.store.install('atlas')
     await before.store.settled()
     const mine = join(before.home, '.localix', 'mini-apps', 'notes')
     await fs.mkdir(mine, { recursive: true })
@@ -96,14 +96,14 @@ describe('the mini app store, from a hosted catalog', () => {
 
     const { store, installed, appDir } = setup(
       hostedCatalog([
-        { name: 'chess', version: '1.1.0' },
+        { name: 'atlas', version: '1.1.0' },
         { name: 'notes', version: '2.0.0' },
       ]),
     )
-    expect(await store.updateInstalled()).toEqual(['chess'])
+    expect(await store.updateInstalled()).toEqual(['atlas'])
     await store.settled()
-    expect(await fs.readFile(join(appDir, 'guide.md'), 'utf8')).toBe('# chess 1.1.0')
-    expect(installed).toEqual([{ name: 'chess', fresh: false }])
+    expect(await fs.readFile(join(appDir, 'guide.md'), 'utf8')).toBe('# atlas 1.1.0')
+    expect(installed).toEqual([{ name: 'atlas', fresh: false }])
     await expect(store.install('notes')).rejects.toThrow(/yours/)
   })
 

@@ -1,11 +1,10 @@
 # Mini apps
 
 A mini app is an application inside Localix: a screen of its own, tools the agent can call, and a
-guide that tells the agent how to use it. Localix ships none: its own mini apps (games, a task
-board, database and source control workbenches and more) live in the
-[Localix marketplace](https://github.com/rsaryev/localix-marketplace) and install from the Store
-like anyone's. Use this page to see your mini apps, switch them on or off, change their settings,
-and create one of your own.
+guide that tells the agent how to use it. Localix ships none: Localix's own mini apps and plugins
+are in the [Localix marketplace](https://github.com/rsaryev/localix-marketplace) and install from
+the Store like anyone's. Use this page to see your mini apps, switch them on or off, change their
+settings, and create one of your own.
 
 Mini apps are not plugins. A [Claude Code plugin](../extending/claude-code-plugins.md) adds skills,
 commands, hooks and servers to the agent and is managed in the Store (Plugins) and with `/plugin`; a
@@ -16,24 +15,24 @@ add yourself waits for your yes before its code runs; one the agent builds for y
 
 ## What you can do
 
-| Outcome                      | How                                                                              | Boundary                                                                                                                     |
-| ---------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| See your mini apps           | `/mini-app list`, or the Store (Mini apps)                                       | The list shows the scope of the current chat's project.                                                                      |
-| Add one from the Store       | The **+** button in the rail (**Open the Store**), or setup                      | Only the recommended apps install without your choice.                                                                       |
-| Get the recommended apps     | Nothing: a new installation installs them in the background                      | Once per app; one you remove is not added again.                                                                             |
-| Update all at once           | **Update all** in the line above the message box, or in the Event Center         | Only apps a catalog installed; your own folders are left alone.                                                              |
-| Update one                   | **Update** on its card in the Store, or wait for the automatic update            | Shown when the catalog offers another version than yours.                                                                    |
-| See what an app is           | Choose its card in the Store                                                     | Its page shows screenshots, its README, contents and plan.                                                                   |
-| Install with its desktop app | **Install as app** beside **Install** in the Store                               | macOS desktop only, for an app with a screen of its own.                                                                     |
-| Add a publisher's catalog    | Store → **Sources** → **Add source…**, or `/mini-app catalog add <url>`          | Localix reads it first; nothing is added until you choose **Add**.                                                           |
-| See or remove catalogs       | Store → **Sources**, a shelf's sources menu, or `/mini-app catalog list`         | The Localix marketplace's catalog is built in and stays.                                                                     |
-| Turn one on or off           | `/mini-app enable <name>`, `/mini-app disable <name>`, or the row's switch       | A per-agent switch is on the agent's **Access** tab.                                                                         |
-| Change a mini app's settings | **Settings** on its row in the Store (Mini apps)                                 | Secret settings are kept in the [vault](secrets.md).                                                                         |
-| Remove one                   | `/mini-app remove <name>`, or **Remove** on its card or in Store → **Installed** | Its data folder stays, so a reinstall finds it.                                                                              |
-| Have the agent build one     | `/mini-app-authoring:create <what it should do>`                                 | Needs the mini-app-authoring plugin, from Store (Plugins); see [Build with the agent](../extending/build-with-the-agent.md). |
-| Pick up edits to its files   | `/mini-app reload`                                                               | Reloads every mini app and its tools, screens and commands.                                                                  |
-| Open the list from the rail  | **Manage mini apps…** in the rail's tools menu                                   | Opens the Store (Mini apps).                                                                                                 |
-| Run one as its own Mac app   | **Install _Name_ as App** on its tab; see [Mac apps](mini-app-mac-apps.md)       | macOS only, for a mini app with a screen of its own.                                                                         |
+| Outcome                      | How                                                                              | Boundary                                                                                                                                                      |
+| ---------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| See your mini apps           | `/mini-app list`, or the Store (Mini apps)                                       | The list shows the scope of the current chat's project.                                                                                                       |
+| Add one from the Store       | The **+** button in the rail (**Open the Store**), or setup                      | Only the recommended apps install without your choice.                                                                                                        |
+| Get the recommended apps     | Nothing: a new installation installs them in the background                      | Once per app; one you remove is not added again.                                                                                                              |
+| Update all at once           | **Update all** in the line above the message box, or in the Event Center         | Only apps a catalog installed; your own folders are left alone.                                                                                               |
+| Update one                   | **Update** on its card in the Store, or wait for the automatic update            | Shown when the catalog offers another version than yours.                                                                                                     |
+| See what an app is           | Choose its card in the Store                                                     | Its page shows screenshots, its README, contents and plan.                                                                                                    |
+| Install with its desktop app | **Install as app** beside **Install** in the Store                               | macOS desktop only, for an app with a screen of its own.                                                                                                      |
+| Add a publisher's catalog    | Store → **Sources** → **Add source…**, or `/mini-app catalog add <url>`          | Localix reads it first; nothing is added until you choose **Add**.                                                                                            |
+| See or remove catalogs       | Store → **Sources**, a shelf's sources menu, or `/mini-app catalog list`         | The Localix marketplace's catalog is built in and stays.                                                                                                      |
+| Turn one on or off           | `/mini-app enable <name>`, `/mini-app disable <name>`, or the row's switch       | A per-agent switch is on the agent's **Access** tab.                                                                                                          |
+| Change a mini app's settings | **Settings** on its row in the Store (Mini apps)                                 | Secret settings are kept in the [vault](secrets.md).                                                                                                          |
+| Remove one                   | `/mini-app remove <name>`, or **Remove** on its card or in Store → **Installed** | Its data folder stays, so a reinstall finds it.                                                                                                               |
+| Have the agent build one     | Describe what it should do, with the authoring plugin installed                  | The plugin is in the [Localix marketplace](https://github.com/rsaryev/localix-marketplace); see [Build with the agent](../extending/build-with-the-agent.md). |
+| Pick up edits to its files   | `/mini-app reload`                                                               | Reloads every mini app and its tools, screens and commands.                                                                                                   |
+| Open the list from the rail  | **Manage mini apps…** in the rail's tools menu                                   | Opens the Store (Mini apps).                                                                                                                                  |
+| Run one as its own Mac app   | **Install _Name_ as App** on its tab; see [Mac apps](mini-app-mac-apps.md)       | macOS only, for a mini app with a screen of its own.                                                                                                          |
 
 Changes made with `/mini-app` take effect on the next turn.
 
@@ -91,8 +90,8 @@ and the bell shows a thin ring while anything runs. Updates on offer appear ther
 line above the message box: **2 mini app updates — Update all**, or **3 updates** when plugins have
 updates too, since the Store offers every kind together. Localix's own update always comes first.
 The line can be hidden with × until what it offers changes. When an install or update finishes, the
-Event Center keeps one line: "Installed Git", "Updated 3 mini apps", or "Could not install Kanban"
-with the reason and **Try again**.
+Event Center keeps one line: "Installed _Name_", "Updated 3 mini apps", or "Could not install
+_Name_" with the reason and **Try again**.
 
 A catalog's app arrives as an archive whose checksum the catalog pins. An archive that does not
 match is discarded, and the version you had keeps running. Apps installed from a catalog take its

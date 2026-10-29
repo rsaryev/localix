@@ -146,11 +146,10 @@ enhancers or one tab strip's kinds. Only a consumer whose own slice moved re-ren
 
 ### Example entrypoints
 
-The core holds no workbench. The mini apps of the
-[Localix marketplace](https://github.com/rsaryev/localix-marketplace/tree/main/mini-apps), such as
-`devops`, `database` and `documents`, are written against this contract: each has a
-`backend/index.ts` returning its subsystems and tools, and a `ui/register.tsx` registering its work
-items, viewlet, anchors, icons and editors.
+The core holds no workbench. The workbench mini apps of the
+[Localix marketplace](https://github.com/rsaryev/localix-marketplace/tree/main/mini-apps) are
+written against this contract: each has a `backend/index.ts` returning its subsystems and tools, and
+a `ui/register.tsx` registering its work items, viewlet, anchors, icons and editors.
 
 ### Activation states
 
@@ -172,8 +171,7 @@ HMR.
 
 - Native workbench UI runs in the host page, so it follows the native-backend trust rule: a mini
   app's artifact is served only after the user enabled it. The artifact is built from the mini app
-  kit by the mini-app-authoring plugin of the Localix marketplace, and Localix installs the built
-  package.
+  kit by the authoring plugin of the Localix marketplace, and Localix installs the built package.
 - Backend enablement is process-global once any exact scope enables the mini app. Route scope is
   resolved per request, but a mini app must not capture one project's working directory at register
   time and treat it as universal.
@@ -210,10 +208,11 @@ HMR.
 - [UI host adapter](../../../apps/ui/src/shared/contrib/host.ts)
 - [Mini app UI wiring](../../../apps/ui/src/shared/contrib/miniAppUiDiscovery.ts)
 - [Mini app UI runtime](../../../apps/ui/src/shared/contrib/miniAppUiRuntime.ts)
-- [Mini app UI artifact builder](https://github.com/rsaryev/localix-marketplace/blob/main/plugins/mini-app-authoring/src/build/ui-build.ts)
+- [Mini app UI artifact builder](https://github.com/rsaryev/localix-marketplace/tree/main/plugins)
+  (in the authoring plugin)
 - [Mini app kit staging](../../../scripts/stage-mini-app-kit.mjs)
 - [Development kit cache](../../../scripts/mini-app-kit-cache.mjs) (a kit staged for identical
   inputs is reused across `bun run dev` launches)
-- [User mini app authoring](https://github.com/rsaryev/localix-marketplace/blob/main/plugins/mini-app-authoring/README.md)
-  and [the local install](../../../apps/api/src/features/mini-apps/local-install.ts)
+- [User mini app authoring](https://github.com/rsaryev/localix-marketplace/tree/main/plugins) and
+  [the local install](../../../apps/api/src/features/mini-apps/local-install.ts)
 - [Workbench registries](../../../apps/ui/src/shared/contrib/uiContrib.ts)

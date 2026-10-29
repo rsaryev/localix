@@ -182,7 +182,7 @@ describe('/plugin argument routing', () => {
 })
 
 /**
- * Making a mini app moved to the mini-app-authoring plugin (`/mini-app-authoring:create`), and
+ * Making a mini app moved to an authoring plugin from the marketplace, and
  * `/mini-app create` was removed — but the menu still offered `create`, so picking it sent a
  * command that no longer exists. `/mini-app` offers only what Localix does to installed apps.
  */

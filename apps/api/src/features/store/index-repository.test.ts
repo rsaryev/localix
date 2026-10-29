@@ -159,7 +159,7 @@ describe('the Store index', () => {
   test('facets count components on capability shelves, and the filtered set by category', async () => {
     const { repo, put } = index()
     await put('s', [
-      plugin('git', {
+      plugin('vcs', {
         category: 'development',
         components: [
           { kind: 'command', name: '/commit' },

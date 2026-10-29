@@ -98,7 +98,7 @@ function miniAppGuidanceBinding(
       ? `Useful agent tools: ${context.tools.join(', ')}`
       : 'Useful agent tools: none advertised; use the visible mini app controls and generic workspace tools.',
     // Said HERE, where the person is looking at the view: "take a screenshot of the app" and
-    // "click Pods in DevOps" are asked of the tab on screen, and the address is what the agent
+    // "click Pods in the cluster app" are asked of the tab on screen, and the address is what the agent
     // would otherwise have to guess.
     owner
       ? `See or use this view yourself: the Browser tool with url "${miniAppViewTarget(owner)}" — snapshot, take_screenshot, steps (click, type).`

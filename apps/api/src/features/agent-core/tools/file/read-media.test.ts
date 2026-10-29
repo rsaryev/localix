@@ -193,7 +193,7 @@ describe('read on a document', () => {
     expect(bad.content).toContain('Invalid pages')
   })
 
-  test('without the documents plugin the model is told why, not handed a binary notice', async () => {
+  test('without a document extractor the model is told why, not handed a binary notice', async () => {
     await writeFile(path.join(tempDir, 'report.docx'), binary)
     const result = await createReadTool(undefined, tempDir).execute('d4', { path: 'report.docx' })
     expect(result.content).toContain('document extraction is unavailable')

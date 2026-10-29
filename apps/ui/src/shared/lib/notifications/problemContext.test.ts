@@ -55,7 +55,7 @@ describe('a problem that names its request', () => {
         ],
         consequence: 'blocked',
       },
-      { scope: 'devops' },
+      { scope: 'fleet' },
     )
     await settle()
     const entry = useNotificationsStore.getState().entries[0]!
@@ -80,7 +80,7 @@ describe('a problem that names its request', () => {
           },
         ],
       },
-      { scope: 'devops' },
+      { scope: 'fleet' },
     )
     await settle()
     const cause = useNotificationsStore.getState().entries[0]!.trace?.[0]

@@ -5,7 +5,8 @@ tools over Localix's APIs, a guide for the agent and commands with pickers. It i
 [Claude Code plugin](claude-code-plugins.md) gives the agent skills, commands, agents, hooks and
 servers in Claude Code's format; the two share nothing. Use this page to write a mini app's manifest
 and backend and to see what the host gives it. To install, switch on or remove mini apps, see
-[Mini apps](../features/mini-apps.md).
+[Mini apps](../features/mini-apps.md). Localix's own mini apps are in the
+[Localix marketplace](https://github.com/rsaryev/localix-marketplace).
 
 **Trust boundary:** A mini app you add awaits your yes before its code runs; one the agent builds
 for you starts enabled. A mini app's native backend runs as trusted code in the API process.
@@ -23,16 +24,16 @@ for you starts enabled. A mini app's native backend runs as trusted code in the 
 
 ## What you can do
 
-| Capability                  | Mechanism                                                                                                  | Boundary                                                                                                               |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Have the agent build one    | Run `/mini-app-authoring:create <what it should do>`; see [Build with the agent](build-with-the-agent.md). | Needs the mini-app-authoring plugin from Store (Plugins); the app it installs is enabled at once and runs unsandboxed. |
-| Add tools over Localix APIs | A mini app's `backend` exports `register(ctx)` returning `tools`.                                          | Native code runs in process and is not sandboxed.                                                                      |
-| Teach the agent your app    | Write the mini app's `guide.md`; long material goes in pages under `guide/`.                               | The agent reads it with `MiniAppGuide`; nothing of it sits in every prompt.                                            |
-| Offer a mini app command    | Declare it under `commands` in `mini-app.json`, with its `prompt` and argument pickers.                    | It runs as `/<app>:<command>`.                                                                                         |
-| Shape runtime behavior      | Return lifecycle hooks, a channel, or one memory provider from `register`.                                 | Hook timeouts and optional host services limit these contributions.                                                    |
-| Add a native workbench      | Ship `ui/register.tsx`; the app builds the artifact and swaps it in place.                                 | Installed from a catalog, or your own under `~/.localix/mini-apps` once on.                                            |
-| Add portable UI             | Declare sandboxed HTML `views`; each opens as a work-item tab.                                             | A sandboxed view cannot use the host kit or native React registrations.                                                |
-| Run as its own Mac app      | The person installs the mini app as an app; see [Mini apps as Mac apps](../features/mini-app-mac-apps.md). | macOS only; the mini app needs a rail viewlet, its main screen.                                                        |
+| Capability                  | Mechanism                                                                                                   | Boundary                                                                                                                                                                |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Have the agent build one    | Describe what it should do, with the authoring plugin; see [Build with the agent](build-with-the-agent.md). | Needs the authoring plugin from the [Localix marketplace](https://github.com/rsaryev/localix-marketplace); the app it installs is enabled at once and runs unsandboxed. |
+| Add tools over Localix APIs | A mini app's `backend` exports `register(ctx)` returning `tools`.                                           | Native code runs in process and is not sandboxed.                                                                                                                       |
+| Teach the agent your app    | Write the mini app's `guide.md`; long material goes in pages under `guide/`.                                | The agent reads it with `MiniAppGuide`; nothing of it sits in every prompt.                                                                                             |
+| Offer a mini app command    | Declare it under `commands` in `mini-app.json`, with its `prompt` and argument pickers.                     | It runs as `/<app>:<command>`.                                                                                                                                          |
+| Shape runtime behavior      | Return lifecycle hooks, a channel, or one memory provider from `register`.                                  | Hook timeouts and optional host services limit these contributions.                                                                                                     |
+| Add a native workbench      | Ship `ui/register.tsx`; the app builds the artifact and swaps it in place.                                  | Installed from a catalog, or your own under `~/.localix/mini-apps` once on.                                                                                             |
+| Add portable UI             | Declare sandboxed HTML `views`; each opens as a work-item tab.                                              | A sandboxed view cannot use the host kit or native React registrations.                                                                                                 |
+| Run as its own Mac app      | The person installs the mini app as an app; see [Mini apps as Mac apps](../features/mini-app-mac-apps.md).  | macOS only; the mini app needs a rail viewlet, its main screen.                                                                                                         |
 
 ## What you can build
 
@@ -77,9 +78,9 @@ has a guide, and the agent reads the guide with `MiniAppGuide` before it first u
 records the rules.
 
 Tools over Localix's APIs, settings or a screen make a mini app; skills, commands, hooks and MCP
-servers for any agent make a [plugin](claude-code-plugins.md). For a workbench,
-`/mini-app-authoring:create <what it should do>` forks the plugin's Daily Log template into a new
-folder and installs it when it passes its checks; see [workbench UI](mini-app-ui.md).
+servers for any agent make a [plugin](claude-code-plugins.md). For a workbench, the authoring
+plugin's `create` command forks its Daily Log template into a new folder and installs it when it
+passes its checks; see [workbench UI](mini-app-ui.md).
 
 ### A minimal mini app
 
@@ -133,7 +134,7 @@ dependency tree: use relative modules and built-in modules only, or pre-bundle d
 
 A mini app that keeps a list does not write its routes, storage or live updates. With
 `"apiVersion": 2`, the SDK's app layer turns a declared collection into all three. This is how the
-Daily Log template of the mini-app-authoring plugin is built:
+Daily Log template of the authoring plugin is built:
 
 ```ts
 import {
@@ -232,7 +233,7 @@ the person that `localix://` link, and the person opens it.
 ### Identity the host binds
 
 An app that records who acted, or streams someone's own data, must not read that identity from model
-or client input. The host binds it; the Kanban board in the Localix marketplace uses all three:
+or client input. The host binds it; a task-board mini app in the Localix marketplace uses all three:
 
 | Seam                                                                                                                                                           | Answer                                                                                          | Boundary                                                        |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
@@ -324,14 +325,14 @@ not a mini app, and one with both `mini-app.json` and `.claude-plugin/plugin.jso
 
 ### Test and package
 
-A mini app brings its own tests; run them with `bun test` in its folder, or let
-`/mini-app-authoring:check` run every gate. Bundle any package dependencies into the backend and
-point `backend` at that file. To offer it to others, pack it into a catalog: see
+A mini app brings its own tests; run them with `bun test` in its folder, or let the authoring
+plugin's `check` command run every gate. Bundle any package dependencies into the backend and point
+`backend` at that file. To offer it to others, pack it into a catalog: see
 [Publish a mini app](mini-app-publishing.md).
 
 ## Localix's own mini apps
 
-Localix ships no mini app. Its own games, workbenches and the Kanban board live in the
+Localix ships no mini app. Localix's own mini apps and plugins live in the
 [Localix marketplace](https://github.com/rsaryev/localix-marketplace), a repository whose releases
 publish a mini app catalog. The Store reads that catalog by default, and its apps install, update
 and are verified like any other catalog's. They are written against the same SDK and kit as yours,

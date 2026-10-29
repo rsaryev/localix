@@ -24,7 +24,7 @@ import { MiniAppIcon } from '@/shared/ui/MiniAppIcon'
 /**
  * The top of the Event Center: what is running now and the updates on offer. Live — every row is
  * read from its owner on its poke (`useBackgroundActivity`) and updates in place; nothing here is
- * a journal row. A finished job leaves as a fact its owner records ("Installed Git").
+ * a journal row. A finished job leaves as a fact its owner records ("Installed Sync").
  */
 
 const KIND_ICON: Record<Exclude<ActivityKind, 'package'>, LucideIcon> = {

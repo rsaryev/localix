@@ -1,6 +1,6 @@
 //! A mini app installed as its own Mac app.
 //!
-//! `Kanban.app` in `~/Applications/Localix Apps` is a copy-on-write clone of this binary with its
+//! `Notes.app` in `~/Applications/Localix Apps` is a copy-on-write clone of this binary with its
 //! own bundle id, name and icon, the way Chrome's installed web apps and Parallels' Windows apps
 //! are made. macOS therefore gives it its own Dock icon, menu bar, Cmd+Tab entry and window frame,
 //! while Localix stays the host: the runtime, the mini app and all of its data live there, and the

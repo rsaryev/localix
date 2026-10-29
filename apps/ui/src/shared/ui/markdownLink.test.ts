@@ -56,7 +56,7 @@ describe('classifyMarkdownLink', () => {
 
   test('an agent links any read-only app view; action links stay inert', () => {
     for (const href of [
-      'localix://resource/chess/game/LOCALIX-1',
+      'localix://resource/puzzle/game/LOCALIX-1',
       'localix://ui/work-item/terminal?session=LOCALIX-1',
       'localix://ui/settings/tools',
     ]) {

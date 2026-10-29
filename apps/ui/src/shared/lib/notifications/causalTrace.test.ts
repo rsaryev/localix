@@ -12,7 +12,7 @@ beforeEach(resetEventTrace)
 const session = { kind: 'session' as const, sessionId: 'LOCALIX-215', projectId: 'PRJ-9' }
 
 /**
- * The shipped defect, from a real Event Center row (seq 6862): a DevOps "Docker returned an
+ * The shipped defect, from a real Event Center row (seq 6862): a mini app "Docker returned an
  * error." row carried `GET kubernetes failed` (a 503 poll) as its trace. The Docker request had
  * failed three seconds earlier and was in the buffer; the newest-failure-in-ten-seconds rule cut it.
  */
@@ -65,8 +65,8 @@ describe('a named cause decides the trace', () => {
       kind: 'http.get',
       summary: 'GET docker failed',
       phase: 'failed',
-      origin: { ...session, label: 'DevOps' },
+      origin: { ...session, label: 'Fleet' },
     })
-    expect(traceOrigin(['h7'])).toMatchObject({ sessionId: 'LOCALIX-215', label: 'DevOps' })
+    expect(traceOrigin(['h7'])).toMatchObject({ sessionId: 'LOCALIX-215', label: 'Fleet' })
   })
 })

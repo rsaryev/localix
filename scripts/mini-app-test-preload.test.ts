@@ -7,8 +7,8 @@
  * a temporary DOM. The root `bunfig.toml` preloads it, but a mini app's own `bun test .` (its
  * `test` script, what turbo runs) reads only the mini app's `bunfig.toml`. A mini app without that
  * chain passed for as long as nothing imported Radix at module scope — until the kit test harness
- * (`@localixai/kit/testing`) gained a static path to the tooltip, and ten database and five
- * trading dialog/menu suites went blank at once.
+ * (`@localixai/kit/testing`) gained a static path to the tooltip, and fifteen
+ * dialog/menu suites went blank at once.
  *
  * So the rule is checked where it is cheap: a mini app with a `*.dom.test.tsx` declares a
  * `bunfig.toml` whose preload runs the deadline first and the kit preload before anything of its

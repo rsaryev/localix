@@ -234,7 +234,7 @@ This capture shows a sidebar conversation hovering over the composer, with no wo
 destinations.
 
 The composer accepts typed references for supported files, folders, diffs, commit history, projects,
-sessions, terminals, tool calls, and mini-app-owned resources such as the chat's Kanban cards
+sessions, terminals, tool calls, and mini-app-owned resources such as the chat's task-board cards
 (`@resource:` → **Board**). Structured-only references cover selected snippets, transcript messages,
 linked conversations, and mini-app-owned resources without inserting expanded blocks into the
 visible prompt. File and folder references resolve in the directory the server assigns to the

@@ -31,7 +31,7 @@ export function sessionSurfacesFor(surface: string): SessionSurfaceContribution[
 /**
  * The fills of one host surface. Subscribed to its OWN slice of the registry: rendered from a
  * parent that rarely re-renders (the composer, the chat surface), a surface read once at mount
- * never showed a mini app that registered later — the Git mini app's poller did not mount until
+ * never showed a mini app that registered later — a mini app's poller did not mount until
  * something else re-rendered its parent, so the panel reported "not a repository" at startup.
  */
 export function SessionSurface({

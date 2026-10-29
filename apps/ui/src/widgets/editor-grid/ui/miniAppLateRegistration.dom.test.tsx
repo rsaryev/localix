@@ -17,7 +17,7 @@ const withUi = (name: string) =>
 /**
  * Mini apps register lazily, after the first paint. Surfaces that read a registry during render
  * used to re-read it only when their parent re-rendered: a restored tab stayed on "Restoring…"
- * until the SLOWEST mini app loaded, and a session surface (the Git poller) never mounted until an
+ * until the SLOWEST mini app loaded, and a session surface (a poller) never mounted until an
  * unrelated render. Each now subscribes to its own slice, and only that slice re-renders.
  */
 describe('surfaces follow a mini app that registers after the first paint', () => {

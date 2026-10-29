@@ -187,7 +187,7 @@ export function createMiniAppService(deps: MiniAppServiceDeps) {
     /** A switch is a rule like any other: `mini-app:<name>`, in one agent's list. */
     setEnabled,
 
-    /** Where the mini app kit is: what the mini-app-authoring plugin builds against. */
+    /** Where the mini app kit is: what the authoring plugin builds against. */
     kitDir: deps.miniAppKitDir ?? miniAppKitDir,
 
     /** Install a package the person built (`mini-app install`) and switch it on. */

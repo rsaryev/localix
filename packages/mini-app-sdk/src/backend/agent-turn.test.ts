@@ -4,7 +4,7 @@ import { askAgentForTurn, askDecisionForTurn, decisionTurns, type Wake } from '.
 import type { DecisionHost, DecisionOutcome } from './decision'
 
 const chat = { userId: 'me', sessionId: 's1' }
-const turn = { message: 'Your move.', tools: ['chess'], key: 'g:3' }
+const turn = { message: 'Your move.', tools: ['atlas'], key: 'g:3' }
 
 test('a delivered wake shows thinking and carries the chat and turn', async () => {
   const seen: unknown[] = []

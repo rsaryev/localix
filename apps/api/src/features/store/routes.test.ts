@@ -7,16 +7,16 @@ import { createStoreRoutes } from './routes'
 import { fakeProvider, makeListing } from './testing/fake-provider'
 import { makeStore } from './testing/store'
 
-const chess = makeListing({ id: 'chess', featured: true, contents: { screen: 1 } })
-const kanban = makeListing({
-  id: 'kanban',
+const atlas = makeListing({ id: 'atlas', featured: true, tags: ['game'], contents: { screen: 1 } })
+const tasks = makeListing({
+  id: 'tasks',
   installs: [{ scope: 'user', version: '1.0.0', enabled: true, updateTo: '1.1.0' }],
 })
 
 function app() {
-  const apps = fakeProvider('mini-app', [chess, kanban], {
+  const apps = fakeProvider('mini-app', [atlas, tasks], {
     projectInstalls: {
-      p1: { chess: [{ scope: 'project', version: '2.0.0', enabled: true }] },
+      p1: { atlas: [{ scope: 'project', version: '2.0.0', enabled: true }] },
     },
     sources: [
       {
@@ -61,11 +61,11 @@ function app() {
 describe('/rpc/store', () => {
   test('a page of listings for a shelf and a search, with the facets', async () => {
     const { get } = app()
-    const response = await get('/listings?shelf=discover&q=che')
+    const response = await get('/listings?shelf=discover&q=atl')
     expect(response.status).toBe(200)
     const body = await response.json()
     expect(body.listings.map((listing: { ref: { id: string } }) => listing.ref.id)).toEqual([
-      'chess',
+      'atlas',
     ])
     expect(body.facets.shelves).toMatchObject({ discover: 1, 'package:mini-app': 2, updates: 1 })
     expect((await (await get('/listings?installed=true')).json()).listings).toHaveLength(1)
@@ -78,7 +78,7 @@ describe('/rpc/store', () => {
     const second = await (await get(`/listings?limit=1&cursor=${first.nextCursor}`)).json()
     expect(second.listings[0].ref.id).not.toBe(first.listings[0].ref.id)
     const games = (await (await get('/listings?category=Games')).json()).listings
-    expect(games.map((listing: { ref: { id: string } }) => listing.ref.id)).toEqual(['chess'])
+    expect(games.map((listing: { ref: { id: string } }) => listing.ref.id)).toEqual(['atlas'])
     expect((await get('/listings?category=Gadgets')).status).toBe(400)
   })
 
@@ -86,7 +86,7 @@ describe('/rpc/store', () => {
     const { apps, post } = app()
     const seen: unknown[] = []
     apps.provider.update = async (_id, scope, actor) => void seen.push([scope, actor.projectId])
-    await post('/mini-app/kanban/update', { scope: 'project', projectId: 'p1' })
+    await post('/mini-app/tasks/update', { scope: 'project', projectId: 'p1' })
     expect(seen).toEqual([['project', 'p1']])
   })
 
@@ -104,35 +104,35 @@ describe('/rpc/store', () => {
 
   test('a listing’s page and its plan', async () => {
     const { get, post } = app()
-    const detail = await get('/mini-app/chess')
+    const detail = await get('/mini-app/atlas')
     expect(detail.status).toBe(200)
     expect((await detail.json()).media).toHaveLength(2)
-    const plan = await post('/mini-app/chess/plan', { scope: 'user' })
+    const plan = await post('/mini-app/atlas/plan', { scope: 'user' })
     expect(plan.status).toBe(200)
-    expect((await plan.json()).warnings).toEqual(['plan for chess'])
-    expect((await get('/skill/chess')).status).toBe(404)
-    expect((await get('/gadget/chess')).status).toBe(400)
+    expect((await plan.json()).warnings).toEqual(['plan for atlas'])
+    expect((await get('/skill/atlas')).status).toBe(404)
+    expect((await get('/gadget/atlas')).status).toBe(400)
   })
 
   test('install is queued (202) and a provider’s refusal keeps its status and code', async () => {
     const { apps, post } = app()
-    const refused = await post('/mini-app/chess/install', { scope: 'user' })
+    const refused = await post('/mini-app/atlas/install', { scope: 'user' })
     expect(refused.status).toBe(409)
     expect((await refused.json()).error.code).toBe('mini_app_unverified')
-    const queued = await post('/mini-app/chess/install', { consent: { plan: true } })
+    const queued = await post('/mini-app/atlas/install', { consent: { plan: true } })
     expect(queued.status).toBe(202)
-    expect(apps.calls).toContain('install chess user')
+    expect(apps.calls).toContain('install atlas user')
   })
 
   test('update is queued; remove and enable answer 204', async () => {
     const { apps, post } = app()
-    expect((await post('/mini-app/kanban/update', {})).status).toBe(202)
-    expect((await post('/mini-app/kanban/remove', { scope: 'user' })).status).toBe(204)
-    expect((await post('/mini-app/kanban/enable', { enabled: false })).status).toBe(204)
+    expect((await post('/mini-app/tasks/update', {})).status).toBe(202)
+    expect((await post('/mini-app/tasks/remove', { scope: 'user' })).status).toBe(204)
+    expect((await post('/mini-app/tasks/enable', { enabled: false })).status).toBe(204)
     expect(apps.calls.slice(-3)).toEqual([
-      'update kanban user',
-      'remove kanban user',
-      'enable kanban user false',
+      'update tasks user',
+      'remove tasks user',
+      'enable tasks user false',
     ])
   })
 
@@ -162,22 +162,22 @@ describe('/rpc/store', () => {
     })
     apps.provider.setConfig = async (id, scope, values, actor) =>
       void saved.push([id, scope, values, actor.projectId])
-    const read = await (await get('/mini-app/chess/config?scope=project&projectId=p1')).json()
-    expect(read.values).toEqual({ url: 'chess@project:p1' })
-    const write = await post('/mini-app/chess/config', {
+    const read = await (await get('/mini-app/atlas/config?scope=project&projectId=p1')).json()
+    expect(read.values).toEqual({ url: 'atlas@project:p1' })
+    const write = await post('/mini-app/atlas/config', {
       scope: 'project',
       projectId: 'p1',
       values: { url: 'https://x.test', tags: ['a'] },
     })
     expect(write.status).toBe(204)
-    expect(saved).toEqual([['chess', 'project', { url: 'https://x.test', tags: ['a'] }, 'p1']])
+    expect(saved).toEqual([['atlas', 'project', { url: 'https://x.test', tags: ['a'] }, 'p1']])
   })
 
   test('a kind without settings says so, and a listing with none answers 404', async () => {
     const { apps, get, post } = app()
-    expect((await post('/mini-app/chess/config', { values: {} })).status).toBe(409)
+    expect((await post('/mini-app/atlas/config', { values: {} })).status).toBe(409)
     apps.provider.config = async () => null
-    expect((await get('/mini-app/chess/config')).status).toBe(404)
+    expect((await get('/mini-app/atlas/config')).status).toBe(404)
   })
 
   test('the Project shelf is the open project’s own files: another project never sees them', async () => {
@@ -212,7 +212,7 @@ describe('/rpc/store', () => {
     expect((await get('/create/mini-app')).status).toBe(409)
     const made: unknown[] = []
     apps.provider.createFields = async () => ({
-      noun: 'chess set',
+      noun: 'atlas set',
       scopes: ['user', 'project'],
       fields: [{ key: 'name', label: 'Name', type: 'string', required: true, secret: false }],
     })
@@ -221,7 +221,7 @@ describe('/rpc/store', () => {
       return { kind: 'mini-app', id: values.name as string }
     }
     expect(await (await get('/create')).json()).toEqual({ kinds: ['mini-app'] })
-    expect((await (await get('/create/mini-app')).json()).noun).toBe('chess set')
+    expect((await (await get('/create/mini-app')).json()).noun).toBe('atlas set')
     const response = await post('/create/mini-app', {
       scope: 'project',
       projectId: 'p1',
@@ -235,14 +235,14 @@ describe('/rpc/store', () => {
   test('an install’s own actions run through its provider, and a kind without them says so', async () => {
     const { apps, post } = app()
     const body = { scope: 'user', action: 'test' }
-    expect((await post('/mini-app/chess/action', body)).status).toBe(409)
+    expect((await post('/mini-app/atlas/action', body)).status).toBe(409)
     apps.provider.runAction = async (id, scope, action) => ({
       ok: true,
       message: `${action} ${id} ${scope}`,
     })
-    const response = await post('/mini-app/chess/action', body)
+    const response = await post('/mini-app/atlas/action', body)
     expect(response.status).toBe(200)
-    expect(await response.json()).toEqual({ ok: true, message: 'test chess user' })
+    expect(await response.json()).toEqual({ ok: true, message: 'test atlas user' })
   })
 
   test('a shelf action is previewed, then run on the items the person confirmed', async () => {
@@ -254,7 +254,7 @@ describe('/rpc/store', () => {
       scope === 'user' ? [{ id: 'tidy', label: 'Tidy up' }] : []
     apps.provider.planShelfAction = async (action, scope) => ({
       summary: `${action} on ${scope}`,
-      items: [{ ref: { kind: 'mini-app', id: 'chess' }, name: 'chess', reason: 'idle' }],
+      items: [{ ref: { kind: 'mini-app', id: 'atlas' }, name: 'atlas', reason: 'idle' }],
     })
     apps.provider.runShelfAction = async (action, scope, ids, actor) => {
       ran.push([action, scope, ids, actor.projectId])
@@ -272,10 +272,10 @@ describe('/rpc/store', () => {
       scope: 'project',
       projectId: 'p1',
       action: 'tidy',
-      ids: ['chess'],
+      ids: ['atlas'],
     })
     expect(await run.json()).toEqual({ ok: true, message: 'done' })
-    expect(ran).toEqual([['tidy', 'project', ['chess'], 'p1']])
+    expect(ran).toEqual([['tidy', 'project', ['atlas'], 'p1']])
   })
 
   test('activity and Update all', async () => {
@@ -283,15 +283,15 @@ describe('/rpc/store', () => {
     const activity = await (await get('/activity')).json()
     expect(activity.updates).toEqual([
       {
-        ref: { kind: 'mini-app', id: 'kanban' },
-        displayName: 'kanban',
+        ref: { kind: 'mini-app', id: 'tasks' },
+        displayName: 'tasks',
         from: '1.0.0',
         to: '1.1.0',
       },
     ])
     const applied = await post('/updates/apply')
     expect(applied.status).toBe(202)
-    expect(await applied.json()).toEqual({ queued: [{ kind: 'mini-app', id: 'kanban' }] })
+    expect(await applied.json()).toEqual({ queued: [{ kind: 'mini-app', id: 'tasks' }] })
   })
 
   test('sources say when they were read, what went wrong and which kinds can add one', async () => {
@@ -322,18 +322,18 @@ describe('/rpc/store', () => {
     const provider = apps.provider
     const detail = provider.detail.bind(provider)
     provider.detail = async (id, actor) => (seen.push(actor.projectId), detail(id, actor))
-    await get('/mini-app/chess?projectId=p1')
+    await get('/mini-app/atlas?projectId=p1')
     expect(seen).toEqual(['p1'])
     const page = await (await get('/listings?projectId=p1')).json()
-    const chessOf = (body: { listings: Array<{ ref: { id: string }; installs: unknown[] }> }) =>
-      body.listings.find((listing) => listing.ref.id === 'chess')
-    expect(chessOf(page)?.installs).toEqual([{ scope: 'project', version: '2.0.0', enabled: true }])
+    const atlasOf = (body: { listings: Array<{ ref: { id: string }; installs: unknown[] }> }) =>
+      body.listings.find((listing) => listing.ref.id === 'atlas')
+    expect(atlasOf(page)?.installs).toEqual([{ scope: 'project', version: '2.0.0', enabled: true }])
     const installed = await (await get('/listings?shelf=installed&projectId=p1')).json()
     expect(installed.listings.map((l: { ref: { id: string } }) => l.ref.id).sort()).toEqual([
-      'chess',
-      'kanban',
+      'atlas',
+      'tasks',
     ])
     const elsewhere = await (await get('/listings?shelf=installed')).json()
-    expect(elsewhere.listings.map((l: { ref: { id: string } }) => l.ref.id)).toEqual(['kanban'])
+    expect(elsewhere.listings.map((l: { ref: { id: string } }) => l.ref.id)).toEqual(['tasks'])
   })
 })

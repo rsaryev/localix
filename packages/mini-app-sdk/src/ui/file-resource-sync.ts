@@ -26,7 +26,7 @@ export function workspacePathsTouch(paths: readonly string[] | null, prefix: str
 
 export interface FileResourceSyncOptions<T> extends ResourceSyncReader<T> {
   sessionId: string | null
-  /** Project-relative directory, e.g. `.localix/resumes`. */
+  /** Project-relative directory, e.g. `.localix/notes`. */
   prefix: string
   enabled?: boolean
   resetKey?: unknown

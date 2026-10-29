@@ -123,8 +123,8 @@ describe('dedupe key', () => {
   test("one subject's settle prefix never covers another subject's rows", () => {
     // Settling is a prefix match on `<subject key>:`; a label containing the separator must not
     // extend a shorter label's prefix.
-    const logs = `${problemSubjectKey('devops', { label: 'logs' })}:`
-    const apiLogs = problemReportDedupeKey('devops', { ...base, subject: { label: 'logs:api' } })
+    const logs = `${problemSubjectKey('ops-panel', { label: 'logs' })}:`
+    const apiLogs = problemReportDedupeKey('ops-panel', { ...base, subject: { label: 'logs:api' } })
     expect(apiLogs.startsWith(logs)).toBe(false)
   })
 })

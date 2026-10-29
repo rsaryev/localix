@@ -290,10 +290,9 @@ last column is what the corresponding check found on its first run.
 | An overlay takes its motion from one recipe                                        | `packages/kit/src/overlays/overlay-motion.test.ts` | 7     |
 
 The token-drift rules have one owner, `apps/api/src/contracts/ui-token-rules.ts`, and two readers:
-the guard above, over the app, and the style step of the mini-app-authoring plugin's check (through
-the kit's tools), over a mini app a person builds, where no repository guard can see it. The style
-step adds one rule of its own: a native button, input, select or textarea where the kit has a
-control.
+the guard above, over the app, and the style step of the authoring plugin's check (through the kit's
+tools), over a mini app a person builds, where no repository guard can see it. The style step adds
+one rule of its own: a native button, input, select or textarea where the kit has a control.
 
 ## Configuration
 

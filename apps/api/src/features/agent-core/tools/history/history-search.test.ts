@@ -27,20 +27,20 @@ describe('extractMessageText', () => {
 
 describe('toFtsMatchQuery', () => {
   it('wraps each word as a quoted (implicitly ANDed) term', () => {
-    expect(toFtsMatchQuery('2048 game react')).toBe('"2048" "game" "react"')
+    expect(toFtsMatchQuery('4096 game react')).toBe('"4096" "game" "react"')
   })
 
   it('neutralizes FTS5 metacharacters that would otherwise raise a syntax error', () => {
-    // The exact input that crashed in the v2 run: `# Implementation Plan: 2048 Game`
-    expect(toFtsMatchQuery('# Implementation Plan: 2048 Game')).toBe(
-      '"Implementation" "Plan:" "2048" "Game"',
+    // An input of the shape that crashed in the v2 run: `# Implementation Plan: 4096 Game`
+    expect(toFtsMatchQuery('# Implementation Plan: 4096 Game')).toBe(
+      '"Implementation" "Plan:" "4096" "Game"',
     )
     // Bare metacharacters must never reach MATCH unquoted.
     expect(toFtsMatchQuery('foo AND bar OR -baz')).toBe('"foo" "AND" "bar" "OR" "-baz"')
   })
 
   it('strips embedded double quotes so the phrase stays well-formed', () => {
-    expect(toFtsMatchQuery('"2048 Game" plan')).toBe('"2048" "Game" "plan"')
+    expect(toFtsMatchQuery('"4096 Game" plan')).toBe('"4096" "Game" "plan"')
   })
 
   it('returns an empty string when nothing is searchable', () => {
@@ -49,7 +49,7 @@ describe('toFtsMatchQuery', () => {
   })
 
   it('keeps unicode words', () => {
-    expect(toFtsMatchQuery('παιχνίδι 2048')).toBe('"παιχνίδι" "2048"')
+    expect(toFtsMatchQuery('παιχνίδι 4096')).toBe('"παιχνίδι" "4096"')
   })
 })
 

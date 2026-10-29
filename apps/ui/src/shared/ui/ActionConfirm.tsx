@@ -9,7 +9,7 @@ import {
 
 /**
  * The one confirmation every action the app cannot take back waits on. Mounted ONCE, at the root
- * layout, because the requests come from everywhere — a link in a book in the reader, a rail button
+ * layout, because the requests come from everywhere — a link in a book inside a mini app, a rail button
  * about to reset the workspace, a palette command about to wipe the event history — and the answer
  * must not depend on which surface asked.
  *

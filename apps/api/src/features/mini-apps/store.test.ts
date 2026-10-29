@@ -10,7 +10,7 @@ const root = tempDirPerTest('mini-app-store-')
 
 function setup() {
   const catalog = hostedMiniAppCatalog([
-    { name: 'chess', displayName: 'Chess', category: 'games' },
+    { name: 'atlas', displayName: 'Atlas', category: 'games' },
     { name: 'notes' },
   ])
   const home = join(root(), 'home')
@@ -31,9 +31,9 @@ describe('the mini app store', () => {
     const { store } = setup()
 
     const { entries } = await store.list()
-    expect(entries.map((entry) => entry.name)).toEqual(['chess', 'notes'])
+    expect(entries.map((entry) => entry.name)).toEqual(['atlas', 'notes'])
     expect(entries[0]).toMatchObject({
-      displayName: 'Chess',
+      displayName: 'Atlas',
       category: 'games',
       version: '1.0.0',
       publisher: { name: 'Localix', verified: true },
@@ -45,14 +45,14 @@ describe('the mini app store', () => {
   test('installing one goes through its phases, announces it, and lists it as installed', async () => {
     const { home, store, changes, pokes } = setup()
 
-    await store.install('chess')
+    await store.install('atlas')
     await store.settled()
 
-    expect(changes).toEqual(['chess'])
+    expect(changes).toEqual(['atlas'])
     expect(pokes()).toBeGreaterThan(1)
-    expect(await fs.readdir(join(home, '.localix', 'mini-apps'))).toContain('chess')
+    expect(await fs.readdir(join(home, '.localix', 'mini-apps'))).toContain('atlas')
     const { entries } = await store.list()
-    expect(entries.find((entry) => entry.name === 'chess')).toMatchObject({
+    expect(entries.find((entry) => entry.name === 'atlas')).toMatchObject({
       installed: { version: '1.0.0' },
       job: { phase: 'done' },
     })
@@ -61,14 +61,14 @@ describe('the mini app store', () => {
 
   test('a newer version offered than installed is an update', async () => {
     const { catalog, store } = setup()
-    await store.install('chess')
+    await store.install('atlas')
     await store.settled()
     catalog.apps[0]!.version = '1.1.0'
     // The catalog is read again once its hold has passed; an update check reads it afresh.
     await store.refresh()
 
-    const [chess] = (await store.list()).entries
-    expect(chess).toMatchObject({ installed: { version: '1.0.0' }, version: '1.1.0', update: true })
+    const [atlas] = (await store.list()).entries
+    expect(atlas).toMatchObject({ installed: { version: '1.0.0' }, version: '1.1.0', update: true })
   })
 
   test('an app no source offers is refused, saying which', async () => {

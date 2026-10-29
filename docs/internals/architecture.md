@@ -11,7 +11,7 @@ record before changing it.
 | Agentic Development Environment | The product category covering connected development surfaces, context, model routes, agents, and extensible workbenches. | Do not use it to exclude non-code workbenches.                 |
 | Session                         | The durable unit of direct or orchestrated agent work.                                                                   | A session can contain multiple runs.                           |
 | Worker                          | A session created for delegated work.                                                                                    | It is not automatically isolated.                              |
-| Kanban board                    | The Localix marketplace's `kanban` mini app: a per-chat task board with dependencies and a card lifecycle.               | A mini app, not core; not a general project-management system. |
+| Task board                      | A mini app from the Localix marketplace: a per-chat task board with dependencies and a card lifecycle.                   | A mini app, not core; not a general project-management system. |
 | Workbench                       | A product surface a mini app contributes.                                                                                | It exists only while its mini app is enabled.                  |
 | Work item                       | A typed editor-grid pane.                                                                                                | Each registered kind owns its component and state contract.    |
 | Composition root                | Bootstrap code selecting concrete infrastructure.                                                                        | Feature modules receive those dependencies.                    |
@@ -101,11 +101,12 @@ persistence around the `AgentRuntime` port. The production composition root supp
 [agent runtime boundary](https://github.com/rsaryev/localix/blob/main/docs/internals/agent-runtime.md)
 owns that interface and its event contract.
 
-Kanban, a mini app of the [Localix marketplace](https://github.com/rsaryev/localix-marketplace), is
-a passive board per chat, stored in that chat's mini app folder. Core names no board. The app
-reaches the host only through generic seams — per-chat storage, the agent directory, the tool's
-bound agent, a resource and a search provider, and a live-frame stream. It creates no session and
-starts no run; agents create child sessions only with the `Agent` tool.
+A task board, a mini app of the
+[Localix marketplace](https://github.com/rsaryev/localix-marketplace), is a passive board per chat,
+stored in that chat's mini app folder. Core names no board. The app reaches the host only through
+generic seams — per-chat storage, the agent directory, the tool's bound agent, a resource and a
+search provider, and a live-frame stream. It creates no session and starts no run; agents create
+child sessions only with the `Agent` tool.
 
 ## Configuration
 

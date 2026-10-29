@@ -26,7 +26,7 @@ export interface ProblemStateProps {
  *
  * Seven mini apps each hand-built this as `<div className="flex-1 items-center justify-center">`
  * around a `ProblemLine` — and in a block-level scroll container `flex-1` is a no-op, so the
- * "centred" failure sat at the top of an empty pane (the DevOps sidebar, reported). `StateNotice`
+ * "centred" failure sat at the top of an empty pane (a mini app sidebar, reported). `StateNotice`
  * is the kit's one centred shell and fills its parent in block and flex layouts alike, so the
  * geometry is decided once, here.
  *

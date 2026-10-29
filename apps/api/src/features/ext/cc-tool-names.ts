@@ -7,7 +7,7 @@
  *
  * ## Unknown-name policy
  * `normalizeCcToolName` passes unknown names through as their lowercased input
- * so the names of mini app and plugin tools (`chess`) continue to work.
+ * so the names of mini app and plugin tools (`arcade`) continue to work.
  * `mapCcToolList` with `{ dropUnknown: true }` silently drops any token that
  * has no entry in the name table (the legacy names, the names a hook sees a
  * shaped tool's calls under, and every built-in by its own name) —

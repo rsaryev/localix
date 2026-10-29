@@ -8,8 +8,8 @@
  * its readers exist, and the reader has no event to hang off.
  *
  * Five mini apps solved it, five times, with the same twenty lines: a module holding a `Set` of
- * listeners, an `announceX`, a `subscribeX`. Two of the five never got wired up at all — Database
- * had the reader and the refresh function and nothing in between, and the API client's picker
+ * listeners, an `announceX`, a `subscribeX`. Two of the five never got wired up at all — one
+ * had the reader and the refresh function and nothing in between, and another one's picker
  * announced only for the agent's writes, so switching an environment by hand updated the sidebar
  * while the titlebar went on naming the one you had just left. That is what a per-mini-app copy of
  * a cross-cutting mechanism costs: not the duplication, the ones that are quietly incomplete.

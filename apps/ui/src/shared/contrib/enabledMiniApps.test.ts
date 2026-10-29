@@ -318,7 +318,7 @@ describe('mini app contribution synchronization', () => {
       source({
         revision: 7,
         scope: { projectId: 'PRJ-1', agentId: null },
-        miniApps: [miniApp('sample'), miniApp('kanban')],
+        miniApps: [miniApp('sample'), miniApp('planner')],
       }),
     )
     expect(miniAppCapabilityVersion()).toBe(documents)

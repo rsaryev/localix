@@ -3,7 +3,7 @@
  *
  * Every step used to run the full post-action pass — wait for html/body transitions (up to
  * 400ms, in 50ms fallback frames in a background preview) and resample the tree for a diff
- * the batch then discarded. That cost about a second per key press: a 2048 game needed 27
+ * the batch then discarded. That cost about a second per key press: a tile game needed 27
  * batches to reach 1000 points, and two batches of 10+ presses hit the UI's 10s cap and came
  * back "the preview did not respond in time" although their moves had run.
  */

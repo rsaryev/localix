@@ -12,12 +12,12 @@ const tryAgain: NotificationAction = {
   label: 'Try again',
   kind: 'invoke',
   command: 'mini_app_install',
-  requestId: 'kanban',
+  requestId: 'planner',
   available: true,
 }
 const failed = {
-  id: 'mini-app-failed:kanban:1.0.0',
-  title: 'Could not install Kanban',
+  id: 'mini-app-failed:planner:1.0.0',
+  title: 'Could not install Planner',
   origin: { kind: 'application', label: 'Mini apps' },
   actions: [tryAgain],
 } as unknown as NotificationEntry
@@ -27,7 +27,7 @@ describe('Try again on a mini app that did not install', () => {
     const install = spyOn(backendClient, 'installMiniApp').mockResolvedValue(undefined)
     const stop = startNotificationCommandHandlers()
     expect(await executeNotificationCommand(failed, tryAgain)).toBe(true)
-    expect(install).toHaveBeenCalledWith('kanban')
+    expect(install).toHaveBeenCalledWith('planner')
     stop()
     install.mockRestore()
   })

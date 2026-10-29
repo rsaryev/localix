@@ -11,23 +11,23 @@ afterAll(async () => teardown())
 
 const LISTINGS = [
   listing({
-    id: 'chess',
-    displayName: 'Chess',
+    id: 'puzzle',
+    displayName: 'Puzzle',
     category: 'games',
     featured: true,
     contents: { screen: 1, command: 2 },
     components: [
-      { kind: 'screen', name: 'Chess', description: 'A screen of its own' },
-      { kind: 'command', name: '/chess:play', description: 'Start a game' },
-      { kind: 'command', name: '/chess:hint' },
+      { kind: 'screen', name: 'Puzzle', description: 'A screen of its own' },
+      { kind: 'command', name: '/puzzle:play', description: 'Start a game' },
+      { kind: 'command', name: '/puzzle:hint' },
     ],
   }),
   listing({
-    id: 'kanban',
-    displayName: 'Kanban',
+    id: 'planner',
+    displayName: 'Planner',
     category: 'utilities',
     contents: { screen: 1, command: 1 },
-    components: [{ kind: 'command', name: '/kanban:plan', description: 'Plan the week' }],
+    components: [{ kind: 'command', name: '/planner:plan', description: 'Plan the week' }],
     installs: [{ scope: 'user', version: '1.0.0', enabled: true }],
   }),
   listing({ id: 'clock', displayName: 'Clock', contents: { screen: 1 } }),
@@ -43,14 +43,14 @@ describe('a capability shelf lists the components themselves', () => {
     const view = await renderStore({ listings: LISTINGS, target: COMMANDS })
     try {
       expect(rows(view.host)).toEqual([
-        'command:/chess:play',
-        'command:/chess:hint',
-        'command:/kanban:plan',
+        'command:/puzzle:play',
+        'command:/puzzle:hint',
+        'command:/planner:plan',
       ])
-      const play = view.host.querySelector<HTMLElement>('[data-component="command:/chess:play"]')!
-      expect(play.textContent).toContain('/chess:play')
+      const play = view.host.querySelector<HTMLElement>('[data-component="command:/puzzle:play"]')!
+      expect(play.textContent).toContain('/puzzle:play')
       expect(play.textContent).toContain('Start a game')
-      expect(play.textContent).toContain('In Chess · Mini app')
+      expect(play.textContent).toContain('In Puzzle · Mini app')
       expect(view.card('clock')).toBeNull()
       expect(view.host.querySelector('[aria-label="Categories"]')).toBeNull()
     } finally {
@@ -62,10 +62,10 @@ describe('a capability shelf lists the components themselves', () => {
     const view = await renderStore({ listings: LISTINGS, target: COMMANDS })
     try {
       await view.type(view.host.querySelector('input[aria-label="Filter commands"]'), 'game')
-      expect(rows(view.host)).toEqual(['command:/chess:play'])
+      expect(rows(view.host)).toEqual(['command:/puzzle:play'])
       await view.type(view.host.querySelector('input[aria-label="Filter commands"]'), '')
       await view.click(view.button('Installed only'))
-      expect(rows(view.host)).toEqual(['command:/kanban:plan'])
+      expect(rows(view.host)).toEqual(['command:/planner:plan'])
     } finally {
       await view.done()
     }
@@ -74,14 +74,14 @@ describe('a capability shelf lists the components themselves', () => {
   test('a row opens its package on What’s inside, with that component marked', async () => {
     const view = await renderStore({ listings: LISTINGS, target: COMMANDS })
     try {
-      const play = view.host.querySelector<HTMLElement>('[data-component="command:/chess:play"]')!
-      await view.click(view.button('/chess:play', play))
-      const page = view.host.querySelector('[data-store-page="chess"]')!
+      const play = view.host.querySelector<HTMLElement>('[data-component="command:/puzzle:play"]')!
+      await view.click(view.button('/puzzle:play', play))
+      const page = view.host.querySelector('[data-store-page="puzzle"]')!
       expect(page).not.toBeNull()
       expect(page.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe(
         'What’s inside',
       )
-      expect(page.querySelector('li[aria-current="true"]')?.textContent).toContain('/chess:play')
+      expect(page.querySelector('li[aria-current="true"]')?.textContent).toContain('/puzzle:play')
     } finally {
       await view.done()
     }
@@ -90,13 +90,13 @@ describe('a capability shelf lists the components themselves', () => {
   test('getting from a row gets the whole package, which the row names', async () => {
     const view = await renderStore({ listings: LISTINGS, target: COMMANDS })
     try {
-      const play = view.host.querySelector<HTMLElement>('[data-component="command:/chess:play"]')!
-      expect(play.textContent).toContain('In Chess')
-      await view.click(view.button('Get Chess', play))
-      expect(view.calls).toEqual(['install mini-app/chess user'])
-      const plan = view.host.querySelector<HTMLElement>('[data-component="command:/kanban:plan"]')!
+      const play = view.host.querySelector<HTMLElement>('[data-component="command:/puzzle:play"]')!
+      expect(play.textContent).toContain('In Puzzle')
+      await view.click(view.button('Get Puzzle', play))
+      expect(view.calls).toEqual(['install mini-app/puzzle user'])
+      const plan = view.host.querySelector<HTMLElement>('[data-component="command:/planner:plan"]')!
       expect(plan.textContent).toContain('Installed')
-      expect(view.button('Get Kanban', plan)).toBeUndefined()
+      expect(view.button('Get Planner', plan)).toBeUndefined()
     } finally {
       await view.done()
     }

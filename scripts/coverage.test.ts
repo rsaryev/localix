@@ -16,28 +16,33 @@ describe('sourceFiles', () => {
       'apps/api/src/testing/fixture.ts',
       'apps/api/src/generated/routes.ts',
       'apps/api/README.md',
-      'mini-apps/api/ui/c.tsx',
-      'mini-apps/api/ui/c.pw.mjs',
+      'mini-apps/sample-b/ui/c.tsx',
+      'mini-apps/sample-b/ui/c.pw.mjs',
       'docs/x.ts',
     ]
     const read = (file: string) => (file.endsWith('types.ts') ? TYPES : CODE)
 
     expect(
-      sourceFiles(['apps/api', 'mini-apps/api'], ['**/testing/**', '**/generated/**'], files, read),
+      sourceFiles(
+        ['apps/api', 'mini-apps/sample-b'],
+        ['**/testing/**', '**/generated/**'],
+        files,
+        read,
+      ),
     ).toEqual({
       'apps/api': ['apps/api/src/a.ts'],
-      'mini-apps/api': ['mini-apps/api/ui/c.tsx'],
+      'mini-apps/sample-b': ['mini-apps/sample-b/ui/c.tsx'],
     })
   })
 
   test('a file belongs to the deepest package that contains it', () => {
-    const files = ['mini-apps/devops/ui/a.ts', 'mini-apps/devops/kubernetes/ui/b.ts']
+    const files = ['mini-apps/sample/ui/a.ts', 'mini-apps/sample/kubernetes/ui/b.ts']
 
     expect(
-      sourceFiles(['mini-apps/devops', 'mini-apps/devops/kubernetes'], [], files, () => CODE),
+      sourceFiles(['mini-apps/sample', 'mini-apps/sample/kubernetes'], [], files, () => CODE),
     ).toEqual({
-      'mini-apps/devops': ['mini-apps/devops/ui/a.ts'],
-      'mini-apps/devops/kubernetes': ['mini-apps/devops/kubernetes/ui/b.ts'],
+      'mini-apps/sample': ['mini-apps/sample/ui/a.ts'],
+      'mini-apps/sample/kubernetes': ['mini-apps/sample/kubernetes/ui/b.ts'],
     })
   })
 })

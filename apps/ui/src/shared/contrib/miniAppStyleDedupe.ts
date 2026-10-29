@@ -23,7 +23,7 @@
  * theme as a `@reference`, and in that mode Tailwind writes each theme value WITH its fallback —
  * `padding-inline: calc(var(--spacing, 0.25rem) * 2)` where the host writes `calc(var(--spacing)
  * * 2)`. Compared as text, no utility that reads a token matched, so a mini app kept its unlayered
- * copy of hundreds of them (161 in Database alone) and out-ranked the host's layered rules: a
+ * copy of hundreds of them (161 in a single one) and out-ranked the host's layered rules: a
  * menu row's `px-2` beat its own `pl-8`, and every icon in a gutter menu sat on its label. In the
  * host document the variable is always defined, so the fallback never applies and dropping it
  * from the comparison is exact.

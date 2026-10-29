@@ -50,14 +50,15 @@ loaders enforce X2.
 A part Claude Code defines and Localix does not run is reported in the plugin's validation, never
 dropped silently. A key Claude Code does not define is a validation warning, as in Claude Code.
 
-A Localix plugin is still only a plugin. `mini-app-authoring` is where mini apps are made: its
-skills, reviewer agent, edit hook and `mini-app` command scaffold, check, build, pack and install
-them, and it imports no Localix code, so X1 and X2 hold: no code path joins the two layers, and its
-folder holds no `mini-app.json`. It reaches Localix only through data — the mini app kit, whose
-`tools/authoring.mjs` carries Localix's own validation (`features/mini-apps/kit-tools.ts`), and
-`GET /rpc/mini-apps/kit` and `POST /rpc/mini-apps/install-local` — so it lives and changes outside
-this repository. The core keeps no authoring: no build tool for the agent and no `/mini-app create`
-(X3: creating is the plugin's command, not a `/mini-app` subcommand).
+A Localix plugin is still only a plugin. The authoring plugin of the
+[Localix marketplace](https://github.com/rsaryev/localix-marketplace) is where mini apps are made:
+its skills, reviewer agent, edit hook and `mini-app` command scaffold, check, build, pack and
+install them, and it imports no Localix code, so X1 and X2 hold: no code path joins the two layers,
+and its folder holds no `mini-app.json`. It reaches Localix only through data — the mini app kit,
+whose `tools/authoring.mjs` carries Localix's own validation (`features/mini-apps/kit-tools.ts`),
+and `GET /rpc/mini-apps/kit` and `POST /rpc/mini-apps/install-local` — so it lives and changes
+outside this repository. The core keeps no authoring: no build tool for the agent and no
+`/mini-app create` (X3: creating is the plugin's command, not a `/mini-app` subcommand).
 
 A mod must get what Claude Code gives it. `scripts/cc-parity/` runs one probe mod in the installed
 Claude Code and in Localix's mods host and compares the shapes each hands it, per event and `$`
@@ -69,7 +70,7 @@ call; `parity.test.ts` holds the entries known to match. See its
 ### Format
 
 ```text
-chess/
+weather/
   mini-app.json      name, version, apiVersion, category, backend, commands, settings
   guide.md           what the agent needs to know to use the app
   icon.svg
@@ -139,14 +140,14 @@ names its publisher and whether it is **verified**, which only a source Localix 
   "schema": 1,
   "apps": [
     {
-      "name": "chess",
-      "displayName": "Chess",
+      "name": "weather",
+      "displayName": "Weather",
       "version": "0.3.0",
       "apiVersion": 1,
-      "category": "games",
-      "description": "Legal moves and agent-opponent play.",
+      "category": "utilities",
+      "description": "Forecasts and alerts.",
       "publisher": { "name": "Localix", "verified": true },
-      "archive": { "url": "chess-0.3.0-3fa1c2d4e5b6.tar.gz", "bytes": 182340, "sha256": "…" }
+      "archive": { "url": "weather-0.3.0-3fa1c2d4e5b6.tar.gz", "bytes": 182340, "sha256": "…" }
     }
   ]
 }
@@ -184,8 +185,8 @@ authoring plugin before it is installed.
    build. An update never touches the app's data folder.
 5. **Trust.** Installing from the store is the person's yes to run the app. An unverified publisher
    is named in the row, and its install asks again first.
-6. **Create.** The mini-app-authoring plugin forks its own template into a folder of the person's,
-   builds the package, and `POST /rpc/mini-apps/install-local` validates it and copies it into
+6. **Create.** The authoring plugin forks its own template into a folder of the person's, builds the
+   package, and `POST /rpc/mini-apps/install-local` validates it and copies it into
    `~/.localix/mini-apps/<name>/` with a local install record: the person's own app, updated by no
    catalog and never installed over a catalog's app.
 

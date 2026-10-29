@@ -79,7 +79,7 @@ describe('TaskCreated', () => {
 
 test('a tool that declares no task-board role runs no task hooks, whatever its name', async () => {
   const b = board([])
-  const named = { ...b.tool, name: 'kanban' } as AgentTool
+  const named = { ...b.tool, name: 'tasks' } as AgentTool
   let ran = false
   const { runtime } = hooks({
     runTaskCreated: async () => {

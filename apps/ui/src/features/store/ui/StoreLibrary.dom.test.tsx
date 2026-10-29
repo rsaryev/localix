@@ -11,18 +11,18 @@ afterAll(async () => teardown())
 
 const LISTINGS = [
   listing({
-    id: 'kanban',
-    displayName: 'Kanban',
+    id: 'planner',
+    displayName: 'Planner',
     installs: [{ scope: 'user', version: '1.0.0', enabled: true }],
     configurable: true,
   }),
   listing({
-    id: 'trading',
-    displayName: 'Trading',
+    id: 'ledger',
+    displayName: 'Ledger',
     version: '2.0.0',
     installs: [{ scope: 'user', version: '1.0.0', enabled: false, updateTo: '2.0.0' }],
   }),
-  listing({ id: 'chess', displayName: 'Chess' }),
+  listing({ id: 'puzzle', displayName: 'Puzzle' }),
   listing({
     id: 'lint',
     displayName: 'Lint',
@@ -37,16 +37,16 @@ describe('the Store’s library', () => {
   test('Installed lists every install with its kind, scope, version and switch', async () => {
     const view = await renderStore({ listings: LISTINGS, target: { shelf: 'installed' } })
     try {
-      expect(row(view.host, 'chess')).toBeNull()
-      const kanban = row(view.host, 'kanban')!
-      expect(kanban.textContent).toContain('Kanban')
-      expect(kanban.textContent).toContain('Mini app')
-      expect(kanban.textContent).toContain('For you')
-      expect(kanban.textContent).toContain('1.0.0')
-      const toggle = kanban.querySelector<HTMLElement>('[role="switch"]')!
+      expect(row(view.host, 'puzzle')).toBeNull()
+      const planner = row(view.host, 'planner')!
+      expect(planner.textContent).toContain('Planner')
+      expect(planner.textContent).toContain('Mini app')
+      expect(planner.textContent).toContain('For you')
+      expect(planner.textContent).toContain('1.0.0')
+      const toggle = planner.querySelector<HTMLElement>('[role="switch"]')!
       expect(toggle.getAttribute('aria-checked')).toBe('true')
       await view.click(toggle)
-      expect(view.calls).toEqual(['disable mini-app/kanban user'])
+      expect(view.calls).toEqual(['disable mini-app/planner user'])
     } finally {
       await view.done()
     }
@@ -63,9 +63,9 @@ describe('the Store’s library', () => {
       expect(row(view.host, 'lint')?.textContent).toContain('Plugin')
       await view.click(view.button('Plugins', view.host.querySelector('[aria-label="Kinds"]')!))
       expect(row(view.host, 'lint')).not.toBeNull()
-      expect(row(view.host, 'kanban')).toBeNull()
+      expect(row(view.host, 'planner')).toBeNull()
       await view.click(view.button('All', view.host.querySelector('[aria-label="Kinds"]')!))
-      expect(row(view.host, 'kanban')).not.toBeNull()
+      expect(row(view.host, 'planner')).not.toBeNull()
     } finally {
       await view.done()
     }
@@ -75,7 +75,7 @@ describe('the Store’s library', () => {
     const view = await renderStore({
       listings: LISTINGS,
       configs: {
-        kanban: {
+        planner: {
           user: {
             fields: [
               { key: 'board', label: 'Board', type: 'string', required: false, secret: false },
@@ -90,17 +90,17 @@ describe('the Store’s library', () => {
       target: { shelf: 'installed' },
     })
     try {
-      await view.openMenu(view.button('Trading actions'))
+      await view.openMenu(view.button('Ledger actions'))
       expect(view.menuItem('Configure')).toBeUndefined()
       await view.click(view.menuItem('Update to 2.0.0'))
-      await view.openMenu(view.button('Kanban actions'))
+      await view.openMenu(view.button('Planner actions'))
       expect(view.menuItem('Update to 2.0.0')).toBeUndefined()
       await view.click(view.menuItem('Remove'))
-      expect(view.calls).toEqual(['update mini-app/trading user', 'remove mini-app/kanban user'])
-      await view.openMenu(view.button('Kanban actions'))
+      expect(view.calls).toEqual(['update mini-app/ledger user', 'remove mini-app/planner user'])
+      await view.openMenu(view.button('Planner actions'))
       await view.click(view.menuItem('Configure'))
       // Configure opens the package's own page on its Settings tab, not a page of Settings.
-      const page = view.host.querySelector('[data-store-page="kanban"]')!
+      const page = view.host.querySelector('[data-store-page="planner"]')!
       expect(page.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe('Settings')
     } finally {
       await view.done()
@@ -110,8 +110,8 @@ describe('the Store’s library', () => {
   test('Updates lists what has a newer version, and Update all takes them all', async () => {
     const view = await renderStore({ listings: LISTINGS, target: { shelf: 'updates' } })
     try {
-      expect(row(view.host, 'kanban')).toBeNull()
-      expect(row(view.host, 'trading')?.textContent).toContain('1.0.0 → 2.0.0')
+      expect(row(view.host, 'planner')).toBeNull()
+      expect(row(view.host, 'ledger')?.textContent).toContain('1.0.0 → 2.0.0')
       await view.click(view.button('Update all'))
       expect(view.calls).toEqual(['update all'])
     } finally {

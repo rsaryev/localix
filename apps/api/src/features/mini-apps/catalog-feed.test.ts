@@ -7,14 +7,14 @@ const catalog = {
   schema: 1,
   apps: [
     {
-      name: 'chess',
-      displayName: 'Chess',
-      description: 'Play chess',
+      name: 'atlas',
+      displayName: 'Atlas',
+      description: 'Play atlas',
       category: 'games',
       version: '1.0.0',
       apiVersion: 1,
       publisher: { name: 'Localix', verified: true },
-      archive: { url: 'chess-1.0.0.tar.gz', bytes: 120, sha256: sha },
+      archive: { url: 'atlas-1.0.0.tar.gz', bytes: 120, sha256: sha },
     },
   ],
 }
@@ -32,7 +32,7 @@ describe('a mini app catalog', () => {
         ...catalog.apps[0]!,
         archive: {
           ...catalog.apps[0]!.archive,
-          url: 'https://example.test/mini-apps/chess-1.0.0.tar.gz',
+          url: 'https://example.test/mini-apps/atlas-1.0.0.tar.gz',
         },
       },
     ])
@@ -53,7 +53,7 @@ describe('a mini app catalog', () => {
         ],
       }),
     })
-    expect(apps.map((app) => app.name)).toEqual(['chess'])
+    expect(apps.map((app) => app.name)).toEqual(['atlas'])
   })
 
   test('reads the store fields beside it, media resolved against the catalog; a bad one is dropped alone', async () => {
@@ -63,21 +63,21 @@ describe('a mini app catalog', () => {
       sha256: sha,
       ...(type ? { type } : {}),
     })
-    const [chess] = await readMiniAppCatalog('https://example.test/mini-apps/catalog.json', {
+    const [atlas] = await readMiniAppCatalog('https://example.test/mini-apps/catalog.json', {
       fetchImpl: serve({
         schema: 1,
         apps: [
           {
             ...catalog.apps[0]!,
-            icon: media('chess-icon.svg', 'image/svg+xml'),
+            icon: media('atlas-icon.svg', 'image/svg+xml'),
             screenshots: [
-              { ...media('chess-1.png', 'image/png'), caption: 'A position' },
+              { ...media('atlas-1.png', 'image/png'), caption: 'A position' },
               media('http://elsewhere.test/2.png', 'image/png'),
               { url: 'broken.png' },
             ],
-            readme: media('chess-readme.md'),
+            readme: media('atlas-readme.md'),
             tags: ['game', 'Not A Tag', 'board-game'],
-            homepage: 'https://example.test/chess',
+            homepage: 'https://example.test/atlas',
             license: 'MIT',
             author: 'Ada',
             featured: true,
@@ -87,24 +87,24 @@ describe('a mini app catalog', () => {
         ],
       }),
     })
-    expect(chess).toMatchObject({
-      icon: { url: 'https://example.test/mini-apps/chess-icon.svg', type: 'image/svg+xml' },
-      screenshots: [{ url: 'https://example.test/mini-apps/chess-1.png', caption: 'A position' }],
-      readme: { url: 'https://example.test/mini-apps/chess-readme.md', bytes: 10 },
+    expect(atlas).toMatchObject({
+      icon: { url: 'https://example.test/mini-apps/atlas-icon.svg', type: 'image/svg+xml' },
+      screenshots: [{ url: 'https://example.test/mini-apps/atlas-1.png', caption: 'A position' }],
+      readme: { url: 'https://example.test/mini-apps/atlas-readme.md', bytes: 10 },
       tags: ['game', 'board-game'],
-      homepage: 'https://example.test/chess',
+      homepage: 'https://example.test/atlas',
       license: 'MIT',
       author: 'Ada',
       featured: true,
       surfaces: ['agent', 'workbench'],
       commands: ['new'],
     })
-    expect(chess!.screenshots).toHaveLength(1)
+    expect(atlas!.screenshots).toHaveLength(1)
 
     const [plain] = await readMiniAppCatalog('https://example.test/catalog.json', {
       fetchImpl: serve({ schema: 1, apps: [{ ...catalog.apps[0]!, icon: 'icon.svg', tags: 3 }] }),
     })
-    expect(plain!.name).toBe('chess')
+    expect(plain!.name).toBe('atlas')
     expect(plain!.icon).toBeUndefined()
     expect(plain!.tags).toBeUndefined()
   })

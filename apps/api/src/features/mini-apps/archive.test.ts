@@ -8,7 +8,7 @@ import { packMiniAppFiles, unpackMiniAppArchive } from './archive'
 const root = tempDirPerTest('mini-app-archive-')
 
 const manifest = (over: Record<string, unknown> = {}) =>
-  JSON.stringify({ name: 'chess', version: '1.0.0', ...over })
+  JSON.stringify({ name: 'atlas', version: '1.0.0', ...over })
 
 describe('a mini app archive', () => {
   test('unpacks into the folder it is given, every file where the archive put it', async () => {
@@ -17,7 +17,7 @@ describe('a mini app archive', () => {
       'backend/index.mjs': 'export const register = () => {}',
     })
     const dest = join(root(), 'out')
-    await unpackMiniAppArchive(bytes, dest, { name: 'chess', version: '1.0.0' })
+    await unpackMiniAppArchive(bytes, dest, { name: 'atlas', version: '1.0.0' })
     expect(await fs.readFile(join(dest, 'backend', 'index.mjs'), 'utf8')).toContain('register')
   })
 
@@ -25,7 +25,7 @@ describe('a mini app archive', () => {
     const bytes = await packMiniAppFiles({ 'mini-app.json': manifest(), '../escape.txt': 'x' })
     const dest = join(root(), 'out')
     await expect(
-      unpackMiniAppArchive(bytes, dest, { name: 'chess', version: '1.0.0' }),
+      unpackMiniAppArchive(bytes, dest, { name: 'atlas', version: '1.0.0' }),
     ).rejects.toThrow(/outside/)
     expect(await fs.readdir(root())).not.toContain('escape.txt')
   })
@@ -33,11 +33,11 @@ describe('a mini app archive', () => {
   test('the manifest must name the app and version the catalog promised', async () => {
     const bytes = await packMiniAppFiles({ 'mini-app.json': manifest({ name: 'other' }) })
     await expect(
-      unpackMiniAppArchive(bytes, join(root(), 'a'), { name: 'chess', version: '1.0.0' }),
+      unpackMiniAppArchive(bytes, join(root(), 'a'), { name: 'atlas', version: '1.0.0' }),
     ).rejects.toThrow(/"other"/)
     const old = await packMiniAppFiles({ 'mini-app.json': manifest({ version: '0.9.0' }) })
     await expect(
-      unpackMiniAppArchive(old, join(root(), 'b'), { name: 'chess', version: '1.0.0' }),
+      unpackMiniAppArchive(old, join(root(), 'b'), { name: 'atlas', version: '1.0.0' }),
     ).rejects.toThrow(/0\.9\.0/)
   })
 
@@ -47,7 +47,7 @@ describe('a mini app archive', () => {
       unpackMiniAppArchive(
         bytes,
         join(root(), 'c'),
-        { name: 'chess', version: '1.0.0' },
+        { name: 'atlas', version: '1.0.0' },
         {
           maxBytes: 32,
         },

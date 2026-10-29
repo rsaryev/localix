@@ -22,7 +22,7 @@ import { LocalixBorderBeam, RECOMMENDED_BEAM_INTENSITY } from '../feedback/local
  * `ContextMenu*` and `DropdownMenu*` are separate component families, and this file used to be two
  * near-identical recursive walkers with a comment excusing the copy. They drifted exactly where a
  * copy drifts — one spelled `danger` as bare `text-status-error`, the shared `tone="danger"` recipe
- * (which also tints the highlight) reached neither, and the API mini app's context menu lost the
+ * (which also tints the highlight) reached neither, and a mini app's context menu lost the
  * treatment altogether while its dropdown kept it.
  *
  * Passing the family in as data (`menu-families.ts`) is the whole fix. Add an entry kind here and

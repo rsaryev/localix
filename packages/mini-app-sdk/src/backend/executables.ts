@@ -5,7 +5,7 @@
  * (`/usr/bin:/bin:/usr/sbin:/sbin`). The host repairs `process.env.PATH` from the login shell after
  * boot, but under Bun a `Bun.spawn` that passes no `env` resolves its executable against the PATH
  * the process STARTED with — so `Bun.spawn(['docker', …])` threw `Executable not found in $PATH:
- * "docker"` on a machine where `/usr/local/bin/docker` was right there, and the DevOps sidebar said
+ * "docker"` on a machine where `/usr/local/bin/docker` was right there, and a mini app's sidebar said
  * "Docker returned an error." Every mini app spawn has to pass the CURRENT environment, and lookups
  * must read the current PATH explicitly; this module is the one place that knows how.
  *

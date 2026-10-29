@@ -224,7 +224,7 @@ export function createReadTool(
         const notFound =
           typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT'
         // On a miss, the model often prepended "/" to a bare workspace filename
-        // (read "/game2048.html" when it lives in the cwd) — point it at the
+        // (read "/maze.html" when it lives in the cwd) — point it at the
         // same-basename file in the working dir so it doesn't waste a retry guessing.
         const hint = notFound
           ? await sameNameInCwdHint(env, targetPath, input.cwd ?? defaultCwd)

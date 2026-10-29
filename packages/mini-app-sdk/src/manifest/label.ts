@@ -3,7 +3,7 @@
  *
  * `displayName` is optional in the manifest, and eleven call sites across the host and the API
  * each wrote `displayName || name` — so a mini app that omitted the field showed
- * its raw id: a settings list reading `database`, `office`, `webhook-notifier` between properly
+ * its raw id: a settings list reading `notes`, `office`, `webhook-notifier` between properly
  * named neighbours. A bare `||` cannot fix that, because `name` is a kebab id by contract
  * ({@link MINI_APP_NAME_RE}); the fallback has to TRANSLATE it.
  *
@@ -17,7 +17,6 @@ const ACRONYMS = new Map([
   ['ai', 'AI'],
   ['cli', 'CLI'],
   ['db', 'DB'],
-  ['devops', 'DevOps'],
   ['http', 'HTTP'],
   ['id', 'ID'],
   ['ide', 'IDE'],

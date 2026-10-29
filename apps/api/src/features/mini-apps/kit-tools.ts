@@ -22,7 +22,7 @@ import { validateMiniApp } from './validate'
 /**
  * Localix's own rules for a mini app, as the mini app kit publishes them (`tools/authoring.mjs`,
  * bundled by `scripts/stage-mini-app-kit.mjs`). Making a mini app is not Localix's job: the
- * `mini-app-authoring` plugin scaffolds, builds, checks and packs one, and loads this module from
+ * authoring plugin scaffolds, builds, checks and packs one, and loads this module from
  * the kit so that what it calls valid is exactly what this Localix will run (rule X1: the plugin
  * imports nothing of Localix; it reads a published contract).
  *

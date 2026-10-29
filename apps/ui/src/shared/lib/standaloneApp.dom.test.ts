@@ -2,7 +2,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test
 import { registerDom } from '@localixai/kit/testing/dom'
 
 let teardown: () => Promise<void>
-const CHESS = { miniApp: 'tile-game', name: 'Tile game', projectDir: '/h/.localix/apps/tile-game' }
+const PUZZLE = { miniApp: 'tile-game', name: 'Tile game', projectDir: '/h/.localix/apps/tile-game' }
 
 beforeAll(() => {
   teardown = registerDom()
@@ -29,13 +29,13 @@ describe('standaloneApp', () => {
 
   test('a malformed mini app name is not a standalone app', async () => {
     const { standaloneApp } = await import('./standaloneApp')
-    window.__LOCALIX_APP = { ...CHESS, miniApp: '../kanban' }
+    window.__LOCALIX_APP = { ...PUZZLE, miniApp: '../planner' }
     expect(standaloneApp()).toBeNull()
   })
 
   test('a window without its project folder is not a standalone app', async () => {
     const { standaloneApp } = await import('./standaloneApp')
-    window.__LOCALIX_APP = { ...CHESS, projectDir: '' }
+    window.__LOCALIX_APP = { ...PUZZLE, projectDir: '' }
     expect(standaloneApp()).toBeNull()
   })
 
@@ -43,12 +43,12 @@ describe('standaloneApp', () => {
     const { standaloneApp } = await import('./standaloneApp')
     window.__LOCALIX_APP = {
       miniApp: 'puzzle-grid',
-      name: '2048',
+      name: 'Block Puzzle',
       projectDir: '/h/.localix/apps/puzzle-grid',
     }
     expect(standaloneApp()).toEqual({
       miniApp: 'puzzle-grid',
-      name: '2048',
+      name: 'Block Puzzle',
       projectDir: '/h/.localix/apps/puzzle-grid',
     })
   })
@@ -58,7 +58,7 @@ describe('applyStandaloneAppStartRoute', () => {
   test('starts on the remembered conversation instead of the home page', async () => {
     const { applyStandaloneAppStartRoute, rememberStandaloneAppSession } =
       await import('./standaloneApp')
-    window.__LOCALIX_APP = CHESS
+    window.__LOCALIX_APP = PUZZLE
     rememberStandaloneAppSession('tile-game', 'abc_123')
     applyStandaloneAppStartRoute()
     expect(window.location.hash).toBe('#/chat/abc_123')
@@ -70,7 +70,7 @@ describe('applyStandaloneAppStartRoute', () => {
     rememberStandaloneAppSession('tile-game', 'abc_123')
     applyStandaloneAppStartRoute()
     expect(window.location.hash).toBe('')
-    window.__LOCALIX_APP = CHESS
+    window.__LOCALIX_APP = PUZZLE
     window.location.hash = '#/chat/other'
     applyStandaloneAppStartRoute()
     expect(window.location.hash).toBe('#/chat/other')
@@ -82,7 +82,7 @@ describe('stampStandaloneAppDataset', () => {
     const { stampStandaloneAppDataset } = await import('./standaloneApp')
     stampStandaloneAppDataset()
     expect(document.documentElement.dataset.desktop).toBeUndefined()
-    window.__LOCALIX_APP = CHESS
+    window.__LOCALIX_APP = PUZZLE
     stampStandaloneAppDataset()
     expect(document.documentElement.dataset.desktop).toBe('true')
     expect(document.documentElement.dataset.standaloneApp).toBe('true')

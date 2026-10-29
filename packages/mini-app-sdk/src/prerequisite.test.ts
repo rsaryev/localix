@@ -20,7 +20,7 @@ const docker = (state: Prerequisite['state'], extra: Partial<Prerequisite> = {})
 
 describe('isMissingExecutable', () => {
   // The shipped defect: the packaged app's spawn threw Bun's wording, no classifier knew it, and
-  // the DevOps sidebar said "Docker returned an error." instead of "Docker is not installed".
+  // a mini app sidebar said "Docker returned an error." instead of "Docker is not installed".
   test("recognises Bun's spawn failure by its text", () => {
     expect(isMissingExecutable(new Error('Executable not found in $PATH: "docker"'))).toBe(true)
   })

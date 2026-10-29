@@ -7,14 +7,14 @@ import { NotFoundError } from '../../lib/domain-errors'
 import type { MiniAppStoreEntry } from './store'
 
 const entry: MiniAppStoreEntry = {
-  name: 'chess',
-  displayName: 'Chess',
-  description: 'Play chess',
+  name: 'atlas',
+  displayName: 'Atlas',
+  description: 'Play atlas',
   category: 'games',
   version: '1.0.0',
   publisher: { name: 'Localix', verified: true },
   source: 'https://hosted.test/mini-app-catalog.json',
-  icon: '/rpc/mini-apps/store/media/chess/icon?v=abc',
+  icon: '/rpc/mini-apps/store/media/atlas/icon?v=abc',
   tags: ['game'],
   installed: null,
   update: false,
@@ -25,7 +25,7 @@ const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47])
 function app(installed: string[], catalogs: string[] = []) {
   const service = {
     appIcon: async (_userId: string, { app }: { app: string }) => {
-      if (app !== 'chess')
+      if (app !== 'atlas')
         throw new NotFoundError('mini_app_icon_not_found', `"${app}" has no icon`)
       return { bytes: SVG, type: 'image/svg+xml' }
     },
@@ -49,8 +49,8 @@ function app(installed: string[], catalogs: string[] = []) {
       list: async () => ({ entries: [entry], problems: [] }),
       detail: async (name: string) => ({
         entry: { ...entry, name },
-        readme: '# Chess',
-        screenshots: [{ url: '/rpc/mini-apps/store/media/chess/screenshot/0?v=abc' }],
+        readme: '# Atlas',
+        screenshots: [{ url: '/rpc/mini-apps/store/media/atlas/screenshot/0?v=abc' }],
         details: { version: '1.0.0', size: 120, license: 'MIT' },
       }),
       media: async (_name: string, kind: string, index?: number) =>
@@ -82,10 +82,10 @@ describe('/rpc/mini-apps/store', () => {
     const response = await app(installed).request('/rpc/mini-apps/store/install', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ name: 'chess', acceptUnverified: true }),
+      body: JSON.stringify({ name: 'atlas', acceptUnverified: true }),
     })
     expect(response.status).toBe(202)
-    expect(installed).toEqual(['chess!'])
+    expect(installed).toEqual(['atlas!'])
   })
 
   test('the catalogs are listed, added and removed; a write answers 204 and is announced', async () => {
@@ -110,28 +110,28 @@ describe('/rpc/mini-apps/store', () => {
   })
 
   test('one app’s store page: its row, README, screenshots and details', async () => {
-    const response = await app([]).request('/rpc/mini-apps/store/chess')
+    const response = await app([]).request('/rpc/mini-apps/store/atlas')
     expect(response.status).toBe(200)
     expect(await response.json()).toMatchObject({
-      entry: { name: 'chess' },
-      readme: '# Chess',
+      entry: { name: 'atlas' },
+      readme: '# Atlas',
       details: { size: 120 },
     })
   })
 
   test('media are served with their type, never sniffed, and an SVG cannot run anything', async () => {
-    const icon = await app([]).request('/rpc/mini-apps/store/media/chess/icon')
+    const icon = await app([]).request('/rpc/mini-apps/store/media/atlas/icon')
     expect(icon.status).toBe(200)
     expect(icon.headers.get('content-type')).toBe('image/svg+xml')
     expect(icon.headers.get('x-content-type-options')).toBe('nosniff')
     expect(icon.headers.get('content-security-policy')).toBe(
       "default-src 'none'; style-src 'unsafe-inline'",
     )
-    const shot = await app([]).request('/rpc/mini-apps/store/media/chess/screenshot/0?v=abc')
+    const shot = await app([]).request('/rpc/mini-apps/store/media/atlas/screenshot/0?v=abc')
     expect(shot.headers.get('content-type')).toBe('image/png')
     expect(shot.headers.get('cache-control')).toContain('immutable')
     expect(new Uint8Array(await shot.arrayBuffer())).toEqual(PNG)
-    expect((await app([]).request('/rpc/mini-apps/store/media/chess/readme')).status).toBe(400)
+    expect((await app([]).request('/rpc/mini-apps/store/media/atlas/readme')).status).toBe(400)
   })
 
   test('a catalog is previewed before it is added', async () => {
@@ -145,7 +145,7 @@ describe('/rpc/mini-apps/store', () => {
   })
 
   test('an installed app’s own icon is served the same way, and one with none is a 404', async () => {
-    const icon = await app([]).request('/rpc/mini-apps/chess/icon?v=1.0.0')
+    const icon = await app([]).request('/rpc/mini-apps/atlas/icon?v=1.0.0')
     expect(icon.status).toBe(200)
     expect(icon.headers.get('content-security-policy')).toContain("default-src 'none'")
     expect((await app([]).request('/rpc/mini-apps/notes/icon')).status).toBe(404)

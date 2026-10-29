@@ -303,7 +303,7 @@ describe('openPreviewCore', () => {
 
   test('an absolute path with NO cwd bound still auto-resolves (missing file → clear error)', async () => {
     const { options, events } = makeCore()
-    const result = await openPreviewCore(options, { url: 'file:///work/sess/game2048.html' })
+    const result = await openPreviewCore(options, { url: 'file:///work/sess/maze.html' })
     expect(result.ok).toBe(false)
     if (!result.ok) expect(result.content).toContain('No such file to preview')
     expect(events).toHaveLength(0)
@@ -332,12 +332,12 @@ describe('openPreviewCore', () => {
 
   test('a RELATIVE path with no cwd gives an actionable serve-first hint (dir + file)', async () => {
     const { options } = makeCore()
-    const result = await openPreviewCore(options, { url: 'work/sess/game2048.html' })
+    const result = await openPreviewCore(options, { url: 'work/sess/maze.html' })
     expect(result.ok).toBe(false)
     if (!result.ok) {
       expect(result.content).toContain('python3 -m http.server')
       expect(result.content).toContain('--directory work/sess')
-      expect(result.content).toContain('game2048.html')
+      expect(result.content).toContain('maze.html')
     }
   })
 
@@ -353,7 +353,7 @@ describe('openPreviewCore', () => {
 
   test('AUTO-SERVES a local file when a workspace cwd is set, and serves it over http', async () => {
     const dir = mkdtempSync(path.join(tmpdir(), 'preview-'))
-    writeFileSync(path.join(dir, 'game.html'), '<h1>2048</h1>')
+    writeFileSync(path.join(dir, 'game.html'), '<h1>Maze</h1>')
     const { options, events } = makeCore('preview-auto', dir)
 
     // model passes just the filename — no manual server start
@@ -369,7 +369,7 @@ describe('openPreviewCore', () => {
     const res = await fetch(url)
     expect(res.status).toBe(200)
     const body = await res.text()
-    expect(body).toContain('<h1>2048</h1>')
+    expect(body).toContain('<h1>Maze</h1>')
     expect(body).toContain('data-vf-probe')
     expect(body).toContain('data-vf-file="game.html"')
 

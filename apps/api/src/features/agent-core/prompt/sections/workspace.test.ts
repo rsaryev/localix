@@ -90,7 +90,7 @@ describe('buildRoleSection', () => {
 
   it('never frames the orchestrator around a task board it may not hold', () => {
     // A board is a plugin tool whose own schema carries its workflow. Core prose about one is
-    // the defect: a run told to drive a board it could not reach invented KANBAN.md.
+    // the defect: a run told to drive a board it could not reach invented a board file.
     for (const roster of [undefined, ['Read', 'Search'], []]) {
       const out = buildRoleSection(SHAPE.orchestrator, roster) ?? ''
       expect(out).not.toMatch(/\bboard\b/i)

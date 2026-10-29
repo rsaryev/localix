@@ -114,7 +114,7 @@ function renderWith(
     pinnedSkills: [{ name: 'sql-review', content: 'review sql carefully' }],
     triggeredSkills: [{ name: 'deploy-guide', content: 'deploy carefully', keyword: 'deploy' }],
     pluginsContext: 'database — 1 skill',
-    miniAppsContext: 'chess — 1 direct tool',
+    miniAppsContext: 'atlas — 1 direct tool',
     mcpInventory: [{ server: 'acme', tools: ['ticket_search'] }],
     mcpInstructions: [{ server: 'acme', text: 'use tickets' }],
     backgroundJobs: [

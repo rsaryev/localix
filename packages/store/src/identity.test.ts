@@ -34,6 +34,6 @@ describe('a package identity is its origin, normalized', () => {
 
   test('an npm package by its name, a catalog archive by its own', () => {
     expect(npmOrigin('@Acme/Lint')).toBe('npm:@acme/lint')
-    expect(catalogOrigin('chess')).toBe('catalog:chess')
+    expect(catalogOrigin('atlas')).toBe('catalog:atlas')
   })
 })

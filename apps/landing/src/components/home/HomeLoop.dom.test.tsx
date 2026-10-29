@@ -113,7 +113,7 @@ test('one mini apps card covers what a person gets, what a developer builds on a
     'tools',
     'decision models',
     'embeddings',
-    '/mini-app-authoring:create',
+    'Localix marketplace',
     'Dock',
     'Spotlight',
   ])
@@ -123,7 +123,9 @@ test('one mini apps card covers what a person gets, what a developer builds on a
     '/docs/features--mini-apps',
     '/docs/extending--mini-apps',
     '/docs/features--mini-app-mac-apps',
+    'https://github.com/rsaryev/localix-marketplace',
   ])
+  expect(words).not.toMatch(/\/[a-z-]+:[a-z-]+/)
   await cleanup()
 })
 
@@ -154,7 +156,9 @@ test('every card that links to the docs opens a page that exists', async () => {
   const { docPages } = await import('../../generated/docs')
   const slugs = new Set(docPages.map((page) => page.slug))
   const { host, cleanup } = await render()
-  const links = [...host.querySelectorAll<HTMLAnchorElement>('article a')]
+  const links = [...host.querySelectorAll<HTMLAnchorElement>('article a')].filter((a) =>
+    a.getAttribute('href')!.startsWith('/'),
+  )
   expect(links.length).toBeGreaterThanOrEqual(5)
   for (const link of links) {
     const slug = new URL(link.href, 'https://localix.ai').pathname.replace('/docs/', '')

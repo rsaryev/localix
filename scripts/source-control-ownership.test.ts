@@ -4,8 +4,9 @@ import path from 'node:path'
 
 import { assertNotVoid, scanSources } from '../apps/api/src/lib/source-lint'
 
-// Lives under `scripts/`, not in core: this is INTEGRATION between the host and one bundled
-// plugin, and the same boundary it enforces forbids core from naming a concrete plugin tree.
+// Lives under `scripts/`, not in core: this is INTEGRATION between the host and
+// the source-control mini app that lives outside this repository, and the same boundary it enforces
+// forbids core from naming a concrete plugin tree.
 const REPO_ROOT = path.resolve(import.meta.dir, '..')
 const CORE_GLOBS = [
   'apps/api/src/**/*.ts',
@@ -17,9 +18,9 @@ const CORE_GLOBS = [
   'packages/kit/src/**/*.tsx',
   'packages/mini-app-sdk/src/**/*.ts',
 ]
-const REVERSE_IMPORT = /from\s*['"][^'"]*mini-apps\/git-workspace(?:\/[^'"]*)?['"]/u
+const REVERSE_IMPORT = /from\s*['"](?:\.\.\/)+mini-apps\/[^/'"]+\/(?:backend|ui|src)\b[^'"]*['"]/u
 const LEGACY_PLUGIN_VOCABULARY =
-  /\bworktrees?\b|source-control|git:\/\/|@git:|git-workspace|RESOURCE_SCHEMES\.git/iu
+  /\bworktrees?\b|source-control|git:\/\/|@git:|RESOURCE_SCHEMES\.git/iu
 
 /**
  * External-format literals belong at their translation boundary. Match the exact expression,
@@ -40,8 +41,8 @@ const EXTERNAL_FORMAT_LITERALS = new Map([
  * Claude Code's agent isolation is a different word from the plugin's worktree feature: a
  * subagent's or workflow agent's `isolation: 'worktree'` and the `WorktreeCreate` hook are part of
  * the Claude Code format core implements (audit: "Claude Code agent isolation"). These modules may
- * say `worktree` for that contract alone; every other legacy term (`source-control`, `git://`,
- * `git-workspace`) still fails in them, and no other core file gains the word.
+ * say `worktree` for that contract alone; every other legacy term (`source-control`, `git://`)
+ * still fails in them, and no other core file gains the word.
  */
 const CLAUDE_CODE_ISOLATION = [
   'apps/api/src/features/agent-core/tools/workflow/',
@@ -75,7 +76,7 @@ function hasLegacyVocabulary(file: string, code: string): boolean {
   return LEGACY_PLUGIN_VOCABULARY.test(name) || LEGACY_PLUGIN_VOCABULARY.test(nativeCode)
 }
 
-describe('Git Workspace ownership boundary', () => {
+describe('Source control ownership boundary', () => {
   test('host source has no reverse import into the bundled plugin', async () => {
     const files = await scanSources({
       root: REPO_ROOT,
@@ -91,9 +92,9 @@ describe('Git Workspace ownership boundary', () => {
     expect(files.filter((file) => REVERSE_IMPORT.test(file.code)).map((file) => file.file)).toEqual(
       [],
     )
-    expect(
-      REVERSE_IMPORT.test(`import { x } from '../../../mini-apps/git-workspace/backend/x'`),
-    ).toBe(true)
+    expect(REVERSE_IMPORT.test(`import { x } from '../../../mini-apps/sample-app/backend/x'`)).toBe(
+      true,
+    )
   })
 
   test('legacy source-control and worktree feature roots cannot return to core', () => {
@@ -112,7 +113,7 @@ describe('Git Workspace ownership boundary', () => {
     const files = await scanSources({
       root: REPO_ROOT,
       include: CORE_GLOBS,
-      skip: (file) => file.endsWith('git-workspace-ownership.test.ts'),
+      skip: (file) => file.endsWith('source-control-ownership.test.ts'),
       minFiles: 300,
     })
     const offenders = files

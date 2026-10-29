@@ -64,12 +64,12 @@ describe('the described-menu walker', () => {
       const view = await openMenu(
         [
           {
-            id: 'reader',
-            label: 'Reader',
+            id: 'viewer',
+            label: 'Viewer',
             checked,
             onSelect: () => picks.push('open'),
             trailingAction: {
-              label: 'Unpin Reader',
+              label: 'Unpin Viewer',
               icon: Pin,
               checked: true,
               onSelect: () => picks.push('unpin'),
@@ -80,7 +80,7 @@ describe('the described-menu walker', () => {
       )
       try {
         const primary = view.menu!.querySelector<HTMLElement>('[data-radix-collection-item]')!
-        const pin = view.menu!.querySelector<HTMLElement>('[aria-label="Unpin Reader"]')!
+        const pin = view.menu!.querySelector<HTMLElement>('[aria-label="Unpin Viewer"]')!
         expect(pin.getAttribute('role')).toBe('menuitemcheckbox')
         expect(pin.getAttribute('aria-checked')).toBe('true')
         await view.act(async () => {

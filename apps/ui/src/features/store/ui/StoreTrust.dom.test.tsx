@@ -24,7 +24,7 @@ const fromCommunity = listing({
   publisher: { name: 'Ada', verified: false },
   source: { id: ADA, label: 'Ada', trust: 'community' },
 })
-const fromLocalix = listing({ id: 'chess', displayName: 'Chess' })
+const fromLocalix = listing({ id: 'puzzle', displayName: 'Puzzle' })
 const LISTINGS = [mine, fromCommunity, fromLocalix]
 
 const DISCOVER = {
@@ -52,7 +52,7 @@ describe('trust is said only for what a source lists', () => {
     const apps = await renderStore({ listings: LISTINGS, target: { shelf: 'package:mini-app' } })
     try {
       expect(apps.card('radio')!.textContent).toContain('Community')
-      expect(apps.card('chess')!.querySelector('[aria-label="Verified · Localix"]')).not.toBeNull()
+      expect(apps.card('puzzle')!.querySelector('[aria-label="Verified · Localix"]')).not.toBeNull()
     } finally {
       await apps.done()
     }
@@ -68,9 +68,9 @@ describe('trust is said only for what a source lists', () => {
       const meta = (id: string) => tile(id).querySelector('[data-slot="tile-meta"]')?.textContent
       expect(meta('files')).toBe('You · MCP server')
       expect(meta('radio')).toBe('Ada · Mini app')
-      expect(meta('chess')).toBe('Localix · Mini app')
+      expect(meta('puzzle')).toBe('Localix · Mini app')
       expect(tile('files').textContent).not.toContain('Community')
-      expect(tile('chess').querySelector('[aria-label="Verified · Localix"]')).not.toBeNull()
+      expect(tile('puzzle').querySelector('[aria-label="Verified · Localix"]')).not.toBeNull()
     } finally {
       await view.done()
     }

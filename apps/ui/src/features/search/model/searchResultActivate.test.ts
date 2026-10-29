@@ -24,9 +24,9 @@ describe('parseCoreUiUri', () => {
     expect(parseCoreUiUri('localix://resource/chat/project/p1')).toBeNull()
     expect(parseCoreUiUri('localix://resource/chat/message/s1/m1')).toBeNull()
   })
-  it('a subsystem scheme like localix://resource/fixture-db/ is not a core target (owned by the database plugin contrib)', () => {
-    // `localix://resource/fixture-db/` hits are activated by the database plugin's UI-anchor contribution
-    // (it reveals the Database sidebar) BEFORE core; core treats the scheme as unknown.
+  it('a subsystem scheme like localix://resource/fixture-db/ is not a core target (owned by a mini app contrib)', () => {
+    // `localix://resource/fixture-db/` hits are activated by a mini app UI-anchor contribution
+    // (it reveals that mini app sidebar) BEFORE core; core treats the scheme as unknown.
     expect(parseCoreUiUri('localix://resource/fixture-db/conn9')).toBeNull()
   })
   it('rejects removed per-feature schemes', () => {

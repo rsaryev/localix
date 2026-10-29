@@ -16,7 +16,7 @@ const stagerArgs = (repoRoot, outKit, cacheRoot) => [
 
 /**
  * Stage the mini app kit into `outKit`. A failure is always fatal: an app without its kit cannot
- * serve the mini-app-authoring plugin anything to build against.
+ * serve the authoring plugin anything to build against.
  */
 export function stageMiniAppKitInto({ repoRoot, outKit, cacheRoot, run = execFileSync }) {
   run('bun', stagerArgs(repoRoot, outKit, cacheRoot), { cwd: repoRoot, stdio: 'inherit' })

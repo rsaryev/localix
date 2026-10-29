@@ -790,15 +790,15 @@ describe('browser action="open" and close', () => {
   test('evaluate snapshotAfter stays on the same browser tab ID', async () => {
     const h = harness({
       sendOutcomes: [
-        { ok: true, result: { action: 'evaluate', previewId: 'tab-2048', value: '42' } },
+        { ok: true, result: { action: 'evaluate', previewId: 'tab-maze', value: '42' } },
         {
           ok: true,
           result: {
             action: 'snapshot',
-            previewId: 'tab-2048',
+            previewId: 'tab-maze',
             snapshot: {
-              url: 'https://2048game.com/',
-              title: '2048',
+              url: 'https://mazegame.com/',
+              title: 'Maze',
               tree: '- grid "board"',
               stats: { nodes: 1, interactive: 1, chars: 14 },
             },
@@ -808,11 +808,11 @@ describe('browser action="open" and close', () => {
     })
     await createBrowserTool(h.deps).execute('e3', {
       action: 'evaluate',
-      preview_id: 'tab-2048',
+      preview_id: 'tab-maze',
       expression: 'window.score',
       snapshot_after: true,
     })
-    expect(h.sends[1]).toEqual({ action: 'snapshot', previewId: 'tab-2048' })
+    expect(h.sends[1]).toEqual({ action: 'snapshot', previewId: 'tab-maze' })
   })
 
   test('a failed open returns the core error as isError', async () => {

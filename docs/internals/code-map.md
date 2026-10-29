@@ -56,9 +56,10 @@ the one runtime manifest the loader uses (`compose.ts`, with `claude-code.ts` fo
 mapping). It reads only `.claude-plugin/plugin.json`: a root `plugin.json` is a validation warning,
 not a manifest, and a folder holding `mini-app.json` is refused as a mini app. Mini apps are found
 and read by `apps/api/src/features/mini-apps/discovery.ts`. Making a mini app is not the core's: the
-`mini-app-authoring` plugin of the Localix marketplace scaffolds, checks and builds one from the
-mini app kit, whose validation tools are `features/mini-apps/kit-tools.ts`, and
-`features/mini-apps/local-install.ts` installs the package it builds.
+authoring plugin of the [Localix marketplace](https://github.com/rsaryev/localix-marketplace)
+scaffolds, checks and builds one from the mini app kit, whose validation tools are
+`features/mini-apps/kit-tools.ts`, and `features/mini-apps/local-install.ts` installs the package it
+builds.
 
 ## Boot is phased, and the phases exist because of cycles
 
@@ -108,8 +109,8 @@ person typing. Each producer has its `source`:
 | Mini app backends, plugin monitors, inbound webhooks | `external`   | `chat/contracts/queue.ts` (the `WakeSource` list) |
 
 A `resume` point is registered by a producer such as the approved plan, and the client offers one
-only while nobody works on the conversation. No mini app board wakes a session: the Kanban mini app
-of the Localix marketplace records work and never starts a run.
+only while nobody works on the conversation. No mini app board wakes a session: a task-board mini
+app records work and never starts a run.
 
 Every wake enters the durable priority queue (`features/chat/runtime/wake-queue.ts`, admission in
 `wake-queue/wake.ts`). An entry is typed by its kind (`wake-queue/entry.ts`): the person's words, a

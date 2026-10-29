@@ -1,5 +1,5 @@
 // Keep the dev workspace's mini app kit current while the API runs: `bun --watch` reloads the API
-// on every source edit, and the kit it serves the mini-app-authoring plugin must not fall behind.
+// on every source edit, and the kit it serves the authoring plugin must not fall behind.
 import { existsSync, statSync, watch as fsWatch } from 'node:fs'
 import { join } from 'node:path'
 

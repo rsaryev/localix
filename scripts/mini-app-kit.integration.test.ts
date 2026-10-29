@@ -1,5 +1,5 @@
 // The mini app kit as staged from the REAL repository: what a release publishes for building mini
-// apps outside it. Localix builds no mini app; the mini-app-authoring plugin (in the Localix
+// apps outside it. Localix builds no mini app; the authoring plugin (in the Localix
 // marketplace) scaffolds, checks and packs against this kit, and its own tests cover that side.
 // These pin what the kit itself promises. Each case names the failure it pins.
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'

@@ -58,32 +58,32 @@ function setup(providers: StoreProvider[], opts: { profile?: typeof CHAT_RUN_PRO
   return { port, call, approve, session }
 }
 
-const kanban = makeListing({
-  id: 'kanban',
+const tasks = makeListing({
+  id: 'tasks',
   installs: [{ scope: 'user', version: '1.0.0', enabled: true, updateTo: '1.1.0' }],
 })
-const chess = makeListing({ id: 'chess' })
+const atlas = makeListing({ id: 'atlas' })
 const review = makeListing({ id: 'review@market', kind: 'plugin' })
 const results = (result: { content: unknown }) => JSON.parse(String(result.content)).results
 
 test('search returns what the Store screen lists, with each package’s install state', async () => {
-  const apps = fakeProvider('mini-app', [chess, kanban])
+  const apps = fakeProvider('mini-app', [atlas, tasks])
   const plugins = fakeProvider('plugin', [review])
   const { call } = setup([apps.provider, plugins.provider])
   const all = results(await call({ action: 'search' }))
   expect(all.map((card: { ref: { id: string } }) => card.ref.id).sort()).toEqual([
-    'chess',
-    'kanban',
+    'atlas',
     'review@market',
+    'tasks',
   ])
-  expect(all.find((card: { ref: { id: string } }) => card.ref.id === 'kanban')).toMatchObject({
+  expect(all.find((card: { ref: { id: string } }) => card.ref.id === 'tasks')).toMatchObject({
     installs: [{ scope: 'user', version: '1.0.0', enabled: true }],
     updateTo: '1.1.0',
   })
   const onlyPlugins = results(await call({ action: 'search', kind: 'plugin' }))
   expect(onlyPlugins.map((card: { ref: { id: string } }) => card.ref.id)).toEqual(['review@market'])
   const installed = results(await call({ action: 'search', installed: true }))
-  expect(installed.map((card: { ref: { id: string } }) => card.ref.id)).toEqual(['kanban'])
+  expect(installed.map((card: { ref: { id: string } }) => card.ref.id)).toEqual(['tasks'])
 })
 
 test('get returns the plan the Store computes for the open project’s scope', async () => {
@@ -156,13 +156,13 @@ test('an unattended run installs nothing', async () => {
 })
 
 test('remove, enable and disable reach the provider once approved', async () => {
-  const apps = fakeProvider('mini-app', [kanban])
+  const apps = fakeProvider('mini-app', [tasks])
   const { call, approve } = setup([apps.provider])
-  const ref = { kind: 'mini-app', id: 'kanban' }
+  const ref = { kind: 'mini-app', id: 'tasks' }
   for (const [action, recorded] of [
-    ['disable', 'enable kanban user false'],
-    ['enable', 'enable kanban user true'],
-    ['remove', 'remove kanban user'],
+    ['disable', 'enable tasks user false'],
+    ['enable', 'enable tasks user true'],
+    ['remove', 'remove tasks user'],
   ] as const) {
     const pending = call({ action, ref, scope: 'user' })
     await approve(true)

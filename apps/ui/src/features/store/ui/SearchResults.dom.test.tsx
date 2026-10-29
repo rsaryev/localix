@@ -30,7 +30,7 @@ const LISTINGS = [
     summary: 'Review tasks',
     installs: [{ scope: 'user', version: '1.0.0', enabled: true }],
   }),
-  listing({ id: 'chess', displayName: 'Chess', category: 'Games' }),
+  listing({ id: 'puzzle', displayName: 'Puzzle', category: 'Games' }),
 ]
 const DISCOVER = { categories: [{ id: 'Games', label: 'Games', count: 1 }] }
 
@@ -51,7 +51,7 @@ describe('the Store’s search results', () => {
       const packages = results().querySelector('section[aria-label="Packages"]')!
       expect(packages.textContent).toContain('Code review')
       expect(packages.textContent).toContain('Reviewer')
-      expect(packages.textContent).not.toContain('Chess')
+      expect(packages.textContent).not.toContain('Puzzle')
       const inside = results().querySelector('section[aria-label="Inside packages"]')!
       expect(inside.textContent).toContain('review-pr')
       expect(inside.textContent).toContain('Skill in Code review')

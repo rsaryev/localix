@@ -9,15 +9,15 @@ import type { NotificationJournal } from '../journal-contracts'
  * through its `onJobsSettled` port when its queue drains, never derived by a window.
  *
  * The progress itself is not here: it is in-memory status the Event Center's "In progress" reads
- * live. What is left once a job ends is one short line: "Installed Git", "Updated 3 mini apps",
- * or "Could not install Kanban" with its reason and a Try again the window runs
+ * live. What is left once a job ends is one short line: "Installed Notes", "Updated 3 mini apps",
+ * or "Could not install Notes" with its reason and a Try again the window runs
  * (`mini_app_install`, the app's name in `requestId`). A later success settles that failure.
  */
 
 const ORIGIN: InboxOrigin = { kind: 'application', label: 'Mini apps' }
 const enc = encodeURIComponent
 
-/** "Git", "Git and Kanban", "Git, Documents and Kanban". */
+/** "Notes", "Notes and Tasks", "Notes, Ledger and Tasks". */
 function names(labels: readonly string[]): string {
   if (labels.length <= 1) return labels[0] ?? ''
   return `${labels.slice(0, -1).join(', ')} and ${labels.at(-1)}`

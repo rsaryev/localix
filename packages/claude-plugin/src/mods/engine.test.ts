@@ -204,7 +204,7 @@ describe('mods API calls are events', () => {
       api,
     )
     await engine.load(
-      'reader',
+      'viewer',
       (on) =>
         void on('session.start', async ($, e, next) => {
           const fs = $.fs as { read: (path: string) => Promise<unknown> }
@@ -217,7 +217,7 @@ describe('mods API calls are events', () => {
       {},
       api,
     )
-    await engine.dispatch('session.start', {}, () => ({}), { plugins: new Set(['reader']) })
+    await engine.dispatch('session.start', {}, () => ({}), { plugins: new Set(['viewer']) })
     expect(reads).toEqual(['content of notes.md!', 'refused: secrets stay put'])
     expect(seen).toEqual([{ path: 'notes.md', as: 'text' }, { value: 'content of notes.md' }])
   })
@@ -249,18 +249,18 @@ describe('mods API calls are events', () => {
 
   test('a call reaches only the hooks of the mods running where its mod runs', async () => {
     const engine = createModsEngine({
-      peersOf: (mod) => new Set(mod.endsWith('@a') ? ['guard@a', 'reader@a'] : [mod]),
+      peersOf: (mod) => new Set(mod.endsWith('@a') ? ['guard@a', 'viewer@a'] : [mod]),
     })
     const api = { fs: { read: () => 'content' } }
     const guard = (on: Parameters<Parameters<typeof engine.load>[1]>[0]) =>
       void on('fs.read', () => ({ deny: 'guarded' }))
     await engine.load('guard@a', guard, {}, api)
-    await engine.load('reader@a', () => {}, {}, api)
-    await engine.load('reader@b', () => {}, {}, api)
+    await engine.load('viewer@a', () => {}, {}, api)
+    await engine.load('viewer@b', () => {}, {}, api)
     const read = (mod: string) =>
       (engine.apiOf(mod) as unknown as { fs: { read: () => Promise<unknown> } }).fs.read()
-    expect(await read('reader@a').catch((error: Error) => error.message)).toBe('guarded')
-    expect(await read('reader@b')).toBe('content')
+    expect(await read('viewer@a').catch((error: Error) => error.message)).toBe('guarded')
+    expect(await read('viewer@b')).toBe('content')
   })
 
   test('calls answer with a promise, as Claude Code’s do, except the synchronous ui calls', async () => {

@@ -1,5 +1,5 @@
 /**
- * A key that changes only a short text — a 2048 move changes the score, no control — must not be
+ * A key that changes only a short text — a game move changes the score, no control — must not be
  * reported as "(no visible change)": the agent read a working move as a dead one.
  */
 import { afterAll, beforeAll, expect, test } from 'bun:test'
@@ -13,7 +13,7 @@ beforeAll(() => GlobalRegistrator.register())
 afterAll(() => GlobalRegistrator.unregister())
 
 test('a key that only changes the score reports the score', async () => {
-  document.body.innerHTML = '<h1>2048</h1><div>Score</div><div id="score">0</div>'
+  document.body.innerHTML = '<h1>Maze</h1><div>Score</div><div id="score">0</div>'
   const onKey = (event: KeyboardEvent) => {
     if (event.code === 'ArrowLeft') document.getElementById('score')!.textContent = '28'
   }

@@ -11,15 +11,15 @@ afterAll(async () => teardown())
 
 const LISTINGS = [
   listing({
-    id: 'chess',
-    displayName: 'Chess',
+    id: 'puzzle',
+    displayName: 'Puzzle',
     category: 'games',
     version: '1.0.0',
-    icon: '/rpc/mini-apps/store/media/chess/icon',
+    icon: '/rpc/mini-apps/store/media/puzzle/icon',
     tags: ['game', 'board-game'],
     contents: { screen: 1, command: 1 },
   }),
-  listing({ id: 'kanban', displayName: 'Kanban', category: 'utilities', tags: ['tasks'] }),
+  listing({ id: 'planner', displayName: 'Planner', category: 'utilities', tags: ['tasks'] }),
   listing({
     id: 'radio',
     displayName: 'Radio',
@@ -28,7 +28,7 @@ const LISTINGS = [
   }),
 ]
 
-async function open(id = 'chess', name = 'Chess') {
+async function open(id = 'puzzle', name = 'Puzzle') {
   const view = await renderStore({ listings: LISTINGS, target: { shelf: 'package:mini-app' } })
   await view.click(view.button(name, view.card(id)!))
   const page = () => view.host.querySelector<HTMLElement>(`[data-store-page="${id}"]`)
@@ -45,14 +45,14 @@ describe('a package’s page', () => {
   test('opens from its row: icon, name, publisher and trust, kind, category, tags and Get', async () => {
     const { view, page } = await open()
     try {
-      expect(page()!.querySelector('h1')?.textContent).toBe('Chess')
-      expect(page()!.querySelector('img')?.getAttribute('src')).toEndWith('/chess/icon')
+      expect(page()!.querySelector('h1')?.textContent).toBe('Puzzle')
+      expect(page()!.querySelector('img')?.getAttribute('src')).toEndWith('/puzzle/icon')
       expect(page()!.textContent).toContain('Localix')
       expect(page()!.querySelector('[aria-label="Verified · Localix"]')).not.toBeNull()
       expect(page()!.textContent).toContain('games')
       expect(view.button('Show packages tagged board-game', page()!)).toBeDefined()
-      await view.click(view.button('Get Chess', page()!))
-      expect(view.calls).toEqual(['install mini-app/chess user'])
+      await view.click(view.button('Get Puzzle', page()!))
+      expect(view.calls).toEqual(['install mini-app/puzzle user'])
     } finally {
       await view.done()
     }
@@ -65,7 +65,7 @@ describe('a package’s page', () => {
       for (const text of ['Mini app', '1.0.0', 'Localix', 'MIT', 'Runs code']) {
         expect(facts.textContent).toContain(text)
       }
-      expect(facts.querySelector('a[href="https://example.test/chess"]')).not.toBeNull()
+      expect(facts.querySelector('a[href="https://example.test/puzzle"]')).not.toBeNull()
     } finally {
       await view.done()
     }
@@ -74,10 +74,10 @@ describe('a package’s page', () => {
   test('its screenshots page, and one opens full-window, paged with the arrows', async () => {
     const { view, page, shown } = await open()
     try {
-      expect(shown()).toEndWith('/chess/screenshot/0')
+      expect(shown()).toEndWith('/puzzle/screenshot/0')
       expect(page()!.textContent).toContain('The board')
       await view.click(view.button('Next screenshot'))
-      expect(shown()).toEndWith('/chess/screenshot/1')
+      expect(shown()).toEndWith('/puzzle/screenshot/1')
       await view.click(view.button('View screenshot 1 full size'))
       const dialog = () => document.body.querySelector<HTMLElement>('[role="dialog"]')
       expect(dialog()?.querySelector('img')?.getAttribute('src')).toEndWith('/screenshot/0')
@@ -104,7 +104,7 @@ describe('a package’s page', () => {
     try {
       const panel = () => page()!.querySelector('[role="tabpanel"]')!
       expect(panel().textContent).toContain('A screen of its own')
-      expect(panel().textContent).toContain('/chess:play')
+      expect(panel().textContent).toContain('/puzzle:play')
       await view.click(tab('Permissions'))
       expect(panel().textContent).toContain('Runs on this computer')
       const headings = [...panel().querySelectorAll('h3')].map((node) => node.textContent)
@@ -154,7 +154,7 @@ describe('a package’s page', () => {
   test('Back is named by the place it returns to, in the words it shows', async () => {
     const view = await renderStore({ listings: LISTINGS, target: { shelf: 'package:mini-app' } })
     try {
-      await view.click(view.button('Chess', view.card('chess')!))
+      await view.click(view.button('Puzzle', view.card('puzzle')!))
       const back = view.host.querySelector<HTMLButtonElement>('[data-store-back]')!
       expect(back.getAttribute('aria-label')).toBe(`Back to ${back.textContent}`)
     } finally {
@@ -170,12 +170,12 @@ describe('a package’s page', () => {
           node.textContent?.startsWith(label),
         )
       await view.click(tab('games'))
-      expect(view.card('kanban')).toBeNull()
-      await view.click(view.button('Chess', view.card('chess')!))
-      expect(view.host.querySelector('[data-store-page="chess"]')).not.toBeNull()
+      expect(view.card('planner')).toBeNull()
+      await view.click(view.button('Puzzle', view.card('puzzle')!))
+      expect(view.host.querySelector('[data-store-page="puzzle"]')).not.toBeNull()
       await view.click(view.button(/^Back to /))
-      expect(view.card('chess')).not.toBeNull()
-      expect(view.card('kanban')).toBeNull()
+      expect(view.card('puzzle')).not.toBeNull()
+      expect(view.card('planner')).toBeNull()
     } finally {
       await view.done()
     }
@@ -186,8 +186,8 @@ describe('a package’s page', () => {
     try {
       await view.click(view.button('Show packages tagged game', page()!))
       expect(view.host.querySelector('h2')?.textContent).toBe('Tagged “game”')
-      expect(view.card('chess')).not.toBeNull()
-      expect(view.card('kanban')).toBeNull()
+      expect(view.card('puzzle')).not.toBeNull()
+      expect(view.card('planner')).toBeNull()
       await view.click(view.button(/^Back to /))
       expect(page()).not.toBeNull()
     } finally {
@@ -198,15 +198,15 @@ describe('a package’s page', () => {
   test('narrow, Get stays in the header and the facts go under the header', async () => {
     const view = await renderStore({
       listings: LISTINGS,
-      target: { ref: { kind: 'mini-app', id: 'chess' } },
+      target: { ref: { kind: 'mini-app', id: 'puzzle' } },
       width: 600,
     })
     try {
-      const page = view.host.querySelector('[data-store-page="chess"]')!
+      const page = view.host.querySelector('[data-store-page="puzzle"]')!
       const header = page.querySelector('header')!
-      expect(view.button('Get Chess', header)).toBeDefined()
+      expect(view.button('Get Puzzle', header)).toBeDefined()
       // One Get on the page, where the eye already is: no second bar pinned to the bottom.
-      expect(page.querySelectorAll('button[aria-label="Get Chess"]')).toHaveLength(1)
+      expect(page.querySelectorAll('button[aria-label="Get Puzzle"]')).toHaveLength(1)
       expect(page.querySelectorAll('[aria-label="Information"]')).toHaveLength(1)
       expect(page.querySelector('aside')).toBeNull()
     } finally {
@@ -217,10 +217,10 @@ describe('a package’s page', () => {
   test('wide, the facts sit beside the description', async () => {
     const view = await renderStore({
       listings: LISTINGS,
-      target: { ref: { kind: 'mini-app', id: 'chess' } },
+      target: { ref: { kind: 'mini-app', id: 'puzzle' } },
     })
     try {
-      const page = view.host.querySelector('[data-store-page="chess"]')!
+      const page = view.host.querySelector('[data-store-page="puzzle"]')!
       expect(page.querySelector('aside [aria-label="Information"]')).not.toBeNull()
     } finally {
       await view.done()
@@ -230,10 +230,10 @@ describe('a package’s page', () => {
   test('a link to one listing opens its page', async () => {
     const view = await renderStore({
       listings: LISTINGS,
-      target: { ref: { kind: 'mini-app', id: 'kanban' } },
+      target: { ref: { kind: 'mini-app', id: 'planner' } },
     })
     try {
-      expect(view.host.querySelector('[data-store-page="kanban"] h1')?.textContent).toBe('Kanban')
+      expect(view.host.querySelector('[data-store-page="planner"] h1')?.textContent).toBe('Planner')
     } finally {
       await view.done()
     }

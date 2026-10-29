@@ -88,7 +88,7 @@ function updatesTitle(kinds: readonly PackageKind[]): string {
   return `${n} ${kind}update${n === 1 ? '' : 's'}`
 }
 
-/** "Git", "Git and Kanban", "Git, Documents and Kanban". */
+/** "Sync", "Sync and Planner", "Sync, Library and Planner". */
 export function joinNames(names: readonly string[]): string {
   if (names.length <= 1) return names[0] ?? ''
   return `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`

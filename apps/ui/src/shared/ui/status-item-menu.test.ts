@@ -21,7 +21,7 @@ describe('the uniform status-item menu', () => {
   test('an item that declared nothing still has a menu', () => {
     // The failure this fixes: a mini app glyph where right-click did nothing, which reads exactly
     // like a mini app that broke. Every item answers, and the answer says where to configure it.
-    expect(labels(statusItemMenuEntries(state({ label: 'Reader' }), host))).toEqual([
+    expect(labels(statusItemMenuEntries(state({ label: 'Viewer' }), host))).toEqual([
       'Mini app settings…',
     ])
   })
@@ -29,10 +29,10 @@ describe('the uniform status-item menu', () => {
   test('an item with only a click gets that click as its first row', () => {
     let opened = 0
     const entries = statusItemMenuEntries(
-      state({ label: 'Open Reader', onClick: () => (opened += 1) }),
+      state({ label: 'Open Viewer', onClick: () => (opened += 1) }),
       host,
     )
-    expect(labels(entries)).toEqual(['Open Reader', '—', 'Mini app settings…'])
+    expect(labels(entries)).toEqual(['Open Viewer', '—', 'Mini app settings…'])
     const primary = entries[0]
     if (!primary || !isMenuAction(primary)) throw new Error('expected an action row')
     primary.onSelect()
@@ -44,7 +44,7 @@ describe('the uniform status-item menu', () => {
     // on top would say the same thing twice in the app's most repeated menu.
     const entries = statusItemMenuEntries(
       state({
-        label: 'DevOps — 2 port-forwards running',
+        label: 'Fleet — 2 port-forwards running',
         onClick: () => undefined,
         menu: [
           { id: 'open', label: 'Open port forwards', onSelect: () => undefined },

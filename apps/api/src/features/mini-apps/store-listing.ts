@@ -112,7 +112,7 @@ export interface OwnMiniApp {
 }
 
 /**
- * The row of an app the person made (installed from their own folder by the mini-app-authoring
+ * The row of an app the person made (installed from their own folder by the authoring
  * plugin, or copied into `~/.localix/mini-apps`): installed, with nothing to install.
  */
 export function ownMiniAppEntry(app: OwnMiniApp): MiniAppStoreEntry {

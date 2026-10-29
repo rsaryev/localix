@@ -44,13 +44,13 @@ test('rows that name a tool by its old id name it by its one name', async () => 
       rule(1, 'tool:bash', 'git push*'),
       rule(2, 'tool:global_search'),
       rule(3, 'tool:Agent'),
-      rule(4, 'tool:chess'),
+      rule(4, 'tool:atlas'),
       rule(5, 'skill:read'),
       rule(6, 'tool:*'),
     ])
     .execute()
   await sql`INSERT INTO tool_usage (id, user_id, project_id, tool_name, first_seen_at, created_at, updated_at)
-    VALUES ('t1', 'u1', 'p1', 'read', 'a', 'a', 'a'), ('t2', 'u1', 'p1', 'chess', 'a', 'a', 'a')`.execute(
+    VALUES ('t1', 'u1', 'p1', 'read', 'a', 'a', 'a'), ('t2', 'u1', 'p1', 'atlas', 'a', 'a', 'a')`.execute(
     db,
   )
 
@@ -66,12 +66,12 @@ test('rows that name a tool by its old id name it by its one name', async () => 
     { action: 'tool:Bash', resource: 'git push*' },
     { action: 'tool:GlobalSearch', resource: '*' },
     { action: 'tool:Agent', resource: '*' },
-    { action: 'tool:chess', resource: '*' },
+    { action: 'tool:atlas', resource: '*' },
     { action: 'skill:read', resource: '*' },
     { action: 'tool:*', resource: '*' },
   ])
   const usage = await db.selectFrom('tool_usage').select('tool_name').orderBy('id').execute()
-  expect(usage.map((row) => row.tool_name)).toEqual(['Read', 'chess'])
+  expect(usage.map((row) => row.tool_name)).toEqual(['Read', 'atlas'])
 })
 
 test('a session keeps the deferred tools it activated, under their names', async () => {
@@ -112,7 +112,7 @@ test('stored items, results, checkpoints and fork seeds name their tools by the 
       { type: 'command', id: 'c', name: 'bash', command: 'ls' },
       { type: 'file_change', id: 'd', name: 'edit', changes: [] },
       { type: 'tool_call', id: 'e', name: 'mcp__github__read' },
-      { type: 'tool_call', id: 'f', name: 'chess' },
+      { type: 'tool_call', id: 'f', name: 'atlas' },
     ],
     results: [{ type: 'tool_result', toolCallId: 'b', toolName: 'activate_tools' }],
   }
@@ -121,12 +121,12 @@ test('stored items, results, checkpoints and fork seeds name their tools by the 
   const seed = {
     tools: [
       { name: 'bash', modelName: 'Bash', description: 'd', schema: {} },
-      { name: 'chess', description: 'd', schema: {} },
+      { name: 'atlas', description: 'd', schema: {} },
     ],
-    toolNames: ['bash', 'chess'],
+    toolNames: ['bash', 'atlas'],
     profile: {
-      toolExposure: { bash: 'direct', chess: 'deferred' },
-      declaredTools: ['read', 'chess'],
+      toolExposure: { bash: 'direct', atlas: 'deferred' },
+      declaredTools: ['read', 'atlas'],
     },
   }
   await sql`INSERT INTO participant_lane_snapshots (user_id, session_id, agent_id, boundary_marker, snapshot_json)
@@ -146,7 +146,7 @@ test('stored items, results, checkpoints and fork seeds name their tools by the 
     'Bash',
     'Edit',
     'mcp__github__read',
-    'chess',
+    'atlas',
   ])
   expect(stored.items[0].text).toBe('read the file')
   expect(stored.results[0].toolName).toBe('ToolSearch')
@@ -156,12 +156,12 @@ test('stored items, results, checkpoints and fork seeds name their tools by the 
   const forked = JSON.parse(lane.rows[0]!.snapshot_json)
   expect(forked.tools).toEqual([
     { name: 'Bash', description: 'd', schema: {} },
-    { name: 'chess', description: 'd', schema: {} },
+    { name: 'atlas', description: 'd', schema: {} },
   ])
-  expect(forked.toolNames).toEqual(['Bash', 'chess'])
+  expect(forked.toolNames).toEqual(['Bash', 'atlas'])
   expect(forked.profile).toEqual({
-    toolExposure: { Bash: 'direct', chess: 'deferred' },
-    declaredTools: ['Read', 'chess'],
+    toolExposure: { Bash: 'direct', atlas: 'deferred' },
+    declaredTools: ['Read', 'atlas'],
   })
 })
 

@@ -1,4 +1,4 @@
-// The mini app kit's `tools` module and its `authoring` block: what the `mini-app-authoring` plugin
+// The mini app kit's `tools` module and its `authoring` block: what the authoring plugin
 // reads to scaffold, build, check and pack a mini app the way this Localix runs one. Localix does
 // not author mini apps itself; it publishes its own rules (the manifest verdict, store media, the
 // house style, the route body rule, the Tailwind compiler) as one prebuilt module, so the plugin

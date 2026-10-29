@@ -96,8 +96,8 @@ test('a hook reads the call as Claude Code names it: hookify tests `tool_name ==
     tool_input: { file_path: 'a.ts', content: 'x' },
   })
   // A tool with no Claude Code counterpart keeps its own name and input.
-  expect(claudeCodeHookCall({ name: 'kanban_add' }, { title: 't' })).toEqual({
-    tool_name: 'kanban_add',
+  expect(claudeCodeHookCall({ name: 'board_add' }, { title: 't' })).toEqual({
+    tool_name: 'board_add',
     tool_input: { title: 't' },
   })
 })

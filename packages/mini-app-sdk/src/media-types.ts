@@ -3,7 +3,7 @@
  * and every mini app.
  *
  * Each surface used to carry its own `{ png: 'image/png', … }` table (the file viewer, the image
- * tool, the media store, the composer's attachment staging, the reader mini app, the binding chip),
+ * tool, the media store, the composer's attachment staging, a document viewer mini app, the binding chip),
  * and a format added to one never reached the others. What differs between those surfaces is a
  * POLICY — which formats it accepts — not what a format's media type is. So the vocabulary lives
  * here and each surface keeps only its own allowlist of extensions or media types.

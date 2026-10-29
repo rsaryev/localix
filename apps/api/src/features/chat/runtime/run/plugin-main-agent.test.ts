@@ -13,7 +13,7 @@ const reviewer: LoadedPluginAgent = {
   description: 'Reviews for vulnerabilities',
   prompt: 'You are a security reviewer.',
   tools: ['Read', 'Search'],
-  disallowedTools: ['kanban'],
+  disallowedTools: ['tasks'],
 }
 const input = {
   agent: { id: DEFAULT_AGENT_ID, instructions: 'You are Localix.' },
@@ -31,7 +31,7 @@ describe('the agent setting', () => {
     expect(applied.disabledTools).toEqual(
       expect.arrayContaining([
         'Loops',
-        'kanban',
+        'tasks',
         'Bash',
         'Write',
         'Edit',

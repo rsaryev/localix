@@ -44,7 +44,7 @@ export function useWorkspaceBuses({
   useEffect(() => subscribeRevealInTree(() => switchSection('files')), [switchSection])
 
   // Sibling slices (e.g. the .sql file panel) can open a named sidebar section
-  // (Database) without importing the page/router — mirrors the reveal-in-tree bus.
+  // (a mini app sidebar) without importing the page/router — mirrors the reveal-in-tree bus.
   // `setSidebarOpen` is the stable React setter supplied by ChatPage; preserve the
   // original effect dependency list while moving this wiring intact.
   useEffect(

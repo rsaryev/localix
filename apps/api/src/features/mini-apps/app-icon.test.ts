@@ -9,16 +9,16 @@ const root = tempDirPerTest('mini-app-icon-')
 const ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"><rect/></svg>'
 
 async function installed(manifest: { icon?: string; version?: string }, icon?: string) {
-  const dir = join(root(), 'chess')
+  const dir = join(root(), 'atlas')
   await fs.mkdir(dir, { recursive: true })
   if (icon !== undefined) await fs.writeFile(join(dir, 'icon.svg'), icon)
-  return { name: 'chess', dir, manifest }
+  return { name: 'atlas', dir, manifest }
 }
 
 describe('an installed mini app’s own icon', () => {
   test('is served from its folder by the path its manifest names', async () => {
     const app = await installed({ icon: './icon.svg', version: '1.2.0' }, ICON)
-    expect(miniAppIconUrl(app)).toBe('/rpc/mini-apps/chess/icon?v=1.2.0')
+    expect(miniAppIconUrl(app)).toBe('/rpc/mini-apps/atlas/icon?v=1.2.0')
     const file = await readMiniAppIcon(app)
     expect(file.type).toBe('image/svg+xml')
     expect(new TextDecoder().decode(file.bytes)).toBe(ICON)

@@ -235,9 +235,9 @@ describe('sameNameInCwdHint', () => {
   }
 
   it('Case 1: suggests the same basename directly in cwd (the "/"-prefixed guess)', async () => {
-    const env = fakeEnv(['/work/game2048.html'])
-    const hint = await sameNameInCwdHint(env, '/game2048.html', '/work')
-    expect(hint).toBe('\nDid you mean: /work/game2048.html? (use that exact path)')
+    const env = fakeEnv(['/work/maze.html'])
+    const hint = await sameNameInCwdHint(env, '/maze.html', '/work')
+    expect(hint).toBe('\nDid you mean: /work/maze.html? (use that exact path)')
   })
 
   it('Case 2: recovers a wrong-DIRECTORY guess via the workspace suffix match', async () => {

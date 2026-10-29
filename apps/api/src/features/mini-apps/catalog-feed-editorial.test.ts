@@ -4,10 +4,10 @@ import { readMiniAppCatalogFeed } from './catalog-feed'
 
 const CATALOG = 'https://hosted.test/mini-app-catalog.json'
 const app = {
-  name: 'chess',
+  name: 'atlas',
   version: '1.0.0',
   publisher: { name: 'Localix', verified: true },
-  archive: { url: 'chess.tar.gz', bytes: 10, sha256: 'a'.repeat(64) },
+  archive: { url: 'atlas.tar.gz', bytes: 10, sha256: 'a'.repeat(64) },
 }
 const serve = (body: unknown) =>
   (async () => new Response(JSON.stringify(body), { status: 200 })) as unknown as typeof fetch
@@ -20,15 +20,15 @@ describe('a catalog’s picks for Discover', () => {
         apps: [app],
         editorial: {
           collections: [
-            { id: 'play', title: 'Play', style: 'grid', items: ['chess', 'plugin:games@localix'] },
+            { id: 'play', title: 'Play', style: 'grid', items: ['atlas', 'plugin:games@localix'] },
           ],
         },
       }),
     })
-    expect(feed.apps.map((found) => found.name)).toEqual(['chess'])
+    expect(feed.apps.map((found) => found.name)).toEqual(['atlas'])
     expect(feed.editorial).toEqual({
       collections: [
-        { id: 'play', title: 'Play', style: 'grid', items: ['chess', 'plugin:games@localix'] },
+        { id: 'play', title: 'Play', style: 'grid', items: ['atlas', 'plugin:games@localix'] },
       ],
     })
   })

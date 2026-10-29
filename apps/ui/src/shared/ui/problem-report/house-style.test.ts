@@ -44,7 +44,7 @@ function framedAlerts(): string[] {
 }
 
 /**
- * A `<ProblemLine>` inside a hand-built centring wrapper. That wrapper is how the DevOps sidebar's
+ * A `<ProblemLine>` inside a hand-built centring wrapper. That wrapper is how a mini app sidebar's
  * "centred" failure sat at the top of an empty pane: `flex-1 justify-center` in a block-level scroll
  * container centres nothing. A failure that is the whole pane is `ProblemState`, which owns the
  * geometry once; a line inside a populated surface needs no centring at all.

@@ -25,8 +25,8 @@ test('browser can open its first page without an existing URL', () => {
 })
 
 test('plain text searches Google while local hosts and web URLs remain addresses', () => {
-  expect(resolvePreviewAddress('  how to play 2048  ', '')).toBe(
-    'https://www.google.com/search?q=how%20to%20play%202048',
+  expect(resolvePreviewAddress('  how to play bridge  ', '')).toBe(
+    'https://www.google.com/search?q=how%20to%20play%20bridge',
   )
   expect(resolvePreviewAddress('hello', '')).toBe('https://www.google.com/search?q=hello')
   expect(resolvePreviewAddress('127.0.0.1:5173', '')).toBe('http://127.0.0.1:5173/')

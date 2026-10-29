@@ -45,7 +45,7 @@
   <tr>
     <td valign="top">
       <strong>Mini apps, built by the agent</strong><br>
-      Describe one with <code>/mini-app-authoring:create</code>, in Localix or Claude Code: a meal log from photos, a dashboard, a game, wired to the agent, models and embeddings.<br>
+      Describe one to the agent, with the authoring plugin from the <a href="https://github.com/rsaryev/localix-marketplace">Localix marketplace</a>: a meal log from photos, a dashboard, a game, wired to the agent, models and embeddings.<br>
       <a href="docs/extending/build-with-the-agent.md">Build a mini app →</a>
     </td>
     <td valign="top">
@@ -73,9 +73,11 @@
 **Plugins** are Claude Code's format and load as they are: `/plugin install owner/repo`, with
 skills, commands, agents, hooks, MCP and language servers working as in Claude Code
 ([compatibility](docs/extending/claude-code-compatibility.md)). **Mini apps** are Localix's own:
-screens, a backend and agent tools. Install them from the Store, or have the agent build one with
-`/mini-app-authoring:create` ([mini apps](docs/features/mini-apps.md),
-[build with the agent](docs/extending/build-with-the-agent.md)).
+screens, a backend and agent tools. Install them from the Store, or have the agent build one
+([mini apps](docs/features/mini-apps.md),
+[build with the agent](docs/extending/build-with-the-agent.md)). Localix itself ships none: its own
+mini apps and plugins are in the
+[Localix marketplace](https://github.com/rsaryev/localix-marketplace).
 
 ## On this computer
 

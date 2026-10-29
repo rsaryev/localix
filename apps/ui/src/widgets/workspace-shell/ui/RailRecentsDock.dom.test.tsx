@@ -101,31 +101,31 @@ describe('RailRecentsDock', () => {
 
   test('collapses every recent behind one trigger and reveals them on click', async () => {
     const { host, render, act, cleanup } = await mount([
-      entry('reader', 'Reader'),
+      entry('viewer', 'Viewer'),
       entry('office', 'Office'),
-      entry('db', 'Database', true),
+      entry('db', 'Records', true),
     ])
     try {
       // ONE slot, whatever the history holds — the active view included, or opening
       // a view would silently grow the rail by an icon.
-      expect(railLabels(host)).toEqual(['Recent views (3), showing Database'])
+      expect(railLabels(host)).toEqual(['Recent views (3), showing Records'])
       expect(flyoutLabels()).toEqual([])
 
       const trigger = host.querySelector<HTMLButtonElement>('[data-rail-recents-trigger]')!
       // "You are here" rides on the trigger instead: active accent, not a new icon.
       expect(trigger.getAttribute('aria-current')).toBe('true')
-      await render([entry('reader', 'Reader'), entry('office', 'Office'), entry('db', 'Database')])
+      await render([entry('viewer', 'Viewer'), entry('office', 'Office'), entry('db', 'Records')])
       expect(railLabels(host)).toEqual(['Recent views (3)'])
       expect(
         host.querySelector('[data-rail-recents-trigger]')?.getAttribute('aria-current'),
       ).toBeNull()
       await render([
-        entry('reader', 'Reader'),
+        entry('viewer', 'Viewer'),
         entry('office', 'Office'),
-        entry('db', 'Database', true),
+        entry('db', 'Records', true),
       ])
       await act(async () => trigger.click())
-      expect(flyoutLabels()).toEqual(['Reader', 'Office', 'Database'])
+      expect(flyoutLabels()).toEqual(['Viewer', 'Office', 'Records'])
 
       // Clicking again puts it away.
       await act(async () => trigger.click())
@@ -136,7 +136,7 @@ describe('RailRecentsDock', () => {
   })
 
   test('hovering the trigger opens the flyout after the intent delay', async () => {
-    const { host, act, cleanup } = await mount([entry('reader', 'Reader')])
+    const { host, act, cleanup } = await mount([entry('viewer', 'Viewer')])
     try {
       const trigger = host.querySelector<HTMLButtonElement>('[data-rail-recents-trigger]')!
       const timers = holdIntentTimers()
@@ -152,7 +152,7 @@ describe('RailRecentsDock', () => {
       } finally {
         timers.release()
       }
-      expect(flyoutLabels()).toEqual(['Reader'])
+      expect(flyoutLabels()).toEqual(['Viewer'])
     } finally {
       await cleanup()
     }
@@ -162,7 +162,7 @@ describe('RailRecentsDock', () => {
   // the menu portals out of the popover, so opening it looked like an interaction
   // outside, and dismissing the popover took the menu's own trigger with it.
   test('a slot context menu holds the flyout open, hover-out included', async () => {
-    const { host, act, cleanup } = await mount([entry('reader', 'Reader')])
+    const { host, act, cleanup } = await mount([entry('viewer', 'Viewer')])
     try {
       const trigger = host.querySelector<HTMLButtonElement>('[data-rail-recents-trigger]')!
       await act(async () => trigger.click())
@@ -183,24 +183,24 @@ describe('RailRecentsDock', () => {
       await act(async () => {
         for (const timer of timers.held) timer.run()
       })
-      expect(flyoutLabels()).toEqual(['Reader'])
+      expect(flyoutLabels()).toEqual(['Viewer'])
 
       // The menu closes (an item was chosen, or Escape): the icons stay up rather
       // than being snatched away mid-gesture.
       await act(async () => reportSlotMenu(false))
-      expect(flyoutLabels()).toEqual(['Reader'])
+      expect(flyoutLabels()).toEqual(['Viewer'])
     } finally {
       await cleanup()
     }
   })
 
   test('a rail drag shuts the flyout so it cannot eat the drop', async () => {
-    const { host, render, act, cleanup } = await mount([entry('reader', 'Reader')])
+    const { host, render, act, cleanup } = await mount([entry('viewer', 'Viewer')])
     try {
       const trigger = host.querySelector<HTMLButtonElement>('[data-rail-recents-trigger]')!
       await act(async () => trigger.click())
-      expect(flyoutLabels()).toEqual(['Reader'])
-      await render([entry('reader', 'Reader')], true)
+      expect(flyoutLabels()).toEqual(['Viewer'])
+      await render([entry('viewer', 'Viewer')], true)
       expect(flyoutLabels()).toEqual([])
     } finally {
       await cleanup()
@@ -210,12 +210,12 @@ describe('RailRecentsDock', () => {
   test('expanded mode drops the trigger; off mode drops the dock entirely', async () => {
     const { setRailRecentsMode } = await import('@/shared/lib/railRecentsPref')
     const { host, render, act, cleanup } = await mount([
-      entry('reader', 'Reader'),
+      entry('viewer', 'Viewer'),
       entry('office', 'Office'),
     ])
     try {
       await act(async () => setRailRecentsMode('expanded'))
-      expect(railLabels(host)).toEqual(['Reader', 'Office'])
+      expect(railLabels(host)).toEqual(['Viewer', 'Office'])
       expect(host.querySelector('[data-rail-recents-trigger]')).toBeNull()
 
       await act(async () => setRailRecentsMode('off'))
@@ -225,7 +225,7 @@ describe('RailRecentsDock', () => {
 
       // Switching back restores the slots — the MRU list was never touched.
       await act(async () => setRailRecentsMode('hover'))
-      await render([entry('reader', 'Reader'), entry('office', 'Office')])
+      await render([entry('viewer', 'Viewer'), entry('office', 'Office')])
       expect(railLabels(host)).toEqual(['Recent views (2)'])
     } finally {
       await cleanup()

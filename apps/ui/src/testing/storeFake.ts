@@ -4,7 +4,7 @@ import { ApiError } from '@/shared/api/internal'
 import type { StoreClient } from '@/shared/api/store-client'
 import { SOURCES, answer, type StoreFake } from './storeFixtures'
 
-/** A client over `fake`, recording each write as one line ("install mini-app/chess user …"). */
+/** A client over `fake`, recording each write as one line ("install mini-app/puzzle user …"). */
 export function fakeClient(fake: StoreFake): StoreClient {
   const call = (line: string) => void fake.calls.push(line)
   const find = (id: string) => fake.listings.find((l) => l.ref.id === id)!
@@ -30,7 +30,7 @@ export function fakeClient(fake: StoreFake): StoreClient {
         facts: [
           { label: 'Version', value: find(ref.id).version ?? '1.0.0' },
           { label: 'License', value: 'MIT' },
-          { label: 'Homepage', value: 'https://example.test/chess' },
+          { label: 'Homepage', value: 'https://example.test/puzzle' },
         ],
         ...(fake.notices?.[ref.id] ? { notice: fake.notices[ref.id] } : {}),
         components: find(ref.id).components ?? [

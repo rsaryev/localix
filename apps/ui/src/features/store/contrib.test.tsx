@@ -20,12 +20,12 @@ test('the Store is one app-level tab that comes back after a restart', () => {
 
 test('the tab’s payload is where it opens; anything else in it is ignored', () => {
   expect(storeTarget({ shelf: 'package:mini-app' })).toEqual({ shelf: 'package:mini-app' })
-  expect(storeTarget({ ref: { kind: 'mini-app', id: 'chess' }, other: 1 })).toEqual({
-    ref: { kind: 'mini-app', id: 'chess' },
+  expect(storeTarget({ ref: { kind: 'mini-app', id: 'puzzle' }, other: 1 })).toEqual({
+    ref: { kind: 'mini-app', id: 'puzzle' },
   })
   expect(
     storeTarget({ addSource: { kind: 'mini-app', input: 'https://ada.test/c.json' } }),
   ).toEqual({ addSource: { kind: 'mini-app', input: 'https://ada.test/c.json' } })
-  expect(storeTarget({ shelf: 3, ref: 'chess' })).toEqual({})
+  expect(storeTarget({ shelf: 3, ref: 'puzzle' })).toEqual({})
   expect(storeTarget(undefined)).toEqual({})
 })

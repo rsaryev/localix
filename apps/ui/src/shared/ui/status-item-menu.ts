@@ -50,9 +50,9 @@ const DEFAULT_HOST: StatusItemMenuHost = { openMiniAppSettings }
  * Exported because more than one surface needs to know where the mini app's offer ends and the
  * host's begins, and the alternative was measuring it: the titlebar's overflow menu looked for the
  * first separator and called everything above it "the mini app's". That is true only of a mini app
- * whose menu has ONE section — every mini app with a section of its own (Git, Reader, Database,
- * API, Learning, Trading) had its whole list silently dropped the moment its glyph stopped fitting,
- * and the row that replaced it looked like a working row.
+ * whose menu has ONE section — every mini app with a section of its own had its whole list
+ * silently dropped the moment its glyph stopped fitting, and the row that replaced it looked
+ * like a working row.
  *
  * The primary action is synthesised ONLY for an item that declared no menu. Every mini app that
  * declares one already opens with its own "Open …" row, and a host-added duplicate above it would

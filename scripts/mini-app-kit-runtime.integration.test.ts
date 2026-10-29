@@ -175,7 +175,7 @@ test('an icon renders to markup with the kit React', () => {
     expect(result.status).toBe(0)
   })
 
-  // The database mini app certified its context provider with the host's own contract checks,
+  // A bundled mini app certified its context provider with the host's own contract checks,
   // imported from the host's source tree: outside the repository it could not run at all.
   test('a backend test certifies its context provider against the host contract', () => {
     const result = runTests({

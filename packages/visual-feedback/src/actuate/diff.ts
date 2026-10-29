@@ -73,7 +73,7 @@ function documentStateSignature(root?: Element): string {
 }
 
 // A short visible text: a score, a counter, a status line. They change while no control does —
-// a 2048 move only changes the score — and the diff called a working move "(no visible change)".
+// a game move only changes the score — and the diff called a working move "(no visible change)".
 const SHORT_TEXT = /^- text "[^"]{1,40}"/
 
 /** Internal: the short texts of the page, one snapshot line each. */

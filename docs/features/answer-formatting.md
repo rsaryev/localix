@@ -108,8 +108,8 @@ A **checklist** is GFM's own task list. In an agent's reply each box can be tick
 stored on the message — the same in every window and after a reload — keyed by where the item sits
 in the text. The agent's words never change, and the marks are never sent to the model. Checkmarks
 appear immediately; a failed server save restores the prior state and shows an error. A checklist
-added to Project Space can be ticked there too: there the text is the store, so a tick changes the
-item's `[ ]` to `[x]` in the element's Markdown, and undo takes it back.
+added to a project board mini app can be ticked there too: there the text is the store, so a tick
+changes the item's `[ ]` to `[x]` in the element's Markdown, and undo takes it back.
 
 ```text
 > [!TABS]
@@ -174,14 +174,16 @@ button returns to the reply. The viewer reuses the rendered SVG and the shared g
 The viewer adapts to the diagram's dimensions and available viewport. It reuses the rendered SVG
 rather than computing another Mermaid layout.
 
-When Project Space is enabled, **Add to Project Space** appears on settled reply fragments:
-headings, paragraphs, lists, quotes, callouts, formulas, tables, code, diagrams, images and links.
-Mermaid becomes an editable diagram with its exact source; code and tables use the board's native
-elements. File trees offer the action on the tree itself and keep the exact `tree` fence. Other text
-keeps its Markdown, including complete steps, tabs, figures and pros/cons. These forms use the same
-renderer on the board, with folding, tab switching and tickable checklists. A table the native
-parser cannot represent is kept as Markdown. The action also appears in the enlarged diagram viewer.
-Each placement can be moved, resized and undone on the originating chat's project board.
+When a project board mini app that takes reply fragments is enabled, an **Add to** action for it
+appears on settled reply fragments: headings, paragraphs, lists, quotes, callouts, formulas, tables,
+code, diagrams, images and links. Mermaid becomes an editable diagram with its exact source; code
+and tables use the board's native elements.
+
+File trees offer the action on the tree itself and keep the exact `tree` fence. Other text keeps its
+Markdown, including complete steps, tabs, figures and pros/cons. These forms use the same renderer
+on the board, with folding, tab switching and tickable checklists. A table the native parser cannot
+represent is kept as Markdown. The action also appears in the enlarged diagram viewer. Each
+placement can be moved, resized and undone on the originating chat's project board.
 
 Generated Localix images and inline image attachments are saved beside the board. External images
 remain HTTP/HTTPS references; an explicit image link with a recognised image extension becomes an

@@ -125,7 +125,7 @@ export class MiniAppApiError extends Error {
  * `toErrorInfo()` naturally spreads into. Reading only the nested shape was a miss on every field:
  * a person whose spreadsheet would not open was told "Request failed with status 400" while the
  * sentence naming the reason, and the library's own words, were both on the wire and both thrown
- * away. The documents mini app worked around it with a private copy of this function.
+ * away. A bundled mini app worked around it with a private copy of this function.
  *
  * So read BOTH. The flat shape is only trusted when `error` is a string — that is what separates
  * it from the nested one, whose `error` is an object.

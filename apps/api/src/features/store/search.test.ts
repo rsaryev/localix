@@ -36,7 +36,7 @@ describe('searching the Store', () => {
       from('community', 'pg@community'),
       from('official', 'pg@official'),
       from('localix', 'pg@localix'),
-      makeListing({ id: 'chess', kind: 'plugin', summary: 'Play chess' }),
+      makeListing({ id: 'atlas', kind: 'plugin', summary: 'Play atlas' }),
     ])
     const { store } = storeOf([plugins.provider])
     const page = await store.listings(actor, { q: 'postgres' })
@@ -107,11 +107,11 @@ describe('searching the Store', () => {
       displayName: 'Helm charts',
       summary: 'Ship releases to clusters',
     })
-    const plugins = fakeProvider('plugin', [k8s, makeListing({ id: 'chess', kind: 'plugin' })])
+    const plugins = fakeProvider('plugin', [k8s, makeListing({ id: 'atlas', kind: 'plugin' })])
     const { store } = storeOf([plugins.provider], {
       meaning: () => [
         { key: 'plugin:helm', z: 4 },
-        { key: 'plugin:chess', z: 0.1 },
+        { key: 'plugin:atlas', z: 0.1 },
       ],
     })
     const page = await store.listings(actor, { q: 'kubernetes' })

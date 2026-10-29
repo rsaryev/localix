@@ -65,7 +65,7 @@ const review = { kind: 'plugin', id: 'review@market' } as const
 describe('store tool: reading', () => {
   test('search returns compact cards with the install state the Store holds', async () => {
     const installed = makeListing({
-      id: 'kanban',
+      id: 'tasks',
       installs: [{ scope: 'user', version: '1.0.0', enabled: true, updateTo: '1.1.0' }],
     })
     const { tool, calls, run } = harness({
@@ -78,7 +78,7 @@ describe('store tool: reading', () => {
     expect(calls).toEqual([['search', { query: 'board', installed: true, limit: 10 }]])
     const [card] = JSON.parse(String(result.content)).results
     expect(card).toMatchObject({
-      ref: { kind: 'mini-app', id: 'kanban' },
+      ref: { kind: 'mini-app', id: 'tasks' },
       kind: 'mini-app',
       installs: [{ scope: 'user', version: '1.0.0', enabled: true }],
       updateTo: '1.1.0',
@@ -116,9 +116,9 @@ describe('store tool: reading', () => {
 })
 
 describe('store tool: several searches in one call', () => {
-  const kanban = makeListing({ id: 'kanban', displayName: 'Kanban' })
-  const chess = makeListing({ id: 'chess', displayName: 'Chess' })
-  const found: Record<string, Listing[]> = { board: [kanban], game: [chess, kanban] }
+  const tasks = makeListing({ id: 'tasks', displayName: 'Tasks' })
+  const atlas = makeListing({ id: 'atlas', displayName: 'Atlas' })
+  const found: Record<string, Listing[]> = { board: [tasks], game: [atlas, tasks] }
   const searching = (calls: unknown[][]) => async (query: { query?: string }) => {
     calls.push(['search', query])
     if (query.query === 'broken') throw new Error('The index is unreachable')
@@ -142,7 +142,7 @@ describe('store tool: several searches in one call', () => {
       ['search', { query: 'game', kind: 'mini-app', limit: 5 }],
     ])
     expect(groups(result.content).map((group) => group.query)).toEqual(['board', 'game'])
-    expect(groups(result.content)[0]!.results!.map((card) => card.name)).toEqual(['Kanban'])
+    expect(groups(result.content)[0]!.results!.map((card) => card.name)).toEqual(['Tasks'])
   })
 
   test('a package two queries find is shown once, then named by the query that showed it', async () => {
@@ -151,8 +151,8 @@ describe('store tool: several searches in one call', () => {
     const [, game] = groups((await run({ action: 'search', queries: ['board', 'game'] })).content)
 
     expect(game!.results).toEqual([
-      expect.objectContaining({ name: 'Chess' }),
-      { ref: { kind: 'mini-app', id: 'kanban' }, shownFor: 'board' },
+      expect.objectContaining({ name: 'Atlas' }),
+      { ref: { kind: 'mini-app', id: 'tasks' }, shownFor: 'board' },
     ])
   })
 
@@ -164,7 +164,7 @@ describe('store tool: several searches in one call', () => {
     expect(result.isError).toBeFalsy()
     const [broken, board] = groups(result.content)
     expect(broken).toEqual({ query: 'broken', error: 'The index is unreachable' })
-    expect(board!.results!.map((card) => card.name)).toEqual(['Kanban'])
+    expect(board!.results!.map((card) => card.name)).toEqual(['Tasks'])
   })
 
   test('the queries run together, not one after another', async () => {

@@ -17,7 +17,7 @@
  * as defining a token, because falling through to it is the defect.
  *
  * Two readers, like `ui-token-rules.ts`: the repository guard reads the kit's source stylesheet,
- * and the mini-app-authoring plugin's style step reads the copy staged in the mini app kit. Browser-safe and
+ * and the authoring plugin's style step reads the copy staged in the mini app kit. Browser-safe and
  * dependency-free.
  */
 

@@ -65,8 +65,8 @@ function setup(opts: { verified?: boolean; editorial?: unknown } = {}) {
 describe('the mini apps in the Store', () => {
   test('an offer is a listing: what it is, where it comes from and what is inside', async () => {
     const { catalog, offer, provider } = setup()
-    offer('chess', {
-      displayName: 'Chess',
+    offer('atlas', {
+      displayName: 'Atlas',
       category: 'games',
       tags: ['board-game'],
       surfaces: ['agent', 'workbench'],
@@ -77,12 +77,12 @@ describe('the mini apps in the Store', () => {
 
     const { listings, problems } = await provider.listings(actor)
     expect(problems).toEqual([])
-    const [chess, clock] = listings
-    expect(chess).toMatchObject({
-      ref: { kind: 'mini-app', id: 'chess' },
-      name: 'chess',
-      displayName: 'Chess',
-      summary: 'chess app',
+    const [atlas, clock] = listings
+    expect(atlas).toMatchObject({
+      ref: { kind: 'mini-app', id: 'atlas' },
+      name: 'atlas',
+      displayName: 'Atlas',
+      summary: 'atlas app',
       category: 'games',
       tags: ['board-game'],
       publisher: { name: 'Localix', verified: true },
@@ -94,22 +94,22 @@ describe('the mini apps in the Store', () => {
       recommended: false,
       installs: [],
     })
-    expect(chess!.components).toEqual([
-      { kind: 'screen', name: 'Chess', description: 'A screen of its own' },
+    expect(atlas!.components).toEqual([
+      { kind: 'screen', name: 'Atlas', description: 'A screen of its own' },
       { kind: 'agent-tool', name: 'Agent tools', description: 'Tools for the agent' },
-      { kind: 'backend', name: 'Chess', description: 'Runs on this computer' },
-      { kind: 'command', name: '/chess:play' },
-      { kind: 'command', name: '/chess:hint' },
+      { kind: 'backend', name: 'Atlas', description: 'Runs on this computer' },
+      { kind: 'command', name: '/atlas:play' },
+      { kind: 'command', name: '/atlas:hint' },
     ])
     expect(clock).toMatchObject({ displayName: 'clock', contents: { screen: 1 }, runsCode: false })
   })
 
   test('Localix’s own catalog is trusted and editorial; one the person added is community', async () => {
     const { offer, provider, catalogs } = setup()
-    offer('chess', { featured: true })
+    offer('atlas', { featured: true })
     const [own] = (await provider.listings(actor)).listings
     expect(own!.source).toMatchObject({ trust: 'localix', weight: 1 })
-    expect(own!.origin).toBe('catalog:chess')
+    expect(own!.origin).toBe('catalog:atlas')
     expect(own!.featured).toBe(true)
 
     catalogs[0]!.builtIn = false
@@ -126,13 +126,13 @@ describe('the mini apps in the Store', () => {
           {
             id: 'play',
             title: 'Play with the agent',
-            items: ['chess', 'checkers', 'plugin:games@localix'],
+            items: ['atlas', 'compass', 'plugin:games@localix'],
           },
         ],
       },
     })
-    offer('chess')
-    offer('checkers')
+    offer('atlas')
+    offer('compass')
     expect(await provider.editorial!()).toEqual([
       {
         source: catalog.url,
@@ -142,8 +142,8 @@ describe('the mini apps in the Store', () => {
             title: 'Play with the agent',
             style: 'row',
             items: [
-              { kind: 'mini-app', id: 'chess' },
-              { kind: 'mini-app', id: 'checkers' },
+              { kind: 'mini-app', id: 'atlas' },
+              { kind: 'mini-app', id: 'compass' },
               { kind: 'plugin', id: 'games@localix' },
             ],
           },
@@ -157,28 +157,28 @@ describe('the mini apps in the Store', () => {
 
   test('an install shows its version, its switch, an offered update and its settings', async () => {
     const { catalog, offer, store, provider, enabled } = setup()
-    offer('chess')
-    await store.install('chess')
+    offer('atlas')
+    await store.install('atlas')
     await store.settled()
     catalog.apps[0]!.version = '1.1.0'
     await store.refresh()
-    enabled.set('chess', false)
+    enabled.set('atlas', false)
 
-    const [chess] = (await provider.listings(actor)).listings
-    expect(chess!.installs).toEqual([
+    const [atlas] = (await provider.listings(actor)).listings
+    expect(atlas!.installs).toEqual([
       { scope: 'user', version: '1.0.0', enabled: false, updateTo: '1.1.0' },
     ])
-    expect(chess!.job).toMatchObject({ action: 'update', phase: 'done' })
-    expect(chess!.configurable).toBeUndefined()
+    expect(atlas!.job).toMatchObject({ action: 'update', phase: 'done' })
+    expect(atlas!.configurable).toBeUndefined()
   })
 
   test('an install that declares settings is configurable; they come typed, secrets only as set', async () => {
     const { offer, store, provider, enabled, configs } = setup()
-    offer('chess')
-    await store.install('chess')
+    offer('atlas')
+    await store.install('atlas')
     await store.settled()
-    enabled.set('chess', true)
-    configs.set('chess', [
+    enabled.set('atlas', true)
+    configs.set('atlas', [
       {
         key: 'level',
         type: 'number',
@@ -201,9 +201,9 @@ describe('the mini apps in the Store', () => {
         isSet: true,
       },
     ])
-    const [chess] = (await provider.listings(actor)).listings
-    expect(chess!.configurable).toBe(true)
-    const config = await provider.config!('chess', 'user', actor)
+    const [atlas] = (await provider.listings(actor)).listings
+    expect(atlas!.configurable).toBe(true)
+    const config = await provider.config!('atlas', 'user', actor)
     expect(config).toMatchObject({
       scope: 'user',
       scopes: ['user'],
@@ -211,44 +211,44 @@ describe('the mini apps in the Store', () => {
       set: ['token'],
     })
     expect(config!.fields[0]).toMatchObject({ label: 'Level', type: 'number', min: 1, max: 9 })
-    expect(await provider.config!('chess', 'project', actor)).toBeNull()
+    expect(await provider.config!('atlas', 'project', actor)).toBeNull()
     expect(await provider.config!('clock', 'user', actor)).toBeNull()
   })
 
   test('saving settings goes to the person’s mini app, in the way it keeps them', async () => {
     const { provider, calls } = setup()
-    await provider.setConfig!('chess', 'user', { level: 4, tags: ['a'] }, actor)
-    expect(calls).toContain('config chess {"level":4,"tags":"[\\"a\\"]"}')
-    await expect(provider.setConfig!('chess', 'project', {}, actor)).rejects.toThrow(
+    await provider.setConfig!('atlas', 'user', { level: 4, tags: ['a'] }, actor)
+    expect(calls).toContain('config atlas {"level":4,"tags":"[\\"a\\"]"}')
+    await expect(provider.setConfig!('atlas', 'project', {}, actor)).rejects.toThrow(
       'never for one project',
     )
   })
 
   test('its page: README, facts and what it adds', async () => {
     const { offer, provider } = setup()
-    offer('chess', {
-      displayName: 'Chess',
+    offer('atlas', {
+      displayName: 'Atlas',
       license: 'MIT',
       author: 'Ada',
-      homepage: 'https://example.test/chess',
+      homepage: 'https://example.test/atlas',
       surfaces: ['workbench'],
       commands: ['play'],
-      readme: '# Chess',
+      readme: '# Atlas',
     })
 
-    const detail = await provider.detail('chess', actor)
-    expect(detail.readme).toBe('# Chess')
+    const detail = await provider.detail('atlas', actor)
+    expect(detail.readme).toBe('# Atlas')
     expect(detail.media).toEqual([])
     expect(detail.facts).toEqual([
       { label: 'Version', value: '1.0.0' },
       { label: 'Size', value: expect.any(String) },
       { label: 'License', value: 'MIT' },
       { label: 'Author', value: 'Ada' },
-      { label: 'Homepage', value: 'https://example.test/chess' },
+      { label: 'Homepage', value: 'https://example.test/atlas' },
     ])
     expect(detail.components).toEqual([
-      { kind: 'screen', name: 'Chess', description: 'A screen of its own' },
-      { kind: 'command', name: '/chess:play' },
+      { kind: 'screen', name: 'Atlas', description: 'A screen of its own' },
+      { kind: 'command', name: '/atlas:play' },
     ])
   })
 
@@ -271,25 +271,25 @@ describe('the mini apps in the Store', () => {
 
   test('a mini app is installed for the person only, never for a project', async () => {
     const { offer, provider } = setup()
-    offer('chess')
-    await expect(provider.plan('chess', 'project', actor)).rejects.toMatchObject({
+    offer('atlas')
+    await expect(provider.plan('atlas', 'project', actor)).rejects.toMatchObject({
       code: 'mini_app_user_scope',
     })
-    await expect(provider.install('chess', 'project', { plan: true }, actor)).rejects.toMatchObject(
+    await expect(provider.install('atlas', 'project', { plan: true }, actor)).rejects.toMatchObject(
       { status: 400 },
     )
   })
 
   test('remove and the switch go to the person’s mini apps', async () => {
     const { provider, calls } = setup()
-    await provider.remove('chess', 'user', actor)
-    await provider.setEnabled!('chess', 'user', false, actor)
-    expect(calls).toEqual(['remove chess', 'enable chess false'])
+    await provider.remove('atlas', 'user', actor)
+    await provider.setEnabled!('atlas', 'user', false, actor)
+    expect(calls).toEqual(['remove atlas', 'enable atlas false'])
   })
 
   test('sources are the catalogs, labelled, with how many apps each offers', async () => {
     const { catalog, offer, provider, catalogs, calls } = setup()
-    offer('chess')
+    offer('atlas')
     catalogs.push({ url: ADA, builtIn: false })
     expect(await provider.sources()).toEqual([
       {
@@ -361,17 +361,17 @@ describe('the mini apps in the Store', () => {
 
   test('every move of an install is heard', async () => {
     const { offer, store, provider } = setup()
-    offer('chess')
+    offer('atlas')
     let heard = 0
     provider.subscribe(() => heard++)
-    await provider.install('chess', 'user', { plan: false }, actor)
+    await provider.install('atlas', 'user', { plan: false }, actor)
     await store.settled()
     expect(heard).toBeGreaterThan(1)
   })
 
   test('a mini app the person made, which no catalog offers, is in the Store as installed', async () => {
     const { offer, provider, own } = setup()
-    offer('chess')
+    offer('atlas')
     own.push({
       name: 'bitcoin-price',
       displayName: 'Bitcoin Price',
@@ -392,7 +392,7 @@ describe('the mini apps in the Store', () => {
       source: { label: 'Made on this computer' },
       authored: 'user',
     })
-    expect(listings.filter((listing) => listing.ref.id === 'chess')).toHaveLength(1)
+    expect(listings.filter((listing) => listing.ref.id === 'atlas')).toHaveLength(1)
     const page = await provider.detail('bitcoin-price', actor)
     expect(page.components.map((component) => component.kind)).toEqual([
       'screen',

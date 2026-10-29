@@ -65,7 +65,7 @@ export function TitlebarOverflowItems({
  * `miniAppMenuEntries` is the single source for where the mini app's half ends — asking it beats
  * measuring the built menu, which is what this did and got wrong: it looked for the FIRST
  * separator and called everything above it the mini app's. True only of a one-section menu, so
- * every mini app that groups its rows (Git, Reader, Database, API, Learning, Trading) had its whole
+ * every mini app that groups its rows had its whole
  * list dropped the moment its glyph stopped fitting, replaced by a row that looked like it worked.
  *
  * Separators and headers do not count: an item whose menu is `Open X` under a title still has ONE

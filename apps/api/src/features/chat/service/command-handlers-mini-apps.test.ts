@@ -38,7 +38,7 @@ describe('/mini-app', () => {
           scopes.push(opts)
           return {
             miniApps: [
-              app('chess', { displayName: 'Chess', version: '0.3.0' }),
+              app('atlas', { displayName: 'Atlas', version: '0.3.0' }),
               app('notes', { enabled: false }),
               app('board', { enabled: false, awaitingConsent: true }),
               app('timer', { error: 'register() threw' }),
@@ -50,7 +50,7 @@ describe('/mini-app', () => {
     )
     expect(scopes).toEqual([{ projectId: 'p1' }])
     expect(text).toContain('**Mini apps**')
-    expect(text).toContain('enabled `chess` · v0.3.0')
+    expect(text).toContain('enabled `atlas` · v0.3.0')
     expect(text).toContain('disabled `notes`')
     expect(text).toContain('waiting for your yes `board`')
     expect(text).toContain('error `timer` — register() threw')
@@ -67,15 +67,15 @@ describe('/mini-app', () => {
   test('enable and disable switch one mini app in this chat’s project', async () => {
     const calls: unknown[] = []
     const service = { setEnabled: async (_u: string, input: unknown) => void calls.push(input) }
-    expect(await run(service, '/mini-app enable chess')).toBe(
-      'Enabled `chess`. Start a new turn for it to take effect.',
+    expect(await run(service, '/mini-app enable atlas')).toBe(
+      'Enabled `atlas`. Start a new turn for it to take effect.',
     )
-    expect(await run(service, '/mini-app disable chess')).toBe(
-      'Disabled `chess`. Start a new turn for it to take effect.',
+    expect(await run(service, '/mini-app disable atlas')).toBe(
+      'Disabled `atlas`. Start a new turn for it to take effect.',
     )
     expect(calls).toEqual([
-      { name: 'chess', projectId: 'p1', enabled: true },
-      { name: 'chess', projectId: 'p1', enabled: false },
+      { name: 'atlas', projectId: 'p1', enabled: true },
+      { name: 'atlas', projectId: 'p1', enabled: false },
     ])
     expect(await run(service, '/mini-app enable')).toBe('Usage: `/mini-app enable <name>`')
   })
@@ -93,12 +93,12 @@ describe('/mini-app', () => {
       await run(
         {
           remove: async () => {
-            throw new Error('"chess" ships with Localix; switch it off instead')
+            throw new Error('"atlas" ships with Localix; switch it off instead')
           },
         },
-        '/mini-app remove chess',
+        '/mini-app remove atlas',
       ),
-    ).toBe('Remove failed: "chess" ships with Localix; switch it off instead')
+    ).toBe('Remove failed: "atlas" ships with Localix; switch it off instead')
   })
 
   test('reload re-reads every mini app folder, building nothing', async () => {
@@ -116,7 +116,7 @@ describe('/mini-app', () => {
   })
 
   test('an unknown sub-command is told the actions instead of listing', async () => {
-    const text = await run({}, '/mini-app disble chess')
+    const text = await run({}, '/mini-app disble atlas')
     expect(text).toContain('Unknown sub-command `disble`')
     expect(text).toContain('/mini-app disable <name>')
     expect(text).not.toContain('/mini-app create')
@@ -149,7 +149,7 @@ describe('/mini-app', () => {
       },
       store: {
         list: async () => ({
-          entries: [entry('chess', HOSTED), entry('kanban', HOSTED), entry('notes', ADA)],
+          entries: [entry('atlas', HOSTED), entry('tasks', HOSTED), entry('notes', ADA)],
           problems: [],
         }),
       },

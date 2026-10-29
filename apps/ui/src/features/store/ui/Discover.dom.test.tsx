@@ -12,8 +12,8 @@ afterAll(async () => teardown())
 
 const ref = (id: string, kind: 'mini-app' | 'plugin' = 'mini-app') => ({ kind, id })
 const LISTINGS = [
-  listing({ id: 'chess', displayName: 'Chess', summary: 'Play a game', category: 'Games' }),
-  listing({ id: 'kanban', displayName: 'Kanban', category: 'Productivity' }),
+  listing({ id: 'puzzle', displayName: 'Puzzle', summary: 'Play a game', category: 'Games' }),
+  listing({ id: 'planner', displayName: 'Planner', category: 'Productivity' }),
   listing({
     id: 'lint',
     displayName: 'Lint',
@@ -33,13 +33,13 @@ const row = (id: string, title: string, ids: ReturnType<typeof ref>[], extra = {
 })
 const DISCOVER = {
   rows: [
-    row('start', 'Start here', [ref('kanban'), ref('lint', 'plugin')]),
+    row('start', 'Start here', [ref('planner'), ref('lint', 'plugin')]),
     row('project', 'For this project · TypeScript', [ref('lint', 'plugin')]),
-    row('picks', 'Hand-picked', [ref('chess'), ref('docs', 'plugin')], {
+    row('picks', 'Hand-picked', [ref('puzzle'), ref('docs', 'plugin')], {
       subtitle: 'By the editors',
       source: 'localix',
     }),
-    row('kind:mini-app', 'Mini apps', [ref('chess'), ref('kanban')]),
+    row('kind:mini-app', 'Mini apps', [ref('puzzle'), ref('planner')]),
     row('kind:plugin', 'Plugins', [ref('lint', 'plugin'), ref('docs', 'plugin')]),
     row('new', 'New & updated', [ref('docs', 'plugin')]),
   ],
@@ -135,13 +135,13 @@ describe('Discover', () => {
     const view = await renderStore({ listings: LISTINGS, discover: DISCOVER })
     try {
       const mini = section(view.host, 'Mini apps')!
-      expect(mini.querySelector('[data-listing="chess"]')!.textContent).toContain('Chess')
+      expect(mini.querySelector('[data-listing="puzzle"]')!.textContent).toContain('Puzzle')
       await view.click(view.button('See all Mini apps'))
       expect(view.host.querySelector('h2')?.textContent).toBe('Mini apps')
       expect(view.reads.at(-1)).toContain('shelf=package:mini-app')
       await view.click(view.button(/^Back to /))
-      await view.click(view.button('Kanban', section(view.host, 'Mini apps')!))
-      expect(view.host.querySelector('[data-store-page="kanban"]')).not.toBeNull()
+      await view.click(view.button('Planner', section(view.host, 'Mini apps')!))
+      expect(view.host.querySelector('[data-store-page="planner"]')).not.toBeNull()
     } finally {
       await view.done()
     }
@@ -157,9 +157,9 @@ describe('Discover', () => {
         view.button('Hand-picked', collections) ?? collections.querySelector('button'),
       )
       expect(view.host.querySelector('h2')?.textContent).toBe('Hand-picked')
-      expect(view.card('chess')).not.toBeNull()
+      expect(view.card('puzzle')).not.toBeNull()
       expect(view.card('docs')).not.toBeNull()
-      expect(view.card('kanban')).toBeNull()
+      expect(view.card('planner')).toBeNull()
     } finally {
       await view.done()
     }
@@ -179,7 +179,7 @@ describe('Discover', () => {
   })
 
   test('a row is whole tiles in as many columns as the pane fits, at most two rows of them', async () => {
-    const all = [ref('chess'), ref('kanban'), ref('lint', 'plugin'), ref('docs', 'plugin')]
+    const all = [ref('puzzle'), ref('planner'), ref('lint', 'plugin'), ref('docs', 'plugin')]
     const discover = { ...DISCOVER, rows: [row('start', 'Start here', all)] }
     const tiles = (host: HTMLElement) => {
       const grid = section(host, 'Start here')!.querySelector<HTMLElement>('ul')!
@@ -255,7 +255,7 @@ describe('Discover', () => {
     const view = await renderStore({
       listings: LISTINGS,
       discover: DISCOVER,
-      recommended: ['docs', 'chess'],
+      recommended: ['docs', 'puzzle'],
     })
     try {
       await view.click(view.button('See all For your work'))
@@ -263,7 +263,7 @@ describe('Discover', () => {
       const order = [...view.host.querySelectorAll('[data-listing]')].map((card) =>
         card.getAttribute('data-listing'),
       )
-      expect(order).toEqual(['docs', 'chess'])
+      expect(order).toEqual(['docs', 'puzzle'])
     } finally {
       await view.done()
     }
@@ -273,12 +273,12 @@ describe('Discover', () => {
     const view = await renderStore({
       listings: LISTINGS,
       discover: DISCOVER,
-      recommended: ['chess'],
+      recommended: ['puzzle'],
       target: { recommended: true },
     })
     try {
       expect(view.host.querySelector('h2')?.textContent).toBe('For your work')
-      expect(view.card('chess')).not.toBeNull()
+      expect(view.card('puzzle')).not.toBeNull()
     } finally {
       await view.done()
     }

@@ -101,10 +101,6 @@ const EXEMPTIONS: Record<string, string> = {
     'Sniffs whether a marketplace `source` LOOKS like a local path (`./`, `../`, `/`, `~`) before it is resolved. The containment check in this same file goes through the owner.',
   'apps/api/src/features/agent-core/tools/preview/open-preview-detect.ts::rel-escape':
     'Sniffs whether an argument looks like a file path vs a URL. No root, nothing to contain.',
-
-  // ── a tree that cannot import the owner ──
-  'plugins/mini-app-authoring/src/lib/paths.ts::rel-escape':
-    'The mini-app-authoring plugin runs from its own source on any Bun, installed from a catalog with no dependencies, so it cannot import this package. Its copy is `path.relative` + `..` (no `startsWith(root)` trap) and its own paths.test.ts pins the sibling, root and escape cases.',
 }
 
 /**

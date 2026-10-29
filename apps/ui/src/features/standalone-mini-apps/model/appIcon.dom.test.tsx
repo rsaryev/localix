@@ -26,9 +26,9 @@ describe('a standalone app’s icon', () => {
       return new Response(SVG, { headers: { 'content-type': 'image/svg+xml' } })
     }) as unknown as typeof fetch
     const { loadAppIcon } = await import('./appIcon')
-    const icon = await loadAppIcon('chess', 'Chess')
+    const icon = await loadAppIcon('puzzle', 'Puzzle')
     expect(asked).toHaveLength(1)
-    expect(new URL(asked[0]!).pathname).toBe('/rpc/mini-apps/chess/icon')
+    expect(new URL(asked[0]!).pathname).toBe('/rpc/mini-apps/puzzle/icon')
     expect(icon.type).toBe('image/svg+xml')
     expect(await icon.text()).toBe(SVG)
   })

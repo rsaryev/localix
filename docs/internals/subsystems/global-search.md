@@ -73,15 +73,14 @@ GlobalSearchPalette or GlobalSearchTab
 | `agents`   | Reusable-agent name, label, and description                                      | Eager; uses the supplied project scope                        |
 | `models`   | Runtime catalog model id and name                                                | Eager; the composition root caches the catalog for 30 seconds |
 
-Enabled mini app backends register at runtime through `MiniAppBackendHost.setSearchRegistry`.
-Current mini app domains include database connections, saved API requests, Docker resources,
-Kubernetes pods, trading markets, and Kanban cards. Their owning mini apps define tier, matching,
-resource URI, and shutdown behavior; global search only enforces the registry contract.
+Enabled mini app backends register at runtime through `MiniAppBackendHost.setSearchRegistry`. Mini
+app domains are whatever the enabled mini apps register: records, requests, containers or board
+cards. Their owning mini apps define tier, matching, resource URI, and shutdown behavior; global
+search only enforces the registry contract.
 
-The Kanban mini app's `kanban:tasks` domain (from the Localix marketplace) is eager and matches a
-card's title, description and id. It reads only the board of the query's `sessionId` — the chat the
-search tab or palette belongs to — and returns no hits without one, because a board belongs to its
-chat.
+A task-board mini app's domain is eager and matches a card's title, description and id. It reads
+only the board of the query's `sessionId` — the chat the search tab or palette belongs to — and
+returns no hits without one, because a board belongs to its chat.
 
 ### Client-only domains
 

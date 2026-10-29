@@ -44,9 +44,9 @@ Under **Updates** are the updates on offer: Localix's own, and the Store's packa
 together, with **Update all**. While anything runs, the bell has a thin ring that fills as the jobs
 do and its label says how many tasks are in progress; the unread count stays as it is.
 
-These rows are not history. When a job ends, its owner records one entry: "Installed Git", "Updated
-3 mini apps", or "Could not install Kanban" with the reason and **Try again**, which queues the app
-again and is settled once it installs.
+These rows are not history. When a job ends, its owner records one entry: "Installed _Name_",
+"Updated 3 mini apps", or "Could not install _Name_" with the reason and **Try again**, which queues
+the app again and is settled once it installs.
 
 ### What becomes an entry
 

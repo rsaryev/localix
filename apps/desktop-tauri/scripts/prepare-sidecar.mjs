@@ -1,12 +1,12 @@
 // Stage everything the packaged Tauri app needs to resolve/start the shared API
 // daemon through a one-shot sidecar launcher (a real `bun.exe` running a
 // bundled `server.js`, NOT `bun build --compile`: the app also runs Bun itself, to run the user's
-// own mini apps and the mini-app-authoring plugin's toolchain, so the runtime ships as a real binary either way).
+// own mini apps and the authoring plugin's toolchain, so the runtime ships as a real binary either way).
 //
 // Produces (under src-tauri/):
 //   binaries/bun-<triple>.exe   the native Bun runtime (Tauri sidecar)
 //   resources/server.js         the API bundled to one JS file, migrations and `kysely` included
-//   resources/mini-app-kit/     what the mini-app-authoring plugin builds USER mini apps against
+//   resources/mini-app-kit/     what the authoring plugin builds USER mini apps against
 //                               (shared-module exports, types, theme, validation tools)
 //
 // Pass --ui to ALSO build apps/ui into apps/ui/dist (the prod frontendDist).
@@ -238,7 +238,7 @@ if (!runtimeReady) {
 
   // ── 3. the mini app kit ────────────────────────────────────────────────────────
   // The app ships no mini app (rule X5): the store installs them from the catalogs of the
-  // marketplaces it trusts. It ships the kit, which the mini-app-authoring plugin builds mini apps
+  // marketplaces it trusts. It ships the kit, which the authoring plugin builds mini apps
   // against (`GET /rpc/mini-apps/kit`).
   stageMiniAppKitInto({ repoRoot: repo, outKit: join(resources, 'mini-app-kit') })
 

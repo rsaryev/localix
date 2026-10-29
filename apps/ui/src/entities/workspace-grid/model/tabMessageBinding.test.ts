@@ -203,7 +203,7 @@ describe('workItemToMessageBinding', () => {
     })
     try {
       const bindings = workItemToMessageBindings(
-        item({ id: 'snippet-view', kind: 'test-live-snippet-view', title: 'API Client' }),
+        item({ id: 'snippet-view', kind: 'test-live-snippet-view', title: 'Request Console' }),
       )
       expect(bindings).toHaveLength(1)
       expect(bindings[0]?.target.attributes?.content).toContain('No saved requests.')

@@ -14,9 +14,9 @@ const calls: string[] = []
 const store: UpdateOffer = {
   id: 'store',
   title: '3 updates',
-  detail: 'Chess, Reader and Review',
+  detail: 'Puzzle, Viewer and Review',
   fingerprint:
-    'mini-app:sample-chess@1.1.0,mini-app:sample-reader@0.4.0,plugin:review@localix@1.1.0',
+    'mini-app:sample-puzzle@1.1.0,mini-app:sample-viewer@0.4.0,plugin:review@localix@1.1.0',
   action: { id: 'update-all', label: 'Update all', run: () => calls.push('store') },
 }
 const app: UpdateOffer = {
@@ -56,7 +56,7 @@ describe('the composer’s update strip', () => {
     calls.length = 0
     const view = await mount([app, store])
     expect(view.host.textContent).toContain('3 updates')
-    expect(view.host.textContent).toContain('Chess, Reader and Review')
+    expect(view.host.textContent).toContain('Puzzle, Viewer and Review')
     expect(view.host.textContent).not.toContain('Localix 1.5.0')
     view.button('Update all')?.click()
     expect(calls).toEqual(['store'])
@@ -75,9 +75,9 @@ describe('the composer’s update strip', () => {
 
   test('while an update runs it shows how far it is, with nothing to press', async () => {
     const view = await mount([
-      { ...store, action: undefined, running: { percent: 40, status: 'Updating Chess · 40%' } },
+      { ...store, action: undefined, running: { percent: 40, status: 'Updating Puzzle · 40%' } },
     ])
-    expect(view.host.textContent).toContain('Updating Chess · 40%')
+    expect(view.host.textContent).toContain('Updating Puzzle · 40%')
     expect(view.button('Update all')).toBeUndefined()
     expect(view.host.querySelector('[role="progressbar"]')?.getAttribute('aria-valuenow')).toBe(
       '40',

@@ -18,7 +18,7 @@ docs/assets/screenshots/<feature>/<surface>--YYYY-MM-DD.png
 Examples:
 
 ```text
-docs/assets/screenshots/task-board/board--2026-08-06.png
+docs/assets/screenshots/composer/context--2026-08-06.png
 docs/assets/screenshots/workspace/editor-grid--2026-08-06.png
 docs/assets/screenshots/providers/connections--2026-08-06.png
 ```
@@ -42,8 +42,8 @@ either value in a second hand-maintained manifest.
 
 The 2026-10-07 and 2026-10-08 homepage captures use the running Localix web UI with a separate demo
 database, English fixture conversations, and the Release Studio project. They show the real editor,
-terminal, browser, Project Space, Kanban, and context controls. The terminal's two passing tests
-were run in the fixture project. No model response was generated during capture.
+terminal, browser, and context controls. The terminal's two passing tests were run in the fixture
+project. No model response was generated during capture.
 
 The preview project and the working Release Checklist demo plugin are preserved under
 `fixtures/release-studio/`. The plugin uses the host's UI kit; its completion counter and progress
@@ -57,29 +57,14 @@ transcript.
 
 The composer-context frame shows automatic open-file and terminal links, their sources and sizes. It
 belongs to workspace context guidance; it does not show a context checkpoint or a selected code
-snippet. The Source Control review frame shows an actual working-tree diff beside commit controls.
-The 9 October context refresh checks two automatic sources and their estimated sizes in the popup;
-the source file remains in an inactive tab beside the terminal, with no vertical editor split. The
-Release Checklist frame shows a functioning fixture whose counter was checked by a UI toggle, with a
-seeded conversation. These placements describe what is visible rather than implying an
-agent-generated plugin or completed commit/push.
+snippet. The 9 October context refresh checks two automatic sources and their estimated sizes in the
+popup; the source file remains in an inactive tab beside the terminal, with no vertical editor
+split. The Release Checklist frame shows a functioning fixture whose counter was checked by a UI
+toggle, with a seeded conversation. These placements describe what is visible rather than implying
+an agent-generated plugin or completed commit/push.
 
 The 9 October browser refresh opens the local fixture through the address field and checks the
 status change from its Review release button; it does not demonstrate feedback attachment.
-
-The 9 October Kanban figures use four seeded cards in the dedicated fixture chat. A real keyboard
-move places the release-notes card in Ready, and the assertions check the saved status and all four
-cards fully inside the viewport. Empty columns are collapsed through their controls. Done states and
-the adjacent transcript are illustrative fixture data, not evidence of an agent run.
-
-The Reader frame uses a generated Markdown release review guide. Its scenario opens the selected
-chapter and checks the chapter heading and two paragraph fragments. The image demonstrates chapter
-navigation and rendered text; other supported document formats require their own evidence.
-
-The Trading frame shows Kraken BTC/USD one-hour candles, volume bars, and a public order book on 8
-October 2026. Its scenario reads the live candle response and checks more than 50 candles with valid
-high/low ordering and positive closes. It does not assert order-book contents or exercise indicator
-settings. The prices belong to the dated capture.
 
 ## Freshness check
 
@@ -110,10 +95,7 @@ public Markdown references and regenerate the landing after a successful run. Ne
 a deliberate placement in the relevant guide. Failed runs cannot automatically publish.
 
 The 2026-10-08 documentation refresh uses the same dark product appearance and 3× standard. Agent
-profiles focus on standing instructions, context and turn limits. Resumes show a populated PDF
-beside its fields. SQLite results come from querying the fixture's release checks. The Markdown
-Guide board contains interactive components whose tab switching is checked. The optional Docker
-capture opens only the dedicated demo container and shows actual logs and controls.
+profiles focus on standing instructions, context and turn limits.
 
 Historical light-theme demonstrations, old landing frames, before/after comparisons and transient
 startup/error captures stay on disk as history, but are excluded from the current public manifest.

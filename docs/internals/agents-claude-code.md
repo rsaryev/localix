@@ -12,8 +12,9 @@
 - Localix's database keeps only what Claude Code has no place for: Access rules, a stable identity
   binding and chat history. All of it is keyed by agent identity and reconciled through the change
   feed.
-- The starter team (architect, backend, frontend, design, devops) is the `team` plugin of the
-  `localix` marketplace, recommended in the Store. Nothing is seeded into a profile.
+- The starter team is a plugin of the
+  [Localix marketplace](https://github.com/rsaryev/localix-marketplace), recommended in the Store.
+  Nothing is seeded into a profile.
 - Mini apps do not contribute agents; an agent shipped with software is a plugin component (X3).
 
 ## Claude Code's agent format (docs; checked against 2.1.310)

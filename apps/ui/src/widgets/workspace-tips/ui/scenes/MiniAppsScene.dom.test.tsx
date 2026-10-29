@@ -22,25 +22,25 @@ afterEach(() => {
 /** The store as a new installation sees it: the recommended apps arriving on their own. */
 const LISTINGS = [
   listing({
-    id: 'sample-git',
-    displayName: 'Git',
+    id: 'sample-sync',
+    displayName: 'Sync',
     recommended: true,
     job: { action: 'install', phase: 'downloading', received: 1, total: 2 },
   }),
   listing({
-    id: 'documents',
-    displayName: 'Documents',
+    id: 'library',
+    displayName: 'Library',
     recommended: true,
     installs: [{ scope: 'user', enabled: true }],
   }),
   listing({
-    id: 'kanban',
-    displayName: 'Kanban',
+    id: 'planner',
+    displayName: 'Planner',
     recommended: true,
     job: { action: 'install', phase: 'queued' },
   }),
-  listing({ id: 'chess', displayName: 'Chess', featured: true }),
-  listing({ id: 'reader', displayName: 'Reader', installs: [{ scope: 'user', enabled: true }] }),
+  listing({ id: 'puzzle', displayName: 'Puzzle', featured: true }),
+  listing({ id: 'viewer', displayName: 'Viewer', installs: [{ scope: 'user', enabled: true }] }),
   listing({ id: 'notes', publisher: { name: 'Ada', verified: false } }),
 ]
 
@@ -102,20 +102,20 @@ test('the slide names the apps that install on their own, and its pick never lea
   openSetup()
   const view = await mountPick()
   try {
-    expect(view.host.textContent).toContain('Git, Documents and Kanban')
+    expect(view.host.textContent).toContain('Sync, Library and Planner')
     await view.open()
 
     // The recommended apps, each with where it stands now.
-    expect(view.item('Git')?.textContent).toContain('Installing 50%')
-    expect(view.item('Documents')?.textContent).toContain('Installed')
-    expect(view.item('Kanban')?.textContent).toContain('Waiting')
+    expect(view.item('Sync')?.textContent).toContain('Installing 50%')
+    expect(view.item('Library')?.textContent).toContain('Installed')
+    expect(view.item('Planner')?.textContent).toContain('Waiting')
     // A few more of Localix's own to add, but none already here and none from someone else.
-    expect(view.item('Chess')?.textContent).toContain('Install')
-    expect(view.item('Reader')).toBeUndefined()
+    expect(view.item('Puzzle')?.textContent).toContain('Install')
+    expect(view.item('Viewer')).toBeUndefined()
     expect(view.item('notes')).toBeUndefined()
 
-    await view.choose(view.item('Chess'))
-    expect(view.installs).toEqual(['chess'])
+    await view.choose(view.item('Puzzle'))
+    expect(view.installs).toEqual(['puzzle'])
     expect(isSetupOpen()).toBe(true)
 
     // The store is the last, quiet way out — and setup stays where it is.
@@ -163,11 +163,11 @@ test('the slide draws the Store’s own apps, and blank cards when it has none',
   }
   const cards = await render(LISTINGS)
   expect(cards).toHaveLength(3)
-  expect(cards[0]).toContain('Git')
+  expect(cards[0]).toContain('Sync')
   expect(cards[0]).toContain('Installing')
-  expect(cards[1]).toContain('Documents')
+  expect(cards[1]).toContain('Library')
   expect(cards[1]).toContain('Installed')
-  expect(cards[2]).toContain('Kanban')
+  expect(cards[2]).toContain('Planner')
   expect(cards.join(' ')).not.toContain('notes')
 
   const blank = await render([])

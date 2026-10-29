@@ -36,9 +36,9 @@ describe('ItemCard and CardGrid', () => {
     const view = await render(() => (
       <CardGridSection title="Featured" count={1}>
         <ItemCard
-          data-item="chess"
-          title="Chess"
-          openLabel="Chess"
+          data-item="atlas"
+          title="Atlas"
+          openLabel="Atlas"
           tile={<span data-testid="tile" />}
           description="Legal moves"
           footer={
@@ -51,7 +51,7 @@ describe('ItemCard and CardGrid', () => {
               Install
             </button>
           }
-          onOpen={() => opened.push('chess')}
+          onOpen={() => opened.push('atlas')}
         />
       </CardGridSection>
     ))
@@ -60,9 +60,9 @@ describe('ItemCard and CardGrid', () => {
       expect(section.getAttribute('aria-label')).toBe('Featured')
       expect(section.querySelector('h2')?.textContent).toContain('Featured')
       expect(section.querySelector('h2')?.textContent).toContain('1')
-      const card = view.host.querySelector('[data-item="chess"]')!
+      const card = view.host.querySelector('[data-item="atlas"]')!
       expect(card.tagName).toBe('LI')
-      const open = card.querySelector<HTMLButtonElement>('button[aria-label="Chess"]')!
+      const open = card.querySelector<HTMLButtonElement>('button[aria-label="Atlas"]')!
       expect(open.getAttribute('aria-describedby')).toBe(
         card.querySelector('p[id]')?.getAttribute('id') ?? null,
       )
@@ -72,7 +72,7 @@ describe('ItemCard and CardGrid', () => {
       )
       await view.click(tag!)
       await view.click(install!)
-      expect(opened).toEqual(['chess'])
+      expect(opened).toEqual(['atlas'])
       expect(pressed).toEqual(['tag', 'install'])
     } finally {
       await view.done()

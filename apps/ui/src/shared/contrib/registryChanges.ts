@@ -5,7 +5,7 @@ import type { MiniAppUiHost } from '@localixai/mini-app-sdk/ui'
  * contribution, a mini app's first UI load settled, a dev rebuild replaced a module.
  *
  * Two defects shaped it. Surfaces that read a registry during render (a restored mini app tab, a
- * tab icon, a session surface such as the Git poller, a diff slot, an editor enhancer) re-read only
+ * tab icon, a session surface such as a poller, a diff slot, an editor enhancer) re-read only
  * when something ELSE re-rendered them, so a restored tab sat on "Restoring…" until an unrelated
  * bump and a closed-and-reopened panel was the only thing that "fixed" it. And the signal that did
  * exist fired once PER MINI APP: each settle re-rendered the whole app, which a startup trace

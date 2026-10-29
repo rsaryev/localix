@@ -624,7 +624,7 @@ jobs:
 
   # ── mini-app-kit: what mini apps are built against, as this release's asset ────
   # Localix ships and hosts no mini app (rule X5): the Localix marketplace publishes its own
-  # catalog. A release publishes the kit the mini-app-authoring plugin builds against.
+  # catalog. A release publishes the kit the authoring plugin builds against.
   mini-app-kit:
     name: Mini app kit
     needs: [prepare, verify, draft-release]
@@ -646,7 +646,7 @@ jobs:
       - name: Build workspace packages
         run: bunx turbo build --filter=@localixai/api
 
-      # The kit mini apps are built against, for the mini-app-authoring plugin where no Localix is
+      # The kit mini apps are built against, for the authoring plugin where no Localix is
       # installed: `releases/latest/download/mini-app-kit.tar.gz`, `kit.json` at its root, checked
       # against SHA256SUMS.txt (publish-desktop names it there).
       - name: Stage and upload the mini app kit

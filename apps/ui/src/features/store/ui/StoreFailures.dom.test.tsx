@@ -10,8 +10,8 @@ beforeAll(() => {
 afterAll(async () => teardown())
 
 const LISTINGS = [
-  listing({ id: 'chess', displayName: 'Chess', category: 'games' }),
-  listing({ id: 'kanban', displayName: 'Kanban', category: 'utilities' }),
+  listing({ id: 'puzzle', displayName: 'Puzzle', category: 'games' }),
+  listing({ id: 'planner', displayName: 'Planner', category: 'utilities' }),
 ]
 const COMMUNITY = listing({
   id: 'lint',
@@ -35,7 +35,7 @@ describe('when the Store cannot read', () => {
       expect(view.host.textContent).not.toContain('Nothing here matches')
       view.recover()
       await view.click(view.button('Try again', view.host))
-      expect(view.card('chess')).not.toBeNull()
+      expect(view.card('puzzle')).not.toBeNull()
       expect(alert(view.host)).toBeNull()
     } finally {
       await view.done()
@@ -45,12 +45,12 @@ describe('when the Store cannot read', () => {
   test('a search says so and offers another try', async () => {
     const view = await renderStore({ listings: LISTINGS, failing: { page: true } })
     try {
-      await view.type(view.host.querySelector('input[aria-label="Search the Store"]'), 'chess')
+      await view.type(view.host.querySelector('input[aria-label="Search the Store"]'), 'puzzle')
       expect(alert(view.host)?.textContent).toContain('could not be read')
       expect(view.host.textContent).not.toContain('Nothing matches')
       view.recover()
       await view.click(view.button('Try again', view.host))
-      expect(view.card('chess')).not.toBeNull()
+      expect(view.card('puzzle')).not.toBeNull()
     } finally {
       await view.done()
     }
@@ -72,13 +72,13 @@ describe('when the Store cannot read', () => {
     const view = await renderStore({
       listings: LISTINGS,
       failing: { detail: true },
-      target: { ref: { kind: 'mini-app', id: 'chess' } },
+      target: { ref: { kind: 'mini-app', id: 'puzzle' } },
     })
     try {
       expect(alert(view.host)?.textContent).toContain('could not be read')
       view.recover()
       await view.click(view.button('Try again', view.host))
-      expect(view.host.querySelector('[data-store-page] h1')?.textContent).toBe('Chess')
+      expect(view.host.querySelector('[data-store-page] h1')?.textContent).toBe('Puzzle')
     } finally {
       await view.done()
     }
@@ -91,8 +91,8 @@ describe('when the Store cannot read', () => {
       target: { shelf: 'package:mini-app' },
     })
     try {
-      await view.click(view.button('Chess', view.card('chess')!))
-      expect(view.host.querySelector('[data-store-page] h1')?.textContent).toBe('Chess')
+      await view.click(view.button('Puzzle', view.card('puzzle')!))
+      expect(view.host.querySelector('[data-store-page] h1')?.textContent).toBe('Puzzle')
       expect(alert(view.host.querySelector('[data-store-page]')!)?.textContent).toContain(
         'could not be read',
       )

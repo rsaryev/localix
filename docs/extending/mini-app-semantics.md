@@ -69,8 +69,8 @@ is retried from the same notice.
 `followCoreDeletions(consumer, handler)` reads the core's deletions the same way, read-only: a
 deleted agent, chat, project or provider connection, with its ref only (`CoreDeletion`). Use it to
 clean up what you kept about one, such as a card assigned to an agent that is gone. A renamed agent
-is not a deletion: store the agent's stable `agentId`, never its name. The Kanban mini app of the
-Localix marketplace unassigns a deleted agent's cards on every board this way, listing its chat
+is not a deletion: store the agent's stable `agentId`, never its name. A task-board mini app of the
+Localix marketplace can unassign a deleted agent's cards on every board this way, listing its chat
 folders with `ctx.sessionStorage.listDataDirs()`.
 
 This feed is durable and for backend consumers. To refresh an open view after a store write, use the

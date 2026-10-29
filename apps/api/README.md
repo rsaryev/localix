@@ -6,8 +6,8 @@ WebSockets, and process lifecycle behind the desktop, browser, and headless clie
 
 ## Consumers
 
-The web UI imports the client contract and dependency-light presentation leaves. The Database plugin
-UI imports a client-side model-routing helper. The desktop build bundles the `src/index.ts` entry,
+The web UI imports the client contract and dependency-light presentation leaves. A mini app UI
+imports a client-side model-routing helper. The desktop build bundles the `src/index.ts` entry,
 which attaches to a compatible runtime or starts one in-process. The `localix` executable in this
 package starts that entry and serves a pre-built UI. The separate CLI workspace builds a desktop
 launcher; it does not bundle this backend.

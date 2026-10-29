@@ -37,6 +37,12 @@ const CONSUMER_ROOTS = ['apps/api/src', 'apps/ui/src', 'packages', 'mini-apps']
 /** `from '@localixai/mini-app-sdk/ui/classes'` — the specifier, never a mention in prose. */
 const SDK_SPECIFIER = /(?:from|import|require)\s*\(?\s*['"]@localixai\/mini-app-sdk([^'"]*)['"]/g
 
+/**
+ * Test harnesses for mini apps published from the marketplace: their tests import them, and no
+ * source in this repository does, so the scan cannot see the importer.
+ */
+const USED_BY_PUBLISHED_MINI_APPS = new Set(['./backend/testing', './ui/testing'])
+
 /** A planted defect, and the phrase the detector owes us for it. */
 interface Control {
   readonly label: string
@@ -174,7 +180,7 @@ describe('mini-app-sdk subpaths and their importers agree', () => {
     roots: CONSUMER_ROOTS.map((root) => join(repoRoot, root)),
     mustInclude: [
       'apps/ui/src/shared/contrib/uiLocations.ts',
-      /mini-apps\/database\/ui\/register\.tsx$/,
+      'apps/api/src/features/mini-apps/backend-host-contracts.ts',
     ],
     minFiles: 500,
     label: 'the first-party consumers of @localixai/mini-app-sdk',
@@ -208,7 +214,7 @@ describe('mini-app-sdk subpaths and their importers agree', () => {
 
   test('every published subpath has at least one first-party importer', () => {
     const orphaned = Object.keys(map)
-      .filter((subpath) => !imported.has(subpath))
+      .filter((subpath) => !imported.has(subpath) && !USED_BY_PUBLISHED_MINI_APPS.has(subpath))
       .map(
         (subpath) =>
           `"${subpath}" is published but nothing imports it — delete the entry, or import it from ` +

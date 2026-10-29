@@ -198,7 +198,7 @@ export function miniAppUiHostFor(miniAppName: string): MiniAppUiHost {
     // contributing a surface of their own. Their registries already existed in this folder and
     // their contribution types already shipped in the SDK — only the façade was missing, so a
     // mini app reaching for `host.workItemSlots` got `undefined.register(…)` and lost its whole
-    // registration pass. Git Workspace was written against all four and could never load.
+    // registration pass. A mini app was written against all four and could never load.
     //
     // A SLOT and a SURFACE are host vocabulary, not mini app identity: the host defines
     // `diff.interactive` and `chat.background`, and an unknown one simply renders nothing. So

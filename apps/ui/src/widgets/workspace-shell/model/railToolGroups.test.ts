@@ -3,19 +3,19 @@ import { groupRailTools, isRailTool } from './railToolGroups'
 import type { RailEntry } from '../ui/shellTypes'
 
 test('manifest categories have stable order, skip empty groups and retain unknown mini apps', () => {
-  const entries = ['Game', 'Database', 'Custom', 'Git'].map(
+  const entries = ['Game', 'Records', 'Custom', 'Sync'].map(
     (id) => ({ id, miniAppName: id }) as RailEntry,
   )
   const groups = groupRailTools(
     entries,
     new Map([
       ['Game', 'games'],
-      ['Database', 'data'],
-      ['Git', 'development'],
+      ['Records', 'data'],
+      ['Sync', 'development'],
     ]),
   )
   expect(groups.map((group) => [group.label, group.entries.map((entry) => entry.id)])).toEqual([
-    ['Workspace', ['Database', 'Git']],
+    ['Workspace', ['Records', 'Sync']],
     ['Tools', ['Custom']],
     ['Games', ['Game']],
   ])

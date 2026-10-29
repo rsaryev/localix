@@ -8,7 +8,7 @@ import { ProblemState } from './ProblemState'
  * The pane-level problem, pinned.
  *
  * Seven mini apps hand-built this as a `flex-1` wrapper around a line, and in a block-level scroll
- * container `flex-1` does nothing — the DevOps "centred" error sat at the top of an empty sidebar.
+ * container `flex-1` does nothing — a mini app's "centred" error sat at the top of an empty sidebar.
  * The geometry is the kit `StateNotice`'s, which fills block and flex parents alike; this test keeps
  * that the shell, and keeps the expected next step a real button rather than one more quiet link.
  */

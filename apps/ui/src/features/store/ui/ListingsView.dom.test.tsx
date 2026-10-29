@@ -15,31 +15,31 @@ const installed = (version: string, updateTo?: string) => [
 
 const LISTINGS = [
   listing({
-    id: 'chess',
-    displayName: 'Chess',
+    id: 'puzzle',
+    displayName: 'Puzzle',
     category: 'games',
     version: '1.0.0',
-    icon: '/rpc/mini-apps/store/media/chess/icon?v=abc',
-    tags: ['game', 'board-game', 'chess', 'strategy'],
+    icon: '/rpc/mini-apps/store/media/puzzle/icon?v=abc',
+    tags: ['game', 'board-game', 'puzzle', 'strategy'],
     featured: true,
     contents: { screen: 1, 'agent-tool': 1, backend: 1, command: 2 },
     components: [
-      { kind: 'screen', name: 'Chess', description: 'A screen of its own' },
-      { kind: 'command', name: '/chess:play', description: 'Start a game' },
-      { kind: 'command', name: '/chess:hint' },
+      { kind: 'screen', name: 'Puzzle', description: 'A screen of its own' },
+      { kind: 'command', name: '/puzzle:play', description: 'Start a game' },
+      { kind: 'command', name: '/puzzle:hint' },
     ],
     runsCode: true,
   }),
   listing({
-    id: 'kanban',
-    displayName: 'Kanban',
+    id: 'planner',
+    displayName: 'Planner',
     category: 'utilities',
     installs: installed('1.0.0'),
     tags: ['tasks'],
   }),
   listing({
-    id: 'trading',
-    displayName: 'Trading',
+    id: 'ledger',
+    displayName: 'Ledger',
     category: 'data',
     version: '2.0.0',
     installs: installed('1.0.0', '2.0.0'),
@@ -115,7 +115,7 @@ describe('the Store’s shelves', () => {
       await view.click(view.shelf('Yours'))
       expect(view.activeSection()).toBe('Yours')
       expect(view.card('review')).not.toBeNull()
-      expect(view.card('chess')).toBeNull()
+      expect(view.card('puzzle')).toBeNull()
     } finally {
       await view.done()
     }
@@ -124,19 +124,19 @@ describe('the Store’s shelves', () => {
   test('a shelf lists its packages as rows: name, trust, summary, who and what, and Get', async () => {
     const view = await renderStore({ listings: LISTINGS, target: APPS })
     try {
-      const chess = view.card('chess')!
-      expect(chess.textContent).toContain('Chess')
-      expect(chess.querySelector('[aria-label="Verified · Localix"]')).not.toBeNull()
+      const puzzle = view.card('puzzle')!
+      expect(puzzle.textContent).toContain('Puzzle')
+      expect(puzzle.querySelector('[aria-label="Verified · Localix"]')).not.toBeNull()
       // Its kind goes without saying on its kind's shelf, and its category does not.
-      expect(chess.textContent).not.toContain('Mini app')
-      expect(chess.textContent).toContain('games')
-      expect(view.button('Get Chess', chess)).toBeDefined()
+      expect(puzzle.textContent).not.toContain('Mini app')
+      expect(puzzle.textContent).toContain('games')
+      expect(view.button('Get Puzzle', puzzle)).toBeDefined()
       expect(view.card('radio')!.textContent).toContain('Community')
-      const icon = chess.querySelector('img')!
-      expect(icon.getAttribute('src')).toEndWith('/rpc/mini-apps/store/media/chess/icon?v=abc')
+      const icon = puzzle.querySelector('img')!
+      expect(icon.getAttribute('src')).toEndWith('/rpc/mini-apps/store/media/puzzle/icon?v=abc')
       expect(icon.getAttribute('alt')).toBe('')
       await view.act(() => icon.dispatchEvent(new Event('error')))
-      expect(view.card('chess')!.querySelector('img')).toBeNull()
+      expect(view.card('puzzle')!.querySelector('img')).toBeNull()
     } finally {
       await view.done()
     }
@@ -145,8 +145,8 @@ describe('the Store’s shelves', () => {
   test('a listing without an icon is a monogram tile of its name', async () => {
     const view = await renderStore({ listings: LISTINGS, target: APPS })
     try {
-      const tile = view.card('kanban')!.querySelector('[data-slot="app-tile"]')
-      expect(tile?.textContent).toBe('KA')
+      const tile = view.card('planner')!.querySelector('[data-slot="app-tile"]')
+      expect(tile?.textContent).toBe('PL')
     } finally {
       await view.done()
     }
@@ -155,8 +155,8 @@ describe('the Store’s shelves', () => {
   test('Get goes through its states: Get, progress, Update, Installed, and what cannot be got', async () => {
     const view = await renderStore({ listings: LISTINGS, target: APPS })
     try {
-      expect(view.button('Update Trading', view.card('trading')!)).toBeDefined()
-      expect(view.card('kanban')!.textContent).toContain('Installed')
+      expect(view.button('Update Ledger', view.card('ledger')!)).toBeDefined()
+      expect(view.card('planner')!.textContent).toContain('Installed')
       const weather = view.card('weather')!
       expect(weather.querySelector('[role="progressbar"]')?.textContent).toContain('25%')
       expect(view.card('future')!.textContent).toContain('Needs a newer Localix')
@@ -169,9 +169,9 @@ describe('the Store’s shelves', () => {
   test('Get and Update reach the Store for the person; a verified source needs no sheet', async () => {
     const view = await renderStore({ listings: LISTINGS, target: APPS })
     try {
-      await view.click(view.button('Get Chess', view.card('chess')!))
-      await view.click(view.button('Update Trading', view.card('trading')!))
-      expect(view.calls).toEqual(['install mini-app/chess user', 'update mini-app/trading user'])
+      await view.click(view.button('Get Puzzle', view.card('puzzle')!))
+      await view.click(view.button('Update Ledger', view.card('ledger')!))
+      expect(view.calls).toEqual(['install mini-app/puzzle user', 'update mini-app/ledger user'])
       expect(document.body.querySelector('[role="dialog"]')).toBeNull()
     } finally {
       await view.done()
@@ -205,18 +205,18 @@ describe('the Store’s shelves', () => {
           node.textContent?.startsWith(label),
         )
       await view.click(tab('games'))
-      expect(view.card('chess')).not.toBeNull()
-      expect(view.card('kanban')).toBeNull()
+      expect(view.card('puzzle')).not.toBeNull()
+      expect(view.card('planner')).toBeNull()
       await view.click(tab('All'))
       const search = view.host.querySelector<HTMLInputElement>(
         'input[aria-label="Search the Store"]',
       )
-      await view.type(search, 'trad')
-      expect(view.card('trading')).not.toBeNull()
-      expect(view.card('chess')).toBeNull()
+      await view.type(search, 'ledg')
+      expect(view.card('ledger')).not.toBeNull()
+      expect(view.card('puzzle')).toBeNull()
       await view.type(search, 'music')
       expect(view.card('radio')).not.toBeNull()
-      expect(view.card('trading')).toBeNull()
+      expect(view.card('ledger')).toBeNull()
     } finally {
       await view.done()
     }
@@ -237,10 +237,10 @@ describe('the Store’s shelves', () => {
       expect(view.menuItem('ada.test')?.textContent).toContain('1')
       await view.click(view.menuItem('ada.test'))
       expect(view.card('radio')).not.toBeNull()
-      expect(view.card('chess')).toBeNull()
+      expect(view.card('puzzle')).toBeNull()
       expect(view.button('Source: ada.test')).toBeDefined()
       await view.click(view.button('Clear source'))
-      expect(view.card('chess')).not.toBeNull()
+      expect(view.card('puzzle')).not.toBeNull()
     } finally {
       await view.done()
     }

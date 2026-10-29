@@ -14,7 +14,7 @@ afterAll(async () => {
 /**
  * The seam a mini app's links actually travel, end to end.
  *
- * The reader (and every other mini app surface) opens a link by calling
+ * A mini app surface opens a link by calling
  * `miniAppExternal.open`, which reaches the host through the runtime bound in
  * `app/miniAppRuntime.ts` and lands on the platform's `external.open` port. Each
  * half was covered; the JOIN was not — and an unbound or duplicated runtime module

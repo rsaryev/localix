@@ -13,20 +13,20 @@ const session = (id: string, projectId: string, updatedAt: number, extra = {}) =
 describe('latestConversation', () => {
   test("opens on the newest of the app's own conversations", () => {
     const sessions = [
-      session('old', 'chess', 1),
-      session('new', 'chess', 3),
+      session('old', 'puzzle', 1),
+      session('new', 'puzzle', 3),
       session('elsewhere', 'work', 9),
     ]
-    expect(latestConversation(sessions, 'chess')).toBe('new')
+    expect(latestConversation(sessions, 'puzzle')).toBe('new')
   })
 
   test('skips archived conversations and threads, and has none in an empty project', () => {
     const sessions = [
-      session('kept', 'chess', 1),
-      session('archived', 'chess', 5, { isArchived: true }),
-      session('thread', 'chess', 6, { parentSessionId: 'kept' }),
+      session('kept', 'puzzle', 1),
+      session('archived', 'puzzle', 5, { isArchived: true }),
+      session('thread', 'puzzle', 6, { parentSessionId: 'kept' }),
     ]
-    expect(latestConversation(sessions, 'chess')).toBe('kept')
-    expect(latestConversation(sessions, 'kanban')).toBeNull()
+    expect(latestConversation(sessions, 'puzzle')).toBe('kept')
+    expect(latestConversation(sessions, 'planner')).toBeNull()
   })
 })

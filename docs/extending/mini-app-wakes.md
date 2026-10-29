@@ -2,20 +2,21 @@
 
 A mini app can start a turn in a chat session when something happens that the agent should act on —
 a person moves in the mini app's view, or a condition the mini app watches comes true. The agent
-answers through the mini app's own tools. The Tic-Tac-Toe mini app of the
-[Localix marketplace](https://github.com/rsaryev/localix-marketplace) is the reference: each chat
-has its own board, a move on it wakes that chat, and the agent replies through the mini app's one
-tool, `tic_tac_toe`, with action `move`. A single tool with action dispatch keeps the mini app's
-callable surface compact. The marketplace's other games have the same shape:
+answers through the mini app's own tools. A turn-based game mini app is the reference: each chat has
+its own board, a move on it wakes that chat, and the agent replies through the mini app's one tool,
+with action `move`. A single tool with action dispatch keeps the mini app's callable surface
+compact. The turn-based games in the
+[Localix marketplace](https://github.com/rsaryev/localix-marketplace) show the variations on that
+shape:
 
-- **Checkers** has a larger move. Its wake lists the legal moves, and the agent answers with one of
-  them through `checkers`; it can also resign a lost game.
-- **Battleship** has hidden information. During play its wake uses the agent's view and hides the
-  user's fleet; completed games reveal both fleets.
-- **Rock Paper Scissors** seals the opener's move. The wake carries the user's move as a digest, and
-  the agent's own move is a [sealed](sealed-moves.md) tool argument the chat never shows.
-- **Chess** takes its rules from a library, behind one module. Its wake lists the legal moves in SAN
-  with the FEN, and the agent answers through `chess`; it can also resign a lost game.
+- **A larger move.** The wake lists the legal moves, and the agent answers with one of them through
+  the game's tool; it can also resign a lost game.
+- **Hidden information.** During play the wake uses the agent's view and hides the user's pieces;
+  completed games reveal both sides.
+- **A sealed opener.** The wake carries the user's move as a digest, and the agent's own move is a
+  [sealed](sealed-moves.md) tool argument the chat never shows.
+- **Rules from a library.** The game takes its rules from a library, behind one module. Its wake
+  lists the legal moves with the position, and the agent answers through the game's tool.
 
 ## Terminology
 
@@ -49,8 +50,8 @@ callable surface compact. The marketplace's other games have the same shape:
    subject to the agent's policy and host/model support. The request's `tools` list names answer
    tools for validation and framing; it does not restrict the run to that subset. Surface activation
    is not saved as the session's explicit tool activation.
-4. The call answers the outcome. The mini app records it — Tic-Tac-Toe shows "thinking" or the
-   reason — so a view never waits for an answer nobody was asked for.
+4. The call answers the outcome. The mini app records it — a game shows "thinking" or the reason —
+   so a view never waits for an answer nobody was asked for.
 
 `c.env.sessionId` reaches the route only once the host has checked that the user owns the session. A
 request naming a foreign or deleted chat arrives without it, so a route that needs a chat refuses it
@@ -87,7 +88,5 @@ changing an active run. Explicitly activated tools have their own lifetime; see
 - [Delivery outcomes](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/triggers/delivery.ts)
 - [Initial tool activation](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/tool-deferral.ts)
 - [Tools a wake or an open tab brings](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/surface-tools.ts)
-- [The reference mini app](https://github.com/rsaryev/localix-marketplace/tree/main/mini-apps/tic-tac-toe)
-- [Checkers, the same shape with multi-square moves](https://github.com/rsaryev/localix-marketplace/tree/main/mini-apps/checkers)
-- [Battleship, the same shape with hidden information](https://github.com/rsaryev/localix-marketplace/tree/main/mini-apps/battleship)
-- [Chess, the same shape with a rules library behind one module](https://github.com/rsaryev/localix-marketplace/tree/main/mini-apps/chess)
+- [The marketplace's turn-based games](https://github.com/rsaryev/localix-marketplace/tree/main/mini-apps)
+  are reference mini apps for this shape

@@ -2,7 +2,7 @@
  * The MINI APP KIT: the platform a Localix release publishes for building mini apps — the export names of the modules the host shares with mini app UI, the host theme's
  * stylesheets, prebuilt copies of the modules a backend may import, the declarations, and the
  * `tools` module carrying Localix's own rules (`kit-tools.ts`). Localix builds no mini app: the
- * mini-app-authoring plugin reads the kit (`GET /rpc/mini-apps/kit`, or a release's
+ * authoring plugin reads the kit (`GET /rpc/mini-apps/kit`, or a release's
  * `mini-app-kit.tar.gz`) and builds against it. Staging (`scripts/stage-mini-app-kit.mjs`) writes
  * it; this module is the one description of its layout, and of the modules the host lends every
  * mini app backend at runtime.

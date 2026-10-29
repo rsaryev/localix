@@ -30,9 +30,9 @@ function harness() {
 
 test('a pointer that rests on a card reads its page ahead', () => {
   const { ahead, read, advance } = harness()
-  ahead.intent('chess')
+  ahead.intent('puzzle')
   advance(120)
-  expect(read).toEqual(['chess'])
+  expect(read).toEqual(['puzzle'])
 })
 
 // Scrolling slides cards under a still pointer: each fired an intent, and each opened page

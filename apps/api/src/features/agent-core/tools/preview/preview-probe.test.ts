@@ -127,13 +127,13 @@ describe('injectProbeIntoHtml placement', () => {
   })
 
   test('falls back to before </body> when there is no head', async () => {
-    const out = await injectProbeIntoHtml('<body><h1>2048</h1></body>')
+    const out = await injectProbeIntoHtml('<body><h1>Maze</h1></body>')
     expect(out.indexOf(PROBE)).toBeLessThan(out.indexOf('</body>'))
   })
 
   test('appends (never prepends before the doctype) for bare fragments', async () => {
-    const out = await injectProbeIntoHtml('<h1>2048</h1>')
-    expect(out.startsWith('<h1>2048</h1>')).toBe(true)
+    const out = await injectProbeIntoHtml('<h1>Maze</h1>')
+    expect(out.startsWith('<h1>Maze</h1>')).toBe(true)
     expect(out).toContain(PROBE)
   })
 

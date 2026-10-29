@@ -7,7 +7,7 @@ import { join } from 'node:path'
  *
  * Under the macOS glass theme `--background` and `--sidebar` are translucent, so a pane that
  * paints a ground while nested inside another pane that already painted one COMPOUNDS: 85% over
- * 70% composites to 95.5% opaque — black. That is how the database mini app's pane came out a black
+ * 70% composites to 95.5% opaque — black. That is how a bundled mini app's pane came out a black
  * slab beside a chat pane that stayed glass. `--surface-raised` and `--surface-sunken` are worse
  * still at pane size: both mix from a ground DARKER than the pane they cover.
  *
@@ -93,7 +93,7 @@ const OUTERMOST_PAINTERS = new Map<string, string>([
 ])
 
 /** Another session owns this tree; it is swept on its own schedule. */
-const SKIP_DIRS = new Set(['node_modules', 'dist', 'git-workspace', '__snapshots__'])
+const SKIP_DIRS = new Set(['node_modules', 'dist', '__snapshots__'])
 // Paths are repository-relative and read from here, so the guard reads the same tree wherever the
 // run starts (the scripts workspace runs from scripts/).
 const REPO = join(import.meta.dir, '..')

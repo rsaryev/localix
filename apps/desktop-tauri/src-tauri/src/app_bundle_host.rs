@@ -139,9 +139,9 @@ mod tests {
     #[test]
     fn a_written_plist_reads_back_every_value() {
         let plist = info_plist(
-            "ai.localix.tauri.app.kanban",
+            "ai.localix.tauri.app.notes",
             "Q&A <board>",
-            "kanban",
+            "notes",
             &sample_host(),
         );
         assert_eq!(
@@ -150,7 +150,7 @@ mod tests {
         );
         assert_eq!(
             plist_string(&plist, keys::MINI_APP).as_deref(),
-            Some("kanban")
+            Some("notes")
         );
         assert_eq!(
             plist_string(&plist, HOST_BUILD).as_deref(),
@@ -162,7 +162,7 @@ mod tests {
         );
         assert_eq!(
             plist_string(&plist, keys::PROJECT).as_deref(),
-            Some("/Users/me/.localix/apps/kanban")
+            Some("/Users/me/.localix/apps/notes")
         );
         assert!(
             !plist.contains("Q&A <board>"),

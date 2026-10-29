@@ -102,7 +102,7 @@ describe('session provenance', () => {
       '{"kind":"skill-fork","parentSessionId":"p","roleId":"r"}',
       // A board card id is the task-board plugin's knowledge, not core's; the
       // 20260926T000000 migration strips it from stored rows, so one that survives is a bug.
-      '{"kind":"task-delegation","parentSessionId":"p","toolCallId":"t","kanbanTaskId":"K"}',
+      '{"kind":"task-delegation","parentSessionId":"p","toolCallId":"t","cardId":"K"}',
     ]) {
       expect(() => parseSessionProvenance(raw)).toThrow('Unrecognized session provenance')
     }

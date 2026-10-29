@@ -3,7 +3,7 @@ import type { RailAction, RailEntry, RailSection } from '../ui/shellTypes'
 import { isRailTool } from './railToolGroups'
 
 export interface BuildRailEntriesInput {
-  /** Sidebar sections (Files, Database, …). */
+  /** Sidebar sections (Files, Search, …). */
   railSections: RailSection[]
   /** The CUSTOMIZABLE rail actions (workspace views); FIXED utilities are excluded upstream. */
   customizableActions: RailAction[]

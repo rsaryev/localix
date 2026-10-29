@@ -68,7 +68,7 @@ describe('buildAgentSystemPrompt', () => {
         conversation: true,
       })
     expect(promptWith(tool('work_items', ['task-board']))).toContain(BOARD_OWNER)
-    expect(promptWith(tool('kanban'))).not.toContain(BOARD_OWNER)
+    expect(promptWith(tool('tasks'))).not.toContain(BOARD_OWNER)
   })
   test('the turn contract renders for a run in a conversation, in the runtime context', () => {
     const toolRegistry = richRegistry(SHAPE.orchestrator)

@@ -39,7 +39,7 @@ describe('release workflow contract', () => {
     expect(release).not.toContain('mini-app-catalog')
   })
 
-  // The mini-app-authoring plugin builds against the latest release's kit when no Localix is
+  // The authoring plugin builds against the latest release's kit when no Localix is
   // installed, and refuses an archive `SHA256SUMS.txt` does not name: a release without either
   // leaves Claude Code users unable to create a mini app at all.
   test('publishes the mini app kit with the release, named in its checksums', () => {

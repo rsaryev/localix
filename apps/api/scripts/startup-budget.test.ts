@@ -80,7 +80,7 @@ describe('startup budget analysis', () => {
         apps: 9,
         importMs: totalMs - 4,
         totalMs,
-        slowest: [{ name: 'database', ms: 53 }],
+        slowest: [{ name: 'notes', ms: 53 }],
       })
     const analysis = analyzeBoot([
       line({ event: 'server.started', time: 0 }),
@@ -91,6 +91,6 @@ describe('startup budget analysis', () => {
     ])
 
     expect(analysis?.miniAppLoads.map((entry) => entry.totalMs)).toEqual([170, 120])
-    expect(analysis?.miniAppLoads[0].slowest[0]).toEqual({ name: 'database', ms: 53 })
+    expect(analysis?.miniAppLoads[0].slowest[0]).toEqual({ name: 'notes', ms: 53 })
   })
 })

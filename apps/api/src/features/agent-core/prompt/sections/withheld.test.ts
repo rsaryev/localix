@@ -80,9 +80,9 @@ describe('the unavailable section', () => {
   })
 
   test('without the Store the user is told to switch a waiting plugin on there', () => {
-    const section = buildWithheldToolsSection(EMPTY, [TOOL.Configure], ['office'], ['kanban'])!
+    const section = buildWithheldToolsSection(EMPTY, [TOOL.Configure], ['office'], ['tasks'])!
     expect(section).not.toContain('`Store`')
-    expect(section).toContain('mini app "kanban"')
+    expect(section).toContain('mini app "tasks"')
     expect(section).toContain('ask the user to switch it on in the Store')
   })
 })

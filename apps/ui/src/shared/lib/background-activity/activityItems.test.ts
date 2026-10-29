@@ -50,7 +50,7 @@ describe('what is happening in the background, as rows', () => {
           jobs: [
             {
               ref: { kind: 'mini-app', id: 'sample-git' },
-              displayName: 'Git',
+              displayName: 'Sync',
               icon: '/rpc/mini-apps/store/media/sample-git/icon?v=1',
               action: 'install',
               phase: 'downloading',
@@ -85,7 +85,7 @@ describe('what is happening in the background, as rows', () => {
       })),
     ).toEqual([
       {
-        name: 'Git',
+        name: 'Sync',
         status: 'Downloading · 1.0 KB of 4.0 KB',
         percent: 25,
         state: 'running',
@@ -175,8 +175,8 @@ describe('what is happening in the background, as rows', () => {
         store: {
           jobs: [],
           updates: [
-            { ref: { kind: 'mini-app', id: 'sample-reader' }, displayName: 'Reader', to: '0.4.0' },
-            { ref: { kind: 'mini-app', id: 'sample-chess' }, displayName: 'Chess', to: '1.1.0' },
+            { ref: { kind: 'mini-app', id: 'sample-viewer' }, displayName: 'Viewer', to: '0.4.0' },
+            { ref: { kind: 'mini-app', id: 'sample-puzzle' }, displayName: 'Puzzle', to: '1.1.0' },
             { ref: { kind: 'plugin', id: 'review@localix' }, displayName: 'Review', to: '1.1.0' },
           ],
         },
@@ -189,9 +189,9 @@ describe('what is happening in the background, as rows', () => {
       {
         id: 'store',
         title: '3 updates',
-        detail: 'Chess, Reader and Review',
+        detail: 'Puzzle, Viewer and Review',
         fingerprint:
-          'mini-app:sample-chess@1.1.0,mini-app:sample-reader@0.4.0,plugin:review@localix@1.1.0',
+          'mini-app:sample-puzzle@1.1.0,mini-app:sample-viewer@0.4.0,plugin:review@localix@1.1.0',
       },
     ])
     press(updates[0]?.action)
@@ -219,8 +219,8 @@ describe('what is happening in the background, as rows', () => {
         store: {
           jobs: [
             {
-              ref: { kind: 'mini-app', id: 'sample-chess' },
-              displayName: 'Chess',
+              ref: { kind: 'mini-app', id: 'sample-puzzle' },
+              displayName: 'Puzzle',
               action: 'update',
               version: '1.1.0',
               phase: 'downloading',
@@ -234,15 +234,15 @@ describe('what is happening in the background, as rows', () => {
       recordingOps().ops,
     )
     expect(items.map(({ name, status }) => ({ name, status }))).toEqual([
-      { name: 'Chess', status: 'Downloading 1.1.0 · 3 B of 4 B' },
+      { name: 'Puzzle', status: 'Downloading 1.1.0 · 3 B of 4 B' },
     ])
     expect(
       updates.map(({ title, fingerprint, running }) => ({ title, fingerprint, running })),
     ).toEqual([
       {
         title: '1 mini app update',
-        fingerprint: 'mini-app:sample-chess@1.1.0',
-        running: { percent: 75, status: 'Updating Chess · 75%' },
+        fingerprint: 'mini-app:sample-puzzle@1.1.0',
+        running: { percent: 75, status: 'Updating Puzzle · 75%' },
       },
     ])
   })

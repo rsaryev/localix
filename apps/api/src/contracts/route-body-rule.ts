@@ -7,7 +7,7 @@
  * `jsonBody` from the mini app SDK) forces it.
  *
  * The repository guard (`lib/route-body-contract.test.ts`) applies this to the app and the bundled
- * mini apps; the mini-app-authoring plugin's check applies it (through the mini app kit's tools)
+ * mini apps; the authoring plugin's check applies it (through the mini app kit's tools)
  * to a person's mini app, which lives in
  * `~/.localix/mini-apps` where no repository guard looks — and the reference those mini apps are
  * copied from once shipped the call. Two copies of the pattern would drift apart the way two copies

@@ -10,6 +10,8 @@ interface Card {
   capture: Capture
   /** The docs pages that say more, as slugs. */
   docs: { slug: string; label: string }[]
+  /** A page outside the docs that the card also points to. */
+  external?: { href: string; label: string }
 }
 
 /**
@@ -63,16 +65,20 @@ const CARDS: Card[] = [
   },
   {
     title: 'Mini apps, with the agent inside',
-    text: 'A mini app is an application inside Localix: a screen, tools the agent can call and a guide for using them. Kanban, Database, DevOps, Trading and the games are mini apps from the Localix marketplace, installed from the Store like any other. Run /mini-app-authoring:create and the agent writes, checks and installs one; through the host it gets decision models, embeddings and search. On macOS it also installs as a Mac app, in the Dock, Cmd+Tab and Spotlight.',
+    text: 'A mini app is an application inside Localix: a screen, tools the agent can call and a guide for using them. Localix’s own mini apps are in the Localix marketplace and install from the Store like any other. Describe one to the agent, with the authoring plugin from the marketplace, and it writes, checks and installs it; through the host it gets decision models, embeddings and search. On macOS it also installs as a Mac app, in the Dock, Cmd+Tab and Spotlight.',
     capture: {
       name: 'mini-apps',
-      alt: 'The Kanban board mini app in Localix: the add-task bar, filters, progress and the columns of task cards',
+      alt: 'A mini app in Localix, a task board: the add-task bar, filters, progress and the columns of task cards',
     },
     docs: [
       { slug: 'features--mini-apps', label: 'Mini apps' },
       { slug: 'extending--mini-apps', label: 'Build a mini app' },
       { slug: 'features--mini-app-mac-apps', label: 'Mac apps' },
     ],
+    external: {
+      href: 'https://github.com/rsaryev/localix-marketplace',
+      label: 'Localix marketplace',
+    },
   },
 ]
 
@@ -93,6 +99,16 @@ export function HomeLoop() {
                     {doc.label} →
                   </Link>
                 ))}
+                {card.external && (
+                  <a
+                    className="loop-link"
+                    href={card.external.href}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                  >
+                    {card.external.label} →
+                  </a>
+                )}
               </div>
             </div>
             <div className="loop-panel">

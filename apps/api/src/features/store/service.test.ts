@@ -5,9 +5,9 @@ import { fakeProvider, makeListing } from './testing/fake-provider'
 import { makeStore } from './testing/store'
 
 const actor = { userId: 'u1' }
-const chess = makeListing({ id: 'chess', featured: true })
-const kanban = makeListing({
-  id: 'kanban',
+const atlas = makeListing({ id: 'atlas', featured: true })
+const tasks = makeListing({
+  id: 'tasks',
   installs: [{ scope: 'user', version: '1.0.0', enabled: true, updateTo: '1.1.0' }],
 })
 const review = makeListing({ id: 'review', kind: 'plugin', contents: { skill: 2 } })
@@ -21,7 +21,7 @@ const storeOf = (providers: StoreProvider[], opts?: Parameters<typeof makeStore>
   (opened = makeStore(providers, opts))
 
 function setup() {
-  const apps = fakeProvider('mini-app', [chess, kanban], {
+  const apps = fakeProvider('mini-app', [atlas, tasks], {
     sources: [
       {
         kind: 'mini-app',
@@ -46,14 +46,14 @@ describe('the Store', () => {
   test('lists every provider’s packages, and reads a provider again only once it changed', async () => {
     const { apps, store, pokes } = setup()
     // The plugin's summary places it in Development, so it ranks above the uncategorized app.
-    expect(ids(await store.listings(actor, {}))).toEqual(['chess', 'review', 'kanban'])
+    expect(ids(await store.listings(actor, {}))).toEqual(['atlas', 'review', 'tasks'])
     expect(ids(await store.listings(actor, { shelf: 'package:plugin' }))).toEqual(['review'])
     expect(apps.calls.filter((call) => call === 'listings')).toHaveLength(1)
 
-    apps.change([chess])
+    apps.change([atlas])
     await store.settled()
     expect(pokes()).toBe(2)
-    expect(ids(await store.listings(actor, {}))).toEqual(['chess', 'review'])
+    expect(ids(await store.listings(actor, {}))).toEqual(['atlas', 'review'])
     expect(apps.calls.filter((call) => call === 'listings')).toHaveLength(2)
   })
 
@@ -85,9 +85,9 @@ describe('the Store', () => {
 
   test('a provider that cannot list is a problem of its kind; the others still answer', async () => {
     const broken = fakeProvider('plugin', [], { fails: 'marketplace unreachable' })
-    const apps = fakeProvider('mini-app', [chess])
+    const apps = fakeProvider('mini-app', [atlas])
     const { store } = storeOf([apps.provider, broken.provider])
-    expect(ids(await store.listings(actor, {}))).toEqual(['chess'])
+    expect(ids(await store.listings(actor, {}))).toEqual(['atlas'])
     expect((await store.listings(actor, { shelf: 'package:plugin' })).problems).toEqual([
       { kind: 'plugin', message: 'marketplace unreachable' },
     ])
@@ -98,7 +98,7 @@ describe('the Store', () => {
     const plugins = fakeProvider('plugin', [review], {
       problems: ['The plugin marketplace "llx" could not be read'],
     })
-    const apps = fakeProvider('mini-app', [chess])
+    const apps = fakeProvider('mini-app', [atlas])
     const { store } = storeOf([apps.provider, plugins.provider])
     const problems = async (query: Parameters<typeof store.listings>[1]) =>
       (await store.listings(actor, query)).problems.map((problem) => problem.kind)
@@ -129,7 +129,7 @@ describe('the Store', () => {
   })
 
   test('a mini app source that could not be read is said where mini apps give something', async () => {
-    const apps = fakeProvider('mini-app', [chess], { problems: ['The catalog answered 503'] })
+    const apps = fakeProvider('mini-app', [atlas], { problems: ['The catalog answered 503'] })
     const { store } = storeOf([apps.provider])
     const problems = async (shelf: string) =>
       (await store.listings(actor, { shelf } as never)).problems.map((problem) => problem.kind)
@@ -142,7 +142,7 @@ describe('the Store', () => {
   test('a page comes with facets over every listing', async () => {
     const { store } = setup()
     const page = await store.listings(actor, { shelf: 'updates' })
-    expect(ids(page)).toEqual(['kanban'])
+    expect(ids(page)).toEqual(['tasks'])
     expect(page.facets.kind).toEqual({ 'mini-app': 2, plugin: 1 })
     expect(page.facets.updates).toBe(1)
     expect(page.facets.shelves['capability:skill']).toBe(2)
@@ -162,20 +162,20 @@ describe('the Store', () => {
 
   test('each action reaches the provider of the listing’s kind', async () => {
     const { apps, plugins, store } = setup()
-    await store.install({ kind: 'mini-app', id: 'chess' }, 'user', { plan: true }, actor)
-    await store.update({ kind: 'mini-app', id: 'kanban' }, 'user', actor)
+    await store.install({ kind: 'mini-app', id: 'atlas' }, 'user', { plan: true }, actor)
+    await store.update({ kind: 'mini-app', id: 'tasks' }, 'user', actor)
     await store.remove({ kind: 'plugin', id: 'review' }, 'project', actor)
-    await store.setEnabled({ kind: 'mini-app', id: 'kanban' }, 'user', false, actor)
+    await store.setEnabled({ kind: 'mini-app', id: 'tasks' }, 'user', false, actor)
     expect(apps.calls).toEqual([
-      'install chess user true',
-      'update kanban user',
-      'enable kanban user false',
+      'install atlas user true',
+      'update tasks user',
+      'enable tasks user false',
     ])
     expect(plugins.calls).toEqual(['remove review project'])
     expect((await store.plan({ kind: 'plugin', id: 'review' }, 'user', actor)).warnings).toEqual([
       'plan for review',
     ])
-    expect((await store.detail({ kind: 'mini-app', id: 'chess' }, actor)).readme).toContain('chess')
+    expect((await store.detail({ kind: 'mini-app', id: 'atlas' }, actor)).readme).toContain('atlas')
   })
 
   test('what a detail page learned a package contains shows on its card and shelves', async () => {
@@ -280,7 +280,7 @@ describe('the Store', () => {
         autoUpdate: false,
       },
     ]
-    const apps = fakeProvider('mini-app', [chess], { sources })
+    const apps = fakeProvider('mini-app', [atlas], { sources })
     const { store } = storeOf([apps.provider])
     await store.listings(actor, {})
     await store.settled()
@@ -289,10 +289,10 @@ describe('the Store', () => {
     await store.settled()
     expect(heard).toEqual([])
     sources[0]!.autoUpdate = true
-    apps.change([chess])
+    apps.change([atlas])
     await store.settled()
     expect(heard).toEqual(['sources'])
-    apps.change([chess])
+    apps.change([atlas])
     await store.settled()
     expect(heard).toEqual(['sources'])
   })
@@ -301,8 +301,8 @@ describe('the Store', () => {
     const { apps, plugins, store } = setup()
     await store.listings(actor, {})
     apps.change([
-      { ...chess, job: { action: 'install', phase: 'downloading', received: 1, total: 4 } },
-      kanban,
+      { ...atlas, job: { action: 'install', phase: 'downloading', received: 1, total: 4 } },
+      tasks,
     ])
     plugins.change([
       { ...review, installs: [{ scope: 'user', version: '1', enabled: true }] },
@@ -317,8 +317,8 @@ describe('the Store', () => {
     expect(await store.activity(actor)).toEqual({
       jobs: [
         {
-          ref: { kind: 'mini-app', id: 'chess' },
-          displayName: 'chess',
+          ref: { kind: 'mini-app', id: 'atlas' },
+          displayName: 'atlas',
           action: 'install',
           phase: 'downloading',
           received: 1,
@@ -333,8 +333,8 @@ describe('the Store', () => {
       ],
       updates: [
         {
-          ref: { kind: 'mini-app', id: 'kanban' },
-          displayName: 'kanban',
+          ref: { kind: 'mini-app', id: 'tasks' },
+          displayName: 'tasks',
           from: '1.0.0',
           to: '1.1.0',
         },
@@ -345,8 +345,8 @@ describe('the Store', () => {
   test('Update all re-reads every source, then updates each install a newer version is offered for', async () => {
     const { apps, plugins, store } = setup()
     const queued = await store.applyUpdates(actor)
-    expect(queued).toEqual([{ kind: 'mini-app', id: 'kanban' }])
-    expect(apps.calls).toEqual(['refresh', 'listings', 'update kanban user'])
+    expect(queued).toEqual([{ kind: 'mini-app', id: 'tasks' }])
+    expect(apps.calls).toEqual(['refresh', 'listings', 'update tasks user'])
     expect(plugins.calls).toEqual(['refresh', 'listings'])
   })
 
@@ -356,12 +356,12 @@ describe('the Store', () => {
       id: 'radio',
       installs: [{ scope: 'user', version: '1.0.0', enabled: true, updateTo: '2.0.0' }],
     })
-    apps.change([radio, kanban])
+    apps.change([radio, tasks])
     apps.provider.update = async (id) => {
       if (id === 'radio') throw new Error('A mini app of yours is already called "radio"')
       apps.calls.push(`update ${id}`)
     }
-    expect(await store.applyUpdates(actor)).toEqual([{ kind: 'mini-app', id: 'kanban' }])
+    expect(await store.applyUpdates(actor)).toEqual([{ kind: 'mini-app', id: 'tasks' }])
   })
 
   test('a kind made here rather than installed is refused by the Store, and still syncs', async () => {
@@ -380,7 +380,7 @@ describe('the Store', () => {
   test('Update all still updates the other kinds when one source cannot be read', async () => {
     const { plugins, store } = setup()
     plugins.provider.refresh = () => Promise.reject(new Error('marketplace offline'))
-    expect(await store.applyUpdates(actor)).toEqual([{ kind: 'mini-app', id: 'kanban' }])
+    expect(await store.applyUpdates(actor)).toEqual([{ kind: 'mini-app', id: 'tasks' }])
   })
 
   test('a page opened before its package is fetched leaves what it contains unknown', async () => {

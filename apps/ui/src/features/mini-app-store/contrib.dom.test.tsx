@@ -12,7 +12,7 @@ beforeAll(() => {
   ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 })
 afterAll(async () => teardown())
-const INSTALLED = ['chess']
+const INSTALLED = ['puzzle']
 afterEach(() => {
   withdrawUi()
   provideMiniAppDesktopApps(null)
@@ -39,10 +39,10 @@ test('once mini apps register, the Store offers a mini app with a screen as a de
     ) as unknown as MiniAppUiHost,
   )
   const seen: (boolean | undefined)[] = []
-  const chess = makeListing({ id: 'chess', contents: { screen: 1 } })
+  const puzzle = makeListing({ id: 'puzzle', contents: { screen: 1 } })
   function Probe() {
     const [extra] = useStoreInstallExtras()
-    seen.push(extra ? extra.available(chess) && extra.has(chess) : undefined)
+    seen.push(extra ? extra.available(puzzle) && extra.has(puzzle) : undefined)
     return null
   }
   const root = createRoot(document.createElement('div'))

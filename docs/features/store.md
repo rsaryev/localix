@@ -1,9 +1,9 @@
 # Store
 
 The Store is where you find, install, update and remove what Localix can add: mini apps and Claude
-Code plugins, from the Localix marketplace and from Anthropic's official and community plugin
-marketplaces. Use this page to see where its packages come from, how its search works, and what
-happens before anything is installed.
+Code plugins, from the [Localix marketplace](https://github.com/rsaryev/localix-marketplace) and
+from Anthropic's official and community plugin marketplaces. Use this page to see where its packages
+come from, how its search works, and what happens before anything is installed.
 
 ## What you can do
 
@@ -24,8 +24,8 @@ happens before anything is installed.
 **Agents** is a package kind of its own: each agent is a Claude Code agent file, listed under
 **Yours**, **This project**, **Managed**, **From plugins** and **Built in**. **Add agent** makes
 one; an agent's page has **Overview**, **Settings** (its definition, written back to the file) and
-**Access** (its per-agent switches). The `team` plugin from the Localix marketplace, Recommended
-here, adds a starter team. See [Agents](agents.md).
+**Access** (its per-agent switches). A starter team from the Localix marketplace is Recommended
+here. See [Agents](agents.md).
 
 ### Finding your way
 

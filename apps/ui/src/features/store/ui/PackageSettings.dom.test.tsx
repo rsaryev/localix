@@ -31,9 +31,9 @@ const config = (over: Partial<ListingConfig> = {}): ListingConfig => ({
 })
 
 const installed = [{ scope: 'user' as const, version: '1.0.0', enabled: true }]
-const CHESS = listing({
-  id: 'chess',
-  displayName: 'Chess',
+const PUZZLE = listing({
+  id: 'puzzle',
+  displayName: 'Puzzle',
   installs: installed,
   configurable: true,
 })
@@ -59,9 +59,9 @@ describe('a package’s Settings tab', () => {
     const plain = listing({ id: 'plain', displayName: 'Plain', installs: installed })
     const fresh = listing({ id: 'fresh', displayName: 'Fresh', configurable: undefined })
     const withSettings = await open({
-      listings: [CHESS, plain, fresh],
-      configs: { chess: { user: config() } },
-      target: { ref: { kind: 'mini-app', id: 'chess' } },
+      listings: [PUZZLE, plain, fresh],
+      configs: { puzzle: { user: config() } },
+      target: { ref: { kind: 'mini-app', id: 'puzzle' } },
     })
     try {
       expect(withSettings.tab('Settings')).toBeDefined()
@@ -70,7 +70,7 @@ describe('a package’s Settings tab', () => {
     }
     for (const id of ['plain', 'fresh']) {
       const without = await open({
-        listings: [CHESS, plain, fresh],
+        listings: [PUZZLE, plain, fresh],
         target: { ref: { kind: 'mini-app', id } },
       })
       try {
@@ -83,16 +83,16 @@ describe('a package’s Settings tab', () => {
 
   test('shows what is set, saves what changed, and the page reads again', async () => {
     const { view, tab, field } = await open({
-      listings: [CHESS],
-      configs: { chess: { user: config() } },
-      target: { ref: { kind: 'mini-app', id: 'chess' } },
+      listings: [PUZZLE],
+      configs: { puzzle: { user: config() } },
+      target: { ref: { kind: 'mini-app', id: 'puzzle' } },
     })
     try {
       await view.click(tab('Settings'))
       expect(field('Service URL')!.value).toBe('https://a.test')
       await view.type(field('Service URL'), 'https://b.test')
       await view.click(view.button('Save'))
-      expect(view.calls).toEqual(['config mini-app/chess user {"url":"https://b.test"}'])
+      expect(view.calls).toEqual(['config mini-app/puzzle user {"url":"https://b.test"}'])
     } finally {
       await view.done()
     }
@@ -106,16 +106,16 @@ describe('a package’s Settings tab', () => {
       ],
     })
     const { view, tab, page } = await open({
-      listings: [CHESS],
-      configs: { chess: { user: withActions } },
+      listings: [PUZZLE],
+      configs: { puzzle: { user: withActions } },
       actionResults: { test: { ok: true, message: 'Connected: 3 tools' } },
-      target: { ref: { kind: 'mini-app', id: 'chess' } },
+      target: { ref: { kind: 'mini-app', id: 'puzzle' } },
     })
     try {
       await view.click(tab('Settings'))
       expect(view.button('Sign out', page())).toBeDefined()
       await view.click(view.button('Test connection', page()))
-      expect(view.calls).toEqual(['action mini-app/chess user test'])
+      expect(view.calls).toEqual(['action mini-app/puzzle user test'])
       expect(page().textContent).toContain('Connected: 3 tools')
     } finally {
       await view.done()
@@ -128,12 +128,12 @@ describe('a package’s Settings tab', () => {
       external: { open: (url) => void opened.push(url) },
     })
     const { view, tab, page } = await open({
-      listings: [CHESS],
+      listings: [PUZZLE],
       configs: {
-        chess: { user: config({ actions: [{ id: 'signin', label: 'Sign in' }] }) },
+        puzzle: { user: config({ actions: [{ id: 'signin', label: 'Sign in' }] }) },
       },
       actionResults: { signin: { ok: true, open: 'https://auth.test/login' } },
-      target: { ref: { kind: 'mini-app', id: 'chess' } },
+      target: { ref: { kind: 'mini-app', id: 'puzzle' } },
     })
     try {
       await view.click(tab('Settings'))
@@ -191,10 +191,10 @@ describe('a package’s Settings tab', () => {
 
   test('a refusal is said beside Save', async () => {
     const { view, tab, field, page } = await open({
-      listings: [CHESS],
-      configs: { chess: { user: config() } },
+      listings: [PUZZLE],
+      configs: { puzzle: { user: config() } },
       configFails: 'The URL must start with https',
-      target: { ref: { kind: 'mini-app', id: 'chess' } },
+      target: { ref: { kind: 'mini-app', id: 'puzzle' } },
     })
     try {
       await view.click(tab('Settings'))

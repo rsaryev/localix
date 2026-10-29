@@ -9,7 +9,7 @@ beforeAll(() => {
 })
 afterAll(async () => teardown())
 
-const LISTINGS = [listing({ id: 'chess', displayName: 'Chess' })]
+const LISTINGS = [listing({ id: 'puzzle', displayName: 'Puzzle' })]
 const SOURCES = [
   {
     kind: 'mini-app' as const,

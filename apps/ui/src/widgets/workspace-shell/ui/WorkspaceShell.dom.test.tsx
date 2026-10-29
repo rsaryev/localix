@@ -459,7 +459,7 @@ describe('WorkspaceShell status contribution', () => {
       JSON.stringify({
         v: 6,
         entries: [
-          { id: 'reader', area: 'overflow' },
+          { id: 'viewer', area: 'overflow' },
           { id: 'office', area: 'overflow' },
         ],
       }),
@@ -472,7 +472,7 @@ describe('WorkspaceShell status contribution', () => {
         railActions={sections.map((id) => ({
           id,
           icon: <span />,
-          label: id === 'reader' ? 'Reader' : 'Office',
+          label: id === 'viewer' ? 'Viewer' : 'Office',
           onClick: noOp,
           customizable: true,
           defaultArea: 'overflow' as const,
@@ -493,7 +493,7 @@ describe('WorkspaceShell status contribution', () => {
       ).map((slot) => slot.getAttribute('aria-label'))
 
     try {
-      await act(async () => root.render(renderShell(['reader', 'office'])))
+      await act(async () => root.render(renderShell(['viewer', 'office'])))
       // Unpinned tools are available only in the catalog until opened.
       expect(railSlots()).toEqual(['All tools', 'Add mini apps'])
 
@@ -512,7 +512,7 @@ describe('WorkspaceShell status contribution', () => {
           await new Promise((resolve) => setTimeout(resolve, 0))
         })
         const reader = [...document.querySelectorAll<HTMLElement>('[role="menuitemradio"]')].find(
-          (item) => item.textContent === 'Reader',
+          (item) => item.textContent === 'Viewer',
         )!
         expect(reader).toBeDefined()
         await act(async () => reader.click())
@@ -536,7 +536,7 @@ describe('WorkspaceShell status contribution', () => {
           ),
         ).map((slot) => slot.getAttribute('aria-label'))
       // Exactly one recent slot: repeated opens do not duplicate it.
-      expect(flyoutSlots().filter((label) => label === 'Reader')).toHaveLength(1)
+      expect(flyoutSlots().filter((label) => label === 'Viewer')).toHaveLength(1)
       await act(async () => dockTrigger.click())
 
       // Re-opening it does NOT reshuffle the slots — the whole point of excluding
@@ -547,7 +547,7 @@ describe('WorkspaceShell status contribution', () => {
       // Reader's mini app goes away: its slot goes with it, without erasing the entry
       // from the recents store (re-enabling brings it back).
       await act(async () => root.render(renderShell(['office'])))
-      expect(railSlots()).not.toContain('Reader')
+      expect(railSlots()).not.toContain('Viewer')
       // …and the dock's trigger goes with it: nothing is left to reveal.
       expect(host.querySelector('[data-rail-recents-trigger]')).toBeNull()
     } finally {

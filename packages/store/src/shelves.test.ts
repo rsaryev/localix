@@ -4,8 +4,8 @@ import { listingSchema } from './contract'
 import { SHELVES, onShelf, parseShelf, shelfCounts } from './shelves'
 import { makeListing } from './testing'
 
-const chess = makeListing({
-  id: 'chess',
+const atlas = makeListing({
+  id: 'atlas',
   featured: true,
   contents: { screen: 1, command: 2 },
 })
@@ -17,10 +17,10 @@ const remote = makeListing({ id: 'remote', kind: 'plugin', contents: 'unknown' }
 
 describe('shelves', () => {
   test('a listing is on its kind’s shelf and on one shelf per component it contains', () => {
-    expect(onShelf(chess, 'package:mini-app')).toBe(true)
-    expect(onShelf(chess, 'package:plugin')).toBe(false)
-    expect(onShelf(chess, 'capability:command')).toBe(true)
-    expect(onShelf(chess, 'capability:skill')).toBe(false)
+    expect(onShelf(atlas, 'package:mini-app')).toBe(true)
+    expect(onShelf(atlas, 'package:plugin')).toBe(false)
+    expect(onShelf(atlas, 'capability:command')).toBe(true)
+    expect(onShelf(atlas, 'capability:skill')).toBe(false)
     expect(onShelf(remote, 'capability:skill')).toBe(false)
   })
 
@@ -29,7 +29,7 @@ describe('shelves', () => {
     const plugin = makeListing({ id: 'lint', kind: 'plugin', contents: { skill: 3, agent: 1 } })
     expect(onShelf(mine, 'capability:skill')).toBe(true)
     expect(onShelf(plugin, 'capability:skill')).toBe(true)
-    expect(shelfCounts([mine, plugin, chess])).toMatchObject({
+    expect(shelfCounts([mine, plugin, atlas])).toMatchObject({
       'capability:skill': 4,
       'capability:agent': 1,
     })
@@ -42,7 +42,7 @@ describe('shelves', () => {
   })
 
   test('Discover holds featured and recommended packages; the library holds installs and updates', () => {
-    expect(onShelf(chess, 'discover')).toBe(true)
+    expect(onShelf(atlas, 'discover')).toBe(true)
     expect(onShelf(notes, 'discover')).toBe(false)
     expect(onShelf(notes, 'installed')).toBe(true)
     expect(onShelf(notes, 'updates')).toBe(true)
@@ -50,7 +50,7 @@ describe('shelves', () => {
   })
 
   test('an empty shelf is left out of the counts', () => {
-    expect(shelfCounts([chess, notes, remote])).toEqual({
+    expect(shelfCounts([atlas, notes, remote])).toEqual({
       discover: 1,
       'package:mini-app': 2,
       'package:plugin': 1,
@@ -61,8 +61,8 @@ describe('shelves', () => {
   })
 
   test('a capability shelf counts what it lists: components, not the packages holding them', () => {
-    const three = makeListing({ id: 'git', contents: { command: 3 } })
-    expect(shelfCounts([three, chess])['capability:command']).toBe(5)
+    const three = makeListing({ id: 'gallery', contents: { command: 3 } })
+    expect(shelfCounts([three, atlas])['capability:command']).toBe(5)
   })
 
   test('a package’s own machinery — its screen, backend, agent tools — is never a shelf', () => {
@@ -84,8 +84,8 @@ describe('shelves', () => {
     expect(onShelf(mine, 'yours')).toBe(true)
     expect(onShelf(mine, 'project')).toBe(false)
     expect(onShelf(ours, 'project')).toBe(true)
-    expect(onShelf(chess, 'yours')).toBe(false)
-    expect(shelfCounts([mine, ours, chess])).toMatchObject({ yours: 1, project: 1 })
+    expect(onShelf(atlas, 'yours')).toBe(false)
+    expect(shelfCounts([mine, ours, atlas])).toMatchObject({ yours: 1, project: 1 })
     expect(parseShelf('yours')).toBe('yours')
     expect(parseShelf('project')).toBe('project')
   })
@@ -135,6 +135,6 @@ describe('shelves', () => {
 
   test('a listing whose contents are not known yet still parses', () => {
     expect(listingSchema.parse(remote).contents).toBe('unknown')
-    expect(() => listingSchema.parse({ ...chess, contents: { gadget: 1 } })).toThrow()
+    expect(() => listingSchema.parse({ ...atlas, contents: { gadget: 1 } })).toThrow()
   })
 })

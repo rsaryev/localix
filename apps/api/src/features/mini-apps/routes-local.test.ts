@@ -5,7 +5,7 @@ import type { AppContext } from '../../app'
 import { UnprocessableError } from '../../lib/domain-errors'
 import { createMiniAppRoutes, type MiniAppRoutesService } from './routes'
 
-/** The two routes the mini-app-authoring plugin calls: where the kit is, and install a package. */
+/** The two routes the authoring plugin calls: where the kit is, and install a package. */
 function app(installs: unknown[]) {
   const service = {
     kitDir: () => '/Applications/Localix.app/Contents/Resources/resources/mini-app-kit',

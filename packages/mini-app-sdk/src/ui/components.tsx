@@ -247,7 +247,7 @@ export function ProblemLine(props: MiniAppProblemLineProps) {
 
 /**
  * The host's pane-level problem. Use it when the failure is the only thing the pane can show; a
- * hand-built centred wrapper is how a "centred" error ended up at the top of the DevOps sidebar.
+ * hand-built centred wrapper is how a "centred" error ended up at the top of a mini app's sidebar.
  */
 export function ProblemState(props: MiniAppProblemStateProps) {
   return render(component('ProblemState'), props)

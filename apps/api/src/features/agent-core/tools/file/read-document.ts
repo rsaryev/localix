@@ -1,7 +1,7 @@
 /**
  * `read` on a PDF or office document: its extracted text, through the injected extractor.
  *
- * The extractable set mirrors what the documents plugin's registry converts (its binary
+ * The extractable set mirrors what the document extractor's registry converts (its binary
  * formats; csv/md are plain text and take the normal text path). `pages` and `sheet` narrow
  * the extraction itself, so a 300-page PDF or a twelve-sheet workbook is read where it matters
  * instead of paged through from the top.
@@ -60,7 +60,7 @@ export async function readDocument(
 ): Promise<DocumentRead> {
   if (!extractor) {
     return {
-      output: `${targetPath} is a PDF/office document, and document extraction is unavailable in this run (the Documents plugin is not loaded). Enable the plugin to read its text, or convert it with \`Bash\` (e.g. \`pdftotext\`).`,
+      output: `${targetPath} is a PDF/office document, and document extraction is unavailable in this run (no document extractor plugin is loaded). Install or enable one from the Store to read its text, or convert it with \`Bash\` (e.g. \`pdftotext\`).`,
     }
   }
   const pageRange = input.pages ? parsePageRange(input.pages) : undefined

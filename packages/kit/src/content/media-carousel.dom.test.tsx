@@ -29,10 +29,10 @@ describe('MediaCarousel', () => {
       host.querySelector('[aria-roledescription="slide"]:not([hidden]) img')?.getAttribute('src')
     try {
       await act(() =>
-        root.render(<MediaCarousel title="Chess" items={ITEMS} onOpen={(i) => opened.push(i)} />),
+        root.render(<MediaCarousel title="Atlas" items={ITEMS} onOpen={(i) => opened.push(i)} />),
       )
       const carousel = host.querySelector<HTMLElement>('[aria-roledescription="carousel"]')!
-      expect(carousel.getAttribute('aria-label')).toBe('Chess screenshots')
+      expect(carousel.getAttribute('aria-label')).toBe('Atlas screenshots')
       expect(shown()).toBe('/shots/0.png')
       expect(host.textContent).toContain('The board')
       await act(() => button('Next screenshot').click())

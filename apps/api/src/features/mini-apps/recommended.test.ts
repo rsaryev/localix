@@ -13,9 +13,9 @@ const root = tempDirPerTest('mini-app-recommended-')
 async function setup() {
   const home = join(root(), 'home')
   const catalog = hostedMiniAppCatalog(
-    ['habits', 'documents', 'kanban', 'chess'].map((name) => ({
+    ['habits', 'diary', 'tasks', 'atlas'].map((name) => ({
       name,
-      recommended: name !== 'chess',
+      recommended: name !== 'atlas',
     })),
   )
   const net = { online: true }
@@ -38,17 +38,17 @@ describe('recommended mini apps on a new installation', () => {
   test('are installed on the first start without asking, and only once', async () => {
     const { pass, installed } = await setup()
     expect(await pass()).toBe('done')
-    expect(await installed()).toEqual(['documents', 'habits', 'kanban'])
+    expect(await installed()).toEqual(['diary', 'habits', 'tasks'])
     expect(await pass()).toBe('done')
-    expect(await installed()).toEqual(['documents', 'habits', 'kanban'])
+    expect(await installed()).toEqual(['diary', 'habits', 'tasks'])
   })
 
   test('one the person removed is never added again', async () => {
     const { home, pass, installed } = await setup()
     await pass()
-    await fs.rm(join(home, '.localix', 'mini-apps', 'kanban'), { recursive: true })
+    await fs.rm(join(home, '.localix', 'mini-apps', 'tasks'), { recursive: true })
     expect(await pass()).toBe('done')
-    expect(await installed()).toEqual(['documents', 'habits'])
+    expect(await installed()).toEqual(['diary', 'habits'])
   })
 
   test('offline, nothing is installed and the pass asks to run again; online it installs', async () => {
@@ -58,25 +58,25 @@ describe('recommended mini apps on a new installation', () => {
     net.online = true
     expect(await installed()).toEqual([])
     expect(await pass()).toBe('done')
-    expect(await installed()).toEqual(['documents', 'habits', 'kanban'])
+    expect(await installed()).toEqual(['diary', 'habits', 'tasks'])
   })
 
   test('an installation that already has mini apps is not a first start: nothing is added', async () => {
     const { store, pass, installed } = await setup()
-    await store.install('chess')
+    await store.install('atlas')
     await store.settled()
     expect(await pass()).toBe('done')
-    expect(await installed()).toEqual(['chess'])
+    expect(await installed()).toEqual(['atlas'])
   })
 
   test('a folder of the person’s own by a recommended name is left as it is', async () => {
     const { home, pass } = await setup()
-    const own = join(home, '.localix', 'mini-apps', 'kanban-own')
+    const own = join(home, '.localix', 'mini-apps', 'tasks-own')
     await fs.mkdir(own, { recursive: true })
-    // The person's folder is named kanban; it carries no install record.
-    await fs.rename(own, join(home, '.localix', 'mini-apps', 'kanban'))
-    await fs.writeFile(join(home, '.localix', 'mini-apps', 'kanban', 'notes.txt'), 'mine')
+    // The person's folder is named tasks; it carries no install record.
+    await fs.rename(own, join(home, '.localix', 'mini-apps', 'tasks'))
+    await fs.writeFile(join(home, '.localix', 'mini-apps', 'tasks', 'notes.txt'), 'mine')
     expect(await pass()).toBe('done')
-    expect(await fs.readdir(join(home, '.localix', 'mini-apps', 'kanban'))).toEqual(['notes.txt'])
+    expect(await fs.readdir(join(home, '.localix', 'mini-apps', 'tasks'))).toEqual(['notes.txt'])
   })
 })

@@ -183,14 +183,14 @@ describe('UpdateStrip with other updates on offer', () => {
         jobs: [],
         updates: [
           {
-            ref: { kind: 'mini-app', id: 'sample-chess' },
-            displayName: 'Chess',
+            ref: { kind: 'mini-app', id: 'sample-puzzle' },
+            displayName: 'Puzzle',
             from: '1.0.0',
             to: '1.1.0',
           },
           {
-            ref: { kind: 'mini-app', id: 'sample-reader' },
-            displayName: 'Reader',
+            ref: { kind: 'mini-app', id: 'sample-viewer' },
+            displayName: 'Viewer',
             from: '0.3.0',
             to: '0.4.0',
           },
@@ -247,7 +247,7 @@ describe('UpdateStrip with other updates on offer', () => {
     await checkDesktopUpdate()
     const view = await mountStrip()
     expect(view.host.textContent).toContain('2 mini app updates')
-    expect(view.host.textContent).toContain('Chess and Reader')
+    expect(view.host.textContent).toContain('Puzzle and Viewer')
     await view.unmount()
     restore()
   })

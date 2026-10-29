@@ -46,7 +46,7 @@ describe('file_path serves the folder, so a static page needs no server of its o
     const dir = mkdtempSync(path.join(tmpdir(), 'preview-assets-'))
     writeFileSync(
       path.join(dir, 'index.html'),
-      '<link rel="stylesheet" href="style.css"><script src="game.js"></script><h1>2048</h1>',
+      '<link rel="stylesheet" href="style.css"><script src="game.js"></script><h1>Maze</h1>',
     )
     writeFileSync(path.join(dir, 'style.css'), 'h1{color:red}')
     writeFileSync(path.join(dir, 'game.js'), 'window.ready=true')

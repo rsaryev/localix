@@ -27,7 +27,7 @@ describe('the turn contract', () => {
 
   test('names a task board only for a run that holds one', () => {
     // A board is a plugin tool; a contract naming it for a run without it once made a model
-    // invent a KANBAN.md.
+    // invent a board file.
     const without = buildTurnControlSection({})
     expect(without).not.toMatch(/\bboard\b/i)
     expect(without).not.toMatch(/\bcards?\b/i)

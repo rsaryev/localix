@@ -60,7 +60,7 @@ describe('mini app hosts follow their owner', () => {
     await createCapabilitySourceRepository(db, 'plugin').upsert('u1', '', 'linter', {
       config: { strict: true },
     })
-    await createCapabilitySourceRepository(db, 'mini-app').upsert('u1', '', 'chess', {
+    await createCapabilitySourceRepository(db, 'mini-app').upsert('u1', '', 'atlas', {
       config: { level: 3 },
     })
     await feed.settle()

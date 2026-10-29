@@ -4,8 +4,8 @@ import { humanizeMiniAppId, miniAppLabel } from './label'
 
 describe('the name a person reads for a mini app', () => {
   test('a declared name is used verbatim', () => {
-    expect(miniAppLabel({ name: 'learning', displayName: 'Learning Studio' })).toBe(
-      'Learning Studio',
+    expect(miniAppLabel({ name: 'ledger', displayName: 'Household Ledger' })).toBe(
+      'Household Ledger',
     )
   })
 
@@ -13,7 +13,7 @@ describe('the name a person reads for a mini app', () => {
     // The whole point: `name` is a kebab id by contract, so a bare `||` fallback puts an
     // identifier in a list of names — which reads as a failed load, not as a mini app.
     expect(miniAppLabel({ name: 'webhook-notifier' })).toBe('Webhook Notifier')
-    expect(miniAppLabel({ name: 'database' })).toBe('Database')
+    expect(miniAppLabel({ name: 'notes' })).toBe('Notes')
   })
 
   test('an empty or blank displayName counts as missing, not as an empty name', () => {
@@ -24,7 +24,7 @@ describe('the name a person reads for a mini app', () => {
 
   test('acronyms keep their own casing instead of becoming Title Case words', () => {
     expect(humanizeMiniAppId('api')).toBe('API')
-    expect(humanizeMiniAppId('devops')).toBe('DevOps')
+    expect(humanizeMiniAppId('sdk-cli')).toBe('SDK CLI')
     expect(humanizeMiniAppId('mcp-bridge')).toBe('MCP Bridge')
     expect(humanizeMiniAppId('sql_runner')).toBe('SQL Runner')
   })

@@ -52,7 +52,7 @@ export const CONTRACT_OWNERS = [
  *
  * The PARENT-side variants are matched too. Only `focus:`/`focus-visible:` were, and the two
  * spellings a composite control reaches for — `focus-within:` and `has-[:focus-visible]:` — walked
- * straight past it: a `focus-within:ring-accent/20` in the database plugin and a
+ * straight past it: a `focus-within:ring-accent/20` in a bundled mini app and a
  * `focus-within:ring-foreground/15` in the model picker are exactly the drift this rule exists to
  * stop, and neither was ever reported. `focus-within:` is doubly worth catching, since it has no
  * keyboard-only semantics at all and lights the ring up on a plain mouse click.

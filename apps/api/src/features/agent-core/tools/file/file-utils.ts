@@ -169,7 +169,7 @@ async function suffixMatchInWorkspace(
  * On a not-found file access, point the model at the file it likely meant so it
  * doesn't burn a retry guessing. Two deterministic, best-effort cases:
  *  1. Same basename directly in `cwd` — the model prepended "/" to a bare workspace
- *     filename (asked for "/game2048.html" when it lives in cwd). Fast path.
+ *     filename (asked for "/maze.html" when it lives in cwd). Fast path.
  *  2. Same basename elsewhere in the workspace — the model guessed the wrong
  *     DIRECTORY (`utils/foo.ts` → `src/utils/foo.ts`); recovered via a bounded,
  *     ignore-respecting `rg --files` search, suggested only when unambiguous.

@@ -34,7 +34,7 @@ const calls: string[] = []
 const download: ActivityItem = {
   id: 'mini-app:sample-git',
   kind: 'package',
-  name: 'Git',
+  name: 'Sync',
   status: 'Downloading · 1.0 KB of 4.0 KB',
   percent: 25,
   state: 'running',
@@ -56,7 +56,7 @@ const model: ActivityItem = {
 const storeUpdates: UpdateOffer = {
   id: 'store',
   title: '3 updates',
-  detail: 'Chess, Reader and Review',
+  detail: 'Puzzle, Viewer and Review',
   fingerprint: 'x',
   action: { id: 'update-all', label: 'Update all', run: () => calls.push('update store') },
 }
@@ -72,12 +72,12 @@ describe('the Event Center’s In progress section', () => {
     calls.length = 0
     const view = await mount([download, model], [])
     const section = view.host.querySelector('section[aria-label="In progress"]')!
-    expect(section.textContent).toContain('Git')
+    expect(section.textContent).toContain('Sync')
     expect(section.textContent).toContain('Downloading · 1.0 KB of 4.0 KB')
     expect(section.querySelector('img')?.getAttribute('src')).toContain('sample-git/icon')
     const bars = [...section.querySelectorAll('[role="progressbar"]')]
     expect(bars.map((bar) => bar.getAttribute('aria-valuenow'))).toEqual(['25', '40'])
-    expect(bars[0]?.getAttribute('aria-label')).toBe('Git progress')
+    expect(bars[0]?.getAttribute('aria-label')).toBe('Sync progress')
     view.button('Open in the Store')?.click()
     view.button('Resume download')?.click()
     view.button('Cancel download')?.click()
@@ -98,7 +98,7 @@ describe('the Event Center’s In progress section', () => {
     const view = await mount([], [storeUpdates])
     const section = view.host.querySelector('section[aria-label="Updates"]')!
     expect(section.textContent).toContain('3 updates')
-    expect(section.textContent).toContain('Chess, Reader and Review')
+    expect(section.textContent).toContain('Puzzle, Viewer and Review')
     view.button('Update all')?.click()
     expect(calls).toEqual(['update store'])
     await view.unmount()
@@ -111,11 +111,11 @@ describe('the Event Center’s In progress section', () => {
         {
           ...storeUpdates,
           action: undefined,
-          running: { percent: 50, status: 'Updating Chess · 50%' },
+          running: { percent: 50, status: 'Updating Puzzle · 50%' },
         },
       ],
     )
-    expect(view.host.textContent).toContain('Updating Chess · 50%')
+    expect(view.host.textContent).toContain('Updating Puzzle · 50%')
     expect(view.button('Update all')).toBeUndefined()
     expect(view.host.querySelector('[role="progressbar"]')?.getAttribute('aria-valuenow')).toBe(
       '50',

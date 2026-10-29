@@ -5,7 +5,7 @@
  * (oklch 0.105 against the shell's 0.13), and `--background` IS that pane's ground. Painted on a
  * pane those tokens are correct; painted on a small control they read as an abrupt black chip over
  * the translucent theme — the bug reported four separate times across the composer chips, the
- * trading data-source select, every search field, and the model-filter pills.
+ * data-source select, every search field, and the model-filter pills.
  *
  * The resting fill for a control is a VEIL, which takes the pane's own colour and only adds
  * density: `bg-input/20 dark:bg-input/30` for fields and triggers, `bg-foreground/[0.04]` for

@@ -64,13 +64,13 @@ describe('the contributed status control', () => {
     // from a mini app that broke.
     const view = await render(
       <StatusItemControl
-        state={item({ label: 'Reader', Icon: GitBranch, onClick: () => undefined })}
+        state={item({ label: 'Viewer', Icon: GitBranch, onClick: () => undefined })}
         placement="titlebar"
       />,
     )
     try {
       const menu = await view.rightClick(view.host.querySelector('button')!)
-      expect(menu?.textContent).toContain('Reader')
+      expect(menu?.textContent).toContain('Viewer')
       expect(menu?.textContent).toContain('Mini app settings…')
     } finally {
       await view.close()
@@ -81,17 +81,17 @@ describe('the contributed status control', () => {
     const view = await render(
       <StatusItemControl
         state={item({
-          label: 'Git',
+          label: 'Sync',
           onClick: () => undefined,
-          menu: [{ id: 'open', label: 'Open Git Workspace', onSelect: () => undefined }],
+          menu: [{ id: 'open', label: 'Open Sync Workspace', onSelect: () => undefined }],
         })}
         placement="titlebar"
       />,
     )
     try {
       const text = (await view.rightClick(view.host.querySelector('button')!))?.textContent ?? ''
-      expect(text.indexOf('Open Git Workspace')).toBeGreaterThanOrEqual(0)
-      expect(text.indexOf('Open Git Workspace')).toBeLessThan(text.indexOf('Mini app settings…'))
+      expect(text.indexOf('Open Sync Workspace')).toBeGreaterThanOrEqual(0)
+      expect(text.indexOf('Open Sync Workspace')).toBeLessThan(text.indexOf('Mini app settings…'))
     } finally {
       await view.close()
     }
@@ -115,7 +115,7 @@ describe('the contributed status control', () => {
 
   test('compact drops the live text from the bar but never from the name', async () => {
     const state = item({
-      label: 'Git — changes, conflicts & history',
+      label: 'Sync — changes, conflicts & history',
       Icon: GitBranch,
       text: 'main',
       metrics: [{ value: '2', label: '2 ahead' }],

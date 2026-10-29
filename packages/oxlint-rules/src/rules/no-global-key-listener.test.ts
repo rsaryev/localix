@@ -71,7 +71,7 @@ describe(RULE, () => {
     expect(findings).toHaveLength(1)
   })
 
-  test.each(['reader', 'code-graph', 'game-2048', 'custom'])(
+  test.each(['alpha', 'beta-view', 'fixture-game', 'custom'])(
     'reports a global listener in the %s plugin UI',
     async (plugin) => {
       expect(

@@ -25,13 +25,13 @@ describe('ChipButton', () => {
   test('is a named button that acts when pressed', async () => {
     let pressed = 0
     const host = await mount(
-      <ChipButton aria-label="Show packages tagged chess" onClick={() => pressed++}>
-        chess
+      <ChipButton aria-label="Show packages tagged atlas" onClick={() => pressed++}>
+        atlas
       </ChipButton>,
     )
     const button = host.querySelector('button')!
     expect(button.getAttribute('type')).toBe('button')
-    expect(button.getAttribute('aria-label')).toBe('Show packages tagged chess')
+    expect(button.getAttribute('aria-label')).toBe('Show packages tagged atlas')
     await act(async () => button.click())
     expect(pressed).toBe(1)
   })
@@ -40,7 +40,7 @@ describe('ChipButton', () => {
     let pressed = 0
     const host = await mount(
       <ChipButton disabled onClick={() => pressed++}>
-        chess
+        atlas
       </ChipButton>,
     )
     await act(async () => host.querySelector('button')!.click())

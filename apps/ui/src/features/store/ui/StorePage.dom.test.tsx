@@ -22,9 +22,9 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
-const chess = listing({
-  id: 'chess',
-  displayName: 'Chess',
+const puzzle = listing({
+  id: 'puzzle',
+  displayName: 'Puzzle',
   version: '1.0.0',
   featured: true,
   contents: { screen: 1 },
@@ -38,7 +38,7 @@ async function mountPage(target?: { shelf?: string }) {
   const { SWRConfig } = await import('swr')
   const { MemoryRouter } = await import('react-router')
   const { storeApi } = await import('@/shared/api/store-client')
-  spyOn(storeApi, 'page').mockImplementation(async (query) => answer([chess, notes], query ?? {}))
+  spyOn(storeApi, 'page').mockImplementation(async (query) => answer([puzzle, notes], query ?? {}))
   spyOn(storeApi, 'sources').mockResolvedValue({ sources: SOURCES, addable: ['mini-app'] })
   spyOn(storeApi, 'reportWorkingSet').mockResolvedValue(undefined)
   spyOn(storeApi, 'recommendations').mockResolvedValue({
@@ -67,7 +67,7 @@ async function mountPage(target?: { shelf?: string }) {
     ),
   )
   const card = (id: string) => host.querySelector<HTMLElement>(`[data-listing="${id}"]`)
-  await until(() => card('chess') !== null)
+  await until(() => card('puzzle') !== null)
   const button = (name: string, scope: ParentNode = document.body) =>
     [...scope.querySelectorAll<HTMLButtonElement>('button')].find(
       (candidate) =>
@@ -102,16 +102,16 @@ describe('the Store tab', () => {
     const React = await import('react')
     const { provideStoreInstallExtra } = await import('@/shared/lib/storeInstallExtra')
     const made: string[] = []
-    const { extra } = installExtra({ made, only: ['chess'] })
+    const { extra } = installExtra({ made, only: ['puzzle'] })
     withdraw = provideStoreInstallExtra(() => extra)
     const { storeApi } = await import('@/shared/api/store-client')
     const { makeListingDetail } = await import('@localixai/store/testing')
-    spyOn(storeApi, 'detail').mockResolvedValue(makeListingDetail(chess))
+    spyOn(storeApi, 'detail').mockResolvedValue(makeListingDetail(puzzle))
     const page = await mountPage({ shelf: 'package:mini-app' })
-    await page.click(page.button('Chess', page.card('chess')!))
-    await page.until(() => page.button('Chess options') !== undefined)
+    await page.click(page.button('Puzzle', page.card('puzzle')!))
+    await page.until(() => page.button('Puzzle options') !== undefined)
     await React.act(async () => {
-      const trigger = page.button('Chess options')!
+      const trigger = page.button('Puzzle options')!
       trigger.focus()
       trigger.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
     })
@@ -121,7 +121,7 @@ describe('the Store tab', () => {
       )
     await page.until(() => item() !== undefined)
     await page.click(item())
-    expect(made).toEqual(['chess'])
+    expect(made).toEqual(['puzzle'])
     await page.unmount()
   })
 })

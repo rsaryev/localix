@@ -40,7 +40,7 @@ describe('mini app utilities minus the host', () => {
   })
 
   test('a token utility matches although the mini app wrote its fallback', () => {
-    // The observed defect: Database's `.px-2` carried `var(--spacing, 0.25rem)`, never matched the
+    // The observed defect: a mini app's `.px-2` carried `var(--spacing, 0.25rem)`, never matched the
     // host's `var(--spacing)`, stayed unlayered and beat the host's `pl-8` on every gutter menu
     // row — each icon sat on its label.
     const host = hostRuleTexts([

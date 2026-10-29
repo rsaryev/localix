@@ -18,14 +18,14 @@ registered, where a plugin's version comes from, and when an update runs.
 
 ### Localix's own plugins
 
-Localix ships no plugin. Its own, such as `mini-app-authoring`, live in the
+Localix ships no plugin. Its own live in the
 [Localix marketplace](https://github.com/rsaryev/localix-marketplace), which is the `localix`
 default marketplace below: they install, update and switch off in the Store (Plugins) like any
 other, and carry no special origin or precedence. In plain Claude Code:
 
 ```bash
 claude plugin marketplace add rsaryev/localix-marketplace
-claude plugin install mini-app-authoring@localix
+claude plugin install <plugin>@localix
 ```
 
 **Name conflicts:** Localix's order, highest first, is your installs (`~/.localix/plugins` and the

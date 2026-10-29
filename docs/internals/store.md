@@ -299,9 +299,9 @@ contract and knows no provider.
   shelves list it. `configure` is the address the Installed menu's **Configure** opens. Neither
   names a provider.
 - **A capability shelf lists components, not packages.** Commands shows one row per command: its
-  name, what it does and "In Chess · Mini app" beside the package's tile, with a filter and an
+  name, what it does and "In _Name_ · Mini app" beside the package's tile, with a filter and an
   "Installed only" switch and no category tabs or groups. A row opens the package on What's inside
-  with that component marked; its button says it installs the package ("Install Chess"). On Skills,
+  with that component marked; its button says it installs the package ("Install _Name_"). On Skills,
   Agents and MCP servers a standalone item is one row of its own, named for itself, with its source
   ("Your skills", "This project") where a plugin's component says "In <plugin> · Plugin"; it opens
   its own page.

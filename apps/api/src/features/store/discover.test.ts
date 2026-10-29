@@ -26,11 +26,11 @@ function setup(opts: Parameters<typeof makeStore>[1] = {}) {
   const apps = fakeProvider(
     'mini-app',
     [
-      app('git', { recommended: true, tags: ['git'] }),
-      app('documents', { recommended: true, updatedAt: '2026-10-20T00:00:00Z' }),
-      app('chess', { featured: true, tags: ['game'] }),
-      app('checkers', { tags: ['game'] }),
-      app('kanban', {
+      app('gallery', { recommended: true, tags: ['gallery'] }),
+      app('diary', { recommended: true, updatedAt: '2026-10-20T00:00:00Z' }),
+      app('atlas', { featured: true, tags: ['game'] }),
+      app('compass', { tags: ['game'] }),
+      app('tasks', {
         installs: [{ scope: 'user', version: '1', enabled: true, updateTo: '2' }],
       }),
     ],
@@ -44,8 +44,8 @@ function setup(opts: Parameters<typeof makeStore>[1] = {}) {
               title: 'Play with the agent',
               style: 'row',
               items: [
-                { kind: 'mini-app', id: 'chess' },
-                { kind: 'mini-app', id: 'checkers' },
+                { kind: 'mini-app', id: 'atlas' },
+                { kind: 'mini-app', id: 'compass' },
                 { kind: 'plugin', id: 'risky@community' },
                 { kind: 'mini-app', id: 'gone' },
               ],
@@ -72,15 +72,15 @@ describe('Discover', () => {
       style: 'row',
       // A community listing never appears in a pick, and one no source lists is left out.
       items: [
-        { kind: 'mini-app', id: 'chess' },
-        { kind: 'mini-app', id: 'checkers' },
+        { kind: 'mini-app', id: 'atlas' },
+        { kind: 'mini-app', id: 'compass' },
       ],
     })
   })
 
   test('Start here mixes the kinds an editorial source recommends, never a community one', async () => {
     const answer = await setup().discover(actor, {})
-    expect(ids(answer, 'start')?.sort()).toEqual(['documents', 'git', 'mini-apps@localix'])
+    expect(ids(answer, 'start')?.sort()).toEqual(['diary', 'gallery', 'mini-apps@localix'])
   })
 
   test('For this project shows what suits the open project, and is left out without a match', async () => {
@@ -93,7 +93,7 @@ describe('Discover', () => {
 
   test('New & updated, then one row per kind by score', async () => {
     const answer = await setup().discover(actor, {})
-    expect(ids(answer, 'new')).toEqual(['documents'])
+    expect(ids(answer, 'new')).toEqual(['diary'])
     expect(answer.rows.find((row) => row.id === 'kind:mini-app')?.title).toBe('Mini apps')
     expect(ids(answer, 'kind:plugin')).toEqual([
       'mini-apps@localix',
@@ -109,16 +109,16 @@ describe('Discover', () => {
     expect(answer.categories).toContainEqual({ id: 'Data', label: 'Data', count: 1 })
     const named = new Set(answer.rows.flatMap((row) => row.items.map((ref) => ref.id)))
     expect(new Set(answer.listings.map((listing) => listing.ref.id))).toEqual(
-      new Set([...named, 'chess']),
+      new Set([...named, 'atlas']),
     )
   })
 
   test('a listing’s page names more from its publisher and what is like it', async () => {
     const store = setup()
-    const detail = await store.detail({ kind: 'mini-app', id: 'chess' }, actor)
-    expect(detail.related?.map((ref) => ref.id)).toContain('checkers')
-    expect(detail.related?.map((ref) => ref.id)).not.toContain('chess')
-    expect(detail.similar?.map((ref) => ref.id)).toEqual(['checkers'])
+    const detail = await store.detail({ kind: 'mini-app', id: 'atlas' }, actor)
+    expect(detail.related?.map((ref) => ref.id)).toContain('compass')
+    expect(detail.related?.map((ref) => ref.id)).not.toContain('atlas')
+    expect(detail.similar?.map((ref) => ref.id)).toEqual(['compass'])
     // The rows come with the listings they name, so the page draws them without another read.
     const named = new Set([...detail.related!, ...detail.similar!].map((ref) => ref.id))
     expect(new Set(detail.linked?.map((listing) => listing.ref.id))).toEqual(named)

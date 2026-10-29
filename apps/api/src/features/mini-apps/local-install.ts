@@ -9,7 +9,7 @@ import { INSTALL_RECORD_FILE, installedBy } from './store-install'
 import { validateMiniApp } from './validate'
 
 /**
- * Installing a mini app the person built (`mini-app install`, from the mini-app-authoring plugin).
+ * Installing a mini app the person built (`mini-app install`, from the authoring plugin).
  * Localix does not build mini apps; it takes a built PACKAGE — the folder `mini-app build` writes —
  * judges it the way discovery will, and installs a copy beside the catalog's apps with the same
  * atomic swap. The copy is the person's own: no catalog updates or removes it, and installing it

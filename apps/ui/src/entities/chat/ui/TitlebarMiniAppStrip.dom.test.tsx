@@ -346,9 +346,8 @@ describe('the titlebar mini app strip', () => {
   test('a folded mini app keeps its whole list, not just its first row', async () => {
     // The regression this pins: the overflow row measured the mini app's half of the menu by
     // looking for the FIRST separator, which is the mini app's own the moment it groups its rows.
-    // Git, Reader, Database, API, Learning and Trading all do — so each of them collapsed to
-    // `Open …` the moment its glyph stopped fitting, and the row that replaced it looked like it
-    // worked.
+    // A mini app with sections does — so it collapsed to `Open …` the moment its glyph stopped
+    // fitting, and the row that replaced it looked like it worked.
     const view = await mountOverflowFor({
       label: 'Reader',
       Icon: Database,

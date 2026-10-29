@@ -116,7 +116,7 @@ const KEYWORDS: ReadonlyArray<[StoreCategory, readonly string[]]> = [
     ['writing', 'blog', 'docs', 'documentation', 'markdown', 'video', 'image', 'content', 'seo'],
   ],
   ['Learning', ['learn', 'learning', 'tutorial', 'course', 'teach', 'explain', 'education']],
-  ['Games', ['game', 'games', 'chess', 'puzzle', 'play']],
+  ['Games', ['game', 'games', 'arcade', 'puzzle', 'play']],
   [
     'Productivity',
     ['productivity', 'notes', 'calendar', 'email', 'tasks', 'todo', 'slack', 'notion', 'jira'],

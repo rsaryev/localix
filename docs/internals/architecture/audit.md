@@ -112,9 +112,9 @@ Follow-ups driven by the writer instead of a consumer, most valuable first:
 
 ## Recorded exceptions
 
-| Exception                                                                                                                                                                                                                                         | Where                                                               |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| Claude Code agent isolation: core creates git worktrees for a subagent's or workflow agent's `isolation: 'worktree'` and runs `WorktreeCreate` hooks, as part of the Claude Code format; the git-workspace plugin keeps its own worktree feature. | `scripts/git-workspace-ownership.test.ts` (`CLAUDE_CODE_ISOLATION`) |
+| Exception                                                                                                                                                                                                                                          | Where                                                                |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Claude Code agent isolation: core creates git worktrees for a subagent's or workflow agent's `isolation: 'worktree'` and runs `WorktreeCreate` hooks, as part of the Claude Code format; a source control mini app keeps its own worktree feature. | `scripts/source-control-ownership.test.ts` (`CLAUDE_CODE_ISOLATION`) |
 
 ## Next audit
 

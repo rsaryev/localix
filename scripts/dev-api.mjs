@@ -49,7 +49,7 @@ function pruneOrphanedStageTrees() {
 pruneOrphanedStageTrees()
 
 // Localix ships no mini app: the store installs them, as it does in a release. Development stages
-// only the mini app kit, which the API serves the mini-app-authoring plugin to build against.
+// only the mini app kit, which the API serves the authoring plugin to build against.
 // Kits staged for identical inputs are reused across launches (`mini-app-kit-cache.mjs`).
 const kitCache = kitCacheRoot(repo)
 stageMiniAppKitInto({ repoRoot: repo, outKit: stagedKit, cacheRoot: kitCache })

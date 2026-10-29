@@ -10,7 +10,7 @@
  * `docs/internals/visual-system.md` says which token answers each question.
  *
  * Two readers, so one owner: the repository guard (`scripts/ui-token-drift-guard.test.ts`) scans
- * the app and the bundled mini apps, and the mini-app-authoring plugin scans a person's mini app
+ * the app and the bundled mini apps, and the authoring plugin scans a person's mini app
  * (through the mini app kit's tools), which lives in
  * `~/.localix/mini-apps` where no repository guard can see it (a generated mini app once shipped
  * `text-red-500`, `bg-emerald-500` and a bare `rounded` through every build step). A second copy of
@@ -101,7 +101,7 @@ export const UI_TOKEN_RULES: readonly UiTokenRule[] = [
   {
     // A panel already has a width: the one the user gave its pane. Centring a literal cap inside
     // it spends that width on two empty gutters — Settings and the Vault did it at `max-w-7xl` and
-    // `max-w-4xl`, then Database, DevOps, Trading and the mini app template at `max-w-2xl`/`6xl`,
+    // `max-w-4xl`, then several bundled mini apps and the mini app template at `max-w-2xl`/`6xl`,
     // numbers that agreed with nothing and showed only once someone widened the window. The
     // offence is the PAIR in one string: a bare `max-w-2xl` on a `<p>` is a measure on text, and a
     // bare `mx-auto` has no column. Long-form prose that is a column (a lesson) asks for the named

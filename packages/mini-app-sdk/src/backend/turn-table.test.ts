@@ -18,7 +18,7 @@ afterEach(() => {
 
 /**
  * A toy game: the person and the agent take turns adding to a count, and the game is over at
- * `goal`. `agentTurns` is how many moves the agent owes in a row (a battleship hit keeps the turn).
+ * `goal`. `agentTurns` is how many moves the agent owes in a row (a board-game hit keeps the turn).
  */
 const gameSchema = z.object({
   id: z.string(),

@@ -48,7 +48,7 @@ export const installMiniAppRequestSchema = z.object({
   acceptUnverified: z.boolean().optional(),
 })
 
-/** A package the person built (`mini-app build`), handed over by the mini-app-authoring plugin. */
+/** A package the person built (`mini-app build`), handed over by the authoring plugin. */
 export const installLocalMiniAppRequestSchema = z.object({
   /** The package folder, absolute. */
   dir: z.string().min(1),

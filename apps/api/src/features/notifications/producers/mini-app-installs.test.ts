@@ -38,23 +38,23 @@ describe('finished mini app installs, as the Event Center reads them', () => {
     const { test, report } = await setup()
     report([
       { name: 'habits', label: 'Habits', kind: 'install', version: '1.0.0' },
-      { name: 'documents', label: 'Documents', kind: 'install', version: '1.0.0' },
-      { name: 'kanban', label: 'Kanban', kind: 'install', version: '1.0.0' },
-      { name: 'chess', label: 'Chess', kind: 'update', version: '1.2.0' },
-      { name: 'reader', label: 'Reader', kind: 'update', version: '0.4.0' },
+      { name: 'ledger', label: 'Ledger', kind: 'install', version: '1.0.0' },
+      { name: 'tasks', label: 'Tasks', kind: 'install', version: '1.0.0' },
+      { name: 'weather', label: 'Weather', kind: 'update', version: '1.2.0' },
+      { name: 'recipes', label: 'Recipes', kind: 'update', version: '0.4.0' },
     ])
     expect((await rowsOf(test)).map(({ title, body }) => ({ title, body }))).toEqual([
-      { title: 'Installed 3 mini apps', body: 'Habits, Documents and Kanban' },
-      { title: 'Updated 2 mini apps', body: 'Chess and Reader' },
+      { title: 'Installed 3 mini apps', body: 'Habits, Ledger and Tasks' },
+      { title: 'Updated 2 mini apps', body: 'Weather and Recipes' },
     ])
   })
 
   test('a failure says what did not happen, why, and offers to try again', async () => {
     const { test, report } = await setup()
-    report([{ name: 'kanban', label: 'Kanban', kind: 'install', error: 'The download stopped' }])
+    report([{ name: 'tasks', label: 'Tasks', kind: 'install', error: 'The download stopped' }])
     const [row] = await openRows(test)
     expect(row).toMatchObject({
-      title: 'Could not install Kanban',
+      title: 'Could not install Tasks',
       body: 'The download stopped',
       severity: 'error',
     })
@@ -64,7 +64,7 @@ describe('finished mini app installs, as the Event Center reads them', () => {
         label: 'Try again',
         kind: 'invoke',
         command: 'mini_app_install',
-        requestId: 'kanban',
+        requestId: 'tasks',
         available: true,
       },
     ])
@@ -72,24 +72,24 @@ describe('finished mini app installs, as the Event Center reads them', () => {
 
   test('the same failure again is still one row, and a later install settles it', async () => {
     const { test, report } = await setup()
-    const failed = { name: 'kanban', label: 'Kanban', kind: 'update', version: '1.1.0' } as const
+    const failed = { name: 'tasks', label: 'Tasks', kind: 'update', version: '1.1.0' } as const
     report([{ ...failed, error: 'offline' }])
     report([{ ...failed, error: 'offline' }])
-    expect((await openRows(test)).map((row) => row.title)).toEqual(['Could not update Kanban'])
+    expect((await openRows(test)).map((row) => row.title)).toEqual(['Could not update Tasks'])
 
     report([failed])
     const rows = await rowsOf(test)
     expect(rows).toContainEqual(
-      expect.objectContaining({ title: 'Could not update Kanban', state: 'settled' }),
+      expect.objectContaining({ title: 'Could not update Tasks', state: 'settled' }),
     )
-    expect(rows).toContainEqual(expect.objectContaining({ title: 'Updated Kanban to 1.1.0' }))
+    expect(rows).toContainEqual(expect.objectContaining({ title: 'Updated Tasks to 1.1.0' }))
   })
 
   test('the row goes to the person who asked, or the installation’s user for an update', async () => {
     const { test, report } = await setup()
-    report([{ name: 'kanban', label: 'Kanban', kind: 'install', userId: 'ada' }])
-    report([{ name: 'chess', label: 'Chess', kind: 'update', version: '1.2.0' }])
-    expect((await openRows(test, 'ada')).map((row) => row.title)).toEqual(['Installed Kanban'])
-    expect((await openRows(test)).map((row) => row.title)).toEqual(['Updated Chess to 1.2.0'])
+    report([{ name: 'tasks', label: 'Tasks', kind: 'install', userId: 'ada' }])
+    report([{ name: 'weather', label: 'Weather', kind: 'update', version: '1.2.0' }])
+    expect((await openRows(test, 'ada')).map((row) => row.title)).toEqual(['Installed Tasks'])
+    expect((await openRows(test)).map((row) => row.title)).toEqual(['Updated Weather to 1.2.0'])
   })
 })
